@@ -55,7 +55,10 @@ function computeNextRetryIso(attempts) {
  * close-issue) should pass an explicit key.
  */
 export function makeIdempotencyKey(method, url, bodyHash) {
-    return `${method}:${url}${bodyHash ? `:${bodyHash}` : `:${Date.now()}-${Math.random().toString(36).slice(2, 10)}`}`;
+    // Use `!= null` (not truthiness): an empty-string bodyHash is a real,
+    // deterministic hash and must dedup — only a genuinely absent (null/undefined)
+    // bodyHash should fall back to a random, non-deduping key.
+    return `${method}:${url}${bodyHash != null ? `:${bodyHash}` : `:${Date.now()}-${Math.random().toString(36).slice(2, 10)}`}`;
 }
 
 /**

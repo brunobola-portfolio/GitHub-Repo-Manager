@@ -231,6 +231,14 @@ describe('gh-outbox helpers', () => {
         expect(a).not.toBe(b)
     })
 
+    it('makeIdempotencyKey treats an empty-string bodyHash as a real (deterministic) hash, not absent', () => {
+        // Regression: `bodyHash ?` mis-classified '' (falsy) as "no key" and went
+        // random, so a bodyless mutation + retry could double-execute.
+        const a = makeIdempotencyKey('PUT', '/x', '')
+        const b = makeIdempotencyKey('PUT', '/x', '')
+        expect(a).toBe(b)
+    })
+
     it('purgeOldSucceeded drops succeeded rows older than 1 day', () => {
         testDb.prepare(`
             INSERT INTO gh_outbox (user_id, method, url, body, idempotency_key, status, completed_at)

@@ -17,6 +17,11 @@ export class MigrationEngine extends EventEmitter {
     this._cancelledPlans = new Set()
     this._pausedPlans = new Set()
     this._lastProgressWrite = new Map() // taskId -> timestamp
+    // Per-type ceilings (ms) for a single task — a safety net so a hung external
+    // call (Azure/GitHub never responding) can't hold a concurrency slot forever.
+    // Generous by design; overridable in tests.
+    this._taskTimeoutMs = { repo: 30 * 60_000, 'repo-tfvc': 45 * 60_000, 'work-items': 20 * 60_000, wiki: 15 * 60_000 }
+    this._defaultTaskTimeoutMs = 30 * 60_000
     this.credentials = createMigrationCredentialManager({ db, logger })
     this._startScheduler()
     this.credentials.startCleanupTimer()
@@ -300,7 +305,8 @@ export class MigrationEngine extends EventEmitter {
         ).run(new Date().toISOString(), task.id)
         this.emit('task-status', { planId, taskId: task.id, status: 'running' })
 
-        const metadata = await this._executeTask(task, credentials)
+        const timeoutMs = this._taskTimeoutMs[task.type] ?? this._defaultTaskTimeoutMs
+        const metadata = await this._withTimeout(this._executeTask(task, credentials), timeoutMs, task)
         // Check for cancellation after execution
         if (this._isCancelled(planId)) return
 
@@ -312,9 +318,18 @@ export class MigrationEngine extends EventEmitter {
       } catch (err) {
         if (this._isCancelled(planId)) return
 
-        this.db.prepare(
-          "UPDATE migration_tasks SET status = 'failed', error_message = ?, completed_at = datetime(?) WHERE id = ?"
-        ).run(err.message, new Date().toISOString(), task.id)
+        // Guard the failed-status write: if it throws (DB locked/corrupt) the row
+        // would otherwise be left 'running' forever and skipped by every resume
+        // (executePlan only re-fetches 'pending') until restart recovery. We can't
+        // fix the row if the DB itself is failing, but we log it loudly and still
+        // emit so SSE clients learn the task failed.
+        try {
+          this.db.prepare(
+            "UPDATE migration_tasks SET status = 'failed', error_message = ?, completed_at = datetime(?) WHERE id = ?"
+          ).run(err.message, new Date().toISOString(), task.id)
+        } catch (dbErr) {
+          logger.error({ err: dbErr, planId, taskId: task.id, taskError: err.message }, 'migration-engine: failed to persist task failure; task left running until restart recovery')
+        }
         this.emit('task-status', { planId, taskId: task.id, status: 'failed' })
         this.emit('task-failed', { planId, taskId: task.id, error: err.message })
       } finally {
@@ -609,13 +624,35 @@ export class MigrationEngine extends EventEmitter {
   }
 
   /**
+   * Races a task promise against a generous per-type ceiling so a hung external
+   * call can't hold a concurrency slot forever. On timeout the task is failed and
+   * the slot freed; the underlying promise is abandoned (a true hang has no clean
+   * cancel) — a safety net, not a routine cancellation path. The timer is unref'd
+   * so it never keeps the process alive.
+   * @param {Promise<any>} promise
+   * @param {number} ms
+   * @param {object} task
+   */
+  _withTimeout(promise, ms, task) {
+    let timer
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`Task timed out after ${Math.round(ms / 60000)} min (${task.type})`)),
+        ms,
+      )
+      if (timer && timer.unref) timer.unref()
+    })
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer))
+  }
+
+  /**
    * Dispatches a task to the appropriate service for execution.
    * @param {object} task - The migration task row from the database
    * @param {object|null} credentials - Credentials for source/target systems
    * @returns {Promise<object>} metadata from the service
    */
   async _executeTask(task, credentials) {
-    const config = typeof task.config === 'string' ? JSON.parse(task.config) : (task.config || {})
+    const config = typeof task.config === 'string' ? safeJson(task.config, {}) : (task.config || {})
     // Resolve Azure PAT: use provided credentials, fall back to server env var
     const resolvedAzurePat = credentials?.azurePat || process.env.AZURE_PAT || null
     const resolvedCredentials = { ...credentials, azurePat: resolvedAzurePat }
