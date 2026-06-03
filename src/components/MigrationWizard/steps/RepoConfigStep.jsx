@@ -12,13 +12,13 @@ import { EmptyState } from '../../ui/EmptyState'
 import { useBranchCache } from '../hooks/useBranchCache'
 import { useAzureProjectData } from '../hooks/useAzureProjectData'
 import { useRepoNameConflicts } from '../hooks/useRepoNameConflicts'
+import { useAiAvailability } from '../hooks/useAiAvailability'
 import { Select } from '../../ui/Select'
 import { Input, Textarea, Switch } from '../../ui/form'
 import { formatFileSize } from '../../../utils/format'
 import { RiskBadge } from '../ui/repo/RiskBadge'
 import { REPO_DESCRIPTION_MAX } from '../../../utils/migrationDescription'
 import { useRepoDescriptionSuggestion } from '../../../hooks/useRepoDescriptionSuggestion'
-import { isAIUnavailable, subscribeAIUnavailable } from '../../../utils/aiAvailability'
 import TargetModePicker from './RepoConfigStep/TargetModePicker'
 
 // Wrapper kept to preserve "0 B" empty-state copy and the "0 decimals for B"
@@ -26,16 +26,6 @@ import TargetModePicker from './RepoConfigStep/TargetModePicker'
 function formatSize(bytes) {
   if (!bytes || bytes <= 0) return '0 B'
   return formatFileSize(bytes, bytes < 1024 ? 0 : 1).replace('Bytes', 'B')
-}
-
-// Maps a markAIUnavailable("<status>:<endpoint>") reason into a single short
-// user-facing line. Keeps the message specific enough to help debugging
-// (Settings → AI) without dumping HTTP status codes on the user.
-function humanizeAIReason(reason = '') {
-  if (reason.startsWith('404:')) return 'AI indisponível: modelo configurado não foi encontrado. Verifica GEMINI_MODEL nas Definições.'
-  if (reason.startsWith('422:')) return 'AI indisponível: chave inválida ou expirada. Atualiza nas Definições → AI.'
-  if (reason.startsWith('400:')) return 'AI indisponível: nenhuma chave AI configurada. Configura uma nas Definições.'
-  return 'AI indisponível para esta sessão — as sugestões usam o template.'
 }
 
 /**
@@ -52,10 +42,9 @@ function humanizeAIReason(reason = '') {
 export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [], onChangeDestination, onChangeSource, onGoToStep }) {
   const { expandedBranches, branchCache, loadingBranches, toggleBranchExpand } = useBranchCache(source)
   const [expandedCards, setExpandedCards] = useState({})
-  const [aiAvailable, setAiAvailable] = useState(false)
   const [quotaNotice, setQuotaNotice] = useState('')
-  const [aiNotice, setAiNotice] = useState('')
   const [generatingId, setGeneratingId] = useState(null)
+  const { aiAvailable, aiNotice, setAiNotice } = useAiAvailability()
   const { suggest } = useRepoDescriptionSuggestion({ aiAvailable })
 
   const isAzureDevops = source?.azureTargetMode === 'azure-devops'
@@ -66,37 +55,6 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
 
   const { conflicts, setConflicts, checkConflict } =
     useRepoNameConflicts({ source, isAzureDevops, azureProjectRepoNames, repos })
-
-  useEffect(() => {
-    let cancelled = false
-    fetch('/api/config/ai-status', { credentials: 'include' })
-      .then((r) => (r.ok ? r.json() : { configured: false }))
-      .then((d) => {
-        if (cancelled) return
-        // Honor any session-scoped unavailability (set by a previous wizard step
-        // that already hit a fatal AI 4xx). Avoids re-enabling AI just because
-        // the config probe says the key exists — the key may exist but point at
-        // a missing model or be revoked.
-        setAiAvailable(!!d?.configured && !isAIUnavailable())
-      })
-      .catch(() => { if (!cancelled) setAiAvailable(false) })
-    return () => { cancelled = true }
-  }, [])
-
-  // React to a fatal AI failure that happens DURING this step (e.g. clicking
-  // Generate with AI returns 404). Downgrade the button to its template-only
-  // state and show a single, dismissible notice.
-  useEffect(() => {
-    if (isAIUnavailable()) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setAiAvailable(false)
-    }
-    const unsub = subscribeAIUnavailable((reason) => {
-      setAiAvailable(false)
-      setAiNotice(humanizeAIReason(reason))
-    })
-    return unsub
-  }, [])
 
   const handleGenerateDescription = useCallback(async (repo, index) => {
     const key = repo.id ?? index
