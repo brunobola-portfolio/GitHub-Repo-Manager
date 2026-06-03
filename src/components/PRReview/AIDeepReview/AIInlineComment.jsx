@@ -27,7 +27,7 @@ export function AIInlineComment({ comment, idx, onDismiss, onEdit }) {
         <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-100 dark:border-slate-700">
             <span
                 aria-hidden="true"
-                className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 text-white shrink-0"
+                className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] text-white shrink-0"
             >
                 <Sparkles className="w-3.5 h-3.5" strokeWidth={2.5} />
             </span>

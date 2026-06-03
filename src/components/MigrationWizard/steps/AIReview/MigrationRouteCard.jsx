@@ -77,7 +77,7 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
           {/* Arrow */}
           <div className="shrink-0 flex flex-col items-center gap-0.5 px-1">
             <motion.div
-              className="w-9 h-9 rounded-full bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 flex items-center justify-center shadow-md"
+              className="w-9 h-9 rounded-full bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] flex items-center justify-center shadow-md"
               animate={{ x: [0, 2, 0] }}
               transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             >

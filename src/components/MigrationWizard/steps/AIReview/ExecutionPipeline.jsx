@@ -69,7 +69,7 @@ export function ExecutionPipeline({ order, repos, source }) {
                 transition-all duration-200 group"
             >
               {/* Step number */}
-              <span className="shrink-0 w-6 h-6 rounded-md bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 text-white flex items-center justify-center ds-text-meta font-bold shadow-sm">
+              <span className="shrink-0 w-6 h-6 rounded-md bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] text-white flex items-center justify-center ds-text-meta font-bold shadow-sm">
                 {i + 1}
               </span>
 

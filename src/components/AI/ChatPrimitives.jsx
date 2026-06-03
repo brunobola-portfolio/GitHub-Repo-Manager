@@ -34,7 +34,7 @@ export function MessageBubble({ message }) {
     return (
         <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
             {!isUser && (
-                <div className={`w-7 h-7 rounded-lg ${isError ? 'bg-rose-500' : 'bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500'} flex items-center justify-center shrink-0 mt-0.5 mr-2 ring-1 ring-white/30 shadow-sm`}>
+                <div className={`w-7 h-7 rounded-lg ${isError ? 'bg-rose-500' : 'bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)]'} flex items-center justify-center shrink-0 mt-0.5 mr-2 ring-1 ring-white/30 shadow-sm`}>
                     {isError
                         ? <AlertTriangle size={13} className="text-white" />
                         : <Sparkles size={13} className="text-white" />}
@@ -44,7 +44,7 @@ export function MessageBubble({ message }) {
                 <div
                     className={`px-3.5 py-2.5 text-sm leading-relaxed rounded-2xl shadow-sm ${
                         isUser
-                            ? 'bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 text-white rounded-br-sm shadow-sm'
+                            ? 'bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] text-white rounded-br-sm shadow-sm'
                             : isError
                                 ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-900/50 rounded-bl-sm'
                                 : 'bg-white dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 rounded-bl-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-pre:my-2 prose-code:text-xs'
@@ -65,7 +65,7 @@ export function MessageBubble({ message }) {
 export function StreamingBubble({ text }) {
     return (
         <div className="flex justify-start">
-            <div className="w-7 h-7 rounded-lg bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 flex items-center justify-center shrink-0 mt-0.5 mr-2 ring-1 ring-white/30 shadow-sm">
+            <div className="w-7 h-7 rounded-lg bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] flex items-center justify-center shrink-0 mt-0.5 mr-2 ring-1 ring-white/30 shadow-sm">
                 <Sparkles size={13} className="text-white" />
             </div>
             <div className="max-w-[82%] flex flex-col gap-2">
@@ -84,7 +84,7 @@ export function StreamingBubble({ text }) {
 export function TypingIndicator() {
     return (
         <div className="flex justify-start" aria-live="polite" aria-label="Assistant is typing">
-            <div className="w-7 h-7 rounded-lg bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 flex items-center justify-center shrink-0 mt-0.5 mr-2 ring-1 ring-white/30 shadow-sm">
+            <div className="w-7 h-7 rounded-lg bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] flex items-center justify-center shrink-0 mt-0.5 mr-2 ring-1 ring-white/30 shadow-sm">
                 <Sparkles size={13} className="text-white" />
             </div>
             <div className="bg-white dark:bg-slate-800/90 px-3.5 py-3 rounded-2xl rounded-bl-sm border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center">

@@ -69,7 +69,7 @@ export function SmartSelectMenu({ repos, onSelect }) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
-          bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 text-white shadow-md
+          bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] text-white shadow-md
           hover:shadow-lg transition-all"
         aria-haspopup="menu"
         aria-expanded={open}

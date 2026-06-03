@@ -134,7 +134,7 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
           onClick={handleOpenPat}
           disabled={!hasContext}
           title={hasContext ? `Abre ${patUrl}` : 'Cola uma URL primeiro'}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] dark:bg-indigo-500 dark:hover:bg-indigo-400 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed disabled:hover:bg-slate-300 transition-colors shadow-sm"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] dark:hover:bg-indigo-400 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed disabled:hover:bg-slate-300 transition-colors shadow-sm"
         >
           <ExternalLink className="w-3.5 h-3.5" />
           {openedAt ? 'Reabrir página de PAT' : hasContext ? `Abrir PAT em ${provider.shortName}` : 'Cola URL primeiro'}

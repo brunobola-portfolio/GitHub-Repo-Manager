@@ -442,7 +442,7 @@ function MobileProgressBar({ steps, currentStepIndex }) {
     <div className="px-4 pt-3 pb-2">
       <div className="h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
         <motion.div
-          className="h-full bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 rounded-full"
+          className="h-full bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] rounded-full"
           initial={false}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.35, ease: 'easeOut' }}
@@ -767,7 +767,7 @@ export default function MigrationWizard({
           className={`inline-flex items-center gap-2 px-6 py-2.5 text-[13px] font-semibold rounded-lg text-white
             ${blockerCount > 0
               ? 'bg-slate-600 cursor-not-allowed opacity-60'
-              : 'bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-indigo-600'}
+              : 'bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-[color:var(--ds-accent-brand)]'}
             shadow-md transition-all duration-200`}
         >
           Next

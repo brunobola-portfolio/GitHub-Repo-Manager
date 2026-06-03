@@ -86,7 +86,7 @@ export function AINotConfiguredBanner({
                         <button
                             type="button"
                             onClick={openAISettings}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[color:var(--ds-accent-brand)] dark:bg-indigo-500 hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-indigo-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-md"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-[color:var(--ds-accent-brand)] text-white text-sm font-semibold rounded-lg transition-colors shadow-md"
                         >
                             <Key className="w-3.5 h-3.5" aria-hidden="true" />
                             Configure AI
