@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { SPRING } from '../motion'
 
 /**
  * Switch — premium toggle.
@@ -17,7 +18,7 @@ const TONE_BG = {
     rose: 'bg-rose-500',
 }
 
-const KNOB_SPRING = { type: 'spring', stiffness: 500, damping: 30 }
+const KNOB_SPRING = SPRING.knob
 
 export function Switch({
     checked = false,

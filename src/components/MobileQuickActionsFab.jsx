@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, X, Download, Wand2, FolderPlus, Search, Sparkles } from 'lucide-react'
+import { TAP } from './ui/motion'
 
 // Render order = visual order top→bottom; last entry sits closest to the
 // FAB trigger. Search / AI assistant are the highest-traffic touch
@@ -121,7 +122,7 @@ export function MobileQuickActionsFab(props) {
                         aria-haspopup="menu"
                         onClick={() => setOpen(v => !v)}
                         animate={{ rotate: open ? 45 : 0 }}
-                        whileTap={{ scale: 0.92 }}
+                        whileTap={TAP}
                         transition={{ type: 'spring', stiffness: 380, damping: 26, mass: 0.7 }}
                         className={`relative w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 dark:from-indigo-400 dark:to-violet-500 shadow-xl shadow-indigo-500/40 dark:shadow-indigo-500/30 ring-1 ring-white/15 flex items-center justify-center text-white ds-focus-ring transition-[transform,opacity,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:shadow-2xl hover:shadow-indigo-500/50 ${
                             open

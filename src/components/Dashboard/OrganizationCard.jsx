@@ -1,6 +1,7 @@
 import { memo, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Building2, Star, GitFork, GitPullRequest, AlertCircle, Lock, Globe, TrendingUp } from 'lucide-react'
+import { TAP } from '../ui/motion'
 import { Card } from '../ui/Card'
 import { formatCompact } from '../../utils/format'
 import { MS_PER_DAY } from '../../utils/time'
@@ -34,7 +35,7 @@ export const OrganizationCard = memo(function OrganizationCard({ org, repos = []
     return (
         <motion.button
             onClick={() => onClick?.(org.login)}
-            whileTap={{ scale: 0.98 }}
+            whileTap={TAP}
             className="group block w-full rounded-2xl ds-focus-ring text-left"
         >
             <Card hover className="p-6">

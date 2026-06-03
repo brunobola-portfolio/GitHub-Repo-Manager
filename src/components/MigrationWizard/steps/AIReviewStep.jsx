@@ -7,6 +7,7 @@ import {
   CircleAlert,
 } from 'lucide-react'
 import { migrationApi } from '../../../api/migration'
+import { TAP } from '../../ui/motion'
 
 import { AnalysisLoadingState } from './AIReview/AnalysisLoadingState'
 import { MigrationRouteCard } from './AIReview/MigrationRouteCard'
@@ -139,7 +140,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
             type="button"
             onClick={analyze}
             disabled={analyzing}
-            whileTap={{ scale: 0.98 }}
+            whileTap={TAP}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
               text-violet-600 dark:text-violet-400
               bg-violet-50 dark:bg-violet-500/10
@@ -365,7 +366,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
                 <motion.button
                   type="button"
                   onClick={handleApprove}
-                  whileTap={{ scale: 0.99 }}
+                  whileTap={TAP}
                   className="relative w-full overflow-hidden inline-flex items-center justify-center gap-2.5 px-5 py-3.5 text-sm font-semibold rounded-xl
                     text-white
                     bg-emerald-600 dark:bg-emerald-500

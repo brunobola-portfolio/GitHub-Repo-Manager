@@ -43,9 +43,10 @@ export function RepoGrid({
 					))}
 				</>
 			)}
-			{!isSearchingAI && repos.map(repo => (
+			{!isSearchingAI && repos.map((repo, i) => (
 				<RepoCard
 					key={repo.id}
+					index={i}
 					repo={repo}
 					viewMode={viewMode}
 					isSelected={selectedIds.has(repo.id)}

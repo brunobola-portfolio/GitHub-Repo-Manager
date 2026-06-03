@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion'
+import { DURATION, EASE } from './motion'
 
 const TONE_CLASSES = {
   default: 'ring-slate-200/60 dark:ring-slate-800/50 bg-white dark:bg-slate-900/60',
@@ -11,12 +12,12 @@ const TONE_CLASSES = {
 
 const VARIANTS = {
   hidden:  { opacity: 0, y: 12 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.16, 1, 0.3, 1] } },
+  visible: { opacity: 1, y: 0, transition: { duration: DURATION.slow, ease: EASE.emphasized } },
 }
 
 const VARIANTS_REDUCED = {
   hidden:  { opacity: 0 },
-  visible: { opacity: 1, transition: { duration: 0.15 } },
+  visible: { opacity: 1, transition: { duration: DURATION.fast } },
 }
 
 /**

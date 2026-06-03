@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
+import { TAP } from '../../ui/motion'
 
 const TONES = {
     indigo: 'bg-indigo-500/15 text-[color:var(--ds-accent-brand)] dark:text-indigo-300 border-indigo-400/40',
@@ -14,7 +15,7 @@ export function FilterChip({ label, count, active, onToggle, tone = 'indigo' }) 
         <motion.button
             type="button"
             onClick={onToggle}
-            whileTap={{ scale: 0.96 }}
+            whileTap={TAP}
             aria-pressed={active}
             className={`
                 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors whitespace-nowrap

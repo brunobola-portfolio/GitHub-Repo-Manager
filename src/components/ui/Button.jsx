@@ -42,8 +42,13 @@ export function Button({ className, variant = 'primary', size = 'md', children, 
     const enforcesMinTarget = !SIZES_WITHOUT_MIN_TARGET.has(size)
     return (
         <button
+            // Subtle tactile press (3% shrink) via CSS so the primitive stays a
+            // plain <button> — no Framer overhead on the most-used control. The
+            // `motion-safe:` guard drops the scale entirely under prefers-reduced-
+            // motion. `transition` (not `transition-colors`) so the transform eases
+            // too. `active:` doesn't fire on disabled buttons.
             className={twMerge(
-                'inline-flex items-center justify-center rounded-lg font-medium transition-colors duration-150 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed',
+                'inline-flex items-center justify-center rounded-lg font-medium transition duration-150 motion-safe:active:scale-[0.97] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed',
                 enforcesMinTarget && 'min-h-[44px] min-w-[44px]',
                 variants[variant] || variants.primary,
                 sizes[size] || sizes.md,

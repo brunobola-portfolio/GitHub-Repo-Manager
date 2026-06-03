@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { XCircle, Info, AlertTriangle, X } from 'lucide-react'
 import { AnimatedCheck } from './AnimatedCheck'
 import { Tooltip } from './Tooltip'
+import { TRANSITION } from './motion'
 
 const ICONS = {
     success: null, // rendered directly as <AnimatedCheck> below
@@ -29,7 +31,6 @@ const ICON_STYLES = {
 }
 
 export function Toast({ id, type = 'info', message, content, onDismiss, duration = 5000 }) {
-    const [isLeaving, setIsLeaving] = useState(false)
     const timerRef = useRef(null)
     const onDismissRef = useRef(onDismiss)
 
@@ -38,30 +39,31 @@ export function Toast({ id, type = 'info', message, content, onDismiss, duration
     }, [onDismiss])
     const Icon = ICONS[type] ?? Info
 
+    // Auto-dismiss removes the toast from the provider's array; <AnimatePresence>
+    // in the container then plays the exit animation — no manual leave-state needed.
     useEffect(() => {
         if (duration > 0) {
-            timerRef.current = setTimeout(() => {
-                setIsLeaving(true)
-                setTimeout(() => onDismissRef.current(id), 300)
-            }, duration)
+            timerRef.current = setTimeout(() => onDismissRef.current(id), duration)
             return () => clearTimeout(timerRef.current)
         }
     }, [duration, id])
 
     const handleDismiss = () => {
         clearTimeout(timerRef.current)
-        setIsLeaving(true)
-        setTimeout(() => onDismiss(id), 300)
+        onDismiss(id)
     }
 
 	return (
-		<div
+		<motion.div
+			layout
 			role={type === 'error' ? 'alert' : 'status'}
 			aria-live={type === 'error' ? 'assertive' : 'polite'}
 			aria-atomic="true"
-			className={`flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg transition-all duration-300 backdrop-blur-md pointer-events-auto w-full max-w-[calc(100vw-2rem)] sm:max-w-sm ${
-				STYLES[type]
-			} ${isLeaving ? 'opacity-0 translate-x-full' : 'opacity-100 translate-x-0'}`}
+			initial={{ opacity: 0, x: 24, scale: 0.98 }}
+			animate={{ opacity: 1, x: 0, scale: 1 }}
+			exit={{ opacity: 0, x: '110%' }}
+			transition={TRANSITION.entrance}
+			className={`flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg backdrop-blur-md pointer-events-auto w-full max-w-[calc(100vw-2rem)] sm:max-w-sm ${STYLES[type]}`}
 		>
             {type === 'success'
                 ? <AnimatedCheck size={20} color="currentColor" />
@@ -82,17 +84,18 @@ export function Toast({ id, type = 'info', message, content, onDismiss, duration
                     <X className="w-4 h-4" />
                 </button>
             </Tooltip>
-        </div>
+        </motion.div>
     )
 }
 
 export function ToastContainer({ toasts, onDismiss }) {
 	return (
 		<div className="fixed inset-x-0 bottom-20 z-[var(--ds-z-toast)] flex flex-col items-end px-4 space-y-2 pointer-events-none sm:items-end sm:right-4 sm:left-auto sm:max-w-sm safe-area-bottom safe-area-right">
-			{toasts.map(toast => (
-				<Toast key={toast.id} {...toast} onDismiss={onDismiss} />
-			))}
+			<AnimatePresence>
+				{toasts.map(toast => (
+					<Toast key={toast.id} {...toast} onDismiss={onDismiss} />
+				))}
+			</AnimatePresence>
 		</div>
 	)
 }
-
