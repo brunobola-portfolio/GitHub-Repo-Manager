@@ -57,7 +57,7 @@ export function OrganizationSelector({ orgs = [], selectedOrg, onSelectOrg, load
                 </Popover.Trigger>
                 <Popover.Portal>
                     <Popover.Content
-                        className="w-[300px] p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-md animate-in fade-in zoom-in-95 duration-200 z-[var(--ds-z-popover)]"
+                        className="w-[300px] max-w-[calc(100vw-1rem)] p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-md animate-in fade-in zoom-in-95 duration-200 z-[var(--ds-z-popover)]"
                         sideOffset={12}
                     >
                         <div className="max-h-[340px] overflow-y-auto space-y-1.5 ds-scrollbar pr-1">
