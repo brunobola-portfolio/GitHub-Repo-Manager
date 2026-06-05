@@ -1,5 +1,6 @@
 import { InsightCard } from '../../ui/InsightCard'
-import { Zap, Copy, ExternalLink, Check } from 'lucide-react'
+import { Zap, ExternalLink } from 'lucide-react'
+import { AnimatedCopyIcon } from '../../ui/AnimatedCopyIcon'
 import { useCopyToClipboard } from '../../../hooks/useCopyToClipboard'
 
 const WEBHOOK_PATH = '/api/v1/webhooks/github'
@@ -37,7 +38,7 @@ export function WebhookConnectPanel({ tier }) {
                         aria-label="Copy webhook URL"
                         className="p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700"
                     >
-                        {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+                        <AnimatedCopyIcon copied={copied} size="w-3.5 h-3.5" copyClassName="text-slate-500" checkClassName="text-emerald-500" />
                     </button>
                 </div>
 

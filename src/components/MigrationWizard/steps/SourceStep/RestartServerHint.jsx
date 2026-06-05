@@ -1,4 +1,5 @@
-import { RefreshCw, Terminal, Copy, Check } from 'lucide-react'
+import { RefreshCw, Terminal } from 'lucide-react'
+import { AnimatedCopyIcon } from '../../../ui/AnimatedCopyIcon'
 import { useCopyToClipboard } from '../../../../hooks/useCopyToClipboard'
 
 /**
@@ -46,7 +47,7 @@ export default function RestartServerHint({ host }) {
               className="px-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-colors"
               aria-label="Copiar comando"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+              <AnimatedCopyIcon copied={copied} size="w-3.5 h-3.5" checkClassName="text-emerald-500" />
             </button>
           </div>
           <p className="ds-text-meta text-slate-500 dark:text-slate-400">

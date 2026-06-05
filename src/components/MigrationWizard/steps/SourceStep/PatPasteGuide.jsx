@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ExternalLink, Copy, Check, Terminal, Eye, EyeOff, Lock, AlertTriangle, Bookmark } from 'lucide-react'
+import { ExternalLink, Terminal, Eye, EyeOff, Lock, AlertTriangle, Bookmark } from 'lucide-react'
+import { AnimatedCopyIcon } from '../../../ui/AnimatedCopyIcon'
 import { SpinnerIcon } from '../../../ui/Spinner'
 import { buildPatSettingsUrl, buildAzCliCommand, classifyProvider } from '../../../../utils/azureProvider'
 import { Input } from '../../../ui/form'
@@ -327,7 +328,7 @@ function CliAlternative({ cmd }) {
           className="px-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
           aria-label="Copiar comando"
         >
-          {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+          <AnimatedCopyIcon copied={copied} size="w-3.5 h-3.5" checkClassName="text-emerald-500" />
         </button>
       </div>
       <p className="ds-text-micro text-slate-400 dark:text-slate-500 mt-1">

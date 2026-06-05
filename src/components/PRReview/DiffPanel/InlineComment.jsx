@@ -137,9 +137,7 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
           aria-label={collapsed ? 'Expand comment' : 'Collapse comment'}
           aria-expanded={!collapsed}
         >
-          {collapsed
-            ? <ChevronRight size={14} />
-            : <ChevronDown size={14} />}
+          <ChevronDown size={14} className={`transition-transform duration-200 ${collapsed ? '-rotate-90' : ''}`} />
         </button>
 
         <Avatar login={login} />

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ShieldAlert, ShieldCheck, Copy, Check, Terminal, Sparkles, Lock } from 'lucide-react'
+import { ShieldAlert, ShieldCheck, Terminal, Sparkles, Lock } from 'lucide-react'
+import { AnimatedCopyIcon } from '../../../ui/AnimatedCopyIcon'
 import { SpinnerIcon } from '../../../ui/Spinner'
 import { getCsrfToken } from '../../../../utils/api'
 
@@ -221,7 +222,7 @@ function EnvSnippet({ envLine, envCopied, onEnvCopy }) {
           className="px-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-colors"
           aria-label="Copiar linha"
         >
-          {envCopied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+          <AnimatedCopyIcon copied={envCopied} size="w-3.5 h-3.5" checkClassName="text-emerald-500" />
         </button>
       </div>
       <p className="ds-text-meta text-slate-500 dark:text-slate-400">

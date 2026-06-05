@@ -3,9 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   CheckCircle2, XCircle, Clock, Package, ClipboardList, BookOpen,
   Download, Plus, History, Loader2, AlertTriangle, ExternalLink, Ban,
-  Sparkles, Trophy, ChevronDown, ChevronUp, Lightbulb, Copy, Check,
+  Sparkles, Trophy, ChevronDown, ChevronUp, Lightbulb,
   ArrowRight, Zap, Shield, ShieldCheck, BarChart3, Timer,
 } from 'lucide-react'
+import { AnimatedCopyIcon } from '../../ui/AnimatedCopyIcon'
 import { migrationApi } from '../../../api/migration'
 import { SectionSpinner } from '../../ui/Spinner'
 import { RowIconBadge } from '../../ui/RowIconBadge'
@@ -342,7 +343,7 @@ function ErrorCard({ error, index }) {
                       aria-label="Copy error message"
                       className="absolute top-2 right-2 p-1 rounded-md bg-red-900/20 hover:bg-red-900/40 text-red-400 opacity-0 group-hover/err:opacity-100 focus:opacity-100 transition-all"
                     >
-                      {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      <AnimatedCopyIcon copied={copied} size="w-3 h-3" />
                     </button>
                   </div>
 

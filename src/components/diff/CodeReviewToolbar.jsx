@@ -24,7 +24,7 @@ export function CodeReviewToolbar({
                         className="hidden md:inline-flex p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors ds-focus-ring"
                         aria-label={treeCollapsed ? 'Show file tree' : 'Hide file tree'}
                     >
-                        {treeCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                        <ChevronLeft className={`w-4 h-4 transition-transform duration-200 ${treeCollapsed ? 'rotate-180' : ''}`} />
                     </button>
                 </Tooltip>
                 {onOpenMobileTree && (

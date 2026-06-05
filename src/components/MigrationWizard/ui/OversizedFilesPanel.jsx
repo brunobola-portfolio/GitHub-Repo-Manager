@@ -1,4 +1,5 @@
-import { Database, ExternalLink, Copy, Check, FileWarning } from 'lucide-react'
+import { Database, ExternalLink, FileWarning } from 'lucide-react'
+import { AnimatedCopyIcon } from '../../ui/AnimatedCopyIcon'
 import { formatFileSize } from '../../../utils/format'
 import { useCopyToClipboard } from '../../../hooks/useCopyToClipboard'
 
@@ -38,7 +39,7 @@ export function OversizedFilesPanel({ files, fallback }) {
               aria-label="Copy file list"
               className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-red-400 hover:bg-red-900/30"
             >
-              {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+              <AnimatedCopyIcon copied={copied} size="w-3 h-3" />
               {copied ? 'Copied' : 'Copy'}
             </button>
           </div>

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { GitCommit, ExternalLink, Copy, Check } from 'lucide-react'
+import { GitCommit, ExternalLink } from 'lucide-react'
+import { AnimatedCopyIcon } from '../ui/AnimatedCopyIcon'
 import { useState } from 'react'
 import { Modal } from '../ui/Modal'
 import { Spinner } from '../ui/Spinner'
@@ -30,7 +31,7 @@ function CopyButton({ value, label }) {
         <button type="button" onClick={onClick}
             className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-mono text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
             aria-label={`Copy ${label}`}>
-            {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+            <AnimatedCopyIcon copied={copied} size="w-3 h-3" checkClassName="text-emerald-500" />
             {value}
         </button>
     )

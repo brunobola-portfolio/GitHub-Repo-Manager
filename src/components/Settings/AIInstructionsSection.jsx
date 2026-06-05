@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-    Sparkles, Save, Undo2, RotateCcw, ChevronDown, ChevronRight,
-    AlertTriangle, CheckCircle2, Search, Copy, Check, Wand2,
+    Sparkles, Save, Undo2, RotateCcw, ChevronDown,
+    AlertTriangle, CheckCircle2, Search, Wand2,
 } from 'lucide-react'
+import { AnimatedCopyIcon } from '../ui/AnimatedCopyIcon'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { Spinner } from '../ui/Spinner'
@@ -74,7 +75,7 @@ function CopyButton({ getText, label = 'Copy' }) {
             onClick={onClick}
             className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md ds-text-meta font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors"
         >
-            {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+            <AnimatedCopyIcon copied={copied} size="w-3 h-3" checkClassName="text-emerald-500" />
             {copied ? 'Copied' : label}
         </button>
     )
@@ -196,7 +197,7 @@ function PromptEditor({ entry, onSaved, onReset }) {
                 className="w-full flex items-start gap-3 text-left -m-1 p-1 rounded-lg ds-focus-ring"
             >
                 <div className="mt-0.5">
-                    {expanded ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+                    <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${expanded ? '' : '-rotate-90'}`} />
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
