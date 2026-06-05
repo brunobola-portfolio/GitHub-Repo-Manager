@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { ExternalLink, Terminal, Eye, EyeOff, Lock, AlertTriangle, Bookmark } from 'lucide-react'
+import { ExternalLink, Terminal, Eye, EyeOff, Lock, AlertTriangle, Bookmark, CheckCircle2 } from 'lucide-react'
 import { AnimatedCopyIcon } from '../../../ui/AnimatedCopyIcon'
 import { SpinnerIcon } from '../../../ui/Spinner'
 import { buildPatSettingsUrl, buildAzCliCommand, classifyProvider } from '../../../../utils/azureProvider'
 import { Input } from '../../../ui/form'
 import { getCsrfToken } from '../../../../utils/api'
 import { emitAppEvent, APP_EVENTS } from '../../../../utils/appEvents'
+import { validatePatFormat } from '../../../../utils/patFormat'
 import SavedCredentialsPicker from './SavedCredentialsPicker'
 
 /**
@@ -29,6 +30,9 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
   const patUrl = buildPatSettingsUrl(host, org)
   const cliCmd = buildAzCliCommand(host, org)
   const hasContext = Boolean(host && org)
+  // Generic, provider-agnostic pre-flight on the pasted token. The server is
+  // the real validator — this only flags obvious paste mistakes inline.
+  const patCheck = validatePatFormat(source.pat || '')
   const [openedAt, setOpenedAt] = useState(null)
   const [savingPat, setSavingPat] = useState(false)
   const [saveLabel, setSaveLabel] = useState('')
@@ -188,10 +192,26 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
             </button>
           }
         />
-        {/* Inline "save for next time" CTA — appears once a PAT looks
-            substantial enough to be a real token. Saving encrypts it in the
-            DB vault so the user never has to re-paste this PAT. */}
-        {source.pat?.trim().length >= 20 && hasContext && !savedJustNow && (
+        {/* Inline format feedback — generic sanity only (server validates for
+            real). Silent until the user has typed something non-empty. */}
+        {patCheck.severity !== 'empty' && patCheck.severity !== 'ok' && (
+          <p className={`mt-1.5 ds-text-meta inline-flex items-center gap-1 ${
+            patCheck.severity === 'error'
+              ? 'text-red-600 dark:text-red-400'
+              : 'text-amber-600 dark:text-amber-400'
+          }`}>
+            <AlertTriangle className="w-3 h-3 shrink-0" /> {patCheck.message}
+          </p>
+        )}
+        {patCheck.ok && (
+          <p className="mt-1.5 ds-text-meta inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+            <CheckCircle2 className="w-3 h-3 shrink-0" /> {patCheck.message}
+          </p>
+        )}
+        {/* Inline "save for next time" CTA — appears once a PAT looks like a
+            real token. Saving encrypts it in the DB vault so the user never
+            has to re-paste this PAT. */}
+        {patCheck.ok && hasContext && !savedJustNow && (
           <div className="mt-2 flex items-stretch gap-2 px-3 py-2 rounded-lg bg-emerald-50/60 dark:bg-emerald-900/15 border border-emerald-200 dark:border-emerald-800">
             <Bookmark className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
