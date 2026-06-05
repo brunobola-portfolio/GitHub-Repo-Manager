@@ -8,13 +8,18 @@
  * - POST /archive - Archive/unarchive multiple repos
  * - POST /delete - Delete multiple repos
  *
- * All destructive endpoints require:
- *   1. requireAuth
- *   2. requireTier('pro')
- *   3. A two-step dry-run → confirmation-token flow (see bulk-helpers.js)
+ * Tier gating:
+ *   - Basic bulk (/visibility, /archive) is FREE on your own repos — these are
+ *     non-destructive/reversible and act through the caller's own GitHub token
+ *     with no marginal cost, so they ship on every tier (requireAuth only).
+ *   - Advanced/destructive bulk (/transfer, /mirror, /delete) stays Pro+
+ *     (requireTier('pro')).
+ *
+ * All mutating endpoints additionally require a two-step dry-run →
+ * confirmation-token flow (see bulk-helpers.js).
  *
  * Read-only endpoints (/transfer/check-conflicts, /community-health/compare)
- * are unchanged — no token required.
+ * require no confirmation token.
  *
  * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
  */
@@ -33,9 +38,9 @@ const router = express.Router();
 
 // ---------------------------------------------------------------------------
 // POST /visibility — Change visibility for multiple repos
-// Previously unguarded; now requires Pro + dry-run/confirmation
+// Basic bulk: FREE on own repos (reversible). Guarded by dry-run/confirmation.
 // ---------------------------------------------------------------------------
-router.post('/visibility', requireAuth, requireTier('pro'), validateBody(bulkVisibilitySchema), async (req, res) => {
+router.post('/visibility', requireAuth, validateBody(bulkVisibilitySchema), async (req, res) => {
     const { repos, makePublic, dryRun } = req.validatedBody;
 
     if (!repos?.length) return errorResponse(res, 400, 'No repositories specified', 'MISSING_REPOS');
@@ -233,9 +238,9 @@ router.post('/mirror', requireAuth, requireTier('pro'), validateBody(bulkMirrorS
 
 // ---------------------------------------------------------------------------
 // POST /archive — Archive/unarchive multiple repos
-// Previously unguarded; now requires Pro + dry-run/confirmation
+// Basic bulk: FREE on own repos (reversible). Guarded by dry-run/confirmation.
 // ---------------------------------------------------------------------------
-router.post('/archive', requireAuth, requireTier('pro'), validateBody(bulkArchiveSchema), async (req, res) => {
+router.post('/archive', requireAuth, validateBody(bulkArchiveSchema), async (req, res) => {
     const { repos, archive = true, dryRun } = req.validatedBody;
 
     if (!repos?.length) return errorResponse(res, 400, 'No repositories specified', 'MISSING_REPOS');

@@ -30,7 +30,8 @@ const TIER_FEATURES = {
 
         // Non-AI gating
         migration: 'dry-run', // Free: dry-run only
-        bulkAdvanced: false,   // transfer / mirror / cross-org
+        basicBulk: true,       // visibility / archive on your own repos (non-destructive)
+        bulkAdvanced: false,   // transfer / mirror / cross-org / delete
         syncRepository: false,
         teams: true,            // Free: up to teamsMax teams, teamMembersMax members each
         teamsMax: 3,
@@ -57,6 +58,7 @@ const TIER_FEATURES = {
         migrationAssistPerMonth: Infinity,
 
         migration: 'full',
+        basicBulk: true,
         bulkAdvanced: true,
         syncRepository: true,
         teams: true,
@@ -83,6 +85,7 @@ const TIER_FEATURES = {
         migrationAssistPerMonth: Infinity,
 
         migration: 'full',
+        basicBulk: true,
         bulkAdvanced: true,
         syncRepository: true,
         teams: true,
