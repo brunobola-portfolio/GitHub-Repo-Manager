@@ -209,11 +209,13 @@ describe('GET /api/v1/work-board/my-issues', () => {
 // ---------------------------------------------------------------------------
 
 describe('GET /api/v1/work-board/stale-prs', () => {
-    it('returns 403 for free user with upgrade info', async () => {
+    it('returns 200 for free user (read-only dashboard available to all tiers)', async () => {
+        mockListStalePRs.mockReturnValue([
+            { repoFullName: 'org/old', prNumber: 9, title: 'Stale', authorLogin: 'dave', openedAt: new Date().toISOString(), ageDays: 14 },
+        ])
         const res = await request(makeApp('free')).get('/api/v1/work-board/stale-prs')
-        expect(res.status).toBe(403)
-        expect(res.body.error).toBe('upgrade_required')
-        expect(res.body.requiredTier).toBe('pro')
+        expect(res.status).toBe(200)
+        expect(res.body.data[0].ageDays).toBe(14)
     })
 
     it('returns 200 for pro user', async () => {
@@ -249,14 +251,17 @@ describe('GET /api/v1/work-board/stale-prs', () => {
 })
 
 // ---------------------------------------------------------------------------
-// review-load  (Pro+)
+// review-load  (all tiers — read-only dashboard)
 // ---------------------------------------------------------------------------
 
 describe('GET /api/v1/work-board/review-load', () => {
-    it('returns 403 for free user', async () => {
+    it('returns 200 for free user (read-only dashboard available to all tiers)', async () => {
+        mockReviewLoadByReviewer.mockReturnValue([
+            { reviewerLogin: 'alice', reviewsSubmitted: 5, reviewsPending: 2 },
+        ])
         const res = await request(makeApp('free')).get('/api/v1/work-board/review-load')
-        expect(res.status).toBe(403)
-        expect(res.body.requiredTier).toBe('pro')
+        expect(res.status).toBe(200)
+        expect(res.body.data[0].reviewerLogin).toBe('alice')
     })
 
     it('returns 200 with reviewer data for pro user', async () => {
@@ -416,13 +421,18 @@ describe('GET /api/v1/work-board/dora.csv', () => {
 })
 
 // ---------------------------------------------------------------------------
-// tech-debt (Pro+)
+// tech-debt (all tiers — read-only dashboard)
 // ---------------------------------------------------------------------------
 
 describe('GET /api/v1/work-board/tech-debt', () => {
-    it('returns 403 for free user', async () => {
+    it('returns 200 for free user (read-only dashboard available to all tiers)', async () => {
+        mockListTechDebtIssues.mockReturnValue([
+            { repoFullName: 'o/a', issueNumber: 1, title: 'x', labels: ['tech-debt'], openedAt: new Date().toISOString(), ageDays: 5 },
+        ])
+        mockTechDebtHotspots.mockReturnValue([{ repoFullName: 'o/a', count: 1, oldestAgeDays: 5 }])
         const res = await request(makeApp('free')).get('/api/v1/work-board/tech-debt')
-        expect(res.status).toBe(403)
+        expect(res.status).toBe(200)
+        expect(res.body.data.items).toHaveLength(1)
     })
 
     it('returns items + hotspots shape for pro user', async () => {

@@ -6,8 +6,8 @@
  * Cross-Repo Work Board API — E2 aggregation endpoints.
  *
  * Tier gating:
- *   Free        — my-reviews, my-issues      (personal value)
- *   Pro+        — stale-prs, review-load     (team insights)
+ *   Free        — my-reviews, my-issues, stale-prs, review-load, tech-debt
+ *                 (all read-only dashboards — commodity, no marginal cost)
  *   Enterprise+ — deploy-freq, lead-time     (DORA metrics)
  *
  * All endpoints require an authenticated session.
@@ -206,9 +206,9 @@ router.get('/my-issues', requireAuth, async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// GET /api/v1/work-board/stale-prs   (Pro+)
+// GET /api/v1/work-board/stale-prs   (all tiers — read-only dashboard)
 // ---------------------------------------------------------------------------
-router.get('/stale-prs', requireAuth, requireTier('pro'), async (req, res) => {
+router.get('/stale-prs', requireAuth, async (req, res) => {
     try {
         const staleAfterDays = Math.max(
             1,
@@ -243,9 +243,9 @@ router.get('/stale-prs', requireAuth, requireTier('pro'), async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// GET /api/v1/work-board/review-load (Pro+)
+// GET /api/v1/work-board/review-load (all tiers — read-only dashboard)
 // ---------------------------------------------------------------------------
-router.get('/review-load', requireAuth, requireTier('pro'), (req, res) => {
+router.get('/review-load', requireAuth, (req, res) => {
     try {
         const repoIds = parseRepoIds(req.query.repoIds);
         const since = req.query.since ? new Date(req.query.since) : undefined;
@@ -418,9 +418,9 @@ router.get('/dora.csv', requireAuth, requireTier('enterprise'), (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// GET /api/v1/work-board/tech-debt  (Pro+) — debt-labelled issues
+// GET /api/v1/work-board/tech-debt  (all tiers) — debt-labelled issues
 // ---------------------------------------------------------------------------
-router.get('/tech-debt', requireAuth, requireTier('pro'), async (req, res) => {
+router.get('/tech-debt', requireAuth, async (req, res) => {
     try {
         const repoIds = parseRepoIds(req.query.repoIds);
         const limit = Math.min(Number.parseInt(req.query.limit || '100', 10), 500);
