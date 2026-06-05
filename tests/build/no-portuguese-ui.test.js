@@ -21,8 +21,10 @@ import { join } from 'node:path'
 import { describe, it, expect } from 'vitest'
 
 const ROOTS = [
-  'src/components/MigrationWizard',
-  'src/components/Settings',
+  'src/components',
+  'src/utils',
+  'src/hooks',
+  'src/api',
 ]
 
 // Portuguese-specific accented letters. These do not appear in English UI copy
@@ -63,16 +65,23 @@ const PT_WORDS = new RegExp(
     'Novo', 'Nova', 'Existente',
     'Confirmar', 'confirmar', 'Testar', 'Trocar',
     'Falhou', 'falhou', 'falharam',
+    'Repetir', 'repetir', 'Aplicar', 'aplicar', 'Aplicad[oa]s?',
+    'Pronto', 'Incluir', 'incluir', 'Anterior',
   ].join('|') + ')\\b',
   'i',
 )
+
+// Files in the scanned ROOTS that intentionally contain Portuguese and must be
+// skipped. `src/utils/greeting.js` is locale-aware i18n (returns PT for pt-*
+// locales, EN otherwise) and is documented as deliberate in the README.
+const EXCLUDE = new Set(['src/utils/greeting.js'])
 
 function listSourceFiles(dir) {
   const out = []
   for (const name of readdirSync(dir)) {
     const p = join(dir, name)
     if (statSync(p).isDirectory()) out.push(...listSourceFiles(p))
-    else if (/\.(jsx|js)$/.test(name)) out.push(p)
+    else if (/\.(jsx|js)$/.test(name) && !EXCLUDE.has(p.replace(/\\/g, '/'))) out.push(p)
   }
   return out
 }

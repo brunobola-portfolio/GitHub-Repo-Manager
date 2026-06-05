@@ -30,7 +30,7 @@ describe('AIAssistantPasteCard', () => {
 
   it('renders the first dynamic question (targetOrg)', () => {
     renderDialog()
-    expect(screen.getByRole('textbox', { name: /github.*org.*destino/i })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: /target.*github.*org/i })).toBeInTheDocument()
   })
 
   it('calls onAnswer with the field and value when user submits a question', () => {
@@ -51,7 +51,7 @@ describe('AIAssistantPasteCard', () => {
         nextField: 'targetName',
       },
     })
-    expect(screen.getByRole('textbox', { name: /nome final.*repo/i })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: /final repo name/i })).toBeInTheDocument()
   })
 
   it('renders the confirm button when status is ready', () => {
@@ -64,7 +64,7 @@ describe('AIAssistantPasteCard', () => {
         nextField: null,
       },
     })
-    expect(screen.getByRole('button', { name: /abrir wizard/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /open wizard/i })).toBeInTheDocument()
   })
 
   it('calls onConfirm when the confirm button is clicked', () => {
@@ -77,13 +77,13 @@ describe('AIAssistantPasteCard', () => {
         nextField: null,
       },
     })
-    fireEvent.click(screen.getByRole('button', { name: /abrir wizard/i }))
+    fireEvent.click(screen.getByRole('button', { name: /open wizard/i }))
     expect(props.onConfirm).toHaveBeenCalledTimes(1)
   })
 
   it('calls onCancel when the cancel button is clicked', () => {
     const { props } = renderDialog()
-    fireEvent.click(screen.getByRole('button', { name: /cancelar/i }))
+    fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
     expect(props.onCancel).toHaveBeenCalledTimes(1)
   })
 

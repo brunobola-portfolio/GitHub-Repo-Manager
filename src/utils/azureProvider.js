@@ -34,8 +34,8 @@ export function classifyProvider(host) {
   if (!host || typeof host !== 'string') {
     return {
       type: PROVIDERS.UNKNOWN,
-      label: 'Não detectado',
-      longLabel: 'Provider não detectado',
+      label: 'Not detected',
+      longLabel: 'Provider not detected',
       shortName: 'Azure DevOps',
       tone: 'slate',
       isCloud: false,
@@ -60,7 +60,7 @@ export function classifyProvider(host) {
     return {
       type: PROVIDERS.VSTS,
       label: 'Visual Studio (legacy)',
-      longLabel: 'Visual Studio Team Services — encaminha para Azure DevOps Cloud',
+      longLabel: 'Visual Studio Team Services — routes to Azure DevOps Cloud',
       shortName: 'VSTS',
       tone: 'sky',
       isCloud: true,

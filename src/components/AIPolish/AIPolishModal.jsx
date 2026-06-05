@@ -21,8 +21,8 @@ export function AIPolishModal({ isOpen, onClose, repoFullNames = [], onAppliedRe
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title={`Polir ${repoFullNames.length} repo${repoFullNames.length === 1 ? '' : 's'} com AI`}
-            subtitle="Sugestões geradas em batch a partir do README e linguagem de cada repo."
+            title={`Polish ${repoFullNames.length} repo${repoFullNames.length === 1 ? '' : 's'} with AI`}
+            subtitle="Suggestions generated in batch from each repo's README and language."
             icon={Sparkles}
             iconGradient="primary"
             size="2xl"

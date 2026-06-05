@@ -52,7 +52,7 @@ export function AIAssistantPasteCard({ dialog, onAnswer, onConfirm, onCancel }) 
         <Wand2 className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="ds-text-meta font-semibold uppercase tracking-wide text-[color:var(--ds-accent-brand)] dark:text-indigo-300">
-            URL detectado
+            URL detected
           </p>
           <Preview dialog={dialog} />
           <ConfirmedAnswers dialog={dialog} />
@@ -60,7 +60,7 @@ export function AIAssistantPasteCard({ dialog, onAnswer, onConfirm, onCancel }) 
         <button
           type="button"
           onClick={onCancel}
-          aria-label="Cancelar"
+          aria-label="Cancel"
           className="p-1 rounded hover:bg-white/50 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
         >
           <X className="w-4 h-4" />
@@ -94,7 +94,7 @@ export function AIAssistantPasteCard({ dialog, onAnswer, onConfirm, onCancel }) 
 
       {isReady && (
         <Button type="button" variant="primary" size="sm" onClick={onConfirm} className="w-full">
-          <Check className="w-4 h-4" /> Abrir wizard com isto preenchido
+          <Check className="w-4 h-4" /> Open wizard with this prefilled
         </Button>
       )}
     </div>
@@ -144,18 +144,18 @@ function ConfirmedAnswers({ dialog }) {
 
 const QUESTIONS = {
   targetOrg: {
-    label: 'Qual a GitHub org de destino?',
-    placeholder: 'p.ex. bolalabs',
-    hint: 'Organização ou utilizador GitHub onde o repo vai ser criado.',
+    label: 'Which target GitHub org?',
+    placeholder: 'e.g. bolalabs',
+    hint: 'GitHub organization or user where the repo will be created.',
   },
   targetName: {
-    label: 'Nome final do repo no GitHub?',
-    placeholder: 'escreve "manter" para usar o original',
-    hint: 'Escreve "manter" para manter o nome detetado.',
+    label: 'Final repo name on GitHub?',
+    placeholder: 'type "keep" to use the original',
+    hint: 'Type "keep" to keep the detected name.',
   },
 }
 
 const ANSWER_LABELS = {
   targetOrg: 'GitHub org',
-  targetName: 'Nome final',
+  targetName: 'Final name',
 }

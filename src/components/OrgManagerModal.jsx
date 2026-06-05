@@ -414,7 +414,7 @@ function SettingsTab({ org }) {
                     <div>
                         <h4 className="font-medium text-amber-800 dark:text-amber-200">Advanced Settings</h4>
                         <p className="text-sm text-amber-700 dark:text-amber-100/80 mt-1">
-                            Para configurações avançadas como billing, webhooks, ou danger zone, use as configurações no GitHub.
+                            For advanced settings like billing, webhooks, or danger zone, use the settings on GitHub.
                         </p>
                     </div>
                 </div>
