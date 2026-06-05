@@ -93,6 +93,11 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
         }
     }
 
+    // Derived above the handlers that close over them (handleMerge / handleClose
+    // pass these to invalidatePRData) so the read order is explicit.
+    const prOwner = pr?.base?.repo?.owner?.login ?? ''
+    const prRepo  = pr?.base?.repo?.name ?? ''
+
     const handleMerge = async () => {
         setMerging(true)
         setMessage(null)
@@ -128,8 +133,6 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
     }
 
     const current = detail || pr
-    const prOwner = pr?.base?.repo?.owner?.login ?? ''
-    const prRepo  = pr?.base?.repo?.name ?? ''
     const isOpen = current.state === 'open'
     const isMerged = current.merged || current.merged_at
 
