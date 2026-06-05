@@ -2,7 +2,7 @@
 
 **Base URL:** `http://localhost:3001/api`
 **Authentication:** GitHub OAuth via session cookies. Most endpoints require an authenticated session (`requireAuth` middleware). The server never exposes raw access tokens to the client.
-**Total Endpoints:** 158
+**Total Endpoints:** ~300
 
 ---
 

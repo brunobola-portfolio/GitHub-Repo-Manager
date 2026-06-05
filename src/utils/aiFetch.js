@@ -24,7 +24,7 @@ export async function fetchJSON(url, options = {}) {
   let body = null
   try { body = await res.json() } catch { /* empty */ }
   if (!res.ok) {
-    const err = new Error(body?.error || `HTTP ${res.status}`)
+    const err = new Error(body?.message || body?.error || `HTTP ${res.status}`)
     err.status = res.status
     err.code = body?.code
     throw err
