@@ -5,6 +5,7 @@ import { getUserTier } from '../middleware/require-tier.js';
 import { getTierOrder, getFeatures } from '../lib/feature-flags.js';
 import { getCurrentUsage, incrementUsage } from '../lib/usage-meter.js';
 import { migrationQuotaDecision } from '../lib/migration-quota.js';
+import { handlePlanComplete } from '../lib/migration-plan-complete.js';
 import { MigrationEngine } from '../migration-engine.js';
 import { createPlanSchema, updatePlanSchema } from '../lib/validators.js';
 import { analyzeMigration } from '../migration-planner.js';
@@ -84,11 +85,11 @@ const taggingService = createMigrationTaggingService({
   logger
 });
 
-engine.on('plan-complete', ({ planId, status }) => {
-  if (status !== 'completed') return;
-  taggingService.applyTaggingForPlan(planId)
-    .catch(err => logger.error({ err, planId }, 'tagging service failed for plan'));
-});
+// Post-completion side effects (tagging marks + credential forget) live in a
+// pure, db-free module so they can be unit-tested in isolation.
+engine.on('plan-complete', (event) =>
+  handlePlanComplete(event, { taggingService, credentials: engine.credentials, logger })
+);
 
 function parseJsonField(value) {
   if (value == null || typeof value === 'object') return value ?? null;
