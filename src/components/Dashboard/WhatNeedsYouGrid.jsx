@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { EASE } from '../ui/motion'
 import { GitPullRequest, Clock, CircleDot, Sparkles, ArrowRight, ArrowUp, ArrowDown } from 'lucide-react'
 import { useYourWork } from '../../hooks/useYourWork'
 import { Skeleton } from '../ui/Skeleton'
@@ -122,7 +123,7 @@ function EmptyState({ onOpenWorkBoard }) {
             role="status"
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.4, ease: EASE.emphasized }}
             className="col-span-2 sm:col-span-3 flex flex-col items-center text-center gap-2 py-5 px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl"
         >
             <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">

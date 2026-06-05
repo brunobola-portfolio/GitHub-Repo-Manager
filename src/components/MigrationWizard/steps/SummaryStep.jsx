@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { EASE } from '../../ui/motion'
 import {
   CheckCircle2, XCircle, Clock, Package, ClipboardList, BookOpen,
   Download, Plus, History, Loader2, AlertTriangle, ExternalLink, Ban,
@@ -115,7 +116,7 @@ function CircularProgress({ score, size = 100, strokeWidth = 7 }) {
           strokeLinecap="round"
           initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 1.2, ease: EASE.emphasized }}
           strokeDasharray={circumference}
         />
       </svg>
@@ -124,7 +125,7 @@ function CircularProgress({ score, size = 100, strokeWidth = 7 }) {
           className={`text-2xl font-bold tracking-tight ${ringColor}`}
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.6, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ delay: 0.6, duration: 0.4, ease: EASE.emphasized }}
         >
           {score}%
         </motion.span>
@@ -174,7 +175,7 @@ function TaskResultRow({ task, index, maxIndex = 10 }) {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: Math.min(index, maxIndex) * 0.06, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ delay: Math.min(index, maxIndex) * 0.06, duration: 0.35, ease: EASE.emphasized }}
       className={`group relative flex items-center gap-3 p-3.5 rounded-xl border transition-all duration-200
         ${statusConfig.bg} ${statusConfig.border}
         hover:shadow-sm`}
@@ -284,7 +285,7 @@ function ErrorCard({ error, index }) {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.08, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ delay: index * 0.08, duration: 0.35, ease: EASE.emphasized }}
       className="rounded-xl border border-red-500/20 dark:border-red-500/15 bg-red-500/5 dark:bg-red-500/5 overflow-hidden"
     >
       {/* Header — always visible */}
@@ -325,7 +326,7 @@ function ErrorCard({ error, index }) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.2, ease: EASE.emphasized }}
             className="overflow-hidden"
           >
             <div className="px-3.5 pb-3.5 space-y-2.5">
@@ -521,7 +522,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, pre
       <motion.div
         initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.5, ease: EASE.emphasized }}
         className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-800/60 dark:to-slate-800/30 border border-slate-200/60 dark:border-white/10"
       >
         {/* Subtle gradient accent at top */}

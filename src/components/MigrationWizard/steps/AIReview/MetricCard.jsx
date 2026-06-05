@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { EASE } from '../../../ui/motion'
 import { Card } from '../../../ui/Card'
 import { AnimatedCounter } from './AnimatedCounter'
 
@@ -11,7 +12,7 @@ export function MetricCard({ icon: Icon, label, value, unit, iconColor, iconBg, 
     <motion.div
       initial={{ opacity: 0, y: 14, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ delay, duration: 0.45, ease: EASE.emphasized }}
     >
       <Card shadow="none" className="relative rounded-xl border-slate-200/80 dark:border-white/10 bg-white dark:bg-white/[0.03] p-3">
       <div className="flex items-center gap-3">

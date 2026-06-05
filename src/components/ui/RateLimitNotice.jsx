@@ -7,6 +7,7 @@
  */
 
 import { motion } from 'framer-motion'
+import { EASE } from './motion'
 import { Hourglass, RotateCcw, X } from 'lucide-react'
 import { useCountdown } from '@/hooks/useCountdown'
 
@@ -105,7 +106,7 @@ export function RateLimitNotice({ retryAt, variant = 'toast', onRetry, onDismiss
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.35, ease: EASE.emphasized }}
                 role="status"
                 aria-live="polite"
                 className="relative z-[var(--ds-z-floating)]"

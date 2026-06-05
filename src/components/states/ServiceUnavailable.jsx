@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { EASE } from '../ui/motion'
 import { Plug, AlertTriangle, BookOpen, Mail, X } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
 
@@ -56,7 +57,7 @@ function CardService({ service, reason, docsHref, contactEmail, contactSubject, 
         <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.4, ease: EASE.emphasized }}
             role="status"
             aria-label={`${service} unavailable`}
             className={twMerge(

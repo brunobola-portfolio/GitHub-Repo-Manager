@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, X, Download, Wand2, FolderPlus, Search, Sparkles } from 'lucide-react'
-import { TAP } from './ui/motion'
+import { TAP, EASE } from './ui/motion'
 
 // Render order = visual order top→bottom; last entry sits closest to the
 // FAB trigger. Search / AI assistant are the highest-traffic touch
@@ -82,7 +82,7 @@ export function MobileQuickActionsFab(props) {
                                         hidden: { opacity: 0, y: 12, scale: 0.9 },
                                         visible: { opacity: 1, y: 0, scale: 1 },
                                     }}
-                                    transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                                    transition={{ duration: 0.2, ease: EASE.emphasized }}
                                 >
                                     <button
                                         type="button"

@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { EASE } from '../../../ui/motion'
 import { ArrowRight } from 'lucide-react'
 import { AzureIcon, GitHubIcon } from './PlatformIcons'
 
@@ -37,7 +38,7 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ delay, duration: 0.5, ease: EASE.emphasized }}
       className="relative overflow-hidden rounded-xl border border-slate-200/80 dark:border-white/10 bg-gradient-to-br from-white via-white to-slate-50 dark:from-white/[0.04] dark:via-white/[0.02] dark:to-white/[0.01]"
     >
       {/* Top gradient accent */}

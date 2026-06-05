@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 import {
   CheckCircle2, ThumbsUp, ThumbsDown, Sparkles, FolderGit2,
 } from 'lucide-react'
-import { TAP } from '../../../ui/motion'
+import { TAP, EASE } from '../../../ui/motion'
 
 /* ═══════════════════════════════════════════
    SUGGESTION ROW
@@ -17,7 +17,7 @@ export function SuggestionRow({ suggestion, index, onAccept, onReject }) {
       layout
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ delay: index * 0.06, duration: 0.4, ease: EASE.emphasized }}
       className={`relative overflow-hidden rounded-xl border transition-all duration-300 ${
         isAccepted
           ? 'border-emerald-200/80 dark:border-emerald-500/25 bg-emerald-50/40 dark:bg-emerald-500/[0.04]'

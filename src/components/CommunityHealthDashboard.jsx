@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring, useReducedMotion } from 'framer-motion';
+import { EASE } from './ui/motion'
 import {
     FileText, Users, Activity, CheckCircle,
     XCircle, AlertCircle, TrendingUp, RefreshCw, Heart, Sparkles
@@ -376,7 +377,7 @@ function FileCheckItem({ file, exists, size, onFix }) {
             className={`flex items-center justify-between p-3 rounded-xl min-h-[44px] bg-white/60 dark:bg-slate-900/60 border ${exists ? 'border-slate-200/40 dark:border-slate-800/40' : 'border-red-300/40 dark:border-red-500/20'} transition-all`}>
             <div className="flex items-center gap-3 min-w-0">
                 {exists ? (
-                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}>
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 0.2, ease: EASE.standard }}>
                         <CheckCircle className="w-5 h-5 text-emerald-500" />
                     </motion.div>
                 ) : (<XCircle className="w-5 h-5 text-red-400 dark:text-red-500" />)}

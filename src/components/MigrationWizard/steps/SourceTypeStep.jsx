@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
+import { EASE } from '../../ui/motion'
 import { Cloud, Globe, GitBranch, AlertTriangle, Loader2, Star, ChevronRight } from 'lucide-react'
 import { Spinner } from '../../ui/Spinner'
 
@@ -61,7 +62,7 @@ const cardVariants = {
     transition: {
       delay: i * 0.08,
       duration: 0.4,
-      ease: [0.16, 1, 0.3, 1],
+      ease: EASE.emphasized,
     },
   }),
 }
