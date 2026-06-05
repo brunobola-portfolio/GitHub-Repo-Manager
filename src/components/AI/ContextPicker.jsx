@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronUp, RotateCcw, Sparkles } from 'lucide-react'
+import { ChevronDown, RotateCcw, Sparkles } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { TRANSITION } from '../ui/motion'
 
 const SIGNAL_LABELS = {
     readme: 'README',
@@ -54,10 +56,19 @@ export function ContextPicker({
                     <Sparkles className="w-4 h-4 text-indigo-500" />
                     Context ({onCount} signals on, {formatKb(totalBytes)})
                 </span>
-                {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
             </button>
 
+            <AnimatePresence initial={false}>
             {open && (
+                <motion.div
+                    key="ctx"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={TRANSITION.standard}
+                    className="overflow-hidden"
+                >
                 <div className="px-3 pb-3 pt-1 space-y-2">
                     {Object.keys(SIGNAL_LABELS).map((kind) => {
                         const checked = !!signals[kind]
@@ -120,7 +131,9 @@ export function ContextPicker({
                         </button>
                     </div>
                 </div>
+                </motion.div>
             )}
+            </AnimatePresence>
         </section>
     )
 }

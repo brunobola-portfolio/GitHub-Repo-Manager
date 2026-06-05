@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Key, Plus, Copy, Check, Trash2, AlertTriangle, Shield } from 'lucide-react'
+import { Key, Plus, Trash2, AlertTriangle, Shield } from 'lucide-react'
+import { AnimatedCopyIcon } from '../ui/AnimatedCopyIcon'
 import { API_BASE_URL } from '../../config'
 import { useToast } from '../../hooks/useToast'
 import { Badge } from '../ui/Badge'
@@ -245,7 +246,7 @@ function NewKeyReveal({ keyData, onDismiss }) {
                             : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400'
                     }`}
                 >
-                    {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <AnimatedCopyIcon copied={copied} />
                     {copied ? 'Copied!' : 'Copy'}
                 </button>
             </div>

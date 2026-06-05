@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
-import { Copy, Check, Pencil } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { AnimatedCopyIcon } from '../../ui/AnimatedCopyIcon'
 import { RefinementChips } from './RefinementChips'
 import { Card } from '../../ui/Card'
 import { Tooltip } from '../../ui/Tooltip'
@@ -43,7 +44,7 @@ export function SectionCard({ title, content, onContentChange, chips, onRefine, 
                             className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors ds-focus-ring"
                             aria-label={copied ? 'Copied' : 'Copy'}
                         >
-                            {copied ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-slate-400" />}
+                            <AnimatedCopyIcon copied={copied} size="w-3 h-3" copyClassName="text-slate-400" checkClassName="text-emerald-500" />
                         </button>
                     </Tooltip>
                 </div>

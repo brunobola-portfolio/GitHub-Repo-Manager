@@ -5,8 +5,10 @@ import { EmptyState } from './ui/EmptyState'
 import {
     History, CheckCircle2, XCircle, ExternalLink,
     Clock, ArrowRight, RefreshCw, Cloud, Globe, GitBranch,
-    ChevronDown, ChevronRight, RotateCcw, FileText, ListChecks
+    ChevronDown, RotateCcw, FileText, ListChecks
 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { TRANSITION } from './ui/motion'
 import { SectionSpinner, Spinner, SpinnerIcon } from './ui/Spinner'
 import { migrationApi } from '../api/migration'
 import { apiCall } from '../utils/api'
@@ -310,13 +312,20 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                 {isExpandable && (
                                                     isLoadingTasks
                                                         ? <Spinner size="md" tone="muted" />
-                                                        : isExpanded
-                                                            ? <ChevronDown className="w-4 h-4 text-slate-400" />
-                                                            : <ChevronRight className="w-4 h-4 text-slate-400" />
+                                                        : <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isExpanded ? '' : '-rotate-90'}`} />
                                                 )}
                                             </div>
                                         </div>
+                                        <AnimatePresence initial={false}>
                                         {isExpanded && tasks.length > 0 && (
+                                            <motion.div
+                                                key="tasks"
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: 'auto', opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={TRANSITION.standard}
+                                                className="overflow-hidden"
+                                            >
                                             <div className="px-3 pb-3 space-y-1.5 border-t border-slate-100 dark:border-slate-700/50 pt-2 ml-10">
                                                 {tasks.map((task, idx) => {
                                                     const taskStatus = STATUS_STYLES[task.status] || STATUS_STYLES.pending
@@ -337,7 +346,9 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                     )
                                                 })}
                                             </div>
+                                            </motion.div>
                                         )}
+                                        </AnimatePresence>
                                     </div>
                                 )
                             })
