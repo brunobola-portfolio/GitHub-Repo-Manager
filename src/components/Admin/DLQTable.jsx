@@ -67,7 +67,7 @@ export function DLQTable({
         <Card glass={false} shadow="sm" className="rounded-xl overflow-x-auto">
             <div
                 ref={tableScrollRef}
-                className="overflow-y-auto max-h-[480px]"
+                className="overflow-x-auto overflow-y-auto max-h-[480px]"
             >
             <table className="w-full text-sm">
                 <thead className={`sticky top-0 z-10 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700 transition-shadow${elevated ? ' shadow-[0_1px_4px_0_rgba(0,0,0,0.08)]' : ''}`}>

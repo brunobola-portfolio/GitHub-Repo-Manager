@@ -58,7 +58,7 @@ export function ManageReposButton({ onOpenSettings }) {
                 side="bottom"
                 align="end"
                 sideOffset={6}
-                className="z-[var(--ds-z-popover)] w-80 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl overflow-hidden"
+                className="z-[var(--ds-z-popover)] w-80 max-w-[calc(100vw-1rem)] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl overflow-hidden"
             >
                 <div className="p-2 border-b border-slate-200/60 dark:border-slate-700/60">
                     <Input

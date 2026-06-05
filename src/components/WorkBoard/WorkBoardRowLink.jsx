@@ -73,7 +73,7 @@ export function WorkBoardRowLink({
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
                     aria-label="Open on GitHub"
-                    className="absolute top-2 right-2 p-1.5 rounded-md text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity ds-focus-ring"
+                    className="absolute top-2 right-2 p-1.5 rounded-md text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 transition-opacity ds-focus-ring"
                 >
                     <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
                 </a>
