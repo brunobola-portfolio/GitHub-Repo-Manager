@@ -229,4 +229,34 @@ describe('README pricing matrix ↔ feature-flags parity', () => {
         expect(readmeFreeCell('Basic bulk on own repos')).toBe('✓')
         expect(readmeFreeCell('Advanced bulk (transfer, mirror, cross-org)')).toBe('✗')
     })
+
+    it('Free Azure DevOps migration shows the metered cap (1 / month)', () => {
+        expect(readmeFreeCell('Azure DevOps Cloud migration')).toBe('1 / month')
+    })
+})
+
+// ---------------------------------------------------------------------------
+// Migration metered-free: Free gets migrationFullPerMonth full (non-dry-run)
+// migrations per month (dry-run stays unlimited). All three surfaces must
+// reflect the same cap so the "1 / month" claim stays honest.
+// ---------------------------------------------------------------------------
+describe('Migration metered-free ↔ feature-flags parity', () => {
+    it('Free migrationFullPerMonth is a finite metered cap (1); Pro/Enterprise unlimited', () => {
+        expect(getFeatures('free').migrationFullPerMonth).toBe(1)
+        expect(getFeatures('pro').migrationFullPerMonth).toBe(Infinity)
+        expect(getFeatures('enterprise').migrationFullPerMonth).toBe(Infinity)
+    })
+
+    it('Free migration flag is "metered" (not the old dry-run-only gate)', () => {
+        expect(getFeatures('free').migration).toBe('metered')
+    })
+
+    it('FeatureComparison Free Azure migration reflects the cap', () => {
+        expect(comparisonFreeValue('Azure DevOps Cloud migration')).toContain(String(getFeatures('free').migrationFullPerMonth))
+    })
+
+    it('PricingPage Free card advertises the metered migration row', () => {
+        const section = tierSection('Free')
+        expect(section).toMatch(/Azure DevOps Cloud migration[^}]*included:\s*'1 \/ month'/)
+    })
 })

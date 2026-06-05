@@ -337,7 +337,7 @@ The hosted product ships three tiers. The **Free tier includes the full AI produ
 | AI Deep Review — PR Chat (streaming Q&A) | ✗             | ✓             | ✓          |
 | Basic bulk on own repos                | ✓               | ✓             | ✓          |
 | Advanced bulk (transfer, mirror, cross-org) | ✗          | ✓             | ✓          |
-| Azure DevOps Cloud migration           | ✗               | ✓             | ✓          |
+| Azure DevOps Cloud migration           | 1 / month       | Unlimited     | Unlimited  |
 | Mirror Sync                            | ✗               | ✓             | ✓          |
 | Dry-Run migration                      | ✓               | ✓             | ✓          |
 | Teams                                  | Up to 3 (5 each)| 15 members    | Unlimited  |

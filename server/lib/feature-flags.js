@@ -28,8 +28,13 @@ const TIER_FEATURES = {
         semanticSearchPerMonth: 75,
         migrationAssistPerMonth: 5,
 
+        // Full (non-dry-run) migrations per month. Dry-run plans stay free +
+        // unlimited; this caps only real executions (metered in usage_metrics
+        // as migration_full_executions, charged once per plan at execute time).
+        migrationFullPerMonth: 1,
+
         // Non-AI gating
-        migration: 'dry-run', // Free: dry-run only
+        migration: 'metered', // Free: 1 full migration/month + unlimited dry-run
         basicBulk: true,       // visibility / archive on your own repos (non-destructive)
         bulkAdvanced: false,   // transfer / mirror / cross-org / delete
         syncRepository: false,
@@ -56,6 +61,7 @@ const TIER_FEATURES = {
         migrationRiskPerMonth: Infinity,
         semanticSearchPerMonth: Infinity,
         migrationAssistPerMonth: Infinity,
+        migrationFullPerMonth: Infinity,
 
         migration: 'full',
         basicBulk: true,
@@ -83,6 +89,7 @@ const TIER_FEATURES = {
         migrationRiskPerMonth: Infinity,
         semanticSearchPerMonth: Infinity,
         migrationAssistPerMonth: Infinity,
+        migrationFullPerMonth: Infinity,
 
         migration: 'full',
         basicBulk: true,

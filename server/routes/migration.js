@@ -2,7 +2,9 @@ import express from 'express';
 import logger from '../lib/logger.js';
 import { requireAuth, safeError } from '../middleware/auth.js';
 import { getUserTier } from '../middleware/require-tier.js';
-import { getTierOrder } from '../lib/feature-flags.js';
+import { getTierOrder, getFeatures } from '../lib/feature-flags.js';
+import { getCurrentUsage, incrementUsage } from '../lib/usage-meter.js';
+import { migrationQuotaDecision } from '../lib/migration-quota.js';
 import { MigrationEngine } from '../migration-engine.js';
 import { createPlanSchema, updatePlanSchema } from '../lib/validators.js';
 import { analyzeMigration } from '../migration-planner.js';
@@ -150,22 +152,52 @@ function formatTaskForApi(row) {
 
 export { formatPlanForApi, formatTaskForApi };
 
-// Free users can create plans but only in dry-run mode. Real execution (and
-// resume/retry of anything that wasn't a dry-run) requires Pro+.
-function requireProOrDryRunPlan(req, res, next) {
+// Free-tier migration meter: dry-run plans are always free + unmetered; full
+// (non-dry-run) plans are free up to migrationFullPerMonth per calendar month,
+// then Pro. The monthly unit is charged ONCE per plan (quota_charged) at
+// execute time, so resume/retry of the SAME plan never re-charge. The decision
+// is the pure migrationQuotaDecision(); this middleware only feeds it the live
+// db/tier state and defers a 'charge' to the execute handler.
+function requireMigrationQuota(req, res, next) {
   const id = parseInt(req.params.id);
-  const plan = db.prepare('SELECT is_dry_run FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
+  const plan = db.prepare('SELECT is_dry_run, quota_charged FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
   if (!plan) return res.status(404).json({ error: 'Plan not found' });
-  const userOrder = getTierOrder(getUserTier(req.session.userId));
-  const proOrder = getTierOrder('pro');
-  if (plan.is_dry_run || userOrder >= proOrder) return next();
-  return res.status(403).json({
-    error: 'upgrade_required',
-    message: 'Real migration execution requires the Pro plan. Free users can create and run dry-run plans only.',
-    currentTier: getUserTier(req.session.userId),
-    requiredTier: 'pro',
-    upgradeUrl: '/pricing',
+  const tier = getUserTier(req.session.userId);
+  const isPro = getTierOrder(tier) >= getTierOrder('pro');
+  const cap = getFeatures(tier).migrationFullPerMonth ?? Infinity;
+  const currentCount = isPro ? 0 : getCurrentUsage(req.session.userId, 'migration_full_executions');
+  const decision = migrationQuotaDecision({
+    isDryRun: !!plan.is_dry_run,
+    isPro,
+    quotaCharged: !!plan.quota_charged,
+    currentCount,
+    cap,
   });
+  if (decision === 'deny') {
+    return res.status(403).json({
+      error: 'upgrade_required',
+      code: 'MIGRATION_QUOTA_EXCEEDED',
+      message: `The Free plan includes ${cap} full migration${cap === 1 ? '' : 's'} per month (dry-runs are unlimited). You've used this month's allowance — upgrade to Pro for unlimited migrations.`,
+      currentTier: tier,
+      requiredTier: 'pro',
+      upgradeUrl: '/pricing',
+    });
+  }
+  // Apply 'charge' only after the plan actually starts (execute handler) so a
+  // 409/validation failure doesn't burn a monthly unit.
+  req.migrationShouldCharge = decision === 'charge';
+  next();
+}
+
+// Idempotently consume one monthly full-migration unit for a plan. The guarded
+// UPDATE bumps the counter at most once per plan, even under retries or
+// concurrent execute calls.
+const chargeMigrationQuotaTxn = db.transaction((userId, planId) => {
+  const r = db.prepare('UPDATE migration_plans SET quota_charged = 1 WHERE id = ? AND quota_charged = 0').run(planId);
+  if (r.changes > 0) incrementUsage(userId, 'migration_full_executions');
+});
+function chargeMigrationQuota(userId, planId) {
+  chargeMigrationQuotaTxn(userId, planId);
 }
 
 /**
@@ -236,17 +268,16 @@ router.post('/plans', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Validation failed', details: flat });
     }
     const { source, tasks, targetOrg, schedule, taggingPolicy } = parsed.data;
-    // Free tier gate — "real migration execution requires Pro" per pricing page.
-    // Previously this silently coerced isDryRun=true when a Free user explicitly
-    // requested a real run; that was surprising (the API appeared to accept the
-    // payload but produced a dry-run plan). Now we reject the request outright
-    // so the contract is explicit.
+    // Free tier: creating a full (non-dry-run) plan is allowed — the monthly
+    // quota is enforced at execute time (requireMigrationQuota). The one thing
+    // Free cannot do is SCHEDULE a full migration to auto-run later, because a
+    // scheduled run bypasses the interactive execute meter; that stays Pro.
     const userOrder = getTierOrder(getUserTier(req.session.userId));
     const isFree = userOrder < getTierOrder('pro');
-    if (isFree && schedule?.isDryRun === false) {
+    if (isFree && schedule?.isDryRun === false && schedule?.mode === 'scheduled') {
       return res.status(403).json({
         error: 'upgrade_required',
-        message: 'Real migration execution requires the Pro plan. Free-tier users can still create and run dry-run plans.',
+        message: 'Scheduling a full migration requires the Pro plan. Free-tier users can run one full migration per month immediately, or schedule unlimited dry-runs.',
         requiredTier: 'pro',
         upgradeUrl: '/pricing',
       });
@@ -261,7 +292,7 @@ router.post('/plans', requireAuth, async (req, res) => {
         return res.status(400).json({ error: 'invalid_host', message: `Source host rejected: ${hostCheck.reason}` });
       }
     }
-    const isDryRun = isFree ? true : !!schedule?.isDryRun;
+    const isDryRun = !!schedule?.isDryRun;
     const planId = engine.createPlan(req.session.userId, source, tasks, { targetOrg, isDryRun });
     if (taggingPolicy) {
       try {
@@ -371,7 +402,7 @@ router.post('/plans/:id/validate', requireAuth, async (req, res) => {
 });
 
 // POST /api/migration/plans/:id/execute — Start execution
-router.post('/plans/:id/execute', requireAuth, requireProOrDryRunPlan, async (req, res) => {
+router.post('/plans/:id/execute', requireAuth, requireMigrationQuota, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
@@ -382,6 +413,10 @@ router.post('/plans/:id/execute', requireAuth, requireProOrDryRunPlan, async (re
     if (updated.changes === 0) {
       return res.status(409).json({ error: 'Plan is already running or cannot be executed' });
     }
+
+    // The plan is now genuinely running — consume the monthly full-migration
+    // unit (idempotent per plan; only set when the meter decided to charge).
+    if (req.migrationShouldCharge) chargeMigrationQuota(req.session.userId, id);
 
     // Extract credentials from session for immediate execution. Accepts either
     // a pasted PAT or a savedCredentialId — the latter is decrypted from the
@@ -435,7 +470,7 @@ router.post('/plans/:id/pause', requireAuth, async (req, res) => {
 });
 
 // POST /api/migration/plans/:id/resume
-router.post('/plans/:id/resume', requireAuth, requireProOrDryRunPlan, async (req, res) => {
+router.post('/plans/:id/resume', requireAuth, requireMigrationQuota, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
@@ -458,7 +493,7 @@ router.post('/plans/:id/resume', requireAuth, requireProOrDryRunPlan, async (req
 });
 
 // POST /api/migration/plans/:id/tasks/:taskId/retry
-router.post('/plans/:id/tasks/:taskId/retry', requireAuth, requireProOrDryRunPlan, async (req, res) => {
+router.post('/plans/:id/tasks/:taskId/retry', requireAuth, requireMigrationQuota, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);

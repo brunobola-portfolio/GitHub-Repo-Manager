@@ -78,7 +78,7 @@ const CATEGORIES = [
       },
       {
         feature: 'Azure DevOps Cloud migration',
-        values: [false, true, true],
+        values: ['1 / month', 'Unlimited', 'Unlimited'],
       },
     ],
   },

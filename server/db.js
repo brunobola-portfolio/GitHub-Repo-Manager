@@ -1113,6 +1113,13 @@ export function initDB(targetDb = db) {
     } catch (err) {
         if (!err.message?.includes('duplicate column')) throw err;
     }
+    // Free-tier "1 full migration / month" meter: marks a plan as having
+    // consumed one monthly unit, so resume/retry never re-charge it.
+    try {
+        db.exec(`ALTER TABLE migration_plans ADD COLUMN quota_charged INTEGER NOT NULL DEFAULT 0`);
+    } catch (err) {
+        if (!err.message?.includes('duplicate column')) throw err;
+    }
     db.exec(`CREATE INDEX IF NOT EXISTS idx_migration_jobs_host
              ON migration_jobs(source_host, source_url)`);
 

@@ -29,6 +29,7 @@ const TIERS_MONTHLY = [
       { label: 'Community Health Dashboard', included: true },
       { label: 'Work Board dashboards', included: true },
       { label: 'Teams — up to 3 (5 members each)', included: true },
+      { label: 'Azure DevOps Cloud migration', included: '1 / month' },
       { label: 'Dry-Run migration', included: true },
       { label: 'Export Metadata (JSON)', included: true },
       { label: 'Basic bulk on your own repos', included: true },
