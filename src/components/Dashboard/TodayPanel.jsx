@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
+import { EASE as MOTION_EASE } from '../ui/motion'
 import { HeroOrgChip } from './HeroOrgChip'
 import { HeroTimeRangeChip } from './HeroTimeRangeChip'
 import { HeroSyncChip } from './HeroSyncChip'
@@ -14,7 +15,7 @@ import {
     getDashboardLocale,
 } from '../../utils/greeting'
 
-const EASE = [0.16, 1, 0.3, 1]
+const EASE = MOTION_EASE.emphasized
 
 const childVariants = {
     hidden: { opacity: 0, y: 12 },
