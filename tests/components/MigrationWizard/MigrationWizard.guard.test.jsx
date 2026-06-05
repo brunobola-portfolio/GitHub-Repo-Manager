@@ -10,10 +10,10 @@
  * the step components + WizardPanel are stubbed to isolate the shell.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import MigrationWizard from '@/components/MigrationWizard/MigrationWizard'
 
-const h = vi.hoisted(() => ({ wizard: null, isMobile: false }))
+const h = vi.hoisted(() => ({ wizard: null, isMobile: false, toast: null }))
 
 function makeWizard(over = {}) {
   return {
@@ -47,8 +47,11 @@ function makeWizard(over = {}) {
 vi.mock('@/hooks/useMigrationWizard', () => ({ useMigrationWizard: () => h.wizard }))
 vi.mock('@/hooks/useAzureOAuth', () => ({ useAzureOAuth: () => ({}) }))
 vi.mock('@/hooks/useAzureOrganizations', () => ({ useAzureOrganizations: () => ({}) }))
-vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ toast: { success: vi.fn(), error: vi.fn(), errorFromException: vi.fn() } }) }))
+vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ toast: h.toast }) }))
 vi.mock('@/hooks/useMobileBreakpoint', () => ({ useMobileBreakpoint: () => h.isMobile }))
+// Partial-mock so getCsrfToken is deterministic; everything else in utils/api
+// is left intact (the rendered tree only consumes getCsrfToken here).
+vi.mock('@/utils/api', async (orig) => ({ ...(await orig()), getCsrfToken: vi.fn().mockResolvedValue('csrf-test') }))
 
 // Render sidebar + children + footer flat so they're queryable.
 vi.mock('@/components/ui/WizardPanel', () => ({
@@ -67,7 +70,11 @@ vi.mock('@/components/MigrationWizard/steps/SourceTypeStep', () => ({ default: (
 vi.mock('@/components/MigrationWizard/steps/SourceStep', () => ({ default: () => <div data-testid="step-azureConnect" /> }))
 vi.mock('@/components/MigrationWizard/steps/UrlInputStep', () => ({ default: () => <div data-testid="step-urlInput" /> }))
 vi.mock('@/components/MigrationWizard/steps/GitHubSourceStep', () => ({ default: () => <div data-testid="step-githubSource" /> }))
-vi.mock('@/components/MigrationWizard/steps/TargetConfigStep', () => ({ default: () => <div data-testid="step-targetConfig" /> }))
+vi.mock('@/components/MigrationWizard/steps/TargetConfigStep', () => ({ default: ({ onStartImport }) => (
+  <div data-testid="step-targetConfig">
+    <button type="button" data-testid="start-import" onClick={onStartImport}>start import</button>
+  </div>
+) }))
 vi.mock('@/components/MigrationWizard/steps/RepoSelectStep', () => ({ default: () => <div data-testid="step-repoSelect" /> }))
 vi.mock('@/components/MigrationWizard/steps/RepoConfigStep', () => ({ default: () => <div data-testid="step-repoConfig" /> }))
 vi.mock('@/components/MigrationWizard/steps/WorkItemsStep', () => ({ default: () => <div data-testid="step-workItems" /> }))
@@ -83,6 +90,8 @@ beforeEach(() => {
   vi.clearAllMocks()
   h.wizard = makeWizard()
   h.isMobile = false
+  h.toast = { success: vi.fn(), error: vi.fn(), errorFromException: vi.fn() }
+  global.fetch = vi.fn()
 })
 
 describe('MigrationWizard guard — extraction safety net', () => {
@@ -173,5 +182,89 @@ describe('MigrationWizard guard — extraction safety net', () => {
     h.wizard = makeWizard({ currentStep: 'sourceType', currentStepIndex: 0, source: { sourceType: '' } })
     render(<MigrationWizard onClose={vi.fn()} />)
     expect(screen.getByTestId('wp-sidebar')).toBeEmptyDOMElement()
+  })
+
+  // --- handleStartImport (useWizardNavigation-adjacent) --------------------
+  it('POSTs a GitHub import body and advances on success', async () => {
+    global.fetch.mockResolvedValue({ json: async () => ({ success: true, jobId: 'job-1' }) })
+    const nextStep = vi.fn()
+    const updateImportJobs = vi.fn()
+    h.wizard = makeWizard({
+      currentStep: 'targetConfig',
+      source: {
+        sourceType: 'github',
+        githubSourceUrl: 'https://github.com/o/r.git',
+        targetOrg: 'dest-org',
+        targetName: '',
+        makePrivate: true,
+        description: 'desc',
+      },
+      nextStep,
+      updateImportJobs,
+    })
+    render(<MigrationWizard onClose={vi.fn()} />)
+    fireEvent.click(screen.getByTestId('start-import'))
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1))
+    const [url, opts] = global.fetch.mock.calls[0]
+    expect(url).toBe('/api/import/url')
+    expect(opts.method).toBe('POST')
+    const body = JSON.parse(opts.body)
+    expect(body.sourceUrl).toBe('https://github.com/o/r.git')
+    expect(body.targetOrg).toBe('dest-org')
+    expect(body.targetName).toBe('r') // falls back to repo slug from the URL
+    expect(body.makePrivate).toBe(true)
+    expect(body.description).toBe('desc')
+    expect(opts.headers['X-CSRF-Token']).toBe('csrf-test')
+
+    await waitFor(() => expect(updateImportJobs).toHaveBeenCalledWith({ jobId: 'job-1' }))
+    expect(h.toast.success).toHaveBeenCalled()
+    expect(nextStep).toHaveBeenCalled()
+  })
+
+  it('POSTs a URL import body with token credentials', async () => {
+    global.fetch.mockResolvedValue({ json: async () => ({ success: true, jobId: 'j2' }) })
+    h.wizard = makeWizard({
+      currentStep: 'targetConfig',
+      source: {
+        sourceType: 'url',
+        sourceUrl: 'https://git.example.com/x.git',
+        authType: 'token',
+        authToken: 'tok',
+        targetName: 'custom-name',
+        makePrivate: false,
+      },
+    })
+    render(<MigrationWizard onClose={vi.fn()} />)
+    fireEvent.click(screen.getByTestId('start-import'))
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1))
+    const body = JSON.parse(global.fetch.mock.calls[0][1].body)
+    expect(body.sourceUrl).toBe('https://git.example.com/x.git')
+    expect(body.credentials).toEqual({ type: 'token', token: 'tok' })
+    expect(body.targetName).toBe('custom-name')
+    expect(body.makePrivate).toBe(false)
+  })
+
+  it('marks the job failed and toasts when the import response is unsuccessful', async () => {
+    global.fetch.mockResolvedValue({ json: async () => ({ success: false, error: 'boom' }) })
+    const updateImportJobs = vi.fn()
+    h.wizard = makeWizard({
+      currentStep: 'targetConfig',
+      source: { sourceType: 'github', githubSourceUrl: 'https://github.com/o/r.git' },
+      updateImportJobs,
+    })
+    render(<MigrationWizard onClose={vi.fn()} />)
+    fireEvent.click(screen.getByTestId('start-import'))
+
+    await waitFor(() =>
+      expect(updateImportJobs).toHaveBeenCalledWith(
+        expect.objectContaining({
+          importing: false,
+          jobStatus: expect.objectContaining({ status: 'failed', errorMessage: 'boom' }),
+        }),
+      ),
+    )
+    expect(h.toast.error).toHaveBeenCalled()
   })
 })
