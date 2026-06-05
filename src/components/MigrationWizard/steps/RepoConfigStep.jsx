@@ -296,7 +296,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
                       options={azureProjects.map((p) => ({ value: p.name, label: p.name }))}
                       value={targetProject}
                       onChange={handleTargetProjectChange}
-                      placeholder={projectsLoading ? 'A carregar projetos…' : 'Escolhe um projeto…'}
+                      placeholder={projectsLoading ? 'Loading projects…' : 'Choose a project…'}
                       size="md"
                       label="Destination project"
                       className="min-w-[220px]"

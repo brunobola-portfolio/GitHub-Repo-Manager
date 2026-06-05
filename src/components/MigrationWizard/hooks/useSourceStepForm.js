@@ -221,7 +221,7 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
     // a clear instruction instead of fetching the wrong cloud and getting
     // a misleading 404.
     if (!source.host?.trim()) {
-      setValidationError('Define o servidor primeiro — cola uma URL Azure DevOps / TFS no campo acima ou escolhe o servidor manualmente.')
+      setValidationError('Set the server first — paste an Azure DevOps / TFS URL in the field above, or choose the server manually.')
       onChange({ validated: false })
       return
     }
@@ -272,8 +272,8 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
         const msg = validateData.error
           || validateData.message
           || (validateRes.status === 401 || validateRes.status === 403
-              ? 'Credenciais rejeitadas pelo servidor (401/403)'
-              : `Validação falhou (HTTP ${validateRes.status})`)
+              ? 'Credentials rejected by the server (401/403)'
+              : `Validation failed (HTTP ${validateRes.status})`)
         setValidationError(msg)
         return
       }

@@ -96,9 +96,9 @@ export default function AllowlistFixPanel({
 
       <div className="p-4 space-y-3">
         <p className="text-sm text-slate-700 dark:text-slate-200">
-          O backend tem uma <strong>allowlist de hosts Azure</strong> (para prevenir SSRF). O servidor
+          The backend keeps an <strong>Azure host allowlist</strong> (to prevent SSRF). The server
           {' '}<code className="px-1 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 font-mono ds-text-meta">{host}</code>{' '}
-          ainda não está autorizado.
+          isn't authorized yet.
         </p>
 
         {canEdit ? (
@@ -116,9 +116,9 @@ export default function AllowlistFixPanel({
         )}
 
         <div className="pt-2 border-t border-amber-200 dark:border-amber-800 ds-text-meta text-slate-500 dark:text-slate-400">
-          <strong>Porque isto existe?</strong> Sem allowlist, alguém poderia abusar do servidor para fazer requests a
-          hosts internos (SSRF). A lista define que servidores externos o backend é autorizado a contactar.
-          Para wildcards usa <code className="px-1 rounded bg-slate-200 dark:bg-slate-700">*.empresa.com</code>.
+          <strong>Why does this exist?</strong> Without an allowlist, someone could abuse the server to make requests to
+          internal hosts (SSRF). The list defines which external servers the backend is allowed to contact.
+          For wildcards use <code className="px-1 rounded bg-slate-200 dark:bg-slate-700">*.company.com</code>.
         </div>
       </div>
     </div>

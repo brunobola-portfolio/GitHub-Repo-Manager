@@ -63,18 +63,18 @@ export function TaggingPolicyPanel({ policy = DEFAULT_TAGGING_POLICY, onChange, 
           checked={!!policy.enabled}
           onChange={e => setField('enabled', e.target.checked)}
           className="accent-violet-500"
-          aria-label="Ativar marcação"
+          aria-label="Enable tagging"
         />
         <div className="flex-1 min-w-0">
-          <div className="text-sm text-slate-900 dark:text-slate-100 font-medium">Ativar marcação</div>
-          <div className="text-xs text-slate-500 dark:text-slate-400">Master switch. Desativa para esta migração não escrever nada.</div>
+          <div className="text-sm text-slate-900 dark:text-slate-100 font-medium">Enable tagging</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400">Master switch. Turn off so this migration writes nothing.</div>
         </div>
       </label>
 
       <fieldset
         disabled={!policy.enabled}
         className={!policy.enabled ? 'opacity-50 pointer-events-none' : ''}
-        aria-label="Onde marcar a migração"
+        aria-label="Where to tag the migration"
       >
         <div className="grid gap-2">
           <Toggle
@@ -82,33 +82,33 @@ export function TaggingPolicyPanel({ policy = DEFAULT_TAGGING_POLICY, onChange, 
             icon={ShieldCheck}
             checked={policy.writeDestination}
             onChange={v => setField('writeDestination', v)}
-            label="Marcar destino (GitHub)"
-            hint="Topics + descrição + custom properties (org)"
+            label="Mark the target (GitHub)"
+            hint="Topics + description + custom properties (org)"
           />
           <Toggle
             id="taggingSource"
             icon={ShieldCheck}
             checked={policy.writeSource}
             onChange={v => setField('writeSource', v)}
-            label="Marcar origem (Azure DevOps)"
-            hint="Project properties + descrição do repo. Requer PAT com Project & Team (Write)."
-            warning={capabilities?.azure?.missingScopes?.length ? `PAT em falta de scope: ${capabilities.azure.missingScopes.join(', ')}` : null}
+            label="Mark the source (Azure DevOps)"
+            hint="Project properties + repo description. Requires a PAT with Project & Team (Write)."
+            warning={capabilities?.azure?.missingScopes?.length ? `PAT missing scope: ${capabilities.azure.missingScopes.join(', ')}` : null}
           />
           <Toggle
             id="taggingGitTag"
             icon={GitBranch}
             checked={policy.writeGitTag}
             onChange={v => setField('writeGitTag', v)}
-            label="Criar git tag anotada"
-            hint="Visível em qualquer clone, independente do hoster."
+            label="Create annotated git tag"
+            hint="Visible in any clone, independent of the host."
           />
           <Toggle
             id="taggingHideSource"
             icon={EyeOff}
             checked={policy.hideSourceName}
             onChange={v => setField('hideSourceName', v)}
-            label="Ocultar nome da origem em topics públicos"
-            hint="Substitui o nome do projeto por um hash curto. Útil para repos open-source."
+            label="Hide the source name in public topics"
+            hint="Replaces the project name with a short hash. Useful for open-source repos."
           />
         </div>
       </fieldset>

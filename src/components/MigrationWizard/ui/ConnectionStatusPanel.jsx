@@ -54,36 +54,36 @@ export default function ConnectionStatusPanel({
   const steps = [
     {
       key: 'parse',
-      label: 'URL detectada',
-      detail: (host && org) ? `${provider.label} · ${host}/${org}` : 'À espera do paste…',
+      label: 'URL detected',
+      detail: (host && org) ? `${provider.label} · ${host}/${org}` : 'Waiting for paste…',
       status: parseStep,
     },
     {
       key: 'creds',
-      label: 'Credenciais prontas',
-      detail: credentialReady ? 'Pronto a autenticar' : 'Configura PAT ou OAuth abaixo',
+      label: 'Credentials ready',
+      detail: credentialReady ? 'Ready to authenticate' : 'Configure a PAT or OAuth below',
       status: credStep,
     },
     {
       key: 'validate',
-      label: 'Autenticar contra o servidor',
+      label: 'Authenticate against the server',
       detail: validateStep === 'loading'
-        ? `A contactar ${host}…`
+        ? `Contacting ${host}…`
         : validateStep === 'error'
           ? validationError
           : validateStep === 'ok'
-            ? 'PAT aceite'
-            : 'Aguarda passo anterior',
+            ? 'PAT accepted'
+            : 'Waiting for the previous step',
       status: validateStep,
     },
     {
       key: 'projects',
-      label: 'Listar projectos',
+      label: 'List projects',
       detail: projectsStep === 'ok'
-        ? `${projectsCount} projecto${projectsCount === 1 ? '' : 's'} carregado${projectsCount === 1 ? '' : 's'}`
+        ? `${projectsCount} project${projectsCount === 1 ? '' : 's'} loaded`
         : projectsStep === 'warn'
-          ? 'Zero projectos visíveis (scope insuficiente?)'
-          : 'Aguarda autenticação',
+          ? 'Zero projects visible (insufficient scope?)'
+          : 'Waiting for authentication',
       status: projectsStep,
     },
   ]
@@ -195,7 +195,7 @@ function stepToneClasses(status) {
 function deriveOverall(steps) {
   if (steps.some((s) => s.status === 'error')) {
     return {
-      label: 'Conexão falhou',
+      label: 'Connection failed',
       bg: 'bg-red-50/50 dark:bg-red-950/20',
       border: 'border-red-200 dark:border-red-800',
       text: 'text-red-700 dark:text-red-300',
@@ -203,7 +203,7 @@ function deriveOverall(steps) {
   }
   if (steps.some((s) => s.status === 'loading')) {
     return {
-      label: 'A validar conexão…',
+      label: 'Validating connection…',
       bg: 'bg-indigo-50/50 dark:bg-indigo-950/20',
       border: 'border-indigo-200 dark:border-indigo-800',
       text: 'text-indigo-700 dark:text-indigo-300',
@@ -211,7 +211,7 @@ function deriveOverall(steps) {
   }
   if (steps.every((s) => s.status === 'ok')) {
     return {
-      label: 'Conexão pronta',
+      label: 'Connection ready',
       bg: 'bg-emerald-50/50 dark:bg-emerald-950/20',
       border: 'border-emerald-200 dark:border-emerald-800',
       text: 'text-emerald-700 dark:text-emerald-300',
@@ -219,14 +219,14 @@ function deriveOverall(steps) {
   }
   if (steps.some((s) => s.status === 'warn')) {
     return {
-      label: 'Conectado com avisos',
+      label: 'Connected with warnings',
       bg: 'bg-amber-50/50 dark:bg-amber-950/20',
       border: 'border-amber-200 dark:border-amber-800',
       text: 'text-amber-700 dark:text-amber-300',
     }
   }
   return {
-    label: 'A preparar conexão',
+    label: 'Preparing connection',
     bg: 'bg-slate-50 dark:bg-slate-900/40',
     border: 'border-slate-200 dark:border-slate-700',
     text: 'text-slate-600 dark:text-slate-400',

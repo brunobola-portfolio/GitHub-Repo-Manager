@@ -38,7 +38,7 @@ export default function SourceUrlForm({
           type="text"
           value={smartPasteValue}
           onChange={(e) => onInput(e.target.value)}
-          placeholder="https://dev.azure.com/org/projecto  ou  https://tfs.empresa.com/Colecao/Projecto"
+          placeholder="https://dev.azure.com/org/project  or  https://tfs.company.com/Collection/Project"
           leadingIcon={Link2}
         />
       </Field>
@@ -73,7 +73,7 @@ export default function SourceUrlForm({
               {/* Parsed breadcrumb + apply */}
               <div className="px-3.5 py-2.5 flex items-center gap-3">
                 <div className="min-w-0 flex-1 flex items-center gap-1.5 text-sm">
-                  <PreviewChip icon={Building2} label="Organização / Collection" value={urlPreview.org} tone="indigo" />
+                  <PreviewChip icon={Building2} label="Organization / Collection" value={urlPreview.org} tone="indigo" />
                   {urlPreview.project && (
                     <>
                       <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />

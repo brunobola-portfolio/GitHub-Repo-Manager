@@ -40,28 +40,28 @@ export default function TargetModePicker({ source, selectedRepos, onChange }) {
           onClick={() => onChange({ azureTargetMode: 'github' })}
           icon={Cloud}
           title="GitHub"
-          subtitle="Cria um repo novo no GitHub e faz push da história convertida."
-          tag="repo público/privado · multi-tenant"
+          subtitle="Creates a new repo on GitHub and pushes the converted history."
+          tag="public/private repo · multi-tenant"
         />
         <ModeCard
           active={mode === 'azure-devops'}
           onClick={() => onChange({ azureTargetMode: 'azure-devops' })}
           icon={Server}
-          title={`${provider.shortName} (mesmo servidor)`}
+          title={`${provider.shortName} (same server)`}
           subtitle={
             <>
-              Converte TFVC em Git e fica num projecto à tua escolha no mesmo <code className="px-1 rounded bg-slate-200 dark:bg-slate-700 ds-text-meta">{source.host}</code> — não sai do servidor.
+              Converts TFVC to Git and lands in a project of your choice on the same <code className="px-1 rounded bg-slate-200 dark:bg-slate-700 ds-text-meta">{source.host}</code> — never leaves the server.
             </>
           }
-          tag="conversão in-place · sem GitHub"
+          tag="in-place conversion · no GitHub"
           accentClass={tone.iconText}
         />
       </div>
       {mode === 'azure-devops' && (
         <div className="px-4 py-2.5 ds-text-meta text-slate-600 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700 bg-white/40 dark:bg-slate-900/30">
-          ℹ️ Escolhe o <strong>projecto destino</strong> no header abaixo (default: o mesmo da origem).
-          Para cada repo podes criar um <strong>novo</strong> ou reutilizar um <strong>existente vazio</strong> nesse projecto.
-          A história TFVC é preservada via Import API.
+          ℹ️ Choose the <strong>target project</strong> in the header below (default: same as the source).
+          For each repo you can create a <strong>new</strong> one or reuse an <strong>existing empty</strong> one in that project.
+          TFVC history is preserved via the Import API.
         </div>
       )}
     </div>

@@ -121,7 +121,7 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
             {host && allowlistStatus === false && (
               <span
                 className="inline-flex items-center gap-1 ds-text-micro uppercase tracking-wider text-amber-600 dark:text-amber-400 font-semibold"
-                title="O backend tem allowlist e este host não está incluído"
+                title="The backend has an allowlist and this host isn't included"
               >
                 <ShieldAlert className="w-3 h-3" />
                 não autorizado no .env
@@ -129,7 +129,7 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
             )}
           </div>
           <div className="text-xs font-mono text-slate-600 dark:text-slate-400 mt-0.5 truncate">
-            {host || 'Cola uma URL ou escolhe abaixo'}
+            {host || 'Paste a URL or choose below'}
           </div>
         </div>
         {!locked && (
@@ -137,7 +137,7 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
             <PresetButton
               active={provider.type === PROVIDERS.CLOUD}
               onClick={pickCloud}
-              title="Usar Azure DevOps Cloud"
+              title="Use Azure DevOps Cloud"
             >
               <Cloud className="w-3.5 h-3.5" />
               Cloud
@@ -145,7 +145,7 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
             <PresetButton
               active={provider.type === PROVIDERS.ON_PREM}
               onClick={startCustomEdit}
-              title="Indicar um servidor TFS on-premises"
+              title="Specify an on-premises TFS server"
             >
               <Server className="w-3.5 h-3.5" />
               On-prem
@@ -155,8 +155,8 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
                 type="button"
                 onClick={startCustomEdit}
                 className="ml-1 p-1.5 rounded-md text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                aria-label="Editar servidor"
-                title="Editar manualmente"
+                aria-label="Edit server"
+                title="Edit manually"
               >
                 <Pencil className="w-3.5 h-3.5" />
               </button>

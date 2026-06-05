@@ -115,7 +115,7 @@ export default function OrgField({
             <Select
               value={source.org}
               onChange={handleOrgDropdownChange}
-              placeholder="Selecionar organização..."
+              placeholder="Select an organization..."
               sections={orgDropdownSections}
               searchable
               loading={orgsLoading}
@@ -146,7 +146,7 @@ export default function OrgField({
                   type="button"
                   onClick={() => setManualOrgMode(true)}
                   className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-t border-slate-200 dark:border-slate-700"
-                  aria-label="Introduzir organização manualmente"
+                  aria-label="Enter organization manually"
                 >
                   <Keyboard className="w-4 h-4" />
                   Ou digitar manualmente...
@@ -244,7 +244,7 @@ export default function OrgField({
                 type="button"
                 onClick={dismissOauthHint}
                 className="text-slate-400 hover:text-slate-300 shrink-0"
-                aria-label="Descartar sugestão"
+                aria-label="Dismiss suggestion"
               >
                 <X className="w-3.5 h-3.5" />
               </button>

@@ -291,22 +291,22 @@ export default function SourceStep({ source, onChange, oauthHook, orgsHook }) {
           within thumb's reach. Skip when the error is the "missing server"
           guidance (no retry possible) or the allowlist error (handled above). */}
       {!validating && validationError
-        && !validationError.includes('Define o servidor')
+        && !validationError.includes('Set the server')
         && !/ALLOWED_AZURE_HOSTS|not in ALLOWED|not in allowlist/i.test(validationError) && (
         <div className="flex items-center justify-between gap-3 px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700">
           <div className="text-xs text-slate-600 dark:text-slate-400 min-w-0">
             {isAccessError && !provider.isCloud
-              ? <>O PAT precisa de ser criado <strong>directamente em {source.host}</strong> e ter scopes <code className="px-1 rounded bg-slate-200 dark:bg-slate-700">Code (Read)</code> + <code className="px-1 rounded bg-slate-200 dark:bg-slate-700">Project &amp; Team (Read)</code>.</>
+              ? <>The PAT must be created <strong>directly on {source.host}</strong> with the scopes <code className="px-1 rounded bg-slate-200 dark:bg-slate-700">Code (Read)</code> + <code className="px-1 rounded bg-slate-200 dark:bg-slate-700">Project &amp; Team (Read)</code>.</>
               : isAccessError
-                ? <>Verifica os scopes do PAT — mínimo <code className="px-1 rounded bg-slate-200 dark:bg-slate-700">Code (Read)</code> + <code className="px-1 rounded bg-slate-200 dark:bg-slate-700">Project &amp; Team (Read)</code>.</>
-                : <>Confirma a URL e tenta novamente. Se persistir, verifica logs do servidor.</>}
+                ? <>Check the PAT scopes — minimum <code className="px-1 rounded bg-slate-200 dark:bg-slate-700">Code (Read)</code> + <code className="px-1 rounded bg-slate-200 dark:bg-slate-700">Project &amp; Team (Read)</code>.</>
+                : <>Check the URL and try again. If it persists, check the server logs.</>}
           </div>
           <button
             type="button"
             onClick={runValidation}
             className="shrink-0 px-2.5 py-1 text-xs font-medium rounded-md border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-colors"
           >
-            Tentar de novo
+            Try again
           </button>
         </div>
       )}
@@ -316,9 +316,9 @@ export default function SourceStep({ source, onChange, oauthHook, orgsHook }) {
           the user toward Personal PAT before they hit a 401. */}
       {serverPatLikelyWrong && !source.validated && !validating && (
         <div className="px-3.5 py-2.5 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-900/15 text-xs text-amber-800 dark:text-amber-200">
-          <strong>Server PAT</strong> está configurado em <code>.env</code>, mas detectaste um servidor TFS on-premises ({source.host}).
-          O Server PAT é tipicamente para Azure DevOps cloud — provavelmente <em>não</em> autentica neste servidor.
-          Recomendado: muda para <strong>Personal Access Token</strong> e cola um PAT criado em <code className="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">{source.host}</code>.
+          <strong>Server PAT</strong> is configured in <code>.env</code>, but you've detected an on-premises TFS server ({source.host}).
+          Server PAT is typically for Azure DevOps cloud — it probably <em>won't</em> authenticate against this server.
+          Recommended: switch to <strong>Personal Access Token</strong> and paste a PAT created on <code className="bg-amber-100 dark:bg-amber-900/40 px-1 rounded">{source.host}</code>.
         </div>
       )}
 
@@ -345,7 +345,7 @@ export default function SourceStep({ source, onChange, oauthHook, orgsHook }) {
             <Select
               value={source.project}
               onChange={handleProjectChange}
-              placeholder="Selecionar projecto..."
+              placeholder="Select a project..."
               options={projectOptions}
               searchable={projects.length > 5}
               label="Projecto"

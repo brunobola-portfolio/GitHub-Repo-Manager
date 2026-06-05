@@ -65,10 +65,10 @@ export default function SavedCredentialsPicker({ host, org, value, onPick, onOpe
         <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
           <KeyRound className="w-3.5 h-3.5" />
           {loading
-            ? 'A procurar tokens guardados…'
+            ? 'Searching saved tokens…'
             : ordered.length === 1
-              ? '1 token guardado para este servidor'
-              : `${ordered.length} tokens guardados para este servidor`}
+              ? '1 saved token for this server'
+              : `${ordered.length} saved tokens for this server`}
         </div>
         <button
           type="button"
@@ -76,7 +76,7 @@ export default function SavedCredentialsPicker({ host, org, value, onPick, onOpe
           className="ds-text-meta text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 inline-flex items-center gap-1"
         >
           <Settings className="w-3 h-3" />
-          Gerir
+          Manage
         </button>
       </div>
 
@@ -86,7 +86,7 @@ export default function SavedCredentialsPicker({ host, org, value, onPick, onOpe
           aria-atomic="true"
           className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 px-2 py-1.5"
         >
-          <Spinner size="sm" tone="muted" label="A carregar credenciais" /> A carregar…
+          <Spinner size="sm" tone="muted" label="Loading credentials" /> Loading…
         </div>
       ) : (
         <div className="relative">
@@ -99,7 +99,7 @@ export default function SavedCredentialsPicker({ host, org, value, onPick, onOpe
             <span className="flex-1 min-w-0 truncate">
               {picked
                 ? <><strong>{picked.label}</strong> <span className="text-slate-500 font-mono text-xs">· {picked.prefix}</span></>
-                : <span className="text-slate-500">Escolhe um token guardado…</span>}
+                : <span className="text-slate-500">Choose a saved token…</span>}
             </span>
             <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
           </button>
