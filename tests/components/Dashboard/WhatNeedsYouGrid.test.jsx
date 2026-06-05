@@ -50,7 +50,7 @@ describe('WhatNeedsYouGrid', () => {
     it('shows empty state when all counts are zero', async () => {
         mockAllZero()
         renderPro(<WhatNeedsYouGrid onOpenWorkBoard={() => {}} />)
-        await waitFor(() => expect(screen.getByText(/estás em dia/i)).toBeInTheDocument())
+        await waitFor(() => expect(screen.getByText(/all caught up/i)).toBeInTheDocument())
     })
 
     it('triggers onOpenWorkBoard with initialTab on card click', async () => {

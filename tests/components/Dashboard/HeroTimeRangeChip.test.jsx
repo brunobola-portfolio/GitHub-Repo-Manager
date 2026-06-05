@@ -33,9 +33,9 @@ describe('HeroTimeRangeChip', () => {
             langSpy = vi.spyOn(navigator, 'language', 'get').mockReturnValue('pt-PT')
         })
 
-        it('renders the current range label in Portuguese', () => {
+        it('still renders the range label in English (app ships English-only UI)', () => {
             render(<HeroTimeRangeChip value="30d" onChange={() => {}} />)
-            expect(screen.getByText('Últimos 30 dias')).toBeInTheDocument()
+            expect(screen.getByText('Last 30 days')).toBeInTheDocument()
         })
     })
 })

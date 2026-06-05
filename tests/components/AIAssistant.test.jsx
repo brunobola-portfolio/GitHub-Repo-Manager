@@ -158,7 +158,7 @@ describe('AIAssistant', () => {
     })
 
     expect(askAI).not.toHaveBeenCalled()
-    expect(await screen.findByText(/URL detectado/i)).toBeInTheDocument()
+    expect(await screen.findByText(/URL detected/i)).toBeInTheDocument()
     expect(screen.getByText(/bruno/)).toBeInTheDocument()
     expect(screen.getByText(/AWIP/)).toBeInTheDocument()
     expect(screen.getByText(/Cacadores/)).toBeInTheDocument()
@@ -188,8 +188,8 @@ describe('AIAssistant', () => {
       fireEvent.submit(input.closest('form'))
     })
 
-    fireEvent.click(await screen.findByRole('button', { name: /cancelar/i }))
-    await waitFor(() => expect(screen.queryByText(/URL detectado/i)).not.toBeInTheDocument())
+    fireEvent.click(await screen.findByRole('button', { name: /cancel/i }))
+    await waitFor(() => expect(screen.queryByText(/URL detected/i)).not.toBeInTheDocument())
   })
 
   it('transitions to the confirm button after both answers are collected', async () => {
@@ -203,20 +203,20 @@ describe('AIAssistant', () => {
     })
 
     // Answer 1: targetOrg
-    const orgInput = await screen.findByRole('textbox', { name: /github.*org.*destino/i })
+    const orgInput = await screen.findByRole('textbox', { name: /target.*github.*org/i })
     await act(async () => {
       fireEvent.change(orgInput, { target: { value: 'bolalabs' } })
       fireEvent.submit(orgInput.closest('form'))
     })
 
     // Answer 2: targetName
-    const nameInput = await screen.findByRole('textbox', { name: /nome final.*repo/i })
+    const nameInput = await screen.findByRole('textbox', { name: /final repo name/i })
     await act(async () => {
       fireEvent.change(nameInput, { target: { value: 'manter' } })
       fireEvent.submit(nameInput.closest('form'))
     })
 
-    expect(await screen.findByRole('button', { name: /abrir wizard/i })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /open wizard/i })).toBeInTheDocument()
   })
 
   it('routes Azure URL with only org/project (no repo) to azureConnect after confirm', async () => {
@@ -230,14 +230,14 @@ describe('AIAssistant', () => {
       fireEvent.submit(input.closest('form'))
     })
 
-    const orgInput = await screen.findByRole('textbox', { name: /github.*org.*destino/i })
+    const orgInput = await screen.findByRole('textbox', { name: /target.*github.*org/i })
     await act(async () => {
       fireEvent.change(orgInput, { target: { value: 'bolalabs' } })
       fireEvent.submit(orgInput.closest('form'))
     })
 
     // After the fix, no targetName question is asked when no repo was detected
-    expect(await screen.findByRole('button', { name: /abrir wizard/i })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /open wizard/i })).toBeInTheDocument()
   })
 
   it('skips the targetName question when no repo is detected in the URL', async () => {
@@ -250,15 +250,15 @@ describe('AIAssistant', () => {
       fireEvent.submit(input.closest('form'))
     })
 
-    const orgInput = await screen.findByRole('textbox', { name: /github.*org.*destino/i })
+    const orgInput = await screen.findByRole('textbox', { name: /target.*github.*org/i })
     await act(async () => {
       fireEvent.change(orgInput, { target: { value: 'bolalabs' } })
       fireEvent.submit(orgInput.closest('form'))
     })
 
     // targetName question should NOT appear — we should go directly to ready
-    expect(screen.queryByRole('textbox', { name: /nome final.*repo/i })).not.toBeInTheDocument()
-    expect(await screen.findByRole('button', { name: /abrir wizard/i })).toBeInTheDocument()
+    expect(screen.queryByRole('textbox', { name: /final repo name/i })).not.toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /open wizard/i })).toBeInTheDocument()
   })
 
   describe('System message injection (ai-assistant:inject-message)', () => {

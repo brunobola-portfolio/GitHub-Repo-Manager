@@ -47,12 +47,12 @@ export function useAI() {
             const actions = []
             if (/migra|import|mov[ei]/.test(msg)) {
                 actions.push({ type: 'open_migration_wizard', label: 'Open Migration Wizard' })
-            } else if (/criar|create|novo repo|new repo/.test(msg)) {
+            } else if (/create|new repo/.test(msg)) {
                 actions.push({ type: 'open_create_repo', label: 'Create Repository' })
             }
             return {
                 reply: actions.length
-                    ? 'Claro, posso abrir isso para ti.'
+                    ? 'Sure, I can open that for you.'
                     : 'Based on the analysis of your repository structure, I recommend adding a CONTRIBUTING.md file. Would you like to explore migrations or create a new repo?',
                 actions,
             }

@@ -4,19 +4,11 @@ import { Calendar, Check } from 'lucide-react'
 import { HeroChip } from './HeroChip'
 
 function getRanges() {
-    const lang = (typeof navigator !== 'undefined' && navigator.language) || 'en-US'
-    const pt = lang.toLowerCase().startsWith('pt')
-    return pt
-        ? [
-              { value: '7d',  label: 'Últimos 7 dias' },
-              { value: '30d', label: 'Últimos 30 dias' },
-              { value: '90d', label: 'Últimos 90 dias' },
-          ]
-        : [
-              { value: '7d',  label: 'Last 7 days' },
-              { value: '30d', label: 'Last 30 days' },
-              { value: '90d', label: 'Last 90 days' },
-          ]
+    return [
+        { value: '7d',  label: 'Last 7 days' },
+        { value: '30d', label: 'Last 30 days' },
+        { value: '90d', label: 'Last 90 days' },
+    ]
 }
 
 export function HeroTimeRangeChip({ value, onChange }) {

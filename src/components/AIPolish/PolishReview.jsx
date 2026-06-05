@@ -43,9 +43,9 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                         <Sparkles className="w-4 h-4" />
                     </div>
                     <div>
-                        <h3 className="text-base font-semibold text-slate-800 dark:text-slate-100">Polir descrições com AI</h3>
+                        <h3 className="text-base font-semibold text-slate-800 dark:text-slate-100">Polish descriptions with AI</h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            {stats.total} repo{stats.total === 1 ? '' : 's'} migrado{stats.total === 1 ? '' : 's'} — sugestões geradas por AI baseadas no README + linguagem.
+                            {stats.total} repo{stats.total === 1 ? '' : 's'} migrated — AI-generated suggestions based on README + language.
                         </p>
                     </div>
                 </div>
@@ -56,8 +56,8 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                 <div className="flex items-start gap-2 p-3 rounded-lg border border-amber-300/60 dark:border-amber-700/50 bg-amber-50/70 dark:bg-amber-950/30 text-amber-800 dark:text-amber-200 text-sm">
                     <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
                     <div>
-                        <p className="font-medium">Quota AI esgotada</p>
-                        <p className="text-xs opacity-90 mt-0.5">Os repos restantes ficaram sem sugestão. Os já carregados podem ainda ser editados e aplicados manualmente.</p>
+                        <p className="font-medium">AI quota exhausted</p>
+                        <p className="text-xs opacity-90 mt-0.5">The remaining repos have no suggestion. The ones already loaded can still be edited and applied manually.</p>
                     </div>
                 </div>
             )}
@@ -95,7 +95,7 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                                     checked={row.include}
                                     onChange={() => toggleInclude(row.fullName)}
                                     disabled={row.status === 'applying' || row.status === 'done'}
-                                    aria-label={`Incluir ${row.fullName}`}
+                                    aria-label={`Include ${row.fullName}`}
                                     className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-indigo-500/40 cursor-pointer"
                                 />
                             </div>
@@ -108,7 +108,7 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                                 </div>
                                 {row.currentDescription && (
                                     <p className="text-xs text-slate-400 dark:text-slate-500 truncate mt-0.5" title={row.currentDescription}>
-                                        Anterior: {row.currentDescription}
+                                        Previous: {row.currentDescription}
                                     </p>
                                 )}
                             </div>
@@ -125,26 +125,26 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                                         value={row.proposedDescription}
                                         onChange={(e) => setProposedDescription(row.fullName, e.target.value)}
                                         disabled={!row.include || row.status === 'applying' || row.status === 'done'}
-                                        placeholder="Sem sugestão"
-                                        aria-label={`Descrição para ${row.fullName}`}
+                                        placeholder="No suggestion"
+                                        aria-label={`Description for ${row.fullName}`}
                                     />
                                 )}
                                 {row.status === 'error' && (
                                     <div className="flex items-center gap-2 text-xs text-rose-600 dark:text-rose-400">
                                         <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                                        <span className="truncate flex-1" title={row.error || ''}>{row.error || 'Falhou'}</span>
+                                        <span className="truncate flex-1" title={row.error || ''}>{row.error || 'Failed'}</span>
                                         <button
                                             type="button"
                                             onClick={() => retryRow(row.fullName)}
                                             className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/40"
                                         >
-                                            <RotateCcw className="w-3 h-3" /> Repetir
+                                            <RotateCcw className="w-3 h-3" /> Retry
                                         </button>
                                     </div>
                                 )}
                                 {row.status === 'quota' && (
                                     <p className="text-xs text-amber-600 dark:text-amber-400 inline-flex items-center gap-1">
-                                        <Ban className="w-3 h-3" /> Ignorado (quota)
+                                        <Ban className="w-3 h-3" /> Skipped (quota)
                                     </p>
                                 )}
                             </div>
@@ -153,8 +153,8 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                             <div className="flex justify-end items-center">
                                 {row.confidence && (
                                     <span
-                                        aria-label={`Confiança ${row.confidence}`}
-                                        title={`Confiança: ${row.confidence}`}
+                                        aria-label={`Confidence ${row.confidence}`}
+                                        title={`Confidence: ${row.confidence}`}
                                         className={`inline-block w-2 h-2 rounded-full mr-2 ${
                                             row.confidence === 'high' ? 'bg-emerald-500'
                                             : row.confidence === 'medium' ? 'bg-amber-500'
@@ -165,18 +165,18 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                                 {row.status === 'resolving' || row.status === 'loading' ? (
                                     <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                                         <Spinner size="xs" />
-                                        {row.status === 'resolving' ? 'A resolver' : 'A carregar'}
+                                        {row.status === 'resolving' ? 'Resolving' : 'Loading'}
                                     </span>
                                 ) : row.status === 'applying' ? (
                                     <span className="inline-flex items-center gap-1.5 text-xs text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">
-                                        <Spinner size="xs" /> A aplicar
+                                        <Spinner size="xs" /> Applying
                                     </span>
                                 ) : row.status === 'done' ? (
                                     <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                                        <CheckCircle2 className="w-3.5 h-3.5" /> Aplicado
+                                        <CheckCircle2 className="w-3.5 h-3.5" /> Applied
                                     </span>
                                 ) : row.status === 'ready' ? (
-                                    <span className="text-xs text-slate-400 dark:text-slate-500">Pronto</span>
+                                    <span className="text-xs text-slate-400 dark:text-slate-500">Ready</span>
                                 ) : null}
                             </div>
                         </motion.div>
@@ -187,9 +187,9 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
             {/* Footer summary + actions */}
             <div className="flex items-center justify-between gap-3 pt-1">
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {stats.includedReady} de {stats.total} prontos para aplicar
-                    {stats.error > 0 && ` · ${stats.error} falharam`}
-                    {stats.done > 0 && ` · ${stats.done} aplicados`}
+                    {stats.includedReady} of {stats.total} ready to apply
+                    {stats.error > 0 && ` · ${stats.error} failed`}
+                    {stats.done > 0 && ` · ${stats.done} applied`}
                 </p>
                 <div className="flex items-center gap-2">
                     {typeof onRequestClose === 'function' && (
@@ -198,7 +198,7 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                             onClick={onRequestClose}
                             disabled={phase === 'applying'}
                         >
-                            {phase === 'done' ? 'Fechar' : 'Cancelar'}
+                            {phase === 'done' ? 'Close' : 'Cancel'}
                         </Button>
                     )}
                     <Button
@@ -207,7 +207,7 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                         disabled={applyDisabled}
                     >
                         {phase === 'applying' ? <Spinner size="xs" tone="onPrimary" /> : <Sparkles className="w-3.5 h-3.5" />}
-                        Aplicar em {stats.includedReady} repositório{stats.includedReady === 1 ? '' : 's'}
+                        Apply to {stats.includedReady} repository{stats.includedReady === 1 ? '' : 's'}
                     </Button>
                 </div>
             </div>
