@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion'
+import { EASE } from './motion'
 
 const GRADIENT_CLASSES = {
   primary:   'bg-indigo-500',
@@ -74,7 +75,7 @@ export function StatBar({
             className={`h-full ${gradientClass} rounded-full`}
             initial={{ width: 0 }}
             animate={{ width: `${pct}%` }}
-            transition={{ duration: 0.32, ease: [0.2, 0, 0, 1], delay: 0.1 }}
+            transition={{ duration: 0.32, ease: EASE.standard, delay: 0.1 }}
             data-testid="statbar-fill"
           />
         ) : (

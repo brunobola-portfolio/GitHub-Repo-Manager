@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
+import { EASE } from '../ui/motion'
 import { ArrowUpRight } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Skeleton } from '../ui/Skeleton'
@@ -48,7 +49,7 @@ export const StatCard = memo(function StatCard({
 
     return (
         <motion.div
-            transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
+            transition={{ duration: 0.2, ease: EASE.standard }}
             className="rounded-2xl ds-focus-ring"
             role={interactive ? 'button' : undefined}
             tabIndex={interactive ? 0 : undefined}
@@ -66,7 +67,7 @@ export const StatCard = memo(function StatCard({
                         </p>
                         <motion.h3
                             className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mt-2 ds-font-mono"
-                            transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
+                            transition={{ duration: 0.2, ease: EASE.standard }}
                         >
                             {isNumeric ? (
                                 <CountUp value={value} format={formatFn} />

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { EASE } from '../ui/motion'
 import { Sparkles, MessageCircle, ArrowRight, X } from 'lucide-react'
 import { useAIPromoVisibility } from '../../hooks/useAIPromoVisibility'
 import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
@@ -58,7 +59,7 @@ export function AIPromoStrip({ repos, licenseTier = 'free', onOpenInsights }) {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.3, ease: EASE.emphasized }}
                 className="overflow-hidden"
             >
                 <div className="relative flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-3 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-800/40 rounded-2xl">

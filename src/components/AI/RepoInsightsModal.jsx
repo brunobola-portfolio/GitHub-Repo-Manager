@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
+import { EASE } from '../ui/motion'
 import {
     Sparkles,
     Brain,
@@ -300,7 +301,7 @@ function CircularScore({ value, max = 100 }) {
                     strokeDasharray={circumference}
                     initial={{ strokeDashoffset: reducedMotion ? offset : circumference }}
                     animate={{ strokeDashoffset: offset }}
-                    transition={reducedMotion ? { duration: 0 } : { duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+                    transition={reducedMotion ? { duration: 0 } : { duration: 0.8, ease: EASE.emphasized, delay: 0.2 }}
                 />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center" aria-hidden="true">

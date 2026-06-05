@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { EASE } from '../ui/motion'
 import { WizardPanel } from '../ui/WizardPanel'
 import { Button } from '../ui/Button'
 import { useMobileBreakpoint } from '../../hooks/useMobileBreakpoint'
@@ -293,7 +294,7 @@ function SidebarStepper({
             className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-indigo-500"
             initial={false}
             animate={{ width: `${fillPct}%` }}
-            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.55, ease: EASE.emphasized }}
           />
         </div>
       </div>
@@ -316,7 +317,7 @@ function SidebarStepper({
                 ? `${((fillUpToIndex + 1) / steps.length) * 100}%`
                 : '0%',
             }}
-            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.55, ease: EASE.emphasized }}
           />
 
           {steps.map((step, index) => {

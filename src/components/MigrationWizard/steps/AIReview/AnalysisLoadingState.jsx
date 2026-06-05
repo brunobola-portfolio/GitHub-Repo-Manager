@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { EASE } from '../../../ui/motion'
 import {
   Brain, Shield, CheckCircle2, Loader2,
   Search, Route, Timer,
@@ -26,7 +27,7 @@ function AnalysisPhaseIndicator({ phase, index, currentPhase }) {
     <motion.div
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.12, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ delay: index * 0.12, duration: 0.5, ease: EASE.emphasized }}
       className="flex items-center gap-3"
     >
       <div className="relative flex items-center justify-center shrink-0">

@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { EASE } from '../../../ui/motion'
 import {
   AlertTriangle, XCircle, Info, ShieldCheck,
 } from 'lucide-react'
@@ -48,7 +49,7 @@ export function RiskCard({ risk, index }) {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.07, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ delay: index * 0.07, duration: 0.4, ease: EASE.emphasized }}
       className={`relative overflow-hidden rounded-xl border ${config.border} ${config.bg} ${config.glow} transition-all duration-300`}
     >
       {/* Left accent bar */}

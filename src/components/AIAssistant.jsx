@@ -7,6 +7,7 @@ import ReactMarkdown from 'react-markdown'
 import { useModal } from '../hooks/useModal'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { motion, AnimatePresence } from 'framer-motion'
+import { EASE } from './ui/motion'
 import { sanitizeActions, dispatchAction } from '../utils/aiActions'
 import { detectRepoUrl } from '../utils/repoUrlDetector'
 import { AIAssistantPasteCard } from './AIAssistantPasteCard'
@@ -268,7 +269,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.8, opacity: 0 }}
-                        transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
+                        transition={{ duration: 0.2, ease: EASE.standard }}
                         onClick={() => { setIsOpen(true); setIsIdle(false) }}
                         onMouseEnter={() => setIsIdle(false)}
                         /* Hidden on mobile (< md): the AI Assistant entry point
@@ -305,7 +306,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                         initial={{ opacity: 0, y: 20, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                        transition={{ duration: 0.32, ease: [0.2, 0, 0, 1] }}
+                        transition={{ duration: 0.32, ease: EASE.standard }}
                         className="fixed bottom-20 xl:bottom-6 right-3 sm:right-6 z-[45]"
                     >
                         <Card className={`w-[calc(100vw-2rem)] sm:w-[22rem] md:w-[26rem] flex flex-col shadow-[var(--ds-shadow-overlay)] border border-slate-200 dark:border-[color:var(--ds-border-dark)] bg-white dark:bg-[color:var(--ds-surface-dark)] overflow-hidden rounded-2xl transition-all duration-300 ${

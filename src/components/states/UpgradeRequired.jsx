@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { EASE } from '../ui/motion'
 import { Lock, Sparkles, Check, ArrowRight } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
 
@@ -76,7 +77,7 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
         <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.45, ease: EASE.emphasized }}
             role="region"
             aria-label={`${tierName(tier)} feature`}
             className={twMerge(

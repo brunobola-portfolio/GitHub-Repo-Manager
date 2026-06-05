@@ -8,7 +8,7 @@ import {
 import { formatNumber, formatCompact } from '../utils/format'
 import { motion, AnimatePresence } from 'framer-motion'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { TAP } from './ui/motion'
+import { TAP, EASE } from './ui/motion'
 import { useModal } from '../hooks/useModal'
 import { Input } from './ui/form'
 
@@ -306,7 +306,7 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 					className="absolute right-3 top-1/2 -translate-y-1/2"
 					initial={{ scale: 0 }}
 					animate={{ scale: 1 }}
-					transition={{ duration: 0.2, ease: [0.2, 0, 0, 1] }}
+					transition={{ duration: 0.2, ease: EASE.standard }}
 				>
 					<div className="relative">
 						<div className="w-2 h-2 rounded-full bg-indigo-500" />

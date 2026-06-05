@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
+import { EASE } from '../../../ui/motion'
 import { Route, ArrowRight, FolderGit2, Recycle } from 'lucide-react'
 import { GitHubIcon, AzureIcon } from './PlatformIcons'
 
@@ -60,7 +61,7 @@ export function ExecutionPipeline({ order, repos, source }) {
               key={name}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 + i * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ delay: 0.3 + i * 0.06, duration: 0.4, ease: EASE.emphasized }}
               className="flex items-center gap-2 px-3 py-2.5 rounded-xl
                 bg-white dark:bg-white/[0.03]
                 border border-slate-200/70 dark:border-white/8
