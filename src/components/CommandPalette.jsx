@@ -35,6 +35,7 @@ import { readRecents, bumpRecent } from './CommandPalette/recents'
 import { SearchInput } from './CommandPalette/SearchInput'
 import { GitHubResults } from './CommandPalette/GitHubResults'
 import { RecentGroup } from './CommandPalette/RecentGroup'
+import { AskModeBanner } from './CommandPalette/AskModeBanner'
 import { GROUP_HEADING_CLASSES, ITEM_CLASSES } from './CommandPalette/styles'
 
 const NAVIGATE_ITEMS = [
@@ -465,17 +466,7 @@ export function CommandPalette({
             </div>
           ) : ask.data ? (
             <>
-              <div className="px-3 pt-3 pb-2 flex items-start gap-2">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-500 shrink-0 mt-[2px]" aria-hidden="true" />
-                <p className="text-xs italic text-indigo-700 dark:text-indigo-300">
-                  {ask.data.summary}
-                </p>
-              </div>
-              {ask.data.queries.length === 0 && (
-                <div className="px-3 pb-3 ds-text-meta text-slate-400 dark:text-slate-500">
-                  No GitHub query inferred. Try rephrasing or remove the leading "?".
-                </div>
-              )}
+              <AskModeBanner summary={ask.data.summary} hasQueries={ask.data.queries.length > 0} />
               {askResults.results.pr.length > 0 && (
                 <Command.Group heading="Pull Requests" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
                   {askResults.results.pr.map((pr) => (
