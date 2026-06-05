@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
+import { SPRING } from '../ui/motion'
 import {
     LayoutGrid,
     FolderGit2,
@@ -187,7 +188,7 @@ export function DashboardShell({ anchors, onViewChange, children }) {
                                                     <motion.span
                                                         layoutId="dashboard-anchor-indicator"
                                                         className="absolute -left-px top-1 bottom-1 w-[2px] rounded-full bg-indigo-500 dark:bg-[color:var(--ds-accent-brand-dark)]"
-                                                        transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                                                        transition={SPRING.panel}
                                                     />
                                                 )}
                                                 <button

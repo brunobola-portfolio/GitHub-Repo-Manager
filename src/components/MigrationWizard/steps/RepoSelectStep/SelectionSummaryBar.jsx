@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
+import { SPRING } from '../../../ui/motion'
 import { HardDrive, Clock, AlertTriangle, AlertOctagon, ArrowRight } from 'lucide-react'
 import { formatFileSize } from '../../../../utils/format'
 
@@ -20,7 +21,7 @@ export function SelectionSummaryBar({ selected, warnings, blockers, autoFixCount
           initial={{ y: 60, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 60, opacity: 0 }}
-          transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+          transition={SPRING.panel}
           className="sticky bottom-0 mt-4 backdrop-blur-md bg-slate-900/70 dark:bg-slate-950/70 border border-indigo-500/20 rounded-2xl p-3 shadow-lg z-10"
           role="status"
           aria-live="polite"

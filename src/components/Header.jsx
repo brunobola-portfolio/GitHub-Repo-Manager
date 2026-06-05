@@ -7,6 +7,7 @@ import {
     Kanban, ShieldAlert, GitPullRequest, CircleDot, AlertTriangle, Pin, ExternalLink, Check
 } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { SPRING } from './ui/motion'
 import { Github } from './icons/GithubIcon'
 import { AppLogoIcon } from './AppLogo'
 import LicenseBadge from './LicenseBadge'
@@ -331,7 +332,7 @@ export function Header({
                     <motion.span
                       layoutId="mobile-nav-active-pill"
                       aria-hidden="true"
-                      transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                      transition={SPRING.panel}
                       className="absolute inset-x-2 top-1 h-7 rounded-lg bg-indigo-500/10 dark:bg-indigo-400/15"
                     />
                   )}
