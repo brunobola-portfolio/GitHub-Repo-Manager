@@ -13,11 +13,17 @@ const router = Router()
 router.post('/repos/:owner/:repo/sync', requireAuth, requireTier('pro'), async (req, res) => {
   const { owner, repo } = req.params
   const token = req.session.accessToken  // requireAuth guarantees this exists
+  // Scope the lookup to the caller's own mirror jobs. Without the user_id
+  // predicate, any Pro user with write access to owner/repo could trigger a
+  // sync that a DIFFERENT user configured — disclosing that user's source_url
+  // (response + audit log) and force-pushing the target from an upstream the
+  // caller never set. migration_jobs.user_id is the same id written at mirror
+  // creation time (see bulk.js mirror INSERT).
   const job = db.prepare(
     `SELECT source_url FROM migration_jobs
-     WHERE target_owner=? AND target_repo=? AND is_mirror=1
+     WHERE target_owner=? AND target_repo=? AND is_mirror=1 AND user_id=?
      ORDER BY id DESC LIMIT 1`
-  ).get(owner, repo)
+  ).get(owner, repo, req.session.userId)
   if (!job) return res.status(404).json({ error: 'Not a tracked mirror' })
 
   const workDir = await mkdtemp(join(tmpdir(), 'grm-sync-'))
