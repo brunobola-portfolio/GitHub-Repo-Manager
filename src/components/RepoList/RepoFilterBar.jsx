@@ -147,16 +147,16 @@ export function RepoFilterBar({
 					{/* Dropdown */}
 					{showSelectionMenu && (
 						<div className="absolute top-full left-0 mt-2 w-48 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-xl shadow-[var(--ds-shadow-overlay)] border border-slate-200/60 dark:border-slate-700/50 py-1 ds-animate-scale-in overflow-hidden">
-							<button onClick={handleSelectAll} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2">
+							<button onClick={handleSelectAll} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 ds-focus-ring">
 								<CheckSquare className="w-4 h-4" />
 								{allFilteredSelected ? 'Deselect All' : 'Select All'}
 							</button>
-							<button onClick={handleInvertSelection} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2">
+							<button onClick={handleInvertSelection} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 ds-focus-ring">
 								<ArrowRightLeft className="w-4 h-4" />
 								Invert Selection
 							</button>
 							<div className="my-1 border-t border-slate-100 dark:border-slate-700"></div>
-							<button onClick={() => { onClearSelection(); setShowSelectionMenu(false); }} className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 flex items-center gap-2">
+							<button onClick={() => { onClearSelection(); setShowSelectionMenu(false); }} className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 flex items-center gap-2 ds-focus-ring">
 								<X className="w-4 h-4" />
 								Clear Selection
 							</button>

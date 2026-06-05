@@ -134,7 +134,7 @@ function MenuItem({ icon, label, onClick, destructive = false }) {
             type="button"
             onClick={onClick}
             className={clsx(
-                'flex w-full items-center gap-2 px-2.5 py-1.5 text-sm rounded-lg transition-colors text-left',
+                'flex w-full items-center gap-2 px-2.5 py-1.5 text-sm rounded-lg transition-colors text-left ds-focus-ring',
                 destructive
                     ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20'
                     : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'

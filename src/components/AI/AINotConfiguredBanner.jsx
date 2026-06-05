@@ -86,7 +86,7 @@ export function AINotConfiguredBanner({
                         <button
                             type="button"
                             onClick={openAISettings}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-[color:var(--ds-accent-brand)] text-white text-sm font-semibold rounded-lg transition-colors shadow-md"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-[color:var(--ds-accent-brand)] text-white text-sm font-semibold rounded-lg transition-colors shadow-md ds-focus-ring"
                         >
                             <Key className="w-3.5 h-3.5" aria-hidden="true" />
                             Configure AI
@@ -107,7 +107,7 @@ export function AINotConfiguredBanner({
                         type="button"
                         onClick={handleDismiss}
                         aria-label="Dismiss AI configuration notice"
-                        className="shrink-0 p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-700/60 transition-colors"
+                        className="shrink-0 p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-700/60 transition-colors ds-focus-ring"
                     >
                         <X className="w-4 h-4" aria-hidden="true" />
                     </button>
