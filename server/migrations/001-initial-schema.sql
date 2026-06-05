@@ -192,6 +192,7 @@ CREATE TABLE IF NOT EXISTS migration_plans (
     source_project TEXT NOT NULL,
     target_org TEXT,
     is_dry_run INTEGER NOT NULL DEFAULT 0,
+    quota_charged INTEGER NOT NULL DEFAULT 0,
     scheduled_at TEXT,
     credentials_enc TEXT,
     started_at TEXT,
