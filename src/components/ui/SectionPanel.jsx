@@ -74,9 +74,7 @@ export function SectionPanel({
             </div>
             {actions ? <div className="flex items-center gap-2 shrink-0">{actions}</div> : null}
             {collapsible ? (
-                open
-                    ? <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
-                    : <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" aria-hidden="true" />
+                <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${open ? '' : '-rotate-90'}`} aria-hidden="true" />
             ) : null}
         </>
     )

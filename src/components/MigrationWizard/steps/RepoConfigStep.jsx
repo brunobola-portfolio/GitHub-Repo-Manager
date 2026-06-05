@@ -684,9 +684,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
                               {repo.branchFilter === 'selected'
                                 ? `${(repo.selectedBranches || []).length} branches`
                                 : 'All branches'}
-                              {expandedBranches[branchKey]
-                                ? <ChevronUp className="w-3 h-3" />
-                                : <ChevronDown className="w-3 h-3" />}
+                              <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${expandedBranches[branchKey] ? 'rotate-180' : ''}`} />
                             </button>
                           )}
                         </div>

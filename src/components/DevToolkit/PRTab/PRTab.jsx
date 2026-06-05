@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
-import { RefreshCw, GitPullRequest, Copy, Check, Rocket, Info, CheckCircle2, FileText } from 'lucide-react'
+import { RefreshCw, GitPullRequest, Rocket, Info, CheckCircle2, FileText } from 'lucide-react'
+import { AnimatedCopyIcon } from '../../ui/AnimatedCopyIcon'
 import { useStreaming } from '../../../hooks/useStreaming'
 import { useToast } from '../../../hooks/useToast'
 import { BranchSelector } from '../shared/BranchSelector'
@@ -284,7 +285,7 @@ export function PRTab({ toolkit }) {
             {sections && !loading && !isStreaming && (
                 <div className="flex items-center gap-3 flex-wrap">
                     <button type="button" onClick={handleCopyAll} className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                        {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                        <AnimatedCopyIcon copied={copied} size="w-3.5 h-3.5" checkClassName="text-emerald-500" />
                         {copied ? 'Copied!' : 'Copy All'}
                     </button>
 

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Copy, Check, Lightbulb, X } from 'lucide-react'
+import { Lightbulb, X } from 'lucide-react'
+import { AnimatedCopyIcon } from '../../ui/AnimatedCopyIcon'
 import { Tooltip } from '../../ui/Tooltip'
 
 export function MultiCommitSplit({ commits = [], onDismiss, onUseAll }) {
@@ -65,7 +66,7 @@ export function MultiCommitSplit({ commits = [], onDismiss, onUseAll }) {
                                 className="shrink-0 p-1 rounded hover:bg-amber-200/50 dark:hover:bg-amber-800/30 transition-colors ds-focus-ring"
                                 aria-label={copiedIdx === idx ? 'Copied' : 'Copy commit message'}
                             >
-                                {copiedIdx === idx ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3 text-slate-400" />}
+                                <AnimatedCopyIcon copied={copiedIdx === idx} size="w-3 h-3" copyClassName="text-slate-400" checkClassName="text-emerald-500" />
                             </button>
                         </Tooltip>
                     </motion.div>
