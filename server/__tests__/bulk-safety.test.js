@@ -245,9 +245,11 @@ describe('Bulk ops safety — dry-run + confirmation-token flow', () => {
     })
 
     // -------------------------------------------------------------------------
-    // Case 6: POST /bulk/archive without Pro tier → 403
+    // Case 6: POST /bulk/archive on free tier → allowed (basic bulk is free).
+    // Archive/unarchive on your own repos is non-destructive and reversible, so
+    // it ships on Free — only the dry-run → confirmation safety layer applies.
     // -------------------------------------------------------------------------
-    it('case 6: POST /bulk/archive without Pro tier (free user) → 403', async () => {
+    it('case 6: POST /bulk/archive on free tier → 200 dry-run (basic bulk is free)', async () => {
         const app = buildApp({ tier: 'free' })
         app.use('/bulk', bulkRouter)
 
@@ -255,20 +257,63 @@ describe('Bulk ops safety — dry-run + confirmation-token flow', () => {
             .post('/bulk/archive')
             .send({ repos: ['owner/repo1'], dryRun: true })
 
-        expect(res.status).toBe(403)
-        expect(res.body.error).toBe('upgrade_required')
+        expect(res.status).toBe(200)
+        expect(res.body.dryRun).toBe(true)
+        expect(typeof res.body.confirmationToken).toBe('string')
     })
 
     // -------------------------------------------------------------------------
-    // Case 7: POST /bulk/visibility without Pro tier → 403
+    // Case 7: POST /bulk/visibility on free tier → allowed (basic bulk is free).
     // -------------------------------------------------------------------------
-    it('case 7: POST /bulk/visibility without Pro tier (free user) → 403', async () => {
+    it('case 7: POST /bulk/visibility on free tier → 200 dry-run (basic bulk is free)', async () => {
         const app = buildApp({ tier: 'free' })
         app.use('/bulk', bulkRouter)
 
         const res = await request(app)
             .post('/bulk/visibility')
             .send({ repos: ['owner/repo1'], makePublic: true, dryRun: true })
+
+        expect(res.status).toBe(200)
+        expect(res.body.dryRun).toBe(true)
+        expect(typeof res.body.confirmationToken).toBe('string')
+    })
+
+    // -------------------------------------------------------------------------
+    // Cases 7a–7c: advanced/destructive bulk stays Pro-gated on free tier → 403.
+    // De-gating basic bulk (visibility/archive) must NOT leak transfer, mirror,
+    // or delete to Free — those remain Pro.
+    // -------------------------------------------------------------------------
+    it('case 7a: POST /bulk/transfer on free tier → 403 (advanced bulk stays Pro)', async () => {
+        const app = buildApp({ tier: 'free' })
+        app.use('/bulk', bulkRouter)
+
+        const res = await request(app)
+            .post('/bulk/transfer')
+            .send({ repos: ['owner/repo1'], toOrg: 'my-org', dryRun: true })
+
+        expect(res.status).toBe(403)
+        expect(res.body.error).toBe('upgrade_required')
+    })
+
+    it('case 7b: POST /bulk/mirror on free tier → 403 (advanced bulk stays Pro)', async () => {
+        const app = buildApp({ tier: 'free' })
+        app.use('/bulk', bulkRouter)
+
+        const res = await request(app)
+            .post('/bulk/mirror')
+            .send({ repos: ['owner/repo1'], toOrg: 'my-org', dryRun: true })
+
+        expect(res.status).toBe(403)
+        expect(res.body.error).toBe('upgrade_required')
+    })
+
+    it('case 7c: POST /bulk/delete on free tier → 403 (destructive bulk stays Pro)', async () => {
+        const app = buildApp({ tier: 'free' })
+        app.use('/bulk', bulkRouter)
+
+        const res = await request(app)
+            .post('/bulk/delete')
+            .send({ repos: ['owner/repo1'], dryRun: true })
 
         expect(res.status).toBe(403)
         expect(res.body.error).toBe('upgrade_required')
