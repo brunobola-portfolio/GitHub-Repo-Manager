@@ -212,7 +212,7 @@ describe('AIAssistant', () => {
     // Answer 2: targetName
     const nameInput = await screen.findByRole('textbox', { name: /final repo name/i })
     await act(async () => {
-      fireEvent.change(nameInput, { target: { value: 'manter' } })
+      fireEvent.change(nameInput, { target: { value: 'keep' } })
       fireEvent.submit(nameInput.closest('form'))
     })
 

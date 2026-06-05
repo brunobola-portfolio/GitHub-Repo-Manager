@@ -44,7 +44,7 @@ describe('buildWizardPayload — Azure', () => {
   it('routes to azureConnect with an empty initialRepos when repo is missing', () => {
     const payload = buildWizardPayload(azureDialog({
       parsed: { org: 'bruno', project: 'AWIP', repo: null },
-      answers: { targetOrg: 'bolalabs', targetName: 'manter' },
+      answers: { targetOrg: 'bolalabs', targetName: 'keep' },
     }))
     expect(payload.initialStep).toBe('azureConnect')
     expect(payload.initialRepos).toEqual([])
@@ -52,9 +52,9 @@ describe('buildWizardPayload — Azure', () => {
     expect(payload.initialSource.project).toBe('AWIP')
   })
 
-  it('treats "manter" (case-insensitive) as "use detected name"', () => {
+  it('treats "keep" (case-insensitive) as "use detected name"', () => {
     const payload = buildWizardPayload(azureDialog({
-      answers: { targetOrg: 'bolalabs', targetName: 'MANTER' },
+      answers: { targetOrg: 'bolalabs', targetName: 'KEEP' },
     }))
     expect(payload.initialSource.targetName).toBe('Cacadores')
     expect(payload.initialRepos[0].targetName).toBe('Cacadores')
@@ -100,9 +100,9 @@ describe('buildWizardPayload — GitHub', () => {
     })
   })
 
-  it('treats "manter" as "use detected repo name"', () => {
+  it('treats "keep" as "use detected repo name"', () => {
     const payload = buildWizardPayload(githubDialog({
-      answers: { targetOrg: 'bolalabs', targetName: 'manter' },
+      answers: { targetOrg: 'bolalabs', targetName: 'keep' },
     }))
     expect(payload.initialSource.targetName).toBe('BolaLabs')
   })

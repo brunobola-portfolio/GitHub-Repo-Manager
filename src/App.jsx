@@ -537,10 +537,10 @@ function AppContent() {
       const fullNames = createdRepos.map(r => r.full_name).filter(Boolean)
       if (fullNames.length === 0) return
       emitAppEvent(APP_EVENTS.AI_ASSISTANT_INJECT_MESSAGE, {
-        text: `Acabei de detectar ${fullNames.length} repo${fullNames.length === 1 ? '' : 's'} migrado${fullNames.length === 1 ? '' : 's'}. Queres que sugira descriptions com AI para todos de uma vez?`,
+        text: `Detected ${fullNames.length} migrated repo${fullNames.length === 1 ? '' : 's'}. Want me to suggest AI descriptions for all of them at once?`,
         actions: [{
           type: 'open_ai_polish',
-          label: `✨ Polir ${fullNames.length} repo${fullNames.length === 1 ? '' : 's'}`,
+          label: `✨ Polish ${fullNames.length} repo${fullNames.length === 1 ? '' : 's'}`,
           payload: { repoFullNames: fullNames },
         }],
       })
