@@ -32,8 +32,9 @@ const TIER_FEATURES = {
         migration: 'dry-run', // Free: dry-run only
         bulkAdvanced: false,   // transfer / mirror / cross-org
         syncRepository: false,
-        teams: false,
-        teamMembersMax: 0,
+        teams: true,            // Free: up to teamsMax teams, teamMembersMax members each
+        teamsMax: 3,
+        teamMembersMax: 5,
         auditLog: false,
     },
     pro: {
@@ -59,6 +60,7 @@ const TIER_FEATURES = {
         bulkAdvanced: true,
         syncRepository: true,
         teams: true,
+        teamsMax: Infinity,
         teamMembersMax: 15,
         auditLog: false,
     },
@@ -84,6 +86,7 @@ const TIER_FEATURES = {
         bulkAdvanced: true,
         syncRepository: true,
         teams: true,
+        teamsMax: Infinity,
         teamMembersMax: Infinity,
         auditLog: true,
         auditExport: true,

@@ -340,7 +340,7 @@ The hosted product ships three tiers. The **Free tier includes the full AI produ
 | Azure DevOps Cloud migration           | ✗               | ✓             | ✓          |
 | Mirror Sync                            | ✗               | ✓             | ✓          |
 | Dry-Run migration                      | ✓               | ✓             | ✓          |
-| Teams                                  | ✗               | 15 members    | Unlimited  |
+| Teams                                  | Up to 3 (5 each)| 15 members    | Unlimited  |
 | Audit Logs / SSO                       | ✗               | ✗             | ✓          |
 | API keys                               | 5               | 10            | 50         |
 
