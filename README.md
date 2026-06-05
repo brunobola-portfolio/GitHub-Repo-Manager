@@ -320,7 +320,7 @@ The hosted product ships three tiers. The **Free tier includes the full AI produ
 
 | Feature                                | Free            | Pro ($19/mo)  | Enterprise |
 |----------------------------------------|-----------------|---------------|------------|
-| Repositories managed                   | 50              | Unlimited     | Unlimited  |
+| Repositories managed                   | 200             | Unlimited     | Unlimited  |
 | AI Assistant (conversational)          | ✓               | ✓             | ✓          |
 | AI queries / month (total)             | 200             | 5,000         | Unlimited  |
 | Semantic Search                        | 50 / month      | Unlimited     | Unlimited  |
@@ -329,7 +329,7 @@ The hosted product ships three tiers. The **Free tier includes the full AI produ
 | README Generator (AI)                  | 5 / month       | Unlimited     | Unlimited  |
 | Commit Generator (AI)                  | 50 / month      | Unlimited     | Unlimited  |
 | PR Review Experience (read + browse)   | ✓               | ✓             | ✓          |
-| Manual PR review write-back            | ✗               | ✓             | ✓          |
+| Manual PR review write-back            | ✓               | ✓             | ✓          |
 | AI Deep Review — walkthrough + comments + publish | ✓    | ✓             | ✓          |
 | AI Deep Review — Prompt Studio (custom presets, path rules, severity floor) | ✗ | ✓ | ✓ |
 | AI Deep Review — org-shared prompts    | ✗               | ✓             | ✓          |
@@ -342,7 +342,7 @@ The hosted product ships three tiers. The **Free tier includes the full AI produ
 | Dry-Run migration                      | ✓               | ✓             | ✓          |
 | Teams                                  | ✗               | 15 members    | Unlimited  |
 | Audit Logs / SSO                       | ✗               | ✗             | ✓          |
-| API keys                               | 2               | 10            | 50         |
+| API keys                               | 5               | 10            | 50         |
 
 Self-hosting under AGPL v3 is free forever — see [LICENSE](LICENSE). The matrix above describes the hosted SaaS.
 
