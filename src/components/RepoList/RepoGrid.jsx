@@ -33,12 +33,12 @@ export function RepoGrid({
 					{Array.from({ length: skeletonCount }).map((_, i) => (
 						<div
 							key={`skeleton-${i}`}
-							className={`animate-pulse rounded-xl border border-slate-200/70 dark:border-white/[0.07] bg-white/60 dark:bg-white/[0.03] ${isGrid ? 'h-40 p-4' : 'h-20 p-3'}`}
+							className={`rounded-xl border border-slate-200/70 dark:border-white/[0.07] bg-white/60 dark:bg-white/[0.03] ${isGrid ? 'h-40 p-4' : 'h-20 p-3'}`}
 							aria-hidden="true"
 						>
-							<div className="h-3 w-1/3 bg-slate-200 dark:bg-white/10 rounded mb-3" />
-							<div className="h-2 w-3/4 bg-slate-200 dark:bg-white/10 rounded mb-2" />
-							<div className="h-2 w-1/2 bg-slate-200 dark:bg-white/10 rounded" />
+							<div className="h-3 w-1/3 ds-skeleton mb-3" />
+							<div className="h-2 w-3/4 ds-skeleton mb-2" />
+							<div className="h-2 w-1/2 ds-skeleton" />
 						</div>
 					))}
 				</>

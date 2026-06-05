@@ -44,9 +44,9 @@ export default function AzureHostsAllowlistSection() {
   if (loading) {
     return (
       <div className="space-y-3">
-        <div className="h-8 rounded bg-slate-100 dark:bg-slate-800 w-2/3 animate-pulse" />
-        <div className="h-20 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
-        <div className="h-20 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+        <div className="h-8 rounded w-2/3 ds-skeleton" />
+        <div className="h-20 rounded-2xl ds-skeleton" />
+        <div className="h-20 rounded-2xl ds-skeleton" />
       </div>
     )
   }

@@ -1,4 +1,5 @@
 import { GitPullRequest, FileCode } from 'lucide-react'
+import { EmptyState } from '../../ui/EmptyState'
 
 export function PRSelector({ pulls = [], loading, onSelect }) {
     if (loading) {
@@ -6,7 +7,7 @@ export function PRSelector({ pulls = [], loading, onSelect }) {
     }
 
     if (!pulls.length) {
-        return <div className="text-center text-sm text-slate-400 dark:text-slate-500 py-8">No open pull requests</div>
+        return <EmptyState icon={GitPullRequest} title="No open pull requests" description="Pick a repository with open PRs to start a review." />
     }
 
     return (

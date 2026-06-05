@@ -2,13 +2,14 @@ import { memo } from 'react'
 import { AlertCircle, Archive, Lock, Search, Plus, Download } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { Spinner } from '../ui/Spinner'
+import { EmptyState as UIEmptyState } from '../ui/EmptyState'
 
 /** Full-bleed overlay shown while the page is refreshing the repo list. */
 export function LoadingState() {
 	return (
 		<div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl transition-all duration-300">
 			<Spinner size="xl" tone="primary" label="Loading repositories" />
-			<p className="mt-4 text-slate-600 dark:text-slate-300 font-medium animate-pulse">
+			<p className="mt-4 text-slate-600 dark:text-slate-300 font-medium">
 				Loading repositories...
 			</p>
 		</div>
@@ -86,13 +87,12 @@ export function EmptyState({ hasRepos, onCreateRepo, onImport, onClearFilters })
 	}
 
 	return (
-		<div data-testid="empty-state" className="flex flex-col items-center justify-center py-20 text-slate-500 dark:text-slate-400">
-			<Search className="w-12 h-12 mb-4 opacity-20" />
-			<p>No repositories match your current filters.</p>
-			<Button variant="ghost" className="mt-2" onClick={onClearFilters}>
-				Clear Filters
-			</Button>
-		</div>
+		<UIEmptyState
+			icon={Search}
+			title="No matches"
+			description="No repositories match your current filters."
+			action={{ label: 'Clear Filters', onClick: onClearFilters }}
+		/>
 	)
 }
 
