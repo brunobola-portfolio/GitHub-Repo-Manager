@@ -25,14 +25,17 @@ vi.mock('../../lib/audit.js', () => ({
     auditLog: vi.fn(),
 }));
 
+// Mutable tier so individual tests can exercise the free-tier caps.
+const { tierHolder } = vi.hoisted(() => ({ tierHolder: { tier: 'pro' } }));
+
 vi.mock('../../middleware/auth.js', async () => {
     const actual = await vi.importActual('../../middleware/auth.js');
     return {
         ...actual,
         requireAuth: (req, _res, next) => {
-            // alice is the session user; tier must be >= pro so member adds are allowed
-            req.session = { userId: 1, userLogin: 'alice', accessToken: 'tok', user: { tier: 'pro' } };
-            req.userTier = 'pro';
+            // alice is the session user; tier defaults to pro (reset in beforeEach).
+            req.session = { userId: 1, userLogin: 'alice', accessToken: 'tok', user: { tier: tierHolder.tier } };
+            req.userTier = tierHolder.tier;
             next();
         },
     };
@@ -71,6 +74,28 @@ beforeEach(() => {
     `);
     seedUsers();
     vi.clearAllMocks();
+    tierHolder.tier = 'pro';
+});
+
+describe('Free-tier team cap (teamsMax = 3)', () => {
+    it('allows 3 owned teams then 403s the 4th', async () => {
+        tierHolder.tier = 'free';
+        for (let i = 1; i <= 3; i++) {
+            const ok = await request(makeApp()).post('/api/v1/teams').send({ name: `Team ${i}` });
+            expect(ok.status).toBe(201);
+        }
+        const blocked = await request(makeApp()).post('/api/v1/teams').send({ name: 'Team 4' });
+        expect(blocked.status).toBe(403);
+        expect(JSON.stringify(blocked.body)).toMatch(/limit/i);
+    });
+
+    it('does not cap Pro tier', async () => {
+        tierHolder.tier = 'pro';
+        for (let i = 1; i <= 4; i++) {
+            const ok = await request(makeApp()).post('/api/v1/teams').send({ name: `Pro ${i}` });
+            expect(ok.status).toBe(201);
+        }
+    });
 });
 
 describe('POST /api/v1/teams (integration)', () => {

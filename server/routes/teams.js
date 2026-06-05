@@ -32,6 +32,15 @@ router.post('/', requireAuth, validateBody(teamCreateSchema), (req, res) => {
     const { name, description } = req.validatedBody;
 
     try {
+        // Free tier is capped at teamsMax OWNED teams; Pro/Enterprise are uncapped.
+        const flags = getFeatures(req.userTier || 'free');
+        if (flags.teamsMax !== undefined && flags.teamsMax !== Infinity) {
+            const owned = db.prepare('SELECT COUNT(*) as n FROM teams WHERE owner_id = ?').get(req.session.userId).n;
+            if (owned >= flags.teamsMax) {
+                return errorResponse(res, 403, `Team limit reached (${flags.teamsMax}). Upgrade to Pro for unlimited teams.`, 'tier_limit_exceeded');
+            }
+        }
+
         const result = db.transaction(() => {
             const insertTeam = db.prepare('INSERT INTO teams (name, description, owner_id) VALUES (?, ?, ?)');
             const info = insertTeam.run(name, description, req.session.userId);

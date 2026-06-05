@@ -39,7 +39,7 @@ import adminAiRoutes from '../admin-ai.js';
 import notificationsRoutes from '../notifications.js';
 import outboxRoutes from '../outbox.js';
 import dashboardRoutes from '../dashboard.js';
-import { requireTier } from '../../middleware/require-tier.js';
+import { requireTier, attachTier } from '../../middleware/require-tier.js';
 import { createCache } from '../../lib/memory-cache.js';
 import { computeAttentionFeed } from '../../lib/attention-feed.js';
 
@@ -47,7 +47,9 @@ const router = Router();
 
 // Mount routes — tier-gated where appropriate
 router.use('/auth', authRoutes);
-router.use('/teams', requireTier('pro'), teamsRoutes);
+// Teams are free (capped: see feature-flags free.teamsMax / teamMembersMax,
+// enforced per-op in teams.js). attachTier sets req.userTier for those caps.
+router.use('/teams', attachTier, teamsRoutes);
 router.use('/system', systemRoutes);
 router.use('/', azureRoutes);
 router.use('/', importRoutes);

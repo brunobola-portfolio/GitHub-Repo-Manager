@@ -27,6 +27,8 @@ const TIERS_MONTHLY = [
       { label: 'PR Review with write-back comments', included: true },
       { label: 'AI queries / month (total)', included: '200' },
       { label: 'Community Health Dashboard', included: true },
+      { label: 'Work Board dashboards', included: true },
+      { label: 'Teams — up to 3 (5 members each)', included: true },
       { label: 'Dry-Run migration', included: true },
       { label: 'Export Metadata (JSON)', included: true },
       { label: 'Basic bulk on your own repos', included: true },
