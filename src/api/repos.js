@@ -7,6 +7,12 @@ export const reposApi = {
     })
   },
 
+  // Read-only sync preview (free on every tier). Returns the tracked mirror's
+  // source/target + last-sync metadata without cloning or pushing.
+  previewSync: async (owner, repo) => {
+    return apiCall(`/api/v1/repos/${owner}/${repo}/sync/preview`)
+  },
+
   getSecurityScan: async (owner, repo) => {
     return apiCall(`/api/v1/repos/${owner}/${repo}/security`)
   },

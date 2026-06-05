@@ -10,6 +10,33 @@ import { requireTier } from '../../middleware/require-tier.js'
 
 const router = Router()
 
+// GET .../sync/preview — read-only sync preview, available on ALL tiers (Free
+// included). Returns the tracked mirror's source/target + last-sync metadata
+// with NO clone or push. The destructive apply (POST .../sync below) mirrors
+// the source over the target and stays Pro. Same user_id scoping as the apply
+// path so the preview never discloses another user's mirror.
+router.get('/repos/:owner/:repo/sync/preview', requireAuth, (req, res) => {
+  const { owner, repo } = req.params
+  const job = db.prepare(
+    `SELECT source_url, source_name, target_full_name, status, completed_at, created_at
+     FROM migration_jobs
+     WHERE target_owner=? AND target_repo=? AND is_mirror=1 AND user_id=?
+     ORDER BY id DESC LIMIT 1`
+  ).get(owner, repo, req.session.userId)
+  if (!job) return res.status(404).json({ error: 'Not a tracked mirror' })
+  res.json({
+    tracked: true,
+    sourceUrl: job.source_url,
+    sourceName: job.source_name || null,
+    target: job.target_full_name || `${owner}/${repo}`,
+    status: job.status || null,
+    lastSyncedAt: job.completed_at || null,
+    trackedSince: job.created_at || null,
+    // Running the sync (mirror clone + force-push) requires Pro.
+    applyRequiresPro: true,
+  })
+})
+
 router.post('/repos/:owner/:repo/sync', requireAuth, requireTier('pro'), async (req, res) => {
   const { owner, repo } = req.params
   const token = req.session.accessToken  // requireAuth guarantees this exists

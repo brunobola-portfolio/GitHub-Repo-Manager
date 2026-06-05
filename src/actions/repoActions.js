@@ -231,6 +231,22 @@ export const repoActions = {
 		},
 	},
 
+	// Read-only sync preview (free on every tier) -- no clone/push.
+	sync_preview: {
+		id: 'sync_preview',
+		label: 'Preview Sync',
+		description: 'Shows the mirror source, target, and last sync — read-only, no changes. Available on every plan.',
+		icon: Eye,
+		intent: 'read-only',
+		surfaces: ['contextMenu', 'commandPalette'],
+		isApplicable: (repo) => !!repo?.isMirror,
+		run: async (repo, ctx) => {
+			const p = await ctx.api.previewSync(repo.owner.login, repo.name)
+			const last = p.lastSyncedAt ? new Date(p.lastSyncedAt).toLocaleString() : 'never synced'
+			ctx.toast.success(`Mirror: ${p.sourceName || p.sourceUrl} → ${p.target} · last synced ${last}${p.applyRequiresPro ? ' · applying requires Pro' : ''}`)
+		},
+	},
+
 	// ───── Mutation: AI suggest name & description ─────
 	/** @unconfirmed-by-design opens a dedicated modal where the user reviews + confirms each suggestion */
 	ai_suggest_name_desc: {
