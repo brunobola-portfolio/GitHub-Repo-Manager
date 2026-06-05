@@ -67,6 +67,8 @@ const PT_WORDS = new RegExp(
     'Falhou', 'falhou', 'falharam',
     'Repetir', 'repetir', 'Aplicar', 'aplicar', 'Aplicad[oa]s?',
     'Pronto', 'Incluir', 'incluir', 'Anterior',
+    // Tokens that evaded the accent check in App.jsx's injected AI message.
+    'Acabei', 'Queres', 'sugira', 'migrad[oa]s?', 'Polir', 'polir', 'manter', 'Manter',
   ].join('|') + ')\\b',
   'i',
 )
@@ -75,6 +77,12 @@ const PT_WORDS = new RegExp(
 // skipped. `src/utils/greeting.js` is locale-aware i18n (returns PT for pt-*
 // locales, EN otherwise) and is documented as deliberate in the README.
 const EXCLUDE = new Set(['src/utils/greeting.js'])
+
+// Root-level entry files that live outside the scanned dirs but still carry
+// user-facing copy — e.g. App.jsx injects AI-Assistant chat messages at
+// runtime (these have no accents + no common tokens, so they evade unless
+// scanned explicitly).
+const EXTRA_FILES = ['src/App.jsx', 'src/main.jsx']
 
 function listSourceFiles(dir) {
   const out = []
@@ -98,17 +106,19 @@ function stripComments(src) {
     .replace(/^\/\/[^\n]*/gm, '')
 }
 
-describe('No Portuguese in Wizard/Settings UI copy', () => {
+describe('No Portuguese in UI copy (app-wide)', () => {
   const violations = []
-  for (const root of ROOTS) {
-    for (const file of listSourceFiles(root)) {
-      const stripped = stripComments(readFileSync(file, 'utf8'))
-      stripped.split('\n').forEach((line, i) => {
-        if (PT_ACCENTS.test(line) || PT_WORDS.test(line)) {
-          violations.push(`${file.replace(/\\/g, '/')}:${i + 1}: ${line.trim()}`)
-        }
-      })
-    }
+  const files = [
+    ...ROOTS.flatMap(listSourceFiles),
+    ...EXTRA_FILES.filter((f) => !EXCLUDE.has(f)),
+  ]
+  for (const file of files) {
+    const stripped = stripComments(readFileSync(file, 'utf8'))
+    stripped.split('\n').forEach((line, i) => {
+      if (PT_ACCENTS.test(line) || PT_WORDS.test(line)) {
+        violations.push(`${file.replace(/\\/g, '/')}:${i + 1}: ${line.trim()}`)
+      }
+    })
   }
 
   it('contains no Portuguese user-facing strings', () => {

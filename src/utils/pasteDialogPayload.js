@@ -3,7 +3,7 @@
  * paste-URL dialog. Pure function — no side effects.
  *
  * The dialog's `status` must be `'ready'` and `answers` must contain
- * `targetOrg`. `targetName` is optional: empty or "manter" (case-insensitive)
+ * `targetOrg`. `targetName` is optional: empty or "keep" (case-insensitive)
  * means "use the detected repo name from the parsed URL".
  *
  * @param {object} dialog  { sourceType, parsed, answers }
@@ -16,7 +16,7 @@
 export function buildWizardPayload(dialog) {
   const detectedName = dialog.parsed.repo
   const answerName = (dialog.answers.targetName || '').trim()
-  const finalName = !answerName || answerName.toLowerCase() === 'manter'
+  const finalName = !answerName || answerName.toLowerCase() === 'keep'
     ? detectedName
     : answerName
 

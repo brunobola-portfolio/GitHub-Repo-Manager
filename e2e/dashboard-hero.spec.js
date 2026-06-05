@@ -33,7 +33,7 @@ test.describe('Dashboard hero', () => {
     test('what-needs-you grid resolves to a non-loading state', async ({ page }) => {
         // The grid has three valid terminal states:
         //   1. cards    — at least one category has data
-        //   2. empty    — total === 0, "Estás em dia" celebratory tile
+        //   2. empty    — total === 0, "You're all caught up." celebratory tile
         //   3. hidden   — all three endpoints returned 401/403/404 and the
         //                 component intentionally renders null (e2e mock mode
         //                 hits this because the backend's requireAuth has no
@@ -41,7 +41,7 @@ test.describe('Dashboard hero', () => {
         // The test passes if we reach any of those — the only failure case
         // is getting stuck on the loading skeleton.
         const reviewsCard = page.locator('[aria-label*="reviews waiting"]').first()
-        const empty = page.getByText(/estás em dia/i)
+        const empty = page.getByText(/you're all caught up/i)
         const skeleton = page.locator('[data-testid="skeleton-card"]').first()
 
         await expect
