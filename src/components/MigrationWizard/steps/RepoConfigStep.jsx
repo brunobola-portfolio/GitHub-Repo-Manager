@@ -2,10 +2,9 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Lock, Unlock, CheckCircle2, XCircle,
-  AlertTriangle, RefreshCw, SkipForward, Edit3,
-  GitBranch, HardDrive, ChevronDown, ChevronUp,
-  Package, MoreHorizontal, Building2, ArrowRight,
-  Globe, Sparkles, Server, Plus, Recycle,
+  AlertTriangle, GitBranch, HardDrive, ChevronDown,
+  Package, MoreHorizontal, ArrowRight, Sparkles,
+  Plus, Recycle,
 } from 'lucide-react'
 import { Spinner } from '../../ui/Spinner'
 import { EmptyState } from '../../ui/EmptyState'
@@ -21,7 +20,7 @@ import TargetModePicker from './RepoConfigStep/TargetModePicker'
 import { DescriptionField } from './RepoConfigStep/DescriptionField'
 import { RepoMetadataBadges } from './RepoConfigStep/RepoMetadataBadges'
 import { ConflictResolutionPanel } from './RepoConfigStep/ConflictResolutionPanel'
-import { formatSize } from './RepoConfigStep/formatSize'
+import { DashboardHeader } from './RepoConfigStep/DashboardHeader'
 
 /**
  * RepoConfigStep - Configure target settings for selected repos.
@@ -255,144 +254,20 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
       </AnimatePresence>
 
       {/* ── Dashboard Header ────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="bg-violet-500/10 border border-violet-500/20 rounded-2xl p-5"
-      >
-        {/* Row 1: Destination + Bulk Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-violet-500/10 ring-1 ring-violet-500/30 flex items-center justify-center shrink-0">
-              {isAzureDevops
-                ? <Server className="w-5 h-5 text-violet-400" />
-                : <Building2 className="w-5 h-5 text-violet-400" />}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="ds-text-micro font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-                  {isAzureDevops ? 'Target project' : 'Importing to'}
-                </span>
-                {isAzureDevops && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-violet-500/15 border border-violet-500/30 text-[9px] font-bold uppercase tracking-wider text-violet-300">
-                    in-place
-                  </span>
-                )}
-              </div>
-              {isAzureDevops ? (
-                <div className="mt-1 flex items-center gap-2 flex-wrap min-w-0">
-                  <div className="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 ring-1 ring-slate-200 dark:ring-slate-700 text-sm font-mono font-semibold text-slate-700 dark:text-slate-200 shadow-sm">
-                    {source.org}
-                  </div>
-                  <span className="text-slate-400 dark:text-slate-500 font-mono select-none">/</span>
-                  {azureProjects.length > 0 ? (
-                    <Select
-                      options={azureProjects.map((p) => ({ value: p.name, label: p.name }))}
-                      value={targetProject}
-                      onChange={handleTargetProjectChange}
-                      placeholder={projectsLoading ? 'Loading projects…' : 'Choose a project…'}
-                      size="md"
-                      label="Destination project"
-                      className="min-w-[220px]"
-                    />
-                  ) : (
-                    <div className="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 ring-1 ring-slate-200 dark:ring-slate-700 text-sm font-mono font-semibold text-slate-700 dark:text-slate-200 shadow-sm">
-                      {targetProject}
-                    </div>
-                  )}
-                  {azureProjects.length > 0 && (
-                    <span className="hidden md:inline ds-text-meta text-slate-400 dark:text-slate-500 font-medium tabular-nums">
-                      {azureProjects.length} {azureProjects.length === 1 ? 'project' : 'projects'}
-                    </span>
-                  )}
-                </div>
-              ) : orgOptions.length > 0 ? (
-                <div className="mt-1 flex items-center gap-2 flex-wrap min-w-0">
-                  <Select
-                    options={orgOptions}
-                    value={source.targetOrg || orgs[0]?.login || ''}
-                    onChange={handleDestinationChange}
-                    placeholder="Select organization..."
-                    size="md"
-                    label="Destination organization"
-                    className="min-w-[220px]"
-                  />
-                  <span className="hidden md:inline ds-text-meta text-slate-400 dark:text-slate-500 font-medium tabular-nums">
-                    {orgOptions.length} {orgOptions.length === 1 ? 'account' : 'accounts'}
-                  </span>
-                </div>
-              ) : (
-                <div className="mt-1 inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 ring-1 ring-slate-200 dark:ring-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-sm">
-                  {source.targetOrg || source.org || 'Personal Account'}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {!isAzureDevops && (
-            <div className="flex items-center gap-2 sm:shrink-0 flex-wrap">
-              <button
-                type="button"
-                onClick={makeAllPrivate}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
-                  bg-violet-500/15 text-violet-400 dark:text-violet-300 border border-violet-500/20
-                  hover:bg-violet-500/25 transition-colors"
-              >
-                <Lock className="w-3.5 h-3.5" />
-                All Private
-              </button>
-              <button
-                type="button"
-                onClick={makeAllPublic}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
-                  bg-cyan-500/15 text-cyan-400 dark:text-cyan-300 border border-cyan-500/20
-                  hover:bg-cyan-500/25 transition-colors"
-              >
-                <Globe className="w-3.5 h-3.5" />
-                All Public
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Row 2: Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
-            <div className="text-xl font-bold text-violet-400">{stats.count}</div>
-            <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">Repositories</div>
-          </div>
-          <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
-            <div className="text-xl font-bold text-cyan-400">{formatSize(stats.totalSize)}</div>
-            <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">Total Size</div>
-          </div>
-          {isAzureDevops ? (
-            <>
-              <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
-                <div className="text-xl font-bold text-amber-400">{stats.tfvcCount}</div>
-                <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">TFVC paths</div>
-              </div>
-              <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
-                <div className="text-xl font-bold text-slate-500 dark:text-slate-400">
-                  {stats.existingInProject === null ? '—' : stats.existingInProject}
-                </div>
-                <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">Existing in project</div>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
-                <div className="text-xl font-bold text-emerald-400">{stats.privateCount}</div>
-                <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">Private</div>
-              </div>
-              <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
-                <div className="text-xl font-bold text-orange-400">{stats.publicCount}</div>
-                <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">Public</div>
-              </div>
-            </>
-          )}
-        </div>
-      </motion.div>
+      <DashboardHeader
+        isAzureDevops={isAzureDevops}
+        source={source}
+        azureProjects={azureProjects}
+        targetProject={targetProject}
+        projectsLoading={projectsLoading}
+        orgOptions={orgOptions}
+        orgs={orgs}
+        stats={stats}
+        onSelectProject={handleTargetProjectChange}
+        onSelectDestination={handleDestinationChange}
+        onAllPrivate={makeAllPrivate}
+        onAllPublic={makeAllPublic}
+      />
 
       {/* ── LFS Warning Banner ──────────────────────────────────── */}
       {hasLfsEnabled && (

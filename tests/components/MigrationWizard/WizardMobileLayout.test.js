@@ -10,14 +10,17 @@ import { readFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 
 describe('MigrationWizard — mobile responsive layout (slice 5 row 14)', () => {
+    // The dashboard header (stats grid + destination/bulk-actions row) was
+    // extracted into RepoConfigStep/DashboardHeader.jsx; the responsive
+    // classes now live there.
     it('RepoConfigStep stats grid drops from 4 to 2 columns at < sm', () => {
-        const source = readFileSync('src/components/MigrationWizard/steps/RepoConfigStep.jsx', 'utf8')
+        const source = readFileSync('src/components/MigrationWizard/steps/RepoConfigStep/DashboardHeader.jsx', 'utf8')
         // The stats row was grid-cols-4; needs grid-cols-2 sm:grid-cols-4.
         expect(source).toMatch(/grid-cols-2\s+sm:grid-cols-4/)
     })
 
     it('RepoConfigStep header stacks the destination + bulk-actions row on mobile', () => {
-        const source = readFileSync('src/components/MigrationWizard/steps/RepoConfigStep.jsx', 'utf8')
+        const source = readFileSync('src/components/MigrationWizard/steps/RepoConfigStep/DashboardHeader.jsx', 'utf8')
         // Header row was a single flex with justify-between; needs flex-col → sm:flex-row.
         expect(source).toMatch(/flex-col\s+sm:flex-row/)
     })
