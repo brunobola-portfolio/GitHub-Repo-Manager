@@ -66,7 +66,7 @@ export default function AzureCredentialsSection() {
       {loading ? (
         <div className="space-y-2">
           {[0, 1].map((i) => (
-            <div key={i} className="h-20 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+            <div key={i} className="h-20 rounded-2xl ds-skeleton" />
           ))}
         </div>
       ) : items.length === 0 ? (
