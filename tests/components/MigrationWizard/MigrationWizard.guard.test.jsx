@@ -53,11 +53,14 @@ vi.mock('@/hooks/useMobileBreakpoint', () => ({ useMobileBreakpoint: () => h.isM
 // is left intact (the rendered tree only consumes getCsrfToken here).
 vi.mock('@/utils/api', async (orig) => ({ ...(await orig()), getCsrfToken: vi.fn().mockResolvedValue('csrf-test') }))
 
-// Render sidebar + children + footer flat so they're queryable.
+// Render sidebar + children + footer flat so they're queryable. The close
+// button forwards onClose so handleClose is reachable even on steps that
+// render no footer (progress/summary).
 vi.mock('@/components/ui/WizardPanel', () => ({
-  WizardPanel: ({ children, footer, sidebar, title }) => (
+  WizardPanel: ({ children, footer, sidebar, title, onClose }) => (
     <div>
       <span>{title}</span>
+      <button type="button" data-testid="wp-close" onClick={onClose}>close</button>
       <div data-testid="wp-sidebar">{sidebar}</div>
       {children}
       <div data-testid="wp-footer">{footer}</div>
@@ -167,6 +170,31 @@ describe('MigrationWizard guard — extraction safety net', () => {
     h.wizard = makeWizard({ currentStep: 'repoConfig', canGoBack: false, isDirty: false })
     render(<MigrationWizard onClose={onClose} />)
     fireEvent.click(screen.getByRole('button', { name: /Cancel/i }))
+    expect(onClose).toHaveBeenCalled()
+    expect(screen.queryByText('Cancel Migration?')).toBeNull()
+  })
+
+  it('shows the unsaved-progress message on a normal dirty step', () => {
+    h.wizard = makeWizard({ currentStep: 'repoConfig', canGoBack: false, isDirty: true })
+    render(<MigrationWizard onClose={vi.fn()} />)
+    fireEvent.click(screen.getByRole('button', { name: /Cancel/i }))
+    expect(screen.getByText(/unsaved progress/i)).toBeInTheDocument()
+  })
+
+  it('shows the in-progress warning message when closing during the progress step', () => {
+    // The progress step renders no footer, so reach handleClose via the panel
+    // close button instead of a Cancel button.
+    h.wizard = makeWizard({ currentStep: 'progress', isDirty: true })
+    render(<MigrationWizard onClose={vi.fn()} />)
+    fireEvent.click(screen.getByTestId('wp-close'))
+    expect(screen.getByText(/migration is in progress/i)).toBeInTheDocument()
+  })
+
+  it('closes without a modal when on the summary step (migration finished)', () => {
+    const onClose = vi.fn()
+    h.wizard = makeWizard({ currentStep: 'summary', isDirty: true })
+    render(<MigrationWizard onClose={onClose} />)
+    fireEvent.click(screen.getByTestId('wp-close'))
     expect(onClose).toHaveBeenCalled()
     expect(screen.queryByText('Cancel Migration?')).toBeNull()
   })

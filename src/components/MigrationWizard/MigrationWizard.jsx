@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { WizardPanel } from '../ui/WizardPanel'
 import { Button } from '../ui/Button'
 import { useMobileBreakpoint } from '../../hooks/useMobileBreakpoint'
-import { ConfirmModal } from '../ui/ConfirmModal'
+import ConfirmCloseModal from './ConfirmCloseModal'
 import { useMigrationWizard } from '../../hooks/useMigrationWizard'
 import { useAzureOAuth } from '../../hooks/useAzureOAuth'
 import { useAzureOrganizations } from '../../hooks/useAzureOrganizations'
@@ -186,9 +186,6 @@ export default function MigrationWizard({
 
   const isProgressOrSummary = currentStep === 'progress' || currentStep === 'summary'
   const isFirstStep = currentStep === 'sourceType'
-  const confirmMessage = currentStep === 'progress'
-    ? 'A migration is in progress. Closing will not stop it, but you will lose visibility of the progress. Are you sure?'
-    : 'You have unsaved progress. All entered data will be lost.'
 
   const showSidebar = !!source.sourceType
   const effectiveMaximized = isMobile || isMaximized
@@ -327,15 +324,11 @@ export default function MigrationWizard({
       </WizardPanel>
 
       {/* Dirty state confirmation modal */}
-      <ConfirmModal
+      <ConfirmCloseModal
         isOpen={showConfirm}
-        onClose={() => setShowConfirm(false)}
+        currentStep={currentStep}
+        onCancel={() => setShowConfirm(false)}
         onConfirm={handleConfirmClose}
-        title="Cancel Migration?"
-        message={confirmMessage}
-        confirmText="Discard & Close"
-        cancelText="Continue Editing"
-        variant="warning"
       />
     </>
   )
