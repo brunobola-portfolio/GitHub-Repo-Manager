@@ -4,14 +4,32 @@
  * Extracted from the per-hook copies that had drifted into byte-for-byte
  * duplicates (`useAIDeepReview`, `usePRCommand`). One source of truth keeps the
  * credential handling, error shape and timeout semantics identical everywhere.
+ *
+ * These also share the SAME quota gate as the dashboard AI surfaces
+ * (`api/aiFetch`): once any AI call returns 429+QUOTA_EXCEEDED, subsequent
+ * calls pre-empt without a network round-trip. Previously the PR-review hooks
+ * bypassed the gate and kept firing 429s after the user was exhausted.
  */
+import {
+  isAIQuotaActive,
+  recordAIQuotaExceeded,
+  getAIQuotaState,
+  clearAIQuotaState,
+  AIQuotaExceededError,
+} from '../api/aiFetch'
 
 /**
  * Credentialed JSON request. Returns the parsed body (or null on 204). On a
  * non-2xx response, throws an Error carrying `.status` and `.code` (lifted from
  * the response body) so callers can map it through formatUserError / AIErrorState.
+ * A 429+QUOTA_EXCEEDED throws the typed {@link AIQuotaExceededError} and arms the
+ * shared gate.
  */
 export async function fetchJSON(url, options = {}) {
+  // Pre-empt: skip the network entirely when the shared gate is already armed.
+  if (isAIQuotaActive()) {
+    throw new AIQuotaExceededError(getAIQuotaState() || {})
+  }
   const res = await fetch(url, {
     credentials: 'include',
     ...options,
@@ -24,11 +42,18 @@ export async function fetchJSON(url, options = {}) {
   let body = null
   try { body = await res.json() } catch { /* empty */ }
   if (!res.ok) {
+    if (res.status === 429 && (body?.code === 'QUOTA_EXCEEDED' || body?.error === 'usage_limit_exceeded')) {
+      recordAIQuotaExceeded(body)
+      throw new AIQuotaExceededError(body)
+    }
     const err = new Error(body?.message || body?.error || `HTTP ${res.status}`)
     err.status = res.status
     err.code = body?.code
     throw err
   }
+  // A healthy response means the gate (if any) was stale — drop it so sibling
+  // AI calls stop pre-empting.
+  clearAIQuotaState()
   return body
 }
 
