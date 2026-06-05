@@ -14,9 +14,10 @@ vi.mock('../lib/audit.js', () => ({
 }))
 
 const mockDbGet = vi.fn()
+const mockPrepare = vi.fn(() => ({ get: mockDbGet }))
 vi.mock('../db.js', () => ({
   default: {
-    prepare: vi.fn(() => ({ get: mockDbGet }))
+    prepare: (...args) => mockPrepare(...args)
   }
 }))
 
@@ -39,7 +40,8 @@ describe('POST /api/v1/repos/:owner/:repo/sync', () => {
     app = express()
     app.use(express.json())
     app.use((req, _res, next) => {
-      req.session = { accessToken: 'tok', user: { id: 1, login: 'alice' } }
+      const uid = Number(req.headers['x-test-user'] || 1)
+      req.session = { accessToken: 'tok', userId: uid, user: { id: uid, login: 'alice' } }
       req.log = { error: vi.fn() }
       next()
     })
@@ -60,5 +62,34 @@ describe('POST /api/v1/repos/:owner/:repo/sync', () => {
     const res = await request(app).post('/api/v1/repos/alice/hello/sync')
     expect(res.status).toBe(404)
     expect(res.body.error).toMatch(/not a tracked mirror/i)
+  })
+
+  it('scopes the mirror lookup to the requesting user (user_id in query + bound param)', async () => {
+    mockDbGet.mockReturnValue({ source_url: 'https://github.com/other/repo.git' })
+    await request(app).post('/api/v1/repos/alice/hello/sync')
+    // The query must filter migration_jobs by user_id, not just target_owner/repo.
+    const sql = mockPrepare.mock.calls[0][0]
+    expect(sql).toMatch(/user_id\s*=\s*\?/i)
+    // ...and the requesting user's id must be bound to it.
+    expect(mockDbGet).toHaveBeenCalledWith('alice', 'hello', 1)
+  })
+
+  it('isolates mirrors by user: owner syncs (200), a different user gets 404', async () => {
+    // The DB row belongs to user 1; only a lookup bound with user_id=1 finds it.
+    mockDbGet.mockImplementation((_owner, _repo, userId) =>
+      userId === 1 ? { source_url: 'https://github.com/other/repo.git' } : undefined)
+
+    // Owner (user 1) — must succeed once the query binds user_id.
+    const ownerRes = await request(app)
+      .post('/api/v1/repos/alice/hello/sync')
+      .set('x-test-user', '1')
+    expect(ownerRes.status).toBe(200)
+
+    // Different user (user 2) — must NOT see user 1's mirror.
+    const otherRes = await request(app)
+      .post('/api/v1/repos/alice/hello/sync')
+      .set('x-test-user', '2')
+    expect(otherRes.status).toBe(404)
+    expect(otherRes.body.error).toMatch(/not a tracked mirror/i)
   })
 })
