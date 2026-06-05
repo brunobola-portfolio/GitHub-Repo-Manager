@@ -134,6 +134,14 @@ function recordQuotaExceeded(payload) {
     notifyQuota()
 }
 
+// Shared with the lower-level utils/aiFetch JSON client so the PR-review hooks
+// (deep review, PR chat, PR commands) hit the SAME quota gate instead of each
+// firing their own 429s after the user is already exhausted.
+export const isAIQuotaActive = isQuotaActive
+export function recordAIQuotaExceeded(payload) {
+    recordQuotaExceeded(payload)
+}
+
 /**
  * aiFetch — guarded fetch for AI endpoints.
  *

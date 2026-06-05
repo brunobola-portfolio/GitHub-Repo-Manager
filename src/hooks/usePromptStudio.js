@@ -1,27 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { fetchJSON } from '../utils/aiFetch';
 // NOTE: Mock data is loaded via dynamic `await import()` inside the inlined
 // env-checked branches below — do NOT add a top-level static import. Static
 // imports of `__mocks__/*` pin the mock module in production bundles even
 // when the runtime branch is dead-code-eliminated. See
 // feedback_vite_inline_dce_guards in project memory.
-
-async function fetchJSON(url, options = {}) {
-    const res = await fetch(url, {
-        credentials: 'include',
-        ...options,
-        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-    });
-    if (res.status === 204) return null;
-    let body = null;
-    try { body = await res.json(); } catch { /* empty */ }
-    if (!res.ok) {
-        const err = new Error(body?.error || `HTTP ${res.status}`);
-        err.status = res.status;
-        err.code = body?.code;
-        throw err;
-    }
-    return body;
-}
 
 /**
  * Drives the Prompt Studio UI surface.
