@@ -81,7 +81,7 @@ export function AINotHealthyBanner({
                         type="button"
                         onClick={handleDismiss}
                         aria-label="Dismiss AI key health notice"
-                        className="shrink-0 p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors"
+                        className="shrink-0 p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors ds-focus-ring"
                     >
                         <X className="w-4 h-4" aria-hidden="true" />
                     </button>

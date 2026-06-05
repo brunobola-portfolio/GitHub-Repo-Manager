@@ -336,7 +336,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                 <div className="relative z-10 flex items-center gap-0.5">
                                     <button
                                         onClick={(e) => { e.stopPropagation(); openModal('showSettings') }}
-                                        className="p-1.5 hover:bg-white/15 rounded-lg transition-colors"
+                                        className="p-1.5 hover:bg-white/15 rounded-lg transition-colors ds-focus-ring"
                                         title="AI Settings"
                                         aria-label="AI Settings"
                                     >
@@ -344,7 +344,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                     </button>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); setIsMinimized(!isMinimized) }}
-                                        className="p-1.5 hover:bg-white/15 rounded-lg transition-colors"
+                                        className="p-1.5 hover:bg-white/15 rounded-lg transition-colors ds-focus-ring"
                                         title={isMinimized ? 'Expand' : 'Minimize'}
                                         aria-label={isMinimized ? 'Expand assistant' : 'Minimize assistant'}
                                     >
@@ -352,7 +352,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                     </button>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); setIsOpen(false) }}
-                                        className="p-1.5 hover:bg-white/15 rounded-lg transition-colors"
+                                        className="p-1.5 hover:bg-white/15 rounded-lg transition-colors ds-focus-ring"
                                         title="Close assistant"
                                         aria-label="Close assistant"
                                     >
