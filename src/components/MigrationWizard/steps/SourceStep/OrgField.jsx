@@ -9,7 +9,7 @@ import { Field, Input } from '../../../ui/form'
 
 /**
  * Org selector with two modes:
- *  - OAuth dropdown (sections: Recentes + Todas, with project-count badges)
+ *  - OAuth dropdown (sections: Recent + All, with project-count badges)
  *  - Manual input (PAT mode or fallback from dropdown)
  *
  * Also renders: inline validation status pill, OAuth upgrade hint,
@@ -60,10 +60,10 @@ export default function OrgField({
     const sections = []
     const recentOrgs = allOrgOptions.filter(o => recents.includes(o.value))
     if (recentOrgs.length > 0) {
-      sections.push({ title: 'Recentes', options: recentOrgs })
+      sections.push({ title: 'Recent', options: recentOrgs })
       const remainingOrgs = allOrgOptions.filter(o => !recents.includes(o.value))
       if (remainingOrgs.length > 0) {
-        sections.push({ title: 'Todas', options: remainingOrgs })
+        sections.push({ title: 'All', options: remainingOrgs })
       }
     } else {
       sections.push({ title: undefined, options: allOrgOptions })
@@ -74,20 +74,20 @@ export default function OrgField({
 
   const orgStatusBadge = useMemo(() => {
     if (validating) {
-      return { text: 'A validar...', color: 'text-slate-400 dark:text-slate-500', dot: 'bg-slate-400', spin: true }
+      return { text: 'Validating...', color: 'text-slate-400 dark:text-slate-500', dot: 'bg-slate-400', spin: true }
     }
     if (source.validated) {
       const count = projects.length
-      return { text: `Conectada · ${count} proj`, color: 'text-emerald-500 dark:text-emerald-400', dot: 'bg-emerald-500' }
+      return { text: `Connected · ${count} proj`, color: 'text-emerald-500 dark:text-emerald-400', dot: 'bg-emerald-500' }
     }
     if (validationError) {
       if (validationError.includes('401') || validationError.includes('403') || validationError.includes('insufficient')) {
-        return { text: 'Sem acesso a esta org', color: 'text-amber-500 dark:text-amber-400', dot: 'bg-amber-500' }
+        return { text: 'No access to this org', color: 'text-amber-500 dark:text-amber-400', dot: 'bg-amber-500' }
       }
       if (validationError.includes('not found') || validationError.includes('404')) {
-        return { text: 'Org não encontrada', color: 'text-red-400 dark:text-red-400', dot: 'bg-red-400' }
+        return { text: 'Org not found', color: 'text-red-400 dark:text-red-400', dot: 'bg-red-400' }
       }
-      return { text: 'Erro de ligação', color: 'text-red-400 dark:text-red-400', dot: 'bg-red-400' }
+      return { text: 'Connection error', color: 'text-red-400 dark:text-red-400', dot: 'bg-red-400' }
     }
     return null
   }, [validating, source.validated, validationError, projects.length])
@@ -125,19 +125,19 @@ export default function OrgField({
                 orgsError ? (
                   <div className="px-3 py-4 text-center">
                     <p className="text-sm text-red-500 dark:text-red-400 mb-2">
-                      {orgsError === 'TOKEN_EXPIRED' ? 'Sessão expirada — autentique novamente' : orgsError}
+                      {orgsError === 'TOKEN_EXPIRED' ? 'Session expired — authenticate again' : orgsError}
                     </p>
                     <button
                       type="button"
                       onClick={fetchOrganizations}
                       className="text-xs text-indigo-500 hover:text-indigo-400 underline"
                     >
-                      Tentar novamente
+                      Try again
                     </button>
                   </div>
                 ) : (
                   <div className="px-3 py-4 text-center text-sm text-slate-500 dark:text-slate-400">
-                    Nenhuma organização encontrada para esta conta
+                    No organizations found for this account
                   </div>
                 )
               }
@@ -149,10 +149,10 @@ export default function OrgField({
                   aria-label="Enter organization manually"
                 >
                   <Keyboard className="w-4 h-4" />
-                  Ou digitar manualmente...
+                  Or type manually...
                 </button>
               }
-              footer={organizations?.length > 0 ? `${organizations.length} orgs disponíveis` : undefined}
+              footer={organizations?.length > 0 ? `${organizations.length} orgs available` : undefined}
             />
           </motion.div>
         ) : (
@@ -210,7 +210,7 @@ export default function OrgField({
                 onClick={() => setManualOrgMode(false)}
                 className="mt-1 text-xs text-indigo-500 hover:text-indigo-400 underline"
               >
-                ← Voltar à lista de organizações
+                ← Back to organization list
               </button>
             )}
           </motion.div>
@@ -231,14 +231,14 @@ export default function OrgField({
             <div className="mt-2 flex items-start gap-2 px-3 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
               <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
               <p className="text-xs text-indigo-300 dark:text-indigo-300 flex-1">
-                OAuth permite listar todas as suas organizações automaticamente
+                OAuth lets you list all your organizations automatically
               </p>
               <button
                 type="button"
                 onClick={() => handleModeSwitch('oauth')}
                 className="text-xs font-medium text-indigo-400 hover:text-indigo-300 shrink-0"
               >
-                Trocar →
+                Switch →
               </button>
               <button
                 type="button"
@@ -268,7 +268,7 @@ export default function OrgField({
                 <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm text-amber-700 dark:text-amber-300">
-                    Este PAT não tem permissões para "{source.org}"
+                    This PAT doesn't have permissions for "{source.org}"
                   </p>
                   <div className="flex items-center gap-2 mt-2">
                     <a
@@ -278,7 +278,7 @@ export default function OrgField({
                       className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400 hover:text-amber-500 underline"
                     >
                       <KeyRound className="w-3 h-3" />
-                      Criar PAT para esta org
+                      Create a PAT for this org
                     </a>
                     {oauthConfigured && (
                       <button
@@ -287,7 +287,7 @@ export default function OrgField({
                         className="inline-flex items-center gap-1 text-xs font-medium text-indigo-500 hover:text-indigo-400 underline"
                       >
                         <Globe className="w-3 h-3" />
-                        Trocar p/ OAuth
+                        Switch to OAuth
                       </button>
                     )}
                   </div>

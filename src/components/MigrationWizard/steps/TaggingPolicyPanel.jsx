@@ -50,9 +50,9 @@ export function TaggingPolicyPanel({ policy = DEFAULT_TAGGING_POLICY, onChange, 
           <Tags className="w-4 h-4 text-violet-500 dark:text-violet-300" aria-hidden />
         </div>
         <div className="flex-1">
-          <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Marcação da migração</h3>
+          <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Migration tagging</h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Deixa rasto nos três sítios onde importa: na origem, no destino, e no histórico git.
+            Leaves a trail in the three places that matter: the source, the target, and the git history.
           </p>
         </div>
       </header>

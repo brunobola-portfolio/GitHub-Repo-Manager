@@ -5,10 +5,10 @@ import { isAIUnavailable, subscribeAIUnavailable } from '../../../utils/aiAvaila
 // user-facing line — specific enough to help debugging (Settings → AI) without
 // dumping HTTP status codes on the user.
 function humanizeAIReason(reason = '') {
-  if (reason.startsWith('404:')) return 'AI indisponível: modelo configurado não foi encontrado. Verifica GEMINI_MODEL nas Definições.'
-  if (reason.startsWith('422:')) return 'AI indisponível: chave inválida ou expirada. Atualiza nas Definições → AI.'
-  if (reason.startsWith('400:')) return 'AI indisponível: nenhuma chave AI configurada. Configura uma nas Definições.'
-  return 'AI indisponível para esta sessão — as sugestões usam o template.'
+  if (reason.startsWith('404:')) return 'AI unavailable: the configured model was not found. Check GEMINI_MODEL in Settings.'
+  if (reason.startsWith('422:')) return 'AI unavailable: invalid or expired key. Update it in Settings → AI.'
+  if (reason.startsWith('400:')) return 'AI unavailable: no AI key configured. Set one up in Settings.'
+  return 'AI unavailable for this session — suggestions use the template.'
 }
 
 /**

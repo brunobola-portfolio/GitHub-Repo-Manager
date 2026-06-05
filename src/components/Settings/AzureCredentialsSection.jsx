@@ -98,12 +98,12 @@ function Header({ onAdd }) {
       <div>
         <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
           <KeyRound className="w-4 h-4 text-indigo-500" />
-          Azure DevOps · Credenciais guardadas
+          Azure DevOps · Saved credentials
         </h3>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xl">
-          Guarda Personal Access Tokens uma vez e reutiliza-os no wizard de migração.
-          Os tokens ficam <strong>encriptados</strong> na base de dados —
-          {' '}<span className="text-emerald-600 dark:text-emerald-400">nunca</span> são devolvidos ao browser depois de guardados.
+          Save Personal Access Tokens once and reuse them in the migration wizard.
+          Tokens are stored <strong>encrypted</strong> in the database —
+          {' '}<span className="text-emerald-600 dark:text-emerald-400">never</span> returned to the browser after being saved.
         </p>
       </div>
       <button
@@ -112,7 +112,7 @@ function Header({ onAdd }) {
         className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] dark:hover:bg-indigo-400 transition-colors shadow-sm"
       >
         <Plus className="w-4 h-4" />
-        Adicionar PAT
+        Add PAT
       </button>
     </div>
   )
@@ -122,10 +122,10 @@ function EmptyState({ onAdd }) {
   return (
     <div className="rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-8 text-center">
       <Sparkles className="w-8 h-8 mx-auto text-slate-400 dark:text-slate-500 mb-2" />
-      <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Ainda sem PATs guardados</h4>
+      <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200">No saved PATs yet</h4>
       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
-        Adiciona um PAT para o teu Azure DevOps ou TFS on-prem e podes reutilizá-lo em todas as migrações futuras
-        sem voltar a colar.
+        Add a PAT for your Azure DevOps or on-prem TFS and reuse it in every future migration
+        without pasting it again.
       </p>
       <button
         type="button"
@@ -133,7 +133,7 @@ function EmptyState({ onAdd }) {
         className="mt-4 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)]"
       >
         <Plus className="w-4 h-4" />
-        Adicionar o primeiro PAT
+        Add your first PAT
       </button>
     </div>
   )
@@ -159,7 +159,7 @@ function CredentialRow({ cred, onDeleted, onTested }) {
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        throw new Error(data?.error || 'Falhou a remoção')
+        throw new Error(data?.error || 'Removal failed')
       }
       onDeleted(cred.id)
     } catch (e) {
@@ -190,7 +190,7 @@ function CredentialRow({ cred, onDeleted, onTested }) {
   }
 
   const patUrl = buildPatSettingsUrl(cred.host, cred.org || '_')
-  const lastUsed = cred.lastUsedAt ? formatRelative(cred.lastUsedAt) : 'nunca usado'
+  const lastUsed = cred.lastUsedAt ? formatRelative(cred.lastUsedAt) : 'never used'
 
   return (
     <li className={`rounded-2xl border ${tone.border} ${tone.bg} overflow-hidden`}>
@@ -211,7 +211,7 @@ function CredentialRow({ cred, onDeleted, onTested }) {
             {cred.host}{cred.org ? ` · ${cred.org}` : ''} · {cred.prefix}
           </div>
           <div className="ds-text-meta text-slate-400 dark:text-slate-500 mt-0.5">
-            Criado em {formatDate(cred.createdAt)} · {lastUsed}
+            Created on {formatDate(cred.createdAt)} · {lastUsed}
             {cred.scopes && cred.scopes.length > 0 && (
               <> · {cred.scopes.join(', ')}</>
             )}
@@ -223,11 +223,11 @@ function CredentialRow({ cred, onDeleted, onTested }) {
             onClick={handleTest}
             disabled={testing}
             className="px-2.5 py-1 text-xs font-medium rounded-md border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 disabled:opacity-50 transition-colors"
-            title="Validar o token contra o servidor"
+            title="Validate the token against the server"
           >
             {testing
               ? <SpinnerIcon className="w-3.5 h-3.5" />
-              : 'Testar'}
+              : 'Test'}
           </button>
           {patUrl && (
             <a
@@ -235,7 +235,7 @@ function CredentialRow({ cred, onDeleted, onTested }) {
               target="_blank"
               rel="noopener noreferrer"
               className="p-1.5 rounded-md text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-colors"
-              title="Abrir página de PATs no servidor"
+              title="Open the PATs page on the server"
             >
               <ExternalLink className="w-3.5 h-3.5" />
             </a>
@@ -248,14 +248,14 @@ function CredentialRow({ cred, onDeleted, onTested }) {
                 disabled={deleting}
                 className="px-2 py-1 text-xs font-semibold rounded-md bg-red-600 text-white hover:bg-red-700"
               >
-                {deleting ? '…' : 'Confirmar'}
+                {deleting ? '…' : 'Confirm'}
               </button>
               <button
                 type="button"
                 onClick={() => setConfirming(false)}
                 className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
               >
-                Cancelar
+                Cancel
               </button>
             </div>
           ) : (
@@ -263,8 +263,8 @@ function CredentialRow({ cred, onDeleted, onTested }) {
               type="button"
               onClick={() => setConfirming(true)}
               className="p-1.5 rounded-md text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-white dark:hover:bg-slate-800 transition-colors"
-              title="Remover do vault local"
-              aria-label="Remover credencial"
+              title="Remove from the local vault"
+              aria-label="Remove credential"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -279,8 +279,8 @@ function CredentialRow({ cred, onDeleted, onTested }) {
               : 'bg-red-50/60 dark:bg-red-900/15 text-red-700 dark:text-red-300'}`}
         >
           {testResult.valid
-            ? <>✓ Token válido contra {cred.host}{testResult.resolvedOrg ? ` (org resolvida: ${testResult.resolvedOrg})` : ''}</>
-            : <>✗ {testResult.error || 'Validação falhou'}</>}
+            ? <>✓ Token valid against {cred.host}{testResult.resolvedOrg ? ` (resolved org: ${testResult.resolvedOrg})` : ''}</>
+            : <>✗ {testResult.error || 'Validation failed'}</>}
         </div>
       )}
     </li>
@@ -338,36 +338,36 @@ function AddCredentialForm({ onClose, onCreated }) {
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
           <Plus className="w-4 h-4 text-indigo-500" />
-          Novo PAT
+          New PAT
         </h4>
         <button
           type="button"
           onClick={onClose}
           className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
         >
-          Cancelar
+          Cancel
         </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="Nome (para reconheceres)">
+        <Field label="Name (for your reference)">
           <input
             type="text"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
-            placeholder="ex: Trigenius TFS · principal"
+            placeholder="e.g. Trigenius TFS · main"
             className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
             maxLength={60}
             required
           />
         </Field>
 
-        <Field label="Host (sem https://)">
+        <Field label="Host (without https://)">
           <input
             type="text"
             value={host}
             onChange={(e) => setHost(e.target.value)}
-            placeholder="dev.azure.com  ou  tfs.empresa.com"
+            placeholder="dev.azure.com  or  tfs.company.com"
             className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 font-mono"
             required
           />
@@ -379,15 +379,15 @@ function AddCredentialForm({ onClose, onCreated }) {
           )}
         </Field>
 
-        <Field label="Organização / Collection (opcional)">
+        <Field label="Organization / Collection (optional)">
           <input
             type="text"
             value={org}
             onChange={(e) => setOrg(e.target.value)}
-            placeholder="ex: Trigenius  ou  tfs/DefaultCollection"
+            placeholder="e.g. Trigenius  or  tfs/DefaultCollection"
             className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 font-mono"
           />
-          <p className="ds-text-micro text-slate-500 mt-1">Permite o botão "Testar" e auto-match no wizard.</p>
+          <p className="ds-text-micro text-slate-500 mt-1">Enables the "Test" button and auto-match in the wizard.</p>
         </Field>
 
         <Field label="Scopes (informativo)">
@@ -426,7 +426,7 @@ function AddCredentialForm({ onClose, onCreated }) {
             type={showPat ? 'text' : 'password'}
             value={pat}
             onChange={(e) => setPat(e.target.value)}
-            placeholder="Cola aqui o PAT gerado no servidor"
+            placeholder="Paste the PAT generated on the server here"
             className="w-full px-3 py-2 pr-10 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 font-mono"
             required
           />
@@ -445,7 +445,7 @@ function AddCredentialForm({ onClose, onCreated }) {
             rel="noopener noreferrer"
             className="mt-1 inline-flex items-center gap-1 ds-text-meta text-indigo-500 hover:text-indigo-400"
           >
-            Criar PAT em {host} <ExternalLink className="w-3 h-3" />
+            Create a PAT on {host} <ExternalLink className="w-3 h-3" />
           </a>
         )}
       </Field>
@@ -462,7 +462,7 @@ function AddCredentialForm({ onClose, onCreated }) {
           onClick={onClose}
           className="px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md"
         >
-          Cancelar
+          Cancel
         </button>
         <button
           type="submit"
@@ -470,8 +470,8 @@ function AddCredentialForm({ onClose, onCreated }) {
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors"
         >
           {submitting
-            ? <><SpinnerIcon className="w-3.5 h-3.5" /> A guardar…</>
-            : <><CheckCircle2 className="w-3.5 h-3.5" /> Guardar token encriptado</>}
+            ? <><SpinnerIcon className="w-3.5 h-3.5" /> Saving…</>
+            : <><CheckCircle2 className="w-3.5 h-3.5" /> Save encrypted token</>}
         </button>
       </div>
     </form>
@@ -490,7 +490,7 @@ function Field({ label, children }) {
 function formatDate(iso) {
   if (!iso) return ''
   try {
-    return new Date(iso).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric' })
+    return new Date(iso).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })
   } catch { return iso }
 }
 
@@ -500,9 +500,9 @@ function formatRelative(iso) {
     const d = new Date(iso)
     const diffMs = Date.now() - d.getTime()
     const days = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-    if (days < 1) return 'usado hoje'
-    if (days < 30) return `usado há ${days}d`
-    if (days < 365) return `usado há ${Math.floor(days / 30)} meses`
-    return `usado há ${Math.floor(days / 365)}+ anos`
+    if (days < 1) return 'used today'
+    if (days < 30) return `used ${days}d ago`
+    if (days < 365) return `used ${Math.floor(days / 30)}mo ago`
+    return `used ${Math.floor(days / 365)}+ years ago`
   } catch { return iso }
 }

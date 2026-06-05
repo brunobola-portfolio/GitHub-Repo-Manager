@@ -56,7 +56,7 @@ export default function SourceStep({ source, onChange, oauthHook, orgsHook }) {
     else if (vcType === 'Tfvc') badge = 'Tfvc'
     else badge = `Git · ${repoCount} ${repoCount === 1 ? 'repo' : 'repos'}`
 
-    if (isInactive) badge = `Inactivo · ${badge || '0 repos'}`
+    if (isInactive) badge = `Inactive · ${badge || '0 repos'}`
 
     return {
       value: p.name,
@@ -72,8 +72,8 @@ export default function SourceStep({ source, onChange, oauthHook, orgsHook }) {
     if (projects.length === 0) return null
     const active = projects.filter(p => !p.state || p.state === 'wellFormed').length
     const inactive = projects.length - active
-    if (inactive > 0) return `${active} activos · ${inactive} inactivos`
-    return `${active} projectos`
+    if (inactive > 0) return `${active} active · ${inactive} inactive`
+    return `${active} projects`
   }, [projects])
 
   const connectionSummary = source.validated && source.project && source.org
@@ -138,7 +138,7 @@ export default function SourceStep({ source, onChange, oauthHook, orgsHook }) {
                   <ProviderBadge host={source.host} variant="inline" />
                 </div>
                 <div className="text-xs text-emerald-700/80 dark:text-emerald-300/80 mt-0.5">
-                  Pronto para escolher repositórios
+                  Ready to pick repositories
                 </div>
               </div>
               <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-100/70 dark:bg-emerald-900/30">
@@ -195,7 +195,7 @@ export default function SourceStep({ source, onChange, oauthHook, orgsHook }) {
           canEdit={hostAllowlist.canEdit}
           onAdded={() => {
             // Refresh allowlist state (pill turns green) and auto-retry
-            // validation so the user doesn't have to click "Tentar de novo".
+            // validation so the user doesn't have to click "Try again".
             refreshAllowlist()
             setValidationError('')
             // Give the cache a moment to invalidate, then re-trigger.
@@ -269,7 +269,7 @@ export default function SourceStep({ source, onChange, oauthHook, orgsHook }) {
           canEdit={hostAllowlist.canEdit}
           onAdded={() => {
             // Refresh allowlist state (pill turns green) and auto-retry
-            // validation so the user doesn't have to click "Tentar de novo".
+            // validation so the user doesn't have to click "Try again".
             refreshAllowlist()
             setValidationError('')
             // Give the cache a moment to invalidate, then re-trigger.
@@ -327,18 +327,18 @@ export default function SourceStep({ source, onChange, oauthHook, orgsHook }) {
       {source.validated && (
         <div>
           <p className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-            Projecto
+            Project
           </p>
           {projects.length === 0 ? (
             <div className="px-3.5 py-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/40">
               <div className="flex items-center gap-2 mb-1 text-slate-700 dark:text-slate-300">
                 <FolderGit2 className="w-4 h-4 shrink-0" />
-                <span className="text-sm font-medium">Sem projectos visíveis</span>
+                <span className="text-sm font-medium">No visible projects</span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                A organização <strong>{source.org}</strong> respondeu mas não devolveu projectos.
-                Causa habitual: o PAT não tem o scope <code className="px-1 rounded bg-slate-100 dark:bg-slate-800">Project &amp; Team (Read)</code>,
-                ou a collection apontada está vazia.
+                The organization <strong>{source.org}</strong> responded but returned no projects.
+                Common cause: the PAT is missing the <code className="px-1 rounded bg-slate-100 dark:bg-slate-800">Project &amp; Team (Read)</code> scope,
+                or the targeted collection is empty.
               </p>
             </div>
           ) : (
@@ -348,7 +348,7 @@ export default function SourceStep({ source, onChange, oauthHook, orgsHook }) {
               placeholder="Select a project..."
               options={projectOptions}
               searchable={projects.length > 5}
-              label="Projecto"
+              label="Project"
               footer={projectFooter}
             />
           )}

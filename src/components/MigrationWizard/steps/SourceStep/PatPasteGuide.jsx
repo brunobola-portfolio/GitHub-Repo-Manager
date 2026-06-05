@@ -60,7 +60,7 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'Falha ao guardar')
+      if (!res.ok) throw new Error(data?.error || 'Failed to save')
       setSavedJustNow(true)
       // After saving, transparently switch to using the saved credential so
       // subsequent calls don't carry the raw PAT around.
@@ -109,7 +109,7 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
           <strong>A PAT is server-specific.</strong> A token created on
           {' '}<code className="px-1 rounded bg-amber-100 dark:bg-amber-900/40">dev.azure.com</code> {' '}
           <em>does not</em> work on
-          {' '}<code className="px-1 rounded bg-amber-100 dark:bg-amber-900/40">tfs.empresa.com</code>{' '}
+          {' '}<code className="px-1 rounded bg-amber-100 dark:bg-amber-900/40">tfs.company.com</code>{' '}
           (and vice-versa). Always create it {hasContext ? <>on the server we point to below (<strong>{host}</strong>).</> : 'on the server where your repo lives.'}
         </div>
       </div>
@@ -182,7 +182,7 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
               type="button"
               onClick={() => setShowPat((v) => !v)}
               className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-              aria-label={showPat ? 'Esconder PAT' : 'Mostrar PAT'}
+              aria-label={showPat ? 'Hide PAT' : 'Show PAT'}
             >
               {showPat ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -196,10 +196,10 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
             <Bookmark className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <div className="text-xs font-medium text-emerald-800 dark:text-emerald-200">
-                Guardar para futuras sessões?
+                Save for future sessions?
               </div>
               <div className="ds-text-meta text-emerald-700/80 dark:text-emerald-300/80">
-                Encripta este PAT na base de dados — só tu o consegues usar e nunca volta para o browser.
+                Encrypts this PAT in the database — only you can use it and it never returns to the browser.
               </div>
               <div className="mt-1.5 flex items-center gap-1.5">
                 <input
@@ -217,8 +217,8 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
                   className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors"
                 >
                   {savingPat
-                    ? <><SpinnerIcon className="w-3 h-3" /> A guardar</>
-                    : <><Bookmark className="w-3 h-3" /> Guardar</>}
+                    ? <><SpinnerIcon className="w-3 h-3" /> Saving</>
+                    : <><Bookmark className="w-3 h-3" /> Save</>}
                 </button>
               </div>
               {saveError && <div className="ds-text-meta text-red-600 dark:text-red-400 mt-1">✗ {saveError}</div>}
@@ -228,7 +228,7 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
         {savedJustNow && (
           <div className="mt-2 px-3 py-1.5 rounded-lg bg-emerald-100/60 dark:bg-emerald-900/30 text-xs text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-1.5">
             <Check className="w-3.5 h-3.5" />
-            PAT guardado · podes geri-lo em Settings → Azure Credentials
+            PAT saved · manage it in Settings → Azure Credentials
           </div>
         )}
       </Step>
@@ -326,7 +326,7 @@ function CliAlternative({ cmd }) {
           type="button"
           onClick={copy}
           className="px-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
-          aria-label="Copiar comando"
+          aria-label="Copy command"
         >
           <AnimatedCopyIcon copied={copied} size="w-3.5 h-3.5" checkClassName="text-emerald-500" />
         </button>

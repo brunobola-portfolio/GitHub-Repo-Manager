@@ -46,7 +46,7 @@ export default function CredentialsForm({
   if (credLoading) {
     return (
       <div>
-        <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Autenticação</p>
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Authentication</p>
         <div className="space-y-2">
           {[0, 1, 2].map((i) => <Skeleton key={i} variant="card" className="h-16" />)}
         </div>
@@ -72,7 +72,7 @@ export default function CredentialsForm({
   const stateFor = (mode, ready, available) => {
     if (!available) return 'unavailable'
     if (source.credentialMode === mode) return ready ? 'active' : 'selected'
-    return ready ? 'available' : 'available'  // both map to "disponível"
+    return ready ? 'available' : 'available'  // both map to "available"
   }
 
   return (
@@ -222,14 +222,14 @@ function OAuthSection({ status, startOAuth, retryOAuth, setValidationError }) {
         onClick={() => {
           const popup = window.open('/api/azure/oauth/start', '_blank')
           if (!popup) {
-            setValidationError('Popup bloqueado — permite popups e tenta de novo.')
+            setValidationError('Popup blocked — allow popups and try again.')
             return
           }
           startOAuth()
         }}
       >
         <Globe className="w-4 h-4" />
-        Abrir browser para autenticar
+        Open browser to authenticate
       </Button>
     )
   }
@@ -237,7 +237,7 @@ function OAuthSection({ status, startOAuth, retryOAuth, setValidationError }) {
     return (
       <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
         <Spinner size="md" tone="muted" />
-        À espera da autenticação no browser…
+        Waiting for authentication in the browser…
       </div>
     )
   }
@@ -245,7 +245,7 @@ function OAuthSection({ status, startOAuth, retryOAuth, setValidationError }) {
     return (
       <span className="inline-flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400">
         <CheckCircle2 className="w-4 h-4" />
-        Autenticado via Azure AD
+        Authenticated via Azure AD
       </span>
     )
   }
@@ -253,8 +253,8 @@ function OAuthSection({ status, startOAuth, retryOAuth, setValidationError }) {
     return (
       <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
         <XCircle className="w-4 h-4" />
-        {status === 'timeout' ? 'Tempo esgotado — ' : 'Erro de autenticação — '}
-        <button type="button" onClick={retryOAuth} className="underline">tentar de novo</button>
+        {status === 'timeout' ? 'Timed out — ' : 'Authentication error — '}
+        <button type="button" onClick={retryOAuth} className="underline">try again</button>
       </div>
     )
   }

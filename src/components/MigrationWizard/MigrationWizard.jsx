@@ -195,12 +195,12 @@ function StepDisc({ status, index, icon: Icon }) {
 
 const ROW_TONE = {
   done:    { row: 'hover:bg-emerald-50/60 dark:hover:bg-emerald-900/10 cursor-pointer', label: 'text-slate-800 dark:text-slate-100', hint: 'text-emerald-600/80 dark:text-emerald-400/70', pill: null },
-  current: { row: 'bg-gradient-to-r from-indigo-50/80 to-transparent dark:from-indigo-500/[0.12] dark:to-transparent', label: 'text-indigo-700 dark:text-indigo-200', hint: 'text-indigo-500/80 dark:text-indigo-300/80', pill: { label: 'AGORA', cls: 'bg-indigo-500 text-white' } },
+  current: { row: 'bg-gradient-to-r from-indigo-50/80 to-transparent dark:from-indigo-500/[0.12] dark:to-transparent', label: 'text-indigo-700 dark:text-indigo-200', hint: 'text-indigo-500/80 dark:text-indigo-300/80', pill: { label: 'NOW', cls: 'bg-indigo-500 text-white' } },
   pending: { row: '', label: 'text-slate-500 dark:text-slate-500', hint: 'text-slate-400 dark:text-slate-600', pill: null },
-  loading: { row: 'bg-gradient-to-r from-indigo-50/80 to-transparent dark:from-indigo-500/[0.10] dark:to-transparent', label: 'text-indigo-700 dark:text-indigo-200', hint: 'text-indigo-500/80 dark:text-indigo-300/80', pill: { label: 'A PROCESSAR', cls: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300' } },
-  error:   { row: 'bg-gradient-to-r from-red-50/80 to-transparent dark:from-red-500/[0.10] dark:to-transparent', label: 'text-red-700 dark:text-red-300', hint: 'text-red-600/80 dark:text-red-400/80', pill: { label: 'AÇÃO', cls: 'bg-red-500 text-white' } },
-  warning: { row: 'bg-gradient-to-r from-amber-50/70 to-transparent dark:from-amber-500/[0.10] dark:to-transparent', label: 'text-amber-700 dark:text-amber-300', hint: 'text-amber-600/80 dark:text-amber-400/80', pill: { label: 'AVISO', cls: 'bg-amber-400 text-white' } },
-  skipped: { row: '', label: 'text-slate-400 dark:text-slate-600', hint: 'text-slate-300 dark:text-slate-700 italic', pill: { label: 'SALTADO', cls: 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400' } },
+  loading: { row: 'bg-gradient-to-r from-indigo-50/80 to-transparent dark:from-indigo-500/[0.10] dark:to-transparent', label: 'text-indigo-700 dark:text-indigo-200', hint: 'text-indigo-500/80 dark:text-indigo-300/80', pill: { label: 'PROCESSING', cls: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300' } },
+  error:   { row: 'bg-gradient-to-r from-red-50/80 to-transparent dark:from-red-500/[0.10] dark:to-transparent', label: 'text-red-700 dark:text-red-300', hint: 'text-red-600/80 dark:text-red-400/80', pill: { label: 'ACTION', cls: 'bg-red-500 text-white' } },
+  warning: { row: 'bg-gradient-to-r from-amber-50/70 to-transparent dark:from-amber-500/[0.10] dark:to-transparent', label: 'text-amber-700 dark:text-amber-300', hint: 'text-amber-600/80 dark:text-amber-400/80', pill: { label: 'WARNING', cls: 'bg-amber-400 text-white' } },
+  skipped: { row: '', label: 'text-slate-400 dark:text-slate-600', hint: 'text-slate-300 dark:text-slate-700 italic', pill: { label: 'SKIPPED', cls: 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400' } },
 }
 
 function SidebarStepper({
@@ -335,9 +335,9 @@ function SidebarStepper({
                   type="button"
                   onClick={() => isClickable && onGoToStep(step)}
                   disabled={!isClickable}
-                  aria-label={`${label}${isActiveLike ? ' (actual)' : status === 'done' ? ' (concluído)' : ''}`}
+                  aria-label={`${label}${isActiveLike ? ' (current)' : status === 'done' ? ' (done)' : ''}`}
                   aria-current={isActiveLike ? 'step' : undefined}
-                  title={!isClickable && status === 'pending' ? `Disponível depois de "${STEP_LABELS[steps[currentStepIndex]] || ''}"` : undefined}
+                  title={!isClickable && status === 'pending' ? `Available after "${STEP_LABELS[steps[currentStepIndex]] || ''}"` : undefined}
                   className={`
                     w-full flex items-center gap-3 px-2 py-2 rounded-xl text-left transition-all duration-200 group relative
                     ${tone.row}
@@ -807,8 +807,8 @@ export default function MigrationWizard({
     if (currentStep === 'progress' && Array.isArray(importJobs) && importJobs.length > 0) {
       const running = importJobs.filter((j) => j?.status === 'running' || j?.status === 'pending').length
       const failed = importJobs.filter((j) => j?.status === 'failed' || j?.status === 'error').length
-      if (failed > 0) return `${failed} ${failed === 1 ? 'falhou' : 'falharam'} · ${running} a correr`
-      if (running > 0) return `${running} ${running === 1 ? 'job a correr' : 'jobs a correr'}`
+      if (failed > 0) return `${failed} ${failed === 1 ? 'failed' : 'failed'} · ${running} running`
+      if (running > 0) return `${running} ${running === 1 ? 'job running' : 'jobs running'}`
     }
     return undefined
   })()
