@@ -36,6 +36,7 @@ import { SearchInput } from './CommandPalette/SearchInput'
 import { GitHubResults } from './CommandPalette/GitHubResults'
 import { RecentGroup } from './CommandPalette/RecentGroup'
 import { AskModeBanner } from './CommandPalette/AskModeBanner'
+import { CommandGroup } from './CommandPalette/CommandGroup'
 import { GROUP_HEADING_CLASSES, ITEM_CLASSES } from './CommandPalette/styles'
 
 const NAVIGATE_ITEMS = [
@@ -632,98 +633,15 @@ export function CommandPalette({
             </Command.Group>
           )}
 
-          <Command.Group heading="Work Board Actions" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
-            {WORK_BOARD_GLOBAL_COMMANDS.map((item) => {
-              const Icon = WORK_BOARD_CMD_ICONS[item.icon]
-              return (
-                <Command.Item
-                  key={item.id}
-                  value={item.searchValue}
-                  onSelect={() => { runWorkBoardCommand(item); onClose() }}
-                  className={ITEM_CLASSES}
-                >
-                  {Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />}
-                  {item.label}
-                </Command.Item>
-              )
-            })}
-          </Command.Group>
+          <CommandGroup heading="Work Board Actions" commands={WORK_BOARD_GLOBAL_COMMANDS} iconMap={WORK_BOARD_CMD_ICONS} onRun={runWorkBoardCommand} onClose={onClose} />
 
-          {trackedRepoCommands.length > 0 && (
-            <Command.Group heading="Tracked Repositories" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
-              {trackedRepoCommands.map((item) => {
-                const Icon = WORK_BOARD_CMD_ICONS[item.icon]
-                return (
-                  <Command.Item
-                    key={item.id}
-                    value={item.searchValue}
-                    onSelect={() => { runWorkBoardCommand(item); onClose() }}
-                    className={ITEM_CLASSES}
-                  >
-                    {Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />}
-                    {item.label}
-                  </Command.Item>
-                )
-              })}
-            </Command.Group>
-          )}
+          <CommandGroup heading="Tracked Repositories" commands={trackedRepoCommands} iconMap={WORK_BOARD_CMD_ICONS} onRun={runWorkBoardCommand} onClose={onClose} />
 
-          {aiCommands.length > 0 && (
-            <Command.Group heading="AI Assistant" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
-              {aiCommands.map((item) => {
-                const Icon = WORK_BOARD_CMD_ICONS[item.icon] ?? null
-                return (
-                  <Command.Item
-                    key={item.id}
-                    value={item.searchValue}
-                    onSelect={() => { runWorkBoardCommand(item); onClose() }}
-                    className={ITEM_CLASSES}
-                  >
-                    {Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />}
-                    {item.label}
-                  </Command.Item>
-                )
-              })}
-            </Command.Group>
-          )}
+          <CommandGroup heading="AI Assistant" commands={aiCommands} iconMap={WORK_BOARD_CMD_ICONS} onRun={runWorkBoardCommand} onClose={onClose} />
 
-          {repoDetailCommands.length > 0 && (
-            <Command.Group heading={`Repo: ${selectedRepoDetail?.full_name ?? ''}`} className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
-              {repoDetailCommands.map((item) => {
-                const Icon = CONTEXT_CMD_ICONS[item.icon]
-                return (
-                  <Command.Item
-                    key={item.id}
-                    value={item.searchValue}
-                    onSelect={() => { runContextCommand(item); onClose() }}
-                    className={ITEM_CLASSES}
-                  >
-                    {Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />}
-                    {item.label}
-                  </Command.Item>
-                )
-              })}
-            </Command.Group>
-          )}
+          <CommandGroup heading={`Repo: ${selectedRepoDetail?.full_name ?? ''}`} commands={repoDetailCommands} iconMap={CONTEXT_CMD_ICONS} onRun={runContextCommand} onClose={onClose} />
 
-          {prReviewCommands.length > 0 && (
-            <Command.Group heading="PR review" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
-              {prReviewCommands.map((item) => {
-                const Icon = CONTEXT_CMD_ICONS[item.icon]
-                return (
-                  <Command.Item
-                    key={item.id}
-                    value={item.searchValue}
-                    onSelect={() => { runContextCommand(item); onClose() }}
-                    className={ITEM_CLASSES}
-                  >
-                    {Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />}
-                    {item.label}
-                  </Command.Item>
-                )
-              })}
-            </Command.Group>
-          )}
+          <CommandGroup heading="PR review" commands={prReviewCommands} iconMap={CONTEXT_CMD_ICONS} onRun={runContextCommand} onClose={onClose} />
 
           {prCommands.length > 0 && (
             <Command.Group heading="Pull request actions" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
@@ -770,62 +688,11 @@ export function CommandPalette({
             </Command.Group>
           )}
 
-          {teamsCommands.length > 0 && (
-            <Command.Group heading="Teams" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
-              {teamsCommands.map((item) => {
-                const Icon = CONTEXT_CMD_ICONS[item.icon]
-                return (
-                  <Command.Item
-                    key={item.id}
-                    value={item.searchValue}
-                    onSelect={() => { runContextCommand(item); onClose() }}
-                    className={ITEM_CLASSES}
-                  >
-                    {Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />}
-                    {item.label}
-                  </Command.Item>
-                )
-              })}
-            </Command.Group>
-          )}
+          <CommandGroup heading="Teams" commands={teamsCommands} iconMap={CONTEXT_CMD_ICONS} onRun={runContextCommand} onClose={onClose} />
 
-          {reposCommands.length > 0 && (
-            <Command.Group heading="Repositories" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
-              {reposCommands.map((item) => {
-                const Icon = CONTEXT_CMD_ICONS[item.icon]
-                return (
-                  <Command.Item
-                    key={item.id}
-                    value={item.searchValue}
-                    onSelect={() => { runContextCommand(item); onClose() }}
-                    className={ITEM_CLASSES}
-                  >
-                    {Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />}
-                    {item.label}
-                  </Command.Item>
-                )
-              })}
-            </Command.Group>
-          )}
+          <CommandGroup heading="Repositories" commands={reposCommands} iconMap={CONTEXT_CMD_ICONS} onRun={runContextCommand} onClose={onClose} />
 
-          {repoActionsCommands.length > 0 && (
-            <Command.Group heading="Repo actions" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
-              {repoActionsCommands.map((item) => {
-                const Icon = item.icon ? CONTEXT_CMD_ICONS[item.icon] : null
-                return (
-                  <Command.Item
-                    key={item.id}
-                    value={item.searchValue}
-                    onSelect={() => { runContextCommand(item); onClose() }}
-                    className={ITEM_CLASSES}
-                  >
-                    {Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />}
-                    {item.label}
-                  </Command.Item>
-                )
-              })}
-            </Command.Group>
-          )}
+          <CommandGroup heading="Repo actions" commands={repoActionsCommands} iconMap={CONTEXT_CMD_ICONS} onRun={runContextCommand} onClose={onClose} />
 
           {activeView === 'work-board' && (
             <Command.Group heading="Work Board" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
