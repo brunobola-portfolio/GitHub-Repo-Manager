@@ -1,11 +1,11 @@
 // @vitest-environment node
 /**
- * Tier gate — PR Review write-back endpoints.
+ * PR Review write-back endpoints — available on ALL tiers (including Free).
  *
- * The pricing page advertises PR Review write-back as a Pro+ feature; Free
- * tier gets read-only access. This suite locks that contract at the route
- * level so a future refactor cannot silently remove requireTier('pro') from
- * any of the four write endpoints without breaking a test.
+ * Write-back (merge / comments / replies / reviews) acts on the user's own
+ * GitHub via their token with no marginal cost, so it's a commodity Free
+ * feature. This suite locks that contract: a future refactor must not silently
+ * RE-gate any of the four write endpoints behind requireTier('pro').
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import request from 'supertest'
@@ -126,16 +126,15 @@ beforeEach(() => {
     mockGithubApi.mockResolvedValue({ data: { id: 1 } })
 })
 
-describe('PR write-back tier gate', () => {
+describe('PR write-back — available on all tiers (incl. Free)', () => {
     // ----- merge -----
-    it('PUT /:owner/:repo/pulls/:n/merge — Free tier gets 403', async () => {
+    it('PUT /:owner/:repo/pulls/:n/merge — Free tier can write-back', async () => {
+        mockGithubApi.mockResolvedValue({ data: { merged: true, message: 'ok' } })
         const res = await request(makeApp('free'))
             .put('/api/v1/repos/acme/app/pulls/1/merge')
             .send({ merge_method: 'merge' })
-        expect(res.status).toBe(403)
-        expect(res.body.error).toBe('upgrade_required')
-        expect(res.body.requiredTier).toBe('pro')
-        expect(mockGithubApi).not.toHaveBeenCalled()
+        expect(res.status).toBe(200)
+        expect(res.body.merged).toBe(true)
     })
 
     it('PUT /:owner/:repo/pulls/:n/merge — Pro tier goes through', async () => {
@@ -148,13 +147,12 @@ describe('PR write-back tier gate', () => {
     })
 
     // ----- inline comment -----
-    it('POST /:owner/:repo/pulls/:n/comments — Free tier gets 403', async () => {
+    it('POST /:owner/:repo/pulls/:n/comments — Free tier can write-back', async () => {
+        mockGithubApi.mockResolvedValue({ data: { id: 99 } })
         const res = await request(makeApp('free'))
             .post('/api/v1/repos/acme/app/pulls/1/comments')
             .send({ body: 'nit', commit_id: 'abc', path: 'src/x.js', line: 3 })
-        expect(res.status).toBe(403)
-        expect(res.body.requiredTier).toBe('pro')
-        expect(mockGithubApi).not.toHaveBeenCalled()
+        expect(res.status).toBe(201)
     })
 
     it('POST /:owner/:repo/pulls/:n/comments — Pro tier goes through', async () => {
@@ -166,13 +164,12 @@ describe('PR write-back tier gate', () => {
     })
 
     // ----- reply -----
-    it('POST /:owner/:repo/pulls/:n/comments/:id/replies — Free tier gets 403', async () => {
+    it('POST /:owner/:repo/pulls/:n/comments/:id/replies — Free tier can write-back', async () => {
+        mockGithubApi.mockResolvedValue({ data: { id: 100 } })
         const res = await request(makeApp('free'))
             .post('/api/v1/repos/acme/app/pulls/1/comments/42/replies')
             .send({ body: 'reply' })
-        expect(res.status).toBe(403)
-        expect(res.body.requiredTier).toBe('pro')
-        expect(mockGithubApi).not.toHaveBeenCalled()
+        expect(res.status).toBe(201)
     })
 
     it('POST /:owner/:repo/pulls/:n/comments/:id/replies — Enterprise tier goes through', async () => {
@@ -184,13 +181,12 @@ describe('PR write-back tier gate', () => {
     })
 
     // ----- submit review (approve / request_changes / comment) -----
-    it('POST /:owner/:repo/pulls/:n/reviews — Free tier gets 403', async () => {
+    it('POST /:owner/:repo/pulls/:n/reviews — Free tier can write-back', async () => {
+        mockGithubApi.mockResolvedValue({ data: { id: 200, state: 'APPROVED' } })
         const res = await request(makeApp('free'))
             .post('/api/v1/repos/acme/app/pulls/1/reviews')
             .send({ event: 'APPROVE', body: 'lgtm' })
-        expect(res.status).toBe(403)
-        expect(res.body.requiredTier).toBe('pro')
-        expect(mockGithubApi).not.toHaveBeenCalled()
+        expect([200, 201]).toContain(res.status)
     })
 
     it('POST /:owner/:repo/pulls/:n/reviews — Pro tier goes through', async () => {

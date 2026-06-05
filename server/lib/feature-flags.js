@@ -8,8 +8,8 @@ import logger from './logger.js';
 // without a single feature draining their whole monthly AI budget.
 const TIER_FEATURES = {
     free: {
-        maxRepos: 50,
-        apiKeys: 2,
+        maxRepos: 200,
+        apiKeys: 5,
 
         // Global AI budget (applies to chat / generic AI calls)
         aiQueriesPerMonth: 200,

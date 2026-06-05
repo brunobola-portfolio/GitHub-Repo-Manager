@@ -36,11 +36,11 @@ describe('Pricing page ↔ feature-flags parity', () => {
         }
     })
 
-    it('Free maxRepos=50 matches "50" on the Free pricing card', () => {
+    it('Free maxRepos=200 matches "200" on the Free pricing card', () => {
         const free = getFeatures('free')
-        expect(free.maxRepos).toBe(50)
+        expect(free.maxRepos).toBe(200)
         const section = tierSection('Free')
-        expect(section).toMatch(/included:\s*'?50'?/)
+        expect(section).toMatch(/Repositories managed[^}]*included:\s*'?200'?/)
     })
 
     it('Free aiQueriesPerMonth=200 matches "200" on the Free pricing card', () => {
@@ -50,11 +50,11 @@ describe('Pricing page ↔ feature-flags parity', () => {
         expect(section).toMatch(/included:\s*'?200'?/)
     })
 
-    it('Free apiKeys=2 matches "2" on the Free pricing card', () => {
+    it('Free apiKeys=5 matches "5" on the Free pricing card', () => {
         const free = getFeatures('free')
-        expect(free.apiKeys).toBe(2)
+        expect(free.apiKeys).toBe(5)
         const section = tierSection('Free')
-        expect(section).toMatch(/API keys[^}]*included:\s*'?2'?/)
+        expect(section).toMatch(/API keys[^}]*included:\s*'?5'?/)
     })
 
     it('Pro aiQueriesPerMonth=5000 matches "5,000" on the Pro pricing card', () => {
