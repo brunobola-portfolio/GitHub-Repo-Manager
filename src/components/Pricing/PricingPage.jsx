@@ -18,9 +18,9 @@ const TIERS_MONTHLY = [
     features: [
       { label: 'Repositories managed', included: '200' },
       { label: 'AI Assistant (conversational)', included: true },
-      { label: 'Semantic Search (AI)', included: '50 / month' },
+      { label: 'Semantic Search (AI)', included: '75 / month' },
       { label: 'Migration Risk Analysis (AI)', included: '5 / month' },
-      { label: 'Repo Insights / Quality Report', included: '10 / month' },
+      { label: 'Repo Insights / Quality Report', included: '15 / month' },
       { label: 'README Generator (AI)', included: '5 / month' },
       { label: 'Commit Generator (AI)', included: '50 / month' },
       { label: 'PR Review Experience', included: true },

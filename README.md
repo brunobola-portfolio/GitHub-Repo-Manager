@@ -306,8 +306,8 @@ Available on **every tier including Free** — the full AI product surface (Assi
 
 A premium PR review experience that turns the in-app PR view into a tool developers actively choose over github.com — generating a structured walkthrough, line-level review comments with one-click code suggestions, PR-context slash commands, and a streaming Q&A chat. One click batches the whole thing into a single GitHub review with a clear AI-generated footer. See the [AI Deep Review feature guide](docs/features/ai-deep-review.md).
 
-- **Walkthrough tab** — markdown summary, per-file change table, and a Mermaid sequence diagram (Free).
-- **Comments tab** — up to 25 line comments with editable `suggestion` blocks; dismiss / edit before publishing (Free).
+- **Walkthrough tab** — markdown summary, per-file change table, and a Mermaid sequence diagram (Pro).
+- **Comments tab** — up to 25 line comments with editable `suggestion` blocks; dismiss / edit before publishing (Pro).
 - **Commands tab** — `/describe`, `/test_plan`, `/improve` PR-context slash commands with "Apply to PR" outbox-backed body PATCH (Pro).
 - **Chat tab** — streaming Q&A on the PR with per-`(user, PR)` persisted history, sanitised inputs, and cancellable SSE (Pro).
 - **Prompt Studio** — built-in presets plus custom presets at user / repo / org scope, path-scoped rules, severity floor, and a `${REPO_STYLE_GUIDE}` token that inlines `.repomanager/review-rules.md` (Pro for custom prompts; built-ins read-only on every tier).
@@ -323,14 +323,14 @@ The hosted product ships three tiers. The **Free tier includes the full AI produ
 | Repositories managed                   | 200             | Unlimited     | Unlimited  |
 | AI Assistant (conversational)          | ✓               | ✓             | ✓          |
 | AI queries / month (total)             | 200             | 5,000         | Unlimited  |
-| Semantic Search                        | 50 / month      | Unlimited     | Unlimited  |
+| Semantic Search                        | 75 / month      | Unlimited     | Unlimited  |
 | Migration Risk Analysis (AI)           | 5 / month       | Unlimited     | Unlimited  |
-| Repo Insights / Quality Report         | 10 / month      | Unlimited     | Unlimited  |
+| Repo Insights / Quality Report         | 15 / month      | Unlimited     | Unlimited  |
 | README Generator (AI)                  | 5 / month       | Unlimited     | Unlimited  |
 | Commit Generator (AI)                  | 50 / month      | Unlimited     | Unlimited  |
 | PR Review Experience (read + browse)   | ✓               | ✓             | ✓          |
 | Manual PR review write-back            | ✓               | ✓             | ✓          |
-| AI Deep Review — walkthrough + comments + publish | ✓    | ✓             | ✓          |
+| AI Deep Review — walkthrough + comments + publish | ✗    | ✓             | ✓          |
 | AI Deep Review — Prompt Studio (custom presets, path rules, severity floor) | ✗ | ✓ | ✓ |
 | AI Deep Review — org-shared prompts    | ✗               | ✓             | ✓          |
 | AI Deep Review — PR slash commands (`/describe`, `/test_plan`, `/improve`) | ✗ | ✓ | ✓ |
