@@ -2,10 +2,24 @@ import db from '../db.js';
 import { getUserTier } from '../middleware/require-tier.js';
 import { getFeatures } from './feature-flags.js';
 
-function getCurrentPeriod() {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+/**
+ * Returns the `{ start, end }` ISO bounds of the calendar month that contains
+ * `now`, computed in **UTC** so the monthly quota boundary (AI queries +
+ * metered migrations) is a single global instant rather than the host server's
+ * local midnight. A non-UTC server otherwise misbuckets usage near the month
+ * rollover, and a TZ change between read and write could split a user's month.
+ *
+ * `period_start` is part of the `usage_metrics` unique key (ON CONFLICT) and
+ * the `getCurrentUsage` lookup key, so both read and write share this function
+ * and stay consistent.
+ *
+ * Exported (with an injectable `now`) for boundary unit tests.
+ */
+export function getCurrentPeriod(now = new Date()) {
+    const year = now.getUTCFullYear();
+    const month = now.getUTCMonth();
+    const start = new Date(Date.UTC(year, month, 1)).toISOString();
+    const end = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59)).toISOString();
     return { start, end };
 }
 
