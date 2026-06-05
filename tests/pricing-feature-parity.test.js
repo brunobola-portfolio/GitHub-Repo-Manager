@@ -184,9 +184,10 @@ describe('FeatureComparison.jsx ↔ feature-flags parity', () => {
         expect(comparisonFreeValue('Advanced bulk (transfer, mirror, cross-org)')).toBe('false')
     })
 
-    it('Free sync-repository row is disabled (matches syncRepository)', () => {
+    it('Free sync row is preview-only — apply (syncRepository) is Pro, preview (syncPreview) is free', () => {
         expect(free.syncRepository).toBe(false)
-        expect(comparisonFreeValue('Sync Repository (mirror sync)')).toBe('false')
+        expect(free.syncPreview).toBe(true)
+        expect(comparisonFreeValue('Sync Repository (mirror sync)')).toBe("'Preview'")
     })
 
     it('Free audit-logs row is disabled (matches auditLog)', () => {
@@ -258,5 +259,28 @@ describe('Migration metered-free ↔ feature-flags parity', () => {
     it('PricingPage Free card advertises the metered migration row', () => {
         const section = tierSection('Free')
         expect(section).toMatch(/Azure DevOps Cloud migration[^}]*included:\s*'1 \/ month'/)
+    })
+})
+
+// ---------------------------------------------------------------------------
+// Sync preview-free: Free gets a read-only sync PREVIEW (syncPreview), while
+// the destructive apply (syncRepository) stays Pro. All surfaces must show the
+// "Preview" capability for Free, not a flat ✗.
+// ---------------------------------------------------------------------------
+describe('Sync preview-free ↔ feature-flags parity', () => {
+    it('Free has sync preview but not apply', () => {
+        expect(getFeatures('free').syncPreview).toBe(true)
+        expect(getFeatures('free').syncRepository).toBe(false)
+    })
+
+    it('Pro/Enterprise have both preview and apply', () => {
+        for (const tier of ['pro', 'enterprise']) {
+            expect(getFeatures(tier).syncPreview).toBe(true)
+            expect(getFeatures(tier).syncRepository).toBe(true)
+        }
+    })
+
+    it('README Mirror Sync row shows preview-only on Free', () => {
+        expect(readmeFreeCell('Mirror Sync (preview free, apply Pro)')).toBe('Preview')
     })
 })

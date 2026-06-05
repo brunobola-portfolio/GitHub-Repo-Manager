@@ -28,7 +28,7 @@ const CATEGORIES = [
       },
       {
         feature: 'Sync Repository (mirror sync)',
-        values: [false, true, true],
+        values: ['Preview', true, true],
       },
     ],
   },

@@ -92,4 +92,40 @@ describe('POST /api/v1/repos/:owner/:repo/sync', () => {
     expect(otherRes.status).toBe(404)
     expect(otherRes.body.error).toMatch(/not a tracked mirror/i)
   })
+
+  // --- Read-only sync preview (Free) ---------------------------------------
+
+  it('GET /sync/preview returns the tracked-mirror manifest, read-only (no clone/push)', async () => {
+    const { default: simpleGit } = await import('simple-git')
+    mockDbGet.mockReturnValue({
+      source_url: 'https://dev.azure.com/org/proj/_git/repo',
+      source_name: 'proj/repo',
+      target_full_name: 'alice/hello',
+      status: 'completed',
+      completed_at: '2026-06-01 10:00:00',
+      created_at: '2026-05-01 09:00:00',
+    })
+    const res = await request(app).get('/api/v1/repos/alice/hello/sync/preview')
+    expect(res.status).toBe(200)
+    expect(res.body.tracked).toBe(true)
+    expect(res.body.sourceUrl).toBe('https://dev.azure.com/org/proj/_git/repo')
+    expect(res.body.target).toBe('alice/hello')
+    expect(res.body.lastSyncedAt).toBe('2026-06-01 10:00:00')
+    expect(res.body.applyRequiresPro).toBe(true)
+    // Preview must NEVER clone or push — it only reads metadata.
+    expect(simpleGit).not.toHaveBeenCalled()
+  })
+
+  it('GET /sync/preview filters migration_jobs by user_id and 404s for a different user', async () => {
+    mockDbGet.mockImplementation((_owner, _repo, userId) =>
+      userId === 1 ? { source_url: 'https://x', target_full_name: 'alice/hello' } : undefined)
+
+    const ownerRes = await request(app).get('/api/v1/repos/alice/hello/sync/preview').set('x-test-user', '1')
+    expect(ownerRes.status).toBe(200)
+    const sql = mockPrepare.mock.calls.at(-1)[0]
+    expect(sql).toMatch(/user_id\s*=\s*\?/i)
+
+    const otherRes = await request(app).get('/api/v1/repos/alice/hello/sync/preview').set('x-test-user', '2')
+    expect(otherRes.status).toBe(404)
+  })
 })

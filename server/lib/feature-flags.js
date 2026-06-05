@@ -37,7 +37,8 @@ const TIER_FEATURES = {
         migration: 'metered', // Free: 1 full migration/month + unlimited dry-run
         basicBulk: true,       // visibility / archive on your own repos (non-destructive)
         bulkAdvanced: false,   // transfer / mirror / cross-org / delete
-        syncRepository: false,
+        syncRepository: false, // mirror sync APPLY (clone + force-push) is Pro
+        syncPreview: true,     // read-only sync preview is free
         teams: true,            // Free: up to teamsMax teams, teamMembersMax members each
         teamsMax: 3,
         teamMembersMax: 5,
@@ -67,6 +68,7 @@ const TIER_FEATURES = {
         basicBulk: true,
         bulkAdvanced: true,
         syncRepository: true,
+        syncPreview: true,
         teams: true,
         teamsMax: Infinity,
         teamMembersMax: 15,
@@ -95,6 +97,7 @@ const TIER_FEATURES = {
         basicBulk: true,
         bulkAdvanced: true,
         syncRepository: true,
+        syncPreview: true,
         teams: true,
         teamsMax: Infinity,
         teamMembersMax: Infinity,

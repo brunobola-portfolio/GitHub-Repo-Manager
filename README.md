@@ -338,7 +338,7 @@ The hosted product ships three tiers. The **Free tier includes the full AI produ
 | Basic bulk on own repos                | ✓               | ✓             | ✓          |
 | Advanced bulk (transfer, mirror, cross-org) | ✗          | ✓             | ✓          |
 | Azure DevOps Cloud migration           | 1 / month       | Unlimited     | Unlimited  |
-| Mirror Sync                            | ✗               | ✓             | ✓          |
+| Mirror Sync (preview free, apply Pro)  | Preview         | ✓             | ✓          |
 | Dry-Run migration                      | ✓               | ✓             | ✓          |
 | Teams                                  | Up to 3 (5 each)| 15 members    | Unlimited  |
 | Audit Logs / SSO                       | ✗               | ✗             | ✓          |
