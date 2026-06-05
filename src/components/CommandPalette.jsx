@@ -9,7 +9,6 @@ import {
   ExternalLink, Copy, FileText, GitBranch, Star, Clock, Archive, ArrowDownAZ,
   Check, ShieldCheck, MessageCircle, LogOut,
 } from 'lucide-react'
-import { Spinner } from './ui/Spinner'
 import { isAbort } from '../utils/errorClassification'
 import { emitAppEvent, onAppEvent, APP_EVENTS } from '../utils/appEvents'
 import { Skeleton } from './ui/Skeleton'
@@ -33,6 +32,7 @@ import { buildPRActionCommands } from '../actions/prActions'
 import { buildBranchActionCommands } from '../actions/branchActions'
 import { buildIssueActionCommands } from '../actions/issueActions'
 import { readRecents, bumpRecent } from './CommandPalette/recents'
+import { SearchInput } from './CommandPalette/SearchInput'
 
 const NAVIGATE_ITEMS = [
   { id: 'nav-dashboard', label: 'Dashboard', view: 'dashboard', icon: LayoutDashboard },
@@ -413,32 +413,12 @@ export function CommandPalette({
           ? 'border-indigo-400 dark:border-indigo-500 ring-1 ring-indigo-400/30'
           : 'border-slate-200 dark:border-[color:var(--ds-border-dark)]'
       }`}>
-        <div className="relative">
-          {askMode && (
-            <Sparkles
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500"
-              aria-hidden="true"
-            />
-          )}
-          <Command.Input
-            value={input}
-            onValueChange={setInput}
-            placeholder={askMode
-              ? 'Ask anything — e.g. PRs touching payment I haven\'t reviewed'
-              : 'Type a command or search PRs, issues, repos… (start with ? to ask)'}
-            autoFocus
-            className={`w-full py-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 bg-transparent border-b outline-none ${
-              askMode
-                ? 'pl-10 pr-4 border-indigo-200 dark:border-indigo-800 placeholder:italic placeholder:text-indigo-400/80'
-                : 'px-4 border-slate-200 dark:border-slate-700'
-            }`}
-          />
-          {(loading || ask.loading || askResults.loading) && (
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true">
-              <Spinner size="sm" tone="muted" />
-            </span>
-          )}
-        </div>
+        <SearchInput
+          askMode={askMode}
+          value={input}
+          onValueChange={setInput}
+          loading={loading || ask.loading || askResults.loading}
+        />
         <Command.List className="max-h-[400px] overflow-y-auto p-2">
           <Command.Empty className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
             {error === 'RATE_LIMITED'
