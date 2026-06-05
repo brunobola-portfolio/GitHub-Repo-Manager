@@ -43,8 +43,8 @@ describe('<ConnectionStatusPanel />', () => {
             />
         )
 
-        // The "A contactar" detail message confirms the loading step is active.
-        expect(screen.getByText(/A contactar/i)).toBeInTheDocument()
+        // The "Contacting" detail message confirms the loading step is active.
+        expect(screen.getByText(/Contacting/i)).toBeInTheDocument()
 
         // SpinnerIcon emits an aria-hidden, animate-spin SVG. There is exactly
         // one such SVG in this state — the validate step.
@@ -53,7 +53,7 @@ describe('<ConnectionStatusPanel />', () => {
         expect(spinners[0].getAttribute('aria-hidden')).toBe('true')
     })
 
-    it('marks the overall panel as "Conexão pronta" when every step is ok', () => {
+    it('marks the overall panel as "Connection ready" when every step is ok', () => {
         render(
             <ConnectionStatusPanel
                 host="dev.azure.com"
@@ -65,8 +65,8 @@ describe('<ConnectionStatusPanel />', () => {
                 projectsCount={3}
             />
         )
-        expect(screen.getByText(/Conexão pronta/i)).toBeInTheDocument()
-        expect(screen.getByText(/3 projectos carregados/i)).toBeInTheDocument()
+        expect(screen.getByText(/Connection ready/i)).toBeInTheDocument()
+        expect(screen.getByText(/3 projects loaded/i)).toBeInTheDocument()
     })
 
     it('marks the overall panel as failed when validationError is set', () => {
@@ -81,13 +81,11 @@ describe('<ConnectionStatusPanel />', () => {
                 projectsCount={0}
             />
         )
-        expect(screen.getByText(/Conexão falhou/i)).toBeInTheDocument()
+        expect(screen.getByText(/Connection failed/i)).toBeInTheDocument()
         expect(screen.getByText(/HTTP 401/)).toBeInTheDocument()
     })
 
-    it('uses "passo" (PT-PT) — not the ES typo "paso" — on pending step copy', () => {
-        // Regression guard for the ConnectionStatusPanel typo fix shipped
-        // alongside the modal-unification panel review.
+    it('shows the pending-step copy on the validate step', () => {
         render(
             <ConnectionStatusPanel
                 host="dev.azure.com"
@@ -99,9 +97,7 @@ describe('<ConnectionStatusPanel />', () => {
                 projectsCount={0}
             />
         )
-        // 'Aguarda passo anterior' should be present (the validate step pending
-        // copy fires once parse=ok but credStep=pending).
-        expect(screen.queryByText(/Aguarda paso anterior/)).not.toBeInTheDocument()
-        expect(screen.getByText(/Aguarda passo anterior/)).toBeInTheDocument()
+        // The validate step's pending copy fires once parse=ok but credStep=pending.
+        expect(screen.getByText(/Waiting for the previous step/)).toBeInTheDocument()
     })
 })

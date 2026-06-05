@@ -33,7 +33,7 @@ describe('<SavedCredentialsPicker />', () => {
         )
 
         // The Spinner carries role="status" via the shared primitive.
-        const spinner = screen.getByRole('status', { name: /a carregar credenciais/i })
+        const spinner = screen.getByRole('status', { name: /loading credentials/i })
         expect(spinner).toBeInTheDocument()
 
         // The loading row's container must announce updates politely so SR

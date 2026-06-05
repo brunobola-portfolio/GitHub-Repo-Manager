@@ -78,9 +78,9 @@ export default function CredentialsForm({
   return (
     <div>
       <div className="flex items-baseline justify-between mb-2">
-        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Autenticação</p>
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Authentication</p>
         <span className="ds-text-meta text-slate-400 dark:text-slate-500">
-          Escolhe um método — só um é usado de cada vez
+          Choose a method — only one is used at a time
         </span>
       </div>
       <div className="space-y-2">
@@ -89,36 +89,36 @@ export default function CredentialsForm({
         <CredCard
           mode="serverPat"
           icon={Server}
-          label="Server PAT (do ficheiro .env)"
-          subtitle="Token configurado no servidor que corre esta app — partilhado por todos os utilizadores. Útil para um único token de automação."
+          label="Server PAT (from the .env file)"
+          subtitle="Token configured on the server running this app — shared by all users. Useful for a single automation token."
           state={stateFor('serverPat', serverReady, envAuthAvailable)}
           hint={
             envAuthAvailable
               ? (isOnPrem
-                  ? 'AZURE_PAT detectado em .env — atenção: provavelmente cloud, pode falhar contra TFS on-prem'
-                  : 'AZURE_PAT detectado em .env')
-              : 'AZURE_PAT não está definido em .env'
+                  ? 'AZURE_PAT detected in .env — heads up: likely a cloud token, may fail against on-prem TFS'
+                  : 'AZURE_PAT detected in .env')
+              : 'AZURE_PAT is not set in .env'
           }
           onSelect={handleModeSwitch}
         >
           {!envAuthAvailable && (
             <div className="space-y-2">
               <p className="text-xs text-slate-600 dark:text-slate-300">
-                Para activar este modo:
+                To enable this mode:
               </p>
-              <pre className="ds-text-meta bg-slate-900 text-slate-200 rounded-lg p-2.5 overflow-x-auto">{`# Edita server/.env
-AZURE_PAT=<token-com-scopes-Code+Project>
+              <pre className="ds-text-meta bg-slate-900 text-slate-200 rounded-lg p-2.5 overflow-x-auto">{`# Edit server/.env
+AZURE_PAT=<token-with-Code+Project-scopes>
 
-# Reinicia o servidor
+# Restart the server
 npm run dev`}</pre>
               <p className="ds-text-meta text-slate-500 dark:text-slate-400">
-                Depois recarrega esta página. Recomendado apenas para ambientes single-user.
+                Then reload this page. Recommended only for single-user environments.
               </p>
             </div>
           )}
           {envAuthAvailable && source.credentialMode === 'serverPat' && (
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Nada para colares aqui — o servidor injecta o token automaticamente quando este card está activo.
+              Nothing to paste here — the server injects the token automatically when this card is active.
             </p>
           )}
         </CredCard>
@@ -127,19 +127,19 @@ npm run dev`}</pre>
         <CredCard
           mode="personalPat"
           icon={KeyRound}
-          label="Personal Access Token (esta sessão)"
+          label="Personal Access Token (this session)"
           subtitle={source.savedCredentialId
-            ? 'A usar um token guardado da tua vault — gerido em Settings → Azure Credentials.'
-            : 'Cola o teu PAT aqui — fica só nesta sessão do browser. Recomendado para TFS on-prem ou quando queres usar a tua identidade.'}
+            ? 'Using a saved token from your vault — managed in Settings → Azure Credentials.'
+            : 'Paste your PAT here — it stays only in this browser session. Recommended for on-prem TFS or when you want to use your own identity.'}
           state={stateFor('personalPat', personalReady, true)}
           hint={
             source.savedCredentialId
-              ? 'Token guardado escolhido · pronto a validar'
+              ? 'Saved token chosen · ready to validate'
               : source.pat?.trim()
-                ? 'Token colado · pronto a validar'
+                ? 'Token pasted · ready to validate'
                 : (source.credentialMode === 'personalPat'
-                    ? 'Aguarda token — escolhe um guardado ou cola um novo abaixo'
-                    : 'Sem token nesta sessão')
+                    ? 'Waiting for a token — choose a saved one or paste a new one below'
+                    : 'No token in this session')
           }
           onSelect={handleModeSwitch}
         >
@@ -159,10 +159,10 @@ npm run dev`}</pre>
           icon={ShieldCheck}
           label="OAuth / Browser Login"
           subtitle={isCloud
-            ? 'Autenticação via Azure AD — abre uma janela do browser para fazer login.'
+            ? 'Authentication via Azure AD — opens a browser window to sign in.'
             : isOnPrem
-              ? 'OAuth via Azure AD não está disponível para TFS on-premises. Usa Personal PAT.'
-              : 'OAuth via Azure AD só funciona com Azure DevOps cloud. Cola uma URL para detectar o servidor.'}
+              ? 'OAuth via Azure AD is not available for on-premises TFS. Use a Personal PAT.'
+              : 'OAuth via Azure AD only works with Azure DevOps cloud. Paste a URL to detect the server.'}
           state={
             !isCloud
               ? 'unavailable'
@@ -172,30 +172,30 @@ npm run dev`}</pre>
           }
           hint={
             !isCloud
-              ? 'Apenas para Azure DevOps cloud'
+              ? 'Cloud Azure DevOps only'
               : !oauthConfigured
-                ? 'Não configurado no servidor'
+                ? 'Not configured on the server'
                 : oauthReady
-                  ? 'Autenticado'
-                  : 'Pronto — clica para abrir o login'
+                  ? 'Authenticated'
+                  : 'Ready — click to open the login'
           }
           onSelect={handleModeSwitch}
         >
           {isOnPrem && (
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Para autenticares em <code>{source.host}</code>, usa <strong>Personal Access Token</strong> acima.
+              To authenticate against <code>{source.host}</code>, use a <strong>Personal Access Token</strong> above.
             </p>
           )}
           {isCloud && !oauthConfigured && (
             <div className="space-y-2">
-              <p className="text-xs text-slate-600 dark:text-slate-300">Para o admin do servidor activar OAuth:</p>
-              <pre className="ds-text-meta bg-slate-900 text-slate-200 rounded-lg p-2.5 overflow-x-auto whitespace-pre-wrap">{`1. Regista uma app em Azure Portal (AAD → App Registrations)
+              <p className="text-xs text-slate-600 dark:text-slate-300">For the server admin to enable OAuth:</p>
+              <pre className="ds-text-meta bg-slate-900 text-slate-200 rounded-lg p-2.5 overflow-x-auto whitespace-pre-wrap">{`1. Register an app in Azure Portal (AAD → App Registrations)
 2. Redirect URI: http://localhost:3001/api/azure/oauth/callback
-3. Adiciona ao server/.env:
+3. Add to server/.env:
      AZURE_CLIENT_ID=<app-client-id>
      AZURE_CLIENT_SECRET=<app-client-secret>
-     AZURE_TENANT_ID=<tenant-id>   (ou "common")
-4. Reinicia o servidor.`}</pre>
+     AZURE_TENANT_ID=<tenant-id>   (or "common")
+4. Restart the server.`}</pre>
             </div>
           )}
           {isCloud && oauthConfigured && source.credentialMode === 'oauth' && (

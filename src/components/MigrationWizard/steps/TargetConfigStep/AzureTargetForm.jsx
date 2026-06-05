@@ -40,22 +40,22 @@ export default function AzureTargetForm({ source, onChange, githubTargetForm = n
             active={mode === 'same-project'}
             onClick={() => setMode('same-project')}
             icon={FolderGit2}
-            title="Mesmo projecto Azure"
-            desc="Cria um repo Git no mesmo projecto da source TFVC."
+            title="Same Azure project"
+            desc="Creates a Git repo in the same project as the TFVC source."
           />
           <ModeCard
             active={mode === 'existing-project'}
             onClick={() => setMode('existing-project')}
             icon={FolderGit2}
-            title="Outro projecto Azure"
-            desc="Cria o repo num projecto Azure existente da mesma organização."
+            title="Another Azure project"
+            desc="Creates the repo in an existing Azure project in the same organization."
           />
           <ModeCard
             active={mode === 'new-project'}
             onClick={() => setMode('new-project')}
             icon={FolderPlus}
-            title="Novo projecto Azure"
-            desc="Provisiona um projecto novo no Azure DevOps e cria o repo lá."
+            title="New Azure project"
+            desc="Provisions a new Azure DevOps project and creates the repo there."
           />
         </div>
       </fieldset>
@@ -141,9 +141,9 @@ function ExistingProjectForm({ source, onChange }) {
 
   return (
     <div className="space-y-3 pt-2">
-      <Field label="Projecto Azure DevOps destino" htmlFor="azure-tgt-existing-project">
+      <Field label="Target Azure DevOps project" htmlFor="azure-tgt-existing-project">
         {loading ? (
-          <div className="flex items-center gap-2 text-sm text-slate-500"><Spinner size="md" tone="muted" /> A carregar projectos…</div>
+          <div className="flex items-center gap-2 text-sm text-slate-500"><Spinner size="md" tone="muted" /> Loading projects…</div>
         ) : (
           <select
             id="azure-tgt-existing-project"
@@ -205,16 +205,16 @@ function NewProjectForm({ source, onChange }) {
 
   return (
     <div className="space-y-3 pt-2">
-      <Field label="Nome do novo projecto" htmlFor="azure-tgt-new-project-name">
+      <Field label="New project name" htmlFor="azure-tgt-new-project-name">
         <Input
           id="azure-tgt-new-project-name"
           value={source.azureNewProjectName || ''}
           onChange={(e) => onChange({ azureNewProjectName: e.target.value })}
-          placeholder="Novo-Projecto"
+          placeholder="New-Project"
           leadingIcon={FolderPlus}
         />
       </Field>
-      <Field label="Descrição (opcional)" htmlFor="azure-tgt-new-project-desc">
+      <Field label="Description (optional)" htmlFor="azure-tgt-new-project-desc">
         <Textarea
           id="azure-tgt-new-project-desc"
           value={source.azureNewProjectDesc || ''}
@@ -222,7 +222,7 @@ function NewProjectForm({ source, onChange }) {
           rows={2}
         />
       </Field>
-      <Field label="Nome do repo destino dentro do novo projecto" htmlFor="azure-tgt-new-repo-name">
+      <Field label="Target repo name inside the new project" htmlFor="azure-tgt-new-repo-name">
         <Input
           id="azure-tgt-new-repo-name"
           value={source.azureTargetRepoName || ''}
@@ -238,7 +238,7 @@ function NewProjectForm({ source, onChange }) {
         className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] disabled:bg-slate-300 disabled:cursor-not-allowed"
       >
         {creating ? <Spinner size="md" tone="onPrimary" /> : <Plus className="w-4 h-4" />}
-        {creating ? 'A criar projecto…' : 'Criar projecto agora'}
+        {creating ? 'Creating project…' : 'Create project now'}
       </button>
       {result && (
         <p className="text-xs text-emerald-600 dark:text-emerald-400">

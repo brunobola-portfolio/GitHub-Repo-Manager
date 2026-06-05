@@ -53,8 +53,8 @@ describe('SourceStep', () => {
     expect(screen.queryByRole('button', { name: /validate/i })).not.toBeInTheDocument()
   })
 
-  // Regression: the amber "Server PAT está configurado … detectaste um servidor
-  // TFS on-premises (<host>)" warning fired whenever the provider wasn't cloud —
+  // Regression: the amber "Server PAT is configured … detected an on-premises
+  // TFS server (<host>)" warning fired whenever the provider wasn't cloud —
   // including the UNKNOWN state before any URL was pasted — printing an empty
   // "()" and falsely claiming a server was detected.
   describe('Server PAT on-prem warning (no false detection)', () => {
@@ -76,8 +76,8 @@ describe('SourceStep', () => {
       )
       // Wait until the env-auth probe resolved (Server PAT card shows its .env
       // hint) so a regression would have had every chance to render the warning.
-      await screen.findByText(/AZURE_PAT detectado em \.env/i)
-      expect(screen.queryByText(/detectaste um servidor TFS on-premises/i)).not.toBeInTheDocument()
+      await screen.findByText(/AZURE_PAT detected in \.env/i)
+      expect(screen.queryByText(/detected an on-premises TFS server/i)).not.toBeInTheDocument()
     })
 
     it('warns about on-prem once a real on-prem host is detected', async () => {
@@ -89,7 +89,7 @@ describe('SourceStep', () => {
           oauthHook={mockOauthHook}
         />,
       )
-      expect(await screen.findByText(/detectaste um servidor TFS on-premises/i)).toBeInTheDocument()
+      expect(await screen.findByText(/detected an on-premises TFS server/i)).toBeInTheDocument()
     })
   })
 })
