@@ -62,8 +62,8 @@ const TABS = [
     { id: 'reviews',     label: 'My Reviews',  icon: GitPullRequest, component: MyReviewsTab, accent: 'purple' },
     { id: 'stale',       label: 'Stale PRs',   icon: AlertTriangle,  component: StalePRsTab,  accent: 'amber' },
     { id: 'issues',      label: 'My Issues',   icon: CircleDot,      component: MyIssuesTab,  accent: 'emerald' },
-    { id: 'reviewload',  label: 'Review Load', icon: Users,          component: ReviewLoadTab, badge: 'Pro', accent: 'sky' },
-    { id: 'techdebt',    label: 'Tech Debt',   icon: Wrench,         component: TechDebtTab, badge: 'Pro', accent: 'amber' },
+    { id: 'reviewload',  label: 'Review Load', icon: Users,          component: ReviewLoadTab, accent: 'sky' },
+    { id: 'techdebt',    label: 'Tech Debt',   icon: Wrench,         component: TechDebtTab, accent: 'amber' },
     { id: 'dora',        label: 'DORA',        icon: BarChart3,      component: DORATab, badge: 'Enterprise', accent: 'indigo' },
 ]
 
