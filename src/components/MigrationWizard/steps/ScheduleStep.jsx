@@ -138,7 +138,7 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
         source: {
           type: wizard.source?.type || 'azure',
           // Forward the resolved host so the backend validates against the
-          // actual server the wizard used (e.g. tfs.empresa.com), not zod's
+          // actual server the wizard used (e.g. tfs.company.com), not zod's
           // 'dev.azure.com' default which fails when the allowlist doesn't
           // include cloud Azure.
           ...(wizard.source?.host ? { host: wizard.source.host } : {}),

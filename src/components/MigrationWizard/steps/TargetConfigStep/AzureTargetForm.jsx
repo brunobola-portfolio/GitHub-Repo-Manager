@@ -26,7 +26,7 @@ export default function AzureTargetForm({ source, onChange, githubTargetForm = n
     <div className="space-y-4">
       <fieldset>
         <legend className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-          Destino da migração
+          Migration target
         </legend>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <ModeCard
@@ -34,7 +34,7 @@ export default function AzureTargetForm({ source, onChange, githubTargetForm = n
             onClick={() => setMode('github')}
             icon={Cloud}
             title="GitHub"
-            desc="Cria um repo novo no GitHub (fluxo principal)."
+            desc="Creates a new repo on GitHub (main flow)."
           />
           <ModeCard
             active={mode === 'same-project'}
@@ -93,14 +93,14 @@ function SameProjectForm({ source, onChange }) {
   return (
     <div className="space-y-3 pt-2">
       <p className="text-xs text-slate-500 dark:text-slate-400">
-        O repo será criado no mesmo projecto da source ({source.project || '—'}).
+        The repo will be created in the same project as the source ({source.project || '—'}).
       </p>
-      <Field label="Nome do repo destino" htmlFor="azure-tgt-same-name">
+      <Field label="Target repo name" htmlFor="azure-tgt-same-name">
         <Input
           id="azure-tgt-same-name"
           value={source.azureTargetRepoName || ''}
           onChange={(e) => onChange({ azureTargetRepoName: e.target.value })}
-          placeholder="meu-repo-novo"
+          placeholder="my-new-repo"
           leadingIcon={FolderGit2}
         />
       </Field>
@@ -151,18 +151,18 @@ function ExistingProjectForm({ source, onChange }) {
             onChange={(e) => onChange({ azureTargetProject: e.target.value })}
             className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-sm"
           >
-            <option value="">— escolhe um projecto —</option>
+            <option value="">— choose a project —</option>
             {projects.map((p) => <option key={p.id || p.name} value={p.name}>{p.name}</option>)}
           </select>
         )}
         {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
       </Field>
-      <Field label="Nome do repo destino" htmlFor="azure-tgt-existing-name">
+      <Field label="Target repo name" htmlFor="azure-tgt-existing-name">
         <Input
           id="azure-tgt-existing-name"
           value={source.azureTargetRepoName || ''}
           onChange={(e) => onChange({ azureTargetRepoName: e.target.value })}
-          placeholder="meu-repo-novo"
+          placeholder="my-new-repo"
           leadingIcon={FolderGit2}
         />
       </Field>
@@ -227,7 +227,7 @@ function NewProjectForm({ source, onChange }) {
           id="azure-tgt-new-repo-name"
           value={source.azureTargetRepoName || ''}
           onChange={(e) => onChange({ azureTargetRepoName: e.target.value })}
-          placeholder="meu-repo-novo"
+          placeholder="my-new-repo"
           leadingIcon={FolderGit2}
         />
       </Field>
@@ -242,7 +242,7 @@ function NewProjectForm({ source, onChange }) {
       </button>
       {result && (
         <p className="text-xs text-emerald-600 dark:text-emerald-400">
-          ✓ Projecto {result.project?.name} criado{result.repo ? ` com repo ${result.repo.name}` : ''}.
+          ✓ Project {result.project?.name} created{result.repo ? ` with repo ${result.repo.name}` : ''}.
         </p>
       )}
       {error && <p className="text-xs text-red-500">{error}</p>}

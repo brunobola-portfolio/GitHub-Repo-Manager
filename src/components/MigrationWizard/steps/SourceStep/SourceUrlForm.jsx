@@ -77,7 +77,7 @@ export default function SourceUrlForm({
                   {urlPreview.project && (
                     <>
                       <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <PreviewChip icon={FolderGit2} label="Projecto" value={urlPreview.project} tone="indigo" />
+                      <PreviewChip icon={FolderGit2} label="Project" value={urlPreview.project} tone="indigo" />
                     </>
                   )}
                   {urlPreview.repo && urlPreview.repo !== urlPreview.project && (

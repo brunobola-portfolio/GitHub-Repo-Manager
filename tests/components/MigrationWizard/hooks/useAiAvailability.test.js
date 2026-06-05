@@ -44,6 +44,6 @@ describe('useAiAvailability', () => {
     await waitFor(() => expect(result.current.aiAvailable).toBe(true))
     act(() => { subscribers.forEach((cb) => cb('404:/api/x')) })
     expect(result.current.aiAvailable).toBe(false)
-    expect(result.current.aiNotice).toMatch(/modelo configurado/i)
+    expect(result.current.aiNotice).toMatch(/configured model/i)
   })
 })

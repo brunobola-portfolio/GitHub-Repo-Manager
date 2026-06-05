@@ -4,7 +4,7 @@ import { CheckCircle2, Dot } from 'lucide-react'
  * Selectable credential card with clear state semantics.
  *
  * State model (explicit, never ambiguous):
- *   - "active"      → currently selected AND ready to authenticate (big "EM USO" pill)
+ *   - "active"      → currently selected AND ready to authenticate (big "IN USE" pill)
  *   - "selected"    → selected but not yet ready (missing PAT, OAuth pending, …)
  *   - "available"   → not selected, but configuration is present and could be used
  *   - "unavailable" → cannot be used right now (not configured server-side, etc.)
@@ -77,10 +77,10 @@ export default function CredCard({
 
 function StatePill({ state }) {
   const map = {
-    active:      { label: 'EM USO',           cls: 'bg-emerald-500 text-white' },
-    selected:    { label: 'seleccionado',     cls: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300' },
-    available:   { label: 'disponível',       cls: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400' },
-    unavailable: { label: 'não configurado',  cls: 'bg-slate-100 dark:bg-slate-800 text-slate-500' },
+    active:      { label: 'IN USE',           cls: 'bg-emerald-500 text-white' },
+    selected:    { label: 'selected',         cls: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300' },
+    available:   { label: 'available',        cls: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400' },
+    unavailable: { label: 'not configured',   cls: 'bg-slate-100 dark:bg-slate-800 text-slate-500' },
   }
   const v = map[state]
   if (!v) return null

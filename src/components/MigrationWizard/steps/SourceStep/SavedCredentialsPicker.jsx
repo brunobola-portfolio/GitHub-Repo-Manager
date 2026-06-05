@@ -129,13 +129,13 @@ export default function SavedCredentialsPicker({ host, org, value, onPick, onOpe
                         </span>
                         {isExactOrg && (
                           <span className="shrink-0 ds-text-micro uppercase tracking-wider font-semibold text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/40">
-                            correspondência exacta
+                            exact match
                           </span>
                         )}
                       </div>
                       <div className="ds-text-meta text-slate-500 dark:text-slate-400 ml-5 mt-0.5 font-mono truncate">
                         {c.org ? `${c.org} · ` : ''}{c.prefix}
-                        {c.lastUsedAt && <> · usado {formatRelative(c.lastUsedAt)}</>}
+                        {c.lastUsedAt && <> · used {formatRelative(c.lastUsedAt)}</>}
                       </div>
                     </button>
                   </li>
@@ -151,7 +151,7 @@ export default function SavedCredentialsPicker({ host, org, value, onPick, onOpe
                   className="w-full px-3 py-2 text-left text-xs text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700/50 inline-flex items-center gap-1.5"
                 >
                   <Plus className="w-3 h-3" />
-                  Colar um PAT diferente em vez disso
+                  Paste a different PAT instead
                 </button>
               </li>
             </ul>
@@ -161,7 +161,7 @@ export default function SavedCredentialsPicker({ host, org, value, onPick, onOpe
 
       {picked && (
         <p className="ds-text-meta text-emerald-700/80 dark:text-emerald-300/80 px-1">
-          ✓ A usar token guardado · o PAT nunca sai do servidor (decriptado on-demand)
+          ✓ Using a saved token · the PAT never leaves the server (decrypted on-demand)
         </p>
       )}
     </div>
@@ -172,9 +172,9 @@ function formatRelative(iso) {
   try {
     const d = new Date(iso)
     const days = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24))
-    if (days < 1) return 'hoje'
-    if (days < 30) return `há ${days}d`
-    if (days < 365) return `há ${Math.floor(days / 30)}m`
-    return `há ${Math.floor(days / 365)}+ anos`
+    if (days < 1) return 'today'
+    if (days < 30) return `${days}d ago`
+    if (days < 365) return `${Math.floor(days / 30)}mo ago`
+    return `${Math.floor(days / 365)}+ years ago`
   } catch { return '' }
 }

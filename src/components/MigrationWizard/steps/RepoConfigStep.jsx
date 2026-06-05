@@ -210,9 +210,9 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
         >
           <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
           <div className="flex-1 min-w-0">
-            <p className="font-medium">Credenciais Azure por validar</p>
+            <p className="font-medium">Azure credentials not validated</p>
             <p className="text-xs opacity-90 mt-0.5">
-              O PAT da Azure ainda não foi confirmado. A migração vai falhar no passo final se não ligares primeiro.
+              The Azure PAT hasn't been confirmed yet. The migration will fail at the final step if you don't connect first.
             </p>
           </div>
           {onGoToStep && (
@@ -221,7 +221,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
               onClick={() => onGoToStep('azureConnect')}
               className="shrink-0 rounded-md border border-amber-400 bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-200 dark:border-amber-600 dark:bg-amber-900/40 dark:text-amber-100 dark:hover:bg-amber-900/60"
             >
-              Ir para Connect
+              Go to Connect
             </button>
           )}
         </div>
@@ -245,7 +245,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
             <Sparkles className="w-4 h-4 mt-0.5 shrink-0 text-amber-500 dark:text-amber-400" aria-hidden="true" />
             <div className="flex-1 min-w-0">
               <p className="font-medium leading-tight">{aiNotice}</p>
-              <p className="ds-text-meta opacity-80 mt-0.5">As descrições e sugestões continuam disponíveis via template determinístico.</p>
+              <p className="ds-text-meta opacity-80 mt-0.5">Descriptions and suggestions remain available via a deterministic template.</p>
             </div>
             <button
               type="button"
@@ -308,7 +308,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
                   )}
                   {azureProjects.length > 0 && (
                     <span className="hidden md:inline ds-text-meta text-slate-400 dark:text-slate-500 font-medium tabular-nums">
-                      {azureProjects.length} {azureProjects.length === 1 ? 'projeto' : 'projetos'}
+                      {azureProjects.length} {azureProjects.length === 1 ? 'project' : 'projects'}
                     </span>
                   )}
                 </div>
@@ -457,29 +457,29 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
                           <button
                             type="button"
                             onClick={() => handleTargetTypeChange(repo, index, 'new')}
-                            title="Cria um repo Git novo neste projeto"
+                            title="Create a new Git repo in this project"
                             className={`inline-flex items-center gap-1 px-2.5 py-1 ds-text-micro font-semibold uppercase tracking-wider transition-all
                               ${(repo.targetType || 'new') === 'new'
                                 ? 'bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-inner'
                                 : 'bg-white dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-300'}`}
                           >
                             <Plus className="w-3 h-3" />
-                            Novo
+                            New
                           </button>
                           <button
                             type="button"
                             onClick={() => handleTargetTypeChange(repo, index, 'existing-empty')}
                             disabled={azureEmptyRepos.length === 0}
                             title={azureEmptyRepos.length === 0
-                              ? 'Não há repos Git vazios neste projeto'
-                              : `Reutiliza um repo existente vazio (${azureEmptyRepos.length} disponível${azureEmptyRepos.length === 1 ? '' : 'is'})`}
+                              ? 'No empty Git repos in this project'
+                              : `Reuse an existing empty repo (${azureEmptyRepos.length} available)`}
                             className={`inline-flex items-center gap-1 px-2.5 py-1 ds-text-micro font-semibold uppercase tracking-wider transition-all border-l border-slate-200 dark:border-slate-700
                               ${repo.targetType === 'existing-empty'
                                 ? 'bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-inner'
                                 : 'bg-white dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-900/60 disabled:hover:text-slate-500 dark:disabled:hover:text-slate-400'}`}
                           >
                             <Recycle className="w-3 h-3" />
-                            Existente
+                            Existing
                             {azureEmptyRepos.length > 0 && repo.targetType !== 'existing-empty' && (
                               <span className="ml-0.5 px-1 rounded-sm bg-violet-500/15 text-violet-600 dark:text-violet-300 text-[9px] tabular-nums">
                                 {azureEmptyRepos.length}

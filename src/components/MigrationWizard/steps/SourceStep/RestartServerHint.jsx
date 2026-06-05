@@ -22,19 +22,19 @@ export default function RestartServerHint({ host }) {
       <div className="px-4 py-2.5 flex items-center gap-2 bg-indigo-100/60 dark:bg-indigo-900/30 border-b border-indigo-200 dark:border-indigo-800">
         <RefreshCw className="w-4 h-4 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]" />
         <span className="text-sm font-semibold text-indigo-800 dark:text-indigo-200">
-          Backend precisa de reiniciar
+          Backend needs a restart
         </span>
       </div>
       <div className="p-4 space-y-2.5">
         <p className="text-sm text-slate-700 dark:text-slate-200">
-          O servidor está a rejeitar <code className="px-1 rounded bg-indigo-100 dark:bg-indigo-900/40 ds-text-meta">{host}</code>{' '}
-          por resolver para um IP privado — comportamento corrigido em código mais recente.
-          Esta é a forma <strong>normal</strong> de um TFS interno funcionar (LAN corporativa) e o teu host
-          já está autorizado na allowlist.
+          The server is rejecting <code className="px-1 rounded bg-indigo-100 dark:bg-indigo-900/40 ds-text-meta">{host}</code>{' '}
+          because it resolves to a private IP — behavior fixed in newer code.
+          This is the <strong>normal</strong> way an internal TFS works (corporate LAN), and your host
+          is already on the allowlist.
         </p>
         <div className="space-y-1.5">
           <p className="text-xs text-slate-600 dark:text-slate-300">
-            <strong>Solução:</strong> reinicia o backend para aplicar o fix:
+            <strong>Fix:</strong> restart the backend to apply the change:
           </p>
           <div className="flex items-stretch gap-1">
             <code className="flex-1 text-[12px] font-mono px-2.5 py-2 rounded-lg bg-slate-900 text-emerald-300 overflow-x-auto inline-flex items-center gap-1.5">
@@ -45,14 +45,14 @@ export default function RestartServerHint({ host }) {
               type="button"
               onClick={copy}
               className="px-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-colors"
-              aria-label="Copiar comando"
+              aria-label="Copy command"
             >
               <AnimatedCopyIcon copied={copied} size="w-3.5 h-3.5" checkClassName="text-emerald-500" />
             </button>
           </div>
           <p className="ds-text-meta text-slate-500 dark:text-slate-400">
-            Pára o servidor (<code>Ctrl+C</code>) e arranca de novo. Depois clica em
-            {' '}<strong>Tentar de novo</strong> abaixo.
+            Stop the server (<code>Ctrl+C</code>) and start it again. Then click
+            {' '}<strong>Try again</strong> below.
           </p>
         </div>
       </div>
