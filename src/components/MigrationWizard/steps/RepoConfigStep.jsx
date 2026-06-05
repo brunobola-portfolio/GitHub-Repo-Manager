@@ -15,18 +15,12 @@ import { useRepoNameConflicts } from '../hooks/useRepoNameConflicts'
 import { useAiAvailability } from '../hooks/useAiAvailability'
 import { Select } from '../../ui/Select'
 import { Input, Switch } from '../../ui/form'
-import { formatFileSize } from '../../../utils/format'
 import { RiskBadge } from '../ui/repo/RiskBadge'
 import { useRepoDescriptionSuggestion } from '../../../hooks/useRepoDescriptionSuggestion'
 import TargetModePicker from './RepoConfigStep/TargetModePicker'
 import { DescriptionField } from './RepoConfigStep/DescriptionField'
-
-// Wrapper kept to preserve "0 B" empty-state copy and the "0 decimals for B"
-// rendering the wizard expects.
-function formatSize(bytes) {
-  if (!bytes || bytes <= 0) return '0 B'
-  return formatFileSize(bytes, bytes < 1024 ? 0 : 1).replace('Bytes', 'B')
-}
+import { RepoMetadataBadges } from './RepoConfigStep/RepoMetadataBadges'
+import { formatSize } from './RepoConfigStep/formatSize'
 
 /**
  * RepoConfigStep - Configure target settings for selected repos.
@@ -524,27 +518,12 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
                       </div>
                     </div>
                     {/* Metadata badges */}
-                    <div className="flex items-center gap-1.5 mt-1.5">
-                      {repo.language && (
-                        <span className="ds-text-micro bg-slate-200 dark:bg-slate-900 text-slate-600 dark:text-slate-500 px-1.5 py-0.5 rounded">
-                          {repo.language}
-                        </span>
-                      )}
-                      <span className="ds-text-micro bg-slate-200 dark:bg-slate-900 text-slate-600 dark:text-slate-500 px-1.5 py-0.5 rounded">
-                        {formatSize(repo.size)}
-                      </span>
-                      {repo.isTfvc ? (
-                        <span className="ds-text-micro bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded">
-                          TFVC
-                        </span>
-                      ) : (
-                        repo.branches > 0 && (
-                          <span className="ds-text-micro bg-slate-200 dark:bg-slate-900 text-slate-600 dark:text-slate-500 px-1.5 py-0.5 rounded">
-                            {repo.branches} {repo.branches === 1 ? 'branch' : 'branches'}
-                          </span>
-                        )
-                      )}
-                    </div>
+                    <RepoMetadataBadges
+                      language={repo.language}
+                      size={repo.size}
+                      isTfvc={repo.isTfvc}
+                      branches={repo.branches}
+                    />
                   </div>
 
                   {/* Right: visibility + status + expand */}
