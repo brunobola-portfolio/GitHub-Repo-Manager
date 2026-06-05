@@ -34,6 +34,7 @@ import { buildIssueActionCommands } from '../actions/issueActions'
 import { readRecents, bumpRecent } from './CommandPalette/recents'
 import { SearchInput } from './CommandPalette/SearchInput'
 import { GitHubResults } from './CommandPalette/GitHubResults'
+import { RecentGroup } from './CommandPalette/RecentGroup'
 import { GROUP_HEADING_CLASSES, ITEM_CLASSES } from './CommandPalette/styles'
 
 const NAVIGATE_ITEMS = [
@@ -386,6 +387,22 @@ export function CommandPalette({
     setRecents(bumpRecent(entry))
   }
 
+  // Selection side effects for a Recent entry: re-bump it and route to the
+  // view/repo. Kept in the parent so RecentGroup stays purely presentational.
+  function handleRecentSelect(entry) {
+    if (entry.kind === 'view') {
+      bumpAndSetRecents(entry)
+      onViewChange(entry.id)
+    } else if (entry.kind === 'repo') {
+      const repo = repos.find(r => r.full_name === entry.id)
+      if (repo) {
+        bumpAndSetRecents(entry)
+        onSelectRepo(repo)
+      }
+    }
+    onClose()
+  }
+
   const openExternal = (url) => {
     if (!url) return
     window.open(url, '_blank', 'noopener,noreferrer')
@@ -523,40 +540,7 @@ export function CommandPalette({
           ) : null)}
 
           {!askMode && recents.length > 0 && input.trim() === '' && (
-            <Command.Group heading="Recent" className={GROUP_HEADING_CLASSES}>
-              {recents.map((entry) => {
-                const navItem = entry.kind === 'view'
-                  ? NAVIGATE_ITEMS.find(n => n.view === entry.id)
-                  : null
-                const Icon = entry.kind === 'view' ? (navItem?.icon ?? Clock) : GitFork
-                return (
-                  <Command.Item
-                    key={`recent-${entry.kind}-${entry.id}`}
-                    value={`recent ${entry.label}`}
-                    onSelect={() => {
-                      if (entry.kind === 'view') {
-                        bumpAndSetRecents(entry)
-                        onViewChange(entry.id)
-                      } else if (entry.kind === 'repo') {
-                        const repo = repos.find(r => r.full_name === entry.id)
-                        if (repo) {
-                          bumpAndSetRecents(entry)
-                          onSelectRepo(repo)
-                        }
-                      }
-                      onClose()
-                    }}
-                    className={ITEM_CLASSES}
-                  >
-                    <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />
-                    {entry.label}
-                    <span className="ml-auto ds-text-micro uppercase tracking-wide text-slate-400">
-                      {entry.kind}
-                    </span>
-                  </Command.Item>
-                )
-              })}
-            </Command.Group>
+            <RecentGroup recents={recents} navigateItems={NAVIGATE_ITEMS} onSelect={handleRecentSelect} />
           )}
 
           {!askMode && (<>
