@@ -139,7 +139,11 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
       Object.values(batchIntervalsRef.current).forEach((id) => clearInterval(id))
       batchIntervalsRef.current = {}
     }
-  }, [isBatchMode, importJobs.importing, importJobs.batchJobs, importJobs.batchStatuses, onUpdate])
+    // NB: importJobs.batchStatuses is intentionally NOT a dep — the effect writes
+    // it (via onUpdate) but never reads it (the updater uses its own `prev`).
+    // Listing it re-ran this effect on every poll tick, tearing down and
+    // re-creating all batch intervals; omitting it keeps the intervals stable.
+  }, [isBatchMode, importJobs.importing, importJobs.batchJobs, onUpdate])
 
   // --- Single import UI ---
   if (!isBatchMode) {

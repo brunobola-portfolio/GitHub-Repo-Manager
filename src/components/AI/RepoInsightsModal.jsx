@@ -387,7 +387,7 @@ function OverviewGrid({ data }) {
                     </h3>
                     <div className="grid sm:grid-cols-2 gap-2">
                         {data.highlights.map((h, i) => (
-                            <div key={i} className="flex items-start gap-2 text-sm text-emerald-600 dark:text-emerald-400">
+                            <div key={`${i}-${h}`} className="flex items-start gap-2 text-sm text-emerald-600 dark:text-emerald-400">
                                 <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
                                 <span className="break-words">{h}</span>
                             </div>
@@ -403,9 +403,9 @@ function OverviewGrid({ data }) {
                         Suggested Topics
                     </h3>
                     <div className="flex flex-wrap gap-2">
-                        {data.suggested_topics.map((topic, i) => (
+                        {data.suggested_topics.map((topic) => (
                             <span
-                                key={i}
+                                key={topic}
                                 className="px-3 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 rounded-full text-sm"
                             >
                                 #{topic}
