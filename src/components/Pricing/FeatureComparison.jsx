@@ -12,11 +12,11 @@ const CATEGORIES = [
     rows: [
       {
         feature: 'Repositories managed',
-        values: ['50', 'Unlimited', 'Unlimited'],
+        values: ['200', 'Unlimited', 'Unlimited'],
       },
       {
         feature: 'API keys',
-        values: ['2', '10', '50'],
+        values: ['5', '10', '50'],
       },
       {
         feature: 'Basic bulk on own repos',
@@ -45,7 +45,7 @@ const CATEGORIES = [
       },
       {
         feature: 'Semantic Search',
-        values: ['50 / month', 'Unlimited', 'Unlimited'],
+        values: ['75 / month', 'Unlimited', 'Unlimited'],
       },
       {
         feature: 'Migration Risk Analysis (AI)',
@@ -53,7 +53,7 @@ const CATEGORIES = [
       },
       {
         feature: 'Repo Insights / Quality Report',
-        values: ['10 / month', 'Unlimited', 'Unlimited'],
+        values: ['15 / month', 'Unlimited', 'Unlimited'],
       },
       {
         feature: 'README Generator (AI)',
