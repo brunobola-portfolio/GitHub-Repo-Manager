@@ -94,6 +94,9 @@ Full detail: [`CHANGELOG.md`](../CHANGELOG.md).
 - [Backend](architecture/backend.md) — Express routes, middleware stack,
   DB adapter seam.
 - [Teams](architecture/teams.md) — teams feature data model.
+- [AI client contracts (ADR)](architecture/ai-client-contracts.md) — why
+  `aiApi` (placeholders) and `aiFetch` (typed throws) coexist, which to use,
+  and the deferred unification plan.
 
 ## Feature guides
 

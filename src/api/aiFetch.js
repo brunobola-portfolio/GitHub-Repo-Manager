@@ -1,3 +1,17 @@
+// =============================================================================
+// aiFetch — the *typed-throw* AI client (and the client-side quota gate).
+//
+// Throws typed errors (AINotConfiguredError / AIInvalidKeyError /
+// AIUnreachableError / AIQuotaExceededError), pre-empting the network when it
+// already knows a call will fail, and shares a process-wide quota gate so
+// fan-out surfaces don't spray 429s. Prefer this for new, explicitly
+// user-triggered AI actions that have a dedicated error/empty surface.
+//
+// This is one of TWO intentional AI-client contracts. The other is
+// `src/api/ai.js` (`aiApi`), which returns honest non-throwing PLACEHOLDERS for
+// ambient surfaces that must render without AI. Full rationale + the (deferred)
+// unification plan: docs/architecture/ai-client-contracts.md.
+// =============================================================================
 import { getAIStatus } from './aiStatus'
 import { getCsrfToken } from '../utils/api'
 
