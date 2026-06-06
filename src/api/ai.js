@@ -1,3 +1,18 @@
+// =============================================================================
+// aiApi — the *placeholder* (non-throwing) AI client.
+//
+// When AI is unconfigured or the provider 503s, these methods return an honest
+// placeholder shape — real fields nulled, plus `{ mock: true, aiConfigured }`
+// (and `runtimeUnavailable: true` for the 503 path) — so ambient AI surfaces
+// (analysis cards, quality reports, batch index, search) degrade gracefully
+// inline WITHOUT a try/catch. Tier/quota errors (429/403) and hard-required
+// ops (e.g. planIssue) are the exceptions — they still throw.
+//
+// This is one of TWO intentional AI-client contracts. The other is
+// `src/api/aiFetch.js`, which THROWS typed errors and owns the quota gate; use
+// that for new, explicitly user-triggered AI actions. Full rationale + the
+// (deferred) unification plan: docs/architecture/ai-client-contracts.md.
+// =============================================================================
 import { API_BASE } from '../config';
 import { getCsrfToken } from '../utils/api';
 import { getAIStatus } from './aiStatus';
