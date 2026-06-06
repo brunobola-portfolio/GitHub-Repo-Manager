@@ -142,6 +142,8 @@ beforeEach(() => {
     // start from a known state.
     document.documentElement.classList.remove('dark')
     window.localStorage.clear()
+    // Reset the URL hash so routing tests don't leak state into one another.
+    window.location.hash = ''
 })
 
 describe('App shell (authenticated, MOCK_MODE=true)', () => {
@@ -243,5 +245,92 @@ describe('App shell (authenticated, MOCK_MODE=true)', () => {
         await waitFor(() => {
             expect(document.documentElement.classList.contains('dark')).toBe(true)
         })
+    })
+})
+
+// ---------------------------------------------------------------------------
+// Hash routing — characterization guard for the bidirectional hash<->activeView
+// sync that an eventual `useAppRouter` extraction must preserve: deep-link
+// repo-detail (parseRepoHash), HASH_ROUTES lookup, empty-hash -> dashboard, the
+// view -> hash sync (VIEW_TO_HASH + replaceState), and the first-mount
+// no-double-sync guard (didInitHashSyncRef) that keeps a deep-link hash intact.
+// ---------------------------------------------------------------------------
+describe('App hash routing (useAppRouter guard)', () => {
+    const settle = () =>
+        screen.findByRole('heading', { name: /repo manager/i }, { timeout: 5000 })
+
+    // The active view is marked locale-independently on the desktop nav via
+    // aria-current="page" — a faster, more reliable signal than waiting on a
+    // lazy view's (locale-dependent) content.
+    const desktopNav = () =>
+        screen.getAllByRole('navigation').find((n) => within(n).queryByText('Repositories'))
+    const expectActiveTab = (name) =>
+        waitFor(
+            () => expect(within(desktopNav()).getByRole('button', { name })).toHaveAttribute('aria-current', 'page'),
+            { timeout: 8000 },
+        )
+
+    it('deep-links straight to repo-detail when mounted at #/repo/:owner/:name', { timeout: 30000 }, async () => {
+        window.location.hash = '#/repo/acme/demo'
+        renderApp()
+        await waitFor(
+            () => expect(screen.getAllByText(/acme\/demo/i).length).toBeGreaterThan(0),
+            { timeout: 8000 },
+        )
+    })
+
+    it('navigates to repo-detail on a hashchange to a repo deep-link', { timeout: 30000 }, async () => {
+        renderApp()
+        await settle()
+        act(() => {
+            window.location.hash = '#/repo/acme/demo/pulls'
+            window.dispatchEvent(new Event('hashchange'))
+        })
+        await waitFor(
+            () => expect(screen.getAllByText(/acme\/demo/i).length).toBeGreaterThan(0),
+            { timeout: 8000 },
+        )
+    })
+
+    it('routes an emptied hash back to the dashboard', { timeout: 30000 }, async () => {
+        window.location.hash = '#/repo/acme/demo'
+        renderApp()
+        await waitFor(
+            () => expect(screen.getAllByText(/acme\/demo/i).length).toBeGreaterThan(0),
+            { timeout: 8000 },
+        )
+        act(() => {
+            window.location.hash = ''
+            window.dispatchEvent(new Event('hashchange'))
+        })
+        // Empty hash routes home — the Dashboard tab becomes active.
+        await expectActiveTab(/dashboard/i)
+    })
+
+    it('syncs the URL hash when navigating via the nav (view -> hash)', { timeout: 30000 }, async () => {
+        renderApp()
+        await settle()
+        fireEvent.click(within(desktopNav()).getByRole('button', { name: /pricing/i }))
+        await waitFor(() => expect(window.location.hash).toBe('#/pricing'), { timeout: 5000 })
+    })
+
+    it('strips the hash to home when navigating back to Dashboard', { timeout: 30000 }, async () => {
+        renderApp()
+        await settle()
+        fireEvent.click(within(desktopNav()).getByRole('button', { name: /pricing/i }))
+        await waitFor(() => expect(window.location.hash).toBe('#/pricing'), { timeout: 5000 })
+        fireEvent.click(within(desktopNav()).getByRole('button', { name: /dashboard/i }))
+        await waitFor(() => expect(window.location.hash).toBe(''), { timeout: 5000 })
+    })
+
+    it('keeps a deep-link hash intact on first mount (no double-sync)', { timeout: 30000 }, async () => {
+        window.location.hash = '#/pricing'
+        renderApp()
+        await settle()
+        // The state->hash effect skips its first run (didInitHashSyncRef), so the
+        // deep-link survives mount instead of being stripped to ''.
+        await waitFor(() => expect(window.location.hash).toBe('#/pricing'), { timeout: 5000 })
+        // ...and it actually routed to pricing (Pricing tab active, not dashboard).
+        await expectActiveTab(/pricing/i)
     })
 })
