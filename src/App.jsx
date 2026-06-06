@@ -5,7 +5,6 @@ import { Sidebar } from './components/Sidebar'
 import { Drawer } from './components/ui/Drawer'
 import { RepoList } from './components/RepoList'
 import { OrgPanel } from './components/OrgPanel'
-import { ConfirmModal } from './components/ui/ConfirmModal'
 import { ToastContainer } from './components/ui/Toast'
 import { PendingSyncBanner } from './components/ui/PendingSyncBanner'
 import { Spinner } from './components/ui/Spinner'
@@ -46,6 +45,7 @@ import { LegalFooter } from './components/LegalFooter'
 import { DemoModeBanner } from './components/DemoModeBanner'
 import { RouteFallback } from './components/ui/RouteFallback'
 import { ViewErrorFallback } from './components/ui/ViewErrorFallback'
+import { ModalSurfaces } from './components/ModalSurfaces'
 import { startTransition } from './utils/viewTransitions'
 import { useAppRouter } from './hooks/useAppRouter'
 import { useAppEventBridge } from './hooks/useAppEventBridge'
@@ -61,30 +61,14 @@ const RoadmapPage = lazy(() => import('./components/Roadmap/RoadmapPage').then(m
 const DashboardPremium = lazy(() => import('./components/Dashboard/DashboardPremium').then(m => ({ default: m.DashboardPremium })))
 const TeamHub = lazy(() => import('./components/Teams/TeamHub').then(m => ({ default: m.TeamHub })))
 const TeamDetails = lazy(() => import('./components/Teams/TeamDetails').then(m => ({ default: m.TeamDetails })))
-const RepoInsightsModal = lazy(() => import('./components/AI/RepoInsightsModal'))
-const SuggestNameDescriptionModal = lazy(() => import('./components/AI/SuggestNameDescriptionModal'))
-const CommunityHealthDashboard = lazy(() => import('./components/CommunityHealthDashboard').then(m => ({ default: m.CommunityHealthDashboard })))
 const SystemSetup = lazy(() => import('./components/Setup/SystemSetup').then(m => ({ default: m.SystemSetup })))
-const CreateRepoModal = lazy(() => import('./components/CreateRepoModal').then(m => ({ default: m.CreateRepoModal })))
-const TransferModal = lazy(() => import('./components/TransferModal').then(m => ({ default: m.TransferModal })))
-const OrgManagerModal = lazy(() => import('./components/OrgManagerModal').then(m => ({ default: m.OrgManagerModal })))
-const DevToolkitPanel = lazy(() => import('./components/DevToolkit/DevToolkitPanel').then(m => ({ default: m.DevToolkitPanel })))
-const SettingsModal = lazy(() => import('./components/SettingsModal').then(m => ({ default: m.SettingsModal })))
 // ImportWizard removed — unified into MigrationWizard
 const RepoDetail = lazy(() => import('./components/RepoDetail').then(m => ({ default: m.RepoDetail })))
-const MigrationHistory = lazy(() => import('./components/MigrationHistory').then(m => ({ default: m.MigrationHistory })))
-const KeyboardShortcutsHelp = lazy(() => import('./components/KeyboardShortcutsHelp').then(m => ({ default: m.KeyboardShortcutsHelp })))
 const AIAssistant = lazy(() => import('./components/AIAssistant').then(m => ({ default: m.AIAssistant })))
-const MigrationWizard = lazy(() => import('./components/MigrationWizard/MigrationWizard'))
 const PRReviewView = lazy(() => import('./components/PRReview/PRReviewView').then(m => ({ default: m.PRReviewView })))
 const WorkBoardPage = lazy(() => import('./components/WorkBoard/WorkBoardPage').then(m => ({ default: m.WorkBoardPage })))
-const BatchIndexProgressModal = lazy(() => import('./components/AI/BatchIndexProgressModal').then(m => ({ default: m.BatchIndexProgressModal })))
-const CompareSimilarDrawer = lazy(() => import('./components/AI/CompareSimilarDrawer').then(m => ({ default: m.CompareSimilarDrawer })))
-const SecurityScanModal = lazy(() => import('./components/security/SecurityScanModal').then(m => ({ default: m.SecurityScanModal })))
-const LicenseActivationModal = lazy(() => import('./components/Settings/LicenseActivationModal').then(m => ({ default: m.LicenseActivationModal })))
 const AdminDLQPage = lazy(() => import('./components/Admin/AdminDLQPage').then(m => ({ default: m.AdminDLQPage })))
 const PromptStudioPage = lazy(() => import('./components/AIPrompts/PromptStudioPage').then(m => ({ default: m.PromptStudioPage })))
-const AIPolishModal = lazy(() => import('./components/AIPolish/AIPolishModal').then(m => ({ default: m.AIPolishModal })))
 // Lazy-load the landing page: only rendered for unauthenticated visitors,
 // so its sub-components stay out of the authenticated main bundle.
 const LandingPage = lazy(() => import('./components/Landing/LandingPage').then(m => ({ default: m.LandingPage })))
@@ -1022,253 +1006,27 @@ function AppContent() {
         )}
       </main>
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Create Repository" variant="modal" onGoHome={() => closeModal('showCreateRepo')} />}>
-        <Suspense fallback={null}>
-          <CreateRepoModal
-            isOpen={modalStates.showCreateRepo}
-            onClose={() => closeModal('showCreateRepo')}
-            onCreate={createRepo}
-            orgs={orgs}
-            isPerforming={isPerforming}
-            askAI={askAI}
-          />
-        </Suspense>
-      </ErrorBoundary>
-
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Transfer" variant="modal" onGoHome={() => closeModal('showTransfer')} />}>
-      <Suspense fallback={null}>
-        <TransferModal
-          isOpen={modalStates.showTransfer}
-          onClose={() => closeModal('showTransfer')}
-          repos={getModalData('showTransfer') || []}
-          orgs={orgs}
-          onTransfer={async (repoNames, targetOrg, strategies) => {
-            try {
-              const options = strategies && Object.keys(strategies).length > 0
-                ? { strategies }
-                : {}
-              const result = await performAction('transfer', repoNames, targetOrg, options)
-              if (result?.success) {
-                toast.success(`Transferred ${repoNames.length} repo(s) to ${targetOrg}`)
-                closeModal('showTransfer')
-                refresh()
-              } else {
-                toast.error(result?.message || 'Transfer failed')
-              }
-            } catch (err) {
-              toast.errorFromException(err, { fallbackTitle: 'Transfer failed' })
-            }
-          }}
-          onMirror={async (repoNames, targetOrg) => {
-            try {
-              const result = await performAction('mirror', repoNames, targetOrg)
-              if (result?.success) {
-                toast.success(`Mirrored ${repoNames.length} repo(s) to ${targetOrg}`)
-                closeModal('showTransfer')
-                refresh()
-              } else {
-                toast.error(result?.message || 'Mirror failed')
-              }
-            } catch (err) {
-              toast.errorFromException(err, { fallbackTitle: 'Mirror failed' })
-            }
-          }}
-          isPerforming={isPerforming}
-        />
-      </Suspense>
-      </ErrorBoundary>
-
-      <ConfirmModal
-        isOpen={modalStates.showConfirm}
-        onClose={() => closeModal('showConfirm')}
-        onConfirm={getModalData('showConfirm')?.onConfirm}
-        title={getModalData('showConfirm')?.title}
-        message={getModalData('showConfirm')?.message}
-        variant={getModalData('showConfirm')?.variant}
-        requiresInput={getModalData('showConfirm')?.requiresInput}
-        confirmText={getModalData('showConfirm')?.confirmText}
-        isLoading={isPerforming}
+      <ModalSurfaces
+        modalStates={modalStates}
+        closeModal={closeModal}
+        getModalData={getModalData}
+        createRepo={createRepo}
+        orgs={orgs}
+        isPerforming={isPerforming}
+        askAI={askAI}
+        performAction={performAction}
+        toast={toast}
+        refresh={refresh}
+        handleRefreshOrgs={handleRefreshOrgs}
+        repos={repos}
+        setReviewingPR={setReviewingPR}
+        setActiveView={setActiveView}
+        isAdmin={isAdmin}
+        patchRepoEverywhere={patchRepoEverywhere}
+        showHelp={showHelp}
+        setShowHelp={setShowHelp}
+        shortcuts={shortcuts}
       />
-
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Organization Manager" variant="modal" onGoHome={() => closeModal('showOrgManager')} />}>
-        <Suspense fallback={null}>
-          <OrgManagerModal
-            isOpen={modalStates.showOrgManager}
-            onClose={() => closeModal('showOrgManager')}
-            org={getModalData('showOrgManager')}
-            onUpdateOrg={(updated) => {
-              toast.success(`Organization ${updated.login} updated`)
-              handleRefreshOrgs()
-            }}
-          />
-        </Suspense>
-      </ErrorBoundary>
-
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Dev Toolkit" variant="modal" onGoHome={() => closeModal('showDevToolkit')} />}>
-        <Suspense fallback={null}>
-          <DevToolkitPanel
-            isOpen={modalStates.showDevToolkit}
-            onClose={() => closeModal('showDevToolkit')}
-            modalData={getModalData('showDevToolkit')}
-            repos={repos}
-            onStartReview={(pr) => {
-              closeModal('showDevToolkit')
-              setReviewingPR(pr)
-              setActiveView('pr-review')
-            }}
-          />
-        </Suspense>
-      </ErrorBoundary>
-
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Settings" variant="modal" onGoHome={() => closeModal('showSettings')} />}>
-        <Suspense fallback={null}>
-          <SettingsModal
-            isOpen={modalStates.showSettings}
-            onClose={() => closeModal('showSettings')}
-            initialTab={getModalData('showSettings')?.initialTab}
-            isAdmin={isAdmin}
-          />
-        </Suspense>
-      </ErrorBoundary>
-
-      {(() => {
-        // `showRepoInsights` accepts either a raw repo object (legacy) or
-        // { repo, initialTab } so call sites can open the modal directly
-        // on a specific tab (e.g. Quality Report → quality tab).
-        const insightsPayload = getModalData('showRepoInsights')
-        const insightsRepo = insightsPayload?.repo ?? insightsPayload
-        const insightsInitialTab = insightsPayload?.initialTab
-        return (
-          <ErrorBoundary fallback={<ViewErrorFallback viewName="Repository Insights" variant="modal" onGoHome={() => closeModal('showRepoInsights')} />}>
-            <Suspense fallback={null}>
-              <RepoInsightsModal
-                isOpen={modalStates.showRepoInsights}
-                onClose={() => closeModal('showRepoInsights')}
-                repo={insightsRepo}
-                initialTab={insightsInitialTab}
-              />
-            </Suspense>
-          </ErrorBoundary>
-        )
-      })()}
-
-      {(() => {
-        const sndPayload = getModalData('suggestNameDescription')
-        const sndRepo = sndPayload?.repo ?? null
-        const sndOnApplied = sndPayload?.onApplied
-        return (
-          <ErrorBoundary fallback={<ViewErrorFallback viewName="Suggest Name & Description" variant="modal" onGoHome={() => closeModal('suggestNameDescription')} />}>
-            <Suspense fallback={null}>
-              <SuggestNameDescriptionModal
-                isOpen={modalStates.suggestNameDescription}
-                onClose={() => closeModal('suggestNameDescription')}
-                repo={sndRepo}
-                onApplied={(updated) => {
-                  sndOnApplied?.(updated)
-                  closeModal('suggestNameDescription')
-                }}
-              />
-            </Suspense>
-          </ErrorBoundary>
-        )
-      })()}
-
-      {modalStates.aiPolish && (
-        <ErrorBoundary fallback={<ViewErrorFallback viewName="AI Polish" variant="modal" onGoHome={() => closeModal('aiPolish')} />}>
-          <Suspense fallback={null}>
-            <AIPolishModal
-              isOpen={modalStates.aiPolish}
-              onClose={() => closeModal('aiPolish')}
-              repoFullNames={getModalData('aiPolish')?.repoFullNames || []}
-              onAppliedRepo={patchRepoEverywhere}
-            />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      {modalStates.showCommunityHealth && (
-        <ErrorBoundary fallback={<ViewErrorFallback viewName="Community Health" variant="modal" onGoHome={() => closeModal('showCommunityHealth')} />}>
-          <Suspense fallback={null}>
-            <CommunityHealthDashboard
-              repo={getModalData('showCommunityHealth')}
-              onClose={() => closeModal('showCommunityHealth')}
-            />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Migration History" variant="modal" onGoHome={() => closeModal('showMigrationHistory')} />}>
-        <Suspense fallback={null}>
-          <MigrationHistory
-            isOpen={modalStates.showMigrationHistory}
-            onClose={() => closeModal('showMigrationHistory')}
-          />
-        </Suspense>
-      </ErrorBoundary>
-
-      {modalStates.showMigrationWizard && (
-        <ErrorBoundary fallback={<ViewErrorFallback viewName="Migration Wizard" variant="modal" onGoHome={() => closeModal('showMigrationWizard')} />}>
-          <Suspense fallback={null}>
-            <MigrationWizard
-              onClose={() => closeModal('showMigrationWizard')}
-              orgs={orgs}
-              initialDryRun={getModalData('showMigrationWizard')?.initialDryRun}
-              initialSource={getModalData('showMigrationWizard')?.initialSource}
-              initialRepos={getModalData('showMigrationWizard')?.initialRepos}
-              initialStep={getModalData('showMigrationWizard')?.initialStep}
-            />
-          </Suspense>
-        </ErrorBoundary>
-      )}
-
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Keyboard Shortcuts" variant="modal" onGoHome={() => setShowHelp(false)} />}>
-        <Suspense fallback={null}>
-          <KeyboardShortcutsHelp
-            isOpen={showHelp}
-            onClose={() => setShowHelp(false)}
-            shortcuts={shortcuts}
-          />
-        </Suspense>
-      </ErrorBoundary>
-
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Batch Index" variant="modal" onGoHome={() => closeModal('showBatchIndex')} />}>
-        <Suspense fallback={null}>
-          <BatchIndexProgressModal
-            isOpen={modalStates.showBatchIndex}
-            onClose={() => closeModal('showBatchIndex')}
-            repos={getModalData('showBatchIndex')?.repos || []}
-          />
-        </Suspense>
-      </ErrorBoundary>
-
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Compare Repositories" variant="modal" onGoHome={() => closeModal('showCompare')} />}>
-        <Suspense fallback={null}>
-          <CompareSimilarDrawer
-            isOpen={modalStates.showCompare}
-            onClose={() => closeModal('showCompare')}
-            repo={getModalData('showCompare')?.repo}
-          />
-        </Suspense>
-      </ErrorBoundary>
-
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Security Scan" variant="modal" onGoHome={() => closeModal('showSecurityScan')} />}>
-        <Suspense fallback={null}>
-          <SecurityScanModal
-            isOpen={modalStates.showSecurityScan}
-            onClose={() => closeModal('showSecurityScan')}
-            repo={getModalData('showSecurityScan')?.repo}
-          />
-        </Suspense>
-      </ErrorBoundary>
-
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="License Activation" variant="modal" onGoHome={() => closeModal('showLicenseActivation')} />}>
-        <Suspense fallback={null}>
-          <LicenseActivationModal
-            isOpen={modalStates.showLicenseActivation}
-            onClose={() => closeModal('showLicenseActivation')}
-          />
-        </Suspense>
-      </ErrorBoundary>
 
       <CommandPalette
         isOpen={commandPalette.isOpen}
