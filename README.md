@@ -21,7 +21,7 @@
 ![LM Studio](https://img.shields.io/badge/LM_Studio-4B2DDC?style=for-the-badge)
 
 <!-- Quality -->
-![Tests](https://img.shields.io/badge/Tests-4246%2B_passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
+![Tests](https://img.shields.io/badge/Tests-4390%2B_passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
 ![License](https://img.shields.io/badge/License-AGPL_v3-blue?style=for-the-badge&logo=gnu&logoColor=white)
 ![Release](https://img.shields.io/github/v/release/brunobola-portfolio/GitHub-Repo-Manager?style=for-the-badge&logo=github&logoColor=white)
 
@@ -555,7 +555,7 @@ For detailed architecture documentation, see [`docs/architecture/overview.md`](d
 | **AI (BYOK)** | Anthropic, OpenAI, Google Gemini, OpenRouter, LMStudio / local — per-user keys encrypted at rest |
 | **APIs** | GitHub REST API (v2022-11-28), Azure DevOps API (v7.1), Stripe Billing |
 | **Logging** | Pino (structured JSON, automatic credential redaction) + Sentry breadcrumbs |
-| **Testing** | Vitest 4 (4246+ unit tests), Testing Library, Playwright |
+| **Testing** | Vitest 4 (4390+ unit tests), Testing Library, Playwright |
 | **Auth** | GitHub OAuth 2.0 (CSRF state), Azure DevOps OAuth |
 | **CI gates** | ESLint `max-warnings 0`, build-honesty test (no mock leaks), bundle-budget (≤ 415 KB gzip eager), README honesty regression guard |
 
