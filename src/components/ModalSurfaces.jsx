@@ -23,14 +23,30 @@ const LicenseActivationModal = lazy(() => import('./Settings/LicenseActivationMo
 const AIPolishModal = lazy(() => import('./AIPolish/AIPolishModal').then(m => ({ default: m.AIPolishModal })))
 
 /**
+ * ModalWrapper — the per-modal boundary every lazy modal here shares: a modal
+ * ViewErrorFallback ErrorBoundary wrapping a null-fallback Suspense. DRYs the
+ * 14 identical boundaries so each modal below reads as just its own element.
+ */
+function ModalWrapper({ viewName, onGoHome, children }) {
+  return (
+    <ErrorBoundary fallback={<ViewErrorFallback viewName={viewName} variant="modal" onGoHome={onGoHome} />}>
+      <Suspense fallback={null}>
+        {children}
+      </Suspense>
+    </ErrorBoundary>
+  )
+}
+
+/**
  * ModalSurfaces — the app shell's modal layer.
  *
  * Renders every ModalContext-driven modal (plus the keyboard-shortcuts help
  * modal, which has its own `showHelp` state) behind per-modal ErrorBoundary +
- * Suspense boundaries. Each modal is purely presentational here: visibility
- * comes from `modalStates`, payloads from `getModalData`, and dismissal calls
- * `closeModal`. The handful of data/action props are stable references owned by
- * App and threaded straight through to the modal that needs them.
+ * Suspense boundaries (via {@link ModalWrapper}). Each modal is purely
+ * presentational here: visibility comes from `modalStates`, payloads from
+ * `getModalData`, and dismissal calls `closeModal`. The handful of data/action
+ * props are stable references owned by App and threaded straight through to the
+ * modal that needs them.
  *
  * Lifecycle (open -> render -> close) is locked by
  * tests/components/App.modalSurfaces.guard.test.jsx.
@@ -58,21 +74,18 @@ export function ModalSurfaces({
 }) {
   return (
     <>
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Create Repository" variant="modal" onGoHome={() => closeModal('showCreateRepo')} />}>
-        <Suspense fallback={null}>
-          <CreateRepoModal
-            isOpen={modalStates.showCreateRepo}
-            onClose={() => closeModal('showCreateRepo')}
-            onCreate={createRepo}
-            orgs={orgs}
-            isPerforming={isPerforming}
-            askAI={askAI}
-          />
-        </Suspense>
-      </ErrorBoundary>
+      <ModalWrapper viewName="Create Repository" onGoHome={() => closeModal('showCreateRepo')}>
+        <CreateRepoModal
+          isOpen={modalStates.showCreateRepo}
+          onClose={() => closeModal('showCreateRepo')}
+          onCreate={createRepo}
+          orgs={orgs}
+          isPerforming={isPerforming}
+          askAI={askAI}
+        />
+      </ModalWrapper>
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Transfer" variant="modal" onGoHome={() => closeModal('showTransfer')} />}>
-      <Suspense fallback={null}>
+      <ModalWrapper viewName="Transfer" onGoHome={() => closeModal('showTransfer')}>
         <TransferModal
           isOpen={modalStates.showTransfer}
           onClose={() => closeModal('showTransfer')}
@@ -111,8 +124,7 @@ export function ModalSurfaces({
           }}
           isPerforming={isPerforming}
         />
-      </Suspense>
-      </ErrorBoundary>
+      </ModalWrapper>
 
       <ConfirmModal
         isOpen={modalStates.showConfirm}
@@ -126,46 +138,40 @@ export function ModalSurfaces({
         isLoading={isPerforming}
       />
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Organization Manager" variant="modal" onGoHome={() => closeModal('showOrgManager')} />}>
-        <Suspense fallback={null}>
-          <OrgManagerModal
-            isOpen={modalStates.showOrgManager}
-            onClose={() => closeModal('showOrgManager')}
-            org={getModalData('showOrgManager')}
-            onUpdateOrg={(updated) => {
-              toast.success(`Organization ${updated.login} updated`)
-              handleRefreshOrgs()
-            }}
-          />
-        </Suspense>
-      </ErrorBoundary>
+      <ModalWrapper viewName="Organization Manager" onGoHome={() => closeModal('showOrgManager')}>
+        <OrgManagerModal
+          isOpen={modalStates.showOrgManager}
+          onClose={() => closeModal('showOrgManager')}
+          org={getModalData('showOrgManager')}
+          onUpdateOrg={(updated) => {
+            toast.success(`Organization ${updated.login} updated`)
+            handleRefreshOrgs()
+          }}
+        />
+      </ModalWrapper>
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Dev Toolkit" variant="modal" onGoHome={() => closeModal('showDevToolkit')} />}>
-        <Suspense fallback={null}>
-          <DevToolkitPanel
-            isOpen={modalStates.showDevToolkit}
-            onClose={() => closeModal('showDevToolkit')}
-            modalData={getModalData('showDevToolkit')}
-            repos={repos}
-            onStartReview={(pr) => {
-              closeModal('showDevToolkit')
-              setReviewingPR(pr)
-              setActiveView('pr-review')
-            }}
-          />
-        </Suspense>
-      </ErrorBoundary>
+      <ModalWrapper viewName="Dev Toolkit" onGoHome={() => closeModal('showDevToolkit')}>
+        <DevToolkitPanel
+          isOpen={modalStates.showDevToolkit}
+          onClose={() => closeModal('showDevToolkit')}
+          modalData={getModalData('showDevToolkit')}
+          repos={repos}
+          onStartReview={(pr) => {
+            closeModal('showDevToolkit')
+            setReviewingPR(pr)
+            setActiveView('pr-review')
+          }}
+        />
+      </ModalWrapper>
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Settings" variant="modal" onGoHome={() => closeModal('showSettings')} />}>
-        <Suspense fallback={null}>
-          <SettingsModal
-            isOpen={modalStates.showSettings}
-            onClose={() => closeModal('showSettings')}
-            initialTab={getModalData('showSettings')?.initialTab}
-            isAdmin={isAdmin}
-          />
-        </Suspense>
-      </ErrorBoundary>
+      <ModalWrapper viewName="Settings" onGoHome={() => closeModal('showSettings')}>
+        <SettingsModal
+          isOpen={modalStates.showSettings}
+          onClose={() => closeModal('showSettings')}
+          initialTab={getModalData('showSettings')?.initialTab}
+          isAdmin={isAdmin}
+        />
+      </ModalWrapper>
 
       {(() => {
         // `showRepoInsights` accepts either a raw repo object (legacy) or
@@ -175,16 +181,14 @@ export function ModalSurfaces({
         const insightsRepo = insightsPayload?.repo ?? insightsPayload
         const insightsInitialTab = insightsPayload?.initialTab
         return (
-          <ErrorBoundary fallback={<ViewErrorFallback viewName="Repository Insights" variant="modal" onGoHome={() => closeModal('showRepoInsights')} />}>
-            <Suspense fallback={null}>
-              <RepoInsightsModal
-                isOpen={modalStates.showRepoInsights}
-                onClose={() => closeModal('showRepoInsights')}
-                repo={insightsRepo}
-                initialTab={insightsInitialTab}
-              />
-            </Suspense>
-          </ErrorBoundary>
+          <ModalWrapper viewName="Repository Insights" onGoHome={() => closeModal('showRepoInsights')}>
+            <RepoInsightsModal
+              isOpen={modalStates.showRepoInsights}
+              onClose={() => closeModal('showRepoInsights')}
+              repo={insightsRepo}
+              initialTab={insightsInitialTab}
+            />
+          </ModalWrapper>
         )
       })()}
 
@@ -193,118 +197,98 @@ export function ModalSurfaces({
         const sndRepo = sndPayload?.repo ?? null
         const sndOnApplied = sndPayload?.onApplied
         return (
-          <ErrorBoundary fallback={<ViewErrorFallback viewName="Suggest Name & Description" variant="modal" onGoHome={() => closeModal('suggestNameDescription')} />}>
-            <Suspense fallback={null}>
-              <SuggestNameDescriptionModal
-                isOpen={modalStates.suggestNameDescription}
-                onClose={() => closeModal('suggestNameDescription')}
-                repo={sndRepo}
-                onApplied={(updated) => {
-                  sndOnApplied?.(updated)
-                  closeModal('suggestNameDescription')
-                }}
-              />
-            </Suspense>
-          </ErrorBoundary>
+          <ModalWrapper viewName="Suggest Name & Description" onGoHome={() => closeModal('suggestNameDescription')}>
+            <SuggestNameDescriptionModal
+              isOpen={modalStates.suggestNameDescription}
+              onClose={() => closeModal('suggestNameDescription')}
+              repo={sndRepo}
+              onApplied={(updated) => {
+                sndOnApplied?.(updated)
+                closeModal('suggestNameDescription')
+              }}
+            />
+          </ModalWrapper>
         )
       })()}
 
       {modalStates.aiPolish && (
-        <ErrorBoundary fallback={<ViewErrorFallback viewName="AI Polish" variant="modal" onGoHome={() => closeModal('aiPolish')} />}>
-          <Suspense fallback={null}>
-            <AIPolishModal
-              isOpen={modalStates.aiPolish}
-              onClose={() => closeModal('aiPolish')}
-              repoFullNames={getModalData('aiPolish')?.repoFullNames || []}
-              onAppliedRepo={patchRepoEverywhere}
-            />
-          </Suspense>
-        </ErrorBoundary>
+        <ModalWrapper viewName="AI Polish" onGoHome={() => closeModal('aiPolish')}>
+          <AIPolishModal
+            isOpen={modalStates.aiPolish}
+            onClose={() => closeModal('aiPolish')}
+            repoFullNames={getModalData('aiPolish')?.repoFullNames || []}
+            onAppliedRepo={patchRepoEverywhere}
+          />
+        </ModalWrapper>
       )}
 
       {modalStates.showCommunityHealth && (
-        <ErrorBoundary fallback={<ViewErrorFallback viewName="Community Health" variant="modal" onGoHome={() => closeModal('showCommunityHealth')} />}>
-          <Suspense fallback={null}>
-            <CommunityHealthDashboard
-              repo={getModalData('showCommunityHealth')}
-              onClose={() => closeModal('showCommunityHealth')}
-            />
-          </Suspense>
-        </ErrorBoundary>
+        <ModalWrapper viewName="Community Health" onGoHome={() => closeModal('showCommunityHealth')}>
+          <CommunityHealthDashboard
+            repo={getModalData('showCommunityHealth')}
+            onClose={() => closeModal('showCommunityHealth')}
+          />
+        </ModalWrapper>
       )}
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Migration History" variant="modal" onGoHome={() => closeModal('showMigrationHistory')} />}>
-        <Suspense fallback={null}>
-          <MigrationHistory
-            isOpen={modalStates.showMigrationHistory}
-            onClose={() => closeModal('showMigrationHistory')}
-          />
-        </Suspense>
-      </ErrorBoundary>
+      <ModalWrapper viewName="Migration History" onGoHome={() => closeModal('showMigrationHistory')}>
+        <MigrationHistory
+          isOpen={modalStates.showMigrationHistory}
+          onClose={() => closeModal('showMigrationHistory')}
+        />
+      </ModalWrapper>
 
       {modalStates.showMigrationWizard && (
-        <ErrorBoundary fallback={<ViewErrorFallback viewName="Migration Wizard" variant="modal" onGoHome={() => closeModal('showMigrationWizard')} />}>
-          <Suspense fallback={null}>
-            <MigrationWizard
-              onClose={() => closeModal('showMigrationWizard')}
-              orgs={orgs}
-              initialDryRun={getModalData('showMigrationWizard')?.initialDryRun}
-              initialSource={getModalData('showMigrationWizard')?.initialSource}
-              initialRepos={getModalData('showMigrationWizard')?.initialRepos}
-              initialStep={getModalData('showMigrationWizard')?.initialStep}
-            />
-          </Suspense>
-        </ErrorBoundary>
+        <ModalWrapper viewName="Migration Wizard" onGoHome={() => closeModal('showMigrationWizard')}>
+          <MigrationWizard
+            onClose={() => closeModal('showMigrationWizard')}
+            orgs={orgs}
+            initialDryRun={getModalData('showMigrationWizard')?.initialDryRun}
+            initialSource={getModalData('showMigrationWizard')?.initialSource}
+            initialRepos={getModalData('showMigrationWizard')?.initialRepos}
+            initialStep={getModalData('showMigrationWizard')?.initialStep}
+          />
+        </ModalWrapper>
       )}
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Keyboard Shortcuts" variant="modal" onGoHome={() => setShowHelp(false)} />}>
-        <Suspense fallback={null}>
-          <KeyboardShortcutsHelp
-            isOpen={showHelp}
-            onClose={() => setShowHelp(false)}
-            shortcuts={shortcuts}
-          />
-        </Suspense>
-      </ErrorBoundary>
+      <ModalWrapper viewName="Keyboard Shortcuts" onGoHome={() => setShowHelp(false)}>
+        <KeyboardShortcutsHelp
+          isOpen={showHelp}
+          onClose={() => setShowHelp(false)}
+          shortcuts={shortcuts}
+        />
+      </ModalWrapper>
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Batch Index" variant="modal" onGoHome={() => closeModal('showBatchIndex')} />}>
-        <Suspense fallback={null}>
-          <BatchIndexProgressModal
-            isOpen={modalStates.showBatchIndex}
-            onClose={() => closeModal('showBatchIndex')}
-            repos={getModalData('showBatchIndex')?.repos || []}
-          />
-        </Suspense>
-      </ErrorBoundary>
+      <ModalWrapper viewName="Batch Index" onGoHome={() => closeModal('showBatchIndex')}>
+        <BatchIndexProgressModal
+          isOpen={modalStates.showBatchIndex}
+          onClose={() => closeModal('showBatchIndex')}
+          repos={getModalData('showBatchIndex')?.repos || []}
+        />
+      </ModalWrapper>
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Compare Repositories" variant="modal" onGoHome={() => closeModal('showCompare')} />}>
-        <Suspense fallback={null}>
-          <CompareSimilarDrawer
-            isOpen={modalStates.showCompare}
-            onClose={() => closeModal('showCompare')}
-            repo={getModalData('showCompare')?.repo}
-          />
-        </Suspense>
-      </ErrorBoundary>
+      <ModalWrapper viewName="Compare Repositories" onGoHome={() => closeModal('showCompare')}>
+        <CompareSimilarDrawer
+          isOpen={modalStates.showCompare}
+          onClose={() => closeModal('showCompare')}
+          repo={getModalData('showCompare')?.repo}
+        />
+      </ModalWrapper>
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="Security Scan" variant="modal" onGoHome={() => closeModal('showSecurityScan')} />}>
-        <Suspense fallback={null}>
-          <SecurityScanModal
-            isOpen={modalStates.showSecurityScan}
-            onClose={() => closeModal('showSecurityScan')}
-            repo={getModalData('showSecurityScan')?.repo}
-          />
-        </Suspense>
-      </ErrorBoundary>
+      <ModalWrapper viewName="Security Scan" onGoHome={() => closeModal('showSecurityScan')}>
+        <SecurityScanModal
+          isOpen={modalStates.showSecurityScan}
+          onClose={() => closeModal('showSecurityScan')}
+          repo={getModalData('showSecurityScan')?.repo}
+        />
+      </ModalWrapper>
 
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="License Activation" variant="modal" onGoHome={() => closeModal('showLicenseActivation')} />}>
-        <Suspense fallback={null}>
-          <LicenseActivationModal
-            isOpen={modalStates.showLicenseActivation}
-            onClose={() => closeModal('showLicenseActivation')}
-          />
-        </Suspense>
-      </ErrorBoundary>
+      <ModalWrapper viewName="License Activation" onGoHome={() => closeModal('showLicenseActivation')}>
+        <LicenseActivationModal
+          isOpen={modalStates.showLicenseActivation}
+          onClose={() => closeModal('showLicenseActivation')}
+        />
+      </ModalWrapper>
     </>
   )
 }
