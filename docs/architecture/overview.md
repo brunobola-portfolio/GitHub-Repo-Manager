@@ -45,6 +45,21 @@ Root component: `src/App.jsx`
   - Modal components for creating, transferring, and importing repositories.
   - Toast system for success/error notifications.
 
+Since the **App.jsx monolith split** (2026-06), `App.jsx` is a thin
+orchestrator (~930 lines, down from ~1690). The shell concerns are extracted
+into focused units it composes:
+
+- `src/hooks/useAppRouter.js` — bidirectional hash ↔ `activeView` routing.
+- `src/hooks/useAppEventBridge.js` — the `APP_EVENTS` bus listeners.
+- `src/components/ModalSurfaces.jsx` — the ModalContext-driven modal layer.
+- `src/components/OrgSidebar.jsx` — the repos-view org rail / panel / overlay.
+- `src/components/NotificationLayer.jsx` — toasts, banners, quota dialog, tour.
+- `src/components/ui/ViewShell.jsx` — the shared per-view fade + ErrorBoundary + Suspense boundary used by every `<main>` route.
+
+Heavy route views (DashboardPremium, RepoDetail, PRReviewView, WorkBoardPage,
+TeamHub, …) are `React.lazy` code-split; Header / Sidebar / RepoList load
+synchronously.
+
 State & data:
 
 - `src/hooks/useGitHub.js`
