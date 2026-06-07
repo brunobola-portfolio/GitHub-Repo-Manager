@@ -111,7 +111,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
         }
     };
 
-    const _handleUpdateRole = async (userId, newRole) => {
+    const handleUpdateRole = async (userId, newRole) => {
         try {
             const headers = { 'Content-Type': 'application/json' };
             try { headers['X-CSRF-Token'] = await getCsrfToken(); } catch { /* server will 403 */ }
@@ -133,7 +133,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
         }
     };
 
-    const _handleRemoveMember = (userId) => {
+    const handleRemoveMember = (userId) => {
         setConfirmAction({
             title: 'Remove Member',
             message: 'Are you sure you want to remove this member?',
@@ -300,6 +300,8 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                                     key={member.id}
                                     member={member}
                                     currentUserRole={currentUserRole}
+                                    onUpdateRole={handleUpdateRole}
+                                    onRemove={handleRemoveMember}
                                     isMe={member.username === user?.login}
                                 />
                             ))}
