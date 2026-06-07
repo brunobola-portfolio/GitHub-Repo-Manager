@@ -3,10 +3,10 @@
  *
  * Tabs:
  *   1. My Reviews   — pending review assignments (Free+)
- *   2. Stale PRs    — PRs open > N days (Pro+)
+ *   2. Stale PRs    — PRs open > N days (Free+)
  *   3. My Issues    — assigned open issues (Free+)
- *   4. Review Load  — reviewer distribution (Pro+)
- *   5. Tech Debt    — labelled issues + hotspots (Pro+)
+ *   4. Review Load  — reviewer distribution (Free+)
+ *   5. Tech Debt    — labelled issues + hotspots (Free+)
  *   6. DORA         — deploy freq + lead time (Enterprise+)
  */
 
