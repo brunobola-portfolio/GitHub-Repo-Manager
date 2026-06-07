@@ -51,13 +51,14 @@ async function mockApi(page) {
 }
 
 test.describe('Repo Overview — README rendering', () => {
-    // Pre-existing flake since 2026-05-08: page.goto('/repos/...') lands on
-    // dashboard (no URL routing in app). See branches-free-plan.spec.js header
-    // for context. Skipped to unblock CI on v4.1.0; fix-forward planned.
-    test.skip(true, 'pre-existing direct-URL routing issue — fix-forward planned')
+    // Deep-linked via the hash router (#/repo/:owner/:name → Overview tab). The
+    // original path-based goto('/repos/...') had no URL→state path and landed on
+    // the dashboard. `?e2eRepoApiLive=readme` makes the MOCK_MODE repo-detail
+    // layer yield the readme endpoint to the page.route stub below, so this
+    // spec's bespoke markdown (not the generic mock README) is rendered.
     test('renders the README as real markdown (table + code), not raw <pre>', async ({ page }) => {
         await mockApi(page)
-        await page.goto(`/repos/${REPO_OWNER}/${REPO_NAME}`)
+        await page.goto(`/?e2eRepoApiLive=readme#/repo/${REPO_OWNER}/${REPO_NAME}`)
 
         // The Overview tab is the default. Wait for it to settle.
         await expect(page.getByRole('heading', { level: 1, name: /^Hello$/ })).toBeVisible()
