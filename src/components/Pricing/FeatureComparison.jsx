@@ -104,7 +104,7 @@ const CATEGORIES = [
     rows: [
       {
         feature: 'Team collaboration',
-        values: [false, '15 members', 'Unlimited'],
+        values: ['Up to 3 (5 each)', '15 members', 'Unlimited'],
       },
     ],
   },

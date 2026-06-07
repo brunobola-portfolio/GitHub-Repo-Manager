@@ -194,6 +194,18 @@ describe('FeatureComparison.jsx ↔ feature-flags parity', () => {
         expect(free.auditLog).toBe(false)
         expect(comparisonFreeValue('Audit Logs')).toBe('false')
     })
+
+    it('Free team-collaboration row is ENABLED (matches teams) — never a bare false', () => {
+        // Regression: this cell shipped as `false` while feature-flags has
+        // teams:true (up to teamsMax/teamMembersMax) and PricingPage + README
+        // both advertise Free teams. A bare `false` here is a pricing lie.
+        expect(free.teams).toBe(true)
+        const cell = comparisonFreeValue('Team collaboration')
+        expect(cell).not.toBe('false')
+        // Reflects the Free caps (teamsMax=3, teamMembersMax=5).
+        expect(cell).toContain(String(free.teamsMax))
+        expect(cell).toContain(String(free.teamMembersMax))
+    })
 })
 
 // ---------------------------------------------------------------------------
