@@ -252,8 +252,11 @@ router.delete('/', requireAuth, (req, res) => {
 
         logger.info({ userId }, '[user-data] Self-service erasure complete');
 
-        // Destroy the session — user is now tombstoned.
-        req.session.destroy(() => {});
+        // Destroy the session — user is now tombstoned. Log (don't swallow) a
+        // store-failure so a lingering session after erasure is observable.
+        req.session.destroy((destroyErr) => {
+            if (destroyErr) logger.error({ err: destroyErr, userId }, '[user-data] failed to destroy session after erasure');
+        });
 
         return res.status(200).json({
             deleted,

@@ -148,8 +148,10 @@ export function getTrackedRepos(userId, filters = {}) {
     if (filters.pinned === false) conds.push('is_pinned = 0');
 
     const where = conds.join(' AND ');
-    const limit = Math.min(Math.max(1, filters.limit ?? 500), 500);
-    const offset = Math.max(0, filters.offset ?? 0);
+    // Coerce to int first: a non-numeric query value (e.g. ?limit=abc) would
+    // otherwise reach Math.max as a string -> NaN -> "LIMIT NaN" (invalid SQL).
+    const limit = Math.min(Math.max(1, Number.parseInt(filters.limit, 10) || 500), 500);
+    const offset = Math.max(0, Number.parseInt(filters.offset, 10) || 0);
 
     const items = db.prepare(`
         SELECT repo_full_name, repo_id, source_signal, is_pinned, is_muted,

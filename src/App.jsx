@@ -357,13 +357,14 @@ function AppContent() {
   }, [])
 
   useEffect(() => {
-    if (!initCalled.current) {
-      initCalled.current = true
-      mark('app:mount')
-      // eslint-disable-next-line react-hooks/immutability -- function hoisted below, rule mis-reports, tracked in deferred cleanup pass
-      checkSystemStatus()
-    }
-    return () => { initCalled.current = false }
+    // Run system-status init exactly once per mount lifetime. No cleanup reset:
+    // resetting initCalled on cleanup defeated the guard under StrictMode (the
+    // dev mount/cleanup/remount would run checkSystemStatus twice).
+    if (initCalled.current) return
+    initCalled.current = true
+    mark('app:mount')
+    // eslint-disable-next-line react-hooks/immutability -- function hoisted below, rule mis-reports, tracked in deferred cleanup pass
+    checkSystemStatus()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

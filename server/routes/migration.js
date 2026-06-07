@@ -417,7 +417,17 @@ router.post('/plans/:id/execute', requireAuth, requireMigrationQuota, async (req
 
     // The plan is now genuinely running — consume the monthly full-migration
     // unit (idempotent per plan; only set when the meter decided to charge).
-    if (req.migrationShouldCharge) chargeMigrationQuota(req.session.userId, id);
+    // If charging throws, roll the status back to its prior value so the plan
+    // isn't stranded 'running' but uncharged (the user can retry; the meter
+    // re-evaluates). The atomic transition above stays first as the race guard.
+    if (req.migrationShouldCharge) {
+      try {
+        chargeMigrationQuota(req.session.userId, id);
+      } catch (chargeErr) {
+        db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run(plan.status, id);
+        throw chargeErr;
+      }
+    }
 
     // Extract credentials from session for immediate execution. Accepts either
     // a pasted PAT or a savedCredentialId — the latter is decrypted from the
