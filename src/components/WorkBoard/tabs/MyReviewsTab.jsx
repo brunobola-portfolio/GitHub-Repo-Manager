@@ -4,6 +4,7 @@ import { GitPullRequest, ExternalLink, Clock, Loader2, Sparkles, MessageSquare }
 import { clsx } from 'clsx'
 import { Modal, ModalFooter } from '../../ui/Modal'
 import { Button } from '../../ui/Button'
+import { Spinner } from '../../ui/Spinner'
 import { useMyPendingReviews } from '../../../hooks/useWorkBoard'
 import { useWorkBoardFilters, applyFilters } from '../filters/filter-context-helpers'
 import { useReviewAction } from '../../../hooks/useReviewAction'

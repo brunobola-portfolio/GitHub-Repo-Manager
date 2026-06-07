@@ -10,7 +10,7 @@ import { TabBar } from '../ui/TabBar';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { PageHeader } from '../ui/PageHeader';
-import { SectionSpinner } from '../ui/Spinner';
+import { SectionSpinner, Spinner } from '../ui/Spinner';
 import { EmptyState } from '../ui/EmptyState';
 import { Input } from '../ui/form';
 import { getCsrfToken } from '../../utils/api';

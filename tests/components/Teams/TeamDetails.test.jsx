@@ -88,4 +88,18 @@ describe('TeamDetails — member management wiring', () => {
             { timeout: 5000 },
         )
     })
+
+    it('renders the user-search Spinner without crashing (regression: Spinner must be imported)', { timeout: 20000 }, async () => {
+        // The invite search renders <Spinner/> while looking up users. Spinner
+        // was used here but never imported, so this branch threw
+        // "ReferenceError: Spinner is not defined" at render — invisible to the
+        // member-tab happy path and to ESLint. Exercising it guards the import.
+        renderDetails()
+        await gotoMembers()
+        fireEvent.click(screen.getByRole('button', { name: /add member/i }))
+        const search = await screen.findByRole('textbox', { name: /search github username/i }, { timeout: 5000 })
+        // >2 chars sets isSearchingUsers=true synchronously -> the Spinner renders.
+        fireEvent.change(search, { target: { value: 'oct' } })
+        expect(screen.getByRole('status', { name: /loading/i })).toBeInTheDocument()
+    })
 })
