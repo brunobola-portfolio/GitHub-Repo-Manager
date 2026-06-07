@@ -381,46 +381,62 @@ export class MigrationEngine extends EventEmitter {
     // If cancelled or paused, don't finalize
     if (this._isCancelled(planId) || this._pausedPlans.has(planId)) return
 
-    // Build summary
-    const allTasks = this.db.prepare(
-      'SELECT status FROM migration_tasks WHERE plan_id = ?'
-    ).all(planId)
+    // Finalize. Wrap the summary/createdRepos/status-write block so a DB
+    // error here can't strand the plan in 'running' (executePlan only
+    // re-fetches pending tasks, so a stranded plan is not resumable) — on
+    // any failure we force a terminal 'failed' status.
+    try {
+      // Build summary
+      const allTasks = this.db.prepare(
+        'SELECT status FROM migration_tasks WHERE plan_id = ?'
+      ).all(planId)
 
-    const summary = {
-      total: allTasks.length,
-      success: allTasks.filter(t => t.status === 'completed').length,
-      failed: allTasks.filter(t => t.status === 'failed').length,
-      skipped: allTasks.filter(t => t.status === 'skipped').length
+      const summary = {
+        total: allTasks.length,
+        success: allTasks.filter(t => t.status === 'completed').length,
+        failed: allTasks.filter(t => t.status === 'failed').length,
+        skipped: allTasks.filter(t => t.status === 'skipped').length
+      }
+
+      const finalStatus = summary.failed > 0 ? 'failed' : 'completed'
+
+      // Aggregate the GitHub repo info for tasks that imported a repo. Powers
+      // the post-migration AI Polish flow — the client uses these full_names
+      // to seed the batch suggestion modal. Additive, backward-compatible.
+      const createdRepoRows = this.db.prepare(
+        `SELECT metadata FROM migration_tasks
+         WHERE plan_id = ? AND status = 'completed' AND metadata IS NOT NULL`
+      ).all(planId)
+      const createdRepos = createdRepoRows
+        .map(row => {
+          try {
+            const meta = typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata
+            if (meta && meta.targetFullName) {
+              return { full_name: meta.targetFullName, html_url: meta.repoUrl || null }
+            }
+          } catch { /* malformed metadata — skip */ }
+          return null
+        })
+        .filter(Boolean)
+
+      this.db.prepare(
+        'UPDATE migration_plans SET status = ?, completed_at = datetime(?), summary = ? WHERE id = ?'
+      ).run(finalStatus, new Date().toISOString(), JSON.stringify(summary), planId)
+      this._cancelledPlans.delete(planId)
+      this._pausedPlans.delete(planId)
+      this.emit('plan-status', { planId, status: finalStatus })
+      this.emit('plan-complete', { planId, status: finalStatus, summary, createdRepos })
+    } catch (finalizeErr) {
+      logger.error({ err: finalizeErr, planId }, 'plan finalization failed; forcing terminal failed status')
+      try {
+        this.db.prepare(
+          "UPDATE migration_plans SET status = 'failed', completed_at = datetime('now') WHERE id = ?"
+        ).run(planId)
+        this._cancelledPlans.delete(planId)
+        this._pausedPlans.delete(planId)
+        this.emit('plan-status', { planId, status: 'failed' })
+      } catch { /* last-resort: DB unreachable — nothing more we can do */ }
     }
-
-    const finalStatus = summary.failed > 0 ? 'failed' : 'completed'
-
-    // Aggregate the GitHub repo info for tasks that imported a repo. Powers
-    // the post-migration AI Polish flow — the client uses these full_names
-    // to seed the batch suggestion modal. Additive, backward-compatible.
-    const createdRepoRows = this.db.prepare(
-      `SELECT metadata FROM migration_tasks
-       WHERE plan_id = ? AND status = 'completed' AND metadata IS NOT NULL`
-    ).all(planId)
-    const createdRepos = createdRepoRows
-      .map(row => {
-        try {
-          const meta = typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata
-          if (meta && meta.targetFullName) {
-            return { full_name: meta.targetFullName, html_url: meta.repoUrl || null }
-          }
-        } catch { /* malformed metadata — skip */ }
-        return null
-      })
-      .filter(Boolean)
-
-    this.db.prepare(
-      'UPDATE migration_plans SET status = ?, completed_at = datetime(?), summary = ? WHERE id = ?'
-    ).run(finalStatus, new Date().toISOString(), JSON.stringify(summary), planId)
-    this._cancelledPlans.delete(planId)
-    this._pausedPlans.delete(planId)
-    this.emit('plan-status', { planId, status: finalStatus })
-    this.emit('plan-complete', { planId, status: finalStatus, summary, createdRepos })
   }
 
   /**
