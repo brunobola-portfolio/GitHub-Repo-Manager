@@ -2,6 +2,7 @@ import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
+import reactPlugin from 'eslint-plugin-react'
 import jsxA11y from 'eslint-plugin-jsx-a11y'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
@@ -16,7 +17,9 @@ export default defineConfig([
     ],
     plugins: {
       'jsx-a11y': jsxA11y,
+      react: reactPlugin,
     },
+    settings: { react: { version: 'detect' } },
     languageOptions: {
       ecmaVersion: 2020,
 	      globals: {
@@ -37,6 +40,10 @@ export default defineConfig([
         destructuredArrayIgnorePattern: '^_',
         ignoreRestSiblings: true
       }],
+      // Catch <Component/> used without being imported/defined — plain no-undef
+      // can't see JSX identifiers, which let two real "ReferenceError: X is not
+      // defined" render crashes ship invisibly (TeamDetails/MyReviewsTab Spinner).
+      'react/jsx-no-undef': 'error',
       'react-hooks/exhaustive-deps': 'error',
       // react-hooks 7.1+ added stricter rules that flag pre-existing patterns
       // across the codebase (boundary state resets, async loading flags,

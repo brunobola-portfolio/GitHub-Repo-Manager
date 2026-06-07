@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ExternalLink, Terminal, Eye, EyeOff, Lock, AlertTriangle, Bookmark, CheckCircle2 } from 'lucide-react'
+import { ExternalLink, Terminal, Eye, EyeOff, Lock, AlertTriangle, Bookmark, Check, CheckCircle2 } from 'lucide-react'
 import { AnimatedCopyIcon } from '../../../ui/AnimatedCopyIcon'
 import { SpinnerIcon } from '../../../ui/Spinner'
 import { buildPatSettingsUrl, buildAzCliCommand, classifyProvider } from '../../../../utils/azureProvider'
