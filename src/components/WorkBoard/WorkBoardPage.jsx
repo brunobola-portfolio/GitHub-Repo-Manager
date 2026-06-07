@@ -14,9 +14,8 @@ import { useState, useEffect, lazy, Suspense } from 'react'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import {
     GitPullRequest, CircleDot, BarChart3,
-    AlertTriangle, Wrench, Users, RefreshCw, Lock,
+    AlertTriangle, Wrench, Users, RefreshCw,
 } from 'lucide-react'
-import * as Popover from '@radix-ui/react-popover'
 import { clsx } from 'clsx'
 import {
     useMyPendingReviews,
@@ -115,50 +114,6 @@ function WorkBoardEmptyState({ webhookConnected, onRefresh }) {
                 </div>
             </div>
         </div>
-    )
-}
-
-// ---------------------------------------------------------------------------
-// LockedTabButton — hover tooltip for tier-gated tabs
-// ---------------------------------------------------------------------------
-
-function LockedTabButton({ tab }) {
-    const [hovered, setHovered] = useState(false)
-    const Icon = tab.icon
-    return (
-        <Popover.Root open={hovered}>
-            <Popover.Trigger
-                asChild
-                onMouseEnter={() => setHovered(true)}
-                onMouseLeave={() => setHovered(false)}
-            >
-                <button
-                    role="tab"
-                    aria-selected={false}
-                    aria-disabled="true"
-                    tabIndex={-1}
-                    className="relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-60"
-                >
-                    <Icon className="w-4 h-4" />
-                    {tab.label}
-                    {tab.badge && (
-                        <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
-                            <Lock className="w-2.5 h-2.5" />
-                            {tab.badge}
-                        </span>
-                    )}
-                </button>
-            </Popover.Trigger>
-            <Popover.Portal>
-                <Popover.Content
-                    side="bottom"
-                    className="z-[var(--ds-z-popover)] px-3 py-1.5 text-xs rounded-lg bg-slate-900 text-slate-100 shadow-lg pointer-events-none border border-white/10"
-                >
-                    Upgrade to {tab.badge} to unlock {tab.label}
-                    <Popover.Arrow className="fill-slate-900" />
-                </Popover.Content>
-            </Popover.Portal>
-        </Popover.Root>
     )
 }
 
