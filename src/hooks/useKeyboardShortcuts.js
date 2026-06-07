@@ -81,6 +81,11 @@ export function useKeyboardShortcuts({
  * Ignores keystrokes while typing in inputs or when a modifier is held.
  */
 export function useContextShortcut({ key, handler, when = true, deps = [] }) {
+    // Keep the latest handler in a ref so the listener always calls the current
+    // closure — without this, an inline handler captured on first registration
+    // goes stale (the effect re-runs only on key/when/deps changes).
+    const handlerRef = useRef(handler)
+    useEffect(() => { handlerRef.current = handler })
     useEffect(() => {
         if (!when) return undefined
         function h(e) {
@@ -89,11 +94,11 @@ export function useContextShortcut({ key, handler, when = true, deps = [] }) {
             if (e.metaKey || e.ctrlKey || e.altKey) return
             if (e.key === key) {
                 e.preventDefault()
-                handler(e)
+                handlerRef.current(e)
             }
         }
         window.addEventListener('keydown', h)
         return () => window.removeEventListener('keydown', h)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- deps still re-bind on caller-provided values; handler stays fresh via ref
     }, [key, when, ...deps])
 }
