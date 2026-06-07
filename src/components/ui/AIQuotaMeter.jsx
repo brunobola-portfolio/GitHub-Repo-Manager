@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
-import { Sparkles, Check, ArrowRight, ExternalLink } from 'lucide-react'
-import { navigateToPricing, openAppSettings } from '../../utils/appEvents'
+import { Sparkles, Check, ExternalLink } from 'lucide-react'
+import { openAppSettings } from '../../utils/appEvents'
 import { formatTimeUntil } from '../../utils/format'
+import { QuotaUpgradeButton } from './QuotaUpgradeButton'
 
 const TONE = {
     indigo: {
@@ -167,14 +168,7 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
                                 <ExternalLink className="w-3 h-3" aria-hidden="true" />
                             </button>
                             {tier === 'free' && (
-                                <button
-                                    type="button"
-                                    onClick={() => { navigateToPricing('pro'); setOpen(false) }}
-                                    className="inline-flex items-center gap-1 text-[12px] font-semibold text-white bg-[color:var(--ds-accent-brand)] hover:bg-[color:var(--ds-accent-brand-hover)] px-2.5 py-1 rounded-md transition-colors"
-                                >
-                                    Upgrade to Pro
-                                    <ArrowRight className="w-3 h-3" aria-hidden="true" />
-                                </button>
+                                <QuotaUpgradeButton upgradeTo="pro" size="xs" onAfterNavigate={() => setOpen(false)} />
                             )}
                         </div>
                     </motion.div>

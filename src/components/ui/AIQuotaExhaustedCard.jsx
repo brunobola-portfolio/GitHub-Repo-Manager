@@ -1,9 +1,9 @@
 import { motion } from 'framer-motion'
-import { Gauge, ArrowRight, Sparkles, ExternalLink } from 'lucide-react'
-import { navigateToPricing, openAppSettings } from '../../utils/appEvents'
+import { Gauge, Sparkles, ExternalLink } from 'lucide-react'
+import { openAppSettings } from '../../utils/appEvents'
 import { formatTimeUntil } from '../../utils/format'
-
-const TIER_LABEL = { pro: 'Pro', enterprise: 'Enterprise', free: 'Free' }
+import { TIER_LABEL } from './quotaShared'
+import { QuotaUpgradeButton } from './QuotaUpgradeButton'
 
 function formatResetAbsolute(iso) {
     if (!iso) return null
@@ -26,7 +26,6 @@ export function AIQuotaExhaustedCard({
     upgradeTo = null,
     currentTier = 'free',
 }) {
-    const upgradeLabel = upgradeTo && TIER_LABEL[upgradeTo]
     const resetRel = formatTimeUntil(resetAt)
     const resetAbs = formatResetAbsolute(resetAt)
     const tierLabel = TIER_LABEL[currentTier] || currentTier
@@ -66,16 +65,7 @@ export function AIQuotaExhaustedCard({
                         </p>
 
                         <div className="mt-3 flex flex-wrap items-center gap-3">
-                            {upgradeLabel && (
-                                <button
-                                    type="button"
-                                    onClick={() => navigateToPricing(upgradeTo)}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-[12px] text-white bg-[color:var(--ds-accent-brand)] hover:bg-[color:var(--ds-accent-brand-hover)] transition-colors"
-                                >
-                                    Upgrade to {upgradeLabel}
-                                    <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-                                </button>
-                            )}
+                            <QuotaUpgradeButton upgradeTo={upgradeTo} size="sm" />
                             <button
                                 type="button"
                                 onClick={() => openAppSettings('usage')}
