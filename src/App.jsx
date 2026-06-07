@@ -39,6 +39,7 @@ import { ViewErrorFallback } from './components/ui/ViewErrorFallback'
 import { ModalSurfaces } from './components/ModalSurfaces'
 import { OrgSidebar } from './components/OrgSidebar'
 import { NotificationLayer } from './components/NotificationLayer'
+import { ViewShell } from './components/ui/ViewShell'
 import { startTransition } from './utils/viewTransitions'
 import { useAppRouter } from './hooks/useAppRouter'
 import { useAppEventBridge } from './hooks/useAppEventBridge'
@@ -650,54 +651,42 @@ function AppContent() {
 
       <main id="main-content" className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 pt-3 md:pt-4 lg:pt-5 pb-52 md:pb-6 transition-all duration-300 relative z-[1]">
         {activeView === 'pricing' && (
-          <div className="animate-in fade-in duration-500">
-            <ErrorBoundary fallback={<ViewErrorFallback viewName="Pricing" />}>
-              <Suspense fallback={<LoadingFallback />}>
-                <PricingPage onGetStarted={(dest) => setActiveView(dest === 'roadmap' ? 'roadmap' : 'dashboard')} />
-              </Suspense>
-            </ErrorBoundary>
-          </div>
+          <ViewShell name="Pricing">
+            <PricingPage onGetStarted={(dest) => setActiveView(dest === 'roadmap' ? 'roadmap' : 'dashboard')} />
+          </ViewShell>
         )}
 
         {activeView === 'roadmap' && (
-          <div className="animate-in fade-in duration-500">
-            <ErrorBoundary fallback={<ViewErrorFallback viewName="Roadmap" />}>
-              <Suspense fallback={<LoadingFallback />}>
-                <RoadmapPage onNavigatePricing={() => setActiveView('pricing')} />
-              </Suspense>
-            </ErrorBoundary>
-          </div>
+          <ViewShell name="Roadmap">
+            <RoadmapPage onNavigatePricing={() => setActiveView('pricing')} />
+          </ViewShell>
         )}
 
         {activeView === 'dashboard' && user && (
-          <div className="animate-in fade-in duration-500">
-            <ErrorBoundary fallback={<ViewErrorFallback viewName="Dashboard" />}>
-              <Suspense fallback={<LoadingFallback />}>
-                <DashboardPremium
-                  user={user}
-                  stats={stats}
-                  orgs={orgs}
-                  repos={displayRepos}
-                  teams={teams}
-                  selectedOrg={selectedOrg}
-                  onSelectOrg={handleOrgSelect}
-                  loading={loading || isSwitchingOrg}
-                  activity={activity}
-                  onViewChange={setActiveView}
-                  onOrgClick={(orgLogin) => {
-                    handleOrgSelect(orgLogin)
-                    setActiveView('repos')
-                  }}
-                  onTeamClick={(team) => {
-                    setSelectedTeam(team)
-                    setActiveView('teams')
-                  }}
-                  onSync={handleRefreshOrgs}
-                  lastSyncedAt={syncStatus?.lastSync ? new Date(syncStatus.lastSync) : null}
-                />
-              </Suspense>
-            </ErrorBoundary>
-          </div>
+          <ViewShell name="Dashboard">
+            <DashboardPremium
+              user={user}
+              stats={stats}
+              orgs={orgs}
+              repos={displayRepos}
+              teams={teams}
+              selectedOrg={selectedOrg}
+              onSelectOrg={handleOrgSelect}
+              loading={loading || isSwitchingOrg}
+              activity={activity}
+              onViewChange={setActiveView}
+              onOrgClick={(orgLogin) => {
+                handleOrgSelect(orgLogin)
+                setActiveView('repos')
+              }}
+              onTeamClick={(team) => {
+                setSelectedTeam(team)
+                setActiveView('teams')
+              }}
+              onSync={handleRefreshOrgs}
+              lastSyncedAt={syncStatus?.lastSync ? new Date(syncStatus.lastSync) : null}
+            />
+          </ViewShell>
         )}
 
         {activeView === 'repos' && (
@@ -755,111 +744,87 @@ function AppContent() {
         )}
 
         {activeView === 'repo-detail' && user && selectedRepoDetail && (
-          <div className="animate-in fade-in duration-500">
-            <ErrorBoundary fallback={<ViewErrorFallback viewName="Repository Detail" onGoHome={() => { setSelectedRepoDetail(null); setActiveView('dashboard') }} />}>
-              <Suspense fallback={<LoadingFallback />}>
-                <RepoDetail
-                  key={selectedRepoDetail.full_name || `${selectedRepoDetail.owner?.login}/${selectedRepoDetail.name}`}
-                  repo={selectedRepoDetail}
-                  initialTab={repoDetailInitialTab}
-                  onTabChange={setRepoDetailActiveTab}
-                  onRepoMutated={handleSelectedRepoMutated}
-                  onBack={() => {
-                    setSelectedRepoDetail(null)
-                    setActiveView('repos')
-                  }}
-                  onStartReview={(pr) => {
-                    setReviewingPR(pr)
-                    setActiveView('pr-review')
-                  }}
-                  onGenerateDescription={(pr) => {
-                    openModalWithData('showDevToolkit', {
-                      initialTab: 'pr',
-                      repo: selectedRepoDetail,
-                      pr: { number: pr.number, head: pr.head?.ref, base: pr.base?.ref },
-                    })
-                  }}
-                />
-              </Suspense>
-            </ErrorBoundary>
-          </div>
+          <ViewShell name="Repository Detail" onGoHome={() => { setSelectedRepoDetail(null); setActiveView('dashboard') }}>
+            <RepoDetail
+              key={selectedRepoDetail.full_name || `${selectedRepoDetail.owner?.login}/${selectedRepoDetail.name}`}
+              repo={selectedRepoDetail}
+              initialTab={repoDetailInitialTab}
+              onTabChange={setRepoDetailActiveTab}
+              onRepoMutated={handleSelectedRepoMutated}
+              onBack={() => {
+                setSelectedRepoDetail(null)
+                setActiveView('repos')
+              }}
+              onStartReview={(pr) => {
+                setReviewingPR(pr)
+                setActiveView('pr-review')
+              }}
+              onGenerateDescription={(pr) => {
+                openModalWithData('showDevToolkit', {
+                  initialTab: 'pr',
+                  repo: selectedRepoDetail,
+                  pr: { number: pr.number, head: pr.head?.ref, base: pr.base?.ref },
+                })
+              }}
+            />
+          </ViewShell>
         )}
 
         {activeView === 'pr-review' && user && reviewingPR && selectedRepoDetail && (
-          <div className="animate-in fade-in duration-300">
-            <ErrorBoundary fallback={<ViewErrorFallback viewName="PR Review" onGoHome={() => { setReviewingPR(null); setActiveView('repo-detail') }} />}>
-              <Suspense fallback={<LoadingFallback />}>
-                <PRReviewView
-                  owner={selectedRepoDetail.owner?.login || selectedRepoDetail.owner}
-                  repo={selectedRepoDetail.name}
-                  pullNumber={reviewingPR.number}
-                  repoName={selectedRepoDetail.full_name || selectedRepoDetail.name}
-                  onBack={() => {
-                    setReviewingPR(null)
-                    setActiveView('repo-detail')
-                  }}
-                />
-              </Suspense>
-            </ErrorBoundary>
-          </div>
+          <ViewShell name="PR Review" fadeClass="animate-in fade-in duration-300" onGoHome={() => { setReviewingPR(null); setActiveView('repo-detail') }}>
+            <PRReviewView
+              owner={selectedRepoDetail.owner?.login || selectedRepoDetail.owner}
+              repo={selectedRepoDetail.name}
+              pullNumber={reviewingPR.number}
+              repoName={selectedRepoDetail.full_name || selectedRepoDetail.name}
+              onBack={() => {
+                setReviewingPR(null)
+                setActiveView('repo-detail')
+              }}
+            />
+          </ViewShell>
         )}
 
         {activeView === 'teams' && user && (
-          <div className="animate-in fade-in duration-500">
-            <ErrorBoundary fallback={<ViewErrorFallback viewName="Teams" onGoHome={() => { setSelectedTeam(null); setActiveView('dashboard') }} />}>
-              <Suspense fallback={<LoadingFallback />}>
-                {selectedTeam ? (
-                  <TeamDetails
-                    team={selectedTeam}
-                    onBack={() => setSelectedTeam(null)}
-                    userRepos={repos}
-                    user={user}
-                    onShowActionsStats={null}
-                  />
-                ) : (
-                  <TeamHub
-                    user={user}
-                    onTeamSelect={setSelectedTeam}
-                    onNavigatePricing={() => setActiveView('pricing')}
-                  />
-                )}
-              </Suspense>
-            </ErrorBoundary>
-          </div>
+          <ViewShell name="Teams" onGoHome={() => { setSelectedTeam(null); setActiveView('dashboard') }}>
+            {selectedTeam ? (
+              <TeamDetails
+                team={selectedTeam}
+                onBack={() => setSelectedTeam(null)}
+                userRepos={repos}
+                user={user}
+                onShowActionsStats={null}
+              />
+            ) : (
+              <TeamHub
+                user={user}
+                onTeamSelect={setSelectedTeam}
+                onNavigatePricing={() => setActiveView('pricing')}
+              />
+            )}
+          </ViewShell>
         )}
 
         {activeView === 'work-board' && user && (
-          <div className="animate-in fade-in duration-500">
-            <ErrorBoundary fallback={<ViewErrorFallback viewName="Work Board" />}>
-              <Suspense fallback={<LoadingFallback />}>
-                <WorkBoardPage
-                    repoCount={displayRepos.length}
-                    onOpenSettings={() => openModalWithData('showSettings', { initialTab: 'work-board' })}
-                    initialTab={viewParams?.initialTab}
-                />
-              </Suspense>
-            </ErrorBoundary>
-          </div>
+          <ViewShell name="Work Board">
+            <WorkBoardPage
+              repoCount={displayRepos.length}
+              onOpenSettings={() => openModalWithData('showSettings', { initialTab: 'work-board' })}
+              initialTab={viewParams?.initialTab}
+            />
+          </ViewShell>
         )}
 
         {activeView === 'prompt-studio' && user && (
-          <div className="animate-in fade-in duration-500">
-            <ErrorBoundary fallback={<ViewErrorFallback viewName="Prompt Studio" onGoHome={() => setActiveView('dashboard')} />}>
-              <Suspense fallback={<LoadingFallback />}>
-                <PromptStudioPage currentTier={currentTier} />
-              </Suspense>
-            </ErrorBoundary>
-          </div>
+          <ViewShell name="Prompt Studio" onGoHome={() => setActiveView('dashboard')}>
+            <PromptStudioPage currentTier={currentTier} />
+          </ViewShell>
         )}
 
         {activeView === 'admin-dlq' && user && (
-          <div className="animate-in fade-in duration-500">
-            <ErrorBoundary fallback={<ViewErrorFallback viewName="DLQ Admin" onGoHome={() => setActiveView('dashboard')} />}>
-              <Suspense fallback={<LoadingFallback />}>
-                <AdminDLQPage />
-              </Suspense>
-            </ErrorBoundary>
-          </div>
+          <ViewShell name="DLQ Admin" onGoHome={() => setActiveView('dashboard')}>
+            <AdminDLQPage />
+          </ViewShell>
         )}
       </main>
 
