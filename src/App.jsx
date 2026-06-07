@@ -2,9 +2,7 @@ import { useState, useCallback, useEffect, useMemo, useRef, lazy, Suspense } fro
 import { useGitHub } from './hooks/useGitHub'
 import { Header } from './components/Header'
 import { Sidebar } from './components/Sidebar'
-import { Drawer } from './components/ui/Drawer'
 import { RepoList } from './components/RepoList'
-import { OrgPanel } from './components/OrgPanel'
 import { Spinner } from './components/ui/Spinner'
 import { useOnboarding } from './hooks/useOnboarding'
 import { useToast } from './hooks/useToast'
@@ -36,7 +34,7 @@ import { DemoModeBanner } from './components/DemoModeBanner'
 import { RouteFallback } from './components/ui/RouteFallback'
 import { ViewErrorFallback } from './components/ui/ViewErrorFallback'
 import { ModalSurfaces } from './components/ModalSurfaces'
-import { OrgSidebar } from './components/OrgSidebar'
+import { OrgSidebar, MobileOrgDrawer } from './components/OrgSidebar'
 import { NotificationLayer } from './components/NotificationLayer'
 import { ViewShell } from './components/ui/ViewShell'
 import { startTransition } from './utils/viewTransitions'
@@ -884,25 +882,16 @@ function AppContent() {
           covered on mobile by the MobileQuickActionsFab menu (Import / Create
           / AI / Search), the SelectionBar (bulk actions when items selected),
           and the bottom-nav More drawer (Pricing / History / Settings). */}
-      {user && (
-        <>
-          <Drawer side="left" mobileOnly isOpen={orgDrawerOpen} onClose={() => setOrgDrawerOpen(false)} width={320}>
-            <div className="p-4">
-              <OrgPanel
-                orgs={orgs}
-                selectedOrg={selectedOrg}
-                onSelectOrg={(org) => {
-                  handleOrgSelect(org)
-                  setOrgDrawerOpen(false)
-                }}
-                user={user}
-                stats={stats}
-                onCreateOrg={handleOpenOrgManager}
-              />
-            </div>
-          </Drawer>
-        </>
-      )}
+      <MobileOrgDrawer
+        user={user}
+        orgs={orgs}
+        selectedOrg={selectedOrg}
+        stats={stats}
+        isOpen={orgDrawerOpen}
+        onClose={() => setOrgDrawerOpen(false)}
+        onSelectOrg={handleOrgSelect}
+        onCreateOrg={handleOpenOrgManager}
+      />
       <LegalFooter />
       </div>
     </>
