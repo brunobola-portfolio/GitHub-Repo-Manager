@@ -1,9 +1,9 @@
-import { Gauge, ArrowRight, Key } from 'lucide-react'
+import { Gauge, Key } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { openAISettings, navigateToPricing } from '../../utils/appEvents'
+import { openAISettings } from '../../utils/appEvents'
 import { Heading } from './Heading'
-
-const TIER_LABEL = { pro: 'Pro', enterprise: 'Enterprise', free: 'Free' }
+import { TIER_LABEL } from './quotaShared'
+import { QuotaUpgradeButton } from './QuotaUpgradeButton'
 
 /**
  * QuotaExceededState — uniform CTA when a user hits a tier-bound quota.
@@ -25,7 +25,6 @@ export function QuotaExceededState({
   onClose,
 }) {
   const resetDate = resetAt ? new Date(resetAt).toISOString().slice(0, 10) : null
-  const upgradeLabel = upgradeTo && TIER_LABEL[upgradeTo]
   const tierLabel = TIER_LABEL[currentTier] || currentTier
   return (
     <motion.div
@@ -53,15 +52,7 @@ export function QuotaExceededState({
       {resetDate && (
         <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">Quota resets on {resetDate}.</p>
       )}
-      {upgradeLabel && (
-        <button
-          type="button"
-          onClick={() => { navigateToPricing(upgradeTo); onClose?.() }}
-          className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-white bg-[color:var(--ds-accent-brand)] hover:bg-[color:var(--ds-accent-brand-hover)] transition-colors ds-focus-ring"
-        >
-          Upgrade to {upgradeLabel} <ArrowRight className="w-4 h-4" />
-        </button>
-      )}
+      <QuotaUpgradeButton upgradeTo={upgradeTo} size="lg" onAfterNavigate={onClose} />
       <div className="mt-5 pt-5 border-t border-slate-200 dark:border-slate-800">
         <button
           type="button"
