@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, ArrowLeft, Plus, Trash2, Shield, UserPlus, BookCopy, Zap, Play, Clock, CheckCircle, XCircle, Loader2, Search, Activity } from 'lucide-react';
 import { Github } from '../icons/GithubIcon';
@@ -27,7 +27,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
     const [members, setMembers] = useState([]);
     const [assignedRepos, setAssignedRepos] = useState([]);
     const [currentUserRole, setCurrentUserRole] = useState('member');
-    const [_loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true);
     const [showInvite, setShowInvite] = useState(false);
     const [showAssign, setShowAssign] = useState(false);
     const [inviteUsername, setInviteUsername] = useState('');
@@ -36,6 +36,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
     const [isSearchingUsers, setIsSearchingUsers] = useState(false);
     const [confirmAction, setConfirmAction] = useState(null);
     const { toast } = useToast();
+    const listboxId = useId();
 
     const fetchDetails = async () => {
         try {
@@ -58,6 +59,33 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
         fetchDetails();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [team.id]);
+
+    // Debounced GitHub user search for the invite box. Keyed on inviteUsername
+    // so each keystroke cancels the previous timer AND aborts the prior fetch —
+    // the old inline-onChange debounce returned a cleanup React silently ignored,
+    // so timers leaked and an unmount mid-debounce could setState on a dead tree.
+    useEffect(() => {
+        if (inviteUsername.trim().length <= 2) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- clear results when query too short
+            setUserSearchResults([]);
+            setIsSearchingUsers(false);
+            return undefined;
+        }
+        setIsSearchingUsers(true);
+        const ctrl = new AbortController();
+        const timer = setTimeout(async () => {
+            try {
+                const res = await fetch(`/api/search/users?q=${encodeURIComponent(inviteUsername)}`, { signal: ctrl.signal });
+                const data = await res.json();
+                setUserSearchResults(Array.isArray(data) ? data : []);
+            } catch {
+                // User search failed/aborted — leave prior results
+            } finally {
+                setIsSearchingUsers(false);
+            }
+        }, 500);
+        return () => { clearTimeout(timer); ctrl.abort(); };
+    }, [inviteUsername]);
 
     const handleInviteGivenUsername = async (usernameToInvite) => {
         try {
@@ -241,39 +269,31 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                                         type="text"
                                         value={inviteUsername}
                                         aria-label="Search GitHub username to invite"
+                                        role="combobox"
+                                        aria-expanded={userSearchResults.length > 0}
+                                        aria-controls={listboxId}
+                                        aria-autocomplete="list"
                                         leadingIcon={Search}
                                         trailing={isSearchingUsers ? <Spinner size="sm" /> : undefined}
-                                        onChange={(e) => {
-                                            setInviteUsername(e.target.value);
-                                            // Debounce search
-                                            if (e.target.value.length > 2) {
-                                                setIsSearchingUsers(true);
-                                                const timer = setTimeout(async () => {
-                                                    try {
-                                                        const res = await fetch(`/api/search/users?q=${e.target.value}`);
-                                                        const data = await res.json();
-                                                        setUserSearchResults(data || []);
-                                                    } catch {
-                                                        // User search failed
-                                                    } finally {
-                                                        setIsSearchingUsers(false);
-                                                    }
-                                                }, 500);
-                                                return () => clearTimeout(timer);
-                                            } else {
-                                                setUserSearchResults([]);
-                                            }
-                                        }}
+                                        onChange={(e) => setInviteUsername(e.target.value)}
                                         placeholder="Search GitHub username..."
                                         autoFocus
                                     />
 
                                     {/* Search Results Dropdown */}
                                     {userSearchResults.length > 0 && (
-                                        <div className="absolute z-[var(--ds-z-popover)] top-full mt-2 left-0 w-full bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl max-h-60 overflow-y-auto">
+                                        <div
+                                            id={listboxId}
+                                            role="listbox"
+                                            aria-label="GitHub user search results"
+                                            className="absolute z-[var(--ds-z-popover)] top-full mt-2 left-0 w-full bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl max-h-60 overflow-y-auto"
+                                        >
                                             {userSearchResults.map(u => (
                                                 <button
                                                     key={u.id}
+                                                    type="button"
+                                                    role="option"
+                                                    aria-selected={false}
                                                     onClick={() => {
                                                         // Trigger invite immediately on selection
                                                         handleInviteGivenUsername(u.login);
@@ -294,18 +314,22 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                             </Card>
                         )}
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {members.map(member => (
-                                <MemberCard
-                                    key={member.id}
-                                    member={member}
-                                    currentUserRole={currentUserRole}
-                                    onUpdateRole={handleUpdateRole}
-                                    onRemove={handleRemoveMember}
-                                    isMe={member.username === user?.login}
-                                />
-                            ))}
-                        </div>
+                        {loading ? (
+                            <SectionSpinner label="Loading members…" />
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {members.map(member => (
+                                    <MemberCard
+                                        key={member.id}
+                                        member={member}
+                                        currentUserRole={currentUserRole}
+                                        onUpdateRole={handleUpdateRole}
+                                        onRemove={handleRemoveMember}
+                                        isMe={member.username === user?.login}
+                                    />
+                                ))}
+                            </div>
+                        )}
                     </motion.div>
                 )}
 
@@ -480,6 +504,7 @@ function MemberCard({ member, currentUserRole, onUpdateRole, onRemove, isMe }) {
                             ? 'text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20'
                             : 'text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
                             }`}
+                        aria-label={isMe ? "Leave Team" : "Remove Member"}
                         title={isMe ? "Leave Team" : "Remove Member"}
                     >
                         {isMe ? <ArrowLeft className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
@@ -495,11 +520,17 @@ function RepoCard({ repo, teamMembers }) {
     const [collaborators, setCollaborators] = useState([]);
     const [loadingCollabs, setLoadingCollabs] = useState(false);
     const [inviting, setInviting] = useState(null); // username being invited
+    // Track "have we fetched" in a ref, not via collaborators.length — the
+    // optimistic add on invite makes the array non-empty, which (with the old
+    // length-based cache guard) permanently blocked a refetch, so the optimistic
+    // 'pending' entry never reconciled with real server state.
+    const hasFetchedCollabsRef = useRef(false);
     const { toast } = useToast();
 
     // 1. Fetch Collaborators when expanded
     const fetchCollaborators = async () => {
-        if (collaborators.length > 0) return; // cache
+        if (hasFetchedCollabsRef.current) return; // cache (ref, not array length)
+        hasFetchedCollabsRef.current = true;
         setLoadingCollabs(true);
         try {
             const [owner, repoName] = repo.repo_full_name.split('/');
@@ -507,9 +538,11 @@ function RepoCard({ repo, teamMembers }) {
             if (res.ok) {
                 const data = await res.json();
                 setCollaborators(data);
+            } else {
+                hasFetchedCollabsRef.current = false; // allow retry on failure
             }
         } catch {
-            // Collaborator fetch failed
+            hasFetchedCollabsRef.current = false; // allow retry on failure
         } finally {
             setLoadingCollabs(false);
         }
@@ -543,9 +576,12 @@ function RepoCard({ repo, teamMembers }) {
 
             if (res.ok) {
                 toast.success(`Invited ${username} to ${repoName}`);
-                // Optimistically add to collaborators list to update UI
+                // Optimistically add to collaborators list to update UI, and
+                // invalidate the cache so the next expand refetches and
+                // reconciles this 'pending' entry against real server state.
                 const newCollab = teamMembers.find(m => m.username === username);
                 setCollaborators(prev => [...prev, { login: username, avatar_url: newCollab?.avatar_url, role_name: 'pending' }]);
+                hasFetchedCollabsRef.current = false;
             } else {
                 toast.error('Failed to invite collaborator');
             }

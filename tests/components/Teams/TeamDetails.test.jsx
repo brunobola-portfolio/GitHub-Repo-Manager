@@ -8,7 +8,7 @@
  * so the dead-prop regression can't come back.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 
 vi.mock('framer-motion', async (importOriginal) => {
     const actual = await importOriginal()
@@ -97,9 +97,33 @@ describe('TeamDetails — member management wiring', () => {
         renderDetails()
         await gotoMembers()
         fireEvent.click(screen.getByRole('button', { name: /add member/i }))
-        const search = await screen.findByRole('textbox', { name: /search github username/i }, { timeout: 5000 })
-        // >2 chars sets isSearchingUsers=true synchronously -> the Spinner renders.
+        const search = await screen.findByRole('combobox', { name: /search github username/i }, { timeout: 5000 })
+        // >2 chars -> the debounce effect flips isSearchingUsers -> Spinner renders.
         fireEvent.change(search, { target: { value: 'oct' } })
-        expect(screen.getByRole('status', { name: /loading/i })).toBeInTheDocument()
+        expect(await screen.findByRole('status', { name: /loading/i }, { timeout: 5000 })).toBeInTheDocument()
+    })
+
+    it('exposes accessible names: remove button + combobox search + listbox results', { timeout: 20000 }, async () => {
+        global.fetch = vi.fn((url, opts = {}) => {
+            calls.push({ url, method: opts.method || 'GET', body: opts.body })
+            if (url === '/api/teams/1' && (!opts.method || opts.method === 'GET')) {
+                return Promise.resolve({ ok: true, json: async () => ({ members: [BOB], repos: [], currentUserRole: 'owner' }) })
+            }
+            if (url.startsWith('/api/search/users')) {
+                return Promise.resolve({ ok: true, json: async () => ([{ id: 9, login: 'newdev', avatar_url: '' }]) })
+            }
+            return Promise.resolve({ ok: true, json: async () => ({}) })
+        })
+        renderDetails()
+        await gotoMembers()
+        // Remove button has a real accessible name (not just title).
+        expect(screen.getByRole('button', { name: 'Remove Member' })).toBeInTheDocument()
+        // Invite search is a combobox; results are a listbox of options.
+        fireEvent.click(screen.getByRole('button', { name: /add member/i }))
+        const combo = await screen.findByRole('combobox', { name: /search github username/i }, { timeout: 5000 })
+        fireEvent.change(combo, { target: { value: 'newdev' } })
+        const listbox = await screen.findByRole('listbox', { name: /search results/i }, { timeout: 5000 })
+        expect(listbox).toBeInTheDocument()
+        expect(within(listbox).getByRole('option', { name: /newdev/i })).toBeInTheDocument()
     })
 })
