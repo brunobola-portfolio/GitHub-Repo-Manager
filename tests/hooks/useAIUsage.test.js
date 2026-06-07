@@ -75,6 +75,9 @@ describe('useAIUsage', () => {
             window.dispatchEvent(new Event('focus'))
         })
         await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+        // The focus refetch must be abortable too (not just the mount fetch),
+        // so an unmount mid-refetch can't setState on a dead component.
+        expect(fetchMock.mock.calls[1][1].signal).toBeInstanceOf(AbortSignal)
     })
 
     it('survives fetch failure by returning loading=false and aiQueries=null', async () => {

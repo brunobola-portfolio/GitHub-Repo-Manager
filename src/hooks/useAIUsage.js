@@ -62,6 +62,9 @@ export function useAIUsage() {
     const [loading, setLoading] = useState(true)
     const quotaGate = useAIQuotaState()
     const lastGate = useRef(quotaGate)
+    // Shared across both effects so every refetch (mount, focus, gate-flip)
+    // uses a signal that's aborted on unmount — no setState on a dead component.
+    const ctrlRef = useRef(null)
 
     async function load(signal) {
         try {
@@ -78,16 +81,18 @@ export function useAIUsage() {
 
     useEffect(() => {
         const ctrl = new AbortController()
+        ctrlRef.current = ctrl
         // eslint-disable-next-line react-hooks/set-state-in-effect
         load(ctrl.signal)
         const onFocus = () => {
             // Focus = user just came back; bypass the cache so they see fresh data.
             invalidateUsageCache()
-            load()
+            load(ctrl.signal)
         }
         window.addEventListener('focus', onFocus)
         return () => {
             ctrl.abort()
+            ctrlRef.current = null
             window.removeEventListener('focus', onFocus)
         }
     }, [])
@@ -100,7 +105,7 @@ export function useAIUsage() {
         if (lastGate.current == null && quotaGate != null) {
             // Bypass the cache: the user just hit a quota — they want fresh numbers.
             invalidateUsageCache()
-            load()
+            load(ctrlRef.current?.signal)
         }
         lastGate.current = quotaGate
     }, [quotaGate])
