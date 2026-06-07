@@ -5,13 +5,8 @@ import { Sidebar } from './components/Sidebar'
 import { Drawer } from './components/ui/Drawer'
 import { RepoList } from './components/RepoList'
 import { OrgPanel } from './components/OrgPanel'
-import { ToastContainer } from './components/ui/Toast'
-import { PendingSyncBanner } from './components/ui/PendingSyncBanner'
 import { Spinner } from './components/ui/Spinner'
-import { QuotaExceededState } from './components/ui/QuotaExceededState'
-import { OnboardingTour } from './components/Onboarding/OnboardingTour'
 import { useOnboarding } from './hooks/useOnboarding'
-import { useFocusTrap } from './hooks/useFocusTrap'
 import { useToast } from './hooks/useToast'
 import ErrorBoundary from './components/ErrorBoundary'
 import { AUTH_ENDPOINTS, MOCK_MODE } from './config'
@@ -36,7 +31,6 @@ import { SlimSidebar } from './components/Sidebar'
 import { SessionBanner } from './components/SessionBanner'
 import { BYOKUpgradeBanner } from './components/BYOKUpgradeBanner'
 import { RateLimitNotice } from './components/ui/RateLimitNotice'
-import { OfflineBanner } from './components/ui/OfflineBanner'
 import { onRetryQueueEvent } from './utils/retry-queue'
 import { LegalFooter } from './components/LegalFooter'
 import { DemoModeBanner } from './components/DemoModeBanner'
@@ -44,6 +38,7 @@ import { RouteFallback } from './components/ui/RouteFallback'
 import { ViewErrorFallback } from './components/ui/ViewErrorFallback'
 import { ModalSurfaces } from './components/ModalSurfaces'
 import { OrgSidebar } from './components/OrgSidebar'
+import { NotificationLayer } from './components/NotificationLayer'
 import { startTransition } from './utils/viewTransitions'
 import { useAppRouter } from './hooks/useAppRouter'
 import { useAppEventBridge } from './hooks/useAppEventBridge'
@@ -125,7 +120,6 @@ function AppContent() {
   // 'app:show-quota-exceeded' event by toast.errorFromException's
   // 'open-quota' action. Cleared when the modal is dismissed.
   const [quotaModal, setQuotaModal] = useState(null)
-  const quotaCardRef = useFocusTrap(!!quotaModal, () => setQuotaModal(null))
 
   // Onboarding tour: shown on first visit (after a brief delay so the
   // dashboard renders first), throttled to once per 6h via useOnboarding.
@@ -911,41 +905,16 @@ function AppContent() {
         MobileQuickActionsFab menu (Search item) so the right edge isn't a
         stack of FABs. Keyboard-only fallback is the ⌘K / Ctrl+K shortcut. */}
 
-      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
-      <PendingSyncBanner isAuthenticated={!!user} />
-      <OnboardingTour
-        isOpen={tourOpen}
-        onClose={() => { onboarding.markSeen(); setTourOpen(false) }}
-        onNeverShow={() => onboarding.markComplete()}
+      <NotificationLayer
+        toasts={toasts}
+        onDismissToast={dismissToast}
+        isAuthenticated={!!user}
+        tourOpen={tourOpen}
+        onCloseTour={() => { onboarding.markSeen(); setTourOpen(false) }}
+        onNeverShowTour={() => onboarding.markComplete()}
+        quotaModal={quotaModal}
+        onCloseQuota={() => setQuotaModal(null)}
       />
-      {quotaModal && (
-        /* eslint-disable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Quota exceeded"
-          tabIndex={-1}
-          className="fixed inset-0 z-[var(--ds-z-ceiling)] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
-          onClick={() => setQuotaModal(null)}
-          onKeyDown={(e) => { if (e.key === 'Escape') setQuotaModal(null) }}
-        >
-          <div ref={quotaCardRef} onClick={(e) => e.stopPropagation()}>
-            <Suspense fallback={null}>
-              <QuotaExceededState
-                feature={quotaModal.feature || 'AI'}
-                currentTier={quotaModal.tier || quotaModal.currentTier}
-                used={quotaModal.used}
-                limit={quotaModal.limit}
-                resetAt={quotaModal.resetAt}
-                upgradeTo={quotaModal.upgradeTo}
-                onClose={() => setQuotaModal(null)}
-              />
-            </Suspense>
-          </div>
-        </div>
-        /* eslint-enable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */
-      )}
-      <OfflineBanner />
       <ErrorBoundary fallback={<ViewErrorFallback viewName="AI Assistant" />}>
         <Suspense fallback={null}>
           <AIAssistant askAI={askAI} user={user} checkAIStatus={checkAIStatus} />
