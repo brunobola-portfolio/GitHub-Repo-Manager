@@ -28,9 +28,8 @@ import { CommandPalette } from './components/CommandPalette'
 import { useResponsiveLayout } from './hooks/useResponsiveLayout'
 import CollapsiblePanel from './components/ui/CollapsiblePanel'
 import { SlimSidebar } from './components/Sidebar'
-import { SessionBanner } from './components/SessionBanner'
-import { BYOKUpgradeBanner } from './components/BYOKUpgradeBanner'
 import { RateLimitNotice } from './components/ui/RateLimitNotice'
+import { HeaderBanners } from './components/HeaderBanners'
 import { onRetryQueueEvent } from './utils/retry-queue'
 import { LegalFooter } from './components/LegalFooter'
 import { DemoModeBanner } from './components/DemoModeBanner'
@@ -625,27 +624,18 @@ function AppContent() {
         onOpenCommandPalette={commandPalette.open}
       />
 
-      {rateLimitBanner && (
-        <RateLimitNotice
-          variant="banner"
-          retryAt={rateLimitBanner.retryAt}
-          onRetry={() => {
-            setRateLimitBanner(null)
-            // After countdown, re-attempt the original action. For the login case,
-            // navigating directly to /api/auth/login restarts the OAuth flow.
-            window.location.href = '/api/auth/login'
-          }}
-          onDismiss={() => setRateLimitBanner(null)}
-        />
-      )}
-      {/* Session expired banner */}
-      <SessionBanner
-        visible={sessionExpired}
-        onLogin={handleLogin}
-        onDismiss={() => setSessionExpired(false)}
-      />
-      {/* BYOK first-login upgrade banner */}
-      <BYOKUpgradeBanner
+      <HeaderBanners
+        rateLimitBanner={rateLimitBanner}
+        onRateLimitRetry={() => {
+          setRateLimitBanner(null)
+          // After countdown, re-attempt the original action. For the login case,
+          // navigating directly to /api/auth/login restarts the OAuth flow.
+          window.location.href = '/api/auth/login'
+        }}
+        onRateLimitDismiss={() => setRateLimitBanner(null)}
+        sessionExpired={sessionExpired}
+        onSessionLogin={handleLogin}
+        onSessionDismiss={() => setSessionExpired(false)}
         isAuthenticated={!!user}
         onOpenAISettings={() => openModalWithData('showSettings', { initialTab: 'ai' })}
       />
