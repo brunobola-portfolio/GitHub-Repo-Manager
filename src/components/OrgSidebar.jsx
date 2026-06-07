@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Building2, ChevronRight } from 'lucide-react'
 import CollapsiblePanel from './ui/CollapsiblePanel'
+import { Drawer } from './ui/Drawer'
 import { OrgPanel } from './OrgPanel'
 import { BREAKPOINTS } from '../hooks/useMediaQuery'
 
@@ -169,5 +170,35 @@ export function OrgSidebar({ user, orgs, selectedOrg, stats, leftMode, onSelectO
         )}
       </AnimatePresence>
     </>
+  )
+}
+
+/**
+ * MobileOrgDrawer — the mobile-only left Drawer org switcher.
+ *
+ * Rendered at the app shell root (not inside OrgSidebar's repos-view rail) so
+ * the Header hamburger can open it on any view. Co-located here because it is
+ * the small-screen sibling of OrgSidebar and shares its OrgPanel body. Selecting
+ * an org both selects it and dismisses the drawer; gated on an authenticated
+ * user. Locked by tests/components/OrgSidebar.mobileDrawer.test.jsx.
+ */
+export function MobileOrgDrawer({ user, orgs, selectedOrg, stats, isOpen, onClose, onSelectOrg, onCreateOrg }) {
+  if (!user) return null
+  return (
+    <Drawer side="left" mobileOnly isOpen={isOpen} onClose={onClose} width={320}>
+      <div className="p-4">
+        <OrgPanel
+          orgs={orgs}
+          selectedOrg={selectedOrg}
+          onSelectOrg={(org) => {
+            onSelectOrg(org)
+            onClose()
+          }}
+          user={user}
+          stats={stats}
+          onCreateOrg={onCreateOrg}
+        />
+      </div>
+    </Drawer>
   )
 }
