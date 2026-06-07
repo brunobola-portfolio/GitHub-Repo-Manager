@@ -361,6 +361,21 @@ const _e2eOverridePRNumber = (() => {
     } catch { return null }
 })()
 
+// E2E test override: `?e2eRepoApiLive=branches,commits,...` makes the mock layer
+// yield control for those resource paths under /api/repos/:owner/:repo so a
+// spec's Playwright `page.route` fixtures can supply bespoke responses the
+// deterministic generators can't express (e.g. a 403 GITHUB_PRO_REQUIRED on
+// branch protection for the free-plan-private path). Read once at module load —
+// tests set it on the URL before the first repo-detail fetch triggers this
+// import.
+const _e2eRepoApiLiveResources = (() => {
+    if (typeof window === 'undefined') return null
+    try {
+        const v = new URLSearchParams(window.location.search).get('e2eRepoApiLive')
+        return v ? new Set(v.split(',').map((s) => s.trim()).filter(Boolean)) : null
+    } catch { return null }
+})()
+
 export function mockRepoDetailFetch(url) {
     // Strip query string for matching
     const [path] = url.split('?')
@@ -386,6 +401,9 @@ export function mockRepoDetailFetch(url) {
     const resource = parts[2]
     const sub1 = parts[3]
     const sub2 = parts[4]
+
+    // E2E: defer the requested resources to Playwright's page.route stubs.
+    if (resource && _e2eRepoApiLiveResources?.has(resource)) return undefined
 
     // /api/repos/:owner/:repo
     if (!resource) return { id: 1, name: repo, full_name: repoName, description: 'Demo repository', private: false, fork: false, owner: { login: owner }, default_branch: 'main', stargazers_count: 42, forks_count: 7, open_issues_count: 5 }
