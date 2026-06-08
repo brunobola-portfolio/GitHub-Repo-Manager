@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 import { ChevronDown, Settings2, RotateCcw } from 'lucide-react'
 import { InsightCard } from '../../ui/InsightCard'
+import { RevealSection } from '../../ui/RevealSection'
 import {
     FEATURE_KEYS,
     FEATURE_KEY_LABELS,
@@ -65,14 +66,7 @@ export function PerFeatureOverrideSection({
 
                 <AnimatePresence initial={false}>
                     {open && (
-                        <motion.div
-                            key="feature-overrides"
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="overflow-hidden"
-                        >
+                        <RevealSection as="div" key="feature-overrides">
                             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
                                 Pick a different model for specific features. Leave empty to use the completion model above.
                             </p>
@@ -146,7 +140,7 @@ export function PerFeatureOverrideSection({
                                     )
                                 })}
                             </ul>
-                        </motion.div>
+                        </RevealSection>
                     )}
                 </AnimatePresence>
             </div>

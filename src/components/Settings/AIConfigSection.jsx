@@ -27,6 +27,7 @@ import { TestButton } from './AIConfig/TestButton'
 import { CapabilityMatrix } from './AIConfig/CapabilityMatrix'
 import { CurrentConfigSummary } from './AIConfig/CurrentConfigSummary'
 import { SectionHeader } from './AIConfig/SectionHeader'
+import { RevealSection } from '../ui/RevealSection'
 
 // ---------------------------------------------------------------------------
 // Main: AIConfigSection
@@ -410,13 +411,7 @@ export function AIConfigSection() {
                     {/* 02 — Embedding provider */}
                     <AnimatePresence>
                         {form.completionProvider && (
-                            <motion.section
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="rounded-2xl bg-white/60 dark:bg-slate-900/50 ring-1 ring-inset ring-slate-200/70 dark:ring-slate-800 p-4 overflow-hidden"
-                            >
+                            <RevealSection className="rounded-2xl bg-white/60 dark:bg-slate-900/50 ring-1 ring-inset ring-slate-200/70 dark:ring-slate-800 p-4">
                                 <SectionHeader
                                     step={2}
                                     title="Embedding provider"
@@ -427,20 +422,14 @@ export function AIConfigSection() {
                                     }
                                 />
                                 <EmbeddingSection form={form} onChange={handleFieldChange} />
-                            </motion.section>
+                            </RevealSection>
                         )}
                     </AnimatePresence>
 
                     {/* 03 — Per-feature overrides */}
                     <AnimatePresence>
                         {form.completionProvider && (
-                            <motion.section
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                                transition={{ duration: 0.2 }}
-                                className="overflow-hidden"
-                            >
+                            <RevealSection>
                                 <PerFeatureOverrideSection
                                     featureOverrides={form.featureOverrides}
                                     completionModel={form.completionModel || (PROVIDER_DEFAULTS[form.completionProvider]?.modelPlaceholder ?? '')}
@@ -448,7 +437,7 @@ export function AIConfigSection() {
                                     embeddingProvider={form.embeddingProvider}
                                     onChange={handleFieldChange}
                                 />
-                            </motion.section>
+                            </RevealSection>
                         )}
                     </AnimatePresence>
 

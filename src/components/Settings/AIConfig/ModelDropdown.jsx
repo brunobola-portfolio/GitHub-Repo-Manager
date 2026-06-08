@@ -44,7 +44,7 @@ export function ModelDropdown({
             id={listboxId}
             role="listbox"
             ref={listRef}
-            className="absolute z-[var(--ds-z-floating)] mt-1 left-0 right-0 max-h-96 overflow-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl shadow-slate-900/10 ds-scrollbar"
+            className="ds-animate-scale-in origin-top absolute z-[var(--ds-z-popover)] mt-2 left-0 right-0 max-h-96 overflow-auto rounded-2xl border border-slate-200/80 dark:border-slate-700/60 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md ring-1 ring-black/[0.04] dark:ring-white/10 shadow-2xl shadow-slate-900/15 dark:shadow-black/60 ds-scrollbar"
         >
             <TierFilterChips
                 availableTiers={availableTiers}
