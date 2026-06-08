@@ -69,6 +69,7 @@ export function ModelDropdown({
                                 <ModelRow
                                     key={opt.id}
                                     option={opt}
+                                    optionId={`${listboxId}-opt-${idx}`}
                                     selected={value === opt.id}
                                     highlighted={highlight === idx}
                                     dataIdx={idx}

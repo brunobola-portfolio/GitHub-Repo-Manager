@@ -26,7 +26,7 @@ function formatDollars(n) {
  *                   because the surrounding ModelSectionHeader already labels the tier,
  *                   making a per-row badge visually redundant.
  */
-export function ModelRow({ option, selected, highlighted, onPick, dataIdx, hideTierBadge = false }) {
+export function ModelRow({ option, optionId, selected, highlighted, onPick, dataIdx, hideTierBadge = false }) {
     const tierStyle = TIER_STYLES[option.tier] || TIER_STYLES.balanced
     const isNew = isNewModel(option.releasedAt)
     const priceTier = pricingTier(option.pricing)
@@ -35,6 +35,7 @@ export function ModelRow({ option, selected, highlighted, onPick, dataIdx, hideT
     return (
         <button
             type="button"
+            id={optionId}
             role="option"
             aria-selected={selected}
             data-idx={dataIdx}
