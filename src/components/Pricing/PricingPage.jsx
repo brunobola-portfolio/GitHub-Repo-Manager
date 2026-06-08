@@ -102,7 +102,7 @@ const FAQS = [
   },
   {
     q: 'Do you offer a free trial for Pro or Enterprise?',
-    a: 'Pro includes a 14-day free trial — no credit card required. Enterprise plans include a guided proof-of-concept period. Contact sales for details.',
+    a: 'The Free plan is generous enough to evaluate the product with no credit card, and Pro is month-to-month — cancel anytime. Enterprise plans include a guided proof-of-concept period. Contact sales for details.',
   },
 ]
 
