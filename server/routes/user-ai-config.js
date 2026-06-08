@@ -23,6 +23,7 @@ import {
     getDecryptedConfig,
 } from '../lib/user-ai-config.js';
 import { createProviderForUser } from '../lib/ai-provider.js';
+import { assertSafeAIEndpoint } from '../lib/url-validator.js';
 import { invalidate as invalidateAIHealth, recordState as recordAIHealth } from '../lib/ai-health-probe.js';
 import { formatAIErrorForUser, getProviderLabel } from '../lib/ai-error-format.js';
 import logger from '../lib/logger.js';
@@ -92,6 +93,23 @@ router.post('/', requireAuth, validateBody(userAIConfigSchema), (req, res) => {
         embeddingEndpointUrl,
         featureOverrides,
     } = req.validatedBody;
+
+    // SSRF guard: a BYOK endpoint URL is fetched server-side, so reject any that
+    // resolve to cloud-metadata / loopback / RFC1918 before storing them. Local
+    // providers may target loopback only when the operator opts in
+    // (ALLOW_LOCAL_AI_ENDPOINTS). Mirrored at provider-build time in
+    // createProviderForUser as defense-in-depth.
+    try {
+        if (completionEndpointUrl) assertSafeAIEndpoint(completionEndpointUrl, { provider: completionProvider });
+        if (embeddingEndpointUrl) assertSafeAIEndpoint(embeddingEndpointUrl, { provider: embeddingProvider });
+    } catch (err) {
+        return res.status(400).json({
+            error: 'endpoint_not_allowed',
+            code: 'UNSAFE_ENDPOINT',
+            message: 'The endpoint URL is not allowed. Use a public https endpoint; local endpoints require the ALLOW_LOCAL_AI_ENDPOINTS server setting.',
+            detail: String(err?.message || '').replace(/^ssrf_guard:\s*/, ''),
+        });
+    }
 
     // Build credential objects from individual fields.
     // undefined fields are left as-is (partial update semantics).

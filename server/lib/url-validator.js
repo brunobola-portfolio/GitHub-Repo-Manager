@@ -180,6 +180,46 @@ export function isInternalUrl(urlString) {
 }
 
 /**
+ * SSRF guard for a user-supplied BYOK AI endpoint URL.
+ *
+ * Self-hosted "local" providers (Ollama, LM Studio, vLLM) legitimately point at
+ * loopback / RFC1918 hosts — but allowing arbitrary private targets turns the
+ * server into an SSRF proxy to cloud metadata (169.254.169.254) and internal
+ * services. So private ranges are blocked by default and only permitted when the
+ * operator EXPLICITLY opts in via ALLOW_LOCAL_AI_ENDPOINTS=true AND the provider
+ * is 'local'. Everything else goes through the strict https-only public guard.
+ *
+ * Throws (message prefixed `ssrf_guard:`) when the endpoint is not allowed;
+ * returns the parsed URL when safe.
+ *
+ * @param {string} raw
+ * @param {{ provider?: string }} [opts]
+ * @returns {URL}
+ */
+export function assertSafeAIEndpoint(raw, { provider } = {}) {
+    const allowLocal = provider === 'local' && process.env.ALLOW_LOCAL_AI_ENDPOINTS === 'true';
+    if (allowLocal) {
+        // Opt-in local endpoint: still require a parseable http(s) URL with no
+        // embedded credentials, but skip the private-range block.
+        if (typeof raw !== 'string' || raw.length === 0) {
+            throw new Error('ssrf_guard: url must be a non-empty string');
+        }
+        let parsed;
+        try { parsed = new URL(raw); } catch { throw new Error('ssrf_guard: invalid url'); }
+        if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+            throw new Error(`ssrf_guard: protocol "${parsed.protocol}" not allowed`);
+        }
+        if (parsed.username || parsed.password) {
+            throw new Error('ssrf_guard: embedded credentials not allowed');
+        }
+        return parsed;
+    }
+    // Public BYOK endpoint (openai/openrouter compatible, etc.) — https only,
+    // no private/loopback/link-local hosts.
+    return assertSafeExternalUrl(raw, { allowHttp: false });
+}
+
+/**
  * Resolve hostname and check if it points to a private/internal IP (DNS rebinding protection)
  */
 export async function resolveAndValidateHost(urlString) {
