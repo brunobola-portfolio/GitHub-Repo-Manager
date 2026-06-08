@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
 	RefreshCw, Loader2, Search, LayoutGrid, List as ListIcon,
 	CheckSquare, X, Sparkles, ChevronDown, ArrowRightLeft, SlidersHorizontal
@@ -93,6 +93,26 @@ export function RepoFilterBar({
 		}
 	}, [])
 
+	// Managed menu: focus the first item when the bulk-selection menu opens, so
+	// keyboard + screen-reader users land inside it (arrow keys then roam).
+	const selectionTriggerRef = useRef(null)
+	const selectionMenuRef = useRef(null)
+	useEffect(() => {
+		if (!showSelectionMenu) return
+		selectionMenuRef.current?.querySelector('[role="menuitem"]')?.focus()
+	}, [showSelectionMenu])
+
+	const handleSelectionMenuKeyDown = (e) => {
+		const items = Array.from(selectionMenuRef.current?.querySelectorAll('[role="menuitem"]') || [])
+		if (!items.length) return
+		const idx = items.indexOf(document.activeElement)
+		if (e.key === 'ArrowDown') { e.preventDefault(); items[(idx + 1) % items.length].focus() }
+		else if (e.key === 'ArrowUp') { e.preventDefault(); items[(idx - 1 + items.length) % items.length].focus() }
+		else if (e.key === 'Home') { e.preventDefault(); items[0].focus() }
+		else if (e.key === 'End') { e.preventDefault(); items[items.length - 1].focus() }
+		else if (e.key === 'Escape') { e.preventDefault(); setShowSelectionMenu(false); selectionTriggerRef.current?.focus() }
+	}
+
 	const handleSelectAll = () => {
 		onSelectAll()
 		setShowSelectionMenu(false)
@@ -134,8 +154,10 @@ export function RepoFilterBar({
 						</div>
 						<div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1"></div>
 						<button
+							ref={selectionTriggerRef}
 							type="button"
 							aria-label="Open selection menu"
+							aria-haspopup="menu"
 							aria-expanded={showSelectionMenu}
 							onClick={(e) => { e.stopPropagation(); setShowSelectionMenu(!showSelectionMenu) }}
 							className="w-6 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
@@ -146,17 +168,24 @@ export function RepoFilterBar({
 
 					{/* Dropdown */}
 					{showSelectionMenu && (
-						<div className="absolute top-full left-0 mt-2 w-48 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-xl shadow-[var(--ds-shadow-overlay)] border border-slate-200/60 dark:border-slate-700/50 py-1 ds-animate-scale-in overflow-hidden">
-							<button onClick={handleSelectAll} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 ds-focus-ring">
+						<div
+							ref={selectionMenuRef}
+							role="menu"
+							tabIndex={-1}
+							aria-label="Bulk selection actions"
+							onKeyDown={handleSelectionMenuKeyDown}
+							className="absolute top-full left-0 mt-2 w-48 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-xl shadow-[var(--ds-shadow-overlay)] border border-slate-200/60 dark:border-slate-700/50 py-1 ds-animate-scale-in overflow-hidden"
+						>
+							<button role="menuitem" tabIndex={-1} onClick={handleSelectAll} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 ds-focus-ring">
 								<CheckSquare className="w-4 h-4" />
 								{allFilteredSelected ? 'Deselect All' : 'Select All'}
 							</button>
-							<button onClick={handleInvertSelection} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 ds-focus-ring">
+							<button role="menuitem" tabIndex={-1} onClick={handleInvertSelection} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 ds-focus-ring">
 								<ArrowRightLeft className="w-4 h-4" />
 								Invert Selection
 							</button>
 							<div className="my-1 border-t border-slate-100 dark:border-slate-700"></div>
-							<button onClick={() => { onClearSelection(); setShowSelectionMenu(false); }} className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 flex items-center gap-2 ds-focus-ring">
+							<button role="menuitem" tabIndex={-1} onClick={() => { onClearSelection(); setShowSelectionMenu(false); }} className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 flex items-center gap-2 ds-focus-ring">
 								<X className="w-4 h-4" />
 								Clear Selection
 							</button>
