@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
-import { Sparkles, Check, ExternalLink } from 'lucide-react'
+import { Sparkles, ExternalLink } from 'lucide-react'
 import { openAppSettings } from '../../utils/appEvents'
 import { formatTimeUntil } from '../../utils/format'
 import { QuotaUpgradeButton } from './QuotaUpgradeButton'
@@ -92,6 +92,11 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
     const percent = unlimited ? 0 : current / Math.max(1, limit)
     const toneKey = unlimited ? 'indigo' : pickTone(percent)
     const tone = TONE[toneKey]
+    // Unlimited reads as the "premium plan" state — give the shell a faint
+    // brand tint so it feels earned, not just a neutral status chip.
+    const shellTone = unlimited
+        ? 'ring-indigo-300/70 dark:ring-indigo-500/30 bg-indigo-50/70 dark:bg-indigo-500/10 hover:ring-indigo-400/70'
+        : 'ring-slate-200/70 dark:ring-slate-800 bg-white/60 dark:bg-slate-900/60 hover:ring-indigo-400/60'
     const reset = formatTimeUntil(resetAt)
     const ariaLabel = unlimited
         ? `AI quota: unlimited on ${tier}. Click for details.`
@@ -107,15 +112,23 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
                 aria-haspopup="dialog"
                 aria-expanded={open}
                 data-tone={toneKey}
-                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full ring-1 ring-inset ring-slate-200/70 dark:ring-slate-800 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm hover:ring-indigo-400/60 ds-focus-ring transition"
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ring-1 ring-inset ${shellTone} backdrop-blur-sm ds-focus-ring transition`}
             >
                 {unlimited ? (
-                    <Check className="w-3.5 h-3.5 text-emerald-500" aria-hidden="true" />
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
                 ) : (
                     <ProgressRing percent={percent} tone={tone} />
                 )}
-                <span className={`ds-text-meta font-semibold tabular-nums ${tone.label}`}>
-                    {unlimited ? 'Unlimited' : `${current} / ${limit}`}
+                {/* "AI" label disambiguates the chip — without it a bare
+                    "Unlimited" next to an empty inbox reads as if it describes
+                    the inbox, not the AI-query allowance. */}
+                <span className="flex items-baseline gap-1">
+                    <span aria-hidden="true" className="ds-text-micro font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+                        AI
+                    </span>
+                    <span className={`ds-text-meta font-semibold tabular-nums ${tone.label}`}>
+                        {unlimited ? 'Unlimited' : `${current} / ${limit}`}
+                    </span>
                 </span>
             </button>
 
@@ -137,8 +150,8 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
                         </div>
                         {unlimited ? (
                             <p className="text-sm text-slate-700 dark:text-slate-200">
-                                <Check className="inline w-4 h-4 mr-1 text-emerald-500" aria-hidden="true" />
-                                Unlimited requests on this plan.
+                                <Sparkles className="inline w-4 h-4 mr-1 text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
+                                Unlimited AI requests on this plan.
                             </p>
                         ) : (
                             <>
