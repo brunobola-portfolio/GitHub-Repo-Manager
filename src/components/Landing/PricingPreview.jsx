@@ -13,11 +13,11 @@ const plans = [
     enterprise: false,
     features: [
       'Up to 200 repositories',
-      'AI Assistant (conversational)',
+      'AI Assistant — 200 queries / month',
       'Semantic Search (75 / month)',
-      'Migration Risk Analysis (5 / month)',
-      'README + Commit + Insights AI',
-      '200 AI queries / month',
+      'README, Commit & Insights AI',
+      'PR Review + write-back comments',
+      'Teams + 1 cloud migration / month',
     ],
   },
   {
@@ -32,9 +32,9 @@ const plans = [
     features: [
       'Unlimited repositories',
       '5,000 AI queries / month',
-      'Unlimited README / Commit / Insights',
+      'Unlimited README, Commit, Insights & Search',
       'Advanced bulk (transfer, mirror, cross-org)',
-      'Azure DevOps migration',
+      'Mirror Sync + Azure DevOps migration',
       'Teams — up to 15 members',
     ],
   },
@@ -50,9 +50,9 @@ const plans = [
     features: [
       'Everything in Pro',
       'Unlimited AI queries',
-      'Full Azure DevOps migration suite',
-      'SSO / SAML + audit logs',
       'Unlimited team members',
+      'SSO / SAML + audit logs',
+      '50 API keys',
       'Priority support + SLA',
     ],
   },
@@ -76,6 +76,7 @@ function PreviewCard({ plan, i, onSignIn }) {
 			variants={cardVariants}
 			initial="hidden"
 			whileInView="visible"
+			whileHover={{ y: -8, transition: { type: 'spring', stiffness: 300, damping: 24 } }}
 			viewport={{ once: true, margin: '-60px' }}
 			className={`relative ${plan.popular ? 'scale-[1.03] md:scale-[1.05]' : ''}`}
 		>
@@ -104,8 +105,8 @@ function PreviewCard({ plan, i, onSignIn }) {
 					${plan.popular
 						? 'bg-indigo-700 dark:bg-indigo-600 border-2 border-indigo-400/30 shadow-2xl'
 						: plan.enterprise
-							? 'bg-white/60 dark:bg-white/[0.04] border border-amber-400/30 dark:border-amber-500/20 backdrop-blur-sm shadow-lg shadow-amber-500/5 hover:shadow-amber-500/30'
-							: 'bg-white/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.08] backdrop-blur-sm hover:border-slate-300 dark:hover:border-slate-600'
+							? 'bg-white/60 dark:bg-white/[0.04] border border-amber-400/30 dark:border-amber-500/20 backdrop-blur-sm shadow-lg shadow-amber-500/5'
+							: 'bg-white/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.08] backdrop-blur-sm'
 					}`}
 			>
 				<div className="flex flex-col gap-6 h-full">
