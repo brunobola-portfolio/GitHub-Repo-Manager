@@ -63,18 +63,9 @@ export function AIPromoStrip({ repos, licenseTier = 'free', onOpenInsights }) {
                 className="overflow-hidden"
             >
                 <div className="relative flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-3 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-800/40 rounded-2xl">
-                    {/* Dismiss — absolute top-right so the action row stays clear of
-                        the mobile FAB territory at the bottom-right of the viewport. */}
-                    <button
-                        type="button"
-                        onClick={handleDismiss}
-                        aria-label="Dismiss AI promotion"
-                        title="Hide for now"
-                        className="absolute top-2 right-2 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ds-focus-ring"
-                    >
-                        <X className="w-4 h-4" />
-                    </button>
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {/* pr-9 on mobile reserves room for the absolute dismiss button
+                        (top-right) so the title can't slide underneath it. */}
+                    <div className="flex items-center gap-3 flex-1 min-w-0 pr-9 sm:pr-0">
                         <div className="w-9 h-9 rounded-xl bg-[color:var(--ds-accent-brand)] flex items-center justify-center flex-shrink-0">
                             <Sparkles className="w-4 h-4 text-white" strokeWidth={2.5} />
                         </div>
@@ -109,6 +100,18 @@ export function AIPromoStrip({ repos, licenseTier = 'free', onOpenInsights }) {
                             <ArrowRight className="w-3.5 h-3.5" />
                         </button>
                     </div>
+                    {/* Dismiss — absolute top-right on mobile (keeps the strip to two
+                        compact rows); on sm+ it joins the flow as the last item so it
+                        sits past the action row instead of overlapping it. */}
+                    <button
+                        type="button"
+                        onClick={handleDismiss}
+                        aria-label="Dismiss AI promotion"
+                        title="Hide for now"
+                        className="absolute top-2 right-2 sm:static sm:flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ds-focus-ring"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
                 </div>
             </motion.aside>
         </AnimatePresence>
