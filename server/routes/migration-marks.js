@@ -25,6 +25,35 @@ export function createMarksRouter({ db }) {
     res.json({ marks: rows.map(r => ({ ...r, payload: safeJson(r.payload) })) })
   })
 
+  // GET /api/migration/marks/mine — every repo the CURRENT user has migrated.
+  // Batched replacement for the per-card `?targetFullName=` fetch: MigratedPill
+  // rendered one request per repo card (~30/grid page). This returns the whole
+  // set in a single round-trip. User-scoped via the owning plan so it never
+  // leaks another tenant's marks (the per-name route below is not user-scoped —
+  // tracked as a follow-up). Returns { migrated: { "owner/repo": { writtenAt } } }
+  // where writtenAt is the latest 'written' timestamp (for the pill tooltip).
+  router.get('/mine', (req, res) => {
+    const userId = req.session?.userId
+    if (!userId) return res.status(401).json({ error: 'auth required' })
+    const rows = db.prepare(
+      `SELECT m.target_id, m.status, m.written_at
+         FROM migration_marks m
+         JOIN migration_plans p ON p.id = m.plan_id
+        WHERE p.user_id = ?
+        ORDER BY m.created_at DESC`
+    ).all(userId)
+    const migrated = {}
+    for (const r of rows) {
+      // target_id is "owner/repo" or "owner/repo#variant" — collapse to the repo.
+      const repo = String(r.target_id).split('#')[0]
+      if (!migrated[repo]) migrated[repo] = { writtenAt: null }
+      if (r.status === 'written' && r.written_at && !migrated[repo].writtenAt) {
+        migrated[repo].writtenAt = r.written_at
+      }
+    }
+    res.json({ migrated })
+  })
+
   // GET /api/migration/marks/plan/:id
   router.get('/plan/:id', (req, res) => {
     const planId = Number(req.params.id)

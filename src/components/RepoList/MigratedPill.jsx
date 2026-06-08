@@ -1,16 +1,19 @@
-import { useMigrationMarksFor } from '../../hooks/useMigrationMarks.js'
+import { useMigratedRepos } from '../../hooks/useMigratedRepos.js'
 
 /**
  * Premium pill rendered next to a repo's name when the repo carries any
- * migration mark. Tooltip surfaces date + source for at-a-glance provenance.
- * Renders nothing while loading or when there are no marks.
+ * migration mark. Tooltip surfaces date for at-a-glance provenance. Renders
+ * nothing while loading or when the repo isn't migrated.
+ *
+ * Reads from the shared {@link useMigratedRepos} batch (one request for the
+ * whole grid) instead of fetching per card — fixes the prior N+1.
  */
 export function MigratedPill({ fullName }) {
-  const { marks, loading } = useMigrationMarksFor(fullName)
-  if (loading || !marks.length) return null
+  const { get, loading } = useMigratedRepos()
+  const entry = get(fullName)
+  if (loading || !entry) return null
 
-  const writtenAt = marks.find(m => m.status === 'written')?.written_at
-  const date = writtenAt ? writtenAt.slice(0, 10) : null
+  const date = entry.writtenAt ? entry.writtenAt.slice(0, 10) : null
 
   return (
     <span
