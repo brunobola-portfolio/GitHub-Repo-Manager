@@ -127,6 +127,7 @@ export function ModelCombobox({
                     role="combobox"
                     aria-expanded={open}
                     aria-controls={listboxId}
+                    aria-activedescendant={open && highlight >= 0 ? `${listboxId}-opt-${highlight}` : undefined}
                     aria-autocomplete="list"
                     value={value ?? ''}
                     onChange={(e) => {

@@ -203,6 +203,7 @@ export function Select({
         return (
             <button
                 key={option.value}
+                id={`${listboxId}-opt-${globalIndex}`}
                 type="button"
                 role="option"
                 aria-selected={isSelected}
@@ -268,6 +269,7 @@ export function Select({
                 aria-haspopup="listbox"
                 aria-expanded={isOpen}
                 aria-controls={listboxId}
+                aria-activedescendant={isOpen && focusedIndex >= 0 ? `${listboxId}-opt-${focusedIndex}` : undefined}
                 aria-label={label}
                 className={`
                     w-full flex items-center justify-between gap-2
