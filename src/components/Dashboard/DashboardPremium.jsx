@@ -68,7 +68,12 @@ export function DashboardPremium({
             .then((r) => (r.ok ? r.json() : null))
             .then((data) => {
                 if (!data || controller.signal.aborted) return
-                if (data.active && data.source === 'license_key' && data.tier) {
+                // For an active licence the endpoint reports source as 'env' or
+                // 'db' (never the literal 'license_key'), so gate on active+tier
+                // rather than a specific source string — otherwise the promo
+                // strip stays stuck on free-tier copy while the quota meter
+                // (which reads /api/v1/usage) correctly shows the paid tier.
+                if (data.active && data.tier) {
                     setLicenseTier(data.tier)
                 }
             })
