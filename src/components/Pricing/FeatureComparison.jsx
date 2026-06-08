@@ -95,7 +95,7 @@ const CATEGORIES = [
       },
       {
         feature: 'PR Review Experience',
-        values: ['Read-only', 'Full + write-back', 'Full + write-back'],
+        values: ['Full + write-back', 'Full + write-back', 'Full + write-back'],
       },
     ],
   },

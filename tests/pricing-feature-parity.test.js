@@ -29,6 +29,21 @@ const comparisonSource = readFileSync(
     'utf-8',
 )
 
+// PricingPreview.jsx is the FOURTH pricing surface — the first one a prospect
+// sees on the landing page. It was never wired into this gate, which let its
+// Free caps drift (50 repos / 50 searches) below the real flags (200 / 75).
+const previewSource = readFileSync(
+    join(__dirname, '..', 'src', 'components', 'Landing', 'PricingPreview.jsx'),
+    'utf-8',
+)
+
+// billing.js is the source of truth for whether a Stripe free trial actually
+// exists — used to keep "free trial" marketing copy honest.
+const billingSource = readFileSync(
+    join(__dirname, '..', 'server', 'routes', 'billing.js'),
+    'utf-8',
+)
+
 const readmeFull = readFileSync(join(__dirname, '..', 'README.md'), 'utf-8')
 // Scope README matrix assertions to the "## Plans & Pricing" section so a
 // like-named row in another table can't satisfy them.
@@ -205,6 +220,53 @@ describe('FeatureComparison.jsx ↔ feature-flags parity', () => {
         // Reflects the Free caps (teamsMax=3, teamMembersMax=5).
         expect(cell).toContain(String(free.teamsMax))
         expect(cell).toContain(String(free.teamMembersMax))
+    })
+
+    it('Free PR-review row is NOT "Read-only" — write-back is free on every tier (prReview:true)', () => {
+        // prReview is true for all tiers and the write-back endpoints are
+        // available on Free (server/__tests__/pr-write-tier-gate.test.js), and
+        // PricingPage lists "PR Review with write-back comments" for Free. A
+        // "Read-only" cell here contradicts all three.
+        expect(free.prReview).toBe(true)
+        const cell = comparisonFreeValue('PR Review Experience')
+        expect(cell).not.toBe("'Read-only'")
+    })
+})
+
+// ---------------------------------------------------------------------------
+// PricingPreview.jsx (Landing) is the FOURTH pricing surface and the first a
+// prospect sees. Tie its Free caps back to feature-flags so it can't drift.
+// ---------------------------------------------------------------------------
+describe('PricingPreview.jsx (Landing) ↔ feature-flags parity', () => {
+    const free = getFeatures('free')
+
+    it('Free repositories line matches maxRepos (200, not the stale 50)', () => {
+        expect(free.maxRepos).toBe(200)
+        expect(previewSource).toMatch(new RegExp(`Up to ${free.maxRepos} repositories`))
+        expect(previewSource).not.toMatch(/Up to 50 repositories/)
+    })
+
+    it('Free Semantic Search line matches semanticSearchPerMonth (75, not the stale 50)', () => {
+        expect(free.semanticSearchPerMonth).toBe(75)
+        expect(previewSource).toMatch(new RegExp(`Semantic Search \\(${free.semanticSearchPerMonth} / month\\)`))
+    })
+})
+
+// ---------------------------------------------------------------------------
+// Honesty: don't advertise a "free trial" the checkout never grants. The Stripe
+// session in billing.js must actually set trial_period_days before any pricing
+// surface may claim a trial.
+// ---------------------------------------------------------------------------
+describe('Free-trial copy ↔ Stripe checkout reality', () => {
+    const stripeImplementsTrial = /trial_period_days/.test(billingSource)
+
+    it('no pricing surface claims an N-day free trial unless Stripe actually grants one', () => {
+        if (stripeImplementsTrial) return // trial is real — copy is allowed
+        // The dishonest claim is an affirmative "14-day free trial" (a CTA or a
+        // statement). A FAQ *question* ("Do you offer a free trial?") and the
+        // Free tier's honest "no credit card required" are both fine.
+        expect(pricingSource, 'PricingPage must not claim an N-day free trial').not.toMatch(/\d+[-\s]?day free trial/i)
+        expect(previewSource, 'PricingPreview must not advertise a free trial').not.toMatch(/free trial/i)
     })
 })
 
