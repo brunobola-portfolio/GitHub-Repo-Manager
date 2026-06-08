@@ -1,6 +1,6 @@
 // @vitest-environment node
-import { describe, it, expect } from 'vitest';
-import { assertSafeExternalUrl, isInternalUrl } from '../lib/url-validator.js';
+import { describe, it, expect, afterEach } from 'vitest';
+import { assertSafeExternalUrl, isInternalUrl, assertSafeAIEndpoint } from '../lib/url-validator.js';
 
 describe('assertSafeExternalUrl', () => {
     describe('accepts', () => {
@@ -128,5 +128,42 @@ describe('isInternalUrl (existing helper, kept for backward compat)', () => {
     });
     it('still allows public https', () => {
         expect(isInternalUrl('https://github.com/')).toBe(false);
+    });
+});
+
+describe('assertSafeAIEndpoint (BYOK endpoint SSRF guard)', () => {
+    const ENV = process.env.ALLOW_LOCAL_AI_ENDPOINTS;
+    afterEach(() => {
+        if (ENV === undefined) delete process.env.ALLOW_LOCAL_AI_ENDPOINTS;
+        else process.env.ALLOW_LOCAL_AI_ENDPOINTS = ENV;
+    });
+
+    it('accepts a public https endpoint for any provider', () => {
+        expect(() => assertSafeAIEndpoint('https://api.openai.com/v1', { provider: 'openai' })).not.toThrow();
+    });
+
+    it('blocks the cloud metadata IP (the core SSRF target)', () => {
+        expect(() => assertSafeAIEndpoint('http://169.254.169.254/latest/meta-data/', { provider: 'local' }))
+            .toThrow(/ssrf_guard/);
+    });
+
+    it('blocks loopback / RFC1918 by default even for the local provider', () => {
+        delete process.env.ALLOW_LOCAL_AI_ENDPOINTS;
+        expect(() => assertSafeAIEndpoint('http://127.0.0.1:11434', { provider: 'local' })).toThrow(/ssrf_guard/);
+        expect(() => assertSafeAIEndpoint('http://10.0.0.5:8080', { provider: 'local' })).toThrow(/ssrf_guard/);
+        expect(() => assertSafeAIEndpoint('http://localhost:11434', { provider: 'openai' })).toThrow(/ssrf_guard/);
+    });
+
+    it('permits a loopback local endpoint ONLY when the operator opts in', () => {
+        process.env.ALLOW_LOCAL_AI_ENDPOINTS = 'true';
+        expect(() => assertSafeAIEndpoint('http://127.0.0.1:11434/v1', { provider: 'local' })).not.toThrow();
+        // The opt-in is scoped to provider 'local' — a non-local provider stays strict.
+        expect(() => assertSafeAIEndpoint('http://127.0.0.1:11434/v1', { provider: 'openai' })).toThrow(/ssrf_guard/);
+    });
+
+    it('rejects non-http(s) schemes and embedded credentials even under opt-in', () => {
+        process.env.ALLOW_LOCAL_AI_ENDPOINTS = 'true';
+        expect(() => assertSafeAIEndpoint('file:///etc/passwd', { provider: 'local' })).toThrow(/ssrf_guard/);
+        expect(() => assertSafeAIEndpoint('http://user:pass@127.0.0.1/v1', { provider: 'local' })).toThrow(/ssrf_guard/);
     });
 });

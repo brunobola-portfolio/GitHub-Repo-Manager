@@ -240,6 +240,38 @@ describe('POST /api/user/ai-config', () => {
 
         expect(res.status).toBe(401);
     });
+
+    // SSRF guard: a BYOK endpoint URL is fetched server-side, so the save
+    // handler must reject metadata / loopback / RFC1918 targets before storing.
+    it('rejects a cloud-metadata completion endpoint with 400 UNSAFE_ENDPOINT', async () => {
+        const app = createApp(true);
+        const res = await request(app)
+            .post('/api/user/ai-config')
+            .send({ completionProvider: 'local', completionApiKey: 'x', completionEndpointUrl: 'http://169.254.169.254/latest/meta-data/' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('UNSAFE_ENDPOINT');
+        expect(_store).toBeNull(); // nothing persisted
+    });
+
+    it('rejects a loopback embedding endpoint with 400 (no opt-in)', async () => {
+        const app = createApp(true);
+        const res = await request(app)
+            .post('/api/user/ai-config')
+            .send({ embeddingProvider: 'local', embeddingApiKey: 'x', embeddingEndpointUrl: 'http://127.0.0.1:11434' });
+
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('UNSAFE_ENDPOINT');
+    });
+
+    it('accepts a public https endpoint (204)', async () => {
+        const app = createApp(true);
+        const res = await request(app)
+            .post('/api/user/ai-config')
+            .send({ completionProvider: 'openai', completionApiKey: 'sk-abc', completionEndpointUrl: 'https://api.openai.com/v1' });
+
+        expect(res.status).toBe(204);
+    });
 });
 
 // ---------------------------------------------------------------------------

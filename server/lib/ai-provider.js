@@ -25,6 +25,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import logger from './logger.js';
 import { computeCostUSD } from './provider-pricing.js';
+import { assertSafeAIEndpoint } from './url-validator.js';
 
 // ---------------------------------------------------------------------------
 // Gemini model defaults — single source of truth
@@ -710,6 +711,16 @@ export async function createProviderForUser(userId, kind = 'completion', opts = 
     const userConfig = getDecryptedConfig(userId);
 
     if (userConfig) {
+        // Defense-in-depth SSRF guard: re-validate any stored BYOK endpoint
+        // before we ever fetch it (covers configs persisted before the
+        // save-time guard in routes/user-ai-config.js existed). Throws on an
+        // unsafe endpoint — callers (e.g. the /test handler) surface it as a
+        // provider error rather than letting the request reach an internal host.
+        const compEndpoint = userConfig.completionCredentials?.endpointUrl;
+        if (compEndpoint) assertSafeAIEndpoint(compEndpoint, { provider: userConfig.completionProvider });
+        const embEndpoint = userConfig.embeddingCredentials?.endpointUrl;
+        if (embEndpoint) assertSafeAIEndpoint(embEndpoint, { provider: userConfig.embeddingProvider });
+
         // --- Completion path ---
         if (kind === 'completion') {
             const provider = userConfig.completionProvider;
