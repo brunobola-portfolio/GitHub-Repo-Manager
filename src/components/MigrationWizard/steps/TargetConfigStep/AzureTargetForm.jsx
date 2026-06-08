@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Cloud, FolderGit2, FolderPlus, Plus } from 'lucide-react'
 import { Field, Input, Textarea } from '../../../ui/form'
 import { Spinner } from '../../../ui/Spinner'
+import { Select } from '../../../ui/Select'
 import { getCsrfToken } from '../../../../utils/api'
 
 /**
@@ -145,15 +146,16 @@ function ExistingProjectForm({ source, onChange }) {
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-slate-500"><Spinner size="md" tone="muted" /> Loading projects…</div>
         ) : (
-          <select
-            id="azure-tgt-existing-project"
+          <Select
+            label="Target Azure DevOps project"
+            placeholder="— choose a project —"
             value={source.azureTargetProject || ''}
-            onChange={(e) => onChange({ azureTargetProject: e.target.value })}
-            className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-sm"
-          >
-            <option value="">— choose a project —</option>
-            {projects.map((p) => <option key={p.id || p.name} value={p.name}>{p.name}</option>)}
-          </select>
+            onChange={(v) => onChange({ azureTargetProject: v })}
+            options={[
+              { value: '', label: '— choose a project —' },
+              ...projects.map((p) => ({ value: p.name, label: p.name })),
+            ]}
+          />
         )}
         {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
       </Field>

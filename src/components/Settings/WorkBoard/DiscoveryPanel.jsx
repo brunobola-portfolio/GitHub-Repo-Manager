@@ -1,5 +1,6 @@
 import { RefreshCw, Info } from 'lucide-react'
 import { formatRelativeTime } from '../../../utils/format'
+import { Select } from '../../ui/Select'
 
 const WINDOW_OPTIONS = [30, 60, 90, 180]
 
@@ -36,19 +37,17 @@ export function DiscoveryPanel({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-200/60 dark:border-slate-700/40">
-                <label className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-700 dark:text-slate-300">Activity window</span>
-                    <select
-                        aria-label="Activity window"
+                    <Select
+                        label="Activity window"
+                        size="sm"
                         value={prefs?.discovery_window_days ?? 60}
-                        onChange={(e) => onUpdatePrefs({ discovery_window_days: Number.parseInt(e.target.value, 10) })}
-                        className="px-2 py-1 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                    >
-                        {WINDOW_OPTIONS.map(days => (
-                            <option key={days} value={days}>{windowLabel(days)}</option>
-                        ))}
-                    </select>
-                </label>
+                        onChange={(v) => onUpdatePrefs({ discovery_window_days: v })}
+                        options={WINDOW_OPTIONS.map(days => ({ value: days, label: windowLabel(days) }))}
+                        className="w-32"
+                    />
+                </div>
 
                 <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-700 dark:text-slate-300">Auto-mute bots</span>

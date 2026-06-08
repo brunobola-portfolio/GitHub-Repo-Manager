@@ -5,7 +5,8 @@ import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { EmptyState } from '../ui/EmptyState'
 import { SectionPanel } from '../ui/SectionPanel'
-import { GitPullRequest, Plus, Loader2, CheckCircle2, XCircle, GitMerge, ExternalLink, ChevronDown, RefreshCw } from 'lucide-react'
+import { Select } from '../ui/Select'
+import { GitPullRequest, Plus, Loader2, CheckCircle2, XCircle, GitMerge, ExternalLink, RefreshCw } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
 import { Field, Input, Textarea } from '../ui/form'
 import { PRDetailPanel } from './PRDetailPanel'
@@ -206,22 +207,17 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                         <div>
                             <label htmlFor="pr-head-branch" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Head Branch *</label>
                             {branches.length > 0 ? (
-                                <div className="relative">
-                                    <select
-                                        id="pr-head-branch"
-                                        value={form.head}
-                                        onChange={e => setForm(f => ({ ...f, head: e.target.value }))}
-                                        aria-label="Head branch"
-                                        aria-required="true"
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm appearance-none pr-8"
-                                    >
-                                        <option value="">Select branch...</option>
-                                        {branches.map(b => (
-                                            <option key={b.name} value={b.name}>{b.name}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                </div>
+                                <Select
+                                    label="Head branch"
+                                    value={form.head}
+                                    onChange={v => setForm(f => ({ ...f, head: v }))}
+                                    placeholder="Select branch..."
+                                    searchable
+                                    options={[
+                                        { value: '', label: 'Select branch...' },
+                                        ...branches.map(b => ({ value: b.name, label: b.name })),
+                                    ]}
+                                />
                             ) : (
                                 <Input id="pr-head-branch" type="text" value={form.head} onChange={e => setForm(f => ({ ...f, head: e.target.value }))}
                                     placeholder="feature-branch" aria-label="Head branch" aria-required="true" />
@@ -230,22 +226,17 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                         <div>
                             <label htmlFor="pr-base-branch" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Base Branch *</label>
                             {branches.length > 0 ? (
-                                <div className="relative">
-                                    <select
-                                        id="pr-base-branch"
-                                        value={form.base}
-                                        onChange={e => setForm(f => ({ ...f, base: e.target.value }))}
-                                        aria-label="Base branch"
-                                        aria-required="true"
-                                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm appearance-none pr-8"
-                                    >
-                                        <option value="">Select branch...</option>
-                                        {branches.map(b => (
-                                            <option key={b.name} value={b.name}>{b.name}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
-                                </div>
+                                <Select
+                                    label="Base branch"
+                                    value={form.base}
+                                    onChange={v => setForm(f => ({ ...f, base: v }))}
+                                    placeholder="Select branch..."
+                                    searchable
+                                    options={[
+                                        { value: '', label: 'Select branch...' },
+                                        ...branches.map(b => ({ value: b.name, label: b.name })),
+                                    ]}
+                                />
                             ) : (
                                 <Input id="pr-base-branch" type="text" value={form.base} onChange={e => setForm(f => ({ ...f, base: e.target.value }))}
                                     placeholder="main" aria-label="Base branch" aria-required="true" />

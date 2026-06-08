@@ -43,12 +43,22 @@ describe('CodeReviewToolbar', () => {
         expect(screen.queryByLabelText(/AI insights/i)).toBeNull()
     })
 
-    it('exposes a tab-width selector with values 2 / 4 / 8', () => {
+    it('exposes a tab-width selector with values 2 / 4 / 8', async () => {
         render(<CodeReviewToolbar {...BASE_PROPS} />)
-        const select = screen.getByLabelText(/tab width/i)
-        expect(select).toBeInTheDocument()
-        const options = [...select.querySelectorAll('option')].map(o => o.value)
-        expect(options).toEqual(expect.arrayContaining(['2', '4', '8']))
+        const trigger = screen.getByRole('combobox', { name: /tab width/i })
+        expect(trigger).toBeInTheDocument()
+        fireEvent.click(trigger)
+        expect(await screen.findByRole('option', { name: 'tab 2' })).toBeInTheDocument()
+        expect(screen.getByRole('option', { name: 'tab 4' })).toBeInTheDocument()
+        expect(screen.getByRole('option', { name: 'tab 8' })).toBeInTheDocument()
+    })
+
+    it('selecting a tab width calls onSetTabWidth with the numeric value', async () => {
+        const onSetTabWidth = vi.fn()
+        render(<CodeReviewToolbar {...BASE_PROPS} onSetTabWidth={onSetTabWidth} />)
+        fireEvent.click(screen.getByRole('combobox', { name: /tab width/i }))
+        fireEvent.click(await screen.findByRole('option', { name: 'tab 8' }))
+        expect(onSetTabWidth).toHaveBeenCalledWith(8)
     })
 })
 

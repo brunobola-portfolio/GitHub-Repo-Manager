@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Field, Input, Textarea } from '../ui/form';
+import { Select } from '../ui/Select';
 
 const MAX_PATH_RULES = 20;
 
@@ -97,18 +98,19 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                 </Field>
                 <div className="grid grid-cols-2 gap-2">
                     <div>
-                        <label className="block text-xs font-medium mb-1" htmlFor="prompt-editor-scope">Scope</label>
-                        <select
-                            id="prompt-editor-scope"
+                        <span className="block text-xs font-medium mb-1">Scope</span>
+                        <Select
+                            label="Scope"
                             value={scope}
-                            onChange={(e) => setScope(e.target.value)}
+                            onChange={(v) => setScope(v)}
                             disabled={isEdit}
-                            className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-sm disabled:opacity-60"
-                        >
-                            <option value="user">User (all repos)</option>
-                            <option value="repo">Repo</option>
-                            <option value="org">Organization (all members)</option>
-                        </select>
+                            size="sm"
+                            options={[
+                                { value: 'user', label: 'User (all repos)' },
+                                { value: 'repo', label: 'Repo' },
+                                { value: 'org', label: 'Organization (all members)' },
+                            ]}
+                        />
                     </div>
                     {scope === 'repo' ? (
                         <Field label="Repo (owner/name)" htmlFor="prompt-editor-scope-target" required>
@@ -163,19 +165,21 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                     <div className="ds-text-micro opacity-60 mt-1">{systemPrompt.length} / 8000</div>
                 </div>
                 <div>
-                    <label className="block text-xs font-medium mb-1" htmlFor="prompt-editor-severity">Severity floor (drops below-floor comments)</label>
-                    <select
-                        id="prompt-editor-severity"
+                    <span className="block text-xs font-medium mb-1">Severity floor (drops below-floor comments)</span>
+                    <Select
+                        label="Severity floor"
                         value={severityFloor}
-                        onChange={(e) => setSeverityFloor(e.target.value)}
-                        className="w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-sm"
-                    >
-                        <option value="">No floor</option>
-                        <option value="info">Info+</option>
-                        <option value="suggestion">Suggestion+</option>
-                        <option value="warning">Warning+</option>
-                        <option value="critical">Critical only</option>
-                    </select>
+                        onChange={(v) => setSeverityFloor(v)}
+                        placeholder="No floor"
+                        size="sm"
+                        options={[
+                            { value: '', label: 'No floor' },
+                            { value: 'info', label: 'Info+' },
+                            { value: 'suggestion', label: 'Suggestion+' },
+                            { value: 'warning', label: 'Warning+' },
+                            { value: 'critical', label: 'Critical only' },
+                        ]}
+                    />
                 </div>
                 <div>
                     <div className="flex items-center mb-1">

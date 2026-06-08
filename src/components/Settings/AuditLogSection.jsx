@@ -7,6 +7,7 @@ import { Card } from '../ui/Card'
 import { Skeleton } from '../ui/Skeleton'
 import { Button } from '../ui/Button'
 import { Field, Input } from '../ui/form'
+import { Select } from '../ui/Select'
 import { RowIconBadge } from '../ui/RowIconBadge'
 import { FeatureState, parseApiError } from '../states'
 import { useStickyHeaderShadow } from '../../hooks/useStickyHeaderShadow'
@@ -113,19 +114,16 @@ export function AuditLogSection() {
             {/* Filters */}
             <div className="flex flex-wrap gap-3 items-end">
                 <div className="flex flex-col gap-1">
-                    <label htmlFor="audit-log-action" className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                    <span id="audit-log-action-label" className="text-xs font-medium text-slate-600 dark:text-slate-400 flex items-center gap-1">
                         <Filter className="w-3 h-3" /> Action
-                    </label>
-                    <select
-                        id="audit-log-action"
+                    </span>
+                    <Select
+                        label="Filter by action"
                         value={action}
-                        onChange={(e) => setAction(e.target.value)}
-                        className="px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
-                    >
-                        {ACTION_OPTIONS.map((o) => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
-                        ))}
-                    </select>
+                        onChange={(v) => setAction(v)}
+                        options={ACTION_OPTIONS}
+                        className="w-44"
+                    />
                 </div>
 
                 <Field label="From" htmlFor="audit-log-date-from">

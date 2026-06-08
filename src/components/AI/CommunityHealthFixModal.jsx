@@ -6,6 +6,7 @@ import { Button } from '../ui/Button'
 import { Spinner } from '../ui/Spinner'
 import { AIErrorState } from '../ui/AIErrorState'
 import { Input, Textarea } from '../ui/form'
+import { Select } from '../ui/Select'
 import { RowIconBadge } from '../ui/RowIconBadge'
 import { getCsrfToken } from '../../utils/api'
 import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
@@ -209,17 +210,18 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 		return (
 			<div className="flex flex-col gap-3">
 				{fileType === 'license' && (
-					<label className="flex items-center gap-2">
+					<div className="flex items-center gap-2">
 						<span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">License:</span>
-						<select
+						<Select
+							label="License"
 							value={licenseId}
-							onChange={(e) => setLicenseId(e.target.value)}
+							onChange={(v) => setLicenseId(v)}
 							disabled={state === 'committing'}
-							className="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm"
-						>
-							{SUPPORTED_LICENSES.map((id) => <option key={id} value={id}>{id}</option>)}
-						</select>
-					</label>
+							size="sm"
+							className="w-40"
+							options={SUPPORTED_LICENSES.map((id) => ({ value: id, label: id }))}
+						/>
+					</div>
 				)}
 				<div className="flex items-center justify-between gap-2">
 					<span className="text-xs font-mono text-slate-500 dark:text-slate-400 truncate" title={filePath}>{filePath}</span>

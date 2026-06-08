@@ -318,9 +318,10 @@ export function Select({
                         className="absolute z-[var(--ds-z-popover)] w-full mt-2
                             bg-white/95 dark:bg-slate-900/95
                             backdrop-blur-md
-                            border border-slate-200 dark:border-slate-700
-                            rounded-xl
-                            shadow-2xl
+                            border border-slate-200/80 dark:border-slate-700/60
+                            ring-1 ring-black/[0.04] dark:ring-white/10
+                            rounded-2xl
+                            shadow-2xl shadow-slate-900/15 dark:shadow-black/60
                             overflow-hidden"
                     >
                         {/* Search input */}

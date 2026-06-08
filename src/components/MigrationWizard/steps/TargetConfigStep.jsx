@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import {
-  FolderGit2, Lock, Globe, Loader2, CheckCircle2, XCircle, ChevronDown,
+  FolderGit2, Lock, Globe, Loader2, CheckCircle2, XCircle,
 } from 'lucide-react'
 import { Spinner } from '../../ui/Spinner'
 import { Field, Input, Textarea } from '../../ui/form'
+import { Select } from '../../ui/Select'
 import { getCsrfToken } from '../../../utils/api'
 import AzureTargetForm from './TargetConfigStep/AzureTargetForm'
 
@@ -95,20 +96,15 @@ export default function TargetConfigStep({ source, onChange, orgs, importJobs: _
         <label htmlFor="target-config-owner" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
           Owner
         </label>
-        <div className="relative">
-          <select
-            id="target-config-owner"
-            value={source.targetOrg || ''}
-            onChange={(e) => onChange({ targetOrg: e.target.value })}
-            className="w-full appearance-none px-3 py-2.5 pr-9 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-          >
-            <option value="">Personal Account</option>
-            {orgs.map((org) => (
-              <option key={org.login} value={org.login}>{org.login}</option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-        </div>
+        <Select
+          label="Owner"
+          value={source.targetOrg || ''}
+          onChange={(v) => onChange({ targetOrg: v })}
+          options={[
+            { value: '', label: 'Personal Account' },
+            ...orgs.map((org) => ({ value: org.login, label: org.login })),
+          ]}
+        />
       </div>
 
       {/* Repository name */}

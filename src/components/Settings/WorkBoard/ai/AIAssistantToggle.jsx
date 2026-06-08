@@ -1,5 +1,6 @@
 import { Sparkles } from 'lucide-react'
 import { InsightCard } from '../../../ui/InsightCard'
+import { Select } from '../../../ui/Select'
 import { useTrackedRepos } from '../../../../hooks/useTrackedRepos'
 
 const CAP_OPTIONS = [
@@ -45,19 +46,17 @@ export function AIAssistantToggle() {
 
                 {enabled && (
                     <div className="flex items-center justify-between pt-3 border-t border-slate-200/60 dark:border-slate-700/40">
-                        <label htmlFor="ai-cap" className="text-sm text-slate-700 dark:text-slate-300">
+                        <span className="text-sm text-slate-700 dark:text-slate-300">
                             Monthly cap
-                        </label>
-                        <select
-                            id="ai-cap"
+                        </span>
+                        <Select
+                            label="Monthly cap"
+                            size="sm"
                             value={cap}
-                            onChange={(e) => updatePrefs({ ai_monthly_cap_cents: Number(e.target.value) })}
-                            className="px-2 py-1 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                        >
-                            {CAP_OPTIONS.map(o => (
-                                <option key={o.cents} value={o.cents}>{o.label}</option>
-                            ))}
-                        </select>
+                            onChange={(v) => updatePrefs({ ai_monthly_cap_cents: v })}
+                            options={CAP_OPTIONS.map(o => ({ value: o.cents, label: o.label }))}
+                            className="w-40"
+                        />
                     </div>
                 )}
             </div>

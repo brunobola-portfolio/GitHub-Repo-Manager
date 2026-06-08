@@ -1,6 +1,13 @@
 import { Columns2, AlignLeft, ChevronLeft, ChevronRight, ChevronsDown, ChevronsUp, Files, PanelRightClose, PanelRightOpen, WrapText } from 'lucide-react'
 import { Tooltip } from '../ui/Tooltip'
+import { Select } from '../ui/Select'
 import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
+
+const TAB_WIDTH_OPTIONS = [
+    { value: 2, label: 'tab 2' },
+    { value: 4, label: 'tab 4' },
+    { value: 8, label: 'tab 8' },
+]
 
 export function CodeReviewToolbar({
     filesCount, additions, deletions, reviewedCount,
@@ -91,19 +98,14 @@ export function CodeReviewToolbar({
 
                 <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1" />
 
-                <label className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                    <span className="sr-only">Tab width</span>
-                    <select
-                        aria-label="Tab width"
-                        value={tabWidth}
-                        onChange={e => onSetTabWidth(Number(e.target.value))}
-                        className="bg-transparent border border-slate-200 dark:border-slate-700 rounded px-1 py-0.5"
-                    >
-                        <option value="2">tab 2</option>
-                        <option value="4">tab 4</option>
-                        <option value="8">tab 8</option>
-                    </select>
-                </label>
+                <Select
+                    label="Tab width"
+                    size="sm"
+                    className="w-24"
+                    value={tabWidth}
+                    onChange={v => onSetTabWidth(v)}
+                    options={TAB_WIDTH_OPTIONS}
+                />
 
                 <button type="button" onClick={onToggleWrap}
                     className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium border transition-colors ${

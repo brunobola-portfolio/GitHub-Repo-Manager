@@ -1,11 +1,12 @@
 import { Search, ArrowUpDown, LayoutList, Rows } from 'lucide-react'
 import { Input } from '../../../ui/form'
+import { Select } from '../../../ui/Select'
 
 const SORT_OPTIONS = [
-  { value: 'name',     label: 'Name (A–Z)' },
-  { value: 'size',     label: 'Size (largest)' },
-  { value: 'activity', label: 'Last activity' },
-  { value: 'risk',     label: 'Risk (worst first)' },
+  { value: 'name',     label: 'Name (A–Z)',        icon: ArrowUpDown },
+  { value: 'size',     label: 'Size (largest)',     icon: ArrowUpDown },
+  { value: 'activity', label: 'Last activity',      icon: ArrowUpDown },
+  { value: 'risk',     label: 'Risk (worst first)', icon: ArrowUpDown },
 ]
 
 export function SearchAndSort({ query, onQuery, sortBy, onSort, viewMode, onViewMode }) {
@@ -22,19 +23,14 @@ export function SearchAndSort({ query, onQuery, sortBy, onSort, viewMode, onView
           aria-label="Search repositories"
         />
       </div>
-      <div className="relative">
-        <ArrowUpDown className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" aria-hidden="true" />
-        <select
-          value={sortBy}
-          onChange={(e) => onSort(e.target.value)}
-          aria-label="Sort repositories"
-          className="appearance-none pl-8 pr-8 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 transition-colors"
-        >
-          {SORT_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
-      </div>
+      <Select
+        className="w-44"
+        size="sm"
+        label="Sort repositories"
+        value={sortBy}
+        onChange={(v) => onSort(v)}
+        options={SORT_OPTIONS}
+      />
       <div className="flex rounded-xl border border-slate-300 dark:border-slate-600 divide-x divide-slate-300 dark:divide-slate-600 overflow-hidden">
         <button
           type="button"

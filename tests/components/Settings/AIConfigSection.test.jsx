@@ -97,6 +97,17 @@ async function renderSection(configOverride = {}) {
     return rendered
 }
 
+/**
+ * Pick a completion provider through the shared premium Select (a
+ * button+listbox, not a native <select>): open it, then click the option
+ * whose accessible name matches `name`.
+ */
+async function selectCompletionProvider(name) {
+    const trigger = screen.getByRole('combobox', { name: /completion provider/i })
+    await act(async () => { fireEvent.click(trigger) })
+    await act(async () => { fireEvent.click(screen.getByRole('option', { name })) })
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -104,10 +115,12 @@ async function renderSection(configOverride = {}) {
 describe('AIConfigSection — provider select', () => {
     it('renders provider select with 5 options (plus empty option)', async () => {
         await renderSection()
-        const select = screen.getByRole('combobox', { name: /completion provider/i })
+        const trigger = screen.getByRole('combobox', { name: /completion provider/i })
+        await act(async () => { fireEvent.click(trigger) })
+        const options = screen.getAllByRole('option')
         // 5 provider options + 1 empty "Select a provider" option = 6
-        expect(select.options).toHaveLength(6)
-        const labels = Array.from(select.options).map((o) => o.text)
+        expect(options).toHaveLength(6)
+        const labels = options.map((o) => o.textContent)
         expect(labels).toContain('Gemini')
         expect(labels).toContain('Anthropic')
         expect(labels).toContain('OpenAI')
@@ -123,20 +136,14 @@ describe('AIConfigSection — provider select', () => {
 
     it('shows API key field after selecting Gemini', async () => {
         await renderSection()
-        const select = screen.getByRole('combobox', { name: /completion provider/i })
-        await act(async () => {
-            fireEvent.change(select, { target: { value: 'gemini' } })
-        })
+        await selectCompletionProvider('Gemini')
         // Label text: "Gemini API Key" — matched by id="completion-api-key" / htmlFor pairing
         expect(screen.getByLabelText(/api key/i)).toBeInTheDocument()
     })
 
     it('shows Endpoint URL input when Local provider is selected', async () => {
         await renderSection()
-        const select = screen.getByRole('combobox', { name: /completion provider/i })
-        await act(async () => {
-            fireEvent.change(select, { target: { value: 'local' } })
-        })
+        await selectCompletionProvider('Local (LMStudio / Ollama)')
         expect(screen.getByLabelText(/endpoint url/i)).toBeInTheDocument()
     })
 })
@@ -144,20 +151,14 @@ describe('AIConfigSection — provider select', () => {
 describe('AIConfigSection — Anthropic shows embedding section', () => {
     it('shows Embedding Provider section when Anthropic is selected', async () => {
         await renderSection()
-        const select = screen.getByRole('combobox', { name: /completion provider/i })
-        await act(async () => {
-            fireEvent.change(select, { target: { value: 'anthropic' } })
-        })
+        await selectCompletionProvider('Anthropic')
         // Anthropic lacks native embeddings — section is always shown
         expect(screen.getByRole('combobox', { name: /embedding provider/i })).toBeInTheDocument()
     })
 
     it('shows embedding section for OpenRouter too', async () => {
         await renderSection()
-        const select = screen.getByRole('combobox', { name: /completion provider/i })
-        await act(async () => {
-            fireEvent.change(select, { target: { value: 'openrouter' } })
-        })
+        await selectCompletionProvider('OpenRouter')
         expect(screen.getByRole('combobox', { name: /embedding provider/i })).toBeInTheDocument()
     })
 })
@@ -283,10 +284,7 @@ describe('AIConfigSection — Save button state', () => {
 
     it('Save button enables after changing the provider', async () => {
         await renderSection()
-        const providerSelect = screen.getByRole('combobox', { name: /completion provider/i })
-        await act(async () => {
-            fireEvent.change(providerSelect, { target: { value: 'gemini' } })
-        })
+        await selectCompletionProvider('Gemini')
         const saveBtn = screen.getByRole('button', { name: /^save$/i })
         expect(saveBtn).not.toBeDisabled()
     })
@@ -318,10 +316,7 @@ describe('AIConfigSection — 400 validation error', () => {
         )
 
         // Select Gemini to make the form dirty
-        const select = screen.getByRole('combobox', { name: /completion provider/i })
-        await act(async () => {
-            fireEvent.change(select, { target: { value: 'gemini' } })
-        })
+        await selectCompletionProvider('Gemini')
 
         // Save button should now be enabled
         const saveBtn = screen.getByRole('button', { name: /^save$/i })
@@ -474,10 +469,7 @@ describe('AIConfigSection — toast on save', () => {
         })
 
         // Dirty the form so save is enabled
-        const providerSelect = screen.getByRole('combobox', { name: /completion provider/i })
-        await act(async () => {
-            fireEvent.change(providerSelect, { target: { value: 'gemini' } })
-        })
+        await selectCompletionProvider('Gemini')
 
         await act(async () => {
             fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
@@ -505,10 +497,7 @@ describe('AIConfigSection — CSRF token sent on mutations', () => {
             renderWithProviders(<AIConfigSection />)
         })
 
-        const select = screen.getByRole('combobox', { name: /completion provider/i })
-        await act(async () => {
-            fireEvent.change(select, { target: { value: 'gemini' } })
-        })
+        await selectCompletionProvider('Gemini')
 
         await act(async () => {
             fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
@@ -532,10 +521,7 @@ describe('AIConfigSection — Test Connection hidden with no provider', () => {
 
     it('shows Test Connection card after selecting a provider', async () => {
         await renderSection()
-        const select = screen.getByRole('combobox', { name: /completion provider/i })
-        await act(async () => {
-            fireEvent.change(select, { target: { value: 'gemini' } })
-        })
+        await selectCompletionProvider('Gemini')
         expect(screen.getByRole('button', { name: /test connection/i })).toBeInTheDocument()
     })
 })

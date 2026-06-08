@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { DiscoveryPanel } from '../../../../src/components/Settings/WorkBoard/DiscoveryPanel'
 
 const defaultPrefs = {
@@ -60,8 +60,12 @@ describe('DiscoveryPanel', () => {
                 onUpdatePrefs={onUpdatePrefs}
             />
         )
-        const select = screen.getByLabelText(/activity window/i)
-        fireEvent.change(select, { target: { value: '90' } })
+        await act(async () => {
+            fireEvent.click(screen.getByRole('combobox', { name: /activity window/i }))
+        })
+        await act(async () => {
+            fireEvent.click(screen.getByRole('option', { name: '90 days' }))
+        })
         await waitFor(() => expect(onUpdatePrefs).toHaveBeenCalledWith({ discovery_window_days: 90 }))
     })
 

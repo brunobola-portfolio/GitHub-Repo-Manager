@@ -83,12 +83,21 @@ async function openSettingsAITab(page) {
     return dialog
 }
 
+/**
+ * Pick a completion provider through the shared premium Select (button +
+ * listbox, not a native <select>): open it, then click the named option.
+ */
+async function pickCompletionProvider(dialog, optionName) {
+    await dialog.getByRole('combobox', { name: /completion provider/i }).click()
+    await dialog.getByRole('option', { name: optionName, exact: true }).click()
+}
+
 test.describe('Settings — AI API key flow', () => {
     test('renders provider/model/key fields when a provider is picked', async ({ page }) => {
         await installAIConfigMock(page)
         const dialog = await openSettingsAITab(page)
 
-        await dialog.getByLabel(/completion provider/i).selectOption('openai')
+        await pickCompletionProvider(dialog, 'OpenAI')
 
         await expect(dialog.locator('#completion-api-key')).toBeVisible()
         await expect(dialog.locator('#completion-model')).toBeVisible()
@@ -98,7 +107,7 @@ test.describe('Settings — AI API key flow', () => {
         await installAIConfigMock(page)
         const dialog = await openSettingsAITab(page)
 
-        await dialog.getByLabel(/completion provider/i).selectOption('openai')
+        await pickCompletionProvider(dialog, 'OpenAI')
         await dialog.locator('#completion-api-key').fill('sk-test-1234567890')
         await dialog.locator('#completion-model').fill('gpt-4o-mini')
 
@@ -120,7 +129,7 @@ test.describe('Settings — AI API key flow', () => {
         await installAIConfigMock(page)
         let dialog = await openSettingsAITab(page)
 
-        await dialog.getByLabel(/completion provider/i).selectOption('openai')
+        await pickCompletionProvider(dialog, 'OpenAI')
         await dialog.locator('#completion-api-key').fill('sk-test-1234567890')
         await dialog.locator('#completion-model').fill('gpt-4o-mini')
         await dialog.getByRole('button', { name: /^save$/i }).click()
@@ -132,7 +141,7 @@ test.describe('Settings — AI API key flow', () => {
 
         // Reopen and verify persistence
         dialog = await openSettingsAITab(page)
-        await expect(dialog.getByLabel(/completion provider/i)).toHaveValue('openai')
+        await expect(dialog.getByRole('combobox', { name: /completion provider/i })).toContainText('OpenAI')
         await expect(dialog.locator('#completion-model')).toHaveValue('gpt-4o-mini')
         // The key is masked — the input is empty but the placeholder reflects a saved key
         await expect(dialog.locator('#completion-api-key'))
@@ -144,7 +153,7 @@ test.describe('Settings — AI API key flow', () => {
         let dialog = await openSettingsAITab(page)
 
         // Seed a saved config
-        await dialog.getByLabel(/completion provider/i).selectOption('openai')
+        await pickCompletionProvider(dialog, 'OpenAI')
         await dialog.locator('#completion-api-key').fill('sk-test-1234567890')
         await dialog.getByRole('button', { name: /^save$/i }).click()
         await expect(dialog.getByRole('status').filter({ hasText: /saved/i })).toBeVisible({ timeout: 10000 })
@@ -158,6 +167,6 @@ test.describe('Settings — AI API key flow', () => {
             .toBeVisible({ timeout: 10000 })
 
         // Provider select should be blank again
-        await expect(dialog.getByLabel(/completion provider/i)).toHaveValue('')
+        await expect(dialog.getByRole('combobox', { name: /completion provider/i })).toContainText(/select a provider/i)
     })
 })

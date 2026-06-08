@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
+import { Select } from '../../ui/Select';
 
 const SEVERITY_OPTIONS = ['all', 'critical', 'warning', 'suggestion', 'info'];
+const SEVERITY_SELECT_OPTIONS = SEVERITY_OPTIONS.map((s) => ({ value: s, label: s }));
 
 export function CommentsListTab({ comments, onJumpToFile, onDismiss, onEdit: _onEdit }) {
     const [filter, setFilter] = useState('all');
@@ -18,14 +20,14 @@ export function CommentsListTab({ comments, onJumpToFile, onDismiss, onEdit: _on
         <div className="flex flex-col h-full min-h-0">
             <div className="px-3 pt-3 pb-2 flex items-center gap-2 text-xs">
                 <span className="text-slate-500 dark:text-slate-400">{visible.length} / {comments.length}</span>
-                <select
-                    aria-label="Severity filter"
+                <Select
+                    label="Severity filter"
+                    size="sm"
+                    className="ml-auto w-36"
                     value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
-                    className="ml-auto rounded border bg-white px-2 py-1 dark:bg-slate-900 dark:border-slate-700"
-                >
-                    {SEVERITY_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
+                    onChange={(v) => setFilter(v)}
+                    options={SEVERITY_SELECT_OPTIONS}
+                />
             </div>
             <ul className="flex-1 overflow-y-auto px-3 pb-3 space-y-2">
                 {visible.map((c) => {
