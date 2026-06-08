@@ -39,6 +39,8 @@ export function FileRiskBadge({ aiRisk, heuristicScore }) {
 
   return (
     <span
+      role="img"
+      aria-label={title}
       className={`inline-block w-2 h-2 rounded-full shrink-0 ${colorClass}`}
       title={title}
     />
