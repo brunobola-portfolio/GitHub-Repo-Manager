@@ -4,8 +4,11 @@ import request from 'supertest'
 import Database from 'better-sqlite3'
 import { createMarksRouter } from '../routes/migration-marks.js'
 
-function setupApp() {
+function setupApp(userId = 1) {
   const db = new Database(':memory:')
+  // Routes are user-scoped via the plan → user join, so the harness needs plans.
+  db.exec(`CREATE TABLE migration_plans (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL)`)
+  db.prepare(`INSERT INTO migration_plans (id, user_id) VALUES (1, 1), (2, 2)`).run()
   db.exec(`CREATE TABLE migration_marks (
     id INTEGER PRIMARY KEY AUTOINCREMENT, plan_id INTEGER NOT NULL, task_id INTEGER,
     scope TEXT NOT NULL, target_kind TEXT NOT NULL, target_id TEXT NOT NULL,
@@ -13,6 +16,7 @@ function setupApp() {
     skip_reason TEXT, error_message TEXT, written_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`)
+  // plan 1 → user 1 (the four marks under test)
   db.prepare(`INSERT INTO migration_marks (plan_id, scope, target_kind, target_id, payload, status, written_at)
     VALUES (1, 'destination', 'github-topic', 'foo/bar', '{"topics":["migrated"]}', 'written', datetime('now'))`).run()
   db.prepare(`INSERT INTO migration_marks (plan_id, scope, target_kind, target_id, payload, status, written_at)
@@ -21,10 +25,13 @@ function setupApp() {
     VALUES (1, 'source', 'azure-project-property', 'acme/Billing', '{}', 'written', datetime('now'))`).run()
   db.prepare(`INSERT INTO migration_marks (plan_id, scope, target_kind, target_id, payload, status)
     VALUES (1, 'git-tag', 'git-annotated-tag', 'migration/2026-05-23-1', '{}', 'failed')`).run()
+  // plan 2 → user 2 (another tenant) — same target repo, must stay invisible to user 1
+  db.prepare(`INSERT INTO migration_marks (plan_id, scope, target_kind, target_id, payload, status, written_at)
+    VALUES (2, 'destination', 'github-topic', 'foo/bar', '{}', 'written', datetime('now'))`).run()
 
   const app = express()
   app.use(express.json())
-  app.use((req, _res, next) => { req.user = { id: 1 }; next() })
+  app.use((req, _res, next) => { req.session = { userId }; next() })
   app.use('/api/migration/marks', createMarksRouter({ db }))
   return app
 }
@@ -62,6 +69,44 @@ describe('migration-marks route', () => {
     const res = await request(app).get('/api/migration/marks')
     expect(res.status).toBe(200)
     expect(res.body.marks.length).toBe(4)
+  })
+})
+
+describe('migration-marks routes — tenant scoping', () => {
+  it('GET ?targetFullName= excludes another tenant\'s marks for the same repo', async () => {
+    // foo/bar has 2 marks under user 1 (plan 1) + 1 under user 2 (plan 2).
+    const u1 = await request(setupApp(1)).get('/api/migration/marks?targetFullName=foo/bar')
+    expect(u1.body.marks.length).toBe(2)
+    const u2 = await request(setupApp(2)).get('/api/migration/marks?targetFullName=foo/bar')
+    expect(u2.body.marks.length).toBe(1)
+  })
+
+  it('GET / scopes the unfiltered list to the caller', async () => {
+    const u2 = await request(setupApp(2)).get('/api/migration/marks')
+    expect(u2.body.marks.length).toBe(1) // only plan 2's single mark
+  })
+
+  it('GET /plan/:id returns empty for a plan the caller does not own (no IDOR)', async () => {
+    const res = await request(setupApp(1)).get('/api/migration/marks/plan/2') // plan 2 → user 2
+    expect(res.status).toBe(200)
+    expect(res.body.marks.length).toBe(0)
+    expect(res.body.byScope.destination.length).toBe(0)
+  })
+
+  it('GET /plan/:id returns the marks for a plan the caller owns', async () => {
+    const res = await request(setupApp(2)).get('/api/migration/marks/plan/2')
+    expect(res.body.marks.length).toBe(1)
+  })
+
+  it('401s without a session on both routes', async () => {
+    const db = new Database(':memory:')
+    db.exec(`CREATE TABLE migration_plans (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL)`)
+    db.exec(`CREATE TABLE migration_marks (id INTEGER PRIMARY KEY, plan_id INTEGER, scope TEXT, target_kind TEXT, target_id TEXT, payload TEXT, status TEXT, written_at TEXT, created_at TEXT)`)
+    const app = express()
+    app.use((req, _res, next) => { req.session = {}; next() })
+    app.use('/api/migration/marks', createMarksRouter({ db }))
+    expect((await request(app).get('/api/migration/marks?targetFullName=x/y')).status).toBe(401)
+    expect((await request(app).get('/api/migration/marks/plan/1')).status).toBe(401)
   })
 })
 
