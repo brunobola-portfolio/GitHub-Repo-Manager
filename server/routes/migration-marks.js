@@ -8,19 +8,23 @@ export function createMarksRouter({ db }) {
   const router = express.Router()
 
   // GET /api/migration/marks?targetFullName=foo/bar&targetKind=github-topic
+  // User-scoped: only marks whose owning plan belongs to the caller, so one
+  // tenant can't read another's migration provenance.
   router.get('/', (req, res) => {
+    const userId = req.session?.userId
+    if (!userId) return res.status(401).json({ error: 'auth required' })
     const { targetFullName, targetKind } = req.query
-    const where = []
-    const args = []
+    const where = ['p.user_id = ?']
+    const args = [userId]
     if (targetFullName) {
-      where.push('(target_id = ? OR target_id LIKE ?)')
+      where.push('(m.target_id = ? OR m.target_id LIKE ?)')
       args.push(String(targetFullName), `${String(targetFullName)}#%`)
     }
     if (targetKind) {
-      where.push('target_kind = ?')
+      where.push('m.target_kind = ?')
       args.push(String(targetKind))
     }
-    const sql = `SELECT * FROM migration_marks ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY created_at DESC LIMIT 200`
+    const sql = `SELECT m.* FROM migration_marks m JOIN migration_plans p ON p.id = m.plan_id WHERE ${where.join(' AND ')} ORDER BY m.created_at DESC LIMIT 200`
     const rows = db.prepare(sql).all(...args)
     res.json({ marks: rows.map(r => ({ ...r, payload: safeJson(r.payload) })) })
   })
@@ -54,15 +58,20 @@ export function createMarksRouter({ db }) {
     res.json({ migrated })
   })
 
-  // GET /api/migration/marks/plan/:id
+  // GET /api/migration/marks/plan/:id — user-scoped: marks are returned only
+  // when the plan belongs to the caller (otherwise an empty set, never another
+  // tenant's provenance — closes the IDOR-by-plan-id).
   router.get('/plan/:id', (req, res) => {
+    const userId = req.session?.userId
+    if (!userId) return res.status(401).json({ error: 'auth required' })
     const planId = Number(req.params.id)
     if (!Number.isFinite(planId)) {
       return res.status(400).json({ error: 'invalid plan id' })
     }
     const rows = db.prepare(
-      `SELECT * FROM migration_marks WHERE plan_id = ? ORDER BY created_at`
-    ).all(planId)
+      `SELECT m.* FROM migration_marks m JOIN migration_plans p ON p.id = m.plan_id
+        WHERE m.plan_id = ? AND p.user_id = ? ORDER BY m.created_at`
+    ).all(planId, userId)
     const byScope = { source: [], destination: [], 'git-tag': [] }
     for (const r of rows) {
       const parsed = { ...r, payload: safeJson(r.payload) }
