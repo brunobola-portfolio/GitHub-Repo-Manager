@@ -1,8 +1,9 @@
-import { defineConfig } from 'vite'
+import { defineConfig, createLogger } from 'vite'
 import react from '@vitejs/plugin-react'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { createRequire } from 'module'
 import path from 'path'
+import { isProxyDownError, BACKEND_DOWN_HINT, makeThrottle } from './scripts/dev/format.mjs'
 
 // Single source of truth for the displayed app version: package.json. Injected
 // as import.meta.env.VITE_APP_VERSION so UI (e.g. the Landing hero badge) never
@@ -21,9 +22,28 @@ const analyzePlugins = process.env.ANALYZE === 'true'
     })]
   : []
 
+// Dev-only logging polish: when the API on :3001 isn't running, Vite's proxy
+// floods the terminal with repeating "http proxy error … ECONNREFUSED" stacks.
+// Wrap the logger so that collapses into ONE throttled, actionable hint. Other
+// logs pass through untouched. (The orchestrator at scripts/dev.mjs supplies its
+// own logger, so this only affects the standalone `npm run dev`.)
+const devLogger = createLogger()
+const baseLoggerError = devLogger.error.bind(devLogger)
+const warnBackendDown = makeThrottle(15000)
+devLogger.error = (msg, options) => {
+  if (isProxyDownError(msg)) {
+    if (warnBackendDown(Date.now())) {
+      devLogger.warn(`  ⚠  ${BACKEND_DOWN_HINT}`, { timestamp: true })
+    }
+    return
+  }
+  baseLoggerError(msg, options)
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), ...analyzePlugins],
+  customLogger: devLogger,
   define: {
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(pkg.version),
   },

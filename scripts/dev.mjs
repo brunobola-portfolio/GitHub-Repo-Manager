@@ -15,7 +15,15 @@ import path from 'node:path'
 import process from 'node:process'
 import dotenv from 'dotenv'
 import { createServer } from 'vite'
-import { tagLine, renderBanner, supportsColor, stripAnsi } from './dev/format.mjs'
+import {
+  tagLine,
+  renderBanner,
+  supportsColor,
+  stripAnsi,
+  isProxyDownError,
+  BACKEND_DOWN_HINT,
+  makeThrottle,
+} from './dev/format.mjs'
 
 dotenv.config({ quiet: true })
 
@@ -70,7 +78,14 @@ backend.on('exit', (code, signal) => {
 // Vite's own startup URL block since the banner below already shows it.
 const SKIP_VITE = /(VITE v|ready in|Local:|Network:|press h \+ enter|use --host)/i
 function viteLogger() {
+  const warnBackendDown = makeThrottle(15000)
   const toWeb = (msg) => {
+    // Collapse the backend-down proxy spam into one throttled hint (the same
+    // copy `npm run dev` shows). Reachable if the backend dies mid-session.
+    if (isProxyDownError(msg)) {
+      if (warnBackendDown(Date.now())) emit('down', BACKEND_DOWN_HINT)
+      return
+    }
     for (const raw of String(msg).split('\n')) {
       const l = stripAnsi(raw).trimEnd()
       if (l && !SKIP_VITE.test(l)) emit('WEB', l)
