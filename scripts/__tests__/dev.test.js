@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { supportsColor, stripAnsi, tagLine, renderBanner } from '../dev/format.mjs'
+import {
+  supportsColor,
+  stripAnsi,
+  tagLine,
+  renderBanner,
+  isProxyDownError,
+  BACKEND_DOWN_HINT,
+  makeThrottle,
+} from '../dev/format.mjs'
 
 describe('supportsColor', () => {
   it('is true for a TTY with no NO_COLOR', () => {
@@ -79,5 +87,38 @@ describe('renderBanner', () => {
     const out = renderBanner(baseState)
     expect(out.startsWith('┌')).toBe(true)
     expect(out.trimEnd().endsWith('┘')).toBe(true)
+  })
+})
+
+describe('isProxyDownError', () => {
+  it('matches Vite proxy ECONNREFUSED messages (with stack)', () => {
+    const msg = 'http proxy error: /api/auth/session-info\nAggregateError [ECONNREFUSED]: \n    at internalConnectMultiple'
+    expect(isProxyDownError(msg)).toBe(true)
+  })
+  it('matches even when the message is ANSI-colored', () => {
+    expect(isProxyDownError('\x1b[31mhttp proxy error: /api/v1/usage\x1b[0m')).toBe(true)
+  })
+  it('does not match ordinary HMR / build logs', () => {
+    expect(isProxyDownError('hmr update /src/App.jsx')).toBe(false)
+    expect(isProxyDownError('[optimizer] bundling dependencies...')).toBe(false)
+  })
+})
+
+describe('BACKEND_DOWN_HINT', () => {
+  it('points at the commands that start the backend', () => {
+    expect(BACKEND_DOWN_HINT).toContain('npm run dev:all')
+    expect(BACKEND_DOWN_HINT).toContain('npm run dev:server')
+  })
+})
+
+describe('makeThrottle', () => {
+  it('passes once, then suppresses until the window elapses', () => {
+    const allow = makeThrottle(1000)
+    expect(allow(0)).toBe(true)
+    expect(allow(500)).toBe(false)
+    expect(allow(999)).toBe(false)
+    expect(allow(1000)).toBe(true)
+    expect(allow(1200)).toBe(false)
+    expect(allow(2000)).toBe(true)
   })
 })

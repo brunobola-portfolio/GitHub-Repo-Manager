@@ -24,6 +24,30 @@ export function supportsColor({ isTTY = false, env = {} } = {}) {
   return Boolean(isTTY)
 }
 
+// True when a log message is Vite's "http proxy error" — emitted (repeatedly,
+// with an ECONNREFUSED stack) when the API on :3001 isn't running.
+export function isProxyDownError(msg) {
+  return stripAnsi(msg).includes('http proxy error')
+}
+
+// One-line replacement for that stack spam: tells the dev what's wrong + how to fix it.
+export const BACKEND_DOWN_HINT =
+  'Backend API not reachable on :3001 — run `npm run dev:all` (web + API) or `npm run dev:server` (API only).'
+
+// Returns a gate that passes at most once per `windowMs`. `now` is supplied by
+// the caller (keeps it pure/testable). Used to throttle the backend-down hint
+// so a flood of proxy errors prints a single reminder, not hundreds.
+export function makeThrottle(windowMs = 15000) {
+  let last = -Infinity
+  return (now) => {
+    if (now - last >= windowMs) {
+      last = now
+      return true
+    }
+    return false
+  }
+}
+
 // kind → gutter label + color. 'up'/'down' are health transitions (dot glyph).
 const LABEL_META = {
   WEB: { text: 'WEB', color: 'magenta' },
