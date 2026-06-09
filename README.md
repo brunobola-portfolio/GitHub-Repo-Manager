@@ -441,13 +441,24 @@ Open [http://localhost:5173](http://localhost:5173) and explore with **87 pre-lo
 
 4. **Start the application**
    ```bash
-   # Both frontend and backend together (recommended)
+   # Frontend + backend together, with a unified premium dev banner (recommended)
    npm run dev:all
 
-   # Or separately:
-   npm run dev:server  # Backend on :3001
-   npm run dev         # Frontend on :5173
+   # Same, but launch the backend under the Node inspector for breakpoints
+   npm run dev:all:debug
+
+   # Or run each service on its own:
+   npm run dev:server  # Backend (API) on :3001
+   npm run dev         # Frontend (Vite) on :5173
+
+   # Free a stuck port from a previous run (3001 + 5173–5180), then re-run:
+   npm run dev:kill
    ```
+
+   `npm run dev:all` prints one banner with both URLs, the `/api` proxy, the
+   active env/log level, and backend health, and tags every log line `WEB` or
+   `API` so the two streams never blur. Running `npm run dev` on its own (no
+   backend) prints a single hint instead of repeating proxy errors.
 
 5. **Open** [http://localhost:5173](http://localhost:5173)
 
@@ -676,12 +687,14 @@ See [`docs/ai-providers.md`](docs/ai-providers.md) for per-provider setup and fr
 <details>
 <summary><strong>Backend Server Not Running (ECONNREFUSED)</strong></summary>
 
+If you start the frontend on its own (`npm run dev`) without the API, Vite prints
+a single throttled hint instead of repeating `ECONNREFUSED` stack traces:
+
 ```text
-[vite] http proxy error: /api/auth/login
-AggregateError [ECONNREFUSED]
+[vite]   ⚠  Backend API not reachable on :3001 — run `npm run dev:all` (web + API) or `npm run dev:server` (API only).
 ```
 
-**Solution**: Run both servers together with `npm run dev:all`, or start the backend separately:
+**Solution**: Run both servers together with `npm run dev:all` (recommended), or start the backend separately:
 ```bash
 npm run dev:server
 ```

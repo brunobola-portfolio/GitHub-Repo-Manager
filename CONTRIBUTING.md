@@ -36,11 +36,18 @@ npm install
 cp .env.example .env
 # Edit .env with your GitHub OAuth credentials and session secret
 
-# 4. Start the development server (frontend + backend)
+# 4. Start the development server (frontend + backend, unified premium banner)
 npm run dev:all
+
+# Variants:
+npm run dev:all:debug   # backend under the Node inspector (breakpoints)
+npm run dev:server      # backend (API) only, on :3001
+npm run dev             # frontend (Vite) only, on :5173
 ```
 
 The frontend runs at `http://localhost:5173` and the backend at `http://localhost:3001` (proxied through Vite).
+
+`npm run dev:all` shows one banner with both URLs, the `/api` proxy, env, log level, and backend health, and tags each log line `WEB` or `API`. If you run `npm run dev` without the backend, Vite prints a single hint (pointing at `dev:all` / `dev:server`) instead of repeating proxy errors.
 
 If a previous run left a stale process on `3001` or any of `5173–5180` (Vite cascades through them), use the cross-platform cleanup script:
 
