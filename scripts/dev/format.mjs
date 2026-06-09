@@ -40,3 +40,38 @@ export function tagLine(kind, line, { color = false, time = '' } = {}) {
   const ts = time ? (color ? `${ANSI.dim}${time}${ANSI.reset} ` : `${time} `) : ''
   return `${ts}${gutter} ${line}`
 }
+
+const visibleLen = (s) => stripAnsi(s).length
+
+function boxify(lines, { color = false } = {}) {
+  const width = Math.max(...lines.map(visibleLen))
+  const d = (s) => (color ? `${ANSI.dim}${s}${ANSI.reset}` : s)
+  const bar = '─'.repeat(width + 2)
+  const side = d('│')
+  const body = lines
+    .map((l) => `${side} ${l}${' '.repeat(width - visibleLen(l))} ${side}`)
+    .join('\n')
+  return [d(`┌${bar}┐`), body, d(`└${bar}┘`)].join('\n')
+}
+
+export function renderBanner(state, { color = false } = {}) {
+  const paint = (name, s) => (color ? `${ANSI[name]}${s}${ANSI.reset}` : s)
+  const dot = paint('green', '●')
+  const webStatus = state.web.ready ? 'Vite ready' : 'starting…'
+  const apiStatus = state.api.healthy ? `healthy ${state.api.latencyMs}ms` : paint('red', 'DOWN')
+  const inspector = state.inspector
+    ? `inspector ${paint('green', '◉')} ${state.inspector}`
+    : 'inspector off'
+
+  const lines = [
+    `${paint('bold', 'GitHub Repo Manager · dev')}   v${state.version}`,
+    '',
+    `${dot} WEB   ${state.web.url}   ${webStatus}`,
+    `${dot} API   ${state.api.url}   ${apiStatus}`,
+    `↳ proxy  /api → :${state.proxyPort}`,
+    '',
+    `NODE_ENV ${state.nodeEnv}   log ${state.logLevel}   mock ${state.mock ? 'on' : 'off'}`,
+    `${inspector}   ·  ctrl-c to stop`,
+  ]
+  return boxify(lines, { color })
+}
