@@ -148,9 +148,11 @@ In `--debug` mode the last line reads: `inspector ◉ ws://127.0.0.1:9229`.
 
 ## Testing
 
-Unit tests for the pure units (per project convention, mirror under `tests/`):
+Unit tests for the pure units. Script tests live in `scripts/__tests__/` per
+the existing convention (`vitest.config.js` includes
+`scripts/__tests__/**/*.test.js` and runs them in the `node` environment):
 
-- `tests/scripts/dev.test.js`
+- `scripts/__tests__/dev.test.js`
   - `tagLine`: WEB/API/status labels produce expected gutter + timestamp; color
     present with TTY, absent with `NO_COLOR`.
   - `renderBanner`: given a state object → expected banner string (ports, env,
@@ -168,6 +170,7 @@ Orchestration/spawn glue is verified manually (`npm run dev:all` and
 
 ## Files
 
-- **New:** `scripts/dev.mjs` (orchestrator), `tests/scripts/dev.test.js`.
+- **New:** `scripts/dev.mjs` (orchestrator), `scripts/dev/format.mjs` (pure
+  format helpers), `scripts/__tests__/dev.test.js`.
 - **Edit:** `package.json` (`dev:all`, add `dev:all:debug`).
 - **Unchanged:** `vite.config.js`, `server/*`, `scripts/kill-dev-ports.js`.
