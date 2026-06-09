@@ -23,3 +23,20 @@ export function supportsColor({ isTTY = false, env = {} } = {}) {
   if (env.NO_COLOR != null) return false
   return Boolean(isTTY)
 }
+
+// kind → gutter label + color. 'up'/'down' are health transitions (dot glyph).
+const LABEL_META = {
+  WEB: { text: 'WEB', color: 'magenta' },
+  API: { text: 'API', color: 'cyan' },
+  up: { text: '●', color: 'green' },
+  down: { text: '●', color: 'red' },
+}
+const GUTTER_WIDTH = 3 // 'WEB'/'API' are 3 cols; the dot pads to match.
+
+export function tagLine(kind, line, { color = false, time = '' } = {}) {
+  const meta = LABEL_META[kind] ?? { text: String(kind), color: 'reset' }
+  const label = meta.text.padEnd(GUTTER_WIDTH, ' ')
+  const gutter = color ? `${ANSI[meta.color]}${label} │${ANSI.reset}` : `${label} │`
+  const ts = time ? (color ? `${ANSI.dim}${time}${ANSI.reset} ` : `${time} `) : ''
+  return `${ts}${gutter} ${line}`
+}
