@@ -515,10 +515,12 @@ Expected:
 - Subsequent lines are gutter-tagged `WEB │ …` (magenta) and `API │ …` (cyan).
 - Open `http://localhost:5173` in a browser; a request shows an `API │ … /api/… 200` line. HMR edit to a `src/*.jsx` file shows a `WEB │ hmr update …` line.
 
-- [ ] **Step 2: Backend-down transition**
+- [ ] **Step 2: Backend-down detection**
 
-While `dev:all` runs, in another terminal: `npm run dev:kill` (or stop just the node child).
-Expected: a red `● │ API down — retrying …` line appears within ~4s. (Restarting the backend is out of scope; this only verifies the transition is reported.)
+While `dev:all` runs, kill just the backend node child (e.g. `taskkill /PID <pid>`
+for the `server/index.js` process, or `npm run dev:kill` which also stops Vite).
+Expected: a red `● │ backend exited (…) — … npm run dev:kill` line appears
+immediately. (Auto-restart is out of scope; this verifies the crash is reported.)
 
 - [ ] **Step 3: Debug mode**
 
@@ -547,3 +549,4 @@ git commit -m "chore(dev): polish dev orchestrator after smoke test"
 - **No new runtime deps:** only `vite` (devDep) + `dotenv` (dep) + Node built-ins.
 - **Name consistency:** `tagLine(kind, line, {color,time})`, `renderBanner(state,{color})`, `state` shape `{version, web:{url,ready}, api:{url,healthy,latencyMs}, proxyPort, nodeEnv, logLevel, mock, inspector}` — identical across format.mjs, its tests, and dev.mjs.
 - **Implementation check (per spec Risks):** Task 5 Step 1 is where Vite 8's `createServer({customLogger})` + `resolvedUrls` and the preserved `/api` proxy are confirmed against the installed version.
+- **As-built refinement (post-smoke):** the Task 4 code above shows an interval `setInterval` health poll. The smoke test (Task 5 Step 1) revealed it made the backend log a `/api/health` block every 4s, drowning the terminal. The shipped `scripts/dev.mjs` therefore drops the interval poll: it keeps the **one-shot startup probe** (for the banner's latency/health) and reports "down" via the child `exit` handler instead. The `setInterval`/`watcher`/`healthy` lines and the `'up'` transition are not in the final file. `tagLine`'s `'up'`/`'down'` kinds remain (used by tests + the exit handler).

@@ -39,6 +39,8 @@ const MOCK = process.env.VITE_MOCK_MODE === 'true'
 const HEALTH_URL = `http://localhost:${PORT}/api/health`
 const INSPECTOR_URL = DEBUG ? 'ws://127.0.0.1:9229' : null
 
+let shuttingDown = false
+
 const delay = (ms) => new Promise((r) => setTimeout(r, ms))
 const clock = () => new Date().toTimeString().slice(0, 8) // HH:MM:SS local
 
@@ -58,10 +60,9 @@ for (const stream of [backend.stdout, backend.stderr]) {
     if (line.trim()) emit('API', stripAnsi(line).trimEnd())
   })
 }
-backend.on('exit', (code) => {
-  if (code && code !== 0) {
-    emit('down', `backend exited (code ${code}) — if a port is stuck, run: npm run dev:kill`)
-  }
+backend.on('exit', (code, signal) => {
+  if (shuttingDown) return // our own kill during shutdown — already reported
+  emit('down', `backend exited (${code ?? signal}) — if a port is stuck, run: npm run dev:kill`)
 })
 
 // ---- vite dev server (programmatic) ---------------------------------------
@@ -105,14 +106,18 @@ async function probe() {
   }
 }
 
-// Give the backend up to ~10s to come up so the first banner usually shows healthy.
+// One-shot startup probe: give the backend up to ~10s to come up so the banner
+// reports its real health + latency. We deliberately do NOT poll on an interval
+// afterwards — that would make the backend log a /api/health block every few
+// seconds, drowning the terminal. Ongoing health is covered for free by the
+// backend's own request/error logs (shown via the API gutter) and by the
+// child-process `exit` handler above, which reports a hard crash.
 let first = await probe()
 const deadline = Date.now() + 10000
 while (!first.ok && Date.now() < deadline) {
   await delay(250)
   first = await probe()
 }
-let healthy = first.ok
 
 process.stdout.write('\n' + renderBanner({
   version: pkg.version,
@@ -125,21 +130,10 @@ process.stdout.write('\n' + renderBanner({
   inspector: INSPECTOR_URL,
 }, { color: COLOR }) + '\n\n')
 
-// Report only health transitions so steady state stays quiet.
-const watcher = setInterval(async () => {
-  const { ok, latency } = await probe()
-  if (ok === healthy) return
-  healthy = ok
-  if (ok) emit('up', `API back — healthy ${latency}ms`)
-  else emit('down', `API down — retrying ${HEALTH_URL}`)
-}, 4000)
-
 // ---- lifecycle ------------------------------------------------------------
-let shuttingDown = false
 async function shutdown() {
   if (shuttingDown) return
   shuttingDown = true
-  clearInterval(watcher)
   process.stdout.write('\n')
   emit('down', 'shutting down dev environment…')
   try { await vite.close() } catch { /* already closed */ }

@@ -63,8 +63,11 @@ scripts/dev.mjs  (supervisor, single process)
 │                  customLogger routes Vite/HMR lines → "WEB │" gutter (magenta)
 │                  resolved port read from server.resolvedUrls (true post-fallback port)
 ├── banner         rendered ONCE when (Vite listening) AND (first /api/health ok)
-├── health-watcher polls GET /api/health on an interval; emits a status line
-│                  ONLY on transition (up→down / down→up), accent green/red
+├── health         ONE-SHOT startup probe → banner latency/health. NO interval
+│                  poll: it would make the backend log a /api/health block every
+│                  few seconds and drown the terminal. Ongoing status comes free
+│                  from the backend's own request/error logs + the child `exit`
+│                  handler (reports a hard crash with a red "down" line).
 └── lifecycle      SIGINT/SIGTERM → close Vite server + kill backend child → clean exit
 ```
 
@@ -115,11 +118,10 @@ In `--debug` mode the last line reads: `inspector ◉ ws://127.0.0.1:9229`.
 ```
 12:04:01  WEB │ hmr update /src/App.jsx
 12:04:02  API │ GET /api/health 200 4ms
-12:04:05  ●   │ API down — retrying (ECONNREFUSED)
-12:04:08  ●   │ API back — healthy 3ms
+12:04:05  ●   │ backend exited (1) — if a port is stuck, run: npm run dev:kill
 ```
 
-- `WEB` = magenta, `API` = cyan, status transition = green (up) / red (down).
+- `WEB` = magenta, `API` = cyan, status (`●`) = green (up) / red (down).
 - Fixed-width gutter so columns align regardless of label.
 - Colors auto-off when stdout is not a TTY or `NO_COLOR` is set.
 
@@ -137,12 +139,14 @@ In `--debug` mode the last line reads: `inspector ◉ ws://127.0.0.1:9229`.
 
 - **Ctrl-C / SIGINT / SIGTERM** → forward shutdown to the backend child, call
   `viteServer.close()`, exit 0. No orphaned ports.
-- **Backend child exits unexpectedly** → red status line with the exit code;
-  keep Vite alive so HMR/state survives. Banner not re-rendered.
-- **Port already in use** (Vite `listen` or backend EADDRINUSE) → friendly line
-  pointing at `npm run dev:kill`.
-- **Health probe failure** → counts as `down`; transition line emitted; watcher
-  keeps polling so recovery is reported.
+- **Backend child exits unexpectedly** → red `●` status line with the exit
+  code/signal + `npm run dev:kill` hint; Vite stays alive so HMR/state survives.
+  Banner is not re-rendered.
+- **Port already in use** (Vite `listen` or backend EADDRINUSE) → the backend
+  logs `fatal` and exits, which trips the child `exit` handler above (hint to
+  run `npm run dev:kill`).
+- **Startup health probe fails for ~10s** → banner still renders, showing
+  `API … DOWN`; the backend's own logs explain why.
 - **Windows-first:** read child stdout line-by-line (no shell-string spawn,
   avoiding quoting pitfalls); ANSI verified in Windows Terminal / VS Code.
 
