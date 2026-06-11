@@ -1,5 +1,5 @@
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import {
     LogOut, RefreshCw, LayoutDashboard, FolderGit2, Plus,
     Bell, Settings, User, ChevronDown, Building2, Shield, Users,
@@ -17,6 +17,7 @@ import { useRelativeTime } from '../hooks/useRelativeTime.js'
 import { formatRelativeTime } from '../utils/format'
 import { useWorkBoardBadgeCounts } from '../hooks/useWorkBoardBadgeCounts'
 import { useNotificationsDigest } from '../hooks/useNotificationsDigest'
+import { useFocusTrap } from '../hooks/useFocusTrap'
 import { Drawer } from './ui/Drawer'
 import { MobileQuickActionsFab } from './MobileQuickActionsFab'
 import { Tooltip } from './ui/Tooltip'
@@ -56,6 +57,11 @@ export function Header({
     const { isDark, toggleTheme } = useTheme()
     const { count: workBoardCount } = useWorkBoardBadgeCounts()
     const notif = useNotificationsDigest({ enabled: !!user })
+
+    // Stable close handlers so the focus-trap effect inside each dropdown
+    // doesn't re-run (and re-grab focus) on every Header re-render.
+    const closeUserMenu = useCallback(() => setShowUserMenu(false), [])
+    const closeNotifications = useCallback(() => setShowNotifications(false), [])
 
     // Close menus on outside click
     useEffect(() => {
@@ -225,7 +231,7 @@ export function Header({
                                             error={notif.error}
                                             totalCount={notif.totalCount}
                                             onMarkSeen={notif.markSeen}
-                                            onClose={() => setShowNotifications(false)}
+                                            onClose={closeNotifications}
                                         />
                                     )}
                                 </div>
@@ -261,7 +267,7 @@ export function Header({
                                             onOpenOrgManager={onOpenOrgManager}
                                             onOpenSettings={onOpenSettings}
                                             onMigrationHistory={onMigrationHistory}
-                                            onClose={() => setShowUserMenu(false)}
+                                            onClose={closeUserMenu}
                                             isAdmin={isAdmin}
                                             onOpenAdminDLQ={onOpenAdminDLQ}
                                         />
@@ -485,8 +491,11 @@ function NavButton({ active, onClick, icon, label, badge }) {
 
 // User Dropdown Menu
 function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, onOpenSettings, onMigrationHistory, onClose, isAdmin = false, onOpenAdminDLQ }) {
+    // Escape-to-close + focus into the menu on open + focus return to the
+    // trigger on close (the menu only mounts while open).
+    const trapRef = useFocusTrap(true, onClose)
     return (
-        <div className="absolute right-0 top-full mt-2 w-72 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl shadow-[var(--ds-shadow-overlay)] border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in">
+        <div ref={trapRef} className="absolute right-0 top-full mt-2 w-72 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl shadow-[var(--ds-shadow-overlay)] border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in">
             {/* User Info */}
             <div className="p-4 bg-slate-50/70 dark:bg-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/50">
                 <div className="flex items-center gap-3">
@@ -596,9 +605,11 @@ const CATEGORY_META = {
 
 function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen, onClose }) {
     const sinceLabel = formatRelativeTime(digest.since)
+    // Escape-to-close + focus management (panel only mounts while open).
+    const trapRef = useFocusTrap(true, onClose)
 
     return (
-        <div className="absolute right-0 top-full mt-2 w-96 max-w-[calc(100vw-1rem)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-[var(--ds-shadow-overlay)] border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in">
+        <div ref={trapRef} className="absolute right-0 top-full mt-2 w-96 max-w-[calc(100vw-1rem)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-[var(--ds-shadow-overlay)] border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in">
             <div className="px-4 pt-3.5 pb-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <div className="min-w-0">
                     <p className="ds-text-micro font-semibold uppercase tracking-[0.22em] text-[color:var(--ds-accent-brand)] dark:text-indigo-300">
@@ -726,6 +737,10 @@ function SystemHealthIndicator() {
     const [open, setOpen] = useState(false)
     const popRef = useRef(null)
     const relative = useRelativeTime(lastCheckedAt)
+    // Stable close + focus management for the popover dialog: Escape closes,
+    // focus moves into the panel on open and returns to the trigger on close.
+    const closePopover = useCallback(() => setOpen(false), [])
+    const trapRef = useFocusTrap(open, closePopover)
 
     useEffect(() => {
         if (!open) return undefined
@@ -765,7 +780,9 @@ function SystemHealthIndicator() {
 
             {open && (
                 <div
+                    ref={trapRef}
                     role="dialog"
+                    aria-modal="false"
                     aria-label={tooltip}
                     className="absolute right-0 top-full mt-2 w-72 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl shadow-[var(--ds-shadow-overlay)] border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in"
                 >
