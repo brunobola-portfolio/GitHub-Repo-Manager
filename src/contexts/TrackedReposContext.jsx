@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as api from '../api/workBoardTracking'
 import { TrackedReposContext } from './contexts'
 
@@ -16,6 +16,12 @@ export function TrackedReposProvider({ children }) {
     const [isRefreshing, setIsRefreshing] = useState(false)
     const [error, setError] = useState(null)
     const pingSentRef = useRef(false)
+    // Mirror of the latest committed repos, read synchronously inside
+    // mutateRepo so its rollback can target the affected row WITHOUT the
+    // callback depending on `repos` (which would otherwise re-create every
+    // action callback — and the whole context value — on each list change).
+    const reposRef = useRef(repos)
+    useEffect(() => { reposRef.current = repos }, [repos])
 
     const reload = useCallback(async (filters = {}) => {
         const data = await api.fetchTrackedRepos(filters)
@@ -52,7 +58,10 @@ export function TrackedReposProvider({ children }) {
     }, [reload, loadPrefs])
 
     const mutateRepo = useCallback(async (repoFullName, action, optimisticPatch) => {
-        const previous = repos
+        // Snapshot ONLY the affected repo's prior row (from the latest
+        // committed state) so a failure rolls back just this repo — never
+        // clobbering a concurrent/interleaved mutation on a different repo.
+        const prevRow = reposRef.current.find(r => r.repo_full_name === repoFullName) ?? null
         if (optimisticPatch) {
             setRepos(prev => applyPatchToRepo(prev, repoFullName, optimisticPatch))
         }
@@ -65,10 +74,19 @@ export function TrackedReposProvider({ children }) {
             }
             return result
         } catch (e) {
-            setRepos(previous)
+            setRepos(prev => {
+                if (prevRow === null) {
+                    // Row didn't exist before this call (e.g. a failed track) —
+                    // drop any phantom we optimistically added.
+                    return prev.filter(r => r.repo_full_name !== repoFullName)
+                }
+                return prev.some(r => r.repo_full_name === repoFullName)
+                    ? prev.map(r => r.repo_full_name === repoFullName ? prevRow : r)
+                    : [...prev, prevRow]
+            })
             throw e
         }
-    }, [repos])
+    }, [])
 
     const pin = useCallback((repoFullName) => mutateRepo(repoFullName, 'pin', { is_pinned: 1 }), [mutateRepo])
     const unpin = useCallback((repoFullName) => mutateRepo(repoFullName, 'unpin', { is_pinned: 0 }), [mutateRepo])
@@ -111,7 +129,11 @@ export function TrackedReposProvider({ children }) {
         return result
     }, [reload])
 
-    const value = {
+    // Memoized so the provider value only changes when real state changes —
+    // not on every render. The action callbacks above are now stable, so
+    // consumers (TrackedDot in every RepoCard, WorkBoardRowMenu, …) no longer
+    // re-render on unrelated provider renders.
+    const value = useMemo(() => ({
         repos,
         prefs,
         countsBySignal,
@@ -124,7 +146,11 @@ export function TrackedReposProvider({ children }) {
         discover,
         refresh,
         undo,
-    }
+    }), [
+        repos, prefs, countsBySignal, isLoading, isRefreshing, error,
+        pin, unpin, mute, unmute, track, untrack,
+        bulkUpdate, updatePrefs, discover, refresh, undo,
+    ])
 
     return <TrackedReposContext.Provider value={value}>{children}</TrackedReposContext.Provider>
 }

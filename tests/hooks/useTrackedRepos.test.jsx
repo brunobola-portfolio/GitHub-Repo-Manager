@@ -91,6 +91,36 @@ describe('useTrackedRepos', () => {
         expect(result.current.repos.find(r => r.repo_full_name === 'a/b').is_pinned).toBe(0)
     })
 
+    it('a failed mutation rolls back ONLY its repo, preserving a concurrent mutation', async () => {
+        // Regression guard: previously a failure restored a whole-array
+        // snapshot, clobbering an interleaved success on a different repo.
+        mockApi.fetchTrackedRepos.mockResolvedValue({
+            items: [
+                { repo_full_name: 'a/b', is_pinned: 0, is_muted: 0, source_signal: 'owned' },
+                { repo_full_name: 'c/d', is_pinned: 0, is_muted: 0, source_signal: 'owned' },
+            ],
+            total: 2,
+            countsBySignal: { owned: 2 },
+        })
+        mockApi.mutateTrackedRepo.mockImplementation((_repoFullName, action) =>
+            action === 'pin'
+                ? Promise.reject(new Error('boom'))
+                : Promise.resolve({ operation_id: 'op', new_state: { is_pinned: 0, is_muted: 1 } }),
+        )
+
+        const { result } = renderHook(() => useTrackedRepos(), { wrapper })
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+        await act(async () => {
+            result.current.mute('c/d')                       // concurrent success
+            await result.current.pin('a/b').catch(() => {})  // fails → rolls back a/b only
+        })
+
+        const get = (name) => result.current.repos.find(r => r.repo_full_name === name)
+        expect(get('a/b').is_pinned).toBe(0) // failed pin reverted
+        expect(get('c/d').is_muted).toBe(1)  // concurrent mute preserved
+    })
+
     it('discover() sets isRefreshing and re-fetches list', async () => {
         mockApi.postDiscover.mockResolvedValue({ discovered: 3, added: 3, removed: 0 })
         const { result } = renderHook(() => useTrackedRepos(), { wrapper })
