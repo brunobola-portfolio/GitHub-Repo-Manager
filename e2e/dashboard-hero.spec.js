@@ -10,9 +10,9 @@ test.describe('Dashboard hero', () => {
     test('renders greeting headline', async ({ page }) => {
         const heading = page.getByRole('heading', { level: 1 })
         await expect(heading).toBeVisible()
-        // Greeting locale follows navigator.language: PT for pt-* locales,
-        // EN otherwise. CI runs en-US so we accept both.
-        await expect(heading).toContainText(/bom dia|boa tarde|boa noite|olá|good morning|good afternoon|good evening|hello/i)
+        // Greeting is English-only (time-of-day based). The legacy PT
+        // alternatives stay in the matcher purely as a back-compat safety net.
+        await expect(heading).toContainText(/good morning|good afternoon|good evening|hello|bom dia|boa tarde|boa noite|olá/i)
     })
 
     test('renders the org filter chip', async ({ page }) => {

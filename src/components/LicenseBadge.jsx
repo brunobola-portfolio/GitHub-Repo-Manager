@@ -71,7 +71,7 @@ export default function LicenseBadge() {
   const expiryTooltip = isExpiringCritical
     ? ` — Expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'}!`
     : isExpiringSoon
-    ? ` — Expires in ${daysUntilExpiry} days`
+    ? ` — Expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'}`
     : ''
 
   return (

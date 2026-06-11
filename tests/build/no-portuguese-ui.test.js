@@ -74,9 +74,10 @@ const PT_WORDS = new RegExp(
 )
 
 // Files in the scanned ROOTS that intentionally contain Portuguese and must be
-// skipped. `src/utils/greeting.js` is locale-aware i18n (returns PT for pt-*
-// locales, EN otherwise) and is documented as deliberate in the README.
-const EXCLUDE = new Set(['src/utils/greeting.js'])
+// skipped. There are none: `src/utils/greeting.js` used to ship PT copy for
+// pt-* locales but was made English-only (the rest of the UI is English), so
+// the guard now covers every file in the ROOTS with no exclusions.
+const EXCLUDE = new Set()
 
 // Root-level entry files that live outside the scanned dirs but still carry
 // user-facing copy — e.g. App.jsx injects AI-Assistant chat messages at

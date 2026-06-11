@@ -96,7 +96,7 @@ Managing a growing GitHub ecosystem is hard. Between dozens of repositories, mul
 
 Get a bird's-eye view of your entire GitHub ecosystem at a glance.
 
-- **DashboardHero** — personalised greeting (`Bom dia` / `Good morning` based on locale + time), org-filter and time-range chips that round-trip through the URL, and a "What needs you" grid surfacing reviews waiting / stale PRs / open issues with week-over-week deltas and a celebratory empty state.
+- **DashboardHero** — personalised, time-of-day greeting (`Good morning` / `Good afternoon` / `Good evening`), org-filter and time-range chips that round-trip through the URL, and a "What needs you" grid surfacing reviews waiting / stale PRs / open issues with week-over-week deltas and a celebratory empty state.
 - **Live Inbox** — replaces the Attention Feed with a sectioned, actionable inbox (needs review, my open PRs, mentions, stale drafts). Archive with `e`, snooze with `s`. AI one-liners on the top 3 items (BYOK, Gemini). Enable with `localStorage.setItem('dashboard_premium_v2_inbox', '1')`. Archive/snooze state persists per-user; both actions are free-tier. See the [Live Inbox feature guide](docs/features/dashboard-live-inbox.md).
 
   ![Live Inbox — needs_review section](docs/images/10_dashboard_live_inbox_needs_review_hd.png)
