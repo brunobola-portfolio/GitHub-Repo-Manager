@@ -38,6 +38,7 @@ import { FilterProvider } from './filters/filter-context'
 import { useContextShortcut } from '../../hooks/useKeyboardShortcuts'
 import { useModal } from '../../hooks/useModal'
 import { KeyboardHelpModal } from './KeyboardHelpModal'
+import { DOCS_URL as WEBHOOK_DOCS_URL } from '../Settings/WorkBoard/WebhookConnectPanel'
 import { AISummaryCard } from './AISummaryCard'
 import { KpiRow } from './KpiRow'
 import { MyReviewsTab } from './tabs/MyReviewsTab'
@@ -98,7 +99,7 @@ function WorkBoardEmptyState({ webhookConnected, onRefresh }) {
                         Connect GitHub webhook
                         {!webhookConnected && (
                             <a
-                                href="/docs/guides/github-webhook-setup"
+                                href={WEBHOOK_DOCS_URL}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="ml-2 underline text-indigo-500 hover:text-indigo-400"

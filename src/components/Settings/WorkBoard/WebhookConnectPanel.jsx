@@ -4,7 +4,10 @@ import { AnimatedCopyIcon } from '../../ui/AnimatedCopyIcon'
 import { useCopyToClipboard } from '../../../hooks/useCopyToClipboard'
 
 const WEBHOOK_PATH = '/api/v1/webhooks/github'
-const DOCS_URL = 'https://docs.github.com/en/developers/webhooks-and-events/webhooks/creating-webhooks'
+// Canonical, browser-reachable GitHub webhook docs. Exported so other
+// onboarding surfaces (e.g. the Work Board empty state) link to the same
+// place instead of a non-served in-repo markdown path.
+export const DOCS_URL = 'https://docs.github.com/en/developers/webhooks-and-events/webhooks/creating-webhooks'
 
 export function WebhookConnectPanel({ tier }) {
     const { copied, copy } = useCopyToClipboard()
