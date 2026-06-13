@@ -140,6 +140,28 @@ export function decideConflictResolution({ size, defaultBranch, onConflict }) {
 }
 
 /**
+ * Delete a repository on GitHub. Treats 404 as success (already gone) and
+ * maps 403 to an actionable message (orgs can forbid member deletions).
+ * @param {string} owner
+ * @param {string} repo
+ * @param {object} headers - GitHub auth headers
+ */
+export async function deleteGithubRepo(owner, repo, headers) {
+    const res = await fetch(
+        `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
+        { method: 'DELETE', headers },
+    );
+    if (res.status === 204 || res.status === 404) return;
+    if (res.status === 403) {
+        throw new Error(
+            `Could not delete the existing repository "${owner}/${repo}" — the organization may block members from deleting repositories, or your token lacks delete permission on it. Enable "Allow members to delete repositories" in the org settings or delete it manually, then retry.`,
+        );
+    }
+    const body = await res.json().catch(() => null);
+    throw new Error(`Failed to delete existing repository "${owner}/${repo}": ${body?.message || res.status}`);
+}
+
+/**
  * Strip credentials from URL for safe logging
  */
 function safeUrl(url) {
