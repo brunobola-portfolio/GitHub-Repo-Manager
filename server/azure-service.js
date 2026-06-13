@@ -789,7 +789,14 @@ async function getCommitActivity(org, project, repoId, defaultBranch, pat, month
   cutoff.setMonth(cutoff.getMonth() - months)
   const branch = (defaultBranch || '').replace(/^refs\/heads\//, '') || 'main'
   const url = `${orgBaseFor(host, org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/commits?searchCriteria.itemVersion.version=${encodeURIComponent(branch)}&searchCriteria.fromDate=${encodeURIComponent(cutoff.toISOString())}&$top=1000&api-version=${API_VERSION}`
-  const data = await azureFetch(url, pat)
+  // An empty repo (or one whose default branch hasn't been pushed yet) returns
+  // 404 from the commits endpoint because the branch ref doesn't exist. That's
+  // an expected, non-error state for this enrichment call — treat it as "no
+  // activity" rather than surfacing a console 404 to the user.
+  const data = await azureFetch(url, pat).catch((err) => {
+    if (err?.status === 404) return { value: [] }
+    throw err
+  })
   const buckets = {}
   for (const c of data.value || []) {
     const d = new Date(c.author?.date || c.committer?.date)
@@ -830,7 +837,13 @@ async function getRepoFullStats(org, project, repoId, defaultBranch, pat, host =
   const branch = (defaultBranch || '').replace(/^refs\/heads\//, '') || 'main'
   const CAP = 500
   const url = `${orgBaseFor(host, org)}/${encodeURIComponent(project)}/_apis/git/repositories/${encodeURIComponent(repoId)}/commits?searchCriteria.itemVersion.version=${encodeURIComponent(branch)}&$top=${CAP}&api-version=${API_VERSION}`
-  const data = await azureFetch(url, pat)
+  // Empty repos / unpushed default branches 404 here — that's a valid "no
+  // commits yet" state, not a failure. Return zeroed stats so the UI can render
+  // a clean empty state instead of logging a 404.
+  const data = await azureFetch(url, pat).catch((err) => {
+    if (err?.status === 404) return { value: [] }
+    throw err
+  })
   const commits = data.value || []
   const contributors = new Set(commits.map((c) => c.author?.email || c.author?.name).filter(Boolean))
   return {
