@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import ErrorBoundary from './ErrorBoundary'
 import { ViewErrorFallback } from './ui/ViewErrorFallback'
 import { ConfirmModal } from './ui/ConfirmModal'
+import { normalizeTransferModalData } from '../utils/transferModalData'
 
 // Lazy-loaded modal surfaces. Each is code-split so its chunk only loads when
 // the modal first opens; App keeps the open/close state in ModalContext.
@@ -85,11 +86,19 @@ export function ModalSurfaces({
         />
       </ModalWrapper>
 
+      {(() => {
+        // `showTransfer` payloads arrive in three shapes (array, bare repo, or
+        // { repos, action }) depending on the entry-point. Normalize so the
+        // modal always gets an array it can `.map` over — a bare object here
+        // is what threw "repos.map is not a function".
+        const { repos: transferRepos, action: transferAction } = normalizeTransferModalData(getModalData('showTransfer'))
+        return (
       <ModalWrapper viewName="Transfer" onGoHome={() => closeModal('showTransfer')}>
         <TransferModal
           isOpen={modalStates.showTransfer}
           onClose={() => closeModal('showTransfer')}
-          repos={getModalData('showTransfer') || []}
+          repos={transferRepos}
+          initialAction={transferAction}
           orgs={orgs}
           onTransfer={async (repoNames, targetOrg, strategies) => {
             try {
@@ -125,6 +134,8 @@ export function ModalSurfaces({
           isPerforming={isPerforming}
         />
       </ModalWrapper>
+        )
+      })()}
 
       <ConfirmModal
         isOpen={modalStates.showConfirm}

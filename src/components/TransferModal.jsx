@@ -10,6 +10,7 @@ import { ConflictPanel } from './ConflictPanel'
 import { useDebounce } from '../hooks/useDebounce'
 import { API_ENDPOINTS } from '../config'
 import { getCsrfToken } from '../utils/api'
+import { getOrgRepoCount } from '../utils/orgRepoCount'
 
 export function TransferModal({
 	isOpen,
@@ -19,16 +20,23 @@ export function TransferModal({
 	onTransfer,
 	onMirror,
 	isPerforming = false,
-	progress = null
+	progress = null,
+	initialAction = 'transfer' // 'transfer' | 'mirror' — entry-point intent
 }) {
 	const [targetOrg, setTargetOrg] = useState('')
-	const [action, setAction] = useState('transfer') // 'transfer' | 'mirror'
+	const [action, setAction] = useState(initialAction) // 'transfer' | 'mirror'
 	const [formError, setFormError] = useState('')
 	const [conflicts, setConflicts] = useState(null) // null = unchecked, {} = checked
 	const [checkingConflicts, setCheckingConflicts] = useState(false)
 	const [resolutions, setResolutions] = useState({}) // { repoName: { action, newName? } }
 	const [dryRun, setDryRun] = useState(false)
 	const debouncedTargetOrg = useDebounce(targetOrg, 500)
+
+	// The modal stays mounted across open/close, so useState only captures the
+	// first initialAction. Re-sync to the entry-point intent each time it opens
+	// (e.g. "Mirror / Fork" must land on mirror mode even after a prior transfer).
+	/* eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot sync to the entry-point intent on open */
+	useEffect(() => { if (isOpen) setAction(initialAction) }, [isOpen, initialAction])
 
 	// Check conflicts when (debounced) targetOrg / repos / action changes
 	/* eslint-disable react-hooks/set-state-in-effect -- targetOrg/action change drives conflict probe */
@@ -243,7 +251,7 @@ export function TransferModal({
 									<div className="text-left">
 										<div className="font-medium text-slate-900 dark:text-slate-100">{org.login}</div>
 										<div className="text-xs text-slate-500 dark:text-slate-400">
-											{org.public_repos || 0} repos
+											{getOrgRepoCount(org)} repos
 										</div>
 									</div>
 								</button>

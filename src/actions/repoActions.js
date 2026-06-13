@@ -193,11 +193,13 @@ export const repoActions = {
 			confirmText: 'Continue',
 			variant: 'warning',
 		}),
-		run: async (repo, ctx) => ctx.openModalWithData('showTransfer', repo),
+		// The transfer modal works over a list — hand it a one-element array,
+		// never a bare repo (it calls `repos.map`).
+		run: async (repo, ctx) => ctx.openModalWithData('showTransfer', [repo]),
 	},
 
 	// ───── Mutation: mirror ─────
-	/** @unconfirmed-by-design opens a dedicated modal that runs its own confirmation flow */
+	/** @unconfirmed-by-design opens the transfer modal in mirror mode, which runs its own confirmation flow */
 	mirror: {
 		id: 'mirror',
 		label: 'Mirror / Fork',
@@ -206,7 +208,9 @@ export const repoActions = {
 		intent: 'mutation',
 		surfaces: ['contextMenu', 'commandPalette'],
 		triggersRefresh: true,
-		run: async (repo, ctx) => ctx.openModalWithData('showMirror', repo),
+		// There is no standalone mirror modal — mirroring is the transfer
+		// modal's "Mirror" mode. Open it pre-switched to that mode.
+		run: async (repo, ctx) => ctx.openModalWithData('showTransfer', { repos: [repo], action: 'mirror' }),
 	},
 
 	// ───── Mutation: sync ─────
@@ -408,7 +412,9 @@ export const repoActions = {
 			confirmText: 'Continue',
 			variant: 'warning',
 		}),
-		run: async (_repos, ctx) => ctx.openModal('showTransfer'),
+		// Forward the selection — opening with no data would render an empty
+		// modal ("0 repos will be transferred").
+		run: async (repos, ctx) => ctx.openModalWithData('showTransfer', repos),
 	},
 	/** @unconfirmed-by-design opens the migration wizard which has its own multi-step confirmation flow */
 	migrate_selected: {

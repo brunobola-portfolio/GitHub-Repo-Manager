@@ -118,6 +118,55 @@ describe('mutation actions', () => {
 	})
 })
 
+describe('transfer modal entry-points feed the modal an array of repos', () => {
+	// Regression: the single-repo `transfer` action used to pass a bare repo
+	// object, which the modal then tried to `.map()` over → "repos.map is not
+	// a function". Every entry-point must hand the modal an array (or a
+	// {repos,...} payload whose `repos` is an array).
+	const repo = { id: 1, name: 'demo', full_name: 'me/demo', owner: { login: 'me' } }
+
+	function reposFromPayload(data) {
+		if (Array.isArray(data)) return data
+		if (data && Array.isArray(data.repos)) return data.repos
+		return data
+	}
+
+	it('transfer (single, context menu) opens showTransfer with a one-element array', async () => {
+		const calls = []
+		const ctx = { openModalWithData: (key, data) => calls.push([key, data]) }
+		await repoActions.transfer.run(repo, ctx)
+		expect(calls).toHaveLength(1)
+		const [key, data] = calls[0]
+		expect(key).toBe('showTransfer')
+		expect(reposFromPayload(data)).toEqual([repo])
+	})
+
+	it('transfer_selected (batch) forwards the selected repos, not an empty modal', async () => {
+		const calls = []
+		const ctx = {
+			openModal: (key) => calls.push([key, undefined]),
+			openModalWithData: (key, data) => calls.push([key, data]),
+		}
+		const repos = [repo, { ...repo, id: 2, name: 'demo2', full_name: 'me/demo2' }]
+		await repoActions.transfer_selected.run(repos, ctx)
+		expect(calls).toHaveLength(1)
+		const [key, data] = calls[0]
+		expect(key).toBe('showTransfer')
+		expect(reposFromPayload(data)).toEqual(repos)
+	})
+
+	it('mirror opens the existing transfer modal in mirror mode (showMirror does not exist)', async () => {
+		const calls = []
+		const ctx = { openModalWithData: (key, data) => calls.push([key, data]) }
+		await repoActions.mirror.run(repo, ctx)
+		expect(calls).toHaveLength(1)
+		const [key, data] = calls[0]
+		expect(key).toBe('showTransfer')
+		expect(data.action).toBe('mirror')
+		expect(reposFromPayload(data)).toEqual([repo])
+	})
+})
+
 describe('destructive: delete', () => {
 	it('delete is registered with destructive intent', () => {
 		expect(repoActions.delete).toBeDefined()
