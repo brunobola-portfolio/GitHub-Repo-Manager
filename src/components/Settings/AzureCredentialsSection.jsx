@@ -1,11 +1,16 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef, useId } from 'react'
 import {
   KeyRound, Plus, Trash2, Cloud, Server, Eye, EyeOff,
   CheckCircle2, XCircle, ExternalLink, Sparkles, AlertCircle,
+  ShieldCheck, ShieldAlert, Check,
 } from 'lucide-react'
 import { SpinnerIcon } from '../ui/Spinner'
+import AllowlistFixPanel from '../ui/AllowlistFixPanel'
 import { getCsrfToken } from '../../utils/api'
-import { classifyProvider, providerToneClasses, PROVIDERS, buildPatSettingsUrl } from '../../utils/azureProvider'
+import { useHostAllowlist } from '../../hooks/useHostAllowlist'
+import { useToast } from '../../hooks/useToast'
+import { formatDate } from '../../utils/format'
+import { classifyProvider, providerToneClasses, buildPatSettingsUrl } from '../../utils/azureProvider'
 
 /**
  * Settings → Azure Credentials.
@@ -28,8 +33,9 @@ export default function AzureCredentialsSection() {
     setLoading(true); setError('')
     try {
       const res = await fetch('/api/azure/credentials', { credentials: 'include' })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'Failed to load credentials')
+      const data = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`)
+      if (!data) throw new Error('Unexpected response from the server')
       setItems(data.items || [])
     } catch (e) {
       setError(e.message)
@@ -139,14 +145,39 @@ function EmptyState({ onAdd }) {
   )
 }
 
+/** True when a failed test is fixable by adding the host to the allowlist. */
+function isHostNotAllowed(result) {
+  if (!result || result.valid) return false
+  return result.code === 'HOST_NOT_ALLOWED'
+    || /ALLOWED_AZURE_HOSTS|not in allowlist/i.test(result.error || '')
+}
+
 function CredentialRow({ cred, onDeleted, onTested }) {
   const provider = classifyProvider(cred.host)
   const tone = providerToneClasses(provider.tone)
   const Icon = provider.isCloud ? Cloud : Server
+  const { toast } = useToast()
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState(null)
+  const [allowlistInfo, setAllowlistInfo] = useState(null)
+  const dismissTimer = useRef(null)
+  const confirmBtnRef = useRef(null)
+  const deleteBtnRef = useRef(null)
+
+  useEffect(() => () => clearTimeout(dismissTimer.current), [])
+
+  // Keyboard parity for the inline confirm: focus lands on Confirm when it
+  // replaces the trash icon, Escape backs out, focus returns to the trigger.
+  useEffect(() => {
+    if (confirming) confirmBtnRef.current?.focus()
+  }, [confirming])
+
+  const cancelConfirm = useCallback(() => {
+    setConfirming(false)
+    requestAnimationFrame(() => deleteBtnRef.current?.focus())
+  }, [])
 
   const handleDelete = async () => {
     setDeleting(true)
@@ -163,14 +194,15 @@ function CredentialRow({ cred, onDeleted, onTested }) {
       }
       onDeleted(cred.id)
     } catch (e) {
-      alert(e.message)
+      toast.error(e.message)
       setDeleting(false)
       setConfirming(false)
     }
   }
 
   const handleTest = async () => {
-    setTesting(true); setTestResult(null)
+    setTesting(true); setTestResult(null); setAllowlistInfo(null)
+    clearTimeout(dismissTimer.current)
     try {
       const csrf = await getCsrfToken().catch(() => null)
       const res = await fetch(`/api/azure/credentials/${cred.id}/test`, {
@@ -178,14 +210,28 @@ function CredentialRow({ cred, onDeleted, onTested }) {
         credentials: 'include',
         headers: { ...(csrf ? { 'X-CSRF-Token': csrf } : {}) },
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => null)
+      if (!data) throw new Error(`HTTP ${res.status}`)
       setTestResult(data)
       onTested?.(cred.id, data)
+      if (isHostNotAllowed(data)) {
+        // Pull allowlist context so the self-fix panel can offer the
+        // 1-click add (admin) or "ask your admin" guidance (non-admin).
+        const info = await fetch(`/api/azure/host-allowlist?host=${encodeURIComponent(cred.host)}`, { credentials: 'include' })
+          .then((r) => (r.ok ? r.json() : null))
+          .catch(() => null)
+        // If the info fetch fails, still render the panel with conservative
+        // defaults — the "ask your admin" + .env guidance is always valid.
+        setAllowlistInfo(info || { patterns: [], usingDefault: true, canEdit: false })
+      }
+      if (data.valid) {
+        // Successes fade out; failures stay visible so the user can act.
+        dismissTimer.current = setTimeout(() => setTestResult(null), 6000)
+      }
     } catch (e) {
       setTestResult({ valid: false, error: e.message })
     } finally {
       setTesting(false)
-      setTimeout(() => setTestResult(null), 6000)
     }
   }
 
@@ -211,7 +257,7 @@ function CredentialRow({ cred, onDeleted, onTested }) {
             {cred.host}{cred.org ? ` · ${cred.org}` : ''} · {cred.prefix}
           </div>
           <div className="ds-text-meta text-slate-400 dark:text-slate-500 mt-0.5">
-            Created on {formatDate(cred.createdAt)} · {lastUsed}
+            Created on {formatDate(cred.createdAt, { day: '2-digit', month: 'short', year: 'numeric' })} · {lastUsed}
             {cred.scopes && cred.scopes.length > 0 && (
               <> · {cred.scopes.join(', ')}</>
             )}
@@ -242,29 +288,36 @@ function CredentialRow({ cred, onDeleted, onTested }) {
           )}
           {confirming ? (
             <div className="flex items-center gap-1">
+              {/* Cancel first so a rapid double-click on the trash position
+                  lands on Cancel, not Confirm. Escape backs out from either. */}
               <button
                 type="button"
-                onClick={handleDelete}
-                disabled={deleting}
-                className="px-2 py-1 text-xs font-semibold rounded-md bg-red-600 text-white hover:bg-red-700"
-              >
-                {deleting ? '…' : 'Confirm'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirming(false)}
+                onClick={cancelConfirm}
+                onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); cancelConfirm() } }}
                 className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
               >
                 Cancel
               </button>
+              <button
+                ref={confirmBtnRef}
+                type="button"
+                onClick={handleDelete}
+                onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); cancelConfirm() } }}
+                disabled={deleting}
+                aria-label={`Confirm removal of "${cred.label}"`}
+                className="px-2 py-1 text-xs font-semibold rounded-md bg-red-600 text-white hover:bg-red-700"
+              >
+                {deleting ? '…' : 'Confirm'}
+              </button>
             </div>
           ) : (
             <button
+              ref={deleteBtnRef}
               type="button"
               onClick={() => setConfirming(true)}
               className="p-1.5 rounded-md text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-white dark:hover:bg-slate-800 transition-colors"
               title="Remove from the local vault"
-              aria-label="Remove credential"
+              aria-label={`Remove credential "${cred.label}"`}
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -273,6 +326,7 @@ function CredentialRow({ cred, onDeleted, onTested }) {
       </div>
       {testResult && (
         <div
+          role={testResult.valid ? 'status' : 'alert'}
           className={`px-4 py-2 text-xs border-t ${tone.border}
             ${testResult.valid
               ? 'bg-emerald-50/60 dark:bg-emerald-900/15 text-emerald-700 dark:text-emerald-300'
@@ -283,11 +337,30 @@ function CredentialRow({ cred, onDeleted, onTested }) {
             : <>✗ {testResult.error || 'Validation failed'}</>}
         </div>
       )}
+      {isHostNotAllowed(testResult) && allowlistInfo && (
+        <div className={`px-4 pb-4 pt-3 border-t ${tone.border}`}>
+          <AllowlistFixPanel
+            host={cred.host}
+            currentPatterns={allowlistInfo.patterns || []}
+            usingDefault={!!allowlistInfo.usingDefault}
+            canEdit={!!allowlistInfo.canEdit}
+            notes={`Added from Settings · credential "${cred.label}"`}
+            onAdded={() => handleTest()}
+          />
+        </div>
+      )}
     </li>
   )
 }
 
 function AddCredentialForm({ onClose, onCreated }) {
+  const formId = useId()
+  const ids = {
+    label: `${formId}-label`,
+    host: `${formId}-host`,
+    org: `${formId}-org`,
+    pat: `${formId}-pat`,
+  }
   const [label, setLabel] = useState('')
   const [host, setHost] = useState('')
   const [org, setOrg] = useState('')
@@ -299,6 +372,7 @@ function AddCredentialForm({ onClose, onCreated }) {
 
   const provider = classifyProvider(host)
   const tone = providerToneClasses(provider.tone)
+  const allowlist = useHostAllowlist(host)
   const patUrl = host && org ? buildPatSettingsUrl(host, org) : null
   const canSubmit = label.trim() && host.trim() && pat.trim().length >= 20
 
@@ -320,8 +394,8 @@ function AddCredentialForm({ onClose, onCreated }) {
         headers: { 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRF-Token': csrf } : {}) },
         body: JSON.stringify({ label: label.trim(), host: host.trim().toLowerCase(), org: org.trim() || null, pat, scopes: scopeList }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`)
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data) throw new Error(data?.error || `HTTP ${res.status}`)
       onCreated(data)
     } catch (e) {
       setError(e.message)
@@ -350,8 +424,9 @@ function AddCredentialForm({ onClose, onCreated }) {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Field label="Name (for your reference)">
+        <Field label="Name (for your reference)" htmlFor={ids.label}>
           <input
+            id={ids.label}
             type="text"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
@@ -362,8 +437,9 @@ function AddCredentialForm({ onClose, onCreated }) {
           />
         </Field>
 
-        <Field label="Host (without https://)">
+        <Field label="Host (without https://)" htmlFor={ids.host}>
           <input
+            id={ids.host}
             type="text"
             value={host}
             onChange={(e) => setHost(e.target.value)}
@@ -372,15 +448,19 @@ function AddCredentialForm({ onClose, onCreated }) {
             required
           />
           {host && (
-            <div className={`mt-1 ds-text-meta inline-flex items-center gap-1 ${tone.text}`}>
-              {provider.isCloud ? <Cloud className="w-3 h-3" /> : <Server className="w-3 h-3" />}
-              {provider.label}
+            <div className="mt-1 flex items-center gap-2 flex-wrap">
+              <span className={`ds-text-meta inline-flex items-center gap-1 ${tone.text}`}>
+                {provider.isCloud ? <Cloud className="w-3 h-3" /> : <Server className="w-3 h-3" />}
+                {provider.label}
+              </span>
+              <HostAllowlistChip status={allowlist.status} />
             </div>
           )}
         </Field>
 
-        <Field label="Organization / Collection (optional)">
+        <Field label="Organization / Collection (optional)" htmlFor={ids.org}>
           <input
+            id={ids.org}
             type="text"
             value={org}
             onChange={(e) => setOrg(e.target.value)}
@@ -390,8 +470,8 @@ function AddCredentialForm({ onClose, onCreated }) {
           <p className="ds-text-micro text-slate-500 mt-1">Enables the "Test" button and auto-match in the wizard.</p>
         </Field>
 
-        <Field label="Scopes (informativo)">
-          <div className="flex flex-wrap gap-1.5">
+        <Field label="Scopes (informational)">
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Scopes (informational)">
             {[
               { key: 'code', label: 'Code', required: true },
               { key: 'project', label: 'Project & Team', required: true },
@@ -401,18 +481,23 @@ function AddCredentialForm({ onClose, onCreated }) {
               <label
                 key={s.key}
                 className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-md border cursor-pointer transition-colors
+                  focus-within:ring-2 focus-within:ring-indigo-500/70 focus-within:ring-offset-1
                   ${scopes[s.key]
                     ? (s.required ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
                                   : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-700')
                     : 'border-slate-300 dark:border-slate-600 text-slate-500 hover:bg-white dark:hover:bg-slate-800'}`}
               >
+                {/* sr-only (NOT hidden/display:none) keeps the checkbox in the
+                    tab order and accessibility tree. */}
                 <input
                   type="checkbox"
-                  className="hidden"
+                  className="sr-only"
                   checked={scopes[s.key]}
                   onChange={(e) => setScopes((prev) => ({ ...prev, [s.key]: e.target.checked }))}
                 />
-                <span className={`w-1.5 h-1.5 rounded-full ${scopes[s.key] ? (s.required ? 'bg-emerald-500' : 'bg-indigo-500') : 'bg-slate-300'}`} />
+                {scopes[s.key]
+                  ? <Check className={`w-3 h-3 ${s.required ? 'text-emerald-500' : 'text-indigo-500'}`} aria-hidden="true" />
+                  : <span className="w-1.5 h-1.5 rounded-full bg-slate-300" aria-hidden="true" />}
                 {s.label}
               </label>
             ))}
@@ -420,9 +505,10 @@ function AddCredentialForm({ onClose, onCreated }) {
         </Field>
       </div>
 
-      <Field label="Personal Access Token">
+      <Field label="Personal Access Token" htmlFor={ids.pat}>
         <div className="relative">
           <input
+            id={ids.pat}
             type={showPat ? 'text' : 'password'}
             value={pat}
             onChange={(e) => setPat(e.target.value)}
@@ -433,6 +519,8 @@ function AddCredentialForm({ onClose, onCreated }) {
           <button
             type="button"
             onClick={() => setShowPat((v) => !v)}
+            aria-label={showPat ? 'Hide token' : 'Show token'}
+            aria-pressed={showPat}
             className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
           >
             {showPat ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -450,8 +538,21 @@ function AddCredentialForm({ onClose, onCreated }) {
         )}
       </Field>
 
+      {/* Pre-emptive allowlist fix — saving a PAT for a blocked host would
+          only fail later at test/migration time, so surface it here. */}
+      {allowlist.status === 'blocked' && (
+        <AllowlistFixPanel
+          host={host.trim().toLowerCase()}
+          currentPatterns={allowlist.patterns}
+          usingDefault={allowlist.usingDefault}
+          canEdit={allowlist.canEdit}
+          notes="Added from Settings · new PAT form"
+          onAdded={() => allowlist.refresh()}
+        />
+      )}
+
       {error && (
-        <div className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1.5">
+        <div role="alert" className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1.5">
           <AlertCircle className="w-3.5 h-3.5" /> {error}
         </div>
       )}
@@ -478,20 +579,39 @@ function AddCredentialForm({ onClose, onCreated }) {
   )
 }
 
-function Field({ label, children }) {
+/** Live allowlist status next to the host field — green / amber / spinner. */
+function HostAllowlistChip({ status }) {
+  if (status === 'checking') {
+    return (
+      <span role="status" className="ds-text-meta inline-flex items-center gap-1 text-slate-400 dark:text-slate-500">
+        <SpinnerIcon className="w-3 h-3" /> checking allowlist…
+      </span>
+    )
+  }
+  if (status === 'allowed') {
+    return (
+      <span role="status" className="ds-text-meta inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+        <ShieldCheck className="w-3 h-3" /> authorized host
+      </span>
+    )
+  }
+  if (status === 'blocked') {
+    return (
+      <span role="status" className="ds-text-meta inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
+        <ShieldAlert className="w-3 h-3" /> not in the allowlist
+      </span>
+    )
+  }
+  return null
+}
+
+function Field({ label, htmlFor, children }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">{label}</label>
+      <label htmlFor={htmlFor} className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">{label}</label>
       {children}
     </div>
   )
-}
-
-function formatDate(iso) {
-  if (!iso) return ''
-  try {
-    return new Date(iso).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })
-  } catch { return iso }
 }
 
 function formatRelative(iso) {

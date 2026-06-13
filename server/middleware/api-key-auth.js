@@ -89,6 +89,18 @@ export function apiKeyAuth(req, res, next) {
         req.scopes = [];
     }
 
+    // Central write-scope gate for API keys: any mutating request must carry
+    // the `write` (or `admin`) scope. Enforced here — inside the single
+    // entry point every API-key request flows through — so a read-scoped key
+    // can't mutate ANY route, without annotating each one. Session/cookie
+    // users never reach this branch (requireAuth only calls apiKeyAuth for
+    // grm_live_ bearers), so the UI is unaffected.
+    const MUTATION = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+    if (MUTATION.has(req.method) && !(req.scopes.includes('write') || req.scopes.includes('admin'))) {
+        logger.warn({ ip: getClientIp(req), keyId: row.id, method: req.method }, 'API key auth failed: write scope required');
+        return res.status(403).json({ error: 'This API key lacks the required "write" scope', required: 'write' });
+    }
+
     // Update last_used_at with IP and User-Agent (synchronous — better-sqlite3 blocks)
     const ip = getClientIp(req);
     const ua = (req.headers['user-agent'] || '').slice(0, 255);

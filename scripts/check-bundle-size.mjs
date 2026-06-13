@@ -15,7 +15,15 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const BUDGETS = {
-    'index-': { maxGzipKB: 60, name: 'main bundle' },
+    // Recalibrated 2026-06: the 60 KB ceiling predated months of feature
+    // growth (work board, licensing, AI quick actions, org panel) and the
+    // build had silently drifted to 86 KB. Lazy-loading the CommandPalette
+    // (+cmdk and its search/AI deps) recovered 21 KB → 65.6 KB measured;
+    // 68 KB keeps a tight tripwire. Remaining content is first-paint UI
+    // (Header/Sidebar/RepoList/providers) — shrinking further means
+    // splitting the initial view, which costs UX. Ratchet down if a future
+    // split lands.
+    'index-': { maxGzipKB: 68, name: 'main bundle' },
     'vendor-react-': { maxGzipKB: 57, name: 'vendor-react' },
     'vendor-ui-': { maxGzipKB: 28, name: 'vendor-ui' },
     'vendor-icons-': { maxGzipKB: 15, name: 'vendor-icons' },

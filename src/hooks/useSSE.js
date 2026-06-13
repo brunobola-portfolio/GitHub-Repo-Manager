@@ -15,6 +15,12 @@ export function useSSE(url) {
   const reconnectAttemptRef = useRef(0)
   const eventSourceRef = useRef(null)
   const connectRef = useRef(null)
+  // Monotonic sequence stamped on every event. The events array is a sliding
+  // window capped at 100, so consumers MUST NOT use array length/index as a
+  // cursor — once the window is full the length pins at 100 and length-based
+  // consumers stop seeing new events (migrations emit 100+). `seq` always
+  // increases, so a consumer can track "last seq processed" reliably.
+  const seqRef = useRef(0)
 
   // Update URL ref on every render - moved to effect for React 19 compliance
   useLayoutEffect(() => {
@@ -69,8 +75,11 @@ export function useSSE(url) {
       es.addEventListener(type, (e) => {
         try {
           const data = JSON.parse(e.data)
+          // Stamp seq OUTSIDE the updater — the listener runs once per real
+          // event, whereas a setState updater can re-run under StrictMode.
+          const seq = ++seqRef.current
           setEvents(prev => {
-            const updated = [...prev, { type, data, id: e.lastEventId }]
+            const updated = [...prev, { type, data, id: e.lastEventId, seq }]
             return updated.length > 100 ? updated.slice(-100) : updated
           })
           if (type === 'catch-up') setLastPlanState(data)

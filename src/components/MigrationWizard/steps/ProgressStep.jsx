@@ -176,14 +176,17 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, o
     return () => { cancelled = true }
   }, [planId])
 
-  // Process SSE events — track how many we've consumed so we process ALL new events
-  const processedCountRef = useRef(0)
+  // Process SSE events by monotonic sequence — NOT array length. useSSE caps
+  // its buffer at a 100-item sliding window, so length pins at 100 once full;
+  // a length cursor would then skip every further event and freeze the UI
+  // mid-migration (real TFVC conversions emit 100+ events). Tracking the last
+  // processed seq survives the window sliding.
+  const lastSeqRef = useRef(0)
 
   useEffect(() => {
-    if (events.length <= processedCountRef.current) return
-
-    const newEvents = events.slice(processedCountRef.current)
-    processedCountRef.current = events.length
+    const newEvents = events.filter(e => (e.seq ?? 0) > lastSeqRef.current)
+    if (newEvents.length === 0) return
+    lastSeqRef.current = newEvents.reduce((max, e) => Math.max(max, e.seq ?? 0), lastSeqRef.current)
 
     for (const evt of newEvents) {
       const { type, data } = evt

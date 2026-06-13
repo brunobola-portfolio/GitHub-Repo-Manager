@@ -34,6 +34,10 @@ vi.mock('../import-service.js', () => ({
 const githubApi = vi.fn();
 vi.mock('../lib/github-api.js', () => ({ githubApi }));
 
+// githubApi() resolves { data, headers } — mirror that real shape so these
+// tests can't pass against a route that incorrectly reads off the wrapper.
+const ghOk = (data) => ({ data, headers: new Map() });
+
 function makeApp(router) {
     const app = express();
     app.use(express.json());
@@ -54,7 +58,7 @@ describe('POST /api/import/check-duplicates', () => {
     });
 
     it('treats an existing empty repo as NOT a duplicate (size=0, no default branch)', async () => {
-        githubApi.mockResolvedValueOnce({ size: 0, default_branch: null, html_url: 'https://github.com/acme/empty-repo' });
+        githubApi.mockResolvedValueOnce(ghOk({ size: 0, default_branch: null, html_url: 'https://github.com/acme/empty-repo' }));
         const res = await request(app)
             .post('/api/import/check-duplicates')
             .send({ targetOwner: 'acme', repos: ['empty-repo'] });
@@ -69,7 +73,7 @@ describe('POST /api/import/check-duplicates', () => {
     });
 
     it('treats an existing populated repo as a duplicate (size>0 or default branch set)', async () => {
-        githubApi.mockResolvedValueOnce({ size: 1024, default_branch: 'main', html_url: 'https://github.com/acme/busy-repo' });
+        githubApi.mockResolvedValueOnce(ghOk({ size: 1024, default_branch: 'main', html_url: 'https://github.com/acme/busy-repo' }));
         const res = await request(app)
             .post('/api/import/check-duplicates')
             .send({ targetOwner: 'acme', repos: ['busy-repo'] });
@@ -93,8 +97,8 @@ describe('POST /api/import/check-duplicates', () => {
 
     it('handles a batch of mixed states in a single request', async () => {
         githubApi
-            .mockResolvedValueOnce({ size: 0, default_branch: null })  // empty
-            .mockResolvedValueOnce({ size: 50, default_branch: 'main' })  // populated
+            .mockResolvedValueOnce(ghOk({ size: 0, default_branch: null }))  // empty
+            .mockResolvedValueOnce(ghOk({ size: 50, default_branch: 'main' }))  // populated
             .mockRejectedValueOnce(new Error('Not Found'));  // missing
         const res = await request(app)
             .post('/api/import/check-duplicates')
@@ -105,8 +109,8 @@ describe('POST /api/import/check-duplicates', () => {
     it('falls back to the authenticated user login when targetOwner is omitted', async () => {
         // /user returns the login; then /repos/<login>/<name> is consulted.
         githubApi
-            .mockResolvedValueOnce({ login: 'authuser' })  // /user
-            .mockResolvedValueOnce({ size: 0, default_branch: null });  // /repos/authuser/foo
+            .mockResolvedValueOnce(ghOk({ login: 'authuser' }))  // /user
+            .mockResolvedValueOnce(ghOk({ size: 0, default_branch: null }));  // /repos/authuser/foo
         const res = await request(app)
             .post('/api/import/check-duplicates')
             .send({ repos: ['foo'] });
@@ -129,7 +133,7 @@ describe('POST /api/import/check-duplicates', () => {
     it('guards against a stale size=0 read by also requiring no default_branch', async () => {
         // Edge case: an old repo with size=0 in the API response but an
         // actual default_branch set — should still be treated as populated.
-        githubApi.mockResolvedValueOnce({ size: 0, default_branch: 'main' });
+        githubApi.mockResolvedValueOnce(ghOk({ size: 0, default_branch: 'main' }));
         const res = await request(app)
             .post('/api/import/check-duplicates')
             .send({ targetOwner: 'acme', repos: ['stale'] });

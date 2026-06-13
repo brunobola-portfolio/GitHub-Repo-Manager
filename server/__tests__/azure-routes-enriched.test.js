@@ -34,12 +34,12 @@ describe('activity route', () => {
 
   it('delegates to azure-service and returns results', async () => {
     vi.spyOn(azureService, 'listRepoActivity').mockResolvedValue({ r1: { lastCommitDate: '2026-01-01T00:00:00Z' } })
-    vi.spyOn(azureService, 'resolvePat').mockReturnValue('PAT')
     const app = express()
     app.use(express.json())
     app.use('/api', azureRoutes)
+    // Pasted `pat` exercises the shared lib/pat-resolver.js path for real.
     const res = await request(app).post('/api/azure/repos/activity').send({
-      org: 'o', project: 'p', repos: [{ id: 'r1', defaultBranch: 'refs/heads/main' }],
+      org: 'o', project: 'p', pat: 'PAT', repos: [{ id: 'r1', defaultBranch: 'refs/heads/main' }],
     })
     expect(res.status).toBe(200)
     expect(res.body.activity.r1.lastCommitDate).toBe('2026-01-01T00:00:00Z')

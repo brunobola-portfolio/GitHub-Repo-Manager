@@ -226,6 +226,30 @@ describe('azure-host-validator', () => {
       const result = await validateAzureHost('attacker.example.com');
       expect(result.ok).toBe(false);
       expect(result.reason).toMatch(/ALLOWED_AZURE_HOSTS/);
+      // Structured code lets the UI offer the allowlist self-fix panel.
+      expect(result.code).toBe('HOST_NOT_ALLOWED');
+    });
+
+    it('rejects userinfo smuggling: allowed-host@attacker must not pass', async () => {
+      // `dev.azure.com:0@169.254.169.254` would split-on-":" to an allowed
+      // hostname while `https://${host}` actually contacts 169.254.169.254.
+      const smuggled = [
+        'dev.azure.com:0@169.254.169.254',
+        'dev.azure.com@evil.test',
+        'dev.azure.com/..',
+        'dev.azure.com#x',
+        'dev.azure.com?x=1',
+        'dev azure.com',
+      ];
+      for (const host of smuggled) {
+        expect(isAllowedHost(host)).toBe(false);
+        const result = await validateAzureHost(host);
+        expect(result.ok).toBe(false);
+        expect(() => resolveAzureBaseUrl(host)).toThrow();
+      }
+      // Sanity: the legitimate forms still pass shape validation.
+      expect(isAllowedHost('dev.azure.com')).toBe(true);
+      expect(resolveAzureBaseUrl('tfs.trigenius.com:8080')).toBe('https://tfs.trigenius.com:8080');
     });
 
     it('DB entries union with env patterns', () => {

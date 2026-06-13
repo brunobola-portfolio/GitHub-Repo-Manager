@@ -13,7 +13,7 @@
  *   useAI    - AI chat, suggestions, README generation
  *
  * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
- * Licensed under the MIT License. See LICENSE in the project root.
+ * Licensed under the GNU AGPL v3.0 only (SPDX: AGPL-3.0-only). See LICENSE in the project root.
  */
 
 import { useCallback } from 'react'

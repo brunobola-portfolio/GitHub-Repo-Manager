@@ -34,7 +34,11 @@ export default defineConfig({
 
   // Parallelize on CI. workers=1 was forcing serial execution (~28min suite).
   // Two workers completes the suite in ~half the time; requests are idempotent.
-  workers: process.env.CI ? 2 : undefined,
+  // Locally, `undefined` meant one worker PER CORE — a dozen Chromium
+  // instances saturating the machine and producing a different random
+  // timeout flake on each full run (dashboard nav, settings panel, …).
+  // Four workers keeps the suite fast (~2 min) without the starvation.
+  workers: process.env.CI ? 2 : 4,
 
   // Reporter to use
   reporter: [

@@ -1,11 +1,27 @@
 // @vitest-environment node
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+import express from 'express'
+import session from 'express-session'
+import request from 'supertest'
 
 // Mock config so we can control nodeEnv per test
 vi.mock('../config.js', () => {
     const cfg = { nodeEnv: 'development' }
     return { config: cfg, default: cfg, __mockConfig: cfg }
 })
+
+// Mocks needed by routes/auth.js (OAuth callback fail-closed tests below).
+// The fail-closed paths return before any DB write, so a no-op db is enough.
+vi.mock('../db.js', () => ({
+    default: {
+        prepare: () => ({ run: () => {}, get: () => null, all: () => [] }),
+    },
+}))
+vi.mock('../lib/audit.js', () => ({ auditLog: () => {} }))
+vi.mock('../middleware/tenant-rate-limit.js', () => ({
+    // Passthrough — rate limiting isn't exercised here.
+    createAuthRouteLimiter: () => (_req, _res, next) => next(),
+}))
 
 import { __mockConfig as mockConfig } from '../config.js'
 import {
@@ -16,6 +32,7 @@ import {
     requireAuth,
     createRequireAI
 } from '../middleware/auth.js'
+import authRouter from '../routes/auth.js'
 
 describe('isValidGitHubUsername', () => {
     it('accepts valid usernames', () => {
@@ -265,5 +282,126 @@ describe('createRequireAI middleware (BYOK-aware)', () => {
 
         await middleware(req, res, next)
         expect(next).toHaveBeenCalled()
+    })
+})
+
+// ── GitHub OAuth /callback — fail-closed on unidentifiable user ─────────
+// routes/auth.js: if the GitHub /user fetch returns !ok, OR returns ok but
+// the body has no id, the handler must redirect to
+// `${FRONTEND_URL}?error=auth_failed` and must NOT establish an
+// authenticated session carrying accessToken. Previously a failed /user
+// fetch fell through and saved a session with accessToken but no userId,
+// which requireAuth (accessToken-only) treated as logged in.
+describe('GitHub OAuth /callback fail-closed', () => {
+    const FRONTEND_URL = 'http://localhost:5173'
+    const OAUTH_STATE = 'fixed-state-token-for-test'
+    const originalFetch = global.fetch
+    const savedEnv = {}
+
+    function buildApp() {
+        const app = express()
+        app.use(express.json())
+        app.use(session({
+            secret: 'test-secret',
+            resave: false,
+            saveUninitialized: true, // allow the empty session to persist a cookie
+            cookie: { secure: false, httpOnly: true, sameSite: 'lax' },
+        }))
+        // routes/auth.js calls req.log.error(...) on the fail-closed paths.
+        app.use((req, _res, next) => {
+            req.log = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
+            next()
+        })
+        // Seed the OAuth state into the session so /callback's timing-safe
+        // state check passes (we can't run the real /login redirect here).
+        app.post('/__seed-state', (req, res) => {
+            req.session.oauthState = OAUTH_STATE
+            req.session.save(() => res.json({ ok: true }))
+        })
+        app.use('/api/auth', authRouter)
+        return app
+    }
+
+    beforeEach(() => {
+        for (const k of ['GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET', 'FRONTEND_URL']) {
+            savedEnv[k] = process.env[k]
+        }
+        process.env.GITHUB_CLIENT_ID = 'test-client-id'
+        process.env.GITHUB_CLIENT_SECRET = 'test-client-secret'
+        process.env.FRONTEND_URL = FRONTEND_URL
+    })
+
+    afterEach(() => {
+        global.fetch = originalFetch
+        for (const k of ['GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET', 'FRONTEND_URL']) {
+            if (savedEnv[k] === undefined) delete process.env[k]
+            else process.env[k] = savedEnv[k]
+        }
+    })
+
+    // Token exchange succeeds; the subsequent /user fetch returns a JSON body.
+    function mockFetch({ userOk, userBody }) {
+        global.fetch = vi.fn(async (url) => {
+            if (typeof url === 'string' && url.includes('login/oauth/access_token')) {
+                return {
+                    ok: true,
+                    json: async () => ({ access_token: 'ghp_exchanged_token' }),
+                }
+            }
+            // https://api.github.com/user
+            return {
+                ok: userOk,
+                status: userOk ? 200 : 401,
+                json: async () => userBody,
+            }
+        })
+    }
+
+    it('(a) /user responds 401/!ok → redirect to error=auth_failed, no session established', async () => {
+        mockFetch({ userOk: false, userBody: { message: 'Bad credentials' } })
+        const agent = request.agent(buildApp())
+        await agent.post('/__seed-state')
+
+        const res = await agent
+            .get('/api/auth/callback')
+            .query({ code: 'abc123', state: OAUTH_STATE })
+        // Redirect must be the auth_failed URL, NOT the success FRONTEND_URL.
+        expect(res.status).toBe(302)
+        expect(res.headers.location).toBe(`${FRONTEND_URL}?error=auth_failed`)
+        expect(res.headers.location).not.toBe(FRONTEND_URL)
+
+        // No authenticated session: a follow-up /session must report 401.
+        const sessionRes = await agent.get('/api/auth/session')
+        expect(sessionRes.status).toBe(401)
+        expect(sessionRes.body).toEqual({ authenticated: false })
+    })
+
+    it('(b) /user ok but JSON has no id → redirect to error=auth_failed, no session established', async () => {
+        mockFetch({ userOk: true, userBody: { login: 'octocat' /* no id */ } })
+        const agent = request.agent(buildApp())
+        await agent.post('/__seed-state')
+
+        const res = await agent
+            .get('/api/auth/callback')
+            .query({ code: 'abc123', state: OAUTH_STATE })
+        expect(res.status).toBe(302)
+        expect(res.headers.location).toBe(`${FRONTEND_URL}?error=auth_failed`)
+        expect(res.headers.location).not.toBe(FRONTEND_URL)
+
+        const sessionRes = await agent.get('/api/auth/session')
+        expect(sessionRes.status).toBe(401)
+        expect(sessionRes.body).toEqual({ authenticated: false })
+    })
+
+    it('control: /user ok WITH id → redirects to success FRONTEND_URL (sanity check the harness)', async () => {
+        mockFetch({ userOk: true, userBody: { id: 12345, login: 'octocat', avatar_url: 'x' } })
+        const agent = request.agent(buildApp())
+        await agent.post('/__seed-state')
+
+        const res = await agent
+            .get('/api/auth/callback')
+            .query({ code: 'abc123', state: OAUTH_STATE })
+        expect(res.status).toBe(302)
+        expect(res.headers.location).toBe(FRONTEND_URL)
     })
 })

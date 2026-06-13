@@ -69,4 +69,48 @@ describe('useSystemHealth', () => {
     })
     expect(result.current.checks).toEqual({})
   })
+
+  it('starts as pending (no indicator) until the first probe completes', async () => {
+    let resolveFetch
+    global.fetch.mockReturnValueOnce(new Promise((resolve) => { resolveFetch = resolve }))
+
+    const { result } = renderHook(() => useSystemHealth())
+    expect(result.current.status).toBe('pending')
+
+    resolveFetch({
+      ok: true,
+      status: 200,
+      json: async () => ({ status: 'ready', checks: { db: 'ok', session: 'ok' } }),
+    })
+    await waitFor(() => {
+      expect(result.current.status).toBe('ready')
+    })
+  })
+
+  it('schedules a fast retry (not the 60s poll) after an unknown result', async () => {
+    vi.useFakeTimers()
+    try {
+      global.fetch
+        .mockRejectedValueOnce(new Error('Network down'))
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          json: async () => ({ status: 'ready', checks: { db: 'ok' } }),
+        })
+
+      const { result } = renderHook(() => useSystemHealth())
+      await vi.waitFor(() => {
+        expect(result.current.status).toBe('unknown')
+      })
+
+      // First backoff step is 5s — well before the 60s poll interval.
+      await vi.advanceTimersByTimeAsync(5_000)
+      await vi.waitFor(() => {
+        expect(result.current.status).toBe('ready')
+      })
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })

@@ -334,7 +334,9 @@ function SectionHeader({ icon: Icon, iconClassName = '', label }) {
 function VisibilityToggleButton({ active, onClick, children }) {
     return (
         <button
+            type="button"
             onClick={onClick}
+            aria-pressed={active}
             className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                 active
                     ? 'bg-white dark:bg-slate-600 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] shadow-sm'

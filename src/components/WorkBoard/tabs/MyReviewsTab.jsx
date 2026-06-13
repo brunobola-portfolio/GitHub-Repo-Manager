@@ -67,7 +67,7 @@ function ChipStrip({ review, hasAI, onSnooze, onPing }) {
 // ReviewRow
 // ---------------------------------------------------------------------------
 
-function ReviewRow({ review, isFocused, onFocus, hasAI, onSnooze, onRequestChanges, onOpenDraftModal }) {
+function ReviewRow({ review, isFocused, onFocus, hasAI, onApprove, onSnooze, onRequestChanges, onOpenDraftModal }) {
     const [hovered, setHovered] = useState(false)
     const hoverTimer = useRef(null)
     const showChips = hovered || isFocused
@@ -117,7 +117,7 @@ function ReviewRow({ review, isFocused, onFocus, hasAI, onSnooze, onRequestChang
                         {ageLabel(review.ageHours)}
                     </div>
                     <InlineActions
-                        onApprove={() => {}}
+                        onApprove={() => onApprove(review)}
                         onRequestChanges={() => onOpenDraftModal(review)}
                         onSnooze={(hours) => onSnooze(review, hours)}
                     />
@@ -299,6 +299,7 @@ export function MyReviewsTab({ hasAI = false }) {
                         isFocused={focusedIndex === idx}
                         onFocus={() => setFocusedIndex(idx)}
                         hasAI={hasAI}
+                        onApprove={(review) => actions.approve({ repoFullName: review.repoFullName, prNumber: review.prNumber })}
                         onSnooze={(review, hours) => actions.snooze({ repoFullName: review.repoFullName, prNumber: review.prNumber, hours })}
                         onRequestChanges={(review, body) => actions.requestChanges({ repoFullName: review.repoFullName, prNumber: review.prNumber, body })}
                         onOpenDraftModal={(review) => setDraftModal({ review, intent: 'request_changes' })}

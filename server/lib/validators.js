@@ -139,6 +139,62 @@ export const azureImportBatchSchema = z.object({
     })).min(1).max(20),
 });
 
+// `hostname[:port]` — the deep allowlist/SSRF validation runs in
+// azure-host-validator; this only bounds shape and length at the edge.
+const azureHostSchema = z.string().max(253)
+    .regex(/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?(:[0-9]{1,5})?$/i, 'must be a hostname (optionally with :port)');
+
+const tfvcPathSchema = z.string().min(2).max(400)
+    .refine((p) => p.startsWith('$/'), { message: 'TFVC path must start with $/' });
+
+// MUST match the camelCase keys of pickStrategies() in routes/import/azure/tfvc.js
+// — kebab-case here would 400 the real values and let the admin force-strategy
+// escape hatch silently fall through to the full cascade.
+const tfvcStrategySchema = z.enum(['importApi', 'gitTfs', 'snapshot']);
+
+export const azureTfvcImportSchema = z.object({
+    azureHost: azureHostSchema.optional(),
+    azureOrg: z.string().min(1).max(200),
+    azureProject: z.string().min(1).max(200),
+    tfvcPath: tfvcPathSchema,
+    azurePat: z.string().min(1).max(500).optional(),
+    savedCredentialId: z.union([z.number(), z.string().max(20)]).optional(),
+    targetOrg: orgNameSchema.optional(),
+    targetName: repoNameSchema.optional(),
+    makePrivate: z.boolean().optional(),
+    description: z.string().max(500).optional(),
+    importHistory: z.boolean().optional(),
+    forceStrategy: tfvcStrategySchema.optional(),
+});
+
+export const azureTfvcBatchSchema = z.object({
+    azureHost: azureHostSchema.optional(),
+    azureOrg: z.string().min(1).max(200),
+    azureProject: z.string().min(1).max(200),
+    azurePat: z.string().min(1).max(500).optional(),
+    savedCredentialId: z.union([z.number(), z.string().max(20)]).optional(),
+    targetOrg: orgNameSchema.optional(),
+    makePrivate: z.boolean().optional(),
+    importHistory: z.boolean().optional(),
+    items: z.array(z.object({
+        tfvcPath: tfvcPathSchema,
+        targetName: z.string().min(1).max(100).optional(),
+    })).min(1).max(20),
+});
+
+export const azureTfvcInPlaceSchema = z.object({
+    azureHost: azureHostSchema.optional(),
+    azureOrg: z.string().min(1).max(200),
+    azureProject: z.string().min(1).max(200),
+    tfvcPath: tfvcPathSchema,
+    azurePat: z.string().min(1).max(500).optional(),
+    savedCredentialId: z.union([z.number(), z.string().max(20)]).optional(),
+    targetRepoName: z.string().min(1).max(100).optional(),
+    targetProject: z.string().min(1).max(200).optional(),
+    existingRepoId: z.string().min(1).max(100).optional(),
+    importHistory: z.boolean().optional(),
+});
+
 export const aiChatSchema = z.object({
     message: z.string().min(1).max(10000),
     context: z.record(z.string(), z.unknown()).optional(),

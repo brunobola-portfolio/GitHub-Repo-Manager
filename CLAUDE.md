@@ -15,7 +15,7 @@
 - Always read files before editing
 
 ## Architecture
-- Frontend: React 19 + Vite 7 + Tailwind CSS v4
+- Frontend: React 19 + Vite 8 + Tailwind CSS v4
 - Backend: Express + better-sqlite3 (port 3001, proxied through Vite)
 - Dark mode: `.dark` class on `<html>` with `@custom-variant dark`
 - Entry: `src/main.jsx` -> `index.css`, `design-system.css`, `App.jsx`

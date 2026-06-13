@@ -751,7 +751,9 @@ function SystemHealthIndicator() {
         return () => document.removeEventListener('mousedown', onClick)
     }, [open])
 
-    if (status === 'ready') return null
+    // 'pending' = first probe still in flight — showing the grey "unknown"
+    // dot during every app load would be noise, not signal.
+    if (status === 'ready' || status === 'pending') return null
 
     const isDegraded = status === 'degraded'
     const dotClass = isDegraded

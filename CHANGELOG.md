@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.4.0] - 2026-06-13
+
+Azure DevOps / TFS credential hardening plus a production-readiness pass that
+closed a boot-stopping deployment bug and a login DoS surfaced by a full
+multi-dimension audit.
+
+### Added
+
+- **Self-fix host allowlist UX** — when a saved Azure/TFS credential or the
+  migration wizard hits a host that isn't authorized, a panel offers admins a
+  1-click add (no restart, audited) and non-admins the exact host + `.env`
+  guidance. New shared `useHostAllowlist` hook + `AllowlistFixPanel`.
+- Live host-allowlist status in Settings → Azure Credentials while typing a host.
+- Structured `HOST_NOT_ALLOWED` / `UNSAFE_URL` / `PRIVATE_ADDRESS` codes from the
+  host validator so the UI can act instead of showing a dead-end string.
+- README / AI / PR / issue markdown now renders styled prose (`@tailwindcss/typography`).
+
+### Security
+
+- **SSRF: userinfo smuggling blocked** — a strict host-shape gate stops
+  `dev.azure.com:0@attacker` from passing the allowlist while the request
+  (PAT included) was routed to the smuggled host.
+- **DNS-rebinding guard** now validates every resolved A/AAAA record incl. IPv6
+  private/loopback/link-local/mapped ranges (was IPv4-first-record only).
+- Allowlist entry details (internal hostnames, notes, admin usernames) are
+  admin-only; non-admins see guidance, not the list.
+- Credential-vault KDF versioned to PBKDF2-SHA512 @ 210k (OWASP); legacy v1
+  blobs still decrypt.
+- API keys: CSRF correctly bypassed for `Bearer grm_live_` requests (header
+  auth is CSRF-immune) **and** a central write-scope gate blocks read-only keys
+  from any mutation — making the documented write/admin scopes usable + safe.
+- OAuth `/callback` fails closed: no half-authenticated session is saved when
+  the GitHub `/user` fetch fails or returns no id.
+- 21 source files relicensed from stray MIT headers to AGPL-3.0-only.
+
+### Fixed
+
+- **CRITICAL: production server could not boot** — Express 5 / path-to-regexp v8
+  rejected the bare `app.get('*')` SPA fallback (`Missing parameter name`);
+  switched to the named splat `'/{*splat}'`.
+- **Login DoS** — the rate limiter passed the whole `req` to `ipKeyGenerator`,
+  collapsing every client into one shared bucket; now keyed on `req.ip`.
+- Migration progress UI froze after 100 SSE events (length cursor vs sliding
+  window) — now consumed by a monotonic sequence number.
+- Import duplicate-detection read the wrong shape off the `githubApi()` wrapper.
+- Work Board "Approve" was a no-op — wired to the working review action.
+- TFVC `forceStrategy` enum mismatch (kebab vs camelCase) and ignored
+  `savedCredentialId`; TFVC routes gained schema validation, a shared PAT
+  resolver, a bounded folder-size fan-out, and a canonical temp dir.
+
+### Changed
+
+- Lazy-loaded the command palette out of the entry chunk (main bundle 86 → 66 KB gzip).
+- System-health indicator no longer flashes "unknown" on load and retries with backoff.
+
 ## [4.3.0] - 2026-05-18
 
 A **premium-through-restraint** release. The visual language pivots from
@@ -1760,7 +1815,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.0.0...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.4.0...HEAD
+[4.4.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.3.0...v4.4.0
 [4.0.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.8.0...v4.0.0
 [3.8.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.7.2...v3.8.0
 [3.7.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.7.1...v3.7.2

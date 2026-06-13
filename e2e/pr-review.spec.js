@@ -211,9 +211,11 @@ test.describe('PR Review view', () => {
         // Escape calls onBack -> setReviewingPR(null), setActiveView('repo-detail')
         await page.keyboard.press('Escape')
 
-        // The Pull Requests tab of RepoDetail should be visible again
+        // The Pull Requests tab of RepoDetail should be visible again. RepoDetail
+        // is lazy-loaded and re-mounts on back-nav, so use the same 15s budget
+        // the lazy-view assertions above use — 10s flapped under load.
         await expect(page.getByRole('tab', { name: /pull requests/i }))
-            .toBeVisible({ timeout: 10000 })
+            .toBeVisible({ timeout: 15000 })
     })
 
     test('breadcrumb back link returns to the repo detail view', async ({ page }) => {
@@ -225,16 +227,20 @@ test.describe('PR Review view', () => {
         await expect(page.getByRole('navigation', { name: /breadcrumb/i }))
             .toBeVisible()
 
-        // Click the "Pull Requests" crumb — it's a button with onClick=onBack.
-        // CI runners flap on the actionability heuristic; calling the DOM
-        // .click() in the page context fires a bubbling MouseEvent that
-        // React's delegated onClick handles, with no actionability gate.
-        await page.evaluate(() => {
-            const btn = [...document.querySelectorAll('button')].find(b => (b.textContent || '').trim() === 'Pull Requests')
-            btn?.click()
-        })
+        // Click the "Pull Requests" crumb (a button with onClick=onBack),
+        // scoped to the breadcrumb nav so it can't match anything else. A
+        // proper locator click auto-waits for actionability and RETRIES —
+        // the previous page.evaluate `btn?.click()` silently no-op'd whenever
+        // the button wasn't ready yet, leaving the test to time out.
+        const backCrumb = page
+            .getByRole('navigation', { name: /breadcrumb/i })
+            .getByRole('button', { name: 'Pull Requests', exact: true })
+        await expect(backCrumb).toBeVisible()
+        await backCrumb.click()
 
+        // RepoDetail is lazy-loaded and re-mounts on back-nav — match the 15s
+        // budget the lazy-view assertions above use (10s flapped under load).
         await expect(page.getByRole('tab', { name: /pull requests/i }))
-            .toBeVisible({ timeout: 10000 })
+            .toBeVisible({ timeout: 15000 })
     })
 })

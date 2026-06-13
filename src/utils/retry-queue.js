@@ -3,7 +3,7 @@
  * Offline mutation retry queue
  *
  * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
- * Licensed under the MIT License. See LICENSE in the project root.
+ * Licensed under the GNU AGPL v3.0 only (SPDX: AGPL-3.0-only). See LICENSE in the project root.
  *
  * Captures failed mutations (POST/PUT/PATCH/DELETE) that failed due to
  * network errors while the browser is offline or the backend is

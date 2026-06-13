@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Typography plugin (Tailwind v4 loads plugins from CSS, not the JS config).
+ * Powers the `prose` classes used to render GitHub READMEs, AI chat answers,
+ * and PR/issue markdown — without it those classes are silent no-ops and the
+ * content renders as flat, unstyled text under v4's preflight resets. */
+@plugin "@tailwindcss/typography";
+
 /* Make Tailwind's `dark:` variant follow the `.dark` class on <html> (Tailwind v4) */
 @custom-variant dark (&:where(.dark, .dark *));
 

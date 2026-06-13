@@ -21,7 +21,11 @@ import {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const TMP_DIR = join(__dirname, 'data', 'tmp');
+// Canonical temp root for ALL import workdirs (git clones, git-tfs, TFVC
+// snapshots). Exported so route-level strategies don't re-derive it with
+// their own __dirname arithmetic — that's how multi-GB clones ended up
+// inside server/routes/ once already.
+export const TMP_DIR = join(__dirname, 'data', 'tmp');
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 // Ensure tmp dir exists

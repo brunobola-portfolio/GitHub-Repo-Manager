@@ -5,23 +5,26 @@ test.describe('Dashboard & Navigation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
     // Wait for app to fully load in mock mode
-    await expect(page.getByRole('button', { name: 'Dashboard' })).toBeVisible({ timeout: 15000 })
+    await expect(page.getByRole('button', { name: 'Dashboard', exact: true })).toBeVisible({ timeout: 15000 })
   })
 
   test('should show dashboard as default view when authenticated', async ({ page }) => {
-    await expect(page.getByRole('button', { name: 'Dashboard' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Dashboard', exact: true })).toBeVisible()
   })
 
   test('should navigate between Dashboard, Repositories, and Teams', async ({ page }) => {
-    // Click Repositories
-    await page.getByRole('button', { name: 'Repositories' }).click()
+    // Click Repositories. Nav buttons need exact-name matching: mock repos
+    // like "fintech-dashboard" otherwise also match the substring "Dashboard"
+    // (and a future "...repositories"/"...teams" repo could collide too),
+    // making getByRole resolve multiple elements once repo cards are in the DOM.
+    await page.getByRole('button', { name: 'Repositories', exact: true }).click()
     await expect(page.getByPlaceholder(/search repositories/i)).toBeVisible({ timeout: 10000 })
 
     // Click Teams
-    await page.getByRole('button', { name: 'Teams' }).click()
+    await page.getByRole('button', { name: 'Teams', exact: true }).click()
 
     // Click back to Dashboard
-    await page.getByRole('button', { name: 'Dashboard' }).click()
+    await page.getByRole('button', { name: 'Dashboard', exact: true }).click()
   })
 
   test('should toggle theme between dark and light mode', async ({ page }) => {

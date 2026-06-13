@@ -152,8 +152,9 @@ router.post('/import/check-duplicates', requireAuth, validateBody(importCheckDup
         // unscoped imports, so it's the actual surface for collisions.
         let targetOwner = req.validatedBody.targetOwner;
         if (!targetOwner) {
+            // githubApi() returns { data, headers } — the login lives on .data.
             const me = await githubApi('/user', token).catch(() => null);
-            targetOwner = me?.login;
+            targetOwner = me?.data?.login;
             if (!targetOwner) {
                 return res.json({ duplicates: {}, duplicateDetails: {} });
             }
@@ -170,7 +171,8 @@ router.post('/import/check-duplicates', requireAuth, validateBody(importCheckDup
 
         await Promise.all(repos.map(async (repoName) => {
             try {
-                const repo = await githubApi(
+                // githubApi() returns { data, headers } — unwrap to the repo object.
+                const { data: repo } = await githubApi(
                     `/repos/${encodeURIComponent(targetOwner)}/${encodeURIComponent(repoName)}`,
                     token,
                 );

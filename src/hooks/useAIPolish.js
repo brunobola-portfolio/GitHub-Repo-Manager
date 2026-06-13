@@ -13,7 +13,7 @@
  * staggered "row arriving" feel rather than a thundering herd.
  *
  * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
- * Licensed under the MIT License.
+ * Licensed under the GNU AGPL v3.0 only (SPDX: AGPL-3.0-only). See LICENSE in the project root.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'

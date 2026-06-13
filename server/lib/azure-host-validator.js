@@ -58,6 +58,23 @@ export function invalidateAllowlistCache() {
   cache = { at: 0, patterns: null };
 }
 
+/**
+ * Strict shape check: the value must be exactly `hostname[:port]` (or a
+ * bracketed IPv6 literal). Rejects userinfo (`user@host`), paths, query
+ * strings, whitespace — anything that would make the validated string and
+ * the URL actually contacted diverge. Without this, a "host" like
+ * `dev.azure.com:0@169.254.169.254` passes the allowlist (port-split keeps
+ * `dev.azure.com`) while `https://${host}` routes the request — PAT
+ * included — to the part after the `@`.
+ */
+function hasSafeHostShape(host) {
+  if (!host || typeof host !== 'string') return false;
+  if (host.startsWith('[')) {
+    return /^\[[0-9a-f:]+\](:[0-9]{1,5})?$/i.test(host);
+  }
+  return /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?(:[0-9]{1,5})?$/i.test(host);
+}
+
 /** Strip an optional port suffix and lowercase the hostname. */
 function normalizeHost(host) {
   if (!host || typeof host !== 'string') return '';
@@ -74,6 +91,7 @@ function normalizeHost(host) {
  * @returns {boolean}
  */
 export function isAllowedHost(host) {
+  if (!hasSafeHostShape(host)) return false;
   const h = normalizeHost(host);
   if (!h) return false;
   const patterns = getAllowedPatterns();
@@ -104,14 +122,14 @@ export function isAllowedHost(host) {
  */
 export async function validateAzureHost(host) {
   if (!isAllowedHost(host)) {
-    return { ok: false, reason: `Host "${host}" is not in ALLOWED_AZURE_HOSTS` };
+    return { ok: false, code: 'HOST_NOT_ALLOWED', reason: `Host "${host}" is not in ALLOWED_AZURE_HOSTS` };
   }
   const probeHost = normalizeHost(host);
   const probeUrl = `https://${probeHost}/`;
   try {
     assertSafeExternalUrl(probeUrl);
   } catch (e) {
-    return { ok: false, reason: String(e.message || '').replace(/^ssrf_guard:\s*/, '') };
+    return { ok: false, code: 'UNSAFE_URL', reason: String(e.message || '').replace(/^ssrf_guard:\s*/, '') };
   }
   // Skip the DNS private-IP check for on-prem hosts — TFS servers are
   // normally deployed inside corporate networks and resolve to RFC1918.
@@ -120,11 +138,27 @@ export async function validateAzureHost(host) {
   if (!isCloud) {
     return { ok: true };
   }
-  const dnsOk = await resolveAndValidateHost(probeUrl);
+  const dnsOk = await cachedDnsCheck(probeHost, probeUrl);
   if (!dnsOk) {
-    return { ok: false, reason: `Host "${host}" resolves to a non-public address` };
+    return { ok: false, code: 'PRIVATE_ADDRESS', reason: `Host "${host}" resolves to a non-public address` };
   }
   return { ok: true };
+}
+
+// Cloud hosts are validated on every Azure API request — cache the DNS
+// verdict briefly so hot paths don't pay a lookup per request. The TTL is
+// short enough that a genuine DNS change (or rebinding attempt) is
+// re-checked within minutes.
+const DNS_OK_TTL_MS = 5 * 60_000;
+const dnsCache = new Map(); // probeHost -> { at, ok }
+
+async function cachedDnsCheck(probeHost, probeUrl) {
+  const hit = dnsCache.get(probeHost);
+  if (hit && Date.now() - hit.at < DNS_OK_TTL_MS) return hit.ok;
+  const ok = await resolveAndValidateHost(probeUrl);
+  if (dnsCache.size > 100) dnsCache.clear();
+  dnsCache.set(probeHost, { at: Date.now(), ok });
+  return ok;
 }
 
 /**
@@ -134,6 +168,9 @@ export async function validateAzureHost(host) {
  */
 export function resolveAzureBaseUrl(host) {
   if (!host) throw new Error('resolveAzureBaseUrl: host required');
+  // Defence in depth — callers validate first, but never build a URL from
+  // a string that could smuggle userinfo/path past the allowlist.
+  if (!hasSafeHostShape(host)) throw new Error('resolveAzureBaseUrl: invalid host');
   return `https://${host}`;
 }
 

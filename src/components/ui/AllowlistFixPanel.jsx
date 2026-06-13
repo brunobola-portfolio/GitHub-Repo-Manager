@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ShieldAlert, ShieldCheck, Terminal, Sparkles, Lock } from 'lucide-react'
-import { AnimatedCopyIcon } from '../../../ui/AnimatedCopyIcon'
-import { SpinnerIcon } from '../../../ui/Spinner'
-import { getCsrfToken } from '../../../../utils/api'
+import { AnimatedCopyIcon } from './AnimatedCopyIcon'
+import { SpinnerIcon } from './Spinner'
+import { getCsrfToken } from '../../utils/api'
 
 /**
  * Self-fix panel for "host not in ALLOWED_AZURE_HOSTS".
@@ -19,6 +19,7 @@ export default function AllowlistFixPanel({
   currentPatterns = [],
   usingDefault = true,
   canEdit = false,
+  notes = 'Added from migration wizard',
   onAdded,
 }) {
   const [copied, setCopied] = useState(false)
@@ -26,18 +27,27 @@ export default function AllowlistFixPanel({
   const [added, setAdded] = useState(false)
   const [error, setError] = useState('')
 
-  // Build the .env line for the "infra-as-code" fallback path. Always
-  // includes defaults so users don't accidentally drop dev.azure.com.
+  // Build the .env line for the "infra-as-code" fallback path. We can only
+  // print a complete `ALLOWED_AZURE_HOSTS=` replacement when we actually know
+  // the full current set: either defaults are in effect, or we were handed
+  // the patterns (admin). For non-admins the patterns list is intentionally
+  // gated to [] server-side — printing a replacement line from an empty list
+  // would silently DROP every other configured host when applied verbatim.
+  // In that case we emit an append-style instruction instead.
   const defaultLine = ['dev.azure.com', '*.visualstudio.com']
+  const patternsKnown = usingDefault || currentPatterns.length > 0
   const merged = Array.from(new Set([
     ...(usingDefault ? defaultLine : currentPatterns),
     host,
   ].filter(Boolean)))
-  const envLine = `ALLOWED_AZURE_HOSTS=${merged.join(',')}`
+  const envLine = patternsKnown
+    ? `ALLOWED_AZURE_HOSTS=${merged.join(',')}`
+    : host
+  const copyValue = envLine
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(envLine)
+      await navigator.clipboard.writeText(copyValue)
       setCopied(true)
       setTimeout(() => setCopied(false), 1800)
     } catch { /* clipboard blocked */ }
@@ -54,7 +64,7 @@ export default function AllowlistFixPanel({
           'Content-Type': 'application/json',
           ...(csrf ? { 'X-CSRF-Token': csrf } : {}),
         },
-        body: JSON.stringify({ pattern: host, notes: 'Added from migration wizard' }),
+        body: JSON.stringify({ pattern: host, notes }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`)
@@ -69,17 +79,7 @@ export default function AllowlistFixPanel({
 
   // Success state after one-click add
   if (added) {
-    return (
-      <div className="rounded-2xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50/60 dark:bg-emerald-900/15 px-4 py-3">
-        <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-          <ShieldCheck className="w-4 h-4" />
-          {host} was added to the allowlist
-        </div>
-        <p className="text-xs text-emerald-700/80 dark:text-emerald-300/80 mt-1">
-          The change is already active — no restart. I'll try to validate again automatically.
-        </p>
-      </div>
-    )
+    return <SuccessState host={host} />
   }
 
   return (
@@ -108,11 +108,12 @@ export default function AllowlistFixPanel({
             error={error}
             onAdd={addNow}
             envLine={envLine}
+            patternsKnown={patternsKnown}
             envCopied={copied}
             onEnvCopy={copy}
           />
         ) : (
-          <NonAdminGuidance host={host} envLine={envLine} envCopied={copied} onEnvCopy={copy} />
+          <NonAdminGuidance host={host} envLine={envLine} patternsKnown={patternsKnown} envCopied={copied} onEnvCopy={copy} />
         )}
 
         <div className="pt-2 border-t border-amber-200 dark:border-amber-800 ds-text-meta text-slate-500 dark:text-slate-400">
@@ -125,7 +126,33 @@ export default function AllowlistFixPanel({
   )
 }
 
-function AdminQuickFix({ host, adding, error, onAdd, envLine, envCopied, onEnvCopy }) {
+/**
+ * Replaces the whole panel after the 1-click add. The subtree the user was
+ * focused in unmounts, so move focus here and announce via role="status" —
+ * otherwise keyboard/SR users are dropped at <body> with no feedback.
+ */
+function SuccessState({ host }) {
+  const ref = useRef(null)
+  useEffect(() => { ref.current?.focus() }, [])
+  return (
+    <div
+      ref={ref}
+      tabIndex={-1}
+      role="status"
+      className="rounded-2xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50/60 dark:bg-emerald-900/15 px-4 py-3 outline-none"
+    >
+      <div className="flex items-center gap-2 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+        <ShieldCheck className="w-4 h-4" />
+        {host} was added to the allowlist
+      </div>
+      <p className="text-xs text-emerald-700/80 dark:text-emerald-300/80 mt-1">
+        The change is already active — no restart. I'll try to validate again automatically.
+      </p>
+    </div>
+  )
+}
+
+function AdminQuickFix({ host, adding, error, onAdd, envLine, patternsKnown, envCopied, onEnvCopy }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3 px-3.5 py-3 rounded-xl bg-white/70 dark:bg-slate-900/40 border border-amber-200 dark:border-amber-800">
@@ -148,7 +175,7 @@ function AdminQuickFix({ host, adding, error, onAdd, envLine, envCopied, onEnvCo
         </button>
       </div>
       {error && (
-        <div className="text-xs text-red-600 dark:text-red-400 px-1">
+        <div role="alert" className="text-xs text-red-600 dark:text-red-400 px-1">
           ✗ {error}
         </div>
       )}
@@ -159,13 +186,21 @@ function AdminQuickFix({ host, adding, error, onAdd, envLine, envCopied, onEnvCo
           <Terminal className="w-3.5 h-3.5" />
           Alternative: add via <code>.env</code> (config-as-code)
         </summary>
-        <EnvSnippet envLine={envLine} envCopied={envCopied} onEnvCopy={onEnvCopy} />
+        <EnvSnippet envLine={envLine} host={host} patternsKnown={patternsKnown} envCopied={envCopied} onEnvCopy={onEnvCopy} />
       </details>
     </div>
   )
 }
 
-function NonAdminGuidance({ host, envLine, envCopied, onEnvCopy }) {
+function NonAdminGuidance({ host, envLine, patternsKnown, envCopied, onEnvCopy }) {
+  const [hostCopied, setHostCopied] = useState(false)
+  const copyHost = async () => {
+    try {
+      await navigator.clipboard.writeText(host)
+      setHostCopied(true)
+      setTimeout(() => setHostCopied(false), 1800)
+    } catch { /* clipboard blocked */ }
+  }
   return (
     <div className="space-y-3">
       <div className="flex items-start gap-3 px-3.5 py-3 rounded-xl bg-white/70 dark:bg-slate-900/40 border border-amber-200 dark:border-amber-800">
@@ -181,15 +216,13 @@ function NonAdminGuidance({ host, envLine, envCopied, onEnvCopy }) {
             </code>
             <button
               type="button"
-              onClick={() => {
-                try {
-                  navigator.clipboard.writeText(host)
-                } catch { /* ignore */ }
-              }}
-              className="ds-text-meta text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline"
+              onClick={copyHost}
+              className="inline-flex items-center gap-1 ds-text-meta text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline"
             >
-              copy host
+              <AnimatedCopyIcon copied={hostCopied} size="w-3 h-3" checkClassName="text-emerald-500" />
+              {hostCopied ? 'copied' : 'copy host'}
             </button>
+            <span className="sr-only" role="status">{hostCopied ? 'Host copied to clipboard' : ''}</span>
           </div>
         </div>
       </div>
@@ -199,28 +232,35 @@ function NonAdminGuidance({ host, envLine, envCopied, onEnvCopy }) {
           <Terminal className="w-3.5 h-3.5" />
           Instructions for the admin (alternative via <code>.env</code>)
         </summary>
-        <EnvSnippet envLine={envLine} envCopied={envCopied} onEnvCopy={onEnvCopy} />
+        <EnvSnippet envLine={envLine} host={host} patternsKnown={patternsKnown} envCopied={envCopied} onEnvCopy={onEnvCopy} />
       </details>
     </div>
   )
 }
 
-function EnvSnippet({ envLine, envCopied, onEnvCopy }) {
+function EnvSnippet({ envLine, host, patternsKnown, envCopied, onEnvCopy }) {
+  // When we don't know the full current allowlist (non-admin: the patterns
+  // are gated server-side), DON'T present a complete replacement line — it
+  // would wipe every other configured host. Tell the admin to append instead.
   return (
     <div className="mt-2 space-y-2">
       <ol className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
         <li>1. Edit <code className="px-1 rounded bg-slate-200 dark:bg-slate-700">server/.env</code></li>
-        <li>2. Add (or replace) this line:</li>
+        <li>
+          {patternsKnown
+            ? '2. Add (or replace) this line:'
+            : <>2. Add <code className="px-1 rounded bg-slate-200 dark:bg-slate-700">{host}</code> to the existing <code className="px-1 rounded bg-slate-200 dark:bg-slate-700">ALLOWED_AZURE_HOSTS</code> (comma-separated) — don't drop the current entries:</>}
+        </li>
       </ol>
       <div className="flex items-stretch gap-1">
         <code className="flex-1 ds-text-meta font-mono px-2.5 py-2 rounded-lg bg-slate-900 text-emerald-300 overflow-x-auto whitespace-nowrap">
-          {envLine}
+          {patternsKnown ? envLine : host}
         </code>
         <button
           type="button"
           onClick={onEnvCopy}
           className="px-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-colors"
-          aria-label="Copy line"
+          aria-label={patternsKnown ? 'Copy line' : 'Copy host'}
         >
           <AnimatedCopyIcon copied={envCopied} size="w-3.5 h-3.5" checkClassName="text-emerald-500" />
         </button>

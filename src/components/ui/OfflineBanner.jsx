@@ -8,7 +8,7 @@
  * deliberately soft. The retry queue handles the mutation side.
  *
  * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
- * Licensed under the MIT License. See LICENSE in the project root.
+ * Licensed under the GNU AGPL v3.0 only (SPDX: AGPL-3.0-only). See LICENSE in the project root.
  */
 
 import { motion, AnimatePresence } from 'framer-motion'
@@ -24,7 +24,7 @@ export function OfflineBanner() {
                     initial={{ y: -50, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: -50, opacity: 0 }}
-                    className="fixed top-0 left-0 right-0 z-[100] bg-amber-500 dark:bg-amber-600 text-white text-sm font-medium py-2 px-4 flex items-center justify-center gap-2 shadow-lg"
+                    className="fixed top-0 left-0 right-0 z-[var(--ds-z-ceiling)] bg-amber-500 dark:bg-amber-600 text-white text-sm font-medium py-2 px-4 flex items-center justify-center gap-2 shadow-lg"
                     role="status"
                     aria-live="polite"
                     data-testid="offline-banner"

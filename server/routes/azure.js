@@ -14,6 +14,7 @@ import {
 import { requireAdmin } from '../middleware/require-admin.js';
 import { auditLog } from '../lib/audit.js';
 import * as credsVault from '../lib/azure-credentials-manager.js';
+import { resolveAzurePat } from '../lib/pat-resolver.js';
 
 const DEFAULT_AZURE_HOST = 'dev.azure.com';
 
@@ -28,42 +29,10 @@ async function resolveHost(req, res) {
     return host;
 }
 
-/**
- * Resolve a PAT from one of three sources, in priority order:
- *   1. `savedCredentialId` in body → decrypt from per-user vault
- *      (preferred — never round-trips the raw PAT through the browser)
- *   2. `pat` in body                → caller pasted it directly
- *   3. Server env / session         → existing AZURE_PAT fallback
- *
- * Returns `{ pat: string, source: 'vault'|'pasted'|'env' }` on success.
- * Returns `{ pat: null, error: string }` when a savedCredentialId was
- * provided but couldn't be resolved — we deliberately do NOT silently
- * fall back to the env PAT in that case (it's almost always a cloud
- * token that would 401 against the on-prem host the saved credential
- * targeted, producing a confusing error).
- */
+// Single source of truth for PAT priority (vault > pasted > session > env)
+// — shared with the migration plan routes via lib/pat-resolver.js.
 function resolvePatFromRequest(req) {
-    const body = req.body || {};
-    if (body.savedCredentialId) {
-        const id = Number(body.savedCredentialId);
-        if (!Number.isFinite(id)) {
-            return { pat: null, error: 'Invalid savedCredentialId' };
-        }
-        let pat = null;
-        try {
-            pat = credsVault.decryptForUse(req.session.userId, id);
-        } catch { /* treated as null below */ }
-        if (!pat) {
-            return {
-                pat: null,
-                error: 'Saved credential not found or could not be decrypted. It may have been deleted, or the encryption key changed. Open Settings → Azure Credentials to revoke and recreate.',
-            };
-        }
-        return { pat, source: 'vault' };
-    }
-    const pat = azureService.resolvePat(body.pat, req.session);
-    if (!pat) return { pat: null, error: 'No PAT provided and no server PAT configured' };
-    return { pat, source: body.pat ? 'pasted' : 'env' };
+    return resolveAzurePat(req, { patField: 'pat' });
 }
 
 /**
@@ -155,10 +124,14 @@ router.get('/azure/host-allowlist', requireAuth, (req, res) => {
         isAdmin = !!row?.is_admin;
     } catch { /* default false */ }
 
+    // Entry details (internal hostnames, free-form notes, admin usernames)
+    // are topology disclosure on shared deployments — admins only. The
+    // per-host `allowed` check is all non-admins need, and skipping the
+    // entry queries also keeps the debounced-keystroke path cheap.
     res.json({
-        patterns: getAllowedHostPatterns(),
-        envPatterns: getEnvHostPatterns(),
-        dbEntries: getDbHostEntries(),
+        patterns: isAdmin ? getAllowedHostPatterns() : [],
+        envPatterns: isAdmin ? getEnvHostPatterns() : [],
+        dbEntries: isAdmin ? getDbHostEntries() : [],
         usingDefault: isUsingDefaultAllowlist(),
         host: host || null,
         allowed: host ? isAllowedHost(host) : null,
@@ -398,14 +371,15 @@ router.post('/azure/pat-permissions', requireAuth, async (req, res) => {
         const ctx = await resolveAzureContext(req, res);
         if (!ctx) return;
 
-        const permissions = { code: false, workItems: false, wiki: false };
+        // Probe each scope independently so a missing one doesn't mask the
+        // others — in parallel, since the three probes are unrelated calls.
+        const [code, workItems, wiki] = await Promise.all([
+            azureService.listRepos(ctx.org, ctx.project, ctx.pat, ctx.host).then(() => true).catch(() => false),
+            azureService.getWorkItemCounts(ctx.org, ctx.project, ctx.pat, ctx.host).then(() => true).catch(() => false),
+            azureService.listWikis(ctx.org, ctx.project, ctx.pat, ctx.host).then(() => true).catch(() => false),
+        ]);
 
-        // Probe each scope independently so a missing one doesn't mask the others.
-        try { await azureService.listRepos(ctx.org, ctx.project, ctx.pat, ctx.host); permissions.code = true; } catch { /* denied */ }
-        try { await azureService.getWorkItemCounts(ctx.org, ctx.project, ctx.pat, ctx.host); permissions.workItems = true; } catch { /* denied */ }
-        try { await azureService.listWikis(ctx.org, ctx.project, ctx.pat, ctx.host); permissions.wiki = true; } catch { /* denied */ }
-
-        res.json({ permissions });
+        res.json({ permissions: { code, workItems, wiki } });
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Failed to check PAT permissions'));
     }
@@ -482,24 +456,33 @@ router.post('/azure/repos/full-stats', requireAuth, enrichedRepoLimiter, async (
     }
 });
 
+// Each folder-size computation is a full recursive listing on the TFS
+// side — bound the concurrency so one request can't slam an on-prem
+// server with dozens of recursive scans at once.
+const FOLDER_SIZE_CONCURRENCY = 5;
+
 router.post('/azure/tfvc/items', requireAuth, async (req, res) => {
     try {
         const { scopePath } = req.body || {};
         const ctx = await resolveAzureContext(req, res);
         if (!ctx) return;
         const items = await azureService.listTfvcItems(ctx.org, ctx.project, ctx.pat, scopePath, ctx.host);
-        // Compute actual folder sizes via recursive listing
-        const enriched = await Promise.all(items.map(async (item) => {
-            if (item.isFolder && item.path) {
-                try {
-                    const size = await azureService.getTfvcFolderSize(ctx.org, ctx.project, ctx.pat, item.path, ctx.host);
-                    return { ...item, size };
-                } catch {
-                    return item; // keep original (0) on error
+        // Compute actual folder sizes via recursive listing, in bounded chunks.
+        const enriched = [];
+        for (let i = 0; i < items.length; i += FOLDER_SIZE_CONCURRENCY) {
+            const chunk = items.slice(i, i + FOLDER_SIZE_CONCURRENCY);
+            enriched.push(...await Promise.all(chunk.map(async (item) => {
+                if (item.isFolder && item.path) {
+                    try {
+                        const size = await azureService.getTfvcFolderSize(ctx.org, ctx.project, ctx.pat, item.path, ctx.host);
+                        return { ...item, size };
+                    } catch {
+                        return item; // keep original (0) on error
+                    }
                 }
-            }
-            return item;
-        }));
+                return item;
+            })));
+        }
         res.json({ items: enriched });
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Failed to list TFVC items'));
@@ -725,7 +708,9 @@ router.post('/azure/credentials/:id/test', requireAuth, async (req, res) => {
         }
         const hostCheck = await validateAzureHost(cred.host);
         if (!hostCheck.ok) {
-            return res.json({ valid: false, error: `Host check failed: ${hostCheck.reason}` });
+            // `code` lets the UI render the allowlist self-fix panel instead
+            // of a dead-end error string.
+            return res.json({ valid: false, error: `Host check failed: ${hostCheck.reason}`, code: hostCheck.code || null, host: cred.host });
         }
         const pat = credsVault.decryptForUse(req.session.userId, id);
         if (!pat) return errorResponse(res, 500, 'Could not decrypt credential', 'DECRYPT_FAILED');

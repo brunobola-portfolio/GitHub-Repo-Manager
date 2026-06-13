@@ -11,7 +11,7 @@ import { createPlanSchema, updatePlanSchema } from '../lib/validators.js';
 import { analyzeMigration } from '../migration-planner.js';
 import { validateAzureHost } from '../lib/azure-host-validator.js';
 import { auditLog } from '../lib/audit.js';
-import * as credsVault from '../lib/azure-credentials-manager.js';
+import { resolveAzurePat } from '../lib/pat-resolver.js';
 import db from '../db.js';
 import { createMigrationTaggingService } from '../migration-tagging-service.js';
 import { createGithubWriter } from '../lib/tagging/github-writer.js';
@@ -21,26 +21,25 @@ import { createHttpShim } from '../lib/tagging/http-shim.js';
 import { createTaggingWorkdirResolver } from '../lib/tagging/tagging-workdir-resolver.js';
 
 /**
- * Resolve the Azure PAT for a plan execute/resume/retry request.
+ * Resolve the Azure PAT for a plan execute/resume/retry request via the
+ * shared resolver (vault > pasted > session > env — same order as the
+ * Azure API routes).
  *
- * Priority:
- *   1. body.azurePat (caller pasted it directly)
- *   2. body.savedCredentialId (decrypt from per-user vault)
- *   3. process.env.AZURE_PAT (server fallback)
- *
- * Returns the PAT string or null. Never throws — the engine surfaces a clear
- * "PAT missing" error downstream when a TFVC task can't authenticate.
+ * A `null` PAT is still a valid outcome (git-only plans never need one;
+ * the engine surfaces a clear "PAT missing" error if a TFVC task can't
+ * authenticate). The one case that MUST fail loudly is an explicit
+ * `savedCredentialId` that can't be resolved — silently substituting the
+ * env cloud PAT produces a confusing 401 against the on-prem host the
+ * saved credential targeted. Returns `{ pat }` or `{ abort: true }` after
+ * writing the HTTP error.
  */
-function resolvePlanExecutionPat(req) {
-  const body = req.body || {};
-  if (typeof body.azurePat === 'string' && body.azurePat.trim()) return body.azurePat;
-  if (body.savedCredentialId) {
-    const id = Number(body.savedCredentialId);
-    if (Number.isFinite(id)) {
-      try { return credsVault.decryptForUse(req.session.userId, id) || null; } catch { return null; }
-    }
+function resolvePlanExecutionPat(req, res) {
+  const result = resolveAzurePat(req, { patField: 'azurePat' });
+  if (req.body?.savedCredentialId && !result.pat) {
+    res.status(401).json({ error: result.error });
+    return { abort: true, pat: null };
   }
-  return process.env.AZURE_PAT || null;
+  return { abort: false, pat: result.pat };
 }
 
 const router = express.Router();
@@ -409,6 +408,12 @@ router.post('/plans/:id/execute', requireAuth, requireMigrationQuota, async (req
     const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
     if (!plan) return res.status(404).json({ error: 'Plan not found' });
 
+    // Resolve the PAT BEFORE the status transition + quota charge so a
+    // broken saved credential fails the request without stranding the
+    // plan 'running' or consuming a migration unit.
+    const patResolution = resolvePlanExecutionPat(req, res);
+    if (patResolution.abort) return;
+
     // Atomic status transition to prevent double-execute race condition
     const updated = db.prepare('UPDATE migration_plans SET status = ? WHERE id = ? AND status IN (?, ?)').run('running', id, 'draft', 'paused');
     if (updated.changes === 0) {
@@ -433,7 +438,7 @@ router.post('/plans/:id/execute', requireAuth, requireMigrationQuota, async (req
     // a pasted PAT or a savedCredentialId — the latter is decrypted from the
     // per-user vault server-side so the raw secret never round-trips through
     // the browser at execute time.
-    const azurePat = resolvePlanExecutionPat(req);
+    const azurePat = patResolution.pat;
     const credentials = {
       githubToken: req.session.accessToken,
       azurePat,
@@ -486,9 +491,11 @@ router.post('/plans/:id/resume', requireAuth, requireMigrationQuota, async (req,
     const id = parseInt(req.params.id);
     const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
     if (!plan) return res.status(404).json({ error: 'Plan not found' });
+    const resumePat = resolvePlanExecutionPat(req, res);
+    if (resumePat.abort) return;
     const resumeCredentials = {
       githubToken: req.session.accessToken,
-      azurePat: resolvePlanExecutionPat(req),
+      azurePat: resumePat.pat,
       azureHost: plan.azure_host || 'dev.azure.com',
       azureOrg: plan.source_org,
       azureProject: plan.source_project
@@ -509,9 +516,11 @@ router.post('/plans/:id/tasks/:taskId/retry', requireAuth, requireMigrationQuota
     const id = parseInt(req.params.id);
     const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
     if (!plan) return res.status(404).json({ error: 'Plan not found' });
+    const retryPat = resolvePlanExecutionPat(req, res);
+    if (retryPat.abort) return;
     const retryCredentials = {
       githubToken: req.session.accessToken,
-      azurePat: resolvePlanExecutionPat(req),
+      azurePat: retryPat.pat,
       azureHost: plan.azure_host || 'dev.azure.com',
       azureOrg: plan.source_org,
       azureProject: plan.source_project

@@ -152,4 +152,42 @@ describe('CSRF middleware', () => {
             .send({})
         expect(cross.status).toBe(403)
     })
+
+    // ── API-key (Bearer) CSRF immunity ──────────────────────────────────
+    // Requests carrying an `Authorization: Bearer grm_live_...` header skip
+    // CSRF enforcement entirely: browsers never auto-attach an Authorization
+    // header cross-site, so such a request cannot be a forged cross-site
+    // mutation. The bearer is validated (and write-scope enforced) downstream
+    // in apiKeyAuth. Only the `grm_live_` prefix bypasses — other bearers
+    // (e.g. a stray `ghp_` token) still require the CSRF token.
+
+    it('POST with Bearer grm_live_ header bypasses CSRF (no token needed)', async () => {
+        // Fresh request, no session token primed, no X-CSRF-Token header.
+        const res = await request(app)
+            .post('/api/repos/touch')
+            .set('Authorization', 'Bearer grm_live_some_api_key_value')
+            .send({})
+        expect(res.status).toBe(200)
+        expect(res.body).toEqual({ touched: true })
+    })
+
+    it('POST with a normal session and no token (no bearer) still 403s', async () => {
+        const agent = request.agent(app)
+        // Prime the session so it holds a token; failure must be the missing
+        // header, not the missing session token.
+        await agent.get('/api/auth/csrf-token')
+
+        const res = await agent.post('/api/repos/touch').send({})
+        expect(res.status).toBe(403)
+        expect(res.body).toEqual({ error: 'Invalid CSRF token', code: 'csrf_invalid' })
+    })
+
+    it('POST with a non-grm Bearer (ghp_) and no token still 403s (only grm_live_ bypasses)', async () => {
+        const res = await request(app)
+            .post('/api/repos/touch')
+            .set('Authorization', 'Bearer ghp_not_an_api_key')
+            .send({})
+        expect(res.status).toBe(403)
+        expect(res.body.code).toBe('csrf_invalid')
+    })
 })

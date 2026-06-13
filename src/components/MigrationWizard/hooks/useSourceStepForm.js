@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { parseAzureUrl } from '../../../utils/azureUrlParser'
 import { getCsrfToken } from '../../../utils/api'
 import { isAbort } from '../../../utils/errorClassification'
+import { useHostAllowlist } from '../../../hooks/useHostAllowlist'
 
 const DEBOUNCE_MS = 400
 
@@ -32,7 +33,6 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
   )
   const [manualOrgMode, setManualOrgMode] = useState(false)
   const [switchingAuth, setSwitchingAuth] = useState(false)
-  const [hostAllowlist, setHostAllowlist] = useState({ patterns: [], usingDefault: true, allowed: null, canEdit: false })
   const debounceRef = useRef(null)
   const validationAbortRef = useRef(null)
   // Flag set when the backend's auto-discovery rewrites source.org to a
@@ -52,25 +52,37 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
   const isDropdownMode = isOAuthMode && oauthStatusValue === 'success' && !manualOrgMode
 
   // ── initialise credential panel ────────────────────────────────────────
+  // Runs ONCE: env-auth and oauth-status are parameterless server facts that
+  // cannot change between credential-mode switches, so re-fetching them on
+  // every handleModeSwitch was pure waste. The current credentialMode is read
+  // through a ref so the "pick a default mode" decision doesn't drag the
+  // fetches into the dependency list.
+  const credentialModeRef = useRef(source.credentialMode)
+  useEffect(() => { credentialModeRef.current = source.credentialMode }, [source.credentialMode])
+
   useEffect(() => {
+    let cancelled = false
     Promise.all([
       fetch('/api/azure/env-auth', { credentials: 'include' }).then((r) => r.json()),
       fetch('/api/azure/oauth-status', { credentials: 'include' }).then((r) => r.json()),
     ])
       .then(([envAuth, oauthStatus]) => {
+        if (cancelled) return
         setEnvAuthAvailable(envAuth.available)
         setOauthConfigured(oauthStatus.configured)
-        if (!source.credentialMode) {
+        if (!credentialModeRef.current) {
           onChange({ credentialMode: envAuth.available ? 'serverPat' : 'personalPat' })
         }
       })
       .catch(() => {
+        if (cancelled) return
         setEnvAuthAvailable(false)
         setOauthConfigured(false)
-        if (!source.credentialMode) onChange({ credentialMode: 'personalPat' })
+        if (!credentialModeRef.current) onChange({ credentialMode: 'personalPat' })
       })
-      .finally(() => setCredLoading(false))
-  }, [onChange, source.credentialMode])
+      .finally(() => { if (!cancelled) setCredLoading(false) })
+    return () => { cancelled = true }
+  }, [onChange])
 
   // ── auto-fetch orgs when OAuth becomes successful ────────────────────
   useEffect(() => {
@@ -79,34 +91,20 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
     }
   }, [oauthStatusValue, fetchOrganizations])
 
-  // ── fetch allowlist whenever host changes, so the UI can show whether
-  // the current host is permitted by the server before validation runs.
-  // `refreshKey` lets callers force a re-fetch (e.g., after admin adds a
-  // host via the AllowlistFixPanel button).
-  const [allowlistRefreshKey, setAllowlistRefreshKey] = useState(0)
-  const refreshAllowlist = useCallback(() => setAllowlistRefreshKey((k) => k + 1), [])
-
-  useEffect(() => {
-    if (!source.host) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- clears derived state when source goes away
-      setHostAllowlist({ patterns: [], usingDefault: true, allowed: null, canEdit: false })
-      return
-    }
-    let cancelled = false
-    fetch(`/api/azure/host-allowlist?host=${encodeURIComponent(source.host)}`, { credentials: 'include' })
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => {
-        if (cancelled || !data) return
-        setHostAllowlist({
-          patterns: data.patterns || [],
-          usingDefault: !!data.usingDefault,
-          allowed: data.allowed,
-          canEdit: !!data.canEdit,
-        })
-      })
-      .catch(() => { /* leave previous state */ })
-    return () => { cancelled = true }
-  }, [source.host, allowlistRefreshKey])
+  // ── host allowlist status, via the shared debounced hook (same one the
+  // Settings → Azure Credentials form uses). `refresh` lets callers force a
+  // re-check (e.g., after admin adds a host via the AllowlistFixPanel button).
+  const allowlistState = useHostAllowlist(source.host)
+  const refreshAllowlist = allowlistState.refresh
+  const hostAllowlist = {
+    patterns: allowlistState.patterns,
+    usingDefault: allowlistState.usingDefault,
+    // Consumers treat `allowed === null` as "not determined yet".
+    allowed: allowlistState.status === 'allowed' ? true
+      : allowlistState.status === 'blocked' ? false
+      : null,
+    canEdit: allowlistState.canEdit,
+  }
 
   // ── smart URL paste ────────────────────────────────────────────────────
   // When the user types/pastes a valid URL, immediately push host+org+project
@@ -338,6 +336,14 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
   }, [source.org, source.pat, source.credentialMode, oauthStatusValue, credentialReady, runValidation])
 
   // ── fetch project metadata (repo counts) lazily ──────────────────────
+  // `projectMetaRef` mirrors projectMeta WITHOUT being an effect dependency:
+  // the effect re-runs when `source.project` changes (to priority-fetch the
+  // picked project), and without the skip below each pick used to cancel and
+  // re-fire the entire PREFETCH_CAP queue — browsing 3 projects meant ~300
+  // duplicate POSTs at the on-prem TFS this cap exists to protect.
+  const projectMetaRef = useRef(projectMeta)
+  useEffect(() => { projectMetaRef.current = projectMeta }, [projectMeta])
+
   useEffect(() => {
     if (!source.validated || projects.length === 0) return
     const org = source.org
@@ -360,9 +366,16 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
       // actually scrolling. The currently-picked project is always prefetched
       // first so its badge populates immediately even when it's past the cap.
       const PREFETCH_CAP = 100
-      const picked = source.project ? projects.find((p) => p.name === source.project) : null
-      const rest = projects.filter((p) => p !== picked).slice(0, PREFETCH_CAP - (picked ? 1 : 0))
+      // Skip projects whose metadata is already known (failed ones, marked
+      // repoCount: -1, get another chance on the next run).
+      const candidates = projects.filter((p) => {
+        const known = projectMetaRef.current[p.name]
+        return !known || known.repoCount === -1
+      })
+      const picked = source.project ? candidates.find((p) => p.name === source.project) : null
+      const rest = candidates.filter((p) => p !== picked).slice(0, PREFETCH_CAP - (picked ? 1 : 0))
       const queue = picked ? [picked, ...rest] : rest
+      if (queue.length === 0) return
       const run = async () => {
         while (queue.length > 0) {
           if (cancelled) return

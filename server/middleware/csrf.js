@@ -115,6 +115,16 @@ export function requireCsrfToken(req, res, next) {
     // Read-only methods don't need CSRF protection.
     if (!MUTATION_METHODS.has(req.method)) return next();
 
+    // API-key (Bearer) clients are CSRF-immune by construction: browsers never
+    // auto-attach an Authorization header cross-site (unlike the session
+    // cookie this defence exists for), so a request carrying a `grm_live_`
+    // bearer cannot be a forged cross-site mutation. Without this skip every
+    // programmatic write 403s before per-route auth runs — making the
+    // documented write/admin API-key scopes entirely unusable. The bearer is
+    // still validated (and write-scope enforced) downstream in apiKeyAuth.
+    const authz = req.headers.authorization || '';
+    if (authz.startsWith('Bearer grm_live_')) return next();
+
     // Bypass list — OAuth callback, webhooks, etc.
     if (isCsrfBypassed(req.originalUrl || req.url || '')) return next();
 

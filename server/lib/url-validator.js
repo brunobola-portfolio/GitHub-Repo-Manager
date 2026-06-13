@@ -219,32 +219,70 @@ export function assertSafeAIEndpoint(raw, { provider } = {}) {
     return assertSafeExternalUrl(raw, { allowHttp: false });
 }
 
+function isPrivateIpv4Parts(parts) {
+    const [a, b] = parts;
+    return a === 0 || a === 127 || a === 10 ||
+        (a === 172 && b >= 16 && b <= 31) ||
+        (a === 192 && b === 168) ||
+        (a === 169 && b === 254);
+}
+
 /**
- * Resolve hostname and check if it points to a private/internal IP (DNS rebinding protection)
+ * True when a resolved IP address (v4 or v6) lands in a private, loopback,
+ * link-local or otherwise non-public range. Unparseable input is treated
+ * as private (block).
+ */
+export function isPrivateAddress(address) {
+    if (!address || typeof address !== 'string') return true;
+    const ip = address.toLowerCase();
+
+    if (ip.includes(':')) {
+        // IPv6
+        if (ip === '::' || ip === '::1') return true;
+        if (/^fe[89ab][0-9a-f]:/i.test(ip)) return true;   // link-local fe80::/10
+        if (/^f[cd][0-9a-f]{2}:/i.test(ip)) return true;   // unique-local fc00::/7
+        // IPv4-mapped IPv6 — dotted (::ffff:10.0.0.1) or hex (::ffff:a00:1)
+        const mappedDotted = ip.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/);
+        if (mappedDotted) {
+            return isPrivateIpv4Parts(mappedDotted[1].split('.').map(Number));
+        }
+        const mappedHex = ip.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+        if (mappedHex) {
+            const hi = parseInt(mappedHex[1], 16);
+            const lo = parseInt(mappedHex[2], 16);
+            return isPrivateIpv4Parts([(hi >> 8) & 0xff, hi & 0xff, (lo >> 8) & 0xff, lo & 0xff]);
+        }
+        return false;
+    }
+
+    const parts = ip.split('.').map(Number);
+    if (parts.length === 4 && parts.every(p => Number.isInteger(p) && p >= 0 && p <= 255)) {
+        return isPrivateIpv4Parts(parts);
+    }
+    // Not a recognisable address — block.
+    return true;
+}
+
+/**
+ * Resolve hostname and check if it points to a private/internal IP (DNS
+ * rebinding protection). Validates EVERY resolved address — A and AAAA —
+ * because an attacker controlling DNS can return a public A record next
+ * to a private AAAA record and let the HTTP client pick the private one.
  */
 export async function resolveAndValidateHost(urlString) {
     try {
         const parsed = new URL(urlString);
         const hostname = parsed.hostname;
 
-        // Skip resolution for IP literals (already validated by isInternalUrl)
+        // Skip resolution for IP literals (already validated by the
+        // synchronous guards in assertSafeExternalUrl / isInternalUrl)
         if (/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname) || hostname.includes(':')) {
-            return true; // Already checked by isInternalUrl
+            return true;
         }
 
-        const { address } = await dns.lookup(hostname);
-        const parts = address.split('.').map(Number);
-
-        if (parts.length === 4 && parts.every(p => !isNaN(p))) {
-            if (parts[0] === 10) return false;
-            if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return false;
-            if (parts[0] === 192 && parts[1] === 168) return false;
-            if (parts[0] === 169 && parts[1] === 254) return false;
-            if (parts[0] === 127) return false;
-            if (parts.every(p => p === 0)) return false;
-        }
-
-        return true;
+        const results = await dns.lookup(hostname, { all: true });
+        if (!Array.isArray(results) || results.length === 0) return false;
+        return results.every((r) => !isPrivateAddress(r.address));
     } catch {
         return false; // DNS resolution failed - block the request
     }

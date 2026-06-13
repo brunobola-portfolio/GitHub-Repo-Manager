@@ -22,7 +22,12 @@ import { useSessionExpiry } from './hooks/useSessionExpiry'
 import { useIsAdmin } from './hooks/useIsAdmin'
 import { useLicense } from './hooks/useLicense'
 import { useCommandPalette } from './hooks/useCommandPalette'
-import { CommandPalette } from './components/CommandPalette'
+// Lazy: the palette (plus its cmdk dependency, ~11 KB gzip together) only
+// matters after Ctrl+K — keep it out of the critical entry chunk. The chunk
+// is warmed on first idle so the first open is still instant.
+const CommandPalette = lazy(() =>
+  import('./components/CommandPalette').then((m) => ({ default: m.CommandPalette }))
+)
 import { useResponsiveLayout } from './hooks/useResponsiveLayout'
 import CollapsiblePanel from './components/ui/CollapsiblePanel'
 import { SlimSidebar } from './components/Sidebar'
@@ -207,6 +212,25 @@ function AppContent() {
   })
 
   const commandPalette = useCommandPalette()
+
+  // Mount the lazy palette on first open and keep it mounted afterwards so
+  // close animations and internal state behave exactly as before the split.
+  // (Render-phase state adjustment — the documented React pattern — instead
+  // of an effect, so the mount happens in the same pass as the open.)
+  const [paletteEverOpened, setPaletteEverOpened] = useState(false)
+  if (commandPalette.isOpen && !paletteEverOpened) setPaletteEverOpened(true)
+
+  // Warm the palette chunk during idle time — the entry bundle stays lean
+  // but the first Ctrl+K doesn't pay a network round-trip.
+  useEffect(() => {
+    const warm = () => { import('./components/CommandPalette') }
+    if (typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(warm, { timeout: 5000 })
+      return () => window.cancelIdleCallback(id)
+    }
+    const id = setTimeout(warm, 3000)
+    return () => clearTimeout(id)
+  }, [])
 
   const handleOpenRepo = useCallback((repo, { tab = 'overview' } = {}) => {
     setSelectedRepoDetail(repo)
@@ -839,21 +863,25 @@ function AppContent() {
         shortcuts={shortcuts}
       />
 
-      <CommandPalette
-        isOpen={commandPalette.isOpen}
-        onClose={commandPalette.close}
-        repos={displayRepos}
-        activeView={activeView}
-        onViewChange={setActiveView}
-        onOpenModal={openModal}
-        onSelectRepo={handleOpenRepo}
-        isAdmin={isAdmin}
-        selectedRepoDetail={selectedRepoDetail}
-        selectedRepoDetailEntities={palettePropEntities}
-        onSyncNow={handleRefreshOrgs}
-        onToggleTheme={toggleTheme}
-        onSignOut={user ? handleLogout : null}
-      />
+      {paletteEverOpened && (
+        <Suspense fallback={null}>
+          <CommandPalette
+            isOpen={commandPalette.isOpen}
+            onClose={commandPalette.close}
+            repos={displayRepos}
+            activeView={activeView}
+            onViewChange={setActiveView}
+            onOpenModal={openModal}
+            onSelectRepo={handleOpenRepo}
+            isAdmin={isAdmin}
+            selectedRepoDetail={selectedRepoDetail}
+            selectedRepoDetailEntities={palettePropEntities}
+            onSyncNow={handleRefreshOrgs}
+            onToggleTheme={toggleTheme}
+            onSignOut={user ? handleLogout : null}
+          />
+        </Suspense>
+      )}
 
       {/* Mobile command-palette entry is consolidated into the
         MobileQuickActionsFab menu (Search item) so the right edge isn't a

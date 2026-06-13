@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef, useId } from 'react'
 import {
   ShieldCheck, ShieldAlert, Plus, Trash2, Lock, Globe,
   Server as ServerIcon, AlertCircle, CheckCircle2, FileCode,
 } from 'lucide-react'
 import { SpinnerIcon } from '../ui/Spinner'
 import { getCsrfToken } from '../../utils/api'
+import { useToast } from '../../hooks/useToast'
+import { formatDate } from '../../utils/format'
 
 /**
  * Settings → Azure Hosts Allowlist (admin only).
@@ -70,41 +72,58 @@ export default function AzureHostsAllowlistSection() {
       {/* Add new — admin only */}
       {canEdit && <AddHostForm onAdded={load} />}
 
-      {/* Combined list with provenance badges */}
-      <div className="space-y-4">
-        {envPatterns.length > 0 && (
-          <Section
-            title="Configured in .env"
-            description="Entries from the ALLOWED_AZURE_HOSTS variable. They can only be changed by editing the server's .env."
-            icon={FileCode}
-          >
-            {envPatterns.map((p) => (
-              <RowReadOnly key={`env:${p}`} pattern={p} source="env" />
-            ))}
-          </Section>
-        )}
-
-        <Section
-          title="Managed in the database"
-          description="Entries you can add/remove here without restarting the server. Audited."
-          icon={ShieldCheck}
-        >
-          {dbEntries.length === 0 ? (
-            <p className="text-xs text-slate-500 dark:text-slate-400 px-4 py-3">
-              No database entries yet.
+      {!canEdit ? (
+        // Entry details are admin-only (internal hostnames + who added them
+        // are topology disclosure). Non-admins get guidance, not the list.
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-5 flex items-start gap-3">
+          <Lock className="w-4 h-4 mt-0.5 text-slate-400 dark:text-slate-500 shrink-0" />
+          <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1">
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              Entries are only visible to administrators
             </p>
-          ) : (
-            dbEntries.map((e) => (
-              <RowDb
-                key={`db:${e.pattern}`}
-                entry={e}
-                canEdit={canEdit}
-                onDeleted={load}
-              />
-            ))
+            <p>
+              When you try to connect to a server that isn't authorized, the app tells you
+              and gives you exactly what to share with your admin — no need to browse this list.
+            </p>
+          </div>
+        </div>
+      ) : (
+        /* Combined list with provenance badges */
+        <div className="space-y-4">
+          {envPatterns.length > 0 && (
+            <Section
+              title="Configured in .env"
+              description="Entries from the ALLOWED_AZURE_HOSTS variable. They can only be changed by editing the server's .env."
+              icon={FileCode}
+            >
+              {envPatterns.map((p) => (
+                <RowReadOnly key={`env:${p}`} pattern={p} source="env" />
+              ))}
+            </Section>
           )}
-        </Section>
-      </div>
+
+          <Section
+            title="Managed in the database"
+            description="Entries you can add/remove here without restarting the server. Audited."
+            icon={ShieldCheck}
+          >
+            {dbEntries.length === 0 ? (
+              <p className="text-xs text-slate-500 dark:text-slate-400 px-4 py-3">
+                No database entries yet.
+              </p>
+            ) : (
+              dbEntries.map((e) => (
+                <RowDb
+                  key={`db:${e.pattern}`}
+                  entry={e}
+                  canEdit={canEdit}
+                  onDeleted={load}
+                />
+              ))
+            )}
+          </Section>
+        </div>
+      )}
 
       <WhyThisExists />
     </div>
@@ -170,9 +189,21 @@ function RowReadOnly({ pattern }) {
 }
 
 function RowDb({ entry, canEdit, onDeleted }) {
+  const { toast } = useToast()
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const isWildcard = entry.pattern.startsWith('*.')
+  const confirmBtnRef = useRef(null)
+  const deleteBtnRef = useRef(null)
+
+  useEffect(() => {
+    if (confirming) confirmBtnRef.current?.focus()
+  }, [confirming])
+
+  const cancelConfirm = useCallback(() => {
+    setConfirming(false)
+    requestAnimationFrame(() => deleteBtnRef.current?.focus())
+  }, [])
 
   const handleDelete = async () => {
     setDeleting(true)
@@ -189,7 +220,7 @@ function RowDb({ entry, canEdit, onDeleted }) {
       }
       onDeleted?.()
     } catch (e) {
-      alert(e.message)
+      toast.error(e.message)
       setDeleting(false)
       setConfirming(false)
     }
@@ -210,7 +241,7 @@ function RowDb({ entry, canEdit, onDeleted }) {
           {entry.added_by_username
             ? <>Added by <strong>{entry.added_by_username}</strong></>
             : 'Added'}
-          {' '}on {formatDate(entry.added_at)}
+          {' '}on {formatDate(entry.added_at, { day: '2-digit', month: 'short', year: 'numeric' })}
           {entry.notes ? ` · ${entry.notes}` : ''}
         </div>
       </div>
@@ -218,29 +249,36 @@ function RowDb({ entry, canEdit, onDeleted }) {
         <div className="shrink-0">
           {confirming ? (
             <div className="flex items-center gap-1">
+              {/* Cancel first so a rapid double-click on the trash position
+                  lands on Cancel, not Confirm. Escape backs out from either. */}
               <button
                 type="button"
-                onClick={handleDelete}
-                disabled={deleting}
-                className="px-2 py-1 text-xs font-semibold rounded-md bg-red-600 text-white hover:bg-red-700"
-              >
-                {deleting ? <SpinnerIcon className="w-3 h-3" /> : 'Confirm'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirming(false)}
+                onClick={cancelConfirm}
+                onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); cancelConfirm() } }}
                 className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
               >
                 Cancel
               </button>
+              <button
+                ref={confirmBtnRef}
+                type="button"
+                onClick={handleDelete}
+                onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); cancelConfirm() } }}
+                disabled={deleting}
+                aria-label={`Confirm removal of ${entry.pattern} from the allowlist`}
+                className="px-2 py-1 text-xs font-semibold rounded-md bg-red-600 text-white hover:bg-red-700"
+              >
+                {deleting ? <SpinnerIcon className="w-3 h-3" /> : 'Confirm'}
+              </button>
             </div>
           ) : (
             <button
+              ref={deleteBtnRef}
               type="button"
               onClick={() => setConfirming(true)}
               className="p-1.5 rounded-md text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-white dark:hover:bg-slate-800 transition-colors"
               title="Remove from allowlist"
-              aria-label="Remove entry"
+              aria-label={`Remove ${entry.pattern} from the allowlist`}
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -252,6 +290,7 @@ function RowDb({ entry, canEdit, onDeleted }) {
 }
 
 function AddHostForm({ onAdded }) {
+  const formId = useId()
   const [pattern, setPattern] = useState('')
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -292,22 +331,30 @@ function AddHostForm({ onAdded }) {
         Add host to allowlist
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-[2fr_3fr_auto] gap-2">
-        <input
-          type="text"
-          value={pattern}
-          onChange={(e) => setPattern(e.target.value)}
-          placeholder="tfs.company.com  or  *.tfs.company.com"
-          className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 font-mono"
-          required
-        />
-        <input
-          type="text"
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Notes (optional) — e.g. 'Acme internal TFS'"
-          className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
-          maxLength={200}
-        />
+        <div>
+          <label htmlFor={`${formId}-pattern`} className="sr-only">Host pattern</label>
+          <input
+            id={`${formId}-pattern`}
+            type="text"
+            value={pattern}
+            onChange={(e) => setPattern(e.target.value)}
+            placeholder="tfs.company.com  or  *.tfs.company.com"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 font-mono"
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor={`${formId}-notes`} className="sr-only">Notes (optional)</label>
+          <input
+            id={`${formId}-notes`}
+            type="text"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Notes (optional) — e.g. 'Acme internal TFS'"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
+            maxLength={200}
+          />
+        </div>
         <button
           type="submit"
           disabled={!pattern.trim() || submitting}
@@ -322,12 +369,12 @@ function AddHostForm({ onAdded }) {
         Optional port: <code className="px-1 rounded bg-slate-200 dark:bg-slate-700">tfs.company.com:8080</code>.
       </p>
       {error && (
-        <div className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1.5">
+        <div role="alert" className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1.5">
           <AlertCircle className="w-3.5 h-3.5" /> {error}
         </div>
       )}
       {success && (
-        <div className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+        <div role="status" className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
           <CheckCircle2 className="w-3.5 h-3.5" /> Added · no restart needed
         </div>
       )}
@@ -361,9 +408,3 @@ function WhyThisExists() {
   )
 }
 
-function formatDate(iso) {
-  if (!iso) return ''
-  try {
-    return new Date(iso).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })
-  } catch { return iso }
-}

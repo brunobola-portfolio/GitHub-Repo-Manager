@@ -287,7 +287,10 @@ if (config.nodeEnv === 'production') {
     const distPath = path.join(__dirname, '..', 'dist');
     if (fs.existsSync(distPath)) {
         app.use(express.static(distPath));
-        app.get('*', (req, res) => {
+        // SPA fallback. Express 5 / path-to-regexp v8 reject a bare '*' at
+        // registration ("Missing parameter name") — the named splat form is
+        // required, or the whole production process crashes before listen().
+        app.get('/{*splat}', (req, res) => {
             if (req.path.startsWith('/api/')) {
                 return res.status(404).json({ error: 'Not found' });
             }

@@ -90,24 +90,36 @@ router.get('/callback', authRouteLimiter, async (req, res) => {
             }
         });
 
-        if (userRes.ok) {
-            const userData = await userRes.json();
-            // Upsert User
-            const stmt = db.prepare(`
-                INSERT INTO users (id, username, avatar_url, email, last_login)
-                VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(id) DO UPDATE SET
-                    username = excluded.username,
-                    avatar_url = excluded.avatar_url,
-                    email = excluded.email,
-                    last_login = CURRENT_TIMESTAMP
-            `);
-            stmt.run(userData.id, userData.login, userData.avatar_url, userData.email || null);
-
-            // Store user ID and login in session for DB lookups
-            req.session.userId = userData.id;
-            req.session.userLogin = userData.login;
+        // Fail CLOSED if we can't identify the user. Previously a failed
+        // /user fetch fell through and still saved a session with an
+        // accessToken but userId=undefined — and requireAuth only checks
+        // accessToken, so that half-authenticated session looked logged in
+        // while every userId-keyed DB lookup broke.
+        if (!userRes.ok) {
+            req.log.error({ status: userRes.status }, 'OAuth: GitHub /user fetch failed');
+            return res.redirect(`${FRONTEND_URL}?error=auth_failed`);
         }
+        const userData = await userRes.json();
+        if (!userData?.id) {
+            req.log.error('OAuth: GitHub /user returned no id');
+            return res.redirect(`${FRONTEND_URL}?error=auth_failed`);
+        }
+
+        // Upsert User
+        const stmt = db.prepare(`
+            INSERT INTO users (id, username, avatar_url, email, last_login)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(id) DO UPDATE SET
+                username = excluded.username,
+                avatar_url = excluded.avatar_url,
+                email = excluded.email,
+                last_login = CURRENT_TIMESTAMP
+        `);
+        stmt.run(userData.id, userData.login, userData.avatar_url, userData.email || null);
+
+        // Store user ID and login in session for DB lookups
+        req.session.userId = userData.id;
+        req.session.userLogin = userData.login;
 
         // Regenerate session to prevent session fixation attacks
         const newUserId = req.session.userId;

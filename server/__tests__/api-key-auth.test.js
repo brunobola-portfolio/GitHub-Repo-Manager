@@ -321,6 +321,76 @@ describe('apiKeyAuth middleware', () => {
         expect(req.session).toBeDefined()
         expect(req.session.userId).toBe(33)
     })
+
+    // ── Write-scope gate ────────────────────────────────────────────────
+    // Any mutating method (POST/PUT/PATCH/DELETE) on an API key that lacks
+    // BOTH 'write' and 'admin' must 403 with { required: 'write' }. Reads
+    // with a read-only key still pass; keys WITH write/admin pass mutations.
+    const seedKey = (scopes) => {
+        const mockGet = vi.fn().mockReturnValue({
+            id: 'key-scope',
+            user_id: 55,
+            scopes: JSON.stringify(scopes),
+            expires_at: null,
+            revoked_at: null,
+        })
+        const mockRun = vi.fn()
+        mockPrepare
+            .mockReturnValueOnce({ get: mockGet }) // SELECT
+            .mockReturnValueOnce({ run: mockRun })  // UPDATE last_used_at (only reached if gate passes)
+        return mockRun
+    }
+
+    it('403s a read-only key on POST (write scope required)', () => {
+        req.method = 'POST'
+        req.headers.authorization = 'Bearer grm_live_readonly_post'
+        const mockRun = seedKey(['read'])
+
+        apiKeyAuth(req, res, next)
+
+        expect(res.status).toHaveBeenCalledWith(403)
+        expect(res.json).toHaveBeenCalledWith({
+            error: 'This API key lacks the required "write" scope',
+            required: 'write',
+        })
+        expect(next).not.toHaveBeenCalled()
+        // Gate fires before the last_used_at UPDATE runs.
+        expect(mockRun).not.toHaveBeenCalled()
+    })
+
+    it('allows a read-only key on GET (no write needed, next called)', () => {
+        req.method = 'GET'
+        req.headers.authorization = 'Bearer grm_live_readonly_get'
+        seedKey(['read'])
+
+        apiKeyAuth(req, res, next)
+
+        expect(next).toHaveBeenCalled()
+        expect(res.status).not.toHaveBeenCalled()
+        expect(req.apiKeyId).toBe('key-scope')
+    })
+
+    it('allows a write-scoped key on POST', () => {
+        req.method = 'POST'
+        req.headers.authorization = 'Bearer grm_live_write_post'
+        seedKey(['read', 'write'])
+
+        apiKeyAuth(req, res, next)
+
+        expect(next).toHaveBeenCalled()
+        expect(res.status).not.toHaveBeenCalled()
+    })
+
+    it('allows an admin-scoped key on DELETE', () => {
+        req.method = 'DELETE'
+        req.headers.authorization = 'Bearer grm_live_admin_delete'
+        seedKey(['admin'])
+
+        apiKeyAuth(req, res, next)
+
+        expect(next).toHaveBeenCalled()
+        expect(res.status).not.toHaveBeenCalled()
+    })
 })
 
 describe('requireScope', () => {

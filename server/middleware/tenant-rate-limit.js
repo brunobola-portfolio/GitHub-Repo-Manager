@@ -58,7 +58,11 @@ export async function createTenantLimiters(type = 'api', options = {}) {
             return tiers[tier]?.[type] ?? tiers.free[type];
         },
         keyGenerator: (req) => {
-            const userId = req.session?.userId || req.tenantId || ipKeyGenerator(req);
+            // ipKeyGenerator expects the IP STRING (it normalises IPv6 to a
+            // /56). Passing the whole req object stringifies to a constant
+            // "[object Object]", collapsing every anonymous client into one
+            // shared bucket — a global lockout instead of per-IP limiting.
+            const userId = req.session?.userId || req.tenantId || ipKeyGenerator(req.ip);
             return `rl:${userId}:${type}`;
         },
         store,
@@ -112,7 +116,7 @@ export function createAuthRouteLimiter() {
     return rateLimit({
         windowMs: 15 * 60 * 1000, // 15 minutes
         max: isDev() ? 200 : 20,
-        keyGenerator: (req) => `rl:authroute:${ipKeyGenerator(req)}`,
+        keyGenerator: (req) => `rl:authroute:${ipKeyGenerator(req.ip)}`,
         standardHeaders: true,
         legacyHeaders: false,
         message: { error: 'Too many authentication attempts. Please try again later.' },

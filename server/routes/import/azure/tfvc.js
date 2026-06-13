@@ -3,14 +3,27 @@ import * as importService from '../../../import-service.js';
 import * as azureService from '../../../azure-service.js';
 import * as gitTfsRunner from '../../../lib/git-tfs-runner.js';
 import { validateAzureHost, resolveAzureBaseUrl } from '../../../lib/azure-host-validator.js';
+import { resolveAzurePat } from '../../../lib/pat-resolver.js';
 import db from '../../../db.js';
 import { requireAuth, safeError, errorResponse } from '../../../middleware/auth.js';
+import { validateBody } from '../../../middleware/validate-request.js';
+import { azureTfvcImportSchema, azureTfvcBatchSchema, azureTfvcInPlaceSchema } from '../../../lib/validators.js';
 import logger from '../../../lib/logger.js';
 import { updateJobProgress } from '../_shared.js';
 
 const router = express.Router();
 
 const DEFAULT_HOST = 'dev.azure.com';
+
+/** Admin check against users.is_admin — sessions never carry an isAdmin flag. */
+function isAdminUser(req) {
+    try {
+        const row = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(req.session?.userId);
+        return !!row?.is_admin;
+    } catch {
+        return false;
+    }
+}
 
 // ------------------------------------------------------------------
 // TFVC import — convert TFVC to Git via cascade of strategies, then
@@ -19,21 +32,24 @@ const DEFAULT_HOST = 'dev.azure.com';
 //   2. git-tfs CLI                       (Windows + VS Build Tools)
 //   3. ZIP snapshot                      (no history; always available)
 // ------------------------------------------------------------------
-router.post('/import/azure-tfvc', requireAuth, async (req, res) => {
+router.post('/import/azure-tfvc', requireAuth, validateBody(azureTfvcImportSchema), async (req, res) => {
     try {
         const {
             azureHost: rawHost,
             azureOrg, azureProject, tfvcPath,
-            azurePat: bodyPat, targetOrg, targetName, makePrivate, description, importHistory
+            targetOrg, targetName, makePrivate, description, importHistory
         } = req.body;
         // forceStrategy is admin-only: it can bypass the safe cascade and force
         // expensive paths (e.g., `snapshot` downloads the full TFVC tree into
         // memory before the 1 GB guard runs). Reject from non-admin sessions.
-        const forceStrategy = (req.session?.isAdmin || process.env.NODE_ENV === 'test')
+        // Admin status lives on users.is_admin (sessions never carry it).
+        const forceStrategy = (isAdminUser(req) || process.env.NODE_ENV === 'test')
             ? req.body.forceStrategy
             : undefined;
         const azureHost = rawHost || DEFAULT_HOST;
-        const azurePat = azureService.resolvePat(bodyPat, req.session);
+        // Shared resolver: honours savedCredentialId (vault) > pasted > session > env.
+        const patResult = resolveAzurePat(req, { patField: 'azurePat' });
+        const azurePat = patResult.pat;
 
         if (!azureOrg || !azureProject || !tfvcPath) {
             return errorResponse(res, 400, 'Azure organization, project, and TFVC path are required', 'MISSING_PARAMS');
@@ -42,7 +58,7 @@ router.post('/import/azure-tfvc', requireAuth, async (req, res) => {
             return errorResponse(res, 400, 'TFVC path must start with $/', 'INVALID_PATH');
         }
         if (!azurePat) {
-            return errorResponse(res, 400, 'No PAT provided and no server PAT configured', 'MISSING_PAT');
+            return errorResponse(res, 400, patResult.error || 'No PAT provided and no server PAT configured', 'MISSING_PAT');
         }
 
         // Host allowlist + SSRF gate before any fetch fires.
@@ -98,20 +114,21 @@ router.post('/import/azure-tfvc', requireAuth, async (req, res) => {
 // ------------------------------------------------------------------
 // Batch TFVC import
 // ------------------------------------------------------------------
-router.post('/import/azure-tfvc/batch', requireAuth, async (req, res) => {
+router.post('/import/azure-tfvc/batch', requireAuth, validateBody(azureTfvcBatchSchema), async (req, res) => {
     try {
         const {
             azureHost: rawHost,
-            azureOrg, azureProject, azurePat: bodyPat, targetOrg, makePrivate, items, importHistory
+            azureOrg, azureProject, targetOrg, makePrivate, items, importHistory
         } = req.body;
         const azureHost = rawHost || DEFAULT_HOST;
-        const azurePat = azureService.resolvePat(bodyPat, req.session);
+        const patResult = resolveAzurePat(req, { patField: 'azurePat' });
+        const azurePat = patResult.pat;
 
         if (!azureOrg || !azureProject || !Array.isArray(items) || items.length === 0) {
             return errorResponse(res, 400, 'Azure org, project, and items array are required', 'MISSING_PARAMS');
         }
         if (!azurePat) {
-            return errorResponse(res, 400, 'No PAT provided and no server PAT configured', 'MISSING_PAT');
+            return errorResponse(res, 400, patResult.error || 'No PAT provided and no server PAT configured', 'MISSING_PAT');
         }
         if (items.length > 20) {
             return errorResponse(res, 400, 'Maximum 20 items per batch import', 'TOO_MANY_ITEMS');
@@ -376,10 +393,8 @@ async function runGitTfsStrategy(ctx) {
     }
 
     const { mkdirSync, existsSync, rmSync } = await import('node:fs');
-    const { join, dirname } = await import('node:path');
-    const { fileURLToPath } = await import('node:url');
-    const __dirname = dirname(fileURLToPath(import.meta.url));
-    const outDir = join(__dirname, '..', '..', 'data', 'tmp', `git-tfs-${Date.now()}`);
+    const { join } = await import('node:path');
+    const outDir = join(importService.TMP_DIR, `git-tfs-${Date.now()}`);
     mkdirSync(outDir, { recursive: true });
 
     try {
@@ -460,10 +475,8 @@ async function runSnapshotStrategy(ctx) {
 
     const { simpleGit } = await import('simple-git');
     const { mkdirSync, existsSync, rmSync, writeFileSync } = await import('node:fs');
-    const { join, dirname } = await import('node:path');
-    const { fileURLToPath } = await import('node:url');
-    const __dirname = dirname(fileURLToPath(import.meta.url));
-    const tmpDir = join(__dirname, '..', '..', 'data', 'tmp', `tfvc-snapshot-${Date.now()}`);
+    const { join } = await import('node:path');
+    const tmpDir = join(importService.TMP_DIR, `tfvc-snapshot-${Date.now()}`);
 
     const MAX_ZIP_SIZE = 1024 * 1024 * 1024;
 
@@ -535,19 +548,19 @@ export { pickStrategies };
 // Request API natively creates the Git repo as part of the conversion;
 // we just stop after step 4 and rename instead of deleting.
 // ------------------------------------------------------------------
-router.post('/import/azure-tfvc/in-place', requireAuth, async (req, res) => {
+router.post('/import/azure-tfvc/in-place', requireAuth, validateBody(azureTfvcInPlaceSchema), async (req, res) => {
     try {
         const {
             azureHost: rawHost,
             azureOrg, azureProject, tfvcPath,
-            azurePat: bodyPat,
             targetRepoName,            // name for the new Git repo (required if existingRepoId absent)
             targetProject,             // optional: different project on same org
             existingRepoId,            // optional: reuse an existing empty Git repo instead of creating
             importHistory,
         } = req.body;
         const azureHost = rawHost || DEFAULT_HOST;
-        const azurePat = azureService.resolvePat(bodyPat, req.session);
+        const patResult = resolveAzurePat(req, { patField: 'azurePat' });
+        const azurePat = patResult.pat;
 
         if (!azureOrg || !azureProject || !tfvcPath) {
             return errorResponse(res, 400, 'Azure organization, project, and TFVC path are required', 'MISSING_PARAMS');
@@ -559,7 +572,7 @@ router.post('/import/azure-tfvc/in-place', requireAuth, async (req, res) => {
             return errorResponse(res, 400, 'targetRepoName is required (or pass existingRepoId)', 'MISSING_TARGET_NAME');
         }
         if (!azurePat) {
-            return errorResponse(res, 400, 'No PAT provided and no server PAT configured', 'MISSING_PAT');
+            return errorResponse(res, 400, patResult.error || 'No PAT provided and no server PAT configured', 'MISSING_PAT');
         }
 
         const hostCheck = await validateAzureHost(azureHost);
