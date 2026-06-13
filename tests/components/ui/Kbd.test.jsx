@@ -19,4 +19,20 @@ describe('Kbd', () => {
     render(<Kbd modifier="mod">K</Kbd>)
     expect(screen.getByText('Ctrl+K')).toBeInTheDocument()
   })
+
+  it('default tone uses the muted slate pill (neutral surfaces)', () => {
+    const { container } = render(<Kbd>Esc</Kbd>)
+    const cls = container.querySelector('kbd').className
+    expect(cls).toContain('--ds-surface-muted')
+    expect(cls).not.toContain('bg-white/20')
+  })
+
+  it('onSolid tone uses translucent-white styling so it reads on coloured buttons', () => {
+    const { container } = render(<Kbd tone="onSolid">↵</Kbd>)
+    const cls = container.querySelector('kbd').className
+    expect(cls).toContain('text-white/90')
+    expect(cls).toContain('bg-white/20')
+    expect(cls).toContain('border-white/30')
+    expect(cls).not.toContain('--ds-surface-muted')
+  })
 })

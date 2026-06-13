@@ -97,7 +97,7 @@ export function ConfirmModal({
                 {cancelText} <Kbd>Esc</Kbd>
             </Button>
             <Button variant={buttonVariant} onClick={handleConfirm} disabled={isLoading || isSubmitting} aria-label={(isLoading || isSubmitting) ? 'Processing...' : confirmText} className="inline-flex items-center gap-2">
-                {(isLoading || isSubmitting) ? 'Processing...' : confirmText} <Kbd modifier="mod">↵</Kbd>
+                {(isLoading || isSubmitting) ? 'Processing...' : confirmText} <Kbd modifier="mod" tone="onSolid">↵</Kbd>
             </Button>
         </ModalFooter>
     )
