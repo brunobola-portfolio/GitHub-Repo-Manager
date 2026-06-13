@@ -161,6 +161,34 @@ export async function deleteGithubRepo(owner, repo, headers) {
     throw new Error(`Failed to delete existing repository "${owner}/${repo}": ${body?.message || res.status}`);
 }
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Create a GitHub repo, retrying while the name is still "already exists"
+ * (GitHub frees a just-deleted name a beat after DELETE returns).
+ * @returns {object} the created repo JSON
+ */
+async function createGithubRepoWithRetry(endpoint, headers, payload, { tries = 5, delayMs = 1000 } = {}) {
+    let lastErr = null;
+    for (let i = 0; i < tries; i++) {
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        if (res.ok) return res.json();
+        const err = await res.json().catch(() => null);
+        const stillExists = res.status === 422
+            && err?.errors?.[0]?.message?.includes('already exists');
+        if (!stillExists) {
+            throw new Error(err?.message || `Failed to create GitHub repository: ${res.status}`);
+        }
+        lastErr = err;
+        await sleep(delayMs);
+    }
+    throw new Error(lastErr?.message || 'Repository name did not free up after deletion — try again.');
+}
+
 /**
  * Strip credentials from URL for safe logging
  */
@@ -190,6 +218,7 @@ async function importRepository(params) {
         isPrivate = true,
         description = '',
         sizeStrategy,
+        onConflict = 'fail',
         githubToken,
         onProgress = () => {}
     } = params;
@@ -198,6 +227,7 @@ async function importRepository(params) {
     const workDir = join(TMP_DIR, jobId);
     let createdRepo = null;
     let reusedExistingRepo = false;
+    let replacedExistingRepo = false;
     let lfsFetchFailed = false;
 
     try {
@@ -289,15 +319,35 @@ async function importRepository(params) {
                     throw new Error(`Repository "${ownerSegment}${targetName}" already exists on GitHub`);
                 }
                 const existing = await existingRes.json();
-                const isEmpty = (existing.size === 0) && !existing.default_branch;
-                if (!isEmpty) {
+                const decision = decideConflictResolution({
+                    size: existing.size,
+                    defaultBranch: existing.default_branch,
+                    onConflict,
+                });
+                if (decision.action === 'fail') {
                     throw new Error(
                         `Repository "${ownerSegment}${targetName}" already exists on GitHub and is not empty. Choose a different target name or delete it first.`,
                     );
                 }
-                createdRepo = existing;
-                reusedExistingRepo = true;
-                onProgress('creating', `Reusing empty repository "${existing.full_name}"...`, 18);
+                if (decision.action === 'replace') {
+                    // Destructive: delete the existing repo, then recreate it
+                    // empty so the normal --mirror push path applies. Logged so
+                    // the deletion is traceable in server logs.
+                    logger.warn({ owner: ownerSlug, repo: targetName }, 'Replacing existing non-empty repo (delete + recreate)');
+                    onProgress('creating', `Replacing existing repository "${existing.full_name}"...`, 16);
+                    await deleteGithubRepo(ownerSlug, targetName, githubHeaders);
+                    createdRepo = await createGithubRepoWithRetry(endpoint, githubHeaders, {
+                        name: targetName,
+                        description: safeDescription,
+                        private: isPrivate,
+                        auto_init: false,
+                    });
+                    replacedExistingRepo = true;
+                } else {
+                    createdRepo = existing;
+                    reusedExistingRepo = true;
+                    onProgress('creating', `Reusing empty repository "${existing.full_name}"...`, 18);
+                }
             } else {
                 throw new Error(err?.message || `Failed to create GitHub repository: ${createRes.status}`);
             }
@@ -481,6 +531,7 @@ async function importRepository(params) {
             hasLFS,
             lfsFetchFailed,
             reusedExistingRepo,
+            replacedExistingRepo,
             emptySource,
             repoUrl: createdRepo.html_url
         };
