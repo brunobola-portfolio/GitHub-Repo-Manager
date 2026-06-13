@@ -184,7 +184,7 @@ async function createGithubRepoWithRetry(endpoint, headers, payload, { tries = 5
             throw new Error(err?.message || `Failed to create GitHub repository: ${res.status}`);
         }
         lastErr = err;
-        await sleep(delayMs);
+        if (i < tries - 1) await sleep(delayMs);
     }
     throw new Error(lastErr?.message || 'Repository name did not free up after deletion — try again.');
 }
