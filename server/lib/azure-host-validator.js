@@ -87,6 +87,34 @@ function normalizeHost(host) {
 }
 
 /**
+ * Canonical heuristic classifier for an Azure DevOps host — the single source
+ * of truth for the cloud / legacy-VSTS / on-prem distinction. Every URL
+ * builder and connection check derives its behaviour from here so the three
+ * families are handled identically everywhere (no scattered ad-hoc
+ * `host === 'dev.azure.com' || host.endsWith('.visualstudio.com')` checks).
+ *
+ * @param {string} host - hostname[:port]
+ * @returns {{ kind: 'cloud'|'vsts'|'on-prem', isCloud: boolean, orgInPath: boolean }}
+ *   - kind:      provider family.
+ *   - isCloud:   cloud (modern dev.azure.com or legacy VSTS). Cloud hosts get
+ *                the DNS/SSRF public-IP guard; on-prem is allowed to resolve
+ *                to private addresses.
+ *   - orgInPath: whether the org/collection belongs in the URL PATH. FALSE for
+ *                legacy *.visualstudio.com, where the account IS the subdomain
+ *                — repeating it in the path 404s every call. TRUE for
+ *                dev.azure.com (cloud) and on-prem TFS, which carry the
+ *                org/collection in the path.
+ */
+export function classifyAzureHost(host) {
+  const h = normalizeHost(host);
+  if (h === 'dev.azure.com') return { kind: 'cloud', isCloud: true, orgInPath: true };
+  if (h.endsWith('.visualstudio.com')) return { kind: 'vsts', isCloud: true, orgInPath: false };
+  // Anything else (incl. an empty/odd host) is treated as on-prem: org in path,
+  // private addresses allowed. on-prem is the safe default for URL shape.
+  return { kind: 'on-prem', isCloud: false, orgInPath: true };
+}
+
+/**
  * @param {string} host - hostname (port permitted and stripped before comparison)
  * @returns {boolean}
  */
@@ -134,7 +162,7 @@ export async function validateAzureHost(host) {
   // Skip the DNS private-IP check for on-prem hosts — TFS servers are
   // normally deployed inside corporate networks and resolve to RFC1918.
   // Cloud hosts keep the full DNS-rebinding defence.
-  const isCloud = probeHost === 'dev.azure.com' || probeHost.endsWith('.visualstudio.com');
+  const { isCloud } = classifyAzureHost(probeHost);
   if (!isCloud) {
     return { ok: true };
   }

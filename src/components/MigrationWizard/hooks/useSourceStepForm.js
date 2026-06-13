@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { parseAzureUrl } from '../../../utils/azureUrlParser'
+import { classifyProvider } from '../../../utils/azureProvider'
 import { getCsrfToken } from '../../../utils/api'
 import { isAbort } from '../../../utils/errorClassification'
 import { useHostAllowlist } from '../../../hooks/useHostAllowlist'
@@ -145,7 +146,7 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
     // before they hit a confusing 401.
     const hostLower = (parsed.host || '').toLowerCase().split(':')[0]
     const currentHostLower = (source.host || '').toLowerCase().split(':')[0]
-    const isCloudHost = hostLower === 'dev.azure.com' || hostLower.endsWith('.visualstudio.com')
+    const isCloudHost = classifyProvider(parsed.host).isCloud
     if (!isCloudHost && hostLower && source.credentialMode !== 'personalPat') {
       updates.credentialMode = 'personalPat'
     }

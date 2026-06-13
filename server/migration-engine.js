@@ -4,11 +4,30 @@ import { defaultRepoDescription } from './lib/repo-description.js'
 import { migrateWorkItems } from './work-item-service.js'
 import { migrateWiki } from './wiki-service.js'
 import * as azureService from './azure-service.js'
+import { classifyAzureHost } from './lib/azure-host-validator.js'
 import { isSchedulingEnabled } from './lib/credential-encryption.js'
 import { createMigrationCredentialManager } from './lib/migration-credential-manager.js'
 import { githubApi } from './lib/github-api.js'
 import logger from './lib/logger.js'
 import { safeJson } from './lib/safe-json.js'
+
+/**
+ * Build the git clone URL for an Azure DevOps source repo, host-aware — mirrors
+ * the REST/PAT URL rule so every surface treats the three provider families
+ * identically:
+ *   - dev.azure.com (cloud):       https://dev.azure.com/{org}/{project}/_git/{repo}
+ *   - {acct}.visualstudio.com (VSTS): account is the subdomain, org NOT in path
+ *                                  → https://acct.visualstudio.com/{project}/_git/{repo}
+ *   - on-prem TFS:                 https://{host}/tfs/DefaultCollection/{org}/{project}/_git/{repo}
+ *
+ * Exported for unit testing.
+ */
+export function buildAzureCloneUrl(host, org, project, repo) {
+  const { kind, orgInPath } = classifyAzureHost(host)
+  const base = kind === 'on-prem' ? `https://${host}/tfs/DefaultCollection` : `https://${host}`
+  const orgSegment = orgInPath ? `/${org}` : ''
+  return `${base}${orgSegment}/${project}/_git/${repo}`
+}
 
 export class MigrationEngine extends EventEmitter {
   constructor(db) {
@@ -741,14 +760,8 @@ export class MigrationEngine extends EventEmitter {
         const azureProject = parts[1]
         const azureRepo = parts.slice(2).join('/')
 
-        // On-prem TFS uses /tfs/DefaultCollection/{org}/...; cloud uses /{org}/...
-        const isCloud = azureHost === 'dev.azure.com' || azureHost.endsWith('.visualstudio.com')
-        const baseClone = isCloud
-          ? `https://${azureHost}`
-          : `https://${azureHost}/tfs/DefaultCollection`
-
         const result = await importRepository({
-          sourceUrl: `${baseClone}/${azureOrg}/${azureProject}/_git/${azureRepo}`,
+          sourceUrl: buildAzureCloneUrl(azureHost, azureOrg, azureProject, azureRepo),
           credentials: resolvedCredentials.azurePat ? { type: 'pat', token: resolvedCredentials.azurePat } : undefined,
           targetOwner,
           targetName: targetRepo,

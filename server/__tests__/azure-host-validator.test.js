@@ -2,8 +2,29 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   isAllowedHost, resolveAzureBaseUrl, invalidateAllowlistCache,
   addHostToAllowlist, removeHostFromAllowlist, validateAzureHost,
+  classifyAzureHost,
 } from '../lib/azure-host-validator.js';
 import db from '../db.js';
+
+describe('classifyAzureHost', () => {
+  it('dev.azure.com → cloud, org in path', () => {
+    expect(classifyAzureHost('dev.azure.com')).toEqual({ kind: 'cloud', isCloud: true, orgInPath: true });
+  });
+
+  it('*.visualstudio.com → vsts cloud, org NOT in path (account is the subdomain)', () => {
+    expect(classifyAzureHost('brunobola.visualstudio.com')).toEqual({ kind: 'vsts', isCloud: true, orgInPath: false });
+  });
+
+  it('arbitrary host → on-prem, org in path, not cloud', () => {
+    expect(classifyAzureHost('tfs.corp.com')).toEqual({ kind: 'on-prem', isCloud: false, orgInPath: true });
+  });
+
+  it('is case-insensitive and port-tolerant', () => {
+    expect(classifyAzureHost('DEV.AZURE.COM').kind).toBe('cloud');
+    expect(classifyAzureHost('CONTOSO.VisualStudio.com').kind).toBe('vsts');
+    expect(classifyAzureHost('tfs.corp.com:8080')).toEqual({ kind: 'on-prem', isCloud: false, orgInPath: true });
+  });
+});
 
 describe('azure-host-validator', () => {
   const originalEnv = process.env.ALLOWED_AZURE_HOSTS;

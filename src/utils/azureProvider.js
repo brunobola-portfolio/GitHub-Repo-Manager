@@ -26,9 +26,14 @@ export const PROVIDERS = {
  *   shortName: string,                 // one-word brand name (eg. "Azure DevOps")
  *   tone: 'indigo'|'sky'|'violet'|'slate',
  *   isCloud: boolean,
+ *   orgInPath: boolean,                // org/collection belongs in URL path?
  *   supportsOAuth: boolean,            // Azure AD OAuth is cloud-only
  *   docsUrl: string,
  * }}
+ *
+ * `orgInPath` is the single rule that keeps every host-aware URL consistent
+ * (API, PAT settings, az CLI, clone). It's FALSE only for legacy VSTS, where
+ * the account is the subdomain and must NOT be repeated in the path.
  */
 export function classifyProvider(host) {
   if (!host || typeof host !== 'string') {
@@ -39,6 +44,7 @@ export function classifyProvider(host) {
       shortName: 'Azure DevOps',
       tone: 'slate',
       isCloud: false,
+      orgInPath: true,
       supportsOAuth: false,
       docsUrl: 'https://learn.microsoft.com/azure/devops/',
     }
@@ -52,6 +58,7 @@ export function classifyProvider(host) {
       shortName: 'Azure DevOps',
       tone: 'indigo',
       isCloud: true,
+      orgInPath: true,
       supportsOAuth: true,
       docsUrl: 'https://learn.microsoft.com/azure/devops/user-guide/sign-up-invite-teammates',
     }
@@ -64,6 +71,8 @@ export function classifyProvider(host) {
       shortName: 'VSTS',
       tone: 'sky',
       isCloud: true,
+      // The account is the subdomain — the org must NOT be repeated in paths.
+      orgInPath: false,
       supportsOAuth: true,
       docsUrl: 'https://learn.microsoft.com/azure/devops/release-notes/2018/sep-10-azure-devops-launch',
     }
@@ -78,6 +87,7 @@ export function classifyProvider(host) {
     shortName: 'TFS',
     tone: 'violet',
     isCloud: false,
+    orgInPath: true,
     supportsOAuth: false,
     docsUrl: 'https://learn.microsoft.com/azure/devops/server/',
   }
@@ -130,8 +140,15 @@ export function providerToneClasses(tone) {
  * @returns {string|null}
  */
 export function buildPatSettingsUrl(host, org) {
-  if (!host || !org) return null
+  if (!host) return null
   const cleanHost = host.replace(/\/+$/, '')
+  // VSTS: the account is the subdomain, so the PAT page lives at the host root
+  // (https://acct.visualstudio.com/_usersSettings/tokens) — repeating the org
+  // would 404, mirroring the API/clone URLs.
+  if (!classifyProvider(host).orgInPath) {
+    return `https://${cleanHost}/_usersSettings/tokens`
+  }
+  if (!org) return null
   const orgPath = org.split('/').map(encodeURIComponent).join('/')
   return `https://${cleanHost}/${orgPath}/_usersSettings/tokens`
 }
@@ -142,5 +159,7 @@ export function buildPatSettingsUrl(host, org) {
  */
 export function buildAzCliCommand(host, org) {
   if (!host || !org) return null
-  return `az devops login --organization "https://${host}/${org}"`
+  // VSTS routes through the bare account host; cloud/on-prem carry the org.
+  const orgUrl = classifyProvider(host).orgInPath ? `https://${host}/${org}` : `https://${host}`
+  return `az devops login --organization "${orgUrl}"`
 }

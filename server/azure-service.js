@@ -11,7 +11,7 @@
  */
 
 import { decryptCredentials } from './lib/credential-encryption.js';
-import { resolveAzureBaseUrl, encodePathSegments } from './lib/azure-host-validator.js';
+import { resolveAzureBaseUrl, encodePathSegments, classifyAzureHost } from './lib/azure-host-validator.js';
 import { basicAuthHeader } from './lib/basic-auth-header.js';
 
 const DEFAULT_HOST = 'dev.azure.com';
@@ -45,9 +45,7 @@ function encOrg(org) {
  */
 function orgBaseFor(host, org) {
     const origin = baseFor(host);
-    const hostname = (host || '').toLowerCase().split(':')[0];
-    if (hostname.endsWith('.visualstudio.com')) return origin;
-    return `${origin}/${encOrg(org)}`;
+    return classifyAzureHost(host).orgInPath ? `${origin}/${encOrg(org)}` : origin;
 }
 
 /**
@@ -216,8 +214,7 @@ async function validatePat(org, pat, host = DEFAULT_HOST) {
         // Only attempt on-prem `/tfs/` fallback for non-cloud hosts and only
         // when the org isn't already collection-prefixed. Cloud servers will
         // never need this path.
-        const hostnameOnly = (host || '').toLowerCase().split(':')[0];
-        const isCloud = hostnameOnly === 'dev.azure.com' || hostnameOnly.endsWith('.visualstudio.com');
+        const { isCloud } = classifyAzureHost(host);
         const alreadyPrefixed = org.toLowerCase().startsWith('tfs/');
         if (!isCloud && !alreadyPrefixed && (e.status === 404 || e.status === 302)) {
             try {

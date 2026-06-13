@@ -1,7 +1,24 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import Database from 'better-sqlite3'
-import { MigrationEngine } from '../migration-engine.js'
+import { MigrationEngine, buildAzureCloneUrl } from '../migration-engine.js'
+
+describe('buildAzureCloneUrl (host-aware source clone URL)', () => {
+  it('dev.azure.com (cloud) keeps the org in the path', () => {
+    expect(buildAzureCloneUrl('dev.azure.com', 'myorg', 'proj', 'repo'))
+      .toBe('https://dev.azure.com/myorg/proj/_git/repo')
+  })
+
+  it('legacy *.visualstudio.com does NOT repeat the account in the path', () => {
+    expect(buildAzureCloneUrl('brunobola.visualstudio.com', 'brunobola', 'proj', 'repo'))
+      .toBe('https://brunobola.visualstudio.com/proj/_git/repo')
+  })
+
+  it('on-prem TFS routes through /tfs/DefaultCollection with the org', () => {
+    expect(buildAzureCloneUrl('tfs.corp.com', 'Trigenius', 'proj', 'repo'))
+      .toBe('https://tfs.corp.com/tfs/DefaultCollection/Trigenius/proj/_git/repo')
+  })
+})
 
 /**
  * Creates an in-memory SQLite database with the same schema used by the app.
