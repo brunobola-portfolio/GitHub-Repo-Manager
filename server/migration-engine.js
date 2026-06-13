@@ -771,6 +771,7 @@ export class MigrationEngine extends EventEmitter {
             source: { org: azureOrg, project: azureProject, isTfvc: false },
           }),
           sizeStrategy: config.sizeStrategy,
+          onConflict: config.onConflict,
           githubToken: resolvedCredentials.githubToken,
           onProgress: (status, message, pct) => callbacks.onProgress(pct, message)
         })
@@ -889,6 +890,7 @@ export class MigrationEngine extends EventEmitter {
               source: { org: tfvcOrg, project: tfvcProject, isTfvc: true, tfvcPath },
             }),
             sizeStrategy: config.sizeStrategy,
+            onConflict: config.onConflict,
             githubToken: resolvedCredentials.githubToken,
             onProgress: (status, message, pct) => callbacks.onProgress(45 + Math.floor((pct / 100) * 50), message)
           })
