@@ -144,7 +144,7 @@ describe('RepoConfigStep guard — extraction safety net', () => {
     expect(screen.queryByText('Description')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: /Toggle advanced options/i }))
     expect(screen.getByText('Description')).toBeInTheDocument()
-    expect(screen.getByText('LFS')).toBeInTheDocument()
+    expect(screen.getByText('Git LFS')).toBeInTheDocument()
   })
 
   // --- Target-name conflict check behaviour --------------------------------

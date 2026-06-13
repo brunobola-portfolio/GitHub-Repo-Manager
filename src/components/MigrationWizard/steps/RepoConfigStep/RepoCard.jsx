@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Package, ArrowRight, Plus, Recycle, Lock, Unlock,
-  MoreHorizontal, CheckCircle2, XCircle, GitBranch, HardDrive, ChevronDown,
+  MoreHorizontal, CheckCircle2, XCircle, GitBranch, HardDrive, ChevronDown, Sparkles,
 } from 'lucide-react'
 import { Spinner } from '../../../ui/Spinner'
 import { Select } from '../../../ui/Select'
@@ -44,6 +44,7 @@ export function RepoCard({
   azureEmptyRepos,
   aiAvailable,
   isGenerating,
+  descriptionMode,
   branchExpanded,
   branchList,
   branchLoading,
@@ -243,37 +244,49 @@ export function RepoCard({
                 index={index}
                 aiAvailable={aiAvailable}
                 isGenerating={isGenerating}
+                mode={descriptionMode}
                 onChange={(value) => handlers.onDescriptionChange(index, value)}
                 onGenerate={() => handlers.onGenerateDescription(repo, index)}
               />
 
               {/* LFS + Branch row */}
-              <div className="flex items-center gap-4">
-                <div className="inline-flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Git LFS — premium control, surfaces auto-detection */}
+                <div className="inline-flex items-center gap-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 pl-2.5 pr-3 py-1.5">
                   <Switch
                     checked={!!repo.lfsEnabled}
                     onChange={(next) => handlers.onUpdateRepo(index, { lfsEnabled: next })}
-                    label="LFS"
+                    label="Git LFS"
+                    tone="amber"
                     size="sm"
                   />
-                  <span className="text-xs text-slate-600 dark:text-slate-400">
-                    <HardDrive className="w-3 h-3 inline mr-1" />
-                    LFS
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 dark:text-slate-300">
+                    <HardDrive className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" aria-hidden="true" />
+                    Git LFS
                   </span>
+                  {repo.hasLfsMarker && (
+                    <span
+                      title="LFS pointers were detected in .gitattributes — enabled automatically"
+                      className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 ds-text-micro font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400"
+                    >
+                      <Sparkles className="w-2.5 h-2.5" aria-hidden="true" />
+                      Auto-detected
+                    </span>
+                  )}
                 </div>
 
                 {!repo.isTfvc && (
                   <button
                     type="button"
                     onClick={() => handlers.onToggleBranchExpand(repo, index)}
-                    className="inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400
-                      hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 px-3 py-2 text-xs font-medium text-slate-600 dark:text-slate-400
+                      hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                   >
-                    <GitBranch className="w-3 h-3" />
+                    <GitBranch className="w-3.5 h-3.5" aria-hidden="true" />
                     {repo.branchFilter === 'selected'
-                      ? `${(repo.selectedBranches || []).length} branches`
+                      ? `${(repo.selectedBranches || []).length} branch${(repo.selectedBranches || []).length === 1 ? '' : 'es'}`
                       : 'All branches'}
-                    <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${branchExpanded ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${branchExpanded ? 'rotate-180' : ''}`} />
                   </button>
                 )}
               </div>

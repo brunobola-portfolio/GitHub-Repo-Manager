@@ -28,6 +28,10 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
   const [expandedCards, setExpandedCards] = useState({})
   const [quotaNotice, setQuotaNotice] = useState('')
   const [generatingId, setGeneratingId] = useState(null)
+  // Per-row provenance of the last generated description ('ai' | 'template'),
+  // so the card can show a transparent badge instead of leaving the user
+  // wondering whether AI actually ran. Cleared when the user edits the text.
+  const [descriptionModes, setDescriptionModes] = useState({})
   const { aiAvailable, aiNotice, setAiNotice } = useAiAvailability()
   const { suggest } = useRepoDescriptionSuggestion({ aiAvailable })
 
@@ -44,8 +48,9 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
     const key = repo.id ?? index
     setGeneratingId(key)
     try {
-      const { description, quotaExceeded } = await suggest({ repo, source })
+      const { description, mode, quotaExceeded } = await suggest({ repo, source })
       onUpdateRepo(index, { description })
+      setDescriptionModes((prev) => ({ ...prev, [index]: mode }))
       if (quotaExceeded) {
         setQuotaNotice('AI quota reached for this hour — used a template instead.')
         setTimeout(() => setQuotaNotice(''), 4000)
@@ -95,6 +100,8 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
 
   const handleDescriptionChange = (index, value) => {
     onUpdateRepo(index, { description: value })
+    // A manual edit invalidates the "AI-generated / Template" provenance badge.
+    setDescriptionModes((prev) => (prev[index] ? { ...prev, [index]: undefined } : prev))
   }
 
   const handleReplace = (repo, index) => {
@@ -147,6 +154,22 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
     }
     prevTargetOrg.current = source.targetOrg
   }, [source.targetOrg, repos, checkConflict])
+
+  // Auto-enable LFS wherever markers were detected (.gitattributes), once per
+  // repo. Keeps large-file pointers preserved by default — the same outcome the
+  // AutoFix drawer produces — so the user never has to hunt for the toggle. We
+  // only seed when the flag is still untouched (undefined); an explicit toggle
+  // off sets it to `false` and is respected.
+  const lfsSeededRef = useRef(new Set())
+  useEffect(() => {
+    repos.forEach((repo, index) => {
+      const key = repo.id ?? repo.name ?? index
+      if (repo.hasLfsMarker && repo.lfsEnabled === undefined && !lfsSeededRef.current.has(key)) {
+        lfsSeededRef.current.add(key)
+        onUpdateRepo(index, { lfsEnabled: true })
+      }
+    })
+  }, [repos, onUpdateRepo])
 
   const hasLfsEnabled = repos.some((r) => r.lfsEnabled)
 
@@ -305,6 +328,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
                 azureEmptyRepos={azureEmptyRepos}
                 aiAvailable={aiAvailable}
                 isGenerating={generatingId === (repo.id ?? index)}
+                descriptionMode={descriptionModes[index]}
                 branchExpanded={!!expandedBranches[branchKey]}
                 branchList={branchCache[branchKey] || []}
                 branchLoading={!!loadingBranches[branchKey]}
