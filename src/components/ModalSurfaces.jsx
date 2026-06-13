@@ -109,6 +109,9 @@ export function ModalSurfaces({
               if (result?.success) {
                 toast.success(`Transferred ${repoNames.length} repo(s) to ${targetOrg}`)
                 closeModal('showTransfer')
+                // performAction refetches the repo list and (via useGitHub's
+                // wrapper) the org counts + stats — the lists and "N repos"
+                // badges update in real time without a manual sync.
                 refresh()
               } else {
                 toast.error(result?.message || 'Transfer failed')
@@ -123,6 +126,9 @@ export function ModalSurfaces({
               if (result?.success) {
                 toast.success(`Mirrored ${repoNames.length} repo(s) to ${targetOrg}`)
                 closeModal('showTransfer')
+                // performAction refetches the repo list and (via useGitHub's
+                // wrapper) the target org's counts — its "N repos" badge bumps
+                // in real time without a manual sync.
                 refresh()
               } else {
                 toast.error(result?.message || 'Mirror failed')

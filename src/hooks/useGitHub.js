@@ -55,10 +55,10 @@ export function useGitHub() {
         setPage,
         refresh,
         patchRepoLocal,
-        performAction,
-        archiveRepos,
-        deleteRepos,
-        createRepo,
+        performAction: performActionRaw,
+        archiveRepos: archiveReposRaw,
+        deleteRepos: deleteReposRaw,
+        createRepo: createRepoRaw,
         importFromAzure,
         checkImportStatus
     } = useRepos(user)
@@ -97,6 +97,34 @@ export function useGitHub() {
         patchRepoLocal(updatedRepo)
         patchOrgRepoLocal(updatedRepo)
     }, [patchRepoLocal, patchOrgRepoLocal])
+
+    // Single source of truth for keeping org data real-time. Any repo mutation
+    // can shift the org "N repos" badges and dashboard stats: create/delete
+    // change totals, transfer moves ownership between accounts, visibility
+    // flips the public/private split. The mutation wrappers below already
+    // refetch the repo LIST (fetchRepos); this refreshes the ORG side too, so
+    // every surface — context menu, bulk bar, command palette, modals — stays
+    // current without each call site remembering to. Silent by design: the
+    // action that ran shows its own result toast.
+    const refreshOrgData = useCallback(() => {
+        Promise.all([fetchOrgs(), fetchStats()]).catch(() => {})
+    }, [fetchOrgs, fetchStats])
+
+    // Wrap a repo mutation so a successful result also refreshes org data.
+    // Functions that throw on failure (archive/delete) propagate the throw
+    // before the refresh; those that resolve with { success: false }
+    // (performAction/createRepo) are guarded so a no-op/failed call doesn't
+    // trigger a pointless refetch.
+    const withOrgRefresh = useCallback((fn) => async (...args) => {
+        const result = await fn(...args)
+        if (result?.success !== false) refreshOrgData()
+        return result
+    }, [refreshOrgData])
+
+    const performAction = withOrgRefresh(performActionRaw)
+    const createRepo = withOrgRefresh(createRepoRaw)
+    const deleteRepos = withOrgRefresh(deleteReposRaw)
+    const archiveRepos = withOrgRefresh(archiveReposRaw)
 
     // ---- Return the exact same shape the old monolith exposed ----
     return {
