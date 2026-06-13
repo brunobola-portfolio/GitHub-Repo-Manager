@@ -7,6 +7,7 @@ import { useAzureProjectData } from '../hooks/useAzureProjectData'
 import { useRepoNameConflicts } from '../hooks/useRepoNameConflicts'
 import { useAiAvailability } from '../hooks/useAiAvailability'
 import { useRepoDescriptionSuggestion } from '../../../hooks/useRepoDescriptionSuggestion'
+import { getOrgRepoCount } from '../../../utils/orgRepoCount'
 import TargetModePicker from './RepoConfigStep/TargetModePicker'
 import { DashboardHeader } from './RepoConfigStep/DashboardHeader'
 import { RepoCard } from './RepoConfigStep/RepoCard'
@@ -162,7 +163,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
     orgs.map((org) => ({
       value: org.login,
       label: org.login,
-      badge: org.isPersonal ? 'Personal' : `${(org.public_repos || 0) + (org.total_private_repos || 0)} repos`,
+      badge: org.isPersonal ? 'Personal' : `${getOrgRepoCount(org)} repos`,
     })),
     [orgs]
   )

@@ -15,6 +15,7 @@ import { useTheme } from '../hooks/useTheme.jsx'
 import { useSystemHealth } from '../hooks/useSystemHealth.js'
 import { useRelativeTime } from '../hooks/useRelativeTime.js'
 import { formatRelativeTime } from '../utils/format'
+import { getOrgRepoCount } from '../utils/orgRepoCount'
 import { useWorkBoardBadgeCounts } from '../hooks/useWorkBoardBadgeCounts'
 import { useNotificationsDigest } from '../hooks/useNotificationsDigest'
 import { useFocusTrap } from '../hooks/useFocusTrap'
@@ -530,7 +531,7 @@ function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, o
                             >
                                 <img src={org.avatar_url} alt={org.login} className="w-6 h-6 rounded-md" />
                                 <span className="text-sm text-slate-700 dark:text-slate-300 flex-1 truncate">{org.login}</span>
-                                <span className="text-xs text-slate-400 dark:text-slate-500">{org.public_repos || 0}</span>
+                                <span className="text-xs text-slate-400 dark:text-slate-500">{getOrgRepoCount(org)}</span>
                             </button>
                         ))
                     )}

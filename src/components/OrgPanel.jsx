@@ -6,6 +6,7 @@ import {
 	Globe, Folder
 } from 'lucide-react'
 import { formatNumber, formatCompact } from '../utils/format'
+import { getOrgRepoCount } from '../utils/orgRepoCount'
 import { motion, AnimatePresence } from 'framer-motion'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { TAP, EASE } from './ui/motion'
@@ -184,7 +185,7 @@ export function OrgPanel({
 
 const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 	// Calculate total repos if available, otherwise fallback
-	const totalRepos = (org.public_repos || 0) + (org.total_private_repos || 0)
+	const totalRepos = getOrgRepoCount(org)
 	const isGrid = viewMode === 'grid'
 	const isPersonal = org.isPersonal === true
 

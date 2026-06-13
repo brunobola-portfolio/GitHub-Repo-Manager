@@ -2,6 +2,7 @@ import React from 'react'
 import { Spinner } from '../ui/Spinner'
 import { Building2, ChevronDown, Check, Loader2 } from 'lucide-react'
 import * as Popover from '@radix-ui/react-popover'
+import { getOrgRepoCount } from '../../utils/orgRepoCount'
 
 /**
  * OrganizationSelector - Premium dropdown for selecting organization
@@ -43,7 +44,7 @@ export function OrganizationSelector({ orgs = [], selectedOrg, onSelectOrg, load
                                 </span>
                                 {selectedOrgData && (
                                     <span className="text-xs text-slate-500 dark:text-slate-400">
-                                        {selectedOrgData.public_repos || 0} repos
+                                        {getOrgRepoCount(selectedOrgData)} repos
                                     </span>
                                 )}
                             </div>
@@ -95,9 +96,9 @@ export function OrganizationSelector({ orgs = [], selectedOrg, onSelectOrg, load
                                     />
                                     <div className="flex flex-col items-start flex-1 min-w-0">
                                         <span className="font-semibold text-left truncate w-full">{org.login}</span>
-                                        {org.public_repos > 0 && (
+                                        {getOrgRepoCount(org) > 0 && (
                                             <span className="text-xs text-slate-500 dark:text-slate-400">
-                                                {org.public_repos} repos
+                                                {getOrgRepoCount(org)} repos
                                             </span>
                                         )}
                                     </div>
