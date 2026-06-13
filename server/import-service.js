@@ -124,6 +124,22 @@ function embedCredentials(url, credentials) {
 }
 
 /**
+ * Decide what to do when the target repo name already exists on GitHub.
+ * Pure (no I/O). An existing *empty* repo is always reused (nothing to lose);
+ * a non-empty repo is replaced only when the user chose `onConflict: 'replace'`,
+ * otherwise the import fails with the "already exists" error.
+ *
+ * @param {{ size:number, defaultBranch:(string|null|undefined), onConflict?:string }} args
+ * @returns {{ action: 'reuse'|'replace'|'fail' }}
+ */
+export function decideConflictResolution({ size, defaultBranch, onConflict }) {
+    const isEmpty = size === 0 && !defaultBranch;
+    if (isEmpty) return { action: 'reuse' };
+    if (onConflict === 'replace') return { action: 'replace' };
+    return { action: 'fail' };
+}
+
+/**
  * Strip credentials from URL for safe logging
  */
 function safeUrl(url) {
