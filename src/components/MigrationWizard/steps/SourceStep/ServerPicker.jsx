@@ -135,7 +135,10 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
         {!locked && (
           <div className="shrink-0 flex items-center gap-1">
             <PresetButton
-              active={provider.type === PROVIDERS.CLOUD}
+              // Both modern cloud (dev.azure.com) AND legacy VSTS
+              // (*.visualstudio.com) are cloud — light up "Cloud" for either so
+              // a pasted VSTS URL auto-selects instead of leaving both unset.
+              active={provider.isCloud}
               onClick={pickCloud}
               title="Use Azure DevOps Cloud"
             >
@@ -190,6 +193,7 @@ function PresetButton({ active, onClick, title, children }) {
       type="button"
       onClick={onClick}
       title={title}
+      aria-pressed={active}
       className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border transition-colors
         ${active
           ? 'border-indigo-400 dark:border-indigo-500 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300'
