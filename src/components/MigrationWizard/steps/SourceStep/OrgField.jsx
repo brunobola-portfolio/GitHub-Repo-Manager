@@ -6,6 +6,7 @@ import {
 import { Spinner } from '../../../ui/Spinner'
 import { Select } from '../../../ui/Select'
 import { Field, Input } from '../../../ui/form'
+import { buildPatSettingsUrl } from '../../../../utils/azureProvider'
 
 /**
  * Org selector with two modes:
@@ -272,7 +273,9 @@ export default function OrgField({
                   </p>
                   <div className="flex items-center gap-2 mt-2">
                     <a
-                      href={`https://dev.azure.com/${encodeURIComponent(source.org)}/_usersSettings/tokens`}
+                      // Host-aware: points at the actual server's PAT page
+                      // (cloud, VSTS, or on-prem), not a hardcoded dev.azure.com.
+                      href={buildPatSettingsUrl(source.host, source.org) || `https://dev.azure.com/${encodeURIComponent(source.org)}/_usersSettings/tokens`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400 hover:text-amber-500 underline"
