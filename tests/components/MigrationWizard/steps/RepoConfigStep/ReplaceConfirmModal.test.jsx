@@ -32,4 +32,16 @@ describe('ReplaceConfirmModal', () => {
     fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
     expect(onCancel).toHaveBeenCalledTimes(1)
   })
+
+  it('resets the typed value after cancel so a reopen is not pre-confirmed', () => {
+    const onCancel = vi.fn()
+    const { rerender } = render(<ReplaceConfirmModal isOpen repoFullName="BolaLabs/AITOOL" onCancel={onCancel} onConfirm={vi.fn()} />)
+    fireEvent.change(screen.getByLabelText(/type the repository name/i), { target: { value: 'BolaLabs/AITOOL' } })
+    fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
+    // close then reopen
+    rerender(<ReplaceConfirmModal isOpen={false} repoFullName="BolaLabs/AITOOL" onCancel={onCancel} onConfirm={vi.fn()} />)
+    rerender(<ReplaceConfirmModal isOpen repoFullName="BolaLabs/AITOOL" onCancel={onCancel} onConfirm={vi.fn()} />)
+    expect(screen.getByLabelText(/type the repository name/i)).toHaveValue('')
+    expect(screen.getByRole('button', { name: /delete & replace/i })).toBeDisabled()
+  })
 })

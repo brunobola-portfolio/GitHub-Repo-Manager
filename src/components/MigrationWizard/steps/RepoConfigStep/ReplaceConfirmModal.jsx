@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useId } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { Modal, ModalFooter } from '../../../ui/Modal'
 import { Input } from '../../../ui/form'
@@ -13,6 +13,7 @@ import { Input } from '../../../ui/form'
  */
 export function ReplaceConfirmModal({ isOpen, repoFullName, onCancel, onConfirm }) {
   const [typed, setTyped] = useState('')
+  const inputId = useId()
 
   const matches = typed.trim() === repoFullName
 
@@ -41,7 +42,8 @@ export function ReplaceConfirmModal({ isOpen, repoFullName, onCancel, onConfirm 
             onClick={handleCancel}
             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg
               text-slate-600 dark:text-slate-300 bg-white/80 dark:bg-white/5
-              border border-slate-200/60 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10"
+              border border-slate-200/60 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-white/10
+              ds-focus-ring"
           >
             Cancel
           </button>
@@ -49,7 +51,7 @@ export function ReplaceConfirmModal({ isOpen, repoFullName, onCancel, onConfirm 
             type="button"
             disabled={!matches}
             onClick={handleConfirm}
-            className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg text-white transition-colors
+            className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg text-white transition-colors ds-focus-ring
               ${matches ? 'bg-red-600 hover:bg-red-700' : 'bg-red-600/40 cursor-not-allowed'}`}
           >
             Delete &amp; Replace
@@ -66,7 +68,7 @@ export function ReplaceConfirmModal({ isOpen, repoFullName, onCancel, onConfirm 
         </p>
         <div>
           <label
-            htmlFor="replace-confirm-name"
+            htmlFor={inputId}
             className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5"
           >
             Type the repository name{' '}
@@ -74,12 +76,13 @@ export function ReplaceConfirmModal({ isOpen, repoFullName, onCancel, onConfirm 
             to confirm
           </label>
           <Input
-            id="replace-confirm-name"
+            id={inputId}
             type="text"
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
             placeholder={repoFullName}
             status={typed && !matches ? 'error' : 'idle'}
+            autoFocus
           />
         </div>
       </div>
