@@ -282,7 +282,11 @@ function ErrorCard({ error, index, onResolveConflict }) {
   const typeConfig = TYPE_CONFIG[error.type] || TYPE_CONFIG.repo
   const TypeIcon = typeConfig.icon
   const oversized = decodeOversizedError(error.error)
-  const isConflict = /already exists/i.test(error.error || '')
+  // Only repo-type tasks can be recovered via the Configure → Replace flow;
+  // other task types (work-items, wiki) may also say "already exists" but
+  // the Replace action does not apply to them.
+  const isRepoTask = error.type === 'repo' || error.type === 'repo-tfvc'
+  const isConflict = isRepoTask && /already exists/i.test(error.error || '')
 
   const handleCopy = () => {
     navigator.clipboard.writeText(error.error)
