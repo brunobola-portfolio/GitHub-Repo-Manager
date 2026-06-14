@@ -122,6 +122,13 @@ export default function MigrationWizard({
     }
   }, [setDirection, updateSource, setRepos, goToStep])
 
+  // From the Summary error screen: jump back to Configure so the user can
+  // choose Replace/Rename/Skip and re-run. The conflict re-surfaces there.
+  const handleResolveConflict = useCallback(() => {
+    setDirection(-1)
+    goToStep('repoConfig')
+  }, [setDirection, goToStep])
+
   // Close with dirty-state confirmation. React 19's compiler handles
   // memoization automatically; manual useCallback was tripping the
   // compiler's preserve-manual-memoization rule.
@@ -175,6 +182,7 @@ export default function MigrationWizard({
     onClose,
     setDirection,
     nextStep,
+    onResolveConflict: handleResolveConflict,
   }
 
   const isAzure = source.sourceType === 'azure'
