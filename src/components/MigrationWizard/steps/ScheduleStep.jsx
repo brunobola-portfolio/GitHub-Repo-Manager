@@ -12,6 +12,7 @@ import { StatCard } from '../ui/repo/StatCard'
 import { formatFileSize } from '../../../utils/format'
 import { TaggingPolicyPanel } from './TaggingPolicyPanel'
 import { DEFAULT_TAGGING_POLICY } from './taggingDefaults'
+import { buildRepoTaskConfig } from './buildRepoTaskConfig'
 
 function SummaryCard({ wizard }) {
   const selectedRepos = (wizard.repos || []).filter(r => r.selected)
@@ -77,23 +78,7 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
         .filter((repo) => repo.sizeStrategy !== 'exclude')
         .map(repo => {
           const repoName = repo.targetName || repo.name
-          const baseConfig = {
-            makePrivate: repo.visibility === 'private',
-            description: repo.description || '',
-          }
-          let config = repo.sizeStrategy === 'lfs-migrate'
-            ? { ...baseConfig, sizeStrategy: 'lfs-migrate' }
-            : baseConfig
-          if (isInPlace && repo.isTfvc) {
-            config = {
-              ...config,
-              inPlace: true,
-              targetProject,
-              ...(repo.targetType === 'existing-empty' && repo.existingRepoId
-                ? { existingRepoId: repo.existingRepoId }
-                : {}),
-            }
-          }
+          const config = buildRepoTaskConfig(repo, { isInPlace, targetProject })
           // targetRef must be 2 parts ("owner/repoName") because the engine's
           // validation regex rejects slashes in the repo segment. For in-place,
           // we encode owner=source.org and pass the destination project via
