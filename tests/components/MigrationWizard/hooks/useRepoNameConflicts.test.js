@@ -41,4 +41,40 @@ describe('useRepoNameConflicts', () => {
     act(() => { result.current.setConflicts((p) => ({ ...p, x: 'idle' })) })
     expect(result.current.conflicts.x).toBe('idle')
   })
+
+  it('mount-seed: repo with conflictAction=replace and name-conflict risk flag seeds to will-replace, not conflict', () => {
+    // This test exercises the mount-seed effect (empty dep array).
+    // Without Fix 1b the name-conflict flag would overwrite 'will-replace' with 'conflict'.
+    const repos = [
+      {
+        name: 'mig',
+        targetName: 'mig',
+        conflictAction: 'replace',
+        risk: { flags: [{ type: 'name-conflict' }] },
+      },
+    ]
+    const { result } = renderHook(() =>
+      useRepoNameConflicts({ ...base, isAzureDevops: false, azureProjectRepoNames: null, repos })
+    )
+    expect(result.current.conflicts.mig).toBe('will-replace')
+  })
+
+  it('Azure re-seed: repo with conflictAction=replace is not clobbered to conflict when its name is in azureProjectRepoNames', () => {
+    // This test exercises the Azure re-seed effect (deps: azureProjectRepoNames, isAzureDevops, repos).
+    // Without Fix 1a the re-seed would overwrite 'will-replace' with 'conflict'.
+    const repos = [
+      {
+        name: 'taken',
+        targetName: 'taken',
+        conflictAction: 'replace',
+        risk: { flags: [] },
+      },
+    ]
+    // 'taken' is in the project — without the guard it would become 'conflict'
+    const names = new Set(['taken'])
+    const { result } = renderHook(() =>
+      useRepoNameConflicts({ ...base, isAzureDevops: true, azureProjectRepoNames: names, repos })
+    )
+    expect(result.current.conflicts.taken).toBe('will-replace')
+  })
 })

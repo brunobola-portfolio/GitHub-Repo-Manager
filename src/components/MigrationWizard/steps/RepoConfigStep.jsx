@@ -362,6 +362,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
           </motion.div>
         )}
       </AnimatePresence>
+      {/* targetName is set whenever a conflict was detected; repo.name is a safe fallback */}
       <ReplaceConfirmModal
         isOpen={!!replaceTarget}
         repoFullName={replaceTarget

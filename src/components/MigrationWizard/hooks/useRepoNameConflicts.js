@@ -86,6 +86,8 @@ export function useRepoNameConflicts({ source, isAzureDevops, azureProjectRepoNa
     setConflicts((prev) => {
       const next = { ...prev }
       repos.forEach((repo) => {
+        // A user-confirmed destructive Replace must survive re-seeds.
+        if (repo.conflictAction === 'replace') { next[repo.name] = 'will-replace'; return }
         const tn = repo.targetName?.trim()
         if (!tn) { next[repo.name] = 'idle'; return }
         next[repo.name] = azureProjectRepoNames.has(tn.toLowerCase()) ? 'conflict' : 'clear'
@@ -106,6 +108,7 @@ export function useRepoNameConflicts({ source, isAzureDevops, azureProjectRepoNa
   useEffect(() => {
     const seeded = {}
     repos.forEach((repo) => {
+      if (repo.conflictAction === 'replace') { seeded[repo.name] = 'will-replace'; return }
       if (repo.risk?.flags?.some((f) => f.type === 'name-conflict')) seeded[repo.name] = 'conflict'
       else if (repo.targetName?.trim()) seeded[repo.name] = 'clear'
     })

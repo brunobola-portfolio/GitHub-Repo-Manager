@@ -174,7 +174,7 @@ describe('RepoConfigStep guard — extraction safety net', () => {
     fireEvent.change(screen.getByLabelText(/type the repository name/i), { target: { value: 'acme/demo' } })
     fireEvent.click(screen.getByRole('button', { name: /delete & replace/i }))
 
-    expect(props.onUpdateRepo).toHaveBeenCalledWith(0, expect.objectContaining({ conflictAction: 'replace' }))
+    expect(props.onUpdateRepo).toHaveBeenCalledWith(0, expect.objectContaining({ conflictAction: 'replace', hasConflict: false }))
   })
 
   // --- AI description generation + quota notice ----------------------------
