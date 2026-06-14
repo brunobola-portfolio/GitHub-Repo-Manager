@@ -80,6 +80,12 @@ export async function fetchMyPendingReviews({ token, login, limit = 100 }) {
     return { ...r, items: r.items.map(normalisePR) };
 }
 
+export async function fetchMyOpenPRs({ token, login, limit = 100 }) {
+    const q = `author:${login} is:open is:pr archived:false`;
+    const r = await callSearch({ token, q, perPage: limit });
+    return { ...r, items: r.items.map(normalisePR) };
+}
+
 export async function fetchStalePRs({ token, login, staleAfterDays = 7, limit = 100 }) {
     const cutoff = new Date(Date.now() - staleAfterDays * 86_400_000).toISOString().slice(0, 10);
     const q = `author:${login} is:open is:pr updated:<${cutoff} archived:false`;

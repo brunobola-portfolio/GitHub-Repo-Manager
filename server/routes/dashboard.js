@@ -6,7 +6,7 @@ import db from '../db.js';
 
 const router = Router();
 
-router.get('/inbox', requireAuth, (req, res) => {
+router.get('/inbox', requireAuth, async (req, res) => {
     try {
         const sections = req.query.sections
             ? String(req.query.sections).split(',').map(s => s.trim()).filter(Boolean)
@@ -17,10 +17,12 @@ router.get('/inbox', requireAuth, (req, res) => {
         if (!userLogin) {
             req.log?.warn?.({ userId: req.session.userId }, 'inbox requested with no userLogin in session');
         }
-        const result = composeInbox(req.session.userId, {
+        const result = await composeInbox(req.session.userId, {
             userLogin,
+            token: req.session.accessToken || null,
             sections,
             includeArchived,
+            logger: req.log,
         });
         res.json(result);
     } catch (err) {
