@@ -4,6 +4,11 @@ import Database from 'better-sqlite3'
 import { MigrationEngine, buildAzureCloneUrl } from '../migration-engine.js'
 import { importRepository } from '../import-service.js'
 
+// Module-level hoist: intercepts the ESM `importRepository` binding inside
+// migration-engine.js for the whole file. Existing tests are unaffected (they
+// override engine._executeTask or only hit the dry-run early-return). Any new
+// test that runs the real _executeTask past the dry-run guard for a repo task
+// MUST set importRepository.mockResolvedValue(...) or it will read .success of undefined.
 vi.mock('../import-service.js', () => ({
   importRepository: vi.fn(),
 }))
