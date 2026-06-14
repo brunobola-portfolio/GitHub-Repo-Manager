@@ -39,7 +39,10 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
 
   const isAzureDevops = source?.azureTargetMode === 'azure-devops'
   const targetProject = source?.targetProject || source?.project || ''
-  const targetOwner = source?.targetOrg || source?.org || ''
+  // Mirror the engine's destination owner: targetOrg, else the user's personal
+  // account (empty → ScheduleStep/import target just the repo name). Never the
+  // Azure source.org, which is not a GitHub owner.
+  const targetOwner = source?.targetOrg || ''
 
   const { azureProjectRepoNames, azureEmptyRepos, azureProjects, projectsLoading } =
     useAzureProjectData({ isAzureDevops, source, targetProject })
@@ -64,7 +67,15 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
   }, [suggest, source, onUpdateRepo])
 
   const handleTargetNameChange = (repo, index, value) => {
-    onUpdateRepo(index, { targetName: value })
+    // Editing the name invalidates a prior confirmed Replace — the destructive
+    // intent was confirmed for a specific name and must not silently carry over.
+    onUpdateRepo(index, {
+      targetName: value,
+      ...(repo.conflictAction === 'replace' ? { conflictAction: undefined } : {}),
+    })
+    if (repo.conflictAction === 'replace') {
+      setConflicts((prev) => ({ ...prev, [repo.name]: 'idle' }))
+    }
     checkConflict(repo.name, value)
   }
 

@@ -59,6 +59,26 @@ describe('useRepoNameConflicts', () => {
     expect(result.current.conflicts.mig).toBe('will-replace')
   })
 
+  it('GitHub path: omits targetOwner from the POST body when no targetOrg is set (falls back to authed user on server)', async () => {
+    // source has no targetOrg — the engine resolves owner from the session user.
+    // The hook must NOT substitute source.org as the owner.
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ duplicates: { 'my-repo': false }, duplicateDetails: {} }),
+    })
+    const noOrg = { source: { org: 'azure-org', targetOrg: undefined } }
+    const { result } = renderHook(() =>
+      useRepoNameConflicts({ ...noOrg, isAzureDevops: false, azureProjectRepoNames: null, repos: NO_REPOS })
+    )
+    act(() => { result.current.checkConflict('my-repo', 'my-repo') })
+    // Wait for the debounced fetch (500ms)
+    await act(() => new Promise((r) => setTimeout(r, 600)))
+    expect(global.fetch).toHaveBeenCalledOnce()
+    const body = JSON.parse(global.fetch.mock.calls[0][1].body)
+    // targetOwner must be omitted or undefined — never the Azure org string.
+    expect(body.targetOwner).toBeUndefined()
+  })
+
   it('Azure re-seed: repo with conflictAction=replace is not clobbered to conflict when its name is in azureProjectRepoNames', () => {
     // This test exercises the Azure re-seed effect (deps: azureProjectRepoNames, isAzureDevops, repos).
     // Without Fix 1a the re-seed would overwrite 'will-replace' with 'conflict'.

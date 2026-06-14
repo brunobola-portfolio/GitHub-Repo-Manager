@@ -154,6 +154,23 @@ describe('RepoConfigStep guard — extraction safety net', () => {
     expect(h.checkConflict).toHaveBeenCalledWith('demo', 'renamed')
   })
 
+  it('clears a previously-confirmed Replace intent when the target name is edited', () => {
+    // Repo has conflictAction='replace' (user already confirmed Replace for this name).
+    const { props } = renderStep({
+      repos: [makeRepo({ conflictAction: 'replace', targetName: 'demo' })],
+    })
+    // h.conflicts is {} — the will-replace badge is driven by conflictAction on the repo,
+    // not a live conflicts entry; we only need to confirm onUpdateRepo behaviour.
+    fireEvent.change(screen.getByLabelText('Target repository name for demo'), { target: { value: 'demo-v2' } })
+    // Must clear conflictAction so the stale destructive intent doesn't carry over.
+    expect(props.onUpdateRepo).toHaveBeenCalledWith(
+      0,
+      expect.objectContaining({ targetName: 'demo-v2', conflictAction: undefined }),
+    )
+    // setConflicts must have been poked to reset the row away from will-replace.
+    expect(h.setConflicts).toHaveBeenCalled()
+  })
+
   // --- ConflictResolutionPanel target --------------------------------------
   it('auto-expands a conflicted card with Replace / Rename actions', () => {
     h.conflicts = { demo: 'conflict' }

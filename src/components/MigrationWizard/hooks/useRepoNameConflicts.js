@@ -58,7 +58,7 @@ export function useRepoNameConflicts({ source, isAzureDevops, azureProjectRepoNa
             },
             body: JSON.stringify({
               repos: [targetName],
-              targetOwner: source.targetOrg || source.org,
+              targetOwner: source.targetOrg || undefined,
             }),
           })
           const data = await res.json()
@@ -75,7 +75,7 @@ export function useRepoNameConflicts({ source, isAzureDevops, azureProjectRepoNa
         }
       }, 500)
     },
-    [source.targetOrg, source.org, isAzureDevops, azureProjectRepoNames]
+    [source.targetOrg, isAzureDevops, azureProjectRepoNames]
   )
 
   // When the Azure project repo list arrives (or changes), re-seed conflict
