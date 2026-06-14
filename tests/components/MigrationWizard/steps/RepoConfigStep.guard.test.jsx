@@ -11,7 +11,7 @@
  * deterministic and conflict / AI / branch state can be driven per test.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import RepoConfigStep from '@/components/MigrationWizard/steps/RepoConfigStep.jsx'
 
 const h = vi.hoisted(() => ({
@@ -166,9 +166,9 @@ describe('RepoConfigStep guard — extraction safety net', () => {
     // source.targetOrg='acme', repo.targetName='demo' → repoFullName = 'acme/demo'
     const { props } = renderStep()
     fireEvent.click(screen.getByRole('button', { name: /^replace$/i }))
-    // Modal shown; action NOT yet wired
+    // Modal shown; conflictAction not yet set (sync effect may have fired hasConflict: true, but no replace action yet)
     expect(screen.getByText(/permanently delete/i)).toBeInTheDocument()
-    expect(props.onUpdateRepo).not.toHaveBeenCalled()
+    expect(props.onUpdateRepo).not.toHaveBeenCalledWith(0, expect.objectContaining({ conflictAction: 'replace' }))
 
     // type-to-confirm using the full target name the component passes to the modal
     fireEvent.change(screen.getByLabelText(/type the repository name/i), { target: { value: 'acme/demo' } })
@@ -193,6 +193,15 @@ describe('RepoConfigStep guard — extraction safety net', () => {
     fireEvent.click(screen.getByRole('button', { name: /Toggle advanced options/i }))
     expect(screen.getByRole('button', { name: /Suggest/i })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Generate with AI/i })).toBeNull()
+  })
+
+  // --- Block-before-run guard: hasConflict sync effect ----------------------
+  it('syncs hasConflict onto repo state when a conflict is present', async () => {
+    h.conflicts = { demo: 'conflict' }
+    const { props } = renderStep()
+    await waitFor(() => {
+      expect(props.onUpdateRepo).toHaveBeenCalledWith(0, { hasConflict: true })
+    })
   })
 
   // --- Branch load-on-expand behaviour -------------------------------------

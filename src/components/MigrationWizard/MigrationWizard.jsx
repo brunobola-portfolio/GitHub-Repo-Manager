@@ -91,6 +91,10 @@ export default function MigrationWizard({
   const blockerCount = currentStep === 'repoSelect'
     ? selectedRepos.reduce((sum, r) => sum + (r.risk?.flags || []).filter((f) => f.severity === 'blocker').length, 0)
     : 0
+  const conflictCount = currentStep === 'repoConfig'
+    ? selectedRepos.filter((r) => r.hasConflict).length
+    : 0
+  const advanceBlocked = blockerCount > 0 || conflictCount > 0
   const { direction, setDirection, handleNext, handleBack, handleStartImport } = useWizardNavigation({
     source,
     currentStepIndex,
@@ -202,10 +206,16 @@ export default function MigrationWizard({
         <button
           type="button"
           onClick={handleNext}
-          disabled={blockerCount > 0}
-          title={blockerCount > 0 ? `${blockerCount} blocker(s) must be resolved — open a row to see options` : undefined}
+          disabled={advanceBlocked}
+          title={
+            blockerCount > 0
+              ? `${blockerCount} blocker(s) must be resolved — open a row to see options`
+              : conflictCount > 0
+                ? `Resolve ${conflictCount} naming conflict(s) to continue — choose Replace, Rename or Skip`
+                : undefined
+          }
           className={`inline-flex items-center gap-2 px-6 py-2.5 text-[13px] font-semibold rounded-lg text-white
-            ${blockerCount > 0
+            ${advanceBlocked
               ? 'bg-slate-600 cursor-not-allowed opacity-60'
               : 'bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-[color:var(--ds-accent-brand)]'}
             shadow-md transition-all duration-200`}

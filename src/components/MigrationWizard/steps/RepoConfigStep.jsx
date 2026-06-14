@@ -181,6 +181,18 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
     })
   }, [repos, onUpdateRepo])
 
+  // Mirror live conflict detection onto repo state so the wizard shell can
+  // block "Next" while any selected repo has an unresolved conflict. Guarded
+  // so it only writes on a real change (no render loop).
+  useEffect(() => {
+    repos.forEach((repo, index) => {
+      const isConflict = conflicts[repo.name] === 'conflict'
+      if (!!repo.hasConflict !== isConflict) {
+        onUpdateRepo(index, { hasConflict: isConflict })
+      }
+    })
+  }, [conflicts, repos, onUpdateRepo])
+
   const hasLfsEnabled = repos.some((r) => r.lfsEnabled)
 
   const stats = useMemo(() => ({
