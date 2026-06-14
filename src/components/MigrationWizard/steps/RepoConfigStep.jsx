@@ -11,6 +11,7 @@ import { getOrgRepoCount } from '../../../utils/orgRepoCount'
 import TargetModePicker from './RepoConfigStep/TargetModePicker'
 import { DashboardHeader } from './RepoConfigStep/DashboardHeader'
 import { RepoCard } from './RepoConfigStep/RepoCard'
+import { ReplaceConfirmModal } from './RepoConfigStep/ReplaceConfirmModal'
 
 /**
  * RepoConfigStep - Configure target settings for selected repos.
@@ -28,6 +29,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
   const [expandedCards, setExpandedCards] = useState({})
   const [quotaNotice, setQuotaNotice] = useState('')
   const [generatingId, setGeneratingId] = useState(null)
+  const [replaceTarget, setReplaceTarget] = useState(null)
   // Per-row provenance of the last generated description ('ai' | 'template'),
   // so the card can show a transparent badge instead of leaving the user
   // wondering whether AI actually ran. Cleared when the user edits the text.
@@ -37,6 +39,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
 
   const isAzureDevops = source?.azureTargetMode === 'azure-devops'
   const targetProject = source?.targetProject || source?.project || ''
+  const targetOwner = source?.targetOrg || source?.org || ''
 
   const { azureProjectRepoNames, azureEmptyRepos, azureProjects, projectsLoading } =
     useAzureProjectData({ isAzureDevops, source, targetProject })
@@ -105,8 +108,15 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
   }
 
   const handleReplace = (repo, index) => {
-    setConflicts((prev) => ({ ...prev, [repo.name]: 'clear' }))
-    onUpdateRepo(index, { conflictAction: 'replace' })
+    setReplaceTarget({ repo, index })
+  }
+
+  const confirmReplace = () => {
+    if (!replaceTarget) return
+    const { repo, index } = replaceTarget
+    setConflicts((prev) => ({ ...prev, [repo.name]: 'will-replace' }))
+    onUpdateRepo(index, { conflictAction: 'replace', hasConflict: false })
+    setReplaceTarget(null)
   }
 
   const handleRename = (repo, index) => {
@@ -352,6 +362,14 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
           </motion.div>
         )}
       </AnimatePresence>
+      <ReplaceConfirmModal
+        isOpen={!!replaceTarget}
+        repoFullName={replaceTarget
+          ? `${targetOwner ? `${targetOwner}/` : ''}${replaceTarget.repo.targetName || replaceTarget.repo.name}`
+          : ''}
+        onCancel={() => setReplaceTarget(null)}
+        onConfirm={confirmReplace}
+      />
     </div>
   )
 }

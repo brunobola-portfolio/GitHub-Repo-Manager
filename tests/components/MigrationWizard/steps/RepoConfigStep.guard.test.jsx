@@ -157,10 +157,24 @@ describe('RepoConfigStep guard — extraction safety net', () => {
   // --- ConflictResolutionPanel target --------------------------------------
   it('auto-expands a conflicted card with Replace / Rename actions', () => {
     h.conflicts = { demo: 'conflict' }
-    const { props } = renderStep()
+    renderStep()
     expect(screen.getByText('A repository with this name already exists')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /Replace/i }))
-    expect(props.onUpdateRepo).toHaveBeenCalledWith(0, { conflictAction: 'replace' })
+  })
+
+  it('Replace opens a confirm modal; confirming sets conflictAction', async () => {
+    h.conflicts = { demo: 'conflict' }
+    // source.targetOrg='acme', repo.targetName='demo' → repoFullName = 'acme/demo'
+    const { props } = renderStep()
+    fireEvent.click(screen.getByRole('button', { name: /^replace$/i }))
+    // Modal shown; action NOT yet wired
+    expect(screen.getByText(/permanently delete/i)).toBeInTheDocument()
+    expect(props.onUpdateRepo).not.toHaveBeenCalled()
+
+    // type-to-confirm using the full target name the component passes to the modal
+    fireEvent.change(screen.getByLabelText(/type the repository name/i), { target: { value: 'acme/demo' } })
+    fireEvent.click(screen.getByRole('button', { name: /delete & replace/i }))
+
+    expect(props.onUpdateRepo).toHaveBeenCalledWith(0, expect.objectContaining({ conflictAction: 'replace' }))
   })
 
   // --- AI description generation + quota notice ----------------------------
