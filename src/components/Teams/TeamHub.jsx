@@ -126,7 +126,9 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
                 description="Collaborate and manage repositories together."
                 icon={Users}
                 actions={
-                    <button
+                    <Button
+                        variant="primary"
+                        size="md"
                         onClick={() => {
                             setFormData({ name: '', description: '' });
                             setIsEditing(false);
@@ -134,11 +136,11 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
                         }}
                         disabled={upgradeRequired}
                         title={upgradeRequired ? 'Teams require the Pro plan' : undefined}
-                        className="flex items-center gap-2 px-4 py-2 bg-[color:var(--ds-accent-brand)] hover:bg-[color:var(--ds-accent-brand-hover)] text-white rounded-xl shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600"
+                        className="gap-2"
                     >
                         {upgradeRequired ? <Lock className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
                         <span>Create Team</span>
-                    </button>
+                    </Button>
                 }
             />
 
@@ -176,19 +178,21 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
                                 />
                             </Field>
                             <div className="flex justify-end gap-3 pt-2">
-                                <button
+                                <Button
+                                    variant="ghost"
+                                    size="md"
                                     type="button"
                                     onClick={() => setShowCreate(false)}
-                                    className="px-4 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl"
                                 >
                                     Cancel
-                                </button>
-                                <button
+                                </Button>
+                                <Button
+                                    variant="primary"
+                                    size="md"
                                     type="submit"
-                                    className="px-6 py-2 bg-[color:var(--ds-accent-brand)] text-white rounded-xl hover:bg-[color:var(--ds-accent-brand-hover)] font-medium"
                                 >
                                     {isEditing ? 'Save Changes' : 'Create Team'}
-                                </button>
+                                </Button>
                             </div>
                         </form>
                         </Card>

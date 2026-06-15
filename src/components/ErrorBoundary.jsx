@@ -1,6 +1,7 @@
 import { Component, cloneElement, isValidElement } from 'react'
 import { AlertTriangle, RefreshCw, RotateCcw } from 'lucide-react'
 import { getCsrfToken } from '../utils/api'
+import { Button } from './ui/Button'
 
 class ErrorBoundary extends Component {
   state = { hasError: false, error: null, errorInfo: null }
@@ -76,20 +77,22 @@ class ErrorBoundary extends Component {
               {this.state.error?.message || 'An unexpected error occurred. You can try again or reload the page.'}
             </p>
             <div className="flex gap-3 justify-center">
-              <button
+              <Button
+                variant="primary"
+                size="md"
                 onClick={this.handleRetry}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-[color:var(--ds-accent-brand)] hover:bg-[color:var(--ds-accent-brand-hover)] text-white rounded-xl font-medium text-sm transition-colors ds-focus-ring"
               >
                 <RotateCcw className="w-4 h-4" />
                 Try Again
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="secondary"
+                size="md"
                 onClick={() => window.location.reload()}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl font-medium text-sm transition-colors focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus:outline-none"
               >
                 <RefreshCw className="w-4 h-4" />
                 Reload Page
-              </button>
+              </Button>
             </div>
           </div>
         </div>

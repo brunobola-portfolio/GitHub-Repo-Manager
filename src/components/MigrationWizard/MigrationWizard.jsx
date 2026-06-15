@@ -199,20 +199,17 @@ export default function MigrationWizard({
       </Button>
 
       {canGoNext && !hideNextButton && (
-        <button
+        <Button
+          variant="primary"
+          size="md"
           type="button"
           onClick={handleNext}
           disabled={blockerCount > 0}
           title={blockerCount > 0 ? `${blockerCount} blocker(s) must be resolved — open a row to see options` : undefined}
-          className={`inline-flex items-center gap-2 px-6 py-2.5 text-[13px] font-semibold rounded-lg text-white
-            ${blockerCount > 0
-              ? 'bg-slate-600 cursor-not-allowed opacity-60'
-              : 'bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-[color:var(--ds-accent-brand)]'}
-            shadow-md transition-all duration-200`}
         >
           Next
           <ArrowRight className="w-3.5 h-3.5" />
-        </button>
+        </Button>
       )}
     </div>
   )

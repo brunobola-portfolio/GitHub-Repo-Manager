@@ -5,6 +5,7 @@ import {
   AlertCircle, Loader2, Info, Flag, HardDrive, AlertTriangle,
 } from 'lucide-react'
 import { Spinner } from '../../ui/Spinner'
+import { Button } from '../../ui/Button'
 import { Field, Input } from '../../ui/form'
 import { migrationApi } from '../../../api/migration'
 import { useToast } from '../../../hooks/useToast'
@@ -323,17 +324,13 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
 
       {/* Execute button */}
       {!scheduled && (
-        <button
+        <Button
+          variant="primary"
+          size="md"
           type="button"
           onClick={handleExecute}
           disabled={executing || (schedule.mode === 'scheduled' && !schedule.scheduledAt)}
-          className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-medium rounded-xl
-            text-white
-            bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)]
-            hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-indigo-600
-            shadow-md
-            disabled:opacity-50 disabled:cursor-not-allowed
-            transition-all"
+          className="w-full"
         >
           {executing ? (
             <>
@@ -346,7 +343,7 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
               {buttonLabel}
             </>
           )}
-        </button>
+        </Button>
       )}
     </div>
   )

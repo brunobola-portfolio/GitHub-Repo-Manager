@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { Button } from '../../ui/Button'
 
 export function CreatePRConfirm({ action = 'create', onConfirm, onCancel, loading }) {
     const labels = {
@@ -14,7 +15,7 @@ export function CreatePRConfirm({ action = 'create', onConfirm, onCancel, loadin
             className="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700"
         >
             <span className="text-xs text-slate-600 dark:text-slate-300">{cfg.title}</span>
-            <button type="button" onClick={onCancel} disabled={loading} className="px-3 py-1 text-xs rounded-md text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Cancel</button>
+            <Button type="button" variant="ghost" size="xs" onClick={onCancel} disabled={loading}>Cancel</Button>
             <button type="button" onClick={onConfirm} disabled={loading} className={`px-3 py-1 text-xs font-medium rounded-md text-white ${cfg.color} disabled:opacity-50`}>
                 {loading ? 'Working...' : cfg.btn}
             </button>

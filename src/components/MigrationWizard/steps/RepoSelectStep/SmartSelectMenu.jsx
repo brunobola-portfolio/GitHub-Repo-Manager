@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Sparkles, ChevronDown, Zap, Clock, XCircle, Archive, AlertOctagon, Pencil } from 'lucide-react'
 import { PatternSelectModal } from './PatternSelectModal'
+import { Button } from '../../../ui/Button'
 
 const PRESETS = [
   { id: 'recommended', icon: Zap,         label: 'Recommended',          predicate: (r) => r.risk?.level === 'ok' && !r.isDisabled },
@@ -64,20 +65,19 @@ export function SmartSelectMenu({ repos, onSelect }) {
 
   return (
     <div className="relative" ref={ref}>
-      <button
+      <Button
         ref={triggerRef}
+        variant="primary"
+        size="xs"
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
-          bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] text-white shadow-md
-          hover:shadow-lg transition-all"
         aria-haspopup="menu"
         aria-expanded={open}
       >
         <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
         Smart Select
         <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
-      </button>
+      </Button>
       {open && (
         <div
           ref={menuRef}

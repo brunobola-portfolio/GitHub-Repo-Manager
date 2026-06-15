@@ -154,9 +154,9 @@ function UpgradePrompt({ onUpgradePro, onUpgradeEnterprise }) {
                             </li>
                         ))}
                     </ul>
-                    <button className="w-full py-2 text-sm font-medium text-white bg-amber-500 dark:bg-amber-400 hover:bg-amber-600 dark:hover:bg-amber-500 rounded-xl transition-colors">
+                    <Button variant="warning" size="md" className="w-full">
                         Contact Sales
-                    </button>
+                    </Button>
                 </Card>
             </div>
         </div>

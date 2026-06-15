@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { X, Send, Sparkles, Loader2, Settings, Key, Minus, ArrowRight, AlertTriangle, RotateCw } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
+import { Button } from './ui/Button'
 import { Card } from './ui/Card'
 import { Input } from './ui/form'
 import ReactMarkdown from 'react-markdown'
@@ -528,13 +529,14 @@ function NotConfiguredState({ onOpenSettings }) {
             <p className="text-sm text-slate-500 dark:text-slate-400 max-w-[260px]">
                 The AI assistant needs a Gemini API key. Add <code className="font-mono text-xs bg-slate-100 dark:bg-slate-800 rounded px-1.5 py-0.5">GEMINI_API_KEY</code> in <code className="font-mono text-xs">server/.env</code>, or configure it from settings.
             </p>
-            <button
+            <Button
                 type="button"
+                variant="primary"
+                size="sm"
                 onClick={onOpenSettings}
-                className="px-4 py-2 bg-[color:var(--ds-accent-brand)] text-white text-sm font-semibold rounded-xl transition-colors hover:opacity-90 shadow-sm"
             >
                 Open settings
-            </button>
+            </Button>
         </div>
     )
 }

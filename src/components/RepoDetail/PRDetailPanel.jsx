@@ -228,24 +228,24 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                         {onGenerateDescription && (
-                            <button
-                                type="button"
+                            <Button
+                                variant="secondary"
+                                size="sm"
                                 onClick={() => onGenerateDescription?.(pr)}
                                 disabled={aiOff}
                                 title={aiOff ? 'Configure AI in Settings → AI to enable generation' : undefined}
-                                className={`inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors ${aiOff ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
-                                <Wand2 className="w-3.5 h-3.5" />
+                                <Wand2 className="w-4 h-4" />
                                 Generate Description
-                            </button>
+                            </Button>
                         )}
                         {onStartReview && (
                             <Button
+                                variant="primary"
                                 size="sm"
                                 onClick={() => onStartReview?.(pr)}
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
                             >
-                                <Eye className="w-4 h-4 mr-1" />
+                                <Eye className="w-4 h-4" />
                                 Review
                             </Button>
                         )}

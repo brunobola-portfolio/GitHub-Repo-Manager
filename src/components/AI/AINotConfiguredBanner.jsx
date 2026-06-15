@@ -3,6 +3,7 @@ import { Sparkles, Key, ArrowRight, X } from 'lucide-react'
 import { useState } from 'react'
 import { BANNER_VARIANTS, BANNER_REDUCED_VARIANTS } from './bannerMotion'
 import { openAISettings } from '../../utils/appEvents'
+import { Button } from '../ui/Button'
 
 /**
  * AINotConfiguredBanner — premium inline banner shown on AI surfaces when
@@ -83,15 +84,16 @@ export function AINotConfiguredBanner({
                         You're seeing placeholder insights. Add a Gemini API key to unlock real analysis, suggestions and README enhancement.
                     </p>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <button
+                        <Button
                             type="button"
+                            variant="primary"
+                            size="sm"
                             onClick={openAISettings}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-[color:var(--ds-accent-brand)] text-white text-sm font-semibold rounded-lg transition-colors shadow-md ds-focus-ring"
                         >
                             <Key className="w-3.5 h-3.5" aria-hidden="true" />
                             Configure AI
                             <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-                        </button>
+                        </Button>
                         <a
                             href="https://aistudio.google.com/app/apikey"
                             target="_blank"

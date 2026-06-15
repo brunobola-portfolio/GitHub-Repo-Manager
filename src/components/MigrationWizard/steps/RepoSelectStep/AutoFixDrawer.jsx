@@ -7,6 +7,7 @@ import { SizeStrategyCard } from './SizeStrategyCard.jsx'
 import { SIZE_CRITICAL_BYTES } from './riskRules.js'
 import { isValidRepoName } from './autoFixRules.js'
 import { Drawer } from '../../../ui/Drawer'
+import { Button } from '../../../ui/Button'
 
 export function AutoFixDrawer({
   open,
@@ -105,21 +106,23 @@ export function AutoFixDrawer({
 
   const footer = (
     <div className="flex items-center justify-end gap-2">
-      <button
+      <Button
+        variant="ghost"
+        size="sm"
         type="button"
         onClick={onClose}
-        className="rounded-md px-3 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
       >
         Cancel
-      </button>
-      <button
+      </Button>
+      <Button
+        variant="primary"
+        size="sm"
         type="button"
         onClick={handleApply}
         disabled={applySet.length === 0}
-        className="rounded-md bg-indigo-500 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 hover:bg-indigo-400"
       >
         Apply selected ({applySet.length})
-      </button>
+      </Button>
     </div>
   )
 

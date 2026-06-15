@@ -10,6 +10,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { TrackedChip } from '../../WorkBoard/TrackedChip'
+import { Button } from '../../ui/Button'
 import { Textarea } from '../../ui/form'
 
 const REVIEW_OPTIONS = [
@@ -168,11 +169,13 @@ export function ReviewToolbar({ pr, repoName, repoFullName, viewMode, onToggleVi
 
       {/* Submit Review button + dropdown */}
       <div className="relative shrink-0">
-        <button
+        <Button
           ref={buttonRef}
+          variant="success"
+          size="sm"
           onClick={() => setDropdownOpen(o => !o)}
           disabled={submitting}
-          className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-green-600 hover:bg-green-700 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500"
+          className="relative"
           aria-expanded={dropdownOpen}
           aria-haspopup="menu"
         >
@@ -185,7 +188,7 @@ export function ReviewToolbar({ pr, repoName, repoFullName, viewMode, onToggleVi
               {pendingCount > 9 ? '9+' : pendingCount}
             </span>
           )}
-        </button>
+        </Button>
 
         {/* Dropdown */}
         <AnimatePresence>

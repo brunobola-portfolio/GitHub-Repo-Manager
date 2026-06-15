@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { RefreshCw, Wand2 } from 'lucide-react'
+import { Button } from '../../ui/Button'
 import { BranchSelector } from '../shared/BranchSelector'
 import { DiffSummary } from '../shared/DiffSummary'
 import { useStreaming } from '../../../hooks/useStreaming'
@@ -228,24 +229,25 @@ export function CommitTab({ toolkit }) {
                 </div>
             )}
 
-            <button
+            <Button
                 type="button"
+                variant="primary"
+                size="md"
                 onClick={handleGenerate}
                 disabled={aiOff || !canGenerate || isStreaming}
                 title={aiOff ? 'Configure AI in Settings → AI to enable generation' : undefined}
-                className="inline-flex items-center gap-2 px-6 py-2.5 text-[13px] font-semibold rounded-lg text-white bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-[color:var(--ds-accent-brand)] shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
                 {isStreaming ? (
                     <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Generating...</>
                 ) : (
                     <><Wand2 className="w-3.5 h-3.5" />Generate</>
                 )}
-            </button>
+            </Button>
 
             {inputMode === 'auto' && totalChanges > MULTI_COMMIT_THRESHOLD && !multiCommits && generated && (
                 <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 text-xs text-amber-700 dark:text-amber-300">
                     <span>Large diff detected ({totalChanges} lines). Split into logical commits?</span>
-                    <button type="button" onClick={handleSplit} disabled={splitLoading} className="px-2 py-0.5 rounded bg-amber-500 hover:bg-amber-600 text-white font-medium disabled:opacity-50">{splitLoading ? 'Splitting...' : 'Split'}</button>
+                    <Button type="button" variant="warning" size="xs" onClick={handleSplit} disabled={splitLoading}>{splitLoading ? 'Splitting...' : 'Split'}</Button>
                 </div>
             )}
 
