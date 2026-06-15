@@ -16,6 +16,10 @@ import { Skeleton } from '../../ui/Skeleton';
 
 const NARRATIVE_TOP_N = 3;
 
+// Kinds the /api/ai/attention-narrative endpoint accepts (repo-attention signals).
+// Inbox items are 'pr'/'issue', which the endpoint rejects (400) — so we skip them.
+const NARRATIVE_KINDS = new Set(['failed_migration', 'stale_pinned', 'abandoned', 'hot']);
+
 const EMPTY_STATE_COPY = {
     needs_review: "No PRs waiting for your review — you're all caught up.",
     my_prs: 'No open PRs of yours right now.',
@@ -53,7 +57,11 @@ export function InboxPanel({ onSelectItem }) {
             setNarratives({});
             return undefined;
         }
-        const top = active.items.slice(0, NARRATIVE_TOP_N);
+        const top = active.items.filter(it => NARRATIVE_KINDS.has(it.kind)).slice(0, NARRATIVE_TOP_N);
+        if (top.length === 0) {
+            setNarratives({});
+            return undefined;
+        }
         const ctrl = new AbortController();
         let cancelled = false;
 
