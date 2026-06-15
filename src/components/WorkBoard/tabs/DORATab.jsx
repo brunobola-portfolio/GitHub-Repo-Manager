@@ -3,6 +3,7 @@ import { useDORASummary } from '../../../hooks/useWorkBoard'
 import { EmptyState, WebhookHint, UpsellCard } from '../shared/shared-ui'
 import { hoursLabel } from '../shared/formatters'
 import { MOCK_MODE, API_BASE_URL } from '../../../config'
+import { Button } from '../../ui/Button'
 import { Card } from '../../ui/Card'
 import { Skeleton } from '../../ui/Skeleton'
 import { todayISO } from '../../../utils/dates'
@@ -113,14 +114,15 @@ export function DORATab() {
                 <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
                     production · last 30 days
                 </div>
-                <button
+                <Button
+                    variant="soft-primary"
+                    size="sm"
                     onClick={exportCsv}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
                     aria-label="Export DORA metrics as CSV"
                 >
                     <Download className="w-3.5 h-3.5" />
                     Export CSV
-                </button>
+                </Button>
             </div>
 
             {/* KPIs — 4 cards */}
