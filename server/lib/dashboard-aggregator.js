@@ -157,6 +157,7 @@ export async function composeInbox(userId, opts = {}) {
     }
 
     return {
+        meta: { live: !!token },
         sections: requested.map(key => ({
             key,
             label: SECTION_CONFIG[key].label,

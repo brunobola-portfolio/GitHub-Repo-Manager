@@ -28,7 +28,7 @@ const EMPTY_STATE_COPY = {
 };
 
 export function InboxPanel({ onSelectItem }) {
-    const { sections, loading, error, archive, snooze } = useInbox();
+    const { sections, meta, loading, error, archive, snooze } = useInbox();
     const { toast } = useToast();
     const [activeKey, setActiveKey] = useState(null);
     const [snoozingItem, setSnoozingItem] = useState(null);
@@ -184,7 +184,11 @@ export function InboxPanel({ onSelectItem }) {
                     )}
                     {error && <p className="p-6 text-sm text-red-600">{String(error.message || error)}</p>}
                     {!loading && !error && active && active.items.length === 0 && (
-                        <p className="p-6 text-sm text-slate-500">{EMPTY_STATE_COPY[active.key] ?? 'Nothing here.'}</p>
+                        <p className="p-6 text-sm text-slate-500">
+                            {meta && meta.live === false
+                                ? "Your GitHub session isn't connected — sign in to load live pull requests and reviews."
+                                : (EMPTY_STATE_COPY[active.key] ?? 'Nothing here.')}
+                        </p>
                     )}
                     {!loading && !error && active && active.items.length > 0 && (
                         <ul>

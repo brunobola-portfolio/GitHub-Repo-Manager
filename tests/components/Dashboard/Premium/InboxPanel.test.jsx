@@ -94,6 +94,45 @@ describe('InboxPanel', () => {
     })
 });
 
+describe('InboxPanel — unauthenticated empty state', () => {
+    beforeEach(() => {
+        vi.resetAllMocks();
+        aiStatusModule.useAIStatus.mockReturnValue({ configured: false, keyOk: false });
+        aiQuotaModule.useAIQuotaState.mockReturnValue(null);
+        aiUsageModule.useAIUsage.mockReturnValue({
+            tier: 'free',
+            aiQueries: null,
+            aiFeatures: {},
+            loading: false,
+        });
+        narrativeApi.fetchAttentionNarrative.mockResolvedValue({ narrative: null });
+    });
+
+    it('shows honest message when meta.live is false and section is empty', async () => {
+        api.fetchInbox.mockResolvedValue({
+            meta: { live: false },
+            sections: [
+                { key: 'needs_review', label: 'Needs my review', items: [] },
+            ],
+        });
+        render(<InboxPanel />);
+        expect(await screen.findByText(
+            "Your GitHub session isn't connected — sign in to load live pull requests and reviews."
+        )).toBeInTheDocument();
+    });
+
+    it('shows normal empty-state copy when meta.live is true and section is empty', async () => {
+        api.fetchInbox.mockResolvedValue({
+            meta: { live: true },
+            sections: [
+                { key: 'needs_review', label: 'Needs my review', items: [] },
+            ],
+        });
+        render(<InboxPanel />);
+        expect(await screen.findByText("No PRs waiting for your review — you're all caught up.")).toBeInTheDocument();
+    });
+});
+
 describe('InboxPanel — AI narrative fan-out', () => {
     beforeEach(() => {
         vi.resetAllMocks();

@@ -134,6 +134,25 @@ describe('composeInbox — stale_drafts section', () => {
     });
 });
 
+describe('composeInbox — meta.live flag', () => {
+    it('returns meta.live === true when a token is supplied', async () => {
+        const result = await composeInbox(USER_ID, {
+            userLogin: LOGIN,
+            token: 'tok',
+            sections: ['my_prs'],
+        });
+        expect(result.meta).toEqual({ live: true });
+    });
+
+    it('returns meta.live === false when no token is supplied', async () => {
+        const result = await composeInbox(USER_ID, {
+            userLogin: LOGIN,
+            sections: ['my_prs'],
+        });
+        expect(result.meta).toEqual({ live: false });
+    });
+});
+
 describe('composeInbox — unknown sections', () => {
     it('silently drops sections that are not in SECTION_KEYS (e.g. retired phase-2 stubs)', async () => {
         // failing_ci and dependabot_ready were removed when Phase 2/3 backing data
