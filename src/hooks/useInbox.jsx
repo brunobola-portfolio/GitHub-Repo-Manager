@@ -7,6 +7,7 @@ const ALL_SECTIONS = ['needs_review', 'my_prs', 'mentions', 'stale_drafts'];
 
 function removeFromSections(state, itemId) {
     return {
+        ...state,
         sections: state.sections.map(s => ({
             ...s,
             items: s.items.filter(i => i.id !== itemId),

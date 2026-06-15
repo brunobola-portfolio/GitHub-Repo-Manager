@@ -144,6 +144,9 @@ describe('InboxPanel — AI narrative fan-out', () => {
             aiFeatures: {},
             loading: false,
         });
+        // Gate-validation fixture: uses kind:'hot' (a NARRATIVE_KINDS-supported kind) inside a
+        // needs_review section to verify the top-N cap and kind guard fire correctly.
+        // In production, needs_review items are kind:'pr' and never trigger narrative fetches.
         api.fetchInbox.mockResolvedValue({
             sections: [{
                 key: 'needs_review',

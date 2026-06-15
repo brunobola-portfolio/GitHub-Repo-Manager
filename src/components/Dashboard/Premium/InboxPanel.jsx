@@ -18,6 +18,7 @@ const NARRATIVE_TOP_N = 3;
 
 // Kinds the /api/ai/attention-narrative endpoint accepts (repo-attention signals).
 // Inbox items are 'pr'/'issue', which the endpoint rejects (400) — so we skip them.
+// Keep in sync with the `kind` enum in server/lib/validators.js (attentionNarrativeSchema).
 const NARRATIVE_KINDS = new Set(['failed_migration', 'stale_pinned', 'abandoned', 'hot']);
 
 const EMPTY_STATE_COPY = {
