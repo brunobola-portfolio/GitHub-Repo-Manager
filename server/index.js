@@ -149,7 +149,18 @@ import { githubEventsWebhookHandler } from './routes/github-events-webhook.js';
 app.post('/api/v1/webhooks/github', express.raw({ type: 'application/json' }), githubEventsWebhookHandler);
 app.post('/api/webhooks/github', express.raw({ type: 'application/json' }), githubEventsWebhookHandler);
 
-app.use(express.json({ limit: '10kb' }));
+// The global JSON cap stays tight (10kb) to keep the attack surface small.
+// AI review endpoints (PR review-summary, deep-review, pr-commands, pr-chat)
+// legitimately receive concatenated diff/patch payloads that far exceed 10kb,
+// so they get a larger limit. These routes are authenticated and rate-limited,
+// which bounds the abuse risk of the higher cap.
+const jsonDefault = express.json({ limit: '10kb' });
+const jsonAiLarge = express.json({ limit: '4mb' });
+app.use((req, res, next) =>
+    req.path.startsWith('/api/ai/')
+        ? jsonAiLarge(req, res, next)
+        : jsonDefault(req, res, next)
+);
 app.use(requestLoggerMiddleware);
 
 // Cap per_page query parameter to prevent excessive data requests

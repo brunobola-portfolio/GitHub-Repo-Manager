@@ -100,6 +100,17 @@ describe('formatUserError', () => {
     expect(out.action.type).toBe('retry')
   })
 
+  it('maps a 413 status to PAYLOAD_TOO_LARGE', () => {
+    const out = formatUserError({ status: 413 })
+    expect(out.code).toBe('PAYLOAD_TOO_LARGE')
+    expect(out.title).toMatch(/too large/i)
+  })
+
+  it('maps a raw "request entity too large" message to PAYLOAD_TOO_LARGE', () => {
+    const out = formatUserError(new Error('request entity too large'))
+    expect(out.code).toBe('PAYLOAD_TOO_LARGE')
+  })
+
   it('maps AI_TIMEOUT to a retry action', () => {
     const out = formatUserError({ code: 'AI_TIMEOUT' })
     expect(out.title).toMatch(/timed out/i)

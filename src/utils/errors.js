@@ -137,6 +137,11 @@ const KNOWN_ERRORS = {
         body: 'You have used your monthly allowance for this feature.',
         action: { label: 'See options', kind: 'open-quota', type: 'upgrade' },
     },
+    PAYLOAD_TOO_LARGE: {
+        title: 'This PR is too large to review',
+        body: 'The diff exceeds the size we can analyze in one pass. Try a smaller pull request or review fewer files at a time.',
+        action: { label: 'Dismiss', kind: 'dismiss', type: 'dismiss' },
+    },
     // -----------------------------------------------------------------
     // Server AI vocabulary — every code emitted by handleAIError plus
     // the route-specific codes thrown around the AI surface area.
@@ -397,6 +402,9 @@ export function formatUserError(err, ctx = {}) {
             return { ...base, body: `Too many requests in a short window. Retry in ${retryAfterSec}s.`, code: 'RATE_LIMITED', raw: null }
         }
         return { ...base, code: 'RATE_LIMITED', raw: null }
+    }
+    if (status === 413 || /entity too large|payload too large/i.test(raw)) {
+        return { ...KNOWN_ERRORS.PAYLOAD_TOO_LARGE, code: 'PAYLOAD_TOO_LARGE', raw: null }
     }
 
     warnUnmappedOnce(err)
