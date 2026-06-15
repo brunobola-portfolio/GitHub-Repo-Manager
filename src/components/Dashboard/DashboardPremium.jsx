@@ -22,6 +22,7 @@ const LanguageChart = lazy(() => import('./LanguageChart').then(m => ({ default:
 import { MigrationActivity } from './MigrationActivity'
 import { OrganizationCard } from './OrganizationCard'
 import { shouldShowCategory, aggregateRepoStats, aggregateLanguages, calculateActivityMetrics } from '../../utils/statsAggregator'
+import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 import { useModal } from '../../hooks/useModal'
 import { Skeleton } from '../ui/Skeleton'
 import { RowIconBadge } from '../ui/RowIconBadge'
@@ -163,7 +164,16 @@ export function DashboardPremium({
                 <div id="attention" className="scroll-mt-20">
                     {isEnabled('inbox') ? (
                         <Suspense fallback={<Skeleton variant="card" className="h-48 rounded-2xl" />}>
-                            <InboxPanel onSelectItem={(item) => onViewChange?.('repos', { highlightRepoFullName: item.repoFullName })} />
+                            <InboxPanel onSelectItem={(item) => {
+                                const number = item.prNumber ?? item.issueNumber
+                                if (item.kind === 'pr' && Number.isFinite(number)) {
+                                    emitAppEvent(APP_EVENTS.OPEN_REPO_PR, { repoFullName: item.repoFullName, number })
+                                } else if (item.kind === 'issue' && Number.isFinite(number)) {
+                                    emitAppEvent(APP_EVENTS.OPEN_REPO_ISSUE, { repoFullName: item.repoFullName, number })
+                                } else {
+                                    onViewChange?.('repos', { highlightRepoFullName: item.repoFullName })
+                                }
+                            }} />
                         </Suspense>
                     ) : (
                         <AttentionFeed onSelectRepo={(repoFullName) => {
