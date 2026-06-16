@@ -1,6 +1,6 @@
 import { Rocket, Download } from 'lucide-react'
 import { useDORASummary } from '../../../hooks/useWorkBoard'
-import { EmptyState, WebhookHint, UpsellCard } from '../shared/shared-ui'
+import { EmptyState, WebhookHint, UpsellCard, ErrorState } from '../shared/shared-ui'
 import { hoursLabel } from '../shared/formatters'
 import { MOCK_MODE, API_BASE_URL } from '../../../config'
 import { Button } from '../../ui/Button'
@@ -60,11 +60,7 @@ export function DORATab() {
 
     if (error) {
         if (error.status === 403) return <UpsellCard tier="enterprise" />
-        return (
-            <div className="p-4 text-sm text-rose-600 dark:text-rose-400">
-                Failed to load DORA metrics. <button onClick={refresh} className="underline">Retry</button>
-            </div>
-        )
+        return <ErrorState error={error} what="DORA metrics" onRetry={refresh} />
     }
 
     const summary = data || {}

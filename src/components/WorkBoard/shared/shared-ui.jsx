@@ -52,6 +52,32 @@ export function EmptyState({ icon: Icon, title, subtitle }) {
 }
 
 // ---------------------------------------------------------------------------
+// Error state — distinguishes an expired session (401) from a generic load
+// failure so a tab never renders a misleading "retry" on a request that will
+// keep failing until the user signs in again. Tier-gated 403s stay at the call
+// site (they map to <UpsellCard> with a tier-specific message).
+// ---------------------------------------------------------------------------
+
+export function ErrorState({ error, what = 'data', onRetry }) {
+    if (error?.status === 401) {
+        return (
+            <div className="p-4 text-sm text-amber-700 dark:text-amber-300">
+                Your session has expired.{' '}
+                <button onClick={() => window.location.reload()} className="underline font-medium">
+                    Refresh to sign in
+                </button>
+            </div>
+        )
+    }
+    return (
+        <div className="p-4 text-sm text-rose-600 dark:text-rose-400">
+            Failed to load {what}.{' '}
+            {onRetry && <button onClick={onRetry} className="underline">Retry</button>}
+        </div>
+    )
+}
+
+// ---------------------------------------------------------------------------
 // No-data hint (webhook not yet configured)
 // ---------------------------------------------------------------------------
 

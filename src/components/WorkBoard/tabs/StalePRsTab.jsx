@@ -7,7 +7,7 @@ import { useWorkBoardFilters, applyFilters } from '../filters/filter-context-hel
 import { useReviewAction } from '../../../hooks/useReviewAction'
 import { useFocusedRow } from '../../../hooks/useFocusedRow'
 import { InlineActions } from '../InlineActions'
-import { SkeletonList, UpsellCard } from '../shared/shared-ui'
+import { SkeletonList, UpsellCard, ErrorState } from '../shared/shared-ui'
 import { PingAuthorPopover, AnimatedChipStrip } from '../shared/PingAuthorPopover'
 import { RowIconBadge } from '../../ui/RowIconBadge'
 import { Select } from '../../ui/Select'
@@ -176,11 +176,7 @@ export function StalePRsTab({ hasAI = false }) {
     if (loading) return <SkeletonList count={6} />
     if (error) {
         if (error.status === 403) return <UpsellCard tier="pro" />
-        return (
-            <div className="p-4 text-sm text-rose-600 dark:text-rose-400">
-                Failed to load stale PRs. <button onClick={refresh} className="underline">Retry</button>
-            </div>
-        )
+        return <ErrorState error={error} what="stale PRs" onRetry={refresh} />
     }
 
     return (

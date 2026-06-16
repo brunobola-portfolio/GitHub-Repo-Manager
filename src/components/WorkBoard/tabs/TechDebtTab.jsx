@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 import { Clock, Wrench, Flame } from 'lucide-react'
 import { useTechDebt } from '../../../hooks/useWorkBoard'
 import { useWorkBoardFilters, applyFilters } from '../filters/filter-context-helpers'
-import { SkeletonList, UpsellCard } from '../shared/shared-ui'
+import { SkeletonList, UpsellCard, ErrorState } from '../shared/shared-ui'
 import { dayLabel } from '../shared/formatters'
 import { WorkBoardRowMenu } from '../WorkBoardRowMenu'
 import { WorkBoardRowLink } from '../WorkBoardRowLink'
@@ -17,11 +17,7 @@ export function TechDebtTab() {
     if (loading) return <SkeletonList count={5} />
     if (error) {
         if (error.status === 403) return <UpsellCard tier="pro" />
-        return (
-            <div className="p-4 text-sm text-rose-600 dark:text-rose-400">
-                Failed to load tech debt. <button onClick={refresh} className="underline">Retry</button>
-            </div>
-        )
+        return <ErrorState error={error} what="tech debt" onRetry={refresh} />
     }
 
     const items = applyFilters(data?.items || [], params)

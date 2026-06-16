@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import { Users } from 'lucide-react'
 import { useReviewLoad } from '../../../hooks/useWorkBoard'
-import { SkeletonList, EmptyState, WebhookHint, UpsellCard } from '../shared/shared-ui'
+import { SkeletonList, EmptyState, WebhookHint, UpsellCard, ErrorState } from '../shared/shared-ui'
 import { Card } from '../../ui/Card'
 
 export function ReviewLoadTab() {
@@ -10,11 +10,7 @@ export function ReviewLoadTab() {
     if (loading) return <SkeletonList count={5} />
     if (error) {
         if (error.status === 403) return <UpsellCard tier="pro" />
-        return (
-            <div className="p-4 text-sm text-rose-600 dark:text-rose-400">
-                Failed to load review load. <button onClick={refresh} className="underline">Retry</button>
-            </div>
-        )
+        return <ErrorState error={error} what="review load" onRetry={refresh} />
     }
 
     const reviewers = Array.isArray(data) ? data : []

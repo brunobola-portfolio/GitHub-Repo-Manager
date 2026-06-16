@@ -10,7 +10,7 @@ import { useWorkBoardFilters, applyFilters } from '../filters/filter-context-hel
 import { useReviewAction } from '../../../hooks/useReviewAction'
 import { useFocusedRow } from '../../../hooks/useFocusedRow'
 import { InlineActions } from '../InlineActions'
-import { SkeletonList, UpsellCard } from '../shared/shared-ui'
+import { SkeletonList, UpsellCard, ErrorState } from '../shared/shared-ui'
 import { PingAuthorPopover, AnimatedChipStrip } from '../shared/PingAuthorPopover'
 import { RowIconBadge } from '../../ui/RowIconBadge'
 import { ageLabel } from '../shared/formatters'
@@ -272,11 +272,7 @@ export function MyReviewsTab({ hasAI = false }) {
     if (loading) return <SkeletonList count={5} />
     if (error) {
         if (error.status === 403) return <UpsellCard tier="pro" />
-        return (
-            <div className="p-4 text-sm text-rose-600 dark:text-rose-400">
-                Failed to load reviews. <button onClick={refresh} className="underline">Retry</button>
-            </div>
-        )
+        return <ErrorState error={error} what="reviews" onRetry={refresh} />
     }
 
     if (reviews.length === 0) {
