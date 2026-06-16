@@ -11,6 +11,7 @@ import { getOrgRepoCount } from '../../../utils/orgRepoCount'
 import TargetModePicker from './RepoConfigStep/TargetModePicker'
 import { DashboardHeader } from './RepoConfigStep/DashboardHeader'
 import { RepoCard } from './RepoConfigStep/RepoCard'
+import { ReplaceConfirmModal } from './RepoConfigStep/ReplaceConfirmModal'
 
 /**
  * RepoConfigStep - Configure target settings for selected repos.
@@ -28,6 +29,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
   const [expandedCards, setExpandedCards] = useState({})
   const [quotaNotice, setQuotaNotice] = useState('')
   const [generatingId, setGeneratingId] = useState(null)
+  const [replaceTarget, setReplaceTarget] = useState(null)
   // Per-row provenance of the last generated description ('ai' | 'template'),
   // so the card can show a transparent badge instead of leaving the user
   // wondering whether AI actually ran. Cleared when the user edits the text.
@@ -37,6 +39,10 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
 
   const isAzureDevops = source?.azureTargetMode === 'azure-devops'
   const targetProject = source?.targetProject || source?.project || ''
+  // Mirror the engine's destination owner: targetOrg, else the user's personal
+  // account (empty → ScheduleStep/import target just the repo name). Never the
+  // Azure source.org, which is not a GitHub owner.
+  const targetOwner = source?.targetOrg || ''
 
   const { azureProjectRepoNames, azureEmptyRepos, azureProjects, projectsLoading } =
     useAzureProjectData({ isAzureDevops, source, targetProject })
@@ -61,7 +67,15 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
   }, [suggest, source, onUpdateRepo])
 
   const handleTargetNameChange = (repo, index, value) => {
-    onUpdateRepo(index, { targetName: value })
+    // Editing the name invalidates a prior confirmed Replace — the destructive
+    // intent was confirmed for a specific name and must not silently carry over.
+    onUpdateRepo(index, {
+      targetName: value,
+      ...(repo.conflictAction === 'replace' ? { conflictAction: undefined } : {}),
+    })
+    if (repo.conflictAction === 'replace') {
+      setConflicts((prev) => ({ ...prev, [repo.name]: 'idle' }))
+    }
     checkConflict(repo.name, value)
   }
 
@@ -105,8 +119,15 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
   }
 
   const handleReplace = (repo, index) => {
-    setConflicts((prev) => ({ ...prev, [repo.name]: 'clear' }))
-    onUpdateRepo(index, { conflictAction: 'replace' })
+    setReplaceTarget({ repo, index })
+  }
+
+  const confirmReplace = () => {
+    if (!replaceTarget) return
+    const { repo, index } = replaceTarget
+    setConflicts((prev) => ({ ...prev, [repo.name]: 'will-replace' }))
+    onUpdateRepo(index, { conflictAction: 'replace', hasConflict: false })
+    setReplaceTarget(null)
   }
 
   const handleRename = (repo, index) => {
@@ -170,6 +191,18 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
       }
     })
   }, [repos, onUpdateRepo])
+
+  // Mirror live conflict detection onto repo state so the wizard shell can
+  // block "Next" while any selected repo has an unresolved conflict. Guarded
+  // so it only writes on a real change (no render loop).
+  useEffect(() => {
+    repos.forEach((repo, index) => {
+      const isConflict = conflicts[repo.name] === 'conflict'
+      if (!!repo.hasConflict !== isConflict) {
+        onUpdateRepo(index, { hasConflict: isConflict })
+      }
+    })
+  }, [conflicts, repos, onUpdateRepo])
 
   const hasLfsEnabled = repos.some((r) => r.lfsEnabled)
 
@@ -352,6 +385,15 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
           </motion.div>
         )}
       </AnimatePresence>
+      {/* targetName is set whenever a conflict was detected; repo.name is a safe fallback */}
+      <ReplaceConfirmModal
+        isOpen={!!replaceTarget}
+        repoFullName={replaceTarget
+          ? `${targetOwner ? `${targetOwner}/` : ''}${replaceTarget.repo.targetName || replaceTarget.repo.name}`
+          : ''}
+        onCancel={() => setReplaceTarget(null)}
+        onConfirm={confirmReplace}
+      />
     </div>
   )
 }

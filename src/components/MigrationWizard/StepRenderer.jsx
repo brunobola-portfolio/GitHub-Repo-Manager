@@ -58,6 +58,7 @@ export default function StepRenderer({ ctx }) {
     onClose,
     setDirection,
     nextStep,
+    onResolveConflict,
   } = ctx
 
   function renderStep() {
@@ -151,6 +152,7 @@ export default function StepRenderer({ ctx }) {
             planId={planId}
             onNewMigration={resetWizard}
             onViewHistory={onClose}
+            onResolveConflict={onResolveConflict}
             preflightFlags={selectedRepos.flatMap((r) => r.risk?.flags || [])}
           />
         )

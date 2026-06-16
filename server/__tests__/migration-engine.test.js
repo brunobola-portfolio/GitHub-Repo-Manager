@@ -2,6 +2,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import Database from 'better-sqlite3'
 import { MigrationEngine, buildAzureCloneUrl } from '../migration-engine.js'
+import { importRepository } from '../import-service.js'
+
+// Module-level hoist: intercepts the ESM `importRepository` binding inside
+// migration-engine.js for the whole file. Existing tests are unaffected (they
+// override engine._executeTask or only hit the dry-run early-return). Any new
+// test that runs the real _executeTask past the dry-run guard for a repo task
+// MUST set importRepository.mockResolvedValue(...) or it will read .success of undefined.
+vi.mock('../import-service.js', () => ({
+  importRepository: vi.fn(),
+}))
 
 describe('buildAzureCloneUrl (host-aware source clone URL)', () => {
   it('dev.azure.com (cloud) keeps the org in the path', () => {
@@ -1107,6 +1117,38 @@ describe('MigrationEngine', () => {
       const tasks = db.prepare('SELECT * FROM migration_tasks WHERE plan_id = ?').all(planId)
 
       await expect(engine._executeTask(tasks[0], { githubToken: 't' })).rejects.toThrow(/Azure PAT is required/)
+    })
+  })
+
+  describe('_executeTask — onConflict forwarding', () => {
+    beforeEach(() => {
+      vi.mocked(importRepository).mockReset()
+    })
+
+    it('forwards config.onConflict to importRepository for a git repo task', async () => {
+      vi.mocked(importRepository).mockResolvedValue({
+        success: true,
+        targetFullName: 'acme/widget',
+        branchCount: 1,
+      })
+
+      const planId = engine.createPlan(
+        1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{
+          type: 'repo',
+          sourceRef: 'org/proj/widget',
+          targetRef: 'acme/widget',
+          config: { onConflict: 'replace', makePrivate: true },
+        }]
+      )
+      const tasks = db.prepare('SELECT * FROM migration_tasks WHERE plan_id = ?').all(planId)
+
+      await engine._executeTask(tasks[0], { githubToken: 'gh', azurePat: 'pat' })
+
+      expect(importRepository).toHaveBeenCalledWith(
+        expect.objectContaining({ onConflict: 'replace' })
+      )
     })
   })
 })

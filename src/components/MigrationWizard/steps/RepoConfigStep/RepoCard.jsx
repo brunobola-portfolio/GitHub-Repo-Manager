@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Package, ArrowRight, Plus, Recycle, Lock, Unlock,
-  MoreHorizontal, CheckCircle2, XCircle, GitBranch, HardDrive, ChevronDown, Sparkles,
+  MoreHorizontal, CheckCircle2, XCircle, GitBranch, HardDrive, ChevronDown, Sparkles, AlertTriangle,
 } from 'lucide-react'
 import { Spinner } from '../../../ui/Spinner'
 import { Select } from '../../../ui/Select'
@@ -24,7 +24,7 @@ import { DescriptionField } from './DescriptionField'
  * @param {object} props
  * @param {object}  props.repo
  * @param {number}  props.index
- * @param {string}  props.conflictStatus  — 'idle' | 'checking' | 'clear' | 'conflict'
+ * @param {string}  props.conflictStatus  — 'idle' | 'checking' | 'clear' | 'conflict' | 'will-replace'
  * @param {boolean} props.isExpanded
  * @param {boolean} props.isAzureDevops
  * @param {Array}   props.azureEmptyRepos
@@ -59,7 +59,7 @@ export function RepoCard({
       exit={{ opacity: 0, y: -12 }}
       transition={{ duration: 0.2, delay: index * 0.05 }}
       className={`relative bg-slate-50 dark:bg-slate-800 border rounded-xl overflow-hidden transition-colors
-        ${conflictStatus === 'conflict'
+        ${(conflictStatus === 'conflict' || repo.conflictAction === 'replace')
           ? 'border-red-500/30'
           : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
         }`}
@@ -163,6 +163,12 @@ export function RepoCard({
             isTfvc={repo.isTfvc}
             branches={repo.branches}
           />
+          {repo.conflictAction === 'replace' && (
+            <span role="status" className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded ds-text-micro font-semibold uppercase tracking-wide bg-red-500/10 text-red-600 dark:text-red-400">
+              <AlertTriangle className="w-2.5 h-2.5" />
+              Will replace (delete) existing repo
+            </span>
+          )}
         </div>
 
         {/* Right: visibility + status + expand */}
@@ -188,18 +194,21 @@ export function RepoCard({
           {/* Status dot + label */}
           <div className="flex items-center gap-1.5 min-w-[70px]">
             <div className={`w-2 h-2 rounded-full shrink-0 ${
+              repo.conflictAction === 'replace' ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]' :
               conflictStatus === 'clear' ? 'bg-emerald-500 shadow-[0_0_6px_rgba(34,197,94,0.5)]' :
               conflictStatus === 'checking' ? 'bg-amber-500 animate-pulse shadow-[0_0_6px_rgba(245,158,11,0.5)]' :
               conflictStatus === 'conflict' ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]' :
               'bg-slate-300 dark:bg-slate-600'
             }`} />
             <span className={`ds-text-meta ${
+              repo.conflictAction === 'replace' ? 'text-red-600 dark:text-red-400' :
               conflictStatus === 'clear' ? 'text-emerald-600 dark:text-emerald-400' :
               conflictStatus === 'checking' ? 'text-amber-600 dark:text-amber-400' :
               conflictStatus === 'conflict' ? 'text-red-600 dark:text-red-400' :
               'text-slate-400 dark:text-slate-500'
             }`}>
-              {conflictStatus === 'clear' ? 'Ready' :
+              {repo.conflictAction === 'replace' ? 'Will replace' :
+               conflictStatus === 'clear' ? 'Ready' :
                conflictStatus === 'checking' ? 'Checking...' :
                conflictStatus === 'conflict' ? 'Conflict' : ''}
             </span>

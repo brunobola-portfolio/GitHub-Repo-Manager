@@ -91,6 +91,10 @@ export default function MigrationWizard({
   const blockerCount = currentStep === 'repoSelect'
     ? selectedRepos.reduce((sum, r) => sum + (r.risk?.flags || []).filter((f) => f.severity === 'blocker').length, 0)
     : 0
+  const conflictCount = currentStep === 'repoConfig'
+    ? selectedRepos.filter((r) => r.hasConflict).length
+    : 0
+  const advanceBlocked = blockerCount > 0 || conflictCount > 0
   const { direction, setDirection, handleNext, handleBack, handleStartImport } = useWizardNavigation({
     source,
     currentStepIndex,
@@ -117,6 +121,13 @@ export default function MigrationWizard({
       goToStep('azureConnect')
     }
   }, [setDirection, updateSource, setRepos, goToStep])
+
+  // From the Summary error screen: jump back to Configure so the user can
+  // choose Replace/Rename/Skip and re-run. The conflict re-surfaces there.
+  const handleResolveConflict = useCallback(() => {
+    setDirection(-1)
+    goToStep('repoConfig')
+  }, [setDirection, goToStep])
 
   // Close with dirty-state confirmation. React 19's compiler handles
   // memoization automatically; manual useCallback was tripping the
@@ -171,6 +182,7 @@ export default function MigrationWizard({
     onClose,
     setDirection,
     nextStep,
+    onResolveConflict: handleResolveConflict,
   }
 
   const isAzure = source.sourceType === 'azure'
@@ -204,8 +216,14 @@ export default function MigrationWizard({
           size="md"
           type="button"
           onClick={handleNext}
-          disabled={blockerCount > 0}
-          title={blockerCount > 0 ? `${blockerCount} blocker(s) must be resolved — open a row to see options` : undefined}
+          disabled={advanceBlocked}
+          title={
+            blockerCount > 0
+              ? `${blockerCount} blocker(s) must be resolved — open a row to see options`
+              : conflictCount > 0
+                ? `Resolve ${conflictCount} naming conflict(s) to continue — choose Replace, Rename or Skip`
+                : undefined
+          }
         >
           Next
           <ArrowRight className="w-3.5 h-3.5" />

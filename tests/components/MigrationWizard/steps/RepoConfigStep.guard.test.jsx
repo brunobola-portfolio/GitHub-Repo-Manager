@@ -11,7 +11,7 @@
  * deterministic and conflict / AI / branch state can be driven per test.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import RepoConfigStep from '@/components/MigrationWizard/steps/RepoConfigStep.jsx'
 
 const h = vi.hoisted(() => ({
@@ -154,13 +154,44 @@ describe('RepoConfigStep guard — extraction safety net', () => {
     expect(h.checkConflict).toHaveBeenCalledWith('demo', 'renamed')
   })
 
+  it('clears a previously-confirmed Replace intent when the target name is edited', () => {
+    // Repo has conflictAction='replace' (user already confirmed Replace for this name).
+    const { props } = renderStep({
+      repos: [makeRepo({ conflictAction: 'replace', targetName: 'demo' })],
+    })
+    // h.conflicts is {} — the will-replace badge is driven by conflictAction on the repo,
+    // not a live conflicts entry; we only need to confirm onUpdateRepo behaviour.
+    fireEvent.change(screen.getByLabelText('Target repository name for demo'), { target: { value: 'demo-v2' } })
+    // Must clear conflictAction so the stale destructive intent doesn't carry over.
+    expect(props.onUpdateRepo).toHaveBeenCalledWith(
+      0,
+      expect.objectContaining({ targetName: 'demo-v2', conflictAction: undefined }),
+    )
+    // setConflicts must have been poked to reset the row away from will-replace.
+    expect(h.setConflicts).toHaveBeenCalled()
+  })
+
   // --- ConflictResolutionPanel target --------------------------------------
   it('auto-expands a conflicted card with Replace / Rename actions', () => {
     h.conflicts = { demo: 'conflict' }
-    const { props } = renderStep()
+    renderStep()
     expect(screen.getByText('A repository with this name already exists')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /Replace/i }))
-    expect(props.onUpdateRepo).toHaveBeenCalledWith(0, { conflictAction: 'replace' })
+  })
+
+  it('Replace opens a confirm modal; confirming sets conflictAction', async () => {
+    h.conflicts = { demo: 'conflict' }
+    // source.targetOrg='acme', repo.targetName='demo' → repoFullName = 'acme/demo'
+    const { props } = renderStep()
+    fireEvent.click(screen.getByRole('button', { name: /^replace$/i }))
+    // Modal shown; conflictAction not yet set (sync effect may have fired hasConflict: true, but no replace action yet)
+    expect(screen.getByText(/permanently delete/i)).toBeInTheDocument()
+    expect(props.onUpdateRepo).not.toHaveBeenCalledWith(0, expect.objectContaining({ conflictAction: 'replace' }))
+
+    // type-to-confirm using the full target name the component passes to the modal
+    fireEvent.change(screen.getByLabelText(/type the repository name/i), { target: { value: 'acme/demo' } })
+    fireEvent.click(screen.getByRole('button', { name: /delete & replace/i }))
+
+    expect(props.onUpdateRepo).toHaveBeenCalledWith(0, expect.objectContaining({ conflictAction: 'replace', hasConflict: false }))
   })
 
   // --- AI description generation + quota notice ----------------------------
@@ -179,6 +210,15 @@ describe('RepoConfigStep guard — extraction safety net', () => {
     fireEvent.click(screen.getByRole('button', { name: /Toggle advanced options/i }))
     expect(screen.getByRole('button', { name: /Suggest/i })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Generate with AI/i })).toBeNull()
+  })
+
+  // --- Block-before-run guard: hasConflict sync effect ----------------------
+  it('syncs hasConflict onto repo state when a conflict is present', async () => {
+    h.conflicts = { demo: 'conflict' }
+    const { props } = renderStep()
+    await waitFor(() => {
+      expect(props.onUpdateRepo).toHaveBeenCalledWith(0, { hasConflict: true })
+    })
   })
 
   // --- Branch load-on-expand behaviour -------------------------------------

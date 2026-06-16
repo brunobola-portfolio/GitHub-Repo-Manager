@@ -5,7 +5,7 @@ import {
   CheckCircle2, XCircle, Clock, Package, ClipboardList, BookOpen,
   Download, Plus, History, Loader2, AlertTriangle, ExternalLink, Ban,
   Sparkles, Trophy, ChevronDown, ChevronUp, Lightbulb,
-  ArrowRight, Zap, Shield, ShieldCheck, BarChart3, Timer,
+  ArrowRight, Zap, Shield, ShieldCheck, BarChart3, Timer, RefreshCw,
 } from 'lucide-react'
 import { AnimatedCopyIcon } from '../../ui/AnimatedCopyIcon'
 import { migrationApi } from '../../../api/migration'
@@ -220,6 +220,14 @@ function TaskResultRow({ task, index, maxIndex = 10 }) {
               Reused
             </span>
           )}
+          {task.metadata?.replacedExistingRepo && (
+            <span
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded ds-text-micro font-medium bg-red-500/10 text-red-600 dark:text-red-400"
+              title="Deleted the pre-existing repo and recreated it from source"
+            >
+              Replaced
+            </span>
+          )}
           {task.metadata?.emptySource && (
             <span
               className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded ds-text-micro font-medium bg-slate-500/10 text-slate-500 dark:text-slate-400"
@@ -268,12 +276,17 @@ function TaskResultRow({ task, index, maxIndex = 10 }) {
    ERROR CARD — detailed error display
    ═══════════════════════════════════════════ */
 
-function ErrorCard({ error, index }) {
+function ErrorCard({ error, index, onResolveConflict }) {
   const [expanded, setExpanded] = useState(index === 0)
   const [copied, setCopied] = useState(false)
   const typeConfig = TYPE_CONFIG[error.type] || TYPE_CONFIG.repo
   const TypeIcon = typeConfig.icon
   const oversized = decodeOversizedError(error.error)
+  // Only repo-type tasks can be recovered via the Configure → Replace flow;
+  // other task types (work-items, wiki) may also say "already exists" but
+  // the Replace action does not apply to them.
+  const isRepoTask = error.type === 'repo' || error.type === 'repo-tfvc'
+  const isConflict = isRepoTask && /already exists/i.test(error.error || '')
 
   const handleCopy = () => {
     navigator.clipboard.writeText(error.error)
@@ -356,6 +369,17 @@ function ErrorCard({ error, index }) {
                       </p>
                     </div>
                   )}
+                  {isConflict && onResolveConflict && (
+                    <button
+                      type="button"
+                      onClick={() => onResolveConflict(error)}
+                      className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg
+                        text-white bg-red-600 hover:bg-red-700 transition-colors ds-focus-ring"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Resolve conflict
+                    </button>
+                  )}
                 </>
               )}
             </div>
@@ -431,7 +455,7 @@ function PreflightSummary({ flags }) {
   )
 }
 
-export default function SummaryStep({ planId, onNewMigration, onViewHistory, preflightFlags = [] }) {
+export default function SummaryStep({ planId, onNewMigration, onViewHistory, onResolveConflict, preflightFlags = [] }) {
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -621,7 +645,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, pre
 
           <div className="space-y-2">
             {taskErrors.map((err, i) => (
-              <ErrorCard key={err.taskId} error={err} index={i} />
+              <ErrorCard key={err.taskId} error={err} index={i} onResolveConflict={onResolveConflict} />
             ))}
           </div>
         </div>
