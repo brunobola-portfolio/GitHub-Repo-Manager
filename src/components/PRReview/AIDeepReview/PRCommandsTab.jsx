@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { SafeMarkdown } from '../../AIPrompts/SafeMarkdown';
 import { AIErrorState } from '../../ui/AIErrorState';
+import { Button } from '../../ui/Button';
 import { usePRCommand } from '../../../hooks/usePRCommand';
 
 const COMMANDS = [
@@ -85,24 +86,26 @@ function PRCommandCard({ owner, repo, prNumber, command }) {
                 </div>
                 <div className="shrink-0 flex items-center gap-1">
                     {result ? (
-                        <button
+                        <Button
                             type="button"
+                            variant="outline"
+                            size="xs"
                             onClick={onDiscard}
                             disabled={loading}
-                            className="px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60"
                             title="Discard cached result"
                         >
                             Discard
-                        </button>
+                        </Button>
                     ) : null}
-                    <button
+                    <Button
                         type="button"
+                        variant="primary"
+                        size="xs"
                         onClick={onRun}
                         disabled={loading}
-                        className="px-2 py-1 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
                     >
                         {loading ? 'Running…' : (result ? 'Re-run' : 'Run')}
-                    </button>
+                    </Button>
                 </div>
             </header>
 
@@ -124,14 +127,15 @@ function PRCommandCard({ owner, repo, prNumber, command }) {
 
                 {result && command.key === 'describe' ? (
                     <div className="mt-3 flex items-center gap-2">
-                        <button
+                        <Button
                             type="button"
+                            variant="success"
+                            size="xs"
                             onClick={onPublish}
                             disabled={publishing}
-                            className="px-2 py-1 text-xs font-medium rounded bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
                         >
                             {publishing ? 'Applying…' : 'Apply to PR'}
-                        </button>
+                        </Button>
                         {publishStatus ? (
                             <span className={`text-xs ${
                                 publishStatus.kind === 'success'

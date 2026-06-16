@@ -1,27 +1,30 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 /**
  * Dashboard aggregator — composes the Live Inbox by fanning out to existing
- * event-aggregation helpers. One module, one read path, one write path for
- * archive/snooze state. No GitHub round-trips here; live data flows through
- * gh-cache at the route layer.
+ * event-aggregation helpers (webhook/DB fallback) or live GitHub Search
+ * fetchers (when a token is present). One module, one read path, one write
+ * path for archive/snooze state.
+ *
+ * Strategy: live-first per section. If a token is supplied the GitHub Search
+ * fetcher is called; on error (rate-limit, network) the webhook/DB query is
+ * used as a fallback so one bad section never blanks the whole inbox.
  */
 
 import db from '../db.js';
 import { listMyPendingReviews, listMyOpenPRs, listMyOpenIssues, listStalePRs } from './event-aggregations.js';
+import {
+    fetchMyPendingReviews,
+    fetchMyOpenPRs,
+    fetchMyOpenIssues,
+    fetchStalePRs,
+} from './work-board-github.js';
 
 // `failing_ci` and `dependabot_ready` were stubs reserved for Premium Dashboard
 // Phase 2 (DORA) and Phase 3 (Scorecards). They were enumerated alongside live
 // sections, which surfaced two permanently-empty rows to every user. Removed
 // from the live shape until the backing data wiring lands; re-add to both
-// SECTION_KEYS and SECTION_BUILDERS together when implementing.
+// SECTION_KEYS and SECTION_CONFIG together when implementing.
 const SECTION_KEYS = ['needs_review', 'my_prs', 'mentions', 'stale_drafts'];
-
-const SECTION_LABEL = {
-    needs_review: 'Needs my review',
-    my_prs: 'My open PRs',
-    mentions: 'Mentions',
-    stale_drafts: 'Stale drafts',
-};
 
 // Priority order — earlier sections "win" ownership of a duplicated id.
 const SECTION_PRIORITY = ['needs_review', 'stale_drafts', 'mentions', 'my_prs'];
@@ -47,85 +50,94 @@ function loadInboxState(userId) {
     return { archived, snoozedUntil };
 }
 
-function buildNeedsReview(userLogin) {
-    const rows = listMyPendingReviews({ reviewerLogin: userLogin });
-    return rows.map(r => ({
-        id: prKey(r.repoFullName, r.prNumber),
-        kind: 'pr',
-        section: 'needs_review',
-        repoFullName: r.repoFullName,
-        prNumber: r.prNumber,
-        title: r.title,
-        authorLogin: r.authorLogin,
-        since: r.requestedAt,
-        ageHours: r.ageHours,
-    }));
-}
-
-const SECTION_BUILDERS = {
-    needs_review: (_userId, opts) => buildNeedsReview(opts.userLogin),
-    my_prs: (_userId, opts) => {
-        const rows = listMyOpenPRs({ authorLogin: opts.userLogin });
-        return rows.map(r => ({
-            id: prKey(r.repoFullName, r.prNumber),
-            kind: 'pr',
-            section: 'my_prs',
-            repoFullName: r.repoFullName,
-            prNumber: r.prNumber,
-            title: r.title,
-            authorLogin: r.authorLogin,
-            since: r.openedAt,
-            ageHours: r.ageHours,
-        }));
+// Per-section config: a live GitHub-Search fetcher (used when a token is
+// present), a webhook/DB fallback (used otherwise or when live errors), and a
+// shared row->item mapper. Live and DB sources return the same normalized field
+// names, so one mapper serves both.
+const SECTION_CONFIG = {
+    needs_review: {
+        label: 'Needs my review',
+        live: ({ token, login }) => fetchMyPendingReviews({ token, login }).then(r => r.items),
+        fallback: ({ login }) => listMyPendingReviews({ reviewerLogin: login }),
+        map: (r) => ({
+            id: prKey(r.repoFullName, r.prNumber), kind: 'pr', section: 'needs_review',
+            repoFullName: r.repoFullName, prNumber: r.prNumber, title: r.title,
+            authorLogin: r.authorLogin, since: r.requestedAt, ageHours: r.ageHours,
+        }),
     },
-    mentions: (_userId, opts) => {
-        const rows = listMyOpenIssues({ assigneeLogin: opts.userLogin });
-        return rows.map(r => ({
-            id: issueKey(r.repoFullName, r.issueNumber),
-            kind: 'issue',
-            section: 'mentions',
-            repoFullName: r.repoFullName,
-            issueNumber: r.issueNumber,
-            title: r.title,
-            since: r.openedAt,
-            ageDays: r.ageDays,
-        }));
+    my_prs: {
+        label: 'My open PRs',
+        live: ({ token, login }) => fetchMyOpenPRs({ token, login }).then(r => r.items),
+        fallback: ({ login }) => listMyOpenPRs({ authorLogin: login }),
+        map: (r) => ({
+            id: prKey(r.repoFullName, r.prNumber), kind: 'pr', section: 'my_prs',
+            repoFullName: r.repoFullName, prNumber: r.prNumber, title: r.title,
+            authorLogin: r.authorLogin, since: r.openedAt, ageHours: r.ageHours,
+        }),
     },
-    stale_drafts: (_userId, opts) => {
-        const rows = listStalePRs({ staleAfterDays: 7 });
-        return rows
-            .filter(r => r.authorLogin === opts.userLogin)
-            .map(r => ({
-                id: prKey(r.repoFullName, r.prNumber),
-                kind: 'pr',
-                section: 'stale_drafts',
-                repoFullName: r.repoFullName,
-                prNumber: r.prNumber,
-                title: r.title,
-                authorLogin: r.authorLogin,
-                since: r.openedAt,
-                ageDays: r.ageDays,
-            }));
+    mentions: {
+        label: 'Mentions',
+        live: ({ token, login }) => fetchMyOpenIssues({ token, login }).then(r => r.items),
+        fallback: ({ login }) => listMyOpenIssues({ assigneeLogin: login }),
+        map: (r) => ({
+            id: issueKey(r.repoFullName, r.issueNumber), kind: 'issue', section: 'mentions',
+            repoFullName: r.repoFullName, issueNumber: r.issueNumber, title: r.title,
+            since: r.openedAt, ageDays: r.ageDays,
+        }),
+    },
+    stale_drafts: {
+        label: 'Stale drafts',
+        live: ({ token, login }) => fetchStalePRs({ token, login }).then(r => r.items),
+        fallback: ({ login }) => listStalePRs({ staleAfterDays: 7 }).filter(r => r.authorLogin === login),
+        map: (r) => ({
+            id: prKey(r.repoFullName, r.prNumber), kind: 'pr', section: 'stale_drafts',
+            repoFullName: r.repoFullName, prNumber: r.prNumber, title: r.title,
+            authorLogin: r.authorLogin, since: r.openedAt, ageDays: r.ageDays,
+        }),
     },
 };
+
+/**
+ * Source one section's items. Live-first when a token is present; on live error
+ * (rate limit, network) fall back to the webhook/DB query so one bad section
+ * never blanks the whole inbox.
+ */
+async function sourceSection(key, { token, login, logger }) {
+    const cfg = SECTION_CONFIG[key];
+    if (token) {
+        try {
+            const rows = await cfg.live({ token, login });
+            return rows.map(cfg.map);
+        } catch (err) {
+            logger?.warn?.({ err, section: key }, 'inbox live fetch failed; falling back to webhook data');
+        }
+    }
+    return cfg.fallback({ login }).map(cfg.map);
+}
 
 /**
  * @param {number} userId
  * @param {object} opts
  * @param {string} opts.userLogin — GitHub login
+ * @param {string|null} [opts.token] — GitHub access token; when present, sections use live search
  * @param {string[]} [opts.sections] — subset; defaults to all SECTION_KEYS
  * @param {boolean} [opts.includeArchived=false]
- * @returns {{ sections: Array<{ key, label, items: Array }> }}
+ * @param {object} [opts.logger] — request logger (optional)
+ * @returns {Promise<{ sections: Array<{ key, label, items: Array }> }>}
  */
-export function composeInbox(userId, opts = {}) {
-    const { userLogin, sections = SECTION_KEYS, includeArchived = false } = opts;
+export async function composeInbox(userId, opts = {}) {
+    const { userLogin, token = null, sections = SECTION_KEYS, includeArchived = false, logger = null } = opts;
     const requested = sections.filter(k => SECTION_KEYS.includes(k));
     const { archived, snoozedUntil } = loadInboxState(userId);
     const now = Date.now();
 
+    const sourced = await Promise.all(
+        requested.map(async key => [key, await sourceSection(key, { token, login: userLogin, logger })]),
+    );
+
     const raw = {};
-    for (const key of requested) {
-        raw[key] = SECTION_BUILDERS[key](userId, { userLogin }).filter(item => {
+    for (const [key, items] of sourced) {
+        raw[key] = items.filter(item => {
             if (!includeArchived && archived.has(item.id)) return false;
             const snoozeIso = snoozedUntil.get(item.id);
             if (snoozeIso && Date.parse(snoozeIso) > now) return false;
@@ -145,9 +157,10 @@ export function composeInbox(userId, opts = {}) {
     }
 
     return {
+        meta: { live: !!token },
         sections: requested.map(key => ({
             key,
-            label: SECTION_LABEL[key],
+            label: SECTION_CONFIG[key].label,
             items: dedupBySection[key] ?? [],
         })),
     };

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ThumbsUp, MessageSquare } from 'lucide-react'
+import { Button } from '../../ui/Button'
 import { useToast } from '../../../hooks/useToast'
 import { getCsrfToken } from '../../../utils/api'
 import { Field, Textarea } from '../../ui/form'
@@ -65,20 +66,22 @@ export function QuickActions({ owner, repo, pullNumber, onSubmitted }) {
 
     return (
         <div className="flex gap-2">
-            <button
+            <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => setAction('APPROVE')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-colors"
             >
                 <ThumbsUp className="w-3 h-3" /> Quick Approve
-            </button>
-            <button
+            </Button>
+            <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => setAction('COMMENT')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
                 <MessageSquare className="w-3 h-3" /> Quick Comment
-            </button>
+            </Button>
         </div>
     )
 }

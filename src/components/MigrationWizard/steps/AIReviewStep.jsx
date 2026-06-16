@@ -7,6 +7,7 @@ import {
   CircleAlert,
 } from 'lucide-react'
 import { migrationApi } from '../../../api/migration'
+import { Button } from '../../ui/Button'
 import { TAP } from '../../ui/motion'
 
 import { AnalysisLoadingState } from './AIReview/AnalysisLoadingState'
@@ -136,22 +137,16 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
           animate={{ opacity: 1 }}
           className="flex items-center justify-end"
         >
-          <motion.button
+          <Button
+            variant="soft-primary"
+            size="xs"
             type="button"
             onClick={analyze}
             disabled={analyzing}
-            whileTap={TAP}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
-              text-violet-600 dark:text-violet-400
-              bg-violet-50 dark:bg-violet-500/10
-              hover:bg-violet-100 dark:hover:bg-violet-500/20
-              border border-violet-200/60 dark:border-violet-500/20
-              disabled:opacity-50 disabled:cursor-not-allowed
-              transition-all duration-200"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             Re-analyze
-          </motion.button>
+          </Button>
         </motion.div>
       )}
 

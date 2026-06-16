@@ -56,7 +56,7 @@ function mockFetchInbox() {
             i => !mockArchivedIds.has(i.id) && !mockSnoozedIds.has(i.id),
         ),
     }));
-    return Promise.resolve({ sections: filtered });
+    return Promise.resolve({ sections: filtered, meta: { live: true } });
 }
 
 async function jsonFetch(url, init = {}) {

@@ -6,6 +6,7 @@ vi.mock('../lib/github-api.js', () => ({ githubApi: (...args) => mockGithubApi(.
 
 const {
     fetchMyPendingReviews,
+    fetchMyOpenPRs,
     fetchStalePRs,
     fetchMyOpenIssues,
     fetchTechDebtIssues,
@@ -122,5 +123,36 @@ describe('work-board-github', () => {
         err.status = 429;
         mockGithubApi.mockRejectedValueOnce(err);
         await expect(fetchMyPendingReviews({ token: 'tok', login: 'alice' })).rejects.toThrow('rate limited');
+    });
+
+    it('fetchMyOpenPRs builds the right search query', async () => {
+        mockGithubApi.mockResolvedValue(makeSearchResult([]));
+        await fetchMyOpenPRs({ token: 'tok', login: 'alice' });
+        const [path, token] = mockGithubApi.mock.calls[0];
+        expect(token).toBe('tok');
+        expect(path).toContain('/search/issues');
+        expect(path).toContain('author%3Aalice');
+        expect(path).toContain('is%3Aopen');
+        expect(path).toContain('is%3Apr');
+        expect(path).toContain('archived%3Afalse');
+    });
+
+    it('fetchMyOpenPRs normalises items (repoFullName, prNumber, title, authorLogin, openedAt)', async () => {
+        const now = new Date();
+        const oneHourAgo = new Date(now.getTime() - 3600 * 1000).toISOString();
+        mockGithubApi.mockResolvedValue(makeSearchResult([
+            githubIssue({ number: 158, title: 'feat: thing', login: 'alice', repo: 'org/repo',
+                createdAt: oneHourAgo, updatedAt: oneHourAgo, isPR: true }),
+        ]));
+        const result = await fetchMyOpenPRs({ token: 'tok', login: 'alice' });
+        expect(result.items).toHaveLength(1);
+        expect(result.items[0]).toMatchObject({
+            repoFullName: 'org/repo',
+            prNumber: 158,
+            title: 'feat: thing',
+            authorLogin: 'alice',
+        });
+        expect(result.items[0].openedAt).toBe(oneHourAgo);
+        expect(result.totalCount).toBe(1);
     });
 });

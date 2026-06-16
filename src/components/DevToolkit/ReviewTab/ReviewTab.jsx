@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { Eye } from 'lucide-react'
+import { Button } from '../../ui/Button'
 import { useStreaming } from '../../../hooks/useStreaming'
 import { isAbort } from '../../../utils/errorClassification'
 import { ChatInput } from '../shared/ChatInput'
@@ -186,14 +187,16 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
                         <QuickActions owner={repoOwner} repo={selectedRepo.name} pullNumber={selectedPR.number} onSubmitted={() => fetchSummary(selectedPR)} />
                     )}
 
-                    <button
+                    <Button
                         type="button"
+                        variant="primary"
+                        size="md"
                         onClick={handleStartFullReview}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-xl text-white bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-[color:var(--ds-accent-brand)] shadow-md transition-all"
+                        className="w-full"
                     >
                         <Eye className="w-4 h-4" />
                         Open Full Review
-                    </button>
+                    </Button>
                 </>
             )}
         </div>

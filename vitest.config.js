@@ -15,6 +15,12 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'happy-dom',
+    // Pre-bundle dependencies with esbuild so each of the 500+ test files pays
+    // a much smaller per-file import cost (the dominant slice of total run time).
+    // Safe: this only affects how deps are loaded, not worker isolation — the
+    // `forks` pool stays (threads segfault here because happy-dom + native
+    // better-sqlite3 can't tear down cleanly in worker threads).
+    deps: { optimizer: { web: { enabled: true }, ssr: { enabled: true } } },
     setupFiles: ['./tests/setup.js'],
     include: ['tests/**/*.test.{js,jsx}', 'server/__tests__/**/*.test.js', 'scripts/__tests__/**/*.test.js'],
     exclude: ['node_modules', 'dist', 'e2e'],

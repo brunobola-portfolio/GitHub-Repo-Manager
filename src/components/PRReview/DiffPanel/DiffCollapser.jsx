@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ChevronRight, FileText } from 'lucide-react'
+import { Button } from '../../ui/Button'
 import { onAppEvent, APP_EVENTS } from '../../../utils/appEvents'
 
 // localStorage prefix for the per-PR/per-commit expanded-files set.
@@ -87,13 +88,15 @@ export function DiffCollapser({ filename, additions = 0, deletions = 0, storageK
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 max-w-md mx-auto">
                 Folded by default to keep the page snappy. Expand only this file, or use Expand all in the toolbar.
             </p>
-            <button
+            <Button
                 type="button"
+                variant="primary"
+                size="sm"
                 onClick={handleExpand}
-                className="inline-flex items-center gap-1 mt-4 px-3 py-1.5 text-xs font-medium rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] transition-colors"
+                className="mt-4"
             >
                 <ChevronRight className="w-3.5 h-3.5" /> Show diff
-            </button>
+            </Button>
         </div>
     )
 }

@@ -21,7 +21,9 @@
 ![LM Studio](https://img.shields.io/badge/LM_Studio-4B2DDC?style=for-the-badge)
 
 <!-- Quality -->
-![Tests](https://img.shields.io/badge/Tests-4390%2B_passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
+[![CI](https://img.shields.io/github/actions/workflow/status/brunobola-portfolio/GitHub-Repo-Manager/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI)](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/actions/workflows/ci.yml)
+[![Deploy](https://img.shields.io/github/actions/workflow/status/brunobola-portfolio/GitHub-Repo-Manager/deploy.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=Deploy)](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/actions/workflows/deploy.yml)
+![Tests](https://img.shields.io/badge/Tests-4640%2B_passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
 ![License](https://img.shields.io/badge/License-AGPL_v3-blue?style=for-the-badge&logo=gnu&logoColor=white)
 ![Release](https://img.shields.io/github/v/release/brunobola-portfolio/GitHub-Repo-Manager?style=for-the-badge&logo=github&logoColor=white)
 

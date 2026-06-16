@@ -94,6 +94,45 @@ describe('InboxPanel', () => {
     })
 });
 
+describe('InboxPanel — unauthenticated empty state', () => {
+    beforeEach(() => {
+        vi.resetAllMocks();
+        aiStatusModule.useAIStatus.mockReturnValue({ configured: false, keyOk: false });
+        aiQuotaModule.useAIQuotaState.mockReturnValue(null);
+        aiUsageModule.useAIUsage.mockReturnValue({
+            tier: 'free',
+            aiQueries: null,
+            aiFeatures: {},
+            loading: false,
+        });
+        narrativeApi.fetchAttentionNarrative.mockResolvedValue({ narrative: null });
+    });
+
+    it('shows honest message when meta.live is false and section is empty', async () => {
+        api.fetchInbox.mockResolvedValue({
+            meta: { live: false },
+            sections: [
+                { key: 'needs_review', label: 'Needs my review', items: [] },
+            ],
+        });
+        render(<InboxPanel />);
+        expect(await screen.findByText(
+            "Your GitHub session isn't connected — sign in to load live pull requests and reviews."
+        )).toBeInTheDocument();
+    });
+
+    it('shows normal empty-state copy when meta.live is true and section is empty', async () => {
+        api.fetchInbox.mockResolvedValue({
+            meta: { live: true },
+            sections: [
+                { key: 'needs_review', label: 'Needs my review', items: [] },
+            ],
+        });
+        render(<InboxPanel />);
+        expect(await screen.findByText("No PRs waiting for your review — you're all caught up.")).toBeInTheDocument();
+    });
+});
+
 describe('InboxPanel — AI narrative fan-out', () => {
     beforeEach(() => {
         vi.resetAllMocks();
@@ -105,26 +144,49 @@ describe('InboxPanel — AI narrative fan-out', () => {
             aiFeatures: {},
             loading: false,
         });
+        // Gate-validation fixture: uses kind:'hot' (a NARRATIVE_KINDS-supported kind) inside a
+        // needs_review section to verify the top-N cap and kind guard fire correctly.
+        // In production, needs_review items are kind:'pr' and never trigger narrative fetches.
         api.fetchInbox.mockResolvedValue({
             sections: [{
                 key: 'needs_review',
                 label: 'Needs my review',
+                // Use supported narrative kinds so the guard lets them through
                 items: [
-                    { id: 'pr:a/b#1', kind: 'pr', section: 'needs_review', title: 't1', repoFullName: 'a/b' },
-                    { id: 'pr:a/b#2', kind: 'pr', section: 'needs_review', title: 't2', repoFullName: 'a/b' },
-                    { id: 'pr:a/b#3', kind: 'pr', section: 'needs_review', title: 't3', repoFullName: 'a/b' },
-                    { id: 'pr:a/b#4', kind: 'pr', section: 'needs_review', title: 't4', repoFullName: 'a/b' },
+                    { id: 'hot:a/b#1', kind: 'hot', section: 'needs_review', title: 't1', repoFullName: 'a/b' },
+                    { id: 'hot:a/b#2', kind: 'hot', section: 'needs_review', title: 't2', repoFullName: 'a/b' },
+                    { id: 'hot:a/b#3', kind: 'hot', section: 'needs_review', title: 't3', repoFullName: 'a/b' },
+                    { id: 'hot:a/b#4', kind: 'hot', section: 'needs_review', title: 't4', repoFullName: 'a/b' },
                 ],
             }],
         });
         narrativeApi.fetchAttentionNarrative.mockResolvedValue({ narrative: 'AI says hello' });
     });
 
-    it('fetches narratives only for the top 3 items of the active section', async () => {
+    it('fetches narratives only for the top 3 items of the active section (supported kinds only)', async () => {
         render(<InboxPanel />);
         await waitFor(() => expect(narrativeApi.fetchAttentionNarrative).toHaveBeenCalledTimes(3));
         const calls = narrativeApi.fetchAttentionNarrative.mock.calls.map(c => c[0].repo);
         expect(calls).toEqual(['a/b', 'a/b', 'a/b']);
+    });
+
+    it('skips narrative fetch for pr/issue inbox items (unsupported kinds)', async () => {
+        api.fetchInbox.mockResolvedValue({
+            sections: [{
+                key: 'needs_review',
+                label: 'Needs my review',
+                items: [
+                    { id: 'pr:a/b#1', kind: 'pr', section: 'needs_review', title: 't1', repoFullName: 'a/b', prNumber: 1 },
+                    { id: 'issue:a/b#2', kind: 'issue', section: 'needs_review', title: 't2', repoFullName: 'a/b', issueNumber: 2 },
+                ],
+            }],
+        });
+        render(<InboxPanel />);
+        await waitFor(() => expect(api.fetchInbox).toHaveBeenCalled());
+        // Items are displayed
+        expect(await screen.findByText('t1')).toBeInTheDocument();
+        // But no narrative fetch because pr/issue are not in NARRATIVE_KINDS
+        expect(narrativeApi.fetchAttentionNarrative).not.toHaveBeenCalled();
     });
 
     it('skips fetch when AI not configured', async () => {

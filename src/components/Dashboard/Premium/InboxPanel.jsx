@@ -16,6 +16,11 @@ import { Skeleton } from '../../ui/Skeleton';
 
 const NARRATIVE_TOP_N = 3;
 
+// Kinds the /api/ai/attention-narrative endpoint accepts (repo-attention signals).
+// Inbox items are 'pr'/'issue', which the endpoint rejects (400) — so we skip them.
+// Keep in sync with the `kind` enum in server/lib/validators.js (attentionNarrativeSchema).
+const NARRATIVE_KINDS = new Set(['failed_migration', 'stale_pinned', 'abandoned', 'hot']);
+
 const EMPTY_STATE_COPY = {
     needs_review: "No PRs waiting for your review — you're all caught up.",
     my_prs: 'No open PRs of yours right now.',
@@ -24,7 +29,7 @@ const EMPTY_STATE_COPY = {
 };
 
 export function InboxPanel({ onSelectItem }) {
-    const { sections, loading, error, archive, snooze } = useInbox();
+    const { sections, meta, loading, error, archive, snooze } = useInbox();
     const { toast } = useToast();
     const [activeKey, setActiveKey] = useState(null);
     const [snoozingItem, setSnoozingItem] = useState(null);
@@ -53,7 +58,11 @@ export function InboxPanel({ onSelectItem }) {
             setNarratives({});
             return undefined;
         }
-        const top = active.items.slice(0, NARRATIVE_TOP_N);
+        const top = active.items.filter(it => NARRATIVE_KINDS.has(it.kind)).slice(0, NARRATIVE_TOP_N);
+        if (top.length === 0) {
+            setNarratives({});
+            return undefined;
+        }
         const ctrl = new AbortController();
         let cancelled = false;
 
@@ -176,7 +185,11 @@ export function InboxPanel({ onSelectItem }) {
                     )}
                     {error && <p className="p-6 text-sm text-red-600">{String(error.message || error)}</p>}
                     {!loading && !error && active && active.items.length === 0 && (
-                        <p className="p-6 text-sm text-slate-500">{EMPTY_STATE_COPY[active.key] ?? 'Nothing here.'}</p>
+                        <p className="p-6 text-sm text-slate-500">
+                            {meta && meta.live === false
+                                ? "Your GitHub session isn't connected — sign in to load live pull requests and reviews."
+                                : (EMPTY_STATE_COPY[active.key] ?? 'Nothing here.')}
+                        </p>
                     )}
                     {!loading && !error && active && active.items.length > 0 && (
                         <ul>

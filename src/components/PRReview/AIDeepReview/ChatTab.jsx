@@ -3,6 +3,7 @@ import { Send, X, Trash2 } from 'lucide-react';
 import { usePRChat } from '../../../hooks/usePRChat';
 import { MessageBubble, StreamingBubble, TypingIndicator } from '../../AI/ChatPrimitives';
 import { AIErrorState } from '../../ui/AIErrorState';
+import { Button } from '../../ui/Button';
 import { Textarea } from '../../ui/form';
 
 /**
@@ -107,22 +108,24 @@ export function ChatTab({ owner, repo, prNumber, headSha }) {
                     />
                 </div>
                 {sending ? (
-                    <button
+                    <Button
                         type="button"
+                        variant="secondary"
+                        size="sm"
                         onClick={cancel}
-                        className="px-3 py-1.5 text-xs font-medium rounded bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600 inline-flex items-center gap-1"
                         aria-label="Cancel reply"
                     >
                         <X size={12} /> Cancel
-                    </button>
+                    </Button>
                 ) : (
-                    <button
+                    <Button
                         type="submit"
+                        variant="primary"
+                        size="sm"
                         disabled={!input.trim()}
-                        className="px-3 py-1.5 text-xs font-semibold rounded bg-[color:var(--ds-accent-brand)] text-white hover:bg-indigo-500 disabled:opacity-50 inline-flex items-center gap-1"
                     >
                         <Send size={12} /> Send
-                    </button>
+                    </Button>
                 )}
             </form>
         </div>

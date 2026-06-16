@@ -9,6 +9,7 @@ import { useElapsedSeconds } from '../../../hooks/useElapsedSeconds'
 import { formatDurationSeconds } from '../../../utils/format'
 import { migrationApi } from '../../../api/migration'
 import { SectionSpinner, SpinnerIcon } from '../../ui/Spinner'
+import { Button } from '../../ui/Button'
 import { emitAppEvent, APP_EVENTS } from '../../../utils/appEvents'
 
 const STATUS_COLORS = {
@@ -135,16 +136,15 @@ function TaskRow({ task, onRetry }) {
         </span>
 
         {isFailed && onRetry && (
-          <button
+          <Button
+            variant="soft-warning"
+            size="xs"
             type="button"
             onClick={() => onRetry(task.id)}
-            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-lg
-              text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20
-              hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
           >
             <RotateCcw className="w-3 h-3" />
             Retry
-          </button>
+          </Button>
         )}
       </div>
     </motion.div>

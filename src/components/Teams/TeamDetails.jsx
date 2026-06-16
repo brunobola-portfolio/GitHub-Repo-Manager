@@ -252,13 +252,15 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                         aria-labelledby="tab-team-detail-tabs-members"
                     >
                         <div className="flex justify-end mb-4">
-                            <button
+                            <Button
+                                variant="primary"
+                                size="md"
                                 onClick={() => setShowInvite(!showInvite)}
-                                className="flex items-center gap-2 px-4 py-2 bg-[color:var(--ds-accent-brand)] text-white rounded-xl hover:bg-[color:var(--ds-accent-brand-hover)] transition-colors shadow-md"
+                                className="gap-2"
                             >
                                 <UserPlus className="w-4 h-4" />
                                 <span>Add Member</span>
-                            </button>
+                            </Button>
                         </div>
 
                         {showInvite && (

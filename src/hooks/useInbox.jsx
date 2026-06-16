@@ -7,6 +7,7 @@ const ALL_SECTIONS = ['needs_review', 'my_prs', 'mentions', 'stale_drafts'];
 
 function removeFromSections(state, itemId) {
     return {
+        ...state,
         sections: state.sections.map(s => ({
             ...s,
             items: s.items.filter(i => i.id !== itemId),
@@ -15,7 +16,7 @@ function removeFromSections(state, itemId) {
 }
 
 export function useInbox({ sections = ALL_SECTIONS } = {}) {
-    const [data, setData] = useState({ sections: [] });
+    const [data, setData] = useState({ sections: [], meta: null });
     const dataRef = useRef(data);
     // Keep ref in sync so archive/snooze can read current state without stale closure.
     // eslint-disable-next-line react-hooks/refs -- intentional "latest ref" pattern; ref is only read in async callbacks, never during render
@@ -34,7 +35,7 @@ export function useInbox({ sections = ALL_SECTIONS } = {}) {
         try {
             const res = await fetchInbox({ sections: sectionsKey.split(',') });
             const safeSections = Array.isArray(res?.sections) ? res.sections : [];
-            setData({ sections: safeSections });
+            setData({ sections: safeSections, meta: res?.meta ?? null });
             setError(null);
         } catch (e) {
             setError(e);
@@ -121,6 +122,7 @@ export function useInbox({ sections = ALL_SECTIONS } = {}) {
 
     return {
         sections: data.sections,
+        meta: data.meta,
         loading,
         error,
         refresh,

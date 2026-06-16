@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { ChevronDown, ChevronRight, CheckCircle } from 'lucide-react'
 import { formatRelativeTime } from '../../../utils/format'
+import { Button } from '../../ui/Button'
 import { Textarea } from '../../ui/form'
 
 /**
@@ -221,20 +222,22 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
                 aria-label="Reply to comment"
               />
               <div className="flex gap-2 mt-1.5 justify-end">
-                <button
+                <Button
+                  variant="outline"
+                  size="xs"
                   onClick={handleCancelReply}
                   disabled={submitting}
-                  className="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="primary"
+                  size="xs"
                   onClick={handleSubmitReply}
                   disabled={submitting || !replyText.trim()}
-                  className="px-2.5 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {submitting ? 'Replying…' : 'Reply'}
-                </button>
+                </Button>
               </div>
             </div>
           )}

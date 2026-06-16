@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { RefreshCw, GitPullRequest, Rocket, Info, CheckCircle2, FileText } from 'lucide-react'
 import { AnimatedCopyIcon } from '../../ui/AnimatedCopyIcon'
+import { Button } from '../../ui/Button'
 import { useStreaming } from '../../../hooks/useStreaming'
 import { useToast } from '../../../hooks/useToast'
 import { BranchSelector } from '../shared/BranchSelector'
@@ -247,14 +248,15 @@ export function PRTab({ toolkit }) {
                 </div>
             )}
 
-            <button
+            <Button
                 type="button"
+                variant="primary"
+                size="md"
                 onClick={handleGenerate}
                 disabled={!canGenerate || loading || isStreaming}
-                className="inline-flex items-center gap-2 px-6 py-2.5 text-[13px] font-semibold rounded-lg text-white bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-[color:var(--ds-accent-brand)] shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
                 {loading || isStreaming ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Generating...</> : <><GitPullRequest className="w-3.5 h-3.5" />Generate PR Description</>}
-            </button>
+            </Button>
 
             <PRSections
                 sections={sections}
@@ -284,20 +286,21 @@ export function PRTab({ toolkit }) {
 
             {sections && !loading && !isStreaming && (
                 <div className="flex items-center gap-3 flex-wrap">
-                    <button type="button" onClick={handleCopyAll} className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                    <Button type="button" variant="outline" size="sm" onClick={handleCopyAll}>
                         <AnimatedCopyIcon copied={copied} size="w-3.5 h-3.5" checkClassName="text-emerald-500" />
                         {copied ? 'Copied!' : 'Copy All'}
-                    </button>
+                    </Button>
 
                     {!confirmAction && (
-                        <button
+                        <Button
                             type="button"
+                            variant="success"
+                            size="sm"
                             onClick={() => setConfirmAction(prContext?.number ? 'update' : 'create')}
-                            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition-colors"
                         >
                             <Rocket className="w-3.5 h-3.5" />
                             {prContext?.number ? 'Update PR' : 'Create PR'}
-                        </button>
+                        </Button>
                     )}
 
                     {confirmAction && (
