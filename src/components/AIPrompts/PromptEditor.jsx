@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Field, Input, Textarea } from '../ui/form';
 import { Select } from '../ui/Select';
+import { Button } from '../ui/Button';
 
 const MAX_PATH_RULES = 20;
 
@@ -184,14 +185,15 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                 <div>
                     <div className="flex items-center mb-1">
                         <span className="block text-xs font-medium flex-1">Path-scoped rules</span>
-                        <button
+                        <Button
                             type="button"
+                            variant="ghost"
+                            size="xs"
                             onClick={addRule}
                             disabled={pathRules.length >= MAX_PATH_RULES}
-                            className="text-xs px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
                         >
                             + Add
-                        </button>
+                        </Button>
                         {pathRules.length >= MAX_PATH_RULES ? (
                             <span className="ds-text-micro text-amber-600 dark:text-amber-400 ml-2">Maximum {MAX_PATH_RULES} rules</span>
                         ) : null}
@@ -228,24 +230,25 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                     )}
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
-                    <button type="button" onClick={onCancel} className="px-3 py-1.5 text-sm rounded hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
-                    <button type="submit" disabled={saving} className="px-3 py-1.5 text-sm font-medium rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60">
+                    <Button type="button" variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
+                    <Button type="submit" variant="primary" size="sm" disabled={saving}>
                         {saving ? 'Saving…' : (isEdit ? 'Save changes' : 'Create preset')}
-                    </button>
+                    </Button>
                 </div>
             </form>
 
             <div className="space-y-3">
                 <div className="flex items-center">
                     <h3 className="text-sm font-medium flex-1">Test on a sample diff</h3>
-                    <button
+                    <Button
                         type="button"
+                        variant="outline"
+                        size="sm"
                         onClick={handleTest}
                         disabled={!isEdit || testing}
-                        className="px-3 py-1.5 text-xs rounded border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60"
                     >
                         {testing ? 'Running…' : 'Run test'}
-                    </button>
+                    </Button>
                 </div>
                 {!isEdit ? (
                     <p className="text-xs opacity-60">Save the preset first, then run a test against a fixed sample diff.</p>

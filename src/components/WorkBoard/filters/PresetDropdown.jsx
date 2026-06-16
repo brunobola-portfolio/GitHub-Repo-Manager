@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, Bookmark, Trash2, Plus } from 'lucide-react'
 import { useWorkBoardPresets } from '../../../hooks/useWorkBoardPresets'
 import { Input } from '../../ui/form'
+import { Button } from '../../ui/Button'
 
 function serialisableFilters(filters) {
     // Keep only the filter keys we actually use, drop anything else.
@@ -102,15 +103,16 @@ export function PresetDropdown({ currentFilters, onApply }) {
                                     disabled={saving}
                                 />
                             </div>
-                            <button
+                            <Button
                                 type="button"
+                                variant="primary"
+                                size="xs"
                                 onClick={handleSave}
                                 disabled={saving || !name.trim()}
-                                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-[color:var(--ds-accent-brand)] text-white hover:bg-indigo-500 disabled:opacity-40"
                             >
                                 <Plus className="w-3 h-3" aria-hidden="true" />
                                 Save
-                            </button>
+                            </Button>
                         </div>
                         {saveError && <div className="px-2 pb-2 ds-text-meta text-rose-500">{saveError}</div>}
                     </motion.div>

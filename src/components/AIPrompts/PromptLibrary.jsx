@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button } from '../ui/Button';
 
 /**
  * Read-only/editable list of prompt presets shown on the Prompt Studio page.
@@ -39,15 +40,17 @@ export function PromptLibrary({ presets, loading, onNew, onEdit, onDelete, onSet
                         {f}
                     </button>
                 ))}
-                <button
+                <Button
                     type="button"
+                    variant="primary"
+                    size="sm"
                     onClick={onNew}
                     disabled={!isPro}
                     title={isPro ? 'Create a custom preset' : 'Upgrade to Pro to create custom presets'}
-                    className="ml-2 px-3 py-1.5 text-sm font-medium rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                    className="ml-2"
                 >
                     + New preset
-                </button>
+                </Button>
             </div>
 
             {!isPro ? (

@@ -123,15 +123,16 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
             <Button variant="secondary" type="button" onClick={onClose}>
                 Cancel
             </Button>
-            <button
+            <Button
+                variant="success"
+                size="md"
                 type="button"
                 onClick={handleSubmit}
                 disabled={!name || isPerforming || nameStatus === 'taken'}
-                className="inline-flex items-center gap-2 px-6 py-2.5 text-[13px] font-semibold rounded-xl text-white bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors ds-focus-ring"
             >
                 {isPerforming && <Spinner size="sm" />}
                 {isPerforming ? 'Creating…' : 'Create Repository'}
-            </button>
+            </Button>
         </div>
     )
 

@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { EASE } from './ui/motion'
 import { ShieldAlert, LogIn, X } from 'lucide-react'
 import { Tooltip } from './ui/Tooltip'
+import { Button } from './ui/Button'
 
 export function SessionBanner({ visible, onLogin, onDismiss }) {
   return (
@@ -30,18 +31,15 @@ export function SessionBanner({ visible, onLogin, onDismiss }) {
 
               {/* Right: actions */}
               <div className="flex items-center gap-2 shrink-0">
-                <button
+                <Button
+                  variant="warning"
+                  size="sm"
                   onClick={onLogin}
-                  className="group flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-semibold
-                    bg-amber-600 hover:bg-amber-500 dark:bg-amber-500 dark:hover:bg-amber-400
-                    text-white dark:text-slate-900
-                    shadow-sm hover:shadow-lg
-                    transition-colors duration-200
-                    focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-1 focus:outline-none"
+                  className="group"
                 >
                   <LogIn className="w-3.5 h-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" />
                   Sign In
-                </button>
+                </Button>
                 {onDismiss && (
                   <Tooltip label="Dismiss">
                     <button

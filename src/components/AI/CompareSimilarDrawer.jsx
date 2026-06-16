@@ -5,6 +5,7 @@ import { Sparkles, GitCompare } from 'lucide-react'
 import { EmptyState } from '../ui/EmptyState'
 import { SectionSpinner } from '../ui/Spinner'
 import { Card } from '../ui/Card'
+import { Button } from '../ui/Button'
 import { AIErrorState } from '../ui/AIErrorState'
 import { CompareDiffModal } from './CompareDiffModal'
 
@@ -131,8 +132,10 @@ export function CompareSimilarDrawer({ isOpen, onClose, repo }) {
                   </span>
                 </div>
                 <div className="mt-3 flex justify-end">
-                  <button
+                  <Button
                     type="button"
+                    variant="soft-primary"
+                    size="sm"
                     onClick={() => target && setDiffTarget({
                       owner: target.owner,
                       repo: target.repo,
@@ -144,16 +147,10 @@ export function CompareSimilarDrawer({ isOpen, onClose, repo }) {
                         ? 'Open side-by-side README / package.json diff'
                         : 'Compare requires the full_name (owner/name) of the target repo'
                     }
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold
-                        text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]
-                        bg-indigo-50 dark:bg-indigo-950/40
-                        hover:bg-indigo-100 dark:hover:bg-indigo-900/50
-                        disabled:opacity-50 disabled:cursor-not-allowed
-                        transition-colors"
                   >
                     <GitCompare className="w-3.5 h-3.5" />
                     Compare
-                  </button>
+                  </Button>
                 </div>
               </Card>
             )

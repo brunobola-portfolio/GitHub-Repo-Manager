@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, ArrowRight, X } from 'lucide-react'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { ONBOARDING_STEPS } from './onboardingSteps'
+import { Button } from '../ui/Button'
 
 /**
  * OnboardingTour — 3-step modal carousel for first-run users.
@@ -113,31 +114,34 @@ export function OnboardingTour({ isOpen, onClose, onNeverShow }) {
                     </button>
                     <div className="flex items-center gap-2">
                         {!isFirst && (
-                            <button
+                            <Button
                                 type="button"
+                                variant="outline"
+                                size="md"
                                 onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
-                                className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 ds-focus-ring"
                             >
                                 <ArrowLeft className="w-4 h-4" /> Back
-                            </button>
+                            </Button>
                         )}
                         {!isLast && (
-                            <button
+                            <Button
                                 type="button"
+                                variant="primary"
+                                size="md"
                                 onClick={() => setStepIndex((i) => Math.min(ONBOARDING_STEPS.length - 1, i + 1))}
-                                className="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold rounded-lg text-white bg-[color:var(--ds-accent-brand)] hover:opacity-90 transition-colors ds-focus-ring"
                             >
                                 Next <ArrowRight className="w-4 h-4" />
-                            </button>
+                            </Button>
                         )}
                         {isLast && (
-                            <button
+                            <Button
                                 type="button"
+                                variant="primary"
+                                size="md"
                                 onClick={handleComplete}
-                                className="inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold rounded-lg text-white bg-[color:var(--ds-accent-brand)] hover:opacity-90 transition-colors ds-focus-ring"
                             >
                                 Got it
-                            </button>
+                            </Button>
                         )}
                     </div>
                 </div>

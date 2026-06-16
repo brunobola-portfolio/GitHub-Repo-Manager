@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Map } from 'lucide-react'
 import { RoadmapStage } from './RoadmapStage'
+import { Button } from '../ui/Button'
 
 /* ─── Roadmap data ─── */
 const STAGES = [
@@ -165,16 +166,12 @@ export function RoadmapPage({ onNavigatePricing } = {}) {
             Ready to get started with what&apos;s available today?
           </p>
           {onNavigatePricing && (
-            <button
+            <Button
+              variant="soft-primary"
               onClick={onNavigatePricing}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm
-                bg-indigo-500/10 dark:bg-indigo-500/15 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]
-                border border-indigo-500/20 hover:border-indigo-500/40
-                hover:bg-indigo-500/15 dark:hover:bg-indigo-500/20
-                transition-all duration-200"
             >
               View Pricing
-            </button>
+            </Button>
           )}
         </motion.div>
 

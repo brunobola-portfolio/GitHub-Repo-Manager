@@ -14,6 +14,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { MOCK_MODE } from '../../config'
 import { useRelativeTime } from '../../hooks/useRelativeTime.js'
 import { PageHeader } from '../ui/PageHeader'
+import { Button } from '../ui/Button'
 
 const POLL_INTERVAL_MS = 60_000
 
@@ -121,11 +122,13 @@ export function StatusPage() {
                                 {meta.label}
                             </span>
                         </div>
-                        <button
+                        <Button
+                            variant="secondary"
+                            size="sm"
                             type="button"
                             onClick={fetchOnce}
                             disabled={loading}
-                            className="inline-flex items-center gap-2 rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-1.5 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 ds-focus-ring disabled:opacity-60 disabled:cursor-wait"
+                            className="disabled:cursor-wait"
                             aria-label="Refresh status"
                         >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -133,7 +136,7 @@ export function StatusPage() {
                                 <path d="M21 3v6h-6" />
                             </svg>
                             {loading ? 'Checking…' : 'Refresh'}
-                        </button>
+                        </Button>
                     </div>
                     <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
                         {state.lastCheckedAt ? <>Updated {relative}</> : 'Waiting for first check…'}
