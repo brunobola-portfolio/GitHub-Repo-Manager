@@ -11,7 +11,7 @@ import { createPlanSchema, updatePlanSchema } from '../lib/validators.js';
 import { analyzeMigration } from '../migration-planner.js';
 import { validateAzureHost } from '../lib/azure-host-validator.js';
 import { auditLog } from '../lib/audit.js';
-import { withReplaceOnConflict } from '../lib/migration-task-config.js';
+import { withReplaceOnConflict, withLfsMigrate } from '../lib/migration-task-config.js';
 import { resolveAzurePat } from '../lib/pat-resolver.js';
 import db from '../db.js';
 import { createMigrationTaggingService } from '../migration-tagging-service.js';
@@ -569,6 +569,43 @@ router.post('/plans/:id/tasks/:taskId/replace-retry', requireAuth, requireMigrat
     };
     engine.retryTask(id, taskId, retryCredentials).catch(err => {
       logger.error({ err, planId: id, taskId }, 'Replace-retry error');
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: safeError(err, 'Operation failed') });
+  }
+});
+
+// POST /api/migration/plans/:id/tasks/:taskId/retry-lfs — recovery for a repo
+// task that failed because files exceed GitHub's 100 MB per-file limit. Patches
+// the stored config with sizeStrategy='lfs-migrate' (so the re-run runs
+// `git lfs migrate import --above=100M` before pushing) and re-runs the task.
+router.post('/plans/:id/tasks/:taskId/retry-lfs', requireAuth, requireMigrationQuota, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const taskId = parseInt(req.params.taskId);
+    const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
+    if (!plan) return res.status(404).json({ error: 'Plan not found' });
+    const task = db.prepare('SELECT * FROM migration_tasks WHERE id = ? AND plan_id = ?').get(taskId, id);
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+    if (task.status !== 'failed') return res.status(409).json({ error: 'Only failed tasks can be retried' });
+    if (task.type !== 'repo' && task.type !== 'repo-tfvc') {
+      return res.status(400).json({ error: 'Git LFS migration only applies to repository tasks' });
+    }
+    const retryPat = resolvePlanExecutionPat(req, res);
+    if (retryPat.abort) return;
+    db.prepare('UPDATE migration_tasks SET config = ? WHERE id = ?')
+      .run(withLfsMigrate(task.config), taskId);
+    auditLog(req, 'migration.task.retry-lfs', 'migration_task', taskId, { planId: id, targetRef: task.target_ref });
+    const retryCredentials = {
+      githubToken: req.session.accessToken,
+      azurePat: retryPat.pat,
+      azureHost: plan.azure_host || 'dev.azure.com',
+      azureOrg: plan.source_org,
+      azureProject: plan.source_project,
+    };
+    engine.retryTask(id, taskId, retryCredentials).catch(err => {
+      logger.error({ err, planId: id, taskId }, 'LFS-retry error');
     });
     res.json({ success: true });
   } catch (err) {

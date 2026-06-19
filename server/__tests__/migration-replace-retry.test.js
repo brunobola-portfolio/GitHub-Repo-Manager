@@ -1,6 +1,23 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
-import { withReplaceOnConflict } from '../lib/migration-task-config.js'
+import { withReplaceOnConflict, withLfsMigrate } from '../lib/migration-task-config.js'
+
+describe('withLfsMigrate', () => {
+  it('sets sizeStrategy=lfs-migrate, preserving other fields', () => {
+    const out = withLfsMigrate('{"makePrivate":true,"onConflict":"replace"}')
+    expect(JSON.parse(out)).toMatchObject({ makePrivate: true, onConflict: 'replace', sizeStrategy: 'lfs-migrate' })
+  })
+
+  it('tolerates object, null, and malformed input', () => {
+    expect(JSON.parse(withLfsMigrate({ a: 1 }))).toMatchObject({ a: 1, sizeStrategy: 'lfs-migrate' })
+    expect(JSON.parse(withLfsMigrate(null))).toEqual({ sizeStrategy: 'lfs-migrate' })
+    expect(JSON.parse(withLfsMigrate('not json'))).toEqual({ sizeStrategy: 'lfs-migrate' })
+  })
+
+  it('overrides an existing sizeStrategy (e.g. exclude)', () => {
+    expect(JSON.parse(withLfsMigrate('{"sizeStrategy":"exclude"}'))).toEqual({ sizeStrategy: 'lfs-migrate' })
+  })
+})
 
 describe('withReplaceOnConflict', () => {
   it('adds onConflict=replace to a JSON config string, preserving fields', () => {
