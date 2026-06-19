@@ -63,6 +63,13 @@ export const migrationApi = {
       ...(savedCredentialId ? { savedCredentialId } : {}),
     })
   }),
+  replaceRetryTask: (id, taskId, { azurePat, savedCredentialId } = {}) => migrationCall(`${API_ENDPOINTS.migrationPlans}/${id}/tasks/${taskId}/replace-retry`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      azurePat: azurePat || null,
+      ...(savedCredentialId ? { savedCredentialId } : {}),
+    })
+  }),
   analyze: (data) => migrationCall(API_ENDPOINTS.migrationAnalyze, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)

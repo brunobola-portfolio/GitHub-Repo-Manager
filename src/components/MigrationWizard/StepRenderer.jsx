@@ -132,6 +132,13 @@ export default function StepRenderer({ ctx }) {
                   savedCredentialId: source.savedCredentialId || null,
                 }).catch(() => {})
               }}
+              onReplaceRetryTask={(taskId) => {
+                // Destructive recovery: delete the conflicting target and re-run.
+                if (planId) migrationApi.replaceRetryTask(planId, taskId, {
+                  azurePat: source.pat || null,
+                  savedCredentialId: source.savedCredentialId || null,
+                }).catch(() => {})
+              }}
               onComplete={() => {
                 setDirection(1)
                 nextStep()

@@ -10,6 +10,8 @@ import { formatDurationSeconds } from '../../../utils/format'
 import { migrationApi } from '../../../api/migration'
 import { SectionSpinner, SpinnerIcon } from '../../ui/Spinner'
 import { Button } from '../../ui/Button'
+import { ReplaceConfirmModal } from './RepoConfigStep/ReplaceConfirmModal'
+import { isReplaceableConflict } from './conflictRecovery'
 import { emitAppEvent, APP_EVENTS } from '../../../utils/appEvents'
 
 const STATUS_COLORS = {
@@ -49,7 +51,7 @@ function normalizeTasks(tasks) {
   return tasks.map(t => ({ ...t, status: normalizeTaskStatus(t.status) }))
 }
 
-function TaskRow({ task, onRetry }) {
+function TaskRow({ task, onRetry, onReplaceRetry }) {
   const TypeIcon = TYPE_ICONS[task.type] || Package
   const StatusIcon = STATUS_ICONS[task.status] || Clock
   const statusColor = STATUS_COLORS[task.status] || STATUS_COLORS.pending
@@ -135,6 +137,18 @@ function TaskRow({ task, onRetry }) {
           {task.status}
         </span>
 
+        {isReplaceableConflict(task) && onReplaceRetry && (
+          <Button
+            variant="soft-danger"
+            size="xs"
+            type="button"
+            onClick={() => onReplaceRetry(task)}
+          >
+            <RotateCcw className="w-3 h-3" />
+            Replace &amp; retry
+          </Button>
+        )}
+
         {isFailed && onRetry && (
           <Button
             variant="soft-warning"
@@ -151,11 +165,12 @@ function TaskRow({ task, onRetry }) {
   )
 }
 
-export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, onComplete }) {
+export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, onReplaceRetryTask, onComplete }) {
   const [tasks, setTasks] = useState([])
   const [planStatus, setPlanStatus] = useState('running')
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [replaceTask, setReplaceTask] = useState(null)
   const completedRef = useRef(false)
 
   const sseUrl = planId ? migrationApi.streamUrl(planId) : null
@@ -350,10 +365,21 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, o
               key={task.id}
               task={task}
               onRetry={onRetryTask ? (taskId) => onRetryTask(taskId) : null}
+              onReplaceRetry={onReplaceRetryTask ? (t) => setReplaceTask(t) : null}
             />
           ))}
         </AnimatePresence>
       </div>
+
+      <ReplaceConfirmModal
+        isOpen={!!replaceTask}
+        repoFullName={replaceTask?.target_ref || replaceTask?.targetRef || ''}
+        onCancel={() => setReplaceTask(null)}
+        onConfirm={() => {
+          if (replaceTask && onReplaceRetryTask) onReplaceRetryTask(replaceTask.id)
+          setReplaceTask(null)
+        }}
+      />
 
       {/* Controls */}
       {isActive && (
