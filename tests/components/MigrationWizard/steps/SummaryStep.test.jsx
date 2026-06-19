@@ -11,37 +11,41 @@ const report = {
   plan: { status: 'completed', durationSeconds: 10 },
   summary: { total: 1, success: 0, failed: 1, skipped: 0 },
   tasks: [{ id: 1, type: 'repo', status: 'failed', sourceRef: 'a/b/AITOOL', targetRef: 'BolaLabs/AITOOL', durationSeconds: 10 }],
-  errors: [{ taskId: 1, type: 'repo', error: 'Repository "BolaLabs/AITOOL" already exists on GitHub and is not empty.', suggestion: 'Rename or delete it.' }],
+  errors: [{ taskId: 1, type: 'repo', targetRef: 'BolaLabs/AITOOL', error: 'Repository "BolaLabs/AITOOL" already exists on GitHub and is not empty.', suggestion: 'Rename or delete it.' }],
 }
 
 describe('SummaryStep conflict recovery', () => {
   beforeEach(() => { migrationApi.getReport.mockResolvedValue(report) })
 
-  it('shows a Resolve conflict button on an "already exists" error and fires onResolveConflict', async () => {
-    const onResolveConflict = vi.fn()
-    render(<SummaryStep planId="p1" onResolveConflict={onResolveConflict} />)
-    const btn = await screen.findByRole('button', { name: /resolve conflict/i })
+  it('shows Replace & retry on a conflict error; fires onReplaceRetry after type-to-confirm', async () => {
+    const onReplaceRetry = vi.fn()
+    render(<SummaryStep planId="p1" onReplaceRetry={onReplaceRetry} />)
+    const btn = await screen.findByRole('button', { name: /replace.*retry/i })
     fireEvent.click(btn)
-    expect(onResolveConflict).toHaveBeenCalledWith(expect.objectContaining({ taskId: 1 }))
+    // Destructive confirm gate: button stays disabled until the exact name is typed.
+    const input = await screen.findByPlaceholderText('BolaLabs/AITOOL')
+    fireEvent.change(input, { target: { value: 'BolaLabs/AITOOL' } })
+    fireEvent.click(screen.getByRole('button', { name: /delete.*replace/i }))
+    expect(onReplaceRetry).toHaveBeenCalledWith(expect.objectContaining({ taskId: 1 }))
   })
 
-  it('does NOT show Resolve conflict for a repo-type error that is not a conflict', async () => {
+  it('does NOT show Replace & retry for a repo-type error that is not a conflict', async () => {
     const nonConflictReport = {
       plan: { status: 'completed', durationSeconds: 5 },
       summary: { total: 1, success: 0, failed: 1, skipped: 0 },
       tasks: [{ id: 2, type: 'repo', status: 'failed', sourceRef: 'org/repo', targetRef: 'dest/repo', durationSeconds: 5 }],
       // Error message does not contain "already exists" — unrelated auth failure
-      errors: [{ taskId: 2, type: 'repo', error: 'Authentication failed' }],
+      errors: [{ taskId: 2, type: 'repo', targetRef: 'dest/repo', error: 'Authentication failed' }],
     }
     migrationApi.getReport.mockResolvedValueOnce(nonConflictReport)
-    render(<SummaryStep planId="p2" onResolveConflict={vi.fn()} />)
+    render(<SummaryStep planId="p2" onReplaceRetry={vi.fn()} />)
     // First error card is auto-expanded (index === 0), so the button would be
     // visible if the guard were wrong — wait for the error card to appear first
     await screen.findByText('Authentication failed')
-    expect(screen.queryByRole('button', { name: /resolve conflict/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /replace.*retry/i })).toBeNull()
   })
 
-  it('does NOT show Resolve conflict for a non-repo "already exists" error', async () => {
+  it('does NOT show Replace & retry for a non-repo "already exists" error', async () => {
     const workItemsConflictReport = {
       plan: { status: 'completed', durationSeconds: 5 },
       summary: { total: 1, success: 0, failed: 1, skipped: 0 },
@@ -50,10 +54,10 @@ describe('SummaryStep conflict recovery', () => {
       errors: [{ taskId: 3, type: 'work-items', error: 'A label already exists with this name' }],
     }
     migrationApi.getReport.mockResolvedValueOnce(workItemsConflictReport)
-    render(<SummaryStep planId="p3" onResolveConflict={vi.fn()} />)
+    render(<SummaryStep planId="p3" onReplaceRetry={vi.fn()} />)
     // First error card is auto-expanded — wait for content to render
     await screen.findByText('A label already exists with this name')
-    expect(screen.queryByRole('button', { name: /resolve conflict/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /replace.*retry/i })).toBeNull()
   })
 
   it('shows a "Replaced" badge for a repo task completed with replacedExistingRepo metadata', async () => {

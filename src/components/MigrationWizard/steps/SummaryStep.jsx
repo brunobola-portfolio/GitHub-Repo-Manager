@@ -14,6 +14,8 @@ import { RowIconBadge } from '../../ui/RowIconBadge'
 import { formatDurationSeconds } from '../../../utils/format'
 import { OversizedFilesPanel } from '../ui/OversizedFilesPanel'
 import { decodeOversizedError } from '../ui/oversizedError'
+import { ReplaceConfirmModal } from './RepoConfigStep/ReplaceConfirmModal'
+import { isConflictError } from './conflictRecovery'
 
 /* ═══════════════════════════════════════════
    CONSTANTS & CONFIGURATION
@@ -276,17 +278,17 @@ function TaskResultRow({ task, index, maxIndex = 10 }) {
    ERROR CARD — detailed error display
    ═══════════════════════════════════════════ */
 
-function ErrorCard({ error, index, onResolveConflict }) {
+function ErrorCard({ error, index, onReplaceRetry }) {
   const [expanded, setExpanded] = useState(index === 0)
   const [copied, setCopied] = useState(false)
+  const [confirming, setConfirming] = useState(false)
   const typeConfig = TYPE_CONFIG[error.type] || TYPE_CONFIG.repo
   const TypeIcon = typeConfig.icon
   const oversized = decodeOversizedError(error.error)
-  // Only repo-type tasks can be recovered via the Configure → Replace flow;
+  // Only repo-type tasks can be recovered via Replace (delete + recreate);
   // other task types (work-items, wiki) may also say "already exists" but
   // the Replace action does not apply to them.
-  const isRepoTask = error.type === 'repo' || error.type === 'repo-tfvc'
-  const isConflict = isRepoTask && /already exists/i.test(error.error || '')
+  const isConflict = isConflictError(error)
 
   const handleCopy = () => {
     navigator.clipboard.writeText(error.error)
@@ -369,15 +371,15 @@ function ErrorCard({ error, index, onResolveConflict }) {
                       </p>
                     </div>
                   )}
-                  {isConflict && onResolveConflict && (
+                  {isConflict && onReplaceRetry && (
                     <button
                       type="button"
-                      onClick={() => onResolveConflict(error)}
+                      onClick={() => setConfirming(true)}
                       className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg
                         text-white bg-red-600 hover:bg-red-700 transition-colors ds-focus-ring"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
-                      Resolve conflict
+                      Replace &amp; retry
                     </button>
                   )}
                 </>
@@ -386,6 +388,13 @@ function ErrorCard({ error, index, onResolveConflict }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ReplaceConfirmModal
+        isOpen={confirming}
+        repoFullName={error.targetRef || ''}
+        onCancel={() => setConfirming(false)}
+        onConfirm={() => { setConfirming(false); onReplaceRetry(error) }}
+      />
     </motion.div>
   )
 }
@@ -455,7 +464,7 @@ function PreflightSummary({ flags }) {
   )
 }
 
-export default function SummaryStep({ planId, onNewMigration, onViewHistory, onResolveConflict, preflightFlags = [] }) {
+export default function SummaryStep({ planId, onNewMigration, onViewHistory, onReplaceRetry, preflightFlags = [] }) {
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -645,7 +654,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
 
           <div className="space-y-2">
             {taskErrors.map((err, i) => (
-              <ErrorCard key={err.taskId} error={err} index={i} onResolveConflict={onResolveConflict} />
+              <ErrorCard key={err.taskId} error={err} index={i} onReplaceRetry={onReplaceRetry} />
             ))}
           </div>
         </div>

@@ -58,7 +58,6 @@ export default function StepRenderer({ ctx }) {
     onClose,
     setDirection,
     nextStep,
-    onResolveConflict,
   } = ctx
 
   function renderStep() {
@@ -159,7 +158,18 @@ export default function StepRenderer({ ctx }) {
             planId={planId}
             onNewMigration={resetWizard}
             onViewHistory={onClose}
-            onResolveConflict={onResolveConflict}
+            onReplaceRetry={(error) => {
+              // Delete the conflicting target and re-run the single task, then
+              // jump to Progress to watch the live re-run over SSE.
+              if (!planId) return
+              migrationApi.replaceRetryTask(planId, error.taskId, {
+                azurePat: source.pat || null,
+                savedCredentialId: source.savedCredentialId || null,
+              }).then(() => {
+                setDirection(1)
+                goToStep('progress')
+              }).catch(() => {})
+            }}
             preflightFlags={selectedRepos.flatMap((r) => r.risk?.flags || [])}
           />
         )
