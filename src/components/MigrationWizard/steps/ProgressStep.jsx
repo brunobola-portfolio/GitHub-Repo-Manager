@@ -11,7 +11,7 @@ import { migrationApi } from '../../../api/migration'
 import { SectionSpinner, SpinnerIcon } from '../../ui/Spinner'
 import { Button } from '../../ui/Button'
 import { ReplaceConfirmModal } from './RepoConfigStep/ReplaceConfirmModal'
-import { isReplaceableConflict } from './conflictRecovery'
+import { isReplaceableConflict, isOversizedFailure } from './conflictRecovery'
 import { emitAppEvent, APP_EVENTS } from '../../../utils/appEvents'
 
 const STATUS_COLORS = {
@@ -51,7 +51,7 @@ function normalizeTasks(tasks) {
   return tasks.map(t => ({ ...t, status: normalizeTaskStatus(t.status) }))
 }
 
-function TaskRow({ task, onRetry, onReplaceRetry }) {
+function TaskRow({ task, onRetry, onReplaceRetry, onLfsRetry }) {
   const TypeIcon = TYPE_ICONS[task.type] || Package
   const StatusIcon = STATUS_ICONS[task.status] || Clock
   const statusColor = STATUS_COLORS[task.status] || STATUS_COLORS.pending
@@ -149,7 +149,20 @@ function TaskRow({ task, onRetry, onReplaceRetry }) {
           </Button>
         )}
 
-        {isFailed && onRetry && (
+        {isOversizedFailure(task) && onLfsRetry && (
+          <Button
+            variant="soft-warning"
+            size="xs"
+            type="button"
+            onClick={() => onLfsRetry(task.id)}
+            title="Re-run converting files over 100 MB to Git LFS"
+          >
+            <RotateCcw className="w-3 h-3" />
+            Retry with Git LFS
+          </Button>
+        )}
+
+        {isFailed && onRetry && !isReplaceableConflict(task) && !isOversizedFailure(task) && (
           <Button
             variant="soft-warning"
             size="xs"
@@ -165,7 +178,7 @@ function TaskRow({ task, onRetry, onReplaceRetry }) {
   )
 }
 
-export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, onReplaceRetryTask, onComplete }) {
+export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, onReplaceRetryTask, onLfsRetryTask, onComplete }) {
   const [tasks, setTasks] = useState([])
   const [planStatus, setPlanStatus] = useState('running')
   const [confirmCancel, setConfirmCancel] = useState(false)
@@ -366,6 +379,7 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, o
               task={task}
               onRetry={onRetryTask ? (taskId) => onRetryTask(taskId) : null}
               onReplaceRetry={onReplaceRetryTask ? (t) => setReplaceTask(t) : null}
+              onLfsRetry={onLfsRetryTask ? (taskId) => onLfsRetryTask(taskId) : null}
             />
           ))}
         </AnimatePresence>

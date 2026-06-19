@@ -60,6 +60,24 @@ describe('SummaryStep conflict recovery', () => {
     expect(screen.queryByRole('button', { name: /replace.*retry/i })).toBeNull()
   })
 
+  it('shows Retry with Git LFS on an oversized-files error and fires onLfsRetry', async () => {
+    const oversizedReport = {
+      plan: { status: 'failed', durationSeconds: 55 },
+      summary: { total: 1, success: 0, failed: 1, skipped: 0 },
+      tasks: [{ id: 12, type: 'repo', status: 'failed', sourceRef: 'a/b/AITOOL', targetRef: 'BolaLabs/AITOOL', durationSeconds: 55 }],
+      errors: [{
+        taskId: 12, type: 'repo', targetRef: 'BolaLabs/AITOOL',
+        error: 'OVERSIZED_FILES:{"files":[{"path":"Lib/StdMigrador100.dll","sizeMB":197}]}|3 file(s) exceeded GitHub\'s 100 MB limit during push.',
+      }],
+    }
+    migrationApi.getReport.mockResolvedValueOnce(oversizedReport)
+    const onLfsRetry = vi.fn()
+    render(<SummaryStep planId="p5" onLfsRetry={onLfsRetry} />)
+    const btn = await screen.findByRole('button', { name: /retry with git lfs/i })
+    fireEvent.click(btn)
+    expect(onLfsRetry).toHaveBeenCalledWith(expect.objectContaining({ taskId: 12 }))
+  })
+
   it('shows a "Replaced" badge for a repo task completed with replacedExistingRepo metadata', async () => {
     const replacedReport = {
       plan: { status: 'completed', durationSeconds: 8 },

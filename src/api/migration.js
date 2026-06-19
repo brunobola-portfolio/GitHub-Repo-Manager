@@ -70,6 +70,13 @@ export const migrationApi = {
       ...(savedCredentialId ? { savedCredentialId } : {}),
     })
   }),
+  retryLfsTask: (id, taskId, { azurePat, savedCredentialId } = {}) => migrationCall(`${API_ENDPOINTS.migrationPlans}/${id}/tasks/${taskId}/retry-lfs`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      azurePat: azurePat || null,
+      ...(savedCredentialId ? { savedCredentialId } : {}),
+    })
+  }),
   analyze: (data) => migrationCall(API_ENDPOINTS.migrationAnalyze, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)

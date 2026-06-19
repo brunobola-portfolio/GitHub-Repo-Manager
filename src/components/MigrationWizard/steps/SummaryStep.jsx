@@ -278,7 +278,7 @@ function TaskResultRow({ task, index, maxIndex = 10 }) {
    ERROR CARD — detailed error display
    ═══════════════════════════════════════════ */
 
-function ErrorCard({ error, index, onReplaceRetry }) {
+function ErrorCard({ error, index, onReplaceRetry, onLfsRetry }) {
   const [expanded, setExpanded] = useState(index === 0)
   const [copied, setCopied] = useState(false)
   const [confirming, setConfirming] = useState(false)
@@ -346,7 +346,20 @@ function ErrorCard({ error, index, onReplaceRetry }) {
           >
             <div className="px-3.5 pb-3.5 space-y-2.5">
               {oversized ? (
-                <OversizedFilesPanel files={oversized.files} fallback={oversized.fallback} />
+                <>
+                  <OversizedFilesPanel files={oversized.files} fallback={oversized.fallback} />
+                  {onLfsRetry && (
+                    <button
+                      type="button"
+                      onClick={() => onLfsRetry(error)}
+                      className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg
+                        text-white bg-amber-600 hover:bg-amber-700 transition-colors ds-focus-ring"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Retry with Git LFS
+                    </button>
+                  )}
+                </>
               ) : (
                 <>
                   <div className="relative group/err">
@@ -464,7 +477,7 @@ function PreflightSummary({ flags }) {
   )
 }
 
-export default function SummaryStep({ planId, onNewMigration, onViewHistory, onReplaceRetry, preflightFlags = [] }) {
+export default function SummaryStep({ planId, onNewMigration, onViewHistory, onReplaceRetry, onLfsRetry, preflightFlags = [] }) {
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -654,7 +667,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
 
           <div className="space-y-2">
             {taskErrors.map((err, i) => (
-              <ErrorCard key={err.taskId} error={err} index={i} onReplaceRetry={onReplaceRetry} />
+              <ErrorCard key={err.taskId} error={err} index={i} onReplaceRetry={onReplaceRetry} onLfsRetry={onLfsRetry} />
             ))}
           </div>
         </div>

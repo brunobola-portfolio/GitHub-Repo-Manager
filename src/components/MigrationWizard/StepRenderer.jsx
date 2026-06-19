@@ -138,6 +138,13 @@ export default function StepRenderer({ ctx }) {
                   savedCredentialId: source.savedCredentialId || null,
                 }).catch(() => {})
               }}
+              onLfsRetryTask={(taskId) => {
+                // Oversized-files recovery: re-run converting >100MB blobs to LFS.
+                if (planId) migrationApi.retryLfsTask(planId, taskId, {
+                  azurePat: source.pat || null,
+                  savedCredentialId: source.savedCredentialId || null,
+                }).catch(() => {})
+              }}
               onComplete={() => {
                 setDirection(1)
                 nextStep()
@@ -163,6 +170,17 @@ export default function StepRenderer({ ctx }) {
               // jump to Progress to watch the live re-run over SSE.
               if (!planId) return
               migrationApi.replaceRetryTask(planId, error.taskId, {
+                azurePat: source.pat || null,
+                savedCredentialId: source.savedCredentialId || null,
+              }).then(() => {
+                setDirection(1)
+                goToStep('progress')
+              }).catch(() => {})
+            }}
+            onLfsRetry={(error) => {
+              // Re-run converting >100MB files to Git LFS, then watch on Progress.
+              if (!planId) return
+              migrationApi.retryLfsTask(planId, error.taskId, {
                 azurePat: source.pat || null,
                 savedCredentialId: source.savedCredentialId || null,
               }).then(() => {
