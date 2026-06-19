@@ -476,7 +476,11 @@ export const createPlanSchema = z.object({
                 description: z.string().max(350).default(''),
                 rollbackPolicy: z.enum(['delete', 'keep-empty']).default('delete'),
                 timeout: z.number().min(60000).max(3600000).default(1800000),
-                sizeStrategy: z.enum(['exclude', 'lfs-migrate']).optional()
+                sizeStrategy: z.enum(['exclude', 'lfs-migrate']).optional(),
+                // Destructive "Replace" intent from the wizard. Zod strips
+                // unknown keys, so this MUST be declared or the engine never
+                // sees it and the migration fails on the existing repo.
+                onConflict: z.enum(['fail', 'replace']).optional()
             }).default({})
         }),
         z.object({
@@ -488,7 +492,14 @@ export const createPlanSchema = z.object({
                 description: z.string().max(350).default(''),
                 rollbackPolicy: z.enum(['delete', 'keep-empty']).default('delete'),
                 timeout: z.number().min(60000).max(3600000).default(1800000),
-                sizeStrategy: z.enum(['exclude', 'lfs-migrate']).optional()
+                sizeStrategy: z.enum(['exclude', 'lfs-migrate']).optional(),
+                onConflict: z.enum(['fail', 'replace']).optional(),
+                // TFVC in-place keys read by the engine (migration-engine.js
+                // repo-tfvc case). Must be declared or zod strips them and the
+                // wizard's in-place choice silently falls back to GitHub push.
+                inPlace: z.boolean().optional(),
+                targetProject: z.string().max(100).optional(),
+                existingRepoId: z.string().max(200).optional()
             }).default({})
         }),
         z.object({

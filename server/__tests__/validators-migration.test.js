@@ -107,4 +107,53 @@ describe('createPlanSchema', () => {
     const res = createPlanSchema.safeParse(plan)
     expect(res.success).toBe(false)
   })
+
+  // Regression: the "Replace" conflict action must survive validation. Zod
+  // strips unknown keys silently (without failing), so `success: true` alone
+  // does NOT prove the field was kept — assert the parsed value explicitly.
+  it('preserves onConflict: replace on repo task config', () => {
+    const plan = {
+      source: { type: 'azure', org: 'o', project: 'p' },
+      tasks: [{ type: 'repo', sourceRef: 'o/p/r', targetRef: 'gh/r', config: { onConflict: 'replace' } }],
+    }
+    const res = createPlanSchema.safeParse(plan)
+    expect(res.success).toBe(true)
+    expect(res.data.tasks[0].config.onConflict).toBe('replace')
+  })
+
+  it('preserves onConflict: replace on repo-tfvc task config', () => {
+    const plan = {
+      source: { type: 'azure', org: 'o', project: 'p' },
+      tasks: [{ type: 'repo-tfvc', sourceRef: 'o/p/r', targetRef: 'gh/r', config: { onConflict: 'replace' } }],
+    }
+    const res = createPlanSchema.safeParse(plan)
+    expect(res.success).toBe(true)
+    expect(res.data.tasks[0].config.onConflict).toBe('replace')
+  })
+
+  it('rejects invalid onConflict values', () => {
+    const plan = {
+      source: { type: 'azure', org: 'o', project: 'p' },
+      tasks: [{ type: 'repo', sourceRef: 'o/p/r', targetRef: 'gh/r', config: { onConflict: 'overwrite' } }],
+    }
+    expect(createPlanSchema.safeParse(plan).success).toBe(false)
+  })
+
+  // Regression (same class as onConflict): TFVC in-place keys read by the
+  // engine must survive validation, otherwise the wizard's in-place choice
+  // is silently dropped and the migration pushes to GitHub instead.
+  it('preserves in-place keys on repo-tfvc task config', () => {
+    const plan = {
+      source: { type: 'azure', org: 'o', project: 'p' },
+      tasks: [{
+        type: 'repo-tfvc', sourceRef: 'o/p/r', targetRef: 'o/r',
+        config: { inPlace: true, targetProject: 'DestProj', existingRepoId: 'abc-123-guid' },
+      }],
+    }
+    const res = createPlanSchema.safeParse(plan)
+    expect(res.success).toBe(true)
+    expect(res.data.tasks[0].config.inPlace).toBe(true)
+    expect(res.data.tasks[0].config.targetProject).toBe('DestProj')
+    expect(res.data.tasks[0].config.existingRepoId).toBe('abc-123-guid')
+  })
 })
