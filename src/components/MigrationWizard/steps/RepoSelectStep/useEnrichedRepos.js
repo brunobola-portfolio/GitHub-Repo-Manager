@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { getCsrfToken } from '../../../../utils/api'
+import { getCsrfToken, apiCall } from '../../../../utils/api'
 import { azureCredPayload } from '../../../../utils/azureRequestPayload'
 
 /**
@@ -158,21 +158,18 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
   const runConflictCheck = useCallback(async (names, targetOwner) => {
     if (!names.length) return
     try {
-      const csrfToken = await getCsrfToken().catch(() => null)
-      const res = await fetch('/api/import/check-duplicates', {
-        method: 'POST', credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-        },
-        // Send targetOwner only when truthy; the server resolves to the
-        // authenticated user's GitHub login when omitted (avoids the old
-        // bug where the Azure org name was sent as a GitHub owner and the
-        // check always returned "no conflict").
+      // Route through apiCall so a stale CSRF token self-heals (it refetches +
+      // retries once on 403 csrf_invalid). A raw fetch here 403'd with no
+      // recovery, dropping the conflict preview silently.
+      // targetOwner is sent only when truthy; the server resolves to the
+      // authenticated user's GitHub login when omitted (avoids the old bug
+      // where the Azure org name was sent as a GitHub owner).
+      const data = await apiCall('/api/import/check-duplicates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(targetOwner ? { repos: names, targetOwner } : { repos: names }),
       })
-      const data = await res.json()
-      if (res.ok && data.duplicates) {
+      if (data?.duplicates) {
         setConflictsState(data.duplicates)
         // Details are optional (older servers won't send them). When absent,
         // downstream consumers fall back to the boolean map and lose the
