@@ -11,6 +11,7 @@ import { createPlanSchema, updatePlanSchema } from '../lib/validators.js';
 import { analyzeMigration } from '../migration-planner.js';
 import { validateAzureHost } from '../lib/azure-host-validator.js';
 import { auditLog } from '../lib/audit.js';
+import { withReplaceOnConflict } from '../lib/migration-task-config.js';
 import { resolveAzurePat } from '../lib/pat-resolver.js';
 import db from '../db.js';
 import { createMigrationTaggingService } from '../migration-tagging-service.js';
@@ -535,6 +536,46 @@ router.post('/plans/:id/tasks/:taskId/retry', requireAuth, requireMigrationQuota
   }
 });
 
+// POST /api/migration/plans/:id/tasks/:taskId/replace-retry — destructive
+// recovery for a repo task that failed on an "already exists" conflict.
+// Patches the stored config with onConflict='replace' then re-runs the task,
+// so the importer deletes + recreates the target. Works on pre-existing failed
+// plans too (this path does not go through createPlanSchema).
+router.post('/plans/:id/tasks/:taskId/replace-retry', requireAuth, requireMigrationQuota, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const taskId = parseInt(req.params.taskId);
+    const plan = db.prepare('SELECT * FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
+    if (!plan) return res.status(404).json({ error: 'Plan not found' });
+    const task = db.prepare('SELECT * FROM migration_tasks WHERE id = ? AND plan_id = ?').get(taskId, id);
+    if (!task) return res.status(404).json({ error: 'Task not found' });
+    if (task.status !== 'failed') return res.status(409).json({ error: 'Only failed tasks can be replace-retried' });
+    if (task.type !== 'repo' && task.type !== 'repo-tfvc') {
+      return res.status(400).json({ error: 'Replace only applies to repository tasks' });
+    }
+    const retryPat = resolvePlanExecutionPat(req, res);
+    if (retryPat.abort) return;
+    // Carry the destructive intent into the stored config so retryTask, which
+    // re-reads task.config from the DB, deletes and recreates the target.
+    db.prepare('UPDATE migration_tasks SET config = ? WHERE id = ?')
+      .run(withReplaceOnConflict(task.config), taskId);
+    auditLog(req, 'migration.task.replace-retry', 'migration_task', taskId, { planId: id, targetRef: task.target_ref });
+    const retryCredentials = {
+      githubToken: req.session.accessToken,
+      azurePat: retryPat.pat,
+      azureHost: plan.azure_host || 'dev.azure.com',
+      azureOrg: plan.source_org,
+      azureProject: plan.source_project,
+    };
+    engine.retryTask(id, taskId, retryCredentials).catch(err => {
+      logger.error({ err, planId: id, taskId }, 'Replace-retry error');
+    });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: safeError(err, 'Operation failed') });
+  }
+});
+
 // GET /api/migration/stream/:id — SSE stream
 router.get('/stream/:id', requireAuth, (req, res) => {
   engine.handleSSEConnection(parseInt(req.params.id), req.session.userId, req, res);
@@ -574,7 +615,7 @@ router.get('/plans/:id/report', requireAuth, async (req, res) => {
       metadata: t.metadata || {}
     }));
     const errors = plan.tasks.filter(t => t.status === 'failed').map(t => ({
-      taskId: t.id, type: t.type, error: t.error_message || 'Unknown error',
+      taskId: t.id, type: t.type, targetRef: t.target_ref, error: t.error_message || 'Unknown error',
       suggestion: getSuggestionForError(t.error_message, t.type, t.config),
     }));
     res.json({
