@@ -14,6 +14,7 @@ import { SelectionSummaryBar } from './RepoSelectStep/SelectionSummaryBar'
 import { AutoFixDrawer } from './RepoSelectStep/AutoFixDrawer.jsx'
 import { SkeletonRow } from '../ui/repo/SkeletonRow'
 import { ShortcutsOverlay } from './RepoSelectStep/ShortcutsOverlay'
+import { ReplaceConfirmModal } from './RepoConfigStep/ReplaceConfirmModal'
 import { isAIUnavailable, subscribeAIUnavailable } from '../../../utils/aiAvailability'
 
 const FILTER_PREDICATES = {
@@ -59,6 +60,7 @@ export default function RepoSelectStep({ repos, onSetRepos, onUpdateRepo, source
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [aiAvailable, setAiAvailable] = useState(false)
+  const [replaceTarget, setReplaceTarget] = useState(null) // { repo, index }
 
   useEffect(() => {
     let cancelled = false
@@ -163,6 +165,38 @@ export default function RepoSelectStep({ repos, onSetRepos, onUpdateRepo, source
     })
     setDrawerOpen(false)
   }, [onUpdateRepo])
+
+  // Conflict resolution from a row's Risk Report (RepoRiskReport actions).
+  // Replace is destructive, so it routes through the type-to-confirm modal;
+  // rename/skip mirror the Configure-step handlers; undo clears the intent.
+  const handleRiskAction = useCallback((repoId, actionId) => {
+    const index = repos.findIndex((r) => r.id === repoId)
+    if (index < 0) return
+    const repo = repos[index]
+    const baseName = repo.targetName || repo.name
+    switch (actionId) {
+      case 'replace':
+        setReplaceTarget({ repo, index })
+        break
+      case 'rename':
+        onUpdateRepo(index, { targetName: `${baseName}-migrated`, conflictAction: 'rename' })
+        break
+      case 'skip':
+        onUpdateRepo(index, { selected: false, conflictAction: 'skip' })
+        break
+      case 'undo-replace':
+        onUpdateRepo(index, { conflictAction: undefined })
+        break
+      default:
+        break
+    }
+  }, [repos, onUpdateRepo])
+
+  const confirmReplace = useCallback(() => {
+    if (!replaceTarget) return
+    onUpdateRepo(replaceTarget.index, { conflictAction: 'replace' })
+    setReplaceTarget(null)
+  }, [replaceTarget, onUpdateRepo])
 
   // Keyboard shortcuts — scoped to the step's container to avoid
   // stealing browser-native Ctrl+A from other parts of the page.
@@ -309,9 +343,18 @@ export default function RepoSelectStep({ repos, onSetRepos, onUpdateRepo, source
             const idx = scored.findIndex((r) => r.id === activeDetailId)
             if (idx < scored.length - 1) setActiveDetailId(scored[idx + 1].id)
           }}
-          onRiskAction={() => { /* Configure step owns rename */ }}
+          onRiskAction={handleRiskAction}
         />
       )}
+
+      <ReplaceConfirmModal
+        isOpen={!!replaceTarget}
+        repoFullName={replaceTarget
+          ? `${targetOrg ? `${targetOrg}/` : ''}${replaceTarget.repo.targetName || replaceTarget.repo.name}`
+          : ''}
+        onCancel={() => setReplaceTarget(null)}
+        onConfirm={confirmReplace}
+      />
     </div>
   )
 }
