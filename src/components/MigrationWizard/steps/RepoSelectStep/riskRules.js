@@ -80,13 +80,28 @@ const rules = [
   function ruleNameConflict(repo, ctx) {
     const name = effectiveName(repo)
     if (!ctx.conflicts?.[name]) return null
+    // Resolved-by-replace: keep it visible but non-blocking so the user can
+    // advance, with an Undo escape hatch. The destructive intent is carried by
+    // repo.conflictAction === 'replace' all the way to the importer.
+    if (repo.conflictAction === 'replace') {
+      return {
+        type: 'will-replace',
+        severity: 'info',
+        message: 'Will replace (delete) the existing repo',
+        suggestion: 'The existing repo on GitHub will be deleted and recreated from the source.',
+        actions: [{ id: 'undo-replace', label: 'Undo' }],
+      }
+    }
     return {
       type: 'name-conflict',
       severity: 'blocker',
       message: `A repository named "${name}" already exists in ${ctx.targetOrg || 'the target org'}.`,
-      suggestion: 'The Configure step lets you rename or skip this repo before migration.',
-      // No inline actions: the Configure step owns rename/skip. Showing
-      // buttons here without wiring them would be a broken affordance.
+      suggestion: 'Resolve it here: Replace (delete & recreate), Rename, or Skip.',
+      actions: [
+        { id: 'replace', label: 'Replace' },
+        { id: 'rename', label: 'Rename' },
+        { id: 'skip', label: 'Skip' },
+      ],
     }
   },
   function ruleEmptyTargetReuse(repo, ctx) {
