@@ -24,6 +24,7 @@ import {
   BACKEND_DOWN_HINT,
   makeThrottle,
 } from './dev/format.mjs'
+import { ensureDepsFresh } from './dev/ensure-deps.mjs'
 
 dotenv.config({ quiet: true })
 
@@ -54,6 +55,27 @@ const clock = () => new Date().toTimeString().slice(0, 8) // HH:MM:SS local
 
 function emit(kind, line) {
   process.stdout.write(tagLine(kind, line, { color: COLOR, time: clock() }) + '\n')
+}
+
+// ---- dependency drift guard -----------------------------------------------
+// Keep node_modules in sync with package-lock.json BEFORE booting, so a
+// freshly-pulled dependency (e.g. after a branch switch) can't make Vite fail
+// to resolve an import mid-session. The fast path is two stat() calls — we only
+// reinstall on real drift, and render a clean summary instead of npm's spam.
+const dep = ensureDepsFresh(ROOT, {
+  onStart: () => emit('down', 'dependencies out of sync — running npm install…'),
+})
+if (dep.installed) {
+  if (dep.code === 0) {
+    const detail = dep.summary ? ` (${dep.summary})` : ''
+    emit('up', `dependencies synced${detail} · ${(dep.elapsedMs / 1000).toFixed(1)}s`)
+  } else {
+    emit('down', `npm install exited (${dep.code}) — run it manually, then restart dev:all`)
+    for (const l of dep.output.split('\n').slice(-6)) {
+      const clean = stripAnsi(l).trimEnd()
+      if (clean) emit('down', clean)
+    }
+  }
 }
 
 // ---- backend child process ------------------------------------------------
