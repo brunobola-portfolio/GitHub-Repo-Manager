@@ -247,6 +247,15 @@ function TaskResultRow({ task, index, maxIndex = 10 }) {
               LFS objects missing
             </span>
           )}
+          {task.metadata?.lfsPushFailed && (
+            <span
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded ds-text-micro font-medium bg-red-500/15 text-red-600 dark:text-red-400"
+              title="LFS objects failed to upload to the target — the repo has pointers to missing objects and will fail on clone. Re-run the migration (or run `git lfs push --all` to the target) to upload them."
+            >
+              <AlertTriangle className="w-2.5 h-2.5" />
+              LFS upload failed
+            </span>
+          )}
         </div>
       </div>
 

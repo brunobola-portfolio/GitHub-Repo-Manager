@@ -99,4 +99,26 @@ describe('SummaryStep conflict recovery', () => {
     render(<SummaryStep planId="p4" />)
     expect(await screen.findByText(/replaced/i)).toBeTruthy()
   })
+
+  it('shows an "LFS upload failed" badge when lfsPushFailed metadata is set', async () => {
+    const lfsReport = {
+      plan: { status: 'completed', durationSeconds: 12 },
+      summary: { total: 1, success: 1, failed: 0, skipped: 0 },
+      tasks: [
+        {
+          id: 6,
+          type: 'repo',
+          status: 'completed',
+          sourceRef: 'org/lfs-repo',
+          targetRef: 'dest/lfs-repo',
+          durationSeconds: 12,
+          metadata: { lfsPushFailed: true },
+        },
+      ],
+      errors: [],
+    }
+    migrationApi.getReport.mockResolvedValueOnce(lfsReport)
+    render(<SummaryStep planId="p6" />)
+    expect(await screen.findByText(/lfs upload failed/i)).toBeTruthy()
+  })
 })

@@ -262,6 +262,7 @@ async function importRepository(params) {
     let reusedExistingRepo = false;
     let replacedExistingRepo = false;
     let lfsFetchFailed = false;
+    let lfsPushFailed = false;
 
     try {
         // Step 1: Validate
@@ -519,10 +520,25 @@ async function importRepository(params) {
         // the target ends up with pointers to missing objects.
         if (lfsPushNeeded(hasLFS, sizeStrategy)) {
             onProgress('lfs-push', 'Pushing LFS objects...', 80);
-            try {
-                await bareGit.raw(['lfs', 'push', '--all', 'github']);
-            } catch (e) {
-                logger.warn({ err: e }, 'LFS push warning');
+            // Retry transient failures (network/rate-limit). If it still fails we
+            // do NOT silently succeed: flag it so the Summary warns the user that
+            // the target has LFS pointers to missing objects (clone will fail)
+            // and they should retry — instead of reporting a clean success.
+            const LFS_PUSH_TRIES = 3;
+            for (let attempt = 1; attempt <= LFS_PUSH_TRIES; attempt++) {
+                try {
+                    await bareGit.raw(['lfs', 'push', '--all', 'github']);
+                    lfsPushFailed = false;
+                    break;
+                } catch (e) {
+                    lfsPushFailed = true;
+                    if (attempt < LFS_PUSH_TRIES) {
+                        logger.warn({ err: e, attempt }, 'LFS push failed; retrying');
+                        await sleep(2000 * attempt);
+                    } else {
+                        logger.error({ err: e }, 'LFS push failed after retries — target has orphaned LFS pointers');
+                    }
+                }
             }
         }
 
@@ -569,6 +585,7 @@ async function importRepository(params) {
             branchCount,
             hasLFS,
             lfsFetchFailed,
+            lfsPushFailed,
             reusedExistingRepo,
             replacedExistingRepo,
             emptySource,
