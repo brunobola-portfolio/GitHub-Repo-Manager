@@ -202,7 +202,20 @@ router.post('/import/azure-tfvc/batch', requireAuth, validateBody(azureTfvcBatch
                     await Promise.race(active);
                 }
             }
-        })();
+        })().catch((err) => {
+            logger.error({ err }, 'Azure TFVC batch-import queue crashed');
+            try {
+                const ids = pendingJobs.map((j) => j.jobId);
+                if (ids.length) {
+                    const placeholders = ids.map(() => '?').join(',');
+                    db.prepare(
+                        `UPDATE migration_jobs SET status = 'failed', error_message = 'Batch import queue crashed', completed_at = datetime('now') WHERE id IN (${placeholders}) AND status IN ('pending', 'running')`,
+                    ).run(...ids);
+                }
+            } catch (markErr) {
+                logger.error({ err: markErr }, 'Failed to mark stuck jobs after queue crash');
+            }
+        });
 
         res.json({
             success: true,

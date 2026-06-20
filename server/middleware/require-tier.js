@@ -199,5 +199,9 @@ if (process.env.NODE_ENV !== 'test') {
         'License validated'
       )
     }
-  }).catch(() => {})
+  }).catch((err) => {
+    // A DB failure here silently degrades the server to the free tier with no
+    // signal. Log it so a misconfigured deploy is diagnosable.
+    logger.warn({ err }, 'Failed to warm license cache at startup; serving default tier until next refresh')
+  })
 }

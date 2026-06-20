@@ -256,7 +256,9 @@ router.post('/import/azure/batch', requireAuth, validateBody(azureImportBatchSch
             }
         };
 
-        // Concurrent execution with queue
+        // Concurrent execution with queue — fire and forget, but with an error
+        // boundary so an orchestrator/DB failure can't leave jobs stuck in
+        // 'pending'/'running' forever (and can't surface as an unhandled rejection).
         (async () => {
             const queue = [...pendingJobs];
             const active = new Set();
@@ -271,7 +273,20 @@ router.post('/import/azure/batch', requireAuth, validateBody(azureImportBatchSch
                     await Promise.race(active);
                 }
             }
-        })();
+        })().catch((err) => {
+            logger.error({ err }, 'Azure git batch-import queue crashed');
+            try {
+                const ids = pendingJobs.map((j) => j.jobId);
+                if (ids.length) {
+                    const placeholders = ids.map(() => '?').join(',');
+                    db.prepare(
+                        `UPDATE migration_jobs SET status = 'failed', error_message = 'Batch import queue crashed', completed_at = datetime('now') WHERE id IN (${placeholders}) AND status IN ('pending', 'running')`,
+                    ).run(...ids);
+                }
+            } catch (markErr) {
+                logger.error({ err: markErr }, 'Failed to mark stuck jobs after queue crash');
+            }
+        });
 
         res.json({
             success: true,
