@@ -1091,10 +1091,10 @@ export function initDB(targetDb = db) {
             item_id        TEXT    NOT NULL,
             archived_at    TEXT,
             snoozed_until  TEXT,
-            PRIMARY KEY (user_id, item_id),
-            -- FK added for GDPR erasure on fresh installs; existing DBs keep the
-            -- old (FK-less) schema, so user-data erasure also DELETEs explicitly.
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            PRIMARY KEY (user_id, item_id)
+            -- No FK: a rebuild migration is needed to add one safely (see audit
+            -- report §4). GDPR erasure is handled explicitly in
+            -- routes/user-data.js (DELETE FROM dashboard_inbox_state).
         )
     `);
 

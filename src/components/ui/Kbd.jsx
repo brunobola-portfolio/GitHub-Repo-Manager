@@ -33,7 +33,10 @@ function isMac() {
 export function Kbd({ children, modifier, tone = 'default' }) {
   const prefix = modifier === 'mod' ? (isMac() ? '⌘' : 'Ctrl+') : ''
   return (
-    <kbd className={`inline-flex items-center px-1.5 py-0.5 ds-text-meta font-medium border rounded-[var(--ds-radius-sm)] font-mono leading-none ${TONE_CLASSES[tone] || TONE_CLASSES.default}`}>
+    // Decorative: the keyboard glyph is a visual hint, not part of an element's
+    // accessible name. aria-hidden keeps button names clean (e.g. "Cancel", not
+    // "Cancel Esc") for screen readers.
+    <kbd aria-hidden="true" className={`inline-flex items-center px-1.5 py-0.5 ds-text-meta font-medium border rounded-[var(--ds-radius-sm)] font-mono leading-none ${TONE_CLASSES[tone] || TONE_CLASSES.default}`}>
       {prefix}{children}
     </kbd>
   )
