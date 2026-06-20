@@ -10,7 +10,19 @@ vi.mock('simple-git', () => ({
     }),
 }));
 
-import { lfsPushNeeded } from '../import-service.js';
+import { lfsPushNeeded, ensureGitLfs } from '../import-service.js';
+
+describe('ensureGitLfs', () => {
+    it('resolves when `git lfs version` succeeds', async () => {
+        await expect(ensureGitLfs(async () => 'git-lfs/3.4.0 (GitHub)')).resolves.toBeUndefined();
+    });
+
+    it('throws a coded, actionable error when git-lfs is not installed', async () => {
+        const runRaw = async () => { throw new Error("git: 'lfs' is not a git command"); };
+        await expect(ensureGitLfs(runRaw)).rejects.toMatchObject({ code: 'GIT_LFS_MISSING' });
+        await expect(ensureGitLfs(runRaw)).rejects.toThrow(/git lfs is not installed|git-lfs/i);
+    });
+});
 
 describe('lfsPushNeeded', () => {
     it('true when the source already used LFS', () => {

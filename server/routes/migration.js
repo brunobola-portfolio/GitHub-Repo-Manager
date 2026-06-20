@@ -228,6 +228,9 @@ function getSuggestionForError(errorMsg, type, config = null) {
   // Not found
   if (msg.includes('not found') || msg.includes('404'))
     return 'The source repository could not be found. Verify the organization, project, and repository name are correct.';
+  // Git LFS not installed on the server (lfs-migrate path)
+  if (msg.includes('git lfs is not installed') || msg.includes('git-lfs'))
+    return 'Install git-lfs on the migration server (https://git-lfs.com) so files over 100 MB can be converted to LFS, then retry. Alternatively, exclude this repository.';
   // Target already exists
   if (msg.includes('already exists'))
     return 'A repository with the same name already exists on the target. Rename the target or delete the existing repository first.';

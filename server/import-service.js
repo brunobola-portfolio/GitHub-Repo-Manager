@@ -154,6 +154,25 @@ export function lfsPushNeeded(hasLFS, sizeStrategy) {
 }
 
 /**
+ * Verify git-lfs is installed before relying on it (lfs-migrate / lfs push).
+ * Without this, a missing git-lfs silently falls back to the original history
+ * and the run fails later at the opaque "exceeds 100 MB" push error. Throws a
+ * coded, actionable error instead.
+ * @param {(args:string[])=>Promise<any>} runRaw - runs `git <args>` (e.g. git.raw)
+ */
+export async function ensureGitLfs(runRaw) {
+    try {
+        await runRaw(['lfs', 'version']);
+    } catch {
+        const err = new Error(
+            'Git LFS is not installed on the migration server, so files over GitHub\'s 100 MB limit cannot be converted. Install git-lfs (https://git-lfs.com) on the server and retry, or choose "Exclude" for this repository.',
+        );
+        err.code = 'GIT_LFS_MISSING';
+        throw err;
+    }
+}
+
+/**
  * Delete a repository on GitHub. Treats 404 as success (already gone) and
  * maps 403 to an actionable message (orgs can forbid member deletions).
  * @param {string} owner
@@ -398,6 +417,10 @@ async function importRepository(params) {
         if (sizeStrategy === 'lfs-migrate') {
             onProgress('lfs-migrate', 'Converting large files to LFS...', 50);
             const migrateGit = simpleGit(workDir);
+            // Fail fast with a clear message if git-lfs is missing — otherwise the
+            // conversion silently no-ops and the run dies later at the opaque
+            // "exceeds 100 MB" push error, which reads as if Replace/LFS did nothing.
+            await ensureGitLfs((args) => migrateGit.raw(args));
             try {
                 await migrateGit.raw([
                     'lfs', 'migrate', 'import',
