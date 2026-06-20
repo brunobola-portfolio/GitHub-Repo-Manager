@@ -18,11 +18,16 @@ const QUICK_LIMIT = 5
 
 const resolveValue = (val, repo) => (typeof val === 'function' ? val(repo) : val)
 
+// The surface filter + priority sort are repo-independent, so compute them once
+// at module load instead of rebuilding the array for every card on every render.
+// Only the per-repo isApplicable filter stays in the render path.
+const QUICK_ACTION_CANDIDATES = Object.values(repoActions)
+	.filter((a) => a.surfaces.includes('quickAction'))
+	.sort((a, b) => (a.quickActionPriority ?? 999) - (b.quickActionPriority ?? 999))
+
 function RepoCardQuickActions({ repo, onAction, onContextMenu }) {
-	const top = Object.values(repoActions)
-		.filter((a) => a.surfaces.includes('quickAction'))
+	const top = QUICK_ACTION_CANDIDATES
 		.filter((a) => (a.isApplicable ? a.isApplicable(repo) : true))
-		.sort((a, b) => (a.quickActionPriority ?? 999) - (b.quickActionPriority ?? 999))
 		.slice(0, QUICK_LIMIT)
 
 	return (
@@ -238,13 +243,26 @@ export const RepoCard = memo(function RepoCard({
 		</motion.div>
 	)
 }, (prevProps, nextProps) => {
-	// Only re-render if these props change
+	// Skip re-render only when every RENDERED repo field and card-level UI prop
+	// is unchanged. The previous whitelist omitted stars/forks/issues/language/
+	// description/pushed_at/full_name, so a card kept stale values when its repo
+	// data refreshed in place (same id, new object). List with the rendered set.
+	const a = prevProps.repo
+	const b = nextProps.repo
 	return (
-		prevProps.repo.id === nextProps.repo.id &&
-		prevProps.repo.name === nextProps.repo.name &&
-		prevProps.repo.updated_at === nextProps.repo.updated_at &&
-		prevProps.repo.archived === nextProps.repo.archived &&
-		prevProps.repo.private === nextProps.repo.private &&
+		a.id === b.id &&
+		a.name === b.name &&
+		a.full_name === b.full_name &&
+		a.owner?.login === b.owner?.login &&
+		a.description === b.description &&
+		a.language === b.language &&
+		a.archived === b.archived &&
+		a.private === b.private &&
+		a.stargazers_count === b.stargazers_count &&
+		a.forks_count === b.forks_count &&
+		a.open_issues_count === b.open_issues_count &&
+		a.pushed_at === b.pushed_at &&
+		a.updated_at === b.updated_at &&
 		prevProps.viewMode === nextProps.viewMode &&
 		prevProps.isSelected === nextProps.isSelected &&
 		prevProps.isContextTarget === nextProps.isContextTarget
