@@ -12,7 +12,14 @@ export function buildRepoTaskConfig(repo, { isInPlace, targetProject }) {
     makePrivate: repo.visibility === 'private',
     description: repo.description || '',
   }
-  let config = repo.sizeStrategy === 'lfs-migrate'
+  // Convert large blobs to LFS when the repo opts into lfs-migrate, OR when the
+  // user flipped the "Git LFS" toggle on a repo that isn't already LFS — that's
+  // the case where files over GitHub's 100MB limit need converting. Repos that
+  // already use LFS (hasLfsMarker) are left on their normal path to avoid a
+  // needless history rewrite.
+  const wantsLfsMigrate = repo.sizeStrategy === 'lfs-migrate'
+    || (repo.lfsEnabled && !repo.hasLfsMarker)
+  let config = wantsLfsMigrate
     ? { ...baseConfig, sizeStrategy: 'lfs-migrate' }
     : baseConfig
 

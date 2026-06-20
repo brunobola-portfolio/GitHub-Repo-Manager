@@ -24,6 +24,21 @@ describe('buildRepoTaskConfig', () => {
       .toMatchObject({ sizeStrategy: 'lfs-migrate' })
   })
 
+  it('Git LFS toggle on a non-LFS repo triggers lfs-migrate', () => {
+    expect(buildRepoTaskConfig({ visibility: 'private', lfsEnabled: true }, { isInPlace: false }))
+      .toMatchObject({ sizeStrategy: 'lfs-migrate' })
+  })
+
+  it('does NOT force lfs-migrate for a repo that already uses LFS (avoids needless history rewrite)', () => {
+    expect(buildRepoTaskConfig({ visibility: 'private', lfsEnabled: true, hasLfsMarker: true }, { isInPlace: false }))
+      .not.toHaveProperty('sizeStrategy')
+  })
+
+  it('no sizeStrategy when the toggle is off', () => {
+    expect(buildRepoTaskConfig({ visibility: 'private' }, { isInPlace: false }))
+      .not.toHaveProperty('sizeStrategy')
+  })
+
   it('adds in-place fields for TFVC existing-empty', () => {
     const cfg = buildRepoTaskConfig(
       { visibility: 'private', isTfvc: true, targetType: 'existing-empty', existingRepoId: 'abc' },
