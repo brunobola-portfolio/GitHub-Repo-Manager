@@ -140,6 +140,20 @@ export function decideConflictResolution({ size, defaultBranch, onConflict }) {
 }
 
 /**
+ * Whether `git lfs push` must run after the mirror push. True when the source
+ * already used LFS OR when `sizeStrategy === 'lfs-migrate'` converted blobs to
+ * LFS pointers during this run — in the latter case `hasLFS` (read from the
+ * pristine source attributes) is false, but the local repo now has LFS objects
+ * that would otherwise be left dangling (pointers pushed, objects missing).
+ * @param {boolean} hasLFS - source repo already used LFS
+ * @param {string} [sizeStrategy]
+ * @returns {boolean}
+ */
+export function lfsPushNeeded(hasLFS, sizeStrategy) {
+    return !!hasLFS || sizeStrategy === 'lfs-migrate';
+}
+
+/**
  * Delete a repository on GitHub. Treats 404 as success (already gone) and
  * maps 403 to an actionable message (orgs can forbid member deletions).
  * @param {string} owner
@@ -477,8 +491,10 @@ async function importRepository(params) {
             throw pushErr;
         }
 
-        // Step 6: Push LFS if needed
-        if (hasLFS) {
+        // Step 6: Push LFS if needed. Also runs when lfs-migrate converted blobs
+        // this run — those objects exist only locally and must be uploaded, or
+        // the target ends up with pointers to missing objects.
+        if (lfsPushNeeded(hasLFS, sizeStrategy)) {
             onProgress('lfs-push', 'Pushing LFS objects...', 80);
             try {
                 await bareGit.raw(['lfs', 'push', '--all', 'github']);
