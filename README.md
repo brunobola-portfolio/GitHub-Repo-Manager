@@ -343,7 +343,8 @@ The hosted product ships three tiers. The **Free tier includes the full AI produ
 | Mirror Sync (preview free, apply Pro)  | Preview         | ✓             | ✓          |
 | Dry-Run migration                      | ✓               | ✓             | ✓          |
 | Teams                                  | Up to 3 (5 each)| 15 members    | Unlimited  |
-| Audit Logs / SSO                       | ✗               | ✗             | ✓          |
+| Audit Logs                             | ✗               | ✗             | ✓          |
+| SSO / SAML _(roadmap)_                 | ✗               | ✗             | ✗          |
 | API keys                               | 5               | 10            | 50         |
 
 Self-hosting under AGPL v3 is free forever — see [LICENSE](LICENSE). The matrix above describes the hosted SaaS.

@@ -103,7 +103,9 @@ const TIER_FEATURES = {
         teamMembersMax: Infinity,
         auditLog: true,
         auditExport: true,
-        sso: true,
+        // SSO/SAML is on the roadmap but NOT implemented (only GitHub OAuth
+        // exists). Keep it false so no surface advertises it as delivered.
+        sso: false,
     },
 };
 

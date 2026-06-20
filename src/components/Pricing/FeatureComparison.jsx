@@ -116,8 +116,8 @@ const CATEGORIES = [
         values: [false, false, true],
       },
       {
-        feature: 'SSO',
-        values: [false, false, true],
+        feature: 'SSO / SAML',
+        values: [false, false, 'Roadmap'],
       },
     ],
   },

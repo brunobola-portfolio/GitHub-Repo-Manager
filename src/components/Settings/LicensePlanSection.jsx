@@ -147,7 +147,7 @@ function UpgradePrompt({ onUpgradePro, onUpgradeEnterprise }) {
                         </div>
                     </div>
                     <ul className="space-y-1.5 mb-4">
-                        {['Everything in Pro', 'Unlimited AI queries', 'SSO / SAML', 'SLA & dedicated support'].map((feat) => (
+                        {['Everything in Pro', 'Unlimited AI queries', 'SSO / SAML (coming soon)', 'SLA & dedicated support'].map((feat) => (
                             <li key={feat} className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
                                 {feat}

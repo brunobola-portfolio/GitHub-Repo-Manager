@@ -51,7 +51,7 @@ const plans = [
       'Everything in Pro',
       'Unlimited AI queries',
       'Unlimited team members',
-      'SSO / SAML + audit logs',
+      'Audit logs (SSO / SAML coming soon)',
       '50 API keys',
       'Priority support + SLA',
     ],

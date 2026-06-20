@@ -68,7 +68,7 @@ const TIERS_MONTHLY = [
       { label: 'Unlimited AI queries', included: true },
       { label: 'Unlimited team members', included: true },
       { label: 'Audit Logs', included: true },
-      { label: 'SSO', included: true },
+      { label: 'SSO / SAML (coming soon)', included: false },
       { label: 'API keys', included: '50' },
       { label: 'Priority Support + SLA', included: true },
     ],
