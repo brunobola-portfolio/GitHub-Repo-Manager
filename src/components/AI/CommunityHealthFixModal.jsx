@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Sparkles, CheckCircle, ExternalLink, Settings as SettingsIcon } from 'lucide-react'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
@@ -44,8 +44,16 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 		setAiNotConfigured(false)
 	}, [])
 
+	// Monotonic generation id: each callGenerate bumps it, and the auto-generate
+	// effect bumps it on cleanup (close / fileType / license switch / unmount).
+	// Results from a superseded generation are dropped so a slow earlier request
+	// can't overwrite a newer one (or setState on a closed modal).
+	const genSeqRef = useRef(0)
+
 	const callGenerate = useCallback(async (overrides = {}) => {
 		if (!repo?.owner?.login || !repo?.name || !fileType) return
+		const seq = ++genSeqRef.current
+		const isStale = () => seq !== genSeqRef.current
 		setState('generating')
 		setError(null)
 		setAiNotConfigured(false)
@@ -58,6 +66,7 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 				body: JSON.stringify({ fileType, overrides }),
 			})
 			const json = await res.json().catch(() => ({}))
+			if (isStale()) return
 			if (!res.ok) {
 				if (json.code === 'ai_not_configured') {
 					setAiNotConfigured(true)
@@ -77,6 +86,7 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 			setCommitMessage(json.suggestedCommitMessage || `chore: add ${fileType}`)
 			setState('preview')
 		} catch (e) {
+			if (isStale()) return
 			setError(e)
 			setState('error')
 		}
@@ -96,6 +106,9 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 		// eslint-disable-next-line react-hooks/set-state-in-effect -- modal-open kicks off fetch
 		if (fileType === 'license') callGenerate({ licenseId })
 		else callGenerate()
+		// Invalidate an in-flight generation when the modal closes or the
+		// fileType/license changes mid-request, so its result is dropped.
+		return () => { genSeqRef.current += 1 }
 	}, [isOpen, fileType, licenseId, callGenerate])
 
 	const callCommit = useCallback(async () => {

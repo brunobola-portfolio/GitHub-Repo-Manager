@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Drawer } from '../ui/Drawer'
 import { aiApi } from '../../api/ai'
 import { Sparkles, GitCompare } from 'lucide-react'
@@ -36,28 +36,39 @@ export function CompareSimilarDrawer({ isOpen, onClose, repo }) {
   //   { owner, repo, label } | null
   const [diffTarget, setDiffTarget] = useState(null)
 
+  // Monotonic load id: drops results from a superseded fetch so switching
+  // repos (or closing the drawer) mid-request can't apply a stale repo's
+  // similar-list or setState after unmount.
+  const loadSeqRef = useRef(0)
+
   const loadResults = async () => {
+    const seq = ++loadSeqRef.current
+    const isStale = () => seq !== loadSeqRef.current
     setLoading(true)
     setNotIndexed(false)
     setError(null)
     try {
       const data = await aiApi.findSimilar(repo.id)
+      if (isStale()) return
       if (data.notIndexed) {
         setNotIndexed(true)
       } else {
         setResults(data.similar || [])
       }
     } catch (err) {
+      if (isStale()) return
       console.error(err)
       setError(err)
     } finally {
-      setLoading(false)
+      if (!isStale()) setLoading(false)
     }
   }
 
   /* eslint-disable react-hooks/set-state-in-effect -- mount + open-state fetch */
   useEffect(() => {
     if (isOpen && repo) loadResults()
+    // Invalidate an in-flight load on repo switch / close / unmount.
+    return () => { loadSeqRef.current += 1 }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, repo?.id])
   /* eslint-enable react-hooks/set-state-in-effect */
