@@ -182,7 +182,10 @@ function AppContent() {
     checkAIStatus,
   } = useGitHub()
 
-  const anyModalOpen = Object.values(modalStates).some(Boolean)
+  // Memoized so its identity is stable across renders — it feeds the `enabled`
+  // prop of useKeyboardShortcuts, which would otherwise re-bind its listener
+  // on every render.
+  const anyModalOpen = useMemo(() => Object.values(modalStates).some(Boolean), [modalStates])
 
   // Poll session expiry and surface a warning toast before the 7-day
   // absolute ceiling trips. Silent when unauthenticated or in mock mode.

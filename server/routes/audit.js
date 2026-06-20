@@ -1,11 +1,14 @@
 import { Router } from 'express';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
+import { requireTier } from '../middleware/require-tier.js';
 
 const router = Router();
 
-// List audit log entries (paginated)
-router.get('/', requireAuth, (req, res) => {
+// List audit log entries (paginated). Audit log is an Enterprise feature.
+// The tier check is ALSO applied at the mount point; enforcing it here too is
+// defense-in-depth so a future remount can't silently expose it to lower tiers.
+router.get('/', requireAuth, requireTier('enterprise'), (req, res) => {
     try {
         const page = Math.max(1, parseInt(req.query.page) || 1);
         const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 50));
