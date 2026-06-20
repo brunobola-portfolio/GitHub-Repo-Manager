@@ -217,7 +217,20 @@ router.delete('/', requireAuth, (req, res) => {
                 'DELETE FROM team_members WHERE user_id = ?'
             ).run(userId);
 
-            // 13. Tombstone the users row (preserve for audit referential integrity).
+            // 13. dashboard_inbox_state (per-user inbox archive/snooze — keyed by
+            //     user_id, no FK so it is NOT cascade-cleaned; must be deleted here
+            //     or personal data survives erasure).
+            const inboxDel = db.prepare(
+                'DELETE FROM dashboard_inbox_state WHERE user_id = ?'
+            ).run(userId);
+
+            // 14. repo_assignments authored by this user (assigned_by has no
+            //     ON DELETE action; tombstoning the user would leave dangling refs).
+            const assignDel = db.prepare(
+                'DELETE FROM repo_assignments WHERE assigned_by = ?'
+            ).run(userId);
+
+            // 15. Tombstone the users row (preserve for audit referential integrity).
             //     users.id IS the GitHub ID — we null the PII fields but keep the row
             //     so that audit_log_v2.user_id foreign references remain valid.
             db.prepare(`
@@ -245,6 +258,8 @@ router.delete('/', requireAuth, (req, res) => {
                 apiKeys: keysDel.changes,
                 subscriptions: subDel.changes,
                 teamMemberships: memberDel.changes,
+                dashboardInboxState: inboxDel.changes,
+                repoAssignments: assignDel.changes,
             };
         });
 

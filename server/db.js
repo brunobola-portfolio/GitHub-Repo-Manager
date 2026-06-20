@@ -1091,7 +1091,10 @@ export function initDB(targetDb = db) {
             item_id        TEXT    NOT NULL,
             archived_at    TEXT,
             snoozed_until  TEXT,
-            PRIMARY KEY (user_id, item_id)
+            PRIMARY KEY (user_id, item_id),
+            -- FK added for GDPR erasure on fresh installs; existing DBs keep the
+            -- old (FK-less) schema, so user-data erasure also DELETEs explicitly.
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
     `);
 

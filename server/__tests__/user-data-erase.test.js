@@ -223,6 +223,23 @@ function buildDb() {
         PRIMARY KEY (team_id, user_id)
     )`);
 
+    db.exec(`CREATE TABLE dashboard_inbox_state (
+        user_id       INTEGER NOT NULL,
+        item_id       TEXT    NOT NULL,
+        archived_at   TEXT,
+        snoozed_until TEXT,
+        PRIMARY KEY (user_id, item_id)
+    )`);
+
+    db.exec(`CREATE TABLE repo_assignments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        team_id INTEGER NOT NULL DEFAULT 1,
+        repo_full_name TEXT NOT NULL DEFAULT 'o/r',
+        repo_id INTEGER NOT NULL DEFAULT 1,
+        assigned_by INTEGER NOT NULL,
+        assigned_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )`);
+
     return db;
 }
 
@@ -347,6 +364,25 @@ describe('G3 — DELETE /api/v1/user/data', () => {
         // AI config row is gone
         const aiRow = _db.prepare(`SELECT * FROM user_ai_config WHERE user_id = 42`).get();
         expect(aiRow).toBeUndefined();
+    });
+
+    it('erases dashboard_inbox_state and repo_assignments (GDPR completeness)', async () => {
+        seedUser(42, 'alice');
+        _db.prepare(`INSERT INTO dashboard_inbox_state (user_id, item_id, archived_at) VALUES (?, ?, ?)`)
+            .run(42, 'pr:o/r#1', '2026-01-01');
+        _db.prepare(`INSERT INTO repo_assignments (team_id, repo_full_name, repo_id, assigned_by) VALUES (?, ?, ?, ?)`)
+            .run(1, 'o/r', 1, 42);
+
+        const app = buildApp(42);
+        const res = await request(app)
+            .delete('/api/v1/user/data')
+            .send({ confirmString: 'ERASE MY DATA' });
+
+        expect(res.status).toBe(200);
+        expect(_db.prepare(`SELECT * FROM dashboard_inbox_state WHERE user_id = 42`).get()).toBeUndefined();
+        expect(_db.prepare(`SELECT * FROM repo_assignments WHERE assigned_by = 42`).get()).toBeUndefined();
+        expect(res.body.deleted.dashboardInboxState).toBe(1);
+        expect(res.body.deleted.repoAssignments).toBe(1);
     });
 
     it('retains the user.erased audit event after erasure', async () => {
