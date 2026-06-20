@@ -93,10 +93,10 @@ export function ConfirmModal({
 
     const footer = (
         <ModalFooter align="right">
-            <Button variant="ghost" onClick={onClose} disabled={isLoading || isSubmitting} aria-label={cancelText} className="inline-flex items-center gap-2">
+            <Button variant="ghost" onClick={onClose} disabled={isLoading || isSubmitting} className="inline-flex items-center gap-2">
                 {cancelText} <Kbd>Esc</Kbd>
             </Button>
-            <Button variant={buttonVariant} onClick={handleConfirm} disabled={isLoading || isSubmitting} aria-label={(isLoading || isSubmitting) ? 'Processing...' : confirmText} className="inline-flex items-center gap-2">
+            <Button variant={buttonVariant} onClick={handleConfirm} disabled={isLoading || isSubmitting} aria-busy={isLoading || isSubmitting} className="inline-flex items-center gap-2">
                 {(isLoading || isSubmitting) ? 'Processing...' : confirmText} <Kbd modifier="mod" tone="onSolid">↵</Kbd>
             </Button>
         </ModalFooter>

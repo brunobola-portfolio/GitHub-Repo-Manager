@@ -480,7 +480,7 @@ export function CommandPalette({
                       <GitPullRequest className={`w-4 h-4 shrink-0 ${pr.state === 'open' ? 'text-emerald-500' : 'text-purple-500'}`} />
                       <div className="flex-1 min-w-0">
                         <div className="truncate font-medium">{pr.title}</div>
-                        <div className="ds-text-meta text-slate-400 truncate">
+                        <div className="ds-text-meta text-slate-500 dark:text-slate-400 truncate">
                           {pr.repoFullName} #{pr.number}
                         </div>
                       </div>
@@ -500,7 +500,7 @@ export function CommandPalette({
                       <CircleDot className={`w-4 h-4 shrink-0 ${it.state === 'open' ? 'text-emerald-500' : 'text-slate-400'}`} />
                       <div className="flex-1 min-w-0">
                         <div className="truncate font-medium">{it.title}</div>
-                        <div className="ds-text-meta text-slate-400 truncate">
+                        <div className="ds-text-meta text-slate-500 dark:text-slate-400 truncate">
                           {it.repoFullName} #{it.number}
                         </div>
                       </div>
@@ -521,7 +521,7 @@ export function CommandPalette({
                       <div className="flex-1 min-w-0">
                         <div className="truncate font-medium">{repo.fullName}</div>
                         {repo.description && (
-                          <div className="ds-text-meta text-slate-400 truncate">{repo.description}</div>
+                          <div className="ds-text-meta text-slate-500 dark:text-slate-400 truncate">{repo.description}</div>
                         )}
                       </div>
                     </Command.Item>
