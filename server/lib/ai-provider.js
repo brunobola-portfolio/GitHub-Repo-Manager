@@ -62,6 +62,15 @@ async function _loadProviders() {
     }
 }
 
+/**
+ * Public: ensure the lazily-imported (non-Gemini) providers are loaded. Await
+ * this before calling `resolveServerProviderFromEnv()` for a non-Gemini
+ * provider, since the registry's `create()` references those modules.
+ */
+export async function loadProviders() {
+    await _loadProviders();
+}
+
 // ---------------------------------------------------------------------------
 // Error taxonomy
 // ---------------------------------------------------------------------------
@@ -685,7 +694,7 @@ const PROVIDER_REGISTRY = {
  * @param {string} [featureKey] — UPPER_SNAKE key (e.g. 'CHAT') for AI_MODEL_<FEATURE> override
  * @returns {object|null} a provider instance, or null when unconfigured
  */
-function resolveServerProviderFromEnv(featureKey) {
+export function resolveServerProviderFromEnv(featureKey) {
     const providerName = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
     const entry = PROVIDER_REGISTRY[providerName];
     if (!entry) {
