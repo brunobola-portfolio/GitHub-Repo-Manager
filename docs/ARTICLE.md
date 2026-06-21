@@ -24,11 +24,11 @@ At its core, this is a full-stack web application that gives you a single pane o
 
 But it goes far beyond a read-only dashboard. Here's what makes it stand out:
 
-### AI-Powered Intelligence (Google Gemini)
+### AI-Powered Intelligence
 
-This isn't AI bolted on as an afterthought. Gemini is woven throughout the platform:
+This isn't AI bolted on as an afterthought. AI is woven throughout the platform:
 
-- **Conversational AI Assistant** -- Ask questions about your repositories in natural language. "Which of my repos need better documentation?" "What's the tech stack breakdown across my organization?" The assistant knows your project context.
+- **Repo Advisor** -- Ask questions about your repositories in natural language. "Which of my repos need better documentation?" "What's the tech stack breakdown across my organization?" The assistant knows your project context.
 - **Semantic Search** -- Go beyond keyword matching. Search your repositories by meaning, not just text.
 - **README Generation and Enhancement** -- Point it at a project and get a professional README, or intelligently fill in missing sections of an existing one.
 - **Quality Reports** -- Comprehensive analysis of code health, documentation completeness, community standards, and engineering practices, scored on a 0-100 scale with prioritized recommendations.
@@ -38,7 +38,7 @@ This isn't AI bolted on as an afterthought. Gemini is woven throughout the platf
 
 That's **10+ distinct AI-powered features**, all working together to make repository management genuinely intelligent.
 
-> **Screenshot suggestion**: Upload `docs/images/09_ai_assistant_dark_hd.png` as a post image showing the Gemini AI Assistant chat interface.
+> **Screenshot suggestion**: Upload `docs/images/09_ai_assistant_dark_hd.png` as a post image showing the Repo Advisor chat interface.
 
 ### Full Azure DevOps Migration Suite
 
@@ -203,7 +203,7 @@ Built with genuine passion for developer tools, modern web technology, and the b
 2. Create a new LinkedIn article or long-form post
 3. Upload `docs/images/01_dashboard_dark_hd.png` as the **cover/hero image**
 4. Add additional images inline or as a carousel:
-   - `docs/images/09_ai_assistant_dark_hd.png` (AI Assistant)
+   - `docs/images/09_ai_assistant_dark_hd.png` (Repo Advisor)
    - `docs/images/08_migration_wizard_hd.png` (Migration Wizard)
    - `docs/images/06_repositories_dark_hd.png` (Repository Management)
 5. Paste hashtags at the end of the post
@@ -216,7 +216,7 @@ Use the shorter version below. Upload 3-4 screenshots as a photo album.
 
 ## Facebook Version (Shorter)
 
-After months of development, I'm excited to share my latest project: **GitHub Repo Manager** -- a full-stack platform for managing your entire GitHub ecosystem, powered by Google Gemini AI.
+After months of development, I'm excited to share my latest project: **GitHub Repo Manager** -- a full-stack platform for managing your entire GitHub ecosystem, powered by your configured AI provider.
 
 **What it does:**
 - Manages repositories, teams, organizations, and CI/CD pipelines from a single dashboard

@@ -108,7 +108,7 @@ Get a bird's-eye view of your entire GitHub ecosystem at a glance.
 - **Language Distribution** — Technology breakdown across all your projects.
 - **Organization Overview** — Quick insights with star, fork, and issue counts per org.
 - **Migration Activity** — Track migration progress and history.
-- **Auto-dismissing AI promo strip** — quietly disappears once you've engaged with the AI Assistant and Insights surfaces enough times.
+- **Auto-dismissing AI promo strip** — quietly disappears once you've engaged with Repo Advisor and Insights surfaces enough times.
 
 ### Advanced Repository Management
 
@@ -174,7 +174,7 @@ Cross-app integration:
 
 KPI tiles show count-up animations, sparklines (last 7 days), and delta badges. Snapshots persist in `work_board_kpi_snapshots` (migration 017) via a daily sweeper job, exposed at `GET /api/v1/work-board/kpi-snapshots`.
 
-#### AI Assistant (BYOK, opt-in, monthly cap)
+#### Repo Advisor (BYOK, opt-in, monthly cap)
 
 - **AI summary card** — two-column layout with urgency glow; the prompt receives 7-day trend snapshots so the headline reflects momentum, not just snapshot state.
 - **Suggestion chips on rows** — `POST /api/v1/work-board/suggest-action` returns `ping` / `snooze` / `view` chips on hover/focus; clicking `Ping` opens an inline typewriter draft comment (no more `window.prompt`).
@@ -254,11 +254,11 @@ Configure any of these providers in Settings → AI Configuration:
 
 ## AI-Powered Intelligence
 
-![AI Assistant](docs/images/09_ai_assistant_dark_hd.png)
+![Repo Advisor](docs/images/09_ai_assistant_dark_hd.png)
 
 GitHub Repo Manager integrates AI via **BYOK** (Bring Your Own Key) — configure Gemini, Anthropic, OpenAI, OpenRouter, or LMStudio in Settings → AI Configuration. 10+ AI features ship on every tier:
 
-### Conversational AI Assistant
+### Repo Advisor — conversational assistant
 - **Natural Language Interface** — Ask questions about your repositories in plain English
 - **Context-Aware Responses** — Answers tailored to your specific projects and data
 - **Quick Actions** — Execute common tasks through conversation
@@ -323,7 +323,7 @@ The hosted product ships three tiers. The **Free tier includes the full AI produ
 | Feature                                | Free            | Pro ($19/mo)  | Enterprise |
 |----------------------------------------|-----------------|---------------|------------|
 | Repositories managed                   | 200             | Unlimited     | Unlimited  |
-| AI Assistant (conversational)          | ✓               | ✓             | ✓          |
+| Repo Advisor (conversational)          | ✓               | ✓             | ✓          |
 | AI queries / month (total)             | 200             | 5,000         | Unlimited  |
 | Semantic Search                        | 75 / month      | Unlimited     | Unlimited  |
 | Migration Risk Analysis (AI)           | 5 / month       | Unlimited     | Unlimited  |
@@ -371,7 +371,7 @@ A complete migration platform for moving from Azure DevOps to GitHub with a guid
 ### Migration Features
 
 - **Guided Wizard** — 8-step flow: Source Type, Configuration, Repo Selection, Target Config, Wiki, Work Items, AI Review, Execute
-- **AI-Assisted Planning** — Gemini-powered risk analysis with severity levels and mitigation suggestions
+- **AI-Assisted Planning** — AI-powered risk analysis with severity levels and mitigation suggestions
 - **Auto-Fix Drawer** — One-click resolution for blocker-level issues (size > 10 GB, name conflicts, reserved/invalid names). Choices persist across the wizard: a repo flagged for LFS migration is pre-selected the next time you open the drawer, the blocker badge clears, and the LFS toggle is auto-enabled in the Configure step.
 - **Smart URL Parser** — Supports 6+ Azure DevOps URL formats (dev.azure.com, visualstudio.com, SSH, shorthand)
 - **Dry-Run Mode** — Test migrations without making changes
@@ -494,7 +494,7 @@ docker compose up -d
 |---------|-------------------|-----------|
 | **Setup** | Zero config | GitHub OAuth + .env |
 | **Repositories** | 87 mock repos | Your real repos |
-| **AI Features** | Mock responses | Gemini-powered |
+| **AI Features** | Mock responses | AI-powered |
 | **Migration** | UI only | Fully functional |
 | **Best for** | Demos, UI testing | Production use |
 
@@ -637,8 +637,8 @@ See [`docs/ai-providers.md`](docs/ai-providers.md) for per-provider setup and fr
 ### Migration Wizard
 ![Migration](docs/images/08_migration_wizard_hd.png)
 
-### AI Assistant
-![AI Assistant](docs/images/09_ai_assistant_dark_hd.png)
+### Repo Advisor
+![Repo Advisor](docs/images/09_ai_assistant_dark_hd.png)
 
 ### Live Inbox — needs_review section
 
@@ -871,7 +871,7 @@ The full premium PR review surface. See the [AI Deep Review feature guide](docs/
 ### v3.0.0–v3.3.x
 
 - **AGPL Open-Core licensing** with Ed25519-signed JWT license keys + Stripe checkout / portal / webhook flow.
-- **AI Assistant action dispatch** — Migration Wizard, Create Repo, Transfer, History, Settings opened from natural-language intent.
+- **Repo Advisor action dispatch** — Migration Wizard, Create Repo, Transfer, History, Settings opened from natural-language intent.
 - **Migration Repo Select redesign** — 10-rule risk engine + 5 batched Azure enrichment endpoints + virtualised slide-in detail panel.
 - **Auto-Fix Drawer** with persistent size-strategy choices and "Fix applied" badge.
 - **Modal system redesign**, **reusable TabBar**, **Health Dashboard Premium**, **Rate Limit UX**.
