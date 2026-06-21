@@ -18,7 +18,7 @@ jobs:
       SESSION_SECRET: ci-test-session-secret-not-real-32chars
       NODE_ENV: test
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: actions/setup-node@v6
