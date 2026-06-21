@@ -320,3 +320,14 @@ git commit -m "docs(ai): rename AI Assistant to Repo Advisor in docs and README"
 **Type consistency:** `createProvider(featureKey)` signature reused across Tasks 1-2; component export `RepoAdvisor` used consistently in Task 4 test + importers. ✓
 
 **Risk notes:** Task 4 is broad; the grep gates in Steps 4-5 are the safety net against missed occurrences. Keep `GEMINI_*` env back-compat (Task 1 falls back to Gemini defaults only for the gemini branch).
+
+**Implementation note (validated against the real code, 2026-06-21):** Tasks 1-2
+shipped, but the sync `createProvider()` factory turned out to be **test-only**
+(no production caller). The real server-wide default paths were (a) the
+`createProviderForUser()` env fallback and (b) `aiService.initialize()` at boot —
+both hardcoded to Gemini. Shipped: a shared `resolveServerProviderFromEnv()` +
+`loadProviders()` in `ai-provider.js`; the fallback now honors `AI_PROVIDER`
+(commit `53b1e23`); `aiService.initialize()` is now async and honors it, with the
+`index.js` boot gate widened + awaited (commit `0f6c53b`). 50 backend tests green;
+`node --check server/index.js` passes (top-level await). The default Gemini path
+is unchanged. The test-only `createProvider()` was left gemini-sync by design.
