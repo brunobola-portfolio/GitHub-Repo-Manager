@@ -156,7 +156,7 @@ Recent specs — full list under each directory:
 - [PR Review Experience](specs/2026-04-09-pr-review-experience-design.md) — file tree, diff viewer, AI insights, conversation threads.
 - [Modal System Redesign](specs/2026-04-11-modal-system-redesign.md) — shared Modal primitive + scrollbar fix + InsightCard/StatBar.
 - [License Mint Automation](specs/2026-04-11-license-mint-automation-design.md) — GitHub Actions–based Ed25519 minting with Resend delivery.
-- [Free Tier Expansion](specs/2026-04-15-free-tier-expansion.md) — move AI Assistant, Semantic Search, Migration Risk Analysis, and PR Review (read-only) to Free.
+- [Free Tier Expansion](specs/2026-04-15-free-tier-expansion.md) — move Repo Advisor, Semantic Search, Migration Risk Analysis, and PR Review (read-only) to Free.
 - [Migration Repo Select Redesign](specs/2026-04-16-migration-repo-select-redesign.md) — 10-rule risk engine + 5 batched Azure endpoints + virtualized detail panel.
 - [BYOK and Remaining Phase 0](specs/2026-04-19-byok-and-remaining-phase-0.md) — BYOK multi-provider AI, event ingestion, Work Board, SOC 2 hardening.
 - [Premium Dashboard Phase 1 — Live Inbox](plans/2026-05-10-premium-dashboard-phase-1-inbox.md) — implementation plan for the inbox aggregator, four endpoints, `dashboard_inbox_state` table, and `InboxPanel` component tree.

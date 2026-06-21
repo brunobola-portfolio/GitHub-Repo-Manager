@@ -1,6 +1,6 @@
 import db from './db.js';
 import logger from './lib/logger.js';
-import { GeminiProvider } from './lib/ai-provider.js';
+import { GeminiProvider, loadProviders, resolveServerProviderFromEnv } from './lib/ai-provider.js';
 import { sanitizeForPrompt } from './lib/ai-features/sanitize.js';
 import {
     detectPatterns,
@@ -58,7 +58,26 @@ class AIService {
         return this.provider?.embeddingModel ?? null;
     }
 
-    initialize(apiKey, modelName = null) {
+    async initialize(apiKey, modelName = null) {
+        // Honor AI_PROVIDER server-wide: when a non-Gemini provider is
+        // configured, build it from the registry (its module loads lazily).
+        const providerName = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
+        if (providerName !== 'gemini') {
+            try {
+                await loadProviders();
+                this.provider = resolveServerProviderFromEnv();
+                if (this.provider) {
+                    logger.info({ provider: providerName }, 'AI Service: Initialized configured provider');
+                } else {
+                    logger.warn({ provider: providerName }, 'AI Service: AI_PROVIDER set but its API key is missing');
+                }
+            } catch (error) {
+                logger.error({ err: error }, 'AI Service: Initialization failed');
+                this.provider = null;
+            }
+            return;
+        }
+
         if (!apiKey) {
             logger.warn('AI Service: No API key provided');
             return;

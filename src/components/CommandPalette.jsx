@@ -637,7 +637,7 @@ export function CommandPalette({
 
           <CommandGroup heading="Tracked Repositories" commands={trackedRepoCommands} iconMap={WORK_BOARD_CMD_ICONS} onRun={runWorkBoardCommand} onClose={onClose} />
 
-          <CommandGroup heading="AI Assistant" commands={aiCommands} iconMap={WORK_BOARD_CMD_ICONS} onRun={runWorkBoardCommand} onClose={onClose} />
+          <CommandGroup heading="Repo Advisor" commands={aiCommands} iconMap={WORK_BOARD_CMD_ICONS} onRun={runWorkBoardCommand} onClose={onClose} />
 
           <CommandGroup heading={`Repo: ${selectedRepoDetail?.full_name ?? ''}`} commands={repoDetailCommands} iconMap={CONTEXT_CMD_ICONS} onRun={runContextCommand} onClose={onClose} />
 

@@ -81,7 +81,7 @@ export function AINotConfiguredBanner({
                         </span>
                     </div>
                     <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                        You're seeing placeholder insights. Add a Gemini API key to unlock real analysis, suggestions and README enhancement.
+                        You're seeing placeholder insights. Add an AI provider key to unlock real analysis, suggestions and README enhancement.
                     </p>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                         <Button

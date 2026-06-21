@@ -23,7 +23,7 @@ export function AIAssistantToggle() {
                         <Sparkles className="w-5 h-5 text-indigo-500" />
                     </div>
                     <div className="flex-1">
-                        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">AI Assistant</h3>
+                        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Repo Advisor</h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                             Natural-language commands and smart suggestions. Opt-in; uses your BYOK provider.
                         </p>
@@ -32,7 +32,7 @@ export function AIAssistantToggle() {
                         type="button"
                         role="switch"
                         aria-checked={enabled}
-                        aria-label="Enable AI Assistant"
+                        aria-label="Enable Repo Advisor"
                         onClick={() => updatePrefs({ ai_assistant_enabled: enabled ? 0 : 1 })}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                             enabled ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-600'

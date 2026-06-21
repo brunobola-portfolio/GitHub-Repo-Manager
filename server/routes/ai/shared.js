@@ -41,7 +41,7 @@ export function handleAIError(res, error, fallbackMessage = 'Failed to generate 
         // failure as a logged-out session and force a re-auth. The 401 status
         // is reserved for our own session cookie expiry.
         return res.status(422).json({
-            error: 'Invalid or expired Gemini API key. Please check your GEMINI_API_KEY in .env file.',
+            error: 'Invalid or expired API key for the configured AI provider. Check your provider key.',
             code: 'INVALID_API_KEY',
         });
     }
@@ -53,7 +53,7 @@ export function handleAIError(res, error, fallbackMessage = 'Failed to generate 
     }
     if (code === AI_ERROR_CODE.QUOTA || (!code && (error.message?.includes('quota') || error.status === 429))) {
         return res.status(429).json({
-            error: 'API quota exceeded. Please try again later or check your Gemini API usage limits.',
+            error: 'API quota exceeded for the configured AI provider. Try again later.',
             code: 'QUOTA_EXCEEDED',
         });
     }
@@ -71,7 +71,7 @@ export function handleAIError(res, error, fallbackMessage = 'Failed to generate 
     }
     if (code === AI_ERROR_CODE.OVERLOAD || (!code && (error.status === 503 || /overload|unavailable|high demand/i.test(error.message || '')))) {
         return res.status(503).json({
-            error: 'Gemini is under heavy load right now. Give it a moment and try again.',
+            error: 'The AI provider is under heavy load right now. Give it a moment and try again.',
             code: 'AI_OVERLOADED',
         });
     }

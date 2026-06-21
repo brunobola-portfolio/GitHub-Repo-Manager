@@ -136,7 +136,7 @@ export function WorkBoardSettingsSection() {
                 eyebrowIcon={Sparkles}
                 eyebrow="Work Board"
                 title="Tracked repositories"
-                description="Manage discovery, webhooks and the AI Assistant that keeps your board tidy."
+                description="Manage discovery, webhooks and Repo Advisor, which keeps your board tidy."
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_18rem] gap-5 lg:items-start">

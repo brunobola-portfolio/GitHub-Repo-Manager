@@ -62,6 +62,15 @@ async function _loadProviders() {
     }
 }
 
+/**
+ * Public: ensure the lazily-imported (non-Gemini) providers are loaded. Await
+ * this before calling `resolveServerProviderFromEnv()` for a non-Gemini
+ * provider, since the registry's `create()` references those modules.
+ */
+export async function loadProviders() {
+    await _loadProviders();
+}
+
 // ---------------------------------------------------------------------------
 // Error taxonomy
 // ---------------------------------------------------------------------------
@@ -672,6 +681,42 @@ const PROVIDER_REGISTRY = {
     },
 };
 
+/**
+ * Resolve the server-wide fallback provider from env (AI_PROVIDER +
+ * <PROVIDER>_API_KEY / <PROVIDER>_MODEL), honoring all registered providers —
+ * not just Gemini. Assumes `_loadProviders()` has already run (callers in the
+ * async path await it first).
+ *
+ * Returns null when the configured provider has no key, so a missing key
+ * degrades to "AI unavailable" gracefully rather than crashing a request — the
+ * same non-throwing contract the previous Gemini-only fallback had.
+ *
+ * @param {string} [featureKey] — UPPER_SNAKE key (e.g. 'CHAT') for AI_MODEL_<FEATURE> override
+ * @returns {object|null} a provider instance, or null when unconfigured
+ */
+export function resolveServerProviderFromEnv(featureKey) {
+    const providerName = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
+    const entry = PROVIDER_REGISTRY[providerName];
+    if (!entry) {
+        logger.warn(
+            { providerName },
+            `[AI] Unknown AI_PROVIDER. Supported providers: ${Object.keys(PROVIDER_REGISTRY).join(', ')}.`,
+        );
+        return null;
+    }
+    const ENV = providerName.toUpperCase();
+    const apiKey = process.env[`${ENV}_API_KEY`];
+    if (!apiKey) return null;
+
+    const featureModel = featureKey ? process.env[`AI_MODEL_${featureKey.toUpperCase()}`] : undefined;
+    if (providerName === 'gemini') {
+        const { baseModel, embeddingModel } = getGeminiModelDefaults();
+        return entry.create({ apiKey, model: featureModel || baseModel, embeddingModel });
+    }
+    const model = featureModel || process.env[`${ENV}_MODEL`];
+    return entry.create({ apiKey, ...(model ? { model } : {}) });
+}
+
 // ---------------------------------------------------------------------------
 // createProviderForUser — per-user provider resolution
 // ---------------------------------------------------------------------------
@@ -788,16 +833,15 @@ export async function createProviderForUser(userId, kind = 'completion', opts = 
         }
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (apiKey) {
-        const { baseModel, embeddingModel } = getGeminiModelDefaults();
-        return new GeminiProvider({ apiKey, model: baseModel, embeddingModel });
-    }
+    // Server-wide fallback now honors AI_PROVIDER (Gemini/Anthropic/OpenAI/
+    // OpenRouter/local), not just Gemini. Providers were loaded at the top of
+    // this function, so the registry create() is safe to call synchronously.
+    const provider = resolveServerProviderFromEnv(featureKey);
 
     // Production: warn loudly but don't crash here (caller decides how to handle null)
-    if (process.env.NODE_ENV === 'production') {
-        logger.warn({ userId }, '[AI] No provider configured for user and no server fallback (GEMINI_API_KEY).');
+    if (!provider && process.env.NODE_ENV === 'production') {
+        logger.warn({ userId }, '[AI] No provider configured for user and no server fallback (set <PROVIDER>_API_KEY).');
     }
 
-    return null;
+    return provider;
 }

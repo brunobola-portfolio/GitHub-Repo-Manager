@@ -73,12 +73,13 @@ if (config.nodeEnv === 'production') {
     app.set('trust proxy', 1);
 }
 
-// Initialize Google AI only if key is present
-if (config.geminiApiKey) {
+// Initialize the configured AI provider (Gemini by default; honors AI_PROVIDER).
+const _aiProvider = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
+if (config.geminiApiKey || _aiProvider !== 'gemini') {
     try {
-        aiService.initialize(config.geminiApiKey);
+        await aiService.initialize(config.geminiApiKey);
     } catch (e) {
-        logger.error({ err: e }, 'Failed to initialize Google AI');
+        logger.error({ err: e }, 'Failed to initialize AI provider');
     }
 }
 

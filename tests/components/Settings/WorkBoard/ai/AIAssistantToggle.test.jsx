@@ -19,13 +19,13 @@ beforeEach(() => {
 describe('AIAssistantToggle', () => {
     it('renders as off when ai_assistant_enabled=0', () => {
         render(<AIAssistantToggle />)
-        const toggle = screen.getByRole('switch', { name: /enable ai assistant/i })
+        const toggle = screen.getByRole('switch', { name: /enable repo advisor/i })
         expect(toggle.getAttribute('aria-checked')).toBe('false')
     })
 
     it('clicking toggle calls updatePrefs with ai_assistant_enabled=1', async () => {
         render(<AIAssistantToggle />)
-        fireEvent.click(screen.getByRole('switch', { name: /enable ai assistant/i }))
+        fireEvent.click(screen.getByRole('switch', { name: /enable repo advisor/i }))
         await waitFor(() => expect(mockHook.updatePrefs).toHaveBeenCalledWith({ ai_assistant_enabled: 1 }))
     })
 
