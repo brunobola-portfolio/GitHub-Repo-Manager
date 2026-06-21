@@ -75,6 +75,11 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
     const [isConfigured, setIsConfigured] = useState(true)
     const { openModal, openModalWithData } = useModal()
     const [pasteDialog, setPasteDialog] = useState(null)
+    // Context-awareness (Phase 2 Slice 2): a recent error the user is asking
+    // about (e.g. a failed migration). Sent with each chat message so the
+    // backend can ground the answer in the error knowledge base, and surfaced
+    // as a dismissible chip so the user can see what Repo Advisor is looking at.
+    const [activeContext, setActiveContext] = useState(null)
 
     const handlePasteAnswer = useCallback((field, value) => {
       setPasteDialog((prev) => {
@@ -145,19 +150,32 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
     useEffect(() => {
         const onInject = (ev) => {
             const detail = ev?.detail || {}
+            const ec = detail.errorContext
+            const hasErrorContext = ec && typeof ec === 'object'
+            if (hasErrorContext) {
+                setActiveContext({
+                    errorMessage: typeof ec.errorMessage === 'string' ? ec.errorMessage : undefined,
+                    errorCode: typeof ec.errorCode === 'string' ? ec.errorCode : undefined,
+                    label: typeof ec.label === 'string' && ec.label.trim() ? ec.label.trim() : 'Recent error',
+                })
+            }
             const text = typeof detail.text === 'string' ? detail.text.trim() : ''
-            if (!text) return
-            const actions = sanitizeActions(detail.actions)
-            setMessages(prev => [...prev, {
-                id: nextMsgId(),
-                role: 'assistant',
-                text,
-                actions,
-                injected: true,
-            }])
-            // Pop the panel open so the message is visible right away.
-            setIsOpen(true)
-            setIsMinimized(false)
+            if (text) {
+                const actions = sanitizeActions(detail.actions)
+                setMessages(prev => [...prev, {
+                    id: nextMsgId(),
+                    role: 'assistant',
+                    text,
+                    actions,
+                    injected: true,
+                }])
+            }
+            // Pop the panel open when there's something to show — a message or a
+            // freshly-attached error context the user can act on.
+            if (text || hasErrorContext) {
+                setIsOpen(true)
+                setIsMinimized(false)
+            }
         }
         return onAppEvent(APP_EVENTS.AI_ASSISTANT_INJECT_MESSAGE, onInject)
     }, [setMessages])
@@ -208,7 +226,12 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
         setMessages(prev => [...prev, { id: nextMsgId(), role: 'user', text }])
         setIsLoading(true)
         try {
-            const response = await askAI(text, { user: user?.login })
+            // Thread the active error context so the backend can ground the
+            // reply in the error knowledge base (Phase 2 Slice 1).
+            const ctx = { user: user?.login }
+            if (activeContext?.errorMessage) ctx.errorMessage = activeContext.errorMessage
+            if (activeContext?.errorCode) ctx.errorCode = activeContext.errorCode
+            const response = await askAI(text, ctx)
             const actions = sanitizeActions(response?.actions)
             setMessages(prev => [...prev, {
                 id: nextMsgId(),
@@ -239,7 +262,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
         } finally {
             setIsLoading(false)
         }
-    }, [askAI, user?.login, setMessages])
+    }, [askAI, user?.login, setMessages, activeContext])
 
     const handleSubmit = (e) => {
         e.preventDefault()
@@ -390,6 +413,33 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                                 {isLoading && <TypingIndicator />}
                                                 <div ref={messagesEndRef} />
                                             </div>
+
+                                            <AnimatePresence>
+                                                {activeContext && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, height: 0 }}
+                                                        animate={{ opacity: 1, height: 'auto' }}
+                                                        exit={{ opacity: 0, height: 0 }}
+                                                        transition={{ duration: 0.2, ease: EASE.standard }}
+                                                        className="px-3 pt-2 overflow-hidden shrink-0"
+                                                    >
+                                                        <div className="flex items-center gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/40 px-2.5 py-1.5">
+                                                            <AlertTriangle size={12} className="text-amber-500 dark:text-amber-400 shrink-0" aria-hidden="true" />
+                                                            <span className="text-xs text-amber-800 dark:text-amber-200 truncate flex-1 min-w-0">
+                                                                Context: {activeContext.label || 'Recent error'}
+                                                            </span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setActiveContext(null)}
+                                                                className="shrink-0 p-0.5 rounded hover:bg-amber-200/50 dark:hover:bg-amber-900/40 text-amber-600 dark:text-amber-300 transition-colors ds-focus-ring"
+                                                                aria-label="Clear context"
+                                                            >
+                                                                <X size={12} />
+                                                            </button>
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
 
                                             <form
                                                 onSubmit={handleSubmit}

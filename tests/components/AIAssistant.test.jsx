@@ -321,4 +321,47 @@ describe('AIAssistant', () => {
       expect(screen.queryByRole('dialog', { name: /repo advisor/i })).not.toBeInTheDocument()
     })
   })
+
+  describe('Error context awareness (Slice 2)', () => {
+    it('shows a dismissible context chip when an inject event carries errorContext', async () => {
+      renderAssistant({ askAI: vi.fn() })
+
+      await act(async () => {
+        emitAppEvent(APP_EVENTS.AI_ASSISTANT_INJECT_MESSAGE, {
+          text: 'Your migration ran into an error. Want me to explain how to fix it?',
+          errorContext: { errorMessage: 'Cannot parse --above=<n>: unknown unit: "m"', label: 'Migration error' },
+        })
+      })
+
+      await screen.findByRole('dialog', { name: /repo advisor/i })
+      expect(await screen.findByText(/Context: Migration error/i)).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: /clear context/i }))
+      await waitFor(() => expect(screen.queryByText(/Context: Migration error/i)).not.toBeInTheDocument())
+    })
+
+    it('includes the active error context in the askAI call so grounding can fire', async () => {
+      const askAI = vi.fn().mockResolvedValue({ reply: 'Here is the fix', actions: [] })
+      renderAssistant({ askAI })
+
+      await act(async () => {
+        emitAppEvent(APP_EVENTS.AI_ASSISTANT_INJECT_MESSAGE, {
+          text: 'Migration error detected.',
+          errorContext: { errorMessage: 'Cannot parse --above=<n>: unknown unit: "m"', label: 'Migration error' },
+        })
+      })
+
+      await screen.findByRole('dialog', { name: /repo advisor/i })
+      const input = screen.getByRole('textbox', { name: /message the ai assistant/i })
+      await act(async () => {
+        fireEvent.change(input, { target: { value: 'how do I fix this?' } })
+        fireEvent.submit(input.closest('form'))
+      })
+
+      await waitFor(() => expect(askAI).toHaveBeenCalled())
+      expect(askAI).toHaveBeenCalledWith('how do I fix this?', expect.objectContaining({
+        errorMessage: expect.stringContaining('unknown unit'),
+      }))
+    })
+  })
 })

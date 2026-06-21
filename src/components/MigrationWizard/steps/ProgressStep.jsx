@@ -277,11 +277,25 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, o
     const terminal = ['completed', 'failed', 'cancelled', 'interrupted']
     if (terminal.includes(planStatus) && !completedRef.current && onComplete) {
       completedRef.current = true
+      // Make Repo Advisor aware of any failure so the user can ask "how do I fix
+      // this?" and get a grounded answer — the error KB matches on the message,
+      // so we forward the first failed task's error as context.
+      const failed = tasks.filter(t => t.status === 'failed' && t.error_message)
+      if (failed.length > 0) {
+        const plural = failed.length === 1
+        emitAppEvent(APP_EVENTS.AI_ASSISTANT_INJECT_MESSAGE, {
+          text: `Your migration ran into ${plural ? 'an error' : `${failed.length} errors`}. Want me to explain how to fix ${plural ? 'it' : 'them'}?`,
+          errorContext: {
+            errorMessage: failed[0].error_message,
+            label: plural ? 'Migration error' : `${failed.length} migration errors`,
+          },
+        })
+      }
       // Short delay so user sees final state before advancing
       const timer = setTimeout(() => onComplete(planStatus), 2000)
       return () => clearTimeout(timer)
     }
-  }, [planStatus, onComplete])
+  }, [planStatus, onComplete, tasks])
 
   const completedCount = tasks.filter(t => t.status === 'complete').length
   const totalCount = tasks.length
