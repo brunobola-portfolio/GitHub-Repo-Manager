@@ -124,6 +124,7 @@ const INITIAL_WIKI = {
 
 const INITIAL_AI_PLAN = {
   analyzed: false,
+  approved: false,
   risks: [],
   suggestions: [],
   executionOrder: [],
@@ -201,7 +202,11 @@ const validators = {
     }
     return null
   },
-  aiReview: () => null,
+  // Migration is destructive — require an explicit, informed approval of the
+  // reviewed plan before advancing. The approve action lives in AIReviewStep
+  // (sets aiPlan.approved); re-analyzing resets it so a new plan is re-approved.
+  aiReview: (state) =>
+    state.aiPlan?.approved ? null : 'Review and approve the migration plan to continue',
   schedule: (state) => {
     if (state.schedule.mode === 'scheduled' && !state.schedule.scheduledAt)
       return 'Select a date and time'

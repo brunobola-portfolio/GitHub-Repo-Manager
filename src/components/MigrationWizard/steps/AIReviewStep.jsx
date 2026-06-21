@@ -4,7 +4,7 @@ import {
   Shield, AlertTriangle, CheckCircle2,
   RefreshCw, Clock, Zap,
   Sparkles, ShieldCheck, ArrowRight,
-  CircleAlert,
+  CircleAlert, FolderGit2,
 } from 'lucide-react'
 import { migrationApi } from '../../../api/migration'
 import { Button } from '../../ui/Button'
@@ -24,10 +24,12 @@ import { SuggestionRow } from './AIReview/SuggestionRow'
 export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState(null)
-  const [approved, setApproved] = useState(aiPlan?.analyzed || false)
+  // Approval lives in wizard state (aiPlan.approved), not local state, because
+  // it is a real gate: the wizard's `aiReview` validator blocks "Next" until the
+  // user has explicitly approved the reviewed plan.
+  const approved = aiPlan?.approved || false
 
   const analyze = useCallback(async () => {
-    setApproved(false)
     setAnalyzing(true)
     setError(null)
 
@@ -71,11 +73,12 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
       const suggestions = (result.suggestions || []).map((s, i) => ({
         ...s,
         id: s.id || `suggestion-${i}`,
-        _accepted: undefined,
       }))
 
       onUpdate({
         analyzed: true,
+        // A fresh analysis must be re-approved before the user can continue.
+        approved: false,
         risks: result.risks || [],
         suggestions,
         executionOrder: result.executionOrder || [],
@@ -96,34 +99,15 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
     }
   }, [analyze, aiPlan?.analyzed, analyzing])
 
-  const handleAcceptSuggestion = (id) => {
-    const updated = (aiPlan.suggestions || []).map(s =>
-      s.id === id ? { ...s, _accepted: s._accepted === true ? undefined : true } : s
-    )
-    onUpdate({ suggestions: updated })
-  }
-
-  const handleRejectSuggestion = (id) => {
-    const updated = (aiPlan.suggestions || []).map(s =>
-      s.id === id ? { ...s, _accepted: s._accepted === false ? undefined : false } : s
-    )
-    onUpdate({ suggestions: updated })
-  }
-
   const handleApprove = () => {
-    setApproved(true)
-    onUpdate({ analyzed: true })
+    onUpdate({ approved: true })
   }
 
   const highRisks = useMemo(() => (aiPlan?.risks || []).filter(r => r.severity === 'high'), [aiPlan?.risks])
   const mediumRisks = useMemo(() => (aiPlan?.risks || []).filter(r => r.severity === 'medium'), [aiPlan?.risks])
   const lowRisks = useMemo(() => (aiPlan?.risks || []).filter(r => r.severity === 'low'), [aiPlan?.risks])
   const allRisks = useMemo(() => [...highRisks, ...mediumRisks, ...lowRisks], [highRisks, mediumRisks, lowRisks])
-  const acceptedCount = useMemo(() =>
-    (aiPlan?.suggestions || []).filter(s => s._accepted === true).length,
-    [aiPlan?.suggestions]
-  )
-  const _repoCount = useMemo(() =>
+  const repoCount = useMemo(() =>
     (wizard.repos || []).filter(r => r.selected).length,
     [wizard.repos]
   )
@@ -219,12 +203,11 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
                 delay={0.2}
               />
               <MetricCard
-                icon={CheckCircle2}
-                label="Accepted"
-                value={acceptedCount}
-                unit={`/ ${(aiPlan.suggestions || []).length}`}
-                iconColor="text-emerald-500"
-                iconBg="bg-emerald-100 dark:bg-emerald-500/15"
+                icon={FolderGit2}
+                label="Repositories"
+                value={repoCount}
+                iconColor="text-sky-500"
+                iconBg="bg-sky-100 dark:bg-sky-500/15"
                 delay={0.26}
               />
             </div>
@@ -308,7 +291,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
                     Optimization Suggestions
                   </h4>
                   <span className="ds-text-meta text-slate-400 dark:text-slate-500">
-                    ({acceptedCount}/{(aiPlan.suggestions || []).length} accepted)
+                    ({aiPlan.suggestions.length})
                   </span>
                 </div>
 
@@ -318,8 +301,6 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
                       key={s.id}
                       suggestion={s}
                       index={i}
-                      onAccept={handleAcceptSuggestion}
-                      onReject={handleRejectSuggestion}
                     />
                   ))}
                 </div>
@@ -378,6 +359,8 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
                   initial={{ opacity: 0, scale: 0.96 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  role="status"
+                  aria-live="polite"
                   className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50/40 dark:bg-emerald-500/[0.04] border border-emerald-200/60 dark:border-emerald-500/20"
                 >
                   <motion.div

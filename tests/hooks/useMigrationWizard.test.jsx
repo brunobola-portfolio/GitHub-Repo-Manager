@@ -242,12 +242,40 @@ describe('useMigrationWizard', () => {
     )
     act(() => result.current.nextStep()) // → repoConfig
     act(() => result.current.nextStep()) // → aiReview (skip workItems + wiki)
+    // aiReview gates "Next" until the plan is explicitly approved.
+    act(() => result.current.updateAiPlan({ approved: true }))
     act(() => result.current.nextStep()) // → schedule
     expect(result.current.currentStep).toBe('schedule')
     act(() => result.current.updateSchedule({ mode: 'scheduled' }))
     act(() => result.current.nextStep()) // should fail
     expect(result.current.currentStep).toBe('schedule')
     expect(result.current.error).toBe('Select a date and time')
+  })
+
+  it('blocks leaving aiReview until the plan is approved', () => {
+    const { result } = renderHook(() => useMigrationWizard())
+    act(() => result.current.updateSource({ sourceType: 'azure' }))
+    act(() => result.current.nextStep()) // sourceType → azureConnect
+    act(() => result.current.updateSource({ org: 'o', project: 'p', pat: 'p', validated: true }))
+    act(() => result.current.nextStep()) // → repoSelect
+    act(() =>
+      result.current.setRepos([
+        { name: 'r', selected: true, targetName: 'r', visibility: 'private', description: '' },
+      ])
+    )
+    act(() => result.current.nextStep()) // → repoConfig
+    act(() => result.current.nextStep()) // → aiReview
+    expect(result.current.currentStep).toBe('aiReview')
+
+    // Unapproved → blocked with a message.
+    act(() => result.current.nextStep())
+    expect(result.current.currentStep).toBe('aiReview')
+    expect(result.current.error).toBe('Review and approve the migration plan to continue')
+
+    // Approved → advances.
+    act(() => result.current.updateAiPlan({ approved: true }))
+    act(() => result.current.nextStep())
+    expect(result.current.currentStep).toBe('schedule')
   })
 
   it('seeds source fields from initialSource option', () => {

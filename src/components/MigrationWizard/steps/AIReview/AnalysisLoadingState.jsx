@@ -1,107 +1,51 @@
-import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { EASE } from '../../../ui/motion'
 import {
-  Brain, Shield, CheckCircle2, Loader2,
-  Search, Route, Timer,
+  Brain, Shield, Search, Route, Timer,
 } from 'lucide-react'
 import { Spinner } from '../../../ui/Spinner'
 
 /* ═══════════════════════════════════════════
-   ANALYSIS PHASES — the loading animation
+   ANALYSIS LOADING STATE
+
+   Honest by design: the analysis runs server-side as a single request, so we
+   do NOT fake per-step progress on a timer (that claimed "Repositories
+   scanned ✓" before anything was confirmed). Instead we show — as a list of
+   what the review covers — what the advisor is looking at, with one
+   indeterminate spinner. No false completions.
    ═══════════════════════════════════════════ */
 
-const ANALYSIS_PHASES = [
-  { id: 'scan', icon: Search, label: 'Scanning repositories', done: 'Repositories scanned', detail: 'Reading structure & metadata' },
-  { id: 'risk', icon: Shield, label: 'Evaluating risks', done: 'Risks evaluated', detail: 'Checking for conflicts & blockers' },
-  { id: 'optimize', icon: Route, label: 'Optimizing execution', done: 'Execution optimized', detail: 'Calculating migration order' },
-  { id: 'estimate', icon: Timer, label: 'Estimating duration', done: 'Duration estimated', detail: 'Projecting timeline & resources' },
+const ANALYSIS_ASPECTS = [
+  { id: 'scan', icon: Search, label: 'Reading repository structure & metadata' },
+  { id: 'risk', icon: Shield, label: 'Checking for conflicts & blockers' },
+  { id: 'optimize', icon: Route, label: 'Determining the migration order' },
+  { id: 'estimate', icon: Timer, label: 'Projecting the timeline' },
 ]
 
-function AnalysisPhaseIndicator({ phase, index, currentPhase }) {
-  const isActive = index === currentPhase
-  const isComplete = index < currentPhase
-  const Icon = phase.icon
-
+function AnalysisAspect({ aspect, index }) {
+  const Icon = aspect.icon
   return (
     <motion.div
-      initial={{ opacity: 0, x: -20 }}
+      initial={{ opacity: 0, x: -16 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.12, duration: 0.5, ease: EASE.emphasized }}
+      transition={{ delay: index * 0.1, duration: 0.45, ease: EASE.emphasized }}
       className="flex items-center gap-3"
     >
-      <div className="relative flex items-center justify-center shrink-0">
-        <motion.div
-          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 ${
-            isComplete
-              ? 'bg-emerald-500/20 dark:bg-emerald-500/15 border border-emerald-500/40'
-              : isActive
-                ? 'bg-violet-500/20 dark:bg-violet-500/15 border border-violet-500/40'
-                : 'bg-slate-100 dark:bg-white/5 border border-slate-200/60 dark:border-white/10'
-          }`}
-          animate={isActive ? { scale: [1, 1.05, 1] } : {}}
-          transition={isActive ? { duration: 2, repeat: Infinity, ease: 'easeInOut' } : {}}
-        >
-          {isComplete ? (
-            <motion.div
-              initial={{ scale: 0, rotate: -90 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 15 }}
-            >
-              <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-            </motion.div>
-          ) : isActive ? (
-            <Icon className="w-5 h-5 text-violet-500 dark:text-violet-400" />
-          ) : (
-            <Icon className="w-5 h-5 text-slate-400 dark:text-slate-500" />
-          )}
-        </motion.div>
-
-        {isActive && (
-          <motion.div
-            className="absolute inset-0 rounded-xl border-2 border-violet-500/40"
-            animate={{ scale: [1, 1.3], opacity: [0.6, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeOut' }}
-          />
-        )}
+      <div className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-violet-500/10 dark:bg-violet-500/[0.12] border border-violet-500/20">
+        <Icon className="w-4.5 h-4.5 text-violet-500 dark:text-violet-400" />
       </div>
-
-      <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium transition-colors duration-300 ${
-          isComplete
-            ? 'text-emerald-600 dark:text-emerald-400'
-            : isActive
-              ? 'text-slate-900 dark:text-slate-100'
-              : 'text-slate-400 dark:text-slate-500'
-        }`}>
-          {isComplete ? phase.done : phase.label}
-        </p>
-        <p className={`text-xs transition-colors duration-300 ${
-          isActive ? 'text-slate-500 dark:text-slate-400' : 'text-slate-300 dark:text-slate-600'
-        }`}>
-          {phase.detail}
-        </p>
-      </div>
-
-      {isActive && (
-        <motion.div className="shrink-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <Spinner size="md" tone="primary" />
-        </motion.div>
-      )}
+      <motion.p
+        className="text-sm text-slate-600 dark:text-slate-300"
+        animate={{ opacity: [0.55, 1, 0.55] }}
+        transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut', delay: index * 0.2 }}
+      >
+        {aspect.label}
+      </motion.p>
     </motion.div>
   )
 }
 
 export function AnalysisLoadingState() {
-  const [currentPhase, setCurrentPhase] = useState(0)
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentPhase(prev => prev >= ANALYSIS_PHASES.length - 1 ? prev : prev + 1)
-    }, 1800)
-    return () => clearInterval(interval)
-  }, [])
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -129,21 +73,25 @@ export function AnalysisLoadingState() {
             transition={{ duration: 1.5, repeat: Infinity }}
           />
         </div>
-        <div>
-          <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-            Analyzing migration plan
-          </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            AI is reviewing your configuration for risks and optimizations
-          </p>
+        <div className="flex items-center gap-3 flex-1">
+          <div>
+            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">
+              Analyzing migration plan
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Reviewing your configuration for risks and optimizations
+            </p>
+          </div>
+          <div className="ml-auto shrink-0">
+            <Spinner size="md" tone="primary" />
+          </div>
         </div>
       </motion.div>
 
-      {/* Phase list */}
-      <div className="space-y-3 relative">
-        <div className="absolute left-5 top-10 bottom-4 w-px bg-slate-200 dark:bg-slate-700" />
-        {ANALYSIS_PHASES.map((phase, i) => (
-          <AnalysisPhaseIndicator key={phase.id} phase={phase} index={i} currentPhase={currentPhase} />
+      {/* What the review covers */}
+      <div className="space-y-3">
+        {ANALYSIS_ASPECTS.map((aspect, i) => (
+          <AnalysisAspect key={aspect.id} aspect={aspect} index={i} />
         ))}
       </div>
 
