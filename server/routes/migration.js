@@ -582,7 +582,7 @@ router.post('/plans/:id/tasks/:taskId/replace-retry', requireAuth, requireMigrat
 // POST /api/migration/plans/:id/tasks/:taskId/retry-lfs — recovery for a repo
 // task that failed because files exceed GitHub's 100 MB per-file limit. Patches
 // the stored config with sizeStrategy='lfs-migrate' (so the re-run runs
-// `git lfs migrate import --above=100M` before pushing) and re-runs the task.
+// `git lfs migrate import --above=100MiB` before pushing) and re-runs the task.
 router.post('/plans/:id/tasks/:taskId/retry-lfs', requireAuth, requireMigrationQuota, async (req, res) => {
   try {
     const id = parseInt(req.params.id);

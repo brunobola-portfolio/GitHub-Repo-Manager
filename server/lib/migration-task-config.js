@@ -20,7 +20,7 @@ export function withReplaceOnConflict(config) {
 /**
  * Return a JSON string of the task config with `sizeStrategy: 'lfs-migrate'`
  * set, so a re-run converts large blobs to LFS pointers
- * (`git lfs migrate import --above=100M`) and clears GitHub's 100 MB per-file
+ * (`git lfs migrate import --above=100MiB`) and clears GitHub's 100 MB per-file
  * rejection. Tolerates string, object, null/undefined, or malformed input.
  * @param {string|object|null|undefined} config
  * @returns {string} serialized config including `sizeStrategy: 'lfs-migrate'`

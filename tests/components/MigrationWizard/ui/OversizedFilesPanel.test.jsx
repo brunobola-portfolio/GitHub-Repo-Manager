@@ -44,7 +44,7 @@ describe('OversizedFilesPanel', () => {
   it('shows the how-to-fix guidance with LFS instructions', () => {
     render(<OversizedFilesPanel files={files} fallback="" />)
     expect(screen.getByText(/Migrate to Git LFS/)).toBeInTheDocument()
-    expect(screen.getByText(/git lfs migrate import --above=100M --everything/)).toBeInTheDocument()
+    expect(screen.getByText(/git lfs migrate import --above=100MiB --everything/)).toBeInTheDocument()
   })
 
   it('uses singular form for a single file', () => {

@@ -8,7 +8,7 @@ function formatSize(bytes) {
 
 const STRATEGIES = [
   { key: 'exclude', label: 'Exclude from migration', icon: X, desc: 'Skip this repo.' },
-  { key: 'lfs-migrate', label: 'Mark for LFS migration', icon: Database, desc: 'Run git-lfs migrate import --above=100M before push.' },
+  { key: 'lfs-migrate', label: 'Mark for LFS migration', icon: Database, desc: 'Run git-lfs migrate import --above=100MiB before push.' },
 ]
 
 export function SizeStrategyCard({ repo, aiSuggestion, selectedStrategy, onSelect }) {

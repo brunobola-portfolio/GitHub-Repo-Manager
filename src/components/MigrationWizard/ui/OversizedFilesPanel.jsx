@@ -69,7 +69,7 @@ export function OversizedFilesPanel({ files, fallback }) {
         </div>
         <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
           Run a new migration with the <strong>Migrate to Git LFS</strong> strategy selected for this
-          repository. The server runs <code className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-800 font-[var(--ds-font-mono)] ds-text-meta">git lfs migrate import --above=100M --everything</code> on a
+          repository. The server runs <code className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-800 font-[var(--ds-font-mono)] ds-text-meta">git lfs migrate import --above=100MiB --everything</code> on a
           fresh bare clone before pushing, which rewrites the affected blobs as LFS pointers without
           losing history.
         </p>

@@ -375,7 +375,7 @@ Repository facts (no names or business context provided):
 
 Choose exactly one strategy from: "exclude" or "lfs-migrate".
 - "exclude": the repository is stale, archival, or too unwieldy; skip it.
-- "lfs-migrate": run git-lfs migrate import --above=100M before pushing; appropriate when the size is caused by large binary assets.
+- "lfs-migrate": run git-lfs migrate import --above=100MiB before pushing; appropriate when the size is caused by large binary assets.
 
 Respond with strict JSON only, no prose outside the JSON:
 {"strategy": "exclude" | "lfs-migrate", "rationale": "one short sentence", "confidence": 0.0-1.0}`;
