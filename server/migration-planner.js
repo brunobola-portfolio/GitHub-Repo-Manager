@@ -1,6 +1,99 @@
 import { aiService } from './ai-service.js';
 import logger from './lib/logger.js';
 
+// A repo only counts as a *size* risk above this. Below it, "this repo is large"
+// is noise that trains users to ignore the whole panel (a 300 MB repo is not a risk).
+const SIZE_RISK_THRESHOLD_BYTES = 1_000_000_000; // 1 GB
+
+// Phrases that mean the model is speculating about data it was never given
+// (LFS status, CI/CD presence, blob sizes, commit history). A premium advisor
+// states known facts or stays silent — it never shows the user "unconfirmed…".
+const HEDGING_PATTERNS = [
+  /\bunconfirmed\b/i,
+  /\b(?:not|un)\s*specified\b/i,
+  /\bnot been specified\b/i,
+  /\bit is (?:not )?(?:un)?clear\b/i,
+  /\bunclear (?:whether|if)\b/i,
+  /\bcannot (?:be )?determined?\b/i,
+  /\bunable to determine\b/i,
+  /\bno information\b/i,
+  /\bnot provided\b/i,
+  /\bit is not known\b/i,
+  /\bif (?:git )?lfs is (?:being )?used\b/i,
+];
+
+const SIZE_WORDS = /\b(?:size|large|larger|big|bigger|huge|gb|gigabyte|transfer duration)\b/i;
+
+function isHedging(text) {
+  const s = String(text || '');
+  return HEDGING_PATTERNS.some((re) => re.test(s));
+}
+
+function normalizeSeverity(severity) {
+  const v = String(severity || '').toLowerCase();
+  return v === 'high' || v === 'medium' || v === 'low' ? v : 'low';
+}
+
+/**
+ * Enforce honesty on a migration analysis (from AI or fallback) before it
+ * reaches the user. Pure function — given the same analysis + context it always
+ * returns the same result. It:
+ *  - drops risks/suggestions/warnings that hedge about ungiven data,
+ *  - drops "this repo is large" risks when no selected repo actually is,
+ *  - normalizes severities to high|medium|low,
+ *  - de-duplicates risks (by title) and suggestions (by text).
+ *
+ * @param {Object} analysis - { executionOrder, risks, suggestions, estimatedMinutes, warnings }
+ * @param {Object} [context] - migration context; uses context.repos[].size
+ * @returns {{ executionOrder, risks, suggestions, estimatedMinutes, warnings }}
+ */
+export function sanitizeAnalysis(analysis = {}, context = {}) {
+  const repos = context.repos || [];
+  const anyRepoIsLarge = repos.some((r) => (r?.size || 0) >= SIZE_RISK_THRESHOLD_BYTES);
+
+  const isUngroundedSizeRisk = (risk) => {
+    const text = `${risk.title || ''} ${risk.description || ''}`;
+    return SIZE_WORDS.test(text) && !anyRepoIsLarge;
+  };
+
+  const seenRisk = new Set();
+  const risks = [];
+  for (const raw of analysis.risks || []) {
+    if (!raw || typeof raw !== 'object') continue;
+    const blob = `${raw.title || ''} ${raw.description || ''} ${raw.mitigation || ''}`;
+    if (isHedging(blob)) continue;
+    const risk = { ...raw, severity: normalizeSeverity(raw.severity) };
+    if (isUngroundedSizeRisk(risk)) continue;
+    const key = String(risk.title || '').trim().toLowerCase();
+    if (key && seenRisk.has(key)) continue;
+    if (key) seenRisk.add(key);
+    risks.push(risk);
+  }
+
+  const seenSug = new Set();
+  const suggestions = [];
+  for (const raw of analysis.suggestions || []) {
+    if (!raw || typeof raw !== 'object') continue;
+    if (isHedging(raw.text)) continue;
+    const key = String(raw.text || '').trim().toLowerCase();
+    if (!key || seenSug.has(key)) continue;
+    seenSug.add(key);
+    suggestions.push(raw);
+  }
+
+  const warnings = (analysis.warnings || []).filter(
+    (w) => typeof w === 'string' && w.trim() && !isHedging(w)
+  );
+
+  return {
+    executionOrder: analysis.executionOrder || [],
+    risks,
+    suggestions,
+    estimatedMinutes: analysis.estimatedMinutes || 0,
+    warnings,
+  };
+}
+
 /**
  * Fallback (non-AI) analysis for migration plans.
  * Provides programmatic risk assessment, ordering, and duration estimates.
@@ -44,8 +137,8 @@ export function fallbackAnalysis(context) {
       risks.push({
         severity: 'medium',
         title: `LFS detected: ${repo.name}`,
-        description: 'Repository uses Git LFS. LFS objects need separate migration handling.',
-        mitigation: 'Ensure LFS storage quota is available on the target.',
+        description: 'Repository uses Git LFS. LFS objects are migrated automatically, but the target needs enough LFS storage quota to receive them.',
+        mitigation: 'Confirm the destination has available Git LFS storage before migrating.',
       });
     }
   }
@@ -141,9 +234,10 @@ export function fallbackAnalysis(context) {
  * @returns {Promise<Object>} Analysis result
  */
 export async function analyzeMigration(context) {
-  // If AI is not configured, use fallback
+  // If AI is not configured, use fallback. Still run it through the sanitizer so
+  // both paths return analyses with the same honesty guarantees.
   if (!aiService.provider) {
-    return fallbackAnalysis(context);
+    return sanitizeAnalysis(fallbackAnalysis(context), context);
   }
 
   try {
@@ -155,15 +249,25 @@ export async function analyzeMigration(context) {
       ? `\n\nTFVC Note: Some repositories use Team Foundation Version Control (TFVC) and must be converted to Git before migration. TFVC conversion preserves up to 180 days of history and takes 2-10 minutes per folder. If conversion fails (>1GB or timeout), a snapshot without history is used as fallback. TFVC folders: ${repos.filter(r => r.isTfvc).map(r => r.name).join(', ')}`
       : '';
 
-    const prompt = `You are analyzing a migration plan from Azure DevOps to GitHub.
-Analyze the following migration context and provide recommendations.
+    // Every fact the model needs is supplied below. The repo line states LFS and
+    // TFVC status explicitly, so the model must NEVER say these are "unconfirmed".
+    const prompt = `You are a migration expert reviewing a plan to move repositories from Azure DevOps to GitHub. Produce a grounded, specific analysis a professional engineer would trust.
 
+KNOWN FACTS (this is the complete picture — anything not listed here is unknown to you):
 Repositories to migrate:
-${repos.map(r => `- ${r.name} (${((r.size || 0) / 1_000_000).toFixed(1)} MB${r.hasLfs ? ', uses LFS' : ''}${r.isTfvc ? ', TFVC' : ''})`).join('\n')}
+${repos.map(r => `- ${r.name}: ${((r.size || 0) / 1_000_000).toFixed(1)} MB, Git LFS: ${r.hasLfs ? 'YES' : 'NO'}, type: ${r.isTfvc ? 'TFVC' : 'Git'}`).join('\n')}
 ${tfvcInfo}
 Work Items: ${JSON.stringify(workItems.counts || {}, null, 2)}
 Wikis: ${wikis.length} wikis, ${wikis.reduce((s, w) => s + (w.pageCount || 0), 0)} total pages
 Target org existing repos: ${(context.target?.existingRepos || []).join(', ') || 'none'}
+
+RULES — follow strictly:
+1. Use ONLY the facts above. NEVER speculate, hedge, or raise a risk about data you were not given (e.g. CI/CD pipelines, branch counts, individual file/blob sizes, commit history). If you don't have a fact, do not invent a risk about it.
+2. NEVER use words like "unconfirmed", "not specified", "unclear", or "if LFS is used". LFS and TFVC status are given per repo above — state them as facts.
+3. Only raise a SIZE risk if a repo is at least 1 GB (1000 MB). Repos under 1 GB are normal — do not flag their size.
+4. Severity means: "high" = will likely fail or block the migration; "medium" = needs a manual step or a decision; "low" = informational. Do not inflate severity.
+5. Every risk and suggestion must reference a specific repo, count, or fact above. No generic git advice that isn't tied to this plan.
+6. If nothing in the facts warrants a risk, return an empty "risks" array. An empty, honest result is better than a padded one.
 
 Return a JSON object with exactly this structure (no markdown, raw JSON only):
 {
@@ -172,28 +276,26 @@ Return a JSON object with exactly this structure (no markdown, raw JSON only):
   "suggestions": [{"id": "...", "text": "...", "repo": "optional-repo-name"}],
   "estimatedMinutes": number,
   "warnings": ["string"]
-}
-
-Consider: repo sizes, LFS usage, name conflicts, work item volume, optimal execution order${repos.some(r => r.isTfvc) ? ', TFVC conversion time and history limitations' : ''}.`;
+}`;
 
     const { text } = await aiService.provider.generate({ prompt });
 
     try {
       const parsed = JSON.parse(text);
-      return {
+      return sanitizeAnalysis({
         executionOrder: parsed.executionOrder || [],
         risks: parsed.risks || [],
         suggestions: (parsed.suggestions || []).map((s, i) => ({ ...s, id: s.id || `ai-${i}` })),
         estimatedMinutes: parsed.estimatedMinutes || 0,
         warnings: parsed.warnings || [],
-      };
+      }, context);
     } catch {
       // If AI returns unparseable response, fall back
       logger.warn('Migration planner: AI response was not valid JSON, using fallback');
-      return fallbackAnalysis(context);
+      return sanitizeAnalysis(fallbackAnalysis(context), context);
     }
   } catch (err) {
     logger.error({ err }, 'Migration planner: AI analysis failed, using fallback');
-    return fallbackAnalysis(context);
+    return sanitizeAnalysis(fallbackAnalysis(context), context);
   }
 }
