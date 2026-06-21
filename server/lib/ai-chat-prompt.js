@@ -14,6 +14,7 @@
  */
 
 import { resolvePromptTemplate } from './ai-prompt-registry.js';
+import { findErrorKbEntry } from './ai-features/error-kb.js';
 
 // Mirrors src/utils/aiActions.js — keep in sync when adding new action types.
 const AI_ACTION_TYPES = [
@@ -120,11 +121,37 @@ Return exactly this JSON shape:
 \`actions\` is optional and may be empty. Never emit duplicate action types. Only include \`payload\` when the action type's description explicitly requires it (today: only \`open_repo_settings\` accepts \`{ owner, repo }\`). Never invent payload fields.`;
 
 /**
+ * Build a grounded "Known issue" block from an error-KB entry. The header
+ * instructs the model to answer FROM this authored content and cite the docs
+ * link — turning "I can't help" into a concrete, sourced fix.
+ * @param {object} entry
+ * @returns {string}
+ */
+function buildKnownIssueBlock(entry) {
+    return [
+        '## Known issue (authored knowledge base — if it matches the user\'s problem, ground your answer in it and cite the Docs link)',
+        '',
+        `**${entry.title}**`,
+        '',
+        `Cause: ${entry.cause}`,
+        '',
+        'Fix:',
+        ...entry.fix.map((step, i) => `${i + 1}. ${step}`),
+        '',
+        `Docs: ${entry.docs}`,
+    ].join('\n');
+}
+
+/**
  * @param {{ message: string, context?: object, userId?: number }} args
  * @returns {string}
  */
 export function buildChatPrompt({ message, context, userId = null }) {
     const safeContext = context && typeof context === 'object' ? context : {};
+    // Answer-first grounding: if the user's message or a context error code
+    // matches an authored KB entry, inject it so the assistant can give a
+    // concrete, sourced fix instead of failing. Content is first-party/trusted.
+    const kbEntry = findErrorKbEntry({ message, code: safeContext.errorCode });
     // The persona block is the only user-overridable section. Everything
     // below — capabilities catalog, response rules, action whitelist, output
     // schema — is appended verbatim so user overrides cannot break the
@@ -138,6 +165,7 @@ export function buildChatPrompt({ message, context, userId = null }) {
         RESPONSE_RULES,
         buildActionsBlock(),
         OUTPUT_SCHEMA,
+        ...(kbEntry ? [buildKnownIssueBlock(kbEntry)] : []),
         `## Conversation context\n\n${JSON.stringify(safeContext, null, 2)}`,
         `## User message\n\n${message}`,
     ].join('\n\n');
