@@ -10,7 +10,7 @@ vi.mock('simple-git', () => ({
     }),
 }));
 
-import { lfsPushNeeded, ensureGitLfs } from '../import-service.js';
+import { lfsPushNeeded, ensureGitLfs, LFS_MIGRATE_IMPORT_ARGS } from '../import-service.js';
 
 describe('ensureGitLfs', () => {
     it('resolves when `git lfs version` succeeds', async () => {
@@ -21,6 +21,26 @@ describe('ensureGitLfs', () => {
         const runRaw = async () => { throw new Error("git: 'lfs' is not a git command"); };
         await expect(ensureGitLfs(runRaw)).rejects.toMatchObject({ code: 'GIT_LFS_MISSING' });
         await expect(ensureGitLfs(runRaw)).rejects.toThrow(/git lfs is not installed|git-lfs/i);
+    });
+});
+
+describe('LFS_MIGRATE_IMPORT_ARGS', () => {
+    it('uses a size unit git-lfs can parse for --above (not a bare "M")', () => {
+        // Regression: `--above=100M` is rejected by git-lfs with
+        // `unknown unit: "m"`, which silently aborts the conversion and
+        // surfaces later as an opaque "exceeded 100 MB during push" failure.
+        const above = LFS_MIGRATE_IMPORT_ARGS.find((a) => a.startsWith('--above='));
+        expect(above).toBeDefined();
+        const value = above.split('=')[1];
+        // git-lfs ParseBytes accepts b/kb/mb/gb/tb and the binary kib/mib/gib/tib.
+        expect(value).toMatch(/^\d+(b|kb|mb|gb|tb|kib|mib|gib|tib)$/i);
+    });
+
+    it('converts across all refs, non-interactively', () => {
+        expect(LFS_MIGRATE_IMPORT_ARGS.slice(0, 3)).toEqual(['lfs', 'migrate', 'import']);
+        expect(LFS_MIGRATE_IMPORT_ARGS).toEqual(
+            expect.arrayContaining(['--everything', '--yes']),
+        );
     });
 });
 

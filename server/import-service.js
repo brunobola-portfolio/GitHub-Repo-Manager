@@ -173,6 +173,23 @@ export async function ensureGitLfs(runRaw) {
 }
 
 /**
+ * Args for `git lfs migrate import` — converts every blob over GitHub's 100 MiB
+ * per-file limit to an LFS pointer across all refs, non-interactively.
+ *
+ * The `--above` size unit MUST be one git-lfs accepts (`b`/`kb`/`mb`/`gb`/`tb`
+ * or the binary `kib`/`mib`/…). A bare `M` is rejected with
+ * `unknown unit: "m"`, which aborts the conversion; the run then proceeds with
+ * the original history and dies later at the opaque oversized-push error.
+ * `100MiB` is kept byte-aligned with GITHUB_FILE_SIZE_LIMIT_BYTES (100 * 1024²).
+ */
+export const LFS_MIGRATE_IMPORT_ARGS = [
+    'lfs', 'migrate', 'import',
+    '--above=100MiB',
+    '--everything',
+    '--yes',
+];
+
+/**
  * Delete a repository on GitHub. Treats 404 as success (already gone) and
  * maps 403 to an actionable message (orgs can forbid member deletions).
  * @param {string} owner
@@ -423,14 +440,19 @@ async function importRepository(params) {
             // "exceeds 100 MB" push error, which reads as if Replace/LFS did nothing.
             await ensureGitLfs((args) => migrateGit.raw(args));
             try {
-                await migrateGit.raw([
-                    'lfs', 'migrate', 'import',
-                    '--above=100M',
-                    '--everything',
-                    '--yes',
-                ]);
+                await migrateGit.raw(LFS_MIGRATE_IMPORT_ARGS);
             } catch (e) {
-                logger.warn({ err: e }, 'git-lfs migrate import failed; proceeding with original history');
+                // Converting the oversized blobs is the entire point of the
+                // lfs-migrate strategy. If it fails, the blobs are untouched and
+                // the push is guaranteed to be rejected — so surface the real
+                // cause now instead of silently proceeding to the opaque
+                // "exceeded 100 MB during push" error that masks it.
+                logger.error({ err: e }, 'git-lfs migrate import failed');
+                const err = new Error(
+                    `Converting large files to Git LFS failed: ${(e?.message || 'unknown git-lfs error').trim()}. The repository was left unchanged — retry, and if it persists check the migration server's git-lfs install.`,
+                );
+                err.code = 'LFS_MIGRATE_FAILED';
+                throw err;
             }
         }
 
