@@ -8,8 +8,8 @@ test.describe('AI Assistant — paste URL flow', () => {
     await expect(page.getByAltText('dev-user')).toBeVisible({ timeout: 15000 })
 
     // Open the AI Assistant
-    await page.getByRole('button', { name: /open ai assistant/i }).click()
-    await expect(page.getByRole('dialog', { name: /ai assistant/i })).toBeVisible()
+    await page.getByRole('button', { name: /open repo advisor/i }).click()
+    await expect(page.getByRole('dialog', { name: /repo advisor/i })).toBeVisible()
 
     // Paste an Azure URL
     const input = page.getByRole('textbox', { name: /message the ai assistant/i })
@@ -49,8 +49,8 @@ test.describe('AI Assistant — paste URL flow', () => {
     await page.goto('/')
     await expect(page.getByAltText('dev-user')).toBeVisible({ timeout: 15000 })
 
-    await page.getByRole('button', { name: /open ai assistant/i }).click()
-    await expect(page.getByRole('dialog', { name: /ai assistant/i })).toBeVisible()
+    await page.getByRole('button', { name: /open repo advisor/i }).click()
+    await expect(page.getByRole('dialog', { name: /repo advisor/i })).toBeVisible()
 
     const input = page.getByRole('textbox', { name: /message the ai assistant/i })
     await input.fill('olá, ajuda-me com um repo novo')
@@ -64,8 +64,8 @@ test.describe('AI Assistant — paste URL flow', () => {
     await page.goto('/')
     await expect(page.getByAltText('dev-user')).toBeVisible({ timeout: 15000 })
 
-    await page.getByRole('button', { name: /open ai assistant/i }).click()
-    await expect(page.getByRole('dialog', { name: /ai assistant/i })).toBeVisible()
+    await page.getByRole('button', { name: /open repo advisor/i }).click()
+    await expect(page.getByRole('dialog', { name: /repo advisor/i })).toBeVisible()
 
     const input = page.getByRole('textbox', { name: /message the ai assistant/i })
     await input.fill('https://github.com/bolalabs/BolaLabs')

@@ -6,7 +6,7 @@ const features = [
     icon: Brain,
     title: 'AI-Powered Insights',
     description:
-      'Quality reports, code health scoring, migration risk analysis, and actionable suggestions — all powered by Gemini AI.',
+      'Quality reports, code health scoring, migration risk analysis, and actionable suggestions — all powered by your configured AI provider.',
     iconColor: 'text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)]',
     glow: '',
     iconBg: 'bg-indigo-500/15 dark:bg-indigo-500/25',

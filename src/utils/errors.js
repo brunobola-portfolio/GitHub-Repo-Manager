@@ -119,7 +119,7 @@ const KNOWN_ERRORS = {
     },
     AI_NOT_CONFIGURED: {
         title: 'AI is not configured',
-        body: 'Configure a Gemini API key in Settings → AI to use this feature.',
+        body: 'Configure an AI provider key in Settings → AI to use this feature.',
         action: { label: 'Open Settings', kind: 'open-settings', type: 'configure', settingsTab: 'ai' },
     },
     TIER_REQUIRED_PRO: {

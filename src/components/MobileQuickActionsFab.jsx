@@ -16,7 +16,7 @@ const ITEMS = [
     { id: 'devtoolkit', label: 'Dev Toolkit',  icon: Wand2,      handlerKey: 'onOpenDevToolkit' },
     { id: 'import',     label: 'Import',       icon: Download,   handlerKey: 'onImport' },
     { id: 'create',     label: 'Create',       icon: FolderPlus, handlerKey: 'onCreate' },
-    { id: 'assistant',  label: 'AI Assistant', icon: Sparkles,   handlerKey: 'onOpenAIAssistant' },
+    { id: 'assistant',  label: 'Repo Advisor', icon: Sparkles,   handlerKey: 'onOpenAIAssistant' },
     { id: 'search',     label: 'Search',       icon: Search,     handlerKey: 'onOpenCommandPalette' },
 ]
 

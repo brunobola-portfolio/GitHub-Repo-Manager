@@ -24,7 +24,7 @@ describe('MobileQuickActionsFab', () => {
         expect(screen.getByRole('menuitem', { name: /import/i })).toBeInTheDocument()
         expect(screen.getByRole('menuitem', { name: /dev toolkit/i })).toBeInTheDocument()
         expect(screen.getByRole('menuitem', { name: /search/i })).toBeInTheDocument()
-        expect(screen.getByRole('menuitem', { name: /ai assistant/i })).toBeInTheDocument()
+        expect(screen.getByRole('menuitem', { name: /repo advisor/i })).toBeInTheDocument()
     })
 
     it('calls onCreate when create item is clicked', () => {
@@ -43,11 +43,11 @@ describe('MobileQuickActionsFab', () => {
         expect(onOpenCommandPalette).toHaveBeenCalled()
     })
 
-    it('calls onOpenAIAssistant when AI Assistant item is clicked', () => {
+    it('calls onOpenAIAssistant when Repo Advisor item is clicked', () => {
         const onOpenAIAssistant = vi.fn()
         render(<MobileQuickActionsFab {...baseHandlers} onOpenAIAssistant={onOpenAIAssistant} />)
         fireEvent.click(screen.getByRole('button', { name: /quick actions/i }))
-        fireEvent.click(screen.getByRole('menuitem', { name: /ai assistant/i }))
+        fireEvent.click(screen.getByRole('menuitem', { name: /repo advisor/i }))
         expect(onOpenAIAssistant).toHaveBeenCalled()
     })
 

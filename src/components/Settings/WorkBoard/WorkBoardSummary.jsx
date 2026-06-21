@@ -57,7 +57,7 @@ export function WorkBoardSummary({ prefs, totalCount, mutedCount, pinnedCount, t
 
                 <div className="flex items-center gap-1.5 ds-text-meta text-slate-500 dark:text-slate-400">
                     <Sparkles className="w-3 h-3" aria-hidden="true" />
-                    <span>AI Assistant</span>
+                    <span>Repo Advisor</span>
                     <span className={`ml-auto inline-flex items-center gap-1 font-semibold ds-text-micro uppercase tracking-wide ${
                         ai.enabled
                             ? 'text-emerald-600 dark:text-emerald-400'

@@ -900,7 +900,7 @@ function AppContent() {
         quotaModal={quotaModal}
         onCloseQuota={() => setQuotaModal(null)}
       />
-      <ErrorBoundary fallback={<ViewErrorFallback viewName="AI Assistant" />}>
+      <ErrorBoundary fallback={<ViewErrorFallback viewName="Repo Advisor" />}>
         <Suspense fallback={null}>
           <AIAssistant askAI={askAI} user={user} checkAIStatus={checkAIStatus} />
         </Suspense>

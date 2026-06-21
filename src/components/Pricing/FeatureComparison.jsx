@@ -36,7 +36,7 @@ const CATEGORIES = [
     name: 'AI Features',
     rows: [
       {
-        feature: 'AI Assistant (conversational)',
+        feature: 'Repo Advisor (conversational)',
         values: [true, true, true],
       },
       {

@@ -32,7 +32,7 @@ const CONFIGURE_CTA_CODES = new Set([
 const WELCOME_MESSAGE = {
     id: 'welcome',
     role: 'assistant',
-    text: "Hi! I'm your AI assistant. Ask me to open the migration wizard, create a repo, or help you manage your projects.",
+    text: "Hi! I'm Repo Advisor. Ask me to open the migration wizard, create a repo, or help you manage your projects.",
 }
 
 // Session-scoped persistence: keep chat history across panel close/open and
@@ -230,7 +230,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
             }
             setMessages(prev => [...prev, {
                 id: nextMsgId(), role: 'assistant', isError: true,
-                text: err?.friendlyMessage || err?.message || 'Something went wrong talking to Gemini.',
+                text: err?.friendlyMessage || err?.message || 'Something went wrong talking to the AI provider.',
                 // Preserve the machine code so MessageBubble can branch on it
                 // instead of substring-matching the human-readable text.
                 errorCode: err?.code || null,
@@ -277,7 +277,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                            on phones is consolidated into MobileQuickActionsFab
                            so the right edge isn't a stack of four FABs. */
                         className="hidden md:flex fixed bottom-20 xl:bottom-6 right-3 sm:right-6 z-[var(--ds-z-composer)] group"
-                        aria-label="Open AI Assistant"
+                        aria-label="Open Repo Advisor"
                     >
                         <div className="relative">
                             <div className={`relative flex items-center bg-[color:var(--ds-accent-brand)] text-white shadow-md transition-all duration-500 ease-in-out hover:opacity-90 ${
@@ -289,7 +289,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                 <span className={`text-sm font-semibold whitespace-nowrap transition-all duration-500 overflow-hidden ${
                                     isIdle ? 'w-0 opacity-0' : 'w-auto opacity-100 hidden sm:inline'
                                 }`}>
-                                    AI Assistant
+                                    Repo Advisor
                                 </span>
                             </div>
                         </div>
@@ -303,7 +303,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                         ref={chatRef}
                         role="dialog"
                         aria-modal="true"
-                        aria-label="AI Assistant"
+                        aria-label="Repo Advisor"
                         initial={{ opacity: 0, y: 20, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -328,7 +328,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                         <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-white/60 animate-pulse" aria-hidden="true" />
                                     </div>
                                     <div className="leading-tight">
-                                        <h3 className="font-semibold text-sm tracking-tight ds-font-display">Gemini Assistant</h3>
+                                        <h3 className="font-semibold text-sm tracking-tight ds-font-display">Repo Advisor</h3>
                                         <span className="ds-text-meta text-white/80 flex items-center gap-1">
                                             <span className={`inline-block w-1.5 h-1.5 rounded-full ${isLoading ? 'bg-amber-300 animate-pulse' : 'bg-emerald-300'}`} aria-hidden="true" />
                                             {isLoading ? 'Thinking…' : 'Online'}
@@ -527,7 +527,7 @@ function NotConfiguredState({ onOpenSettings }) {
             </div>
             <h4 className="text-lg font-semibold text-slate-900 dark:text-slate-100 ds-font-display">Setup required</h4>
             <p className="text-sm text-slate-500 dark:text-slate-400 max-w-[260px]">
-                The AI assistant needs a Gemini API key. Add <code className="font-mono text-xs bg-slate-100 dark:bg-slate-800 rounded px-1.5 py-0.5">GEMINI_API_KEY</code> in <code className="font-mono text-xs">server/.env</code>, or configure it from settings.
+                Repo Advisor needs an AI provider key. Add a provider key (e.g. <code className="font-mono text-xs bg-slate-100 dark:bg-slate-800 rounded px-1.5 py-0.5">GEMINI_API_KEY</code>) in <code className="font-mono text-xs">server/.env</code>, or configure a provider from settings.
             </p>
             <Button
                 type="button"

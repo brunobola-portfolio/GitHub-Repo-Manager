@@ -231,7 +231,7 @@ export const aiApi = {
             suggestions: [
                 { title: 'AI Not Configured', description: 'Set GEMINI_API_KEY for real suggestions', type: 'info' }
             ],
-            analysis: 'AI features require a Gemini API key. Using placeholder data.',
+            analysis: 'AI features require an AI provider key. Using placeholder data.',
         });
 
         const shortCircuit = await withAIConfigured(unconfiguredSuggestions);

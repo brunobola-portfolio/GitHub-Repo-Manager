@@ -17,7 +17,7 @@ const TIERS_MONTHLY = [
     ctaText: 'Get Started',
     features: [
       { label: 'Repositories managed', included: '200' },
-      { label: 'AI Assistant (conversational)', included: true },
+      { label: 'Repo Advisor (conversational)', included: true },
       { label: 'Semantic Search (AI)', included: '75 / month' },
       { label: 'Migration Risk Analysis (AI)', included: '5 / month' },
       { label: 'Repo Insights / Quality Report', included: '15 / month' },
@@ -94,7 +94,7 @@ const FAQS = [
   },
   {
     q: 'What counts as an AI query?',
-    a: 'Each call to the AI Assistant, Semantic Search, Migration Risk Analysis, README Generator, Commit Generator, or Repo Insights counts as one query against your monthly total. Free-tier users also get per-feature caps (e.g. 5 READMEs/month) so no single feature drains your whole budget. Cached responses and read-only dashboard views are free.',
+    a: 'Each call to Repo Advisor, Semantic Search, Migration Risk Analysis, README Generator, Commit Generator, or Repo Insights counts as one query against your monthly total. Free-tier users also get per-feature caps (e.g. 5 READMEs/month) so no single feature drains your whole budget. Cached responses and read-only dashboard views are free.',
   },
   {
     q: 'Is my data secure?',

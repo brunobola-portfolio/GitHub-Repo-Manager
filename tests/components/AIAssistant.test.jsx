@@ -14,9 +14,9 @@ function renderAssistant({ askAI, checkAIStatus = async () => ({ configured: tru
 }
 
 async function openAssistant() {
-    const trigger = await screen.findByRole('button', { name: /open ai assistant/i })
+    const trigger = await screen.findByRole('button', { name: /open repo advisor/i })
     fireEvent.click(trigger)
-    await screen.findByRole('dialog', { name: /ai assistant/i })
+    await screen.findByRole('dialog', { name: /repo advisor/i })
 }
 
 describe('AIAssistant', () => {
@@ -33,7 +33,7 @@ describe('AIAssistant', () => {
     it('renders the welcome message when opened', async () => {
         renderAssistant({ askAI: vi.fn() })
         await openAssistant()
-        expect(await screen.findByText(/I'm your AI assistant/i)).toBeInTheDocument()
+        expect(await screen.findByText(/I'm Repo Advisor/i)).toBeInTheDocument()
     })
 
     it('renders action chips from a successful reply', async () => {
@@ -279,7 +279,7 @@ describe('AIAssistant', () => {
       })
 
       // Panel auto-opened
-      await screen.findByRole('dialog', { name: /ai assistant/i })
+      await screen.findByRole('dialog', { name: /repo advisor/i })
 
       // Message text rendered
       expect(await screen.findByText(/Migrei 3 repos\. Polimos\?/)).toBeInTheDocument()
@@ -318,7 +318,7 @@ describe('AIAssistant', () => {
       })
 
       // Panel should NOT have auto-opened — no valid messages were injected.
-      expect(screen.queryByRole('dialog', { name: /ai assistant/i })).not.toBeInTheDocument()
+      expect(screen.queryByRole('dialog', { name: /repo advisor/i })).not.toBeInTheDocument()
     })
   })
 })
