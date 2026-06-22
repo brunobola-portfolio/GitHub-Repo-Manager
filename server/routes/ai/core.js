@@ -30,6 +30,7 @@ import { requireAI, handleAIError, providerGenerateWithRetry } from './shared.js
 import { buildChatPrompt } from '../../lib/ai-chat-prompt.js';
 import { resolveMaxOutputTokens } from '../../lib/ai-output-budget.js';
 import { checkAISpendCap, recordAISpend } from '../../lib/ai-spend-cap.js';
+import { buildAIAuditMeta } from '../../lib/ai-audit.js';
 import { getKeyHealth, probeAndCache } from '../../lib/ai-health-probe.js';
 import {
     buildPrompt as buildNarrativePrompt,
@@ -178,7 +179,7 @@ router.post('/ai/chat', requireAuth, validateBody(aiChatSchema), requireAI, asyn
             required: ['reply'],
         };
 
-        const { text, parsed: parsedFromProvider, costUSD } = await providerGenerateWithRetry(
+        const { text, parsed: parsedFromProvider, usage: aiUsage, costUSD } = await providerGenerateWithRetry(
             req.aiProvider,
             // Cap output to bound cost/latency (OWASP LLM10). Provider-neutral —
             // the generate layer maps maxOutputTokens onto each SDK's field.
@@ -198,7 +199,14 @@ router.post('/ai/chat', requireAuth, validateBody(aiChatSchema), requireAI, asyn
 
         incrementUsage(req.session.userId, 'ai_queries');
         recordAISpend(req.session.userId, costUSD);
-        auditLog(req, 'ai.chat', 'ai', null, { messageLength: message.length });
+        // PII-safe audit trail: counts/model/cost only, never prompt/reply content.
+        auditLog(req, 'ai.chat', 'ai', null, buildAIAuditMeta({
+            feature: 'chat',
+            model: req.aiProvider?.model,
+            usage: aiUsage,
+            costUSD,
+            messageLength: message.length,
+        }));
 
         res.json({
             reply: parsed.reply,
