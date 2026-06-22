@@ -28,6 +28,7 @@ import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage,
 import { auditLog } from '../../lib/audit.js';
 import { requireAI, handleAIError, providerGenerateWithRetry } from './shared.js';
 import { buildChatPrompt } from '../../lib/ai-chat-prompt.js';
+import { resolveMaxOutputTokens } from '../../lib/ai-output-budget.js';
 import { getKeyHealth, probeAndCache } from '../../lib/ai-health-probe.js';
 import {
     buildPrompt as buildNarrativePrompt,
@@ -165,7 +166,9 @@ router.post('/ai/chat', requireAuth, validateBody(aiChatSchema), requireAI, asyn
 
         const { text, parsed: parsedFromProvider } = await providerGenerateWithRetry(
             req.aiProvider,
-            { prompt: systemPrompt, schema },
+            // Cap output to bound cost/latency (OWASP LLM10). Provider-neutral —
+            // the generate layer maps maxOutputTokens onto each SDK's field.
+            { prompt: systemPrompt, schema, generationConfig: { maxOutputTokens: resolveMaxOutputTokens() } },
         );
 
         // Prefer the provider's parsed payload (when it returns one) but fall
