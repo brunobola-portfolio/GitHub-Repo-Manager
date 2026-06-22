@@ -37,6 +37,7 @@ import {
     MAX_USER_MESSAGE_LEN,
 } from '../../lib/ai-features/pr-chat.js';
 import { getDraft } from '../../lib/ai-pr-review-store.js';
+import { resolveMaxOutputTokens } from '../../lib/ai-output-budget.js';
 import logger from '../../lib/logger.js';
 
 const router = express.Router();
@@ -247,6 +248,7 @@ router.post('/:owner/:repo/:pr', requireAuth, requireTier('pro'), generateRateLi
             prompt: fullPrompt,
             systemPrompt,
             signal: sse.signal,
+            generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
         });
         assistantText = await streamToSSE(stream, sse);
     } catch (err) {
