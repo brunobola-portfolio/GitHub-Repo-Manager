@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { X, Send, Sparkles, Loader2, Settings, Key, Minus, ArrowRight, AlertTriangle, RotateCw } from 'lucide-react'
+import { X, Send, Sparkles, Loader2, Settings, Key, Minus, ArrowRight, AlertTriangle, RotateCw, ExternalLink } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
 import { Button } from './ui/Button'
 import { Card } from './ui/Card'
@@ -14,6 +14,26 @@ import { detectRepoUrl } from '../utils/repoUrlDetector'
 import { AIAssistantPasteCard } from './AIAssistantPasteCard'
 import { buildWizardPayload } from '../utils/pasteDialogPayload'
 import { onAppEvent, APP_EVENTS } from '../utils/appEvents'
+
+// Render Markdown links in assistant replies as premium, safe external sources
+// (Phase 3 Slice 2). Grounded answers cite docs (e.g. the error KB's links);
+// surface them distinctly with an external-link affordance and a hardened rel.
+function SourceLink({ href, children }) {
+    if (!href) return <>{children}</>
+    return (
+        <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-baseline gap-0.5 font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] underline decoration-indigo-300/50 hover:decoration-indigo-500 underline-offset-2 transition-colors ds-focus-ring"
+        >
+            {children}
+            <ExternalLink size={11} className="self-center shrink-0" aria-hidden="true" />
+        </a>
+    )
+}
+
+const MARKDOWN_COMPONENTS = { a: SourceLink }
 
 let msgIdCounter = 0
 const nextMsgId = () => `msg-${Date.now()}-${++msgIdCounter}`
@@ -536,7 +556,7 @@ function MessageBubble({ message, onAction, onRetry, onOpenSettings }) {
                                 : 'bg-white dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 rounded-bl-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-pre:my-2 prose-code:text-xs'
                     }`}
                 >
-                    {isUser ? message.text : <ReactMarkdown>{message.text}</ReactMarkdown>}
+                    {isUser ? message.text : <ReactMarkdown components={MARKDOWN_COMPONENTS}>{message.text}</ReactMarkdown>}
                 </div>
 
                 {!isUser && Array.isArray(message.actions) && message.actions.length > 0 && (
