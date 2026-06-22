@@ -1,0 +1,53 @@
+{
+  "feature": "repo-advisor-chat",
+  "version": 1,
+  "description": "Golden dataset for the Repo Advisor chat handler's parse/validation contract. Tests the route's reply/actions parsing against fixed mock responses (no real LLM). Model and grounding quality are out of scope until --real mode.",
+  "cases": [
+    {
+      "id": "happy-reply-with-action",
+      "input": { "message": "I want to migrate a repo from Azure DevOps" },
+      "mockResponse": "{\"reply\":\"Sure — I can open the migration wizard for you.\",\"actions\":[{\"type\":\"open_migration_wizard\",\"label\":\"Open Wizard\"}]}",
+      "expected": [
+        { "scorer": "jsonShape", "args": { "reply": "string", "actions": "object" } },
+        { "scorer": "lengthBounds", "path": "reply", "args": { "min": 1, "max": 2000 } }
+      ],
+      "tags": ["happy-path"]
+    },
+    {
+      "id": "grounded-lfs-error-input",
+      "input": { "message": "my migration failed: Cannot parse --above=<n>: unknown unit: \"m\"" },
+      "mockResponse": "{\"reply\":\"Git LFS isn't installed on the migration server, so the conversion aborted. Install git-lfs and retry.\",\"actions\":[]}",
+      "expected": [
+        { "scorer": "jsonShape", "args": { "reply": "string", "actions": "object" } },
+        { "scorer": "lengthBounds", "path": "reply", "args": { "min": 1, "max": 2000 } }
+      ],
+      "tags": ["happy-path", "grounding"],
+      "_note": "Exercises the error-KB grounding branch in buildChatPrompt without throwing. The mock reply is fixed, so this validates the parse contract — not model grounding (that needs --real mode)."
+    },
+    {
+      "id": "reply-without-actions",
+      "input": { "message": "what can you do?" },
+      "mockResponse": "{\"reply\":\"I can open the migration wizard, create repos, and explain errors.\"}",
+      "expected": [
+        { "scorer": "jsonShape", "args": { "reply": "string", "actions": "object" } },
+        { "scorer": "lengthBounds", "path": "reply", "args": { "min": 1, "max": 2000 } }
+      ],
+      "tags": ["happy-path", "no-actions"],
+      "_note": "Model omits actions; the adapter defaults it to [] (Array.isArray check), so actions is still an object/array."
+    },
+    {
+      "id": "malformed-json-returns-null",
+      "input": { "message": "hello" },
+      "mockResponse": "the model hallucinated plain text, not JSON",
+      "expected": [ { "scorer": "exactMatch", "args": null } ],
+      "tags": ["error-path", "malformed-response"]
+    },
+    {
+      "id": "missing-reply-returns-null",
+      "input": { "message": "hello" },
+      "mockResponse": "{\"actions\":[]}",
+      "expected": [ { "scorer": "exactMatch", "args": null } ],
+      "tags": ["error-path", "missing-reply"]
+    }
+  ]
+}
