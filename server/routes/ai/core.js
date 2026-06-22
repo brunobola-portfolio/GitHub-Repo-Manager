@@ -28,6 +28,7 @@ import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage,
 import { auditLog } from '../../lib/audit.js';
 import { requireAI, handleAIError, providerGenerateWithRetry, guardedGenerate } from './shared.js';
 import { buildChatPrompt } from '../../lib/ai-chat-prompt.js';
+import { buildReadmeEnhancePrompt } from '../../lib/ai-features/readme-enhance.js';
 import { resolveMaxOutputTokens } from '../../lib/ai-output-budget.js';
 import { checkAISpendCap, recordAISpend } from '../../lib/ai-spend-cap.js';
 import { buildAIAuditMeta } from '../../lib/ai-audit.js';
@@ -477,7 +478,13 @@ router.post('/ai/readme/enhance', requireAuth, validateBody(aiReadmeEnhanceSchem
             }
         }
 
-        const result = await aiService.enhanceReadme(readmeContent, repo, fileStructure);
+        // Run generation through guardedGenerate so README enhance gets the
+        // same cost/audit guards as the other AI routes AND uses the per-user
+        // (BYOK-aware) provider, instead of the server-only aiService path.
+        const { prompt, missingSections, patterns } = buildReadmeEnhancePrompt(readmeContent, repo, fileStructure);
+        const { text } = await guardedGenerate(req, { prompt }, { feature: 'readme_enhance' });
+        const result = { enhancement: text, missingSections, patterns };
+
         incrementAIUsage(userId, 'ai_readme');
         auditLog(req, 'ai.readme.enhance', 'ai', null, { repoName: repo.full_name });
         res.json({ success: true, ...result, currentReadme: readmeContent });

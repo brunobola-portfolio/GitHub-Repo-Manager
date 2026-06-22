@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { enhanceReadme } from '../../lib/ai-features/readme-enhance.js';
+import { enhanceReadme, buildReadmeEnhancePrompt } from '../../lib/ai-features/readme-enhance.js';
 import { AIError, AI_ERROR_CODE } from '../../lib/ai-provider.js';
 
 function buildProvider(generateImpl) {
@@ -24,6 +24,23 @@ describe('ai-features/readme-enhance.enhanceReadme', () => {
         expect(result.missingSections).toContain('Usage');
         expect(result.missingSections).toContain('License');
         expect(result.patterns).toBeDefined();
+    });
+
+    it('buildReadmeEnhancePrompt returns the prompt + missing sections + patterns without an LLM call', () => {
+        const built = buildReadmeEnhancePrompt('', repoData, []);
+        expect(built.prompt).toContain('lib'); // project name embedded
+        expect(built.prompt).toContain('Generate ONLY the missing sections');
+        expect(built.missingSections).toContain('Installation');
+        expect(built.missingSections).toContain('License');
+        expect(built.patterns).toBeDefined();
+    });
+
+    it('enhanceReadme uses the same prompt builder (wrapper stays backward-compatible)', async () => {
+        const provider = buildProvider(async () => ({ text: '## Usage\n...' }));
+        const result = await enhanceReadme({ provider }, '', repoData, []);
+        const passedPrompt = provider.generate.mock.calls[0][0].prompt;
+        expect(passedPrompt).toBe(buildReadmeEnhancePrompt('', repoData, []).prompt);
+        expect(result.enhancement).toBe('## Usage\n...');
     });
 
     it('translates NOT_FOUND AIError into a human-friendly message (error path)', async () => {

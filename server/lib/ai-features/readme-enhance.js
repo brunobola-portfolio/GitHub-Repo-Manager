@@ -4,21 +4,17 @@ import { sanitizeForPrompt } from './sanitize.js';
 import { detectPatterns } from './quality-metrics.js';
 
 /**
- * Generate missing README sections as markdown.
+ * Build the README-enhance prompt (no LLM call). Pure: detects missing
+ * sections + patterns and renders the prompt. Exposed so route handlers can
+ * run the generation through `guardedGenerate` (spend cap / output cap / spend
+ * record / cost audit) instead of the server-provider-only `enhanceReadme`.
  *
- * @param {object} ctx
- * @param {object} ctx.provider - AI provider with .generate() + .model
  * @param {string} currentReadme
  * @param {object} repoData - Repository metadata
  * @param {object} fileStructure - File tree
- * @returns {Promise<{ enhancement: string, missingSections: string[], patterns: object }>}
+ * @returns {{ prompt: string, missingSections: string[], patterns: object }}
  */
-export async function enhanceReadme(ctx, currentReadme, repoData, fileStructure) {
-    const provider = ctx?.provider;
-    if (!provider?.model) {
-        throw new Error('AI model not initialized. Please check GEMINI_API_KEY and GEMINI_MODEL configuration.');
-    }
-
+export function buildReadmeEnhancePrompt(currentReadme, repoData, fileStructure) {
     const patterns = detectPatterns(currentReadme, fileStructure);
     const missingSections = [];
     if (!patterns.hasInstallation) missingSections.push('Installation');
@@ -48,6 +44,27 @@ export async function enhanceReadme(ctx, currentReadme, repoData, fileStructure)
 
             Return ONLY the markdown for missing sections (no existing content, no JSON wrapper).
         `;
+
+    return { prompt, missingSections, patterns };
+}
+
+/**
+ * Generate missing README sections as markdown.
+ *
+ * @param {object} ctx
+ * @param {object} ctx.provider - AI provider with .generate() + .model
+ * @param {string} currentReadme
+ * @param {object} repoData - Repository metadata
+ * @param {object} fileStructure - File tree
+ * @returns {Promise<{ enhancement: string, missingSections: string[], patterns: object }>}
+ */
+export async function enhanceReadme(ctx, currentReadme, repoData, fileStructure) {
+    const provider = ctx?.provider;
+    if (!provider?.model) {
+        throw new Error('AI model not initialized. Please check GEMINI_API_KEY and GEMINI_MODEL configuration.');
+    }
+
+    const { prompt, missingSections, patterns } = buildReadmeEnhancePrompt(currentReadme, repoData, fileStructure);
 
     try {
         // Note: enhanceReadme returns raw markdown, so we use the raw text (not fence-stripped)
