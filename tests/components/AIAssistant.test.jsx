@@ -400,4 +400,26 @@ describe('AIAssistant', () => {
       expect(screen.getByRole('log')).toHaveAttribute('aria-live', 'polite')
     })
   })
+
+  describe('Premium source citations (Phase 3 Slice 2)', () => {
+    it('renders links in assistant replies as safe external sources', async () => {
+      const askAI = vi.fn().mockResolvedValue({
+        reply: 'Install Git LFS — see [git-lfs.com](https://git-lfs.com) for steps.',
+        actions: [],
+      })
+      renderAssistant({ askAI })
+      await openAssistant()
+
+      const input = screen.getByRole('textbox', { name: /message the ai assistant/i })
+      await act(async () => {
+        fireEvent.change(input, { target: { value: 'how do I fix the lfs error?' } })
+        fireEvent.submit(input.closest('form'))
+      })
+
+      const link = await screen.findByRole('link', { name: /git-lfs\.com/i })
+      expect(link).toHaveAttribute('href', 'https://git-lfs.com')
+      expect(link).toHaveAttribute('target', '_blank')
+      expect(link.getAttribute('rel') || '').toMatch(/noopener/)
+    })
+  })
 })
