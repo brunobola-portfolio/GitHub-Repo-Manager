@@ -9,6 +9,31 @@ The server itself may have a Gemini fallback key for demo / self-host mode
 
 ---
 
+## Server-wide configuration (env)
+
+Per-user BYOK above is the primary path. For the **server fallback** (used by
+users without their own config) the assistant is provider-neutral — pick the
+provider with `AI_PROVIDER` and set its key. See `.env.example` for the full,
+commented list. Key variables:
+
+| Env var | Purpose | Default |
+|---|---|---|
+| `AI_PROVIDER` | Server fallback provider: `gemini` \| `anthropic` \| `openai` \| `openrouter` \| `local` | `gemini` |
+| `<PROVIDER>_API_KEY` / `<PROVIDER>_MODEL` | Key + model for the chosen provider (e.g. `ANTHROPIC_API_KEY`, `OPENAI_MODEL`) | — |
+| `AI_MODEL_<FEATURE>` | Per-feature model override (e.g. `AI_MODEL_REVIEW`) | provider default |
+| `AI_REQUIRE_USER_CONFIG` | `true` ⇒ disable the server fallback; every user must BYOK | off |
+| `AI_MAX_OUTPUT_TOKENS` | Per-call output-token cap (OWASP LLM10) | `2048` (256–8192) |
+| `AI_SPEND_CAP_CENTS` | Monthly per-user AI spend cap, US cents | `0` = unlimited |
+| `AI_RETRY_BASE_DELAY_MS` | Backoff base for transient provider errors | `400` |
+| `WORK_BOARD_AI_ENABLED` | Work Board AI endpoints (off unless exactly `true`) | off |
+| `ALLOW_LOCAL_AI_ENDPOINTS` | Allow loopback/private BYOK endpoints (with `local` provider) | off (SSRF-blocked) |
+| `CREDENTIAL_ENCRYPTION_KEY` | AES-256-GCM key for BYOK creds at rest (required in prod) | falls back to `SESSION_SECRET` (dev only) |
+
+> Example — run the whole server on Anthropic: `AI_PROVIDER=anthropic`,
+> `ANTHROPIC_API_KEY=sk-ant-…`. Cap cost: `AI_SPEND_CAP_CENTS=500` ($5/user/mo).
+
+---
+
 ## Gemini (Google)
 
 **Provider key:** `gemini`
