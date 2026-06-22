@@ -35,6 +35,16 @@ const WELCOME_MESSAGE = {
     text: "Hi! I'm Repo Advisor. Ask me to open the migration wizard, create a repo, or help you manage your projects.",
 }
 
+// Capability-led starter prompts shown in the empty state. Concrete examples
+// teach what the assistant can do far better than an open "ask me anything"
+// (NN/g chatbot guidance) — and one nods to the troubleshooting it now grounds.
+const SUGGESTED_PROMPTS = [
+    'Migrate a repo from Azure DevOps',
+    'Create a new repository',
+    'Why did my migration fail?',
+    'Find repositories similar to one of mine',
+]
+
 // Session-scoped persistence: keep chat history across panel close/open and
 // route navigation, but drop it when the tab is closed so long-lived sessions
 // don't balloon sessionStorage with stale conversation logs.
@@ -392,7 +402,13 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                         <NotConfiguredState onOpenSettings={() => openModal('showSettings')} />
                                     ) : (
                                         <>
-                                            <div className="ds-scrollbar flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-slate-50/40 dark:bg-slate-900/40">
+                                            <div
+                                                className="ds-scrollbar flex-1 overflow-y-auto px-4 py-4 space-y-3 bg-slate-50/40 dark:bg-slate-900/40"
+                                                role="log"
+                                                aria-live="polite"
+                                                aria-relevant="additions"
+                                                aria-label="Conversation"
+                                            >
                                                 {messages.map((msg) => (
                                                     <MessageBubble
                                                         key={msg.id}
@@ -402,6 +418,23 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                                         onOpenSettings={() => openModal('showSettings')}
                                                     />
                                                 ))}
+                                                {messages.length === 1 && messages[0]?.id === 'welcome' && !pasteDialog && !isLoading && (
+                                                    <div className="pt-1">
+                                                        <p className="ds-text-meta text-slate-400 dark:text-slate-500 mb-2 px-0.5">Try asking</p>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {SUGGESTED_PROMPTS.map((prompt) => (
+                                                                <button
+                                                                    key={prompt}
+                                                                    type="button"
+                                                                    onClick={() => sendMessage(prompt)}
+                                                                    className="text-left text-xs font-medium px-3 py-2 rounded-xl bg-white dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/60 hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors ds-focus-ring"
+                                                                >
+                                                                    {prompt}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
                                                 {pasteDialog && (
                                                   <AIAssistantPasteCard
                                                     dialog={pasteDialog}
