@@ -221,6 +221,79 @@ describe('POST /api/ai/suggest — 429 when limit exceeded', () => {
 })
 
 // ---------------------------------------------------------------------------
+// TEST 2b — POST /api/ai/batch-index caps the batch to the remaining quota
+// (the per-repo loop must not process N repos on a single up-front check).
+// ---------------------------------------------------------------------------
+
+describe('POST /api/ai/batch-index — quota caps the batch to remaining allowance', () => {
+    let app
+    beforeEach(async () => {
+        vi.clearAllMocks()
+        const express2 = express()
+        express2.use(express.json())
+        express2.use((req, _res, next) => {
+            req.session = makeSession({ userTier: 'free' })
+            req.log = { error: vi.fn(), warn: vi.fn(), info: vi.fn() }
+            next()
+        })
+        const { default: aiRouter } = await import('../routes/ai.js')
+        express2.use('/api', aiRouter)
+        app = express2
+
+        // Restore a complete db.prepare stub — an earlier describe overrode it
+        // with a get/all-only shape, and clearAllMocks does not reset
+        // implementations, so the batch insert's .run() would otherwise throw.
+        const { default: db } = await import('../db.js')
+        db.prepare.mockReturnValue({
+            get: vi.fn(() => null),
+            all: vi.fn(() => []),
+            run: vi.fn(() => ({ changes: 1, lastInsertRowid: 99 })),
+        })
+    })
+
+    it('processes only as many repos as the binding remaining quota allows', async () => {
+        // Legacy single-check path (kept allowed so the failure is a count, not a 500).
+        mockCheckAIFeatureLimit.mockReturnValue({ allowed: true, current: 8, limit: 10, remaining: 2, metric: 'ai_insights' })
+        // New per-iteration cap: ai_insights has 2 left, ai_queries plenty → binding 2.
+        mockCheckUsageLimit.mockImplementation((_uid, metric) =>
+            metric === 'ai_insights'
+                ? { allowed: true, current: 8, limit: 10, remaining: 2, metric }
+                : { allowed: true, current: 0, limit: 200, remaining: 200, metric })
+
+        const { aiService } = await import('../ai-service.js')
+        aiService.analyzeRepo = vi.fn(async () => ({ summary: 's', suggested_topics: [], health_score: 80 }))
+        aiService.embedText = vi.fn(async () => [0.1, 0.2, 0.3])
+
+        const repos = Array.from({ length: 5 }, (_, i) => ({ id: i + 1, full_name: `o/r${i}`, name: `r${i}` }))
+        const res = await request(app).post('/api/ai/batch-index').send({ repos })
+
+        expect(res.status).toBe(200)
+        expect(res.body.processed).toBe(2)
+        expect(aiService.analyzeRepo).toHaveBeenCalledTimes(2);
+        expect(mockIncrementAIUsage).toHaveBeenCalledTimes(2)
+        expect(res.body.skipped).toBe(3)
+    })
+
+    it('returns 429 when no quota remains, without doing any AI work', async () => {
+        mockCheckAIFeatureLimit.mockReturnValue({ allowed: false, current: 10, limit: 10, remaining: 0, metric: 'ai_insights' })
+        mockCheckUsageLimit.mockImplementation((_uid, metric) =>
+            metric === 'ai_insights'
+                ? { allowed: false, current: 10, limit: 10, remaining: 0, metric }
+                : { allowed: true, current: 0, limit: 200, remaining: 200, metric })
+
+        const { aiService } = await import('../ai-service.js')
+        aiService.analyzeRepo = vi.fn()
+        aiService.embedText = vi.fn()
+
+        const repos = [{ id: 1, full_name: 'o/r', name: 'r' }]
+        const res = await request(app).post('/api/ai/batch-index').send({ repos })
+
+        expect(res.status).toBe(429)
+        expect(aiService.analyzeRepo).not.toHaveBeenCalled()
+    })
+})
+
+// ---------------------------------------------------------------------------
 // TEST 3 — GET /api/v1/audit/logs returns 403 for non-enterprise tier
 // ---------------------------------------------------------------------------
 

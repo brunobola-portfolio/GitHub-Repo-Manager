@@ -42,6 +42,8 @@ import {
 import { BUILTIN_PRESETS, BUILTIN_KEYS, isBuiltinKey } from '../../lib/ai-features/builtin-prompts.js';
 import { resolvePromptForGenerate } from '../../lib/ai-features/prompt-registry.js';
 import { createProviderForUser } from '../../lib/ai-provider.js';
+import { checkUsageLimit, incrementUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { denyIfSpendCapReached, recordStreamCompletion } from './shared.js';
 import { runDeepReview } from '../../lib/ai-features/pr-deep-review.js';
 import {
     isOrgMember,
@@ -305,6 +307,15 @@ router.post('/presets/:id/test', requireAuth, requireTier('pro'), testRateLimit,
     const id = req.params.id;
     const userId = req.session.userId;
 
+    // A preset test runs a full deep review on a sample PR — meter it against
+    // the AI-query quota (Pro 5000/mo, Enterprise unlimited) and enforce the
+    // spend cap before any provider call (OWASP LLM10).
+    const quota = checkUsageLimit(userId, 'ai_queries');
+    if (!quota.allowed) {
+        return res.status(429).json(quotaExceededResponse({ ...quota, metric: 'ai_queries' }));
+    }
+    if (denyIfSpendCapReached(req, res)) return;
+
     let provider;
     try {
         provider = await createProviderForUser(userId, 'completion', { featureKey: 'PR_DEEP_REVIEW' });
@@ -354,6 +365,18 @@ router.post('/presets/:id/test', requireAuth, requireTier('pro'), testRateLimit,
     }
 
     if (!result) return errorResponse(res, 503, 'AI Deep Review disabled', 'AI_DISABLED');
+
+    // Meter the query + record spend + write a PII-safe cost audit.
+    incrementUsage(userId, 'ai_queries');
+    recordStreamCompletion(req, {
+        feature: 'prompt_test',
+        action: 'ai.prompt_test',
+        model: result.modelUsed,
+        usage: { inputTokens: result.inputTokens, outputTokens: result.outputTokens },
+        costUSD: result.costUsd ?? null,
+        extraMeta: { presetId: id },
+    });
+
     res.json({ presetName: resolved.name, source: resolved.source, sample: result });
 });
 
