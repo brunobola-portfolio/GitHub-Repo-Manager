@@ -43,6 +43,8 @@ const mockGenerate = vi.fn(async () => ({
             { path: 'a.js', side: 'RIGHT', line: 1, severity: 'info', body: 'hi' },
         ],
     },
+    usage: { inputTokens: 200, outputTokens: 80 },
+    costUSD: 0.04,
 }));
 const mockProvider = {
     model: {},
@@ -113,13 +115,32 @@ beforeEach(() => {
     testDb.prepare('DELETE FROM ai_pr_reviews').run();
     testDb.prepare('DELETE FROM gh_outbox').run();
     testDb.prepare('DELETE FROM gh_cache').run();
+    testDb.prepare('DELETE FROM ai_spend').run();
+    testDb.prepare('DELETE FROM usage_metrics').run();
     testDb.prepare('INSERT OR IGNORE INTO users (id, username) VALUES (?, ?)').run(USER_ID, 'alice');
     githubApiMock.mockClear();
     mockGenerate.mockClear();
     createProviderForUserMock.mockReset();
     createProviderForUserMock.mockResolvedValue(mockProvider);
     _resetRateLimits();
+    delete process.env.AI_SPEND_CAP_CENTS;
 });
+
+// Helpers for the metering assertions below.
+const monthKey = () => new Date().toISOString().slice(0, 7);
+function aiQueriesCount() {
+    const { start } = { start: new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)).toISOString() };
+    return testDb.prepare(
+        "SELECT count FROM usage_metrics WHERE user_id = ? AND metric_type = 'ai_queries' AND period_start = ?"
+    ).get(USER_ID, start)?.count ?? 0;
+}
+function seedAiQueries(count) {
+    const start = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)).toISOString();
+    const end = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 0, 23, 59, 59)).toISOString();
+    testDb.prepare(
+        'INSERT INTO usage_metrics (user_id, metric_type, count, period_start, period_end) VALUES (?, ?, ?, ?, ?)'
+    ).run(USER_ID, 'ai_queries', count, start, end);
+}
 
 describe('POST /api/ai/deep-review/:owner/:repo/:pr', () => {
     it('generates a draft and persists it', async () => {
@@ -138,6 +159,47 @@ describe('POST /api/ai/deep-review/:owner/:repo/:pr', () => {
         const res = await request(app).post('/api/ai/deep-review/acme/api/42').send({});
         expect(res.status).toBe(404);
         expect(res.body.code).toBe('NO_AI_PROVIDER');
+    });
+
+    it('meters the AI query (increments ai_queries) on success', async () => {
+        const app = makeApp();
+        const res = await request(app).post('/api/ai/deep-review/acme/api/42').send({});
+        expect(res.status).toBe(200);
+        expect(aiQueriesCount()).toBe(1);
+    });
+
+    it('records monthly spend + a PII-safe audit entry after generation', async () => {
+        const app = makeApp();
+        await request(app).post('/api/ai/deep-review/acme/api/42').send({});
+
+        const cents = testDb.prepare('SELECT cents FROM ai_spend WHERE user_id = ?').get(USER_ID)?.cents;
+        expect(cents).toBe(4); // 0.04 USD
+
+        const audit = testDb.prepare(
+            "SELECT details FROM audit_log_v2 WHERE user_id = ? AND action = 'ai.deep_review' ORDER BY id DESC LIMIT 1"
+        ).get(USER_ID);
+        expect(audit).toBeTruthy();
+        const details = JSON.parse(audit.details);
+        expect(details).toMatchObject({ feature: 'deep_review', inputTokens: 200, outputTokens: 80 });
+    });
+
+    it('returns 429 QUOTA_EXCEEDED when the monthly AI query cap is reached (provider not called)', async () => {
+        seedAiQueries(5000); // Pro cap is 5000/mo
+        const app = makeApp();
+        const res = await request(app).post('/api/ai/deep-review/acme/api/42').send({});
+        expect(res.status).toBe(429);
+        expect(res.body.code).toBe('QUOTA_EXCEEDED');
+        expect(createProviderForUserMock).not.toHaveBeenCalled();
+    });
+
+    it('returns 429 AI_SPEND_CAP_REACHED when over the monthly spend cap (provider not called)', async () => {
+        process.env.AI_SPEND_CAP_CENTS = '100';
+        testDb.prepare('INSERT INTO ai_spend (user_id, month, cents) VALUES (?, ?, ?)').run(USER_ID, monthKey(), 150);
+        const app = makeApp();
+        const res = await request(app).post('/api/ai/deep-review/acme/api/42').send({});
+        expect(res.status).toBe(429);
+        expect(res.body.code).toBe('AI_SPEND_CAP_REACHED');
+        expect(createProviderForUserMock).not.toHaveBeenCalled();
     });
 });
 

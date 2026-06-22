@@ -88,6 +88,7 @@ beforeEach(() => {
     testDb.prepare('DELETE FROM ai_pr_chat_messages').run();
     testDb.prepare('DELETE FROM gh_cache').run();
     testDb.prepare('DELETE FROM ai_spend').run();
+    testDb.prepare('DELETE FROM usage_metrics').run();
     // audit_log_v2 is append-only (a trigger blocks DELETE) — don't clear it;
     // tests query by action instead.
     testDb.prepare('INSERT OR IGNORE INTO users (id, username) VALUES (?, ?)').run(USER_ID, 'alice');
@@ -97,6 +98,20 @@ beforeEach(() => {
     setTier('pro');
     delete process.env.AI_SPEND_CAP_CENTS;
 });
+
+const aiQueriesStart = () => new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)).toISOString();
+function aiQueriesCount() {
+    return testDb.prepare(
+        "SELECT count FROM usage_metrics WHERE user_id = ? AND metric_type = 'ai_queries' AND period_start = ?"
+    ).get(USER_ID, aiQueriesStart())?.count ?? 0;
+}
+function seedAiQueries(count) {
+    const start = aiQueriesStart();
+    const end = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 0, 23, 59, 59)).toISOString();
+    testDb.prepare(
+        'INSERT INTO usage_metrics (user_id, metric_type, count, period_start, period_end) VALUES (?, ?, ?, ?, ?)'
+    ).run(USER_ID, 'ai_queries', count, start, end);
+}
 
 describe('GET /api/ai/pr-chat/:owner/:repo/:pr', () => {
     it('returns the persisted history (empty initially)', async () => {
@@ -205,6 +220,26 @@ describe('POST /api/ai/pr-chat/:owner/:repo/:pr', () => {
             'SELECT COUNT(*) AS n FROM ai_pr_chat_messages WHERE user_id = ?'
         ).get(USER_ID);
         expect(stored.n).toBe(0);
+    });
+
+    it('meters the AI query (increments ai_queries) after a successful turn', async () => {
+        const app = makeApp();
+        const res = await request(app)
+            .post('/api/ai/pr-chat/acme/api/42')
+            .send({ message: 'What does this PR do?' });
+        expect(res.status).toBe(200);
+        expect(aiQueriesCount()).toBe(1);
+    });
+
+    it('returns 429 QUOTA_EXCEEDED when the monthly AI query cap is reached (provider not called)', async () => {
+        seedAiQueries(5000); // Pro cap
+        const app = makeApp();
+        const res = await request(app)
+            .post('/api/ai/pr-chat/acme/api/42')
+            .send({ message: 'hi' });
+        expect(res.status).toBe(429);
+        expect(res.body.code).toBe('QUOTA_EXCEEDED');
+        expect(createProviderForUserMock).not.toHaveBeenCalled();
     });
 });
 

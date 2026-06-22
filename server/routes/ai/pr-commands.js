@@ -22,6 +22,8 @@ import { githubApi } from '../../lib/github-api.js';
 import { readThrough } from '../../lib/gh-cache.js';
 import { executeViaOutbox } from '../../lib/outbox-helper.js';
 import { createProviderForUser } from '../../lib/ai-provider.js';
+import { checkUsageLimit, incrementUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { denyIfSpendCapReached, recordStreamCompletion } from './shared.js';
 import { runPRCommand, isSupportedCommand } from '../../lib/ai-features/pr-commands.js';
 import {
     saveResult,
@@ -168,6 +170,14 @@ router.post('/:owner/:repo/:pr/:command', requireAuth, requireTier('pro'), gener
         return errorResponse(res, 400, 'Invalid command. Expected describe, test_plan, or improve.', 'INVALID_COMMAND');
     }
 
+    // Meter the AI query (Pro is capped at 5000/mo, Enterprise unlimited) and
+    // enforce the monthly spend cap BEFORE any provider call (OWASP LLM10).
+    const quota = checkUsageLimit(userId, 'ai_queries');
+    if (!quota.allowed) {
+        return res.status(429).json(quotaExceededResponse({ ...quota, metric: 'ai_queries' }));
+    }
+    if (denyIfSpendCapReached(req, res)) return;
+
     let provider;
     try {
         provider = await createProviderForUser(userId, 'completion', { featureKey: 'PR_COMMAND' });
@@ -243,6 +253,17 @@ router.post('/:owner/:repo/:pr/:command', requireAuth, requireTier('pro'), gener
         result.costUsd ?? null,
         result.modelUsed,
     );
+
+    // Meter the query + record spend + write a PII-safe cost audit.
+    incrementUsage(userId, 'ai_queries');
+    recordStreamCompletion(req, {
+        feature: 'pr_command',
+        action: 'ai.pr_command',
+        model: result.modelUsed,
+        usage: { inputTokens: result.inputTokens, outputTokens: result.outputTokens },
+        costUSD: result.costUsd ?? null,
+        extraMeta: { command, repo: `${owner}/${repo}`, pr: Number(pr) },
+    });
 
     res.json({
         id,

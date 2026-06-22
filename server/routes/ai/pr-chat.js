@@ -24,6 +24,7 @@ import { requireTier } from '../../middleware/require-tier.js';
 import { githubApi } from '../../lib/github-api.js';
 import { readThrough } from '../../lib/gh-cache.js';
 import { createProviderForUser } from '../../lib/ai-provider.js';
+import { checkUsageLimit, incrementUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { initSSE, streamToSSEWithUsage } from '../ai-streaming.js';
 import { denyIfSpendCapReached, recordStreamCompletion } from './shared.js';
 import {
@@ -154,9 +155,14 @@ router.post('/:owner/:repo/:pr', requireAuth, requireTier('pro'), generateRateLi
         return errorResponse(res, 400, `message exceeds ${MAX_USER_MESSAGE_LEN} characters`, 'INVALID_INPUT');
     }
 
-    // Denial-of-wallet guard (OWASP LLM10): refuse before any provider call or
-    // GitHub fetch if the user is over the monthly AI spend cap. Sends a 429
-    // JSON envelope (we have not opened the SSE stream yet).
+    // Meter the AI query even for Pro (counts toward the monthly AI-query pool;
+    // Pro is capped at 5000/mo, Enterprise unlimited) and enforce the monthly
+    // spend cap — both BEFORE any provider call or GitHub fetch (OWASP LLM10).
+    // We have not opened the SSE stream yet, so a 429 JSON envelope is correct.
+    const quota = checkUsageLimit(userId, 'ai_queries');
+    if (!quota.allowed) {
+        return res.status(429).json(quotaExceededResponse({ ...quota, metric: 'ai_queries' }));
+    }
     if (denyIfSpendCapReached(req, res)) return;
 
     let provider;
@@ -270,9 +276,10 @@ router.post('/:owner/:repo/:pr', requireAuth, requireTier('pro'), generateRateLi
         return;
     }
 
-    // Record monthly spend + a PII-safe audit entry (OWASP LLM10). Usage/cost
-    // come from the stream; both may be null (provider reported none, or the
-    // client disconnected) — recordAISpend no-ops on null cost.
+    // Meter the AI query + record monthly spend + a PII-safe audit entry
+    // (OWASP LLM10). Usage/cost come from the stream; both may be null (provider
+    // reported none, or the client disconnected) — recordAISpend no-ops on null.
+    incrementUsage(userId, 'ai_queries');
     recordStreamCompletion(req, {
         feature: 'pr_chat',
         model: provider?._modelName ?? null,

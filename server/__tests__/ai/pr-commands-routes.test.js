@@ -47,12 +47,13 @@ const sampleByCommand = {
     },
 };
 
+const usageMeta = { usage: { inputTokens: 150, outputTokens: 60 }, costUSD: 0.04 };
 const mockGenerate = vi.fn(async (args) => {
     // Detect which command we're running by looking at the schema's required fields.
     const required = args?.schema?.required || [];
-    if (required.includes('cases')) return { parsed: sampleByCommand.test_plan };
-    if (required.includes('suggestions')) return { parsed: sampleByCommand.improve };
-    return { parsed: sampleByCommand.describe };
+    if (required.includes('cases')) return { parsed: sampleByCommand.test_plan, ...usageMeta };
+    if (required.includes('suggestions')) return { parsed: sampleByCommand.improve, ...usageMeta };
+    return { parsed: sampleByCommand.describe, ...usageMeta };
 });
 
 const mockProvider = {
@@ -127,6 +128,8 @@ beforeEach(() => {
     testDb.prepare('DELETE FROM ai_pr_commands').run();
     testDb.prepare('DELETE FROM gh_outbox').run();
     testDb.prepare('DELETE FROM gh_cache').run();
+    testDb.prepare('DELETE FROM ai_spend').run();
+    testDb.prepare('DELETE FROM usage_metrics').run();
     testDb.prepare('INSERT OR IGNORE INTO users (id, username) VALUES (?, ?)').run(USER_ID, 'alice');
     githubApiMock.mockClear();
     mockGenerate.mockClear();
@@ -135,7 +138,23 @@ beforeEach(() => {
     createProviderForUserMock.mockResolvedValue(mockProvider);
     _resetRateLimits();
     setTier('pro');
+    delete process.env.AI_SPEND_CAP_CENTS;
 });
+
+const monthKey = () => new Date().toISOString().slice(0, 7);
+function aiQueriesCount() {
+    const start = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)).toISOString();
+    return testDb.prepare(
+        "SELECT count FROM usage_metrics WHERE user_id = ? AND metric_type = 'ai_queries' AND period_start = ?"
+    ).get(USER_ID, start)?.count ?? 0;
+}
+function seedAiQueries(count) {
+    const start = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)).toISOString();
+    const end = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 0, 23, 59, 59)).toISOString();
+    testDb.prepare(
+        'INSERT INTO usage_metrics (user_id, metric_type, count, period_start, period_end) VALUES (?, ?, ?, ?, ?)'
+    ).run(USER_ID, 'ai_queries', count, start, end);
+}
 
 describe('POST /api/ai/pr-commands/:owner/:repo/:pr/:command', () => {
     it('generates and persists a /describe result', async () => {
@@ -180,6 +199,47 @@ describe('POST /api/ai/pr-commands/:owner/:repo/:pr/:command', () => {
         const res = await request(app).post('/api/ai/pr-commands/acme/api/42/describe').send({});
         expect(res.status).toBe(404);
         expect(res.body.code).toBe('NO_AI_PROVIDER');
+    });
+
+    it('meters the AI query (increments ai_queries) on success', async () => {
+        const app = makeApp();
+        const res = await request(app).post('/api/ai/pr-commands/acme/api/42/describe').send({});
+        expect(res.status).toBe(200);
+        expect(aiQueriesCount()).toBe(1);
+    });
+
+    it('records monthly spend + a PII-safe audit entry after generation', async () => {
+        const app = makeApp();
+        await request(app).post('/api/ai/pr-commands/acme/api/42/describe').send({});
+
+        const cents = testDb.prepare('SELECT cents FROM ai_spend WHERE user_id = ?').get(USER_ID)?.cents;
+        expect(cents).toBe(4); // 0.04 USD
+
+        const audit = testDb.prepare(
+            "SELECT details FROM audit_log_v2 WHERE user_id = ? AND action = 'ai.pr_command' ORDER BY id DESC LIMIT 1"
+        ).get(USER_ID);
+        expect(audit).toBeTruthy();
+        const details = JSON.parse(audit.details);
+        expect(details).toMatchObject({ feature: 'pr_command', command: 'describe', inputTokens: 150, outputTokens: 60 });
+    });
+
+    it('returns 429 QUOTA_EXCEEDED when the monthly AI query cap is reached (provider not called)', async () => {
+        seedAiQueries(5000);
+        const app = makeApp();
+        const res = await request(app).post('/api/ai/pr-commands/acme/api/42/describe').send({});
+        expect(res.status).toBe(429);
+        expect(res.body.code).toBe('QUOTA_EXCEEDED');
+        expect(createProviderForUserMock).not.toHaveBeenCalled();
+    });
+
+    it('returns 429 AI_SPEND_CAP_REACHED when over the monthly spend cap (provider not called)', async () => {
+        process.env.AI_SPEND_CAP_CENTS = '100';
+        testDb.prepare('INSERT INTO ai_spend (user_id, month, cents) VALUES (?, ?, ?)').run(USER_ID, monthKey(), 150);
+        const app = makeApp();
+        const res = await request(app).post('/api/ai/pr-commands/acme/api/42/describe').send({});
+        expect(res.status).toBe(429);
+        expect(res.body.code).toBe('AI_SPEND_CAP_REACHED');
+        expect(createProviderForUserMock).not.toHaveBeenCalled();
     });
 
     it('returns 403 for free tier (Pro feature)', async () => {
