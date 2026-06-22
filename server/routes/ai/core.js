@@ -26,7 +26,7 @@ import { aiService, sanitizeForPrompt } from '../../ai-service.js';
 import { safeJsonParse } from '../../lib/utils.js';
 import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
-import { requireAI, handleAIError, providerGenerateWithRetry } from './shared.js';
+import { requireAI, handleAIError, providerGenerateWithRetry, guardedGenerate } from './shared.js';
 import { buildChatPrompt } from '../../lib/ai-chat-prompt.js';
 import { resolveMaxOutputTokens } from '../../lib/ai-output-budget.js';
 import { checkAISpendCap, recordAISpend } from '../../lib/ai-spend-cap.js';
@@ -242,10 +242,10 @@ router.post('/ai/attention-narrative', requireAuth, validateBody(attentionNarrat
 
     try {
         const prompt = buildNarrativePrompt({ repo, kind, signal });
-        const { text } = await providerGenerateWithRetry(req.aiProvider, {
+        const { text } = await guardedGenerate(req, {
             prompt,
             maxOutputTokens: ATTENTION_NARRATIVE_LIMITS.maxOutputTokens,
-        });
+        }, { feature: 'attention_narrative' });
 
         const narrative = shapeNarrative(text);
         if (!narrative) {
@@ -370,7 +370,7 @@ router.post('/ai/suggest', requireAuth, validateBody(aiSuggestSchema), requireAI
     }
     Do not include markdown formatting in the JSON output, just raw JSON.`;
 
-        const { text } = await req.aiProvider.generate({ prompt });
+        const { text } = await guardedGenerate(req, { prompt }, { feature: 'suggest' });
 
         const parsed = safeJsonParse(text);
         if (!parsed) {
@@ -423,7 +423,7 @@ router.post('/ai/readme', requireAuth, validateBody(aiReadmeSchema), requireAI, 
     Make it sound exciting and professional.`;
 
         const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-        const { text } = await req.aiProvider.generate({ prompt });
+        const { text } = await guardedGenerate(req, { prompt }, { feature: 'readme' });
 
         incrementAIUsage(userId, 'ai_readme');
         auditLog(req, 'ai.readme', 'ai', null, { repoName: cleanName, model: modelName });
