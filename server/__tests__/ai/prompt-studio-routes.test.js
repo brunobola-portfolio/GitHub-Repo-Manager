@@ -52,6 +52,8 @@ const mockGenerate = vi.fn(async () => ({
             { path: 'src/sample.js', side: 'RIGHT', line: 1, severity: 'info', body: 'use ===' },
         ],
     },
+    usage: { inputTokens: 90, outputTokens: 30 },
+    costUSD: 0.04,
 }));
 const mockProvider = {
     model: {},
@@ -111,8 +113,26 @@ function makeApp(userId = USER_ID) {
     return app;
 }
 
+const monthKey = () => new Date().toISOString().slice(0, 7);
+const aiQueriesStart = () => new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)).toISOString();
+function aiQueriesCount(uid = USER_ID) {
+    return testDb.prepare(
+        "SELECT count FROM usage_metrics WHERE user_id = ? AND metric_type = 'ai_queries' AND period_start = ?"
+    ).get(uid, aiQueriesStart())?.count ?? 0;
+}
+function seedAiQueries(count, uid = USER_ID) {
+    const start = aiQueriesStart();
+    const end = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 0, 23, 59, 59)).toISOString();
+    testDb.prepare(
+        'INSERT INTO usage_metrics (user_id, metric_type, count, period_start, period_end) VALUES (?, ?, ?, ?, ?)'
+    ).run(uid, 'ai_queries', count, start, end);
+}
+
 beforeEach(() => {
     testDb.prepare('DELETE FROM ai_review_prompts').run();
+    testDb.prepare('DELETE FROM ai_spend').run();
+    testDb.prepare('DELETE FROM usage_metrics').run();
+    delete process.env.AI_SPEND_CAP_CENTS;
     testDb.prepare('INSERT OR IGNORE INTO users (id, username) VALUES (?, ?)').run(USER_ID, 'alice');
     testDb.prepare('INSERT OR IGNORE INTO users (id, username) VALUES (?, ?)').run(OTHER_USER_ID, 'bob');
     mockGenerate.mockClear();
@@ -376,6 +396,44 @@ describe('POST /api/ai/prompt-studio/presets/:id/test', () => {
             .post('/api/ai/prompt-studio/presets/12345/test').send({});
         expect(res.status).toBe(404);
         expect(res.body.code).toBe('NOT_FOUND');
+    });
+
+    it('meters the AI query (increments ai_queries) on a successful test run', async () => {
+        const res = await request(makeApp())
+            .post('/api/ai/prompt-studio/presets/general/test').send({});
+        expect(res.status).toBe(200);
+        expect(aiQueriesCount()).toBe(1);
+    });
+
+    it('records monthly spend + a PII-safe cost audit after the test run', async () => {
+        await request(makeApp())
+            .post('/api/ai/prompt-studio/presets/general/test').send({});
+        const cents = testDb.prepare('SELECT cents FROM ai_spend WHERE user_id = ?').get(USER_ID)?.cents;
+        expect(cents).toBe(4); // 0.04 USD
+        const audit = testDb.prepare(
+            "SELECT details FROM audit_log_v2 WHERE user_id = ? AND action = 'ai.prompt_test' ORDER BY id DESC LIMIT 1"
+        ).get(USER_ID);
+        expect(audit).toBeTruthy();
+        expect(JSON.parse(audit.details)).toMatchObject({ feature: 'prompt_test', inputTokens: 90, outputTokens: 30 });
+    });
+
+    it('returns 429 QUOTA_EXCEEDED when the monthly AI query cap is reached (provider not called)', async () => {
+        seedAiQueries(5000); // Pro cap
+        const res = await request(makeApp())
+            .post('/api/ai/prompt-studio/presets/general/test').send({});
+        expect(res.status).toBe(429);
+        expect(res.body.code).toBe('QUOTA_EXCEEDED');
+        expect(createProviderForUserMock).not.toHaveBeenCalled();
+    });
+
+    it('returns 429 AI_SPEND_CAP_REACHED when over the monthly spend cap (provider not called)', async () => {
+        process.env.AI_SPEND_CAP_CENTS = '100';
+        testDb.prepare('INSERT INTO ai_spend (user_id, month, cents) VALUES (?, ?, ?)').run(USER_ID, monthKey(), 150);
+        const res = await request(makeApp())
+            .post('/api/ai/prompt-studio/presets/general/test').send({});
+        expect(res.status).toBe(429);
+        expect(res.body.code).toBe('AI_SPEND_CAP_REACHED');
+        expect(createProviderForUserMock).not.toHaveBeenCalled();
     });
 });
 

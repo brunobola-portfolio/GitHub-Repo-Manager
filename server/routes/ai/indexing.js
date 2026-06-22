@@ -15,7 +15,7 @@ import { requireAuth, safeError } from '../../middleware/auth.js';
 import { aiIndexSchema } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { aiService } from '../../ai-service.js';
-import { checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { checkUsageLimit, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
 import { requireAI, handleAIError } from './shared.js';
 
@@ -216,12 +216,24 @@ router.post('/ai/batch-index', requireAuth, requireAI, async (req, res) => {
     }
 
     const userId = req.session.userId;
-    const batchCount = Math.min(repos.length, 10);
-    const check = checkAIFeatureLimit(userId, 'ai_insights');
-    if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
+    const requested = Math.min(repos.length, 10);
+
+    // Quota: each repo consumes one ai_insights + one ai_queries (incrementAIUsage
+    // bumps both). A single up-front check let a near-cap user process the whole
+    // batch; instead cap the batch to the user's *binding* remaining allowance so
+    // N embeds can never exceed the quota the check approved.
+    const insightsCheck = checkUsageLimit(userId, 'ai_insights');
+    const queriesCheck = checkUsageLimit(userId, 'ai_queries');
+    const remaining = Math.max(0, Math.min(insightsCheck.remaining, queriesCheck.remaining));
+    if (remaining === 0) {
+        const limiting = insightsCheck.remaining <= queriesCheck.remaining
+            ? { ...insightsCheck, metric: 'ai_insights' }
+            : { ...queriesCheck, metric: 'ai_queries' };
+        return res.status(429).json(quotaExceededResponse(limiting));
+    }
 
     const results = [];
-    const limit = batchCount; // Max 10 at a time
+    const limit = Math.min(requested, remaining); // Max 10 per call, capped by quota
 
     // Prepare statements outside the loop for better performance
     const insertMetadata = db.prepare(`
@@ -313,7 +325,9 @@ router.post('/ai/batch-index', requireAuth, requireAI, async (req, res) => {
         success: true,
         processed: results.length,
         results,
-        skipped: repos.length > 10 ? repos.length - 10 : 0
+        // Anything not processed this call — over the per-call max of 10 or
+        // beyond the user's remaining quota.
+        skipped: Math.max(0, repos.length - limit)
     });
 });
 
