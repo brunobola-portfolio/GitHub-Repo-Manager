@@ -112,7 +112,7 @@ export function CapabilityMatrix({ activeProvider }) {
             {activeProvider && PROVIDER_CAPABILITIES[activeProvider]?.semanticSearch !== 'yes' && (
                 <p className="flex items-start gap-1.5 ds-text-meta text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 ring-1 ring-inset ring-amber-200/60 dark:ring-amber-800/50 rounded-lg px-2 py-1.5">
                     <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" aria-hidden="true" />
-                    <span>Semantic search needs an embedding provider. Configure one above or switch to Gemini / OpenAI.</span>
+                    <span>Semantic search needs an embedding provider. Configure one above, or switch to a provider with native embeddings (e.g. Gemini or OpenAI).</span>
                 </p>
             )}
         </div>

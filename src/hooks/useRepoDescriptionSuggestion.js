@@ -4,8 +4,9 @@ import { getCsrfToken } from '../utils/api'
 import { isAIUnavailable, markAIFromResponse } from '../utils/aiAvailability'
 
 /**
- * Produces a description suggestion for a migration repo, either via Gemini
- * (when AI is available) or from a deterministic template. Always resolves —
+ * Produces a description suggestion for a migration repo, either via the
+ * configured AI provider (when available) or from a deterministic template.
+ * Always resolves —
  * a network failure silently falls through to the template so the caller can
  * blindly pipe the result into the textarea.
  *

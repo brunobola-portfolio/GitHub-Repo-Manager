@@ -10,7 +10,7 @@ const TIER_LABEL = {
 
 /**
  * WorkBoardSummary — editorial right-rail card. Shows at-a-glance counts,
- * last-sync time, plan tier, and current AI Assistant enablement. Never
+ * last-sync time, plan tier, and current Repo Advisor enablement. Never
  * drives behaviour — purely informational.
  */
 export function WorkBoardSummary({ prefs, totalCount, mutedCount, pinnedCount, tier }) {
