@@ -364,4 +364,40 @@ describe('AIAssistant', () => {
       }))
     })
   })
+
+  describe('Premium UX (Phase 3 Slice 1)', () => {
+    it('shows capability-led suggested prompts in the welcome state', async () => {
+      renderAssistant({ askAI: vi.fn() })
+      await openAssistant()
+      expect(await screen.findByRole('button', { name: /migrate a repo from azure devops/i })).toBeInTheDocument()
+    })
+
+    it('sends a suggested prompt when clicked', async () => {
+      const askAI = vi.fn().mockResolvedValue({ reply: 'ok', actions: [] })
+      renderAssistant({ askAI })
+      await openAssistant()
+      const chip = await screen.findByRole('button', { name: /^create a new repository$/i })
+      await act(async () => { fireEvent.click(chip) })
+      await waitFor(() => expect(askAI).toHaveBeenCalledWith('Create a new repository', expect.any(Object)))
+    })
+
+    it('hides suggested prompts once the conversation has started', async () => {
+      const askAI = vi.fn().mockResolvedValue({ reply: 'done', actions: [] })
+      renderAssistant({ askAI })
+      await openAssistant()
+      const input = screen.getByRole('textbox', { name: /message the ai assistant/i })
+      await act(async () => {
+        fireEvent.change(input, { target: { value: 'hi' } })
+        fireEvent.submit(input.closest('form'))
+      })
+      await screen.findByText('done')
+      expect(screen.queryByRole('button', { name: /migrate a repo from azure devops/i })).not.toBeInTheDocument()
+    })
+
+    it('exposes the message list as an aria-live log region', async () => {
+      renderAssistant({ askAI: vi.fn() })
+      await openAssistant()
+      expect(screen.getByRole('log')).toHaveAttribute('aria-live', 'polite')
+    })
+  })
 })
