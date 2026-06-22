@@ -361,6 +361,13 @@ export class AnthropicProvider {
         const decoder = new TextDecoder();
         let buffer = '';
 
+        // Token usage arrives across two event types: `message_start` carries
+        // input_tokens (+ optional cache_read_input_tokens), and each
+        // `message_delta` carries the running output_tokens (last one wins).
+        let inputTokens = null;
+        let outputTokens = null;
+        let cachedInputTokens = null;
+
         try {
             while (true) {
                 if (signal?.aborted) break;
@@ -390,6 +397,13 @@ export class AnthropicProvider {
                         if (json?.type === 'content_block_delta' && json?.delta?.type === 'text_delta') {
                             const text = json.delta.text;
                             if (text) yield text;
+                        } else if (json?.type === 'message_start') {
+                            const u = json.message?.usage;
+                            if (u?.input_tokens != null) inputTokens = u.input_tokens;
+                            if (u?.output_tokens != null) outputTokens = u.output_tokens;
+                            if (u?.cache_read_input_tokens != null) cachedInputTokens = u.cache_read_input_tokens;
+                        } else if (json?.type === 'message_delta' && json?.usage?.output_tokens != null) {
+                            outputTokens = json.usage.output_tokens;
                         }
                     } catch {
                         // skip malformed SSE lines
@@ -403,5 +417,20 @@ export class AnthropicProvider {
         } finally {
             reader.releaseLock();
         }
+
+        // Surface usage as the generator return value (OWASP LLM10 — spend +
+        // audit). Null when the stream reported no usage or was aborted.
+        if (signal?.aborted || (inputTokens == null && outputTokens == null)) {
+            return { usage: null, costUSD: null };
+        }
+        const usage = {
+            inputTokens,
+            outputTokens,
+            ...(cachedInputTokens != null ? { cachedInputTokens } : {}),
+        };
+        return {
+            usage,
+            costUSD: computeCostUSD({ modelName: model, inputTokens, outputTokens }),
+        };
     }
 }

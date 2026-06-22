@@ -97,3 +97,56 @@ export async function streamToSSE(textChunks, sse) {
     return accumulated;
 }
 
+/**
+ * Like {@link streamToSSE}, but also surfaces the stream's post-completion
+ * usage so callers can record spend + emit a cost audit (OWASP LLM10).
+ *
+ * Provider `generateStream()` generators *return* `{ usage, costUSD }` once the
+ * stream drains (token counts only become available after the final SSE event).
+ * A plain `for await` discards a generator's return value, so we drive the
+ * iterator manually to capture it. Streams that don't report usage (e.g. a
+ * local model, or an aborted stream) yield `{ usage: null, costUSD: null }` —
+ * `recordAISpend` no-ops on null cost, so this degrades safely.
+ *
+ * @param {AsyncIterable<string>} textChunks
+ * @param {ReturnType<initSSE>} sse
+ * @returns {Promise<{ text: string, usage: object|null, costUSD: number|null }>}
+ */
+export async function streamToSSEWithUsage(textChunks, sse) {
+    let accumulated = '';
+    let usage = null;
+    let costUSD = null;
+
+    const iterator = typeof textChunks[Symbol.asyncIterator] === 'function'
+        ? textChunks[Symbol.asyncIterator]()
+        : textChunks;
+
+    try {
+        while (true) {
+            const { value, done } = await iterator.next();
+            if (done) {
+                // Generator return value carries the post-stream usage metadata.
+                if (value && typeof value === 'object') {
+                    usage = value.usage ?? null;
+                    costUSD = value.costUSD ?? null;
+                }
+                break;
+            }
+            if (sse.isAborted) break;
+            if (value) {
+                accumulated += value;
+                sse.sendChunk(value);
+            }
+        }
+    } finally {
+        // An early break (abort / disconnect) leaves the generator suspended;
+        // closing it runs its `finally` (e.g. reader.releaseLock). On a stream
+        // that already finished this is a harmless no-op.
+        if (typeof iterator.return === 'function') {
+            try { await iterator.return(); } catch { /* generator already settled */ }
+        }
+    }
+
+    return { text: accumulated, usage, costUSD };
+}
+

@@ -216,6 +216,71 @@ describe('OpenAIProvider.generateStream() — abort handling (I6)', () => {
         expect(chunks).toHaveLength(0)
     })
 
+    it('requests usage via stream_options and returns usage + costUSD from the final chunk', async () => {
+        const provider = new OpenAIProvider({ apiKey: 'sk-test12345678', model: 'gpt-4o' })
+        let capturedBody = null
+        let readCount = 0
+        const reader = {
+            read: vi.fn(async () => {
+                readCount++
+                if (readCount === 1) {
+                    return {
+                        done: false,
+                        value: encodeSSE([
+                            'data: ' + JSON.stringify({ choices: [{ delta: { content: 'hi' } }] }),
+                            'data: ' + JSON.stringify({ choices: [], usage: { prompt_tokens: 40, completion_tokens: 12 } }),
+                            'data: [DONE]',
+                        ]),
+                    }
+                }
+                return { done: true, value: undefined }
+            }),
+            releaseLock: vi.fn(),
+        }
+        provider._postStream = vi.fn(async (path, body) => {
+            capturedBody = body
+            return { ok: true, status: 200, body: { getReader: () => reader } }
+        })
+
+        const iter = provider.generateStream({ prompt: 'x' })
+        const first = await iter.next()
+        expect(first.value).toBe('hi')
+        const final = await iter.next()
+        expect(final.done).toBe(true)
+        expect(capturedBody.stream_options).toEqual({ include_usage: true })
+        expect(final.value.usage).toEqual({ inputTokens: 40, outputTokens: 12 })
+        expect(typeof final.value.costUSD).toBe('number')
+        expect(final.value.costUSD).toBeGreaterThan(0)
+    })
+
+    it('returns null usage/costUSD when no usage chunk is present', async () => {
+        const provider = new OpenAIProvider({ apiKey: 'sk-test12345678', model: 'gpt-4o' })
+        let readCount = 0
+        const reader = {
+            read: vi.fn(async () => {
+                readCount++
+                if (readCount === 1) {
+                    return {
+                        done: false,
+                        value: encodeSSE([
+                            'data: ' + JSON.stringify({ choices: [{ delta: { content: 'a' } }] }),
+                            'data: [DONE]',
+                        ]),
+                    }
+                }
+                return { done: true, value: undefined }
+            }),
+            releaseLock: vi.fn(),
+        }
+        provider._postStream = vi.fn().mockResolvedValue({ ok: true, status: 200, body: { getReader: () => reader } })
+
+        const iter = provider.generateStream({ prompt: 'x' })
+        await iter.next()
+        const final = await iter.next()
+        expect(final.done).toBe(true)
+        expect(final.value).toEqual({ usage: null, costUSD: null })
+    })
+
     it('throws AIError(CANCELED) when mid-stream AbortError is caught', async () => {
         const provider = new OpenAIProvider({ apiKey: 'sk-test12345678', model: 'gpt-4o' })
         const controller = new AbortController()

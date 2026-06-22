@@ -17,8 +17,8 @@ import { requireAuth, safeError, isValidGitHubFullName } from '../../middleware/
 import { aiService, sanitizeForPrompt } from '../../ai-service.js';
 import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
-import { initSSE, streamToSSE } from '../ai-streaming.js';
-import { requireAI } from './shared.js';
+import { initSSE, streamToSSEWithUsage } from '../ai-streaming.js';
+import { requireAI, denyIfSpendCapReached, recordStreamCompletion } from './shared.js';
 import { mapAIErrorToResponse } from '../../middleware/ai-error-mapper.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import {
@@ -109,6 +109,9 @@ router.post('/ai/review-summary', requireAuth, validateBody(aiReviewSummarySchem
         const { fileManifest, topFilePatches, prMetadata } = req.validatedBody;
 
         if (req.query.stream === 'true') {
+            // Denial-of-wallet guard (OWASP LLM10): refuse before opening the
+            // SSE stream if the user is over the monthly AI spend cap.
+            if (denyIfSpendCapReached(req, res)) return;
             // Streaming branch: build prompt inline, stream raw text, parse on completion
             const sse = initSSE(res);
             try {
@@ -130,7 +133,7 @@ File manifest: ${sanitizeForPrompt(JSON.stringify((fileManifest || []).map(f => 
                     signal: sse.signal,
                     generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
                 });
-                const raw = await streamToSSE(textStream, sse);
+                const { text: raw, usage, costUSD } = await streamToSSEWithUsage(textStream, sse);
 
                 let parsed;
                 try {
@@ -154,7 +157,14 @@ File manifest: ${sanitizeForPrompt(JSON.stringify((fileManifest || []).map(f => 
                 };
 
                 incrementUsage(userId, 'ai_queries');
-                auditLog(req, 'ai.review_summary', 'ai', null, { repo: prMetadata?.repo, fileCount: fileManifest?.length, streamed: true });
+                recordStreamCompletion(req, {
+                    feature: 'review_summary',
+                    action: 'ai.review_summary',
+                    model: req.aiProvider?.model,
+                    usage,
+                    costUSD,
+                    extraMeta: { repo: prMetadata?.repo, fileCount: fileManifest?.length, streamed: true },
+                });
 
                 sse.sendDone(normalized);
             } catch (err) {
@@ -232,13 +242,14 @@ Rules:
         const userMessage = `Generate a commit message for this diff:\n\n${safeDiff}`;
 
         if (req.query.stream === 'true') {
+            if (denyIfSpendCapReached(req, res)) return;
             const sse = initSSE(res);
             try {
                 const iter = req.aiProvider.generateStream({
                     prompt: systemPrompt + '\n\n' + userMessage,
                     generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
                 });
-                const raw = await streamToSSE(iter, sse);
+                const { text: raw, usage, costUSD } = await streamToSSEWithUsage(iter, sse);
 
                 let parsed;
                 try {
@@ -250,7 +261,14 @@ Rules:
                 const message = parsed.body ? `${parsed.subject}\n\n${parsed.body}` : parsed.subject;
 
                 incrementAIUsage(userId, 'ai_commit');
-                auditLog(req, 'ai_generate_commit', 'ai', null, { format, diff_length: diff.length, streamed: true });
+                recordStreamCompletion(req, {
+                    feature: 'generate_commit',
+                    action: 'ai_generate_commit',
+                    model: req.aiProvider?.model,
+                    usage,
+                    costUSD,
+                    extraMeta: { format, diff_length: diff.length, streamed: true },
+                });
 
                 sse.sendDone({ message, subject: parsed.subject, body: parsed.body || '', format_used: format });
             } catch {
@@ -345,13 +363,14 @@ Rules:
         const userMessage = `Generate a PR description.\n\nCommits:\n${commitList}\n\nFiles changed:\n${filesInfo}\n\nPatches:\n${safePatches}`;
 
         if (req.query.stream === 'true') {
+            if (denyIfSpendCapReached(req, res)) return;
             const sse = initSSE(res);
             try {
                 const iter = req.aiProvider.generateStream({
                     prompt: systemPrompt + '\n\n' + userMessage,
                     generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
                 });
-                const raw = await streamToSSE(iter, sse);
+                const { text: raw, usage, costUSD } = await streamToSSEWithUsage(iter, sse);
 
                 let parsed;
                 try {
@@ -362,7 +381,14 @@ Rules:
                 }
 
                 incrementUsage(userId, 'ai_queries');
-                auditLog(req, 'ai_generate_pr', 'ai', null, { commit_count: commits.length, streamed: true });
+                recordStreamCompletion(req, {
+                    feature: 'generate_pr',
+                    action: 'ai_generate_pr',
+                    model: req.aiProvider?.model,
+                    usage,
+                    costUSD,
+                    extraMeta: { commit_count: commits.length, streamed: true },
+                });
 
                 sse.sendDone({
                     title: parsed.title || '', summary: parsed.summary || '', test_plan: parsed.test_plan || '',
@@ -463,16 +489,24 @@ Return ONLY the refined content, no explanation, no markdown fences.`;
         const userMessage = `Refinement instruction: ${instructionText}\n\nOriginal content:\n${safeOriginal}${diffContext}`;
 
         if (req.query.stream === 'true') {
+            if (denyIfSpendCapReached(req, res)) return;
             const sse = initSSE(res);
             try {
                 const iter = req.aiProvider.generateStream({
                     prompt: systemPrompt + '\n\n' + userMessage,
                     generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
                 });
-                const raw = await streamToSSE(iter, sse);
+                const { text: raw, usage, costUSD } = await streamToSSEWithUsage(iter, sse);
 
                 incrementUsage(userId, 'ai_queries');
-                auditLog(req, 'ai_refine', 'ai', null, { instruction, content_type, streamed: true });
+                recordStreamCompletion(req, {
+                    feature: 'refine',
+                    action: 'ai_refine',
+                    model: req.aiProvider?.model,
+                    usage,
+                    costUSD,
+                    extraMeta: { instruction, content_type, streamed: true },
+                });
 
                 sse.sendDone({ refined_content: raw.trim() });
             } catch {
@@ -621,16 +655,24 @@ router.post('/ai/chat-refine', requireAuth, validateBody(aiChatRefineSchema), re
             'Assistant:',
         ].filter(Boolean).join('\n\n');
 
+        if (denyIfSpendCapReached(req, res)) return;
         const sse = initSSE(res);
         try {
             const iter = req.aiProvider.generateStream({
                 prompt: systemPrompt + '\n\n' + fullPrompt,
                 generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
             });
-            const raw = await streamToSSE(iter, sse);
+            const { text: raw, usage, costUSD } = await streamToSSEWithUsage(iter, sse);
 
             incrementUsage(userId, 'ai_queries');
-            auditLog(req, 'ai_chat_refine', 'ai', null, { content_type, message_length: message.length });
+            recordStreamCompletion(req, {
+                feature: 'chat_refine',
+                action: 'ai_chat_refine',
+                model: req.aiProvider?.model,
+                usage,
+                costUSD,
+                extraMeta: { content_type, message_length: message.length },
+            });
 
             sse.sendDone({ refined_content: raw.trim() });
         } catch {

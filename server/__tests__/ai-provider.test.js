@@ -355,6 +355,31 @@ describe('GeminiProvider', () => {
             }
             expect(chunks).toEqual(['a', 'b'])
         })
+
+        it('returns usage + costUSD from the post-stream response metadata', async () => {
+            async function* gen() { yield { text: () => 'hi' } }
+            mockGenerateContentStream.mockResolvedValue({
+                stream: gen(),
+                response: Promise.resolve({ usageMetadata: { promptTokenCount: 12, candidatesTokenCount: 7 } }),
+            })
+            const iter = provider.generateStream({ prompt: 'x' })
+            const first = await iter.next()
+            expect(first.value).toBe('hi')
+            const final = await iter.next()
+            expect(final.done).toBe(true)
+            expect(final.value.usage).toEqual({ inputTokens: 12, outputTokens: 7 })
+            expect(typeof final.value.costUSD).toBe('number')
+            expect(final.value.costUSD).toBeGreaterThan(0)
+        })
+
+        it('returns null usage/costUSD when the stream has no response metadata', async () => {
+            mockGenerateContentStream.mockResolvedValue(makeStream(['a']))
+            const iter = provider.generateStream({ prompt: 'x' })
+            await iter.next()
+            const final = await iter.next()
+            expect(final.done).toBe(true)
+            expect(final.value).toEqual({ usage: null, costUSD: null })
+        })
     })
 })
 

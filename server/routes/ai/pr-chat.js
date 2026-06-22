@@ -24,7 +24,8 @@ import { requireTier } from '../../middleware/require-tier.js';
 import { githubApi } from '../../lib/github-api.js';
 import { readThrough } from '../../lib/gh-cache.js';
 import { createProviderForUser } from '../../lib/ai-provider.js';
-import { initSSE, streamToSSE } from '../ai-streaming.js';
+import { initSSE, streamToSSEWithUsage } from '../ai-streaming.js';
+import { denyIfSpendCapReached, recordStreamCompletion } from './shared.js';
 import {
     appendMessage,
     listMessages,
@@ -153,6 +154,11 @@ router.post('/:owner/:repo/:pr', requireAuth, requireTier('pro'), generateRateLi
         return errorResponse(res, 400, `message exceeds ${MAX_USER_MESSAGE_LEN} characters`, 'INVALID_INPUT');
     }
 
+    // Denial-of-wallet guard (OWASP LLM10): refuse before any provider call or
+    // GitHub fetch if the user is over the monthly AI spend cap. Sends a 429
+    // JSON envelope (we have not opened the SSE stream yet).
+    if (denyIfSpendCapReached(req, res)) return;
+
     let provider;
     try {
         provider = await createProviderForUser(userId, 'completion', { featureKey: 'PR_CHAT' });
@@ -240,6 +246,8 @@ router.post('/:owner/:repo/:pr', requireAuth, requireTier('pro'), generateRateLi
     const sse = initSSE(res, req);
 
     let assistantText = '';
+    let streamUsage = null;
+    let streamCostUSD = null;
     try {
         if (typeof provider.generateStream !== 'function') {
             throw new Error('Configured AI provider does not support streaming.');
@@ -250,7 +258,10 @@ router.post('/:owner/:repo/:pr', requireAuth, requireTier('pro'), generateRateLi
             signal: sse.signal,
             generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
         });
-        assistantText = await streamToSSE(stream, sse);
+        const completed = await streamToSSEWithUsage(stream, sse);
+        assistantText = completed.text;
+        streamUsage = completed.usage;
+        streamCostUSD = completed.costUSD;
     } catch (err) {
         logger.warn({ err: err?.message, code: err?.code, owner, repo, pr }, 'PR chat stream failed');
         if (!sse.isAborted) {
@@ -258,6 +269,16 @@ router.post('/:owner/:repo/:pr', requireAuth, requireTier('pro'), generateRateLi
         }
         return;
     }
+
+    // Record monthly spend + a PII-safe audit entry (OWASP LLM10). Usage/cost
+    // come from the stream; both may be null (provider reported none, or the
+    // client disconnected) — recordAISpend no-ops on null cost.
+    recordStreamCompletion(req, {
+        feature: 'pr_chat',
+        model: provider?._modelName ?? null,
+        usage: streamUsage,
+        costUSD: streamCostUSD,
+    });
 
     // Persist assistant reply (best-effort; partial reply still useful).
     if (assistantText) {

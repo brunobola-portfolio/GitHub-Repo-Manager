@@ -225,3 +225,57 @@ export async function guardedGenerate(req, opts, { feature } = {}) {
 
     return result;
 }
+
+// ---------------------------------------------------------------------------
+// Streaming guards — guardedGenerate's guards, split for the SSE call shape.
+// ---------------------------------------------------------------------------
+/**
+ * Pre-stream spend-cap CHECK. Streaming routes call this BEFORE `initSSE`
+ * (which commits a 200 + SSE headers) so an over-cap user gets a clean 429 JSON
+ * envelope instead of an SSE error. Mirrors the check inside guardedGenerate.
+ *
+ * @param {object} req — Express request (needs session.userId)
+ * @param {object} res — Express response
+ * @returns {boolean} true if the request was denied (a 429 was sent); the
+ *                    caller must `return` without streaming.
+ */
+export function denyIfSpendCapReached(req, res) {
+    const spend = checkAISpendCap(req.session?.userId);
+    if (spend.allowed) return false;
+    res.status(429).json({
+        error: 'Monthly AI spend limit reached. Try again next month or raise the cap.',
+        code: 'AI_SPEND_CAP_REACHED',
+        spent_cents: spend.spentCents,
+        cap_cents: spend.capCents,
+    });
+    return true;
+}
+
+/**
+ * Post-stream bookkeeping for an SSE AI call: record spend + emit a PII-safe
+ * audit entry. The streaming analogue of guardedGenerate's tail.
+ *
+ * `usage`/`costUSD` come from `streamToSSEWithUsage` and may be null (provider
+ * reported no usage, or the client disconnected) — `recordAISpend` no-ops on
+ * null cost and the audit still records feature + model. Pass `extraMeta` to
+ * merge route-specific fields (repo, commit_count, streamed:true) into the
+ * audit meta; `action` overrides the default `ai.<feature>` audit action so
+ * existing audit-log action names are preserved.
+ *
+ * @param {object} req
+ * @param {object} opts
+ * @param {string} [opts.feature]
+ * @param {string} [opts.model]     — resolved model id (the streaming provider
+ *                                     may differ from req.aiProvider, e.g. pr-chat)
+ * @param {object|null} [opts.usage]
+ * @param {number|null} [opts.costUSD]
+ * @param {string} [opts.action]    — explicit audit action name
+ * @param {object} [opts.extraMeta] — route-specific audit fields to merge
+ */
+export function recordStreamCompletion(req, { feature, model, usage, costUSD, action, extraMeta } = {}) {
+    recordAISpend(req.session?.userId, costUSD);
+    auditLog(req, action || `ai.${feature || 'stream'}`, 'ai', null, {
+        ...(extraMeta || {}),
+        ...buildAIAuditMeta({ feature, model, usage, costUSD }),
+    });
+}

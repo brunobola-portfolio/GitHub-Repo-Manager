@@ -181,6 +181,66 @@ describe('AnthropicProvider.generateStream() — abort handling (I6)', () => {
         expect(chunks).toHaveLength(0)
     })
 
+    it('returns usage + costUSD parsed from message_start and message_delta events', async () => {
+        const provider = new AnthropicProvider({ apiKey: 'sk-ant-test1234', model: 'claude-3-sonnet' })
+
+        let readCount = 0
+        const reader = {
+            read: vi.fn(async () => {
+                readCount++
+                if (readCount === 1) {
+                    return {
+                        done: false,
+                        value: encodeSSE([
+                            'data: ' + JSON.stringify({ type: 'message_start', message: { usage: { input_tokens: 30, output_tokens: 1 } } }),
+                            'data: ' + JSON.stringify({ type: 'content_block_delta', delta: { type: 'text_delta', text: 'hi' } }),
+                            'data: ' + JSON.stringify({ type: 'message_delta', usage: { output_tokens: 18 } }),
+                        ]),
+                    }
+                }
+                return { done: true, value: undefined }
+            }),
+            releaseLock: vi.fn(),
+        }
+        provider._postStream = vi.fn().mockResolvedValue({ ok: true, status: 200, body: { getReader: () => reader } })
+
+        const iter = provider.generateStream({ prompt: 'x' })
+        const first = await iter.next()
+        expect(first.value).toBe('hi')
+        const final = await iter.next()
+        expect(final.done).toBe(true)
+        expect(final.value.usage).toEqual({ inputTokens: 30, outputTokens: 18 })
+        expect(typeof final.value.costUSD).toBe('number')
+        expect(final.value.costUSD).toBeGreaterThan(0)
+    })
+
+    it('returns null usage/costUSD when no usage events are present in the stream', async () => {
+        const provider = new AnthropicProvider({ apiKey: 'sk-ant-test1234', model: 'claude-3-sonnet' })
+        let readCount = 0
+        const reader = {
+            read: vi.fn(async () => {
+                readCount++
+                if (readCount === 1) {
+                    return {
+                        done: false,
+                        value: encodeSSE([
+                            'data: ' + JSON.stringify({ type: 'content_block_delta', delta: { type: 'text_delta', text: 'a' } }),
+                        ]),
+                    }
+                }
+                return { done: true, value: undefined }
+            }),
+            releaseLock: vi.fn(),
+        }
+        provider._postStream = vi.fn().mockResolvedValue({ ok: true, status: 200, body: { getReader: () => reader } })
+
+        const iter = provider.generateStream({ prompt: 'x' })
+        await iter.next()
+        const final = await iter.next()
+        expect(final.done).toBe(true)
+        expect(final.value).toEqual({ usage: null, costUSD: null })
+    })
+
     it('throws AIError(CANCELED) when mid-stream AbortError is caught', async () => {
         const provider = new AnthropicProvider({ apiKey: 'sk-ant-test1234', model: 'claude-3-sonnet' })
         const controller = new AbortController()
