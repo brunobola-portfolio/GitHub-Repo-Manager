@@ -613,6 +613,19 @@ export function initDB(targetDb = db) {
             );
             CREATE INDEX IF NOT EXISTS idx_wbai_spend_user_month
                 ON work_board_ai_spend(user_id, month);
+
+            -- Generalized per-user monthly AI spend (denial-of-wallet cap across
+            -- the whole AI surface; see server/lib/ai-spend-cap.js). Separate
+            -- from work_board_ai_spend so the Work Board's own cap is unaffected.
+            CREATE TABLE IF NOT EXISTS ai_spend (
+                user_id  INTEGER NOT NULL,
+                month    TEXT NOT NULL,
+                cents    INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (user_id, month),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS idx_ai_spend_user_month
+                ON ai_spend(user_id, month);
         `);
 
         // -----------------------------------------------------------------------
