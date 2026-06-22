@@ -25,6 +25,8 @@ import { githubApi } from '../../lib/github-api.js';
 import { readThrough } from '../../lib/gh-cache.js';
 import { executeViaOutbox } from '../../lib/outbox-helper.js';
 import { createProviderForUser } from '../../lib/ai-provider.js';
+import { checkUsageLimit, incrementUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { denyIfSpendCapReached, recordStreamCompletion } from './shared.js';
 import { runDeepReview } from '../../lib/ai-features/pr-deep-review.js';
 import { resolvePromptForGenerate } from '../../lib/ai-features/prompt-registry.js';
 import { buildGitHubReviewPayload } from '../../lib/ai-features/pr-deep-review-publish.js';
@@ -103,6 +105,15 @@ router.param('commentIdx', (req, res, next, val) => {
 router.post('/:owner/:repo/:pr', requireAuth, requireTier('pro'), generateRateLimit, async (req, res) => {
     const { owner, repo, pr } = req.params;
     const userId = req.session.userId;
+
+    // Meter the AI query even for Pro (counts toward the monthly AI-query pool;
+    // Pro is capped at 5000/mo, Enterprise unlimited) and enforce the monthly
+    // spend cap — BEFORE any provider call (OWASP LLM10, fail fast).
+    const quota = checkUsageLimit(userId, 'ai_queries');
+    if (!quota.allowed) {
+        return res.status(429).json(quotaExceededResponse({ ...quota, metric: 'ai_queries' }));
+    }
+    if (denyIfSpendCapReached(req, res)) return;
 
     let provider;
     try {
@@ -237,6 +248,19 @@ router.post('/:owner/:repo/:pr', requireAuth, requireTier('pro'), generateRateLi
         result.costUsd ?? null,
         result.modelUsed,
     );
+
+    // Meter the query + record spend + write a PII-safe cost audit. `costUsd`/
+    // tokens are null when the provider can't surface usage — recordAISpend
+    // no-ops on null cost and the audit still records feature + model.
+    incrementUsage(userId, 'ai_queries');
+    recordStreamCompletion(req, {
+        feature: 'deep_review',
+        action: 'ai.deep_review',
+        model: result.modelUsed,
+        usage: { inputTokens: result.inputTokens, outputTokens: result.outputTokens },
+        costUSD: result.costUsd ?? null,
+        extraMeta: { repo: `${owner}/${repo}`, pr: Number(pr), preset: resolvedPrompt.source },
+    });
 
     res.json({ draftId, draft: result, lastReviewedSha: prData.head.sha });
 });
