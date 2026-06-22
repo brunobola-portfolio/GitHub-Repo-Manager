@@ -29,6 +29,7 @@ import { auditLog } from '../../lib/audit.js';
 import { requireAI, handleAIError, providerGenerateWithRetry } from './shared.js';
 import { buildChatPrompt } from '../../lib/ai-chat-prompt.js';
 import { resolveMaxOutputTokens } from '../../lib/ai-output-budget.js';
+import { checkAISpendCap, recordAISpend } from '../../lib/ai-spend-cap.js';
 import { getKeyHealth, probeAndCache } from '../../lib/ai-health-probe.js';
 import {
     buildPrompt as buildNarrativePrompt,
@@ -129,6 +130,19 @@ router.post('/ai/chat', requireAuth, validateBody(aiChatSchema), requireAI, asyn
             return res.status(429).json(quotaExceededResponse({ ...usage, metric: 'ai_queries' }));
         }
 
+        // Monthly spend cap — a cost-based denial-of-wallet guard (OWASP LLM10)
+        // alongside the count-based quota above. Off unless AI_SPEND_CAP_CENTS
+        // is set; enforced across the AI surface when it is.
+        const spend = checkAISpendCap(req.session.userId);
+        if (!spend.allowed) {
+            return res.status(429).json({
+                code: 'AI_SPEND_CAP_REACHED',
+                error: 'Monthly AI spend limit reached. Try again next month or raise the cap.',
+                spent_cents: spend.spentCents,
+                cap_cents: spend.capCents,
+            });
+        }
+
         const { message, context } = req.validatedBody;
 
         if (!message || message.trim().length === 0) {
@@ -164,7 +178,7 @@ router.post('/ai/chat', requireAuth, validateBody(aiChatSchema), requireAI, asyn
             required: ['reply'],
         };
 
-        const { text, parsed: parsedFromProvider } = await providerGenerateWithRetry(
+        const { text, parsed: parsedFromProvider, costUSD } = await providerGenerateWithRetry(
             req.aiProvider,
             // Cap output to bound cost/latency (OWASP LLM10). Provider-neutral —
             // the generate layer maps maxOutputTokens onto each SDK's field.
@@ -183,6 +197,7 @@ router.post('/ai/chat', requireAuth, validateBody(aiChatSchema), requireAI, asyn
         }
 
         incrementUsage(req.session.userId, 'ai_queries');
+        recordAISpend(req.session.userId, costUSD);
         auditLog(req, 'ai.chat', 'ai', null, { messageLength: message.length });
 
         res.json({
