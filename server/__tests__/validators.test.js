@@ -14,6 +14,7 @@ import {
     azureImportSchema,
     aiChatSchema,
     aiIndexSchema,
+    userAIConfigSchema,
 } from '../lib/validators.js'
 
 describe('createRepoSchema', () => {
@@ -322,6 +323,40 @@ describe('aiIndexSchema', () => {
         const result = aiIndexSchema.safeParse({
             repo: { full_name: 'owner/repo' }
         })
+        expect(result.success).toBe(false)
+    })
+})
+
+describe('userAIConfigSchema — featureOverrides model values', () => {
+    it('accepts well-formed model ids across providers', () => {
+        const result = userAIConfigSchema.safeParse({
+            featureOverrides: {
+                CHAT: 'gemini-2.5-pro',
+                PR_REVIEW: 'claude-opus-4-5',
+                SUGGEST: 'gpt-4o',
+                EMBED: 'meta-llama/llama-3.1-70b-instruct', // OpenRouter style with a slash
+            },
+        })
+        expect(result.success).toBe(true)
+    })
+
+    it('rejects an empty-string model value', () => {
+        const result = userAIConfigSchema.safeParse({ featureOverrides: { CHAT: '' } })
+        expect(result.success).toBe(false)
+    })
+
+    it('rejects a model value with whitespace or control characters', () => {
+        expect(userAIConfigSchema.safeParse({ featureOverrides: { CHAT: 'gpt 4o' } }).success).toBe(false)
+        expect(userAIConfigSchema.safeParse({ featureOverrides: { CHAT: 'gpt\n4o' } }).success).toBe(false)
+    })
+
+    it('rejects a model value with prompt-injection-y punctuation', () => {
+        const result = userAIConfigSchema.safeParse({ featureOverrides: { CHAT: 'gpt-4o; rm -rf' } })
+        expect(result.success).toBe(false)
+    })
+
+    it('still rejects a non-UPPER_SNAKE feature key', () => {
+        const result = userAIConfigSchema.safeParse({ featureOverrides: { 'chat': 'gpt-4o' } })
         expect(result.success).toBe(false)
     })
 })

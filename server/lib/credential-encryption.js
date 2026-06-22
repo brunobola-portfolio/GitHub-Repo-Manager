@@ -26,7 +26,7 @@ const KEY_CACHE_MAX = 256
 // log on every encryption/decryption call.
 let fallbackWarned = false
 
-function resolveSecret() {
+function resolvePrimarySecret() {
   const primary = process.env.CREDENTIAL_ENCRYPTION_KEY
   const fallback = process.env.SESSION_SECRET
   const nodeEnv = process.env.NODE_ENV
@@ -55,10 +55,27 @@ function resolveSecret() {
   return secret
 }
 
-function deriveKey(salt, version) {
+/**
+ * Ordered list of secrets to try when decrypting: the active primary first,
+ * then `CREDENTIAL_ENCRYPTION_KEY_PREVIOUS` if set. This enables zero-downtime
+ * key rotation — set the new key as `CREDENTIAL_ENCRYPTION_KEY` and the old one
+ * as `CREDENTIAL_ENCRYPTION_KEY_PREVIOUS`; existing blobs keep decrypting while
+ * every new write (encryptCredentials always uses the primary) re-encrypts
+ * under the new key. Once all stored secrets have been re-saved, drop the
+ * previous key. Encryption ALWAYS uses the primary (index 0).
+ */
+function resolveSecrets() {
+  const primary = resolvePrimarySecret()
+  const previous = process.env.CREDENTIAL_ENCRYPTION_KEY_PREVIOUS
+  return (previous && previous !== primary) ? [primary, previous] : [primary]
+}
+
+function deriveKey(salt, version, secret) {
   const { iterations, digest } = KDF[version]
-  const secret = resolveSecret()
-  const cacheKey = `${version}:${salt.toString('hex')}:${secret.length}`
+  // Cache on a per-secret fingerprint (NOT secret length — two rotation keys
+  // can share a length, which would collide and hand back the wrong key).
+  const fingerprint = crypto.createHash('sha256').update(secret).digest('hex').slice(0, 16)
+  const cacheKey = `${version}:${salt.toString('hex')}:${fingerprint}`
   const hit = keyCache.get(cacheKey)
   if (hit) return hit
   // Keep the v1 KDF context string for both versions — the version byte
@@ -73,7 +90,7 @@ function deriveKey(salt, version) {
 
 export function encryptCredentials(credentials) {
   const salt = crypto.randomBytes(SALT_LENGTH)
-  const key = deriveKey(salt, 'v2')
+  const key = deriveKey(salt, 'v2', resolveSecrets()[0]) // always the primary
   const iv = crypto.randomBytes(IV_LENGTH)
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv)
   const plaintext = JSON.stringify(credentials)
@@ -87,14 +104,26 @@ export function decryptCredentials(encoded) {
   const hex = version === 'v2' ? encoded.slice(V2_PREFIX.length) : encoded
   const buf = Buffer.from(hex, 'hex')
   const salt = buf.subarray(0, SALT_LENGTH)
-  const key = deriveKey(salt, version)
   const iv = buf.subarray(SALT_LENGTH, SALT_LENGTH + IV_LENGTH)
   const tag = buf.subarray(SALT_LENGTH + IV_LENGTH, SALT_LENGTH + IV_LENGTH + TAG_LENGTH)
   const encrypted = buf.subarray(SALT_LENGTH + IV_LENGTH + TAG_LENGTH)
-  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv)
-  decipher.setAuthTag(tag)
-  const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()])
-  return JSON.parse(decrypted.toString('utf8'))
+
+  // Try the primary key, then the previous key (rotation). A GCM auth failure
+  // on the wrong key throws — fall through and try the next. Only when no
+  // configured secret can authenticate the blob do we surface the error.
+  let lastError
+  for (const secret of resolveSecrets()) {
+    try {
+      const key = deriveKey(salt, version, secret)
+      const decipher = crypto.createDecipheriv(ALGORITHM, key, iv)
+      decipher.setAuthTag(tag)
+      const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()])
+      return JSON.parse(decrypted.toString('utf8'))
+    } catch (err) {
+      lastError = err
+    }
+  }
+  throw lastError
 }
 
 export function isSchedulingEnabled() {

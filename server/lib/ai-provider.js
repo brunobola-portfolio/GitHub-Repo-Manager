@@ -25,7 +25,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import logger from './logger.js';
 import { computeCostUSD } from './provider-pricing.js';
-import { assertSafeAIEndpoint } from './url-validator.js';
+import { assertSafeAIEndpoint, resolveAndValidateHost } from './url-validator.js';
 
 // ---------------------------------------------------------------------------
 // Gemini model defaults — single source of truth
@@ -768,6 +768,21 @@ export function resolveServerProviderFromEnv(featureKey) {
  *   credentials, not the server's shared key.
  * @returns {Promise<import('./providers/openai.js').OpenAIProvider|GeminiProvider|null>}
  */
+/**
+ * DNS-rebinding recheck: resolve a stored BYOK endpoint's hostname and throw if
+ * it points at a private/internal address. Skipped for endpoints the operator
+ * explicitly allowed to be local (ALLOW_LOCAL_AI_ENDPOINTS + `local` provider),
+ * which are loopback/private by design.
+ */
+async function assertEndpointHostIsPublic(endpointUrl, provider) {
+    const allowLocal = provider === 'local' && process.env.ALLOW_LOCAL_AI_ENDPOINTS === 'true';
+    if (allowLocal) return;
+    const safe = await resolveAndValidateHost(endpointUrl);
+    if (!safe) {
+        throw new Error('ssrf_guard: AI endpoint host resolves to a private or unreachable address');
+    }
+}
+
 export async function createProviderForUser(userId, kind = 'completion', opts = {}) {
     await _loadProviders();
 
@@ -784,10 +799,22 @@ export async function createProviderForUser(userId, kind = 'completion', opts = 
         // save-time guard in routes/user-ai-config.js existed). Throws on an
         // unsafe endpoint — callers (e.g. the /test handler) surface it as a
         // provider error rather than letting the request reach an internal host.
+        //
+        // The sync guard validates the URL shape + literal-IP ranges; the async
+        // recheck resolves the hostname and rejects if it points at a private
+        // address — closing the DNS-rebinding window between save and use. We
+        // skip the DNS recheck for endpoints the operator explicitly allowed via
+        // ALLOW_LOCAL_AI_ENDPOINTS (those are loopback/private on purpose).
         const compEndpoint = userConfig.completionCredentials?.endpointUrl;
-        if (compEndpoint) assertSafeAIEndpoint(compEndpoint, { provider: userConfig.completionProvider });
+        if (compEndpoint) {
+            assertSafeAIEndpoint(compEndpoint, { provider: userConfig.completionProvider });
+            await assertEndpointHostIsPublic(compEndpoint, userConfig.completionProvider);
+        }
         const embEndpoint = userConfig.embeddingCredentials?.endpointUrl;
-        if (embEndpoint) assertSafeAIEndpoint(embEndpoint, { provider: userConfig.embeddingProvider });
+        if (embEndpoint) {
+            assertSafeAIEndpoint(embEndpoint, { provider: userConfig.embeddingProvider });
+            await assertEndpointHostIsPublic(embEndpoint, userConfig.embeddingProvider);
+        }
 
         // --- Completion path ---
         if (kind === 'completion') {

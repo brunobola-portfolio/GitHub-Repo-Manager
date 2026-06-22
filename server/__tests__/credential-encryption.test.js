@@ -37,6 +37,10 @@ function encryptV1(credentials, secret) {
 describe('credential-encryption', () => {
   beforeEach(() => {
     process.env.SESSION_SECRET = TEST_SECRET
+    // Each test starts from a clean key environment so a rotation test can't
+    // strand the SESSION_SECRET-fallback suites below it.
+    delete process.env.CREDENTIAL_ENCRYPTION_KEY
+    delete process.env.CREDENTIAL_ENCRYPTION_KEY_PREVIOUS
   })
 
   it('encrypts and decrypts credentials roundtrip', () => {
@@ -111,5 +115,57 @@ describe('credential-encryption', () => {
 
   it('reports scheduling enabled when SESSION_SECRET set', () => {
     expect(isSchedulingEnabled()).toBe(true)
+  })
+})
+
+describe('credential-encryption — CREDENTIAL_ENCRYPTION_KEY rotation', () => {
+  // Two distinct keys of the SAME length — this also guards against a
+  // derived-key cache keyed only on secret length (which would collide).
+  const OLD_KEY = 'old-credential-key-aaaaaaaaaaaaaaaaaaaaaa' // 41 chars
+  const NEW_KEY = 'new-credential-key-bbbbbbbbbbbbbbbbbbbbbb' // 41 chars
+
+  beforeEach(() => {
+    delete process.env.SESSION_SECRET
+    delete process.env.CREDENTIAL_ENCRYPTION_KEY
+    delete process.env.CREDENTIAL_ENCRYPTION_KEY_PREVIOUS
+  })
+
+  it('decrypts a blob written under the old key once it is set as the PREVIOUS key', () => {
+    const creds = { githubToken: 'ghp_rotate_me' }
+    process.env.CREDENTIAL_ENCRYPTION_KEY = OLD_KEY
+    const blob = encryptCredentials(creds)
+
+    // Rotate: new key is primary, old key is retained as previous.
+    process.env.CREDENTIAL_ENCRYPTION_KEY = NEW_KEY
+    process.env.CREDENTIAL_ENCRYPTION_KEY_PREVIOUS = OLD_KEY
+
+    expect(decryptCredentials(blob)).toEqual(creds)
+  })
+
+  it('writes new blobs under the new primary key (old key alone cannot read them)', () => {
+    const creds = { githubToken: 'ghp_new_primary' }
+    process.env.CREDENTIAL_ENCRYPTION_KEY = NEW_KEY
+    process.env.CREDENTIAL_ENCRYPTION_KEY_PREVIOUS = OLD_KEY
+    const blob = encryptCredentials(creds)
+
+    // After the old key is fully retired, the new blob still reads…
+    process.env.CREDENTIAL_ENCRYPTION_KEY = NEW_KEY
+    delete process.env.CREDENTIAL_ENCRYPTION_KEY_PREVIOUS
+    expect(decryptCredentials(blob)).toEqual(creds)
+
+    // …but a process holding only the old key cannot read it.
+    process.env.CREDENTIAL_ENCRYPTION_KEY = OLD_KEY
+    delete process.env.CREDENTIAL_ENCRYPTION_KEY_PREVIOUS
+    expect(() => decryptCredentials(blob)).toThrow()
+  })
+
+  it('strands old-key blobs once the previous key is removed (rotation completed)', () => {
+    const creds = { githubToken: 'ghp_legacy' }
+    process.env.CREDENTIAL_ENCRYPTION_KEY = OLD_KEY
+    const blob = encryptCredentials(creds)
+
+    process.env.CREDENTIAL_ENCRYPTION_KEY = NEW_KEY
+    delete process.env.CREDENTIAL_ENCRYPTION_KEY_PREVIOUS
+    expect(() => decryptCredentials(blob)).toThrow()
   })
 })

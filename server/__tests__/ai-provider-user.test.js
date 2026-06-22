@@ -64,6 +64,14 @@ vi.mock('../lib/user-ai-config.js', () => ({
     deleteUserAIConfig: vi.fn(),
 }));
 
+// Keep the real synchronous SSRF guard (assertSafeAIEndpoint) but stub the
+// async DNS resolution so the rebinding recheck is deterministic.
+const mockResolveAndValidate = vi.fn(async () => true);
+vi.mock('../lib/url-validator.js', async (orig) => {
+    const actual = await orig();
+    return { ...actual, resolveAndValidateHost: (...args) => mockResolveAndValidate(...args) };
+});
+
 // ---------------------------------------------------------------------------
 // Import SUT after mocks
 // ---------------------------------------------------------------------------
@@ -83,7 +91,9 @@ beforeEach(() => {
     delete process.env.GEMINI_EMBEDDING_MODEL;
     delete process.env.NODE_ENV;
     delete process.env.AI_REQUIRE_USER_CONFIG;
+    delete process.env.ALLOW_LOCAL_AI_ENDPOINTS;
     vi.clearAllMocks();
+    mockResolveAndValidate.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -360,5 +370,61 @@ describe('createProviderForUser()', () => {
 
         expect(provider).toBeInstanceOf(MockOpenRouterProvider);
         expect(provider._opts.apiKey).toBe('sk-or-user');
+    });
+
+    // ----- DNS-rebinding recheck on a stored BYOK endpoint -----
+
+    it('rejects a BYOK endpoint whose hostname resolves to a private address (DNS rebinding)', async () => {
+        mockResolveAndValidate.mockResolvedValue(false);
+        _mockDecryptedConfig = {
+            userId: 1,
+            completionProvider: 'openai',
+            completionModel: 'gpt-4o',
+            completionCredentials: { apiKey: 'sk-user', endpointUrl: 'https://evil.example.com/v1' },
+            embeddingProvider: null,
+            embeddingModel: null,
+            embeddingCredentials: null,
+            featureOverrides: {},
+        };
+
+        await expect(createProviderForUser(1, 'completion')).rejects.toThrow(/ssrf/i);
+        expect(mockResolveAndValidate).toHaveBeenCalledWith('https://evil.example.com/v1');
+    });
+
+    it('allows a BYOK endpoint that resolves to a public address', async () => {
+        mockResolveAndValidate.mockResolvedValue(true);
+        _mockDecryptedConfig = {
+            userId: 1,
+            completionProvider: 'openai',
+            completionModel: 'gpt-4o',
+            completionCredentials: { apiKey: 'sk-user', endpointUrl: 'https://api.example.com/v1' },
+            embeddingProvider: null,
+            embeddingModel: null,
+            embeddingCredentials: null,
+            featureOverrides: {},
+        };
+
+        const provider = await createProviderForUser(1, 'completion');
+        expect(provider).toBeInstanceOf(MockOpenAIProvider);
+        expect(mockResolveAndValidate).toHaveBeenCalledWith('https://api.example.com/v1');
+    });
+
+    it('skips the DNS recheck for an explicitly-allowed local endpoint', async () => {
+        process.env.ALLOW_LOCAL_AI_ENDPOINTS = 'true';
+        mockResolveAndValidate.mockResolvedValue(false); // would block — must be skipped
+        _mockDecryptedConfig = {
+            userId: 1,
+            completionProvider: 'local',
+            completionModel: 'local-model',
+            completionCredentials: { apiKey: 'local', endpointUrl: 'http://localhost:1234/v1' },
+            embeddingProvider: null,
+            embeddingModel: null,
+            embeddingCredentials: null,
+            featureOverrides: {},
+        };
+
+        const provider = await createProviderForUser(1, 'completion');
+        expect(provider).toBeInstanceOf(MockLocalProvider);
+        expect(mockResolveAndValidate).not.toHaveBeenCalled();
     });
 });
