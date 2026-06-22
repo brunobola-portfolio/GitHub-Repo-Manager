@@ -32,6 +32,7 @@ import {
     REFINE_INSTRUCTIONS,
 } from '../../lib/validators.js';
 import { createCache } from '../../lib/memory-cache.js';
+import { resolveMaxOutputTokens } from '../../lib/ai-output-budget.js';
 
 const router = express.Router();
 
@@ -127,6 +128,7 @@ File manifest: ${sanitizeForPrompt(JSON.stringify((fileManifest || []).map(f => 
                 const textStream = req.aiProvider.generateStream({
                     prompt: systemPrompt + '\n\n' + prContext + '\n\nDiff:\n' + patchText,
                     signal: sse.signal,
+                    generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
                 });
                 const raw = await streamToSSE(textStream, sse);
 
@@ -234,6 +236,7 @@ Rules:
             try {
                 const iter = req.aiProvider.generateStream({
                     prompt: systemPrompt + '\n\n' + userMessage,
+                    generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
                 });
                 const raw = await streamToSSE(iter, sse);
 
@@ -346,6 +349,7 @@ Rules:
             try {
                 const iter = req.aiProvider.generateStream({
                     prompt: systemPrompt + '\n\n' + userMessage,
+                    generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
                 });
                 const raw = await streamToSSE(iter, sse);
 
@@ -463,6 +467,7 @@ Return ONLY the refined content, no explanation, no markdown fences.`;
             try {
                 const iter = req.aiProvider.generateStream({
                     prompt: systemPrompt + '\n\n' + userMessage,
+                    generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
                 });
                 const raw = await streamToSSE(iter, sse);
 
@@ -620,6 +625,7 @@ router.post('/ai/chat-refine', requireAuth, validateBody(aiChatRefineSchema), re
         try {
             const iter = req.aiProvider.generateStream({
                 prompt: systemPrompt + '\n\n' + fullPrompt,
+                generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
             });
             const raw = await streamToSSE(iter, sse);
 
