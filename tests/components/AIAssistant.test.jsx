@@ -422,4 +422,45 @@ describe('AIAssistant', () => {
       expect(link.getAttribute('rel') || '').toMatch(/noopener/)
     })
   })
+
+  describe('Code block copy (Phase 3 UX)', () => {
+    it('renders a copy button for fenced code blocks in assistant replies', async () => {
+      const askAI = vi.fn().mockResolvedValue({
+        reply: 'Run this:\n\n```sh\nwinget install GitHub.GitLFS\n```',
+        actions: [],
+      })
+      renderAssistant({ askAI })
+      await openAssistant()
+
+      const input = screen.getByRole('textbox', { name: /message the ai assistant/i })
+      await act(async () => {
+        fireEvent.change(input, { target: { value: 'how do I install lfs?' } })
+        fireEvent.submit(input.closest('form'))
+      })
+
+      expect(await screen.findByRole('button', { name: /copy code/i })).toBeInTheDocument()
+    })
+
+    it('copies the code text to the clipboard when clicked', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      // navigator.clipboard is a getter-only prop in happy-dom — define over it.
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+      const askAI = vi.fn().mockResolvedValue({
+        reply: '```sh\ngit lfs install\n```',
+        actions: [],
+      })
+      renderAssistant({ askAI })
+      await openAssistant()
+
+      const input = screen.getByRole('textbox', { name: /message the ai assistant/i })
+      await act(async () => {
+        fireEvent.change(input, { target: { value: 'cmd' } })
+        fireEvent.submit(input.closest('form'))
+      })
+
+      const btn = await screen.findByRole('button', { name: /copy code/i })
+      await act(async () => { fireEvent.click(btn) })
+      expect(writeText).toHaveBeenCalledWith(expect.stringContaining('git lfs install'))
+    })
+  })
 })

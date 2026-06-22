@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { X, Send, Sparkles, Loader2, Settings, Key, Minus, ArrowRight, AlertTriangle, RotateCw, ExternalLink } from 'lucide-react'
+import { X, Send, Sparkles, Loader2, Settings, Key, Minus, ArrowRight, AlertTriangle, RotateCw, ExternalLink, Copy, Check } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
 import { Button } from './ui/Button'
 import { Card } from './ui/Card'
@@ -33,7 +33,42 @@ function SourceLink({ href, children }) {
     )
 }
 
-const MARKDOWN_COMPONENTS = { a: SourceLink }
+// Extract the raw text of a Markdown AST node (for copy-to-clipboard).
+function nodeText(node) {
+    if (!node) return ''
+    if (typeof node.value === 'string') return node.value
+    if (Array.isArray(node.children)) return node.children.map(nodeText).join('')
+    return ''
+}
+
+// Render fenced code blocks with a copy button — assistant fixes often include
+// shell commands (e.g. `winget install GitHub.GitLFS`) worth one-click copying.
+function CodeBlock({ node, children }) {
+    const [copied, setCopied] = useState(false)
+    const copy = () => {
+        try {
+            navigator.clipboard?.writeText?.(nodeText(node))
+            setCopied(true)
+            setTimeout(() => setCopied(false), 1500)
+        } catch { /* clipboard unavailable — degrade silently */ }
+    }
+    return (
+        <div className="relative group/code">
+            <button
+                type="button"
+                onClick={copy}
+                aria-label="Copy code"
+                className="absolute top-1.5 right-1.5 inline-flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-medium bg-slate-700/80 text-slate-100 opacity-0 group-hover/code:opacity-100 focus-visible:opacity-100 transition-opacity ds-focus-ring"
+            >
+                {copied ? <Check size={11} aria-hidden="true" /> : <Copy size={11} aria-hidden="true" />}
+                {copied ? 'Copied' : 'Copy'}
+            </button>
+            <pre>{children}</pre>
+        </div>
+    )
+}
+
+const MARKDOWN_COMPONENTS = { a: SourceLink, pre: CodeBlock }
 
 let msgIdCounter = 0
 const nextMsgId = () => `msg-${Date.now()}-${++msgIdCounter}`
