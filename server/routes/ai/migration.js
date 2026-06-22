@@ -19,7 +19,7 @@ import { safeJsonParse } from '../../lib/utils.js';
 import { parseSizeStrategyResponse, parseDescriptionResponse } from '../../lib/migration-ai-parsers.js';
 import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
-import { requireAI, handleAIError } from './shared.js';
+import { requireAI, handleAIError, guardedGenerate } from './shared.js';
 
 const router = express.Router();
 
@@ -160,7 +160,7 @@ Respond with **only** valid JSON (no prose, no markdown fences) matching this sh
 Keep "files" to at most 12 entries. If the issue is too vague to plan, return:
 { "title": "Needs clarification", "approach": "<what's missing>", "files": [], "tests": "", "risks": "", "estimatedHours": 0 }`;
 
-            const { text } = await req.aiProvider.generate({ prompt });
+            const { text } = await guardedGenerate(req, { prompt }, { feature: 'issue_to_plan' });
             const parsed = safeJsonParse(text);
             const plan = normaliseIssuePlan(parsed);
 
@@ -289,7 +289,7 @@ Rules:
 - Flag LFS, >1GB size, >50 branches, active CI/CD, GitHub Pages, and wikis as warnings or blockers as appropriate.
 - Be specific, not generic. Reference the actual signals.`;
 
-        const { text: raw } = await req.aiProvider.generate({ prompt: systemPrompt });
+        const { text: raw } = await guardedGenerate(req, { prompt: systemPrompt }, { feature: 'migration_risk' });
 
         let parsed = null;
         let parseError = false;
@@ -383,7 +383,7 @@ Respond with strict JSON only, no prose outside the JSON:
     try {
         const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
         // Provider strips markdown fences centrally — no manual replace needed.
-        const { text } = await req.aiProvider.generate({ prompt });
+        const { text } = await guardedGenerate(req, { prompt }, { feature: 'migration_size' });
 
         const sizeStrategyResult = parseSizeStrategyResponse(text);
         if (!sizeStrategyResult) {
@@ -444,7 +444,7 @@ Respond with strict JSON only, no prose outside the JSON:
     try {
         const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
         // Provider strips markdown fences centrally — text is clean.
-        const { text } = await req.aiProvider.generate({ prompt });
+        const { text } = await guardedGenerate(req, { prompt }, { feature: 'migration_description' });
 
         // Fall through to deterministic template on any unexpected shape — keep the
         // endpoint's contract simple: always return a usable { description }.

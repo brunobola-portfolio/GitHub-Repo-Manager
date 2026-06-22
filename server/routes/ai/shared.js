@@ -12,6 +12,10 @@ import { createRequireAI } from '../../middleware/auth.js';
 import { aiService } from '../../ai-service.js';
 import { AIError, AI_ERROR_CODE, toAIError } from '../../lib/ai-provider.js';
 import logger from '../../lib/logger.js';
+import { resolveMaxOutputTokens } from '../../lib/ai-output-budget.js';
+import { checkAISpendCap, recordAISpend } from '../../lib/ai-spend-cap.js';
+import { buildAIAuditMeta } from '../../lib/ai-audit.js';
+import { auditLog } from '../../lib/audit.js';
 
 // ---------------------------------------------------------------------------
 // requireAI — factory-built middleware, instantiated once per process.
@@ -28,6 +32,17 @@ export const requireAI = createRequireAI(aiService);
  */
 export function handleAIError(res, error, fallbackMessage = 'Failed to generate AI response. Please try again later.') {
     const code = error instanceof AIError ? error.code : null;
+
+    // Monthly spend cap hit (thrown by guardedGenerate) — surface as a 429 with
+    // the same structured shape the chat route uses.
+    if (error?.code === 'AI_SPEND_CAP_REACHED') {
+        return res.status(429).json({
+            error: error.message || 'Monthly AI spend limit reached.',
+            code: 'AI_SPEND_CAP_REACHED',
+            spent_cents: error.spendInfo?.spentCents,
+            cap_cents: error.spendInfo?.capCents,
+        });
+    }
 
     if (code === AI_ERROR_CODE.NOT_FOUND || (!code && (error.message?.includes('not found') || error.status === 404))) {
         return res.status(404).json({
@@ -165,4 +180,48 @@ export async function providerGenerateWithRetry(
     }
 
     throw lastError;
+}
+
+// ---------------------------------------------------------------------------
+// guardedGenerate — providerGenerateWithRetry + uniform cost/audit guards.
+// ---------------------------------------------------------------------------
+/**
+ * Run a non-streaming AI generation with the uniform OWASP-LLM10 guards applied,
+ * so individual routes can't accidentally omit them:
+ *   - spend cap CHECK before the call → throws `AI_SPEND_CAP_REACHED` (handleAIError maps it to 429)
+ *   - per-call output-token cap injected (the global ceiling always wins)
+ *   - spend RECORD + PII-safe audit AFTER the call
+ *
+ * Quota checks stay in the route (their metric varies). Use this instead of
+ * `providerGenerateWithRetry` / `provider.generate` for every blocking AI call.
+ *
+ * @param {object} req — Express request (needs session.userId + aiProvider)
+ * @param {object} opts — forwarded to provider.generate ({ prompt, schema, ... })
+ * @param {{ feature: string }} meta — audit/feature label
+ * @returns {Promise<{ text: string, parsed?: any, usage?: object, costUSD?: number }>}
+ */
+export async function guardedGenerate(req, opts, { feature } = {}) {
+    const userId = req.session?.userId;
+
+    const spend = checkAISpendCap(userId);
+    if (!spend.allowed) {
+        const err = new Error('Monthly AI spend limit reached. Try again next month or raise the cap.');
+        err.code = 'AI_SPEND_CAP_REACHED';
+        err.spendInfo = spend;
+        throw err;
+    }
+
+    // Output cap is a hard ceiling: it overrides any route-supplied value.
+    const generationConfig = { ...(opts?.generationConfig || {}), maxOutputTokens: resolveMaxOutputTokens() };
+    const result = await providerGenerateWithRetry(req.aiProvider, { ...opts, generationConfig });
+
+    recordAISpend(userId, result?.costUSD);
+    auditLog(req, `ai.${feature || 'generate'}`, 'ai', null, buildAIAuditMeta({
+        feature: feature || 'generate',
+        model: req.aiProvider?.model,
+        usage: result?.usage,
+        costUSD: result?.costUSD,
+    }));
+
+    return result;
 }

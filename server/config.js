@@ -27,6 +27,9 @@ const configSchema = z.object({
     geminiApiKey: z.string().optional(),
     geminiModel: z.string().default('gemini-2.5-flash'),
     geminiEmbeddingModel: z.string().default('gemini-embedding-001'),
+    // Server-wide fallback provider (per-user BYOK overrides this). Validated
+    // here so a typo fails fast at startup instead of at the first AI call.
+    aiProvider: z.enum(['gemini', 'anthropic', 'openai', 'openrouter', 'local']).default('gemini'),
 
     // Monitoring (optional)
     sentryDsn: z.string().optional(),
@@ -91,6 +94,8 @@ function loadConfig() {
         geminiApiKey: process.env.GEMINI_API_KEY,
         geminiModel: process.env.GEMINI_MODEL,
         geminiEmbeddingModel: process.env.GEMINI_EMBEDDING_MODEL,
+        // Coerce empty string → undefined so `AI_PROVIDER=` falls back to the default.
+        aiProvider: process.env.AI_PROVIDER || undefined,
         sentryDsn: process.env.SENTRY_DSN,
         azurePat: process.env.AZURE_PAT,
         webhookSecret: process.env.WEBHOOK_SECRET,
