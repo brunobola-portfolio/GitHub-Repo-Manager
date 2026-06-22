@@ -28,14 +28,16 @@ vi.mock('../../middleware/require-tier.js', () => ({
     attachTier: (req, _res, next) => { req.userTier = currentTier; next(); },
 }));
 
-// Streaming AI provider mock — yields a fixed reply chunked into 3 parts.
+// Streaming AI provider mock — yields a fixed reply chunked into 3 parts and
+// reports post-stream usage (so spend/audit wiring can be exercised).
 const mockProvider = {
     _modelName: 'mock-model',
-     
+
     async *generateStream() {
         yield 'Hello ';
         yield 'from ';
         yield 'mock.';
+        return { usage: { inputTokens: 100, outputTokens: 40 }, costUSD: 0.05 };
     },
 };
 const createProviderForUserMock = vi.fn(async () => mockProvider);
@@ -85,11 +87,15 @@ function makeApp(userId = USER_ID) {
 beforeEach(() => {
     testDb.prepare('DELETE FROM ai_pr_chat_messages').run();
     testDb.prepare('DELETE FROM gh_cache').run();
+    testDb.prepare('DELETE FROM ai_spend').run();
+    // audit_log_v2 is append-only (a trigger blocks DELETE) — don't clear it;
+    // tests query by action instead.
     testDb.prepare('INSERT OR IGNORE INTO users (id, username) VALUES (?, ?)').run(USER_ID, 'alice');
     createProviderForUserMock.mockReset();
     createProviderForUserMock.mockResolvedValue(mockProvider);
     _resetRateLimits();
     setTier('pro');
+    delete process.env.AI_SPEND_CAP_CENTS;
 });
 
 describe('GET /api/ai/pr-chat/:owner/:repo/:pr', () => {
@@ -155,6 +161,50 @@ describe('POST /api/ai/pr-chat/:owner/:repo/:pr', () => {
         expect(stored[0]).toEqual({ role: 'user', content: 'What does this PR do?' });
         expect(stored[1].role).toBe('assistant');
         expect(stored[1].content).toBe('Hello from mock.');
+    });
+
+    it('records monthly spend + a PII-safe audit entry after the stream completes', async () => {
+        const app = makeApp();
+        const res = await request(app)
+            .post('/api/ai/pr-chat/acme/api/42')
+            .send({ message: 'What does this PR do?' });
+        expect(res.status).toBe(200);
+
+        // costUSD 0.05 → 5 cents accumulated for the current month.
+        const spendRow = testDb.prepare(
+            'SELECT cents FROM ai_spend WHERE user_id = ?'
+        ).get(USER_ID);
+        expect(spendRow?.cents).toBe(5);
+
+        const audit = testDb.prepare(
+            "SELECT action, details FROM audit_log_v2 WHERE user_id = ? AND action = 'ai.pr_chat'"
+        ).get(USER_ID);
+        expect(audit).toBeTruthy();
+        const details = JSON.parse(audit.details);
+        expect(details).toMatchObject({ feature: 'pr_chat', inputTokens: 100, outputTokens: 40 });
+        // never persists the prompt or reply content
+        expect(details).not.toHaveProperty('message');
+        expect(JSON.stringify(details)).not.toContain('What does this PR do?');
+    });
+
+    it('returns 429 AI_SPEND_CAP_REACHED before streaming when the monthly cap is exceeded', async () => {
+        process.env.AI_SPEND_CAP_CENTS = '100';
+        const month = new Date().toISOString().slice(0, 7);
+        testDb.prepare('INSERT INTO ai_spend (user_id, month, cents) VALUES (?, ?, ?)').run(USER_ID, month, 150);
+
+        const app = makeApp();
+        const res = await request(app)
+            .post('/api/ai/pr-chat/acme/api/42')
+            .send({ message: 'What does this PR do?' });
+
+        expect(res.status).toBe(429);
+        expect(res.body.code).toBe('AI_SPEND_CAP_REACHED');
+        // The provider is never invoked and no turn is persisted.
+        expect(createProviderForUserMock).not.toHaveBeenCalled();
+        const stored = testDb.prepare(
+            'SELECT COUNT(*) AS n FROM ai_pr_chat_messages WHERE user_id = ?'
+        ).get(USER_ID);
+        expect(stored.n).toBe(0);
     });
 });
 

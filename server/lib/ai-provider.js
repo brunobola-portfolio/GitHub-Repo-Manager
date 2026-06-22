@@ -374,6 +374,28 @@ function normalizeGeminiGenerationConfig(cfg) {
     return Object.keys(out).length > 0 ? out : null;
 }
 
+/**
+ * Map a Gemini `usageMetadata` object to our provider-neutral usage + cost
+ * shape. Returns `{ usage: null, costUSD: null }` when token counts are
+ * absent (e.g. a stream that reported no usage). Shared by `generate()` and
+ * `generateStream()` so both surface spend identically.
+ */
+function geminiUsageFromMeta(meta, modelName) {
+    const usage = meta && (meta.promptTokenCount != null || meta.candidatesTokenCount != null)
+        ? {
+            inputTokens: meta.promptTokenCount ?? null,
+            outputTokens: meta.candidatesTokenCount ?? null,
+            ...(meta.cachedContentTokenCount != null
+                ? { cachedInputTokens: meta.cachedContentTokenCount }
+                : {}),
+        }
+        : null;
+    const costUSD = usage
+        ? computeCostUSD({ modelName, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens })
+        : null;
+    return { usage, costUSD };
+}
+
 // ---------------------------------------------------------------------------
 // GeminiProvider
 // ---------------------------------------------------------------------------
@@ -481,19 +503,7 @@ export class GeminiProvider {
             // Surface usage + cost so callers can persist accurate spend.
             // Gemini's usageMetadata is available since @google/generative-ai 0.12+.
             // Defensive: missing/partial metadata returns null without crashing.
-            const meta = result?.response?.usageMetadata;
-            const usage = meta && (meta.promptTokenCount != null || meta.candidatesTokenCount != null)
-                ? {
-                    inputTokens: meta.promptTokenCount ?? null,
-                    outputTokens: meta.candidatesTokenCount ?? null,
-                    ...(meta.cachedContentTokenCount != null
-                        ? { cachedInputTokens: meta.cachedContentTokenCount }
-                        : {}),
-                }
-                : null;
-            const costUSD = usage
-                ? computeCostUSD({ modelName, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens })
-                : null;
+            const { usage, costUSD } = geminiUsageFromMeta(result?.response?.usageMetadata, modelName);
 
             if (schema) {
                 try {
@@ -593,6 +603,19 @@ export class GeminiProvider {
             if (signal?.aborted) break;
             const text = chunk.text();
             if (text) yield text;
+        }
+
+        // Usage only becomes available once the stream drains: the SDK exposes
+        // it via `streamResult.response`. Surface it as the generator's return
+        // value so callers can record spend + audit (OWASP LLM10). Never throw
+        // from here — a usage-extraction failure must not fail the response the
+        // client already received.
+        if (signal?.aborted) return { usage: null, costUSD: null };
+        try {
+            const response = await streamResult?.response;
+            return geminiUsageFromMeta(response?.usageMetadata, modelName);
+        } catch {
+            return { usage: null, costUSD: null };
         }
     }
 }

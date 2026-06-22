@@ -409,12 +409,23 @@ export class OpenAIProvider {
             if (generationConfig.temperature != null) body.temperature = generationConfig.temperature;
         }
 
+        // Ask the API to emit a final usage chunk so we can record spend + audit
+        // post-stream (OWASP LLM10). OpenAI-compatible servers that don't support
+        // this simply omit the usage chunk → usage stays null (handled gracefully).
+        body.stream_options = { include_usage: true };
+
         const res = await this._postStream('/chat/completions', body, signal);
 
         // Parse SSE stream
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
+
+        // The terminal usage chunk (sent just before `[DONE]`) carries
+        // prompt_tokens / completion_tokens with an empty `choices` array.
+        let inputTokens = null;
+        let outputTokens = null;
+        let cachedInputTokens = null;
 
         try {
             while (true) {
@@ -444,6 +455,14 @@ export class OpenAIProvider {
                         const json = JSON.parse(trimmed.slice(6));
                         const delta = json?.choices?.[0]?.delta?.content;
                         if (delta) yield delta;
+                        const u = json?.usage;
+                        if (u && (u.prompt_tokens != null || u.completion_tokens != null)) {
+                            if (u.prompt_tokens != null) inputTokens = u.prompt_tokens;
+                            if (u.completion_tokens != null) outputTokens = u.completion_tokens;
+                            if (u.prompt_tokens_details?.cached_tokens != null) {
+                                cachedInputTokens = u.prompt_tokens_details.cached_tokens;
+                            }
+                        }
                     } catch {
                         // skip malformed SSE line
                     }
@@ -456,5 +475,20 @@ export class OpenAIProvider {
         } finally {
             reader.releaseLock();
         }
+
+        // Surface usage as the generator return value (spend + audit). Null when
+        // the stream reported no usage or was aborted.
+        if (signal?.aborted || (inputTokens == null && outputTokens == null)) {
+            return { usage: null, costUSD: null };
+        }
+        const usage = {
+            inputTokens,
+            outputTokens,
+            ...(cachedInputTokens != null ? { cachedInputTokens } : {}),
+        };
+        return {
+            usage,
+            costUSD: computeCostUSD({ modelName: model, inputTokens, outputTokens }),
+        };
     }
 }

@@ -289,8 +289,13 @@ and a "Reset" button.
 
 The Settings UI shows indicative pricing next to each model name input. Prices
 are sourced from public provider documentation and last updated 2026-04-19.
-They are informational only — this application never meters LLM tokens; you
-pay your AI provider directly.
+They are informational only — you always pay your AI provider directly.
+
+When `AI_SPEND_CAP_CENTS` is set, the server additionally tracks per-user
+monthly spend from provider-reported token usage to enforce the cap, and writes
+a PII-safe cost audit entry (model + token counts + cents, never prompt or reply
+text). This covers **both blocking and streaming** AI calls. With the cap unset
+(`0`), no spend tracking occurs.
 
 | Model                    | Input ($/1M) | Output ($/1M) |
 | ------------------------ | ------------ | ------------- |
