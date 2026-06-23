@@ -190,16 +190,36 @@ node server/evals/run.js --baseline=server/evals/baseline.local.json
 Per-developer baselines can be saved to `server/evals/baseline.local.json`
 (gitignored). Shared baselines can be committed at any path outside that name.
 
-## Future: --real mode
+## --real mode (real-model evaluation)
 
-The framework is structured to support real-model evaluation as a follow-up.
-The `createMockProvider` in `ai-evals.js` can be replaced with the actual
-`GeminiProvider` from `server/lib/ai-provider.js`.
+`--real` runs the same datasets against a real model instead of the fixed mock
+responses, so you can grade model/grounding **quality** (not just the parse
+contract). It is **opt-in and never runs in CI** — the `npm run test:evals` gate
+stays deterministic and key-free.
 
-A future `--real` flag would:
-1. Load the real provider from env (requires `GEMINI_API_KEY`).
-2. Pass the actual prompt to the model and score the real response.
-3. Run on a subset of cases tagged `real` to control API cost.
+```bash
+# OpenRouter example (any registered provider works)
+AI_PROVIDER=openrouter \
+OPENROUTER_API_KEY=sk-or-... \
+OPENROUTER_MODEL=openai/gpt-4o-mini \
+npm run test:evals:real -- --dataset=repo-advisor-chat
+```
 
-**This is not implemented in MVP.** Prompt quality and model accuracy are
-out of scope for the eval harness until real-model mode is added.
+How it works:
+
+1. The runner builds the provider from env via `resolveServerProviderFromEnv`
+   (`AI_PROVIDER` + `<PROVIDER>_API_KEY` + `<PROVIDER>_MODEL`). It exits with a
+   clear message if no key is configured.
+2. The adapter sends the **real** prompt to the model; the case's deterministic
+   `expected` scorers (jsonShape, lengthBounds, …) still run — they survive
+   non-determinism — and validate the contract.
+3. Cases may add a **`judge`** array of `llmJudge` descriptors that grade
+   free-text quality against a rubric. The judge model is the eval provider, or
+   a separate one via `AI_MODEL_JUDGE`. `llmJudge` **fails closed** (a missing
+   judge, a thrown call, or unparseable output → fail) so a flaky judge can
+   never silently green a run.
+4. Cases marked `"mockOnly": true` (e.g. malformed-response → null contract
+   checks) are **skipped** in real mode — they only hold for fixed mocks.
+
+Cost control: target a single dataset (`--dataset=`) and/or `--tag=`; each case
+is one model call plus one judge call per `judge` descriptor.

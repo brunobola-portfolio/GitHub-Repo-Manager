@@ -18,6 +18,7 @@ import {
     numberRange,
     allOf,
     anyOf,
+    llmJudge,
 } from '../lib/ai-evals.js';
 
 // ---------------------------------------------------------------------------
@@ -362,6 +363,123 @@ describe('runEval', () => {
         const result = await runEval(evalWithBadScorer, jsonParseAdapter);
         expect(result.cases[0].pass).toBe(false);
         expect(result.cases[0].scorerResults[0].reason).toContain('Unknown scorer');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// llmJudge — LLM-as-judge scorer (used only in --real mode)
+// ---------------------------------------------------------------------------
+
+describe('llmJudge', () => {
+    const judgeReturning = (text) => ({ generate: async () => ({ text }) });
+
+    it('passes when the judge returns {"pass": true}', async () => {
+        const judge = judgeReturning('{"pass": true, "reason": "meets the rubric"}');
+        const result = await llmJudge('some reply', { rubric: 'must be helpful' }, judge);
+        expect(result.pass).toBe(true);
+        expect(result.reason).toContain('rubric');
+    });
+
+    it('fails when the judge returns {"pass": false}', async () => {
+        const judge = judgeReturning('{"pass": false, "reason": "off topic"}');
+        const result = await llmJudge('some reply', { rubric: 'must be helpful' }, judge);
+        expect(result.pass).toBe(false);
+        expect(result.reason).toBe('off topic');
+    });
+
+    it('tolerates a judge that wraps the JSON in code fences', async () => {
+        const judge = judgeReturning('```json\n{"pass": true, "reason": "ok"}\n```');
+        const result = await llmJudge('reply', { rubric: 'r' }, judge);
+        expect(result.pass).toBe(true);
+    });
+
+    it('fails closed when the judge call throws', async () => {
+        const judge = { generate: async () => { throw new Error('rate limited'); } };
+        const result = await llmJudge('reply', { rubric: 'r' }, judge);
+        expect(result.pass).toBe(false);
+        expect(result.reason).toMatch(/judge/i);
+    });
+
+    it('fails closed when no judge provider is supplied', async () => {
+        const result = await llmJudge('reply', { rubric: 'r' }, null);
+        expect(result.pass).toBe(false);
+        expect(result.reason).toMatch(/judge/i);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// runEval — real-provider override + llmJudge descriptors (--real mode)
+// ---------------------------------------------------------------------------
+
+describe('runEval (--real mode)', () => {
+    // Adapter mirrors the real adapters: it sends the prompt to whatever
+    // provider it is given and parses the reply.
+    const chatAdapter = async ({ provider }) => {
+        const { text } = await provider.generate({ prompt: 'built-prompt' });
+        try { return JSON.parse(text); } catch { return null; }
+    };
+
+    const evalDef = defineEval({
+        name: 'real-eval',
+        feature: 'real-feature',
+        cases: [{
+            id: 'real-1',
+            input: { message: 'why did my migration fail?' },
+            mockResponse: '{"reply":"MOCK reply"}',
+            expected: [{ scorer: 'jsonShape', args: { reply: 'string' } }],
+            judge: [{ scorer: 'llmJudge', path: 'reply', args: { rubric: 'mentions git-lfs' } }],
+        }],
+    });
+
+    it('routes the adapter to the real provider instead of the mock response', async () => {
+        const realProvider = { generate: async () => ({ text: '{"reply":"REAL model reply"}' }) };
+        const judge = { generate: async () => ({ text: '{"pass": true, "reason": "ok"}' }) };
+
+        const result = await runEval(evalDef, chatAdapter, { provider: realProvider, judge });
+
+        const c = result.cases[0];
+        expect(c.pass).toBe(true);
+        // The llmJudge descriptor ran (real mode), in addition to jsonShape.
+        const judgeResult = c.scorerResults.find(r => r.scorer === 'llmJudge');
+        expect(judgeResult).toBeTruthy();
+        expect(judgeResult.pass).toBe(true);
+    });
+
+    it('a failing judge verdict fails the case in real mode', async () => {
+        const realProvider = { generate: async () => ({ text: '{"reply":"unrelated"}' }) };
+        const judge = { generate: async () => ({ text: '{"pass": false, "reason": "no git-lfs mention"}' }) };
+
+        const result = await runEval(evalDef, chatAdapter, { provider: realProvider, judge });
+        expect(result.cases[0].pass).toBe(false);
+    });
+
+    it('skips llmJudge descriptors in mock mode (no real provider)', async () => {
+        const result = await runEval(evalDef, chatAdapter); // mock mode
+        const c = result.cases[0];
+        // Only the deterministic `expected` scorers run; judge is skipped.
+        expect(c.scorerResults.some(r => r.scorer === 'llmJudge')).toBe(false);
+        expect(c.pass).toBe(true);
+    });
+
+    const evalWithMockOnly = defineEval({
+        name: 'mixed',
+        feature: 'mixed',
+        cases: [
+            { id: 'real-ok', input: {}, mockResponse: '{"reply":"hi"}', expected: [{ scorer: 'jsonShape', args: { reply: 'string' } }] },
+            { id: 'mock-only', input: {}, mockResponse: 'garbage', expected: [{ scorer: 'exactMatch', args: null }], mockOnly: true },
+        ],
+    });
+
+    it('skips mockOnly cases in real mode', async () => {
+        const realProvider = { generate: async () => ({ text: '{"reply":"real"}' }) };
+        const result = await runEval(evalWithMockOnly, chatAdapter, { provider: realProvider });
+        expect(result.cases.map(c => c.id)).toEqual(['real-ok']);
+    });
+
+    it('runs mockOnly cases in mock mode', async () => {
+        const result = await runEval(evalWithMockOnly, chatAdapter);
+        expect(result.cases).toHaveLength(2);
+        expect(result.cases.every(c => c.pass)).toBe(true);
     });
 });
 

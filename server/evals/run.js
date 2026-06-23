@@ -81,6 +81,10 @@ const filterDataset = args.dataset || null;
 const baselinePath = args.baseline || null;
 const outputMd = args['output-md'] || null;
 const verbose = args.verbose === true || args.verbose === 'true';
+// --real: hit a real model instead of the fixed mock responses. Needs a
+// provider key in env (AI_PROVIDER + <PROVIDER>_API_KEY). Off by default so the
+// CI gate (`npm run test:evals`) stays deterministic and key-free.
+const real = args.real === true || args.real === 'true';
 
 // ---------------------------------------------------------------------------
 // Discover and load datasets
@@ -139,7 +143,33 @@ async function loadAdapter(feature) {
 // Run all datasets
 // ---------------------------------------------------------------------------
 
+/**
+ * Build the real provider + judge from env (only in --real mode). Exits with a
+ * clear message when no provider key is configured.
+ * @returns {Promise<{ provider: object, judge: object } | null>}
+ */
+async function buildRealProviders() {
+    if (!real) return null;
+    const { loadProviders, resolveServerProviderFromEnv } = await import('../lib/ai-provider.js');
+    await loadProviders();
+    const provider = resolveServerProviderFromEnv('EVAL');
+    if (!provider) {
+        console.error(
+            '[eval] --real needs a provider key. Set AI_PROVIDER and the matching ' +
+            '<PROVIDER>_API_KEY (e.g. AI_PROVIDER=openrouter OPENROUTER_API_KEY=… ' +
+            'OPENROUTER_MODEL=…). Optional: AI_MODEL_EVAL / AI_MODEL_JUDGE overrides.',
+        );
+        process.exit(1);
+    }
+    // The judge can be a different (cheaper/stronger) model via AI_MODEL_JUDGE;
+    // otherwise it reuses the eval provider.
+    const judge = resolveServerProviderFromEnv('JUDGE') || provider;
+    console.error(`[eval] --real mode ON — provider=${(process.env.AI_PROVIDER || 'gemini')}`);
+    return { provider, judge };
+}
+
 async function runAll() {
+    const realProviders = await buildRealProviders();
     const datasets = loadDatasets();
     const runAt = new Date().toISOString();
     const featureResults = [];
@@ -157,7 +187,10 @@ async function runAll() {
         }
 
         const evalDef = { name: file, feature, cases };
-        const opts = filterTag ? { tags: [filterTag] } : {};
+        const opts = {
+            ...(filterTag ? { tags: [filterTag] } : {}),
+            ...(realProviders ? { provider: realProviders.provider, judge: realProviders.judge } : {}),
+        };
         const result = await runEval(evalDef, adapter, opts);
 
         featureResults.push(result);
