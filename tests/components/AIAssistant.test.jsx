@@ -5,10 +5,10 @@ import { ModalProvider } from '../../src/contexts/ModalContext.jsx'
 import { useModal } from '../../src/hooks/useModal'
 import { emitAppEvent, APP_EVENTS } from '../../src/utils/appEvents'
 
-function renderAssistant({ askAI, checkAIStatus = async () => ({ configured: true }) } = {}) {
+function renderAssistant({ askAI, askAIStream, checkAIStatus = async () => ({ configured: true }) } = {}) {
     return render(
         <ModalProvider>
-            <AIAssistant askAI={askAI} user={{ login: 'alice' }} checkAIStatus={checkAIStatus} />
+            <AIAssistant askAI={askAI} askAIStream={askAIStream} user={{ login: 'alice' }} checkAIStatus={checkAIStatus} />
         </ModalProvider>
     )
 }
@@ -420,6 +420,73 @@ describe('AIAssistant', () => {
       expect(link).toHaveAttribute('href', 'https://git-lfs.com')
       expect(link).toHaveAttribute('target', '_blank')
       expect(link.getAttribute('rel') || '').toMatch(/noopener/)
+    })
+  })
+
+  describe('Streaming replies (SSE)', () => {
+    it('uses askAIStream when provided, rendering progressive text + final actions', async () => {
+      const askAIStream = vi.fn(async (_msg, _ctx, { onDelta }) => {
+        onDelta('Insta')
+        onDelta('Install Git LFS')
+        return { reply: 'Install Git LFS', actions: [{ type: 'open_settings', label: 'Open Settings' }] }
+      })
+      const askAI = vi.fn()
+      renderAssistant({ askAI, askAIStream })
+      await openAssistant()
+
+      const input = screen.getByRole('textbox', { name: /message the ai assistant/i })
+      await act(async () => {
+        fireEvent.change(input, { target: { value: 'fix lfs' } })
+        fireEvent.submit(input.closest('form'))
+      })
+
+      expect(await screen.findByText('Install Git LFS')).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: /Open Settings/ })).toHaveAttribute('data-action', 'open_settings')
+      // Streaming path used, blocking path untouched.
+      expect(askAIStream).toHaveBeenCalledWith('fix lfs', expect.any(Object), expect.objectContaining({
+        onDelta: expect.any(Function),
+        signal: expect.any(Object),
+      }))
+      expect(askAI).not.toHaveBeenCalled()
+    })
+
+    it('shows a Stop button while streaming and aborts the request when clicked', async () => {
+      let capturedSignal = null
+      let resolveStream
+      const askAIStream = vi.fn((_msg, _ctx, { signal }) => {
+        capturedSignal = signal
+        return new Promise((resolve) => { resolveStream = () => resolve({ reply: 'partial', actions: [] }) })
+      })
+      renderAssistant({ askAI: vi.fn(), askAIStream })
+      await openAssistant()
+
+      const input = screen.getByRole('textbox', { name: /message the ai assistant/i })
+      await act(async () => {
+        fireEvent.change(input, { target: { value: 'hi' } })
+        fireEvent.submit(input.closest('form'))
+      })
+
+      const stop = await screen.findByRole('button', { name: /stop/i })
+      await act(async () => {
+        fireEvent.click(stop)
+        resolveStream()
+      })
+
+      expect(capturedSignal).toBeTruthy()
+      expect(capturedSignal.aborted).toBe(true)
+    })
+
+    it('still uses blocking askAI when askAIStream is not provided', async () => {
+      const askAI = vi.fn().mockResolvedValue({ reply: 'blocking ok', actions: [] })
+      renderAssistant({ askAI }) // no askAIStream
+      await openAssistant()
+      const input = screen.getByRole('textbox', { name: /message the ai assistant/i })
+      await act(async () => {
+        fireEvent.change(input, { target: { value: 'hi' } })
+        fireEvent.submit(input.closest('form'))
+      })
+      expect(await screen.findByText('blocking ok')).toBeInTheDocument()
+      expect(askAI).toHaveBeenCalled()
     })
   })
 

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { X, Send, Sparkles, Loader2, Settings, Key, Minus, ArrowRight, AlertTriangle, RotateCw, ExternalLink, Copy, Check } from 'lucide-react'
+import { X, Send, Sparkles, Loader2, Settings, Key, Minus, ArrowRight, AlertTriangle, RotateCw, ExternalLink, Copy, Check, Square } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
 import { Button } from './ui/Button'
 import { Card } from './ui/Card'
@@ -118,7 +118,7 @@ function loadInitialMessages() {
     }
 }
 
-export function AIAssistant({ askAI, user, checkAIStatus }) {
+export function AIAssistant({ askAI, askAIStream, user, checkAIStatus }) {
     const [isOpen, setIsOpen] = useState(false)
     const [isMinimized, setIsMinimized] = useState(false)
     // The persisted slice is already capped at CHAT_STORAGE_MAX_MESSAGES, but
@@ -269,6 +269,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
     }, [messages])
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional one-shot idle reset when the panel opens; the rest of the effect manages the idle timer + scroll listener (deps: [isOpen])
         if (isOpen) { setIsIdle(false); return }
         const startIdle = () => {
             clearTimeout(idleTimerRef.current)
@@ -287,24 +288,22 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
         dispatchAction(action, { openModal })
     }, [openModal])
 
+    // Holds the in-flight streaming request's controller so the Stop button can
+    // abort it. Cleared when the request settles.
+    const abortRef = useRef(null)
+    const handleStop = useCallback(() => { abortRef.current?.abort() }, [])
+
     const sendMessage = useCallback(async (text) => {
         setMessages(prev => [...prev, { id: nextMsgId(), role: 'user', text }])
         setIsLoading(true)
-        try {
-            // Thread the active error context so the backend can ground the
-            // reply in the error knowledge base (Phase 2 Slice 1).
-            const ctx = { user: user?.login }
-            if (activeContext?.errorMessage) ctx.errorMessage = activeContext.errorMessage
-            if (activeContext?.errorCode) ctx.errorCode = activeContext.errorCode
-            const response = await askAI(text, ctx)
-            const actions = sanitizeActions(response?.actions)
-            setMessages(prev => [...prev, {
-                id: nextMsgId(),
-                role: 'assistant',
-                text: response?.reply || '',
-                actions,
-            }])
-        } catch (err) {
+
+        // Thread the active error context so the backend can ground the reply in
+        // the error knowledge base (Phase 2 Slice 1).
+        const ctx = { user: user?.login }
+        if (activeContext?.errorMessage) ctx.errorMessage = activeContext.errorMessage
+        if (activeContext?.errorCode) ctx.errorCode = activeContext.errorCode
+
+        const surfaceError = (err) => {
             if (err?.code === 'AI_NOT_CONFIGURED' || err?.code === 'AI_NOT_INITIALIZED') {
                 setIsConfigured(false)
                 return
@@ -324,10 +323,48 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                 errorCode: err?.code || null,
                 retryText: text,
             }])
+        }
+
+        try {
+            if (askAIStream) {
+                // Streaming path: render an assistant bubble that fills in live as
+                // the reply prose arrives, then finalize with the parsed actions.
+                const streamId = nextMsgId()
+                setMessages(prev => [...prev, { id: streamId, role: 'assistant', text: '', streaming: true }])
+                const controller = new AbortController()
+                abortRef.current = controller
+                try {
+                    const onDelta = (full) => setMessages(prev => prev.map(m => (
+                        m.id === streamId ? { ...m, text: full } : m
+                    )))
+                    const response = await askAIStream(text, ctx, { onDelta, signal: controller.signal })
+                    const actions = sanitizeActions(response?.actions)
+                    setMessages(prev => prev.map(m => (
+                        m.id === streamId
+                            ? { ...m, text: response?.reply ?? m.text, actions, streaming: false }
+                            : m
+                    )))
+                } catch (err) {
+                    // Drop the placeholder bubble, then surface a normal error bubble.
+                    setMessages(prev => prev.filter(m => m.id !== streamId))
+                    surfaceError(err)
+                } finally {
+                    abortRef.current = null
+                }
+            } else {
+                // Blocking fallback (mock mode / no streaming hook).
+                const response = await askAI(text, ctx)
+                const actions = sanitizeActions(response?.actions)
+                setMessages(prev => [...prev, {
+                    id: nextMsgId(), role: 'assistant', text: response?.reply || '', actions,
+                }])
+            }
+        } catch (err) {
+            surfaceError(err)
         } finally {
             setIsLoading(false)
         }
-    }, [askAI, user?.login, setMessages, activeContext])
+    }, [askAI, askAIStream, user?.login, setMessages, activeContext])
 
     const handleSubmit = (e) => {
         e.preventDefault()
@@ -498,7 +535,7 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                                     onCancel={handlePasteCancel}
                                                   />
                                                 )}
-                                                {isLoading && <TypingIndicator />}
+                                                {isLoading && !messages.some(m => m.streaming) && <TypingIndicator />}
                                                 <div ref={messagesEndRef} />
                                             </div>
 
@@ -544,16 +581,28 @@ export function AIAssistant({ askAI, user, checkAIStatus }) {
                                                             autoComplete="off"
                                                         />
                                                     </div>
-                                                    <button
-                                                        type="submit"
-                                                        disabled={isLoading || !input.trim()}
-                                                        className="shrink-0 inline-flex items-center justify-center h-11 w-11 bg-[color:var(--ds-accent-brand)] text-white rounded-xl hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm ds-focus-ring"
-                                                        aria-label="Send message"
-                                                    >
-                                                        {isLoading
-                                                            ? <Spinner size="sm" />
-                                                            : <Send size={16} />}
-                                                    </button>
+                                                    {isLoading && askAIStream ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleStop}
+                                                            className="shrink-0 inline-flex items-center justify-center h-11 w-11 bg-slate-700 dark:bg-slate-600 text-white rounded-xl hover:opacity-90 transition-colors shadow-sm ds-focus-ring"
+                                                            aria-label="Stop generating"
+                                                            title="Stop"
+                                                        >
+                                                            <Square size={14} fill="currentColor" />
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            type="submit"
+                                                            disabled={isLoading || !input.trim()}
+                                                            className="shrink-0 inline-flex items-center justify-center h-11 w-11 bg-[color:var(--ds-accent-brand)] text-white rounded-xl hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm ds-focus-ring"
+                                                            aria-label="Send message"
+                                                        >
+                                                            {isLoading
+                                                                ? <Spinner size="sm" />
+                                                                : <Send size={16} />}
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </form>
                                         </>
@@ -591,7 +640,19 @@ function MessageBubble({ message, onAction, onRetry, onOpenSettings }) {
                                 : 'bg-white dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 rounded-bl-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-pre:my-2 prose-code:text-xs'
                     }`}
                 >
-                    {isUser ? message.text : <ReactMarkdown components={MARKDOWN_COMPONENTS}>{message.text}</ReactMarkdown>}
+                    {isUser
+                        ? message.text
+                        : (
+                            <>
+                                <ReactMarkdown components={MARKDOWN_COMPONENTS}>{message.text}</ReactMarkdown>
+                                {message.streaming && (
+                                    <span
+                                        className="inline-block w-1.5 h-3.5 -mb-0.5 ml-0.5 align-baseline rounded-[1px] bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-dark)] animate-pulse motion-reduce:animate-none"
+                                        aria-hidden="true"
+                                    />
+                                )}
+                            </>
+                        )}
                 </div>
 
                 {!isUser && Array.isArray(message.actions) && message.actions.length > 0 && (

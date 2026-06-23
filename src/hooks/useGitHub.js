@@ -80,7 +80,8 @@ export function useGitHub() {
     // ---- AI ----
     const {
         checkAIStatus,
-        askAI
+        askAI,
+        askAIStream
     } = useAI()
 
     // Merge loading / error / message: auth state takes priority
@@ -159,6 +160,7 @@ export function useGitHub() {
         fetchStats,
         activity,
         askAI,
+        askAIStream,
         setSelectedOrg,
         archiveRepos,
         deleteRepos,
