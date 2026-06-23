@@ -26,7 +26,9 @@ import { aiService, sanitizeForPrompt } from '../../ai-service.js';
 import { safeJsonParse } from '../../lib/utils.js';
 import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
-import { requireAI, handleAIError, providerGenerateWithRetry, guardedGenerate } from './shared.js';
+import { requireAI, handleAIError, providerGenerateWithRetry, guardedGenerate, recordStreamCompletion } from './shared.js';
+import { initSSE, streamReplyDeltasToSSE } from '../ai-streaming.js';
+import { extractReplyText } from '../../lib/ai-features/stream-json.js';
 import { buildChatPrompt } from '../../lib/ai-chat-prompt.js';
 import { buildReadmeEnhancePrompt } from '../../lib/ai-features/readme-enhance.js';
 import { resolveMaxOutputTokens } from '../../lib/ai-output-budget.js';
@@ -160,6 +162,53 @@ router.post('/ai/chat', requireAuth, validateBody(aiChatSchema), requireAI, asyn
         // (for JSON-incapable providers the implementation coerces via
         // system prompt + JSON parse).
         const systemPrompt = buildChatPrompt({ message, context, userId: req.session.userId });
+
+        // Streaming branch (opt-in via ?stream=true). The quota + spend-cap
+        // checks above already ran before any provider call, so an over-limit
+        // user got a 429 JSON before we open the SSE stream. We stream the
+        // model's `reply` as clean prose deltas (extracted from the growing JSON
+        // envelope) and emit the parsed { reply, actions } in the done event.
+        if (req.query.stream === 'true') {
+            // Note: initSSE(res) WITHOUT req — a client disconnect is detected via
+            // the next write failing (which aborts sse.signal and stops the
+            // provider), matching the dev-toolkit streaming routes. Passing req
+            // here would also work in prod but trips supertest's early 'close'.
+            const sse = initSSE(res);
+            let result;
+            try {
+                const stream = req.aiProvider.generateStream({
+                    prompt: systemPrompt,
+                    signal: sse.signal,
+                    generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
+                });
+                result = await streamReplyDeltasToSSE(stream, sse, extractReplyText);
+            } catch (err) {
+                req.log.warn({ err: err?.message, code: err?.code }, 'AI chat stream failed');
+                if (!sse.isAborted) sse.sendError('Failed to generate AI response. Please try again.');
+                return;
+            }
+
+            // Parse the full envelope for actions. We've already streamed prose
+            // and committed a 200, so on a parse miss we fall back to the
+            // streamed reply text + no actions instead of erroring.
+            const cleaned = result.raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+            const parsed = safeJsonParse(cleaned);
+            const reply = parsed && typeof parsed.reply === 'string' ? parsed.reply : result.reply;
+            const actions = parsed && Array.isArray(parsed.actions) ? parsed.actions : [];
+
+            incrementUsage(req.session.userId, 'ai_queries');
+            recordStreamCompletion(req, {
+                feature: 'chat',
+                action: 'ai.chat',
+                model: req.aiProvider?.model,
+                usage: result.usage,
+                costUSD: result.costUSD,
+                extraMeta: { messageLength: message.length, streamed: true },
+            });
+
+            sse.sendDone({ reply, actions });
+            return;
+        }
 
         const schema = {
             type: 'object',
