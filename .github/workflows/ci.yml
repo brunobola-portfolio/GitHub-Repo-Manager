@@ -56,6 +56,10 @@ jobs:
       - if: steps.nm.outputs.cache-hit != 'true'
         run: npm ci --no-audit --no-fund
       - run: npx vitest run
+      # Golden AI evals (mock-provider, deterministic, no API key). Real-model
+      # evals (`--real`) are intentionally NOT run here — they need a provider
+      # key + budget; run them locally/scheduled via `npm run test:evals:real`.
+      - run: npm run test:evals
 
   build:
     runs-on: ubuntu-latest
