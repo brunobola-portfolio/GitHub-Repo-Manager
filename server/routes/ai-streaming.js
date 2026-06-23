@@ -150,3 +150,57 @@ export async function streamToSSEWithUsage(textChunks, sse) {
     return { text: accumulated, usage, costUSD };
 }
 
+/**
+ * Stream a JSON-envelope generation as clean reply DELTAS.
+ *
+ * The Repo Advisor chat model streams a `{"reply": "...", "actions": [...]}`
+ * envelope. Raw JSON tokens can't be rendered as prose, so this accumulates the
+ * raw output, runs `extractReply(rawSoFar)` after each chunk, and forwards only
+ * the newly-revealed reply suffix to the client (which appends it like any text
+ * stream). `actions` are parsed by the caller from the returned `raw` once the
+ * stream finishes. Like {@link streamToSSEWithUsage}, it captures the
+ * generator's post-stream `{ usage, costUSD }` return value.
+ *
+ * @param {AsyncIterable<string>} rawChunks — provider.generateStream() output
+ * @param {ReturnType<initSSE>} sse
+ * @param {(rawSoFar: string) => string} extractReply — partial-JSON reply extractor
+ * @returns {Promise<{ raw: string, reply: string, usage: object|null, costUSD: number|null }>}
+ */
+export async function streamReplyDeltasToSSE(rawChunks, sse, extractReply) {
+    let raw = '';
+    let sentLen = 0;
+    let usage = null;
+    let costUSD = null;
+
+    const iterator = typeof rawChunks[Symbol.asyncIterator] === 'function'
+        ? rawChunks[Symbol.asyncIterator]()
+        : rawChunks;
+
+    try {
+        while (true) {
+            const { value, done } = await iterator.next();
+            if (done) {
+                if (value && typeof value === 'object') {
+                    usage = value.usage ?? null;
+                    costUSD = value.costUSD ?? null;
+                }
+                break;
+            }
+            if (sse.isAborted) break;
+            if (!value) continue;
+            raw += value;
+            const reply = extractReply(raw);
+            if (reply.length > sentLen) {
+                sse.sendChunk(reply.slice(sentLen));
+                sentLen = reply.length;
+            }
+        }
+    } finally {
+        if (typeof iterator.return === 'function') {
+            try { await iterator.return(); } catch { /* generator already settled */ }
+        }
+    }
+
+    return { raw, reply: extractReply(raw), usage, costUSD };
+}
+
