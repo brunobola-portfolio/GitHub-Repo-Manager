@@ -51,6 +51,7 @@
     "test:e2e:headed": "playwright test --headed",
     "playwright:install": "playwright install",
     "test:evals": "node server/evals/run.js",
+    "test:evals:real": "node server/evals/run.js --real",
     "retention:run": "node server/scripts/retention.js",
     "retention:dry": "node server/scripts/retention.js --dry-run",
     "admin:grant": "node server/scripts/admin-grant.mjs",

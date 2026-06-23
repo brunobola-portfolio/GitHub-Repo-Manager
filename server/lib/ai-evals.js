@@ -22,7 +22,11 @@
  *  - numberRange(actual, { min, max })
  *  - allOf(scorerFns)               — combinator: all must pass
  *  - anyOf(scorerFns)               — combinator: at least one must pass
+ *  - llmJudge(value, { rubric }, judge) — async; grades free-text with a model
+ *    (used only in --real mode, where a judge provider is available)
  */
+
+import { safeJsonParse } from './utils.js';
 
 // ---------------------------------------------------------------------------
 // Mock provider
@@ -164,6 +168,49 @@ export function numberRange(actual, { min = -Infinity, max = Infinity } = {}) {
     return { pass: true, reason: `${actual} is within [${min}, ${max}]` };
 }
 
+/**
+ * LLM-as-judge scorer — grades free-text output against a rubric using a model.
+ * Async (unlike the deterministic scorers) and only meaningful in `--real` mode,
+ * where the runner supplies a judge provider. Fails CLOSED: a missing judge,
+ * a thrown call, or unparseable output all return `{ pass: false }` so a flaky
+ * judge can never silently green a run.
+ *
+ * @param {any} value — the text under judgement (resolve a `path` to the reply)
+ * @param {{ rubric: string }|string} args — grading rubric
+ * @param {{ generate: Function }|null} judge — judge AIProvider
+ * @returns {Promise<{ pass: boolean, reason: string }>}
+ */
+export async function llmJudge(value, args, judge) {
+    const rubric = typeof args === 'string' ? args : args?.rubric;
+    if (!judge || typeof judge.generate !== 'function') {
+        return { pass: false, reason: 'llmJudge requires a judge provider (run with --real)' };
+    }
+    if (!rubric) return { pass: false, reason: 'llmJudge requires a rubric' };
+
+    const prompt = [
+        'You are a strict evaluator grading an AI assistant reply against a rubric.',
+        'Judge ONLY whether the reply satisfies the rubric — not its style.',
+        `Rubric: ${rubric}`,
+        'Reply under test:',
+        '"""',
+        String(value ?? ''),
+        '"""',
+        'Respond with ONLY a JSON object: {"pass": boolean, "reason": string}.',
+    ].join('\n');
+
+    let parsed;
+    try {
+        const { text } = await judge.generate({ prompt });
+        parsed = safeJsonParse(typeof text === 'string' ? text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '') : text);
+    } catch (err) {
+        return { pass: false, reason: `judge call failed: ${err.message}` };
+    }
+    if (!parsed || typeof parsed.pass !== 'boolean') {
+        return { pass: false, reason: 'judge returned no parseable {pass, reason} verdict' };
+    }
+    return { pass: parsed.pass, reason: String(parsed.reason ?? '(no reason given)').slice(0, 300) };
+}
+
 // ---------------------------------------------------------------------------
 // Combinators
 // ---------------------------------------------------------------------------
@@ -219,13 +266,20 @@ function resolvePath(obj, path) {
  * @param {any} actualOutput  — the handler output object
  * @returns {{ scorer: string, path?: string, pass: boolean, reason: string }}
  */
-function runScorerDescriptor(descriptor, actualOutput) {
+async function runScorerDescriptor(descriptor, actualOutput, ctx = {}) {
     const { scorer: scorerName, path, args } = descriptor;
+    const value = resolvePath(actualOutput, path);
+
+    // llmJudge is async and needs the judge provider from the run context.
+    if (scorerName === 'llmJudge') {
+        const result = await llmJudge(value, args, ctx.judge);
+        return { scorer: scorerName, path, ...result };
+    }
+
     const scorerFn = SCORER_REGISTRY[scorerName];
     if (!scorerFn) {
         return { scorer: scorerName, path, pass: false, reason: `Unknown scorer "${scorerName}"` };
     }
-    const value = resolvePath(actualOutput, path);
     const result = scorerFn(value, args);
     return { scorer: scorerName, path, ...result };
 }
@@ -248,17 +302,28 @@ export function defineEval(opts) {
 /**
  * Run a single eval case. Returns a result object.
  *
- * @param {object} evalCase  — { id, input, mockResponse, expected, tags? }
- * @param {Function} adapter — async ({ input, mockResponse, provider }) => actualOutput
+ * Mock mode (default): the adapter gets a {@link createMockProvider} that
+ * returns the case's fixed `mockResponse`, and only the deterministic
+ * `expected` scorers run.
+ *
+ * Real mode (`opts.provider` set): the adapter gets the real provider, so the
+ * case exercises an actual model. The case's `expected` scorers still run
+ * (structural contract checks survive non-determinism) PLUS any `judge`
+ * descriptors (e.g. llmJudge), which require `opts.judge`.
+ *
+ * @param {object} evalCase  — { id, input, mockResponse, expected, judge?, tags? }
+ * @param {Function} adapter — async ({ input, mockResponse, provider, real }) => actualOutput
+ * @param {{ provider?: object, judge?: object }} [opts]
  * @returns {Promise<{ id: string, pass: boolean, scorerResults: Array, error?: string }>}
  */
-async function runCase(evalCase, adapter) {
+async function runCase(evalCase, adapter, opts = {}) {
     const { id, input, mockResponse, expected } = evalCase;
-    const provider = createMockProvider(mockResponse);
+    const real = !!opts.provider;
+    const provider = opts.provider || createMockProvider(mockResponse);
 
     let actualOutput;
     try {
-        actualOutput = await adapter({ input, mockResponse, provider });
+        actualOutput = await adapter({ input, mockResponse, provider, real });
     } catch (err) {
         return {
             id,
@@ -268,7 +333,17 @@ async function runCase(evalCase, adapter) {
         };
     }
 
-    const scorerResults = expected.map(descriptor => runScorerDescriptor(descriptor, actualOutput));
+    // Judge descriptors are quality grading — only run them against a real model.
+    const descriptors = [
+        ...(expected || []),
+        ...(real && Array.isArray(evalCase.judge) ? evalCase.judge : []),
+    ];
+    const ctx = { judge: opts.judge, input };
+
+    const scorerResults = [];
+    for (const descriptor of descriptors) {
+        scorerResults.push(await runScorerDescriptor(descriptor, actualOutput, ctx));
+    }
     const pass = scorerResults.every(r => r.pass);
 
     return { id, pass, scorerResults };
@@ -279,17 +354,25 @@ async function runCase(evalCase, adapter) {
  *
  * @param {{ name: string, feature: string, cases: Array }} evalDef
  * @param {Function} adapter  — async ({ input, mockResponse, provider }) => actualOutput
- * @param {{ tags?: string[] }} [opts]  — filter options
+ * @param {{ tags?: string[], provider?: object, judge?: object }} [opts]
+ *   — `tags` filters cases; `provider` (real mode) routes the adapter to a real
+ *   model instead of the mock; `judge` supplies the llmJudge provider.
  * @returns {Promise<{ feature: string, cases: Array, passed: number, failed: number }>}
  */
-export async function runEval(evalDef, adapter, { tags } = {}) {
+export async function runEval(evalDef, adapter, { tags, provider, judge } = {}) {
     let cases = evalDef.cases;
 
     if (tags && tags.length > 0) {
         cases = cases.filter(c => c.tags && tags.some(t => c.tags.includes(t)));
     }
 
-    const results = await Promise.all(cases.map(c => runCase(c, adapter)));
+    // `mockOnly` cases assert mock-specific contract behaviour (e.g. malformed
+    // response → null) that a real model won't reproduce — skip them in real mode.
+    if (provider) {
+        cases = cases.filter(c => !c.mockOnly);
+    }
+
+    const results = await Promise.all(cases.map(c => runCase(c, adapter, { provider, judge })));
 
     const passed = results.filter(r => r.pass).length;
     const failed = results.length - passed;

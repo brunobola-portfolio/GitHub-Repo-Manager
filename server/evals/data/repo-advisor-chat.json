@@ -21,8 +21,11 @@
         { "scorer": "jsonShape", "args": { "reply": "string", "actions": "object" } },
         { "scorer": "lengthBounds", "path": "reply", "args": { "min": 1, "max": 2000 } }
       ],
+      "judge": [
+        { "scorer": "llmJudge", "path": "reply", "args": { "rubric": "The reply must identify that Git LFS is missing/not installed as the cause and tell the user to install git-lfs and retry the migration. It must NOT invent an unrelated cause." } }
+      ],
       "tags": ["happy-path", "grounding"],
-      "_note": "Exercises the error-KB grounding branch in buildChatPrompt without throwing. The mock reply is fixed, so this validates the parse contract — not model grounding (that needs --real mode)."
+      "_note": "Exercises the error-KB grounding branch in buildChatPrompt. Mock mode validates the parse contract; --real mode additionally grades grounding quality via the `judge` rubric."
     },
     {
       "id": "reply-without-actions",
@@ -40,6 +43,7 @@
       "input": { "message": "hello" },
       "mockResponse": "the model hallucinated plain text, not JSON",
       "expected": [ { "scorer": "exactMatch", "args": null } ],
+      "mockOnly": true,
       "tags": ["error-path", "malformed-response"]
     },
     {
@@ -47,6 +51,7 @@
       "input": { "message": "hello" },
       "mockResponse": "{\"actions\":[]}",
       "expected": [ { "scorer": "exactMatch", "args": null } ],
+      "mockOnly": true,
       "tags": ["error-path", "missing-reply"]
     }
   ]

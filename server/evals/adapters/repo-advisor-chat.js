@@ -5,10 +5,11 @@
  * Mirrors POST /ai/chat: build the system prompt, call the provider (mock),
  * then parse + shape the `{ reply, actions }` payload exactly as the route does.
  *
- * This validates the response CONTRACT deterministically against fixed mock
- * responses (no real LLM). Model / grounding QUALITY is out of scope until the
- * `--real` mode lands (it needs a provider key + budget). Building the prompt
- * here also exercises the error-KB grounding path so it can't throw.
+ * In mock mode this validates the response CONTRACT deterministically against
+ * fixed mock responses. In `--real` mode the same prompt is sent to a real
+ * model and graded by the case's structural scorers + any `judge` rubric.
+ * Building the prompt also exercises the error-KB grounding path so it can't
+ * throw.
  */
 
 import { buildChatPrompt } from '../../lib/ai-chat-prompt.js';
@@ -22,12 +23,12 @@ export const feature = 'repo-advisor-chat';
  * @returns {Promise<{ reply: string, actions: Array } | null>}
  */
 export async function runCase({ input, provider }) {
-    // Build the prompt as the route does — verifies it doesn't throw and
-    // exercises the error-KB grounding branch for error-referencing messages.
-    buildChatPrompt({ message: input.message, context: input.context });
+    // Build the prompt exactly as the route does — exercises the error-KB
+    // grounding branch and feeds the REAL prompt to the model in --real mode.
+    // (The mock provider ignores it and returns the case's mockResponse.)
+    const prompt = buildChatPrompt({ message: input.message, context: input.context });
 
-    // Mock provider ignores the prompt and returns the case's mockResponse.
-    const { text } = await provider.generate({ prompt: 'eval-prompt' });
+    const { text } = await provider.generate({ prompt });
 
     // Mirror the route's parse contract: valid only with a string `reply`.
     const parsed = safeJsonParse(text);
