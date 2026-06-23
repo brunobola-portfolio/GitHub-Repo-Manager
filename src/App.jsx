@@ -179,6 +179,7 @@ function AppContent() {
     fetchStats,
     activity,
     askAI,
+    askAIStream,
     checkAIStatus,
   } = useGitHub()
 
@@ -902,7 +903,7 @@ function AppContent() {
       />
       <ErrorBoundary fallback={<ViewErrorFallback viewName="Repo Advisor" />}>
         <Suspense fallback={null}>
-          <AIAssistant askAI={askAI} user={user} checkAIStatus={checkAIStatus} />
+          <AIAssistant askAI={askAI} askAIStream={askAIStream} user={user} checkAIStatus={checkAIStatus} />
         </Suspense>
       </ErrorBoundary>
 
