@@ -632,7 +632,11 @@ export const userAIConfigSchema = z.object({
     embeddingEndpointUrl: z.string().url().max(500).nullable().optional(),
     featureOverrides: z.record(
         z.string().regex(/^[A-Z_]+$/, 'Feature key must be UPPER_SNAKE_CASE'),
-        z.string().max(120)
+        // Model id: non-empty, bounded, and restricted to the characters real
+        // provider model ids use (alnum plus . _ - : and / for OpenRouter
+        // "vendor/model"). Rejects empty strings, whitespace, control chars and
+        // injection-y punctuation before the value ever reaches a provider SDK.
+        z.string().min(1).max(120).regex(/^[A-Za-z0-9._:/-]+$/, 'Invalid model id')
     ).nullable().optional(),
 });
 

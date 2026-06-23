@@ -28,6 +28,7 @@ commented list. Key variables:
 | `WORK_BOARD_AI_ENABLED` | Work Board AI endpoints (off unless exactly `true`) | off |
 | `ALLOW_LOCAL_AI_ENDPOINTS` | Allow loopback/private BYOK endpoints (with `local` provider) | off (SSRF-blocked) |
 | `CREDENTIAL_ENCRYPTION_KEY` | AES-256-GCM key for BYOK creds at rest (required in prod) | falls back to `SESSION_SECRET` (dev only) |
+| `CREDENTIAL_ENCRYPTION_KEY_PREVIOUS` | Old key kept readable during rotation — set the new key above, the old one here; re-saves re-encrypt under the new key, then drop this | unset |
 
 > Example — run the whole server on Anthropic: `AI_PROVIDER=anthropic`,
 > `ANTHROPIC_API_KEY=sk-ant-…`. Cap cost: `AI_SPEND_CAP_CENTS=500` ($5/user/mo).
