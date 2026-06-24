@@ -28,3 +28,26 @@ describe('FileTreeItem — viewed marker animation', () => {
         expect(screen.getByText('-3')).toBeInTheDocument()
     })
 })
+
+describe('FileTreeItem — treeitem a11y semantics', () => {
+    it('is a tabIndex=-1 treeitem with level/posinset/setsize + id (aria-activedescendant target)', () => {
+        render(
+            <FileTreeItem
+                file={FILE} id="tree-item-2" isActive isFocused
+                isReviewed={false} posInSet={3} setSize={42} onClick={vi.fn()}
+            />,
+        )
+        const item = screen.getByRole('treeitem')
+        expect(item).toHaveAttribute('id', 'tree-item-2')
+        expect(item).toHaveAttribute('tabindex', '-1')
+        expect(item).toHaveAttribute('aria-level', '1')
+        expect(item).toHaveAttribute('aria-posinset', '3')
+        expect(item).toHaveAttribute('aria-setsize', '42')
+        expect(item).toHaveAttribute('aria-selected', 'true')
+    })
+
+    it('marks aria-selected=false when not active', () => {
+        render(<FileTreeItem file={FILE} isActive={false} isReviewed={false} onClick={vi.fn()} />)
+        expect(screen.getByRole('treeitem')).toHaveAttribute('aria-selected', 'false')
+    })
+})

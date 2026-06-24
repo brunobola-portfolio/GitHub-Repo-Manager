@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo } from 'react'
+import { useRef, useEffect, useMemo, useState, useId } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { ArrowUpDown } from 'lucide-react'
 import { FileTreeItem } from './FileTreeItem'
@@ -27,6 +27,11 @@ export function FileTree({
   onSortChange,
 }) {
   const parentRef = useRef(null)
+  const treeId = useId()
+  const itemId = (i) => `${treeId}-item-${i}`
+  // Roving "active descendant" index for keyboard navigation. Focus stays on
+  // the tree container; this points aria-activedescendant at the current row.
+  const [focusedIndex, setFocusedIndex] = useState(0)
 
   // Build AI risk lookup: filename -> level string (e.g. 'high')
   // AI fileRisks items use `file` as the filename property
@@ -61,14 +66,43 @@ export function FileTree({
     overscan: 15,
   })
 
-  // Scroll active file into view when it changes
+  // Scroll active file into view when it changes + move the roving anchor to it
+  // (so keyboard navigation resumes from the selected file).
   useEffect(() => {
     if (!activeFile) return
     const idx = files.findIndex(f => f.filename === activeFile)
     if (idx !== -1) {
+      setFocusedIndex(idx)
       rowVirtualizer.scrollToIndex(idx, { align: 'auto' })
     }
   }, [activeFile, files, rowVirtualizer])
+
+  // Keyboard navigation for the tree (focus stays on the container; we move the
+  // active descendant). Up/Down step, Home/End jump, Enter/Space select. Off-
+  // screen targets are scrolled in so aria-activedescendant resolves.
+  const handleTreeKeyDown = (e) => {
+    if (!files.length) return
+    let next = focusedIndex
+    switch (e.key) {
+      case 'ArrowDown': next = Math.min(focusedIndex + 1, files.length - 1); break
+      case 'ArrowUp': next = Math.max(focusedIndex - 1, 0); break
+      case 'Home': next = 0; break
+      case 'End': next = files.length - 1; break
+      case 'Enter':
+      case ' ':
+        e.preventDefault()
+        if (files[focusedIndex]) onFileSelect?.(files[focusedIndex].filename)
+        return
+      default:
+        return
+    }
+    e.preventDefault()
+    setFocusedIndex(next)
+    rowVirtualizer.scrollToIndex(next, { align: 'auto' })
+  }
+
+  // Clamp in case the file list shrank under a stale index.
+  const activeDescendantIndex = Math.max(0, Math.min(focusedIndex, files.length - 1))
 
   const nextSortMode = sortMode === 'risk' ? 'az' : 'risk'
 
@@ -90,14 +124,20 @@ export function FileTree({
         </button>
       </div>
 
-      {/* Virtualized list */}
+      {/* Virtualized list. Focus lives here (single tab stop); arrow keys move
+          the active descendant. The sizer + row wrappers are presentational so
+          the treeitems read as direct children of the tree despite virtualization. */}
       <div
         ref={parentRef}
         role="tree"
+        tabIndex={0}
         aria-label="Changed files"
-        className="flex-1 overflow-y-auto overflow-x-hidden"
+        aria-activedescendant={files[activeDescendantIndex] ? itemId(activeDescendantIndex) : undefined}
+        onKeyDown={handleTreeKeyDown}
+        className="flex-1 overflow-y-auto overflow-x-hidden focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-blue-500"
       >
         <div
+          role="presentation"
           style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}
         >
           {rowVirtualizer.getVirtualItems().map(virtualRow => {
@@ -110,6 +150,7 @@ export function FileTree({
             return (
               <div
                 key={file.filename}
+                role="presentation"
                 style={{
                   position: 'absolute',
                   top: 0,
@@ -120,12 +161,16 @@ export function FileTree({
                 }}
               >
                 <FileTreeItem
+                  id={itemId(virtualRow.index)}
                   file={file}
                   isActive={isActive}
+                  isFocused={virtualRow.index === activeDescendantIndex}
                   isReviewed={isReviewed}
                   aiRisk={aiRisk}
                   heuristicScore={hScore}
-                  onClick={() => onFileSelect?.(file.filename)}
+                  posInSet={virtualRow.index + 1}
+                  setSize={files.length}
+                  onClick={() => { setFocusedIndex(virtualRow.index); onFileSelect?.(file.filename) }}
                 />
               </div>
             )
