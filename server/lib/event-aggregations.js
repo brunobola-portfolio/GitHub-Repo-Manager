@@ -51,21 +51,27 @@ function hoursSince(isoDate) {
 export function listMyPendingReviews({ reviewerLogin, limit = 100 }) {
     if (!reviewerLogin) return [];
 
+    // Pull the latest pr_event title/author via correlated lookups scoped to
+    // each assignment's (repo_id, pr_number) — uses idx_pr_events_repo_pr. The
+    // previous LEFT JOIN derived the "latest event per (repo, pr)" across ALL
+    // pr_events first (a cross-tenant full scan, O(total events)); this bounds
+    // the work to the reviewer's own pending slice instead.
     const rows = db.prepare(`
         SELECT
             ra.repo_full_name   AS repoFullName,
             ra.pr_number        AS prNumber,
-            pe.title            AS title,
-            pe.author_login     AS authorLogin,
+            (
+                SELECT pe.title FROM pr_events pe
+                WHERE pe.repo_id = ra.repo_id AND pe.pr_number = ra.pr_number
+                ORDER BY pe.id DESC LIMIT 1
+            )                   AS title,
+            (
+                SELECT pe.author_login FROM pr_events pe
+                WHERE pe.repo_id = ra.repo_id AND pe.pr_number = ra.pr_number
+                ORDER BY pe.id DESC LIMIT 1
+            )                   AS authorLogin,
             ra.requested_at     AS requestedAt
         FROM review_assignments ra
-        LEFT JOIN (
-            SELECT repo_id, pr_number, title, author_login
-            FROM pr_events
-            WHERE id IN (
-                SELECT MAX(id) FROM pr_events GROUP BY repo_id, pr_number
-            )
-        ) pe ON pe.repo_id = ra.repo_id AND pe.pr_number = ra.pr_number
         WHERE ra.reviewer_login = ?
           AND ra.state = 'pending'
         ORDER BY ra.requested_at DESC
@@ -337,6 +343,15 @@ export function listTechDebtIssues({ labels, repoIds, limit = 100 } = {}) {
         .map(l => String(l).toLowerCase());
     const { clause, bindings } = repoIdsFilter(repoIds);
 
+    // When repoIds is supplied, scope the "latest row per (repo, issue)"
+    // computation to those repos so the inner GROUP BY is a bounded indexed
+    // scan rather than an O(all-events) cross-tenant scan. (MAX(id) GROUP BY
+    // repo_id,issue_number partitions by repo, so restricting the input gives
+    // the identical per-issue maxes for those repos.) Callers that omit repoIds
+    // remain a full scan — those paths are cached at the work-board layer; the
+    // deeper unscoped fix is a per-issue snapshot table.
+    const innerWhere = bindings.length ? `WHERE repo_id IN (${bindings.map(() => '?').join(', ')})` : '';
+
     // Latest row per (repo_id, issue_number). We filter in JS because labels
     // are stored as JSON text; this runs against the already-small result set.
     const rows = db.prepare(`
@@ -359,6 +374,7 @@ export function listTechDebtIssues({ labels, repoIds, limit = 100 } = {}) {
         WHERE ie.id IN (
             SELECT MAX(id)
             FROM issue_events
+            ${innerWhere}
             GROUP BY repo_id, issue_number
         )
           AND NOT EXISTS (
@@ -369,7 +385,7 @@ export function listTechDebtIssues({ labels, repoIds, limit = 100 } = {}) {
           )
           ${clause.replace(/AND repo_id/g, 'AND ie.repo_id')}
         ORDER BY openedAt ASC
-    `).all(...bindings);
+    `).all(...bindings, ...bindings);
 
     const matched = [];
     for (const r of rows) {
