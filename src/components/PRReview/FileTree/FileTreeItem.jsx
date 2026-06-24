@@ -26,14 +26,23 @@ function basename(path) {
 /**
  * Single row in the file tree.
  *
+ * Focus lives on the parent role=tree (aria-activedescendant pattern) because
+ * the list is virtualized — rows unmount on scroll, so they can't reliably hold
+ * DOM focus. Each row is therefore a treeitem with tabIndex -1, an id the tree
+ * points its active descendant at, and a manual ring when `isFocused`.
+ *
  * @param {object}   file            - PR file object { filename, additions, deletions, status }
+ * @param {string}   id              - Stable id so the tree's aria-activedescendant can target it
  * @param {boolean}  isActive        - Whether this file is currently selected
+ * @param {boolean}  isFocused       - Whether this row is the tree's active descendant
  * @param {boolean}  isReviewed      - Whether the user has marked this file reviewed
  * @param {string}   [aiRisk]        - Named AI risk level for this file
  * @param {number}   [heuristicScore] - Heuristic risk score 0–5
+ * @param {number}   [posInSet]      - 1-based position within the full (virtualized) set
+ * @param {number}   [setSize]       - Total number of files (for AT, despite virtualization)
  * @param {Function} onClick         - Called when the row is clicked
  */
-export function FileTreeItem({ file, isActive, isReviewed, aiRisk, heuristicScore, onClick }) {
+export function FileTreeItem({ file, id, isActive, isFocused, isReviewed, aiRisk, heuristicScore, posInSet, setSize, onClick }) {
   const { filename, additions = 0, deletions = 0, status = 'modified' } = file
   const reducedMotion = useReducedMotion()
 
@@ -43,6 +52,9 @@ export function FileTreeItem({ file, isActive, isReviewed, aiRisk, heuristicScor
   const activeClass = isActive
     ? 'bg-blue-100 dark:bg-blue-900/40'
     : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+  // Real focus stays on the tree container, so the active-descendant row shows
+  // its own ring instead of relying on :focus-visible.
+  const focusClass = isFocused ? 'ring-1 ring-inset ring-blue-500' : ''
 
   // motion.button with `layout` so re-sorting (risk/A-Z toggle, viewed
   // reorder) animates rows to their new positions instead of jumping.
@@ -51,10 +63,15 @@ export function FileTreeItem({ file, isActive, isReviewed, aiRisk, heuristicScor
     <motion.button
       layout={reducedMotion ? false : 'position'}
       transition={reducedMotion ? { duration: 0 } : { duration: 0.2, ease: EASE.standard }}
+      id={id}
       role="treeitem"
+      tabIndex={-1}
+      aria-level={1}
       aria-selected={isActive}
+      aria-posinset={posInSet}
+      aria-setsize={setSize}
       onClick={onClick}
-      className={`w-full flex items-center gap-1.5 px-2 py-1 text-left transition-colors ${activeClass} focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500`}
+      className={`w-full flex items-center gap-1.5 px-2 py-1 text-left transition-colors ${activeClass} ${focusClass} focus:outline-none`}
       title={filename}
     >
       {/* Risk dot */}
