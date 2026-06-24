@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { ShieldAlert, RefreshCw, RotateCcw, CheckCircle2, AlertTriangle, WifiOff, HelpCircle } from 'lucide-react'
 import { apiCall } from '../../utils/api'
 import { useToast } from '../../hooks/useToast'
+import { useTabData } from '../../hooks/useTabData.js'
 import { useRelativeTime } from '../../hooks/useRelativeTime.js'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
@@ -28,49 +29,31 @@ const ORDER = ['ok', 'invalid', 'unreachable', 'unknown']
  * operational visibility, not long-term metrics.
  */
 export function ProbeStatsSection({ isAdmin = false }) {
-    const [stats, setStats] = useState(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
     const [resetting, setResetting] = useState(false)
     const { toast } = useToast()
+
+    // Single shared loader with AbortController cancellation via useTabData —
+    // replaces the hand-rolled loading/error/try-catch + mount effect (and its
+    // eslint-disable). Non-admins skip the fetch entirely; the render
+    // short-circuits to the "admin only" state below regardless.
+    const { data: stats, loading, error, reload } = useTabData(
+        () => (isAdmin ? apiCall('/api/admin/ai/probe-stats') : Promise.resolve(null)),
+        [isAdmin],
+    )
     const lastOutcomeRel = useRelativeTime(stats?.lastOutcomeAt ?? null)
-
-    const fetchStats = useCallback(async () => {
-        setLoading(true)
-        setError(null)
-        try {
-            const data = await apiCall('/api/admin/ai/probe-stats')
-            setStats(data)
-        } catch (err) {
-            setError(err)
-            setStats(null)
-        } finally {
-            setLoading(false)
-        }
-    }, [])
-
-    /* eslint-disable react-hooks/set-state-in-effect -- mount-time fetch + manual refresh */
-    useEffect(() => {
-        if (!isAdmin) {
-            setLoading(false)
-            return
-        }
-        fetchStats()
-    }, [isAdmin, fetchStats])
-    /* eslint-enable react-hooks/set-state-in-effect */
 
     const handleReset = useCallback(async () => {
         setResetting(true)
         try {
             await apiCall('/api/admin/ai/probe-stats/reset', { method: 'POST' })
             toast.success('Probe counters reset')
-            await fetchStats()
+            await reload()
         } catch (err) {
             toast.errorFromException(err, { fallbackTitle: 'Reset failed' })
         } finally {
             setResetting(false)
         }
-    }, [fetchStats, toast])
+    }, [reload, toast])
 
     if (!isAdmin) {
         return (
@@ -99,7 +82,7 @@ export function ProbeStatsSection({ isAdmin = false }) {
                 icon={AlertTriangle}
                 title="Couldn't load probe stats"
                 description={error.message ?? 'Unknown error talking to /api/admin/ai/probe-stats.'}
-                action={{ label: 'Retry', onClick: fetchStats }}
+                action={{ label: 'Retry', onClick: reload }}
             />
         )
     }
@@ -114,7 +97,7 @@ export function ProbeStatsSection({ isAdmin = false }) {
                 description={lastOutcomeRel ? `Last outcome ${lastOutcomeRel}` : undefined}
                 actions={
                     <>
-                        <Button variant="secondary" size="sm" onClick={fetchStats} disabled={loading}>
+                        <Button variant="secondary" size="sm" onClick={reload} disabled={loading}>
                             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
                             Refresh
                         </Button>
