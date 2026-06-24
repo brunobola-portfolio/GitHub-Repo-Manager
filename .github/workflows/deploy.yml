@@ -11,7 +11,7 @@ jobs:
       SESSION_SECRET: ci-test-session-secret-not-real-32chars
       NODE_ENV: test
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with:
           node-version: 22
@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install Railway CLI
         run: npm install -g @railway/cli
       - name: Deploy to Railway
