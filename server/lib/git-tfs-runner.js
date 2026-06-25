@@ -12,10 +12,7 @@
  */
 
 import { spawn } from 'node:child_process';
-import { promisify } from 'node:util';
-import { execFile as execFileCb } from 'node:child_process';
-
-const execFile = promisify(execFileCb);
+import { detectTool } from './env/detect.js';
 
 let cachedAvailability = null;
 
@@ -27,16 +24,8 @@ let cachedAvailability = null;
  */
 export async function isAvailable() {
   if (cachedAvailability !== null) return cachedAvailability;
-  if (process.platform !== 'win32') {
-    cachedAvailability = false;
-    return false;
-  }
-  try {
-    await execFile('git-tfs', ['--version'], { timeout: 5000 });
-    cachedAvailability = true;
-  } catch {
-    cachedAvailability = false;
-  }
+  const r = await detectTool('git-tfs');
+  cachedAvailability = r.status === 'ok';
   return cachedAvailability;
 }
 

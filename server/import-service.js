@@ -11,6 +11,7 @@ import { randomUUID } from 'crypto';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import logger from './lib/logger.js';
+import { detectTool } from './lib/env/detect.js';
 import { isInternalUrl, resolveAndValidateHost } from './lib/url-validator.js';
 import {
     findOversizedBlobs,
@@ -37,13 +38,8 @@ if (!existsSync(TMP_DIR)) {
  * Check if git is available on the system
  */
 async function checkGitInstalled() {
-    try {
-        const git = simpleGit();
-        const version = await git.version();
-        return { installed: true, version: version?.installed ? version : null };
-    } catch {
-        return { installed: false, version: null };
-    }
+    const r = await detectTool('git');
+    return { installed: r.status === 'ok' || r.status === 'outdated', version: r.version };
 }
 
 /**
@@ -161,11 +157,15 @@ export function lfsPushNeeded(hasLFS, sizeStrategy) {
  * @param {(args:string[])=>Promise<any>} runRaw - runs `git <args>` (e.g. git.raw)
  */
 export async function ensureGitLfs(runRaw) {
-    try {
-        await runRaw(['lfs', 'version']);
-    } catch {
+    // The repo-scoped runRaw stays the detection path (honours the repo's PATH),
+    // but normalise the "missing" verdict through the engine's status model.
+    const probe = await detectTool('git-lfs', {
+        runner: async (_cmd, args) => ({ stdout: await runRaw(args) }),
+        force: true,
+    });
+    if (probe.status === 'missing') {
         const err = new Error(
-            'Git LFS is not installed on the migration server, so files over GitHub\'s 100 MB limit cannot be converted. Install git-lfs (https://git-lfs.com) on the server and retry, or choose "Exclude" for this repository.',
+            "Git LFS is not installed on the migration server, so files over GitHub's 100 MB limit cannot be converted. Install git-lfs (https://git-lfs.com) on the server and retry, or choose \"Exclude\" for this repository.",
         );
         err.code = 'GIT_LFS_MISSING';
         throw err;
