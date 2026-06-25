@@ -59,7 +59,9 @@
     "admin:dlq": "node server/scripts/admin-dlq.mjs",
     "admin:dlq:sweep": "node server/scripts/dlq-sweep.mjs",
     "lint:css": "node scripts/check-killed-classes.mjs",
-    "prebuild": "npm run lint:css"
+    "prebuild": "npm run lint:css",
+    "doctor": "node scripts/doctor.mjs",
+    "doctor:fix": "node scripts/doctor.mjs --fix"
   },
   "dependencies": {
     "@git-diff-view/react": "^0.1.3",
