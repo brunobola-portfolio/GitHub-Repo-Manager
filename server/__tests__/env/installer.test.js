@@ -47,4 +47,12 @@ describe('installTool', () => {
     const r = await installTool('tf', d); // tf has no installers
     expect(r).toMatchObject({ ok: false, reason: 'no_installer' });
   });
+
+  it('returns wrong_platform without invoking spawn for win32-only tools on linux', async () => {
+    const d = deps();
+    d.platform = 'linux';
+    const r = await installTool('git-tfs', d); // git-tfs is win32-only
+    expect(r).toMatchObject({ ok: false, reason: 'wrong_platform' });
+    expect(d.spawnRunner).not.toHaveBeenCalled();
+  });
 });

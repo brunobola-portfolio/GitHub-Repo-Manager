@@ -13,15 +13,25 @@ const defaultSpawnRunner = (cmd, args, { onLine } = {}) =>
   new Promise((resolve) => {
     const child = spawn(cmd, args, { windowsHide: true });
     let output = '';
+    // A spawn error fires both 'error' then 'close'; only the first resolve wins.
+    let settled = false;
     const pump = (chunk) => {
       const text = chunk.toString();
       output += text;
-      for (const line of text.split(/\r?\n/)) if (line.trim()) onLine?.(line);
+      for (const line of text.split(/\r?\n/)) if (line.trim()) onLine?.(sanitizeOutput(line));
     };
     child.stdout?.on('data', pump);
     child.stderr?.on('data', pump);
-    child.on('error', (err) => resolve({ code: 1, output: `${output}\n${err.message}` }));
-    child.on('close', (code) => resolve({ code: code ?? 1, output }));
+    child.on('error', (err) => {
+      if (settled) return;
+      settled = true;
+      resolve({ code: 1, output: `${output}\n${sanitizeOutput(err.message)}` });
+    });
+    child.on('close', (code) => {
+      if (settled) return;
+      settled = true;
+      resolve({ code: code ?? 1, output });
+    });
   });
 
 /**
@@ -53,7 +63,7 @@ export async function installTool(id, opts = {}) {
   }
 
   const needsElevation = requiresElevation(preferred);
-  const printable = `${command.cmd} ${command.args.join(' ')}`;
+  const printable = sanitizeOutput(`${command.cmd} ${command.args.join(' ')}`);
   onProgress?.({ phase: 'start', manager: preferred, command: printable });
 
   const { code, output } = await spawnRunner(command.cmd, command.args, {
@@ -85,5 +95,5 @@ export async function installTool(id, opts = {}) {
 }
 
 function fail(manager, reason, message) {
-  return { ok: false, manager, code: 1, needsElevation: false, command: null, output: message, redetected: null, reason };
+  return { ok: false, manager, code: 1, needsElevation: false, command: null, output: sanitizeOutput(message), redetected: null, reason };
 }
