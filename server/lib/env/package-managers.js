@@ -48,7 +48,7 @@ export async function resolveManagers({ platform = process.platform, runner = de
 }
 
 /** True when installing via `manager` needs root/admin on `platform`. */
-export function requiresElevation(manager) {
+export function requiresElevation(manager, _platform) {
   return ELEVATED.has(manager);
 }
 
