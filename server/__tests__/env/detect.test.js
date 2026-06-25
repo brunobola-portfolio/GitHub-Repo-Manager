@@ -41,3 +41,16 @@ describe('detectTool', () => {
     expect(runner).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('detectAll', () => {
+  it('honors the platform option', async () => {
+    const { detectAll } = await import('../../lib/env/detect.js');
+    const results = await detectAll({ runner: okGit('git version 2.45.1'), platform: 'linux' });
+
+    const git = results.find((r) => r.id === 'git');
+    const gitTfs = results.find((r) => r.id === 'git-tfs');
+
+    expect(git.status).toBe('ok');
+    expect(gitTfs.status).toBe('n/a');
+  });
+});

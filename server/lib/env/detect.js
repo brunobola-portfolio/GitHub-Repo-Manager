@@ -50,7 +50,7 @@ export async function detectTool(idOrEntry, opts = {}) {
 
   const cached = cache.get(entry.id);
   if (!opts.force && cached && cached.expires > Date.now()) {
-    return cached.result;
+    return { ...cached.result };
   }
 
   let result;
