@@ -25,7 +25,7 @@ const defaultSpawnRunner = (cmd, args, { onLine } = {}) =>
     child.on('error', (err) => {
       if (settled) return;
       settled = true;
-      resolve({ code: 1, output: `${output}\n${sanitizeOutput(err.message)}` });
+      resolve({ code: 1, output: `${sanitizeOutput(output)}\n${sanitizeOutput(err.message)}` });
     });
     child.on('close', (code) => {
       if (settled) return;

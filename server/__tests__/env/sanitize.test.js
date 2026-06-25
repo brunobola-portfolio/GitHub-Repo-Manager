@@ -22,8 +22,19 @@ describe('sanitizeOutput', () => {
     expect(sanitizeOutput(token)).toBe('***');
   });
 
-  it('preserves a 40-char all-lowercase path-like run', () => {
-    // all-lowercase = no digits, so entropy heuristic skips it
+  it('masks a GitHub PAT with all-lowercase payload and no digits (regression)', () => {
+    // ghp_ + 36 all-lowercase chars — no digit, entropy heuristic would miss this
+    const token = 'ghp_' + 'abcdefghijklmnopqrstuvwxyzabcdefghij';
+    expect(sanitizeOutput(token)).toBe('***');
+  });
+
+  it('masks a fine-grained github_pat_ token', () => {
+    const token = 'github_pat_abcdefghijklmnopqrstuvwxyzABCDEFGHIJ';
+    expect(sanitizeOutput(token)).toBe('***');
+  });
+
+  it('preserves a 40-char all-lowercase path-like run (no prefix)', () => {
+    // all-lowercase, no known prefix, no digits — entropy heuristic skips it
     const segment = 'abcdefghijklmnopqrstuvwxyzabcdefghijklmn';
     expect(sanitizeOutput(segment)).toBe(segment);
   });
