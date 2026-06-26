@@ -10,7 +10,7 @@ import { join, relative, dirname, basename, extname } from 'path';
 import { randomUUID } from 'crypto';
 import { fileURLToPath } from 'url';
 import { dirname as pathDirname } from 'path';
-import { getWikiCloneUrl, buildAuthenticatedCloneUrl } from './azure-service.js';
+import { getWikiCloneUrl, buildAuthenticatedCloneUrl, orgBaseFor } from './azure-service.js';
 import { isInternalUrl, resolveAndValidateHost } from './lib/url-validator.js';
 import logger from './lib/logger.js';
 
@@ -33,7 +33,7 @@ if (!existsSync(TMP_DIR)) {
  * @param {string} [project] - Azure DevOps project (for work item links)
  * @returns {string} Converted content
  */
-function convertContent(content, destination, org, project) {
+function convertContent(content, destination, org, project, host) {
     let result = content;
 
     // Remove [[_TOC_]]
@@ -61,11 +61,15 @@ function convertContent(content, destination, org, project) {
         }
     }
 
-    // Convert @WorkItem:ID to link
+    // Convert @WorkItem:ID to link. orgBaseFor() resolves the right origin for
+    // cloud / *.visualstudio.com / on-prem TFS (hardcoding dev.azure.com pointed
+    // every on-prem link at the wrong host); project is URL-encoded so it can't
+    // break out of the markdown link syntax.
     if (org && project) {
+        const base = `${orgBaseFor(host, org)}/${encodeURIComponent(project)}`;
         result = result.replace(
             /@WorkItem:(\d+)/g,
-            `[ADO Work Item #$1](https://dev.azure.com/${org}/${project}/_workitems/edit/$1)`
+            `[ADO Work Item #$1](${base}/_workitems/edit/$1)`
         );
     }
 
@@ -151,7 +155,7 @@ function walkDir(dir) {
  * @returns {Object} { pagesConverted, destination }
  */
 async function migrateWiki(config, azureCreds, githubToken, targetOwner, targetRepo, callbacks = {}) {
-    const { org, project, wikiId, destination } = config;
+    const { org, project, wikiId, destination, host } = config;
     const { pat } = azureCreds;
     const onProgress = callbacks.onProgress || (() => {});
 
@@ -162,7 +166,7 @@ async function migrateWiki(config, azureCreds, githubToken, targetOwner, targetR
     try {
         // Step 1: Get wiki clone URL
         onProgress('fetching', 'Fetching wiki clone URL...', 5);
-        const wikiRemoteUrl = await getWikiCloneUrl(org, project, pat, wikiId);
+        const wikiRemoteUrl = await getWikiCloneUrl(org, project, pat, wikiId, host);
         if (!wikiRemoteUrl) {
             throw new Error('Could not retrieve wiki clone URL from Azure DevOps');
         }
@@ -217,7 +221,7 @@ async function migrateWiki(config, azureCreds, githubToken, targetOwner, targetR
             // Convert markdown files
             if (ext === '.md') {
                 const content = readFileSync(filePath, 'utf-8');
-                const converted = convertContent(content, destination, org, project);
+                const converted = convertContent(content, destination, org, project, host);
                 const destPath = join(convertedDir, relPath);
                 mkdirSync(dirname(destPath), { recursive: true });
                 writeFileSync(destPath, converted, 'utf-8');
