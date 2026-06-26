@@ -180,6 +180,8 @@ app.use('/api/', (req, _res, next) => {
 // unavailable, etc.). Legacy GET /api/health below is preserved separately.
 import healthRouter from './routes/health.js';
 app.use('/api/health', healthRouter);
+import envRouter from './routes/env.js';
+app.use('/api/env', envRouter);
 
 // Rate limiting for API endpoints
 // Per-tenant limits (free / pro / enterprise) backed by Redis when REDIS_URL is set.

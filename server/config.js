@@ -132,6 +132,10 @@ function loadConfig() {
         data.logLevel = 'warn';
     }
 
+    // Operator toggle: set ENV_TOOLING_INSTALL_ENABLED=false to disable the
+    // admin-gated /api/env/tooling/:id/install endpoint on hosted deployments.
+    data.envToolingInstallEnabled = process.env.ENV_TOOLING_INSTALL_ENABLED !== 'false';
+
     return Object.freeze(data);
 }
 
