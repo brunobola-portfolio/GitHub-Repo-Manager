@@ -38,6 +38,29 @@ export async function preflightTooling(job, opts = {}) {
 }
 
 /**
+ * Aggregate the migration tooling a plan needs from its tasks.
+ * TFVC is per-task (type 'repo-tfvc'); lfs-migrate lives in each task's
+ * config JSON. `hasLFS` (source already uses LFS) is only knowable at
+ * clone time — the lazy ensureGitLfs check still guards that path — so the
+ * pre-clone signal we can assert here is the chosen lfs-migrate strategy.
+ * @param {object} plan - migration_plans row (has source_type)
+ * @param {Array<{type:string, config:string}>} tasks - migration_tasks rows
+ * @returns {{ sourceType: string, hasLFS: boolean, sizeStrategy: string|null }}
+ */
+export function migrationJobFromPlan(plan, tasks = []) {
+  const anyTfvc = plan.source_type === 'azure-tfvc' || tasks.some((t) => t.type === 'repo-tfvc');
+  const anyLfsMigrate = tasks.some((t) => {
+    try { return JSON.parse(t.config || '{}')?.sizeStrategy === 'lfs-migrate'; }
+    catch { return false; }
+  });
+  return {
+    sourceType: anyTfvc ? 'azure-tfvc' : plan.source_type,
+    hasLFS: false,
+    sizeStrategy: anyLfsMigrate ? 'lfs-migrate' : null,
+  };
+}
+
+/**
  * Resolve the Azure PAT for a plan execute/resume/retry request via the
  * shared resolver (vault > pasted > session > env — same order as the
  * Azure API routes).
@@ -66,11 +89,10 @@ const engine = new MigrationEngine(db);
 // retry, scheduled) checks required tooling before the plan transitions to
 // 'running'. The engine._preflight seam is null by default so engine unit
 // tests are unaffected; only the live route process sees real tool detection.
-engine._preflight = (plan) => preflightTooling({
-  sourceType: plan.source_type,
-  hasLFS: false,
-  sizeStrategy: null,
-});
+engine._preflight = (plan) => {
+  const tasks = db.prepare('SELECT type, config FROM migration_tasks WHERE plan_id = ?').all(plan.id);
+  return preflightTooling(migrationJobFromPlan(plan, tasks));
+};
 
 // Tagging service: wired post-execution so the engine stays focused on
 // plan/task orchestration. Failure of marks NEVER aborts the migration —
