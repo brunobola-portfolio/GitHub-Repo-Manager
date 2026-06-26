@@ -13,7 +13,7 @@ import { PageHeader } from '../ui/PageHeader';
 import { SectionSpinner, Spinner } from '../ui/Spinner';
 import { EmptyState } from '../ui/EmptyState';
 import { Input } from '../ui/form';
-import { getCsrfToken } from '../../utils/api';
+import { apiCall } from '../../utils/api';
 
 const TEAM_TABS = [
     { id: 'activity', label: 'Activity', icon: Activity },
@@ -89,27 +89,19 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
 
     const handleInviteGivenUsername = async (usernameToInvite) => {
         try {
-            const headers = { 'Content-Type': 'application/json' };
-            try { headers['X-CSRF-Token'] = await getCsrfToken(); } catch { /* server will 403 */ }
-            const res = await fetch(`/api/teams/${team.id}/members`, {
+            await apiCall(`/api/teams/${team.id}/members`, {
                 method: 'POST',
-                credentials: 'include',
-                headers,
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: usernameToInvite })
             });
-            const data = await res.json();
-            if (res.ok) {
-                toast.success('Member added successfully');
-                setInviteUsername('');
-                setUserSearchResults([]);
-                // Keep the search open or close it? Let's close it for cleaner UX
-                setShowInvite(false);
-                fetchDetails();
-            } else {
-                toast.error(data.error || 'Failed to add member');
-            }
+            toast.success('Member added successfully');
+            setInviteUsername('');
+            setUserSearchResults([]);
+            // Keep the search open or close it? Let's close it for cleaner UX
+            setShowInvite(false);
+            fetchDetails();
         } catch (error) {
-            toast.error('Failed to invite user');
+            toast.error(error?.data?.error || 'Failed to add member');
         }
     };
 
@@ -118,46 +110,31 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
 
     const handleAssignRepoDirectly = async (repo) => {
         try {
-            const headers = { 'Content-Type': 'application/json' };
-            try { headers['X-CSRF-Token'] = await getCsrfToken(); } catch { /* server will 403 */ }
-            const res = await fetch(`/api/teams/${team.id}/repos`, {
+            await apiCall(`/api/teams/${team.id}/repos`, {
                 method: 'POST',
-                credentials: 'include',
-                headers,
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ repoFullName: repo.full_name, repoId: repo.id })
             });
-            if (res.ok) {
-                toast.success('Repository assigned');
-                // Don't close panel, maybe user wants to assign more
-                // But typically clearer to close or clear search
-                fetchDetails();
-            } else {
-                toast.error('Failed to assign repository');
-            }
+            toast.success('Repository assigned');
+            // Don't close panel, maybe user wants to assign more
+            // But typically clearer to close or clear search
+            fetchDetails();
         } catch (error) {
-            toast.error('Error assigning repository');
+            toast.error(error?.data?.error || 'Failed to assign repository');
         }
     };
 
     const handleUpdateRole = async (userId, newRole) => {
         try {
-            const headers = { 'Content-Type': 'application/json' };
-            try { headers['X-CSRF-Token'] = await getCsrfToken(); } catch { /* server will 403 */ }
-            const res = await fetch(`/api/teams/${team.id}/members/${userId}`, {
+            await apiCall(`/api/teams/${team.id}/members/${userId}`, {
                 method: 'PUT',
-                credentials: 'include',
-                headers,
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ role: newRole })
             });
-
-            if (res.ok) {
-                toast.success('Role updated');
-                fetchDetails(); // Refresh list
-            } else {
-                toast.error('Failed to update role');
-            }
+            toast.success('Role updated');
+            fetchDetails(); // Refresh list
         } catch (error) {
-            toast.error('Error updating role');
+            toast.error(error?.data?.error || 'Failed to update role');
         }
     };
 
@@ -168,22 +145,13 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
             confirmText: 'Remove',
             onConfirm: async () => {
                 try {
-                    const headers = {};
-                    try { headers['X-CSRF-Token'] = await getCsrfToken(); } catch { /* server will 403 */ }
-                    const res = await fetch(`/api/teams/${team.id}/members/${userId}`, {
+                    await apiCall(`/api/teams/${team.id}/members/${userId}`, {
                         method: 'DELETE',
-                        credentials: 'include',
-                        headers,
                     });
-
-                    if (res.ok) {
-                        toast.success('Member removed');
-                        fetchDetails();
-                    } else {
-                        toast.error('Failed to remove member');
-                    }
+                    toast.success('Member removed');
+                    fetchDetails();
                 } catch (error) {
-                    toast.error('Error removing member');
+                    toast.error(error?.data?.error || 'Failed to remove member');
                 }
             }
         });
@@ -567,28 +535,20 @@ function RepoCard({ repo, teamMembers }) {
         setInviting(username);
         try {
             const [owner, repoName] = repo.repo_full_name.split('/');
-            const headers = { 'Content-Type': 'application/json' };
-            try { headers['X-CSRF-Token'] = await getCsrfToken(); } catch { /* server will 403 */ }
-            const res = await fetch(`/api/repos/${owner}/${repoName}/collaborators/${username}`, {
+            await apiCall(`/api/repos/${owner}/${repoName}/collaborators/${username}`, {
                 method: 'PUT',
-                credentials: 'include',
-                headers,
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ permission: 'push' }) // Default to Write access
             });
-
-            if (res.ok) {
-                toast.success(`Invited ${username} to ${repoName}`);
-                // Optimistically add to collaborators list to update UI, and
-                // invalidate the cache so the next expand refetches and
-                // reconciles this 'pending' entry against real server state.
-                const newCollab = teamMembers.find(m => m.username === username);
-                setCollaborators(prev => [...prev, { login: username, avatar_url: newCollab?.avatar_url, role_name: 'pending' }]);
-                hasFetchedCollabsRef.current = false;
-            } else {
-                toast.error('Failed to invite collaborator');
-            }
+            toast.success(`Invited ${username} to ${repoName}`);
+            // Optimistically add to collaborators list to update UI, and
+            // invalidate the cache so the next expand refetches and
+            // reconciles this 'pending' entry against real server state.
+            const newCollab = teamMembers.find(m => m.username === username);
+            setCollaborators(prev => [...prev, { login: username, avatar_url: newCollab?.avatar_url, role_name: 'pending' }]);
+            hasFetchedCollabsRef.current = false;
         } catch (error) {
-            toast.error('Error inviting collaborator');
+            toast.error(error?.data?.error || 'Failed to invite collaborator');
         } finally {
             setInviting(null);
         }
@@ -729,24 +689,16 @@ function ActionsTab({ assignedRepos, onShowStats }) {
     const handleRunWorkflow = async (workflowId, repoFullName) => {
         try {
             const [owner, repo] = repoFullName.split('/');
-            const headers = { 'Content-Type': 'application/json' };
-            try { headers['X-CSRF-Token'] = await getCsrfToken(); } catch { /* server will 403 */ }
-            const res = await fetch(`/api/repos/${owner}/${repo}/actions/workflows/${workflowId}/dispatches`, {
+            await apiCall(`/api/repos/${owner}/${repo}/actions/workflows/${workflowId}/dispatches`, {
                 method: 'POST',
-                credentials: 'include',
-                headers,
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ref: 'main' })
             });
-
-            if (res.ok) {
-                toast.success('Workflow triggered!');
-                // Wait a bit then refresh runs
-                setTimeout(() => fetchWorkflows(repoFullName), 2000);
-            } else {
-                toast.error('Failed to trigger workflow');
-            }
+            toast.success('Workflow triggered!');
+            // Wait a bit then refresh runs
+            setTimeout(() => fetchWorkflows(repoFullName), 2000);
         } catch (error) {
-            toast.error('Error triggering workflow');
+            toast.error(error?.data?.error || 'Failed to trigger workflow');
         }
     };
 

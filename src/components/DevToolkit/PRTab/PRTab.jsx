@@ -9,7 +9,7 @@ import { DiffSummary } from '../shared/DiffSummary'
 import { RefinementZone } from '../shared/RefinementZone'
 import { PRSections } from './PRSections'
 import { CreatePRConfirm } from './CreatePRConfirm'
-import { getCsrfToken } from '../../../utils/api'
+import { apiCall } from '../../../utils/api'
 
 export function PRTab({ toolkit }) {
     const { toast } = useToast()
@@ -160,28 +160,20 @@ export function PRTab({ toolkit }) {
             const repo = selectedRepo.name
             const body = buildBody()
 
-            const csrfHeader = await getCsrfToken().catch(() => null)
-            const mutationHeaders = {
-                'Content-Type': 'application/json',
-                ...(csrfHeader ? { 'X-CSRF-Token': csrfHeader } : {}),
-            }
             if (prContext?.number) {
-                const patchRes = await fetch(`/api/repos/${owner}/${repo}/pulls/${prContext.number}`, {
+                await apiCall(`/api/repos/${owner}/${repo}/pulls/${prContext.number}`, {
                     method: 'PATCH',
-                    headers: mutationHeaders,
-                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ title: sections.title, body }),
                 })
-                if (!patchRes.ok) throw new Error('Update failed')
                 const prUrlValue = `https://github.com/${owner}/${repo}/pull/${prContext.number}`
                 setPrUrl(prUrlValue)
                 toolkit.setGeneratedPR?.({ number: prContext.number, url: prUrlValue, title: sections.title })
                 toast.success(`PR #${prContext.number} updated`)
             } else {
-                const res = await fetch(`/api/repos/${owner}/${repo}/pulls`, {
+                const data = await apiCall(`/api/repos/${owner}/${repo}/pulls`, {
                     method: 'POST',
-                    headers: mutationHeaders,
-                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         title: sections.title,
                         body,
@@ -189,8 +181,6 @@ export function PRTab({ toolkit }) {
                         base: baseBranch,
                     }),
                 })
-                if (!res.ok) throw new Error('Create failed')
-                const data = await res.json()
                 setPrUrl(data.pull_request?.html_url || `https://github.com/${owner}/${repo}/pulls`)
                 toolkit.setGeneratedPR?.({ number: data.pull_request?.number, url: data.pull_request?.html_url, title: sections.title })
                 toast.success(`PR #${data.pull_request?.number || ''} created`.trim())

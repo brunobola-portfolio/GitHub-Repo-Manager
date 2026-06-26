@@ -1,30 +1,25 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, fireEvent, waitFor, act } from '@testing-library/react'
 
-// QuickActions now sends a CSRF header on review POST; stub the token fetch
-// so it doesn't consume the test's mocked fetch response.
+// QuickActions submits reviews through the shared apiCall layer (which injects
+// and rotates the CSRF token + retries internally). Mock that boundary to drive
+// the success / failure paths rather than the raw fetch underneath it.
 vi.mock('@/utils/api', async (importOriginal) => {
     const actual = await importOriginal()
-    return { ...actual, getCsrfToken: vi.fn(async () => 'csrf-test-token') }
+    return { ...actual, apiCall: vi.fn() }
 })
 
+import { apiCall } from '@/utils/api'
 import { QuickActions } from '@/components/DevToolkit/ReviewTab/QuickActions'
 import { renderWithProviders } from '../../helpers/render-with-providers'
 
-let fetchMock
-
 beforeEach(() => {
-    fetchMock = vi.fn()
-    vi.stubGlobal('fetch', fetchMock)
-})
-
-afterEach(() => {
-    vi.unstubAllGlobals()
+    apiCall.mockReset()
 })
 
 describe('QuickActions — review submit toasts', () => {
     it('fires a success toast when an approval succeeds', async () => {
-        fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve({}) })
+        apiCall.mockResolvedValueOnce({})
 
         renderWithProviders(
             <QuickActions owner="acme" repo="web" pullNumber={42} onSubmitted={() => {}} />
@@ -44,7 +39,7 @@ describe('QuickActions — review submit toasts', () => {
     })
 
     it('fires an error toast when the review submit fails', async () => {
-        fetchMock.mockResolvedValueOnce({ ok: false, status: 500, json: () => Promise.resolve({}) })
+        apiCall.mockRejectedValueOnce(Object.assign(new Error('Failed'), { status: 500, data: {} }))
 
         renderWithProviders(
             <QuickActions owner="acme" repo="web" pullNumber={42} onSubmitted={() => {}} />
