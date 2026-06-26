@@ -25,7 +25,7 @@ export function EnvironmentToolingSection({ isAdmin = false }) {
   const install = useCallback(async (id, label) => {
     setInstallingId(id)
     try {
-      await apiCall(`/api/env/tooling/${id}/install`, { method: 'POST' })
+      await apiCall(`/api/env/tooling/${id}/install`, { method: 'POST' }, { timeout: 600000 }) // 10 min; SSE-stream UI is a follow-up
       toast.success(`${label} install triggered`)
       await reload()
     } catch (err) {
