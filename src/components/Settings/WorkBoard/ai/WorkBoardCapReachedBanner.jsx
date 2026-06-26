@@ -74,7 +74,12 @@ export function WorkBoardCapReachedBanner({ spentCents, capCents, className = ''
                             href="#ai-cap"
                             onClick={(e) => {
                                 e.preventDefault()
-                                document.getElementById('ai-cap-input')?.focus()
+                                // The cap control is the <Select> in AIAssistantToggle,
+                                // wrapped in #ai-cap. Scroll it into view and focus its
+                                // trigger button (the old #ai-cap-input never existed).
+                                const el = document.getElementById('ai-cap')
+                                el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                                el?.querySelector('button')?.focus()
                             }}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-rose-700 dark:text-rose-200 bg-rose-50 dark:bg-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 ring-1 ring-inset ring-rose-200 dark:ring-rose-800 rounded-lg transition-colors"
                         >

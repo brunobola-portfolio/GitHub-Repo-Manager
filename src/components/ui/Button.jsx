@@ -39,10 +39,14 @@ const sizes = {
 // adding another opt-out size is a deliberate accessibility decision.
 const SIZES_WITHOUT_MIN_TARGET = new Set(['xs'])
 
-export function Button({ className, variant = 'primary', size = 'md', children, ...props }) {
+export function Button({ className, variant = 'primary', size = 'md', type = 'button', children, ...props }) {
     const enforcesMinTarget = !SIZES_WITHOUT_MIN_TARGET.has(size)
     return (
         <button
+            // Default to type="button" so this shared primitive never submits a
+            // surrounding <form> by accident. Submit buttons pass type="submit"
+            // explicitly (every form in the app already does).
+            type={type}
             // Subtle tactile press (3% shrink) via CSS so the primitive stays a
             // plain <button> — no Framer overhead on the most-used control. The
             // `motion-safe:` guard drops the scale entirely under prefers-reduced-

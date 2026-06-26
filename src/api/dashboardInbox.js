@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '../config';
+import { apiCall } from '../utils/api';
 
 const BASE = `${API_BASE_URL}/api/v1/dashboard`;
 
@@ -82,7 +83,7 @@ export function archiveInboxItem(itemId) {
         mockArchivedIds.add(itemId);
         return Promise.resolve({ ok: true });
     }
-    return jsonFetch(`${BASE}/inbox/${encodeURIComponent(itemId)}/archive`, { method: 'POST' });
+    return apiCall(`${BASE}/inbox/${encodeURIComponent(itemId)}/archive`, { method: 'POST' });
 }
 
 export function restoreInboxItem(itemId) {
@@ -91,7 +92,7 @@ export function restoreInboxItem(itemId) {
         mockSnoozedIds.delete(itemId);
         return Promise.resolve({ ok: true });
     }
-    return jsonFetch(`${BASE}/inbox/${encodeURIComponent(itemId)}/restore`, { method: 'POST' });
+    return apiCall(`${BASE}/inbox/${encodeURIComponent(itemId)}/restore`, { method: 'POST' });
 }
 
 export function snoozeInboxItem(itemId, untilIso) {
@@ -99,7 +100,7 @@ export function snoozeInboxItem(itemId, untilIso) {
         mockSnoozedIds.add(itemId);
         return Promise.resolve({ ok: true });
     }
-    return jsonFetch(`${BASE}/inbox/${encodeURIComponent(itemId)}/snooze`, {
+    return apiCall(`${BASE}/inbox/${encodeURIComponent(itemId)}/snooze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ until: untilIso }),

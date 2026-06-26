@@ -45,7 +45,7 @@ export function AIAssistantToggle() {
                 </div>
 
                 {enabled && (
-                    <div className="flex items-center justify-between pt-3 border-t border-slate-200/60 dark:border-slate-700/40">
+                    <div id="ai-cap" className="flex items-center justify-between pt-3 border-t border-slate-200/60 dark:border-slate-700/40 scroll-mt-4">
                         <span className="text-sm text-slate-700 dark:text-slate-300">
                             Monthly cap
                         </span>

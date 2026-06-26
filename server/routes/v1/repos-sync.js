@@ -7,8 +7,12 @@ import db from '../../db.js'
 import { auditLog } from '../../lib/audit.js'
 import { requireAuth } from '../../middleware/auth.js'
 import { requireTier } from '../../middleware/require-tier.js'
+import { applyOwnerRepoParamValidators } from '../repos/_shared.js'
 
 const router = Router()
+// Reject malformed :owner/:repo before they reach githubApi() or the git push
+// URL — same guard the server/routes/repos/*.js sub-routers register.
+applyOwnerRepoParamValidators(router)
 
 // GET .../sync/preview — read-only sync preview, available on ALL tiers (Free
 // included). Returns the tracked mirror's source/target + last-sync metadata

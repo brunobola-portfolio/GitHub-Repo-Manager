@@ -3,8 +3,12 @@ import { githubApi } from '../../lib/github-api.js'
 import { auditLog } from '../../lib/audit.js'
 import { requireAuth } from '../../middleware/auth.js'
 import { requireTier } from '../../middleware/require-tier.js'
+import { applyOwnerRepoParamValidators } from '../repos/_shared.js'
 
 const router = Router()
+// Reject malformed :owner/:repo before they reach githubApi() — same guard
+// the server/routes/repos/*.js sub-routers register.
+applyOwnerRepoParamValidators(router)
 
 function parseSettled(settled) {
   if (settled.status === 'fulfilled') {
