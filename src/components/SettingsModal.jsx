@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
-import { Moon, Sun, Monitor, Zap, Trash2, GitBranch, Key, Shield, BadgeCheck, Sparkles, Kanban, Wand2, Palette, Cloud, ShieldCheck } from 'lucide-react'
+import { Moon, Sun, Monitor, Zap, Trash2, GitBranch, Key, Shield, BadgeCheck, Sparkles, Kanban, Wand2, Palette, Cloud, ShieldCheck, Wrench } from 'lucide-react'
 import { useTheme } from '../hooks/useTheme'
 import { useToast } from '../hooks/useToast'
 import { API_BASE_URL } from '../config'
@@ -21,6 +21,7 @@ import { Button } from './ui/Button'
 import { Input, Switch } from './ui/form'
 import { SectionSpinner } from './ui/Spinner'
 const ProbeStatsSection = lazy(() => import('./Settings/ProbeStatsSection').then(m => ({ default: m.ProbeStatsSection })))
+const EnvironmentToolingSection = lazy(() => import('./Settings/EnvironmentToolingSection').then(m => ({ default: m.EnvironmentToolingSection })))
 import { getCsrfToken } from '../utils/api'
 
 // SettingsIcon defined before TABS so it can be referenced in the array
@@ -58,6 +59,7 @@ const TABS = [
 const ADMIN_TABS = [
     { id: 'azure-hosts', label: 'Azure Hosts Allowlist', icon: ShieldCheck },
     { id: 'probe-stats', label: 'AI Probes', icon: BadgeCheck },
+    { id: 'env-tooling', label: 'Migration Tooling', icon: Wrench },
 ]
 
 export function SettingsModal({ isOpen, onClose, initialTab, isAdmin = false }) {
@@ -190,6 +192,7 @@ export function SettingsModal({ isOpen, onClose, initialTab, isAdmin = false }) 
                     {activeTab === 'license' && <div><LicensePlanSection /></div>}
                     {activeTab === 'audit' && <div><AuditLogSection /></div>}
                     {activeTab === 'probe-stats' && <div><ProbeStatsSection isAdmin={isAdmin} /></div>}
+                    {activeTab === 'env-tooling' && <div><EnvironmentToolingSection isAdmin={isAdmin} /></div>}
                 </Suspense>
             )}
         </Modal>
