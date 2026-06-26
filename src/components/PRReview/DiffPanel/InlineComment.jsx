@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
+import { safeMarkdownProps } from '../../AIPrompts/markdownConfig'
 import { ChevronDown, ChevronRight, CheckCircle } from 'lucide-react'
 import { formatRelativeTime } from '../../../utils/format'
 import { Button } from '../../ui/Button'
@@ -39,7 +40,7 @@ function ReplyItem({ reply }) {
         <span className="text-xs text-slate-400 dark:text-slate-500">{formatRelativeTime(reply.created_at)}</span>
       </div>
       <div className="prose prose-sm dark:prose-invert max-w-none text-xs">
-        <ReactMarkdown>{reply.body ?? ''}</ReactMarkdown>
+        <ReactMarkdown {...safeMarkdownProps}>{reply.body ?? ''}</ReactMarkdown>
       </div>
     </div>
   )
@@ -164,9 +165,10 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
       {/* Collapsible body */}
       {!collapsed && (
         <div className="px-3 py-2">
-          {/* Comment body — ReactMarkdown with default settings escapes HTML — safe against XSS */}
+          {/* Comment body — safeMarkdownProps adds GFM + rehype-sanitize + safe
+              external links on top of react-markdown's default HTML escaping. */}
           <div className="prose prose-sm dark:prose-invert max-w-none">
-            <ReactMarkdown>{comment.body ?? ''}</ReactMarkdown>
+            <ReactMarkdown {...safeMarkdownProps}>{comment.body ?? ''}</ReactMarkdown>
           </div>
 
           {/* Replies */}
