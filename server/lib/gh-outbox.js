@@ -83,13 +83,18 @@ export async function enqueueAndExecute({ userId, method, url, body = null, idem
         throw new Error('gh-outbox.enqueueAndExecute: missing required arg');
     }
 
-    // Insert-or-fetch existing row by idempotency key
+    // Insert-or-fetch existing row by idempotency key. The key is namespaced by
+    // userId because gh_outbox.idempotency_key is globally UNIQUE: without the
+    // prefix, two users issuing the same (method, url, body) would collide on
+    // one row, letting user B read back user A's cached response — or silently
+    // no-op B's own mutation.
     const bodyJson = body ? JSON.stringify(body) : null;
+    const scopedKey = `${userId}:${idempotencyKey}`;
     const insert = db.prepare(`
         INSERT INTO gh_outbox (user_id, method, url, body, idempotency_key, status, attempts)
         VALUES (?, ?, ?, ?, ?, 'pending', 0)
         ON CONFLICT(idempotency_key) DO NOTHING
-    `).run(userId, method, url, bodyJson, idempotencyKey);
+    `).run(userId, method, url, bodyJson, scopedKey);
 
     let row;
     if (insert.changes > 0) {
@@ -98,7 +103,7 @@ export async function enqueueAndExecute({ userId, method, url, body = null, idem
         row = db.prepare(`
             SELECT id, status, attempts, response_status, response_body
             FROM gh_outbox WHERE idempotency_key = ?
-        `).get(idempotencyKey);
+        `).get(scopedKey);
 
         // If a previous attempt succeeded, return the cached response — the
         // client retried, but we already applied the mutation.
@@ -274,7 +279,26 @@ export async function runOutboxOnce({ tokenLookup }) {
 }
 
 let timer = null;
+let tickInFlight = false;
 const DEFAULT_INTERVAL_MS = 60 * 1000; // 1 min — outbox is more time-sensitive than DLQ
+
+/**
+ * Run a worker tick guarded against re-entrancy: setInterval fires every
+ * intervalMs regardless of whether the previous (async) tick has finished, and
+ * a slow tick (50 rows × network round-trips behind backoff) can exceed it. The
+ * flag stops an overlapping tick from re-selecting and re-driving the same
+ * pending rows. NOTE: single-process only — a horizontally-scaled deployment
+ * still needs a DB-level row claim (UPDATE ... SET status='processing').
+ */
+async function runGuardedTick(tokenLookup) {
+    if (tickInFlight) return;
+    tickInFlight = true;
+    try {
+        await runOutboxOnce({ tokenLookup });
+    } finally {
+        tickInFlight = false;
+    }
+}
 
 /**
  * Start the outbox retry worker. The token lookup is injected so we can
@@ -286,11 +310,11 @@ const DEFAULT_INTERVAL_MS = 60 * 1000; // 1 min — outbox is more time-sensitiv
  */
 export function startGhOutboxWorker({ tokenLookup, intervalMs = DEFAULT_INTERVAL_MS } = {}) {
     if (timer) return;
-    runOutboxOnce({ tokenLookup }).catch(err =>
+    runGuardedTick(tokenLookup).catch(err =>
         logger.warn({ err }, '[gh-outbox-worker] initial tick failed')
     );
     timer = setInterval(() => {
-        runOutboxOnce({ tokenLookup }).catch(err =>
+        runGuardedTick(tokenLookup).catch(err =>
             logger.warn({ err }, '[gh-outbox-worker] tick failed')
         );
     }, intervalMs);
