@@ -42,7 +42,7 @@ export function EnvironmentToolingSection({ isAdmin = false }) {
     return <div className="space-y-3">{[0, 1, 2, 3].map((k) => <Skeleton key={k} variant="card" className="h-16" />)}</div>
   }
   if (error) {
-    return <EmptyState icon={AlertTriangle} title="Couldn't load tooling status" description={error.message} action={{ label: 'Retry', onClick: reload }} />
+    return <EmptyState icon={AlertTriangle} title="Couldn't load tooling status" description={error?.message ?? 'An unexpected error occurred'} action={{ label: 'Retry', onClick: reload }} />
   }
 
   const tools = data?.tools ?? []
@@ -59,7 +59,7 @@ export function EnvironmentToolingSection({ isAdmin = false }) {
       <div className="space-y-2">
         {tools.map((t) => {
           const meta = STATUS_META[t.status] ?? STATUS_META['n/a']
-          const canInstall = (t.status === 'missing' || t.status === 'outdated') && t.status !== 'n/a'
+          const canInstall = t.status === 'missing' || t.status === 'outdated'
           return (
             <Card key={t.id} glass={false} shadow="sm" className="p-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
