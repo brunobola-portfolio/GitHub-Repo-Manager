@@ -310,22 +310,32 @@ router.post('/community-health/compare', requireAuth, async (req, res) => {
         }
 
         const userId = req.session.userId;
+
+        // Resolve each repo's GitHub data concurrently in small batches instead
+        // of one serial round-trip each (50 repos was up to 50 sequential calls).
+        // Unparseable names are skipped exactly as before; order is preserved by
+        // index; the batch avoids firing all 50 GitHub calls at once (mirrors
+        // orgs.js). Errors still propagate to the outer catch (500) as before.
+        const parsedRepos = repos
+            .map((repoFullName) => ({ repoFullName, parsed: parseRepoFullName(repoFullName) }))
+            .filter((x) => x.parsed);
+
+        const BATCH_SIZE = 5;
         const comparison = [];
-
-        for (const repoFullName of repos) {
-            const parsed = parseRepoFullName(repoFullName);
-            if (!parsed) continue;
-            const { owner, repo } = parsed;
-            const { data: repoData } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken);
-
-            const cached = db.prepare('SELECT health_score FROM community_health_cache WHERE user_id = ? AND repo_id = ?')
-                .get(userId, repoData.id);
-
-            comparison.push({
-                repo: repoFullName,
-                score: cached?.health_score || 0,
-                hasCachedData: !!cached
-            });
+        for (let i = 0; i < parsedRepos.length; i += BATCH_SIZE) {
+            const batch = parsedRepos.slice(i, i + BATCH_SIZE);
+            const results = await Promise.all(batch.map(async ({ repoFullName, parsed }) => {
+                const { owner, repo } = parsed;
+                const { data: repoData } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken);
+                const cached = db.prepare('SELECT health_score FROM community_health_cache WHERE user_id = ? AND repo_id = ?')
+                    .get(userId, repoData.id);
+                return {
+                    repo: repoFullName,
+                    score: cached?.health_score || 0,
+                    hasCachedData: !!cached,
+                };
+            }));
+            comparison.push(...results);
         }
 
         res.json({ comparison });
