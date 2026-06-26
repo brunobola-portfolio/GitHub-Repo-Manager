@@ -100,12 +100,20 @@ export function ModalSurfaces({
           repos={transferRepos}
           initialAction={transferAction}
           orgs={orgs}
-          onTransfer={async (repoNames, targetOrg, strategies) => {
+          onTransfer={async (repoNames, targetOrg, strategies, opts = {}) => {
+            const dryRun = !!opts.dryRun
             try {
               const options = strategies && Object.keys(strategies).length > 0
                 ? { strategies }
                 : {}
-              const result = await performAction('transfer', repoNames, targetOrg, options)
+              const result = await performAction('transfer', repoNames, targetOrg, { ...options, dryRunOnly: dryRun })
+              if (dryRun) {
+                // Simulate: the dry-run validated server-side (no throw) but
+                // nothing was moved. Keep the modal open so the user can review
+                // and then run it for real.
+                toast.success(`Dry-run OK — ${repoNames.length} repo(s) would be transferred to ${targetOrg}. No changes made.`)
+                return
+              }
               if (result?.success) {
                 toast.success(`Transferred ${repoNames.length} repo(s) to ${targetOrg}`)
                 closeModal('showTransfer')
@@ -117,12 +125,17 @@ export function ModalSurfaces({
                 toast.error(result?.message || 'Transfer failed')
               }
             } catch (err) {
-              toast.errorFromException(err, { fallbackTitle: 'Transfer failed' })
+              toast.errorFromException(err, { fallbackTitle: dryRun ? 'Dry-run failed' : 'Transfer failed' })
             }
           }}
-          onMirror={async (repoNames, targetOrg) => {
+          onMirror={async (repoNames, targetOrg, opts = {}) => {
+            const dryRun = !!opts.dryRun
             try {
-              const result = await performAction('mirror', repoNames, targetOrg)
+              const result = await performAction('mirror', repoNames, targetOrg, { dryRunOnly: dryRun })
+              if (dryRun) {
+                toast.success(`Dry-run OK — ${repoNames.length} repo(s) would be mirrored to ${targetOrg}. No changes made.`)
+                return
+              }
               if (result?.success) {
                 toast.success(`Mirrored ${repoNames.length} repo(s) to ${targetOrg}`)
                 closeModal('showTransfer')
@@ -134,7 +147,7 @@ export function ModalSurfaces({
                 toast.error(result?.message || 'Mirror failed')
               }
             } catch (err) {
-              toast.errorFromException(err, { fallbackTitle: 'Mirror failed' })
+              toast.errorFromException(err, { fallbackTitle: dryRun ? 'Dry-run failed' : 'Mirror failed' })
             }
           }}
           isPerforming={isPerforming}

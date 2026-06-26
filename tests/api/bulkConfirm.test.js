@@ -123,6 +123,26 @@ describe('bulkExecuteWithConfirmation', () => {
     }
   })
 
+  // ---- Preview-only (Simulate) ---------------------------------------------
+
+  it('dryRunOnly: runs ONLY the dry-run step and returns its payload', async () => {
+    mockFetch.mockResolvedValueOnce(makeResponse(200, DRY_RUN_OK))
+
+    const resp = await bulkExecuteWithConfirmation({
+      url: '/api/transfer',
+      body: { repos: ['org/repo-a'], toOrg: 'dest' },
+      dryRunOnly: true,
+    })
+
+    // Execute must never run — nothing is mutated by a simulation.
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    const sentBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+    expect(sentBody.dryRun).toBe(true)
+    expect(resp.status).toBe(200)
+    const data = await resp.json()
+    expect(data.confirmationToken).toBe('jwt-token-abc123')
+  })
+
   // ---- Dry-run failures ----------------------------------------------------
 
   it('dry-run 403 (tier rejected) throws with status 403 and reason', async () => {

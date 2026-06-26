@@ -69,12 +69,15 @@ export async function deleteRepos(repoNames, confirmToken = 'DELETE') {
  * @throws {Error}                On any rejection from the two-step flow.
  */
 export async function performAction(action, repoNames, org = '', options = {}) {
+    // `dryRunOnly` is a client-side flag (stop after the non-mutating dry-run),
+    // not part of the request body — pull it out before building the body.
+    const { dryRunOnly = false, ...bodyOptions } = options
     const body = {
         repos: repoNames,
         toOrg: org,
-        ...options,
+        ...bodyOptions,
     }
     const endpoint = API_ENDPOINTS[action] || `${API_BASE}/${action}`
-    const resp = await bulkExecuteWithConfirmation({ url: endpoint, body })
+    const resp = await bulkExecuteWithConfirmation({ url: endpoint, body, dryRunOnly })
     return safeParseJson(resp)
 }
