@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { getCsrfToken } from '../../../utils/api'
+import { apiCall } from '../../../utils/api'
 
 /**
  * useWizardNavigation — owns the wizard shell's directional transitions and
@@ -70,32 +70,32 @@ export function useWizardNavigation({
         }
       }
 
-      const headers = { 'Content-Type': 'application/json' }
-      try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
-      const res = await fetch(endpoint, {
+      // apiCall injects+rotates the CSRF token (the credential payload was
+      // previously sent without retry/queue protection). A 200 with
+      // success:false stays a logical error; HTTP errors throw with the
+      // server message on err.data.
+      const data = await apiCall(endpoint, {
         method: 'POST',
-        credentials: 'include',
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
-      const data = await res.json()
 
       if (data.success) {
         updateImportJobs({ jobId: data.jobId })
         toast.success('Import queued')
-        nextStep()
       } else {
         updateImportJobs({
           importing: false,
           jobStatus: { status: 'failed', errorMessage: data.error, progressPct: 0 },
         })
         toast.error(`Failed to start import — ${data.error || 'try again'}`)
-        nextStep()
       }
+      nextStep()
     } catch (e) {
+      const serverError = e?.data?.error
       updateImportJobs({
         importing: false,
-        jobStatus: { status: 'failed', errorMessage: e.message, progressPct: 0 },
+        jobStatus: { status: 'failed', errorMessage: serverError || e.message, progressPct: 0 },
       })
       toast.errorFromException(e, { fallbackTitle: 'Failed to start import' })
       nextStep()

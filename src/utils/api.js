@@ -334,6 +334,9 @@ export async function fetchWithRetry(url, options = {}, retryOptions = {}) {
     // logic (it's a GET anyway, but the extra check documents the invariant).
     const mutation = isMutation(options) && isSameOriginApi(url)
     const isCsrfFetch = typeof url === 'string' && url.includes('/api/auth/csrf-token')
+    // Captured once so it survives the options reassignment in the CSRF-retry
+    // path below. Lets callers abort an in-flight request (e.g. on unmount).
+    const callerSignal = options.signal
     if (mutation && !isCsrfFetch) {
         try {
             const token = await getCsrfToken()
@@ -364,16 +367,24 @@ export async function fetchWithRetry(url, options = {}, retryOptions = {}) {
         }
 
         try {
-            // Create abort controller for timeout
+            // Create abort controller for timeout, and bridge a caller-supplied
+            // AbortSignal (abort-on-unmount) into it so cancellation actually
+            // reaches the in-flight fetch rather than being silently dropped.
             const controller = new AbortController()
             const timeoutId = setTimeout(() => controller.abort(), timeout)
+            const onCallerAbort = () => controller.abort()
+            if (callerSignal) {
+                if (callerSignal.aborted) controller.abort()
+                else callerSignal.addEventListener('abort', onCallerAbort, { once: true })
+            }
 
-            const response = await fetch(url, {
-                ...options,
-                signal: controller.signal
-            })
-
-            clearTimeout(timeoutId)
+            let response
+            try {
+                response = await fetch(url, { ...options, signal: controller.signal })
+            } finally {
+                clearTimeout(timeoutId)
+                if (callerSignal) callerSignal.removeEventListener('abort', onCallerAbort)
+            }
 
             // If response is ok, return it
             if (response.ok) {
@@ -422,6 +433,10 @@ export async function fetchWithRetry(url, options = {}, retryOptions = {}) {
             // Categorize the error
             const apiError = categorizeError(response.status, null, typeof url === 'string' ? url : null)
             apiError.data = errorData
+            // Surface the server's machine-readable code (some endpoints put it
+            // under `code`, AI endpoints under `error`) so migrated callers can
+            // branch on err.code exactly as they did on the raw response body.
+            apiError.code = errorData?.code ?? errorData?.error ?? null
 
             // Drop a Sentry breadcrumb on every non-2xx response so the
             // request chain is visible when a later error fires. Level
@@ -441,6 +456,11 @@ export async function fetchWithRetry(url, options = {}, retryOptions = {}) {
             lastError = apiError
 
         } catch (error) {
+            // A caller-initiated abort (e.g. component unmount) is a cancel, not
+            // a transient failure — never retry or enqueue it; surface it now.
+            if (callerSignal?.aborted) {
+                throw error
+            }
             // If it's already an ApiError, use it
             if (error instanceof ApiError) {
                 if (!error.isRetryable || attempt === maxRetries) {
