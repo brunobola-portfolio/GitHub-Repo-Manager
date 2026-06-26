@@ -180,8 +180,6 @@ app.use('/api/', (req, _res, next) => {
 // unavailable, etc.). Legacy GET /api/health below is preserved separately.
 import healthRouter from './routes/health.js';
 app.use('/api/health', healthRouter);
-import envRouter from './routes/env.js';
-app.use('/api/env', envRouter);
 
 // Rate limiting for API endpoints
 // Per-tenant limits (free / pro / enterprise) backed by Redis when REDIS_URL is set.
@@ -290,6 +288,10 @@ app.get('/api/health', (_req, res) => {
 // ------------------------------------------------------------------
 // Mounted Route Modules
 // ------------------------------------------------------------------
+
+// Env tooling routes (admin-gated; must be after session + CSRF middleware)
+import envRouter from './routes/env.js';
+app.use('/api/env', envRouter);
 
 // API v1 routes
 app.use('/api/v1', v1Routes);

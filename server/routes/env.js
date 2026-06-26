@@ -24,12 +24,12 @@ router.get('/tooling', requireAuth, async (_req, res) => {
 
 router.post('/tooling/:id/install', requireAuth, requireAdmin, async (req, res) => {
   const { id } = req.params;
-  if (!getTool(id)) return errorResponse(res, 404, 'Unknown tool', 'unknown_tool');
   if (config.envToolingInstallEnabled === false) {
     return errorResponse(res, 403, 'Tool installation is disabled on this deployment', 'install_disabled');
   }
+  if (!getTool(id)) return errorResponse(res, 404, 'Unknown tool', 'unknown_tool');
 
-  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
+  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
   const send = (event) => res.write(`data: ${JSON.stringify(event)}\n\n`);
 
   try {

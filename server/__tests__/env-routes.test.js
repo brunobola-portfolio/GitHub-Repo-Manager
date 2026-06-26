@@ -14,9 +14,14 @@ vi.mock('../middleware/auth.js', () => ({
 }));
 vi.mock('../middleware/require-admin.js', () => ({ requireAdmin: (req, res, next) => (req.headers['x-admin'] ? next() : res.status(403).json({ error: 'Admin only' })) }));
 vi.mock('../lib/audit.js', () => ({ auditLog: vi.fn() }));
+vi.mock('../config.js', () => ({ config: { envToolingInstallEnabled: true } }));
 
 let router;
-beforeEach(async () => { router = (await import('../routes/env.js')).default; });
+let mockedConfig;
+beforeEach(async () => {
+  router = (await import('../routes/env.js')).default;
+  mockedConfig = (await import('../config.js')).config;
+});
 
 function app() {
   const a = express();
@@ -38,5 +43,22 @@ describe('POST /api/env/tooling/:id/install', () => {
   it('is admin-gated', async () => {
     const res = await request(app()).post('/api/env/tooling/git-lfs/install');
     expect(res.status).toBe(403);
+  });
+
+  it('returns 403 install_disabled when flag is false', async () => {
+    mockedConfig.envToolingInstallEnabled = false;
+    try {
+      const res = await request(app()).post('/api/env/tooling/any-tool/install').set('x-admin', '1');
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('install_disabled');
+    } finally {
+      mockedConfig.envToolingInstallEnabled = true;
+    }
+  });
+
+  it('returns 404 unknown_tool for an unrecognised tool id', async () => {
+    const res = await request(app()).post('/api/env/tooling/not-a-real-tool/install').set('x-admin', '1');
+    expect(res.status).toBe(404);
+    expect(res.body.code).toBe('unknown_tool');
   });
 });
