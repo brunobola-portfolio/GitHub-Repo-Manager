@@ -267,7 +267,17 @@ export class MigrationEngine extends EventEmitter {
     // (null by default so engine unit tests are unaffected). Throws EnvironmentError
     // on the first missing tool; the caller's .catch surfaces it to the client.
     if (typeof this._preflight === 'function') {
-      await this._preflight(plan)
+      try {
+        await this._preflight(plan)
+      } catch (err) {
+        // A missing-tool preflight failure must terminate the plan cleanly with
+        // an actionable message rather than leaving it stranded mid-transition.
+        this.db.prepare(
+          "UPDATE migration_plans SET status = 'failed', summary = ?, completed_at = datetime('now') WHERE id = ?"
+        ).run(`Tooling preflight failed: ${err.message}`, planId)
+        this.emit('plan-status', { planId, status: 'failed', error: err.message, code: err.code })
+        throw err
+      }
     }
 
     // Stash credentials so the post-completion tagging service (and any other

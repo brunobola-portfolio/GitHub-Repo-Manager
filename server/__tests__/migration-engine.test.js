@@ -647,6 +647,24 @@ describe('MigrationEngine', () => {
       expect(evt.createdRepos).toHaveLength(1)
       expect(evt.createdRepos[0].full_name).toBe('acme/r1')
     })
+
+    // Regression: a missing-tool preflight throw must terminate the plan as
+    // 'failed' with an actionable summary instead of stranding it mid-run.
+    it('fails the plan with an actionable summary when tooling preflight throws', async () => {
+      engine._preflight = async () => {
+        const e = new Error('Git LFS is not installed')
+        e.code = 'ENV_TOOL_MISSING'
+        throw e
+      }
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      await expect(engine.executePlan(planId)).rejects.toThrow(/Git LFS is not installed/)
+      const plan = engine.getPlanStatus(planId)
+      expect(plan.status).toBe('failed')
+      expect(plan.summary).toMatch(/preflight failed/i)
+    })
   })
 
   describe('cancelPlan', () => {

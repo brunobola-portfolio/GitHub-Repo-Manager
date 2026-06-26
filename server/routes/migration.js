@@ -466,6 +466,25 @@ router.post('/plans/:id/execute', requireAuth, requireMigrationQuota, async (req
     const patResolution = resolvePlanExecutionPat(req, res);
     if (patResolution.abort) return;
 
+    // Preflight required migration tooling BEFORE transitioning to 'running',
+    // so a missing tool (e.g. git-lfs) returns an actionable error instead of
+    // stranding the plan mid-run. Guarded: the seam is null in unit harnesses.
+    if (typeof engine._preflight === 'function') {
+      try {
+        await engine._preflight(plan);
+      } catch (toolErr) {
+        if (toolErr?.code === 'ENV_TOOL_MISSING') {
+          return res.status(422).json({
+            error: toolErr.message,
+            code: toolErr.code,
+            fix: toolErr.fix,
+            docsUrl: toolErr.docsUrl,
+          });
+        }
+        throw toolErr;
+      }
+    }
+
     // Atomic status transition to prevent double-execute race condition
     const updated = db.prepare('UPDATE migration_plans SET status = ? WHERE id = ? AND status IN (?, ?)').run('running', id, 'draft', 'paused');
     if (updated.changes === 0) {
