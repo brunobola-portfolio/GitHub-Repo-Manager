@@ -262,6 +262,14 @@ export class MigrationEngine extends EventEmitter {
       throw new Error(`Cannot execute plan with status '${plan.status}'`)
     }
 
+    // Preflight: verify required system tools are available BEFORE the plan
+    // transitions to 'running'. Injected via engine._preflight by the route layer
+    // (null by default so engine unit tests are unaffected). Throws EnvironmentError
+    // on the first missing tool; the caller's .catch surfaces it to the client.
+    if (typeof this._preflight === 'function') {
+      await this._preflight(plan)
+    }
+
     // Stash credentials so the post-completion tagging service (and any other
     // plan-complete subscriber) can resolve them via `engine.credentials.retrieve()`
     // — covers immediate execute, scheduled tick, and retry/resume flows

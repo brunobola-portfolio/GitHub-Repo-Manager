@@ -20,6 +20,22 @@ import { createAzureWriter } from '../lib/tagging/azure-writer.js';
 import { createGitTagWriter } from '../lib/tagging/git-tag-writer.js';
 import { createHttpShim } from '../lib/tagging/http-shim.js';
 import { createTaggingWorkdirResolver } from '../lib/tagging/tagging-workdir-resolver.js';
+import { assertReady } from '../lib/env/readiness.js';
+
+/**
+ * Map a migration job descriptor to the tool capabilities it requires and
+ * assert those tools are present. Throws EnvironmentError (code: 'ENV_TOOL_MISSING')
+ * on the first missing tool so callers can surface a clear, actionable message.
+ *
+ * @param {{ sourceType?: string, hasLFS?: boolean, sizeStrategy?: string }} job
+ * @param {object} [opts]  Passed through to assertReady (supports { runner, platform, force })
+ */
+export async function preflightTooling(job, opts = {}) {
+  const caps = ['git-import'];
+  if (job.sourceType === 'azure-tfvc') caps.push('tfvc', 'tfvc-clone');
+  if (job.hasLFS || job.sizeStrategy === 'lfs-migrate') caps.push('lfs', 'lfs-migrate');
+  await assertReady(caps, opts);
+}
 
 /**
  * Resolve the Azure PAT for a plan execute/resume/retry request via the
@@ -45,6 +61,16 @@ function resolvePlanExecutionPat(req, res) {
 
 const router = express.Router();
 const engine = new MigrationEngine(db);
+
+// Wire preflight into the engine so every executePlan call (execute, resume,
+// retry, scheduled) checks required tooling before the plan transitions to
+// 'running'. The engine._preflight seam is null by default so engine unit
+// tests are unaffected; only the live route process sees real tool detection.
+engine._preflight = (plan) => preflightTooling({
+  sourceType: plan.source_type,
+  hasLFS: false,
+  sizeStrategy: null,
+});
 
 // Tagging service: wired post-execution so the engine stays focused on
 // plan/task orchestration. Failure of marks NEVER aborts the migration —
