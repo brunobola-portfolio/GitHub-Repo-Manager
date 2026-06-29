@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ThumbsUp, MessageSquare } from 'lucide-react'
 import { Button } from '../../ui/Button'
 import { useToast } from '../../../hooks/useToast'
-import { getCsrfToken } from '../../../utils/api'
+import { apiCall } from '../../../utils/api'
 import { Field, Textarea } from '../../ui/form'
 
 export function QuickActions({ owner, repo, pullNumber, onSubmitted }) {
@@ -16,21 +16,17 @@ export function QuickActions({ owner, repo, pullNumber, onSubmitted }) {
         setLoading(true)
         setError(null)
         try {
-            const headers = { 'Content-Type': 'application/json' }
-            try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
-            const res = await fetch(`/api/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`, {
+            await apiCall(`/api/repos/${owner}/${repo}/pulls/${pullNumber}/reviews`, {
                 method: 'POST',
-                headers,
-                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ event, body: comment || undefined, comments: [] }),
             })
-            if (!res.ok) throw new Error('Failed to submit review')
             toast.success(event === 'APPROVE' ? 'PR approved' : 'Comment posted')
             setAction(null)
             setComment('')
             onSubmitted?.()
         } catch (err) {
-            setError(err.message || 'Failed to submit review')
+            setError(err?.data?.error || err.message || 'Failed to submit review')
             toast.errorFromException(err, { fallbackTitle: 'Failed to submit review' })
         } finally { setLoading(false) }
     }

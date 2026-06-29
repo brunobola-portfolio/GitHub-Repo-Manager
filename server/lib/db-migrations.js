@@ -420,6 +420,22 @@ export const MIGRATIONS = [
                      ON user_azure_credentials(user_id, host)`);
         },
     },
+    {
+        version: 26,
+        name: 'event tables: action-leading indexes for dashboard/work-board fallbacks',
+        up(db) {
+            // listMyOpenIssues / listTechDebtIssues (event-aggregations.js) and
+            // listStalePRs (dashboard-aggregator.js) filter by action='opened' |
+            // 'closed'. No existing index leads with `action`, so those queries —
+            // some run unscoped per active user by the KPI snapshot job — full-scan
+            // the multi-tenant event tables. A leading-action index (with created_at
+            // for the recency window / ORDER BY) makes the predicate index-driven.
+            db.exec(`CREATE INDEX IF NOT EXISTS idx_issue_events_action_created
+                     ON issue_events(action, created_at)`);
+            db.exec(`CREATE INDEX IF NOT EXISTS idx_pr_events_action_created
+                     ON pr_events(action, created_at)`);
+        },
+    },
 ];
 
 /**

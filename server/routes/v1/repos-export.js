@@ -2,9 +2,13 @@ import { Router } from 'express'
 import { githubApi } from '../../lib/github-api.js'
 import { auditLog } from '../../lib/audit.js'
 import { requireAuth, safeError } from '../../middleware/auth.js'
+import { applyOwnerRepoParamValidators } from '../repos/_shared.js'
 
 
 const router = Router()
+// Reject malformed :owner/:repo before they reach githubApi() — same guard
+// the server/routes/repos/*.js sub-routers register.
+applyOwnerRepoParamValidators(router)
 
 router.get('/repos/:owner/:repo/export', requireAuth, async (req, res) => {
   const { owner, repo } = req.params

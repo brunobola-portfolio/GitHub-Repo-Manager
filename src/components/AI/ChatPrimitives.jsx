@@ -12,6 +12,7 @@
 import { Sparkles, AlertTriangle, ChevronRight } from 'lucide-react';
 import { Spinner } from '../ui/Spinner';
 import ReactMarkdown from 'react-markdown';
+import { safeMarkdownProps } from '../AIPrompts/markdownConfig';
 
 /**
  * MessageBubble — renders a single chat turn. Accepts a `message` shape:
@@ -50,7 +51,7 @@ export function MessageBubble({ message }) {
                                 : 'bg-white dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 rounded-bl-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-pre:my-2 prose-code:text-xs'
                     }`}
                 >
-                    {isUser ? body : <ReactMarkdown>{body}</ReactMarkdown>}
+                    {isUser ? body : <ReactMarkdown {...safeMarkdownProps}>{body}</ReactMarkdown>}
                 </div>
             </div>
         </div>
@@ -70,7 +71,7 @@ export function StreamingBubble({ text }) {
             </div>
             <div className="max-w-[82%] flex flex-col gap-2">
                 <div className="px-3.5 py-2.5 text-sm leading-relaxed rounded-2xl shadow-sm bg-white dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 rounded-bl-sm prose prose-sm dark:prose-invert max-w-none">
-                    <ReactMarkdown>{text || '…'}</ReactMarkdown>
+                    <ReactMarkdown {...safeMarkdownProps}>{text || '…'}</ReactMarkdown>
                 </div>
             </div>
         </div>

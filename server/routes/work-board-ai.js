@@ -5,6 +5,7 @@
  */
 
 import express from 'express';
+import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 import { requireAuth } from '../middleware/auth.js';
 import { requireWorkBoardAI } from '../middleware/work-board-ai-gate.js';
 import { computeSuggestions, dismissSuggestion } from '../lib/work-board-suggestions-engine.js';
@@ -19,6 +20,20 @@ import db from '../db.js';
 const router = express.Router();
 
 const VALID_ACTIONS = new Set(['pin', 'unpin', 'mute', 'unmute', 'track', 'untrack']);
+
+// Per-user rate limit on /interpret: each call fires a billable LLM request,
+// and requireWorkBoardAI only enforces a *monthly* cap (and only when one is
+// set), so without this a tight request loop could burn the whole budget in
+// seconds. Keyed on userId so one user can't exhaust another's allowance.
+const interpretLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 30,
+    keyGenerator: (req) => `wb-ai-interpret:${req.session?.userId ?? ipKeyGenerator(req)}`,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many AI requests — slow down and try again shortly', code: 'rate_limited' },
+    skip: (req) => !req.session?.userId,
+});
 
 function listTrackedReposForPrompt(userId) {
     return db.prepare(
@@ -82,7 +97,7 @@ router.post('/dismiss-suggestion', requireAuth, requireWorkBoardAI, (req, res) =
     res.json({ dismissed: true });
 });
 
-router.post('/interpret', requireAuth, requireWorkBoardAI, async (req, res) => {
+router.post('/interpret', requireAuth, interpretLimiter, requireWorkBoardAI, async (req, res) => {
     const { prompt } = req.body ?? {};
     if (!prompt || typeof prompt !== 'string' || prompt.length < 3) {
         return res.status(400).json({ error: 'prompt required (string, >= 3 chars)' });

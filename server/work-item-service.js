@@ -6,7 +6,7 @@
  * Rate limiting: tracks X-RateLimit-Remaining header, pauses when < 100
  */
 
-import { fetchWorkItems } from './azure-service.js'
+import { fetchWorkItems, orgBaseFor } from './azure-service.js'
 import { basicAuthHeader } from './lib/basic-auth-header.js'
 
 /**
@@ -429,7 +429,7 @@ async function fetchExistingLabels(githubToken, owner, repo) {
  * @returns {Promise<{ issuesCreated: number, labelsCreated: number }>}
  */
 async function migrateWorkItems(config, azureCreds, githubToken, targetOwner, targetRepo, callbacks) {
-  const { org, project, types, labelMapping = {} } = config
+  const { org, project, types, labelMapping = {}, host } = config
   const { pat } = azureCreds
   const onProgress = callbacks?.onProgress || (() => {})
   const isCancelled = callbacks?.isCancelled || (() => false)
@@ -448,9 +448,11 @@ async function migrateWorkItems(config, azureCreds, githubToken, targetOwner, ta
     ? `SELECT [System.Id] FROM workitems WHERE [System.TeamProject] = '${escapedProject}' AND [System.WorkItemType] IN (${wiqlTypes})`
     : `SELECT [System.Id] FROM workitems WHERE [System.TeamProject] = '${escapedProject}'`
 
-  // Use the WIQL endpoint to get IDs first
+  // Use the WIQL endpoint to get IDs first. orgBaseFor() resolves the correct
+  // origin for cloud, *.visualstudio.com, and on-prem TFS hosts — hardcoding
+  // dev.azure.com here 404s every on-prem/VSTS work-item migration.
   const wiqlRes = await fetch(
-    `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis/wit/wiql?api-version=7.1`,
+    `${orgBaseFor(host, org)}/${encodeURIComponent(project)}/_apis/wit/wiql?api-version=7.1`,
     {
       method: 'POST',
       headers: {
@@ -479,7 +481,7 @@ async function migrateWorkItems(config, azureCreds, githubToken, targetOwner, ta
   if (isCancelled()) return { issuesCreated, labelsCreated }
 
   // Step 2: Fetch full work item details (with relations)
-  const rawItems = await fetchWorkItems(org, project, pat, workItemIds)
+  const rawItems = await fetchWorkItems(org, project, pat, workItemIds, host)
   const normalizedItems = rawItems.map(normalizeWorkItem)
 
   onProgress(15, 'Building dependency tree...')

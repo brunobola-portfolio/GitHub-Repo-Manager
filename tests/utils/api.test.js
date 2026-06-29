@@ -459,3 +459,49 @@ describe('onRateLimit event bus', () => {
         fetchSpy.mockRestore()
     })
 })
+
+describe('fetchWithRetry — caller AbortSignal and error code', () => {
+    beforeEach(() => { resetSessionExpired() })
+    afterEach(() => { vi.restoreAllMocks() })
+
+    it('honors a caller AbortSignal and does not retry the cancel', async () => {
+        const controller = new AbortController()
+        controller.abort()
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation((_url, opts) =>
+            opts?.signal?.aborted
+                ? Promise.reject(new DOMException('Aborted', 'AbortError'))
+                : Promise.resolve(new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } }))
+        )
+
+        await expect(
+            fetchWithRetry('/api/widgets', { signal: controller.signal }, { maxRetries: 3, baseDelay: 1 })
+        ).rejects.toThrow()
+        // The cancel must not be retried as if it were a timeout.
+        expect(fetchSpy).toHaveBeenCalledTimes(1)
+        fetchSpy.mockRestore()
+    })
+
+    it('surfaces the server error code (code field) on the ApiError', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+            new Response(JSON.stringify({ code: 'validation_failed', error: 'bad input' }), {
+                status: 422, headers: { 'Content-Type': 'application/json' },
+            })
+        )
+        await expect(
+            fetchWithRetry('/api/widgets', {}, { maxRetries: 0 })
+        ).rejects.toMatchObject({ type: ErrorType.VALIDATION, code: 'validation_failed' })
+        fetchSpy.mockRestore()
+    })
+
+    it('falls back to the error field for AI-style string codes', async () => {
+        const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+            new Response(JSON.stringify({ error: 'AI_NOT_CONFIGURED' }), {
+                status: 400, headers: { 'Content-Type': 'application/json' },
+            })
+        )
+        await expect(
+            fetchWithRetry('/api/ai/thing', {}, { maxRetries: 0 })
+        ).rejects.toMatchObject({ code: 'AI_NOT_CONFIGURED' })
+        fetchSpy.mockRestore()
+    })
+})

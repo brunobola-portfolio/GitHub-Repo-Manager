@@ -120,9 +120,9 @@ export function TransferModal({
 		}
 
 		if (action === 'transfer') {
-			onTransfer?.(repos.map(r => r.full_name), targetOrg, strategies)
+			onTransfer?.(repos.map(r => r.full_name), targetOrg, strategies, { dryRun })
 		} else {
-			onMirror?.(repos.map(r => r.full_name), targetOrg)
+			onMirror?.(repos.map(r => r.full_name), targetOrg, { dryRun })
 		}
 	}
 

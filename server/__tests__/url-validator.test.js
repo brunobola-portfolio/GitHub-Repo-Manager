@@ -129,6 +129,31 @@ describe('isInternalUrl (existing helper, kept for backward compat)', () => {
     it('still allows public https', () => {
         expect(isInternalUrl('https://github.com/')).toBe(false);
     });
+    it('still allows git:// to a public host (import feature)', () => {
+        expect(isInternalUrl('git://github.com/org/repo')).toBe(false);
+    });
+    // Hardened coverage — these were NOT caught by the old hand-rolled checks.
+    it('flags the full 127/8 loopback range, not just 127.0.0.1', () => {
+        expect(isInternalUrl('https://127.0.0.5/')).toBe(true);
+        expect(isInternalUrl('git://127.1.2.3/repo')).toBe(true);
+    });
+    it('flags embedded credentials', () => {
+        expect(isInternalUrl('https://user:pass@github.com/')).toBe(true);
+    });
+    it('flags IPv6 loopback and link-local literals', () => {
+        expect(isInternalUrl('https://[::1]/')).toBe(true);
+        expect(isInternalUrl('https://[fe80::1]/')).toBe(true);
+    });
+    it('flags IPv4-mapped IPv6 pointing at loopback', () => {
+        expect(isInternalUrl('https://[::ffff:127.0.0.1]/')).toBe(true);
+    });
+    it('flags .local mDNS hostnames', () => {
+        expect(isInternalUrl('https://printer.local/')).toBe(true);
+    });
+    it('blocks non-https/git schemes', () => {
+        expect(isInternalUrl('http://github.com/')).toBe(true);
+        expect(isInternalUrl('file:///etc/passwd')).toBe(true);
+    });
 });
 
 describe('assertSafeAIEndpoint (BYOK endpoint SSRF guard)', () => {

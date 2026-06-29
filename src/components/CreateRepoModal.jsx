@@ -86,13 +86,16 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
         setAiError(null)
         try {
             const res = await askAI(`Generate a short, professional, and catchy description (max 100 chars) for a GitHub repository named "${name}". Return ONLY the description text, no quotes.`)
-            if (res.error === 'AI_NOT_CONFIGURED') {
-                setDescription('AI not configured. Set GEMINI_API_KEY in server/.env')
-            } else if (res?.message) {
-                setDescription(res.message.replace(/^"|"$/g, '').trim())
-            }
+            // askAI resolves to { reply, actions } and THROWS typed errors —
+            // the description is in res.reply, not res.message.
+            const text = (res?.reply || '').replace(/^"|"$/g, '').trim()
+            if (text) setDescription(text)
         } catch (e) {
-            setAiError(e?.message || 'Failed to generate description')
+            setAiError(
+                e?.code === 'AI_NOT_CONFIGURED'
+                    ? 'AI not configured. Set GEMINI_API_KEY in server/.env'
+                    : (e?.message || 'Failed to generate description')
+            )
         } finally {
             setIsGenerating(false)
         }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getCsrfToken } from '../../../utils/api'
+import { apiCall } from '../../../utils/api'
 
 const AI_CACHE_TTL_MS = 60 * 60 * 1000 // 1 hour
 
@@ -116,11 +116,11 @@ export function useReviewAI(owner, repo, pullNumber, headSha, files, options = {
             const totalAdditions = files.reduce((sum, f) => sum + (f.additions || 0), 0)
             const totalDeletions = files.reduce((sum, f) => sum + (f.deletions || 0), 0)
 
-            const csrf = await getCsrfToken()
-            const res = await fetch('/api/ai/review-summary', {
+            // apiCall injects+rotates the CSRF token and, on failure, throws an
+            // ApiError carrying .status and .code (mapped by AIErrorState to a CTA).
+            const result = await apiCall('/api/ai/review-summary', {
                 method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     fileManifest,
                     topFilePatches,
@@ -133,16 +133,6 @@ export function useReviewAI(owner, repo, pullNumber, headSha, files, options = {
                     },
                 }),
             })
-
-            if (!res.ok) {
-                const errBody = await res.json().catch(() => null)
-                const err = new Error(errBody?.error ?? `AI request failed: ${res.status}`)
-                err.status = res.status
-                err.code = errBody?.code
-                throw err
-            }
-
-            const result = await res.json()
             const summaryData = result.summary ?? result
 
             saveCachedSummary(cacheKey, summaryData)

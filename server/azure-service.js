@@ -854,6 +854,7 @@ async function getRepoFullStats(org, project, repoId, defaultBranch, pat, host =
 }
 
 export {
+    orgBaseFor,
     validatePat,
     listProjects,
     createProject,

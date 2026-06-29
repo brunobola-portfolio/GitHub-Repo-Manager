@@ -86,20 +86,21 @@ router.get('/github', requireAuth, validateQuery(querySchema), async (req, res) 
         const perTypeLimit = type === 'all' ? Math.max(3, Math.ceil(limit / 3)) : limit;
         let prs = [], issues = [], repos = [];
 
-        if (type === 'all' || type === 'pr') {
-            const p = searchIssues(q, 'is:pr', token, perTypeLimit);
-            if (type === 'pr') prs = await p;
-            else prs = await p.catch(() => []);
-        }
-        if (type === 'all' || type === 'issue') {
-            const p = searchIssues(q, 'is:issue', token, perTypeLimit);
-            if (type === 'issue') issues = await p;
-            else issues = await p.catch(() => []);
-        }
-        if (type === 'all' || type === 'repo') {
-            const p = searchRepos(q, token, perTypeLimit);
-            if (type === 'repo') repos = await p;
-            else repos = await p.catch(() => []);
+        if (type === 'all') {
+            // Fire all three sub-queries concurrently (per-call catch keeps a
+            // single failing type from sinking the others), then await together
+            // — matches this file's docstring contract of parallel fan-out.
+            [prs, issues, repos] = await Promise.all([
+                searchIssues(q, 'is:pr', token, perTypeLimit).catch(() => []),
+                searchIssues(q, 'is:issue', token, perTypeLimit).catch(() => []),
+                searchRepos(q, token, perTypeLimit).catch(() => []),
+            ]);
+        } else if (type === 'pr') {
+            prs = await searchIssues(q, 'is:pr', token, perTypeLimit);
+        } else if (type === 'issue') {
+            issues = await searchIssues(q, 'is:issue', token, perTypeLimit);
+        } else if (type === 'repo') {
+            repos = await searchRepos(q, token, perTypeLimit);
         }
 
         return res.json({

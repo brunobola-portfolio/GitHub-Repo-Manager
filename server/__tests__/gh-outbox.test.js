@@ -43,7 +43,7 @@ describe('gh-outbox.enqueueAndExecute', () => {
         expect(result.queued).toBe(false)
         expect(result.data).toEqual({ merged: true })
 
-        const row = testDb.prepare('SELECT * FROM gh_outbox WHERE idempotency_key=?').get('merge:42')
+        const row = testDb.prepare('SELECT * FROM gh_outbox WHERE idempotency_key=?').get(`${USER_ID}:merge:42`)
         expect(row.status).toBe('succeeded')
         expect(JSON.parse(row.response_body)).toEqual({ merged: true })
     })
@@ -66,7 +66,7 @@ describe('gh-outbox.enqueueAndExecute', () => {
         expect(result.queued).toBe(true)
         expect(result.outboxId).toBeGreaterThan(0)
 
-        const row = testDb.prepare('SELECT * FROM gh_outbox WHERE idempotency_key=?').get('merge:42')
+        const row = testDb.prepare('SELECT * FROM gh_outbox WHERE idempotency_key=?').get(`${USER_ID}:merge:42`)
         expect(row.status).toBe('pending')
         expect(row.attempts).toBe(1)
         expect(row.last_error).toContain('GitHub down')
@@ -87,7 +87,7 @@ describe('gh-outbox.enqueueAndExecute', () => {
             token: 'tok',
         })).rejects.toThrow('Bad request')
 
-        const row = testDb.prepare('SELECT * FROM gh_outbox WHERE idempotency_key=?').get('comment:1')
+        const row = testDb.prepare('SELECT * FROM gh_outbox WHERE idempotency_key=?').get(`${USER_ID}:comment:1`)
         expect(row.status).toBe('failed')
         expect(row.next_retry_at).toBeNull()
     })
@@ -112,6 +112,29 @@ describe('gh-outbox.enqueueAndExecute', () => {
         expect(githubApiMock).toHaveBeenCalledTimes(1)
     })
 
+    it('namespaces the idempotency key by user so one user cannot read back another\'s response', async () => {
+        testDb.prepare('INSERT OR IGNORE INTO users (id, username) VALUES (?, ?)').run(2, 'other')
+
+        githubApiMock.mockResolvedValueOnce({ data: { secret: 'user-1-data' }, headers: new Map() })
+        const a = await enqueueAndExecute({
+            userId: USER_ID, method: 'POST', url: '/x', body: { v: 1 },
+            idempotencyKey: 'collide', token: 'tok-a',
+        })
+        expect(a.data).toEqual({ secret: 'user-1-data' })
+
+        githubApiMock.mockResolvedValueOnce({ data: { secret: 'user-2-data' }, headers: new Map() })
+        const b = await enqueueAndExecute({
+            userId: 2, method: 'POST', url: '/x', body: { v: 1 },
+            idempotencyKey: 'collide', token: 'tok-b',
+        })
+        // User 2 must get THEIR own fresh call, not user 1's cached response.
+        expect(b.data).toEqual({ secret: 'user-2-data' })
+        expect(githubApiMock).toHaveBeenCalledTimes(2)
+
+        const keys = testDb.prepare('SELECT idempotency_key FROM gh_outbox ORDER BY user_id').all().map(r => r.idempotency_key)
+        expect(keys).toEqual([`${USER_ID}:collide`, '2:collide'])
+    })
+
     it('429 (rate limit) is treated as retryable, not failed', async () => {
         const err = new Error('rate limited')
         err.status = 429
@@ -123,7 +146,7 @@ describe('gh-outbox.enqueueAndExecute', () => {
         })
 
         expect(result.queued).toBe(true)
-        const row = testDb.prepare('SELECT status FROM gh_outbox WHERE idempotency_key=?').get('rl:1')
+        const row = testDb.prepare('SELECT status FROM gh_outbox WHERE idempotency_key=?').get(`${USER_ID}:rl:1`)
         expect(row.status).toBe('pending')
     })
 })

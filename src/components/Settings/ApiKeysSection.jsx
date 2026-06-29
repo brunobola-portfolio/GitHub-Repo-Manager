@@ -11,7 +11,7 @@ import { Skeleton } from '../ui/Skeleton'
 import { Field, Input } from '../ui/form'
 import { RowIconBadge } from '../ui/RowIconBadge'
 import { formatDate as formatDateBase } from '../../utils/format'
-import { getCsrfToken } from '../../utils/api'
+import { apiCall } from '../../utils/api'
 
 const SCOPE_OPTIONS = [
     { id: 'read', label: 'Read', description: 'Read access to repositories and data' },
@@ -86,19 +86,16 @@ function NewKeyForm({ onCreated, onCancel }) {
         setError(null)
         try {
             const body = { name: name.trim(), scopes, ...(expiry ? { expires_at: new Date(expiry).toISOString() } : {}) }
-            const headers = { 'Content-Type': 'application/json' }
-            try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
-            const res = await fetch(`${API_BASE_URL}/api/v1/api-keys`, {
+            // apiCall injects+rotates the CSRF token and parses the body; the
+            // server error stays reachable via err.data on a thrown ApiError.
+            const data = await apiCall(`${API_BASE_URL}/api/v1/api-keys`, {
                 method: 'POST',
-                headers,
-                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
             })
-            const data = await res.json()
-            if (!res.ok) throw new Error(data.error || data.message || 'Failed to create API key')
             onCreated(data)
         } catch (err) {
-            setError(err.message)
+            setError(err?.data?.error || err?.data?.message || err?.message || 'Failed to create API key')
         } finally {
             setSubmitting(false)
         }
@@ -388,18 +385,12 @@ export function ApiKeysSection() {
     }, [fetchKeys, toast])
 
     const handleRevoke = useCallback(async (id) => {
-        const headers = {}
-        try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
-        const res = await fetch(`${API_BASE_URL}/api/v1/api-keys/${id}`, {
-            method: 'DELETE',
-            credentials: 'include',
-            headers,
-        })
-        if (!res.ok) {
-            const data = await res.json().catch(() => ({}))
-            const msg = data.error || data.message || 'Failed to revoke key'
+        try {
+            await apiCall(`${API_BASE_URL}/api/v1/api-keys/${id}`, { method: 'DELETE' })
+        } catch (err) {
+            const msg = err?.data?.error || err?.data?.message || err?.message || 'Failed to revoke key'
             toast.error(msg)
-            throw new Error(msg)
+            throw err
         }
         toast.success('API key revoked')
         fetchKeys()

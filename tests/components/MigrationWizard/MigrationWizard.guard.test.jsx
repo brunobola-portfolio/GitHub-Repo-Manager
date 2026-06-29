@@ -12,6 +12,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import MigrationWizard from '@/components/MigrationWizard/MigrationWizard'
+import { apiCall } from '@/utils/api'
 
 const h = vi.hoisted(() => ({ wizard: null, isMobile: false, toast: null }))
 
@@ -49,9 +50,10 @@ vi.mock('@/hooks/useAzureOAuth', () => ({ useAzureOAuth: () => ({}) }))
 vi.mock('@/hooks/useAzureOrganizations', () => ({ useAzureOrganizations: () => ({}) }))
 vi.mock('@/hooks/useToast', () => ({ useToast: () => ({ toast: h.toast }) }))
 vi.mock('@/hooks/useMobileBreakpoint', () => ({ useMobileBreakpoint: () => h.isMobile }))
-// Partial-mock so getCsrfToken is deterministic; everything else in utils/api
-// is left intact (the rendered tree only consumes getCsrfToken here).
-vi.mock('@/utils/api', async (orig) => ({ ...(await orig()), getCsrfToken: vi.fn().mockResolvedValue('csrf-test') }))
+// Partial-mock so the import request is deterministic. handleStartImport now
+// goes through the shared apiCall (which owns CSRF injection — covered in
+// api.test.js), so we mock that boundary rather than raw fetch.
+vi.mock('@/utils/api', async (orig) => ({ ...(await orig()), getCsrfToken: vi.fn().mockResolvedValue('csrf-test'), apiCall: vi.fn() }))
 
 // Render sidebar + children + footer flat so they're queryable. The close
 // button forwards onClose so handleClose is reachable even on steps that
@@ -214,7 +216,7 @@ describe('MigrationWizard guard — extraction safety net', () => {
 
   // --- handleStartImport (useWizardNavigation-adjacent) --------------------
   it('POSTs a GitHub import body and advances on success', async () => {
-    global.fetch.mockResolvedValue({ json: async () => ({ success: true, jobId: 'job-1' }) })
+    apiCall.mockResolvedValue({ success: true, jobId: 'job-1' })
     const nextStep = vi.fn()
     const updateImportJobs = vi.fn()
     h.wizard = makeWizard({
@@ -233,8 +235,8 @@ describe('MigrationWizard guard — extraction safety net', () => {
     render(<MigrationWizard onClose={vi.fn()} />)
     fireEvent.click(screen.getByTestId('start-import'))
 
-    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1))
-    const [url, opts] = global.fetch.mock.calls[0]
+    await waitFor(() => expect(apiCall).toHaveBeenCalledTimes(1))
+    const [url, opts] = apiCall.mock.calls[0]
     expect(url).toBe('/api/import/url')
     expect(opts.method).toBe('POST')
     const body = JSON.parse(opts.body)
@@ -243,7 +245,6 @@ describe('MigrationWizard guard — extraction safety net', () => {
     expect(body.targetName).toBe('r') // falls back to repo slug from the URL
     expect(body.makePrivate).toBe(true)
     expect(body.description).toBe('desc')
-    expect(opts.headers['X-CSRF-Token']).toBe('csrf-test')
 
     await waitFor(() => expect(updateImportJobs).toHaveBeenCalledWith({ jobId: 'job-1' }))
     expect(h.toast.success).toHaveBeenCalled()
@@ -251,7 +252,7 @@ describe('MigrationWizard guard — extraction safety net', () => {
   })
 
   it('POSTs a URL import body with token credentials', async () => {
-    global.fetch.mockResolvedValue({ json: async () => ({ success: true, jobId: 'j2' }) })
+    apiCall.mockResolvedValue({ success: true, jobId: 'j2' })
     h.wizard = makeWizard({
       currentStep: 'targetConfig',
       source: {
@@ -266,8 +267,8 @@ describe('MigrationWizard guard — extraction safety net', () => {
     render(<MigrationWizard onClose={vi.fn()} />)
     fireEvent.click(screen.getByTestId('start-import'))
 
-    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1))
-    const body = JSON.parse(global.fetch.mock.calls[0][1].body)
+    await waitFor(() => expect(apiCall).toHaveBeenCalledTimes(1))
+    const body = JSON.parse(apiCall.mock.calls[0][1].body)
     expect(body.sourceUrl).toBe('https://git.example.com/x.git')
     expect(body.credentials).toEqual({ type: 'token', token: 'tok' })
     expect(body.targetName).toBe('custom-name')
@@ -275,7 +276,7 @@ describe('MigrationWizard guard — extraction safety net', () => {
   })
 
   it('marks the job failed and toasts when the import response is unsuccessful', async () => {
-    global.fetch.mockResolvedValue({ json: async () => ({ success: false, error: 'boom' }) })
+    apiCall.mockResolvedValue({ success: false, error: 'boom' })
     const updateImportJobs = vi.fn()
     h.wizard = makeWizard({
       currentStep: 'targetConfig',

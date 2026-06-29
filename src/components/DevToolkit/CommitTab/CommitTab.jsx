@@ -10,7 +10,7 @@ import { RefinementZone } from '../shared/RefinementZone'
 import { FormatSelector } from './FormatSelector'
 import { SessionHistory } from './SessionHistory'
 import { MultiCommitSplit } from './MultiCommitSplit'
-import { getCsrfToken } from '../../../utils/api'
+import { apiCall } from '../../../utils/api'
 import { Textarea } from '../../ui/form'
 
 const INPUT_MODES = [
@@ -149,19 +149,15 @@ export function CommitTab({ toolkit }) {
         setSplitLoading(true)
         setLocalError(null)
         try {
-            const csrf = await getCsrfToken()
-            const res = await fetch('/api/ai/generate-commit', {
+            const data = await apiCall('/api/ai/generate-commit', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     diff,
                     format,
                     repo_context: selectedRepo ? { name: selectedRepo.full_name } : undefined,
                 }),
             })
-            if (!res.ok) throw new Error('Split failed')
-            const data = await res.json()
             const msgs = data.message.split('\n').filter(l => l.trim())
             setMultiCommits(msgs.map(m => ({ message: m.replace(/^\d+\.\s*/, ''), files: [] })))
         } catch {

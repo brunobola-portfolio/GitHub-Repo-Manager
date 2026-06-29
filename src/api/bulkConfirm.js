@@ -28,11 +28,16 @@ function makeBulkError(message, status, reason, body) {
  * @param {string} opts.url          Full endpoint URL (e.g. API_ENDPOINTS.delete)
  * @param {object} opts.body         The request body WITHOUT `dryRun` flag
  * @param {object} [opts.fetchOptions]  Extra options merged into fetch (e.g. signal)
- * @returns {Promise<Response>}      The FINAL (execute) Response. Caller parses JSON as usual.
+ * @param {boolean} [opts.dryRunOnly]   Preview only: run the dry-run step and
+ *                                   return its (non-mutating) response without
+ *                                   executing. Used by the "Simulate" toggle.
+ * @returns {Promise<Response>}      The FINAL (execute) Response — or, when
+ *                                   dryRunOnly, the dry-run Response. Caller
+ *                                   parses JSON as usual.
  * @throws {Error}                   On network failure, dry-run rejection, or execute rejection.
  *                                   Error has `.status`, `.reason` (if server returned one), `.body`.
  */
-export async function bulkExecuteWithConfirmation({ url, body, fetchOptions = {} }) {
+export async function bulkExecuteWithConfirmation({ url, body, fetchOptions = {}, dryRunOnly = false }) {
   // Spread fetchOptions FIRST so caller-supplied opts (e.g. signal) come
   // through, then re-set headers explicitly so caller's headers cannot stomp
   // our Content-Type. Previously we declared `headers` twice in the literal,
@@ -73,6 +78,16 @@ export async function bulkExecuteWithConfirmation({ url, body, fetchOptions = {}
   let dryRunData = null
   try { dryRunData = await dryRunResp.json() } catch (e) {
     throw makeBulkError('Failed to parse dry-run response: ' + e.message, dryRunResp.status, null, null)
+  }
+
+  // Preview only ("Simulate"): the dry-run step is non-mutating, so return its
+  // payload now and never run the execute step. Re-wrap into a Response so the
+  // caller's safeParseJson handling is identical to the execute path.
+  if (dryRunOnly) {
+    return new Response(JSON.stringify(dryRunData), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
 
   const { confirmationToken, expiresInSeconds } = dryRunData || {}

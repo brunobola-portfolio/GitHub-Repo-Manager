@@ -222,7 +222,11 @@ export const aiTranslateSearchSchema = z.object({
 // against prompt injection via large/exotic body payloads.
 // ---------------------------------------------------------------------------
 
-const repoFullNameRegex = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\/[a-zA-Z0-9_-][a-zA-Z0-9._-]{0,99}$/;
+// owner/repo. The repo segment may start with a dot ('.github', '.allstar' are
+// real, common GitHub repos) but must not be all dots ('.', '..' — path
+// traversal). The owner segment is alphanumeric+hyphen (GitHub owners can't
+// contain dots). No '/' inside either segment.
+const repoFullNameRegex = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\/(?!\.+$)[a-zA-Z0-9._-]{1,100}$/;
 
 export const aiRepoMetadataSchema = z.object({
     id: z.number().int().positive().optional(),
@@ -360,18 +364,27 @@ export const aiReviewSummarySchema = z.object({
     }),
 });
 
+// Shared shape for a repo object handed to the indexer. `id` is the GitHub
+// numeric repo ID and the primary key in repo_metadata / repo_embeddings
+// (NOT NULL) — without it Zod strips the field and the INSERT throws against
+// the NOT NULL column. `full_name` is regex-validated (not just length-bounded)
+// because the index handlers splice it straight into GitHub API paths.
+const aiIndexRepoSchema = z.object({
+    id: z.number().int().positive(),
+    full_name: z.string().min(3).max(200).regex(repoFullNameRegex),
+    name: z.string().optional(),
+    description: z.string().max(5000).optional().nullable(),
+    language: z.string().max(50).optional().nullable()
+});
+
 export const aiIndexSchema = z.object({
-    // `id` is the GitHub numeric repo ID and the primary key in
-    // repo_metadata / repo_embeddings (NOT NULL). Without it on the
-    // schema Zod strips the field and the INSERT throws against the
-    // NOT NULL column, surfacing as a generic 500.
-    repo: z.object({
-        id: z.number().int().positive(),
-        full_name: z.string().min(1).max(200),
-        name: z.string().optional(),
-        description: z.string().max(5000).optional().nullable(),
-        language: z.string().max(50).optional().nullable()
-    })
+    repo: aiIndexRepoSchema
+});
+
+// Batch variant: same per-repo shape, bounded to the handler's 10-repo cap so
+// every element is shape- and length-validated before any GitHub fetch.
+export const aiBatchIndexSchema = z.object({
+    repos: z.array(aiIndexRepoSchema).min(1).max(10)
 });
 
 export const aiIssueToPlanSchema = z.object({
