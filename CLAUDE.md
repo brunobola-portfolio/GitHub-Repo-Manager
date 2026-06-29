@@ -1,11 +1,18 @@
 # CLAUDE.md - Project Rules
 
 ## Git Commits
-- NEVER add `Co-Authored-By` lines to commit messages
+- NEVER add AI/tool attribution to commit messages — no `Co-Authored-By` lines, no
+  "Generated with Claude Code", "🤖 Generated with Claude Code", "Co-Authored-By: Claude",
+  or any similar assistant/tool attribution, footer, or trailer
 - Follow Conventional Commits format: `type(scope): description`
 - Types: `feat`, `fix`, `chore`, `refactor`, `docs`, `style`, `perf`, `test`
 - Keep commit subject under 72 characters
 - Use body for details when needed (separated by blank line)
+
+## Pull Requests
+- NEVER add AI/tool attribution to PR titles or descriptions — no "Generated with Claude Code",
+  "🤖 Generated with Claude Code", "Co-Authored-By", or any similar assistant/tool footer
+- Write PR titles and descriptions as a human author would: what changed and why
 
 ## Code Style
 - Use `.jsx` files only (NO TypeScript)
