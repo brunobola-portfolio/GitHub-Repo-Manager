@@ -140,43 +140,62 @@ export function assertSafeExternalUrl(raw, opts = {}) {
 }
 
 /**
- * Check if a URL targets a private/internal network (SSRF protection)
+ * Check if a URL targets a private/internal network (SSRF protection).
+ *
+ * Returns true (block) for non-https/git schemes, embedded credentials,
+ * localhost/.local aliases, and any IP literal in a private / loopback /
+ * link-local range. Unlike the previous hand-rolled checks (which caught only
+ * the exact 127.0.0.1), IP literals are delegated to isPrivateAddress so the
+ * full 127/8, RFC1918, link-local, IPv6 loopback/link-local/unique-local and
+ * IPv4-mapped-IPv6 ranges are covered — matching assertSafeExternalUrl.
+ *
+ * `git://` stays allowed because import-service supports git clone URLs; the
+ * scheme allowlist is the one intentional difference from assertSafeExternalUrl.
+ * Callers run resolveAndValidateHost() afterwards for DNS-rebinding protection.
  */
 export function isInternalUrl(urlString) {
+    let parsed;
     try {
-        const parsed = new URL(urlString);
-        const hostname = parsed.hostname.toLowerCase();
-        const protocol = parsed.protocol;
-
-        // Only allow https:// and git:// protocols
-        if (protocol !== 'https:' && protocol !== 'git:') {
-            return true;
-        }
-
-        // Block localhost and loopback
-        if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname === '[::1]') {
-            return true;
-        }
-
-        // Block private IP ranges (RFC 1918 + link-local + cloud metadata)
-        const parts = hostname.split('.').map(Number);
-        if (parts.length === 4 && parts.every(p => !isNaN(p))) {
-            // 10.0.0.0/8
-            if (parts[0] === 10) return true;
-            // 172.16.0.0/12
-            if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
-            // 192.168.0.0/16
-            if (parts[0] === 192 && parts[1] === 168) return true;
-            // 169.254.0.0/16 (link-local / cloud metadata)
-            if (parts[0] === 169 && parts[1] === 254) return true;
-            // 0.0.0.0
-            if (parts.every(p => p === 0)) return true;
-        }
-
-        return false;
+        parsed = new URL(urlString);
     } catch {
         return true; // Invalid URLs are blocked
     }
+
+    // Scheme allowlist: public HTTPS and git:// only.
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'git:') {
+        return true;
+    }
+
+    // Embedded credentials — credential-smuggling / phishing risk.
+    if (parsed.username || parsed.password) {
+        return true;
+    }
+
+    // Normalise hostname; Node keeps the brackets around IPv6 literals.
+    let hostname = parsed.hostname.toLowerCase();
+    if (hostname.startsWith('[') && hostname.endsWith(']')) {
+        hostname = hostname.slice(1, -1);
+    }
+    if (!hostname) return true;
+
+    // Localhost aliases and mDNS suffixes.
+    if (
+        hostname === 'localhost' ||
+        hostname === '0.0.0.0' ||
+        hostname === '::' ||
+        hostname.endsWith('.local') ||
+        hostname.endsWith('.localhost')
+    ) {
+        return true;
+    }
+
+    // IP literal? Delegate to the comprehensive private-range matcher.
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname) || hostname.includes(':')) {
+        return isPrivateAddress(hostname);
+    }
+
+    // A real hostname — string checks can't see where it resolves.
+    return false;
 }
 
 /**
