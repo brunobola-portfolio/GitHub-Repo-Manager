@@ -222,7 +222,11 @@ export const aiTranslateSearchSchema = z.object({
 // against prompt injection via large/exotic body payloads.
 // ---------------------------------------------------------------------------
 
-const repoFullNameRegex = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\/[a-zA-Z0-9_-][a-zA-Z0-9._-]{0,99}$/;
+// owner/repo. The repo segment may start with a dot ('.github', '.allstar' are
+// real, common GitHub repos) but must not be all dots ('.', '..' — path
+// traversal). The owner segment is alphanumeric+hyphen (GitHub owners can't
+// contain dots). No '/' inside either segment.
+const repoFullNameRegex = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\/(?!\.+$)[a-zA-Z0-9._-]{1,100}$/;
 
 export const aiRepoMetadataSchema = z.object({
     id: z.number().int().positive().optional(),

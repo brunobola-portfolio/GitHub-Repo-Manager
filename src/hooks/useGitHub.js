@@ -118,7 +118,8 @@ export function useGitHub() {
     // trigger a pointless refetch.
     const withOrgRefresh = useCallback((fn) => async (...args) => {
         const result = await fn(...args)
-        if (result?.success !== false) refreshOrgData()
+        // Skip the org refetch on a failed call OR a dry-run preview (no mutation).
+        if (result?.success !== false && !result?.dryRun) refreshOrgData()
         return result
     }, [refreshOrgData])
 

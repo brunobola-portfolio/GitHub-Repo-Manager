@@ -97,7 +97,11 @@ export function useWizardNavigation({
         importing: false,
         jobStatus: { status: 'failed', errorMessage: serverError || e.message, progressPct: 0 },
       })
-      toast.errorFromException(e, { fallbackTitle: 'Failed to start import' })
+      // Prefer the server's specific reason (e.g. "already in progress",
+      // "invalid source URL") in the toast; its codes aren't in the generic
+      // error map, so errorFromException alone would surface a vague fallback.
+      if (serverError) toast.error(`Failed to start import — ${serverError}`)
+      else toast.errorFromException(e, { fallbackTitle: 'Failed to start import' })
       nextStep()
     }
   }, [source, updateImportJobs, nextStep, toast])

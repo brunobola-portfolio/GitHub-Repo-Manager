@@ -31,6 +31,12 @@ describe('aiBatchIndexSchema', () => {
     it('rejects a full_name that is not owner/repo', () => {
         expect(aiBatchIndexSchema.safeParse({ repos: [{ id: 1, full_name: 'notaslug' }] }).success).toBe(false)
     })
+    it('accepts a dot-leading repo name (.github) but still rejects . and ..', () => {
+        expect(aiBatchIndexSchema.safeParse({ repos: [{ id: 1, full_name: 'octocat/.github' }] }).success).toBe(true)
+        expect(aiBatchIndexSchema.safeParse({ repos: [{ id: 1, full_name: 'octocat/.allstar' }] }).success).toBe(true)
+        expect(aiBatchIndexSchema.safeParse({ repos: [{ id: 1, full_name: 'octocat/..' }] }).success).toBe(false)
+        expect(aiBatchIndexSchema.safeParse({ repos: [{ id: 1, full_name: 'octocat/.' }] }).success).toBe(false)
+    })
     it('requires the numeric id', () => {
         expect(aiBatchIndexSchema.safeParse({ repos: [{ full_name: 'o/r' }] }).success).toBe(false)
     })

@@ -221,6 +221,15 @@ export function useRepos(user) {
 
         try {
             const parsed = await performActionApi(action, repoNames, org, options)
+
+            // Dry-run preview ("Simulate"): nothing was mutated and the payload
+            // carries no results/message. Don't write a success message/activity
+            // entry or refetch the repo list — surface a `dryRun` flag so the
+            // useGitHub org-refresh wrapper skips its refetch too.
+            if (options.dryRunOnly) {
+                return { success: true, dryRun: true, action, count: repoNames.length, raw: parsed }
+            }
+
             const apiResults = Array.isArray(parsed?.results) ? parsed.results : []
             const failed = apiResults.filter(r => r && r.success === false)
             const successCount = apiResults.length
