@@ -14,8 +14,32 @@ import {
     azureImportSchema,
     aiChatSchema,
     aiIndexSchema,
+    aiBatchIndexSchema,
     userAIConfigSchema,
 } from '../lib/validators.js'
+
+describe('aiBatchIndexSchema', () => {
+    const repo = { id: 1, full_name: 'octocat/hello-world', name: 'hello-world' }
+
+    it('accepts a valid batch of repos', () => {
+        expect(aiBatchIndexSchema.safeParse({ repos: [repo, { ...repo, id: 2 }] }).success).toBe(true)
+    })
+    it('rejects a malformed full_name (path-traversal shape)', () => {
+        const r = aiBatchIndexSchema.safeParse({ repos: [{ id: 1, full_name: '../../etc/passwd', name: 'x' }] })
+        expect(r.success).toBe(false)
+    })
+    it('rejects a full_name that is not owner/repo', () => {
+        expect(aiBatchIndexSchema.safeParse({ repos: [{ id: 1, full_name: 'notaslug' }] }).success).toBe(false)
+    })
+    it('requires the numeric id', () => {
+        expect(aiBatchIndexSchema.safeParse({ repos: [{ full_name: 'o/r' }] }).success).toBe(false)
+    })
+    it('rejects an empty batch and a batch over the 10-repo cap', () => {
+        expect(aiBatchIndexSchema.safeParse({ repos: [] }).success).toBe(false)
+        const tooMany = Array.from({ length: 11 }, (_, i) => ({ ...repo, id: i + 1 }))
+        expect(aiBatchIndexSchema.safeParse({ repos: tooMany }).success).toBe(false)
+    })
+})
 
 describe('createRepoSchema', () => {
     it('accepts valid repo data', () => {

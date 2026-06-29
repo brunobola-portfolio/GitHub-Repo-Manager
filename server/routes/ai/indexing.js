@@ -12,7 +12,7 @@ import express from 'express';
 import db from '../../db.js';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError } from '../../middleware/auth.js';
-import { aiIndexSchema } from '../../lib/validators.js';
+import { aiIndexSchema, aiBatchIndexSchema } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { aiService } from '../../ai-service.js';
 import { checkUsageLimit, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
@@ -209,11 +209,8 @@ router.get('/ai/metadata', requireAuth, (req, res) => {
 });
 
 // Batch Index - Index multiple repos at once
-router.post('/ai/batch-index', requireAuth, requireAI, async (req, res) => {
-    const { repos } = req.body; // Array of repo objects
-    if (!repos || !Array.isArray(repos)) {
-        return res.status(400).json({ error: 'Array of repos required' });
-    }
+router.post('/ai/batch-index', requireAuth, validateBody(aiBatchIndexSchema), requireAI, async (req, res) => {
+    const { repos } = req.validatedBody; // validated array of repo objects (each full_name regex-checked)
 
     const userId = req.session.userId;
     const requested = Math.min(repos.length, 10);

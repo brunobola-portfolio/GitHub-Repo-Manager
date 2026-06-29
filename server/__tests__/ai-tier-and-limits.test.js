@@ -291,6 +291,8 @@ describe('POST /api/ai/batch-index — quota caps the batch to remaining allowan
         expect(res.status).toBe(429)
         expect(aiService.analyzeRepo).not.toHaveBeenCalled()
     })
+    // NOTE: this file mocks validateBody to a pass-through, so full_name
+    // validation is covered as a schema unit test in validators.test.js, not here.
 })
 
 // ---------------------------------------------------------------------------
