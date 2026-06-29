@@ -55,13 +55,24 @@ export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, confl
       // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag around a network request; setState is guarded by plan.length and the AbortController pattern below.
       setIsValidating(true)
       const names = plan.map((p) => p.to)
-      fetch('/api/import/check-duplicates', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetOrg, repos: names }),
-        signal: controller.signal,
-      })
+      // Mint the CSRF token BEFORE the POST. The global requireCsrfToken guard
+      // (mounted ahead of this route) 403s any mutation missing the header, so
+      // this call — which previously sent none — silently failed ('unchecked')
+      // on every fire. Mirror the Phase-3 AI call below, which already attaches it.
+      getCsrfToken()
+        .catch(() => null)
+        .then((csrf) =>
+          fetch('/api/import/check-duplicates', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(csrf ? { 'X-CSRF-Token': csrf } : {}),
+            },
+            body: JSON.stringify({ targetOrg, repos: names }),
+            signal: controller.signal,
+          })
+        )
         .then(async (res) => {
           // Fix 2: priority-aware auth error
           if (res.status === 401) {
