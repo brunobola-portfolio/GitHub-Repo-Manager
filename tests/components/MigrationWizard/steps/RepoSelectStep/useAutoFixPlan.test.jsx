@@ -54,6 +54,22 @@ describe('useAutoFixPlan', () => {
     })
   })
 
+  it('Phase 2 attaches the X-CSRF-Token header on the check-duplicates POST', async () => {
+    // Regression: the Phase-2 fetch previously sent no CSRF header, so the
+    // global requireCsrfToken guard 403'd it on every fire (silently degrading
+    // every conflict status to 'unchecked'). It must mint + send the token.
+    mockFetchImpl({ 'check-duplicates': { body: { duplicates: {} } } })
+    const repos = [makeRepo({ id: 'a', name: 'api', selected: true })]
+    renderHook(() =>
+      useAutoFixPlan({ repos, allRepos: repos, targetOrg: 'myorg', azureProject: 'X', aiAvailable: false }),
+    )
+    await waitFor(() => {
+      const call = global.fetch.mock.calls.find((c) => String(c[0]).includes('check-duplicates'))
+      expect(call).toBeTruthy()
+      expect(call[1].headers['X-CSRF-Token']).toBe('test-csrf-token')
+    })
+  })
+
   it('Phase 2 sets unchecked on fetch failure (5xx)', async () => {
     mockFetchImpl({ 'check-duplicates': { ok: false, status: 500, body: {} } })
     const repos = [makeRepo({ id: 'a', name: 'api', selected: true })]

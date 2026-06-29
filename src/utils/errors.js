@@ -258,6 +258,16 @@ const KNOWN_ERRORS = {
         body: 'Real migration execution is part of the Pro plan. Free accounts can still create and run dry-run plans.',
         action: { label: 'See plans', kind: 'open-pricing', type: 'upgrade' },
     },
+    // Migration preflight: the execute/resume/retry routes return a 422 with
+    // this code when a required CLI (TFVC client, git-tfs, Git LFS) is missing
+    // on the migration server. The inline banner shows the specific tool +
+    // fix (surfaced via migrationApi); this toast routes the user to the
+    // Migration Tooling settings tab where the environment doctor lives.
+    ENV_TOOL_MISSING: {
+        title: 'Migration tool missing on the server',
+        body: 'A command-line tool this migration needs (such as the TFVC client or Git LFS) isn’t installed on the migration server. Install it — or run the environment doctor — then retry. The inline error names the exact tool.',
+        action: { label: 'Check environment', kind: 'open-settings', type: 'configure', settingsTab: 'env-tooling' },
+    },
 }
 
 const FALLBACK = {

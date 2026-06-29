@@ -20,8 +20,15 @@ async function migrationCall(url, options = {}) {
             if (parts.length) {
                 err.message = `${err.data.error || err.message} — ${parts.join('; ')}`;
             }
-        } else if (err.data?.error) {
-            err.message = err.data.error;
+        } else if (err.data?.error || err.data?.message) {
+            // Prefer the human-readable `message`: quota/host envelopes put a
+            // machine code in `error` and the sentence in `message`. Fall back
+            // to `error`, which IS the sentence for ENV_TOOL_MISSING (missing
+            // migration tooling). Append the actionable `fix` hint when the
+            // envelope carries one so the surfaced error tells the user how to
+            // resolve it, not just what failed.
+            const base = err.data.message || err.data.error;
+            err.message = err.data.fix ? `${base} — ${err.data.fix}` : base;
         }
         throw err;
     }
@@ -40,7 +47,7 @@ export const migrationApi = {
   }),
   deletePlan: (id) => apiCall(`${API_ENDPOINTS.migrationPlans}/${id}`, { method: 'DELETE' }),
   validatePlan: (id) => apiCall(`${API_ENDPOINTS.migrationPlans}/${id}/validate`, { method: 'POST' }),
-  executePlan: (id, { azurePat, savedCredentialId } = {}) => apiCall(`${API_ENDPOINTS.migrationPlans}/${id}/execute`, {
+  executePlan: (id, { azurePat, savedCredentialId } = {}) => migrationCall(`${API_ENDPOINTS.migrationPlans}/${id}/execute`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       azurePat: azurePat || null,
@@ -49,14 +56,14 @@ export const migrationApi = {
   }),
   cancelPlan: (id) => apiCall(`${API_ENDPOINTS.migrationPlans}/${id}/cancel`, { method: 'POST' }),
   pausePlan: (id) => apiCall(`${API_ENDPOINTS.migrationPlans}/${id}/pause`, { method: 'POST' }),
-  resumePlan: (id, { azurePat, savedCredentialId } = {}) => apiCall(`${API_ENDPOINTS.migrationPlans}/${id}/resume`, {
+  resumePlan: (id, { azurePat, savedCredentialId } = {}) => migrationCall(`${API_ENDPOINTS.migrationPlans}/${id}/resume`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       azurePat: azurePat || null,
       ...(savedCredentialId ? { savedCredentialId } : {}),
     })
   }),
-  retryTask: (id, taskId, { azurePat, savedCredentialId } = {}) => apiCall(`${API_ENDPOINTS.migrationPlans}/${id}/tasks/${taskId}/retry`, {
+  retryTask: (id, taskId, { azurePat, savedCredentialId } = {}) => migrationCall(`${API_ENDPOINTS.migrationPlans}/${id}/tasks/${taskId}/retry`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       azurePat: azurePat || null,
