@@ -192,4 +192,31 @@ describe('formatUserError', () => {
     const unmappedCalls = warnSpy.mock.calls.filter(c => String(c[0]).includes('[formatUserError] unmapped'))
     expect(unmappedCalls).toHaveLength(0)
   })
+
+  // -----------------------------------------------------------------------
+  // ENV_TOOL_MISSING — migration preflight tool detection. The execute route
+  // returns a 422 { error, code: 'ENV_TOOL_MISSING', fix, docsUrl } when a
+  // required migration CLI (TFVC client, git-tfs, Git LFS) is missing on the
+  // server. The toast must map it to a real, actionable state instead of the
+  // generic "Something went wrong" fallback + an unmapped-error console warn.
+  // -----------------------------------------------------------------------
+
+  it('maps ENV_TOOL_MISSING to a configure action targeting the env-tooling tab', () => {
+    const out = formatUserError({ code: 'ENV_TOOL_MISSING' })
+    expect(out.title).not.toBe('Something went wrong')
+    expect(out.action.kind).toBe('open-settings')
+    expect(out.action.type).toBe('configure')
+    expect(out.action.settingsTab).toBe('env-tooling')
+    expect(out.raw).toBeNull()
+  })
+
+  it('does not log "unmapped error" warn for a known ENV_TOOL_MISSING code', () => {
+    const err = Object.assign(
+      new Error('Invalid request. Please check your input.'),
+      { status: 422, code: 'ENV_TOOL_MISSING' },
+    )
+    formatUserError(err)
+    const unmappedCalls = console.warn.mock.calls.filter(c => String(c[0]).includes('[formatUserError] unmapped'))
+    expect(unmappedCalls).toHaveLength(0)
+  })
 })
