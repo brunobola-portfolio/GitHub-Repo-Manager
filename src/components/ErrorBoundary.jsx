@@ -74,8 +74,18 @@ class ErrorBoundary extends Component {
               Something went wrong
             </h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 leading-relaxed">
-              {this.state.error?.message || 'An unexpected error occurred. You can try again or reload the page.'}
+              An unexpected error occurred. You can try again or reload the page.
             </p>
+            {this.state.error?.message && (
+              <details className="text-left mb-6 -mt-2">
+                <summary className="cursor-pointer text-xs font-medium text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 rounded ds-focus-ring">
+                  Technical details
+                </summary>
+                <pre className="mt-2 max-h-40 overflow-auto rounded-lg bg-slate-100 dark:bg-slate-900/60 p-3 text-xs text-slate-600 dark:text-slate-400 whitespace-pre-wrap break-words">
+                  {this.state.error.message}
+                </pre>
+              </details>
+            )}
             <div className="flex gap-3 justify-center">
               <Button
                 variant="primary"

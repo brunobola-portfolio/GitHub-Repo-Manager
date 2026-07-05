@@ -23,7 +23,7 @@ describe('<MarksBadge>', () => {
   it('renders none variant when no marks', () => {
     render(<MarksBadge marks={[]} />)
     expect(screen.getByLabelText(/no migration marks/i)).toBeInTheDocument()
-    expect(screen.getByText('Sem tags')).toBeInTheDocument()
+    expect(screen.getByText('No tags')).toBeInTheDocument()
   })
 
   it('invokes onClick when clicked', () => {

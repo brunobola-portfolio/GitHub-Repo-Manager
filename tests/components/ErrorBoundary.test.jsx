@@ -107,4 +107,20 @@ describe('ErrorBoundary', () => {
     )
     expect(screen.getByText('Test error')).toBeInTheDocument()
   })
+
+  it('shows a friendly generic message with the raw error tucked into Technical details', () => {
+    render(
+      <ErrorBoundary>
+        <ThrowingChild shouldThrow={true} />
+      </ErrorBoundary>
+    )
+    // Friendly copy is the primary message, not the raw exception text.
+    expect(
+      screen.getByText('An unexpected error occurred. You can try again or reload the page.')
+    ).toBeInTheDocument()
+    // Raw message is preserved, but behind a collapsed "Technical details" disclosure.
+    expect(screen.getByText('Technical details')).toBeInTheDocument()
+    expect(screen.getByText('Technical details').closest('details')).toBeTruthy()
+    expect(screen.getByText('Test error')).toBeInTheDocument()
+  })
 })

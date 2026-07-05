@@ -252,7 +252,9 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
         icon={Package}
         title="No repositories selected"
         description="Go back and select repositories to configure."
-        action={{ label: 'Back to Selection', onClick: () => window.history.back() }}
+        action={onGoToStep
+          ? { label: 'Back to Selection', onClick: () => onGoToStep('repoSelect') }
+          : undefined}
       />
     )
   }

@@ -1,6 +1,22 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { parseRepoHash, buildRepoHash } from '../utils/repoDetailHash'
 
+// Per-view document.title. index.html ships a single static marketing title,
+// so browser tabs / history entries / bookmarks are otherwise indistinguishable.
+const APP_NAME = 'GitHub Repo Manager'
+const MARKETING_TITLE = 'GitHub Repo Manager — AI-Powered Repository Management'
+const VIEW_TITLES = {
+  dashboard: 'Dashboard',
+  repos: 'Repositories',
+  teams: 'Teams',
+  'work-board': 'Work Board',
+  'prompt-studio': 'Prompt Studio',
+  pricing: 'Pricing',
+  roadmap: 'Roadmap',
+  'pr-review': 'PR Review',
+  'admin-dlq': 'Admin',
+}
+
 /**
  * useAppRouter - bidirectional hash <-> activeView routing for the app shell.
  *
@@ -26,6 +42,7 @@ export function useAppRouter({
   repoDetailActiveTab,
   setRepoDetailActiveTab,
   setReviewingPR,
+  isAuthenticated = false,
 }) {
   // Hash-based deep-link routing. The app is state-routed via setActiveView,
   // but the major static views are deep-linkable (Settings, docs, e2e, browser
@@ -120,4 +137,24 @@ export function useAppRouter({
     window.history.replaceState(null, '', newUrl || window.location.pathname)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeView, selectedRepoDetail, repoDetailActiveTab])
+
+  // Keep document.title in sync with the current view so tabs/history/bookmarks
+  // are distinguishable. Logged-out users (landing page) keep the marketing
+  // title; repo-detail shows the repo's full name when it's cheaply available.
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    if (!isAuthenticated) {
+      document.title = MARKETING_TITLE
+      return
+    }
+    let viewName
+    if (activeView === 'repo-detail' && selectedRepoDetail) {
+      viewName = selectedRepoDetail.full_name
+        || [selectedRepoDetail.owner?.login, selectedRepoDetail.name].filter(Boolean).join('/')
+        || selectedRepoDetail.name
+    } else {
+      viewName = VIEW_TITLES[activeView]
+    }
+    document.title = viewName ? `${viewName} — ${APP_NAME}` : MARKETING_TITLE
+  }, [isAuthenticated, activeView, selectedRepoDetail])
 }

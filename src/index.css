@@ -115,9 +115,9 @@
   html::-webkit-scrollbar-thumb:hover {
     background-color: rgba(148, 163, 184, 0.8);
   }
-  .dark html:hover { scrollbar-color: rgba(255, 255, 255, 0.2) transparent; }
-  .dark html:hover::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.2); }
-  .dark html::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.4); }
+  html.dark:hover { scrollbar-color: rgba(255, 255, 255, 0.2) transparent; }
+  html.dark:hover::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.2); }
+  html.dark::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.4); }
 
   /* Same premium overlay applied to every scrollable element by default
      so internal scroll containers (modals, drawers, dropdowns, tab panes)

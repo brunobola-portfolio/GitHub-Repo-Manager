@@ -69,6 +69,11 @@ const PT_WORDS = new RegExp(
     'Pronto', 'Incluir', 'incluir', 'Anterior',
     // Tokens that evaded the accent check in App.jsx's injected AI message.
     'Acabei', 'Queres', 'sugira', 'migrad[oa]s?', 'Polir', 'polir', 'manter', 'Manter',
+    // Accent-free PT that shipped in Dashboard / MigrationHistory / wizard copy
+    // ("A sincronizar", "Sem tags", "nada escrito", "Progresso"). Each is a
+    // Portuguese-only token with no English or JS-identifier collision — note
+    // 'tags' is deliberately excluded (English) so 'Sem tags' is caught via 'sem'.
+    'sincroniza\\w*', 'progresso', 'nada', 'escrit[oa]s?', 'sem',
   ].join('|') + ')\\b',
   'i',
 )

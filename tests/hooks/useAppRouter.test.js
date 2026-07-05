@@ -95,3 +95,35 @@ describe('useAppRouter — state -> hash', () => {
         expect(window.location.hash).toBe('')
     })
 })
+
+describe('useAppRouter — document.title', () => {
+    it('sets a per-view title for an authenticated view', () => {
+        const p = mkProps({ activeView: 'work-board', isAuthenticated: true })
+        renderHook(() => useAppRouter(p))
+        expect(document.title).toBe('Work Board — GitHub Repo Manager')
+    })
+
+    it('uses the repo full_name in repo-detail', () => {
+        const p = mkProps({
+            activeView: 'repo-detail',
+            isAuthenticated: true,
+            selectedRepoDetail: { name: 'demo', full_name: 'acme/demo', owner: { login: 'acme' } },
+        })
+        renderHook(() => useAppRouter(p))
+        expect(document.title).toBe('acme/demo — GitHub Repo Manager')
+    })
+
+    it('keeps the marketing title when logged out', () => {
+        const p = mkProps({ activeView: 'dashboard', isAuthenticated: false })
+        renderHook(() => useAppRouter(p))
+        expect(document.title).toBe('GitHub Repo Manager — AI-Powered Repository Management')
+    })
+
+    it('updates the title when the view changes', () => {
+        const p = mkProps({ activeView: 'dashboard', isAuthenticated: true })
+        const { rerender } = renderHook((props) => useAppRouter(props), { initialProps: p })
+        expect(document.title).toBe('Dashboard — GitHub Repo Manager')
+        act(() => { rerender({ ...p, activeView: 'teams' }) })
+        expect(document.title).toBe('Teams — GitHub Repo Manager')
+    })
+})

@@ -200,4 +200,23 @@ describe('AIInstructionsSection', () => {
         const previews = screen.getAllByText(/logflow/)
         expect(previews.length).toBeGreaterThanOrEqual(1)
     })
+
+    it('makes the prompt tabs keyboard-reachable via arrow keys (shared TabBar)', async () => {
+        const user = userEvent.setup()
+        apiCall.mockResolvedValueOnce(CATALOG)
+        render(<AIInstructionsSection />)
+        await waitFor(() => expect(screen.getByText(/Assistant chat — persona/)).toBeInTheDocument())
+        await user.click(screen.getByText(/Assistant chat — persona/))
+
+        // Editor is the default active tab; inactive tabs use roving tabindex.
+        expect(screen.getByRole('tab', { name: /^Editor$/i })).toHaveAttribute('aria-selected', 'true')
+        expect(screen.getByRole('tab', { name: /^Default$/i })).toHaveAttribute('tabindex', '-1')
+
+        // Previously the inactive tabs were unreachable (no arrow-key handling).
+        // The shared TabBar wires ArrowRight on the tablist to move + select.
+        const tablist = screen.getByRole('tablist')
+        tablist.focus()
+        await user.keyboard('{ArrowRight}')
+        expect(screen.getByRole('tab', { name: /^Default$/i })).toHaveAttribute('aria-selected', 'true')
+    })
 })

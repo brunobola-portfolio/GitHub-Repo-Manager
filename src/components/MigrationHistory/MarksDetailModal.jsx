@@ -17,7 +17,7 @@ function ScopeSection({ scope, marks }) {
     <div className="mb-4">
       <div className="text-xs uppercase tracking-wider text-slate-400 mb-1">{scope}</div>
       {marks.length === 0
-        ? <div className="text-sm text-slate-500 italic">— nada escrito</div>
+        ? <div className="text-sm text-slate-500 italic">— nothing written</div>
         : marks.map(m => (
             <div key={m.id} className="flex items-start gap-2 py-1 text-sm">
               <span className={statusClass(m.status)} aria-label={`status: ${m.status}`}>{statusIcon(m.status)}</span>

@@ -38,17 +38,17 @@
 
 | # | Item | Status |
 |---|---|---|
-| C1 | PT strings (HeroSyncChip, MarksBadge, MarksDetailModal, Steppers) + widen anti-PT guard (accent-free words; note server prompts) | pending |
-| C2 | WorkBoard window.alert → toast | pending |
-| C3 | document.title per view | pending |
-| C4 | Landing footer "Vite 7" → sourced version | pending |
-| C5 | ErrorBoundary: generic message, raw error to details/console | pending |
-| C6 | AIInstructionsSection tabs → shared ui/TabBar | pending |
-| C7 | Wizard "Back to Selection" history.back() → wizard step nav | pending |
+| C1 | PT strings (HeroSyncChip, MarksBadge, MarksDetailModal, Steppers) + widen anti-PT guard (accent-free words; note server prompts) | done |
+| C2 | WorkBoard window.alert → toast | done |
+| C3 | document.title per view | done |
+| C4 | Landing footer "Vite 7" → sourced version | done |
+| C5 | ErrorBoundary: generic message, raw error to details/console | done |
+| C6 | AIInstructionsSection tabs → shared ui/TabBar | done |
+| C7 | Wizard "Back to Selection" history.back() → wizard step nav | done |
 | C8 | Silent catch{} in ProgressStep/MigrationHistory → toast.errorFromException | pending |
-| C9 | `.dark html` scrollbar selector fix (`html.dark`) | pending |
-| C10 | `color-scheme: light dark` for native controls | pending |
-| C11 | ::selection dark-mode token | pending |
+| C9 | `.dark html` scrollbar selector fix (`html.dark`) | done |
+| C10 | `color-scheme: light dark` for native controls | done |
+| C11 | ::selection dark-mode token | done |
 
 ## Wave D — structural mediums (as credit allows)
 
@@ -75,3 +75,4 @@
 - 2026-07-05: Wave B2 landed (bulk visibility split into two honest actions; PR review submit toast+refetch; ReadmeEnhance diff theme; DevToolkit chat light-mode). 52 targeted tests green.
 - 2026-07-05: Wave A3 landed (parseServerTimestamp UTC fix app-wide + 4 leaf de-patches; complete->completed writers + migration 27 + tolerant reads; durations + em-dash placeholders). 85 targeted tests green.
 - 2026-07-05: Wave A1 landed (registry-driven GDPR erasure covering ~37 user-scoped tables + schema-introspection completeness test; export gap + credential-leak fix; maintenance janitors scheduling retention/gh_cache/gh_outbox/undo-log). 58 targeted tests green.
+- 2026-07-05: Wave C landed (PT strings EN + wider anti-PT gate incl. server chat prompt; alert->toast; per-view document.title; Vite 8 footer; friendly ErrorBoundary; AIInstructions tabs on shared TabBar; wizard step-nav CTA; scrollbar/color-scheme/::selection theme fixes). 95 targeted tests green. C8 pending.

@@ -31,7 +31,7 @@ function pickVariant(marks) {
 }
 
 function summary(marks) {
-  if (!marks.length) return 'Sem tags'
+  if (!marks.length) return 'No tags'
   const w = marks.filter(m => m.status === 'written').length
   return `${w}/${marks.length}`
 }

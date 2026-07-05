@@ -17,7 +17,7 @@ export function HeroSyncChip({ onSync, lastSyncedAt }) {
         }
     }
 
-    const label = syncing ? 'A sincronizar…' : relative ? `Sync (${relative})` : 'Sync'
+    const label = syncing ? 'Syncing…' : relative ? `Sync (${relative})` : 'Sync'
     const ariaLabel = lastSyncedAt
         ? `Sync now, last synced ${relative ?? 'just now'}`
         : 'Sync now'

@@ -18,6 +18,11 @@
 }
 
 :root {
+  /* Tell the UA to render native form controls (checkboxes, radios, date/time
+   * pickers, scrollbars) in the light scheme by default; the dark override
+   * lives on :root.dark below so they follow the app theme. */
+  color-scheme: light;
+
   /* ===== TYPOGRAPHY ===== */
   --ds-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans",
                   Helvetica, Arial, sans-serif, "Apple Color Emoji",
@@ -172,6 +177,8 @@
  * regardless of source order. Block ALSO placed AFTER the second :root
  * block above so source order also favours the dark redefinitions. */
 :root.dark {
+  /* Native form controls / pickers follow the dark theme. */
+  color-scheme: dark;
   --ds-chart-axis: var(--ds-fg-muted-dark);
   --ds-chart-grid: var(--ds-border-dark);
   /* Status tokens — auto-swap to dark variants */
@@ -301,6 +308,9 @@
 
 /* ===== SELECTION ===== */
 ::selection { background: color-mix(in srgb, var(--ds-accent-brand) 25%, transparent); }
+/* Dark mode uses the lighter brand token so selected text stays legible on the
+   dark canvas (the light indigo-600 tint is too dim against slate-900). */
+.dark ::selection { background: color-mix(in srgb, var(--ds-accent-brand-dark) 25%, transparent); }
 
 /* ===== REDUCED MOTION ===== */
 @media (prefers-reduced-motion: reduce) {

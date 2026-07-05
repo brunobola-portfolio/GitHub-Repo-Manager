@@ -228,7 +228,7 @@ export function SidebarStepper({
       <div className="px-4 pt-4 pb-3">
         <div className="flex items-center justify-between mb-2.5">
           <span className="ds-text-micro font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-            Progresso
+            Progress
           </span>
           <div className="inline-flex items-baseline gap-0.5 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-500/10 text-[color:var(--ds-accent-brand)] dark:text-indigo-300 font-bold tabular-nums">
             <span className="text-[13px] leading-none">{effectiveCurrent}</span>

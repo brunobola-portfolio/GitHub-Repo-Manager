@@ -42,7 +42,7 @@ function LandingFooter() {
           >
             Bruno Marques
           </a>
-          {' '}· React 19 + Vite 7 + Tailwind CSS v4
+          {' '}· React 19 + Vite 8 + Tailwind CSS v4
         </p>
 
         <div className="flex items-center gap-5">

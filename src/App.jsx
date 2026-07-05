@@ -281,6 +281,7 @@ function AppContent() {
     repoDetailActiveTab,
     setRepoDetailActiveTab,
     setReviewingPR,
+    isAuthenticated: !!user,
   })
 
   // Bridge the APP_EVENTS bus (navigation, modal opens, and event

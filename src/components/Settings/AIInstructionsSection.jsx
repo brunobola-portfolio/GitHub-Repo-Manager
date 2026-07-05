@@ -11,6 +11,7 @@ import { ConfirmModal } from '../ui/ConfirmModal'
 import { Field, Input, Textarea } from '../ui/form'
 import { PanelHeader } from '../ui/PanelHeader'
 import { EmptyState } from '../ui/EmptyState'
+import { TabBar } from '../ui/TabBar'
 import { useToast } from '../../hooks/useToast'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import { apiCall } from '../../utils/api'
@@ -95,26 +96,10 @@ const TABS = [
     { id: 'preview', label: 'Preview' },
 ]
 
-function TabButton({ active, onClick, children, id, controls }) {
-    return (
-        <button
-            type="button"
-            role="tab"
-            id={id}
-            aria-selected={active}
-            aria-controls={controls}
-            tabIndex={active ? 0 : -1}
-            onClick={onClick}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                active
-                    ? 'bg-indigo-500/10 text-[color:var(--ds-accent-brand)] dark:bg-indigo-400/15 dark:text-indigo-200'
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-        >
-            {children}
-        </button>
-    )
-}
+// Stable tablist id namespace per prompt entry. TabBar derives the tab button
+// ids (`tab-<layoutId>-<tabId>`) and aria-controls (`tabpanel-<layoutId>-<tabId>`)
+// from this, which the tab panels below reference back via aria-labelledby.
+const tablistId = (key) => `aiprompt-${key}`
 
 function PromptEditor({ entry, onSaved, onReset }) {
     const { toast } = useToast()
@@ -221,19 +206,14 @@ function PromptEditor({ entry, onSaved, onReset }) {
                 <div className="space-y-3 pt-2 border-t border-slate-200/60 dark:border-slate-700/50">
                     {/* Tab strip */}
                     <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <div role="tablist" aria-label="Prompt views" className="inline-flex items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-800/60">
-                            {TABS.map(t => (
-                                <TabButton
-                                    key={t.id}
-                                    id={`prompt-tab-${entry.key}-${t.id}`}
-                                    controls={`prompt-tabpanel-${entry.key}-${t.id}`}
-                                    active={tab === t.id}
-                                    onClick={() => setTab(t.id)}
-                                >
-                                    {t.label}
-                                </TabButton>
-                            ))}
-                        </div>
+                        <TabBar
+                            tabs={TABS}
+                            activeTab={tab}
+                            onTabChange={setTab}
+                            variant="pill"
+                            size="sm"
+                            layoutId={tablistId(entry.key)}
+                        />
                         <div className="flex items-center gap-1">
                             {diffCount > 0 && (
                                 <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md ds-text-meta font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800/40">
@@ -266,8 +246,8 @@ function PromptEditor({ entry, onSaved, onReset }) {
                     {tab === 'editor' && (
                         <div
                             role="tabpanel"
-                            id={`prompt-tabpanel-${entry.key}-editor`}
-                            aria-labelledby={`prompt-tab-${entry.key}-editor`}
+                            id={`tabpanel-${tablistId(entry.key)}-editor`}
+                            aria-labelledby={`tab-${tablistId(entry.key)}-editor`}
                         >
                             <Field label="Your prompt" htmlFor={`prompt-editor-${entry.key}`}>
                                 <Textarea
@@ -300,8 +280,8 @@ function PromptEditor({ entry, onSaved, onReset }) {
                     {tab === 'default' && (
                         <div
                             role="tabpanel"
-                            id={`prompt-tabpanel-${entry.key}-default`}
-                            aria-labelledby={`prompt-tab-${entry.key}-default`}
+                            id={`tabpanel-${tablistId(entry.key)}-default`}
+                            aria-labelledby={`tab-${tablistId(entry.key)}-default`}
                         >
                             <p className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">
                                 Built-in default — used when you have no override.
@@ -318,8 +298,8 @@ function PromptEditor({ entry, onSaved, onReset }) {
                     {tab === 'preview' && (
                         <div
                             role="tabpanel"
-                            id={`prompt-tabpanel-${entry.key}-preview`}
-                            aria-labelledby={`prompt-tab-${entry.key}-preview`}
+                            id={`tabpanel-${tablistId(entry.key)}-preview`}
+                            aria-labelledby={`tab-${tablistId(entry.key)}-preview`}
                         >
                             <p className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">
                                 Preview with sample data — exactly what the model would receive.

@@ -37,6 +37,7 @@ import { PresetDropdown } from './filters/PresetDropdown'
 import { FilterProvider } from './filters/filter-context'
 import { useContextShortcut } from '../../hooks/useKeyboardShortcuts'
 import { useModal } from '../../hooks/useModal'
+import { useToast } from '../../hooks/useToast'
 import { KeyboardHelpModal } from './KeyboardHelpModal'
 import { DOCS_URL as WEBHOOK_DOCS_URL } from '../Settings/WorkBoard/WebhookConnectPanel'
 import { AISummaryCard } from './AISummaryCard'
@@ -161,6 +162,7 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
     // Help modal state (from centralized ModalContext)
     const { modalStates, openModal, closeModal } = useModal()
     const helpOpen = modalStates.workBoardHelp || false
+    const { toast } = useToast()
 
     // `?` opens help (Shift+/ yields event.key === '?' on most layouts)
     useContextShortcut({ key: '?', handler: () => openModal('workBoardHelp') })
@@ -183,9 +185,7 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
             // Lightweight first pass: nudge user to the filter-bar PresetDropdown.
             // A deeper integration would open the dropdown + focus its input; we
             // skip that to avoid cross-component ref coupling.
-            if (typeof window !== 'undefined' && typeof window.alert === 'function') {
-                window.alert('Use the Presets dropdown in the filter bar to save the current filters as a preset.')
-            }
+            toast.info('Use the Presets dropdown in the filter bar to save the current filters as a preset.')
         }
         const offs = [
             onAppEvent(APP_EVENTS.WORKBOARD_GO_TAB, onGoTab),
