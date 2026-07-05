@@ -89,4 +89,22 @@ describe('Tooltip', () => {
     render(<Tooltip label="Tooltip text"><button aria-label="Real name"><svg /></button></Tooltip>)
     expect(screen.getByRole('button')).toHaveAttribute('aria-label', 'Real name')
   })
+
+  it('dismisses a visible tooltip on Escape without moving focus (WCAG 1.4.13)', () => {
+    vi.useFakeTimers()
+    render(<Tooltip label="Sync repos"><button>Sync</button></Tooltip>)
+    const btn = screen.getByText('Sync')
+    btn.focus()
+    fireEvent.mouseEnter(btn)
+    act(() => { vi.advanceTimersByTime(300) })
+    expect(screen.getByText('Sync repos')).toBeInTheDocument()
+    expect(document.activeElement).toBe(btn)
+    // Escape hides the tooltip; focus stays put and it doesn't re-reveal.
+    act(() => { fireEvent.keyDown(btn, { key: 'Escape' }) })
+    expect(screen.queryByText('Sync repos')).not.toBeInTheDocument()
+    expect(document.activeElement).toBe(btn)
+    act(() => { vi.advanceTimersByTime(300) })
+    expect(screen.queryByText('Sync repos')).not.toBeInTheDocument()
+    vi.useRealTimers()
+  })
 })

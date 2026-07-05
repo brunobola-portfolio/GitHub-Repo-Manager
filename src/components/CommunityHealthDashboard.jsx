@@ -9,6 +9,7 @@ import { useToast } from '../hooks/useToast';
 import { Modal } from './ui/Modal';
 import { Button } from './ui/Button';
 import { TabBar } from './ui/TabBar';
+import { Tooltip } from './ui/Tooltip';
 import { CommunityHealthFixModal } from './AI/CommunityHealthFixModal';
 import { formatFileSize } from '../utils/format';
 
@@ -387,16 +388,17 @@ function FileCheckItem({ file, exists, size, onFix }) {
             <div className="flex items-center gap-2 flex-shrink-0">
                 {exists && size > 0 && (<span className="text-xs text-slate-400">{formatFileSize(size, 1)}</span>)}
                 {canFix && (
-                    <button
-                        type="button"
-                        onClick={() => onFix(file)}
-                        className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] transition-colors"
-                        title={`Generate ${file} with AI and commit it to the repo`}
-                        aria-label={`Fix ${file} with AI`}
-                    >
-                        <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
-                        Fix with AI
-                    </button>
+                    <Tooltip label={`Generate ${file} with AI and commit it to the repo`}>
+                        <button
+                            type="button"
+                            onClick={() => onFix(file)}
+                            className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] transition-colors"
+                            aria-label={`Fix ${file} with AI`}
+                        >
+                            <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
+                            Fix with AI
+                        </button>
+                    </Tooltip>
                 )}
             </div>
         </motion.div>

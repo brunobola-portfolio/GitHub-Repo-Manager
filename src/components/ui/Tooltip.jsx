@@ -2,6 +2,12 @@
  * Delayed tooltip primitive (300ms hover delay) that plays well with
  * Radix asChild triggers (Popover.Trigger / DropdownMenu.Trigger / …).
  *
+ * CONVENTION: interactive controls (buttons, toggles, icon buttons,
+ * actionable links) use this <Tooltip>; only static / truncated text may
+ * keep a native `title`. Native title= is unstyled, ignores dark mode, has
+ * an OS-dependent delay and never fires on touch — so anything the user
+ * clicks or focuses should be wrapped here instead.
+ *
  * Behaviour
  *  - Wraps a single React element child
  *  - Forwards ref onto the *inner* child (not the wrapping span) so
@@ -160,13 +166,27 @@ export const Tooltip = forwardRef(function Tooltip(
         setVisible(false)
       }
     }
+    // WCAG 1.4.13 (Content on Hover or Focus): a visible tooltip must be
+    // dismissable without moving the pointer or focus. Escape hides it while
+    // the trigger keeps focus — we clear pendingShow too so the still-active
+    // hover/focus intent can't immediately re-reveal it. We don't
+    // preventDefault/stopPropagation so a parent (e.g. a modal) can still act
+    // on the same Escape.
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setPendingShow(false)
+        setVisible(false)
+      }
+    }
     window.addEventListener('resize', reposition)
     window.addEventListener('scroll', reposition, true)
     document.addEventListener('pointerdown', onOutsidePointer, true)
+    document.addEventListener('keydown', onKeyDown, true)
     return () => {
       window.removeEventListener('resize', reposition)
       window.removeEventListener('scroll', reposition, true)
       document.removeEventListener('pointerdown', onOutsidePointer, true)
+      document.removeEventListener('keydown', onKeyDown, true)
     }
   }, [visible])
 

@@ -100,7 +100,7 @@ export function Header({
                     )}
                     <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-950 p-[4px] sm:pr-3 rounded-[13px] border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0">
                         <div className="bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] w-[34px] h-[34px] rounded-[9px] flex items-center justify-center shadow-md flex-shrink-0 text-white">
-                            <AppLogoIcon className="w-[18px] h-[18px]" />
+                            <AppLogoIcon className="w-4.5 h-4.5" />
                         </div>
                         <div className="min-w-0 hidden sm:block">
                             {/* Brand label demoted from <h1> to <h2>: the page-level h1 lives in
@@ -118,15 +118,16 @@ export function Header({
                 </div>
 
                 {/* ⌘K command palette chip */}
-                <button
-                    type="button"
-                    onClick={onOpenCommandPalette}
-                    aria-label="Open command palette (Ctrl+K)"
-                    title="Open command palette (Ctrl+K)"
-                    className="hidden min-[1340px]:inline-flex items-center gap-1.5 px-2 h-[28px] rounded-lg ds-text-meta font-medium text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/50 bg-white/40 dark:bg-slate-800/40 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-colors"
-                >
-                    <kbd className="font-mono">⌘K</kbd>
-                </button>
+                <Tooltip label="Open command palette (Ctrl+K)">
+                    <button
+                        type="button"
+                        onClick={onOpenCommandPalette}
+                        aria-label="Open command palette (Ctrl+K)"
+                        className="hidden min-[1340px]:inline-flex items-center gap-1.5 px-2 h-[28px] rounded-lg ds-text-meta font-medium text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/50 bg-white/40 dark:bg-slate-800/40 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-colors"
+                    >
+                        <kbd className="font-mono">⌘K</kbd>
+                    </button>
+                </Tooltip>
 
                 {/* Center: Navigation (desktop) */}
                 <div className="flex-1 flex justify-center min-w-0">
@@ -174,13 +175,13 @@ export function Header({
                             {/* Quick Actions Container */}
                             <div className="hidden min-[1340px]:flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-[4px] rounded-[13px] border border-slate-200/50 dark:border-slate-700/50">
                                 <HeaderIconButton onClick={onCreateRepo} label="Create new repository" title="New repo">
-                                    <Plus className="w-[15px] h-[15px]" />
+                                    <Plus className="w-4 h-4" />
                                 </HeaderIconButton>
                                 <HeaderIconButton onClick={onImport} label="Import Repository" title="Import">
-                                    <Download className="w-[15px] h-[15px]" />
+                                    <Download className="w-4 h-4" />
                                 </HeaderIconButton>
                                 <HeaderIconButton onClick={onOpenDevToolkit} label="Dev Toolkit" title="Dev Toolkit">
-                                    <Wand2 className="w-[15px] h-[15px]" />
+                                    <Wand2 className="w-4 h-4" />
                                 </HeaderIconButton>
                             </div>
 
@@ -194,7 +195,7 @@ export function Header({
 
                                 {/* Sync */}
                                 <HeaderIconButton onClick={handleSync} label="Sync organizations" disabled={syncing}>
-                                    <RefreshCw className={`w-[15px] h-[15px] ${syncing ? 'animate-spin' : ''}`} />
+                                    <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
                                 </HeaderIconButton>
 
                                 {/* Notifications */}
@@ -214,7 +215,7 @@ export function Header({
                                         aria-haspopup="true"
                                         active={showNotifications}
                                     >
-                                        <Bell className="w-[15px] h-[15px]" />
+                                        <Bell className="w-4 h-4" />
                                         {notif.totalCount > 0 && (
                                             <span
                                                 aria-hidden="true"
@@ -292,7 +293,7 @@ export function Header({
                                         transition-colors duration-200
                                         ds-focus-ring"
                                 >
-                                    <Github className="w-[15px] h-[15px]" />
+                                    <Github className="w-4 h-4" />
                                     <span className="hidden sm:inline">Login with GitHub</span>
                                     <span className="sm:hidden">Login</span>
                                 </button>
@@ -428,9 +429,9 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
                 }`}
                 aria-label={label}
             >
-                <span className="relative w-[15px] h-[15px]" aria-hidden="true">
-                    <Sun className={`w-[15px] h-[15px] absolute inset-0 transition-[opacity,transform] duration-300 ${isDark ? 'opacity-100 rotate-0' : 'opacity-0 rotate-90'}`} />
-                    <Moon className={`w-[15px] h-[15px] absolute inset-0 transition-[opacity,transform] duration-300 ${isDark ? 'opacity-0 -rotate-90' : 'opacity-100 rotate-0'}`} />
+                <span className="relative w-4 h-4" aria-hidden="true">
+                    <Sun className={`w-4 h-4 absolute inset-0 transition-[opacity,transform] duration-300 ${isDark ? 'opacity-100 rotate-0' : 'opacity-0 rotate-90'}`} />
+                    <Moon className={`w-4 h-4 absolute inset-0 transition-[opacity,transform] duration-300 ${isDark ? 'opacity-0 -rotate-90' : 'opacity-100 rotate-0'}`} />
                 </span>
             </button>
         </Tooltip>
@@ -465,28 +466,29 @@ function HeaderIconButton({ onClick, label, title, children, disabled, active, .
 function NavButton({ active, onClick, icon, label, badge }) {
     const IconComponent = icon
     return (
-        <button
-            type="button"
-            onClick={onClick}
-            aria-current={active ? 'page' : undefined}
-            aria-label={label}
-            title={label}
-            className={`relative flex items-center gap-1.5 px-2.5 lg:px-3.5 h-[34px] rounded-[9px] text-[13px] font-semibold transition-all duration-200 ds-focus-ring ds-font-display ${active
-                ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-600/40'
-                }`}
-        >
-            {IconComponent && <IconComponent className="w-[15px] h-[15px]" />}
-            <span className="hidden min-[1340px]:inline">{label}</span>
-            {badge > 0 && (
-                <span
-                    aria-label={`${badge} items need attention`}
-                    className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 ds-text-micro font-bold rounded-full bg-indigo-500 text-white"
-                >
-                    {badge > 9 ? '9+' : badge}
-                </span>
-            )}
-        </button>
+        <Tooltip label={label}>
+            <button
+                type="button"
+                onClick={onClick}
+                aria-current={active ? 'page' : undefined}
+                aria-label={label}
+                className={`relative flex items-center gap-1.5 px-2.5 lg:px-3.5 h-[34px] rounded-[9px] text-[13px] font-semibold transition-all duration-200 ds-focus-ring ds-font-display ${active
+                    ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-600/40'
+                    }`}
+            >
+                {IconComponent && <IconComponent className="w-4 h-4" />}
+                <span className="hidden min-[1340px]:inline">{label}</span>
+                {badge > 0 && (
+                    <span
+                        aria-label={`${badge} items need attention`}
+                        className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 ds-text-micro font-bold rounded-full bg-indigo-500 text-white"
+                    >
+                        {badge > 9 ? '9+' : badge}
+                    </span>
+                )}
+            </button>
+        </Tooltip>
     )
 }
 
@@ -764,22 +766,23 @@ function SystemHealthIndicator() {
 
     return (
         <div className="relative" ref={popRef}>
-            <button
-                type="button"
-                onClick={() => setOpen(v => !v)}
-                aria-label={tooltip}
-                aria-haspopup="dialog"
-                aria-expanded={open}
-                title={tooltip}
-                data-testid="system-health-indicator"
-                data-status={status}
-                className="relative w-[34px] h-[34px] rounded-[9px] flex items-center justify-center transition-all duration-200 ds-focus-ring hover:bg-white/80 dark:hover:bg-slate-700"
-            >
-                <span
-                    className={`w-2.5 h-2.5 rounded-full ring-4 ${dotClass}`}
-                    aria-hidden="true"
-                />
-            </button>
+            <Tooltip label={tooltip}>
+                <button
+                    type="button"
+                    onClick={() => setOpen(v => !v)}
+                    aria-label={tooltip}
+                    aria-haspopup="dialog"
+                    aria-expanded={open}
+                    data-testid="system-health-indicator"
+                    data-status={status}
+                    className="relative w-[34px] h-[34px] rounded-[9px] flex items-center justify-center transition-all duration-200 ds-focus-ring hover:bg-white/80 dark:hover:bg-slate-700"
+                >
+                    <span
+                        className={`w-2.5 h-2.5 rounded-full ring-4 ${dotClass}`}
+                        aria-hidden="true"
+                    />
+                </button>
+            </Tooltip>
 
             {open && (
                 <div

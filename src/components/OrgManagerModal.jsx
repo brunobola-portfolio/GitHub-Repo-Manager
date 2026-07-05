@@ -10,6 +10,7 @@ import { InsightCard } from './ui/InsightCard'
 import { EmptyState } from './ui/EmptyState'
 import { isAbort } from '../utils/errorClassification'
 import { Spinner } from './ui/Spinner'
+import { Tooltip } from './ui/Tooltip'
 import { Field, Input, Textarea } from './ui/form'
 import { useToast } from '../hooks/useToast'
 import { getCsrfToken } from '../utils/api'
@@ -388,16 +389,17 @@ function MembersTab({ members, orgLogin }) {
                         <div className="font-medium text-slate-900 dark:text-slate-100">{member.login}</div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 capitalize">{member.role || 'member'}</div>
                     </div>
-                    <a
-                        href={member.html_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={`Open ${member.login}'s GitHub profile in new tab`}
-                        title={`Open ${member.login}'s GitHub profile`}
-                        className="text-slate-400 dark:text-slate-300 hover:text-slate-600 dark:hover:text-slate-100"
-                    >
-                        <ExternalLink className="w-4 h-4" />
-                    </a>
+                    <Tooltip label={`Open ${member.login}'s GitHub profile`}>
+                        <a
+                            href={member.html_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`Open ${member.login}'s GitHub profile in new tab`}
+                            className="text-slate-400 dark:text-slate-300 hover:text-slate-600 dark:hover:text-slate-100"
+                        >
+                            <ExternalLink className="w-4 h-4" />
+                        </a>
+                    </Tooltip>
                 </div>
             ))}
         </div>

@@ -4,6 +4,7 @@ import { AnimatedCopyIcon } from '../../../ui/AnimatedCopyIcon'
 import { SpinnerIcon } from '../../../ui/Spinner'
 import { buildPatSettingsUrl, buildAzCliCommand, classifyProvider } from '../../../../utils/azureProvider'
 import { Input } from '../../../ui/form'
+import { Tooltip } from '../../../ui/Tooltip'
 import { getCsrfToken } from '../../../../utils/api'
 import { emitAppEvent, APP_EVENTS } from '../../../../utils/appEvents'
 import { validatePatFormat } from '../../../../utils/patFormat'
@@ -134,16 +135,20 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
               </span>
         }
       >
-        <button
-          type="button"
-          onClick={handleOpenPat}
-          disabled={!hasContext}
-          title={hasContext ? `Open ${patUrl}` : 'Paste a URL first'}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] dark:hover:bg-indigo-400 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed disabled:hover:bg-slate-300 transition-colors shadow-sm"
-        >
-          <ExternalLink className="w-3.5 h-3.5" />
-          {openedAt ? 'Reopen PAT page' : hasContext ? `Open PAT on ${provider.shortName}` : 'Paste URL first'}
-        </button>
+        <Tooltip label={hasContext ? `Open ${patUrl}` : 'Paste a URL first'}>
+          <button
+            type="button"
+            onClick={handleOpenPat}
+            disabled={!hasContext}
+            // Explicit name = the visible label, so the Tooltip's aria mirror
+            // can't overwrite it with the raw URL (keeps WCAG 2.5.3 label-in-name).
+            aria-label={openedAt ? 'Reopen PAT page' : hasContext ? `Open PAT on ${provider.shortName}` : 'Paste URL first'}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] dark:hover:bg-indigo-400 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed disabled:hover:bg-slate-300 transition-colors shadow-sm"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            {openedAt ? 'Reopen PAT page' : hasContext ? `Open PAT on ${provider.shortName}` : 'Paste URL first'}
+          </button>
+        </Tooltip>
         {hasContext && (
           <p className="ds-text-meta text-slate-500 dark:text-slate-400 mt-1.5 font-mono break-all">
             {patUrl}
