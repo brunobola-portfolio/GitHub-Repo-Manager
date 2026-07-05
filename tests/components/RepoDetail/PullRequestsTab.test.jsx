@@ -39,6 +39,44 @@ afterEach(() => {
     vi.restoreAllMocks()
 })
 
+describe('PullRequestsTab — accessible row structure', () => {
+    it('opens via a real title button, not a role="button" row wrapper', async () => {
+        const api = makeApi()
+        renderWithProviders(
+            <PullRequestsTab api={api} onStartReview={vi.fn()} onGenerateDescription={vi.fn()} />
+        )
+
+        // The row's primary control is now a real <button> carrying the stable
+        // "Open pull request #N: <title>" name (e2e + SR selector), instead of a
+        // div[role=button] wrapping the inner Merge/Close/View controls.
+        const opener = await screen.findByRole('button', { name: /Open pull request #42: Fix the thing/i })
+        expect(opener.tagName).toBe('BUTTON')
+
+        // The surrounding row Card must NOT expose an interactive role or be a
+        // tab stop — that nested-interactive shape is exactly what axe flagged.
+        const rowCard = opener.closest('.cursor-pointer')
+        expect(rowCard).not.toBeNull()
+        expect(rowCard).not.toHaveAttribute('role')
+        expect(rowCard).not.toHaveAttribute('tabindex')
+    })
+
+    it('clicking the title button opens the PR detail panel', async () => {
+        const user = userEvent.setup()
+        const api = makeApi()
+        renderWithProviders(
+            <PullRequestsTab api={api} onStartReview={vi.fn()} onGenerateDescription={vi.fn()} />
+        )
+
+        const opener = await screen.findByRole('button', { name: /Open pull request #42: Fix the thing/i })
+        await user.click(opener)
+
+        // Navigating to the detail panel unmounts the list, so the row opener is gone.
+        await waitFor(() =>
+            expect(screen.queryByRole('button', { name: /Open pull request #42/i })).not.toBeInTheDocument()
+        )
+    })
+})
+
 describe('PullRequestsTab — toast feedback', () => {
     it('fires a success toast when a PR is merged', async () => {
         const user = userEvent.setup()

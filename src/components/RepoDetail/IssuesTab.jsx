@@ -197,21 +197,11 @@ export function IssuesTab({ api, repoFullName }) {
                         <Card
                             key={issue.id}
                             ref={(node) => { rowRefs.current[idx] = node }}
-                            role="button"
-                            tabIndex={0}
-                            aria-label={`Open issue #${issue.number}: ${issue.title}`}
-                            className={`p-3 cursor-pointer transition-colors ds-focus-ring ${
+                            className={`relative p-3 cursor-pointer transition-colors ${
                                 idx === focusedIndex
                                     ? 'border-indigo-400 dark:border-indigo-600 bg-indigo-50/40 dark:bg-indigo-900/15 ring-1 ring-indigo-300 dark:ring-indigo-700/60'
                                     : 'hover:border-indigo-300 dark:hover:border-indigo-600'
                             }`}
-                            onClick={() => setSelectedIssue(issue)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault()
-                                    setSelectedIssue(issue)
-                                }
-                            }}
                         >
                             <div className="flex items-start gap-3">
                                 <div className={`mt-0.5 ${issue.state === 'open' ? 'text-green-500' : 'text-purple-500'}`}>
@@ -219,7 +209,20 @@ export function IssuesTab({ api, repoFullName }) {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
-                                        <span className="font-medium text-sm text-slate-900 dark:text-slate-100">{issue.title}</span>
+                                        {/* Title is the row's primary control; its
+                                            `after` overlay stretches over the whole
+                                            Card so the entire row still opens on click,
+                                            while the View link + action button sit above
+                                            it via z-10. Replaces the former role="button"
+                                            Card (nested-interactive). */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedIssue(issue)}
+                                            aria-label={`Open issue #${issue.number}: ${issue.title}`}
+                                            className="font-medium text-sm text-slate-900 dark:text-slate-100 text-left rounded-sm ds-focus-ring after:absolute after:inset-0 after:content-['']"
+                                        >
+                                            {issue.title}
+                                        </button>
                                         <span className="text-xs text-slate-400">#{issue.number}</span>
                                     </div>
                                     <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -239,13 +242,13 @@ export function IssuesTab({ api, repoFullName }) {
                                         {issue.html_url && (
                                             <a href={issue.html_url} target="_blank" rel="noopener noreferrer"
                                                 onClick={e => e.stopPropagation()}
-                                                className="text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline flex items-center gap-1">
+                                                className="relative z-10 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline flex items-center gap-1">
                                                 View <ExternalLink className="w-3 h-3" />
                                             </a>
                                         )}
                                     </div>
                                 </div>
-                                <div role="presentation" onClick={e => e.stopPropagation()}>
+                                <div role="presentation" className="relative z-10" onClick={e => e.stopPropagation()}>
                                     {issue.state === 'open' ? (
                                         <Button variant="ghost" size="sm" onClick={() => handleClose(issue)} className="text-purple-600 dark:text-purple-400 text-xs shrink-0">
                                             Close

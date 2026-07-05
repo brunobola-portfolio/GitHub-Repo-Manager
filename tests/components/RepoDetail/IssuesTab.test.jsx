@@ -33,6 +33,38 @@ afterEach(() => {
     vi.restoreAllMocks()
 })
 
+describe('IssuesTab — accessible row structure', () => {
+    it('opens via a real title button, not a role="button" row wrapper', async () => {
+        const api = makeApi()
+        renderWithProviders(<IssuesTab api={api} repoFullName="owner/repo" />)
+
+        // The row's primary control is now a real <button> carrying the stable
+        // "Open issue #N: <title>" name, instead of a div[role=button] wrapping
+        // the inner Close/View controls (the nested-interactive axe violation).
+        const opener = await screen.findByRole('button', { name: /Open issue #10: A real bug/i })
+        expect(opener.tagName).toBe('BUTTON')
+
+        const rowCard = opener.closest('.cursor-pointer')
+        expect(rowCard).not.toBeNull()
+        expect(rowCard).not.toHaveAttribute('role')
+        expect(rowCard).not.toHaveAttribute('tabindex')
+    })
+
+    it('clicking the title button opens the issue detail panel', async () => {
+        const user = userEvent.setup()
+        const api = makeApi()
+        renderWithProviders(<IssuesTab api={api} repoFullName="owner/repo" />)
+
+        const opener = await screen.findByRole('button', { name: /Open issue #10: A real bug/i })
+        await user.click(opener)
+
+        // Navigating to the detail panel unmounts the list, so the row opener is gone.
+        await waitFor(() =>
+            expect(screen.queryByRole('button', { name: /Open issue #10/i })).not.toBeInTheDocument()
+        )
+    })
+})
+
 describe('IssuesTab — toast feedback', () => {
     it('fires a success toast when an issue is closed', async () => {
         const user = userEvent.setup()

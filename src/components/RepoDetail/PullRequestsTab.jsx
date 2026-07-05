@@ -277,27 +277,30 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                         <Card
                             key={pr.id ?? pr.number}
                             ref={(node) => { rowRefs.current[idx] = node }}
-                            role="button"
-                            tabIndex={0}
-                            aria-label={`Open pull request #${pr.number}: ${pr.title}`}
-                            className={`p-3 cursor-pointer transition-colors ds-focus-ring ${
+                            className={`relative p-3 cursor-pointer transition-colors ${
                                 idx === focusedIndex
                                     ? 'border-indigo-400 dark:border-indigo-600 bg-indigo-50/40 dark:bg-indigo-900/15 ring-1 ring-indigo-300 dark:ring-indigo-700/60'
                                     : 'hover:border-indigo-300 dark:hover:border-indigo-600'
                             }`}
-                            onClick={() => setSelectedPR(pr)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault()
-                                    setSelectedPR(pr)
-                                }
-                            }}
                         >
                             <div className="flex items-start gap-3">
                                 <div className="mt-0.5">{getPrIcon(pr)}</div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="font-medium text-sm text-slate-900 dark:text-slate-100">{pr.title}</span>
+                                        {/* Title is the row's primary control; its
+                                            `after` overlay stretches over the whole
+                                            Card so the entire row still opens on click,
+                                            while the View link + action buttons sit
+                                            above it via z-10. Replaces the former
+                                            role="button" Card (nested-interactive). */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedPR(pr)}
+                                            aria-label={`Open pull request #${pr.number}: ${pr.title}`}
+                                            className="font-medium text-sm text-slate-900 dark:text-slate-100 text-left rounded-sm ds-focus-ring after:absolute after:inset-0 after:content-['']"
+                                        >
+                                            {pr.title}
+                                        </button>
                                         <span className="text-xs text-slate-400">#{pr.number}</span>
                                         <PRRiskBadges pr={pr} className="ml-1" />
                                     </div>
@@ -312,14 +315,14 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                                         {pr.html_url && (
                                             <a href={pr.html_url} target="_blank" rel="noopener noreferrer"
                                                 onClick={e => e.stopPropagation()}
-                                                className="text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline flex items-center gap-1">
+                                                className="relative z-10 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline flex items-center gap-1">
                                                 View <ExternalLink className="w-3 h-3" />
                                             </a>
                                         )}
                                     </div>
                                 </div>
                                 {pr.state === 'open' && (
-                                    <div role="presentation" className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                                    <div role="presentation" className="relative z-10 flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
                                         <Button variant="ghost" size="sm" onClick={() => handleMerge(pr)}
                                             className="text-purple-600 dark:text-purple-400 text-xs">
                                             <GitMerge className="w-3.5 h-3.5 mr-1" /> Merge

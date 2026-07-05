@@ -31,7 +31,7 @@ function RepoCardQuickActions({ repo, onAction, onContextMenu }) {
 		.slice(0, QUICK_LIMIT)
 
 	return (
-		<div className="flex items-center gap-0.5 ml-auto flex-shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300">
+		<div className="relative z-10 flex items-center gap-0.5 ml-auto flex-shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300">
 			{top.map((a) => {
 				const Icon = resolveValue(a.icon, repo)
 				const label = resolveValue(a.label, repo)
@@ -114,23 +114,17 @@ export const RepoCard = memo(function RepoCard({
 
 	return (
 		<motion.div
-			tabIndex={0}
-			role="button"
 			data-testid="repo-card"
-			aria-label={`${repo.name}${repo.private ? ' (private)' : ' (public)'}${isSelected ? ', selected' : ''}`}
-			onClick={onToggle}
-			onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
 			onContextMenu={onContextMenu}
 			initial={{ opacity: 0, y: 6 }}
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ ...TRANSITION.entrance, delay: entranceDelay }}
 			style={stateStyle}
 			className={`
-                group relative transition-all duration-300 cursor-pointer
+                group relative isolate transition-all duration-300 cursor-pointer
                 border
                 shadow-lg shadow-slate-200/40 dark:shadow-black/40
                 ds-hover-lift
-                ds-focus-ring
                 ${isContextTarget
 					? isSelected
 						? 'bg-indigo-100/60 dark:bg-indigo-900/40'
@@ -142,16 +136,34 @@ export const RepoCard = memo(function RepoCard({
                 ${isGrid ? 'rounded-2xl p-3 sm:p-4 xl:p-5 flex flex-col h-full' : 'rounded-xl p-4 flex items-center gap-4'}
             `}
 		>
-			{/* Selection Checkbox */}
+			{/* Stretched selection control (background layer). Clicking anywhere
+			    on the card that isn't another control toggles selection — the same
+			    mouse behaviour as before, but now a real, keyboard-reachable,
+			    screen-reader-labelled <button> instead of a role="button" wrapper.
+			    This is what removes the axe `nested-interactive` violation: the
+			    title/health/action buttons below are siblings layered ABOVE this
+			    overlay via z-10, not descendants of a button role. onContextMenu
+			    stays on the container (not an ARIA-interactive attribute). */}
+			<button
+				type="button"
+				onClick={onToggle}
+				aria-pressed={isSelected}
+				aria-label={`Select ${repo.name}${repo.private ? ' (private)' : ' (public)'}`}
+				data-testid="repo-card-select"
+				className={`absolute inset-0 z-0 focus:outline-none ds-focus-ring ${isGrid ? 'rounded-2xl' : 'rounded-xl'}`}
+			/>
+
+			{/* Selection Checkbox (visual indicator only — pointer-events pass
+			    through to the select control beneath) */}
 			{/* In Grid: Top Right. In List: Left side, static. */}
 			{isGrid ? (
-				<div className={`absolute top-4 right-4 z-10 transition-opacity duration-200 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'}`}>
+				<div className={`pointer-events-none absolute top-4 right-4 z-10 transition-opacity duration-200 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'}`}>
 					<div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'}`}>
 						{isSelected && <CheckSquare className="w-3.5 h-3.5 text-white" />}
 					</div>
 				</div>
 			) : (
-				<div className="flex-shrink-0">
+				<div className="pointer-events-none relative z-10 flex-shrink-0">
 					<div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'}`}>
 						{isSelected && <CheckSquare className="w-3.5 h-3.5 text-white" />}
 					</div>
@@ -169,7 +181,7 @@ export const RepoCard = memo(function RepoCard({
 							<h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate group-hover:text-indigo-500 transition-colors ds-font-display">
 								<button type="button" onClick={(e) => { e.stopPropagation(); onRepoClick?.(repo) }}
 									data-testid="repo-card-open"
-									className="hover:underline focus:outline-none focus-visible:underline text-left truncate">
+									className="relative z-10 hover:underline focus:outline-none focus-visible:underline text-left truncate">
 									{repo.name}
 								</button>
 							</h3>
@@ -178,6 +190,7 @@ export const RepoCard = memo(function RepoCard({
 							{aiMeta?.health_score != null && (
 								<RepoHealthBadge
 									score={aiMeta.health_score}
+									className="relative z-10"
 									onClick={onExplainHealth ? () => onExplainHealth(repo) : undefined}
 								/>
 							)}
