@@ -165,7 +165,7 @@ user-keyed table is ever added without being classified. Excerpt:
     "user_subscriptions": 1,
     "team_members": 2
   },
-  "tombstoned": ["user", "audit_log", "audit_log_v2"]
+  "tombstoned": ["user", "audit_log_v2"]
 }
 ```
 

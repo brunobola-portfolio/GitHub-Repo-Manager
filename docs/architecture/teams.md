@@ -201,8 +201,9 @@ User expands a repo in the Repos tab
 ## Audit Logging
 
 Team operations (create, delete, member add, member remove) are recorded via
-`auditLog()` from `server/lib/audit.js`. Actions are also written to the `audit_log`
-table with the acting user's ID, action type, target, and details as JSON.
+`auditLog()` from `server/lib/audit.js`. Actions are written to the `audit_log_v2`
+table (hash-chained, append-only) with the acting user's ID, action, resource type,
+resource id, and details as JSON.
 
 ---
 

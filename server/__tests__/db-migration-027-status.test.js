@@ -18,8 +18,11 @@ describe("migration 27 — unify migration_jobs.status 'complete' → 'completed
     expect(migration(27)).toBeDefined()
     const versions = MIGRATIONS.map((m) => m.version)
     expect(new Set(versions).size).toBe(versions.length)
-    // Highest version — appended at the tail of the ledger, not inserted mid-run.
-    expect(Math.max(...versions)).toBe(27)
+    // Migrations are appended at the tail, never inserted mid-run: versions form
+    // a contiguous run (base schema is the implicit v1, so MIGRATIONS start at 2).
+    const sorted = [...versions].sort((a, b) => a - b)
+    expect(sorted[0]).toBe(2)
+    for (let i = 1; i < sorted.length; i++) expect(sorted[i]).toBe(sorted[i - 1] + 1)
   })
 
   it("rewrites legacy 'complete' rows to 'completed' and leaves other states intact", () => {

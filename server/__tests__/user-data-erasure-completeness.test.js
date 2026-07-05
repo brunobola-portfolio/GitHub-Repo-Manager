@@ -108,10 +108,11 @@ describe('erasure registry completeness', () => {
         expect(problems, problems.join('; ')).toEqual([]);
     });
 
-    it('marks the append-only audit tables as survive (never erased)', () => {
+    it('marks the append-only audit table as survive (never erased)', () => {
         const byTable = Object.fromEntries(ERASURE_REGISTRY.map((e) => [e.table, e]));
         expect(byTable['audit_log_v2'].action).toBe('survive');
-        expect(byTable['audit_log'].action).toBe('survive');
+        // Legacy v1 audit_log was dropped (db-migrations.js migration 28); only v2 remains.
+        expect(byTable['audit_log']).toBeUndefined();
         expect(byTable['users'].action).toBe('tombstone');
     });
 });
@@ -155,7 +156,6 @@ describe('erasure wipes every user-scoped table', () => {
         run(`INSERT INTO team_members (team_id, user_id, role) VALUES (?, ?, 'owner')`, teamId, USER_ID);
         run(`INSERT INTO repo_assignments (team_id, repo_full_name, repo_id, assigned_by) VALUES (?, 'o/r', 1, ?)`, teamId, USER_ID);
         run(`INSERT INTO dashboard_inbox_state (user_id, item_id) VALUES (?, 'pr:o/r#1')`, USER_ID);
-        run(`INSERT INTO license_keys (id, user_id, license_key_hash, tier, issued_at, expires_at) VALUES ('lk1', ?, 'lh', 'pro', '2026-01-01', '2027-01-01')`, USER_ID);
         run(`INSERT INTO issued_licenses (user_id, tier, license_key) VALUES (?, 'pro', 'key')`, USER_ID);
         run(`INSERT INTO work_board_tracked_repos (user_id, repo_full_name, source_signal) VALUES (?, 'o/r', 'manual')`, USER_ID);
         run(`INSERT INTO work_board_prefs (user_id) VALUES (?)`, USER_ID);
@@ -183,7 +183,6 @@ describe('erasure wipes every user-scoped table', () => {
         run(`INSERT INTO migration_marks (plan_id, scope, target_kind, target_id, payload) VALUES (?, 'source', 'repo', 'tid', '{}')`, planId);
 
         // Survive
-        run(`INSERT INTO audit_log (user_id, action, target) VALUES (?, 'x', 'y')`, USER_ID);
         run(`INSERT INTO audit_log_v2 (user_id, action, resource_type) VALUES (?, 'seed', 'user')`, USER_ID);
         run(`INSERT INTO azure_host_allowlist (pattern, added_by) VALUES ('*.azure.com', ?)`, USER_ID);
         run(`INSERT INTO installed_license (id, license_key, tier, installed_by) VALUES (1, 'k', 'pro', ?)`, USER_ID);
@@ -208,7 +207,6 @@ describe('erasure wipes every user-scoped table', () => {
         expect(res.body.deleted.gh_cache).toBe(1);
         expect(res.body.deleted.ai_spend).toBe(1);
         expect(res.body.deleted.email_dead_letter).toBe(1);
-        expect(res.body.deleted.license_keys).toBe(1);
 
         // Every 'erase' table must now be empty for this data subject.
         const values = { userId: USER_ID, login: LOGIN, email: EMAIL };
@@ -224,7 +222,6 @@ describe('erasure wipes every user-scoped table', () => {
 
         // Survive tables retained.
         expect(_db.prepare(`SELECT COUNT(*) c FROM teams WHERE owner_id = ?`).get(USER_ID).c).toBe(1);
-        expect(_db.prepare(`SELECT COUNT(*) c FROM audit_log WHERE user_id = ?`).get(USER_ID).c).toBe(1);
         expect(_db.prepare(`SELECT COUNT(*) c FROM azure_host_allowlist`).get().c).toBe(1);
         expect(_db.prepare(`SELECT COUNT(*) c FROM installed_license`).get().c).toBe(1);
         // audit_log_v2: the seed row + the user.erased row, both retained.

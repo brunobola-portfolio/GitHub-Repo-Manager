@@ -186,7 +186,7 @@ the backend based on the `DATABASE_URL` environment variable:
 transaction. Tables include: `users`, `teams`, `team_members`,
 `repo_assignments`, `repo_metadata`, `repo_embeddings`, `community_health_cache`,
 `workflow_runs`, `workflows_meta`, `migration_jobs`, `migration_plans`,
-`migration_tasks`, `user_subscriptions`, `api_keys`, `audit_log`,
+`migration_tasks`, `user_subscriptions`, `api_keys`, `audit_log_v2`,
 `dashboard_inbox_state`, and more.
 
 `dashboard_inbox_state` carries `(user_id INTEGER, item_id TEXT, archived_at TEXT, snoozed_until TEXT)` with composite PK `(user_id, item_id)`. `item_id` is a stable aggregator-defined key like `pr:owner/repo#123`.

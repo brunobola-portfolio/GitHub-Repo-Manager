@@ -99,7 +99,6 @@ export const ERASURE_REGISTRY = [
     // repo_assignments.assigned_by has no ON DELETE action; tombstoning the user
     // would otherwise leave dangling authorship rows, so wipe the ones this user created.
     { table: 'repo_assignments', action: 'erase', key: { column: 'assigned_by', source: 'userId' } },
-    { table: 'license_keys', action: 'erase', key: { column: 'user_id', source: 'userId' } },
     { table: 'issued_licenses', action: 'erase', key: { column: 'user_id', source: 'userId' } },
     { table: 'work_board_tracked_repos', action: 'erase', key: { column: 'user_id', source: 'userId' } },
     { table: 'work_board_prefs', action: 'erase', key: { column: 'user_id', source: 'userId' } },
@@ -129,8 +128,6 @@ export const ERASURE_REGISTRY = [
       reason: 'Deleted via ON DELETE CASCADE from migration_plans (and migration_tasks).' },
 
     // --- Survive: intentionally retained ---------------------------------
-    { table: 'audit_log', action: 'survive', key: { column: 'user_id' },
-      reason: 'Security audit trail (SOC 2 CC6.5). Retained for compliance; user_id now references the tombstoned user, so it is no longer personal data.' },
     { table: 'audit_log_v2', action: 'survive', key: { column: 'user_id' },
       reason: 'Tamper-evident append-only hash chain. DELETE is rejected by triggers and would break the chain; retained for compliance.' },
     { table: 'teams', action: 'survive', key: { column: 'owner_id' },
@@ -416,7 +413,7 @@ router.delete('/', requireAuth, (req, res) => {
             if (destroyErr) logger.error({ err: destroyErr, userId }, '[user-data] failed to destroy session after erasure');
             res.status(200).json({
                 deleted,
-                tombstoned: ['user', 'audit_log', 'audit_log_v2'],
+                tombstoned: ['user', 'audit_log_v2'],
             });
         });
         return;

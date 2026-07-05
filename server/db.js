@@ -303,19 +303,10 @@ export function initDB(targetDb = db) {
         // this the unfiltered listing sorts the whole table.
         db.exec(`CREATE INDEX IF NOT EXISTS idx_marks_created ON migration_marks(created_at DESC)`);
 
-        // Audit log for destructive operations
-        db.exec(`
-            CREATE TABLE IF NOT EXISTS audit_log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                action TEXT NOT NULL,
-                target TEXT NOT NULL,
-                details TEXT,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
-        db.exec(`CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_log(user_id)`);
-        db.exec(`CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log(created_at)`);
+        // NOTE: the legacy v1 `audit_log` table has been removed. Every audit
+        // write goes to `audit_log_v2` (hash-chained, append-only — see
+        // lib/audit.js); v1 had no production reader or writer. Existing
+        // databases have the dead table dropped by db-migrations.js migration 28.
 
         // Enhanced audit log v2
         db.exec(`
@@ -400,25 +391,11 @@ export function initDB(targetDb = db) {
         `);
         db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_usage_unique ON usage_metrics(user_id, metric_type, period_start)`);
 
-        // License Keys Table (admin tracking for issued licenses)
-        db.exec(`
-            CREATE TABLE IF NOT EXISTS license_keys (
-                id TEXT PRIMARY KEY,
-                user_id INTEGER REFERENCES users(id),
-                license_key_hash TEXT NOT NULL UNIQUE,
-                tier TEXT NOT NULL CHECK(tier IN ('pro', 'enterprise')),
-                seats INTEGER NOT NULL DEFAULT 1,
-                org_name TEXT,
-                email TEXT,
-                issued_at TEXT NOT NULL,
-                expires_at TEXT NOT NULL,
-                revoked_at TEXT,
-                metadata TEXT,
-                created_at TEXT NOT NULL DEFAULT (datetime('now'))
-            )
-        `);
-        db.exec(`CREATE INDEX IF NOT EXISTS idx_license_keys_hash ON license_keys(license_key_hash)`);
-        db.exec(`CREATE INDEX IF NOT EXISTS idx_license_keys_tier ON license_keys(tier)`);
+        // NOTE: the legacy `license_keys` table has been removed. Issued licenses
+        // are tracked in `issued_licenses` (lib/license-issuer.js) and the active
+        // self-hosted license lives in the `installed_license` singleton;
+        // `license_keys` had no production reader or writer. Existing databases
+        // have the dead table dropped by db-migrations.js migration 28.
 
         // Per-user AI configuration (BYOK — bring-your-own-key)
         db.exec(`

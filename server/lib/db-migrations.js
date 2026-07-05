@@ -450,6 +450,22 @@ export const MIGRATIONS = [
             db.exec(`UPDATE migration_jobs SET status = 'completed' WHERE status = 'complete'`);
         },
     },
+    {
+        version: 28,
+        name: 'drop dead tables: audit_log (v1) + license_keys',
+        up(db) {
+            // audit_log (v1) was superseded by audit_log_v2 (hash-chained,
+            // append-only) — lib/audit.js only ever writes v2. license_keys was
+            // superseded by issued_licenses (lib/license-issuer.js) plus the
+            // installed_license singleton. Neither dead table had any production
+            // reader or writer, so dropping them keeps the schema, the GDPR
+            // erasure registry, and the audit trail honest. Idempotent: a no-op
+            // on a fresh DB where the base schema no longer creates them, and on
+            // a re-run after the tables are already gone.
+            db.exec(`DROP TABLE IF EXISTS audit_log`);
+            db.exec(`DROP TABLE IF EXISTS license_keys`);
+        },
+    },
 ];
 
 /**

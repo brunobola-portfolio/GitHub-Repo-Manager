@@ -67,6 +67,29 @@ function parseRepoIds(raw) {
 }
 
 // ---------------------------------------------------------------------------
+// Helper — has this deployment ever ingested a GitHub webhook event?
+//
+// GitHub webhook ingestion writes pr_events / issue_events / deployment_events
+// — NOT `webhook_events`, which is the Stripe idempotency ledger. A self-hosted
+// deploy with working GitHub webhooks but no Stripe traffic must still report
+// "connected", so probe the actual GitHub event tables. Cheap EXISTS probes
+// (index/rowid-driven, short-circuiting), never COUNT(*).
+// ---------------------------------------------------------------------------
+function isWebhookConnected() {
+    try {
+        const row = db.prepare(
+            `SELECT 1 WHERE EXISTS (SELECT 1 FROM pr_events)
+                        OR EXISTS (SELECT 1 FROM issue_events)
+                        OR EXISTS (SELECT 1 FROM deployment_events)`
+        ).get();
+        return !!row;
+    } catch {
+        // A table may be absent on an older/partial deploy — treat as not connected.
+        return false;
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Shared helper — resolve data for a tab using cache → live → webhook fallback.
 //
 // Contract:
@@ -165,11 +188,7 @@ router.get('/my-reviews', requireAuth, async (req, res) => {
             ? data
             : filterOutSnoozed({ userId: req.session.userId, items: data, itemType: 'pr' });
         const finalData = applyTrackedFilter(req.session?.userId, snoozeFiltered);
-        let webhookConnected = false;
-        try {
-            webhookConnected = !!db.prepare('SELECT 1 FROM webhook_events LIMIT 1').get();
-        } catch { /* table may not exist in older deploys */ }
-        res.json({ data: finalData, meta: { ...meta, webhookConnected } });
+        res.json({ data: finalData, meta: { ...meta, webhookConnected: isWebhookConnected() } });
     } catch (err) {
         errorResponse(res, 500, safeError(err, 'Failed to fetch pending reviews'));
     }
