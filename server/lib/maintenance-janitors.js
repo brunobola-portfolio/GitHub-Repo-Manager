@@ -24,13 +24,74 @@
  */
 
 import logger from './logger.js';
+import db from '../db.js';
 import { runRetentionPass } from './retention.js';
 import { purgeOlderThan as purgeGhCache } from './gh-cache.js';
 import { purgeOldSucceeded as purgeGhOutbox } from './gh-outbox.js';
 import { cleanupExpired as cleanupUndoLog } from './work-board-undo-log.js';
+import { runDbBackupOnce } from './db-backup.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
+
+// GitHub event-ingestion tables that otherwise grow forever. Each is purged by
+// its natural creation timestamp. The table list is a fixed allowlist (never
+// user input), so interpolating the names into SQL is safe; only the cutoff and
+// batch size are bound parameters.
+const EVENT_TABLES = [
+    { table: 'pr_events', column: 'created_at' },
+    { table: 'issue_events', column: 'created_at' },
+    { table: 'deployment_events', column: 'created_at' },
+    { table: 'review_assignments', column: 'requested_at' },
+    { table: 'workflow_runs', column: 'created_at' },
+];
+
+const DEFAULT_EVENT_RETENTION_DAYS = 365;
+const EVENT_PURGE_BATCH = 5000;
+
+/**
+ * Delete rows older than EVENT_RETENTION_DAYS from the GitHub event tables.
+ * Deletes are batched (LIMIT per statement) so a large backlog never holds the
+ * shared SQLite write lock long enough to stall request handlers.
+ *
+ * Disabled when EVENT_RETENTION_DAYS is 0, empty, or non-positive.
+ *
+ * @param {object}  [opts]
+ * @param {object}  [opts.database]      - db handle (defaults to the app db)
+ * @param {number}  [opts.retentionDays] - override the env value
+ * @param {number}  [opts.batchSize]     - rows per DELETE statement
+ * @returns {{ skipped: boolean, retentionDays: number, perTable: Record<string, number> }}
+ */
+export function purgeOldEvents({ database = db, retentionDays, batchSize = EVENT_PURGE_BATCH } = {}) {
+    const days = retentionDays ?? parseInt(process.env.EVENT_RETENTION_DAYS ?? String(DEFAULT_EVENT_RETENTION_DAYS), 10);
+    if (!Number.isFinite(days) || days <= 0) {
+        return { skipped: true, retentionDays: 0, perTable: {} };
+    }
+
+    const cutoff = `-${days} days`;
+    const perTable = {};
+    for (const { table, column } of EVENT_TABLES) {
+        let deleted = 0;
+        try {
+            const stmt = database.prepare(
+                `DELETE FROM ${table} WHERE rowid IN (
+                    SELECT rowid FROM ${table}
+                    WHERE ${column} IS NOT NULL AND ${column} < datetime('now', ?)
+                    LIMIT ?
+                )`
+            );
+            for (;;) {
+                const info = stmt.run(cutoff, batchSize);
+                deleted += info.changes;
+                if (info.changes < batchSize) break;
+            }
+        } catch (err) {
+            logger.warn({ err, table }, '[maintenance] event purge failed');
+        }
+        perTable[table] = deleted;
+    }
+    return { skipped: false, retentionDays: days, perTable };
+}
 
 let dailyTimer = null;
 let hourlyTimer = null;
@@ -40,17 +101,18 @@ let hourlyTimer = null;
 let dailyRunning = false;
 
 /**
- * Daily pass: retention enforcement + gh_cache housekeeping. Each step is
- * isolated so one failure never blocks the others.
- * @returns {Promise<{retention: object|null, ghCachePurged: number, skipped?: boolean}>}
+ * Daily pass: retention enforcement + gh_cache housekeeping + event-table
+ * retention + a WAL-safe SQLite backup. Each step is isolated so one failure
+ * never blocks the others.
+ * @returns {Promise<{retention: object|null, ghCachePurged: number, eventsPurged: object|null, backup: object|null, skipped?: boolean}>}
  */
 export async function runDailyMaintenanceOnce() {
     if (dailyRunning) {
         logger.debug('[maintenance] daily pass already running; skipping overlap');
-        return { retention: null, ghCachePurged: 0, skipped: true };
+        return { retention: null, ghCachePurged: 0, eventsPurged: null, backup: null, skipped: true };
     }
     dailyRunning = true;
-    const summary = { retention: null, ghCachePurged: 0 };
+    const summary = { retention: null, ghCachePurged: 0, eventsPurged: null, backup: null };
     try {
         try {
             summary.retention = await runRetentionPass({});
@@ -62,6 +124,16 @@ export async function runDailyMaintenanceOnce() {
             summary.ghCachePurged = purgeGhCache(maxAgeDays) || 0;
         } catch (err) {
             logger.warn({ err }, '[maintenance] gh_cache purge failed');
+        }
+        try {
+            summary.eventsPurged = purgeOldEvents();
+        } catch (err) {
+            logger.warn({ err }, '[maintenance] event purge failed');
+        }
+        try {
+            summary.backup = await runDbBackupOnce();
+        } catch (err) {
+            logger.warn({ err }, '[maintenance] db backup failed');
         }
         logger.info(summary, '[maintenance] daily pass complete');
     } finally {

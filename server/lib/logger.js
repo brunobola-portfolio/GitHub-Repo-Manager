@@ -4,6 +4,43 @@ const isProduction = process.env.NODE_ENV === 'production';
 const isTest = process.env.NODE_ENV === 'test';
 
 /**
+ * Structural secret-redaction backstop.
+ *
+ * Call-site discipline (never logging `req.session.accessToken`, using
+ * redactSecrets on AI-bound content, etc.) is the first line of defence, but a
+ * single future `logger.error({ err })` where the error object carries request
+ * config/headers (axios-style / provider-SDK errors) would otherwise ship live
+ * GitHub/Azure tokens into logs and Sentry breadcrumbs. These paths censor the
+ * common secret-bearing shapes structurally so that never happens.
+ *
+ * Exported so tests can assert the coverage without reaching into pino internals.
+ */
+export const REDACT_PATHS = [
+    'req.headers.authorization',
+    'req.headers.cookie',
+    'res.headers["set-cookie"]',
+    '*.headers.authorization',
+    '*.headers.Authorization',
+    '*.headers.cookie',
+    'err.config.headers.authorization',
+    'err.config.headers.Authorization',
+    'err.config.headers',
+    '*.accessToken',
+    '*.access_token',
+    '*.refreshToken',
+    '*.refresh_token',
+    '*.token',
+    '*.pat',
+    '*.apiKey',
+    '*.api_key',
+    '*.password',
+    '*.sessionSecret',
+    'password',
+    'token',
+    'accessToken',
+];
+
+/**
  * Structured logger for the server.
  * Uses pino for fast, JSON-structured logging.
  * In development: pretty-prints for readability.
@@ -22,6 +59,11 @@ const logger = pino({
         }
     },
     timestamp: pino.stdTimeFunctions.isoTime,
+    // Backstop redaction for secret-bearing paths (see REDACT_PATHS above).
+    redact: {
+        paths: REDACT_PATHS,
+        censor: '[REDACTED]',
+    },
     base: {
         service: 'github-repo-manager'
     }
@@ -45,7 +87,12 @@ export function createRequestLogger(req) {
  * Express middleware that attaches a request logger and logs request/response
  */
 export function requestLoggerMiddleware(req, res, next) {
-    req.id = req.headers['x-request-id'] || generateRequestId();
+    // Preserve the id already assigned by the request-id middleware in
+    // server/index.js (which is what we send back to the client via the
+    // X-Request-Id header). Only fall back to generating one if this
+    // middleware somehow runs first, so the logged requestId always equals
+    // the header the client saw.
+    req.id = req.id || req.headers['x-request-id'] || generateRequestId();
     req.log = createRequestLogger(req);
 
     const start = Date.now();

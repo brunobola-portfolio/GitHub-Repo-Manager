@@ -10,6 +10,7 @@
 import express from 'express';
 import session from 'express-session';
 import cors from 'cors';
+import compression from 'compression';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { createTenantLimiters, globalLimiter } from './middleware/tenant-rate-limit.js';
@@ -117,6 +118,18 @@ app.use((req, res, next) => {
     next();
 });
 
+// Response compression — mounted early so it wraps every downstream response
+// (static assets + JSON). The filter skips Server-Sent Events so streamed
+// chunks flush to the client immediately instead of being buffered by the
+// gzip transform (compression's default filter already excludes
+// text/event-stream, but we assert it explicitly for clarity + safety).
+app.use(compression({
+    filter: (req, res) => {
+        if (res.getHeader('Content-Type') === 'text/event-stream') return false;
+        return compression.filter(req, res);
+    },
+}));
+
 // Middleware Setup
 app.use(helmet({
     contentSecurityPolicy: config.nodeEnv === 'production' ? {
@@ -158,8 +171,12 @@ app.post('/api/webhooks/github', express.raw({ type: 'application/json' }), gith
 // which bounds the abuse risk of the higher cap.
 const jsonDefault = express.json({ limit: '10kb' });
 const jsonAiLarge = express.json({ limit: '4mb' });
+// The AI router is mounted at BOTH /api/ai/* (legacy alias) and /api/v1/ai/*,
+// so the large-body carve-out must match both prefixes — otherwise a diff/patch
+// payload posted to the v1 path is rejected at the 10kb default cap.
+const isAiPath = (p) => p.startsWith('/api/ai/') || p.startsWith('/api/v1/ai/');
 app.use((req, res, next) =>
-    req.path.startsWith('/api/ai/')
+    isAiPath(req.path)
         ? jsonAiLarge(req, res, next)
         : jsonDefault(req, res, next)
 );
@@ -303,7 +320,22 @@ app.use('/api', v1Routes);
 if (config.nodeEnv === 'production') {
     const distPath = path.join(__dirname, '..', 'dist');
     if (fs.existsSync(distPath)) {
-        app.use(express.static(distPath));
+        // Vite content-hashes filenames under /assets (e.g. index-a1b2c3.js), so
+        // those are safe to cache forever (immutable). Everything else — most
+        // importantly index.html, whose asset references change every deploy —
+        // must revalidate, so we send no-cache for it. index:false makes '/'
+        // fall through to the SPA fallback below, which serves index.html with
+        // the correct no-cache header.
+        app.use(express.static(distPath, {
+            index: false,
+            setHeaders: (res, filePath) => {
+                if (/[/\\]assets[/\\]/.test(filePath)) {
+                    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+                } else {
+                    res.setHeader('Cache-Control', 'no-cache');
+                }
+            },
+        }));
         // SPA fallback. Express 5 / path-to-regexp v8 reject a bare '*' at
         // registration ("Missing parameter name") — the named splat form is
         // required, or the whole production process crashes before listen().
@@ -311,6 +343,9 @@ if (config.nodeEnv === 'production') {
             if (req.path.startsWith('/api/')) {
                 return res.status(404).json({ error: 'Not found' });
             }
+            // Never cache the app shell — it must always pick up the latest
+            // hashed asset references after a deploy.
+            res.setHeader('Cache-Control', 'no-cache');
             res.sendFile(path.join(distPath, 'index.html'));
         });
     }
@@ -402,13 +437,21 @@ server.on('error', (e) => {
 // Graceful Shutdown
 // ------------------------------------------------------------------
 
+// After signalling shutdown we give in-flight requests a brief window to drain
+// naturally, then force-close whatever is left (long-lived SSE streams never
+// finish on their own) so server.close()'s callback fires and we exit cleanly
+// instead of hitting the hard force-exit(1) below.
+const SHUTDOWN_DRAIN_MS = 3000;
+
 function gracefulShutdown(signal) {
     logger.info({ signal }, 'Shutting down gracefully...');
 
     // Flip the liveness probe to "shutting_down" immediately so orchestrators
     // drain traffic before we close the listening socket. Imported lazily to
     // avoid a second top-level import line for a single-use hook.
-    import('./routes/health.js').then(({ markShuttingDown }) => markShuttingDown()).catch(() => {});
+    import('./routes/health.js')
+        .then(({ markShuttingDown }) => markShuttingDown())
+        .catch((err) => logger.warn({ err }, 'Could not flag health probe as shutting down'));
 
     server.close(async () => {
         try {
@@ -487,6 +530,27 @@ function gracefulShutdown(signal) {
         logger.info('Server shut down complete');
         process.exit(0);
     });
+
+    // Free idle keep-alive sockets immediately so normal (finished) requests
+    // don't hold the listening socket open (Node >= 18.2).
+    if (typeof server.closeIdleConnections === 'function') {
+        server.closeIdleConnections();
+    }
+
+    // SSE streams (AI streaming, migration progress, env-tool install) keep a
+    // request in-flight indefinitely, so server.close() would otherwise wait on
+    // them until the 10s force-exit(1) — closing the DB uncleanly mid-WAL and
+    // making orchestrators log the deploy as a crash. After a short drain
+    // window, force-close everything still open so the close callback runs and
+    // we exit(0) cleanly. closeAllConnections() (Node >= 18.2) is transport
+    // level, so it covers every SSE endpoint regardless of how it was opened.
+    const drainTimer = setTimeout(() => {
+        if (typeof server.closeAllConnections === 'function') {
+            logger.info('Draining remaining connections (open SSE streams) for shutdown');
+            server.closeAllConnections();
+        }
+    }, SHUTDOWN_DRAIN_MS);
+    if (drainTimer.unref) drainTimer.unref();
 
     // Force exit if graceful shutdown takes too long
     setTimeout(() => {

@@ -3,7 +3,10 @@ builder = "nixpacks"
 
 [deploy]
 startCommand = "node server/index.js"
-healthcheckPath = "/api/health"
+# Readiness probe (routes/health.js): mounted before rate limiters/session,
+# checks DB + session-store, and returns 503 while draining. Use it for
+# load-balancer readiness rather than the rate-limited legacy /api/health.
+healthcheckPath = "/api/health/ready"
 healthcheckTimeout = 10
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3

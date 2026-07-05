@@ -26,7 +26,7 @@ const TRACKED_KEYS = [
     'SESSION_SECRET', 'WEBHOOK_SECRET', 'CREDENTIAL_ENCRYPTION_KEY',
     'DISABLE_HTTPS_ENFORCEMENT', 'STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET',
     'LICENSE_SIGNING_PRIVATE_KEY_PEM', 'EMAIL_PROVIDER', 'RESEND_API_KEY',
-    'FRONTEND_URL',
+    'FRONTEND_URL', 'ALLOW_MOCK_AUTH', 'VITE_MOCK_MODE',
 ];
 
 beforeEach(() => {
@@ -300,5 +300,63 @@ describe('G4 — verifySecretsAtStartup', () => {
         process.env.FRONTEND_URL = 'http://localhost:5173';
         const { warnings } = verifySecretsAtStartup({ nodeEnv: 'production' });
         expect(warnings.some(w => w.includes('FRONTEND_URL') && w.includes('HTTPS'))).toBe(false);
+    });
+
+    // -----------------------------------------------------------------------
+    // ALLOW_MOCK_AUTH — must hard-fail production boot (unauthenticated login)
+    // -----------------------------------------------------------------------
+
+    it('production + ALLOW_MOCK_AUTH=true → error (unauthenticated mock login reachable)', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
+        process.env.ALLOW_MOCK_AUTH = 'true';
+        const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(errors.some(e => e.includes('ALLOW_MOCK_AUTH') && e.includes('mock-login'))).toBe(true);
+    });
+
+    it('production + ALLOW_MOCK_AUTH unset → no ALLOW_MOCK_AUTH error', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
+        const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(errors.some(e => e.includes('ALLOW_MOCK_AUTH'))).toBe(false);
+    });
+
+    it('production + ALLOW_MOCK_AUTH=false → no ALLOW_MOCK_AUTH error', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
+        process.env.ALLOW_MOCK_AUTH = 'false';
+        const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(errors.some(e => e.includes('ALLOW_MOCK_AUTH'))).toBe(false);
+    });
+
+    it('development + ALLOW_MOCK_AUTH=true → no error (dev tooling relies on it)', () => {
+        process.env.ALLOW_MOCK_AUTH = 'true';
+        const { errors } = verifySecretsAtStartup({ nodeEnv: 'development' });
+        expect(errors.some(e => e.includes('ALLOW_MOCK_AUTH'))).toBe(false);
+    });
+
+    // -----------------------------------------------------------------------
+    // VITE_MOCK_MODE — warn in production (seeds demo data)
+    // -----------------------------------------------------------------------
+
+    it('production + VITE_MOCK_MODE=true → warning (seeds demo data)', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
+        process.env.VITE_MOCK_MODE = 'true';
+        const { warnings } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(warnings.some(w => w.includes('VITE_MOCK_MODE') && w.includes('demo'))).toBe(true);
+    });
+
+    it('production + VITE_MOCK_MODE=true → warning only, not an error', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
+        process.env.VITE_MOCK_MODE = 'true';
+        const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(errors.some(e => e.includes('VITE_MOCK_MODE'))).toBe(false);
     });
 });

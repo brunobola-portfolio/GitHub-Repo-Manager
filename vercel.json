@@ -2,9 +2,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
-  "rewrites": [
-    { "source": "/api/:path*", "destination": "https://api.yourapp.com/api/:path*" }
-  ],
   "headers": [
     {
       "source": "/(.*)",

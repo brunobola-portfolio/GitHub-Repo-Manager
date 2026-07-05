@@ -23,12 +23,12 @@
 
 | # | Item | Files (primary) | Status |
 |---|---|---|---|
-| B1a | Fail startup when ALLOW_MOCK_AUTH set in production (secrets gate) | `server/lib/startup-secrets-check.js` | pending |
-| B1b | SQLite backup story: scheduled `.backup()` janitor + retention + restore doc | `server/index.js`, new lib, docs | pending |
-| B1c | Health checks → `/live`/`/ready` probes | `Dockerfile`, `railway.toml` | pending |
-| B1d | Compression + immutable caching for hashed assets on Express SPA | `server/index.js` | pending |
-| B1e | SSE drain on shutdown (close SSE clients before server.close) | `server/index.js` | pending |
-| B1f | X-Request-Id ↔ logged requestId correlation; pino redact backstop; 4MB AI body-limit on /api/v1/ai/* | `server/index.js`, `server/lib/logger.js` | pending |
+| B1a | Fail startup when ALLOW_MOCK_AUTH set in production (secrets gate) | `server/lib/startup-secrets-check.js` | done |
+| B1b | SQLite backup story: scheduled `.backup()` janitor + retention + restore doc | `server/index.js`, new lib, docs | done |
+| B1c | Health checks → `/live`/`/ready` probes | `Dockerfile`, `railway.toml` | done |
+| B1d | Compression + immutable caching for hashed assets on Express SPA | `server/index.js` | done |
+| B1e | SSE drain on shutdown (close SSE clients before server.close) | `server/index.js` | done |
+| B1f | X-Request-Id ↔ logged requestId correlation; pino redact backstop; 4MB AI body-limit on /api/v1/ai/* | `server/index.js`, `server/lib/logger.js` | done |
 | B2a | Bulk visibility: replace forced-private with Public/Private picker modal | `src/actions/repoActions.js` + modal | done |
 | B2b | PR review submit: success toast + refetch | `PRReview/PRReviewView.jsx` | done |
 | B2c | ReadmeEnhanceDiffPanel: pass diffViewTheme | `AI/ReadmeEnhanceDiffPanel.jsx` | done |
@@ -54,7 +54,7 @@
 
 | # | Item | Status |
 |---|---|---|
-| D1 | Event-table retention job (pr/issue/deployment events, workflow_runs) | pending |
+| D1 | Event-table retention job (pr/issue/deployment events, workflow_runs) | done |
 | D2 | MigrationWizard dark-only islands (SizeStrategyCard, TFVC, PingAuthorPopover) | done |
 | D3 | A11y: name destructive icon buttons; migration progressbar semantics + completion announcement | done |
 | D4 | Dead code: OrganizationSelector; dead tables audit_log v1/license_keys; stale server/migrations/*.sql note | pending |
@@ -78,3 +78,4 @@
 - 2026-07-05: Wave C landed (PT strings EN + wider anti-PT gate incl. server chat prompt; alert->toast; per-view document.title; Vite 8 footer; friendly ErrorBoundary; AIInstructions tabs on shared TabBar; wizard step-nav CTA; scrollbar/color-scheme/::selection theme fixes). 95 targeted tests green. C8 pending.
 - 2026-07-05: C8+D8+D3(progressbar) landed by lead (ProgressStep: load-error retry state, pause/cancel toasts, Resume button, progressbar+live-region a11y; MigrationHistory: rerun/resume/export toasts). 4 new RTL tests.
 - 2026-07-05: Wave D-alpha landed (SizeStrategyCard/TFVC/FixPlanItem/PingAuthorPopover light+dark pairs incl. trigger chip + DashboardHeader badge; delete-release/webhook aria-labels; webhook dot text alternative). Also FIXED pre-existing CI red: AutoFixDrawer conflict test broken by a8b5576 CSRF mint (route-aware fetch mock).
+- 2026-07-05: Wave B1 landed (prod boot fails on ALLOW_MOCK_AUTH; scheduled WAL-safe SQLite backups + restore doc; health probes in Dockerfile/railway; compression + immutable asset caching; SSE-aware shutdown drain; request-id/log unification + pino redact; v1 AI body-limit; event-table retention 365d; vercel.json placeholder removed). 67 tests green. NOTE for owner: deploy.yml is a silent no-op behind a green badge — needs workflow-scope change (fail loudly or rename to Build Verify).

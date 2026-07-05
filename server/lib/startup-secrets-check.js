@@ -73,6 +73,33 @@ export function verifySecretsAtStartup({ nodeEnv }) {
             );
         }
 
+        // Mock-auth escape hatch must never be reachable in production.
+        // server/routes/auth.js mounts POST /api/auth/mock whenever
+        // ALLOW_MOCK_AUTH==='true' regardless of NODE_ENV, minting a fully
+        // authenticated session (user 999999) with no credentials. A single
+        // stray env var on an internet-exposed instance is therefore an
+        // unauthenticated login bypass — hard-fail boot so it can't happen
+        // silently.
+        if (process.env.ALLOW_MOCK_AUTH === 'true') {
+            errors.push(
+                'ALLOW_MOCK_AUTH=true enables the unauthenticated mock-login endpoint ' +
+                '(POST /api/auth/mock) in production — anyone could mint a session ' +
+                'without credentials. Unset ALLOW_MOCK_AUTH; it is only for local development.'
+            );
+        }
+
+        // VITE_MOCK_MODE=true makes the server seed demo users/repos into the
+        // database at boot (index.js seedMockData). Harmless in dev, but a
+        // copied-over dev .env would pollute a production DB with fake data.
+        // Warn rather than abort so an operator who genuinely wants a seeded
+        // demo instance can proceed explicitly.
+        if (process.env.VITE_MOCK_MODE === 'true') {
+            warnings.push(
+                'VITE_MOCK_MODE=true seeds demo users/repos into the database at startup ' +
+                '— not recommended in production. Set VITE_MOCK_MODE=false unless this is a demo instance.'
+            );
+        }
+
         // Warn if HTTPS enforcement has been intentionally disabled.
         if (process.env.DISABLE_HTTPS_ENFORCEMENT === 'true') {
             warnings.push(

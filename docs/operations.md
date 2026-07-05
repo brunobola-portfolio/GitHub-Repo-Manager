@@ -7,6 +7,8 @@ how-to-build side, see [`docs/index.md`](index.md).
 
 - [Quick reference](#quick-reference)
 - [Release flow](#release-flow)
+- [Backup & restore](#backup--restore)
+- [Data & event retention](#data--event-retention)
 - [Dead-letter queues](#dead-letter-queues-email--webhook)
 - [Public status page](#public-status-page)
 - [Bundle budget](#bundle-budget)
@@ -49,6 +51,74 @@ green before and after the tag.
    `CHANGELOG.md` section.
 
 **Do not force-push tags.** If a release is wrong, cut a `vX.Y.(Z+1)` patch.
+
+---
+
+## Backup & restore
+
+**Applies to the default SQLite deployment.** If you run Postgres
+(`DATABASE_URL=postgres://…`), use that database's native backup tooling
+instead — the scheduled backup below no-ops with a log line on Postgres.
+
+The single SQLite file (`server/data/manager.db`) holds users, AES-GCM-encrypted
+BYOK credentials and Azure PATs, migration plans/marks, audit logs and sessions.
+The DB runs in **WAL mode**, so a naive `cp manager.db` produces an
+*inconsistent* snapshot (recent pages live in the `-wal` sidecar). Use the
+scheduled online backup instead — it is WAL-safe.
+
+### Automatic backups
+
+The daily maintenance pass (`server/lib/maintenance-janitors.js`) runs a
+better-sqlite3 online backup (`db.backup()`) into `DB_BACKUP_DIR`:
+
+| Env var | Default | Meaning |
+| ------- | ------- | ------- |
+| `DB_BACKUP_DIR` | `server/data/backups` | Where timestamped `manager-<ISO>.db` files are written. Absolute path recommended (point at a separate mounted volume). **Empty string disables backups.** |
+| `DB_BACKUP_KEEP` | `7` | How many of the most-recent backups to retain; older ones are pruned. |
+
+Backups are enabled by default. For a real disaster-recovery posture, set
+`DB_BACKUP_DIR` to a path on a **different volume** than the live database, and
+ship those files off-box (rsync/object storage) on your own schedule.
+
+### Restore
+
+1. **Stop the server** (`docker compose stop app`, or kill the node process).
+   Never swap the DB file while the process holds it open.
+2. Pick a backup from `DB_BACKUP_DIR` (newest that predates the incident).
+3. Replace the live DB:
+
+   ```bash
+   cp /path/to/backups/manager-2026-07-05T02-00-00-000Z.db server/data/manager.db
+   ```
+
+4. **Delete the stale WAL sidecars** — they belong to the *old* database and
+   would corrupt the restored one:
+
+   ```bash
+   rm -f server/data/manager.db-wal server/data/manager.db-shm
+   ```
+
+5. **Start the server.** It re-opens WAL mode cleanly and runs migrations.
+
+> The backup files are full, self-contained SQLite databases — you can inspect
+> one read-only before restoring: `sqlite3 manager-<ISO>.db ".tables"`.
+
+---
+
+## Data & event retention
+
+Three scheduled purges keep unbounded tables in check. All run from the daily
+maintenance pass and log per-table counts.
+
+| Data | Env var | Default | Notes |
+| ---- | ------- | ------- | ----- |
+| AI credential auto-deletion (G2) | `DATA_RETENTION_DAYS` | `365` | The 365-day promise users are emailed about. |
+| GitHub event tables | `EVENT_RETENTION_DAYS` | `365` | `pr_events`, `issue_events`, `deployment_events`, `review_assignments`, `workflow_runs`. Deleted by creation timestamp, batched to avoid long write locks. `0`/empty disables. |
+| `gh_cache` | `GH_CACHE_MAX_AGE_DAYS` | `30` | Cached GitHub responses. |
+
+If you rely on `workflow_runs` / event history for long-horizon DORA stats,
+raise `EVENT_RETENTION_DAYS` (or set it to `0` and prune manually) — the daily
+purge is the only thing bounding those tables.
 
 ---
 
