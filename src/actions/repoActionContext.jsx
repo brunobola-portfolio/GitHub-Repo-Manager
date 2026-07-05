@@ -49,8 +49,9 @@ import { reposApi } from '../api/repos'
  *   declare `triggersRefresh: true` in their action definition — runAction
  *   would then refresh the list a second time, causing a visible flicker
  *   and a wasted round-trip. Specifically: the `archive`,
- *   `archive_selected`, `delete`, `delete_selected`, `visibility`, and
- *   `visibility_selected` actions go through the wrappers and must leave
+ *   `archive_selected`, `delete`, `delete_selected`, `visibility`,
+ *   `make_public_selected`, and `make_private_selected` actions go through
+ *   the wrappers and must leave
  *   triggersRefresh unset (or false). Actions that bypass these wrappers
  *   (e.g. sync via ctx.api.syncMirror, transfer via the modal flow) MAY
  *   declare triggersRefresh: true to opt back in to runAction's refresh.

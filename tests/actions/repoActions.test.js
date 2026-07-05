@@ -222,10 +222,10 @@ describe('batch actions', () => {
 	const BATCH_IDS = [
 		'archive_selected', 'transfer_selected', 'migrate_selected',
 		'dry_run_selected', 'export_meta_selected', 'ai_batch_index_selected',
-		'visibility_selected', 'delete_selected',
+		'make_public_selected', 'make_private_selected', 'delete_selected',
 	]
 
-	it('all 8 batch actions are present', () => {
+	it('all 9 batch actions are present', () => {
 		for (const id of BATCH_IDS) {
 			expect(repoActions[id], id).toBeDefined()
 		}
@@ -247,7 +247,56 @@ describe('batch actions', () => {
 	it('wrapper-bound batch actions do NOT triggerRefresh', () => {
 		expect(repoActions.archive_selected.triggersRefresh).toBeFalsy()
 		expect(repoActions.delete_selected.triggersRefresh).toBeFalsy()
-		expect(repoActions.visibility_selected.triggersRefresh).toBeFalsy()
+		expect(repoActions.make_public_selected.triggersRefresh).toBeFalsy()
+		expect(repoActions.make_private_selected.triggersRefresh).toBeFalsy()
+	})
+})
+
+describe('batch visibility actions are explicit (no lying "Make Public/Private")', () => {
+	const repos = [
+		{ name: 'a', full_name: 'me/a' },
+		{ name: 'b', full_name: 'me/b' },
+	]
+
+	it('the ambiguous visibility_selected action no longer exists', () => {
+		expect(repoActions.visibility_selected).toBeUndefined()
+	})
+
+	it('make_public_selected calls performAction with makePublic: true', async () => {
+		const calls = []
+		const ctx = {
+			performAction: (...args) => { calls.push(args); return Promise.resolve() },
+			toast: { success: () => {} },
+		}
+		await repoActions.make_public_selected.run(repos, ctx)
+		expect(calls).toHaveLength(1)
+		const [action, fullNames, , opts] = calls[0]
+		expect(action).toBe('visibility')
+		expect(fullNames).toEqual(['me/a', 'me/b'])
+		expect(opts).toEqual({ makePublic: true })
+	})
+
+	it('make_private_selected calls performAction with makePublic: false', async () => {
+		const calls = []
+		const ctx = {
+			performAction: (...args) => { calls.push(args); return Promise.resolve() },
+			toast: { success: () => {} },
+		}
+		await repoActions.make_private_selected.run(repos, ctx)
+		expect(calls).toHaveLength(1)
+		const [action, fullNames, , opts] = calls[0]
+		expect(action).toBe('visibility')
+		expect(fullNames).toEqual(['me/a', 'me/b'])
+		expect(opts).toEqual({ makePublic: false })
+	})
+
+	it('both confirm dialogs use the warning variant and a direction-specific confirm label', () => {
+		const pub = repoActions.make_public_selected.confirm(repos)
+		expect(pub.variant).toBe('warning')
+		expect(pub.confirmText).toBe('Make Public')
+		const priv = repoActions.make_private_selected.confirm(repos)
+		expect(priv.variant).toBe('warning')
+		expect(priv.confirmText).toBe('Make Private')
 	})
 })
 

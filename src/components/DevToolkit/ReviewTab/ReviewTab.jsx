@@ -146,7 +146,7 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
                     <div className="flex items-center justify-between">
                         <div>
                             <h3 className="text-sm font-medium text-slate-800 dark:text-slate-200">{selectedPR.title}</h3>
-                            <p className="text-xs text-slate-400">#{selectedPR.number} by {selectedPR.user?.login}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">#{selectedPR.number} by {selectedPR.user?.login}</p>
                         </div>
                         <button type="button" onClick={() => { setSelectedPR(null); setSummary(null); setQaHistory([]); setQaResponses([]) }} className="text-xs text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline">Change PR</button>
                     </div>
@@ -161,16 +161,16 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
                                     {qaResponses.map((msg, i) => (
                                         <div key={i} className={`px-3 py-2 rounded-lg text-sm ${
                                             msg.role === 'user'
-                                                ? 'bg-indigo-500/10 text-indigo-300 ml-8'
-                                                : 'bg-slate-800/60 text-slate-300 mr-8'
+                                                ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300 ml-8'
+                                                : 'bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:text-slate-300 mr-8'
                                         }`}>
                                             {msg.content}
                                         </div>
                                     ))}
                                     {isStreaming && (
-                                        <div className="bg-slate-800/60 text-slate-300 mr-8 px-3 py-2 rounded-lg text-sm">
+                                        <div className="bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:text-slate-300 mr-8 px-3 py-2 rounded-lg text-sm">
                                             {streamingText}
-                                            <span className="inline-block w-2 h-4 ml-0.5 bg-emerald-400 animate-pulse align-text-bottom" />
+                                            <span className="inline-block w-2 h-4 ml-0.5 bg-emerald-500 dark:bg-emerald-400 animate-pulse align-text-bottom" />
                                         </div>
                                     )}
                                 </div>

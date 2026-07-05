@@ -224,12 +224,22 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
         comments: state.pendingComments,
       })
       dispatch({ type: 'CLEAR_PENDING_COMMENTS' })
+      // Confirm the outcome and refetch so the new review + its verdict
+      // (approved / changes-requested) and any published comments show up.
+      // Without this, Approve/Request-changes looked like a no-op.
+      const SUCCESS_MESSAGE = {
+        APPROVE: 'Review approved',
+        REQUEST_CHANGES: 'Changes requested',
+        COMMENT: 'Comment submitted',
+      }
+      toast.success(SUCCESS_MESSAGE[event] ?? 'Review submitted')
+      refetch()
     } catch (e) {
       toast.errorFromException(e, { fallbackTitle: 'Failed to submit review' })
     } finally {
       setSubmitting(false)
     }
-  }, [submitReview, state.pendingComments, state.headSha, dispatch, toast])
+  }, [submitReview, state.pendingComments, state.headSha, dispatch, toast, refetch])
 
   // Submit review with staleness check
   const handleSubmitReview = useCallback(async (args) => {

@@ -33,13 +33,14 @@ describe('SelectionSheet (mobile bottom-sheet)', () => {
 		{ id: 2, full_name: 'c/d' },
 	]
 
-	it('renders all 8 batch action labels when open', () => {
+	it('renders all 9 batch action labels when open', () => {
 		render(<SelectionSheet isOpen repos={repos} onAction={() => { }} onClose={() => { }} />)
 		expect(screen.getByText(/archive 2 repos/i)).toBeInTheDocument()
 		expect(screen.getByText(/transfer 2 repos/i)).toBeInTheDocument()
 		expect(screen.getByText(/migrate 2 repos/i)).toBeInTheDocument()
 		expect(screen.getByText(/dry-run 2 repos/i)).toBeInTheDocument()
-		expect(screen.getByText(/make public\/private/i)).toBeInTheDocument()
+		expect(screen.getByText(/make 2 repos public/i)).toBeInTheDocument()
+		expect(screen.getByText(/make 2 repos private/i)).toBeInTheDocument()
 		expect(screen.getByText(/export 2/i)).toBeInTheDocument()
 		expect(screen.getByText(/batch index 2 with ai/i)).toBeInTheDocument()
 		expect(screen.getByText(/delete 2 repos/i)).toBeInTheDocument()

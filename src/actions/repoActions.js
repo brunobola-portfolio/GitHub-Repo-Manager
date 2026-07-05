@@ -469,22 +469,46 @@ export const repoActions = {
 		isBatchSafe: true,
 		run: async (repos, ctx) => ctx.openModalWithData('showBatchIndex', { repos }),
 	},
-	visibility_selected: {
-		id: 'visibility_selected',
-		label: 'Make Public/Private',
-		description: 'Changes the visibility of all selected repositories at once.',
+	// Two explicit batch visibility actions. The old single `visibility_selected`
+	// action was mislabelled "Make Public/Private" but hard-coded private, so a
+	// user intending public silently got the opposite. Splitting into two
+	// self-describing actions removes the ambiguity (no target picker needed) and
+	// makes the confirm/toast copy match what actually happens.
+	make_public_selected: {
+		id: 'make_public_selected',
+		label: (repos) => `Make ${repos.length} repos public`,
+		description: 'Makes all selected repositories visible to everyone on the internet.',
+		icon: Unlock,
+		intent: 'mutation',
+		surfaces: ['selectionBar', 'commandPalette'],
+		isBatchSafe: true,
+		// NOTE: ctx.performAction wrapper already refreshes.
+		confirm: (repos) => ({
+			title: `Make ${repos.length} repositories public?`,
+			message: `The following repositories will become visible to everyone on the internet:\n\n${repos.slice(0, 5).map((r) => `• ${r.full_name}`).join('\n')}${repos.length > 5 ? `\n• …and ${repos.length - 5} more` : ''}`,
+			confirmText: 'Make Public',
+			variant: 'warning',
+		}),
+		run: async (repos, ctx) => {
+			await ctx.performAction('visibility', repos.map((r) => r.full_name), '', { makePublic: true })
+			ctx.toast.success(`${repos.length} repositories are now public`)
+		},
+	},
+	make_private_selected: {
+		id: 'make_private_selected',
+		label: (repos) => `Make ${repos.length} repos private`,
+		description: 'Hides all selected repositories from public listings. Existing public links will 404.',
 		icon: Lock,
 		intent: 'mutation',
 		surfaces: ['selectionBar', 'commandPalette'],
 		isBatchSafe: true,
 		// NOTE: ctx.performAction wrapper already refreshes.
 		confirm: (repos) => ({
-			title: `Change visibility for ${repos.length} repositories?`,
-			message: `Visibility changes are reversible but already-cached public links will 404 for any becoming private. Affected:\n\n${repos.slice(0, 5).map((r) => `• ${r.full_name}`).join('\n')}${repos.length > 5 ? `\n• …and ${repos.length - 5} more` : ''}`,
-			confirmText: 'Continue',
+			title: `Make ${repos.length} repositories private?`,
+			message: `The following repositories will be hidden from public listings; already-cached public links will 404:\n\n${repos.slice(0, 5).map((r) => `• ${r.full_name}`).join('\n')}${repos.length > 5 ? `\n• …and ${repos.length - 5} more` : ''}`,
+			confirmText: 'Make Private',
 			variant: 'warning',
 		}),
-		// TODO(visibility-target-picker): build a 2-button modal (Public / Private). For Phase 1, default to private.
 		run: async (repos, ctx) => {
 			await ctx.performAction('visibility', repos.map((r) => r.full_name), '', { makePublic: false })
 			ctx.toast.success(`${repos.length} repositories are now private`)

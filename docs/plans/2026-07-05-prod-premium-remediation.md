@@ -29,10 +29,10 @@
 | B1d | Compression + immutable caching for hashed assets on Express SPA | `server/index.js` | pending |
 | B1e | SSE drain on shutdown (close SSE clients before server.close) | `server/index.js` | pending |
 | B1f | X-Request-Id ↔ logged requestId correlation; pino redact backstop; 4MB AI body-limit on /api/v1/ai/* | `server/index.js`, `server/lib/logger.js` | pending |
-| B2a | Bulk visibility: replace forced-private with Public/Private picker modal | `src/actions/repoActions.js` + modal | pending |
-| B2b | PR review submit: success toast + refetch | `PRReview/PRReviewView.jsx` | pending |
-| B2c | ReadmeEnhanceDiffPanel: pass diffViewTheme | `AI/ReadmeEnhanceDiffPanel.jsx` | pending |
-| B2d | DevToolkit ReviewTab: light-mode legible bubble palette | `DevToolkit/ReviewTab/ReviewTab.jsx` | pending |
+| B2a | Bulk visibility: replace forced-private with Public/Private picker modal | `src/actions/repoActions.js` + modal | done |
+| B2b | PR review submit: success toast + refetch | `PRReview/PRReviewView.jsx` | done |
+| B2c | ReadmeEnhanceDiffPanel: pass diffViewTheme | `AI/ReadmeEnhanceDiffPanel.jsx` | done |
+| B2d | DevToolkit ReviewTab: light-mode legible bubble palette | `DevToolkit/ReviewTab/ReviewTab.jsx` | done |
 
 ## Wave C — quick wins (polish PR)
 
@@ -72,3 +72,4 @@
 ## Log
 - 2026-07-05: plan created; report committed.
 - 2026-07-05: Wave A2 landed (yearly billing honest end-to-end + /billing/config probe; compliance claims rewritten; LicensePlanSection corrected + parity gate 5th surface; Roadmap page + ROADMAP.md write-back reconciled). 57 targeted tests green.
+- 2026-07-05: Wave B2 landed (bulk visibility split into two honest actions; PR review submit toast+refetch; ReadmeEnhance diff theme; DevToolkit chat light-mode). 52 targeted tests green.

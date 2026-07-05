@@ -1,5 +1,5 @@
 import {
-	Archive, ArrowRightLeft, Upload, Lock, Download, Trash2, X, CheckSquare,
+	Archive, ArrowRightLeft, Upload, Lock, Unlock, Download, Trash2, X, CheckSquare,
 } from 'lucide-react'
 import { repoActions } from '../../actions/repoActions'
 
@@ -7,7 +7,8 @@ const PILL_ORDER = [
 	'archive_selected',
 	'transfer_selected',
 	'migrate_selected',
-	'visibility_selected',
+	'make_public_selected',
+	'make_private_selected',
 	'export_meta_selected',
 ]
 
@@ -15,7 +16,8 @@ const ICONS = {
 	archive_selected: Archive,
 	transfer_selected: ArrowRightLeft,
 	migrate_selected: Upload,
-	visibility_selected: Lock,
+	make_public_selected: Unlock,
+	make_private_selected: Lock,
 	export_meta_selected: Download,
 	delete_selected: Trash2,
 }

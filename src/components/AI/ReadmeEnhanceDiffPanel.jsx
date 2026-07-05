@@ -7,8 +7,10 @@ import { Button } from '../ui/Button'
 import { SectionSpinner } from '../ui/Spinner'
 import { AIErrorState } from '../ui/AIErrorState'
 import { isAbort } from '../../utils/errorClassification'
+import { useTheme } from '../../hooks/useTheme'
 
 export function ReadmeEnhanceDiffPanel({ repo }) {
+  const { isDark } = useTheme()
   const [loading, setLoading] = useState(true)
   const [enhanced, setEnhanced] = useState(null)
   const [currentReadme, setCurrentReadme] = useState('')
@@ -109,6 +111,7 @@ export function ReadmeEnhanceDiffPanel({ repo }) {
             hunks: []
           }}
           diffViewMode={DiffModeEnum.Split}
+          diffViewTheme={isDark ? 'dark' : 'light'}
         />
       </div>
     </div>

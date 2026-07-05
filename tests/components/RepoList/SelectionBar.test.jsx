@@ -13,13 +13,14 @@ describe('SelectionBar (desktop pill)', () => {
 		expect(screen.getByText('2')).toBeInTheDocument()
 	})
 
-	it('renders the inline action buttons (Archive, Transfer, Migrate, Visibility, Export, Delete)', () => {
+	it('renders the inline action buttons (Archive, Transfer, Migrate, Make Public, Make Private, Export, Delete)', () => {
 		render(<SelectionBar repos={repos} onAction={() => { }} onClear={() => { }} />)
 		// Each inline batch action has a button labeled by its registry label
 		expect(screen.getByRole('button', { name: /archive 2 repos/i })).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: /transfer 2 repos/i })).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: /migrate 2 repos/i })).toBeInTheDocument()
-		expect(screen.getByRole('button', { name: /make public\/private/i })).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: /make 2 repos public/i })).toBeInTheDocument()
+		expect(screen.getByRole('button', { name: /make 2 repos private/i })).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: /export 2 \(json\)/i })).toBeInTheDocument()
 		expect(screen.getByRole('button', { name: /delete 2 repos/i })).toBeInTheDocument()
 	})

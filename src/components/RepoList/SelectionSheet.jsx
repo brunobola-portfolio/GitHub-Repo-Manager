@@ -1,7 +1,7 @@
 import { Drawer } from '../ui/Drawer'
 import { repoActions } from '../../actions/repoActions'
 import {
-	Archive, ArrowRightLeft, Upload, FlaskConical, Download, Sparkles, Lock, Trash2,
+	Archive, ArrowRightLeft, Upload, FlaskConical, Download, Sparkles, Lock, Unlock, Trash2,
 } from 'lucide-react'
 
 const SHEET_ORDER = [
@@ -9,7 +9,8 @@ const SHEET_ORDER = [
 	'transfer_selected',
 	'migrate_selected',
 	'dry_run_selected',
-	'visibility_selected',
+	'make_public_selected',
+	'make_private_selected',
 	'export_meta_selected',
 	'ai_batch_index_selected',
 	'delete_selected',
@@ -20,7 +21,8 @@ const ICONS = {
 	transfer_selected: ArrowRightLeft,
 	migrate_selected: Upload,
 	dry_run_selected: FlaskConical,
-	visibility_selected: Lock,
+	make_public_selected: Unlock,
+	make_private_selected: Lock,
 	export_meta_selected: Download,
 	ai_batch_index_selected: Sparkles,
 	delete_selected: Trash2,
