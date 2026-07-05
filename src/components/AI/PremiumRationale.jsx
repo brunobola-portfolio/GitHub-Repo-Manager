@@ -1,4 +1,5 @@
 import { Sparkles, Wand2, Info, AlertTriangle, ShieldCheck } from 'lucide-react'
+import { formatFileSize } from '../../utils/format'
 
 const CONFIDENCE_STYLE = {
     high: { dot: 'bg-emerald-500', label: 'HIGH', color: 'text-emerald-700 dark:text-emerald-300' },
@@ -8,8 +9,8 @@ const CONFIDENCE_STYLE = {
 
 function formatBytes(bytes) {
     if (typeof bytes !== 'number') return ''
-    if (bytes < 1024) return `${bytes}B`
-    return `${(bytes / 1024).toFixed(1)}KB`
+    // Canonical formatter — rolls KB→MB→GB with a space, single vocabulary.
+    return formatFileSize(bytes, 1)
 }
 
 export function PremiumRationale({ source, rationale, confidence, signalsUsed = [], redactions = [] }) {

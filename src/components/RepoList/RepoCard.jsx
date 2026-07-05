@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { Badge } from '../ui/Badge'
 import { Tooltip } from '../ui/Tooltip'
-import { formatCompact } from '../../utils/format'
+import { formatCompact, formatRelativeTime } from '../../utils/format'
 import { TrackedDot } from '../WorkBoard/TrackedDot'
 import { MigratedPill } from './MigratedPill'
 import { RepoHealthBadge } from '../AI/RepoHealthBadge'
@@ -227,17 +227,7 @@ export const RepoCard = memo(function RepoCard({
 			</div>
 			{isGrid && repo.pushed_at && (
 				<p className="hidden lg:block text-xs text-slate-400 dark:text-slate-500 mt-1.5">
-					{(() => {
-                        // Use a stable reference for "now" to keep render pure
-						const diff = new Date().setHours(0, 0, 0, 0) - new Date(repo.pushed_at).getTime()
-						const mins = Math.floor(diff / 60000)
-						const hours = Math.floor(mins / 60)
-						const days = Math.floor(hours / 24)
-						if (days > 30) return `Updated ${new Date(repo.pushed_at).toLocaleDateString()}`
-						if (days > 0) return `Updated ${days}d ago`
-						if (hours > 0) return `Updated ${hours}h ago`
-						return `Updated ${mins}m ago`
-					})()}
+					Updated {formatRelativeTime(repo.pushed_at)}
 				</p>
 			)}
 		</motion.div>

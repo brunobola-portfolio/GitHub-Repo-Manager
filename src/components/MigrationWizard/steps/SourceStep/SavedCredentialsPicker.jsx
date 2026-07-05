@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { KeyRound, Plus, Check, Settings } from 'lucide-react'
 import { Spinner } from '../../../ui/Spinner'
 import { Select } from '../../../ui/Select'
+import { formatRelativeTime } from '../../../../utils/format'
 
 // Sentinel option value for the "paste a different PAT" row. Selecting it clears
 // the saved-credential pick (onPick(null)); modelling it as a real Select option
@@ -107,7 +108,7 @@ export default function SavedCredentialsPicker({ host, org, value, onPick, onOpe
         </div>
         <div className="ds-text-meta text-slate-500 dark:text-slate-400 ml-5 mt-0.5 font-mono truncate">
           {option.org ? `${option.org} · ` : ''}{option.prefix}
-          {option.lastUsedAt && <> · used {formatRelative(option.lastUsedAt)}</>}
+          {option.lastUsedAt && <> · used {formatRelativeTime(option.lastUsedAt)}</>}
         </div>
       </div>
     )
@@ -164,15 +165,4 @@ export default function SavedCredentialsPicker({ host, org, value, onPick, onOpe
       )}
     </div>
   )
-}
-
-function formatRelative(iso) {
-  try {
-    const d = new Date(iso)
-    const days = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24))
-    if (days < 1) return 'today'
-    if (days < 30) return `${days}d ago`
-    if (days < 365) return `${Math.floor(days / 30)}mo ago`
-    return `${Math.floor(days / 365)}+ years ago`
-  } catch { return '' }
 }

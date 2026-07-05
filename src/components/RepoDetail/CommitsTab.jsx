@@ -9,20 +9,7 @@ import { StaleDataBadge } from '../ui/StaleDataBadge'
 import { useResilientFetch } from '../../hooks/useResilientFetch'
 import { useFocusedRow } from '../../hooks/useFocusedRow'
 import { CommitDetailPanel } from './CommitDetailPanel'
-
-function formatAge(iso) {
-    if (!iso) return ''
-    const dt = new Date(iso)
-    const ageMs = Date.now() - dt.getTime()
-    const min = Math.floor(ageMs / 60_000)
-    if (min < 1) return 'just now'
-    if (min < 60) return `${min} min ago`
-    const hr = Math.floor(min / 60)
-    if (hr < 24) return `${hr} h ago`
-    const days = Math.floor(hr / 24)
-    if (days < 30) return `${days} d ago`
-    return dt.toLocaleDateString()
-}
+import { formatRelativeTime } from '../../utils/format'
 
 export function CommitsTab({ repo }) {
     const owner = repo.owner?.login || repo.full_name?.split('/')[0]
@@ -144,7 +131,7 @@ export function CommitsTab({ repo }) {
                                     {author?.login && <span>· {author.login}</span>}
                                     <span className="inline-flex items-center gap-1">
                                         <Clock className="w-3 h-3" />
-                                        {formatAge(commit.commit?.author?.date || commit.commit?.committer?.date)}
+                                        {formatRelativeTime(commit.commit?.author?.date || commit.commit?.committer?.date)}
                                     </span>
                                 </div>
                             </div>

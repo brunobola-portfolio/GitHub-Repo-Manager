@@ -1,7 +1,8 @@
 import {
-	memo, useState, useEffect, useMemo, useRef
+	memo, useState, useEffect, useRef
 } from 'react'
 import { Card } from './ui/Card'
+import { formatRelativeTime } from '../utils/format'
 import { Button } from './ui/Button'
 import { Spinner } from './ui/Spinner'
 import { RowIconBadge } from './ui/RowIconBadge'
@@ -454,8 +455,6 @@ function ActionHistory({ results, isPerforming, message }) {
 }
 
 function ActivityList({ activity }) {
-    const now = useMemo(() => new Date(), [])
-
     // Wrap in a Card to match Quick Actions / Action History above so the
     // sidebar reads as one cohesive premium column instead of three loose
     // panels with the activity feed dangling borderless underneath.
@@ -467,12 +466,12 @@ function ActivityList({ activity }) {
                 </div>
                 <h3 className="font-semibold text-sm text-slate-800 dark:text-slate-100">Recent Activity</h3>
             </div>
-            <ActivityListBody activity={activity} now={now} />
+            <ActivityListBody activity={activity} />
         </Card>
     )
 }
 
-function ActivityListBody({ activity, now }) {
+function ActivityListBody({ activity }) {
     if (!Array.isArray(activity) || activity.length === 0) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center py-10 text-slate-400">
@@ -489,7 +488,7 @@ function ActivityListBody({ activity, now }) {
             {activity.map((event) => {
                 if (!event) return null
                 const EventIcon = getEventIcon(event.type)
-                const timeAgo = getTimeAgo(new Date(event.created_at), now)
+                const timeAgo = formatRelativeTime(event.created_at)
 
                 return (
                     <div key={event.id} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
@@ -562,21 +561,6 @@ function getEventDescription(event) {
         default:
             return event.type?.replace('Event', '') || 'Activity'
     }
-}
-
-function getTimeAgo(date, now = new Date()) {
-    const seconds = Math.floor((now - date) / 1000)
-    let interval = seconds / 31536000
-    if (interval > 1) return Math.floor(interval) + "y ago"
-    interval = seconds / 2592000
-    if (interval > 1) return Math.floor(interval) + "mo ago"
-    interval = seconds / 86400
-    if (interval > 1) return Math.floor(interval) + "d ago"
-    interval = seconds / 3600
-    if (interval > 1) return Math.floor(interval) + "h ago"
-    interval = seconds / 60
-    if (interval > 1) return Math.floor(interval) + "m ago"
-    return Math.floor(seconds) + "s ago"
 }
 
 // React.memo so identical sidebarProps (already memoised in App.jsx) skip

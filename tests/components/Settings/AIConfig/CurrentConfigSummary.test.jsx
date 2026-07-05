@@ -22,7 +22,7 @@ const FORM_GEMINI = {
     embeddingModel: null,
     featureOverrides: {},
     serverFallbackAvailable: false,
-    updatedAt: new Date(Date.now() - 90 * 60 * 1000).toISOString(), // ~90min ago → "1 hour ago"
+    updatedAt: new Date(Date.now() - 90 * 60 * 1000).toISOString(), // ~90min ago → canonical "1h ago"
 }
 
 describe('CurrentConfigSummary', () => {

@@ -10,6 +10,7 @@ import { Modal } from './ui/Modal';
 import { Button } from './ui/Button';
 import { TabBar } from './ui/TabBar';
 import { CommunityHealthFixModal } from './AI/CommunityHealthFixModal';
+import { formatFileSize } from '../utils/format';
 
 /**
  * Map between the file labels surfaced by the community-health analyser and
@@ -384,7 +385,7 @@ function FileCheckItem({ file, exists, size, onFix }) {
                 <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{file}</span>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-                {exists && size > 0 && (<span className="text-xs text-slate-400">{(size / 1024).toFixed(1)} KB</span>)}
+                {exists && size > 0 && (<span className="text-xs text-slate-400">{formatFileSize(size, 1)}</span>)}
                 {canFix && (
                     <button
                         type="button"

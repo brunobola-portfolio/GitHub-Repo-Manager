@@ -8,6 +8,7 @@ import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
 import { InlineEditField } from './InlineEditField'
 import { MigrationProvenanceCard } from './MigrationProvenanceCard'
+import { formatFileSize, formatDate } from '../../utils/format'
 
 /**
  * Decode a GitHub contents-API README payload into a UTF-8 string.
@@ -172,16 +173,17 @@ export function OverviewTab({ api, repoData, onUpdate }) {
                         )}
                         <div>
                             <dt className="text-xs text-slate-500 dark:text-slate-400">Created</dt>
-                            <dd className="text-slate-700 dark:text-slate-300">{repoData.created_at ? new Date(repoData.created_at).toLocaleDateString() : '—'}</dd>
+                            <dd className="text-slate-700 dark:text-slate-300">{repoData.created_at ? formatDate(repoData.created_at) : '—'}</dd>
                         </div>
                         <div>
                             <dt className="text-xs text-slate-500 dark:text-slate-400">Last Updated</dt>
-                            <dd className="text-slate-700 dark:text-slate-300">{repoData.updated_at ? new Date(repoData.updated_at).toLocaleDateString() : '—'}</dd>
+                            <dd className="text-slate-700 dark:text-slate-300">{repoData.updated_at ? formatDate(repoData.updated_at) : '—'}</dd>
                         </div>
                         {repoData.size > 0 && (
                             <div>
                                 <dt className="text-xs text-slate-500 dark:text-slate-400">Size</dt>
-                                <dd className="text-slate-700 dark:text-slate-300">{(repoData.size / 1024).toFixed(1)} MB</dd>
+                                {/* GitHub returns repo size in KB → ×1024 to feed the canonical byte formatter. */}
+                                <dd className="text-slate-700 dark:text-slate-300">{formatFileSize(repoData.size * 1024, 1)}</dd>
                             </div>
                         )}
                     </dl>

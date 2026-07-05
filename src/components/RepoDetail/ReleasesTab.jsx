@@ -10,6 +10,7 @@ import { Spinner } from '../ui/Spinner'
 import { Field, Input, Textarea } from '../ui/form'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
+import { formatRelativeTime, formatDateTime } from '../../utils/format'
 
 export function ReleasesTab({ api }) {
     const { toast } = useToast()
@@ -158,7 +159,7 @@ export function ReleasesTab({ api }) {
                                 )}
                                 <div className="flex items-center gap-3 mt-2 text-xs text-slate-500 dark:text-slate-400">
                                     <span>{r.author?.login}</span>
-                                    <span>{new Date(r.published_at || r.created_at).toLocaleDateString()}</span>
+                                    <span title={formatDateTime(r.published_at || r.created_at)}>{formatRelativeTime(r.published_at || r.created_at)}</span>
                                     {r.html_url && (
                                         <a href={r.html_url} target="_blank" rel="noopener noreferrer"
                                             className="text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline flex items-center gap-1">

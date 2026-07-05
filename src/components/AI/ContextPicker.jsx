@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ChevronDown, RotateCcw, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { TRANSITION } from '../ui/motion'
+import { formatFileSize } from '../../utils/format'
 
 const SIGNAL_LABELS = {
     readme: 'README',
@@ -25,10 +26,6 @@ const EXPECTED_BYTES = {
 }
 
 const TOTAL_CAP = 8192
-
-function formatKb(bytes) {
-    return `${(bytes / 1024).toFixed(1)} KB`
-}
 
 export function ContextPicker({
     mode = 'single',
@@ -54,7 +51,7 @@ export function ContextPicker({
             >
                 <span className="inline-flex items-center gap-1.5">
                     <Sparkles className="w-4 h-4 text-indigo-500" />
-                    Context ({onCount} signals on, {formatKb(totalBytes)})
+                    Context ({onCount} signals on, {formatFileSize(totalBytes, 1)})
                 </span>
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
             </button>
@@ -83,7 +80,7 @@ export function ContextPicker({
                                     className="accent-indigo-500"
                                 />
                                 <span className="flex-1 text-slate-700 dark:text-slate-200">{SIGNAL_LABELS[kind]}</span>
-                                {checked && <span className="text-xs text-slate-500">{formatKb(expected)}</span>}
+                                {checked && <span className="text-xs text-slate-500">{formatFileSize(expected, 1)}</span>}
                             </label>
                         )
                     })}
@@ -120,7 +117,7 @@ export function ContextPicker({
 
                     <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
                         <span className="text-xs text-slate-500">
-                            {`Total: ${formatKb(totalBytes)} / ${formatKb(TOTAL_CAP)}`}
+                            {`Total: ${formatFileSize(totalBytes, 1)} / ${formatFileSize(TOTAL_CAP, 1)}`}
                         </span>
                         <button
                             type="button"

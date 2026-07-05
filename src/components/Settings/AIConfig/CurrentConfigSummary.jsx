@@ -3,7 +3,7 @@ import { Sparkles, Cloud, KeyRound, ShieldAlert, CheckCircle2, Clock, AlertTrian
 import { PROVIDER_LABELS, PROVIDER_DEFAULTS } from '../../../utils/providerCapabilities'
 import { useAIStatus } from '../../../hooks/useAIStatus'
 import { useAIFeaturesHealth } from '../../../hooks/useAIFeaturesHealth'
-import { parseServerTimestamp } from '../../../utils/format'
+import { formatRelativeTime } from '../../../utils/format'
 
 const HEALTH_PILL = {
     ok:           { Icon: CheckCircle2,  cls: 'text-emerald-600 dark:text-emerald-400 bg-emerald-100/70 dark:bg-emerald-900/40 ring-emerald-200/70 dark:ring-emerald-800/60', label: 'OK' },
@@ -16,25 +16,6 @@ const FEATURE_LABEL = {
     completion: 'Completion',
     chat:       'Chat',
     embedding:  'Embedding',
-}
-
-function formatRelativeTime(iso) {
-    if (!iso) return null
-    // parseServerTimestamp reads the server's naive 'YYYY-MM-DD HH:MM:SS' as UTC.
-    const parsed = parseServerTimestamp(iso)
-    if (!parsed) return null
-    const then = parsed.getTime()
-    const diffSec = Math.round((Date.now() - then) / 1000)
-    if (diffSec < 0) return 'just now'
-    if (diffSec < 45) return 'just now'
-    if (diffSec < 90) return '1 minute ago'
-    const diffMin = Math.round(diffSec / 60)
-    if (diffMin < 60) return `${diffMin} minutes ago`
-    const diffHr = Math.round(diffMin / 60)
-    if (diffHr < 24) return `${diffHr} hour${diffHr === 1 ? '' : 's'} ago`
-    const diffDay = Math.round(diffHr / 24)
-    if (diffDay < 30) return `${diffDay} day${diffDay === 1 ? '' : 's'} ago`
-    return new Date(then).toLocaleDateString()
 }
 
 /**

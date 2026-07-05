@@ -4,9 +4,13 @@
  */
 
 /**
- * Default locale for number formatting. The UI ships in English so numbers
- * render in en-US style (1,234 / 1.23M). Override per-call via `options.locale`
- * on formatNumber/formatCompact if a localised surface ever lands.
+ * Default locale for the whole formatting module. The UI ships in English, so
+ * BOTH numbers and dates are pinned to en-US rather than the browser locale:
+ *   - numbers render en-US style (1,234 / 1.23M);
+ *   - dates render month-first (7/5/2026) so a pt-PT browser doesn't show a
+ *     day-first date (5/7/2026) inside an otherwise-English sentence.
+ * Override per-call via `options.locale` on formatNumber/formatCompact if a
+ * localised surface ever lands.
  */
 export const APP_LOCALE = 'en-US'
 
@@ -175,7 +179,9 @@ export function formatDate(value, options = {}) {
 	const d = parseServerTimestamp(value)
 	if (!d) return ''
 	try {
-		return d.toLocaleDateString(undefined, options)
+		// Pinned to APP_LOCALE (see APP_LOCALE doc) — dates stay month-first
+		// regardless of the viewer's browser locale.
+		return d.toLocaleDateString(APP_LOCALE, options)
 	} catch {
 		return d.toISOString().split('T')[0]
 	}
@@ -191,7 +197,8 @@ export function formatDateTime(value) {
 	const d = parseServerTimestamp(value)
 	if (!d) return ''
 	try {
-		return d.toLocaleString()
+		// Pinned to APP_LOCALE (see APP_LOCALE doc) for the same reason as formatDate.
+		return d.toLocaleString(APP_LOCALE)
 	} catch {
 		return d.toISOString()
 	}

@@ -16,6 +16,7 @@ import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
 import { useFocusedRow } from '../../hooks/useFocusedRow'
 import { emitAppEvent, onAppEvent, APP_EVENTS } from '../../utils/appEvents'
+import { formatRelativeTime, formatDateTime } from '../../utils/format'
 
 export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
     const { toast } = useToast()
@@ -307,7 +308,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                                     </div>
                                     <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-500 dark:text-slate-400">
                                         <span>{pr.user?.login}</span>
-                                        <span>{new Date(pr.created_at).toLocaleDateString()}</span>
+                                        <span title={formatDateTime(pr.created_at)}>{formatRelativeTime(pr.created_at)}</span>
                                         {pr.html_url && (
                                             <a href={pr.html_url} target="_blank" rel="noopener noreferrer"
                                                 onClick={e => e.stopPropagation()}

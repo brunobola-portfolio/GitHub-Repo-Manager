@@ -9,7 +9,7 @@ import AllowlistFixPanel from '../ui/AllowlistFixPanel'
 import { getCsrfToken } from '../../utils/api'
 import { useHostAllowlist } from '../../hooks/useHostAllowlist'
 import { useToast } from '../../hooks/useToast'
-import { formatDate } from '../../utils/format'
+import { formatDate, formatRelativeTime } from '../../utils/format'
 import { classifyProvider, providerToneClasses, buildPatSettingsUrl } from '../../utils/azureProvider'
 
 /**
@@ -236,7 +236,7 @@ function CredentialRow({ cred, onDeleted, onTested }) {
   }
 
   const patUrl = buildPatSettingsUrl(cred.host, cred.org || '_')
-  const lastUsed = cred.lastUsedAt ? formatRelative(cred.lastUsedAt) : 'never used'
+  const lastUsed = cred.lastUsedAt ? `used ${formatRelativeTime(cred.lastUsedAt)}` : 'never used'
 
   return (
     <li className={`rounded-2xl border ${tone.border} ${tone.bg} overflow-hidden`}>
@@ -614,15 +614,3 @@ function Field({ label, htmlFor, children }) {
   )
 }
 
-function formatRelative(iso) {
-  if (!iso) return ''
-  try {
-    const d = new Date(iso)
-    const diffMs = Date.now() - d.getTime()
-    const days = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-    if (days < 1) return 'used today'
-    if (days < 30) return `used ${days}d ago`
-    if (days < 365) return `used ${Math.floor(days / 30)}mo ago`
-    return `used ${Math.floor(days / 365)}+ years ago`
-  } catch { return iso }
-}

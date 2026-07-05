@@ -8,6 +8,7 @@ import { MOCK_MODE } from '../../config'
 import { AIErrorState } from '../ui/AIErrorState'
 import { Skeleton } from '../ui/Skeleton'
 import { onAppEvent, APP_EVENTS } from '../../utils/appEvents'
+import { formatRelativeTime } from '../../utils/format'
 
 function bulletHref(link) {
     if (!link || !link.repo || !link.number) return null
@@ -35,15 +36,6 @@ function UrgencyGauge({ score }) {
             </text>
         </svg>
     )
-}
-
-function timeAgo(isoString) {
-    if (!isoString) return null
-    const diffMs = Date.now() - new Date(isoString).getTime()
-    const mins = Math.round(diffMs / 60000)
-    if (mins < 1) return 'just now'
-    if (mins < 60) return `${mins} min ago`
-    return `${Math.round(mins / 60)} hr ago`
 }
 
 export function AISummaryCard({ meta: metaProp } = {}) {
@@ -256,7 +248,7 @@ export function AISummaryCard({ meta: metaProp } = {}) {
                 </AnimatePresence>
                 {generatedAt && (
                     <p className="mt-auto pt-2 ds-text-meta text-slate-500 text-right">
-                        Generated {timeAgo(generatedAt)}
+                        Generated {formatRelativeTime(generatedAt)}
                     </p>
                 )}
             </div>

@@ -1,25 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { CloudOff, RefreshCw } from 'lucide-react'
-import { parseServerTimestamp } from '../../utils/format'
-
-function formatRelative(fetchedAt) {
-    if (!fetchedAt) return null
-    // parseServerTimestamp reads the server's naive "YYYY-MM-DD HH:MM:SS" as UTC.
-    const dt = parseServerTimestamp(fetchedAt)
-    if (!dt) return null
-    const ageSec = Math.max(0, Math.round((Date.now() - dt.getTime()) / 1000))
-    if (ageSec < 60) return 'just now'
-    if (ageSec < 3600) return `${Math.floor(ageSec / 60)} min ago`
-    if (ageSec < 86400) return `${Math.floor(ageSec / 3600)} h ago`
-    return `${Math.floor(ageSec / 86400)} d ago`
-}
+import { formatRelativeTime } from '../../utils/format'
 
 /**
  * StaleDataBadge — shown when the server returned cached data because the
  * live GitHub call failed. Linear-style subtle pill plus a retry button.
  */
 export function StaleDataBadge({ fetchedAt, onRetry, className = '' }) {
-    const relative = formatRelative(fetchedAt)
+    const relative = formatRelativeTime(fetchedAt)
     return (
         <div
             data-testid="stale-data-badge"

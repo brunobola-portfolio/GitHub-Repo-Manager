@@ -13,6 +13,7 @@ import { useToast } from '../../hooks/useToast'
 import { useFocusedRow } from '../../hooks/useFocusedRow'
 import { issueActions } from '../../actions/issueActions'
 import { emitAppEvent, onAppEvent, APP_EVENTS } from '../../utils/appEvents'
+import { formatRelativeTime, formatDateTime } from '../../utils/format'
 
 export function IssuesTab({ api, repoFullName }) {
     const { toast } = useToast()
@@ -231,7 +232,7 @@ export function IssuesTab({ api, repoFullName }) {
                                     </div>
                                     <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-500 dark:text-slate-400">
                                         <span>{issue.user?.login}</span>
-                                        <span>{new Date(issue.created_at).toLocaleDateString()}</span>
+                                        <span title={formatDateTime(issue.created_at)}>{formatRelativeTime(issue.created_at)}</span>
                                         {issue.comments > 0 && (
                                             <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" /> {issue.comments}</span>
                                         )}

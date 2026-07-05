@@ -4,11 +4,12 @@ import { Spinner } from '../ui/Spinner'
 import { Input } from '../ui/form'
 import { Search, AlertTriangle, FileText } from 'lucide-react'
 import { reposApi } from '../../api/repos'
+import { formatFileSize } from '../../utils/format'
 
 function formatBytes(bytes) {
     if (bytes == null) return ''
-    if (bytes < 1024) return `${bytes} B`
-    return `${(bytes / 1024).toFixed(1)} KB`
+    // Canonical formatter — rolls KB→MB→GB with a space, single vocabulary.
+    return formatFileSize(bytes, 1)
 }
 
 export function FileTreePicker({ isOpen, owner, repoName, branch, onPick, onClose }) {
