@@ -21,6 +21,10 @@ node_modules
 .env.production
 .env.development
 
+# License signing private key — verification only needs keys/public.pem;
+# keep the private key out of every build layer, including the builder stage
+keys/private.pem
+
 # Local DB files
 server/data/*.db
 server/data/tmp/

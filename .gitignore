@@ -18,10 +18,12 @@ coverage
 *.local
 .augment/
 .agent/
-augment rules/
-rules/
+# Root-anchored: unanchored names like `rules/` would silently swallow any
+# future src/server folder with the same name.
+/augment rules/
+/rules/
 /plans/
-Implementation/
+/Implementation/
 .roo/
 .superpowers/
 
@@ -32,9 +34,15 @@ Implementation/
 .env.production
 .env.development
 
-# Database files
+# Database files (incl. SQLite WAL/journal sidecars — `*.db` alone does not
+# match `repos.db-wal`, which appears whenever the server runs in WAL mode)
 *.db
+*.db-wal
+*.db-shm
+*.db-journal
 *.sqlite
+*.sqlite-wal
+*.sqlite-shm
 *.sqlite3
 server/data/
 
@@ -74,9 +82,10 @@ server/data/
 playwright-report/
 test-results/
 
-# Temporary development docs
-validation-*.md
-dashboard-improved.md
+# Temporary development docs — root-anchored so they can never silently
+# swallow legitimate files under docs/ (e.g. docs/reports/validation-*.md)
+/validation-*.md
+/dashboard-improved.md
 
 # Temporary files
 nul
@@ -86,4 +95,4 @@ keys/private.pem
 
 # Eval harness — local baseline files (per-dev, not committed)
 server/evals/baseline.local.json
-dados.txt
+/dados.txt
