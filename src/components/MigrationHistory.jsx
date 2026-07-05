@@ -12,6 +12,7 @@ import { TRANSITION } from './ui/motion'
 import { SectionSpinner, Spinner, SpinnerIcon } from './ui/Spinner'
 import { migrationApi } from '../api/migration'
 import { apiCall } from '../utils/api'
+import { formatDateTime, formatDurationSeconds, parseServerTimestamp } from '../utils/format'
 import { MarksBadge } from './MigrationHistory/MarksBadge.jsx'
 import { MarksDetailModal } from './MigrationHistory/MarksDetailModal.jsx'
 import { useMarksForPlan } from '../hooks/useMigrationMarks.js'
@@ -173,7 +174,13 @@ export function MigrationHistory({ isOpen, onClose }) {
         else loadJobs()
     }, [isOpen, activeTab])
 
-    const filteredJobs = filter === 'all' ? jobs : jobs.filter(j => j.status === filter)
+    // Tolerate the legacy 'complete'/'completed' vocabulary split during rollout:
+    // the 'complete' filter chip matches both spellings of the terminal state.
+    const filteredJobs = filter === 'all'
+        ? jobs
+        : jobs.filter(j => filter === 'complete'
+            ? (j.status === 'complete' || j.status === 'completed')
+            : j.status === filter)
 
     return (
         <Modal
@@ -274,7 +281,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                 <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400">
                                                     <span className={`capitalize font-medium ${status.text}`}>{plan.status}</span>
                                                     {taskCount > 0 && <span>{taskCount} task{taskCount !== 1 ? 's' : ''}</span>}
-                                                    <span>{plan.createdAt ? new Date(plan.createdAt).toLocaleString() : ''}</span>
+                                                    <span>{formatDateTime(plan.createdAt)}</span>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2 shrink-0">
@@ -330,9 +337,12 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                 {tasks.map((task, idx) => {
                                                     const taskStatus = STATUS_STYLES[task.status] || STATUS_STYLES.pending
                                                     const TaskIcon = taskStatus.icon
-                                                    const duration = task.completedAt && task.startedAt
-                                                        ? Math.round((new Date(task.completedAt) - new Date(task.startedAt)) / 1000)
+                                                    const durationSec = task.completedAt && task.startedAt
+                                                        ? Math.round((parseServerTimestamp(task.completedAt)?.getTime() - parseServerTimestamp(task.startedAt)?.getTime()) / 1000)
                                                         : null
+                                                    const durationLabel = durationSec != null
+                                                        ? formatDurationSeconds(durationSec, { zero: '' })
+                                                        : ''
                                                     return (
                                                         <div key={task.id || idx} className="flex items-center gap-2 text-xs">
                                                             <TaskIcon className={`w-3.5 h-3.5 ${taskStatus.text}`} />
@@ -341,7 +351,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                             {task.progressPct > 0 && task.status === 'running' && (
                                                                 <span className="text-slate-400">{task.progressPct}%</span>
                                                             )}
-                                                            {duration !== null && <span className="text-slate-400">{duration}s</span>}
+                                                            {durationLabel && <span className="text-slate-400">{durationLabel}</span>}
                                                         </div>
                                                     )
                                                 })}
@@ -383,9 +393,9 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                 </div>
                                                 <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400">
                                                     <span className={`capitalize font-medium ${status.text}`}>{job.status}</span>
-                                                    <span>{job.startedAt ? new Date(job.startedAt).toLocaleString() : ''}</span>
+                                                    <span>{formatDateTime(job.startedAt)}</span>
                                                     {job.completedAt && job.startedAt && (
-                                                        <span>{Math.round((new Date(job.completedAt) - new Date(job.startedAt)) / 1000)}s</span>
+                                                        <span>{formatDurationSeconds(Math.round((parseServerTimestamp(job.completedAt)?.getTime() - parseServerTimestamp(job.startedAt)?.getTime()) / 1000), { zero: '—' })}</span>
                                                     )}
                                                     {meta?.branchCount && <span>{meta.branchCount} branch(es)</span>}
                                                 </div>
@@ -398,7 +408,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                     <p className="text-xs text-red-500 dark:text-red-400 mt-1 truncate">{job.errorMessage}</p>
                                                 )}
                                             </div>
-                                            {meta?.repoUrl && job.status === 'complete' && (
+                                            {meta?.repoUrl && (job.status === 'complete' || job.status === 'completed') && (
                                                 <a href={meta.repoUrl} target="_blank" rel="noopener noreferrer"
                                                     aria-label="Open migrated repository in new tab"
                                                     title="Open migrated repository in new tab"

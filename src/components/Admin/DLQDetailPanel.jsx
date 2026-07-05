@@ -17,12 +17,13 @@ import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
 import { RotateCw, CheckCircle2 } from 'lucide-react'
 import { SectionSpinner } from '../ui/Spinner'
+import { parseServerTimestamp } from '../../utils/format'
 
 function formatTimestamp(iso) {
     if (!iso) return '—'
-    const ts = typeof iso === 'string' && !iso.includes('T') ? iso.replace(' ', 'T') + 'Z' : iso
-    const d = new Date(ts)
-    if (Number.isNaN(d.getTime())) return iso
+    // parseServerTimestamp reads SQLite's naive 'YYYY-MM-DD HH:MM:SS' as UTC.
+    const d = parseServerTimestamp(iso)
+    if (!d) return typeof iso === 'string' ? iso : '—'
     return d.toLocaleString()
 }
 

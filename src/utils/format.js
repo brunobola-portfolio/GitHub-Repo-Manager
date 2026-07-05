@@ -122,6 +122,47 @@ export function formatFileSize(bytes, decimals = 2) {
 }
 
 /**
+ * Naive SQLite timestamp shape: 'YYYY-MM-DD HH:MM:SS' (optionally 'T'-separated,
+ * optional fractional seconds) with NO timezone designator. This is exactly what
+ * `CURRENT_TIMESTAMP` / `datetime('now')` emit — a UTC wall-clock value with the
+ * 'Z' stripped. `new Date()` reads such a string as LOCAL time, so every
+ * server-sourced timestamp would be off by the viewer's UTC offset.
+ */
+const NAIVE_SQLITE_TS_RE = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(\.\d+)?$/
+
+/**
+ * Parse a timestamp coming from the server or an API into a Date, treating the
+ * naive SQLite shape as UTC (append 'Z') so it doesn't get misread as local time.
+ *
+ * Contract — what each input shape resolves to:
+ *   - naive 'YYYY-MM-DD HH:MM:SS' (± 'T' separator, ± fractional secs, NO zone)
+ *       → interpreted as UTC (the server's actual meaning).
+ *   - ISO strings that already carry a zone ('...Z', '...+01:00', '...-0500')
+ *       → passed through untouched (native parse; already unambiguous).
+ *   - date-only 'YYYY-MM-DD' → passed through (native parse already treats it as UTC).
+ *   - epoch numbers (ms) and Date instances → returned as-is (absolute already).
+ *   - null / undefined / '' / unparseable → null (callers guard on it).
+ *
+ * @param {Date|string|number|null|undefined} value
+ * @returns {Date|null}
+ */
+export function parseServerTimestamp(value) {
+	if (value == null) return null
+	if (value instanceof Date) return isNaN(value.getTime()) ? null : value
+	if (typeof value === 'number') {
+		const d = new Date(value)
+		return isNaN(d.getTime()) ? null : d
+	}
+	if (typeof value !== 'string') return null
+	const str = value.trim()
+	if (!str) return null
+	// Naive UTC wall-clock with no zone marker → normalize to explicit UTC.
+	const normalized = NAIVE_SQLITE_TS_RE.test(str) ? str.replace(' ', 'T') + 'Z' : str
+	const d = new Date(normalized)
+	return isNaN(d.getTime()) ? null : d
+}
+
+/**
  * Format a date using the user's locale (date only, no time).
  * Returns empty string for nullish / unparseable input so it's safe to drop
  * straight into JSX without ternary guards.
@@ -131,9 +172,8 @@ export function formatFileSize(bytes, decimals = 2) {
  * @returns {string}
  */
 export function formatDate(value, options = {}) {
-	if (value == null) return ''
-	const d = value instanceof Date ? value : new Date(value)
-	if (isNaN(d.getTime())) return ''
+	const d = parseServerTimestamp(value)
+	if (!d) return ''
 	try {
 		return d.toLocaleDateString(undefined, options)
 	} catch {
@@ -148,9 +188,8 @@ export function formatDate(value, options = {}) {
  * @returns {string}
  */
 export function formatDateTime(value) {
-	if (value == null) return ''
-	const d = value instanceof Date ? value : new Date(value)
-	if (isNaN(d.getTime())) return ''
+	const d = parseServerTimestamp(value)
+	if (!d) return ''
 	try {
 		return d.toLocaleString()
 	} catch {
@@ -194,7 +233,9 @@ export function formatDurationSeconds(seconds, { zero = '-' } = {}) {
  */
 export function formatTimeUntil(iso) {
     if (!iso) return null
-    const ms = new Date(iso).getTime() - Date.now()
+    const target = parseServerTimestamp(iso)
+    if (!target) return null
+    const ms = target.getTime() - Date.now()
     if (Number.isNaN(ms) || ms <= 0) return null
     const d = Math.round(ms / 86_400_000)
     if (d >= 1) return `in ${d} day${d === 1 ? '' : 's'}`
@@ -216,8 +257,8 @@ export function formatRelativeTime(date) {
 	if (!date) return ''
 
 	const now = new Date()
-	const then = new Date(date)
-	if (isNaN(then.getTime())) return ''
+	const then = parseServerTimestamp(date)
+	if (!then) return ''
 	const seconds = Math.floor((now - then) / 1000)
 
 	if (seconds < 0) return 'just now'

@@ -436,6 +436,20 @@ export const MIGRATIONS = [
                      ON pr_events(action, created_at)`);
         },
     },
+    {
+        version: 27,
+        name: "migration_jobs.status: unify legacy 'complete' → 'completed'",
+        up(db) {
+            // The legacy import pipeline (url/azure-git/azure-tfvc) historically
+            // wrote status='complete' while the bulk-mirror path and the new
+            // migration engine write 'completed'. That split made bulk-mirrored
+            // jobs render 'Pending' forever and undercounted the dashboard's
+            // Successful stat. Writers are now canonicalized to 'completed';
+            // fold existing rows over so history + stats agree. Idempotent —
+            // a re-run finds no 'complete' rows left to update.
+            db.exec(`UPDATE migration_jobs SET status = 'completed' WHERE status = 'complete'`);
+        },
+    },
 ];
 
 /**

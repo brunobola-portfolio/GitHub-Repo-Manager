@@ -90,7 +90,10 @@ router.get('/migrations/stats', requireAuth, async (req, res) => {
     try {
         const userId = req.session.userId;
         const total = db.prepare('SELECT COUNT(*) as count FROM migration_jobs WHERE user_id = ?').get(userId);
-        const completed = db.prepare("SELECT COUNT(*) as count FROM migration_jobs WHERE user_id = ? AND status = 'complete'").get(userId);
+        // Tolerate the legacy 'complete'/'completed' split during rollout: count
+        // both spellings as the terminal-success state so bulk-mirrored jobs
+        // (which write 'completed') no longer vanish from the Successful count.
+        const completed = db.prepare("SELECT COUNT(*) as count FROM migration_jobs WHERE user_id = ? AND status IN ('complete', 'completed')").get(userId);
         const failed = db.prepare("SELECT COUNT(*) as count FROM migration_jobs WHERE user_id = ? AND status = 'failed'").get(userId);
         const running = db.prepare("SELECT COUNT(*) as count FROM migration_jobs WHERE user_id = ? AND status IN ('pending', 'running')").get(userId);
         const tfvc = db.prepare("SELECT COUNT(*) as count FROM migration_jobs WHERE user_id = ? AND source_type = 'azure-tfvc'").get(userId);

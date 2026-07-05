@@ -102,7 +102,7 @@ router.post('/import/url', requireAuth, validateBody(importSchema), async (req, 
             try {
                 if (result.success) {
                     db.prepare(`
-                        UPDATE migration_jobs SET status = 'complete', target_full_name = ?, progress_pct = 100,
+                        UPDATE migration_jobs SET status = 'completed', target_full_name = ?, progress_pct = 100,
                         progress_message = 'Import completed successfully!', completed_at = datetime('now'),
                         metadata = ?
                         WHERE id = ?

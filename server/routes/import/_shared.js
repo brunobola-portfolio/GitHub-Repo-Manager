@@ -1,7 +1,10 @@
 import db from '../../db.js';
 
 export const updateJobProgress = db.transaction((status, message, pct, jobId) => {
-    const dbStatus = status === 'complete' ? 'complete' : status === 'failed' ? 'failed' : 'running';
+    // Canonical terminal status is 'completed' (matches the new engine + bulk
+    // mirror). `status` here is the internal progress phase ('complete') emitted
+    // by import-service/wiki-service; we persist it as 'completed'.
+    const dbStatus = status === 'complete' ? 'completed' : status === 'failed' ? 'failed' : 'running';
     db.prepare(`
         UPDATE migration_jobs SET status = ?, progress_message = ?, progress_pct = ?
         WHERE id = ?

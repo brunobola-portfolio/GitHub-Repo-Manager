@@ -93,7 +93,7 @@ router.post('/import/azure', requireAuth, validateBody(azureImportSchema), async
             try {
                 if (result.success) {
                     db.prepare(`
-                        UPDATE migration_jobs SET status = 'complete', target_full_name = ?, progress_pct = 100,
+                        UPDATE migration_jobs SET status = 'completed', target_full_name = ?, progress_pct = 100,
                         progress_message = 'Import completed successfully!', completed_at = datetime('now'),
                         metadata = ?
                         WHERE id = ?
@@ -237,7 +237,7 @@ router.post('/import/azure/batch', requireAuth, validateBody(azureImportBatchSch
 
                 if (result.success) {
                     db.prepare(`
-                        UPDATE migration_jobs SET status = 'complete', target_full_name = ?, progress_pct = 100,
+                        UPDATE migration_jobs SET status = 'completed', target_full_name = ?, progress_pct = 100,
                         progress_message = 'Import completed!', completed_at = datetime('now'), metadata = ?
                         WHERE id = ?
                     `).run(result.targetFullName, JSON.stringify({ branchCount: result.branchCount, hasLFS: result.hasLFS, repoUrl: result.repoUrl }), jobId);

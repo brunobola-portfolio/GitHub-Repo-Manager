@@ -395,7 +395,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                             <div key={hook.id} className="flex items-center gap-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
                                 <div className={`w-2 h-2 rounded-full ${hook.active ? 'bg-green-500' : 'bg-slate-400'}`} />
                                 <span className="text-sm text-slate-700 dark:text-slate-300 flex-1 truncate font-mono">
-                                    {hook.config?.url || 'N/A'}
+                                    {hook.config?.url || '—'}
                                 </span>
                                 <Button variant="ghost" size="sm" onClick={() => pingHook(hook.id)} title="Ping">
                                     <RefreshCw className="w-3.5 h-3.5" />

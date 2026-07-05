@@ -16,14 +16,13 @@ import { Badge } from '../ui/Badge'
 import { Card } from '../ui/Card'
 import { EmptyState } from '../ui/EmptyState'
 import { useStickyHeaderShadow } from '../../hooks/useStickyHeaderShadow'
+import { parseServerTimestamp } from '../../utils/format'
 
 function formatTimestamp(iso) {
     if (!iso) return '—'
-    // SQLite `datetime('now')` emits 'YYYY-MM-DD HH:MM:SS' (no timezone).
-    // Treat as UTC so the local-time render matches the retry worker's view.
-    const ts = typeof iso === 'string' && !iso.includes('T') ? iso.replace(' ', 'T') + 'Z' : iso
-    const d = new Date(ts)
-    if (Number.isNaN(d.getTime())) return iso
+    // parseServerTimestamp reads SQLite's naive 'YYYY-MM-DD HH:MM:SS' as UTC.
+    const d = parseServerTimestamp(iso)
+    if (!d) return typeof iso === 'string' ? iso : '—'
     return d.toLocaleString()
 }
 

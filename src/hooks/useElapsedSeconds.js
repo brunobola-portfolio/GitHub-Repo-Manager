@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { parseServerTimestamp } from '../utils/format'
 
 /**
  * Live elapsed-seconds counter since `startedAt`. Ticks every second while
@@ -13,7 +14,10 @@ import { useEffect, useState } from 'react'
  * @returns {number|null}
  */
 export function useElapsedSeconds(startedAt, active = true) {
-  const startMs = startedAt ? new Date(startedAt).getTime() : null
+  // parseServerTimestamp treats naive-UTC server timestamps as UTC; without it
+  // the live elapsed timer (Date.now() - startMs) is off by the viewer's offset.
+  const startDate = parseServerTimestamp(startedAt)
+  const startMs = startDate ? startDate.getTime() : null
   const valid = startMs != null && Number.isFinite(startMs)
 
   const compute = () => (valid ? Math.max(0, Math.floor((Date.now() - startMs) / 1000)) : null)

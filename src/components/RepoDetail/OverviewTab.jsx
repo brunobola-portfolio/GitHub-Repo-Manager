@@ -172,11 +172,11 @@ export function OverviewTab({ api, repoData, onUpdate }) {
                         )}
                         <div>
                             <dt className="text-xs text-slate-500 dark:text-slate-400">Created</dt>
-                            <dd className="text-slate-700 dark:text-slate-300">{repoData.created_at ? new Date(repoData.created_at).toLocaleDateString() : 'N/A'}</dd>
+                            <dd className="text-slate-700 dark:text-slate-300">{repoData.created_at ? new Date(repoData.created_at).toLocaleDateString() : '—'}</dd>
                         </div>
                         <div>
                             <dt className="text-xs text-slate-500 dark:text-slate-400">Last Updated</dt>
-                            <dd className="text-slate-700 dark:text-slate-300">{repoData.updated_at ? new Date(repoData.updated_at).toLocaleDateString() : 'N/A'}</dd>
+                            <dd className="text-slate-700 dark:text-slate-300">{repoData.updated_at ? new Date(repoData.updated_at).toLocaleDateString() : '—'}</dd>
                         </div>
                         {repoData.size > 0 && (
                             <div>

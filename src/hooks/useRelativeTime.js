@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
+import { parseServerTimestamp } from '../utils/format';
 
 // Accept Date | string | number — API responses arrive as ISO strings, not
-// Date instances, so calling date.getTime() on a string throws.
+// Date instances, so calling date.getTime() on a string throws. Route through
+// parseServerTimestamp so naive-UTC SQLite timestamps ('YYYY-MM-DD HH:MM:SS')
+// are read as UTC instead of local time.
 function toDate(input) {
-    if (input == null) return null;
-    if (input instanceof Date) return Number.isNaN(input.getTime()) ? null : input;
-    const d = new Date(input);
-    return Number.isNaN(d.getTime()) ? null : d;
+    return parseServerTimestamp(input);
 }
 
 function format(input) {

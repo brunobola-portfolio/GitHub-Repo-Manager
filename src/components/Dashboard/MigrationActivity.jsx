@@ -9,8 +9,13 @@ import { EmptyState } from '../ui/EmptyState'
 import { formatRelativeTime } from '../../utils/format'
 import { useModal } from '../../hooks/useModal'
 
+// Terminal-success config, aliased under BOTH legacy spellings ('complete' from
+// the legacy import pipeline, 'completed' from bulk-mirror + the new engine) so
+// a bulk-mirrored job never falls through to the amber 'Pending' clock.
+const COMPLETED_CONFIG = { icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10', label: 'Completed' }
 const STATUS_CONFIG = {
-  complete: { icon: CheckCircle2, color: 'text-emerald-500', bg: 'bg-emerald-500/10', label: 'Completed' },
+  complete: COMPLETED_CONFIG,
+  completed: COMPLETED_CONFIG,
   failed: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-500/10', label: 'Failed' },
   running: { icon: SpinnerIcon, color: 'text-blue-500', bg: 'bg-blue-500/10', label: 'Running', animate: false },
   pending: { icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10', label: 'Pending' },

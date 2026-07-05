@@ -261,7 +261,7 @@ export async function runTfvcImport(params) {
             onProgress('running', `Attempting ${strategy.label}...`, strategy.startPct);
             const result = await strategy.run(ctx);
             db.prepare(`
-                UPDATE migration_jobs SET status = 'complete', target_full_name = ?, progress_pct = 100,
+                UPDATE migration_jobs SET status = 'completed', target_full_name = ?, progress_pct = 100,
                 progress_message = 'TFVC import completed successfully!', completed_at = datetime('now'),
                 metadata = ?
                 WHERE id = ?
@@ -706,7 +706,7 @@ async function runInPlaceTfvcConversion(params) {
         const finalRepo = await azureService.getRepoDetails(azureOrg, destProject, resolvedRepoName, azurePat, azureHost);
 
         db.prepare(`
-            UPDATE migration_jobs SET status = 'complete', target_full_name = ?, progress_pct = 100,
+            UPDATE migration_jobs SET status = 'completed', target_full_name = ?, progress_pct = 100,
             progress_message = 'TFVC converted to Git in Azure DevOps!', completed_at = datetime('now'),
             metadata = ?
             WHERE id = ?

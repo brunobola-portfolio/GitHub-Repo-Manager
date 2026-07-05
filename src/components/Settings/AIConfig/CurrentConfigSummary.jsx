@@ -3,6 +3,7 @@ import { Sparkles, Cloud, KeyRound, ShieldAlert, CheckCircle2, Clock, AlertTrian
 import { PROVIDER_LABELS, PROVIDER_DEFAULTS } from '../../../utils/providerCapabilities'
 import { useAIStatus } from '../../../hooks/useAIStatus'
 import { useAIFeaturesHealth } from '../../../hooks/useAIFeaturesHealth'
+import { parseServerTimestamp } from '../../../utils/format'
 
 const HEALTH_PILL = {
     ok:           { Icon: CheckCircle2,  cls: 'text-emerald-600 dark:text-emerald-400 bg-emerald-100/70 dark:bg-emerald-900/40 ring-emerald-200/70 dark:ring-emerald-800/60', label: 'OK' },
@@ -19,8 +20,10 @@ const FEATURE_LABEL = {
 
 function formatRelativeTime(iso) {
     if (!iso) return null
-    const then = typeof iso === 'string' ? Date.parse(iso.endsWith('Z') ? iso : iso + 'Z') : Number(iso)
-    if (!Number.isFinite(then)) return null
+    // parseServerTimestamp reads the server's naive 'YYYY-MM-DD HH:MM:SS' as UTC.
+    const parsed = parseServerTimestamp(iso)
+    if (!parsed) return null
+    const then = parsed.getTime()
     const diffSec = Math.round((Date.now() - then) / 1000)
     if (diffSec < 0) return 'just now'
     if (diffSec < 45) return 'just now'

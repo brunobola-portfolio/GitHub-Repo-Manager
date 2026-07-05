@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { CloudOff, RefreshCw } from 'lucide-react'
+import { parseServerTimestamp } from '../../utils/format'
 
 function formatRelative(fetchedAt) {
     if (!fetchedAt) return null
-    // Server emits "YYYY-MM-DD HH:MM:SS" UTC — append 'Z' so JS parses it as UTC.
-    const dt = new Date(fetchedAt.replace(' ', 'T') + 'Z')
-    if (Number.isNaN(dt.getTime())) return null
+    // parseServerTimestamp reads the server's naive "YYYY-MM-DD HH:MM:SS" as UTC.
+    const dt = parseServerTimestamp(fetchedAt)
+    if (!dt) return null
     const ageSec = Math.max(0, Math.round((Date.now() - dt.getTime()) / 1000))
     if (ageSec < 60) return 'just now'
     if (ageSec < 3600) return `${Math.floor(ageSec / 60)} min ago`
