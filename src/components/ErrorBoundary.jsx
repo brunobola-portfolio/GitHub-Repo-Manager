@@ -3,6 +3,36 @@ import { AlertTriangle, RefreshCw, RotateCcw } from 'lucide-react'
 import { getCsrfToken } from '../utils/api'
 import { Button } from './ui/Button'
 
+// A failed dynamic import is almost always a stale session after a redeploy:
+// the loaded index.html references old content-hashed chunk URLs that no
+// longer exist on the server. A full reload fetches the fresh HTML and fixes
+// it — so try that ONCE automatically before showing the error card (the
+// sessionStorage guard prevents a reload loop when the server is truly down).
+const CHUNK_LOAD_ERROR_RE =
+  /failed to fetch dynamically imported module|error loading dynamically imported module|loading chunk .+ failed|importing a module script failed/i
+const CHUNK_RELOAD_FLAG = 'chunk-reload-attempted'
+
+function tryChunkReloadRecovery(error) {
+  if (!CHUNK_LOAD_ERROR_RE.test(error?.message ?? '')) return false
+  try {
+    if (sessionStorage.getItem(CHUNK_RELOAD_FLAG)) return false
+    sessionStorage.setItem(CHUNK_RELOAD_FLAG, String(Date.now()))
+  } catch {
+    return false // storage unavailable — fall through to the error card
+  }
+  window.location.reload()
+  return true
+}
+
+// If the app has been alive for a while after a recovery reload, the redeploy
+// was picked up successfully — re-arm the guard so a FUTURE redeploy can also
+// self-heal (without this, only the first redeploy per tab would recover).
+if (typeof window !== 'undefined') {
+  setTimeout(() => {
+    try { sessionStorage.removeItem(CHUNK_RELOAD_FLAG) } catch { /* ignore */ }
+  }, 30_000)
+}
+
 class ErrorBoundary extends Component {
   state = { hasError: false, error: null, errorInfo: null }
 
@@ -11,6 +41,7 @@ class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, errorInfo) {
+    if (tryChunkReloadRecovery(error)) return
     this.setState({ errorInfo })
     console.error('ErrorBoundary caught:', error, errorInfo)
 

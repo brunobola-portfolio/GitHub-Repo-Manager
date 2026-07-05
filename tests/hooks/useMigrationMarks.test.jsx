@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { useMigrationMarksFor, useMarksForPlan } from '../../src/hooks/useMigrationMarks.js'
+import { useMigrationMarksFor, useMarksForPlan, __resetMarksAuthGateForTests } from '../../src/hooks/useMigrationMarks.js'
 
 beforeEach(() => {
   global.fetch = vi.fn()
+  __resetMarksAuthGateForTests()
 })
 
 describe('useMigrationMarksFor', () => {
@@ -60,5 +61,25 @@ describe('useMarksForPlan', () => {
     const { result } = renderHook(() => useMarksForPlan(null))
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(global.fetch).not.toHaveBeenCalled()
+  })
+})
+
+describe('401 session gate', () => {
+  it('stops fetching marks for the rest of the session after a 401', async () => {
+    global.fetch.mockResolvedValue({ ok: false, status: 401 })
+    const first = renderHook(() => useMigrationMarksFor('a/one'))
+    await waitFor(() => expect(first.result.current.loading).toBe(false))
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+
+    // Every subsequent card would previously fire its own request + 401 —
+    // now the module-level gate short-circuits them.
+    const second = renderHook(() => useMigrationMarksFor('a/two'))
+    await waitFor(() => expect(second.result.current.loading).toBe(false))
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+    expect(second.result.current.marks).toEqual([])
+
+    const plan = renderHook(() => useMarksForPlan(7))
+    await waitFor(() => expect(plan.result.current.loading).toBe(false))
+    expect(global.fetch).toHaveBeenCalledTimes(1)
   })
 })
