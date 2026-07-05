@@ -58,7 +58,9 @@ global.ResizeObserver = class ResizeObserver {
 // Mock scrollIntoView
 Element.prototype.scrollIntoView = vi.fn()
 
-// Mock localStorage
+// Mock localStorage — includes the spec's enumeration surface (length / key(i))
+// so code that sweeps stored keys (e.g. useDraftPersistence's TTL sweep)
+// behaves like it does in a real browser.
 const localStorageMock = (() => {
   let store = {}
   return {
@@ -71,7 +73,11 @@ const localStorageMock = (() => {
     }),
     clear: vi.fn(() => {
       store = {}
-    })
+    }),
+    key: vi.fn(i => Object.keys(store)[i] ?? null),
+    get length() {
+      return Object.keys(store).length
+    },
   }
 })()
 
