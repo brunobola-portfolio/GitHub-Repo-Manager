@@ -25,13 +25,18 @@ const VIEW_TITLES = {
  *    view (deep-linkable repo-detail via parseRepoHash, the static HASH_ROUTES
  *    table, or the dashboard when the hash is cleared).
  *  - state -> hash: when activeView changes from in-app navigation, mirror it
- *    into the URL via history.replaceState (so the address bar, browser
- *    back/forward and share-the-URL all work). The first run is skipped so a
+ *    into the URL so the address bar, browser back/forward and share-the-URL
+ *    all work. DRILL-IN transitions (entering repo-detail, entering pr-review)
+ *    use pushState to create a real history entry that Back can return to;
+ *    LATERAL top-level switches and repo-detail tab changes use replaceState so
+ *    Back doesn't walk every sidebar/tab click. The first run is skipped so a
  *    deep-link hash isn't stripped before the hash->state effect resolves its
  *    startTransition.
  *
- * Views outside the hash map (pr-review, admin-dlq, ...) are left untouched;
- * repo-detail carries its own owner/name/tab hash.
+ * admin-dlq and other views outside the hash map are left untouched; repo-detail
+ * carries its own owner/name/tab hash. pr-review is a state overlay that keeps
+ * the underlying repo hash but pushes a duplicate history entry so Back exits
+ * it (restored via the popstate listener, since the fragment is unchanged).
  */
 export function useAppRouter({
   activeView,
@@ -89,8 +94,19 @@ export function useAppRouter({
       }
     }
     sync() // initial mount
+    // Listen to BOTH events. hashchange fires when Back/Forward changes the URL
+    // fragment (the common case — drill-in entries carry distinct hashes).
+    // popstate ALSO fires for history traversals that DON'T change the fragment
+    // — notably backing out of pr-review, whose pushed entry duplicates the repo
+    // hash. Without popstate that Back would be a dead key. Both call the same
+    // idempotent sync(); a fragment-changing traversal fires both, so sync just
+    // runs twice with the same result (harmless).
     window.addEventListener('hashchange', sync)
-    return () => window.removeEventListener('hashchange', sync)
+    window.addEventListener('popstate', sync)
+    return () => {
+      window.removeEventListener('hashchange', sync)
+      window.removeEventListener('popstate', sync)
+    }
     // HASH_ROUTES is memoised; the passed setters are stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setActiveView])
@@ -113,11 +129,25 @@ export function useAppRouter({
   // the hash->state effect (declared above) has resolved its startTransition.
   // Subsequent activeView changes are user-driven navigation and SHOULD sync.
   const didInitHashSyncRef = useRef(false)
+  // Remember the previous navigation so we can tell a DRILL-IN (which should
+  // create a browser-history entry) from a LATERAL switch or a tab change
+  // (which should not). Shape: { view, repoKey }.
+  const prevNavRef = useRef(null)
   useEffect(() => {
+    // owner/name identity of the current repo-detail target (null elsewhere).
+    // Distinguishes "opened a different repo" from "same repo, changed tab", and
+    // stays stable across stub->rich upgrades / mutation patches (same o/n).
+    const repoKey = selectedRepoDetail
+      ? `${selectedRepoDetail.owner?.login || selectedRepoDetail.full_name?.split('/')[0]}/${selectedRepoDetail.name}`
+      : null
+    const prev = prevNavRef.current
+
     if (!didInitHashSyncRef.current) {
       didInitHashSyncRef.current = true
+      prevNavRef.current = { view: activeView, repoKey }
       return
     }
+
     let desired
     if (activeView === 'repo-detail' && selectedRepoDetail) {
       // repo-detail carries its own owner/name/tab in the hash.
@@ -126,15 +156,56 @@ export function useAppRouter({
     } else {
       desired = VIEW_TO_HASH[activeView]
     }
-    // Only sync when the view is in the deep-link map. Views still outside the
-    // hash space (pr-review, admin-dlq, etc.) leave the hash alone.
+
+    // --- push-vs-replace decision -------------------------------------------
+    // DRILL-IN (pushState — Back should return to where we came from, not exit
+    // the SPA): entering repo-detail from any other view, switching to a
+    // DIFFERENT repo while already in repo-detail (each repo is its own back
+    // target), and entering pr-review.
+    // Everything else REPLACES: lateral top-level switches (dashboard/repos/
+    // teams/work-board/…) and tab changes WITHIN one repo-detail — Back must not
+    // walk every sidebar click or every tab click.
+    const enteringRepoDetail =
+      activeView === 'repo-detail' && (prev?.view !== 'repo-detail' || prev?.repoKey !== repoKey)
+    const enteringPrReview =
+      activeView === 'pr-review' && prev?.view !== 'pr-review'
+
+    prevNavRef.current = { view: activeView, repoKey }
+
+    // pr-review has no hash of its own (state overlay on top of a repo). Push a
+    // DUPLICATE history entry carrying the current (repo) URL so browser Back
+    // has a stopping point ON TOP OF repo-detail and returns to the PR's repo
+    // instead of skipping past it. hashchange won't fire when this entry is
+    // popped (identical fragment) — which is exactly why the hash->state effect
+    // also listens to popstate: popping re-runs sync() against the repo hash,
+    // restoring repo-detail and clearing the reviewing PR. The address bar keeps
+    // the clean repo URL throughout, and pr-review stays out of the hash space.
+    if (activeView === 'pr-review') {
+      if (enteringPrReview) {
+        const here = window.location.pathname + window.location.search + window.location.hash
+        window.history.pushState(null, '', here)
+      }
+      return
+    }
+
+    // Views still outside the hash map (admin-dlq, …) leave the hash alone.
     if (desired === undefined) return
+    // Already at the target URL: never emit a second entry for the same place.
+    // Also the cold-deep-link guard — on mount the hash already equals `desired`,
+    // so a drill-in view restored FROM the URL doesn't push a redundant entry.
     if (window.location.hash === desired) return
-    // Use replaceState so each nav click doesn't pollute the history stack
-    // with an entry per click; the back button still works because the
-    // hash-driven sync above watches popstate too via hashchange.
+
     const newUrl = window.location.pathname + window.location.search + desired
-    window.history.replaceState(null, '', newUrl || window.location.pathname)
+    const target = newUrl || window.location.pathname
+    if (enteringRepoDetail) {
+      // Drill-in: one new entry. The view we came from lives in the prior entry
+      // with its own hash, so Back + the hashchange listener restore it.
+      window.history.pushState(null, '', target)
+    } else {
+      // Lateral switch or same-repo tab change: mirror into the URL in place so
+      // the history stack isn't polluted with an entry per click.
+      window.history.replaceState(null, '', target)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeView, selectedRepoDetail, repoDetailActiveTab])
 

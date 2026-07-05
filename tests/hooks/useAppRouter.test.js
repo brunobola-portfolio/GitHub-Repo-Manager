@@ -77,6 +77,110 @@ describe('useAppRouter — hash -> state', () => {
         })
         expect(p.setActiveView).toHaveBeenCalledWith('teams')
     })
+
+    it('restores the previous top-level view on a Back (popstate) that changed the hash', () => {
+        // Browser Back that changes the fragment fires popstate (and hashchange).
+        // The router now listens to popstate too, so this alone restores state.
+        const p = mkProps()
+        renderHook(() => useAppRouter(p))
+        p.setActiveView.mockClear()
+        act(() => {
+            window.location.hash = '#/teams'
+            window.dispatchEvent(new Event('popstate'))
+        })
+        expect(p.setActiveView).toHaveBeenCalledWith('teams')
+    })
+
+    it('restores repo-detail on a Back out of pr-review (same-hash popstate)', () => {
+        // pr-review keeps the repo hash, so its Back fires popstate WITHOUT a
+        // hashchange. Popping re-runs sync() against the repo hash, which routes
+        // back to repo-detail and clears the reviewing PR.
+        window.location.hash = '#/repo/acme/demo'
+        const p = mkProps()
+        renderHook(() => useAppRouter(p))
+        p.setActiveView.mockClear()
+        p.setReviewingPR.mockClear()
+        act(() => { window.dispatchEvent(new Event('popstate')) })
+        expect(p.setActiveView).toHaveBeenCalledWith('repo-detail')
+        expect(p.setReviewingPR).toHaveBeenCalledWith(null)
+    })
+})
+
+describe('useAppRouter — history push vs replace', () => {
+    const repo = { name: 'demo', full_name: 'acme/demo', owner: { login: 'acme' } }
+
+    it('pushes exactly one history entry when drilling into repo-detail', () => {
+        const p = mkProps({ activeView: 'repos' })
+        const { rerender } = renderHook((props) => useAppRouter(props), { initialProps: p })
+        const push = vi.spyOn(window.history, 'pushState')
+        const replace = vi.spyOn(window.history, 'replaceState')
+        act(() => { rerender({ ...p, activeView: 'repo-detail', selectedRepoDetail: repo }) })
+        expect(push).toHaveBeenCalledTimes(1)
+        expect(push).toHaveBeenCalledWith(null, '', expect.stringContaining('#/repo/acme/demo'))
+        expect(replace).not.toHaveBeenCalled()
+        push.mockRestore(); replace.mockRestore()
+    })
+
+    it('replaces (no new entry) on a lateral top-level switch', () => {
+        const p = mkProps({ activeView: 'dashboard' })
+        const { rerender } = renderHook((props) => useAppRouter(props), { initialProps: p })
+        const push = vi.spyOn(window.history, 'pushState')
+        const replace = vi.spyOn(window.history, 'replaceState')
+        act(() => { rerender({ ...p, activeView: 'teams' }) })
+        expect(push).not.toHaveBeenCalled()
+        expect(replace).toHaveBeenCalledTimes(1)
+        expect(window.location.hash).toBe('#/teams')
+        push.mockRestore(); replace.mockRestore()
+    })
+
+    it('replaces (no push) when only the repo-detail tab changes', () => {
+        const p = mkProps({ activeView: 'repos' })
+        const { rerender } = renderHook((props) => useAppRouter(props), { initialProps: p })
+        // Drill in first (this pushes) so the tab change is a true in-view change.
+        act(() => { rerender({ ...p, activeView: 'repo-detail', selectedRepoDetail: repo, repoDetailActiveTab: 'overview' }) })
+        const push = vi.spyOn(window.history, 'pushState')
+        const replace = vi.spyOn(window.history, 'replaceState')
+        act(() => { rerender({ ...p, activeView: 'repo-detail', selectedRepoDetail: repo, repoDetailActiveTab: 'pulls' }) })
+        expect(push).not.toHaveBeenCalled()
+        expect(replace).toHaveBeenCalledTimes(1)
+        expect(window.location.hash).toBe('#/repo/acme/demo/pulls')
+        push.mockRestore(); replace.mockRestore()
+    })
+
+    it('pushes one entry when entering pr-review, keeping the repo hash', () => {
+        window.location.hash = '#/repo/acme/demo'
+        const p = mkProps({ activeView: 'repo-detail', selectedRepoDetail: repo })
+        const { rerender } = renderHook((props) => useAppRouter(props), { initialProps: p })
+        const push = vi.spyOn(window.history, 'pushState')
+        const replace = vi.spyOn(window.history, 'replaceState')
+        act(() => { rerender({ ...p, activeView: 'pr-review', selectedRepoDetail: repo }) })
+        expect(push).toHaveBeenCalledTimes(1)
+        expect(replace).not.toHaveBeenCalled()
+        expect(window.location.hash).toBe('#/repo/acme/demo') // overlay keeps the repo URL
+        push.mockRestore(); replace.mockRestore()
+    })
+
+    it('does not push a second entry while staying in pr-review', () => {
+        const p = mkProps({ activeView: 'pr-review', selectedRepoDetail: repo })
+        const { rerender } = renderHook((props) => useAppRouter(props), { initialProps: p })
+        const push = vi.spyOn(window.history, 'pushState')
+        // A re-render that stays in pr-review (e.g. an unrelated prop change) must
+        // not keep stacking history entries.
+        act(() => { rerender({ ...p, activeView: 'pr-review', selectedRepoDetail: { ...repo } }) })
+        expect(push).not.toHaveBeenCalled()
+        push.mockRestore()
+    })
+
+    it('does not touch history on initial mount and preserves a deep-link hash', () => {
+        window.location.hash = '#/repo/acme/demo'
+        const push = vi.spyOn(window.history, 'pushState')
+        const replace = vi.spyOn(window.history, 'replaceState')
+        renderHook(() => useAppRouter(mkProps()))
+        expect(push).not.toHaveBeenCalled()
+        expect(replace).not.toHaveBeenCalled()
+        expect(window.location.hash).toBe('#/repo/acme/demo')
+        push.mockRestore(); replace.mockRestore()
+    })
 })
 
 describe('useAppRouter — state -> hash', () => {

@@ -59,7 +59,7 @@
 | D3 | A11y: name destructive icon buttons; migration progressbar semantics + completion announcement | done |
 | D4 | dead OrganizationSelector removed; dead DB tables deferred (needs migration + registry sync) | partial |
 | D5 | Unsaved-changes guard (RepoDetail Settings / SettingsModal) | done |
-| D6 | Browser-Back history model (pushState for drill-ins) | pending |
+| D6 | Browser-Back history model (pushState for drill-ins) | done |
 | D7 | RepoSelector+BranchSelector+SavedCredentialsPicker migrated (renderOption additive); PromptPicker+ModelCombobox left with rationale | done |
 | D8 | Pause→Resume control in ProgressStep | done |
 
@@ -84,3 +84,4 @@
 
 ## Session outcome (2026-07-05)
 All 9 clusters landed direct-to-main with per-cluster review + targeted tests + lint. Deliberately deferred: D4 dead-table drops (needs migration + erasure-registry sync), D6 Back-button history model (product decision), Badge/pill + tooltip + relative-time-dialect consolidations, axe-gate widening, Teams/AIAssistant sweep, Playwright visual pass, deploy.yml honesty (owner-only, workflow scope).
+- 2026-07-05: Wave E4 landed (Back-button history: pushState on drill-ins repo-detail/pr-review + different-repo, replaceState on laterals/tab changes, popstate listener for same-fragment pops; pr-review stays out of hash space). 30 tests green.
