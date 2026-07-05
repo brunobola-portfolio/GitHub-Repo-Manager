@@ -15,6 +15,31 @@
  *   - confirmString does not match exactly.
  *   - User has an active subscription (cancel first).
  *   - User is already tombstoned (returns 404).
+ *
+ * ---------------------------------------------------------------------------
+ * ERASURE_REGISTRY — the single source of truth for every user-scoped table.
+ *
+ * Historically this route wiped a hand-enumerated list of ~15 tables, so every
+ * NEW user-scoped table (encrypted Azure PATs, AI chat transcripts, gh_outbox
+ * request bodies, work-board state, quota/spend counters, …) silently survived
+ * "Erase my data". That is a GDPR Article-17 defect.
+ *
+ * The registry classifies EVERY table that carries a user-keyed column into one
+ * of four fates. The companion COMPLETENESS TEST introspects the live schema
+ * (sqlite_master + PRAGMA table_info) and fails if any table with a user-keyed
+ * column is missing here — so a future table can never again be silently missed.
+ *
+ * action:
+ *   'erase'     — rows for this user are DELETEd. `key.column` + `key.source`
+ *                 (userId | login | email) say how to match the data subject.
+ *   'cascade'   — no direct DELETE; rows disappear via ON DELETE CASCADE when
+ *                 the parent (`via`) is erased. Documented so the test counts it.
+ *   'tombstone' — the users row itself: PII columns nulled, deleted_at set, the
+ *                 row is KEPT so audit foreign references stay valid.
+ *   'survive'   — rows are intentionally retained; `reason` gives the legal /
+ *                 integrity justification (audit trail, shared entity, system
+ *                 config). These are never personal data of the erasing user
+ *                 once the users row is tombstoned.
  */
 
 import { Router } from 'express';
@@ -26,6 +51,149 @@ import logger from '../lib/logger.js';
 const router = Router();
 
 const CONFIRM_STRING = 'ERASE MY DATA';
+
+/**
+ * Column names that identify the user a row belongs to. Any table that carries
+ * one of these MUST appear in ERASURE_REGISTRY (enforced by the completeness
+ * test). These are ownership/actor columns — the ones that tie a row to a data
+ * subject — not incidental references (e.g. workflow_runs.actor_login, which is
+ * covered by that table's user_id).
+ */
+export const USER_KEY_COLUMNS = new Set([
+    'user_id',
+    'owner_id',
+    'author_login',
+    'reviewer_login',
+    'assigned_by',
+    'added_by',
+    'installed_by',
+    'to_address',
+]);
+
+export const ERASURE_REGISTRY = [
+    // --- The user record itself -------------------------------------------
+    { table: 'users', action: 'tombstone', key: { column: 'id', source: 'userId' },
+      reason: 'users.id is the GitHub ID and is referenced by audit rows; PII columns are nulled and deleted_at is set instead of deleting the row.' },
+
+    // --- Erased: personal data keyed by user_id ---------------------------
+    { table: 'user_ai_config', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'user_ai_prompts', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'ai_pr_reviews', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'ai_review_prompts', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'ai_pr_commands', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'ai_pr_chat_messages', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'user_azure_credentials', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'migration_jobs', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    // migration_plans erase cascades to migration_tasks + migration_marks.
+    { table: 'migration_plans', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'community_health_cache', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'repo_metadata', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'repo_embeddings', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'workflow_runs', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'workflows_meta', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'usage_metrics', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'api_keys', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'user_subscriptions', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'team_members', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'dashboard_inbox_state', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    // repo_assignments.assigned_by has no ON DELETE action; tombstoning the user
+    // would otherwise leave dangling authorship rows, so wipe the ones this user created.
+    { table: 'repo_assignments', action: 'erase', key: { column: 'assigned_by', source: 'userId' } },
+    { table: 'license_keys', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'issued_licenses', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'work_board_tracked_repos', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'work_board_prefs', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'work_board_ai_dismissed', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'work_board_undo_log', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'work_board_ai_spend', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'ai_spend', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'work_board_cache', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'work_board_snooze', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'work_board_presets', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'work_board_kpi_snapshots', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'gh_cache', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    { table: 'gh_outbox', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+
+    // --- Erased: personal data keyed by the GitHub login ------------------
+    { table: 'pr_events', action: 'erase', key: { column: 'author_login', source: 'login' } },
+    { table: 'issue_events', action: 'erase', key: { column: 'author_login', source: 'login' } },
+    { table: 'review_assignments', action: 'erase', key: { column: 'reviewer_login', source: 'login' } },
+
+    // --- Erased: personal data keyed by the user's email address ----------
+    { table: 'email_dead_letter', action: 'erase', key: { column: 'to_address', source: 'email' } },
+
+    // --- Cascade: removed transitively via the parent's erase -------------
+    { table: 'migration_tasks', action: 'cascade', via: 'migration_plans', key: { column: 'plan_id' },
+      reason: 'Deleted via ON DELETE CASCADE from migration_plans.' },
+    { table: 'migration_marks', action: 'cascade', via: 'migration_plans', key: { column: 'plan_id' },
+      reason: 'Deleted via ON DELETE CASCADE from migration_plans (and migration_tasks).' },
+
+    // --- Survive: intentionally retained ---------------------------------
+    { table: 'audit_log', action: 'survive', key: { column: 'user_id' },
+      reason: 'Security audit trail (SOC 2 CC6.5). Retained for compliance; user_id now references the tombstoned user, so it is no longer personal data.' },
+    { table: 'audit_log_v2', action: 'survive', key: { column: 'user_id' },
+      reason: 'Tamper-evident append-only hash chain. DELETE is rejected by triggers and would break the chain; retained for compliance.' },
+    { table: 'teams', action: 'survive', key: { column: 'owner_id' },
+      reason: 'Shared collaborative entity that may hold other members and repo assignments. Not deleted; owner_id references the tombstoned user.' },
+    { table: 'azure_host_allowlist', action: 'survive', key: { column: 'added_by' },
+      reason: 'Instance-wide admin configuration (allowed Azure hosts), not the erasing user\'s personal data. added_by is provenance only (ON DELETE SET NULL).' },
+    { table: 'installed_license', action: 'survive', key: { column: 'installed_by' },
+      reason: 'Instance-wide license singleton, not per-user personal data. installed_by is provenance only (ON DELETE SET NULL).' },
+];
+
+/**
+ * Introspect a live SQLite schema and return every table that carries a
+ * user-keyed column yet is NOT classified in ERASURE_REGISTRY. An empty array
+ * means erasure coverage is structurally complete.
+ * @param {object} liveDb - a better-sqlite3-compatible handle
+ * @returns {Array<{ table: string, column: string }>}
+ */
+export function scanSchemaForUnclassifiedUserTables(liveDb) {
+    const classified = new Set(ERASURE_REGISTRY.map((e) => e.table));
+    const tables = liveDb
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+        .all()
+        .map((r) => r.name);
+
+    const unclassified = [];
+    for (const table of tables) {
+        // Table names come from sqlite_master (trusted); safe to interpolate.
+        const cols = liveDb.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
+        const hit = cols.find((c) => USER_KEY_COLUMNS.has(c));
+        if (hit && !classified.has(table)) unclassified.push({ table, column: hit });
+    }
+    return unclassified;
+}
+
+/**
+ * Verify the registry itself against a live schema: every classified table must
+ * exist and, when it declares a key column, that column must exist. Catches the
+ * opposite drift (a registry entry for a renamed/dropped table/column).
+ * @param {object} liveDb
+ * @returns {string[]} human-readable problems; empty means consistent
+ */
+export function verifyRegistryConsistency(liveDb) {
+    const problems = [];
+    const schema = new Map();
+    for (const { name } of liveDb.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all()) {
+        schema.set(name, new Set(liveDb.prepare(`PRAGMA table_info(${name})`).all().map((c) => c.name)));
+    }
+    for (const entry of ERASURE_REGISTRY) {
+        if (!schema.has(entry.table)) {
+            problems.push(`registry table not found in schema: ${entry.table}`);
+            continue;
+        }
+        const col = entry.key?.column;
+        if (col && !schema.get(entry.table).has(col)) {
+            problems.push(`registry key column missing: ${entry.table}.${col}`);
+        }
+    }
+    return problems;
+}
+
+// Erase entries, in a FK-safe order (parents whose CASCADE we rely on are still
+// simple row deletes here; we never delete the users row, so no RESTRICT bites).
+const ERASE_ENTRIES = ERASURE_REGISTRY.filter((e) => e.action === 'erase');
 
 /**
  * GET /api/v1/user/data/export
@@ -45,7 +213,13 @@ router.get('/export', requireAuth, (req, res) => {
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         const login = user.username;
-        const all = (sql, ...params) => db.prepare(sql).all(...params);
+
+        // Only query tables that exist in this deployment's schema so a partial
+        // schema (or a not-yet-migrated table) never 500s the whole export.
+        const existing = new Set(
+            db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r) => r.name),
+        );
+        const all = (table, sql, ...params) => (existing.has(table) ? db.prepare(sql).all(...params) : []);
 
         // Cap each table at MAX_EXPORT_ROWS to bound the in-memory JSON build
         // and the response size. Heavy-volume tables (webhook events,
@@ -54,7 +228,8 @@ router.get('/export', requireAuth, (req, res) => {
         // a `truncated` map so the caller knows which tables were capped.
         const MAX_EXPORT_ROWS = 50_000;
         const truncated = {};
-        const capped = (key, sql, ...params) => {
+        const capped = (table, key, sql, ...params) => {
+            if (!existing.has(table)) return [];
             const rows = db.prepare(`${sql} LIMIT ${MAX_EXPORT_ROWS + 1}`).all(...params);
             if (rows.length > MAX_EXPORT_ROWS) {
                 truncated[key] = { limit: MAX_EXPORT_ROWS, note: 'export truncated; contact support for a full dump' };
@@ -65,27 +240,65 @@ router.get('/export', requireAuth, (req, res) => {
 
         const payload = {
             exportedAt: new Date().toISOString(),
-            schemaVersion: 1,
+            schemaVersion: 2,
             user,
-            aiConfig: all('SELECT * FROM user_ai_config WHERE user_id = ?', userId),
-            subscriptions: all('SELECT * FROM user_subscriptions WHERE user_id = ?', userId),
+            aiConfig: all(
+                'user_ai_config',
+                // Explicit columns: NEVER export the encrypted credential blobs
+                // (completion_credentials_enc / embedding_credentials_enc).
+                `SELECT user_id, completion_provider, completion_model, embedding_provider,
+                        embedding_model, feature_overrides_json, updated_at, warning_sent_at
+                 FROM user_ai_config WHERE user_id = ?`,
+                userId,
+            ),
+            subscriptions: all('user_subscriptions', 'SELECT * FROM user_subscriptions WHERE user_id = ?', userId),
             apiKeys: all(
+                'api_keys',
                 'SELECT id, name, scopes, created_at, last_used_at, revoked_at FROM api_keys WHERE user_id = ?',
                 userId,
             ), // note: NEVER export key material — only the metadata
-            migrationJobs: capped('migrationJobs', 'SELECT * FROM migration_jobs WHERE user_id = ?', userId),
-            migrationPlans: capped('migrationPlans', 'SELECT * FROM migration_plans WHERE user_id = ?', userId),
-            prEvents: login ? capped('prEvents', 'SELECT * FROM pr_events WHERE author_login = ?', login) : [],
-            issueEvents: login ? capped('issueEvents', 'SELECT * FROM issue_events WHERE author_login = ?', login) : [],
+            migrationJobs: capped('migration_jobs', 'migrationJobs', 'SELECT * FROM migration_jobs WHERE user_id = ?', userId),
+            migrationPlans: capped('migration_plans', 'migrationPlans', 'SELECT * FROM migration_plans WHERE user_id = ?', userId),
+            prEvents: login ? capped('pr_events', 'prEvents', 'SELECT * FROM pr_events WHERE author_login = ?', login) : [],
+            issueEvents: login ? capped('issue_events', 'issueEvents', 'SELECT * FROM issue_events WHERE author_login = ?', login) : [],
             reviewAssignments: login
-                ? capped('reviewAssignments', 'SELECT * FROM review_assignments WHERE reviewer_login = ?', login)
+                ? capped('review_assignments', 'reviewAssignments', 'SELECT * FROM review_assignments WHERE reviewer_login = ?', login)
                 : [],
-            communityHealthCache: all('SELECT * FROM community_health_cache WHERE user_id = ?', userId),
-            repoMetadata: all('SELECT * FROM repo_metadata WHERE user_id = ?', userId),
-            workflowRuns: capped('workflowRuns', 'SELECT * FROM workflow_runs WHERE user_id = ?', userId),
-            workflowsMeta: all('SELECT * FROM workflows_meta WHERE user_id = ?', userId),
-            usageMetrics: capped('usageMetrics', 'SELECT * FROM usage_metrics WHERE user_id = ?', userId),
-            teamMemberships: all('SELECT * FROM team_members WHERE user_id = ?', userId),
+            communityHealthCache: all('community_health_cache', 'SELECT * FROM community_health_cache WHERE user_id = ?', userId),
+            repoMetadata: all('repo_metadata', 'SELECT * FROM repo_metadata WHERE user_id = ?', userId),
+            workflowRuns: capped('workflow_runs', 'workflowRuns', 'SELECT * FROM workflow_runs WHERE user_id = ?', userId),
+            workflowsMeta: all('workflows_meta', 'SELECT * FROM workflows_meta WHERE user_id = ?', userId),
+            usageMetrics: capped('usage_metrics', 'usageMetrics', 'SELECT * FROM usage_metrics WHERE user_id = ?', userId),
+            teamMemberships: all('team_members', 'SELECT * FROM team_members WHERE user_id = ?', userId),
+
+            // Extended portability set (schemaVersion 2). Secret material is
+            // NEVER exported: Azure PATs (pat_encrypted) are excluded — only the
+            // prefix/metadata — mirroring the api_keys rule above.
+            azureCredentials: all(
+                'user_azure_credentials',
+                'SELECT id, user_id, label, host, org, pat_prefix, scopes, created_at, last_used_at FROM user_azure_credentials WHERE user_id = ?',
+                userId,
+            ),
+            aiPrompts: all('user_ai_prompts', 'SELECT * FROM user_ai_prompts WHERE user_id = ?', userId),
+            aiReviewPrompts: all('ai_review_prompts', 'SELECT * FROM ai_review_prompts WHERE user_id = ?', userId),
+            aiPrReviews: capped(
+                'ai_pr_reviews', 'aiPrReviews',
+                'SELECT id, repo_owner, repo_name, pr_number, status, model_used, cost_usd, created_at, updated_at FROM ai_pr_reviews WHERE user_id = ?',
+                userId,
+            ),
+            aiPrCommands: capped(
+                'ai_pr_commands', 'aiPrCommands',
+                'SELECT id, repo_owner, repo_name, pr_number, command, model_used, cost_usd, created_at, updated_at FROM ai_pr_commands WHERE user_id = ?',
+                userId,
+            ),
+            aiPrChatMessages: capped(
+                'ai_pr_chat_messages', 'aiPrChatMessages',
+                'SELECT id, repo_owner, repo_name, pr_number, role, content, created_at FROM ai_pr_chat_messages WHERE user_id = ?',
+                userId,
+            ),
+            workBoardPrefs: all('work_board_prefs', 'SELECT * FROM work_board_prefs WHERE user_id = ?', userId),
+            workBoardTrackedRepos: capped('work_board_tracked_repos', 'workBoardTrackedRepos', 'SELECT * FROM work_board_tracked_repos WHERE user_id = ?', userId),
+            workBoardPresets: all('work_board_presets', 'SELECT * FROM work_board_presets WHERE user_id = ?', userId),
             truncated,
         };
 
@@ -124,7 +337,7 @@ router.delete('/', requireAuth, (req, res) => {
         }
 
         // Check the user actually exists and is not already tombstoned.
-        const user = db.prepare('SELECT id, username, deleted_at FROM users WHERE id = ?').get(userId);
+        const user = db.prepare('SELECT id, username, email, deleted_at FROM users WHERE id = ?').get(userId);
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
@@ -145,94 +358,38 @@ router.delete('/', requireAuth, (req, res) => {
         // --- Audit before wipe (append-only, so this survives the transaction) ---
         auditLog(req, 'user.erased', 'user', userId, { reason: 'self-service' });
 
-        // --- Transactional wipe ---
+        // Values used to match the data subject across the different key columns.
+        const values = { userId, login: user.username, email: user.email };
+
+        // Tables actually present in this deployment. In production initDB creates
+        // every registry table, so nothing is skipped; the guard is a safety net
+        // against schema drift / partial deployments so one missing table can't
+        // abort the whole transactional wipe. The completeness test asserts every
+        // registry table exists, so a skip here in prod would be a caught bug.
+        const existing = new Set(
+            db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r) => r.name),
+        );
+
+        // --- Transactional wipe (registry-driven, FK order preserved) ---
         const wipe = db.transaction(() => {
-            // 1. user_ai_config
-            const aiDel = db.prepare('DELETE FROM user_ai_config WHERE user_id = ?').run(userId);
+            const deleted = {};
+            const skipped = [];
 
-            // 2. migration_jobs (user is the author via user_id)
-            const migDel = db.prepare('DELETE FROM migration_jobs WHERE user_id = ?').run(userId);
+            for (const entry of ERASE_ENTRIES) {
+                if (!existing.has(entry.table)) { skipped.push(entry.table); continue; }
+                const value = values[entry.key.source];
+                if (value === null || value === undefined) { deleted[entry.table] = 0; continue; }
+                // entry.table / entry.key.column are static trusted constants
+                // (never user input); the matched value is always parameterized.
+                const info = db.prepare(
+                    `DELETE FROM ${entry.table} WHERE ${entry.key.column} = ?`
+                ).run(value);
+                deleted[entry.table] = info.changes;
+            }
 
-            // 3. migration_plans (includes migration_tasks via CASCADE)
-            const planDel = db.prepare('DELETE FROM migration_plans WHERE user_id = ?').run(userId);
-
-            // 4. Event tables keyed by author_login — look up the stored login first.
-            //    We match on the github username stored in users.username.
-            const login = user.username;
-
-            const prDel = db.prepare(
-                'DELETE FROM pr_events WHERE author_login = ?'
-            ).run(login);
-
-            const issueDel = db.prepare(
-                'DELETE FROM issue_events WHERE author_login = ?'
-            ).run(login);
-
-            // deployment_events has no author column — skip.
-
-            const reviewDel = db.prepare(
-                'DELETE FROM review_assignments WHERE reviewer_login = ?'
-            ).run(login);
-
-            // 5. community_health_cache
-            const healthDel = db.prepare(
-                'DELETE FROM community_health_cache WHERE user_id = ?'
-            ).run(userId);
-
-            // 6. repo_metadata
-            const metaDel = db.prepare(
-                'DELETE FROM repo_metadata WHERE user_id = ?'
-            ).run(userId);
-
-            // 7. repo_embeddings
-            const embDel = db.prepare(
-                'DELETE FROM repo_embeddings WHERE user_id = ?'
-            ).run(userId);
-
-            // 8. workflow_runs / workflows_meta
-            const wfRunDel = db.prepare(
-                'DELETE FROM workflow_runs WHERE user_id = ?'
-            ).run(userId);
-            const wfMetaDel = db.prepare(
-                'DELETE FROM workflows_meta WHERE user_id = ?'
-            ).run(userId);
-
-            // 9. usage_metrics
-            const usageDel = db.prepare(
-                'DELETE FROM usage_metrics WHERE user_id = ?'
-            ).run(userId);
-
-            // 10. api_keys
-            const keysDel = db.prepare(
-                'DELETE FROM api_keys WHERE user_id = ?'
-            ).run(userId);
-
-            // 11. user_subscriptions (only after active-check above)
-            const subDel = db.prepare(
-                'DELETE FROM user_subscriptions WHERE user_id = ?'
-            ).run(userId);
-
-            // 12. team_members (membership records — teams themselves are NOT deleted)
-            const memberDel = db.prepare(
-                'DELETE FROM team_members WHERE user_id = ?'
-            ).run(userId);
-
-            // 13. dashboard_inbox_state (per-user inbox archive/snooze — keyed by
-            //     user_id, no FK so it is NOT cascade-cleaned; must be deleted here
-            //     or personal data survives erasure).
-            const inboxDel = db.prepare(
-                'DELETE FROM dashboard_inbox_state WHERE user_id = ?'
-            ).run(userId);
-
-            // 14. repo_assignments authored by this user (assigned_by has no
-            //     ON DELETE action; tombstoning the user would leave dangling refs).
-            const assignDel = db.prepare(
-                'DELETE FROM repo_assignments WHERE assigned_by = ?'
-            ).run(userId);
-
-            // 15. Tombstone the users row (preserve for audit referential integrity).
-            //     users.id IS the GitHub ID — we null the PII fields but keep the row
-            //     so that audit_log_v2.user_id foreign references remain valid.
+            // Tombstone the users row (preserve for audit referential integrity).
+            // users.id IS the GitHub ID — we null the PII fields but keep the row
+            // so that audit_log_v2.user_id foreign references remain valid.
             db.prepare(`
                 UPDATE users
                 SET email      = NULL,
@@ -242,29 +399,14 @@ router.delete('/', requireAuth, (req, res) => {
                 WHERE id = ?
             `).run(userId);
 
-            return {
-                aiConfig: aiDel.changes > 0,
-                migrationJobs: migDel.changes,
-                migrationPlans: planDel.changes,
-                prEvents: prDel.changes,
-                issueEvents: issueDel.changes,
-                reviewAssignments: reviewDel.changes,
-                communityHealthCache: healthDel.changes,
-                repoMetadata: metaDel.changes,
-                repoEmbeddings: embDel.changes,
-                workflowRuns: wfRunDel.changes,
-                workflowsMeta: wfMetaDel.changes,
-                usageMetrics: usageDel.changes,
-                apiKeys: keysDel.changes,
-                subscriptions: subDel.changes,
-                teamMemberships: memberDel.changes,
-                dashboardInboxState: inboxDel.changes,
-                repoAssignments: assignDel.changes,
-            };
+            return { deleted, skipped };
         });
 
-        const deleted = wipe();
+        const { deleted, skipped } = wipe();
 
+        if (skipped.length > 0) {
+            logger.warn({ userId, skipped }, '[user-data] erasure skipped tables absent from schema');
+        }
         logger.info({ userId }, '[user-data] Self-service erasure complete');
 
         // Destroy the session — user is now tombstoned. Respond only AFTER the
@@ -274,7 +416,7 @@ router.delete('/', requireAuth, (req, res) => {
             if (destroyErr) logger.error({ err: destroyErr, userId }, '[user-data] failed to destroy session after erasure');
             res.status(200).json({
                 deleted,
-                tombstoned: ['user', 'audit_log'],
+                tombstoned: ['user', 'audit_log', 'audit_log_v2'],
             });
         });
         return;

@@ -39,6 +39,7 @@ import { startWorkBoardSweeper, stopWorkBoardSweeper, startKpiSnapshotJob, stopK
 import { startEmailRetryWorker, stopEmailRetryWorker } from './lib/email-retry-worker.js';
 import { startWebhookRetryWorker, stopWebhookRetryWorker } from './lib/webhook-retry-worker.js';
 import { startGhOutboxWorker, stopGhOutboxWorker } from './lib/gh-outbox.js';
+import { startMaintenanceJanitors, stopMaintenanceJanitors } from './lib/maintenance-janitors.js';
 import { createSessionTokenLookup } from './lib/session-token-lookup.js';
 
 // API v1 route aggregator
@@ -357,6 +358,12 @@ startWebhookRetryWorker();
 // for the SQLite/Redis caveats.
 startGhOutboxWorker({ tokenLookup: createSessionTokenLookup(db) });
 
+// Start data-lifecycle janitors: the 365-day AI-credential retention pass (the
+// auto-deletion users are emailed a promise about) + gh_cache / gh_outbox /
+// undo-log purges. Written + tested previously but never scheduled — only the
+// manual CLI ran them. See server/lib/maintenance-janitors.js.
+startMaintenanceJanitors();
+
 // Recover migration plans orphaned by a previous crash/restart: any plan left
 // 'running' in the DB has no live execution loop now, so reset its in-flight
 // tasks and auto-resume (when credentials are still available) or mark it
@@ -451,6 +458,12 @@ function gracefulShutdown(signal) {
             stopGhOutboxWorker();
         } catch (e) {
             logger.warn({ err: e }, 'Could not stop gh-outbox worker');
+        }
+
+        try {
+            stopMaintenanceJanitors();
+        } catch (e) {
+            logger.warn({ err: e }, 'Could not stop maintenance janitors');
         }
 
         try {

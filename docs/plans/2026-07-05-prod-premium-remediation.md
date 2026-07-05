@@ -9,8 +9,8 @@
 
 | # | Item | Files (primary) | Status |
 |---|---|---|---|
-| A1a | GDPR erasure sweep: enumerate user-scoped tables dynamically (sqlite_master minus explicit survive-allowlist) so new tables can't be missed | `server/routes/user-data.js` | pending |
-| A1b | Schedule the written-but-never-run purge jobs (BYOK retention pass, gh_cache, gh_outbox, undo-log) as boot janitors with graceful-shutdown stop | `server/index.js`, `server/lib/retention.js` | pending |
+| A1a | GDPR erasure sweep: enumerate user-scoped tables dynamically (sqlite_master minus explicit survive-allowlist) so new tables can't be missed | `server/routes/user-data.js` | done |
+| A1b | Schedule the written-but-never-run purge jobs (BYOK retention pass, gh_cache, gh_outbox, undo-log) as boot janitors with graceful-shutdown stop | `server/index.js`, `server/lib/retention.js` | done |
 | A2a | Yearly billing: thread billingPeriod into checkout end-to-end; hide yearly toggle unless yearly Stripe prices are configured | `Pricing/PricingPage.jsx`, server billing route, `server/config.js` | done |
 | A2b | Pricing claims honesty: SOC 2 / AES-256-at-rest / data-residency copy → only what code substantiates | `Pricing/PricingPage.jsx` | done |
 | A2c | Settings upsell: correct quota numbers from ground truth; extend parity gate to cover LicensePlanSection | `Settings/LicensePlanSection.jsx`, `tests/pricing-feature-parity.test.js` | done |
@@ -74,3 +74,4 @@
 - 2026-07-05: Wave A2 landed (yearly billing honest end-to-end + /billing/config probe; compliance claims rewritten; LicensePlanSection corrected + parity gate 5th surface; Roadmap page + ROADMAP.md write-back reconciled). 57 targeted tests green.
 - 2026-07-05: Wave B2 landed (bulk visibility split into two honest actions; PR review submit toast+refetch; ReadmeEnhance diff theme; DevToolkit chat light-mode). 52 targeted tests green.
 - 2026-07-05: Wave A3 landed (parseServerTimestamp UTC fix app-wide + 4 leaf de-patches; complete->completed writers + migration 27 + tolerant reads; durations + em-dash placeholders). 85 targeted tests green.
+- 2026-07-05: Wave A1 landed (registry-driven GDPR erasure covering ~37 user-scoped tables + schema-introspection completeness test; export gap + credential-leak fix; maintenance janitors scheduling retention/gh_cache/gh_outbox/undo-log). 58 targeted tests green.

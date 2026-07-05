@@ -353,7 +353,7 @@ describe('G3 — DELETE /api/v1/user/data', () => {
 
         expect(res.status).toBe(200);
         expect(res.body.tombstoned).toContain('user');
-        expect(res.body.deleted.migrationJobs).toBe(1);
+        expect(res.body.deleted.migration_jobs).toBe(1);
 
         // User row is tombstoned
         const user = _db.prepare(`SELECT username, email, deleted_at FROM users WHERE id = 42`).get();
@@ -381,8 +381,8 @@ describe('G3 — DELETE /api/v1/user/data', () => {
         expect(res.status).toBe(200);
         expect(_db.prepare(`SELECT * FROM dashboard_inbox_state WHERE user_id = 42`).get()).toBeUndefined();
         expect(_db.prepare(`SELECT * FROM repo_assignments WHERE assigned_by = 42`).get()).toBeUndefined();
-        expect(res.body.deleted.dashboardInboxState).toBe(1);
-        expect(res.body.deleted.repoAssignments).toBe(1);
+        expect(res.body.deleted.dashboard_inbox_state).toBe(1);
+        expect(res.body.deleted.repo_assignments).toBe(1);
     });
 
     it('retains the user.erased audit event after erasure', async () => {

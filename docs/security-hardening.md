@@ -144,28 +144,28 @@ curl -X DELETE https://your-instance/api/v1/user/data \
   -d '{"confirmString": "ERASE MY DATA"}'
 ```
 
-A `200` response includes a summary of what was deleted:
+A `200` response includes a summary of what was deleted, keyed by table name.
+Erasure is registry-driven: every user-scoped table in the schema is classified
+as erase / cascade / tombstone / survive in `server/routes/user-data.js`
+(`ERASURE_REGISTRY`), and a completeness test fails the build if a new
+user-keyed table is ever added without being classified. Excerpt:
 
 ```json
 {
   "deleted": {
-    "aiConfig": true,
-    "migrationJobs": 3,
-    "migrationPlans": 1,
-    "prEvents": 12,
-    "issueEvents": 4,
-    "reviewAssignments": 7,
-    "communityHealthCache": 5,
-    "repoMetadata": 8,
-    "repoEmbeddings": 8,
-    "workflowRuns": 22,
-    "workflowsMeta": 3,
-    "usageMetrics": 2,
-    "apiKeys": 1,
-    "subscriptions": 1,
-    "teamMemberships": 2
+    "user_ai_config": 1,
+    "user_azure_credentials": 1,
+    "ai_pr_chat_messages": 12,
+    "migration_jobs": 3,
+    "migration_plans": 1,
+    "gh_outbox": 4,
+    "gh_cache": 9,
+    "work_board_prefs": 1,
+    "api_keys": 1,
+    "user_subscriptions": 1,
+    "team_members": 2
   },
-  "tombstoned": ["user", "audit_log"]
+  "tombstoned": ["user", "audit_log", "audit_log_v2"]
 }
 ```
 
