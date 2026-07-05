@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, ArrowUpRight } from 'lucide-react'
+import { Badge } from '../ui/Badge'
 
 /**
  * CategorySection — collapsible section shell used across the dashboard.
@@ -93,9 +94,9 @@ export function CategorySection({
                                 </span>
                             )}
                             {badge && !count && (
-                                <span className="px-2.5 py-0.5 ds-text-meta font-semibold rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">
+                                <Badge tone="brand" size="sm" className="font-semibold">
                                     {badge}
-                                </span>
+                                </Badge>
                             )}
                         </span>
                     </span>

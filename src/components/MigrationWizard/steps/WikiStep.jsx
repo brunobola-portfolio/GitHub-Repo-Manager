@@ -4,6 +4,7 @@ import {
 } from 'lucide-react'
 import { SectionSpinner } from '../../ui/Spinner'
 import { EmptyState } from '../../ui/EmptyState'
+import { Badge } from '../../ui/Badge'
 import { Switch } from '../../ui/form'
 import { getCsrfToken } from '../../../utils/api'
 import { azureCredPayload } from '../../../utils/azureRequestPayload'
@@ -143,9 +144,9 @@ export default function WikiStep({ wiki, onUpdate, source }) {
                       <span className="font-medium text-slate-900 dark:text-slate-100">
                         {w.name}
                       </span>
-                      <span className="px-2 py-0.5 ds-text-micro font-medium rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                      <Badge tone="neutral" size="xs" className="uppercase tracking-wide">
                         {w.type === 'projectWiki' ? 'Project Wiki' : 'Code Wiki'}
-                      </span>
+                      </Badge>
                     </div>
 
                     {/* Large content warning */}

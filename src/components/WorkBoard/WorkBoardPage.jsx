@@ -27,6 +27,7 @@ import {
 import { useRelativeTime } from '../../hooks/useRelativeTime'
 import { useUrlParams } from '../../hooks/useUrlParams'
 import { PageShell } from '../ui/PageShell'
+import { Badge } from '../ui/Badge'
 import { PageHeader } from '../ui/PageHeader'
 import { PageMount } from '../ui/PageMount'
 import { HeroHalo } from '../ui/HeroHalo'
@@ -339,13 +340,9 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
                                 <Icon className="w-4 h-4" />
                                 {tab.label}
                                 {tab.badge && (
-                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                                        tab.badge === 'Enterprise'
-                                            ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
-                                            : 'bg-[color:var(--ds-surface-muted)] dark:bg-[color:var(--ds-surface-muted-dark)] text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
-                                    }`}>
+                                    <Badge tone={tab.badge === 'Enterprise' ? 'warning' : 'brand'} size="xs" className="font-bold">
                                         {tab.badge}
-                                    </span>
+                                    </Badge>
                                 )}
                                 {isActive && (
                                     <motion.div

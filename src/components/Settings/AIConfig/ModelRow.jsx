@@ -6,6 +6,7 @@ import {
     isNewModel,
 } from '../../../utils/providerModels'
 import { pricingTier, PRICING_TIER_CLS } from '../../../utils/providerPricing'
+import { Badge } from '../../ui/Badge'
 
 const ICON_BY_NAME = { Image, Wrench, Braces, Brain }
 
@@ -60,19 +61,19 @@ export function ModelRow({ option, optionId, selected, highlighted, onPick, data
                         </span>
                     )}
                     {option.context && (
-                        <span className="ds-text-micro font-medium px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 ring-1 ring-inset ring-slate-200/60 dark:ring-slate-700">
+                        <Badge tone="neutral" size="xs" ring>
                             {option.context}
-                        </span>
+                        </Badge>
                     )}
                     {option.recommended && (
-                        <span className="ds-text-micro font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-200 dark:ring-indigo-800">
+                        <Badge tone="brand" size="xs" ring className="uppercase tracking-wide font-semibold">
                             Recommended
-                        </span>
+                        </Badge>
                     )}
                     {isNew && (
-                        <span className="ds-text-micro font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:ring-amber-800">
+                        <Badge tone="warning" size="xs" ring className="uppercase tracking-wide font-semibold">
                             NEW
-                        </span>
+                        </Badge>
                     )}
                 </div>
 

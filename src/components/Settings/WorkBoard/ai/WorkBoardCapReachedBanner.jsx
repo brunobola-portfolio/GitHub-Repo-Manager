@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion'
 import { Wallet, ArrowRight, AlertTriangle } from 'lucide-react'
 import { BANNER_VARIANTS, BANNER_REDUCED_VARIANTS } from '../../../AI/bannerMotion'
+import { Badge } from '../../../ui/Badge'
 
 function formatCents(cents) {
     if (cents == null) return null
@@ -33,9 +34,9 @@ export function WorkBoardCapReachedBanner({ spentCents, capCents, className = ''
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="font-semibold text-slate-900 dark:text-slate-100">AI monthly cap reached</h4>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wide bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-200 ring-1 ring-inset ring-rose-200 dark:ring-rose-800">
-                            <AlertTriangle className="w-2.5 h-2.5" aria-hidden="true" /> Blocked
-                        </span>
+                        <Badge tone="rose" size="xs" ring icon={<AlertTriangle className="w-2.5 h-2.5" aria-hidden="true" />} className="uppercase tracking-wide font-semibold">
+                            Blocked
+                        </Badge>
                     </div>
                     <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
                         Work Board AI is paused for the rest of this month. Raise the cap below or wait for the next billing window.

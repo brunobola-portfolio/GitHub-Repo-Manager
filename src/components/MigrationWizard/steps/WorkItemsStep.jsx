@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { SectionSpinner } from '../../ui/Spinner'
 import { Input, Switch } from '../../ui/form'
+import { Badge } from '../../ui/Badge'
 import { getCsrfToken } from '../../../utils/api'
 import { azureCredPayload } from '../../../utils/azureRequestPayload'
 
@@ -200,9 +201,9 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
                       )}
                     </div>
                     <span className="font-medium text-slate-900 dark:text-slate-100">{type}</span>
-                    <span className="ml-auto px-2 py-0.5 text-xs font-medium rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400">
+                    <Badge tone="neutral" size="sm" className="ml-auto">
                       {count}
-                    </span>
+                    </Badge>
                   </button>
                 )
               })}

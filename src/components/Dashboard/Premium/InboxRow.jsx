@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Archive, Clock, ChevronRight } from 'lucide-react';
 import { formatRelativeTime } from '../../../utils/format';
+import { Badge } from '../../ui/Badge';
 
 const KIND_LABEL = { pr: 'PR', issue: 'Issue' };
 
@@ -34,9 +35,9 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
                         <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
                             {item.title}
                         </span>
-                        <span className="px-1.5 py-0.5 ds-text-micro uppercase tracking-wider rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                        <Badge tone="neutral" size="xs" className="uppercase tracking-wider">
                             {KIND_LABEL[item.kind] ?? item.kind}
-                        </span>
+                        </Badge>
                     </div>
                     <div className="mt-0.5 flex items-center gap-3 ds-text-meta text-slate-500 dark:text-slate-400">
                         <span className="ds-font-mono">{item.repoFullName}</span>

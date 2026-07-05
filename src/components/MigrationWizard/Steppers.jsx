@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { EASE } from '../ui/motion'
 import { Spinner } from '../ui/Spinner'
+import { Badge } from '../ui/Badge'
 import {
   Check, Radio, Link2, GitFork, Settings2, Sparkles,
   CalendarClock, Activity, Flag, Cloud, ChevronRight,
@@ -210,14 +211,10 @@ export function SidebarStepper({
             {selectedCount > 0 && (
               <>
                 <ChevronRight className="w-2.5 h-2.5 text-slate-400 dark:text-slate-600 shrink-0" />
-                <span className={`ds-text-micro font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap inline-flex items-center gap-1 ${
-                  totalWarnings > 0
-                    ? 'text-amber-500 dark:text-amber-400 bg-amber-500/10 dark:bg-amber-500/15'
-                    : 'text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/15'
-                }`}>
+                <Badge tone={totalWarnings > 0 ? 'warning' : 'success'} size="xs" className="gap-1 whitespace-nowrap font-bold">
                   {selectedCount} repos
                   {totalWarnings > 0 && <AlertTriangle className="w-2.5 h-2.5" />}
-                </span>
+                </Badge>
               </>
             )}
           </div>

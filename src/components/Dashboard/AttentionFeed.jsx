@@ -19,6 +19,7 @@ import { Spinner } from '../ui/Spinner'
 import { Skeleton } from '../ui/Skeleton'
 import { AIQuotaMeter } from '../ui/AIQuotaMeter'
 import { AIQuotaExhaustedCard } from '../ui/AIQuotaExhaustedCard'
+import { Badge } from '../ui/Badge'
 
 const SEVERITY_RING = {
     high: 'ring-red-200 dark:ring-red-900/40 bg-red-50/50 dark:bg-red-950/20',
@@ -26,10 +27,11 @@ const SEVERITY_RING = {
     low: 'ring-slate-200 dark:ring-slate-800 bg-white dark:bg-slate-900',
 }
 
-const SEVERITY_BADGE = {
-    high: 'bg-red-100 text-red-700 ring-red-200 dark:bg-red-900/40 dark:text-red-200 dark:ring-red-800',
-    medium: 'bg-amber-100 text-amber-700 ring-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:ring-amber-800',
-    low: 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700',
+// Severity → canonical Badge tone (Badge owns the colour pairs + inset ring).
+const SEVERITY_TONE = {
+    high: 'danger',
+    medium: 'warning',
+    low: 'neutral',
 }
 
 const KIND_ICON = {
@@ -255,7 +257,6 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
 function AttentionRow({ item, onClick, narrative = null }) {
     const Icon = KIND_ICON[item.kind] ?? Sparkles
     const ringClass = SEVERITY_RING[item.severity] ?? SEVERITY_RING.low
-    const badgeClass = SEVERITY_BADGE[item.severity] ?? SEVERITY_BADGE.low
     const accentClass = KIND_ACCENT[item.kind] ?? 'text-indigo-500'
     const ago = formatRelativeTime(item.since)
 
@@ -274,9 +275,9 @@ function AttentionRow({ item, onClick, narrative = null }) {
                         <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
                             {item.repoFullName}
                         </span>
-                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wide ring-1 ring-inset ${badgeClass}`}>
+                        <Badge tone={SEVERITY_TONE[item.severity] ?? 'neutral'} size="xs" ring className="uppercase tracking-wide font-semibold">
                             {KIND_LABEL[item.kind] ?? item.kind}
-                        </span>
+                        </Badge>
                     </div>
                     <p className="mt-1 text-xs text-slate-600 dark:text-slate-300 line-clamp-2">
                         {item.title}

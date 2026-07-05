@@ -6,6 +6,7 @@ import { SkeletonList, UpsellCard, ErrorState } from '../shared/shared-ui'
 import { dayLabel } from '../shared/formatters'
 import { WorkBoardRowMenu } from '../WorkBoardRowMenu'
 import { WorkBoardRowLink } from '../WorkBoardRowLink'
+import { Badge } from '../../ui/Badge'
 import { EmptyStateDiscovery } from '../EmptyStateDiscovery'
 import { Card } from '../../ui/Card'
 import { RowIconBadge } from '../../ui/RowIconBadge'
@@ -89,12 +90,9 @@ export function TechDebtTab() {
                                             <span className="font-mono text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">{issue.repoFullName}</span>
                                             #{issue.issueNumber}
                                             {(issue.labels || []).slice(0, 3).map(label => (
-                                                <span
-                                                    key={label}
-                                                    className="px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 ds-text-micro font-medium"
-                                                >
+                                                <Badge key={label} tone="neutral" size="xs">
                                                     {label}
-                                                </span>
+                                                </Badge>
                                             ))}
                                             {issue.assignees?.length > 0 && (
                                                 <span className="ds-text-micro text-slate-400">

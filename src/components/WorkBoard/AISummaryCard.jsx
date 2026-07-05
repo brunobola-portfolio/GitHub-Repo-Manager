@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { clsx } from 'clsx'
 import { Sparkles, RefreshCw, X } from 'lucide-react'
 import { Tooltip } from '../ui/Tooltip'
+import { Badge } from '../ui/Badge'
 import { fetchWithRetry } from '../../utils/api'
 import { MOCK_MODE } from '../../config'
 import { AIErrorState } from '../ui/AIErrorState'
@@ -176,9 +177,9 @@ export function AISummaryCard({ meta: metaProp } = {}) {
                     {severityLabel}
                 </span>
                 {(provider || model) && (
-                    <span className="mt-1 px-2 py-0.5 ds-text-micro rounded-full bg-slate-100 dark:bg-slate-700/80 text-slate-500 dark:text-slate-400">
+                    <Badge tone="neutral" size="xs" className="mt-1 font-normal">
                         {provider}{model ? ` · ${model}` : ''}
-                    </span>
+                    </Badge>
                 )}
                 <div className="flex gap-1 mt-1">
                     <Tooltip label="Regenerate">

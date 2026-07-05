@@ -3,6 +3,7 @@ import { AnimatePresence } from 'framer-motion'
 import { ChevronDown, Settings2, RotateCcw } from 'lucide-react'
 import { InsightCard } from '../../ui/InsightCard'
 import { RevealSection } from '../../ui/RevealSection'
+import { Badge } from '../../ui/Badge'
 import {
     FEATURE_KEYS,
     FEATURE_KEY_LABELS,
@@ -53,9 +54,9 @@ export function PerFeatureOverrideSection({
                         </span>
                         <span className="text-xs font-normal text-slate-400">(optional)</span>
                         {activeOverrides > 0 && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 ds-text-micro font-semibold uppercase tracking-wide rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200">
+                            <Badge tone="brand" size="xs" className="uppercase tracking-wide font-semibold">
                                 {activeOverrides} set
-                            </span>
+                            </Badge>
                         )}
                     </div>
                     <ChevronDown

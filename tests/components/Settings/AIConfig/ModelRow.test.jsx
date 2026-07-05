@@ -31,6 +31,18 @@ describe('ModelRow', () => {
         expect(screen.getByText('1M')).toBeInTheDocument()
     })
 
+    it('renders context/Recommended/NEW as canonical Badge pills with their tones', () => {
+        vi.useFakeTimers()
+        vi.setSystemTime(new Date('2026-05-12T00:00:00Z'))
+        render(<ModelRow option={BASE_OPTION} selected={false} highlighted={false} onPick={noopHandlers} />)
+        // context → neutral, Recommended → brand(indigo), NEW → warning(amber); all ringed pills
+        expect(screen.getByText('1M').className).toContain('bg-slate-100')
+        expect(screen.getByText(/recommended/i).className).toContain('bg-indigo-100')
+        expect(screen.getByText('NEW').className).toContain('bg-amber-100')
+        expect(screen.getByText('NEW').className).toContain('rounded-full')
+        vi.useRealTimers()
+    })
+
     it('renders a RECOMMENDED pill when option.recommended is true', () => {
         render(<ModelRow option={BASE_OPTION} selected={false} highlighted={false} onPick={noopHandlers} />)
         expect(screen.getByText(/recommended/i)).toBeInTheDocument()

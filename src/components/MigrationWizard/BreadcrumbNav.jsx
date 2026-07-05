@@ -1,6 +1,7 @@
 
 
 import { Cloud, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Badge } from '../ui/Badge';
 
 const VISIBLE_STEPS = ['repoSelect', 'repoConfig', 'workItems', 'wiki', 'aiReview', 'schedule'];
 
@@ -41,14 +42,10 @@ export default function BreadcrumbNav({ source, currentStep, selectedCount, tota
       <span className="flex items-center text-sm font-medium text-slate-700 dark:text-slate-300 shrink-0">
         Repos
         {selectedCount > 0 && (
-          <span className={`text-xs px-1.5 py-0.5 rounded-full ml-1 inline-flex items-center gap-1 ${
-            totalWarnings > 0
-              ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
-              : 'bg-indigo-100 dark:bg-indigo-900/30 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
-          }`}>
+          <Badge tone={totalWarnings > 0 ? 'warning' : 'brand'} size="xs" className="ml-1 gap-1">
             {selectedCount} selected
             {totalWarnings > 0 && <AlertTriangle className="w-3 h-3" />}
-          </span>
+          </Badge>
         )}
       </span>
     </nav>

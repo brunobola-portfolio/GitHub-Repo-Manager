@@ -1,6 +1,7 @@
 import { InsightCard } from '../../ui/InsightCard'
 import { Zap, ExternalLink } from 'lucide-react'
 import { AnimatedCopyIcon } from '../../ui/AnimatedCopyIcon'
+import { Badge } from '../../ui/Badge'
 import { useCopyToClipboard } from '../../../hooks/useCopyToClipboard'
 
 const WEBHOOK_PATH = '/api/v1/webhooks/github'
@@ -24,7 +25,7 @@ export function WebhookConnectPanel({ tier }) {
                 <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-amber-500" />
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Live updates via webhook</p>
-                    {!isProPlus && <span className="ml-auto px-2 py-0.5 ds-text-micro font-semibold uppercase tracking-wider rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">Pro</span>}
+                    {!isProPlus && <Badge tone="warning" size="xs" className="ml-auto uppercase tracking-wider font-semibold">Pro</Badge>}
                 </div>
 
                 <p className="text-xs text-slate-500 dark:text-slate-400">

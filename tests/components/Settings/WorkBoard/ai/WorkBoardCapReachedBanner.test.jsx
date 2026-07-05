@@ -9,6 +9,14 @@ describe('WorkBoardCapReachedBanner', () => {
         expect(screen.getByText(/Blocked/i)).toBeInTheDocument()
     })
 
+    it('renders the Blocked status as a canonical rose Badge pill', () => {
+        render(<WorkBoardCapReachedBanner />)
+        const badge = screen.getByText(/Blocked/i).closest('span')
+        expect(badge.className).toContain('rounded-full')
+        expect(badge.className).toContain('bg-rose-100')
+        expect(badge.className).toContain('ring-1')
+    })
+
     it('formats spent and cap as USD when both are provided', () => {
         render(<WorkBoardCapReachedBanner spentCents={250} capCents={1000} />)
         // 250 cents → $2.50, 1000 cents → $10.00
