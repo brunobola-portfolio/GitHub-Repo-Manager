@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { ConfirmModal } from '../ui/ConfirmModal'
@@ -14,7 +14,7 @@ import { Settings, Save, AlertTriangle, Lock, Globe, Webhook, Trash2, Plus, Refr
 import { Spinner } from '../ui/Spinner'
 import { Field, Input } from '../ui/form'
 
-export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
+export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChange = () => {} }) {
     const { toast } = useToast()
     const aiStatus = useAIStatus()
     const aiOff = !aiStatus.loading && !aiStatus.configured
@@ -46,6 +46,20 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
             }
             toast.errorFromException(err, { fallbackTitle: 'Failed to load topic suggestions' })
             setTopicsState({ kind: 'idle' })
+        }
+    }
+
+    // From the "Not indexed yet" dead-end: trigger indexing right here, then
+    // re-run the suggestion fetch so the user stays in-flow instead of being
+    // told to go index elsewhere.
+    const handleIndexRepo = async () => {
+        setTopicsState({ kind: 'loading' })
+        try {
+            await aiApi.indexRepo(repoData)
+            await loadTopicSuggestions()
+        } catch (err) {
+            toast.errorFromException(err, { fallbackTitle: 'Failed to index repository' })
+            setTopicsState({ kind: 'not-indexed' })
         }
     }
 
@@ -98,6 +112,14 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
         [initialForm, form],
     )
     const handleDiscard = () => setForm(initialForm)
+
+    // Lift the dirty bit up so RepoDetail can guard tab switches / closing the
+    // detail view. Reported on every change; reset to clean on unmount so a
+    // navigation that discards these edits doesn't leave a stale dirty flag.
+    useEffect(() => {
+        onDirtyChange(isDirty)
+    }, [isDirty, onDirtyChange])
+    useEffect(() => () => onDirtyChange(false), [onDirtyChange])
 
     const [confirmAction, setConfirmAction] = useState(null)
 
@@ -598,7 +620,12 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                     <EmptyState
                         icon={Sparkles}
                         title="Not indexed yet"
-                        description="Index this repo first to get AI-suggested topics."
+                        description="Index this repo to unlock AI-suggested topics — indexing reads its README, language, and dependencies."
+                        action={{
+                            label: 'Index this repo',
+                            onClick: handleIndexRepo,
+                            disabled: aiOff || repoData.archived,
+                        }}
                     />
                 )}
 

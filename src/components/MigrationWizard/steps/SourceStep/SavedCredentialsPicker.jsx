@@ -1,6 +1,12 @@
-import { useState, useEffect } from 'react'
-import { KeyRound, ChevronDown, Plus, Check, Settings } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { KeyRound, Plus, Check, Settings } from 'lucide-react'
 import { Spinner } from '../../../ui/Spinner'
+import { Select } from '../../../ui/Select'
+
+// Sentinel option value for the "paste a different PAT" row. Selecting it clears
+// the saved-credential pick (onPick(null)); modelling it as a real Select option
+// means Select closes the dropdown for us on click, like any other selection.
+const PASTE_SENTINEL = '__paste_new__'
 
 /**
  * Pick a previously-saved Azure PAT for the current host. Loads /api/azure/
@@ -16,7 +22,6 @@ import { Spinner } from '../../../ui/Spinner'
 export default function SavedCredentialsPicker({ host, org, value, onPick, onOpenSettings }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
-  const [open, setOpen] = useState(false)
 
   useEffect(() => {
     if (!host) {
@@ -55,6 +60,58 @@ export default function SavedCredentialsPicker({ host, org, value, onPick, onOpe
   const others = items.filter((c) => !matching.includes(c))
   const ordered = [...matching, ...others]
 
+  // Map credentials → Select options (+ a trailing "paste a different PAT"
+  // sentinel). Rich per-row content (bold label, exact-match badge, org/prefix/
+  // last-used sub-line) is drawn by `renderOption`; the trigger uses Select's
+  // native icon/label/badge to show the picked token + its prefix.
+  const options = useMemo(() => {
+    const creds = ordered.map((c) => ({
+      value: c.id,
+      label: c.label,
+      icon: KeyRound,
+      badge: c.prefix,
+      badgeColor: 'font-mono text-slate-500 dark:text-slate-400',
+      org: c.org,
+      prefix: c.prefix,
+      lastUsedAt: c.lastUsedAt,
+      isExactOrg: !!(org && c.org === org),
+    }))
+    return [...creds, { value: PASTE_SENTINEL, label: 'Paste a different PAT instead', __paste: true }]
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `ordered` is derived from items each render
+  }, [items, org])
+
+  const handleChange = (val) => {
+    onPick(val === PASTE_SENTINEL ? null : val)
+  }
+
+  const renderCredentialOption = (option, { selected }) =>
+    option.__paste ? (
+      <span className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+        <Plus className="w-3 h-3 shrink-0" />
+        Paste a different PAT instead
+      </span>
+    ) : (
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          {selected
+            ? <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+            : <KeyRound className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
+          <span className="flex-1 min-w-0 truncate font-medium text-slate-800 dark:text-slate-100">
+            {option.label}
+          </span>
+          {option.isExactOrg && (
+            <span className="shrink-0 ds-text-micro uppercase tracking-wider font-semibold text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/40">
+              exact match
+            </span>
+          )}
+        </div>
+        <div className="ds-text-meta text-slate-500 dark:text-slate-400 ml-5 mt-0.5 font-mono truncate">
+          {option.org ? `${option.org} · ` : ''}{option.prefix}
+          {option.lastUsedAt && <> · used {formatRelative(option.lastUsedAt)}</>}
+        </div>
+      </div>
+    )
+
   if (!host || (!loading && ordered.length === 0)) return null
 
   const picked = value ? items.find((c) => c.id === value) : null
@@ -89,74 +146,15 @@ export default function SavedCredentialsPicker({ host, org, value, onPick, onOpe
           <Spinner size="sm" tone="muted" label="Loading credentials" /> Loading…
         </div>
       ) : (
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg hover:border-emerald-400 dark:hover:border-emerald-600 transition-colors text-left"
-          >
-            <KeyRound className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-            <span className="flex-1 min-w-0 truncate">
-              {picked
-                ? <><strong>{picked.label}</strong> <span className="text-slate-500 font-mono text-xs">· {picked.prefix}</span></>
-                : <span className="text-slate-500">Choose a saved token…</span>}
-            </span>
-            <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
-          </button>
-
-          {open && (
-            <ul className="absolute z-10 mt-1 w-full max-h-72 overflow-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-lg">
-              {ordered.map((c) => {
-                const isPicked = c.id === value
-                const isExactOrg = org && c.org === org
-                return (
-                  <li key={c.id}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onPick(c.id)
-                        setOpen(false)
-                      }}
-                      className={`w-full px-3 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors
-                        ${isPicked ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''}`}
-                    >
-                      <div className="flex items-center gap-2">
-                        {isPicked
-                          ? <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                          : <KeyRound className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
-                        <span className="flex-1 min-w-0 truncate font-medium text-slate-800 dark:text-slate-100">
-                          {c.label}
-                        </span>
-                        {isExactOrg && (
-                          <span className="shrink-0 ds-text-micro uppercase tracking-wider font-semibold text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/40">
-                            exact match
-                          </span>
-                        )}
-                      </div>
-                      <div className="ds-text-meta text-slate-500 dark:text-slate-400 ml-5 mt-0.5 font-mono truncate">
-                        {c.org ? `${c.org} · ` : ''}{c.prefix}
-                        {c.lastUsedAt && <> · used {formatRelative(c.lastUsedAt)}</>}
-                      </div>
-                    </button>
-                  </li>
-                )
-              })}
-              <li className="border-t border-slate-100 dark:border-slate-700">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onPick(null)
-                    setOpen(false)
-                  }}
-                  className="w-full px-3 py-2 text-left text-xs text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700/50 inline-flex items-center gap-1.5"
-                >
-                  <Plus className="w-3 h-3" />
-                  Paste a different PAT instead
-                </button>
-              </li>
-            </ul>
-          )}
-        </div>
+        <Select
+          options={options}
+          value={value ?? ''}
+          onChange={handleChange}
+          renderOption={renderCredentialOption}
+          searchable={ordered.length > 8}
+          label="Saved token"
+          placeholder="Choose a saved token…"
+        />
       )}
 
       {picked && (

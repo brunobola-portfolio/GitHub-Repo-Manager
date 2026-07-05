@@ -17,6 +17,7 @@ import {
     FileText, Star, Eye, GitFork, ExternalLink, Lock, Globe, Loader2, Zap
 } from 'lucide-react'
 import { Spinner, SectionSpinner } from '../ui/Spinner'
+import { ConfirmModal } from '../ui/ConfirmModal'
 import { TabBar } from '../ui/TabBar'
 import { TrackedChip } from '../WorkBoard/TrackedChip'
 import { PageHeader } from '../ui/PageHeader'
@@ -39,6 +40,34 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription,
     const [repoData, setRepoData] = useState(repo)
     const [loadingRepo, setLoadingRepo] = useState(false)
     const [isStaleData, setIsStaleData] = useState(false)
+
+    // Unsaved-changes guard for the Settings tab. SettingsTab reports its dirty
+    // bit up via onDirtyChange; a queued navigation (tab switch or Back) is held
+    // in pendingNav until the user chooses Discard (proceed) or Stay (dismiss).
+    const [settingsDirty, setSettingsDirty] = useState(false)
+    const [pendingNav, setPendingNav] = useState(null)
+
+    // A navigation must be guarded only when leaving a *dirty* Settings tab.
+    const guardLeaving = (nextTab) =>
+        activeTab === 'settings' && settingsDirty && nextTab !== 'settings'
+
+    const requestTabChange = (nextTab) => {
+        if (guardLeaving(nextTab)) setPendingNav({ type: 'tab', tab: nextTab })
+        else setActiveTab(nextTab)
+    }
+
+    const requestBack = () => {
+        if (guardLeaving(null)) setPendingNav({ type: 'back' })
+        else onBack()
+    }
+
+    const confirmDiscard = () => {
+        const nav = pendingNav
+        setPendingNav(null)
+        setSettingsDirty(false)
+        if (nav?.type === 'tab') setActiveTab(nav.tab)
+        else if (nav?.type === 'back') onBack()
+    }
 
     const owner = repo.owner?.login || repo.full_name?.split('/')[0]
     const repoName = repo.name
@@ -119,7 +148,7 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription,
             )}
             {/* Header */}
             <div className="relative flex items-start gap-4">
-                <Button variant="ghost" size="sm" onClick={onBack} className="mt-1 shrink-0">
+                <Button variant="ghost" size="sm" onClick={requestBack} className="mt-1 shrink-0">
                     <ArrowLeft className="w-4 h-4 mr-1" /> Back
                 </Button>
 
@@ -190,7 +219,7 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription,
             <TabBar
                 tabs={TABS}
                 activeTab={activeTab}
-                onTabChange={setActiveTab}
+                onTabChange={requestTabChange}
                 variant="underline"
                 layoutId="repo-detail-tabs"
                 className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,transparent,black_24px,black_calc(100%-24px),transparent)]"
@@ -206,9 +235,21 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription,
                     {activeTab === 'actions' && <ActionsTab repo={r} />}
                     {activeTab === 'issues' && <IssuesTab api={api} repoFullName={`${owner}/${repoName}`} />}
                     {activeTab === 'pulls' && <PullRequestsTab api={api} onStartReview={onStartReview} onGenerateDescription={onGenerateDescription} />}
-                    {activeTab === 'settings' && <SettingsTab owner={owner} repo={repoName} api={api} repoData={r} onUpdate={handleRepoMutated} />}
+                    {activeTab === 'settings' && <SettingsTab owner={owner} repo={repoName} api={api} repoData={r} onUpdate={handleRepoMutated} onDirtyChange={setSettingsDirty} />}
                 </Suspense>
             </div>
+
+            {/* Unsaved-changes guard when leaving a dirty Settings tab */}
+            <ConfirmModal
+                isOpen={!!pendingNav}
+                onClose={() => setPendingNav(null)}
+                onConfirm={confirmDiscard}
+                title="Discard unsaved changes?"
+                message="You have unsaved changes in Settings. Leaving this tab will discard them."
+                confirmText="Discard"
+                cancelText="Stay"
+                variant="warning"
+            />
         </PageMount>
     )
 }

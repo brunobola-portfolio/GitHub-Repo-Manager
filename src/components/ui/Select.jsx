@@ -24,6 +24,11 @@ import { Skeleton } from './Skeleton'
  * @param {React.ReactNode} props.errorState - Custom error state content
  * @param {Function} props.onOpen - Called when dropdown opens
  * @param {React.ReactNode} props.extraOption - Extra option rendered at the bottom (e.g. "Type manually...")
+ * @param {Function} [props.renderOption] - Optional custom renderer for an option's inner content.
+ *   Receives `(option, { selected, focused })` and returns the button body. Select still owns the
+ *   button element, `role="option"`, aria-selected, keyboard focus, selection styling and click
+ *   handling — this only replaces the default icon/label/badge/check layout so pickers with richer
+ *   rows (sub-lines, multiple badges) can adopt Select without forking.
  */
 export function Select({
     options = [],
@@ -43,6 +48,7 @@ export function Select({
     errorState,
     onOpen,
     extraOption,
+    renderOption,
 }) {
     const [isOpen, setIsOpen] = useState(false)
     const [focusedIndex, setFocusedIndex] = useState(0)
@@ -195,7 +201,7 @@ export function Select({
     }
 
     // Render an individual option row
-    const renderOption = (option, globalIndex) => {
+    const renderOptionButton = (option, globalIndex) => {
         const isSelected = option.value === value
         const isFocused = globalIndex === focusedIndex
         const IconComponent = option.icon
@@ -230,20 +236,26 @@ export function Select({
                     }
                 `}
             >
-                <span className="flex items-center gap-2 min-w-0">
-                    {IconComponent && <IconComponent className="w-4 h-4 text-slate-400 shrink-0" />}
-                    <span className="truncate">{option.label}</span>
-                </span>
-                <span className="flex items-center gap-2 shrink-0">
-                    {option.badge !== undefined && option.badge !== null && (
-                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                            option.badgeColor || 'text-slate-500 dark:text-slate-400'
-                        }`}>
-                            {option.badge === -1 ? '—' : option.badge}
+                {renderOption ? (
+                    renderOption(option, { selected: isSelected, focused: isFocused })
+                ) : (
+                    <>
+                        <span className="flex items-center gap-2 min-w-0">
+                            {IconComponent && <IconComponent className="w-4 h-4 text-slate-400 shrink-0" />}
+                            <span className="truncate">{option.label}</span>
                         </span>
-                    )}
-                    {isSelected && <Check className="w-4 h-4 text-indigo-500" />}
-                </span>
+                        <span className="flex items-center gap-2 shrink-0">
+                            {option.badge !== undefined && option.badge !== null && (
+                                <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                                    option.badgeColor || 'text-slate-500 dark:text-slate-400'
+                                }`}>
+                                    {option.badge === -1 ? '—' : option.badge}
+                                </span>
+                            )}
+                            {isSelected && <Check className="w-4 h-4 text-indigo-500" />}
+                        </span>
+                    </>
+                )}
             </button>
         )
     }
@@ -379,14 +391,14 @@ export function Select({
                                                 {section.title}
                                             </div>
                                         )}
-                                        {sectionOptions.map((opt) => renderOption(opt, opt._globalIndex))}
+                                        {sectionOptions.map((opt) => renderOptionButton(opt, opt._globalIndex))}
                                     </div>
                                 )
                             })}
 
                             {/* Flat options mode */}
                             {!loading && !errorState && !sections && filteredOptions.map((option, index) => (
-                                renderOption(option, index)
+                                renderOptionButton(option, index)
                             ))}
 
                             {/* Extra option at the bottom */}

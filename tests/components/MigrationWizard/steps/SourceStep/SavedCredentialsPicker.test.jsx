@@ -1,6 +1,16 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
-import { render, screen, cleanup, waitFor } from '@testing-library/react'
+import { render, screen, cleanup, waitFor, fireEvent } from '@testing-library/react'
 import SavedCredentialsPicker from '@/components/MigrationWizard/steps/SourceStep/SavedCredentialsPicker'
+
+const CREDS_RESPONSE = {
+    ok: true,
+    json: async () => ({
+        items: [
+            { id: 'c1', label: 'Prod token', org: 'acme', prefix: 'ghp_aaa', lastUsedAt: null },
+            { id: 'c2', label: 'Personal token', org: null, prefix: 'ghp_bbb', lastUsedAt: null },
+        ],
+    }),
+}
 
 /**
  * Smoke coverage for the post-Loader2→Spinner migration. We don't need to
@@ -65,5 +75,75 @@ describe('<SavedCredentialsPicker />', () => {
         await waitFor(() => {
             expect(container).toBeEmptyDOMElement()
         })
+    })
+
+    // --- Post-migration onto ui/Select ---
+
+    it('renders a Select combobox once credentials load', async () => {
+        global.fetch = vi.fn().mockResolvedValue(CREDS_RESPONSE)
+        render(
+            <SavedCredentialsPicker host="dev.azure.com" org="acme" value={null} onPick={() => {}} onOpenSettings={() => {}} />
+        )
+        expect(await screen.findByRole('combobox', { name: /saved token/i })).toBeInTheDocument()
+    })
+
+    it('opens and lists saved tokens plus a paste-new row', async () => {
+        global.fetch = vi.fn().mockResolvedValue(CREDS_RESPONSE)
+        render(
+            <SavedCredentialsPicker host="dev.azure.com" org="acme" value={null} onPick={() => {}} onOpenSettings={() => {}} />
+        )
+        const combo = await screen.findByRole('combobox', { name: /saved token/i })
+        fireEvent.click(combo)
+        expect(screen.getByRole('option', { name: /Prod token/ })).toBeInTheDocument()
+        expect(screen.getByRole('option', { name: /Personal token/ })).toBeInTheDocument()
+        expect(screen.getByRole('option', { name: /Paste a different PAT/ })).toBeInTheDocument()
+    })
+
+    it('flags the exact-org match on the matching row', async () => {
+        global.fetch = vi.fn().mockResolvedValue(CREDS_RESPONSE)
+        render(
+            <SavedCredentialsPicker host="dev.azure.com" org="acme" value={null} onPick={() => {}} onOpenSettings={() => {}} />
+        )
+        const combo = await screen.findByRole('combobox', { name: /saved token/i })
+        fireEvent.click(combo)
+        // 'Prod token' is org=acme → exact match; 'Personal token' (org null) is not.
+        expect(screen.getByRole('option', { name: /Prod token/ })).toHaveTextContent(/exact match/i)
+        expect(screen.getByRole('option', { name: /Personal token/ })).not.toHaveTextContent(/exact match/i)
+    })
+
+    it('selecting a saved token calls onPick with its id', async () => {
+        const onPick = vi.fn()
+        global.fetch = vi.fn().mockResolvedValue(CREDS_RESPONSE)
+        render(
+            <SavedCredentialsPicker host="dev.azure.com" org="acme" value={null} onPick={onPick} onOpenSettings={() => {}} />
+        )
+        const combo = await screen.findByRole('combobox', { name: /saved token/i })
+        fireEvent.click(combo)
+        fireEvent.click(screen.getByRole('option', { name: /Personal token/ }))
+        expect(onPick).toHaveBeenCalledWith('c2')
+    })
+
+    it('choosing "paste a different PAT" clears the pick via onPick(null)', async () => {
+        const onPick = vi.fn()
+        global.fetch = vi.fn().mockResolvedValue(CREDS_RESPONSE)
+        render(
+            <SavedCredentialsPicker host="dev.azure.com" org="acme" value={null} onPick={onPick} onOpenSettings={() => {}} />
+        )
+        const combo = await screen.findByRole('combobox', { name: /saved token/i })
+        fireEvent.click(combo)
+        fireEvent.click(screen.getByRole('option', { name: /Paste a different PAT/ }))
+        expect(onPick).toHaveBeenCalledWith(null)
+    })
+
+    it('opens with the keyboard (ArrowDown) and Escape closes', async () => {
+        global.fetch = vi.fn().mockResolvedValue(CREDS_RESPONSE)
+        render(
+            <SavedCredentialsPicker host="dev.azure.com" org="acme" value={null} onPick={() => {}} onOpenSettings={() => {}} />
+        )
+        const combo = await screen.findByRole('combobox', { name: /saved token/i })
+        fireEvent.keyDown(combo, { key: 'ArrowDown' })
+        expect(combo).toHaveAttribute('aria-expanded', 'true')
+        fireEvent.keyDown(combo, { key: 'Escape' })
+        expect(combo).toHaveAttribute('aria-expanded', 'false')
     })
 })

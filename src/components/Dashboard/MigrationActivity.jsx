@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
 import {
   Download, CheckCircle2, XCircle, Cloud,
@@ -27,11 +27,36 @@ const STATUS_CONFIG = {
 export function MigrationActivity({ loading: parentLoading }) {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const { openModal } = useModal()
   // Single click-through target: every clickable surface in this widget opens
   // the full Migration History modal so users can drill in. We intentionally
   // don't pass per-job context since the modal does its own listing + sort.
   const openHistory = () => openModal('showMigrationHistory')
+  const openWizard = () => openModal('showMigrationWizard')
+
+  // Guard against setState after unmount — the retry path fires the fetch
+  // outside the mount effect, so a plain effect-scoped `mounted` flag isn't
+  // enough on its own.
+  const mountedRef = useRef(true)
+  useEffect(() => () => { mountedRef.current = false }, [])
+
+  const loadStats = useCallback(() => {
+    setLoading(true)
+    setError(false)
+    fetch('/api/migrations/stats', { credentials: 'include' })
+      .then(r => {
+        if (!r.ok) throw new Error(`stats request failed: ${r.status}`)
+        return r.json()
+      })
+      .then(data => { if (mountedRef.current) setStats(data) })
+      .catch(() => {
+        // Distinguish a genuine failure from an empty result so the UI can
+        // offer a Retry instead of masquerading as "no migrations yet".
+        if (mountedRef.current) setError(true)
+      })
+      .finally(() => { if (mountedRef.current) setLoading(false) })
+  }, [])
 
   /* eslint-disable react-hooks/set-state-in-effect -- one-shot data load on mount; demo branch is fully synchronous */
   useEffect(() => {
@@ -70,22 +95,24 @@ export function MigrationActivity({ loading: parentLoading }) {
       setLoading(false)
       return
     }
-    let mounted = true
-    fetch('/api/migrations/stats', { credentials: 'include' })
-      .then(r => r.json())
-      .then(data => { if (mounted) setStats(data) })
-      .catch(() => {
-        // Dashboard widget — degrade silently to the "no stats" empty state.
-        // Real errors are captured via the HTTP layer (toast + Sentry).
-      })
-      .finally(() => { if (mounted) setLoading(false) })
-    return () => { mounted = false }
-  }, [])
+    loadStats()
+  }, [loadStats])
   /* eslint-enable react-hooks/set-state-in-effect */
 
   if (loading || parentLoading) {
     return (
       <SectionSpinner padding="py-12" />
+    )
+  }
+
+  if (error) {
+    return (
+      <EmptyState
+        icon={AlertTriangle}
+        title="Couldn't load migrations"
+        description="We couldn't reach the migration service. Check your connection and try again."
+        action={{ label: 'Retry', onClick: loadStats }}
+      />
     )
   }
 
@@ -95,6 +122,7 @@ export function MigrationActivity({ loading: parentLoading }) {
         icon={Download}
         title="No migrations yet"
         description="Import repositories from Azure DevOps, GitHub, or any Git URL"
+        action={{ label: 'Start a migration', onClick: openWizard }}
       />
     )
   }

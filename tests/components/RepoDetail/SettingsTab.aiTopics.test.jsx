@@ -4,7 +4,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 vi.mock('@/hooks/useAIStatus', () => ({ useAIStatus: vi.fn() }))
 vi.mock('@/hooks/useModal', () => ({ useModal: () => ({ openModalWithData: vi.fn() }) }))
 vi.mock('@/api/ai', () => ({
-    aiApi: { getMetadata: vi.fn() },
+    aiApi: { getMetadata: vi.fn(), indexRepo: vi.fn() },
 }))
 vi.mock('@/api/repos', () => ({
     reposApi: { setTopics: vi.fn() },
@@ -86,6 +86,27 @@ describe('SettingsTab — AI-suggested topics', () => {
         fireEvent.click(screen.getByRole('button', { name: /suggest topics/i }))
         await waitFor(() => {
             expect(screen.getByText(/not indexed/i)).toBeInTheDocument()
+        })
+    })
+
+    it('offers an "Index this repo" action from the not-indexed state that indexes then re-fetches', async () => {
+        const err = new Error('404')
+        err.status = 404
+        // First getMetadata call → 404 (not indexed); after indexing, resolve suggestions.
+        aiApi.getMetadata
+            .mockRejectedValueOnce(err)
+            .mockResolvedValueOnce({ topics: ['react', 'graphql'], health_score: 80 })
+        aiApi.indexRepo.mockResolvedValue({ success: true, analysis: {} })
+        render(<SettingsTab {...baseProps} />)
+        fireEvent.click(screen.getByRole('button', { name: /suggest topics/i }))
+        const indexBtn = await screen.findByRole('button', { name: /index this repo/i })
+        fireEvent.click(indexBtn)
+        await waitFor(() => {
+            expect(aiApi.indexRepo).toHaveBeenCalledWith(baseRepoData)
+        })
+        // Re-fetched suggestions surface (graphql is new; react already present).
+        await waitFor(() => {
+            expect(screen.getByLabelText(/graphql/i)).toBeInTheDocument()
         })
     })
 

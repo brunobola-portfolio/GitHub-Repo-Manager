@@ -57,10 +57,10 @@
 | D1 | Event-table retention job (pr/issue/deployment events, workflow_runs) | done |
 | D2 | MigrationWizard dark-only islands (SizeStrategyCard, TFVC, PingAuthorPopover) | done |
 | D3 | A11y: name destructive icon buttons; migration progressbar semantics + completion announcement | done |
-| D4 | Dead code: OrganizationSelector; dead tables audit_log v1/license_keys; stale server/migrations/*.sql note | pending |
-| D5 | Unsaved-changes guard (RepoDetail Settings / SettingsModal) | pending |
+| D4 | dead OrganizationSelector removed; dead DB tables deferred (needs migration + registry sync) | partial |
+| D5 | Unsaved-changes guard (RepoDetail Settings / SettingsModal) | done |
 | D6 | Browser-Back history model (pushState for drill-ins) | pending |
-| D7 | Select regressions (PromptPicker, SavedCredentialsPicker, ModelCombobox, DevToolkit selectors) | pending |
+| D7 | RepoSelector+BranchSelector+SavedCredentialsPicker migrated (renderOption additive); PromptPicker+ModelCombobox left with rationale | done |
 | D8 | Pause→Resume control in ProgressStep | done |
 
 ## Deferred (needs owner decision or separate initiative)
@@ -79,3 +79,4 @@
 - 2026-07-05: C8+D8+D3(progressbar) landed by lead (ProgressStep: load-error retry state, pause/cancel toasts, Resume button, progressbar+live-region a11y; MigrationHistory: rerun/resume/export toasts). 4 new RTL tests.
 - 2026-07-05: Wave D-alpha landed (SizeStrategyCard/TFVC/FixPlanItem/PingAuthorPopover light+dark pairs incl. trigger chip + DashboardHeader badge; delete-release/webhook aria-labels; webhook dot text alternative). Also FIXED pre-existing CI red: AutoFixDrawer conflict test broken by a8b5576 CSRF mint (route-aware fetch mock).
 - 2026-07-05: Wave B1 landed (prod boot fails on ALLOW_MOCK_AUTH; scheduled WAL-safe SQLite backups + restore doc; health probes in Dockerfile/railway; compression + immutable asset caching; SSE-aware shutdown drain; request-id/log unification + pino redact; v1 AI body-limit; event-table retention 365d; vercel.json placeholder removed). 67 tests green. NOTE for owner: deploy.yml is a silent no-op behind a green badge — needs workflow-scope change (fail loudly or rename to Build Verify).
+- 2026-07-05: Wave D-beta landed (Select renderOption additive + 3 pickers migrated with a11y; dead OrganizationSelector deleted; unsaved-Settings guard in RepoDetail; MigrationActivity error-vs-empty + wizard CTA; AI-topics Index action). 489 tests green across affected suites. SettingsModal reported no-dirty-tracking by design; ModelCombobox/PromptPicker left bespoke with rationale.
