@@ -14,6 +14,7 @@ import { migrationApi } from '../api/migration'
 import { apiCall } from '../utils/api'
 import { formatDateTime, formatDurationSeconds, parseServerTimestamp } from '../utils/format'
 import { MarksBadge } from './MigrationHistory/MarksBadge.jsx'
+import { useToast } from '../hooks/useToast'
 import { MarksDetailModal } from './MigrationHistory/MarksDetailModal.jsx'
 import { useMarksForPlan } from '../hooks/useMigrationMarks.js'
 
@@ -72,6 +73,7 @@ export function MigrationHistory({ isOpen, onClose }) {
     const [activeTab, setActiveTab] = useState('plans') // 'plans' | 'legacy'
     const [expandedPlan, setExpandedPlan] = useState(null)
     const [loadingPlanIds, setLoadingPlanIds] = useState(() => new Set())
+    const { toast } = useToast()
 
     const loadJobs = async () => {
         setLoading(true)
@@ -143,15 +145,21 @@ export function MigrationHistory({ isOpen, onClose }) {
                 wiki: plan.wiki,
                 schedule: plan.schedule
             })
+            toast.success('Migration plan re-created — execute it from the Plans list')
             loadPlans()
-        } catch { /* ignore */ }
+        } catch (err) {
+            toast.errorFromException(err, { fallbackTitle: 'Failed to re-run migration plan' })
+        }
     }
 
     const handleResumePlan = async (plan) => {
         try {
             await migrationApi.resumePlan(plan.id)
+            toast.success('Migration resumed')
             loadPlans()
-        } catch { /* ignore */ }
+        } catch (err) {
+            toast.errorFromException(err, { fallbackTitle: 'Failed to resume migration plan' })
+        }
     }
 
     const handleExportReport = async (plan) => {
@@ -164,7 +172,9 @@ export function MigrationHistory({ isOpen, onClose }) {
             a.download = `migration-report-${plan.id}.json`
             a.click()
             URL.revokeObjectURL(url)
-        } catch { /* ignore */ }
+        } catch (err) {
+            toast.errorFromException(err, { fallbackTitle: 'Failed to export migration report' })
+        }
     }
 
     useEffect(() => {

@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Package, ClipboardList, BookOpen, CheckCircle2, XCircle,
-  Clock, Pause, Ban, RotateCcw, AlertTriangle,
+  Clock, Pause, Play, Ban, RotateCcw, AlertTriangle,
 } from 'lucide-react'
 import { useSSE } from '../../../hooks/useSSE'
+import { useToast } from '../../../hooks/useToast'
 import { useElapsedSeconds } from '../../../hooks/useElapsedSeconds'
 import { formatDurationSeconds } from '../../../utils/format'
 import { migrationApi } from '../../../api/migration'
@@ -183,13 +184,18 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, o
   const [planStatus, setPlanStatus] = useState('running')
   const [confirmCancel, setConfirmCancel] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
+  const [reloadKey, setReloadKey] = useState(0)
   const [replaceTask, setReplaceTask] = useState(null)
   const completedRef = useRef(false)
+  const { toast } = useToast()
 
   const sseUrl = planId ? migrationApi.streamUrl(planId) : null
   const { events, connected } = useSSE(sseUrl)
 
-  // Fetch initial plan state on mount
+  // Fetch initial plan state on mount (and again when the user retries a
+  // failed load via reloadKey). A failed fetch used to be swallowed, leaving
+  // the user stranded on a frozen "0/0 tasks" view with no way out.
   useEffect(() => {
     if (!planId) return
     let cancelled = false
@@ -199,10 +205,10 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, o
         setTasks(normalizeTasks(plan.tasks || []))
         setPlanStatus(plan.status || 'running')
       })
-      .catch(() => {})
+      .catch((err) => { if (!cancelled) setLoadError(err) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [planId])
+  }, [planId, reloadKey])
 
   // Process SSE events by monotonic sequence — NOT array length. useSSE caps
   // its buffer at a 100-item sliding window, so length pins at 100 once full;
@@ -310,8 +316,8 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, o
       await migrationApi.cancelPlan(planId)
       setPlanStatus('cancelled')
       if (onCancel) onCancel()
-    } catch {
-      // ignore
+    } catch (err) {
+      toast.errorFromException(err, { fallbackTitle: 'Failed to cancel migration' })
     }
     setConfirmCancel(false)
   }
@@ -321,8 +327,20 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, o
       await migrationApi.pausePlan(planId)
       setPlanStatus('paused')
       if (onPause) onPause()
-    } catch {
-      // ignore
+    } catch (err) {
+      toast.errorFromException(err, { fallbackTitle: 'Failed to pause migration' })
+    }
+  }
+
+  // Pause used to be a one-way door: the only visible way forward from
+  // 'paused' was destructive (Cancel). Resume reuses the plan's stored
+  // credentials server-side (vault > session > env), so no re-prompt needed.
+  const handleResume = async () => {
+    try {
+      await migrationApi.resumePlan(planId)
+      setPlanStatus('running')
+    } catch (err) {
+      toast.errorFromException(err, { fallbackTitle: 'Failed to resume migration' })
     }
   }
 
@@ -344,8 +362,41 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, o
     )
   }
 
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 p-12 text-center">
+        <AlertTriangle className="w-8 h-8 text-red-500" />
+        <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">Couldn't load migration progress</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          The migration keeps running on the server — this only affects the live view.
+        </p>
+        <Button
+          variant="secondary"
+          size="sm"
+          type="button"
+          onClick={() => { setLoadError(null); setLoading(true); setReloadKey((k) => k + 1) }}
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          Try again
+        </Button>
+      </div>
+    )
+  }
+
+  const terminalStatuses = ['completed', 'failed', 'cancelled', 'interrupted']
+
   return (
     <div className="space-y-5">
+      {/* Announce migration state to assistive tech: SSE progress is otherwise
+          purely visual, so screen-reader users got no completion/failure signal. */}
+      <span className="sr-only" role="status">
+        {terminalStatuses.includes(planStatus)
+          ? `Migration ${planStatus}`
+          : planStatus === 'paused'
+            ? 'Migration paused'
+            : `${completedCount} of ${totalCount} tasks completed`}
+      </span>
+
       {/* Connection status + task count */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -374,7 +425,14 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, o
           <span className="text-xs font-medium text-slate-600 dark:text-slate-300">Overall</span>
           <span className="text-xs font-medium text-slate-600 dark:text-slate-300 tabular-nums">{overallProgress}%</span>
         </div>
-        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+        <div
+          className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden"
+          role="progressbar"
+          aria-label="Overall migration progress"
+          aria-valuenow={overallProgress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
           <motion.div
             className="h-full bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] rounded-full"
             initial={{ width: 0 }}
@@ -412,20 +470,33 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, o
       {/* Controls */}
       {isActive && (
         <div className="flex items-center gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
-          <button
-            type="button"
-            onClick={handlePause}
-            disabled={planStatus === 'paused'}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl
-              text-amber-700 dark:text-amber-300
-              bg-amber-50 dark:bg-amber-900/20
-              hover:bg-amber-100 dark:hover:bg-amber-900/40
-              disabled:opacity-50 disabled:cursor-not-allowed
-              transition-colors"
-          >
-            <Pause className="w-4 h-4" />
-            {planStatus === 'paused' ? 'Paused' : 'Pause'}
-          </button>
+          {planStatus === 'paused' ? (
+            <button
+              type="button"
+              onClick={handleResume}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl
+                text-emerald-700 dark:text-emerald-300
+                bg-emerald-50 dark:bg-emerald-900/20
+                hover:bg-emerald-100 dark:hover:bg-emerald-900/40
+                transition-colors"
+            >
+              <Play className="w-4 h-4" />
+              Resume
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handlePause}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl
+                text-amber-700 dark:text-amber-300
+                bg-amber-50 dark:bg-amber-900/20
+                hover:bg-amber-100 dark:hover:bg-amber-900/40
+                transition-colors"
+            >
+              <Pause className="w-4 h-4" />
+              Pause
+            </button>
+          )}
 
           <button
             type="button"

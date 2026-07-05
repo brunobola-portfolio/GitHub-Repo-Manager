@@ -45,7 +45,7 @@
 | C5 | ErrorBoundary: generic message, raw error to details/console | done |
 | C6 | AIInstructionsSection tabs → shared ui/TabBar | done |
 | C7 | Wizard "Back to Selection" history.back() → wizard step nav | done |
-| C8 | Silent catch{} in ProgressStep/MigrationHistory → toast.errorFromException | pending |
+| C8 | Silent catch{} in ProgressStep/MigrationHistory → toast.errorFromException | done |
 | C9 | `.dark html` scrollbar selector fix (`html.dark`) | done |
 | C10 | `color-scheme: light dark` for native controls | done |
 | C11 | ::selection dark-mode token | done |
@@ -61,7 +61,7 @@
 | D5 | Unsaved-changes guard (RepoDetail Settings / SettingsModal) | pending |
 | D6 | Browser-Back history model (pushState for drill-ins) | pending |
 | D7 | Select regressions (PromptPicker, SavedCredentialsPicker, ModelCombobox, DevToolkit selectors) | pending |
-| D8 | Pause→Resume control in ProgressStep | pending |
+| D8 | Pause→Resume control in ProgressStep | done |
 
 ## Deferred (needs owner decision or separate initiative)
 - Teams + AIAssistant audit sweep (surfaces unaudited by the panel)
@@ -76,3 +76,4 @@
 - 2026-07-05: Wave A3 landed (parseServerTimestamp UTC fix app-wide + 4 leaf de-patches; complete->completed writers + migration 27 + tolerant reads; durations + em-dash placeholders). 85 targeted tests green.
 - 2026-07-05: Wave A1 landed (registry-driven GDPR erasure covering ~37 user-scoped tables + schema-introspection completeness test; export gap + credential-leak fix; maintenance janitors scheduling retention/gh_cache/gh_outbox/undo-log). 58 targeted tests green.
 - 2026-07-05: Wave C landed (PT strings EN + wider anti-PT gate incl. server chat prompt; alert->toast; per-view document.title; Vite 8 footer; friendly ErrorBoundary; AIInstructions tabs on shared TabBar; wizard step-nav CTA; scrollbar/color-scheme/::selection theme fixes). 95 targeted tests green. C8 pending.
+- 2026-07-05: C8+D8+D3(progressbar) landed by lead (ProgressStep: load-error retry state, pause/cancel toasts, Resume button, progressbar+live-region a11y; MigrationHistory: rerun/resume/export toasts). 4 new RTL tests.
