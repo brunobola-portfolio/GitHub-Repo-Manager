@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, ArrowLeft, Plus, Trash2, Shield, UserPlus, BookCopy, Zap, Play, Clock, CheckCircle, XCircle, Loader2, Search, Activity } from 'lucide-react';
+import { Users, ArrowLeft, Plus, Trash2, Shield, UserPlus, BookCopy, Zap, Play, Clock, CheckCircle, XCircle, Loader2, Search, Activity, AlertTriangle } from 'lucide-react';
 import { Github } from '../icons/GithubIcon';
 import { useToast } from '../../hooks/useToast';
 import { ActivityTab } from './ActivityTab';
@@ -14,6 +14,7 @@ import { SectionSpinner, Spinner } from '../ui/Spinner';
 import { EmptyState } from '../ui/EmptyState';
 import { Input } from '../ui/form';
 import { apiCall } from '../../utils/api';
+import { formatDate, formatDateTime } from '../../utils/format';
 
 const TEAM_TABS = [
     { id: 'activity', label: 'Activity', icon: Activity },
@@ -28,6 +29,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
     const [assignedRepos, setAssignedRepos] = useState([]);
     const [currentUserRole, setCurrentUserRole] = useState('member');
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [showInvite, setShowInvite] = useState(false);
     const [showAssign, setShowAssign] = useState(false);
     const [inviteUsername, setInviteUsername] = useState('');
@@ -41,6 +43,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
     const fetchDetails = async () => {
         try {
             setLoading(true);
+            setLoadError(false);
             const res = await fetch(`/api/teams/${team.id}`);
             if (!res.ok) throw new Error('Failed to load team details');
             const data = await res.json();
@@ -48,6 +51,10 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
             setAssignedRepos(data.repos);
             setCurrentUserRole(data.currentUserRole);
         } catch (error) {
+            // Distinguish a genuine load failure from a team that's simply
+            // empty — otherwise the Members/Repos tabs render their "nothing
+            // here yet" CTA and quietly hide the fact that the fetch broke.
+            setLoadError(true);
             toast.error('Failed to load details');
         } finally {
             setLoading(false);
@@ -286,6 +293,13 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
 
                         {loading ? (
                             <SectionSpinner label="Loading members…" />
+                        ) : loadError ? (
+                            <EmptyState
+                                icon={AlertTriangle}
+                                title="Couldn't load members"
+                                description="We couldn't reach the team service. Check your connection and try again."
+                                action={{ label: 'Retry', onClick: fetchDetails }}
+                            />
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {members.map(member => (
@@ -389,11 +403,20 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                             ))}
                             {assignedRepos.length === 0 && (
                                 <div className="col-span-full">
-                                    <EmptyState
-                                        icon={Github}
-                                        title="No repositories assigned"
-                                        description="Assign repositories to share them with the team."
-                                    />
+                                    {loadError ? (
+                                        <EmptyState
+                                            icon={AlertTriangle}
+                                            title="Couldn't load repositories"
+                                            description="We couldn't reach the team service. Check your connection and try again."
+                                            action={{ label: 'Retry', onClick: fetchDetails }}
+                                        />
+                                    ) : (
+                                        <EmptyState
+                                            icon={Github}
+                                            title="No repositories assigned"
+                                            description="Assign repositories to share them with the team."
+                                        />
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -440,7 +463,7 @@ function MemberCard({ member, currentUserRole, onUpdateRole, onRemove, isMe }) {
             <div className="flex-1 min-w-0">
                 <h4 className="font-bold text-slate-900 dark:text-slate-100 truncate">{member.username}</h4>
                 <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-slate-400">Joined {new Date(member.joined_at).toLocaleDateString()}</span>
+                    <span className="text-xs text-slate-400">Joined {formatDate(member.joined_at)}</span>
                     {isMe && <span className="ds-text-micro bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-[color:var(--ds-accent-brand-dark)] px-1.5 py-0.5 rounded-full">You</span>}
                 </div>
             </div>
@@ -489,6 +512,7 @@ function RepoCard({ repo, teamMembers }) {
     const [showCollaborators, setShowCollaborators] = useState(false);
     const [collaborators, setCollaborators] = useState([]);
     const [loadingCollabs, setLoadingCollabs] = useState(false);
+    const [collabError, setCollabError] = useState(false);
     const [inviting, setInviting] = useState(null); // username being invited
     // Track "have we fetched" in a ref, not via collaborators.length — the
     // optimistic add on invite makes the array non-empty, which (with the old
@@ -502,6 +526,7 @@ function RepoCard({ repo, teamMembers }) {
         if (hasFetchedCollabsRef.current) return; // cache (ref, not array length)
         hasFetchedCollabsRef.current = true;
         setLoadingCollabs(true);
+        setCollabError(false);
         try {
             const [owner, repoName] = repo.repo_full_name.split('/');
             const res = await fetch(`/api/repos/${owner}/${repoName}/collaborators`);
@@ -510,9 +535,13 @@ function RepoCard({ repo, teamMembers }) {
                 setCollaborators(data);
             } else {
                 hasFetchedCollabsRef.current = false; // allow retry on failure
+                // Surface the failure instead of masquerading as "no
+                // collaborators found" — that empty copy hid real errors.
+                setCollabError(true);
             }
         } catch {
             hasFetchedCollabsRef.current = false; // allow retry on failure
+            setCollabError(true);
         } finally {
             setLoadingCollabs(false);
         }
@@ -587,7 +616,7 @@ function RepoCard({ repo, teamMembers }) {
             </h4>
 
             <div className="mt-auto pt-4 border-t border-slate-100 dark:border-slate-700 text-xs text-slate-500">
-                <span>Assigned {new Date(repo.created_at).toLocaleDateString()}</span>
+                <span>Assigned {formatDate(repo.created_at)}</span>
             </div>
 
             {/* Collaborators Panel */}
@@ -606,6 +635,18 @@ function RepoCard({ repo, teamMembers }) {
                                 <h5 className="ds-text-micro uppercase font-bold text-slate-400 mb-2">Collaborators</h5>
                                 {loadingCollabs ? (
                                     <Spinner size="sm" className="mx-auto" />
+                                ) : collabError ? (
+                                    <div className="flex items-center gap-2 text-xs text-red-500 dark:text-red-400">
+                                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                                        <span>Couldn't load collaborators.</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => { hasFetchedCollabsRef.current = false; fetchCollaborators(); }}
+                                            className="font-medium text-indigo-500 hover:text-indigo-600 hover:underline ds-focus-ring rounded"
+                                        >
+                                            Retry
+                                        </button>
+                                    </div>
                                 ) : (
                                     <div className="flex flex-wrap gap-1">
                                         {collaborators.map(c => (
@@ -658,6 +699,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
     const [workflows, setWorkflows] = useState([]);
     const [runs, setRuns] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [actionsError, setActionsError] = useState(false);
     const { toast } = useToast();
 
     useEffect(() => {
@@ -670,6 +712,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
 
     const fetchWorkflows = async (repoFullName) => {
         setLoading(true);
+        setActionsError(false);
         try {
             const [owner, repo] = repoFullName.split('/');
             const [wfRes, runRes] = await Promise.all([
@@ -679,7 +722,14 @@ function ActionsTab({ assignedRepos, onShowStats }) {
 
             if (wfRes.ok) setWorkflows(await wfRes.json());
             if (runRes.ok) setRuns(await runRes.json());
+            // A non-ok workflows response previously fell through silently to a
+            // "No workflows found" empty state — flag it as an error instead.
+            if (!wfRes.ok) {
+                setActionsError(true);
+                toast.error('Failed to load actions');
+            }
         } catch (error) {
+            setActionsError(true);
             toast.error('Failed to load actions');
         } finally {
             setLoading(false);
@@ -747,6 +797,13 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                     </div>
                 ) : loading ? (
                     <SectionSpinner label="Loading workflows..." padding="p-12" />
+                ) : actionsError ? (
+                    <EmptyState
+                        icon={AlertTriangle}
+                        title="Couldn't load actions"
+                        description="We couldn't reach GitHub Actions for this repository. Check your connection and try again."
+                        action={{ label: 'Retry', onClick: () => fetchWorkflows(selectedRepo) }}
+                    />
                 ) : (
                     <div className="space-y-8">
                         {/* Workflows List */}
@@ -794,7 +851,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                                             <div>
                                                 <div className="font-medium text-slate-900 dark:text-slate-100">{run.name}</div>
                                                 <div className="text-xs text-slate-500">
-                                                    {run.event} • {run.head_branch} • {new Date(run.created_at).toLocaleString()}
+                                                    {run.event} • {run.head_branch} • {formatDateTime(run.created_at)}
                                                 </div>
                                             </div>
                                         </div>

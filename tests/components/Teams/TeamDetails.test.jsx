@@ -127,3 +127,58 @@ describe('TeamDetails — member management wiring', () => {
         expect(within(listbox).getByRole('option', { name: /newdev/i })).toBeInTheDocument()
     })
 })
+
+describe('TeamDetails — load errors surface (not empty states)', () => {
+    it('shows an error + Retry (not a "no members" blank grid) when team details fail to load', { timeout: 20000 }, async () => {
+        global.fetch = vi.fn((url, opts = {}) => {
+            if (url === '/api/teams/1' && (!opts.method || opts.method === 'GET')) {
+                return Promise.resolve({ ok: false, status: 500, json: async () => ({}) })
+            }
+            return Promise.resolve({ ok: true, json: async () => ({}) })
+        })
+        renderDetails()
+        await screen.findByText('Platform', {}, { timeout: 5000 })
+        fireEvent.click(screen.getByText('Members'))
+        expect(await screen.findByText(/couldn't load members/i, {}, { timeout: 5000 })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
+    })
+
+    it('recovers when Retry is clicked after a failed load', { timeout: 20000 }, async () => {
+        let failNext = true
+        global.fetch = vi.fn((url, opts = {}) => {
+            if (url === '/api/teams/1' && (!opts.method || opts.method === 'GET')) {
+                if (failNext) { failNext = false; return Promise.resolve({ ok: false, status: 500, json: async () => ({}) }) }
+                return Promise.resolve({ ok: true, json: async () => ({ members: [BOB], repos: [], currentUserRole: 'owner' }) })
+            }
+            return Promise.resolve({ ok: true, json: async () => ({}) })
+        })
+        renderDetails()
+        await screen.findByText('Platform', {}, { timeout: 5000 })
+        fireEvent.click(screen.getByText('Members'))
+        fireEvent.click(await screen.findByRole('button', { name: /retry/i }, { timeout: 5000 }))
+        expect(await screen.findByText('bob', {}, { timeout: 5000 })).toBeInTheDocument()
+    })
+
+    it('shows an error + Retry (not "no collaborators found") when a repo\'s collaborators fail to load', { timeout: 20000 }, async () => {
+        global.fetch = vi.fn((url, opts = {}) => {
+            if (url === '/api/teams/1' && (!opts.method || opts.method === 'GET')) {
+                return Promise.resolve({ ok: true, json: async () => ({
+                    members: [BOB],
+                    repos: [{ id: 10, repo_full_name: 'acme/api', created_at: '2026-01-01T00:00:00.000Z' }],
+                    currentUserRole: 'owner',
+                }) })
+            }
+            if (String(url).includes('/collaborators')) {
+                return Promise.resolve({ ok: false, status: 500, json: async () => ({}) })
+            }
+            return Promise.resolve({ ok: true, json: async () => ({}) })
+        })
+        renderDetails()
+        await screen.findByText('Platform', {}, { timeout: 5000 })
+        fireEvent.click(screen.getByText('Repositories'))
+        const access = await screen.findByRole('button', { name: /access/i }, { timeout: 5000 })
+        fireEvent.click(access)
+        expect(await screen.findByText(/couldn't load collaborators/i, {}, { timeout: 5000 })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
+    })
+})

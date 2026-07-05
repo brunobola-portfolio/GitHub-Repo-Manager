@@ -345,8 +345,20 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus }) {
                             : m
                     )))
                 } catch (err) {
-                    // Drop the placeholder bubble, then surface a normal error bubble.
-                    setMessages(prev => prev.filter(m => m.id !== streamId))
+                    // A mid-stream disconnect must not silently swallow what the
+                    // user already read. Keep the partial bubble (marked
+                    // interrupted) when text arrived; only drop the placeholder
+                    // when nothing streamed in. Either way surfaceError appends an
+                    // honest error note + Retry that re-sends this same prompt.
+                    setMessages(prev => {
+                        const partial = prev.find(m => m.id === streamId)
+                        if (partial && partial.text) {
+                            return prev.map(m => (
+                                m.id === streamId ? { ...m, streaming: false, interrupted: true } : m
+                            ))
+                        }
+                        return prev.filter(m => m.id !== streamId)
+                    })
                     surfaceError(err)
                 } finally {
                     abortRef.current = null
@@ -650,6 +662,12 @@ function MessageBubble({ message, onAction, onRetry, onOpenSettings }) {
                                         className="inline-block w-1.5 h-3.5 -mb-0.5 ml-0.5 align-baseline rounded-[1px] bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-dark)] animate-pulse motion-reduce:animate-none"
                                         aria-hidden="true"
                                     />
+                                )}
+                                {message.interrupted && (
+                                    <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+                                        <AlertTriangle size={11} aria-hidden="true" />
+                                        Response interrupted — retry below to continue.
+                                    </p>
                                 )}
                             </>
                         )}

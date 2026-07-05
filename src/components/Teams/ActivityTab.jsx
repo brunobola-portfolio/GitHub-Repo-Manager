@@ -1,23 +1,27 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { GitCommit, GitPullRequest, CircleDot, Activity, Clock, FileCode, Star, GitFork, Tag, Trash2 } from 'lucide-react';
+import { GitCommit, GitPullRequest, CircleDot, Activity, Clock, FileCode, Star, GitFork, Tag, Trash2, AlertTriangle } from 'lucide-react';
 
 import { MOCK_MODE } from '../../config';
 import { EmptyState } from '../ui/EmptyState';
 import { Card } from '../ui/Card';
 import { Skeleton } from '../ui/Skeleton';
+import { formatDate, parseServerTimestamp } from '../../utils/format';
 
 export function ActivityTab({ teamId }) {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState(false);
+    const [reloadKey, setReloadKey] = useState(0);
     const [meta, setMeta] = useState({ truncated: false, totalRepos: 0, scannedRepos: 0 });
 
     useEffect(() => {
+        let cancelled = false;
         const fetchActivity = async () => {
             if (MOCK_MODE) {
                 // Simulate network delay
                 await new Promise(resolve => setTimeout(resolve, 800));
+                if (cancelled) return;
                 setEvents(MOCK_ACTIVITY_DATA);
                 setLoading(false);
                 return;
@@ -25,17 +29,12 @@ export function ActivityTab({ teamId }) {
 
             try {
                 setLoading(true);
-                setError(null);
+                setError(false);
                 const res = await fetch(`/api/teams/${teamId}/activity`);
-
-                // Fallback for demo if backend not running/configured
-                if (!res.ok) {
-                    setEvents(MOCK_ACTIVITY_DATA);
-                    setLoading(false);
-                    return;
-                }
+                if (!res.ok) throw new Error(`activity request failed: ${res.status}`);
 
                 const data = await res.json();
+                if (cancelled) return;
                 // Backwards compatible: older shape was a bare array; current
                 // shape is { events, totalRepos, scannedRepos, truncated }.
                 if (Array.isArray(data)) {
@@ -49,19 +48,32 @@ export function ActivityTab({ teamId }) {
                         scannedRepos: data.scannedRepos ?? 0,
                     });
                 }
-            } catch (e) {
-                setError(e?.message || 'Failed to load activity feed');
-                setEvents(MOCK_ACTIVITY_DATA);
+            } catch {
+                // Surface an honest error + Retry instead of silently
+                // substituting fabricated demo events — real users would read
+                // MOCK_ACTIVITY_DATA as genuine team activity.
+                if (!cancelled) {
+                    setError(true);
+                    setEvents([]);
+                }
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         };
 
         fetchActivity();
-    }, [teamId]);
+        return () => { cancelled = true; };
+    }, [teamId, reloadKey]);
 
     if (loading) return <ActivitySkeleton />;
-    if (error && events.length === 0) return <div className="p-8 text-center text-red-400">{error}</div>;
+    if (error) return (
+        <EmptyState
+            icon={AlertTriangle}
+            title="Couldn't load activity"
+            description="We couldn't reach the activity feed. Check your connection and try again."
+            action={{ label: 'Retry', onClick: () => setReloadKey(k => k + 1) }}
+        />
+    );
     if (events.length === 0) return (
         <EmptyState
             icon={Activity}
@@ -70,9 +82,10 @@ export function ActivityTab({ teamId }) {
         />
     );
 
-    // Group events by date
+    // Group events by date. formatDate parses naive-UTC server strings
+    // correctly (and passes ISO-with-zone through untouched).
     const groupedEvents = events.reduce((groups, event) => {
-        const date = new Date(event.created_at).toLocaleDateString(undefined, {
+        const date = formatDate(event.created_at, {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
@@ -85,11 +98,6 @@ export function ActivityTab({ teamId }) {
 
     return (
         <div className="space-y-8">
-            {error && (
-                <div className="px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">
-                    {error} — showing cached data.
-                </div>
-            )}
             {meta.truncated && (
                 <div className="px-4 py-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-xl text-xs text-amber-800 dark:text-amber-200">
                     Showing activity from {meta.scannedRepos} of {meta.totalRepos} team repositories — older or rate-limited repos are deferred to keep this feed responsive.
@@ -113,6 +121,10 @@ export function ActivityTab({ teamId }) {
 }
 
 function ActivityItem({ event }) {
+    // parseServerTimestamp handles naive-UTC server strings; toLocaleTimeString
+    // gives the clock time (no format.js time-only helper exists to reuse).
+    const eventTime = parseServerTimestamp(event.created_at);
+
     const getEventIcon = (type) => {
         switch (type) {
             case 'PushEvent': return <GitCommit className="w-4 h-4 text-emerald-500" />;
@@ -174,7 +186,7 @@ function ActivityItem({ event }) {
                     />
                     <span className="text-xs text-slate-400 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {new Date(event.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {eventTime ? eventTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                     </span>
                 </div>
             </div>

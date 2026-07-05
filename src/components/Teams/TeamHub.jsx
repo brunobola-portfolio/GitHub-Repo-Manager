@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Plus, ChevronRight, MoreVertical, Trash2, Edit2, Lock, Sparkles } from 'lucide-react';
+import { Users, Plus, ChevronRight, MoreVertical, Trash2, Edit2, Lock, Sparkles, AlertTriangle } from 'lucide-react';
 import { Github } from '../icons/GithubIcon';
 import { useToast } from '../../hooks/useToast';
 import { ConfirmModal } from '../ui/ConfirmModal';
@@ -17,6 +17,7 @@ import { getCsrfToken } from '../../utils/api';
 export function TeamHub({ onTeamSelect, onNavigatePricing }) {
     const [teams, setTeams] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [upgradeRequired, setUpgradeRequired] = useState(false);
     const [showCreate, setShowCreate] = useState(false);
 
@@ -36,6 +37,10 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
         const result = await listTeams();
         setTeams(result.teams);
         setUpgradeRequired(result.upgradeRequired);
+        // Distinguish a real load failure from an empty account so the grid
+        // can offer Retry instead of the misleading "No teams yet — create
+        // your first team" CTA.
+        setLoadError(!!result.error);
         if (result.error) {
             toast.error('Could not load teams');
         }
@@ -77,7 +82,7 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
                 toast.error(data.error || 'Operation failed');
             }
         } catch (error) {
-            toast.error('Operation failed');
+            toast.errorFromException(error, { fallbackTitle: isEditing ? 'Failed to update team' : 'Failed to create team' });
         }
     };
 
@@ -104,7 +109,7 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
                         toast.error(data.error || 'Failed to delete team');
                     }
                 } catch (error) {
-                    toast.error('Failed to delete team');
+                    toast.errorFromException(error, { fallbackTitle: 'Failed to delete team' });
                 }
             }
         });
@@ -218,7 +223,18 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
                         />
                     ))}
 
-                    {teams.length === 0 && !upgradeRequired && (
+                    {teams.length === 0 && loadError && (
+                        <div className="col-span-full">
+                            <EmptyState
+                                icon={AlertTriangle}
+                                title="Couldn't load teams"
+                                description="We couldn't reach the team service. Check your connection and try again."
+                                action={{ label: 'Retry', onClick: fetchTeams }}
+                            />
+                        </div>
+                    )}
+
+                    {teams.length === 0 && !upgradeRequired && !loadError && (
                         <div className="col-span-full">
                             <EmptyState
                                 icon={Users}

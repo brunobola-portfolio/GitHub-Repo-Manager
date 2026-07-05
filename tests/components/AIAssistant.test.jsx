@@ -488,6 +488,34 @@ describe('AIAssistant', () => {
       expect(await screen.findByText('blocking ok')).toBeInTheDocument()
       expect(askAI).toHaveBeenCalled()
     })
+
+    it('keeps partial streamed text (marked interrupted) + offers Retry when the stream errors mid-response', async () => {
+      const askAIStream = vi.fn()
+        .mockImplementationOnce(async (_msg, _ctx, { onDelta }) => {
+          onDelta('Here is half of the ans')
+          throw Object.assign(new Error('stream disconnected'), { code: 'AI_NETWORK_ERROR' })
+        })
+        .mockResolvedValueOnce({ reply: 'Full recovered answer', actions: [] })
+      renderAssistant({ askAI: vi.fn(), askAIStream })
+      await openAssistant()
+
+      const input = screen.getByRole('textbox', { name: /message the ai assistant/i })
+      await act(async () => {
+        fireEvent.change(input, { target: { value: 'explain' } })
+        fireEvent.submit(input.closest('form'))
+      })
+
+      // The partial answer the user already read must NOT be silently dropped.
+      expect(await screen.findByText(/half of the ans/i)).toBeInTheDocument()
+      expect(await screen.findByText(/interrupted/i)).toBeInTheDocument()
+
+      // An honest error note + Retry appears; Retry re-sends the same prompt.
+      const retry = await screen.findByRole('button', { name: /retry/i })
+      await act(async () => { fireEvent.click(retry) })
+      await waitFor(() => expect(askAIStream).toHaveBeenCalledTimes(2))
+      expect(askAIStream).toHaveBeenLastCalledWith('explain', expect.any(Object), expect.any(Object))
+      expect(await screen.findByText(/Full recovered answer/)).toBeInTheDocument()
+    })
   })
 
   describe('Code block copy (Phase 3 UX)', () => {
