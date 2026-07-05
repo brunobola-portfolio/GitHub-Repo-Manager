@@ -393,14 +393,23 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate }) {
                     <div className="space-y-2">
                         {webhooks.map(hook => (
                             <div key={hook.id} className="flex items-center gap-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
-                                <div className={`w-2 h-2 rounded-full ${hook.active ? 'bg-green-500' : 'bg-slate-400'}`} />
+                                <div
+                                    className={`w-2 h-2 rounded-full ${hook.active ? 'bg-green-500' : 'bg-slate-400'}`}
+                                    role="img"
+                                    aria-label={hook.active ? 'Webhook active' : 'Webhook inactive'}
+                                    title={hook.active ? 'Active' : 'Inactive'}
+                                />
                                 <span className="text-sm text-slate-700 dark:text-slate-300 flex-1 truncate font-mono">
                                     {hook.config?.url || '—'}
                                 </span>
-                                <Button variant="ghost" size="sm" onClick={() => pingHook(hook.id)} title="Ping">
+                                <Button variant="ghost" size="sm" onClick={() => pingHook(hook.id)}
+                                    aria-label={hook.config?.url ? `Ping webhook ${hook.config.url}` : 'Ping webhook'}
+                                    title="Ping">
                                     <RefreshCw className="w-3.5 h-3.5" />
                                 </Button>
-                                <Button variant="ghost" size="sm" onClick={() => deleteHook(hook.id)} className="text-red-500">
+                                <Button variant="ghost" size="sm" onClick={() => deleteHook(hook.id)} className="text-red-500"
+                                    aria-label={hook.config?.url ? `Delete webhook ${hook.config.url}` : 'Delete webhook'}
+                                    title="Delete webhook">
                                     <Trash2 className="w-3.5 h-3.5" />
                                 </Button>
                             </div>

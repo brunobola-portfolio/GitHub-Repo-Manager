@@ -163,10 +163,18 @@ describe('AutoFixDrawer', () => {
   })
 
   it('edit to a conflicting name excludes the item from Apply', async () => {
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => ({ duplicates: { 'existing-name': true } }),
+    // Route-aware mock: since a8b5576 the hook mints a CSRF token BEFORE the
+    // duplicate-check POST, so a one-shot mockResolvedValueOnce got consumed
+    // by the token fetch and the conflict response never reached the probe.
+    global.fetch.mockImplementation((url) => {
+      if (String(url).includes('check-duplicates')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ duplicates: { 'existing-name': true } }),
+        })
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) })
     })
     const user = userEvent.setup({ delay: null })
     const repos = [makeRepo({ id: 'a', name: 'api', selected: true })]

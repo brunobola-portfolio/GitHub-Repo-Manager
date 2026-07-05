@@ -246,6 +246,27 @@ describe('ReleasesTab — create release flow', () => {
 })
 
 describe('ReleasesTab — delete flow', () => {
+  it('exposes a specific accessible name on each per-row delete button', async () => {
+    const api = makeApi()
+    render(<ReleasesTab owner="owner" repo="repo" api={api} />)
+
+    await waitFor(() =>
+      expect(screen.getByText(/3 Releases/)).toBeInTheDocument()
+    )
+
+    // Named after the release title (falling back to tag_name) so the
+    // icon-only Trash button is not an anonymous "button" for AT users.
+    expect(
+      screen.getByRole('button', { name: 'Delete release v2.0.0 — Stable' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Delete release v2.1.0-rc.1' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Delete release Draft Release' })
+    ).toBeInTheDocument()
+  })
+
   it('opens ConfirmModal then deletes on confirm', async () => {
     const user = userEvent.setup()
     const api = makeApi()
@@ -255,13 +276,10 @@ describe('ReleasesTab — delete flow', () => {
       expect(screen.getByText(/3 Releases/)).toBeInTheDocument()
     )
 
-    // Each release row has a delete (Trash) button — click the first.
-    // Excludes the header Refresh button (which has aria-label="Refresh releases")
-    // so we only pick the per-row trash buttons that have no aria-label.
-    const deleteButtons = screen
-      .getAllByRole('button')
-      .filter(b => !b.getAttribute('aria-label') && b.querySelector('svg') && !b.textContent?.trim())
-    expect(deleteButtons.length).toBeGreaterThanOrEqual(3)
+    // Each release row has a delete (Trash) button with a specific
+    // accessible name — click the first (v2.0.0 — Stable).
+    const deleteButtons = screen.getAllByRole('button', { name: /^Delete release/i })
+    expect(deleteButtons.length).toBe(3)
     await user.click(deleteButtons[0])
 
     // ConfirmModal dialog opens
@@ -290,9 +308,7 @@ describe('ReleasesTab — delete flow', () => {
     await waitFor(() =>
       expect(screen.getByText(/3 Releases/)).toBeInTheDocument()
     )
-    const deleteButtons = screen
-      .getAllByRole('button')
-      .filter(b => !b.getAttribute('aria-label') && b.querySelector('svg') && !b.textContent?.trim())
+    const deleteButtons = screen.getAllByRole('button', { name: /^Delete release/i })
     await user.click(deleteButtons[0])
 
     const dialog = await screen.findByRole('dialog')

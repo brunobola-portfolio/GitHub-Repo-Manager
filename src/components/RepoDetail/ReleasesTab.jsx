@@ -167,7 +167,9 @@ export function ReleasesTab({ api }) {
                                     )}
                                 </div>
                             </div>
-                            <Button variant="ghost" size="sm" onClick={() => handleDelete(r)} className="text-red-500 hover:text-red-700">
+                            <Button variant="ghost" size="sm" onClick={() => handleDelete(r)} className="text-red-500 hover:text-red-700"
+                                aria-label={`Delete release ${r.name || r.tag_name}`}
+                                title={`Delete release ${r.name || r.tag_name}`}>
                                 <Trash2 className="w-3.5 h-3.5" />
                             </Button>
                         </div>

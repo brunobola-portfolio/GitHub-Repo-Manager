@@ -55,8 +55,8 @@
 | # | Item | Status |
 |---|---|---|
 | D1 | Event-table retention job (pr/issue/deployment events, workflow_runs) | pending |
-| D2 | MigrationWizard dark-only islands (SizeStrategyCard, TFVC, PingAuthorPopover) | pending |
-| D3 | A11y: name destructive icon buttons; migration progressbar semantics + completion announcement | pending |
+| D2 | MigrationWizard dark-only islands (SizeStrategyCard, TFVC, PingAuthorPopover) | done |
+| D3 | A11y: name destructive icon buttons; migration progressbar semantics + completion announcement | done |
 | D4 | Dead code: OrganizationSelector; dead tables audit_log v1/license_keys; stale server/migrations/*.sql note | pending |
 | D5 | Unsaved-changes guard (RepoDetail Settings / SettingsModal) | pending |
 | D6 | Browser-Back history model (pushState for drill-ins) | pending |
@@ -77,3 +77,4 @@
 - 2026-07-05: Wave A1 landed (registry-driven GDPR erasure covering ~37 user-scoped tables + schema-introspection completeness test; export gap + credential-leak fix; maintenance janitors scheduling retention/gh_cache/gh_outbox/undo-log). 58 targeted tests green.
 - 2026-07-05: Wave C landed (PT strings EN + wider anti-PT gate incl. server chat prompt; alert->toast; per-view document.title; Vite 8 footer; friendly ErrorBoundary; AIInstructions tabs on shared TabBar; wizard step-nav CTA; scrollbar/color-scheme/::selection theme fixes). 95 targeted tests green. C8 pending.
 - 2026-07-05: C8+D8+D3(progressbar) landed by lead (ProgressStep: load-error retry state, pause/cancel toasts, Resume button, progressbar+live-region a11y; MigrationHistory: rerun/resume/export toasts). 4 new RTL tests.
+- 2026-07-05: Wave D-alpha landed (SizeStrategyCard/TFVC/FixPlanItem/PingAuthorPopover light+dark pairs incl. trigger chip + DashboardHeader badge; delete-release/webhook aria-labels; webhook dot text alternative). Also FIXED pre-existing CI red: AutoFixDrawer conflict test broken by a8b5576 CSRF mint (route-aware fetch mock).

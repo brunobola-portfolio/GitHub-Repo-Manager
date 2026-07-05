@@ -15,7 +15,7 @@ export function FixPlanItem({ item, checked, conflictStatus, onToggle, onEdit })
   return (
     <div
       className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-sm
-        ${disabled ? 'border-red-500/40 bg-red-950/10' : 'border-slate-700 bg-slate-800/40'}`}
+        ${disabled ? 'border-red-300 bg-red-50 dark:border-red-500/40 dark:bg-red-950/10' : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/40'}`}
     >
       <input
         type="checkbox"
@@ -25,7 +25,7 @@ export function FixPlanItem({ item, checked, conflictStatus, onToggle, onEdit })
         aria-label={`Apply fix for ${item.from}`}
       />
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <span className="truncate text-slate-400 line-through">{item.from}</span>
+        <span className="truncate text-slate-500 line-through dark:text-slate-400">{item.from}</span>
         <ArrowRight className="h-3 w-3 shrink-0 text-slate-500" />
         <div className="min-w-0 flex-1">
           <Input
@@ -39,7 +39,7 @@ export function FixPlanItem({ item, checked, conflictStatus, onToggle, onEdit })
           />
         </div>
       </div>
-      <span className="shrink-0 rounded bg-slate-700 px-2 py-0.5 ds-text-micro uppercase tracking-wide text-slate-300">
+      <span className="shrink-0 rounded bg-slate-100 px-2 py-0.5 ds-text-micro uppercase tracking-wide text-slate-600 dark:bg-slate-700 dark:text-slate-300">
         {TYPE_LABEL[item.type] || item.type}
       </span>
       <ConflictIcon status={conflictStatus} />

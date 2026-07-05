@@ -84,8 +84,8 @@ export function PingAuthorPopover({ cacheKey, requestPayload, onPing, disabled =
                     className={clsx(
                         'flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
                         pingState === 'error'
-                            ? 'border-rose-500/50 text-rose-400'
-                            : 'border-indigo-500/50 text-indigo-300 hover:bg-indigo-500/10',
+                            ? 'border-rose-500/50 text-rose-600 dark:text-rose-400'
+                            : 'border-indigo-500/50 text-indigo-600 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-500/10',
                     )}
                 >
                     {pingState === 'loading'
@@ -98,9 +98,9 @@ export function PingAuthorPopover({ cacheKey, requestPayload, onPing, disabled =
                 side="bottom"
                 align="start"
                 avoidCollisions
-                className="z-[var(--ds-z-popover)] w-72 rounded-xl border border-white/10 bg-slate-900 p-3 shadow-xl"
+                className="z-[var(--ds-z-popover)] w-72 rounded-xl border border-slate-200 bg-white dark:border-white/10 dark:bg-slate-900 p-3 shadow-xl"
             >
-                <p className="mb-2 ds-text-meta text-slate-400">AI draft — edit before sending</p>
+                <p className="mb-2 ds-text-meta text-slate-500 dark:text-slate-400">AI draft — edit before sending</p>
                 <Textarea
                     defaultValue={pingBody}
                     onChange={e => setPingBody(e.target.value)}
@@ -111,7 +111,7 @@ export function PingAuthorPopover({ cacheKey, requestPayload, onPing, disabled =
                     <button
                         type="button"
                         onClick={() => setPopoverOpen(false)}
-                        className="px-2 py-1 text-xs text-slate-400 hover:text-slate-200"
+                        className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                     >
                         Cancel
                     </button>
@@ -119,7 +119,7 @@ export function PingAuthorPopover({ cacheKey, requestPayload, onPing, disabled =
                         <button
                             type="button"
                             onClick={() => setEditing(true)}
-                            className="px-2 py-1 text-xs text-slate-400 hover:text-slate-200"
+                            className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                         >
                             Edit first
                         </button>
@@ -132,7 +132,7 @@ export function PingAuthorPopover({ cacheKey, requestPayload, onPing, disabled =
                         Send
                     </button>
                 </div>
-                <Popover.Arrow className="fill-slate-900" />
+                <Popover.Arrow className="fill-white dark:fill-slate-900" />
             </Popover.Content>
         </Popover.Root>
     )

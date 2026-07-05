@@ -57,7 +57,7 @@ export function DashboardHeader({
                 {isAzureDevops ? 'Target project' : 'Importing to'}
               </span>
               {isAzureDevops && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-violet-500/15 border border-violet-500/30 text-[9px] font-bold uppercase tracking-wider text-violet-300">
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-violet-50 border border-violet-200 text-[9px] font-bold uppercase tracking-wider text-violet-700 dark:bg-violet-500/15 dark:border-violet-500/30 dark:text-violet-300">
                   in-place
                 </span>
               )}
