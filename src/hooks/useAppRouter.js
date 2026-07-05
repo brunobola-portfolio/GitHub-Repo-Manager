@@ -66,6 +66,19 @@ export function useAppRouter({
     '#/':           null,
   }), [])
 
+  // The view the last hash->state sync routes to, plus the stale view seen
+  // while React hasn't committed it yet. setActiveView is view-transition
+  // wrapped (async) while setSelectedRepoDetail is not, so a render can
+  // observe {selectedRepoDetail: stub, activeView: old-view} — the mirror
+  // effect below must NOT write the URL from that half-applied state (it
+  // would replace the just-traversed repo entry with the lateral hash and
+  // clobber Forward navigation).
+  const syncTargetViewRef = useRef(null)
+  const syncStaleViewRef = useRef(null)
+  // Latest committed activeView, readable from the sync event handler (which
+  // closes over stale render scope). Kept fresh by the mirror effect below.
+  const activeViewRef = useRef(null)
+
   useEffect(() => {
     const sync = () => {
       const hash = window.location.hash
@@ -75,6 +88,8 @@ export function useAppRouter({
       const repoRoute = parseRepoHash(hash)
       if (repoRoute) {
         const { owner, name, tab } = repoRoute
+        syncTargetViewRef.current = 'repo-detail'
+        syncStaleViewRef.current = activeViewRef.current
         setSelectedRepoDetail((prev) => {
           const prevOwner = prev?.owner?.login || prev?.full_name?.split('/')[0]
           if (prevOwner === owner && prev?.name === name) return prev // keep rich object
@@ -88,6 +103,8 @@ export function useAppRouter({
       }
       if (hash in HASH_ROUTES) {
         const next = HASH_ROUTES[hash]
+        syncTargetViewRef.current = next ?? 'dashboard'
+        syncStaleViewRef.current = activeViewRef.current
         setSelectedRepoDetail(null)
         setReviewingPR(null)
         setActiveView(next ?? 'dashboard')
@@ -134,6 +151,8 @@ export function useAppRouter({
   // (which should not). Shape: { view, repoKey }.
   const prevNavRef = useRef(null)
   useEffect(() => {
+    // Keep the committed-view ref fresh for the sync event handler.
+    activeViewRef.current = activeView
     // owner/name identity of the current repo-detail target (null elsewhere).
     // Distinguishes "opened a different repo" from "same repo, changed tab", and
     // stays stable across stub->rich upgrades / mutation patches (same o/n).
@@ -146,6 +165,24 @@ export function useAppRouter({
       didInitHashSyncRef.current = true
       prevNavRef.current = { view: activeView, repoKey }
       return
+    }
+
+    // A hash->state sync is in flight (browser Back/Forward or a manual hash
+    // edit). setActiveView is view-transition wrapped (async) while the other
+    // sync setters are not, so a render can commit with the seeded repo/route
+    // state while activeView still holds the PRE-traversal view — mirroring
+    // the URL from that half-applied state would rewrite the just-traversed
+    // history entry (e.g. replace the repo entry with '#/repos'), clobbering
+    // Forward navigation. Hold writes while activeView still equals the view
+    // captured at sync time; resume when the target lands or a competing
+    // in-app navigation supersedes the sync.
+    if (syncTargetViewRef.current) {
+      if (activeView === syncStaleViewRef.current && activeView !== syncTargetViewRef.current) {
+        prevNavRef.current = { view: activeView, repoKey }
+        return
+      }
+      syncTargetViewRef.current = null
+      syncStaleViewRef.current = null
     }
 
     let desired

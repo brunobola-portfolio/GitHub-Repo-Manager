@@ -231,3 +231,67 @@ describe('useAppRouter — document.title', () => {
         expect(document.title).toBe('Teams — GitHub Repo Manager')
     })
 })
+
+describe('useAppRouter — mid-transition guard (view-transition async commit)', () => {
+    // App wraps setActiveView in document.startViewTransition (async) while
+    // sync's other setters commit immediately, so after a Back/Forward the
+    // mirror effect can observe {selectedRepoDetail: stub, activeView: OLD}.
+    // Writing the URL from that half-applied state used to REPLACE the
+    // just-traversed repo entry with the lateral hash, clobbering Forward.
+    it('does not rewrite the traversed repo hash from the stale render', () => {
+        window.location.hash = '#/repos'
+        const p = mkProps({ activeView: 'repos' })
+        const { rerender } = renderHook((props) => useAppRouter(props), { initialProps: p })
+
+        // Browser Forward lands on the repo entry: hash changes, sync fires.
+        act(() => {
+            window.location.hash = '#/repo/acme/demo'
+            window.dispatchEvent(new Event('hashchange'))
+        })
+
+        const replaceSpy = vi.spyOn(window.history, 'replaceState')
+        const pushSpy = vi.spyOn(window.history, 'pushState')
+
+        // Stale render: the stub committed but activeView is still 'repos'.
+        rerender(mkProps({
+            activeView: 'repos',
+            selectedRepoDetail: { name: 'demo', full_name: 'acme/demo', owner: { login: 'acme' } },
+        }))
+        expect(replaceSpy).not.toHaveBeenCalled()
+        expect(pushSpy).not.toHaveBeenCalled()
+        expect(window.location.hash).toBe('#/repo/acme/demo')
+
+        // Catch-up render: the view transition lands; hash already matches,
+        // so still no write.
+        rerender(mkProps({
+            activeView: 'repo-detail',
+            selectedRepoDetail: { name: 'demo', full_name: 'acme/demo', owner: { login: 'acme' } },
+        }))
+        expect(replaceSpy).not.toHaveBeenCalled()
+        expect(pushSpy).not.toHaveBeenCalled()
+
+        replaceSpy.mockRestore()
+        pushSpy.mockRestore()
+    })
+
+    it('resumes mirroring when a competing navigation supersedes the sync', () => {
+        window.location.hash = '#/repos'
+        const p = mkProps({ activeView: 'repos' })
+        const { rerender } = renderHook((props) => useAppRouter(props), { initialProps: p })
+
+        act(() => {
+            window.location.hash = '#/repo/acme/demo'
+            window.dispatchEvent(new Event('hashchange'))
+        })
+
+        const replaceSpy = vi.spyOn(window.history, 'replaceState')
+
+        // The user clicks Teams before the repo-detail transition lands: the
+        // sync is superseded and normal mirroring must resume immediately.
+        rerender(mkProps({ activeView: 'teams' }))
+        expect(replaceSpy).toHaveBeenCalledTimes(1)
+        expect(replaceSpy.mock.calls[0][2]).toContain('#/teams')
+
+        replaceSpy.mockRestore()
+    })
+})
