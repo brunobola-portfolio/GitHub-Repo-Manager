@@ -25,7 +25,14 @@
 import express from 'express';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js';
-import { prCreateSchema, prUpdateSchema } from '../../lib/validators.js';
+import {
+    prCreateSchema,
+    prUpdateSchema,
+    prMergeSchema,
+    prReviewCommentSchema,
+    prReviewReplySchema,
+    prReviewSubmitSchema,
+} from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { readThrough, invalidate } from '../../lib/gh-cache.js';
 import { executeViaOutbox } from '../../lib/outbox-helper.js';
@@ -111,14 +118,14 @@ router.post('/:owner/:repo/pulls', requireAuth, validateBody(prCreateSchema), as
 });
 
 // Merge pull request — outbox-routed (Pro+ tier-gated)
-router.put('/:owner/:repo/pulls/:pull_number/merge', requireAuth, async (req, res) => {
+router.put('/:owner/:repo/pulls/:pull_number/merge', requireAuth, validateBody(prMergeSchema), async (req, res) => {
     try {
         const { owner, repo, pull_number } = req.params;
-        const { commit_title, commit_message, merge_method = 'merge' } = req.body;
+        const { commit_title, commit_message, merge_method, sha } = req.validatedBody;
         const result = await executeViaOutbox(req, {
             method: 'PUT',
             url: `/repos/${owner}/${repo}/pulls/${pull_number}/merge`,
-            body: { commit_title, commit_message, merge_method },
+            body: { commit_title, commit_message, merge_method, sha },
         });
         invalidate({ userId: req.session.userId, resourceType: 'pulls', prefix: `${owner}/${repo}` });
         if (result.queued) {
@@ -274,43 +281,16 @@ router.get('/:owner/:repo/pulls/:pull_number/comments', requireAuth, async (req,
 });
 
 // Create inline review comment — tier-gated as Pro+ (write-back).
-router.post('/:owner/:repo/pulls/:pull_number/comments', requireAuth, async (req, res) => {
+router.post('/:owner/:repo/pulls/:pull_number/comments', requireAuth, validateBody(prReviewCommentSchema), async (req, res) => {
     try {
         const { owner, repo, pull_number } = req.params;
-        const { body, commit_id, path, line, side, start_line, start_side } = req.body;
-
-        if (!body || !path || !commit_id) {
-            return res.status(400).json({
-                error: 'body, path, and commit_id are required',
-                code: 'VALIDATION_ERROR'
-            });
-        }
-
-        if (line != null && (!Number.isInteger(line) || line < 1)) {
-            return res.status(400).json({
-                error: 'line must be a positive integer',
-                code: 'VALIDATION_ERROR'
-            });
-        }
-
-        // Normalize side to GitHub's expected values
-        const VALID_SIDES = ['LEFT', 'RIGHT'];
-        const normalizedSide = side ? String(side).toUpperCase() : undefined;
-        if (normalizedSide && !VALID_SIDES.includes(normalizedSide)) {
-            return res.status(400).json({
-                error: 'side must be LEFT or RIGHT',
-                code: 'VALIDATION_ERROR'
-            });
-        }
-
-        const payload = { body, commit_id, path, line, side: normalizedSide };
-        if (start_line !== undefined) payload.start_line = start_line;
-        if (start_side !== undefined) payload.start_side = start_side;
-
+        // req.validatedBody is already whitelisted, length-capped, and has
+        // `side`/`start_side` normalised to GitHub's uppercase enum, so it can
+        // be forwarded verbatim (unknown keys were rejected by the schema).
         const result = await executeViaOutbox(req, {
             method: 'POST',
             url: `/repos/${owner}/${repo}/pulls/${pull_number}/comments`,
-            body: payload,
+            body: req.validatedBody,
         });
         invalidate({ userId: req.session.userId, resourceType: 'pull_comments', prefix: `${owner}/${repo}#${pull_number}` });
         if (result.queued) {
@@ -324,14 +304,10 @@ router.post('/:owner/:repo/pulls/:pull_number/comments', requireAuth, async (req
 });
 
 // Reply to a PR review comment thread — tier-gated as Pro+ (write-back).
-router.post('/:owner/:repo/pulls/:pull_number/comments/:comment_id/replies', requireAuth, async (req, res) => {
+router.post('/:owner/:repo/pulls/:pull_number/comments/:comment_id/replies', requireAuth, validateBody(prReviewReplySchema), async (req, res) => {
     try {
         const { owner, repo, pull_number, comment_id } = req.params;
-        const { body } = req.body;
-
-        if (!body) {
-            return res.status(400).json({ error: 'body is required', code: 'VALIDATION_ERROR' });
-        }
+        const { body } = req.validatedBody;
 
         try {
             const { data } = await githubApi(
@@ -360,32 +336,18 @@ router.post('/:owner/:repo/pulls/:pull_number/comments/:comment_id/replies', req
 
 // Submit a PR review (approve, request changes, or comment) — tier-gated as
 // Pro+ (write-back). Free tier can still fetch reviews for read-only mode.
-router.post('/:owner/:repo/pulls/:pull_number/reviews', requireAuth, async (req, res) => {
+router.post('/:owner/:repo/pulls/:pull_number/reviews', requireAuth, validateBody(prReviewSubmitSchema), async (req, res) => {
     try {
         const { owner, repo, pull_number } = req.params;
-        const { commit_id, event, body, comments } = req.body;
-
-        if (!event) {
-            return res.status(400).json({ error: 'event is required', code: 'VALIDATION_ERROR' });
-        }
-
-        const VALID_EVENTS = ['APPROVE', 'REQUEST_CHANGES', 'COMMENT'];
-        if (!VALID_EVENTS.includes(event)) {
-            return res.status(400).json({
-                error: `event must be one of: ${VALID_EVENTS.join(', ')}`,
-                code: 'VALIDATION_ERROR'
-            });
-        }
+        // Validated + normalised by prReviewSubmitSchema: `event` is a known
+        // enum, each comment's `side` is already uppercased, and unknown
+        // envelope keys were rejected with a 400.
+        const { commit_id, event, body, comments } = req.validatedBody;
 
         const payload = { event };
         if (commit_id) payload.commit_id = commit_id;
         if (body) payload.body = body;
-        if (Array.isArray(comments)) {
-            payload.comments = comments.map(c => ({
-                ...c,
-                side: c.side ? String(c.side).toUpperCase() : c.side,
-            }));
-        }
+        if (Array.isArray(comments)) payload.comments = comments;
 
         const result = await executeViaOutbox(req, {
             method: 'POST',

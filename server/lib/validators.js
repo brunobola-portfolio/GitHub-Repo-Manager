@@ -700,6 +700,73 @@ export const prUpdateSchema = z.object({
     maintainer_can_modify: z.boolean().optional(),
 }).strict();
 
+// --- PR write-back: merge / review-comment / reply / review submit ---
+//
+// These four endpoints previously shipped with `requireAuth` but read
+// straight off `req.body` with no (or ad-hoc) validation. The schemas below
+// whitelist exactly what each handler forwards to GitHub, matching the shapes
+// the frontend actually sends (mergePull / DiffPanel onAddComment /
+// submitReview / replyToComment) plus GitHub-documented optionals. `.strict()`
+// at the envelope level rejects unknown-shape input with a 400 via
+// `validateBody`'s `{ error, code: 'validation_failed' }` envelope.
+
+// Diff side ('LEFT' | 'RIGHT'), accepted case-insensitively because
+// @git-diff-view and older callers can emit lowercase; normalised to GitHub's
+// uppercase enum before it reaches the API. Non-string input falls through to
+// the enum, which rejects it with a 400.
+const reviewCommentSide = z.preprocess(
+    (v) => (typeof v === 'string' ? v.toUpperCase() : v),
+    z.enum(['LEFT', 'RIGHT']),
+);
+
+export const prMergeSchema = z.object({
+    merge_method: z.enum(['merge', 'squash', 'rebase']).optional().default('merge'),
+    commit_title: z.string().max(1024).optional(),
+    commit_message: z.string().max(65_536).optional(),
+    // GitHub-documented optional: the head SHA the PR must match to merge.
+    sha: z.string().min(1).max(64).optional(),
+}).strict();
+
+export const prReviewCommentSchema = z.object({
+    body: z.string().min(1).max(65_536),
+    commit_id: z.string().min(1).max(64),
+    path: z.string().min(1).max(1024),
+    line: z.number().int().positive().max(1_000_000).optional(),
+    side: reviewCommentSide.optional(),
+    start_line: z.number().int().positive().max(1_000_000).optional(),
+    start_side: reviewCommentSide.optional(),
+    subject_type: z.enum(['line', 'file']).optional(),
+    in_reply_to: z.number().int().positive().optional(),
+}).strict();
+
+export const prReviewReplySchema = z.object({
+    body: z.string().min(1).max(65_536),
+}).strict();
+
+// Per-comment shape inside a review submission. NON-strict on purpose: the
+// review composer can attach UI-only annotation keys (severity, suggestion)
+// that GitHub does not accept — zod strips them here so they never reach the
+// API, without 400-ing the whole review over a harmless extra field.
+const prReviewInlineComment = z.object({
+    path: z.string().min(1).max(1024),
+    body: z.string().min(1).max(65_536),
+    line: z.number().int().positive().max(1_000_000).optional(),
+    side: reviewCommentSide.optional(),
+    start_line: z.number().int().positive().max(1_000_000).optional(),
+    start_side: reviewCommentSide.optional(),
+    position: z.number().int().nonnegative().optional(),
+});
+
+export const prReviewSubmitSchema = z.object({
+    event: z.enum(['APPROVE', 'REQUEST_CHANGES', 'COMMENT']),
+    // Optional — APPROVE may carry no body; the frontend sends '' or undefined.
+    body: z.string().max(65_536).optional(),
+    // The PR head SHA, passed straight through by the frontend; it can be null
+    // when the head hasn't loaded yet, so allow null as well as absent.
+    commit_id: z.string().min(1).max(64).nullable().optional(),
+    comments: z.array(prReviewInlineComment).max(200).optional(),
+}).strict();
+
 export const branchCreateSchema = z.object({
     // Git ref name rules (simplified subset of `git check-ref-format`):
     //   - no leading '-' (would be parsed as a CLI flag downstream)

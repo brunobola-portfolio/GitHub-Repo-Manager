@@ -37,6 +37,7 @@ import {
     forkSchema,
     templateGenerateSchema,
     collaboratorAddSchema,
+    repoLabelCreateSchema,
 } from '../../lib/validators.js';
 import { auditLog } from '../../lib/audit.js';
 import { clampPerPage, applyOwnerRepoParamValidators } from './_shared.js';
@@ -393,10 +394,10 @@ router.get('/:owner/:repo/labels', requireAuth, async (req, res) => {
 });
 
 // Create label
-router.post('/:owner/:repo/labels', requireAuth, async (req, res) => {
+router.post('/:owner/:repo/labels', requireAuth, validateBody(repoLabelCreateSchema), async (req, res) => {
     try {
         const { owner, repo } = req.params;
-        const { name, color, description } = req.body;
+        const { name, color, description } = req.validatedBody;
 
         const { data } = await githubApi(`/repos/${owner}/${repo}/labels`, req.session.accessToken, {
             method: 'POST',
