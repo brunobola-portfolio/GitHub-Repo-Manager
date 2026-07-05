@@ -10,7 +10,29 @@ const router = Router();
 
 const checkoutSchema = z.object({
     tier: z.enum(['pro', 'enterprise']),
+    // Billing cadence. Defaults to monthly so older clients (and any caller
+    // that omits it) keep the previous behaviour. Yearly is only honoured when
+    // a matching yearly price ID is configured (see resolvePriceId).
+    billingPeriod: z.enum(['monthly', 'yearly']).default('monthly'),
 });
+
+// Map (tier, billingPeriod) → the configured Stripe price ID. Returns null when
+// that combination has no price configured (e.g. yearly requested but
+// STRIPE_PRICE_*_YEARLY is unset), which the caller turns into a 400 so we
+// never silently fall back to the monthly price and mis-charge the buyer.
+function resolvePriceId(tier, billingPeriod) {
+    if (tier === 'pro') {
+        return billingPeriod === 'yearly' ? config.stripePriceProYearly : config.stripePriceProMonthly;
+    }
+    return billingPeriod === 'yearly' ? config.stripePriceEnterpriseYearly : config.stripePriceEnterpriseMonthly;
+}
+
+// Whether yearly checkout is actually wired. The pricing page's monthly/yearly
+// toggle is Pro-driven (Enterprise is Contact-Sales), so yearly is "available"
+// only when Stripe is enabled AND a real Pro yearly price ID is configured.
+function isYearlyBillingAvailable() {
+    return isStripeEnabled() && !!config.stripePriceProYearly;
+}
 
 function requireStripe(req, res, next) {
     if (!isStripeEnabled()) {
@@ -19,13 +41,23 @@ function requireStripe(req, res, next) {
     next();
 }
 
+// Public capability probe — no auth so the (possibly logged-out) pricing page
+// can feature-detect before rendering the yearly toggle. Booleans only; leaks
+// no secrets or price IDs.
+router.get('/config', (req, res) => {
+    res.json({
+        stripeEnabled: isStripeEnabled(),
+        yearlyBillingAvailable: isYearlyBillingAvailable(),
+    });
+});
+
 // Create checkout session
 router.post('/checkout', requireAuth, requireStripe, async (req, res) => {
     try {
         const parsed = checkoutSchema.safeParse(req.body);
         if (!parsed.success) return res.status(400).json({ error: 'Invalid input' });
 
-        const { tier } = parsed.data;
+        const { tier, billingPeriod } = parsed.data;
         const stripe = getStripe();
         const userId = req.session.userId;
 
@@ -45,8 +77,8 @@ router.post('/checkout', requireAuth, requireStripe, async (req, res) => {
             ).run(userId, customerId, customerId);
         }
 
-        const priceId = tier === 'pro' ? config.stripePriceProMonthly : config.stripePriceEnterpriseMonthly;
-        if (!priceId) return res.status(400).json({ error: `Price not configured for ${tier} tier` });
+        const priceId = resolvePriceId(tier, billingPeriod);
+        if (!priceId) return res.status(400).json({ error: `Price not configured for ${tier} ${billingPeriod} plan` });
 
         const session = await stripe.checkout.sessions.create({
             customer: customerId,
@@ -54,7 +86,7 @@ router.post('/checkout', requireAuth, requireStripe, async (req, res) => {
             line_items: [{ price: priceId, quantity: 1 }],
             success_url: `${config.frontendUrl}/settings?billing=success`,
             cancel_url: `${config.frontendUrl}/pricing`,
-            metadata: { userId: String(userId), tier },
+            metadata: { userId: String(userId), tier, billingPeriod },
         });
 
         res.json({ url: session.url });

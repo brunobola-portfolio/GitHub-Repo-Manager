@@ -11,10 +11,10 @@
 |---|---|---|---|
 | A1a | GDPR erasure sweep: enumerate user-scoped tables dynamically (sqlite_master minus explicit survive-allowlist) so new tables can't be missed | `server/routes/user-data.js` | pending |
 | A1b | Schedule the written-but-never-run purge jobs (BYOK retention pass, gh_cache, gh_outbox, undo-log) as boot janitors with graceful-shutdown stop | `server/index.js`, `server/lib/retention.js` | pending |
-| A2a | Yearly billing: thread billingPeriod into checkout end-to-end; hide yearly toggle unless yearly Stripe prices are configured | `Pricing/PricingPage.jsx`, server billing route, `server/config.js` | pending |
-| A2b | Pricing claims honesty: SOC 2 / AES-256-at-rest / data-residency copy → only what code substantiates | `Pricing/PricingPage.jsx` | pending |
-| A2c | Settings upsell: correct quota numbers from ground truth; extend parity gate to cover LicensePlanSection | `Settings/LicensePlanSection.jsx`, `tests/pricing-feature-parity.test.js` | pending |
-| A2d | Roadmap vs pricing write-back contradiction: reword Roadmap (backend is ungated; Free keeps write-back per pricing page) | `Roadmap/RoadmapPage.jsx` | pending |
+| A2a | Yearly billing: thread billingPeriod into checkout end-to-end; hide yearly toggle unless yearly Stripe prices are configured | `Pricing/PricingPage.jsx`, server billing route, `server/config.js` | done |
+| A2b | Pricing claims honesty: SOC 2 / AES-256-at-rest / data-residency copy → only what code substantiates | `Pricing/PricingPage.jsx` | done |
+| A2c | Settings upsell: correct quota numbers from ground truth; extend parity gate to cover LicensePlanSection | `Settings/LicensePlanSection.jsx`, `tests/pricing-feature-parity.test.js` | done |
+| A2d | Roadmap vs pricing write-back contradiction: reword Roadmap (backend is ungated; Free keeps write-back per pricing page) | `Roadmap/RoadmapPage.jsx` | done |
 | A3a | Naive-UTC timestamps: central parse fix in format.js (+Z for SQLite naive strings), remove leaf hand-patches | `src/utils/format.js` + leaf components | pending |
 | A3b | Status vocabulary: canonicalize `complete`→`completed` (writers + stats + data migration + UI map) | `server/routes/import/*`, `server/lib/db-migrations.js` | pending |
 | A3c | MigrationHistory duration via formatDurationSeconds; standardize `N/A`→`—` | `MigrationHistory.jsx`, `RepoDetail/OverviewTab.jsx`, `SettingsTab.jsx` | pending |
@@ -71,3 +71,4 @@
 
 ## Log
 - 2026-07-05: plan created; report committed.
+- 2026-07-05: Wave A2 landed (yearly billing honest end-to-end + /billing/config probe; compliance claims rewritten; LicensePlanSection corrected + parity gate 5th surface; Roadmap page + ROADMAP.md write-back reconciled). 57 targeted tests green.

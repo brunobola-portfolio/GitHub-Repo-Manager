@@ -37,6 +37,15 @@ const previewSource = readFileSync(
     'utf-8',
 )
 
+// LicensePlanSection.jsx is the FIFTH pricing surface — the in-app Settings
+// upsell. It drifted to a fictional "10,000 AI queries/month" + non-Pro
+// deliverables ("Priority support", "Advanced analytics"); wire it in so the
+// Pro upsell copy can never diverge from feature-flags again.
+const licenseSource = readFileSync(
+    join(__dirname, '..', 'src', 'components', 'Settings', 'LicensePlanSection.jsx'),
+    'utf-8',
+)
+
 // billing.js is the source of truth for whether a Stripe free trial actually
 // exists — used to keep "free trial" marketing copy honest.
 const billingSource = readFileSync(
@@ -249,6 +258,49 @@ describe('PricingPreview.jsx (Landing) ↔ feature-flags parity', () => {
     it('Free Semantic Search line matches semanticSearchPerMonth (75, not the stale 50)', () => {
         expect(free.semanticSearchPerMonth).toBe(75)
         expect(previewSource).toMatch(new RegExp(`Semantic Search \\(${free.semanticSearchPerMonth} / month\\)`))
+    })
+})
+
+// ---------------------------------------------------------------------------
+// LicensePlanSection.jsx (Settings upsell) is the FIFTH pricing surface. Its
+// Pro upsell bullet list must match feature-flags (pro) — no fictional caps,
+// no non-Pro deliverables.
+// ---------------------------------------------------------------------------
+describe('LicensePlanSection.jsx (Settings upsell) ↔ feature-flags parity', () => {
+    const pro = getFeatures('pro')
+
+    // The Pro upsell renders `{[...bullets].map(...)}` right after the
+    // "For teams" subtitle. Grab that literal array so assertions are scoped
+    // to the Pro card and can't be satisfied by the Enterprise list.
+    function proUpsellArray() {
+        const anchor = licenseSource.indexOf('For teams')
+        const mapIdx = licenseSource.indexOf('].map(', anchor)
+        const arrStart = licenseSource.lastIndexOf('[', mapIdx)
+        return licenseSource.slice(arrStart, mapIdx + 1)
+    }
+
+    it('Pro AI-queries bullet matches aiQueriesPerMonth (5,000 — not the stale 10,000)', () => {
+        expect(pro.aiQueriesPerMonth).toBe(5000)
+        const list = proUpsellArray()
+        expect(list).toContain(pro.aiQueriesPerMonth.toLocaleString('en-US')) // "5,000"
+        expect(list).not.toMatch(/10,000/)
+    })
+
+    it('Pro upsell reflects unlimited repositories (maxRepos = Infinity)', () => {
+        expect(pro.maxRepos).toBe(Infinity)
+        expect(proUpsellArray()).toMatch(/Unlimited repositories/i)
+    })
+
+    it('Pro upsell does not claim non-Pro deliverables (Priority support / Advanced analytics)', () => {
+        const list = proUpsellArray()
+        // "Priority support" is an Enterprise deliverable (SLA); Pro is "Email support".
+        expect(list).not.toMatch(/Priority support/i)
+        // "Advanced analytics" is a roadmap Enterprise item, not a Pro feature.
+        expect(list).not.toMatch(/Advanced analytics/i)
+    })
+
+    it('does not leave "N/A" placeholders in the panel (uses an em dash)', () => {
+        expect(licenseSource).not.toMatch(/'N\/A'/)
     })
 })
 

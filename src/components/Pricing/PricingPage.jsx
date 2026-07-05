@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, ArrowRight, Sparkles, GitBranch, Shield, Cpu } from 'lucide-react'
 import { PricingCard } from './PricingCard'
@@ -98,7 +98,7 @@ const FAQS = [
   },
   {
     q: 'Is my data secure?',
-    a: 'All data is encrypted in transit (TLS 1.3) and at rest (AES-256). Enterprise plans include audit logs and custom data-residency options. We never access your code without explicit permission.',
+    a: 'Traffic is encrypted in transit over HTTPS/TLS, and the credentials you store — your GitHub and Azure PATs plus any bring-your-own-key AI provider keys — are encrypted at rest with AES-256-GCM. The stack is security-hardened (Content-Security-Policy, rate limiting, and an append-only, SHA-256 hash-chained audit log), and because the app is self-hostable under AGPL you can run it on your own infrastructure so your data never leaves it. We never access your code without explicit permission.',
   },
   {
     q: 'Do you offer a free trial for Pro or Enterprise?',
@@ -162,13 +162,34 @@ const SALES_EMAIL = 'bruno@bolalabs.pt'
 
 export function PricingPage({ onGetStarted } = {}) {
   const [isYearly, setIsYearly] = useState(false)
+  // Feature-detect yearly billing. The toggle stays hidden until the server
+  // confirms a yearly Stripe price is actually configured, so we never show
+  // "Save 20%" and then charge the monthly price at checkout. Defaults to
+  // false (hidden) so an unavailable/failed probe errs on the honest side.
+  const [yearlyAvailable, setYearlyAvailable] = useState(false)
   const [checkoutLoading, setCheckoutLoading] = useState(null)
   // Stays on Pricing when checkout is unavailable so the user actually sees
   // the explanation (previously we navigated home and the banner never showed).
   // 'unavailable' = Stripe missing (503); 'error' = network / unexpected.
   const [checkoutState, setCheckoutState] = useState(null)
 
-  const handleCheckout = useCallback(async (tier) => {
+  // On mount, ask the backend whether yearly billing is wired. If the probe
+  // is unreachable we leave the toggle hidden rather than advertise a discount
+  // the checkout can't honour.
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/v1/billing/config`, { credentials: 'include' })
+        if (!res.ok) return
+        const data = await res.json()
+        if (!cancelled) setYearlyAvailable(!!data?.yearlyBillingAvailable)
+      } catch { /* keep yearly hidden when we can't confirm it's configured */ }
+    })()
+    return () => { cancelled = true }
+  }, [])
+
+  const handleCheckout = useCallback(async (tier, billingPeriod = 'monthly') => {
     setCheckoutLoading(tier)
     setCheckoutState(null)
     try {
@@ -178,7 +199,7 @@ export function PricingPage({ onGetStarted } = {}) {
         method: 'POST',
         credentials: 'include',
         headers,
-        body: JSON.stringify({ tier }),
+        body: JSON.stringify({ tier, billingPeriod }),
       })
       if (res.status === 503) {
         setCheckoutState({ kind: 'unavailable' })
@@ -209,12 +230,12 @@ export function PricingPage({ onGetStarted } = {}) {
       return
     }
     if (tier === 'Pro') {
-      handleCheckout('pro')
+      handleCheckout('pro', isYearly ? 'yearly' : 'monthly')
       return
     }
     // Free tier — go to dashboard
     if (onGetStarted) onGetStarted('free')
-  }, [handleCheckout, onGetStarted])
+  }, [handleCheckout, onGetStarted, isYearly])
 
   const tiers = TIERS_MONTHLY.map(t => applyYearly(t, isYearly))
 
@@ -315,7 +336,10 @@ export function PricingPage({ onGetStarted } = {}) {
             No hidden fees, no surprise bills.
           </motion.p>
 
-          {/* Monthly / Yearly toggle */}
+          {/* Monthly / Yearly toggle — only shown when the backend confirms a
+              yearly Stripe price is configured, so the discount always maps to
+              a real yearly checkout. */}
+          {yearlyAvailable && (
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -359,6 +383,7 @@ export function PricingPage({ onGetStarted } = {}) {
               )}
             </AnimatePresence>
           </motion.div>
+          )}
         </div>
 
         {/* ── Social proof strip ── */}
@@ -374,7 +399,10 @@ export function PricingPage({ onGetStarted } = {}) {
             // anywhere, so advertising it would be unverified.
             { icon: GitBranch, text: 'Scales to thousands of repos per workspace' },
             { icon: Cpu, text: 'Multi-provider AI (Gemini, Claude, GPT, OpenRouter)' },
-            { icon: Shield, text: 'SOC 2-hardened architecture' },
+            // Substantiated in code: helmet CSP + express-rate-limit +
+            // append-only SHA-256 hash-chained audit log. No SOC 2 attestation
+            // exists, so we advertise the hardening measures, not a certification.
+            { icon: Shield, text: 'Hardened stack — CSP, rate limiting, tamper-evident audit log' },
           ].map(({ icon: Icon, text }) => (
             <div key={text} className="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500">
               <Icon className="w-4 h-4 text-indigo-500/60 dark:text-indigo-400/50" />

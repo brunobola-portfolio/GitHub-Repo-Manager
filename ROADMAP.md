@@ -71,7 +71,7 @@ A thin mirror of the in-app Roadmap page (`/roadmap`). Everything here is either
 - **README Enhance** (v3.0.1) — Pro. AI-generated diff against your current README.
 - **Batch Indexing** (v3.0.1) — Pro. Bulk AI indexing with progress modal.
 - **Bulk operations safety** — confirmation dialogs, dry-run mode, tier-gated destructive actions.
-- **PR Review write-back tier gating** (v3.4.0) — Free is read-only; Pro+ for approve / request-changes / comment / merge.
+- **PR Review write-back** (v3.4.0) — approve / request-changes / comment / merge from the app. Available on all tiers: the original Pro gating was deliberately removed in the v4.x pricing rebalance (locked by tier-gate tests).
 - **PR Review Experience** (v3.0.x) — file tree, diff viewer, AI insights, threads.
 - **License Badge + License Mint Automation** (v3.0.1) — Ed25519 JWT.
 - **Modal System Redesign** (v3.0.1) — shared primitive, body scroll lock.

@@ -46,8 +46,8 @@ const STATUS_VARIANT = {
 }
 
 function formatDate(dateStr) {
-    if (!dateStr) return 'N/A'
-    return formatDateBase(dateStr, { year: 'numeric', month: 'long', day: 'numeric' }) || 'N/A'
+    if (!dateStr) return '—'
+    return formatDateBase(dateStr, { year: 'numeric', month: 'long', day: 'numeric' }) || '—'
 }
 
 function PlanCard({ tier, status, renewalDate, onManage, onChangePlan, portalLoading }) {
@@ -122,7 +122,11 @@ function UpgradePrompt({ onUpgradePro, onUpgradeEnterprise }) {
                         </div>
                     </div>
                     <ul className="space-y-1.5 mb-4">
-                        {['Unlimited repositories', '10,000 AI queries/month', 'Priority support', 'Advanced analytics'].map((feat) => (
+                        {/* Grounded in feature-flags.js (pro) + the Pro pricing card:
+                            maxRepos=Infinity, aiQueriesPerMonth=5000, bulkAdvanced +
+                            syncRepository=true, "Email support". Priority support and
+                            advanced analytics are NOT Pro deliverables (Enterprise). */}
+                        {['Unlimited repositories', '5,000 AI queries/month', 'Advanced bulk & mirror sync', 'Email support'].map((feat) => (
                             <li key={feat} className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
                                 {feat}

@@ -56,7 +56,6 @@ const STAGES = [
       { title: 'Cross-Repo Work Board', description: 'My Reviews, Stale PRs, My Issues, Review Load, Tech Debt, DORA (deploy freq, lead time p50/p90, CFR, MTTR, CSV export)', tier: 'All' },
       { title: 'AI Issue-to-PR Planner', description: 'Plan-only mode — structured plan (approach, files, tests, risks, estimate) for any open issue', tier: 'Pro' },
       { title: 'Command Palette live GitHub search', description: 'PRs, issues, repos via the GitHub Search API with debounce + rate-limit awareness', tier: 'All' },
-      { title: 'PR Review write-back tier gating', description: 'Free tier is strictly read-only; Pro+ required for approve / request-changes / comment / merge', tier: 'Pro + Enterprise' },
       { title: 'GitHub event ingestion pipeline', description: 'Real-time PR, issue and deployment webhook ingestion into the Work Board', tier: 'All' },
       { title: 'SOC 2 code hardening', description: 'Append-only audit log with SHA-256 hash chain, self-service data erasure, startup secrets check, retention pass', tier: 'Enterprise' },
       { title: 'Stripe billing + license key delivery', description: 'Ed25519-signed JWT license keys issued on checkout completion', tier: 'Pro + Enterprise' },
