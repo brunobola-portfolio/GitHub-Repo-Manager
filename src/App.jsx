@@ -748,7 +748,7 @@ function AppContent() {
                   expandedWidth={280}
                   slimContent={
                     <SlimSidebar
-                      selectedRepos={selectedRepos}
+                      {...sidebarProps}
                       onOpenImport={() => openModal('showMigrationWizard')}
                       onNavigateWorkBoard={() => setActiveView('work-board')}
                     />

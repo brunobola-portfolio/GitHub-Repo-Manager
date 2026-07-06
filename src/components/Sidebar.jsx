@@ -15,7 +15,7 @@ import {
 import { useSelection } from '../hooks/useSelection'
 import { useModal } from '../hooks/useModal'
 
-function SlimPopover({ isOpen, onClose, children, triggerRef }) {
+function SlimPopover({ isOpen, onClose, children, triggerRef, ariaLabel = 'Quick actions' }) {
   const popoverRef = useRef(null)
 
   useEffect(() => {
@@ -55,7 +55,7 @@ function SlimPopover({ isOpen, onClose, children, triggerRef }) {
       tabIndex={-1}
       role="dialog"
       aria-modal="true"
-      aria-label="Quick actions"
+      aria-label={ariaLabel}
       className="absolute right-full mr-2 top-0 w-72 max-h-80 overflow-y-auto rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white dark:bg-slate-900 backdrop-blur-md shadow-xl z-[var(--ds-z-popover)] p-3 outline-none"
     >
       {children}
@@ -63,7 +63,8 @@ function SlimPopover({ isOpen, onClose, children, triggerRef }) {
   )
 }
 
-function SlimIconButton({ icon: Icon, label, isActive, onClick, accent, buttonRef }) {
+function SlimIconButton({ icon: Icon, label, isActive, onClick, accent, buttonRef, count = 0 }) {
+  const hasCount = count > 0
   return (
     <button
       ref={buttonRef}
@@ -75,11 +76,19 @@ function SlimIconButton({ icon: Icon, label, isActive, onClick, accent, buttonRe
             ? 'bg-indigo-100 dark:bg-indigo-900/40 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
             : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300'
       }`}
-      aria-label={label}
+      aria-label={hasCount ? `${label} (${count})` : label}
       aria-haspopup={accent ? undefined : 'true'}
       aria-expanded={isActive || undefined}
     >
       <Icon className="w-5 h-5" />
+      {hasCount && (
+        <span
+          aria-hidden="true"
+          className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-indigo-500 text-white ds-text-micro font-bold leading-[16px] text-center ring-2 ring-white dark:ring-slate-900"
+        >
+          {count > 99 ? '99+' : count}
+        </span>
+      )}
       <span className="absolute right-full mr-3 px-2 py-1 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-[var(--ds-z-popover)]">
         {label}
       </span>
@@ -87,7 +96,42 @@ function SlimIconButton({ icon: Icon, label, isActive, onClick, accent, buttonRe
   )
 }
 
-function SlimSidebarBase({ selectedRepos, onOpenImport, onNavigateWorkBoard }) {
+// How many rows the collapsed-rail popovers surface before you expand the
+// sidebar for the full list.
+const SLIM_ROW_LIMIT = 5
+
+function SlimPopoverHeading({ children }) {
+  return (
+    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 px-1">
+      {children}
+    </p>
+  )
+}
+
+// Compact, honest empty for the small popover surface — mirrors the inline
+// empties the expanded ActionHistory / ActivityList panels already use (the
+// expanded views don't use <EmptyState>, so neither does the rail).
+function SlimEmpty({ icon: Icon, label }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-6 text-slate-500 dark:text-slate-400">
+      <Icon className="w-7 h-7 mb-2 opacity-20" />
+      <span className="text-xs">{label}</span>
+    </div>
+  )
+}
+
+function SlimSidebarBase({
+  selectedRepos = [],
+  results = [],
+  activity = [],
+  isPerforming = false,
+  performAction,
+  onTransfer,
+  onArchive,
+  onDelete,
+  onOpenImport,
+  onNavigateWorkBoard,
+}) {
   const [openPopover, setOpenPopover] = useState(null)
 
   // Define hooks at top level individually
@@ -98,6 +142,11 @@ function SlimSidebarBase({ selectedRepos, onOpenImport, onNavigateWorkBoard }) {
   const togglePopover = (name) => {
     setOpenPopover(prev => prev === name ? null : name)
   }
+
+  const selectionCount = selectedRepos?.length || 0
+  const hasSelection = selectionCount > 0
+  const recentResults = results.slice(0, SLIM_ROW_LIMIT)
+  const recentActivity = activity.slice(0, SLIM_ROW_LIMIT)
 
   return (
     <div className="flex flex-col items-center gap-2 py-3">
@@ -118,19 +167,37 @@ function SlimSidebarBase({ selectedRepos, onOpenImport, onNavigateWorkBoard }) {
           isActive={openPopover === 'actions'}
           onClick={() => togglePopover('actions')}
           buttonRef={actionsRef}
+          count={selectionCount}
         />
         <div className="relative">
           <SlimPopover
             isOpen={openPopover === 'actions'}
             onClose={() => setOpenPopover(null)}
             triggerRef={actionsRef}
+            ariaLabel="Quick Actions"
           >
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Quick Actions</p>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            {selectedRepos?.length > 0
-              ? `${selectedRepos.length} repos selected`
-              : 'Select repos for actions'}
-          </p>
+          <div className="flex items-center justify-between mb-2 px-1">
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Quick Actions</p>
+            {hasSelection && (
+              <span className="ds-text-micro font-medium px-2 py-0.5 rounded-full bg-[color:var(--ds-surface-muted)] dark:bg-[color:var(--ds-surface-muted-dark)] text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">
+                {selectionCount} selected
+              </span>
+            )}
+          </div>
+          {hasSelection ? (
+            <QuickActionButtons
+              isPerforming={isPerforming}
+              performAction={performAction}
+              onTransfer={onTransfer}
+              onArchive={onArchive}
+              onDelete={onDelete}
+              selectedRepos={selectedRepos}
+            />
+          ) : (
+            <p className="text-sm text-slate-500 dark:text-slate-400 px-1">
+              Select repos for bulk actions.
+            </p>
+          )}
         </SlimPopover>
       </div>
 
@@ -142,15 +209,25 @@ function SlimSidebarBase({ selectedRepos, onOpenImport, onNavigateWorkBoard }) {
           isActive={openPopover === 'history'}
           onClick={() => togglePopover('history')}
           buttonRef={historyRef}
+          count={results.length}
         />
         <div className="relative">
           <SlimPopover
             isOpen={openPopover === 'history'}
             onClose={() => setOpenPopover(null)}
             triggerRef={historyRef}
+            ariaLabel="Action History"
           >
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Action History</p>
-          <p className="text-sm text-slate-500 dark:text-slate-400">No recent actions</p>
+          <SlimPopoverHeading>Action History</SlimPopoverHeading>
+          {recentResults.length === 0 ? (
+            <SlimEmpty icon={History} label="No recent actions" />
+          ) : (
+            <div className="-mx-1 divide-y divide-slate-100 dark:divide-slate-800/60 rounded-xl overflow-hidden">
+              {recentResults.map((r, i) => (
+                <ActionHistoryRow key={i} result={r} />
+              ))}
+            </div>
+          )}
         </SlimPopover>
       </div>
 
@@ -160,15 +237,25 @@ function SlimSidebarBase({ selectedRepos, onOpenImport, onNavigateWorkBoard }) {
           isActive={openPopover === 'activity'}
           onClick={() => togglePopover('activity')}
           buttonRef={activityRef}
+          count={activity.length}
         />
         <div className="relative">
           <SlimPopover
             isOpen={openPopover === 'activity'}
             onClose={() => setOpenPopover(null)}
             triggerRef={activityRef}
+            ariaLabel="Recent Activity"
           >
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Recent Activity</p>
-          <p className="text-sm text-slate-500 dark:text-slate-400">No recent activity</p>
+          <SlimPopoverHeading>Recent Activity</SlimPopoverHeading>
+          {recentActivity.length === 0 ? (
+            <SlimEmpty icon={Clock} label="No recent activity" />
+          ) : (
+            <div className="-mx-1 divide-y divide-slate-100 dark:divide-slate-800/60 rounded-xl overflow-hidden">
+              {recentActivity.map((event) => (
+                event ? <ActivityRow key={event.id} event={event} /> : null
+              ))}
+            </div>
+          )}
         </SlimPopover>
       </div>
 
@@ -294,57 +381,75 @@ function QuickActions({
                         </div>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 gap-2">
-                        {/* Visibility */}
-                        <ActionButton
-                            icon={Lock}
-                            label="Private"
-                            onClick={() => performAction('visibility', { makePublic: false })}
-                            disabled={isPerforming}
-                            variant="warning"
-                            className="col-span-1"
-                        />
-                        <ActionButton
-                            icon={Unlock}
-                            label="Public"
-                            onClick={() => performAction('visibility', { makePublic: true })}
-                            disabled={isPerforming}
-                            variant="success"
-                            className="col-span-1"
-                        />
-
-                        {/* Transfer/Mirror */}
-                        <ActionButton
-                            icon={ArrowRightLeft}
-                            label="Transfer"
-                            subLabel="or Mirror"
-                            onClick={onTransfer}
-                            disabled={isPerforming}
-                            variant="info"
-                            className="col-span-2"
-                        />
-
-                        {/* Destructive */}
-                        <div className="col-span-2 pt-2 mt-1 border-t border-slate-100 dark:border-slate-800/60 grid grid-cols-2 gap-2">
-                            <ActionButton
-                                icon={Archive}
-                                label="Archive"
-                                onClick={() => onArchive?.(selectedRepos, true)}
-                                disabled={isPerforming}
-                                variant="secondary"
-                            />
-                            <ActionButton
-                                icon={Trash2}
-                                label="Delete"
-                                onClick={() => onDelete?.(selectedRepos)}
-                                disabled={isPerforming}
-                                variant="danger"
-                            />
-                        </div>
-                    </div>
+                    <QuickActionButtons
+                        isPerforming={isPerforming}
+                        performAction={performAction}
+                        onTransfer={onTransfer}
+                        onArchive={onArchive}
+                        onDelete={onDelete}
+                        selectedRepos={selectedRepos}
+                    />
                 )}
             </div>
         </Card>
+    )
+}
+
+// Shared bulk-action grid — reused by the expanded QuickActions card and the
+// collapsed SlimSidebar "Quick Actions" popover so both render the SAME real
+// actions (no invented / duplicated buttons).
+function QuickActionButtons({
+    isPerforming, performAction, onTransfer, onArchive, onDelete, selectedRepos
+}) {
+    return (
+        <div className="grid grid-cols-2 gap-2">
+            {/* Visibility */}
+            <ActionButton
+                icon={Lock}
+                label="Private"
+                onClick={() => performAction?.('visibility', { makePublic: false })}
+                disabled={isPerforming}
+                variant="warning"
+                className="col-span-1"
+            />
+            <ActionButton
+                icon={Unlock}
+                label="Public"
+                onClick={() => performAction?.('visibility', { makePublic: true })}
+                disabled={isPerforming}
+                variant="success"
+                className="col-span-1"
+            />
+
+            {/* Transfer/Mirror */}
+            <ActionButton
+                icon={ArrowRightLeft}
+                label="Transfer"
+                subLabel="or Mirror"
+                onClick={onTransfer}
+                disabled={isPerforming}
+                variant="info"
+                className="col-span-2"
+            />
+
+            {/* Destructive */}
+            <div className="col-span-2 pt-2 mt-1 border-t border-slate-100 dark:border-slate-800/60 grid grid-cols-2 gap-2">
+                <ActionButton
+                    icon={Archive}
+                    label="Archive"
+                    onClick={() => onArchive?.(selectedRepos, true)}
+                    disabled={isPerforming}
+                    variant="secondary"
+                />
+                <ActionButton
+                    icon={Trash2}
+                    label="Delete"
+                    onClick={() => onDelete?.(selectedRepos)}
+                    disabled={isPerforming}
+                    variant="danger"
+                />
+            </div>
+        </div>
     )
 }
 
@@ -380,6 +485,42 @@ function ActionButton({ icon: IconComp, label, subLabel, onClick, disabled, vari
     )
 }
 
+// Shared single history row — reused by the expanded ActionHistory panel and
+// the collapsed SlimSidebar "Action History" popover.
+function ActionHistoryRow({ result: r }) {
+    return (
+        <div className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+            <div className="flex items-start gap-3">
+                <div className={`mt-0.5 p-1 rounded-full ${r.success ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'}`}>
+                    {r.success ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                        <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                            {ACTION_LABELS[r.action] || r.action}
+                        </div>
+                        <span className="ds-text-micro text-slate-500 dark:text-slate-400">
+                            {new Date(r.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                    </div>
+                    <div className="ds-text-meta text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">
+                        {r.message}
+                    </div>
+                    {!r.success && r.details?.length > 0 && (
+                        <div className="mt-1 space-y-0.5">
+                            {r.details.map((d, j) => (
+                                <div key={j} className="ds-text-micro text-red-500/80 dark:text-red-400/70 leading-tight">
+                                    {d.field ? `${d.field}: ` : ''}{d.message}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    )
+}
+
 function ActionHistory({ results, isPerforming, message }) {
     return (
         <Card hover={true} className="flex-shrink-0 overflow-hidden border border-slate-200 dark:border-slate-700/60 shadow-sm rounded-2xl flex flex-col max-h-[300px]">
@@ -407,35 +548,7 @@ function ActionHistory({ results, isPerforming, message }) {
                 ) : (
                     <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
                         {results.map((r, i) => (
-                            <div key={i} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                                <div className="flex items-start gap-3">
-                                    <div className={`mt-0.5 p-1 rounded-full ${r.success ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'}`}>
-                                        {r.success ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center justify-between">
-                                            <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-                                                {ACTION_LABELS[r.action] || r.action}
-                                            </div>
-                                            <span className="ds-text-micro text-slate-500 dark:text-slate-400">
-                                                {new Date(r.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
-                                        </div>
-                                        <div className="ds-text-meta text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">
-                                            {r.message}
-                                        </div>
-                                        {!r.success && r.details?.length > 0 && (
-                                            <div className="mt-1 space-y-0.5">
-                                                {r.details.map((d, j) => (
-                                                    <div key={j} className="ds-text-micro text-red-500/80 dark:text-red-400/70 leading-tight">
-                                                        {d.field ? `${d.field}: ` : ''}{d.message}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
+                            <ActionHistoryRow key={i} result={r} />
                         ))}
                     </div>
                 )}
@@ -485,44 +598,49 @@ function ActivityListBody({ activity }) {
 
     return (
         <div className="flex-1 min-h-0 divide-y divide-slate-100 dark:divide-slate-800/60 overflow-y-auto ds-scrollbar">
-            {activity.map((event) => {
-                if (!event) return null
-                const EventIcon = getEventIcon(event.type)
-                const timeAgo = formatRelativeTime(event.created_at)
+            {activity.map((event) => (
+                event ? <ActivityRow key={event.id} event={event} /> : null
+            ))}
+        </div>
+    )
+}
 
-                return (
-                    <div key={event.id} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
-                        <div className="flex items-start gap-3">
-                            <div className="mt-1">
-                                {EventIcon}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-2">
-                                    <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate hover:text-indigo-500 cursor-pointer">
-                                        {event.repo?.name || 'Unknown Repo'}
-                                    </div>
-                                    <span className="ds-text-micro text-slate-500 dark:text-slate-400 whitespace-nowrap">{timeAgo}</span>
-                                </div>
-                                <div className="ds-text-meta text-slate-500 dark:text-slate-400 mt-0.5 leading-tight line-clamp-2">
-                                    {getEventDescription(event)}
-                                </div>
-                                <div className="mt-1.5 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button
-                                        className="ds-text-micro font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline flex items-center gap-1"
-                                        aria-label="View activity details"
-                                        onClick={() => {
-                                            const repoName = event.repo?.name
-                                            if (repoName) window.open(`https://github.com/${repoName}`, '_blank', 'noopener')
-                                        }}
-                                    >
-                                        View Details <ExternalLink className="w-2.5 h-2.5" />
-                                    </button>
-                                </div>
-                            </div>
+// Shared single activity row — reused by the expanded Recent Activity panel and
+// the collapsed SlimSidebar "Recent Activity" popover.
+function ActivityRow({ event }) {
+    const EventIcon = getEventIcon(event.type)
+    const timeAgo = formatRelativeTime(event.created_at)
+
+    return (
+        <div className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+            <div className="flex items-start gap-3">
+                <div className="mt-1">
+                    {EventIcon}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate hover:text-indigo-500 cursor-pointer">
+                            {event.repo?.name || 'Unknown Repo'}
                         </div>
+                        <span className="ds-text-micro text-slate-500 dark:text-slate-400 whitespace-nowrap">{timeAgo}</span>
                     </div>
-                )
-            })}
+                    <div className="ds-text-meta text-slate-500 dark:text-slate-400 mt-0.5 leading-tight line-clamp-2">
+                        {getEventDescription(event)}
+                    </div>
+                    <div className="mt-1.5 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                            className="ds-text-micro font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline flex items-center gap-1"
+                            aria-label="View activity details"
+                            onClick={() => {
+                                const repoName = event.repo?.name
+                                if (repoName) window.open(`https://github.com/${repoName}`, '_blank', 'noopener')
+                            }}
+                        >
+                            View Details <ExternalLink className="w-2.5 h-2.5" />
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     )
 }
