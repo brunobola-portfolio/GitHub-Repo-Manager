@@ -667,7 +667,7 @@ function AppContent() {
         onOpenAISettings={() => openModalWithData('showSettings', { initialTab: 'ai' })}
       />
 
-      <main id="main-content" className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 pt-3 md:pt-4 lg:pt-5 pb-52 md:pb-6 transition-all duration-300 relative z-[1]">
+      <main id="main-content" className="max-w-[var(--layout-max-w)] mx-auto px-[var(--layout-px)] pt-3 md:pt-4 lg:pt-5 pb-52 md:pb-6 transition-all duration-[var(--ds-duration-slow)] relative z-[1]">
         {activeView === 'pricing' && (
           <ViewShell name="Pricing">
             <PricingPage onGetStarted={(dest) => setActiveView(dest === 'roadmap' ? 'roadmap' : 'dashboard')} />
@@ -789,7 +789,7 @@ function AppContent() {
         )}
 
         {activeView === 'pr-review' && user && reviewingPR && selectedRepoDetail && (
-          <ViewShell name="PR Review" fadeClass="animate-in fade-in duration-300" onGoHome={() => { setReviewingPR(null); setActiveView('repo-detail') }}>
+          <ViewShell name="PR Review" fadeClass="animate-in fade-in duration-[var(--ds-duration-slow)]" onGoHome={() => { setReviewingPR(null); setActiveView('repo-detail') }}>
             <PRReviewView
               owner={selectedRepoDetail.owner?.login || selectedRepoDetail.owner}
               repo={selectedRepoDetail.name}

@@ -85,8 +85,8 @@ export function Header({
 
     return (
         <>
-        <header className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-700/50 sticky top-0 z-20 transition-all duration-300 shadow-sm dark:shadow-black/20 safe-area-top">
-            <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 h-14 sm:h-16 flex items-center gap-3">
+        <header className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-700/50 sticky top-0 z-20 transition-all duration-[var(--ds-duration-slow)] shadow-sm dark:shadow-black/20 safe-area-top">
+            <div className="max-w-[var(--layout-max-w)] mx-auto px-[var(--layout-px)] h-14 sm:h-16 flex items-center gap-3">
                 {/* Left: Logo & Title */}
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink-0">
                     {user && (
@@ -123,7 +123,7 @@ export function Header({
                         type="button"
                         onClick={onOpenCommandPalette}
                         aria-label="Open command palette (Ctrl+K)"
-                        className="hidden min-[1340px]:inline-flex items-center gap-1.5 px-2 h-[28px] rounded-lg ds-text-meta font-medium text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/50 bg-white/40 dark:bg-slate-800/40 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-colors"
+                        className="hidden nav:inline-flex items-center gap-1.5 px-2 h-[28px] rounded-lg ds-text-meta font-medium text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/50 bg-white/40 dark:bg-slate-800/40 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-colors"
                     >
                         <kbd className="font-mono">⌘K</kbd>
                     </button>
@@ -173,7 +173,7 @@ export function Header({
                     {user ? (
                         <>
                             {/* Quick Actions Container */}
-                            <div className="hidden min-[1340px]:flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-[4px] rounded-[13px] border border-slate-200/50 dark:border-slate-700/50">
+                            <div className="hidden nav:flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-[4px] rounded-[13px] border border-slate-200/50 dark:border-slate-700/50">
                                 <HeaderIconButton onClick={onCreateRepo} label="Create new repository" title="New repo">
                                     <Plus className="w-4 h-4" />
                                 </HeaderIconButton>
@@ -422,7 +422,7 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
                 type="button"
                 onClick={toggleTheme}
                 aria-pressed={isDark}
-                className={`relative flex items-center justify-center rounded-[9px] transition-all duration-300 ds-focus-ring w-[34px] h-[34px] ${
+                className={`relative flex items-center justify-center rounded-[9px] transition-all duration-[var(--ds-duration-slow)] ds-focus-ring w-[34px] h-[34px] ${
                     isDark
                         ? 'bg-slate-600/80 text-amber-300 hover:bg-slate-500/80 hover:text-amber-200'
                         : 'bg-white text-[color:var(--ds-accent-brand)] shadow-sm hover:bg-indigo-50 hover:text-indigo-700'
@@ -430,8 +430,8 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
                 aria-label={label}
             >
                 <span className="relative w-4 h-4" aria-hidden="true">
-                    <Sun className={`w-4 h-4 absolute inset-0 transition-[opacity,transform] duration-300 ${isDark ? 'opacity-100 rotate-0' : 'opacity-0 rotate-90'}`} />
-                    <Moon className={`w-4 h-4 absolute inset-0 transition-[opacity,transform] duration-300 ${isDark ? 'opacity-0 -rotate-90' : 'opacity-100 rotate-0'}`} />
+                    <Sun className={`w-4 h-4 absolute inset-0 transition-[opacity,transform] duration-[var(--ds-duration-slow)] ${isDark ? 'opacity-100 rotate-0' : 'opacity-0 rotate-90'}`} />
+                    <Moon className={`w-4 h-4 absolute inset-0 transition-[opacity,transform] duration-[var(--ds-duration-slow)] ${isDark ? 'opacity-0 -rotate-90' : 'opacity-100 rotate-0'}`} />
                 </span>
             </button>
         </Tooltip>
@@ -478,7 +478,7 @@ function NavButton({ active, onClick, icon, label, badge }) {
                     }`}
             >
                 {IconComponent && <IconComponent className="w-4 h-4" />}
-                <span className="hidden min-[1340px]:inline">{label}</span>
+                <span className="hidden nav:inline">{label}</span>
                 {badge > 0 && (
                     <span
                         aria-label={`${badge} items need attention`}

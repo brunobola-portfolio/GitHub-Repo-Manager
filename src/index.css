@@ -15,6 +15,17 @@
  * layout has no vertical room on short viewports. */
 @custom-variant short (@media (max-height: 500px));
 
+/* Named breakpoints (Tailwind v4 @theme) — generate `nav:` / `wide:` / `ultra:`
+ * variants so shell code never hardcodes `min-[1340px]`-style widths:
+ *   nav   = point where the header nav labels/quick-actions fit
+ *   wide  = filter bar collapses to a single row
+ *   ultra = beyond-1920 density (extra grid column, wider gutters) */
+@theme {
+	--breakpoint-nav: 1340px;
+	--breakpoint-wide: 1700px;
+	--breakpoint-ultra: 1920px;
+}
+
 /* Safelist modal size classes used inside lookup tables (src/components/ui/Modal.jsx).
  * Tailwind's JIT scans for whole class tokens but these live inside an object literal
  * used via runtime indexing — the scanner finds them when spelled out here so they
@@ -38,6 +49,15 @@
 	--bottom-nav-height: 0px;
 	--card-min-width: 300px;
 	--layout-py: 0.75rem;
+	/* Shell horizontal rhythm — ONE token instead of `px-4 sm:px-6 lg:px-8
+	   xl:px-10` repeated across App/Header/banners. Steps mirror the old
+	   ladder and add an ultra step. Consumed as `px-[var(--layout-px)]`. */
+	--layout-px: 1rem;
+	/* Shell content cap. 1920px left 320px of dead gutter per side on 2560
+	   displays (measured 2026-07-06, spec 2026-06-25 workstream 1); 2400px
+	   uses the space while `--card-min-width`'s ultra step below keeps cards
+	   from stretching. Flip to 2560px here if edge-to-edge is preferred. */
+	--layout-max-w: 2400px;
 }
 
 @media (max-width: 639px) {
@@ -51,6 +71,12 @@
 @media (min-width: 640px) and (max-width: 767px) {
 	:root {
 		--card-min-width: 280px;
+	}
+}
+
+@media (min-width: 640px) {
+	:root {
+		--layout-px: 1.5rem;
 	}
 }
 
@@ -69,6 +95,25 @@
 @media (min-width: 1024px) {
 	:root {
 		--layout-py: 1.25rem;
+		--layout-px: 2rem;
+	}
+}
+
+/* Source order matters: this must sit AFTER the 1024 block or its 2rem step
+   would win the cascade for every viewport >= 1280 (both queries match; the
+   later declaration takes precedence). */
+@media (min-width: 1280px) {
+	:root {
+		--layout-px: 2.5rem;
+	}
+}
+
+/* Ultra (>= 1920px): wider gutters + a higher card floor so the raised
+   `--layout-max-w` yields an extra grid column instead of stretched cards. */
+@media (min-width: 1920px) {
+	:root {
+		--layout-px: 3rem;
+		--card-min-width: 340px;
 	}
 }
 

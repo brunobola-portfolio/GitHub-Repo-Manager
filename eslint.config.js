@@ -6,6 +6,29 @@ import reactPlugin from 'eslint-plugin-react'
 import jsxA11y from 'eslint-plugin-jsx-a11y'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
+// Shared no-restricted-syntax entries for the layout anti-drift gate — used in
+// two config blocks below (they cannot be one block: see the comment there).
+const layoutAntiDriftRules = [
+  {
+    selector: String.raw`Literal[value=/\bmin-\[\d+px\]/]`,
+    message: 'Use the named breakpoints nav:/wide:/ultra: (src/index.css @theme) instead of raw min-[Npx] variants.',
+  },
+  {
+    selector: String.raw`TemplateElement[value.raw=/\bmin-\[\d+px\]/]`,
+    message: 'Use the named breakpoints nav:/wide:/ultra: (src/index.css @theme) instead of raw min-[Npx] variants.',
+  },
+  {
+    // Shell-scale caps only (1900-2999px) — small max-w-[Npx] values on
+    // menus/popovers are legitimate component sizing.
+    selector: String.raw`Literal[value=/\bmax-w-\[(19|2\d)\d{2}px\]/]`,
+    message: 'Use max-w-[var(--layout-max-w)] (src/index.css) for shell-scale caps so ultrawide sizing stays in one token.',
+  },
+  {
+    selector: String.raw`TemplateElement[value.raw=/\bmax-w-\[(19|2\d)\d{2}px\]/]`,
+    message: 'Use max-w-[var(--layout-max-w)] (src/index.css) for shell-scale caps so ultrawide sizing stays in one token.',
+  },
+]
+
 export default defineConfig([
   globalIgnores(['dist', '**/dist/**', '.claude/worktrees/**', '.dev/**', 'coverage/**']),
   {
@@ -113,7 +136,23 @@ export default defineConfig([
           selector: "Literal[value=/\\bds-(gradient-text|card-shimmer|btn-shimmer|border-glow|hover-glow|animate-float|pulse-glow|glass(-strong)?)\\b/]",
           message: 'Theme spec: this ds-* class is in the kill list.',
         },
+        // Layout anti-drift gate (spec 2026-06-25 workstream 3). The shell went
+        // through a token migration — named breakpoints (`nav:`/`wide:`/`ultra:`
+        // from the @theme block in src/index.css) and `--layout-px`/
+        // `--layout-max-w` vars — so raw pixel breakpoints must not creep back.
+        ...layoutAntiDriftRules,
       ],
+    },
+  },
+  {
+    // Same layout gate for the src files OUTSIDE the block above (App.jsx,
+    // actions, contexts, …). Flat-config `rules` REPLACE rather than merge for
+    // overlapping files, so this block must exclude the dirs already covered —
+    // otherwise it would silently drop the theme-spec rules there.
+    files: ['src/**/*.{js,jsx}'],
+    ignores: ['src/components/**', 'src/hooks/**', 'src/utils/**'],
+    rules: {
+      'no-restricted-syntax': ['error', ...layoutAntiDriftRules],
     },
   },
 ])

@@ -112,7 +112,9 @@ export function RateLimitNotice({ retryAt, variant = 'toast', onRetry, onDismiss
                 className="relative z-[var(--ds-z-floating)]"
             >
                 <div className="bg-amber-50/90 dark:bg-amber-900/60 border-b border-amber-300 dark:border-amber-500 backdrop-blur-md">
-                    <div className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-3 sm:gap-4">
+                    {/* Aligned to the shared shell token (this banner previously
+                        stopped at lg:px-8, silently narrower than its siblings). */}
+                    <div className="max-w-[var(--layout-max-w)] mx-auto px-[var(--layout-px)] py-2.5 flex items-center justify-between gap-3 sm:gap-4">
                         <div className="flex items-center gap-3 min-w-0">
                             {Ring}
                             <p className="text-sm font-medium text-amber-800 dark:text-amber-200/90 truncate">

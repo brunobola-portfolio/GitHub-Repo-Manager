@@ -124,11 +124,11 @@ export function RepoFilterBar({
 	}
 
 	return (
-		<div className="sticky z-10 p-2 md:p-2.5 rounded-2xl border border-slate-200/60 dark:border-slate-700/40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md shadow-xl shadow-slate-200/50 dark:shadow-black/50 transition-all duration-300" style={{ top: 'calc(var(--header-height) + var(--layout-py))' }}>
-			<div className="flex flex-wrap min-[1700px]:flex-nowrap gap-x-2 gap-y-2.5 items-center">
+		<div className="sticky z-10 p-2 md:p-2.5 rounded-2xl border border-slate-200/60 dark:border-slate-700/40 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md shadow-xl shadow-slate-200/50 dark:shadow-black/50 transition-all duration-[var(--ds-duration-slow)]" style={{ top: 'calc(var(--header-height) + var(--layout-py))' }}>
+			<div className="flex flex-wrap wide:flex-nowrap gap-x-2 gap-y-2.5 items-center">
 
 			{/* Search & View Toggle */}
-			<div className="flex items-center gap-2 w-full min-[1700px]:w-auto min-[1700px]:flex-1 flex-wrap sm:flex-nowrap min-w-0">
+			<div className="flex items-center gap-2 w-full wide:w-auto wide:flex-1 flex-wrap sm:flex-nowrap min-w-0">
 				{/* Advanced Selection Menu */}
 				<div className="relative z-[var(--ds-z-composer)] flex-shrink-0">
 					<div className="flex items-center rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-1">
@@ -274,7 +274,7 @@ export function RepoFilterBar({
 					</Button>
 				</div>
 			) : (
-				<div className="flex items-center gap-2 w-full min-[1700px]:w-auto flex-wrap lg:flex-nowrap min-w-0">
+				<div className="flex items-center gap-2 w-full wide:w-auto flex-wrap lg:flex-nowrap min-w-0">
 					<Select
 						value={typeFilter}
 						onChange={setTypeFilter}
