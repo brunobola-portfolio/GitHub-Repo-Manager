@@ -134,6 +134,14 @@ export const RepoCard = memo(function RepoCard({
 						: 'bg-white/70 dark:bg-slate-800/80 border-slate-200/70 dark:border-slate-700/50 hover:border-indigo-400/60 dark:hover:border-indigo-500/40'
 				}
                 ${isGrid ? 'rounded-2xl p-3 sm:p-4 xl:p-5 flex flex-col h-full' : 'rounded-xl p-4 flex items-center gap-4'}
+                ${/* Skip layout/paint for offscreen cards — with hundreds of
+                    repos only the visible rows render. `auto <estimate>` keeps
+                    scrollbar geometry sane before first render, then the
+                    browser remembers each card's real size. Paint containment
+                    only clips DESCENDANTS to the card box (nothing inside
+                    overflows it; menus/tooltips are app-level portals), the
+                    card's own hover shadow is unaffected. */ ''}
+                ${isGrid ? '[content-visibility:auto] [contain-intrinsic-size:auto_190px]' : '[content-visibility:auto] [contain-intrinsic-size:auto_88px]'}
             `}
 		>
 			{/* Stretched selection control (background layer). Clicking anywhere

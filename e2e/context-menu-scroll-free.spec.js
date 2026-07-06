@@ -2,9 +2,10 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Context Menu — scroll-free and flip behavior', () => {
 	test.beforeEach(async ({ page }) => {
-		await page.goto('/')
-		// Wait until at least one repo card is visible, but don't fail if not.
-		await page.locator('[data-testid="repo-card"]').first().waitFor({ state: 'visible', timeout: 10000 }).catch(() => {})
+		// Repo cards live on the repositories view (goto '/' lands on the
+		// dashboard, where every test below would self-skip).
+		await page.goto('/#/repos')
+		await page.locator('[data-testid="repo-card"]').first().waitFor({ state: 'visible', timeout: 15000 })
 	})
 
 	test('right-click menu opens without scrollbars', async ({ page }) => {
@@ -35,24 +36,23 @@ test.describe('Context Menu — scroll-free and flip behavior', () => {
 		const viewport = page.viewportSize()
 		if (!viewport) test.skip()
 
-		const card = page.locator('[data-testid="repo-card"]').first()
-		if (!(await card.isVisible())) test.skip()
-
-		// Dispatch a contextmenu event at the very bottom of the viewport.
-		await page.dispatchEvent('body', 'contextmenu', {
+		// Fire the contextmenu event ON a card (so the app's handler runs) but
+		// with pointer coordinates at the very bottom of the viewport — a
+		// downward-opening menu would overflow, so the position math must
+		// flip/clamp it fully on screen. (The old version dispatched on <body>,
+		// which no card handler ever receives, so the test always self-skipped.)
+		await page.locator('[data-testid="repo-card"]').first().dispatchEvent('contextmenu', {
 			bubbles: true,
 			clientX: 200,
 			clientY: viewport.height - 20,
 		})
 		const menu = page.getByRole('menu').first()
-		if (!(await menu.isVisible({ timeout: 500 }).catch(() => false))) test.skip()
+		await expect(menu).toBeVisible()
 
 		const menuBox = await menu.boundingBox()
 		expect(menuBox).not.toBeNull()
-		if (menuBox) {
-			expect(menuBox.y + menuBox.height).toBeLessThanOrEqual(viewport.height)
-			expect(menuBox.y).toBeGreaterThanOrEqual(0)
-		}
+		expect(menuBox.y + menuBox.height).toBeLessThanOrEqual(viewport.height)
+		expect(menuBox.y).toBeGreaterThanOrEqual(0)
 	})
 
 	test('batch menu shows no scrollbar with multiple repos selected', async ({ page }) => {
