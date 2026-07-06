@@ -23,8 +23,10 @@ below links to the canonical page for that topic.
 
 Full detail: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.5.0 (2026-07-06)** — **Production readiness.** A 10-specialist audit (88 findings) followed by eight remediation waves on `main`. Repo Advisor rebuilt end-to-end (provider-neutral `AI_PROVIDER`, spend caps + audit metadata, SSE streaming, BYOK hardening, golden evals + CI gate); end-to-end migration Replace (resolve conflicts, Replace & retry, LFS retry); environment-tooling readiness (`npm run doctor`, `/api/env`, per-plan preflight); GDPR registry-driven erasure + export; ops hardening (WAL-safe scheduled backups, daily/hourly janitors, `/live` + `/ready` probes, compression, SSE-aware shutdown); shared Zod request-validation layer (`validation_failed`); versioned migration ledger replacing loose `.sql` files. Quality gates: 5,200+ unit tests + a dual-theme axe a11y gate (9 views × 2 themes) + design-token anti-drift lint.
+- **v4.4.0 (2026-06-13)** — **Azure/TFS credential hardening + production-readiness pass.** Self-fix host-allowlist UX (1-click admin add, audited), structured `HOST_NOT_ALLOWED` / `UNSAFE_URL` / `PRIVATE_ADDRESS` codes, PBKDF2-SHA512 credential-vault KDF. Fixes a boot-stopping Express 5 SPA-fallback bug and a login DoS surfaced by a full multi-dimension audit.
 - **v4.3.0 (2026-05-18)** — **Premium-through-restraint.** Visual language pivots from "AI-template" (rainbow gradients, glow shadows, shimmer) to a GitHub-tasteful aesthetic across every modal, toast, banner and empty/error state (see [theme spec](specs/2026-05-14-premium-non-llm-theme-design.md)). Mobile gets a peek-out FAB with breathing halo + edge stripe + spring reveal; hash deep-linking (`#/repos`, `#/work`, `#/teams`, `#/roadmap`, `#/pricing`, `#/ai/prompts`) syncs bidirectionally with view state; the page scrollbar becomes a premium overlay (transparent by default, slate-400/50 on hover) and fully hides on touch devices. RepoDetail tabs, WorkBoard tabs, SettingsModal sections and MigrationWizard late steps now lazy-loaded — **~91 KB gzipped deferred from first paint** (RepoDetail alone: 331 → 188 KB, -43 %). 121 commits, 3896 unit + 84 e2e green.
-- **v4.2.0 (upcoming — commit 848e8a2)** — **Premium Dashboard Phase 1: Live Inbox.** Replaces the always-empty Attention Feed with a sectioned, keyboard-driven inbox (needs review, my PRs, mentions, stale drafts). Archive (`e`) / snooze (`s`) state persisted in `dashboard_inbox_state` SQLite table. AI narrative on top-3 items. Four new endpoints under `/api/v1/dashboard/*`. `dependabot_ready` and `failing_ci` are stubs (data wired in Phase 2/3). Lazy-loaded; gated behind `localStorage` flag `dashboard_premium_v2_inbox`. All actions free-tier.
+- **v4.2.0 (2026-05-13)** — **Premium Dashboard Phase 1: Live Inbox.** Replaces the always-empty Attention Feed with a sectioned, keyboard-driven inbox (needs review, my PRs, mentions, stale drafts). Archive (`e`) / snooze (`s`) state persisted in `dashboard_inbox_state` SQLite table. AI narrative on top-3 items. Four new endpoints under `/api/v1/dashboard/*`. `dependabot_ready` and `failing_ci` are stubs (data wired in Phase 2/3). Lazy-loaded; gated behind `localStorage` flag `dashboard_premium_v2_inbox`. All actions free-tier.
 - **v4.1.0 (2026-05-10)** — **PR review premium pass.** Layered render
   strategy for huge diffs: `<DiffCollapser>` fold-by-default above
   500 lines, `<DiffComputeOnDemand>` above 50 000, `useDeferredValue`
@@ -163,10 +165,11 @@ Recent specs — full list under each directory:
 
 ## Reports
 
-- [Validation report](reports/VALIDATION-REPORT.md) — code analysis and
-  validation results (Dec 2025, partially outdated).
-- [Mobile validation snapshot](reports/validation-mobile-snapshot.md) —
-  Playwright accessibility tree snapshot.
+Validation and audit-panel reports live in [`reports/`](reports/). Recent:
+
+- [Prod/Premium readiness panel (2026-07-05)](reports/2026-07-05-prod-premium-readiness-panel.md) — 8-specialist audit behind the v4.5.0 remediation.
+- [Codebase audit panel (2026-06-26)](reports/2026-06-26-codebase-audit-panel.md) — full-codebase multi-specialist review.
+- [Validation report](reports/VALIDATION-REPORT.md) — earlier code analysis and validation results (partially outdated).
 
 ## Other
 

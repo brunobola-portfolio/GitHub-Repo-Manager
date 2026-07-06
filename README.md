@@ -23,13 +23,13 @@
 <!-- Quality -->
 [![CI](https://img.shields.io/github/actions/workflow/status/brunobola-portfolio/GitHub-Repo-Manager/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI)](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/actions/workflows/ci.yml)
 [![Deploy](https://img.shields.io/github/actions/workflow/status/brunobola-portfolio/GitHub-Repo-Manager/deploy.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=Deploy)](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/actions/workflows/deploy.yml)
-![Tests](https://img.shields.io/badge/Tests-4640%2B_passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
+![Tests](https://img.shields.io/badge/Tests-5200%2B_passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
 ![License](https://img.shields.io/badge/License-AGPL_v3-blue?style=for-the-badge&logo=gnu&logoColor=white)
 ![Release](https://img.shields.io/github/v/release/brunobola-portfolio/GitHub-Repo-Manager?style=for-the-badge&logo=github&logoColor=white)
 
 **A full-stack AI-powered dashboard for managing repositories, teams, CI/CD, and migrating from Azure DevOps — all in one beautiful interface.**
 
-[Try Demo Mode](#quick-start-demo-mode) | [Features](#features-overview) | [Installation](#installation) | [Documentation](docs/) | [What's new in v4.0.0](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v4.0.0)
+[Try Demo Mode](#quick-start-demo-mode) | [Features](#features-overview) | [Installation](#installation) | [Documentation](docs/) | [What's new in v4.5.0](CHANGELOG.md#450---2026-07-06)
 
 **Production-hardened** — AES-256-GCM BYOK, rolling sessions + CSRF double-submit, GitHub API circuit breaker, SSRF guard on import-from-URL.
 
@@ -243,7 +243,7 @@ Configure any of these providers in Settings → AI Configuration:
 
 - **Dark/Light Mode** — System preference detection with manual toggle
 - **Keyboard Shortcuts** — Command palette (Ctrl+K), navigation, and action shortcuts
-- **Responsive Design** — Desktop, tablet, and mobile with touch-optimized targets (44px min)
+- **Responsive Design** — Desktop, tablet, and mobile with touch-optimized targets (44px min); ultrawide (>1920px) displays gain a fourth repo-grid column and balanced gutters via named `nav:` / `wide:` / `ultra:` breakpoints
 - **Accessibility** — Focus traps, ARIA roles, screen reader support, skip navigation
 - **Smart Notifications** — Non-intrusive toast feedback on all actions
 - **Local Caching** — Fast performance with intelligent data caching
@@ -256,7 +256,9 @@ Configure any of these providers in Settings → AI Configuration:
 
 ![Repo Advisor](docs/images/09_ai_assistant_dark_hd.png)
 
-GitHub Repo Manager integrates AI via **BYOK** (Bring Your Own Key) — configure Gemini, Anthropic, OpenAI, OpenRouter, or LMStudio in Settings → AI Configuration. 10+ AI features ship on every tier:
+GitHub Repo Manager integrates AI via **BYOK** (Bring Your Own Key) — configure Gemini, Anthropic, OpenAI, OpenRouter, or LMStudio in Settings → AI Configuration. 10+ AI features ship on every tier.
+
+The AI layer is provider-neutral (`AI_PROVIDER`) and production-hardened: a global spend cap and per-call output-token cap (OWASP LLM10), PII-safe audit metadata on every call, SSE streaming replies that preserve partial text on disconnect, BYOK hardening (key rotation, model-id validation, DNS re-checks), and a golden-eval suite gated in CI. Repo Advisor answers are answer-first, grounded, and cited.
 
 ### Repo Advisor — conversational assistant
 - **Natural Language Interface** — Ask questions about your repositories in plain English
@@ -378,7 +380,8 @@ A complete migration platform for moving from Azure DevOps to GitHub with a guid
 - **Scheduling** — Queue migrations for off-peak execution
 - **Pause/Resume** — Interrupt and continue without data loss
 - **Task Retry** — Retry individual failed tasks without re-running everything
-- **Conflict Detection** — Pre-check for existing repos in target
+- **Conflict Detection + Resolution** — Pre-check for existing repos in target, then resolve each naming conflict inline (replace / rename / skip) with a type-to-confirm modal for destructive replaces; failed conflict tasks offer one-click **Replace & retry** from the progress and summary screens
+- **Git LFS retry** — Oversized-file failures offer "Retry with Git LFS" (automatic `git lfs migrate` conversion + LFS object push)
 - **Encrypted Credentials** — PATs encrypted at rest with AES-256-GCM
 - **Progress Tracking** — Real-time updates with per-task status and duration
 - **Full Audit Trail** — Complete migration history with error details
@@ -565,13 +568,13 @@ For detailed architecture documentation, see [`docs/architecture/overview.md`](d
 | **UI/UX** | Framer Motion 12, Lucide Icons 1.8, Recharts 3, Radix UI, cmdk |
 | **Backend** | Node.js 20+, Express 5.2 |
 | **Database** | better-sqlite3 12.9 (WAL mode, 32 MB cache) |
-| **Security** | Helmet.js, express-rate-limit (per-tier + per-IP auth-route), Zod validation, SSRF guard, CSRF double-submit, AES-256-GCM credential encryption |
-| **AI (BYOK)** | Anthropic, OpenAI, Google Gemini, OpenRouter, LMStudio / local — per-user keys encrypted at rest |
+| **Security** | Helmet.js, express-rate-limit (per-tier + per-IP auth-route), shared Zod request-validation layer (`validation_failed` envelope), SSRF + DNS-rebinding guard, CSRF double-submit, AES-256-GCM credential encryption |
+| **AI (BYOK)** | Anthropic, OpenAI, Google Gemini, OpenRouter, LMStudio / local — provider-neutral (`AI_PROVIDER`), per-user keys encrypted at rest, global spend cap + per-call output-token cap, PII-safe audit metadata, SSE streaming |
 | **APIs** | GitHub REST API (v2022-11-28), Azure DevOps API (v7.1), Stripe Billing |
 | **Logging** | Pino (structured JSON, automatic credential redaction) + Sentry breadcrumbs |
-| **Testing** | Vitest 4 (4390+ unit tests), Testing Library, Playwright |
+| **Testing** | Vitest (5,200+ unit tests) + Testing Library + Playwright, with a dual-theme (light + dark) axe accessibility gate |
 | **Auth** | GitHub OAuth 2.0 (CSRF state), Azure DevOps OAuth |
-| **CI gates** | ESLint `max-warnings 0`, build-honesty test (no mock leaks), bundle-budget (≤ 415 KB gzip eager), README honesty regression guard |
+| **CI gates** | ESLint `max-warnings 0`, build-honesty test (no mock leaks), bundle-budget (≤ 415 KB gzip eager), README honesty regression guard, dual-theme axe a11y gate, AI golden-eval gate |
 
 ### GitHub Permissions
 
@@ -583,7 +586,7 @@ For detailed architecture documentation, see [`docs/architecture/overview.md`](d
 | `delete_repo` | Required for bulk delete action |
 | `admin:org` | Create teams, manage organization settings (optional) |
 
-> **Security**: Tokens are stored in encrypted server-side sessions (`httpOnly`, `sameSite: lax`). The backend uses Helmet.js headers, tier-aware rate limiting, parameterized SQL queries throughout, and Zod schemas on billing / license / search / API-key routes (roadmap: extend to all routes). Azure PATs and BYOK provider keys are encrypted at rest with AES-256-GCM + PBKDF2-HMAC-SHA256 key derivation.
+> **Security**: Tokens are stored in encrypted server-side sessions (`httpOnly`, `sameSite: lax`, rolling with a 7-day absolute ceiling). The backend uses Helmet.js headers, tier-aware rate limiting, parameterized SQL queries throughout, and a shared Zod request-validation layer (`validateBody` / `validateQuery` / `validateParams`) that returns a consistent `400 { error, code: 'validation_failed' }` across PR write-backs, repo contents, issue labels/assignees, webhook updates, workflow dispatch, community-health, AI and billing/license/search/API-key routes. Azure PATs and BYOK provider keys are encrypted at rest with AES-256-GCM + PBKDF2-HMAC-SHA256 key derivation.
 
 ---
 
@@ -822,6 +825,17 @@ A: No. Source repos are never modified. Use dry-run mode to test first.
 ---
 
 ## Recently Shipped
+
+### v4.5.0 — Production readiness (2026-07-06)
+
+The production-readiness release: a 10-specialist audit (88 findings) followed by eight remediation waves on `main`. Full detail in [`CHANGELOG.md`](CHANGELOG.md).
+
+- **Repo Advisor rebuilt end-to-end** — provider-neutral `AI_PROVIDER`, answer-first grounded/cited error KB, code-block copy, SSE streaming, per-call output-token cap + global AI spend cap (OWASP LLM10), PII-safe audit metadata, Pro-tier quota across every AI route, BYOK hardening (key rotation, model-id validation, DNS re-checks), and a golden-eval suite with a CI eval gate.
+- **Migration Replace, end-to-end** — resolve naming conflicts (replace / rename / skip) with a type-to-confirm modal, one-click "Replace & retry", and "Retry with Git LFS" for oversized files.
+- **Environment tooling readiness** — tool registry, `npm run doctor`, `/api/env` status endpoint with admin-gated in-app installs, and per-plan preflight that fails migrations with an actionable error instead of a mid-job crash.
+- **GDPR data lifecycle** — registry-driven account erasure across every user-scoped table (schema-introspection completeness test) with a per-table deletion receipt, plus a corrected data export.
+- **Operations hardening** — WAL-safe scheduled SQLite backups with retention, daily/hourly maintenance janitors, `/live` + `/ready` health probes, HTTP compression, SSE-aware graceful shutdown, and a documented restore runbook.
+- **Quality gates grew with the product** — 5,200+ unit tests, a dual-theme (light + dark) axe accessibility gate (9 views × 2 themes = 18 hard-gated scans), and ESLint anti-drift rules for design tokens. Schema changes now run through a versioned migration ledger instead of loose `.sql` files.
 
 ### v4.0.0 — AI Deep Review (2026-05-08)
 

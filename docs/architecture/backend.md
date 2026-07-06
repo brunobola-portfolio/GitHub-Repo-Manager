@@ -32,18 +32,30 @@ server/
 │   ├── system.js                 # Health, feature flags, system info
 │   ├── webhooks.js               # GitHub webhook receiver (signature-verified)
 │   ├── stripe-webhooks.js        # Stripe webhook handler (raw body)
-│   └── dashboard.js              # /api/v1/dashboard/* — inbox, archive, restore, snooze
+│   ├── health.js                 # /api/health/live + /ready probes
+│   ├── env.js                    # /api/env/* operator tooling status + install
+│   ├── dashboard.js              # /api/v1/dashboard/* — inbox, archive, restore, snooze
+│   ├── repos/  azure/  import/  ai/  # domain sub-routers (split from monoliths)
+│   └── … work-board*, admin-*, license, user-data, notifications, search, outbox
 ├── middleware/
 │   ├── auth.js                   # requireAuth, webhook signature, safeError
 │   ├── api-key-auth.js           # Bearer token (grm_live_*) authentication
 │   ├── require-tier.js           # Tier gating (free / pro / enterprise)
+│   ├── require-admin.js          # requireAdmin (users.is_admin flag)
+│   ├── csrf.js                   # CSRF double-submit token gate
+│   ├── validate-request.js       # validateBody/Query/Params → validation_failed
 │   ├── tenant.js                 # Multi-tenancy (req.tenantId from session)
 │   └── tenant-rate-limit.js      # Per-tier rate limiting (Redis or in-memory)
 ├── lib/
 │   ├── github-api.js             # GitHub REST API wrapper with retry logic
-│   ├── audit.js                  # Audit log writer
+│   ├── gh-cache.js               # ETag-aware read-through GitHub cache (gh_cache)
+│   ├── gh-outbox.js              # Idempotent GitHub mutation outbox (gh_outbox)
+│   ├── audit.js                  # Audit log writer (hash-chained)
 │   ├── credential-encryption.js  # AES-256-GCM credential vault
 │   ├── feature-flags.js          # Tier feature matrix (free / pro / enterprise)
+│   ├── db-migrations.js          # Versioned schema-migration ledger (v28)
+│   ├── db-backup.js              # WAL-safe scheduled SQLite backups
+│   ├── maintenance-janitors.js   # Daily/hourly retention + purge + backup timers
 │   ├── logger.js                 # Pino structured logging
 │   ├── monitoring.js             # Sentry error tracking initialisation
 │   ├── queue.js                  # BullMQ queues (falls back to in-memory)
@@ -61,17 +73,8 @@ server/
 ├── workers/
 │   ├── migration-worker.js       # BullMQ processor for migration plans
 │   └── ai-worker.js              # BullMQ processor for repo indexing
-├── migrations/
-│   └── 001-initial-schema.sql    # Base SQL migration
-├── __tests__/                    # Backend unit tests (8 files)
-│   ├── auth.test.js
-│   ├── credential-encryption.test.js
-│   ├── migration-engine.test.js
-│   ├── migration-planner.test.js
-│   ├── validators-migration.test.js
-│   ├── validators.test.js
-│   ├── wiki-service.test.js
-│   └── work-item-service.test.js
+├── migrations/                   # NO .sql files — see lib/db-migrations.js (README only)
+├── __tests__/                    # Backend unit tests (many files; part of the 5,200+ suite)
 ├── ai-service.js                 # Google Gemini AI analysis and embeddings
 ├── actions-service.js            # GitHub Actions workflow run analytics
 ├── azure-service.js              # Azure DevOps REST API v7.1 (PAT auth)
@@ -85,39 +88,51 @@ server/
 
 ## Entry Point: `server/index.js`
 
-The entry point is a lean 296-line file responsible for:
+The entry point is a compact orchestration file responsible for:
 
+0. **Startup secrets check** -- `verifySecretsAtStartup()` runs before anything
+   binds a port; a misconfigured production deploy fails fast (see
+   [security hardening G4/G9](../security-hardening.md)).
 1. **Monitoring** -- initialises Sentry before anything else.
-2. **Database** -- calls `initDB()` to run schema migrations and seed data (mock
-   mode only).
+2. **Database** -- calls `initDB()` (base schema) then the versioned migration
+   ledger (`runMigrations`), and seeds data in mock mode only.
 3. **AI** -- optionally initialises Google Gemini if `GEMINI_API_KEY` is set.
 4. **Middleware stack** (applied in order):
    - `helmet` -- security headers (full CSP in production).
    - `cors` -- credentials-aware, origin-locked in production.
+   - `compression` -- gzip response compression (mounted early), with
+     immutable caching on content-hashed `/assets`.
    - `express.raw` -- raw body for the Stripe webhook endpoint (before JSON
      parser).
-   - `express.json` -- 10 KB body limit.
-   - Request ID tracing (`X-Request-Id`).
-   - Pino request logger.
+   - `express.json` -- body-size limited (larger cap on v1 AI routes).
+   - Request ID tracing (`X-Request-Id`) + Pino request logger.
    - `per_page` cap (1--100) on all `/api/` routes.
+   - CSRF double-submit gate on mutating routes.
    - Rate limiting: global safety-net limiter, then per-tenant limiters after
      session.
    - Session (Redis > SQLite > MemoryStore, depending on environment).
    - `attachTier` -- populates `req.userTier` from subscription data.
-5. **Health check** -- `GET /api/health` returns status, version, uptime, and
-   database connectivity.
-6. **Route mounting** -- V1 routes on `/api/v1`, with backward-compatible
-   `/api` alias.
-7. **Static serving** -- production builds served from `dist/` with SPA
-   fallback.
-8. **Error handling** -- Sentry handler, then a global JSON error handler.
-9. **Graceful shutdown** -- marks in-flight migration jobs as interrupted, closes
-   the database, and force-exits after a 10-second timeout.
+5. **Health probes** -- `GET /api/health/live` + `/ready` (K8s-style;
+   unauthenticated, un-rate-limited); the legacy shallow `GET /api/health` is
+   preserved.
+6. **Route mounting** -- `/api/env/*` tooling routes, then V1 routes on
+   `/api/v1` with a backward-compatible `/api` alias.
+7. **Maintenance janitors** -- `startMaintenanceJanitors()` schedules the daily
+   (retention + gh_cache purge + event retention + DB backup) and hourly
+   (gh_outbox + undo-log) passes.
+8. **Static serving** -- production builds served from `dist/` with SPA
+   fallback (`/{*splat}` named splat for Express 5 / path-to-regexp v8).
+9. **Error handling** -- Sentry handler, then a global JSON error handler.
+10. **Graceful shutdown** -- flips the liveness probe to `shutting_down`, drains
+    in-flight requests, marks in-flight migration jobs/plans/tasks interrupted,
+    stops the janitors, closes the DB, and force-closes lingering SSE streams
+    before force-exit.
 
 ## Route Aggregation: `server/routes/v1/index.js`
 
-All 18 route modules are mounted by the V1 aggregator. Some routes are
-tier-gated at mount time:
+The route modules are mounted by the V1 aggregator (the table below is a
+representative subset — the full set spans 40+ modules under `server/routes/`,
+including several domain sub-routers). Some routes are tier-gated at mount time:
 
 | Mount path | Module | Tier gate |
 | --- | --- | --- |
@@ -182,17 +197,24 @@ the backend based on the `DATABASE_URL` environment variable:
 
 ### Schema Management
 
-`db.js` exports `initDB()` which runs inline schema migrations inside a
-transaction. Tables include: `users`, `teams`, `team_members`,
-`repo_assignments`, `repo_metadata`, `repo_embeddings`, `community_health_cache`,
-`workflow_runs`, `workflows_meta`, `migration_jobs`, `migration_plans`,
-`migration_tasks`, `user_subscriptions`, `api_keys`, `audit_log_v2`,
+`db.js` exports `initDB()` which applies the idempotent base schema
+(`CREATE TABLE/INDEX IF NOT EXISTS`) inside a transaction, then calls
+`runMigrations(db)` from [`lib/db-migrations.js`](../../server/lib/db-migrations.js).
+Tables include: `users`, `teams`, `team_members`, `repo_assignments`,
+`repo_metadata`, `repo_embeddings`, `community_health_cache`, `workflow_runs`,
+`workflows_meta`, `migration_jobs`, `migration_plans`, `migration_tasks`,
+`user_subscriptions`, `api_keys`, `audit_log_v2`, `gh_cache`, `gh_outbox`,
 `dashboard_inbox_state`, and more.
 
 `dashboard_inbox_state` carries `(user_id INTEGER, item_id TEXT, archived_at TEXT, snoozed_until TEXT)` with composite PK `(user_id, item_id)`. `item_id` is a stable aggregator-defined key like `pr:owner/repo#123`.
 
-SQL migration files are stored in `server/migrations/` (currently
-`001-initial-schema.sql`).
+**There are no `.sql` migration files.** The old drifting `server/migrations/00X-*.sql`
+copies were removed; the directory now holds only a README. Ordered, versioned
+migrations live in `lib/db-migrations.js` (`MIGRATIONS`, currently **v28**),
+recorded in a `schema_migrations(version, name, applied_at)` ledger. Every
+`up(db)` is idempotent (`addColumnIfMissing` + `IF NOT EXISTS`) so it re-applies
+safely on databases that predate the ledger. Add a schema change by appending
+the next version number — never by adding a `.sql` file.
 
 ## Configuration
 
@@ -204,13 +226,19 @@ startup. The schema covers:
 - **GitHub OAuth**: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`
 - **Database**: `DATABASE_URL` (optional; SQLite if absent)
 - **Redis**: `REDIS_URL` (optional; enables distributed sessions and BullMQ)
-- **AI**: `GEMINI_API_KEY`, `GEMINI_MODEL` (default `gemini-2.5-flash`),
-  `GEMINI_EMBEDDING_MODEL` (default `gemini-embedding-001`)
+- **AI**: provider-neutral `AI_PROVIDER` (default `gemini`), `GEMINI_API_KEY`,
+  `GEMINI_MODEL` (default `gemini-2.5-flash`), `GEMINI_EMBEDDING_MODEL`
+  (default `gemini-embedding-001`), `AI_MAX_OUTPUT_TOKENS` (per-call cap),
+  `AI_REQUIRE_USER_CONFIG`
 - **Monitoring**: `SENTRY_DSN`
 - **Azure DevOps**: `AZURE_PAT`
 - **Webhooks**: `WEBHOOK_SECRET`
 - **Stripe**: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, price IDs
-- **Mock mode**: `VITE_MOCK_MODE`
+- **Ops / retention**: `DB_BACKUP_DIR`, `DB_BACKUP_KEEP` (default 7),
+  `DATA_RETENTION_DAYS` (default 365), `EVENT_RETENTION_DAYS` (default 365),
+  `GH_CACHE_MAX_AGE_DAYS` (default 30)
+- **Mock mode**: `VITE_MOCK_MODE` (production boot fails fast if
+  `ALLOW_MOCK_AUTH` is set)
 
 Invalid configuration causes the process to exit immediately with formatted
 error output.
@@ -291,34 +319,39 @@ The server selects a session store in priority order:
 
 ## Tier System
 
-Three subscription tiers control feature access:
+Three subscription tiers control feature access. The **source of truth** is
+[`lib/feature-flags.js`](../../server/lib/feature-flags.js) (`TIER_FEATURES`) —
+this table is a rendering of it and must be kept in sync (the README pricing
+table and a parity CI gate track the same values):
 
 | Feature | Free | Pro | Enterprise |
 | --- | --- | --- | --- |
-| Max repos | 20 | Unlimited | Unlimited |
-| AI queries / month | 50 | 500 | Unlimited |
-| Migration | -- | Basic | Full |
-| Teams | -- | Yes (3 members) | Yes (unlimited) |
+| Max repos | 200 | Unlimited | Unlimited |
+| AI queries / month (global) | 200 | 5,000 | Unlimited |
+| Semantic search / month | 75 | Unlimited | Unlimited |
+| Migration risk analysis / month | 5 | Unlimited | Unlimited |
+| Full migrations / month | 1 (metered; dry-run free) | Unlimited | Unlimited |
+| Teams | Up to 3 (5 members each) | 15 members | Unlimited |
+| Basic bulk (own repos) | Yes | Yes | Yes |
+| Advanced bulk (transfer / mirror / cross-org) | -- | Yes | Yes |
+| Mirror sync | Preview only | Apply | Apply |
 | Audit log | -- | -- | Yes + export |
-| API keys | 1 | 5 | 20 |
-| Semantic search | -- | Yes | Yes |
-| SSO | -- | -- | Yes |
+| API keys | 5 | 10 | 50 |
+| SSO / SAML | -- (roadmap) | -- (roadmap) | -- (roadmap) |
+
+> The AI capabilities (Assistant, Semantic Search, Migration Risk Analysis, PR
+> Review) are available on **every** tier, with per-feature monthly caps on Free
+> tracked independently of the global `aiQueriesPerMonth` counter. SSO/SAML is
+> on the roadmap but **not implemented** (only GitHub OAuth exists), so
+> `feature-flags.js` keeps `sso: false` on every tier.
 
 ## Testing
 
-Backend tests live in `server/__tests__/` (8 test files). The full project test
-suite includes 404 tests across 24 test files.
-
-| Test file | Covers |
-| --- | --- |
-| `auth.test.js` | Auth middleware and webhook verification |
-| `credential-encryption.test.js` | AES-256-GCM encrypt/decrypt round-trips |
-| `migration-engine.test.js` | Migration plan execution logic |
-| `migration-planner.test.js` | Migration plan generation |
-| `validators-migration.test.js` | Zod validation for migration inputs |
-| `validators.test.js` | General request validation schemas |
-| `wiki-service.test.js` | Wiki service operations |
-| `work-item-service.test.js` | Azure DevOps work-item integration |
+Backend tests live in `server/__tests__/` and cover auth + webhook verification,
+credential encryption, the migration engine/planner, request validators, route
+body-validation, tier gating, AI routes/streaming guards, and the Azure
+wiki/work-item services. They are part of the project's **5,200+ unit test**
+suite (Vitest); the frontend tests live under `tests/` mirroring `src/`.
 
 Run backend tests:
 
@@ -334,10 +367,13 @@ npx vitest
 
 ## Security
 
-- **Session cookies**: `httpOnly`, `sameSite: 'lax'`, `secure` in production, 24-hour expiry.
+- **Session cookies**: `httpOnly`, `sameSite: 'lax'`, `secure` in production;
+  rolling expiry with a hard 7-day absolute ceiling (see security hardening G5).
+- **CSRF double-submit tokens** on every mutating route (G6).
 - **HMAC-SHA256 webhook verification** with timing-safe comparison.
 - **Parameterised SQL queries** throughout (no string interpolation).
-- **Zod validation** on all config and request inputs.
+- **Zod validation** on config (`config.js`) and request inputs — the shared
+  `validate-request.js` layer returns a consistent `validation_failed` envelope.
 - **Helmet** for security headers with strict CSP in production.
 - **HSTS** with preload in production (2-year max-age).
 - **API key hashing** (SHA-256 before storage, never stored in plaintext).
@@ -348,4 +384,4 @@ npx vitest
 
 ---
 
-Last updated: 2026-04-03
+Last updated: 2026-07-06

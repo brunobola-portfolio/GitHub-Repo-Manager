@@ -109,11 +109,12 @@ ones without rewriting per-page layouts:
 - [`useViewportSafeHeight`](../../src/hooks/useViewportSafeHeight.js) — returns
   the visual viewport height, accounting for iOS Safari URL-bar collapse.
   Falls back to `window.innerHeight` when `visualViewport` is unavailable.
-- [`<MobileFAB>`](../../src/components/ui/MobileFAB.jsx) — floating action
-  button rendered only at `< md`. Used in `App.jsx` to expose the command
-  palette on touch devices that don't have a Cmd+K shortcut. Hidden on
-  desktop. `shiftAboveBottomBar` lifts it to `bottom-20` for pages with a
-  bottom tab bar.
+- [`MobileQuickActionsFab`](../../src/components/MobileQuickActionsFab.jsx) —
+  the touch-device floating action button (Create / Import / Dev Toolkit),
+  rendered only at `< md`. It uses the "peek-out" reveal pattern (translated
+  ~55% off the right edge until hover/focus/tap slides it in). The earlier
+  standalone `<MobileFAB>` primitive was removed in v4.3.0 — the peek pattern
+  it documented is now reproduced inline here and in `PRReviewView`.
 - [`<ModalSticky>`](../../src/components/ui/ModalSticky.jsx) — wraps `<Modal>`
   with mobile-aware layout: full-height container, scrolling body, sticky
   footer pushed to the bottom edge. Backwards-compatible with `<Modal>` at
@@ -159,8 +160,8 @@ adopts Contributor Covenant 2.1 by canonical reference (link to
 contributor-covenant.org) rather than verbatim — same legal effect, less
 maintenance burden.
 
-The `friendlyAiError` translator at [`src/utils/aiErrorFriendly.js`](../../src/utils/aiErrorFriendly.js)
-and the server-side [`server/middleware/ai-error-mapper.js`](../../server/middleware/ai-error-mapper.js)
+The client-side [`formatUserError`](../../src/utils/errors.js) helper and the
+server-side [`server/middleware/ai-error-mapper.js`](../../server/middleware/ai-error-mapper.js)
 are the shared utilities for converting AIError codes into user-readable
 messages — used by both Work Board AI summary and the Community Health auto-fix
 modal.
@@ -293,7 +294,7 @@ The application supports two database backends via `server/lib/db-adapter.js`:
 - **SQLite** (default): Uses `better-sqlite3` with WAL mode. The adapter preserves the synchronous `db.prepare().get/all/run()` API used throughout the route layer.
 - **PostgreSQL**: Activated when the `DATABASE_URL` environment variable is set. Uses `node-postgres` (`pg`) and exposes the same interface with async methods (top-level `await` is supported via ESM `"type": "module"`).
 
-Schema is defined in `server/db.js` (`initDB()`) and kept in sync with `server/migrations/001-initial-schema.sql`, which is the SQLite source-of-truth file. A PostgreSQL equivalent (`001-initial-schema.pg.sql`) will be provided when full PostgreSQL support ships.
+Schema management has a single source of truth — **there are no loose `.sql` files** (the old drifting `server/migrations/00X-*.sql` copies were removed). `server/db.js` (`initDB()`) applies the idempotent base schema (`CREATE TABLE/INDEX IF NOT EXISTS`), then `server/lib/db-migrations.js` applies the ordered, versioned migrations (currently **v28**) recorded in a `schema_migrations(version, name, applied_at)` ledger. Every `up(db)` is intentionally idempotent (`addColumnIfMissing` + `IF NOT EXISTS`), so the runner can safely re-apply on a database that predates the ledger. Add a new schema change by appending an entry to `MIGRATIONS` with the next version number — never by adding a `.sql` file.
 
 Multi-tenancy: all per-user tables (`repo_metadata`, `repo_embeddings`, `community_health_cache`, `workflow_runs`, `workflows_meta`) carry a `user_id` column and use composite primary keys `(user_id, repo_id)` to isolate data between accounts.
 
@@ -377,12 +378,51 @@ The v3.6/v3.7 sprint closed the P0–P4 audit findings. The short list:
 
 Full detail: [`docs/security-hardening.md`](../security-hardening.md) (G1–G9).
 
+## Operational subsystems (v4.5)
+
+The production-readiness release added a small set of always-on subsystems that
+keep a long-running instance healthy without operator babysitting:
+
+- **Maintenance janitors** ([`server/lib/maintenance-janitors.js`](../../server/lib/maintenance-janitors.js)) —
+  two `unref()`'d timers started at boot. The **daily** pass runs the retention
+  enforcement, `gh_cache` purge, GitHub event-table retention, and a WAL-safe
+  DB backup; the **hourly** pass drops succeeded `gh_outbox` rows and expired
+  undo-log entries. Each step is isolated so one failure never blocks the rest,
+  and an overlap guard prevents a slow pass from re-entering.
+- **Scheduled backups** ([`server/lib/db-backup.js`](../../server/lib/db-backup.js)) —
+  better-sqlite3 online backup (`db.backup()`, WAL-safe) into `DB_BACKUP_DIR`
+  (default `<db dir>/backups`), keeping `DB_BACKUP_KEEP` (default 7). No-ops on
+  Postgres. Restore runbook in [`docs/operations.md`](../operations.md).
+- **Health probes** ([`server/routes/health.js`](../../server/routes/health.js)) —
+  K8s-style `GET /api/health/live` (200 unless shutting down; never touches the
+  DB) and `GET /api/health/ready` (DB + session-store checks, 100 ms budget
+  each, 503 with a per-check map when degraded). Graceful shutdown flips the
+  liveness probe, drains in-flight requests, then force-closes long-lived SSE
+  streams after `SHUTDOWN_DRAIN_MS`.
+- **Resilient GitHub I/O** — reads go through
+  [`gh-cache.js`](../../server/lib/gh-cache.js) (`readThrough()`, ETag-aware,
+  per-user `gh_cache` table) and mutations through
+  [`gh-outbox.js`](../../server/lib/gh-outbox.js)
+  (`enqueueAndExecute()`, per-user idempotency keys, retry-on-failure).
+- **Request validation layer** — shared Zod schemas
+  ([`server/lib/validators.js`](../../server/lib/validators.js)) applied via
+  [`validateBody` / `validateQuery` / `validateParams`](../../server/middleware/validate-request.js),
+  returning a consistent `400 { error, code: 'validation_failed' }` on PR
+  write-backs, repo-content writes, issue labels/assignees, webhook updates,
+  workflow dispatch, and community-health endpoints.
+- **Frontend event bus** ([`src/utils/appEvents.js`](../../src/utils/appEvents.js)) —
+  a module-singleton emitter (`emitAppEvent` / `onAppEvent` / `APP_EVENTS`) that
+  replaced all `window.dispatchEvent(new CustomEvent(...))` usage.
+- **Billing config probe** — the pricing page hides the yearly toggle unless
+  yearly prices are configured, probed via the public
+  `GET /api/v1/billing/config`.
+
 ## System Architecture Diagram
 
 ```mermaid
 graph TB
     subgraph Client["Browser"]
-        UI["React 19 SPA<br/>Vite 7 + Tailwind CSS 4"]
+        UI["React 19 SPA<br/>Vite 8 + Tailwind CSS 4"]
         Hooks["Custom Hooks<br/>useGitHub, useAuth, useTheme"]
         Wizard["Migration Wizard<br/>Multi-step planning UI"]
         SSE["SSE Client<br/>Real-time progress"]
@@ -437,6 +477,6 @@ graph TB
     Import -->|"simple-git"| GH
 ```
 
-> **Note:** The Mermaid diagram above shows the high-level data flow. The full modular route structure (18 route files, middleware stack, and infrastructure wiring) is documented in [`docs/architecture/backend.md`](backend.md).
+> **Note:** The Mermaid diagram above shows the high-level data flow. The full modular route structure (40+ route modules under `server/routes/`, middleware stack, and infrastructure wiring) is documented in [`docs/architecture/backend.md`](backend.md).
 
 This document is a high-level guide; see inline comments and the README for more details.

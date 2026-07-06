@@ -10,6 +10,7 @@ how-to-build side, see [`docs/index.md`](index.md).
 - [Backup & restore](#backup--restore)
 - [Data & event retention](#data--event-retention)
 - [Dead-letter queues](#dead-letter-queues-email--webhook)
+- [Health probes (`/live` vs `/ready`)](#health-probes-live-vs-ready)
 - [Public status page](#public-status-page)
 - [Bundle budget](#bundle-budget)
 - [Audit trail](#audit-trail)
@@ -22,7 +23,8 @@ how-to-build side, see [`docs/index.md`](index.md).
 
 | Concern | Where |
 | ------- | ----- |
-| Live health | `GET /api/health/ready` and public [`/status`](#public-status-page) |
+| Liveness probe | `GET /api/health/live` (kill-if-dead; no dependency checks) |
+| Readiness probe | `GET /api/health/ready` and public [`/status`](#public-status-page) |
 | Admin DLQ UI | `/admin/dlq` (requires `users.is_admin = 1`) |
 | Admin DLQ CLI | `npm run admin:dlq -- --help` |
 | Release notes | [`CHANGELOG.md`](../CHANGELOG.md) + [GitHub Releases](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases) |
@@ -169,6 +171,20 @@ If the retry throws again, the DLQ row updates with the new error — inspect
 the stored error before retrying a third time.
 
 ---
+
+## Health probes (`/live` vs `/ready`)
+
+Two K8s-style probes live in [`server/routes/health.js`](../server/routes/health.js),
+both unauthenticated and un-rate-limited (they fire before any session exists):
+
+| Probe | Wire it to | Semantics |
+| ----- | ---------- | --------- |
+| `GET /api/health/live` | orchestrator **liveness** (restart-if-dead) | Returns `200 {status:'alive'}` immediately. Touches **no** dependency, so a degraded DB/Redis can't get the pod killed. Returns `503 {status:'shutting_down'}` once graceful shutdown starts, so traffic drains before the socket closes. |
+| `GET /api/health/ready` | orchestrator **readiness** + LB + `/status` | Runs the DB (`SELECT 1`) and session-store checks (Redis `ping` if `REDIS_URL`, else a trivial SQLite check), each with a 100 ms budget. `200 {status:'ready',checks}` when all pass, `503 {status:'degraded',checks}` with a per-check map otherwise. |
+
+The legacy shallow `GET /api/health` (version/uptime/DB connectivity) is
+preserved for backward compatibility. Add or remove readiness checks in
+`health.js`; keep each read-only and timeout-bounded.
 
 ## Public status page
 

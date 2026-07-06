@@ -394,3 +394,32 @@ User BYOK AI credentials and Azure DevOps PATs are encrypted at rest with AES-25
 ### Mitigation
 
 [`server/lib/startup-secrets-check.js#verifySecretsAtStartup`](../server/lib/startup-secrets-check.js#L19) now includes `CREDENTIAL_ENCRYPTION_KEY` in the production-required list alongside `SESSION_SECRET` and `WEBHOOK_SECRET` ([line 27](../server/lib/startup-secrets-check.js#L27)). In `NODE_ENV=production` the check aborts with `process.exit(1)` if the key is absent or shorter than 32 bytes ([lines 29-37](../server/lib/startup-secrets-check.js#L29)). The verifier runs before `initDB()` and before the Express app binds to a port, so a misconfigured deploy fails fast at boot rather than starting up and then silently persisting credentials encrypted under the session signing key. Weak-keyword detection (`change`, `secret`, `password`, `default`, `test`) is applied to all three required secrets in every environment ([lines 98-106](../server/lib/startup-secrets-check.js#L98)) to catch copy-paste mistakes during setup.
+
+---
+
+## G10 — Shared request-validation layer (SOC 2 CC6.6)
+
+### Threat
+
+Route handlers that read `req.body` / `req.query` / `req.params` directly trust
+whatever the client sends. Divergent, hand-rolled validation (or none) invites
+type-confusion bugs, oversized payloads, and injection into downstream GitHub /
+Azure / AI calls — and inconsistent error shapes make the client guess.
+
+### Mitigation
+
+A shared Zod layer standardises input validation. Schemas live in
+[`server/lib/validators.js`](../server/lib/validators.js); the thin middleware
+wrappers `validateBody` / `validateQuery` / `validateParams` in
+[`server/middleware/validate-request.js`](../server/middleware/validate-request.js)
+`safeParse` the input and, on failure, emit a single consistent envelope —
+`400 { error, code: 'validation_failed' }` — with the first issue's path +
+message. Parsed data is attached at `req.validatedBody` / `req.validatedQuery`
+/ `req.validatedParams` so handlers never mutate `req.body` in place. Coverage
+includes PR write-backs, repo-content writes, issue labels/assignees, webhook
+updates, workflow dispatch, community-health, AI (`/ai/*` bodies with
+`sanitizeForPrompt`), and the import/search/bulk routes. Combined with the
+existing SSRF guard (G7) and the AI body-size caps, untrusted input is validated
+before it reaches any privileged sink.
+
+> **Data erasure (GDPR Art. 17)** is registry-driven — see [G3](#g3--self-service-data-erasure-gdpr-article-17--soc-2-cc65). Every user-scoped table is classified in `ERASURE_REGISTRY` (`server/routes/user-data.js`) and a schema-introspection completeness test fails the build if a new user-keyed table is added without a classification.
