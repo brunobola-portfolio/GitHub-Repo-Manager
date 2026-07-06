@@ -36,7 +36,14 @@ import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js'
 import { actionsService } from '../../actions-service.js';
 import { communityHealthService } from '../../community-health-service.js';
 import { safeJsonParse } from '../../lib/utils.js';
-import { webhookCreateSchema } from '../../lib/validators.js';
+import {
+    webhookCreateSchema,
+    webhookUpdateSchema,
+    workflowDispatchSchema,
+    communityHealthGenerateSchema,
+    communityHealthCommitFixSchema,
+    emptyBodySchema,
+} from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { auditLog } from '../../lib/audit.js';
 import { FILE_GENERATORS, commitOrOpenPR } from '../../lib/ai-features/community-health-fix.js';
@@ -90,10 +97,10 @@ router.post('/:owner/:repo/hooks', requireAuth, validateBody(webhookCreateSchema
 });
 
 // Update webhook
-router.patch('/:owner/:repo/hooks/:hook_id', requireAuth, async (req, res) => {
+router.patch('/:owner/:repo/hooks/:hook_id', requireAuth, validateBody(webhookUpdateSchema), async (req, res) => {
     try {
         const { owner, repo, hook_id } = req.params;
-        const { config, events, active, add_events, remove_events } = req.body;
+        const { config, events, active, add_events, remove_events } = req.validatedBody;
 
         const { data } = await githubApi(`/repos/${owner}/${repo}/hooks/${hook_id}`, req.session.accessToken, {
             method: 'PATCH',
@@ -120,8 +127,8 @@ router.delete('/:owner/:repo/hooks/:hook_id', requireAuth, async (req, res) => {
     }
 });
 
-// Ping webhook (test)
-router.post('/:owner/:repo/hooks/:hook_id/pings', requireAuth, async (req, res) => {
+// Ping webhook (test) — no body; reject stray fields.
+router.post('/:owner/:repo/hooks/:hook_id/pings', requireAuth, validateBody(emptyBodySchema), async (req, res) => {
     try {
         const { owner, repo, hook_id } = req.params;
         await githubApi(`/repos/${owner}/${repo}/hooks/${hook_id}/pings`, req.session.accessToken, {
@@ -350,10 +357,10 @@ router.get('/:owner/:repo/actions/workflows', requireAuth, async (req, res) => {
 });
 
 // Trigger Workflow Dispatch
-router.post('/:owner/:repo/actions/workflows/:id/dispatches', requireAuth, async (req, res) => {
+router.post('/:owner/:repo/actions/workflows/:id/dispatches', requireAuth, validateBody(workflowDispatchSchema), async (req, res) => {
     try {
         const { owner, repo, id } = req.params;
-        const { ref = 'main', inputs = {} } = req.body;
+        const { ref = 'main', inputs = {} } = req.validatedBody;
 
         await githubApi(`/repos/${owner}/${repo}/actions/workflows/${id}/dispatches`, req.session.accessToken, {
             method: 'POST',
@@ -379,8 +386,8 @@ router.get('/:owner/:repo/actions/runs', requireAuth, async (req, res) => {
     }
 });
 
-// Sync workflow runs for a repository
-router.post('/:owner/:repo/actions/sync', requireAuth, async (req, res) => {
+// Sync workflow runs for a repository — no body; reject stray fields.
+router.post('/:owner/:repo/actions/sync', requireAuth, validateBody(emptyBodySchema), async (req, res) => {
     try {
         const { owner, repo } = req.params;
         const repoFullName = `${owner}/${repo}`;
@@ -484,10 +491,13 @@ router.get('/:owner/:repo/community-health', requireAuth, async (req, res) => {
 //   POST /:owner/:repo/community-health/commit-fix  — commits user-confirmed content
 // ------------------------------------------------------------------
 
-router.post('/:owner/:repo/community-health/generate', requireAuth, async (req, res) => {
+router.post('/:owner/:repo/community-health/generate', requireAuth, validateBody(communityHealthGenerateSchema), async (req, res) => {
     const { owner, repo } = req.params;
-    const { fileType, overrides = {} } = req.body || {};
+    const { fileType, overrides = {} } = req.validatedBody;
 
+    // Semantic check the schema can't express: is there a generator registered
+    // for this fileType? The registry is the single source of truth and emits a
+    // specific `invalid_file_type` code (distinct from `validation_failed`).
     const gen = FILE_GENERATORS[fileType];
     if (!gen) {
         return res.status(400).json({ error: `unknown fileType: ${fileType}`, code: 'invalid_file_type' });
@@ -529,10 +539,12 @@ router.post('/:owner/:repo/community-health/generate', requireAuth, async (req, 
     }
 });
 
-router.post('/:owner/:repo/community-health/commit-fix', requireAuth, async (req, res) => {
+router.post('/:owner/:repo/community-health/commit-fix', requireAuth, validateBody(communityHealthCommitFixSchema), async (req, res) => {
     const { owner, repo } = req.params;
-    const { filePath, content, commitMessage, mode = 'direct' } = req.body || {};
+    const { filePath, content, commitMessage, mode = 'direct' } = req.validatedBody;
 
+    // Presence check kept inline: it emits the domain-specific `invalid_body`
+    // code the route contract established (the schema only bounds/strict-checks).
     if (!filePath || !content || !commitMessage) {
         return res.status(400).json({ error: 'missing required fields', code: 'invalid_body' });
     }

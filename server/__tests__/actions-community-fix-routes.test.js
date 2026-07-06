@@ -46,9 +46,18 @@ vi.mock('../middleware/auth.js', () => ({
 vi.mock('../actions-service.js', () => ({ actionsService: {} }))
 vi.mock('../community-health-service.js', () => ({ communityHealthService: {} }))
 vi.mock('../lib/audit.js', () => ({ auditLog: vi.fn() }))
-vi.mock('../lib/validators.js', () => ({ webhookCreateSchema: { safeParse: () => ({ success: true, data: {} }) } }))
+vi.mock('../lib/validators.js', () => ({
+    webhookCreateSchema: { safeParse: () => ({ success: true, data: {} }) },
+    webhookUpdateSchema: {},
+    workflowDispatchSchema: {},
+    communityHealthGenerateSchema: {},
+    communityHealthCommitFixSchema: {},
+    emptyBodySchema: {},
+}))
 vi.mock('../middleware/validate-request.js', () => ({
-    validateBody: () => (_req, _res, next) => next(),
+    // Passthrough that still populates req.validatedBody (the handlers read from
+    // it) — validation itself is exercised in route-body-validation.test.js.
+    validateBody: () => (req, _res, next) => { req.validatedBody = req.body || {}; next(); },
 }))
 
 const commitOrOpenPRMock = vi.fn(async () => ({ commitSha: 'abc123', mode: 'direct' }))

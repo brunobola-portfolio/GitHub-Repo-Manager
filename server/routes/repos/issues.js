@@ -14,8 +14,14 @@
 
 import express from 'express';
 import { githubApi } from '../../lib/github-api.js';
-import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js';
-import { issueCreateSchema, issueUpdateSchema, issueCommentSchema } from '../../lib/validators.js';
+import { requireAuth, safeError } from '../../middleware/auth.js';
+import {
+    issueCreateSchema,
+    issueUpdateSchema,
+    issueCommentSchema,
+    issueLabelsReplaceSchema,
+    issueAssigneesSchema,
+} from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { readThrough, invalidate } from '../../lib/gh-cache.js';
 import { executeViaOutbox } from '../../lib/outbox-helper.js';
@@ -184,13 +190,10 @@ router.get('/:owner/:repo/issues/:issue_number/comments', requireAuth, async (re
 // ------------------------------------------------------------------
 
 // Replace labels on an issue — outbox-routed
-router.put('/:owner/:repo/issues/:issue_number/labels', requireAuth, async (req, res) => {
+router.put('/:owner/:repo/issues/:issue_number/labels', requireAuth, validateBody(issueLabelsReplaceSchema), async (req, res) => {
     try {
         const { owner, repo, issue_number } = req.params;
-        const { labels } = req.body;
-        if (!Array.isArray(labels)) {
-            return errorResponse(res, 400, 'labels must be an array', 'VALIDATION_ERROR');
-        }
+        const { labels } = req.validatedBody;
         const result = await executeViaOutbox(req, {
             method: 'PUT',
             url: `/repos/${owner}/${repo}/issues/${issue_number}/labels`,
@@ -208,13 +211,10 @@ router.put('/:owner/:repo/issues/:issue_number/labels', requireAuth, async (req,
 });
 
 // Add assignees — outbox-routed
-router.post('/:owner/:repo/issues/:issue_number/assignees', requireAuth, async (req, res) => {
+router.post('/:owner/:repo/issues/:issue_number/assignees', requireAuth, validateBody(issueAssigneesSchema), async (req, res) => {
     try {
         const { owner, repo, issue_number } = req.params;
-        const { assignees } = req.body;
-        if (!Array.isArray(assignees)) {
-            return errorResponse(res, 400, 'assignees must be an array', 'VALIDATION_ERROR');
-        }
+        const { assignees } = req.validatedBody;
         const result = await executeViaOutbox(req, {
             method: 'POST',
             url: `/repos/${owner}/${repo}/issues/${issue_number}/assignees`,
@@ -232,13 +232,10 @@ router.post('/:owner/:repo/issues/:issue_number/assignees', requireAuth, async (
 });
 
 // Remove assignees — outbox-routed
-router.delete('/:owner/:repo/issues/:issue_number/assignees', requireAuth, async (req, res) => {
+router.delete('/:owner/:repo/issues/:issue_number/assignees', requireAuth, validateBody(issueAssigneesSchema), async (req, res) => {
     try {
         const { owner, repo, issue_number } = req.params;
-        const { assignees } = req.body;
-        if (!Array.isArray(assignees)) {
-            return errorResponse(res, 400, 'assignees must be an array', 'VALIDATION_ERROR');
-        }
+        const { assignees } = req.validatedBody;
         const result = await executeViaOutbox(req, {
             method: 'DELETE',
             url: `/repos/${owner}/${repo}/issues/${issue_number}/assignees`,

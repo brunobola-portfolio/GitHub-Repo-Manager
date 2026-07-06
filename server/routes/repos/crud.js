@@ -38,6 +38,8 @@ import {
     templateGenerateSchema,
     collaboratorAddSchema,
     repoLabelCreateSchema,
+    contentsCreateUpdateSchema,
+    contentsDeleteSchema,
 } from '../../lib/validators.js';
 import { auditLog } from '../../lib/audit.js';
 import { clampPerPage, applyOwnerRepoParamValidators } from './_shared.js';
@@ -316,11 +318,11 @@ router.get('/:owner/:repo/contents', requireAuth, async (req, res) => {
 });
 
 // Create/Update file (path in query param)
-router.put('/:owner/:repo/contents', requireAuth, async (req, res) => {
+router.put('/:owner/:repo/contents', requireAuth, validateBody(contentsCreateUpdateSchema), async (req, res) => {
     try {
         const { owner, repo } = req.params;
         const { path } = req.query;
-        const { message, content, branch, sha } = req.body;
+        const { message, content, branch, sha } = req.validatedBody;
 
         if (!path) return res.status(400).json({ error: 'Path query parameter required' });
         if (!validatePath(path)) {
@@ -339,11 +341,11 @@ router.put('/:owner/:repo/contents', requireAuth, async (req, res) => {
 });
 
 // Delete file (path in query param)
-router.delete('/:owner/:repo/contents', requireAuth, async (req, res) => {
+router.delete('/:owner/:repo/contents', requireAuth, validateBody(contentsDeleteSchema), async (req, res) => {
     try {
         const { owner, repo } = req.params;
         const { path } = req.query;
-        const { message, sha, branch } = req.body;
+        const { message, sha, branch } = req.validatedBody;
 
         if (!path) return res.status(400).json({ error: 'Path query parameter required' });
         if (!validatePath(path)) {

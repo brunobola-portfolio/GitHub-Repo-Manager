@@ -849,6 +849,123 @@ export const clientErrorSchema = z.object({
     context: z.record(z.string(), z.unknown()).optional(),
 }).strict();
 
+// --- Repository contents (create/update/delete file) ---
+//
+// The GitHub Contents API takes the file `path` in the URL (our routes read it
+// from the query string and validate it separately via `validatePath`), so the
+// body carries only commit metadata + the payload. There is no frontend caller
+// for these write endpoints today; the shapes below match GitHub's documented
+// Contents API and exactly what the handlers forward to githubApi
+// (`{ message, content, branch, sha }` for PUT, `{ message, sha, branch }` for
+// DELETE). `content` is base64 and capped so a single request can't stream an
+// unbounded blob through the proxy (~2 MB of binary ≈ 2.8 MB of base64 text).
+const base64Content = z.string()
+    .min(1)
+    .max(2_800_000)
+    .regex(/^[A-Za-z0-9+/=\s]+$/, 'content must be base64-encoded');
+
+export const contentsCreateUpdateSchema = z.object({
+    message: z.string().min(1).max(10_000),
+    content: base64Content,
+    // Present = update the existing blob; absent = create a new file.
+    sha: z.string().min(1).max(64).optional(),
+    branch: z.string().min(1).max(255).optional(),
+}).strict();
+
+export const contentsDeleteSchema = z.object({
+    message: z.string().min(1).max(10_000),
+    // GitHub requires the blob sha to delete.
+    sha: z.string().min(1).max(64),
+    branch: z.string().min(1).max(255).optional(),
+}).strict();
+
+// --- Issue labels / assignees (parity endpoints) ---
+//
+// Replace-labels intentionally allows an EMPTY array — "clear all labels" is a
+// legitimate flow (IssueSidebar sends the full selected label set, which may be
+// empty). This is why we DON'T reuse `issueLabelsSchema` (which is `.min(1)`,
+// for the add-labels endpoint). Items are GitHub label names.
+export const issueLabelsReplaceSchema = z.object({
+    labels: z.array(z.string().min(1).max(50)).max(100),
+}).strict();
+
+// Add / remove assignees share one shape. Each item is a GitHub login (≤ 39
+// chars). Empty is allowed (the prior inline check only required an array); the
+// frontend always sends exactly one login.
+export const issueAssigneesSchema = z.object({
+    assignees: z.array(z.string().min(1).max(39)).max(25),
+}).strict();
+
+// --- Webhook update (PATCH /hooks/:id) ---
+//
+// No frontend caller today (the UI creates / deletes / pings hooks but has no
+// edit form). Shape mirrors GitHub's "Update a repository webhook" API and
+// exactly what the handler forwards: config + events + add/remove_events +
+// active. All optional so an effective no-op PATCH (`{}`) is accepted; unknown
+// keys are rejected so nothing unexpected is forwarded to GitHub.
+export const webhookUpdateSchema = z.object({
+    config: z.object({
+        url: z.string().url().max(2000).optional(),
+        content_type: z.enum(['json', 'form']).optional(),
+        secret: z.string().max(255).optional(),
+        insecure_ssl: z.union([z.string().max(1), z.number()]).optional(),
+    }).strict().optional(),
+    events: z.array(z.string().min(1).max(50)).max(100).optional(),
+    add_events: z.array(z.string().min(1).max(50)).max(100).optional(),
+    remove_events: z.array(z.string().min(1).max(50)).max(100).optional(),
+    active: z.boolean().optional(),
+}).strict();
+
+// --- Workflow dispatch (POST /actions/workflows/:id/dispatches) ---
+//
+// The frontend sends `{ ref }` (repoActionsApi.triggerDispatch / the Teams run
+// button); GitHub also accepts an `inputs` map. `ref` is optional here because
+// the handler defaults it to 'main'. `inputs` values are scalars only — GitHub
+// rejects nested objects. `ref` is forwarded in the JSON body (not the URL) so
+// a length bound is sufficient.
+export const workflowDispatchSchema = z.object({
+    ref: z.string().min(1).max(255).optional(),
+    inputs: z.record(
+        z.string().max(100),
+        z.union([z.string().max(1000), z.number(), z.boolean()]),
+    ).optional(),
+}).strict();
+
+// --- Empty-body POST endpoints (ping webhook, sync actions) ---
+//
+// These callers send no body; express.json() still yields `{}` (body-parser
+// initialises `req.body` before the content-type check). A strict empty object
+// accepts the real `{}` while rejecting any stray/injected fields.
+export const emptyBodySchema = z.object({}).strict();
+
+// --- Community-health AI auto-fix (generate / commit-fix) ---
+//
+// `fileType` stays a bounded string (NOT an enum): the FILE_GENERATORS registry
+// in the handler is the single source of truth for valid keys and emits a
+// specific `invalid_file_type` code, so duplicating the key list here would
+// create a second source and a less useful error. The schema bounds lengths,
+// validates the `overrides` shape (unknown override keys are stripped, not
+// rejected), and rejects unknown envelope keys.
+export const communityHealthGenerateSchema = z.object({
+    fileType: z.string().min(1).max(60),
+    overrides: z.object({
+        licenseId: z.string().min(1).max(50).optional(),
+        email: z.string().max(320).optional(),
+    }).strip().optional().default({}),
+}).strict();
+
+// commit-fix: filePath/content/commitMessage stay OPTIONAL here because the
+// handler's presence check emits the domain-specific `invalid_body` code that
+// the route contract (and its test) already established; the schema bounds
+// lengths, validates `mode`, and rejects unknown keys. `content` is capped like
+// the raw contents route.
+export const communityHealthCommitFixSchema = z.object({
+    filePath: z.string().max(1024).optional(),
+    content: z.string().max(2_000_000).optional(),
+    commitMessage: z.string().max(10_000).optional(),
+    mode: z.enum(['direct', 'pr']).optional().default('direct'),
+}).strict();
+
 // --- Middleware factory ---
 //
 // The legacy `validate()` helper was removed in the P1-F / P3-Q validation
