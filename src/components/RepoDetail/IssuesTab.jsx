@@ -14,6 +14,7 @@ import { useFocusedRow } from '../../hooks/useFocusedRow'
 import { issueActions } from '../../actions/issueActions'
 import { emitAppEvent, onAppEvent, APP_EVENTS } from '../../utils/appEvents'
 import { formatRelativeTime, formatDateTime } from '../../utils/format'
+import { issueLabelChipStyle } from '../../utils/issueLabelColors'
 
 export function IssuesTab({ api, repoFullName }) {
     const { toast } = useToast()
@@ -223,12 +224,12 @@ export function IssuesTab({ api, repoFullName }) {
                                         >
                                             {issue.title}
                                         </button>
-                                        <span className="text-xs text-slate-400">#{issue.number}</span>
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">#{issue.number}</span>
                                     </div>
                                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                                         {issue.labels?.map(l => (
-                                            <span key={l.name} className="text-xs px-1.5 py-0.5 rounded-full font-medium"
-                                                style={{ backgroundColor: `#${l.color}20`, color: `#${l.color}`, borderColor: `#${l.color}40`, borderWidth: 1 }}>
+                                            <span key={l.name} className="text-xs px-1.5 py-0.5 rounded-full font-medium text-[color:var(--lbl-fg)] dark:text-[color:var(--lbl-fg-dark)]"
+                                                style={issueLabelChipStyle(l.color)}>
                                                 {l.name}
                                             </span>
                                         ))}

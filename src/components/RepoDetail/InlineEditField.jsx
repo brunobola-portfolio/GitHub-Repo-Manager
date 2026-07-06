@@ -88,7 +88,7 @@ export function InlineEditField({
     const hasValue = !!(value && String(value).trim())
     const display = hasValue
         ? (renderValue ? renderValue(value) : <span className="text-slate-700 dark:text-slate-300">{value}</span>)
-        : <span className="text-slate-400 dark:text-slate-500 italic">{placeholder || 'Add value'}</span>
+        : <span className="text-slate-500 dark:text-slate-400 italic">{placeholder || 'Add value'}</span>
 
     const enterEdit = () => {
         if (disabled) return

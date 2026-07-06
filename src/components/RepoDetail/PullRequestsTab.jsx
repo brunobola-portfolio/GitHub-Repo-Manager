@@ -301,13 +301,13 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                                         >
                                             {pr.title}
                                         </button>
-                                        <span className="text-xs text-slate-400">#{pr.number}</span>
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">#{pr.number}</span>
                                         <PRRiskBadges pr={pr} className="ml-1" />
                                     </div>
                                     <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                        <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">{pr.head?.ref}</span>
+                                        <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded text-slate-600 dark:text-slate-300">{pr.head?.ref}</span>
                                         <span>→</span>
-                                        <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded">{pr.base?.ref}</span>
+                                        <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded text-slate-600 dark:text-slate-300">{pr.base?.ref}</span>
                                     </div>
                                     <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-500 dark:text-slate-400">
                                         <span>{pr.user?.login}</span>
@@ -328,7 +328,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                                             <GitMerge className="w-3.5 h-3.5 mr-1" /> Merge
                                         </Button>
                                         <Button variant="ghost" size="sm" onClick={() => handleClose(pr)}
-                                            className="text-red-500 dark:text-red-400 text-xs">
+                                            className="text-red-600 dark:text-red-400 text-xs">
                                             Close
                                         </Button>
                                     </div>

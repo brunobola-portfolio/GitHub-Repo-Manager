@@ -14,6 +14,7 @@ import { useDraftPersistence } from '../../hooks/useDraftPersistence'
 import { useToast } from '../../hooks/useToast'
 import { Textarea } from '../ui/form'
 import { formatRelativeTime } from '../../utils/format'
+import { issueLabelChipStyle } from '../../utils/issueLabelColors'
 
 export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }) {
     const { toast } = useToast()
@@ -182,13 +183,8 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                         {current.labels.map(l => (
                             <span
                                 key={l.name}
-                                className="text-xs px-2 py-0.5 rounded-full font-medium"
-                                style={{
-                                    backgroundColor: `#${l.color}20`,
-                                    color: `#${l.color}`,
-                                    borderColor: `#${l.color}40`,
-                                    borderWidth: 1
-                                }}
+                                className="text-xs px-2 py-0.5 rounded-full font-medium text-[color:var(--lbl-fg)] dark:text-[color:var(--lbl-fg-dark)]"
+                                style={issueLabelChipStyle(l.color)}
                             >
                                 {l.name}
                             </span>

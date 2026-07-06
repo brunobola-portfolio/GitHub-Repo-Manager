@@ -343,7 +343,7 @@ function VisibilityToggleButton({ active, onClick, children }) {
             className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                 active
                     ? 'bg-white dark:bg-slate-600 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] shadow-sm'
-                    : 'text-slate-500 dark:text-slate-400'
+                    : 'text-slate-600 dark:text-slate-400'
             }`}
         >
             {children}

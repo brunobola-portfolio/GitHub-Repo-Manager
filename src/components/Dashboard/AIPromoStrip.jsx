@@ -73,7 +73,7 @@ export function AIPromoStrip({ repos, licenseTier = 'free', onOpenInsights }) {
                             <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 ds-font-display truncate">
                                 {copy.title}
                             </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                            <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
                                 {copy.body}
                             </p>
                         </div>

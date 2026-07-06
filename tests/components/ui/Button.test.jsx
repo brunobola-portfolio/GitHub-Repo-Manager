@@ -80,7 +80,7 @@ describe('Button', () => {
         render(<Button variant="soft-danger">x</Button>)
         const cls = screen.getByRole('button').className
         expect(cls).toContain('bg-red-50')
-        expect(cls).toContain('text-red-600')
+        expect(cls).toContain('text-red-700')
     })
 
     it('renders soft-primary with indigo-50 bg + indigo text + indigo border', () => {

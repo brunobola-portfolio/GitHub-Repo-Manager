@@ -331,7 +331,7 @@ function KeyRow({ apiKey, onRevoke }) {
                     <button
                         onClick={() => setConfirming(true)}
                         disabled={isRevoked}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-colors"
                     >
                         <Trash2 className="w-3.5 h-3.5" />
                         Revoke

@@ -36,7 +36,7 @@ export function WorkBoardFilterBar({
             {/* Repos */}
             {availableRepos.length > 0 && (
                 <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="ds-text-micro font-semibold uppercase tracking-wider text-slate-400 mr-1">Repo</span>
+                    <span className="ds-text-micro font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mr-1">Repo</span>
                     {availableRepos.map(r => (
                         <FilterChip key={r} label={r} tone="indigo"
                             active={repos.has(r)}
@@ -48,7 +48,7 @@ export function WorkBoardFilterBar({
             {/* Authors */}
             {availableAuthors.length > 0 && (
                 <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="ds-text-micro font-semibold uppercase tracking-wider text-slate-400 mr-1">By</span>
+                    <span className="ds-text-micro font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mr-1">By</span>
                     {availableAuthors.map(a => (
                         <FilterChip key={a} label={a} tone="emerald"
                             active={authors.has(a)}
@@ -60,7 +60,7 @@ export function WorkBoardFilterBar({
             {/* Labels */}
             {availableLabels.length > 0 && (
                 <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="ds-text-micro font-semibold uppercase tracking-wider text-slate-400 mr-1">Label</span>
+                    <span className="ds-text-micro font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mr-1">Label</span>
                     {availableLabels.map(l => (
                         <FilterChip key={l} label={l} tone="amber"
                             active={labels.has(l)}
@@ -71,7 +71,7 @@ export function WorkBoardFilterBar({
 
             {/* Age — single-select */}
             <div className="flex items-center gap-1.5">
-                <span className="ds-text-micro font-semibold uppercase tracking-wider text-slate-400 mr-1">Age</span>
+                <span className="ds-text-micro font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mr-1">Age</span>
                 {AGE_BUCKETS.map(b => (
                     <FilterChip key={b.id} label={b.label} tone="slate"
                         active={filters.age === b.id}

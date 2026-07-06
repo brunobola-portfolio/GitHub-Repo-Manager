@@ -497,7 +497,7 @@ function HealthOverview({ repos, openModalWithData }) {
                     <div className="w-2 h-2 rounded-full bg-emerald-500" />
                     <span><strong>{totalRepos}</strong> source repos available for health analysis</span>
                 </div>
-                <span className="text-xs text-slate-400 dark:text-slate-500">Click any repo to run a full health check</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">Click any repo to run a full health check</span>
             </div>
 
             {/* Repo grid */}
@@ -519,7 +519,7 @@ function HealthOverview({ repos, openModalWithData }) {
                                     <span className="text-xs text-slate-500 dark:text-slate-400">{repo.language}</span>
                                 )}
                                 {repo.stargazers_count > 0 && (
-                                    <span className="flex items-center gap-0.5 text-xs text-slate-400 dark:text-slate-500">
+                                    <span className="flex items-center gap-0.5 text-xs text-slate-500 dark:text-slate-400">
                                         <Star className="w-3 h-3" /> {repo.stargazers_count}
                                     </span>
                                 )}
@@ -532,7 +532,7 @@ function HealthOverview({ repos, openModalWithData }) {
 
             {/* Show more hint */}
             {totalRepos > 6 && (
-                <p className="text-xs text-center text-slate-400 dark:text-slate-500 pt-1">
+                <p className="text-xs text-center text-slate-500 dark:text-slate-400 pt-1">
                     Showing top 6 of {totalRepos} repos. Run individual health checks from the Repositories view.
                 </p>
             )}

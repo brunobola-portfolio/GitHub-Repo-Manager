@@ -269,7 +269,7 @@ function QuickActions({
                             <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
                                 No repositories selected
                             </p>
-                            <p className="ds-text-micro text-slate-400 mt-1">
+                            <p className="ds-text-micro text-slate-500 dark:text-slate-400 mt-1">
                                 Select items to perform bulk actions
                             </p>
                         </div>
@@ -287,7 +287,7 @@ function QuickActions({
                                 </div>
                                 <div className="text-left">
                                     <div className="text-xs font-semibold">Import Repository</div>
-                                    <div className="ds-text-micro text-white/75">Git URL, Azure, GitHub</div>
+                                    <div className="ds-text-micro text-white/90">Git URL, Azure, GitHub</div>
                                 </div>
                                 <ChevronRight className="w-4 h-4 ml-auto" />
                             </button>
@@ -400,7 +400,7 @@ function ActionHistory({ results, isPerforming, message }) {
 
             <div className="flex-1 overflow-y-auto p-0 ds-scrollbar">
                 {results.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-8 text-slate-400">
+                    <div className="flex flex-col items-center justify-center py-8 text-slate-500 dark:text-slate-400">
                         <History className="w-8 h-8 mb-2 opacity-20" />
                         <span className="text-xs">No recent actions</span>
                     </div>
@@ -417,7 +417,7 @@ function ActionHistory({ results, isPerforming, message }) {
                                             <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">
                                                 {ACTION_LABELS[r.action] || r.action}
                                             </div>
-                                            <span className="ds-text-micro text-slate-400">
+                                            <span className="ds-text-micro text-slate-500 dark:text-slate-400">
                                                 {new Date(r.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </span>
                                         </div>
@@ -501,7 +501,7 @@ function ActivityListBody({ activity }) {
                                     <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate hover:text-indigo-500 cursor-pointer">
                                         {event.repo?.name || 'Unknown Repo'}
                                     </div>
-                                    <span className="ds-text-micro text-slate-400 whitespace-nowrap">{timeAgo}</span>
+                                    <span className="ds-text-micro text-slate-500 dark:text-slate-400 whitespace-nowrap">{timeAgo}</span>
                                 </div>
                                 <div className="ds-text-meta text-slate-500 dark:text-slate-400 mt-0.5 leading-tight line-clamp-2">
                                     {getEventDescription(event)}

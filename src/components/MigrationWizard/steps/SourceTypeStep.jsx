@@ -18,7 +18,7 @@ const SOURCE_TYPES = [
       border: 'border-cyan-400/60 dark:border-cyan-400/40',
       bg: 'bg-cyan-50/80 dark:bg-cyan-950/30',
       ring: 'ring-cyan-400/20',
-      badge: 'bg-amber-500',
+      badge: 'bg-amber-700',
     },
   },
   {

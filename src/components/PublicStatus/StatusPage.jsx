@@ -21,19 +21,19 @@ const POLL_INTERVAL_MS = 60_000
 const STATUS_META = {
     ready: {
         label: 'All systems operational',
-        pill: 'bg-emerald-500 text-white',
+        pill: 'bg-emerald-700 text-white',
         dot: 'bg-emerald-500',
         ring: 'ring-emerald-500/20',
     },
     degraded: {
         label: 'Partial outage',
-        pill: 'bg-amber-500 text-white',
+        pill: 'bg-amber-700 text-white',
         dot: 'bg-amber-500',
         ring: 'ring-amber-500/20',
     },
     unknown: {
         label: 'Checking…',
-        pill: 'bg-slate-400 text-white',
+        pill: 'bg-slate-500 text-white',
         dot: 'bg-slate-400',
         ring: 'ring-slate-400/20',
     },
@@ -45,7 +45,7 @@ const COMPONENTS = [
 ]
 
 function checkTone(value) {
-    if (value === 'ok') return { label: 'Operational', color: 'text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-500' }
+    if (value === 'ok') return { label: 'Operational', color: 'text-emerald-700 dark:text-emerald-400', dot: 'bg-emerald-500' }
     if (typeof value === 'string' && value.startsWith('error')) return { label: value.replace(/^error:\s*/, 'Error: '), color: 'text-rose-600 dark:text-rose-400', dot: 'bg-rose-500' }
     return { label: 'Unknown', color: 'text-slate-500 dark:text-slate-400', dot: 'bg-slate-400' }
 }

@@ -106,7 +106,7 @@ export function LanguageChart({ data = [], loading }) {
                         <Skeleton className="w-64 h-64 rounded-full" />
                     </div>
                 ) : enrichedData.length === 0 ? (
-                    <div className="flex items-center justify-center text-slate-400 dark:text-slate-500" style={{ height: `${chartHeight}px` }}>
+                    <div className="flex items-center justify-center text-slate-500 dark:text-slate-400" style={{ height: `${chartHeight}px` }}>
                         <p>No language data available</p>
                     </div>
                 ) : (
@@ -204,7 +204,7 @@ export function LanguageChart({ data = [], loading }) {
                                                 <span className="text-slate-600 dark:text-slate-400 font-semibold">
                                                     {lang.value}
                                                 </span>
-                                                <span className="text-slate-400 dark:text-slate-500 font-medium">
+                                                <span className="text-slate-500 dark:text-slate-400 font-medium">
                                                     {lang.percentage}%
                                                 </span>
                                             </div>

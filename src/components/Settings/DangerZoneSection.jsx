@@ -103,7 +103,7 @@ export function DangerZoneSection({ onErased }) {
                         <p className="text-sm font-semibold text-rose-700 dark:text-rose-300 block">
                             Danger Zone
                         </p>
-                        <p className="text-xs text-rose-600/80 dark:text-rose-400/70 mt-0.5">
+                        <p className="text-xs text-rose-700 dark:text-rose-400 mt-0.5">
                             Export your data or permanently erase your account. Both actions are audit-logged.
                         </p>
                     </div>

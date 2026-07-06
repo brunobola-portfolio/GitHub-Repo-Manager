@@ -112,7 +112,7 @@ export function Header({
                                 Repo Manager
                                 <LicenseBadge />
                             </h2>
-                            <p className="ds-text-meta text-slate-400 dark:text-slate-500 leading-none mt-0.5">Organize & migrate</p>
+                            <p className="ds-text-meta text-slate-600 dark:text-slate-400 leading-none mt-0.5">Organize & migrate</p>
                         </div>
                     </div>
                 </div>

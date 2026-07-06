@@ -53,7 +53,7 @@ function DeltaBadge({ pct }) {
     const flat = Math.abs(pct) < 5
     const up = pct > 0
     const label = flat ? '—' : (up ? `+${pct}%` : `${pct}%`)
-    const color = flat ? 'text-slate-400' : up ? 'text-amber-400' : 'text-emerald-400'
+    const color = flat ? 'text-slate-500 dark:text-slate-400' : up ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'
     return (
         <motion.span
             className={clsx('ds-text-micro font-medium tabular-nums', color)}
@@ -129,7 +129,7 @@ function KpiTile({ icon: Icon, label, value, hint, loading, errored, accent = 'i
                 {showError ? (
                     <div className="mt-0.5 ds-text-meta text-rose-500/80 dark:text-rose-400/80">couldn't load</div>
                 ) : (
-                    hint && <div className="mt-0.5 ds-text-meta text-slate-400 dark:text-slate-500">{hint}</div>
+                    hint && <div className="mt-0.5 ds-text-meta text-slate-500 dark:text-slate-400">{hint}</div>
                 )}
             </div>
         </button>

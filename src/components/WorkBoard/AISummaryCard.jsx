@@ -101,7 +101,7 @@ export function AISummaryCard({ meta: metaProp } = {}) {
                 <div className="flex items-center gap-2 mb-1.5">
                     <Sparkles className="w-4 h-4 text-amber-500" aria-hidden="true" />
                     <span className="font-medium text-sm text-slate-800 dark:text-slate-200">AI Work Summary</span>
-                    <span className="ds-text-micro uppercase tracking-wide opacity-60 text-amber-700 dark:text-amber-300">demo</span>
+                    <span className="ds-text-micro uppercase tracking-wide text-amber-700 dark:text-amber-300">demo</span>
                     <button
                         type="button"
                         onClick={() => setDismissed(true)}

@@ -4,6 +4,7 @@ import { Tag, Users, Milestone, Check } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Spinner } from '../ui/Spinner'
 import { useToast } from '../../hooks/useToast'
+import { issueLabelChipStyle } from '../../utils/issueLabelColors'
 
 /**
  * IssueSidebar — labels, assignees, milestone editor for the right rail of
@@ -88,17 +89,13 @@ function LabelEditor({ owner, repo, issue, api, onMutate }) {
 
             <div className="flex flex-wrap items-center gap-1.5 min-h-[24px]">
                 {(issue.labels || []).length === 0 ? (
-                    <span className="text-xs text-slate-400">No labels</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">No labels</span>
                 ) : (
                     issue.labels.map(l => (
                         <span
                             key={l.name}
-                            className="text-xs px-2 py-0.5 rounded-full font-medium border"
-                            style={{
-                                backgroundColor: `#${l.color}20`,
-                                color: `#${l.color}`,
-                                borderColor: `#${l.color}40`,
-                            }}
+                            className="text-xs px-2 py-0.5 rounded-full font-medium border text-[color:var(--lbl-fg)] dark:text-[color:var(--lbl-fg-dark)]"
+                            style={issueLabelChipStyle(l.color)}
                         >
                             {l.name}
                         </span>

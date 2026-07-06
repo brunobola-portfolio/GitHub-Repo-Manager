@@ -256,7 +256,7 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
                 actions={
                     <>
                         {earliest && (
-                            <span className="ds-text-meta text-slate-400 dark:text-slate-500" aria-live="polite">
+                            <span className="ds-text-meta text-slate-500 dark:text-slate-400" aria-live="polite">
                                 updated {earliestLabel}
                             </span>
                         )}

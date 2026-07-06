@@ -96,7 +96,7 @@ export function OrgPanel({
 									}`}>
 									All Orgs
 								</h3>
-								<p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+								<p className="text-xs text-slate-600 dark:text-slate-400 truncate">
 									{formatNumber(stats?.totalRepos || 0)} repos
 								</p>
 							</div>
@@ -279,7 +279,7 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 						<div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
 							isSelected
 								? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/60'
-								: 'bg-emerald-50/50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30'
+								: 'bg-emerald-50/50 dark:bg-emerald-900/10 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30'
 						}`}>
 							<Globe className="w-3 h-3" />
 							<span>{formatCompact(org.public_repos)}</span>
@@ -291,7 +291,7 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 						<div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
 							isSelected
 								? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60'
-								: 'bg-amber-50/50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/30'
+								: 'bg-amber-50/50 dark:bg-amber-900/10 text-amber-700 dark:text-amber-400 border-amber-100 dark:border-amber-900/30'
 						}`}>
 							<Shield className="w-3 h-3" />
 							<span>{formatCompact(org.total_private_repos)}</span>
