@@ -342,8 +342,8 @@ function VisibilityToggleButton({ active, onClick, children }) {
             aria-pressed={active}
             className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                 active
-                    ? 'bg-white dark:bg-slate-600 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] shadow-sm'
-                    : 'text-slate-600 dark:text-slate-400'
+                    ? 'bg-white dark:bg-slate-800 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] shadow-sm'
+                    : 'text-slate-600 dark:text-slate-300'
             }`}
         >
             {children}
@@ -361,7 +361,7 @@ const ThemeOption = ({ value, icon: IconComp, label, currentTheme, setTheme }) =
             aria-pressed={active}
             className={`flex flex-col items-center gap-1.5 py-2.5 rounded-lg border transition-all ${active
                 ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ring-2 ring-indigo-500/20'
-                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-slate-700 dark:hover:text-slate-300'
+                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-slate-700 dark:hover:text-slate-300'
                 }`}
         >
             <IconComp size={18} />
