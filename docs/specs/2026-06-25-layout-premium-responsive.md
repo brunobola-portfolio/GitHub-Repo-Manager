@@ -39,6 +39,8 @@ A design panel (6 lenses + judge) plus direct verification on 2026-06-25 confirm
 
 **Current:** `<main>` cap `max-w-[1920px]` (App.jsx:669); Header and banners repeat the same wrapper. `--card-min-width` already steps 300→100%→280→320 across breakpoints (index.css:37-59).
 
+**Measured evidence (2026-07-06, live Playwright at 2560×1240, both themes):** content pinned to 1920px → **320px of dead gutter on each side (25% of the viewport unused)**; repo grid stays at **3 columns** where 4 fit comfortably. Screenshots in `.dev/visual-pass/2560_*.jpeg`. No breakage — purely unused space, confirming this workstream's premise.
+
 **Design:**
 
 - Add named breakpoints in an `@theme` block in `index.css`: `--breakpoint-ultra: 1920px;` (and `--breakpoint-wide: 1700px;`) → generates `ultra:` / `wide:` variants (Tailwind v4).
