@@ -1,14 +1,14 @@
 # Work Board API Reference
 
-**Mount path:** `/api/v1/work-board`
-**Router file:** `server/routes/work-board-tracking.js`
-**Last updated:** 2026-04-24
+**Mount path:** `/api/v1/work-board` (also reachable via the legacy `/api/work-board` alias)
+**Router files:** `server/routes/work-board-tracking.js` (tracked repos, prefs, discovery — documented in full below), plus `work-board.js` (analytics/DORA), `work-board-actions.js` (snooze, presets, review actions), and `work-board-ai.js` (mounted at `/api/v1/work-board/ai`). The latter three are summarised under [Additional Work Board routes](#actions-and-presets).
+**Last updated:** 2026-07-06
 
 All endpoints require an authenticated session (`requireAuth`). Authentication
 is via session cookie (GitHub OAuth) or an API key passed as
 `Authorization: Bearer grm_live_...`.
 
-Mutating requests (POST, PATCH) must include a valid CSRF token in the
+Mutating requests (POST, PATCH, DELETE) must include a valid CSRF token in the
 `X-CSRF-Token` header.
 
 ---
@@ -24,6 +24,9 @@ Mutating requests (POST, PATCH) must include a valid CSRF token in the
 - [`POST /discover`](#post-discover)
 - [`GET /ping`](#get-ping)
 - [`GET /repo-search`](#get-repo-search)
+- [Additional Work Board routes — Actions and presets](#actions-and-presets)
+- [Additional Work Board routes — Analytics and DORA metrics](#analytics-and-dora-metrics)
+- [Additional Work Board routes — Work Board AI assistant](#work-board-ai-assistant)
 
 ---
 
@@ -428,3 +431,67 @@ those where it appears mid-string. Within each tier, repos are sorted by
 curl -b session.cookie \
   "https://example.com/api/v1/work-board/repo-search?q=acme%2Fback"
 ```
+
+---
+
+## Additional Work Board routes
+
+The following routers are mounted alongside the tracking router at
+`/api/v1/work-board` (the AI router at `/api/v1/work-board/ai`). Paths below are
+relative to `/api/v1/work-board`. All require `requireAuth`; mutations require
+the `X-CSRF-Token` header. Bodies marked with a `*Schema` are Zod-validated.
+
+### Actions and presets
+
+`server/routes/work-board-actions.js`. Snooze management, saved filter presets,
+and AI-assisted review actions.
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `POST` | `/snooze` | Yes | Snooze an item (`snoozeBodySchema`) |
+| `DELETE` | `/snooze` | Yes | Un-snooze an item (`unsnoozeBodySchema`) |
+| `GET` | `/snoozes` | Yes | List the caller's active snoozes |
+| `POST` | `/review-action` | Yes | Apply a review action to a PR (`reviewActionBodySchema`) |
+| `GET` | `/presets` | Yes | List saved filter presets |
+| `POST` | `/presets` | Yes | Create a preset (`presetCreateBodySchema`) |
+| `PATCH` | `/presets/:id` | Yes | Update a preset (`presetIdParamsSchema` + `presetUpdateBodySchema`) |
+| `DELETE` | `/presets/:id` | Yes | Delete a preset (`presetIdParamsSchema`) |
+| `POST` | `/ai-summary` | Yes | AI summary of the current board slice |
+| `POST` | `/suggest-action` | Yes | Suggest a next action (`suggestActionBodySchema`) |
+| `POST` | `/draft-comment` | Yes | Draft a PR/issue comment (`draftCommentBodySchema`; rate-limited) |
+
+### Analytics and DORA metrics
+
+`server/routes/work-board.js`. Personal queues and delivery metrics. The DORA
+family requires the **Enterprise** tier (`requireTier('enterprise')` →
+`403 TIER_REQUIRED_ENTERPRISE`); the rest are available to all tiers.
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/my-reviews` | Yes | PRs awaiting the caller's review |
+| `GET` | `/my-issues` | Yes | Issues assigned to the caller |
+| `GET` | `/stale-prs` | Yes | Stale/aging PRs across tracked repos |
+| `GET` | `/review-load` | Yes | Reviewer-load distribution |
+| `GET` | `/tech-debt` | Yes | Tech-debt signals across tracked repos |
+| `GET` | `/kpi-snapshots` | Yes | Stored KPI snapshots |
+| `GET` | `/deploy-freq` | Enterprise | DORA: deployment frequency |
+| `GET` | `/lead-time` | Enterprise | DORA: lead time for changes |
+| `GET` | `/change-failure-rate` | Enterprise | DORA: change-failure rate |
+| `GET` | `/mttr` | Enterprise | DORA: mean time to restore |
+| `GET` | `/dora` | Enterprise | Combined DORA metrics |
+| `GET` | `/dora.csv` | Enterprise | Combined DORA metrics as CSV |
+
+### Work Board AI assistant
+
+`server/routes/work-board-ai.js`, mounted at `/api/v1/work-board/ai`. Paths below
+are relative to that prefix. Every route except `/status` requires the Work Board
+AI feature to be enabled (`requireWorkBoardAI`).
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/ai/status` | Yes | Whether the Work Board AI assistant is enabled/configured |
+| `GET` | `/ai/suggestions` | Yes | Current AI suggestions for the board |
+| `POST` | `/ai/dismiss-suggestion` | Yes | Dismiss a suggestion |
+| `POST` | `/ai/interpret` | Yes | Interpret a natural-language board command (rate-limited) |
+| `POST` | `/ai/apply` | Yes | Apply an interpreted action |
+| `GET` | `/ai/activity` | Yes | Recent AI-assistant activity |

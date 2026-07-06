@@ -1,32 +1,131 @@
 # GitHub Repo Manager - API Reference
 
 **Base URL:** `http://localhost:3001/api`
-**Authentication:** GitHub OAuth via session cookies. Most endpoints require an authenticated session (`requireAuth` middleware). The server never exposes raw access tokens to the client.
-**Total Endpoints:** ~300
+**Versioned alias:** Every route below is served under both `/api/*` (legacy) and `/api/v1/*`. The two prefixes hit the same handlers — `server/index.js` mounts the v1 aggregator at both (`app.use('/api/v1', v1Routes)` and `app.use('/api', v1Routes)`).
+**Authentication:** GitHub OAuth via session cookies, or an API key sent as `Authorization: Bearer grm_live_...`. Most endpoints require an authenticated session (`requireAuth` middleware). The server never exposes raw access tokens to the client.
+**CSRF:** All mutating `/api/*` requests (non-GET/HEAD/OPTIONS) require a valid `X-CSRF-Token` header. The OAuth flow and signature-verified webhooks are exempt.
+**Request validation:** Write endpoints validate their JSON body with Zod (`validateBody` middleware). An invalid body returns `400 { error, code: 'validation_failed' }` — see [Shared Response Envelopes](#shared-response-envelopes).
+**Total Endpoints:** ~310 route handlers (across `server/routes/**` plus the app-level webhook and health routes in `server/index.js`). This document gives full entries for the public-facing and recently-changed surface; lower-level internal routes are summarised under [Additional Endpoints](#additional-endpoints-grouped).
 
 ---
 
 ## Table of Contents
 
-- [Authentication](#authentication-apiauthx)
-- [User](#user-apiuserx)
-- [Repositories](#repositories-apireposx)
-- [Organizations](#organizations-apiorgsx)
-- [Teams](#teams-apiteamsx)
-- [AI](#ai-apiaix)
-- [Bulk Operations](#bulk-operations-apix)
-- [Import](#import-apiimportx)
-- [Azure DevOps](#azure-devops-apiazurex)
-- [Webhooks](#webhooks-apiwebhooksx)
-- [Migration Plans](#migration-plans-apimigrationx)
-- [Statistics](#statistics-apistatsx)
-- [System](#system-apisystemx)
-- [Billing](#billing-apibillingx)
-- [Audit Log](#audit-log-apiauditx)
-- [Usage Metrics](#usage-metrics-apiusagex)
-- [API Keys](#api-keys-apiapi-keysx)
+- [Shared Response Envelopes](#shared-response-envelopes)
+- [Authentication](#authentication-apiauth)
+- [User](#user-api)
+- [User Data & Privacy (GDPR)](#user-data--privacy-gdpr-apiuserdata)
+- [Repositories](#repositories-apirepos)
+- [Organizations](#organizations-apiorgs)
+- [Teams](#teams-apiteams)
+- [AI](#ai-apiai)
+- [Bulk Operations](#bulk-operations-api)
+- [Import](#import-apiimport)
+- [Azure DevOps](#azure-devops-apiazure)
+- [Webhooks](#webhooks-apiwebhooks)
+- [Migration Plans](#migration-plans-apimigration)
+- [Migration Marks](#migration-marks-apimigrationmarks)
+- [Statistics](#statistics-apistats)
+- [System](#system-apisystem)
+- [Health Probes](#health-probes-apihealth)
+- [Billing](#billing-apibilling)
+- [Audit Log](#audit-log-apiaudit)
+- [Usage Metrics](#usage-metrics-apiusage)
+- [API Keys](#api-keys-apiapi-keys)
 - [Stripe Webhooks](#stripe-webhooks-apiv1webhooksstripe)
-- [Dashboard](#dashboard-apiv1dashboardx)
+- [Dashboard](#dashboard-apiv1dashboard)
+- [Additional Endpoints](#additional-endpoints-grouped)
+
+---
+
+## Shared Response Envelopes
+
+These envelopes are produced by shared middleware and apply across the entire API. Individual endpoint entries below do not repeat them.
+
+### Validation error — `400`
+
+Emitted by `validateBody` / `validateQuery` / `validateParams`
+(`server/middleware/validate-request.js`) when a request body/query/params fails
+its Zod schema. The message names the offending field.
+
+```json
+{
+  "error": "title: String must contain at least 1 character(s)",
+  "code": "validation_failed"
+}
+```
+
+### Authentication required — `401`
+
+Emitted by `requireAuth` (`server/middleware/auth.js`) when there is no valid
+session token or API key:
+
+```json
+{ "error": "Session expired. Please login again." }
+```
+
+An invalid `Authorization: Bearer grm_live_...` key returns `{ "error": "Invalid API key" }`.
+
+### Tier gate — `403`
+
+Emitted by `requireTier(minTier)` (`server/middleware/require-tier.js`,
+payload from `tierRequiredPayload` in `server/lib/usage-meter.js`) when the
+caller's tier is below the required tier. `code` is `TIER_REQUIRED_PRO` or
+`TIER_REQUIRED_ENTERPRISE`.
+
+```json
+{
+  "error": "Tier required",
+  "code": "TIER_REQUIRED_PRO",
+  "feature": "/repos/owner/repo/sync",
+  "currentTier": "free",
+  "requiredTier": "pro"
+}
+```
+
+### AI not configured — `400`
+
+Emitted by `requireAI` when no AI provider key (user BYOK or server fallback) is available:
+
+```json
+{
+  "error": "AI_NOT_CONFIGURED",
+  "message": "AI features require a provider API key. Configure one in Settings → AI Configuration.",
+  "configureUrl": "/settings#ai"
+}
+```
+
+### AI quota / usage-limit exceeded — `429`
+
+Emitted by metered AI endpoints (`quotaExceededResponse` in
+`server/lib/usage-meter.js`) once a per-feature or global `ai_queries` cap is hit:
+
+```json
+{
+  "error": "usage_limit_exceeded",
+  "code": "QUOTA_EXCEEDED",
+  "feature": "ai_semantic_search",
+  "resetAt": "2026-08-01T00:00:00.000Z",
+  "upgradeTo": "pro",
+  "message": "Semantic Search limit reached (50/50 this month). Upgrade to Pro for unlimited.",
+  "metric": "ai_semantic_search",
+  "limit": 50,
+  "current": 50,
+  "remaining": 0,
+  "upgradeUrl": "/pricing"
+}
+```
+
+### Server error — `500`
+
+The global error handler and per-route `catch` blocks return
+`{ "error": "<message>" }`. In production the message is the generic fallback
+(`safeError` hides internals); in development it carries the real error text.
+
+### Multi-status — `207`
+
+Bulk operations return `207` when some items succeed and others fail; the body
+carries a per-item `results` array.
 
 ---
 
@@ -192,6 +291,58 @@ Search GitHub users by query string.
 | `q` | string | Yes | Search query |
 
 **Response (200):** Array of GitHub user objects (max 5 results).
+
+---
+
+## User Data & Privacy (GDPR) (`/api/user/data/*`)
+
+Self-service data portability (GDPR Article 20) and erasure (GDPR Article 17 / SOC 2 CC6.5). Backed by `server/routes/user-data.js`; mounted at `/api/user/data`. Erasure is registry-driven: an `ERASURE_REGISTRY` classifies every user-keyed table as `erase`, `cascade`, `tombstone`, or `survive`, and a completeness test fails CI if a new user-keyed table is left unclassified.
+
+### `GET /api/user/data/export`
+
+Export every row keyed to the authenticated user across the tables the erasure handler would wipe. Read-only; no side effects. Streams a downloadable JSON attachment (`Content-Disposition: attachment; filename="<login>-data-export-<ts>.json"`). Secret material is never included — encrypted Azure PATs and API-key material are excluded (only metadata/prefixes are exported). Heavy tables are capped at 50,000 rows each and flagged in a `truncated` map.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Response (200):** JSON body with `exportedAt`, `schemaVersion: 2`, `user`, and per-table arrays (`aiConfig`, `subscriptions`, `apiKeys`, `migrationJobs`, `migrationPlans`, `prEvents`, `issueEvents`, `reviewAssignments`, `communityHealthCache`, `repoMetadata`, `workflowRuns`, `workflowsMeta`, `usageMetrics`, `teamMemberships`, `azureCredentials`, `aiPrompts`, `aiReviewPrompts`, `aiPrReviews`, `aiPrCommands`, `aiPrChatMessages`, `workBoardPrefs`, `workBoardTrackedRepos`, `workBoardPresets`, `truncated`).
+
+**Error Codes:**
+- `404` - User not found
+- `500` - Export failed
+
+---
+
+### `DELETE /api/user/data`
+
+Wipe all personal-data rows for the authenticated user and tombstone the `users` row (email/avatar nulled, `username` set to `deleted-user`, `deleted_at` set) so audit history keeps referential integrity. Runs as a single transaction, then destroys the session.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `confirmString` | string | Yes | Must equal exactly `ERASE MY DATA` |
+
+**Response (200):**
+
+```json
+{
+  "deleted": { "user_ai_config": 1, "migration_jobs": 4, "gh_outbox": 0 },
+  "tombstoned": ["user", "audit_log_v2"]
+}
+```
+
+`deleted` maps each erased table to its deleted-row count. `tombstoned` lists the retained-but-anonymised records (the `users` row and the append-only `audit_log_v2` hash chain, which is retained for compliance).
+
+**Error Codes:**
+- `400` - `confirmString` does not match exactly, or the user still has an active subscription (cancel it first)
+- `404` - User not found, or already erased
+- `500` - Erasure failed (no data was changed)
 
 ---
 
@@ -452,12 +603,12 @@ Create a new branch.
 |---|---|
 | Auth required | Yes |
 
-**Request Body:**
+**Request Body** (validated by `branchCreateSchema`, `.strict()` — unknown keys are rejected):
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `name` | string | Required | New branch name |
-| `source_branch` | string | `"main"` | Branch to create from |
+| `name` | string | Required | New branch name. Validated against a `git check-ref-format` subset: no leading `-`, no `..`, no `//`, no `@{`, no whitespace and none of `~ ^ : ? * \ [`, no control chars (1–255 chars) |
+| `from` | string | `"main"` | Branch to create from (its head SHA becomes the new ref's base) |
 
 **Response (200):**
 ```json
@@ -466,6 +617,9 @@ Create a new branch.
   "ref": { ... }
 }
 ```
+
+**Error Codes:**
+- `400 validation_failed` - Invalid git ref name, or an unknown body key was sent
 
 ---
 
@@ -1748,7 +1902,7 @@ Get aggregated GitHub Actions statistics for all repositories assigned to a team
 
 ## AI (`/api/ai/*`)
 
-All AI endpoints require both authentication and a configured Gemini API key (`requireAI` middleware), unless noted otherwise.
+All AI endpoints require both authentication and a configured AI provider key (`requireAI` middleware), unless noted otherwise. The provider is resolved per request: a user BYOK key (see [User AI configuration](#additional-endpoints-grouped)) takes precedence, falling back to the server-configured provider. When no key is available, `requireAI` returns `400 AI_NOT_CONFIGURED` (see [Shared Response Envelopes](#shared-response-envelopes)).
 
 ### `GET /api/config/ai-status`
 
@@ -2088,6 +2242,8 @@ Index multiple repositories at once (max 10 per request).
 ## Bulk Operations (`/api/*`)
 
 All bulk operations process repositories sequentially and return multi-status responses (HTTP 207) when some operations succeed and others fail.
+
+**Tier gating:** `POST /api/visibility`, `POST /api/archive`, and `POST /api/community-health/compare` are available on all tiers. `POST /api/transfer`, `POST /api/transfer/check-conflicts`, `POST /api/mirror`, and `POST /api/delete` require the **Pro** tier (`requireTier('pro')` → `403 TIER_REQUIRED_PRO` otherwise).
 
 ### `POST /api/visibility`
 
@@ -3042,7 +3198,15 @@ Check whether target repository names already exist on GitHub before importing. 
 
 ## Migration Plans (`/api/migration/*`)
 
-Migration plans provide a structured way to plan, validate, execute, and monitor multi-step migrations from Azure DevOps to GitHub. Plans can include repositories, wikis, and work items. All migration plan endpoints require the Pro tier.
+Migration plans provide a structured way to plan, validate, execute, and monitor multi-step migrations from Azure DevOps to GitHub. Plans can include repositories, wikis, and work items.
+
+**Tier gating** (none of these routes carry `requireTier` at the route level — the model is metered, not tier-locked):
+
+- Creating, listing, reading, updating, validating, cancelling and pausing plans is available to **all tiers** (each plan is owned by the caller — `WHERE user_id = ?` — so cross-tenant access 404s).
+- **Full (non-dry-run) execution is metered** by `requireMigrationQuota`: Free tier gets **1 full migration per month**; dry-runs are unlimited. Applies to `execute`, `resume`, and the three task-level retry routes.
+- **Scheduling** a full migration to auto-run later requires **Pro** — a scheduled run bypasses the interactive execute meter, so `POST /plans` returns `403 upgrade_required` when a Free user submits `schedule.mode: 'scheduled'` with `schedule.isDryRun: false`.
+
+Plan bodies are validated by `createPlanSchema` / `updatePlanSchema` (`server/lib/validators.js`). Zod **strips undeclared task `config` keys**, so only the declared fields survive — per task type: `makePrivate`, `description`, `rollbackPolicy`, `timeout`, `sizeStrategy` (`exclude` | `lfs-migrate`), `onConflict` (`fail` | `replace`); `repo-tfvc` additionally allows `inPlace`, `targetProject`, `existingRepoId`; `work-items` and `wiki` have their own config shapes.
 
 ### `POST /api/migration/plans`
 
@@ -3051,7 +3215,7 @@ Create a new migration plan.
 | Detail | Value |
 |---|---|
 | Auth required | Yes |
-| Tier required | Pro |
+| Tier | All tiers (full runs metered — see gating note above) |
 
 **Request Body:**
 
@@ -3082,7 +3246,7 @@ List migration plans for the authenticated user (paginated).
 | Detail | Value |
 |---|---|
 | Auth required | Yes |
-| Tier required | Pro |
+| Tier | All tiers (full runs metered — see gating note above) |
 
 **Query Parameters:**
 
@@ -3111,7 +3275,7 @@ Get a migration plan with all tasks and their statuses.
 | Detail | Value |
 |---|---|
 | Auth required | Yes |
-| Tier required | Pro |
+| Tier | All tiers (full runs metered — see gating note above) |
 | Authorization | Plan owner only |
 
 **Response (200):** Plan object with tasks array.
@@ -3129,7 +3293,7 @@ Update a migration plan. Only draft plans can be updated.
 | Detail | Value |
 |---|---|
 | Auth required | Yes |
-| Tier required | Pro |
+| Tier | All tiers (full runs metered — see gating note above) |
 | Authorization | Plan owner only |
 
 **Response (200):**
@@ -3153,7 +3317,7 @@ Delete a migration plan. Active plans cannot be deleted.
 | Detail | Value |
 |---|---|
 | Auth required | Yes |
-| Tier required | Pro |
+| Tier | All tiers (full runs metered — see gating note above) |
 | Authorization | Plan owner only |
 
 **Response (200):**
@@ -3177,7 +3341,7 @@ Run pre-flight validation on a migration plan (check credentials, target availab
 | Detail | Value |
 |---|---|
 | Auth required | Yes |
-| Tier required | Pro |
+| Tier | All tiers (full runs metered — see gating note above) |
 | Authorization | Plan owner only |
 
 **Response (200):** Validation result object.
@@ -3194,7 +3358,7 @@ Start executing a migration plan. Runs asynchronously.
 | Detail | Value |
 |---|---|
 | Auth required | Yes |
-| Tier required | Pro |
+| Tier | All tiers (full runs metered — see gating note above) |
 | Authorization | Plan owner only |
 
 **Request Body:**
@@ -3224,7 +3388,7 @@ Cancel a running migration plan.
 | Detail | Value |
 |---|---|
 | Auth required | Yes |
-| Tier required | Pro |
+| Tier | All tiers (full runs metered — see gating note above) |
 | Authorization | Plan owner only |
 
 **Response (200):**
@@ -3247,7 +3411,7 @@ Pause a running migration plan.
 | Detail | Value |
 |---|---|
 | Auth required | Yes |
-| Tier required | Pro |
+| Tier | All tiers (full runs metered — see gating note above) |
 | Authorization | Plan owner only |
 
 **Response (200):**
@@ -3270,7 +3434,7 @@ Resume a paused migration plan.
 | Detail | Value |
 |---|---|
 | Auth required | Yes |
-| Tier required | Pro |
+| Tier | All tiers (full runs metered — see gating note above) |
 | Authorization | Plan owner only |
 
 **Request Body:**
@@ -3299,7 +3463,7 @@ Retry a failed task within a migration plan.
 | Detail | Value |
 |---|---|
 | Auth required | Yes |
-| Tier required | Pro |
+| Tier | All tiers (full runs metered — see gating note above) |
 | Authorization | Plan owner only |
 
 **Request Body:**
@@ -3321,6 +3485,56 @@ Retry a failed task within a migration plan.
 
 ---
 
+### `POST /api/migration/plans/:id/tasks/:taskId/replace-retry`
+
+Destructive recovery for a repository task that failed on an "already exists" conflict. Patches the stored task `config` with `onConflict: 'replace'` and re-runs it, so the importer deletes and recreates the target. Works on pre-existing failed plans too (this path does not re-run `createPlanSchema`).
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Quota | Metered (`requireMigrationQuota`) — Free: 1 full migration/month |
+| Authorization | Plan owner only |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `azurePat` | string | No | Azure PAT for the retry |
+
+**Response (200):** `{ "success": true }`
+
+**Error Codes:**
+- `400` - Task type is not `repo`/`repo-tfvc` (Replace only applies to repository tasks)
+- `404` - Plan or task not found (or not owned by the caller)
+- `409` - Only failed tasks can be replace-retried
+
+---
+
+### `POST /api/migration/plans/:id/tasks/:taskId/retry-lfs`
+
+Recovery for a repository task that failed because files exceed GitHub's 100 MB per-file limit. Patches the stored config with `sizeStrategy: 'lfs-migrate'` (so the re-run runs `git lfs migrate import --above=100MiB` before pushing) and re-runs the task.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Quota | Metered (`requireMigrationQuota`) — Free: 1 full migration/month |
+| Authorization | Plan owner only |
+
+**Request Body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `azurePat` | string | No | Azure PAT for the retry |
+
+**Response (200):** `{ "success": true }`
+
+**Error Codes:**
+- `400` - Task type is not `repo`/`repo-tfvc` (Git LFS migration only applies to repository tasks)
+- `404` - Plan or task not found (or not owned by the caller)
+- `409` - Only failed tasks can be retried
+
+---
+
 ### `GET /api/migration/stream/:id`
 
 Subscribe to real-time migration progress via Server-Sent Events (SSE).
@@ -3328,7 +3542,7 @@ Subscribe to real-time migration progress via Server-Sent Events (SSE).
 | Detail | Value |
 |---|---|
 | Auth required | Yes |
-| Tier required | Pro |
+| Tier | All tiers (full runs metered — see gating note above) |
 | Authorization | Plan owner only |
 | Content-Type | `text/event-stream` |
 
@@ -3343,7 +3557,7 @@ Analyze a set of repositories for migration planning. Uses AI-powered analysis w
 | Detail | Value |
 |---|---|
 | Auth required | Yes |
-| Tier required | Pro |
+| Tier | All tiers (full runs metered — see gating note above) |
 
 **Request Body:**
 
@@ -3365,7 +3579,7 @@ Export a migration report for a completed (or failed) plan.
 | Detail | Value |
 |---|---|
 | Auth required | Yes |
-| Tier required | Pro |
+| Tier | All tiers (full runs metered — see gating note above) |
 | Authorization | Plan owner only |
 
 **Response (200):**
@@ -3391,6 +3605,83 @@ Export a migration report for a completed (or failed) plan.
 
 **Error Codes:**
 - `403` - Not the plan owner
+
+---
+
+## Migration Marks (`/api/migration/marks/*`)
+
+Read-only provenance for repositories that were produced by a migration. Marks are written to GitHub topics/description/custom-properties, Azure project properties, and a git annotated tag when a plan runs; these endpoints surface them for the "Migrated" pill, the MigrationHistory badge, and the RepoDetail provenance card. Backed by `server/routes/migration-marks.js`; mounted at `/api/migration/marks` behind `requireAuth`. Every query is scoped to the caller through the owning plan (`migration_plans.user_id = ?`), so one tenant can never read another's provenance.
+
+Stored `payload` columns are returned parsed (via `safeJson`).
+
+### `GET /api/migration/marks`
+
+List marks, optionally filtered. Capped at 200 rows, newest first.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Query Parameters:**
+
+| Param | Type | Description |
+|---|---|---|
+| `targetFullName` | string | Match marks whose `target_id` is `owner/repo` or `owner/repo#variant` |
+| `targetKind` | string | Exact match on `target_kind` (e.g. `github-topic`) |
+
+**Response (200):** `{ "marks": [ { ...markRow, "payload": {...} } ] }`
+
+**Error Codes:**
+- `401` - Not authenticated
+
+---
+
+### `GET /api/migration/marks/mine`
+
+Batched lookup of every repo the current user has migrated — a single round-trip replacement for the per-card `?targetFullName=` fetch.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Response (200):**
+
+```json
+{
+  "migrated": {
+    "owner/repo": { "writtenAt": "2026-05-23T12:00:00Z" }
+  }
+}
+```
+
+`writtenAt` is the latest `written` timestamp for that repo (used for the pill tooltip), or `null` if no mark has reached `written` status.
+
+**Error Codes:**
+- `401` - Not authenticated
+
+---
+
+### `GET /api/migration/marks/plan/:id`
+
+All marks for a single plan, grouped by scope. User-scoped: returns an empty set (never a 403) when the plan belongs to another tenant.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Response (200):**
+
+```json
+{
+  "planId": 1,
+  "byScope": { "source": [ ... ], "destination": [ ... ], "git-tag": [ ... ] },
+  "marks": [ { ...markRow, "payload": {...} } ]
+}
+```
+
+**Error Codes:**
+- `400` - Invalid plan id (not numeric)
+- `401` - Not authenticated
 
 ---
 
@@ -3630,9 +3921,94 @@ Report a client-side error. Used by the frontend error boundary. No authenticati
 
 ---
 
+## Health Probes (`/api/health/*`)
+
+Kubernetes-style liveness/readiness probes plus a legacy shallow health check. Unlike the rest of this document, these are **mounted directly at `/api/health`** (in `server/index.js`, before session/CSRF/rate-limit middleware) — they are **not** served under the `/api/v1` alias. All three are unauthenticated, un-rate-limited, and CSRF-exempt (GETs), so probes work before any session exists and while the stack is degraded.
+
+### `GET /api/health`
+
+Legacy shallow health check (used by the frontend's connectivity detection).
+
+| Detail | Value |
+|---|---|
+| Auth required | No |
+
+**Response (200):**
+
+```json
+{
+  "status": "ok",
+  "version": "4.1.1",
+  "uptime": 1234,
+  "database": "connected",
+  "redis": "configured"
+}
+```
+
+`database` is `disconnected` (and `status` becomes `degraded`) if the `SELECT 1` probe throws. `redis` is present only when `REDIS_URL` is configured.
+
+---
+
+### `GET /api/health/live`
+
+Liveness probe. Returns 200 immediately unless the process is mid-shutdown; touches no downstream dependency so a degraded dependency can't cause the orchestrator to kill the pod.
+
+| Detail | Value |
+|---|---|
+| Auth required | No |
+
+**Response (200):** `{ "status": "alive" }`
+**Response (503):** `{ "status": "shutting_down" }` while the server is draining.
+
+---
+
+### `GET /api/health/ready`
+
+Readiness probe. Runs dependency checks, each with a 100 ms RTT budget: the database (`SELECT 1`) and the session store (Redis `PING` when `REDIS_URL` is set, otherwise a trivial SQLite `sessions`-table check).
+
+| Detail | Value |
+|---|---|
+| Auth required | No |
+
+**Response (200):**
+
+```json
+{ "status": "ready", "checks": { "db": "ok", "session": "ok" } }
+```
+
+**Response (503):** returned when any check fails; the `checks` map names the degraded dependency:
+
+```json
+{ "status": "degraded", "checks": { "db": "ok", "session": "error: timeout after 100ms" } }
+```
+
+---
+
 ## Billing (`/api/billing/*`)
 
 Billing endpoints manage Stripe-based subscriptions. All billing mutation endpoints require Stripe to be configured on the server (`requireStripe` middleware). Returns `503` if Stripe is not configured.
+
+### `GET /api/billing/config`
+
+Public capability probe so the (possibly logged-out) pricing page can feature-detect before rendering the monthly/yearly toggle. Booleans only — leaks no secrets or price IDs.
+
+| Detail | Value |
+|---|---|
+| Auth required | No |
+
+**Response (200):**
+
+```json
+{
+  "stripeEnabled": true,
+  "yearlyBillingAvailable": true
+}
+```
+
+- `stripeEnabled` — `true` when a Stripe secret key is configured.
+- `yearlyBillingAvailable` — `true` only when Stripe is enabled **and** a Pro yearly price ID (`STRIPE_PRICE_PRO_YEARLY`) is configured. The pricing toggle is Pro-driven (Enterprise is Contact-Sales).
+
+---
 
 ### `POST /api/billing/checkout`
 
@@ -3645,9 +4021,10 @@ Create a Stripe Checkout session to subscribe to a paid tier.
 
 **Request Body:**
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `tier` | string | Yes | Subscription tier: `pro` or `enterprise` |
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `tier` | string | Yes | - | Subscription tier: `pro` or `enterprise` |
+| `billingPeriod` | string | No | `"monthly"` | `monthly` or `yearly`. Yearly is honoured only when a matching yearly price ID is configured for the tier; otherwise the request 400s (never silently falls back to monthly) |
 
 **Response (200):**
 
@@ -3658,7 +4035,7 @@ Create a Stripe Checkout session to subscribe to a paid tier.
 ```
 
 **Error Codes:**
-- `400` - Invalid input or price not configured for tier
+- `400` - Invalid input, or price not configured for the requested `tier` + `billingPeriod`
 - `503` - Billing is not configured
 
 ---
@@ -3719,6 +4096,8 @@ Get the current subscription status for the authenticated user.
 
 ## Audit Log (`/api/audit/*`)
 
+The audit router is mounted behind `requireTier('enterprise')`, so all audit endpoints require the **Enterprise** tier (a lower tier gets `403 TIER_REQUIRED_ENTERPRISE`).
+
 ### `GET /api/audit`
 
 List audit log entries for the authenticated user (paginated). Supports filtering by action, resource type, and date range.
@@ -3726,6 +4105,7 @@ List audit log entries for the authenticated user (paginated). Supports filterin
 | Detail | Value |
 |---|---|
 | Auth required | Yes |
+| Tier required | Enterprise |
 
 **Query Parameters:**
 
@@ -4060,6 +4440,217 @@ Snoozes an inbox item until a future timestamp.
 **Response `200`:** `{ "ok": true }`
 
 **Errors:** `400` if `until` is missing, non-parseable, or in the past. `500` on DB failure.
+
+---
+
+## Additional Endpoints (grouped)
+
+Lower-level, internal, and operator routes that back specific UI surfaces. Every route below is served under both `/api/*` and `/api/v1/*` (via the v1 aggregator) **except** the Environment Tooling group, which is mounted only at `/api/env`. `Auth` column: `Yes` = `requireAuth`; `Admin` = additionally `requireAdmin`; `Pro`/`Enterprise` = additionally `requireTier`; `AI` = additionally `requireAI`; `No` = unauthenticated. Write endpoints noting a `*Schema` are Zod-validated (`server/lib/validators.js`).
+
+### Authentication extras (`/api/auth/*`)
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/auth/session-info` | No | Session diagnostics (age, absolute-timeout deadline) |
+| `POST` | `/api/auth/refresh-session` | No | Roll the session/refresh its expiry |
+| `GET` | `/api/auth/csrf-token` | No | Issue a CSRF token for the SPA |
+
+### Search (`/api/search/*`)
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/search/github` | Yes | Proxy to the GitHub search API (validated query via `querySchema`) |
+
+### GitHub event webhooks
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `POST` | `/api/webhooks/github` | No (signature) | Receive GitHub App/event webhooks (raw body, `X-Hub-Signature-256`). Also at `/api/v1/webhooks/github`. |
+
+### Pull request review sub-endpoints (`/api/repos/:owner/:repo/pulls/*`)
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `.../pulls/:pull_number/diff` | Yes | Raw unified diff for the PR |
+| `GET` | `.../pulls/:pull_number/comments` | Yes | List review comments |
+| `POST` | `.../pulls/:pull_number/comments` | Yes | Create a review comment (`prReviewCommentSchema`) |
+| `POST` | `.../pulls/:pull_number/comments/:comment_id/replies` | Yes | Reply to a review comment (`prReviewReplySchema`) |
+| `POST` | `.../pulls/:pull_number/reviews` | Yes | Submit a review — approve / request-changes / comment (`prReviewSubmitSchema`) |
+
+### Issue labels, assignees & timeline (`/api/repos/:owner/:repo/*`)
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `PUT` | `.../issues/:issue_number/labels` | Yes | Replace an issue's labels (`issueLabelsReplaceSchema`; an empty array clears all labels) |
+| `POST` | `.../issues/:issue_number/assignees` | Yes | Add assignees (`issueAssigneesSchema`) |
+| `DELETE` | `.../issues/:issue_number/assignees` | Yes | Remove assignees (`issueAssigneesSchema`) |
+| `GET` | `.../assignees` | Yes | List users assignable to issues/PRs |
+| `GET` | `.../issues/:issue_number/timeline` | Yes | Issue timeline events |
+| `DELETE` | `.../collaborators/:username` | Yes | Remove a collaborator |
+
+### Commit detail (`/api/repos/:owner/:repo/commits/*`)
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `.../commits/:sha` | Yes | Single commit (with files + stats) |
+| `GET` | `.../commits/:sha/diff` | Yes | Raw diff for a single commit |
+
+### Repository insights & CODEOWNERS (`/api/repos/:owner/:repo/*`)
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `.../commits/style` | Yes | Analyse commit-message conventions |
+| `GET` | `.../pr-template` | Yes | Fetch the repo's PR template |
+| `GET` | `.../codeowners` | Yes | Fetch the CODEOWNERS file |
+| `GET` | `.../codeowners/suggest` | Yes | Suggest CODEOWNERS entries from history |
+| `POST` | `.../community-health/generate` | Yes | Generate a community-health file (`communityHealthGenerateSchema`) |
+| `POST` | `.../community-health/commit-fix` | Yes | Commit a community-health fix (`communityHealthCommitFixSchema`) |
+
+### Repository tree / export / security / sync
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/repos/:owner/:repo/tree` | Yes | Full recursive git tree |
+| `GET` | `/api/repos/:owner/:repo/export` | Yes | Export repository metadata as JSON |
+| `GET` | `/api/repos/:owner/:repo/security` | Pro | Security overview (Dependabot/alerts) |
+| `GET` | `/api/repos/:owner/:repo/sync/preview` | Yes | Preview a fork sync (free — no mutation) |
+| `POST` | `/api/repos/:owner/:repo/sync` | Pro | Sync a fork with its upstream |
+
+### AI developer toolkit (`/api/ai/*`)
+
+All require `requireAuth` + `requireAI` and are body-validated.
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `POST` | `/api/ai/review-summary` | AI | Summarise a PR review (`aiReviewSummarySchema`) |
+| `POST` | `/api/ai/generate-commit` | AI | Generate a commit message (`aiGenerateCommitSchema`) |
+| `POST` | `/api/ai/generate-pr` | AI | Generate PR title/body (`aiGeneratePrSchema`) |
+| `POST` | `/api/ai/refine` | AI | Refine supplied text (`aiRefineSchema`) |
+| `POST` | `/api/ai/analyze-context` | AI | Analyse staged/diff context (`aiAnalyzeContextSchema`) |
+| `POST` | `/api/ai/chat-refine` | AI | Conversational refine turn (`aiChatRefineSchema`) |
+
+### AI — other (`/api/ai/*`)
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `POST` | `/api/ai/attention-narrative` | AI | Narrative summary for the attention feed (`attentionNarrativeSchema`) |
+| `POST` | `/api/ai/translate-search` | AI | Translate NL query → search filters (`aiTranslateSearchSchema`) |
+| `GET` | `/api/ai/metadata` | Yes | List cached AI metadata across indexed repos |
+| `POST` | `/api/ai/suggest-name-description` | Yes | Suggest repo name/description; deterministic fallback when AI is unavailable (`bodySchema`) |
+| `POST` | `/api/ai/issue-to-plan` | AI | Convert an issue into a migration/task plan (`aiIssueToPlanSchema`) |
+| `POST` | `/api/ai/migration-size-strategy` | AI | Recommend a size strategy for a migration |
+| `POST` | `/api/ai/migration-description` | AI | Generate a migration description |
+| `GET` | `/api/ai/attention-feed` | Yes | Pure-DB attention feed over tracked repos + migration ledger (free) |
+
+### AI prompt overrides (`/api/ai/prompts/*`)
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/ai/prompts` | Yes | List the caller's saved prompt overrides |
+| `PUT` | `/api/ai/prompts/:key` | Yes | Set a prompt override (`promptSchema`) |
+| `DELETE` | `/api/ai/prompts/:key` | Yes | Clear a prompt override |
+
+### Azure DevOps — enriched repo probes (`/api/azure/*`)
+
+Rate-limited (`enrichedRepoLimiter`). Each accepts `{ org, project, ... , pat? }` and uses the server PAT when `pat` is omitted.
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `POST` | `/api/azure/projects/create` | Yes | Create an Azure DevOps project |
+| `POST` | `/api/azure/repos/activity` | Yes | Recent activity for an Azure repo |
+| `POST` | `/api/azure/repos/lfs-check` | Yes | Detect Git LFS usage |
+| `POST` | `/api/azure/repos/commit-activity` | Yes | Commit-activity histogram |
+| `POST` | `/api/azure/repos/readme` | Yes | Fetch the repo README |
+| `POST` | `/api/azure/repos/full-stats` | Yes | Aggregated repo statistics |
+
+### Azure DevOps — credentials vault (`/api/azure/credentials/*`)
+
+Encrypted Azure PAT storage; secrets are never returned (only prefix/metadata).
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/azure/credentials` | Yes | List saved credentials (metadata only) |
+| `POST` | `/api/azure/credentials` | Yes | Save an encrypted Azure PAT |
+| `PATCH` | `/api/azure/credentials/:id` | Yes | Update a saved credential |
+| `DELETE` | `/api/azure/credentials/:id` | Yes | Delete a saved credential |
+| `POST` | `/api/azure/credentials/:id/test` | Yes | Test a saved credential against Azure |
+
+### Azure DevOps — host allowlist (`/api/azure/host-allowlist*`)
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/azure/host-allowlist` | Yes | List allowed Azure hosts |
+| `POST` | `/api/azure/host-allowlist` | Admin | Add an allowed host pattern |
+| `DELETE` | `/api/azure/host-allowlist/:pattern` | Admin | Remove an allowed host pattern |
+
+### Import — TFVC in-place (`/api/import/*`)
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `POST` | `/api/import/azure-tfvc/in-place` | Yes | Convert a TFVC path to Git in place within Azure DevOps (`azureTfvcInPlaceSchema`) |
+
+### User AI configuration (`/api/user/ai-config/*`)
+
+BYOK provider configuration; encrypted credentials are never returned.
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/user/ai-config` | Yes | Current AI provider config (no secrets) |
+| `POST` | `/api/user/ai-config` | Yes | Save provider config (`userAIConfigSchema`) |
+| `DELETE` | `/api/user/ai-config` | Yes | Clear AI provider config |
+| `POST` | `/api/user/ai-config/test` | Yes | Test provider credentials (`testAIConfigSchema`; rate-limited) |
+
+### Licensing (`/api/license/*`)
+
+Self-hosted Pro/Enterprise license-key management.
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/license` | No | Current license status |
+| `POST` | `/api/license/validate` | No | Validate a license key (rate-limited) |
+| `POST` | `/api/license/install` | Yes | Install a license key (rate-limited) |
+| `DELETE` | `/api/license/install` | Admin | Uninstall the active license |
+
+### Notifications & outbox
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/notifications/digest` | Yes | Notification digest for the user |
+| `POST` | `/api/notifications/mark-seen` | Yes | Mark notifications as seen |
+| `GET` | `/api/outbox/pending` | Yes | Pending queued GitHub mutations (gh-outbox) for the user |
+
+### Environment tooling (`/api/env/*`) — not under `/api/v1`
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/env/tooling` | Yes | Tool readiness + detected package managers (platform status) |
+| `POST` | `/api/env/tooling/:id/install` | Admin | SSE-streamed assisted install of a tool (`403` when `envToolingInstallEnabled` is false; `404` for an unknown tool) |
+
+### Admin — dead-letter queues (`/api/admin/dlq/*`)
+
+Operator API, gated internally with `requireAuth` + `requireTier('enterprise')` + `requireAdmin`.
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/admin/dlq/email` | Admin | List dead-lettered emails |
+| `GET` | `/api/admin/dlq/email/:id` | Admin | Get one dead-lettered email |
+| `POST` | `/api/admin/dlq/email/:id/retry` | Admin | Retry a dead-lettered email |
+| `DELETE` | `/api/admin/dlq/email/:id` | Admin | Delete a dead-lettered email |
+| `GET` | `/api/admin/dlq/webhook` | Admin | List dead-lettered webhooks |
+| `GET` | `/api/admin/dlq/webhook/:id` | Admin | Get one dead-lettered webhook |
+| `POST` | `/api/admin/dlq/webhook/:id/retry` | Admin | Retry a dead-lettered webhook |
+| `DELETE` | `/api/admin/dlq/webhook/:id` | Admin | Delete a dead-lettered webhook (also `POST .../webhook/:id/delete`) |
+
+### Admin — AI probe stats (`/api/admin/ai/*`)
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/admin/ai/probe-stats` | Admin | AI-provider probe statistics |
+| `POST` | `/api/admin/ai/probe-stats/reset` | Admin | Reset probe statistics |
+
+### Work Board (`/api/v1/work-board/*`)
+
+Tracking, actions, analytics (DORA), and the Work Board AI assistant are documented separately in [WORK-BOARD-API.md](./WORK-BOARD-API.md).
 
 ---
 
