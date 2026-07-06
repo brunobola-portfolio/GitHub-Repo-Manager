@@ -87,7 +87,9 @@ export function WorkBoardRowMenu({ repoFullName, itemUrl, itemType, itemNumber }
                         aria-label="More actions"
                         onClick={stopBubble}
                         onMouseDown={stopBubble}
-                        className="p-1.5 rounded-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors ds-focus-ring"
+                        /* `relative z-10` lifts the trigger above the WorkBoardRowLink
+                           open-in-app overlay (absolute z-0) so it stays clickable. */
+                        className="relative z-10 p-1.5 rounded-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors ds-focus-ring"
                     >
                         <MoreHorizontal className="w-4 h-4 text-slate-500" />
                     </button>

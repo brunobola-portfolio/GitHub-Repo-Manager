@@ -44,28 +44,27 @@ export function WorkBoardRowLink({
         emitAppEvent(eventName, { repoFullName, number })
     }
 
-    const onKeyDown = (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            const eventName = itemType === 'pr' ? APP_EVENTS.OPEN_REPO_PR : APP_EVENTS.OPEN_REPO_ISSUE
-            emitAppEvent(eventName, { repoFullName, number })
-        }
-    }
-
     return (
-        <div className={`relative group ${className}`}>
-            {/* div+role instead of <button> so nested action buttons (InlineActions, menus) are valid HTML */}
-            <div
-                role="button"
-                tabIndex={0}
+        <div className={`relative isolate group ${className}`}>
+            {/* Stretched open-in-app control (background layer). A real,
+                keyboard-reachable <button> layered BEHIND the row content
+                (z-0) — NOT a role="button" wrapper AROUND it. The row's inner
+                controls (InlineActions, the kebab menu, the GitHub link below)
+                are lifted above it with `relative z-10`, so they are siblings
+                of — not descendants of — this button. That is what removes the
+                axe `nested-interactive` violation the old wrapper tripped.
+                Non-interactive row content stays static, so clicking it falls
+                through to this transparent overlay = open-in-app, exactly as
+                the old wrapper behaved. Enter/Space fire it natively (button),
+                so no manual keydown handling is needed. */}
+            <button
+                type="button"
                 onClick={openInApp}
                 onAuxClick={openInApp}
-                onKeyDown={onKeyDown}
                 aria-label={ariaLabel || `Open ${itemType === 'pr' ? 'pull request' : 'issue'} #${number} in app`}
-                className="block w-full text-left ds-focus-ring rounded-xl cursor-pointer"
-            >
-                {children}
-            </div>
+                className="absolute inset-0 z-0 rounded-xl cursor-pointer ds-focus-ring"
+            />
+            {children}
             <Tooltip label="Open on GitHub">
                 <a
                     href={itemUrl}
@@ -73,7 +72,7 @@ export function WorkBoardRowLink({
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
                     aria-label="Open on GitHub"
-                    className="absolute top-2 right-2 p-1.5 rounded-md text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 transition-opacity ds-focus-ring"
+                    className="absolute top-2 right-2 z-10 p-1.5 rounded-md text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 transition-opacity ds-focus-ring"
                 >
                     <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
                 </a>

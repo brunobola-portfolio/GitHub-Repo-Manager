@@ -100,7 +100,7 @@ function ReviewRow({ review, isFocused, onFocus, hasAI, onApprove, onSnooze, onR
                 itemUrl={githubUrl}
                 ariaLabel={`Open PR #${review.prNumber} ${review.title ? `— ${review.title}` : ''} in app`}
             >
-                <div className="flex items-start gap-4 p-5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                <div className="flex items-start gap-4 p-5 group-hover:bg-slate-50 dark:group-hover:bg-slate-800/50 transition-colors">
                     <RowIconBadge icon={GitPullRequest} tone="purple" size="md" className="mt-0.5" />
                     <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">

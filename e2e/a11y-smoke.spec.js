@@ -35,16 +35,16 @@ test.describe('accessibility smoke', () => {
     await checkA11y(page)
   })
 
-  test('work board is scanned (nested-interactive deferred — out of scope)', async ({ page }) => {
+  test('work board has no critical/serious a11y violations', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByAltText(MOCK_USER.login)).toBeVisible({ timeout: 15000 })
     await page.getByRole('button', { name: /work board/i }).first().click()
     await page.waitForLoadState('networkidle')
-    // The Work Board's own cards still use the role="button"-with-inner-controls
-    // shape (axe `nested-interactive`, 5 nodes). Those files (WorkBoard/**) are
-    // owned by another change; scan-and-warn here so the shared gate stays green
-    // until they adopt the same stretched-control fix used on RepoCard/PR/Issue.
-    await checkA11y(page, { warnOnly: true })
+    // The Work Board rows adopted the same stretched-control fix as RepoCard /
+    // PR / Issue rows: WorkBoardRowLink's role="button" wrapper was replaced by
+    // an absolute z-0 open-in-app <button> overlay with the inner controls
+    // lifted to z-10. This scan guards against a regression of that shape.
+    await checkA11y(page)
   })
 
   test('public status page has no critical/serious a11y violations', async ({ page }) => {
