@@ -7,6 +7,122 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.5.0] - 2026-07-06
+
+The production-readiness release: a 10-specialist audit (88 findings) followed
+by eight remediation waves executed directly on `main`, plus the Repo Advisor
+AI assistant rebuild, the end-to-end migration Replace experience, and an
+environment-tooling readiness system. Quality gates grew with the product:
+5,200+ unit tests, a dual-theme accessibility gate, and lint rules that stop
+design drift at commit time.
+
+### Added
+
+- **Repo Advisor** — the AI assistant rebuilt end-to-end: provider-neutral
+  `AI_PROVIDER` config, answer-first error knowledge base with grounded,
+  cited sources, code-block copy, SSE streaming replies, per-call output-token
+  caps and a global AI spend cap (OWASP LLM10), PII-safe audit metadata,
+  Pro-tier quota metering across all AI routes, BYOK hardening (key rotation,
+  model-id validation, DNS re-checks), golden-eval suite with an optional
+  real-model LLM-as-judge mode, and a CI eval gate.
+- **Migration Replace, end-to-end** — naming conflicts on the Repos step are
+  now resolvable (replace / rename / skip) with a destructive type-to-confirm
+  modal; failed conflict tasks offer one-click "Replace & retry" from both the
+  progress and summary screens; oversized-file failures offer "Retry with Git
+  LFS" (automatic `git lfs migrate` conversion + LFS object push).
+- **Environment tooling readiness** — declarative tool registry (git,
+  git-lfs, git-tfs…), `npm run doctor` CLI, `/api/env` status endpoint with
+  admin-gated in-app installs (SSE progress, sanitized output), an operator
+  Settings panel, and per-plan preflight that fails migrations with an
+  actionable error instead of a mid-job crash.
+- **GDPR data lifecycle** — registry-driven account erasure covering every
+  user-scoped table (with a schema-introspection completeness test so new
+  tables cannot be missed) and a corrected data export; erasure responds with
+  a per-table deletion receipt.
+- **Operations hardening** — WAL-safe scheduled SQLite backups with retention
+  (`DB_BACKUP_DIR` / `DB_BACKUP_KEEP`), daily/hourly maintenance janitors
+  (retention, gh-cache, outbox, undo-log, event purge), `/live` + `/ready`
+  health probes wired into Docker/Railway, HTTP compression with immutable
+  asset caching, SSE-aware graceful shutdown, request-id log correlation with
+  secret redaction, and a documented restore runbook.
+- **Yearly billing** — `billingPeriod` threaded through Stripe checkout
+  end-to-end; the pricing page hides the yearly toggle unless yearly prices
+  are actually configured (probed via the public `GET /api/v1/billing/config`).
+- **Browser history model** — drill-ins (repo detail, PR review) push real
+  history entries; Back/Forward now traverse the app the way users expect.
+- **Ultrawide layout** — shell tokens (`--layout-px`, `--layout-max-w`) plus
+  named breakpoints (`nav:` / `wide:` / `ultra:`); >1920 px displays gain a
+  fourth repo-grid column and balanced gutters instead of 320 px of dead space.
+- **Collapsed sidebar, real data** — the slim rail's Quick Actions, History
+  and Activity popovers now show live entries (shared row renders with the
+  expanded sidebar) with count badges on the rail icons.
+- **Server request validation** — shared zod schemas + `validateBody` on all
+  PR write-backs, repo contents writes, issue labels/assignees, webhook
+  update, workflow dispatch and community-health endpoints; invalid bodies
+  return a consistent `400 { error, code: 'validation_failed' }`.
+
+### Changed
+
+- **One canonical Badge** — `ui/Badge` gained a tone/size/ring/icon/dot API
+  (9 AA-safe palettes, light+dark); 18 bespoke pills migrated onto it.
+- **One tooltip convention** — interactive controls use `ui/Tooltip` (Escape
+  dismissal per WCAG 1.4.13); native `title` reserved for static text.
+- **One motion scale** — every hardcoded `duration-300` migrated to the
+  design-system tokens (200 ms micro-interactions / 320 ms layout); an ESLint
+  anti-drift gate blocks raw durations, raw pixel breakpoints and shell-scale
+  width caps from creeping back.
+- **One time vocabulary** — nine relative-time dialects unified on
+  `formatRelativeTime`; five byte formatters unified on `formatFileSize`;
+  dates pinned to a single locale.
+- Azure route monolith split into focused sub-routers; migration task
+  execution extracted into per-type task runners; schema changes now run
+  through a real versioned migration ledger (v28) instead of `try/catch`.
+- Migration AI review no longer performs approval theater: the plan gate is
+  real, hedge-free analysis text is enforced server-side.
+
+### Fixed
+
+- Naive SQLite UTC timestamps parsed correctly app-wide (times no longer
+  drift by the local offset); migration status vocabulary canonicalized
+  (`complete` → `completed`) with a data migration.
+- Stale-chunk loads after a redeploy self-heal with a one-shot reload;
+  provenance-badge 401s no longer spam the console per card.
+- Teams and AI Assistant surfaces show honest load-error states with retry
+  (no more fabricated demo activity on production errors); AI chat preserves
+  partial text with a retry marker when a stream disconnects.
+- Work Board KPI tiles, transfer dry-run previews, org repo counts and
+  legacy `visualstudio.com` host handling all corrected.
+- Draft persistence gained a 30-day TTL sweep so abandoned drafts stop
+  accumulating in localStorage.
+
+### Security
+
+- SSRF: hardened internal-IP/host checks in `isInternalUrl`; `/ai/batch-index`
+  body validation with strict `full_name` regex; per-user rate limit on the
+  Work Board AI interpreter; outbox idempotency keys scoped per user.
+- Production boot now fails fast when `ALLOW_MOCK_AUTH` is set.
+- License signing private key excluded from the Docker build context; SQLite
+  WAL sidecars and root-anchored ignore patterns added to `.gitignore`.
+- 4 MB body limit on v1 AI routes; pino redaction backstop for tokens.
+
+### Accessibility
+
+- Axe gate widened from 4 views/critical-only to **9 views × 2 themes,
+  critical + serious, zero deferred contrast rules** — 18 hard-gated scans.
+- `nested-interactive` eliminated at the source: repo cards, PR/issue rows and
+  Work Board rows use the stretched-control pattern (real keyboard-reachable
+  buttons layered under lifted sibling controls).
+- 104 light-mode and all dark-mode color-contrast violations driven to zero
+  (issue-label chips derive AA-safe text from the label colour per theme).
+- Migration progress announces via `role="status"` live region + progressbar
+  semantics; destructive icon buttons named.
+
+### Performance
+
+- Action-leading indexes on `issue_events` / `pr_events`; Work Board event
+  aggregation bounded to the caller's slice; community-health/compare GitHub
+  fetches parallelized; command palette code-split behind idle warm-up.
+
 ## [4.4.0] - 2026-06-13
 
 Azure DevOps / TFS credential hardening plus a production-readiness pass that
