@@ -31,7 +31,7 @@ function RepoCardQuickActions({ repo, onAction, onContextMenu }) {
 		.slice(0, QUICK_LIMIT)
 
 	return (
-		<div className="relative z-10 flex items-center gap-0.5 ml-auto flex-shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-300">
+		<div className="relative z-10 flex items-center gap-0.5 ml-auto flex-shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-[var(--ds-duration)]">
 			{top.map((a) => {
 				const Icon = resolveValue(a.icon, repo)
 				const label = resolveValue(a.label, repo)
@@ -121,7 +121,7 @@ export const RepoCard = memo(function RepoCard({
 			transition={{ ...TRANSITION.entrance, delay: entranceDelay }}
 			style={stateStyle}
 			className={`
-                group relative isolate transition-all duration-300 cursor-pointer
+                group relative isolate transition-all duration-[var(--ds-duration-slow)] cursor-pointer
                 border
                 shadow-lg shadow-slate-200/40 dark:shadow-black/40
                 ds-hover-lift

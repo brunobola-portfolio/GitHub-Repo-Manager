@@ -50,7 +50,7 @@ export function RiskCard({ risk, index }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.07, duration: 0.4, ease: EASE.emphasized }}
-      className={`relative overflow-hidden rounded-xl border ${config.border} ${config.bg} ${config.glow} transition-all duration-300`}
+      className={`relative overflow-hidden rounded-xl border ${config.border} ${config.bg} ${config.glow} transition-all duration-[var(--ds-duration)]`}
     >
       {/* Left accent bar */}
       <div className={`absolute top-0 left-0 bottom-0 w-0.5 bg-gradient-to-b ${config.accentBar}`} />

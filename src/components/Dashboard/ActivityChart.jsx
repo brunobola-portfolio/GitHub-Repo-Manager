@@ -75,7 +75,7 @@ export function ActivityChart({ activity = [], timeRange, loading }) {
             transition={{ duration: 0.5 }}
         >
             <Card
-                className="p-4 sm:p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300"
+                className="p-4 sm:p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-[var(--ds-duration)]"
                 style={{ minHeight: `${chartHeight + 60}px` }}
             >
                 <div className="flex items-center mb-6">

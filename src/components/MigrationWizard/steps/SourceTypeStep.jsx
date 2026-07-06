@@ -141,7 +141,7 @@ export default function SourceTypeStep({ source, onChange, onAdvance }) {
               className={`
                 ds-focus-ring
                 group relative w-full flex items-center gap-4 p-4 rounded-2xl text-left
-                transition-all duration-300 ease-out
+                transition-all duration-[var(--ds-duration-slow)] ease-out
                 ${selected
                   ? `${accent.border} ${accent.bg} ring-2 ${accent.ring} shadow-lg ${accent.glow}`
                   : 'border border-slate-200/50 dark:border-slate-700/40 bg-white/60 dark:bg-slate-800/40 hover:bg-white/90 dark:hover:bg-slate-800/60 hover:border-slate-300/80 dark:hover:border-slate-600/60 hover:shadow-lg hover:shadow-slate-200/40 dark:hover:shadow-black/30'
@@ -152,7 +152,7 @@ export default function SourceTypeStep({ source, onChange, onAdvance }) {
               {/* Icon */}
               <div className={`
                 relative p-3 rounded-xl ${accent.icon}
-                shadow-md transition-all duration-300
+                shadow-md transition-all duration-[var(--ds-duration-slow)]
                 ${selected ? `shadow-lg ${accent.glow}` : 'shadow-slate-200/60 dark:shadow-black/30'}
                 ${hovered && !selected ? `shadow-lg ${accent.glow}` : ''}
               `}>
@@ -196,7 +196,7 @@ export default function SourceTypeStep({ source, onChange, onAdvance }) {
 
               {/* Arrow indicator */}
               <div className={`
-                flex-shrink-0 transition-all duration-300
+                flex-shrink-0 transition-all duration-[var(--ds-duration-slow)]
                 ${selected
                   ? 'opacity-100 translate-x-0'
                   : 'opacity-0 -translate-x-2 group-hover:opacity-60 group-hover:translate-x-0'

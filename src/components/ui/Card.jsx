@@ -26,7 +26,7 @@ export function Card({
             // Layered shadows for depth (opt-out via shadow="sm" | "none")
             SHADOW_CLASS[shadow] ?? SHADOW_CLASS.lg,
             // Smooth transitions
-            'overflow-hidden transition-all duration-300',
+            'overflow-hidden transition-all duration-[var(--ds-duration-slow)]',
             // Hover effects
             hover && 'ds-hover-lift cursor-pointer',
             className

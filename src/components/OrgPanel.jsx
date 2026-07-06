@@ -30,7 +30,7 @@ export function OrgPanel({
 	)
 
 	return (
-		<div className="h-full flex flex-col bg-transparent w-full transition-all duration-300">
+		<div className="h-full flex flex-col bg-transparent w-full transition-all duration-[var(--ds-duration-slow)]">
 			{/* Header */}
 			<div className="p-5 border-b border-slate-200/60 dark:border-slate-700/40">
 				<div className="flex items-center justify-between mb-4">
@@ -200,7 +200,7 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 			whileTap={TAP}
 			onClick={onClick}
 			title={org.description || org.login}
-			className={`group relative w-full flex items-center gap-3 rounded-xl transition-all duration-300 border ${
+			className={`group relative w-full flex items-center gap-3 rounded-xl transition-all duration-[var(--ds-duration-slow)] border ${
 				isSelected
 					? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-800 shadow-lg'
 					: 'bg-white/80 dark:bg-slate-800/60 border-slate-200/50 dark:border-slate-700/40 hover:border-indigo-200 dark:hover:border-indigo-800/60 hover:shadow-xl'
@@ -221,7 +221,7 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 				<img
 					src={org.avatar_url}
 					alt={org.login}
-					className={`rounded-xl object-cover ring-2 transition-all duration-300 ${
+					className={`rounded-xl object-cover ring-2 transition-all duration-[var(--ds-duration-slow)] ${
 						isSelected
 							? 'ring-indigo-300 dark:ring-indigo-600 shadow-lg'
 							: 'ring-slate-200 dark:ring-slate-700 group-hover:ring-indigo-300 dark:group-hover:ring-indigo-700/60 group-hover:shadow-md'

@@ -136,7 +136,7 @@ export function FeaturesSection() {
                 hover:bg-white/80 dark:hover:bg-white/[0.07]
                 hover:shadow-lg
                 backdrop-blur-sm
-                transition-all duration-300`}
+                transition-all duration-[var(--ds-duration-slow)]`}
             >
               {/* Gradient accent top line */}
               <div
@@ -145,7 +145,7 @@ export function FeaturesSection() {
 
               {/* Icon */}
               <div
-                className={`w-11 h-11 rounded-xl ${feat.iconBg} flex items-center justify-center mb-5 transition-transform duration-300`}
+                className={`w-11 h-11 rounded-xl ${feat.iconBg} flex items-center justify-center mb-5 transition-transform duration-[var(--ds-duration-slow)]`}
               >
                 <feat.icon
                   className={`w-5 h-5 ${feat.iconColor}`}

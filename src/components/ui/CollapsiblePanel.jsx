@@ -41,7 +41,7 @@ export default function CollapsiblePanel({
   return (
     <div
       ref={panelRef}
-      className={`flex-shrink-0 sticky transition-[width] duration-300 ease-in-out ${overflowClass} ${className}`}
+      className={`flex-shrink-0 sticky transition-[width] duration-[var(--ds-duration-slow)] ease-in-out ${overflowClass} ${className}`}
       style={{
         width: `${width}px`,
         top: 'calc(var(--header-height) + var(--layout-py))',

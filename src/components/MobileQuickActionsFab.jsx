@@ -109,7 +109,7 @@ export function MobileQuickActionsFab(props) {
                     {!open && (
                         <motion.span
                             aria-hidden="true"
-                            className="absolute inset-0 rounded-full bg-indigo-500/40 dark:bg-indigo-400/30 blur-2xl pointer-events-none transition-opacity duration-300 group-hover:opacity-0 group-focus-within:opacity-0"
+                            className="absolute inset-0 rounded-full bg-indigo-500/40 dark:bg-indigo-400/30 blur-2xl pointer-events-none transition-opacity duration-[var(--ds-duration)] group-hover:opacity-0 group-focus-within:opacity-0"
                             animate={{ scale: [1, 1.18, 1], opacity: [0.55, 0.85, 0.55] }}
                             transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
                         />
@@ -135,7 +135,7 @@ export function MobileQuickActionsFab(props) {
                         {!open && (
                             <span
                                 aria-hidden="true"
-                                className="absolute left-1.5 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-full bg-white/70 transition-opacity duration-300 group-hover:opacity-0 group-focus-within:opacity-0"
+                                className="absolute left-1.5 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-full bg-white/70 transition-opacity duration-[var(--ds-duration)] group-hover:opacity-0 group-focus-within:opacity-0"
                             />
                         )}
                         {open ? <X className="w-6 h-6" /> : <Plus className="w-6 h-6" />}

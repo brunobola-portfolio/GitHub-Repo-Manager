@@ -352,7 +352,7 @@ export function PricingPage({ onGetStarted } = {}) {
 
             <button
               onClick={() => setIsYearly(v => !v)}
-              className={`relative w-12 h-6 rounded-full transition-colors duration-300 ds-focus-ring
+              className={`relative w-12 h-6 rounded-full transition-colors duration-[var(--ds-duration)] ds-focus-ring
                 ${isYearly ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-white/10'}`}
               aria-label="Toggle yearly billing"
             >
@@ -489,7 +489,7 @@ export function PricingPage({ onGetStarted } = {}) {
                 >
                   <span className="flex items-center gap-2">
                     Get started free
-                    <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+                    <ArrowRight className="w-4 h-4 transition-transform duration-[var(--ds-duration)] group-hover:translate-x-1" />
                   </span>
                 </button>
                 <button

@@ -42,6 +42,16 @@ describe('layout anti-drift lint gate', () => {
         expect(msgs).not.toMatch(/named breakpoints|--layout-max-w/)
     })
 
+    it('flags duration-300 but accepts the motion tokens', async () => {
+        const raw = await messagesFor(component('transition-all duration-300'), 'src/components/Probe.jsx')
+        expect(raw).toMatch(/motion tokens/)
+        const tokened = await messagesFor(
+            component('transition-all duration-[var(--ds-duration-slow)] hover:duration-[var(--ds-duration)]'),
+            'src/components/Probe.jsx',
+        )
+        expect(tokened).not.toMatch(/motion tokens/)
+    })
+
     it('keeps the theme-spec rules alive in the components block (no rule clobbering)', async () => {
         // The gate lives in TWO blocks; the components one must still carry the
         // pre-existing theme-spec selectors alongside the layout entries.

@@ -78,7 +78,7 @@ export function CTASection({ onSignIn }) {
             <span className="flex items-center gap-2.5">
               <Github className="w-5 h-5" />
               Start Free — No credit card required
-              <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+              <ArrowRight className="w-4 h-4 transition-transform duration-[var(--ds-duration)] group-hover:translate-x-1" />
             </span>
           </button>
         </motion.div>

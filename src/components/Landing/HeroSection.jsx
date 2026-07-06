@@ -98,7 +98,7 @@ export function HeroSection({ onSignIn }) {
           <span className="flex items-center gap-2.5">
             <Github className="w-5 h-5" />
             Sign in with GitHub
-            <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+            <ArrowRight className="w-4 h-4 transition-transform duration-[var(--ds-duration)] group-hover:translate-x-1" />
           </span>
         </button>
 
@@ -113,7 +113,7 @@ export function HeroSection({ onSignIn }) {
             hover:border-indigo-300/70 dark:hover:border-indigo-500/40
             hover:bg-white/90 dark:hover:bg-white/[0.1]
             backdrop-blur-sm
-            transition-all duration-300
+            transition-all duration-[var(--ds-duration)]
             ds-focus-ring"
         >
           <Github className="w-5 h-5" />

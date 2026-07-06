@@ -18,7 +18,7 @@ export function SuggestionRow({ suggestion, index }) {
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.06, duration: 0.4, ease: EASE.emphasized }}
-      className="relative overflow-hidden rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-white/[0.03] hover:border-slate-300 dark:hover:border-white/15 hover:shadow-sm transition-all duration-300"
+      className="relative overflow-hidden rounded-xl border border-slate-200/80 dark:border-white/10 bg-white dark:bg-white/[0.03] hover:border-slate-300 dark:hover:border-white/15 hover:shadow-sm transition-all duration-[var(--ds-duration)]"
     >
       <div className="flex items-center gap-3 p-3.5">
         {/* Icon */}

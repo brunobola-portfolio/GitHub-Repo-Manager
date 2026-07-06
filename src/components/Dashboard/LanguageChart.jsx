@@ -94,7 +94,7 @@ export function LanguageChart({ data = [], loading }) {
             transition={{ duration: 0.5, delay: 0.1 }}
         >
             <Card
-                className="p-4 sm:p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-300"
+                className="p-4 sm:p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-[var(--ds-duration)]"
                 style={{ minHeight: `${chartHeight + 60}px` }}
             >
                 <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-6 flex items-center gap-2">

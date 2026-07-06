@@ -59,7 +59,7 @@ export const StatCard = memo(function StatCard({
             title={interactive && hint ? hint : undefined}
             style={interactive ? { cursor: 'pointer' } : undefined}
         >
-            <Card className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all duration-300 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 group">
+            <Card className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all duration-[var(--ds-duration)] border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 group">
                 <div className="flex items-start justify-between">
                     <div className="flex-1">
                         <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide ds-font-display">

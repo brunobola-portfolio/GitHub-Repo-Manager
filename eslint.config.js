@@ -27,6 +27,17 @@ const layoutAntiDriftRules = [
     selector: String.raw`TemplateElement[value.raw=/\bmax-w-\[(19|2\d)\d{2}px\]/]`,
     message: 'Use max-w-[var(--layout-max-w)] (src/index.css) for shell-scale caps so ultrawide sizing stays in one token.',
   },
+  // duration-300 was fully migrated to the motion tokens (2026-07-06); the
+  // deliberate scale is duration-200 (Tailwind) for snappy cases plus the two
+  // tokens below — a literal 300 means someone bypassed that decision.
+  {
+    selector: String.raw`Literal[value=/\bduration-300\b/]`,
+    message: 'Use the motion tokens: duration-[var(--ds-duration)] (200ms, hover/micro) or duration-[var(--ds-duration-slow)] (320ms, layout/lift).',
+  },
+  {
+    selector: String.raw`TemplateElement[value.raw=/\bduration-300\b/]`,
+    message: 'Use the motion tokens: duration-[var(--ds-duration)] (200ms, hover/micro) or duration-[var(--ds-duration-slow)] (320ms, layout/lift).',
+  },
 ]
 
 export default defineConfig([

@@ -7,7 +7,7 @@ import { EmptyState as UIEmptyState } from '../ui/EmptyState'
 /** Full-bleed overlay shown while the page is refreshing the repo list. */
 export function LoadingState() {
 	return (
-		<div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl transition-all duration-300">
+		<div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl transition-all duration-[var(--ds-duration)]">
 			<Spinner size="xl" tone="primary" label="Loading repositories" />
 			<p className="mt-4 text-slate-600 dark:text-slate-300 font-medium">
 				Loading repositories...

@@ -152,7 +152,7 @@ function SetupStep({ label, icon: Icon, status }) {
                 )}
             </div>
             <div className="flex-1">
-                <span className={`font-medium transition-colors duration-300 ${status === 'pending' ? 'text-slate-600' : 'text-white'
+                <span className={`font-medium transition-colors duration-[var(--ds-duration)] ${status === 'pending' ? 'text-slate-600' : 'text-white'
                     }`}>
                     {label}
                 </span>

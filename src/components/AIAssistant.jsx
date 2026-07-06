@@ -447,7 +447,7 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus }) {
                         transition={{ duration: 0.32, ease: EASE.standard }}
                         className="fixed bottom-20 xl:bottom-6 right-3 sm:right-6 z-[45]"
                     >
-                        <Card className={`w-[calc(100vw-2rem)] sm:w-[22rem] md:w-[26rem] flex flex-col shadow-[var(--ds-shadow-overlay)] border border-slate-200 dark:border-[color:var(--ds-border-dark)] bg-white dark:bg-[color:var(--ds-surface-dark)] overflow-hidden rounded-2xl transition-all duration-300 ${
+                        <Card className={`w-[calc(100vw-2rem)] sm:w-[22rem] md:w-[26rem] flex flex-col shadow-[var(--ds-shadow-overlay)] border border-slate-200 dark:border-[color:var(--ds-border-dark)] bg-white dark:bg-[color:var(--ds-surface-dark)] overflow-hidden rounded-2xl transition-all duration-[var(--ds-duration-slow)] ${
                             isMinimized ? '' : 'h-[65vh] xl:h-[540px]'
                         }`}>
                             {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}

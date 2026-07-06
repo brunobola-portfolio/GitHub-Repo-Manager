@@ -22,7 +22,7 @@ export function RoadmapItem({ title, description, tier, index = 0 }) {
         border border-slate-200/60 dark:border-white/[0.08]
         hover:border-slate-300 dark:hover:border-white/[0.15]
         hover:shadow-lg hover:shadow-slate-200/50 dark:hover:shadow-black/30
-        transition-shadow duration-300"
+        transition-shadow duration-[var(--ds-duration-slow)]"
     >
       <div className="flex items-start justify-between gap-3 mb-1">
         <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-100 leading-snug">
