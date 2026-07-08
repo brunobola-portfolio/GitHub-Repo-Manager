@@ -1,4 +1,4 @@
-name: Deploy
+name: Build Verify
 
 on:
   push:
@@ -23,7 +23,11 @@ jobs:
   deploy-backend:
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    # Opt-in deploys: set the repository VARIABLE `DEPLOY_ENABLED=true`
+    # (Settings -> Secrets and variables -> Actions -> Variables) once the
+    # RAILWAY_TOKEN secret is configured. Until then this job shows as
+    # SKIPPED (grey) — never a green badge pretending a deploy happened.
+    if: github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
     steps:
       - uses: actions/checkout@v7
       - name: Install Railway CLI
@@ -31,20 +35,24 @@ jobs:
       - name: Deploy to Railway
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service api
-        if: env.RAILWAY_TOKEN != ''
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "::error::DEPLOY_ENABLED is true but the RAILWAY_TOKEN secret is not set"
+            exit 1
+          fi
+          railway up --service api
 
   deploy-frontend:
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
     steps:
       - name: Trigger Vercel deployment
         env:
           VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
         run: |
-          if [ -n "$VERCEL_DEPLOY_HOOK" ]; then
-            curl -X POST "$VERCEL_DEPLOY_HOOK"
-          else
-            echo "VERCEL_DEPLOY_HOOK not set - Vercel auto-deploys from GitHub"
+          if [ -z "$VERCEL_DEPLOY_HOOK" ]; then
+            echo "::error::DEPLOY_ENABLED is true but the VERCEL_DEPLOY_HOOK secret is not set"
+            exit 1
           fi
+          curl -fsS -X POST "$VERCEL_DEPLOY_HOOK"
