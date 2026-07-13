@@ -130,4 +130,35 @@ describe('AISummaryCard', () => {
         render(<AISummaryCard />)
         await waitFor(() => expect(screen.getByText(/quota exceeded/i)).toBeInTheDocument())
     })
+
+    describe('urgency gauge stroke uses theme-aware design tokens (no hardcoded hex)', () => {
+        // The gauge svg is identified by its `aria-label` ("urgency N%"); its
+        // colored arc is the second <path> (the first is the always-visible
+        // background track, stroke="currentColor").
+        const arcStroke = (container) => {
+            const svg = container.querySelector('svg[aria-label^="urgency"]')
+            return svg?.querySelectorAll('path')[1]?.getAttribute('stroke')
+        }
+
+        it('critical urgency (>0.7) routes through var(--ds-status-danger)', async () => {
+            mock2xx({ data: { headline: 'h', bullets: [{ text: 'b', severity: 'high' }], urgencyScore: 0.9 }, meta: {} })
+            const { container } = render(<AISummaryCard />)
+            await waitFor(() => expect(screen.getByText('h')).toBeInTheDocument())
+            expect(arcStroke(container)).toBe('var(--ds-status-danger)')
+        })
+
+        it('elevated urgency (>0.3) routes through var(--ds-status-warning)', async () => {
+            mock2xx({ data: { headline: 'h', bullets: [{ text: 'b', severity: 'medium' }], urgencyScore: 0.4 }, meta: {} })
+            const { container } = render(<AISummaryCard />)
+            await waitFor(() => expect(screen.getByText('h')).toBeInTheDocument())
+            expect(arcStroke(container)).toBe('var(--ds-status-warning)')
+        })
+
+        it('nominal urgency (<=0.3) routes through var(--ds-chart-series-1), matching the "Nominal" indigo label', async () => {
+            mock2xx({ data: { headline: 'h', bullets: [{ text: 'b', severity: 'info' }], urgencyScore: 0.1 }, meta: {} })
+            const { container } = render(<AISummaryCard />)
+            await waitFor(() => expect(screen.getByText('h')).toBeInTheDocument())
+            expect(arcStroke(container)).toBe('var(--ds-chart-series-1)')
+        })
+    })
 })

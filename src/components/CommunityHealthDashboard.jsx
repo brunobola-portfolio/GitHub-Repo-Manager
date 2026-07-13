@@ -51,11 +51,15 @@ function useIsDesktop() {
     return isDesktop;
 }
 
+// `color` feeds the SVG ring stroke directly, so it must be theme-aware —
+// routed through design-system.css tokens instead of hardcoded hexes. No
+// literal "info blue" token is swapped for dark mode, so "Good" maps to the
+// brand token (chart-series-1) rather than inventing a new one.
 function getScoreConfig(score) {
-    if (score >= 80) return { color: '#10b981', tailwind: 'emerald', label: 'Excellent' };
-    if (score >= 60) return { color: '#3b82f6', tailwind: 'blue', label: 'Good' };
-    if (score >= 40) return { color: '#f59e0b', tailwind: 'amber', label: 'Fair' };
-    return { color: '#ef4444', tailwind: 'red', label: 'Needs Improvement' };
+    if (score >= 80) return { color: 'var(--ds-chart-series-2)', tailwind: 'emerald', label: 'Excellent' };
+    if (score >= 60) return { color: 'var(--ds-chart-series-1)', tailwind: 'blue', label: 'Good' };
+    if (score >= 40) return { color: 'var(--ds-chart-series-3)', tailwind: 'amber', label: 'Fair' };
+    return { color: 'var(--ds-status-danger)', tailwind: 'red', label: 'Needs Improvement' };
 }
 
 function HealthScoreRing({ score }) {

@@ -1,3 +1,4 @@
+import { AnimatePresence } from 'framer-motion'
 import { RepoCard } from './RepoCard'
 
 /**
@@ -7,6 +8,15 @@ import { RepoCard } from './RepoCard'
  * list is hidden and skeleton placeholders are shown instead: 6 in grid
  * mode, 4 in list mode. This preserves the "results will swap" affordance
  * from the original file.
+ *
+ * Filtered-out cards exit-animate (RepoCard's `exit` prop) instead of
+ * disappearing instantly, mirroring the migration wizard's repo list
+ * (RepoSelectStep/RepoList.jsx). `initial={false}` matches the wizard too —
+ * it only animates cards that actually enter/exit after mount, not the
+ * first paint of a (possibly hundred-card) grid. `mode="popLayout"` takes
+ * exiting cards out of the CSS grid flow immediately so the remaining cards
+ * reflow without waiting for the exit animation to finish — cheaper than
+ * giving every card a `layout` prop when the grid can hold many cards.
  */
 export function RepoGrid({
 	repos,
@@ -43,21 +53,23 @@ export function RepoGrid({
 					))}
 				</>
 			)}
-			{!isSearchingAI && repos.map((repo, i) => (
-				<RepoCard
-					key={repo.id}
-					index={i}
-					repo={repo}
-					viewMode={viewMode}
-					isSelected={selectedIds.has(repo.id)}
-					isContextTarget={contextTargetId === repo.id}
-					onToggle={() => onToggle(repo.id)}
-					onAction={onAction}
-					onContextMenu={(e) => onContextMenu(e, repo)}
-					onExplainHealth={onExplainHealth ? (r) => onExplainHealth(r) : undefined}
-					onRepoClick={onRepoClick}
-				/>
-			))}
+			<AnimatePresence initial={false} mode="popLayout">
+				{!isSearchingAI && repos.map((repo, i) => (
+					<RepoCard
+						key={repo.id}
+						index={i}
+						repo={repo}
+						viewMode={viewMode}
+						isSelected={selectedIds.has(repo.id)}
+						isContextTarget={contextTargetId === repo.id}
+						onToggle={() => onToggle(repo.id)}
+						onAction={onAction}
+						onContextMenu={(e) => onContextMenu(e, repo)}
+						onExplainHealth={onExplainHealth ? (r) => onExplainHealth(r) : undefined}
+						onRepoClick={onRepoClick}
+					/>
+				))}
+			</AnimatePresence>
 		</div>
 	)
 }

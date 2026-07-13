@@ -27,7 +27,14 @@ function UrgencyGauge({ score }) {
     const largeArc = clamped > 0.5 ? 1 : 0
     const start = `${cx - r},${cy}`
     const path = clamped === 0 ? '' : `M${start} A${r},${r} 0 ${largeArc} 1 ${x},${y}`
-    const stroke = clamped > 0.7 ? '#f43f5e' : clamped > 0.3 ? '#f59e0b' : '#6366f1'
+    // Theme-aware status tokens (design-system.css) instead of hardcoded hexes;
+    // the calm/nominal state uses the chart-series-1 (brand) token to match the
+    // "Nominal" severity label's indigo text below, rather than the grey neutral token.
+    const stroke = clamped > 0.7
+        ? 'var(--ds-status-danger)'
+        : clamped > 0.3
+            ? 'var(--ds-status-warning)'
+            : 'var(--ds-chart-series-1)'
     return (
         <svg width="56" height="34" viewBox="0 0 56 34" aria-label={`urgency ${(clamped * 100).toFixed(0)}%`}>
             <path d={`M${cx - r},${cy} A${r},${r} 0 0 1 ${cx + r},${cy}`} fill="none" stroke="currentColor" strokeOpacity="0.15" strokeWidth="4" strokeLinecap="round" />

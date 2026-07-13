@@ -138,6 +138,15 @@ describe('CommunityHealthDashboard', () => {
         });
     });
 
+    // The HealthScoreRing svg has a static background <circle stroke="currentColor">
+    // and a colored progress <circle> — find the latter by its var(--ds-...) stroke
+    // instead of a CSS attribute selector (jsdom's selector engine chokes on the
+    // parens inside a quoted `[stroke^="var(--ds-"]` attribute value).
+    const findTokenStrokedCircle = () =>
+        Array.from(document.querySelectorAll('svg circle')).find((c) =>
+            (c.getAttribute('stroke') || '').startsWith('var(--ds-')
+        );
+
     it('applies correct color for different score ranges', async () => {
         const lowScoreData = { ...mockHealthData, score: 30 };
         global.fetch.mockResolvedValueOnce({
@@ -148,6 +157,28 @@ describe('CommunityHealthDashboard', () => {
         await waitFor(() => {
             expect(screen.getAllByText('Needs Improvement').length).toBeGreaterThan(0);
         });
+        // The header ScoreBadge (checked above) mounts as soon as `showContent`
+        // flips true, but the ring lives inside the body's `AnimatePresence
+        // mode="wait"` swap and only mounts once the skeleton's exit finishes —
+        // wait for its sibling text too, or the ring may not exist here yet.
+        await waitFor(() => {
+            expect(screen.getByText('Overall Health Score')).toBeInTheDocument();
+        });
+        // Danger tier routes through the theme-aware status token, not a hardcoded hex.
+        expect(findTokenStrokedCircle()).toHaveAttribute('stroke', 'var(--ds-status-danger)');
+    });
+
+    it('routes the health-score ring stroke through theme-aware chart-series tokens (no hardcoded hex)', async () => {
+        // mockHealthData.score === 85 → "Excellent" tier.
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve(mockHealthData)
+        });
+        render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);
+        await waitFor(() => {
+            expect(screen.getByText('Overall Health Score')).toBeInTheDocument();
+        });
+        expect(findTokenStrokedCircle()).toHaveAttribute('stroke', 'var(--ds-chart-series-2)');
     });
 
     it('high priority recommendations have pulse animation class', async () => {
