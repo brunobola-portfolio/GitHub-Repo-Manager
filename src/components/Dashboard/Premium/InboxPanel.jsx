@@ -7,6 +7,7 @@ import { useAIStatus } from '../../../hooks/useAIStatus';
 import { useAIQuotaState } from '../../../hooks/useAIQuotaState';
 import { useAIUsage } from '../../../hooks/useAIUsage';
 import { useToast } from '../../../hooks/useToast';
+import { isBlockingDialogOpen } from '../../../utils/dialogState';
 import { InboxRow } from './InboxRow';
 import { InboxSection } from './InboxSection';
 import { SnoozeModal } from './SnoozeModal';
@@ -107,9 +108,10 @@ export function InboxPanel({ onSelectItem }) {
                 e.target.isContentEditable
             ) return;
             // The inbox sits on the dashboard behind any modal/drawer. Don't let
-            // the destructive 'e' (archive) / 's' (snooze) fire while a dialog is
-            // open — the user isn't looking at the inbox and never meant to act on it.
-            if (document.querySelector('[role="dialog"], [aria-modal="true"]')) return;
+            // the destructive 'e' (archive) / 's' (snooze) fire while a blocking
+            // dialog is open — the user isn't looking at the inbox and never
+            // meant to act on it. (Non-modal popovers don't suppress the keys.)
+            if (isBlockingDialogOpen()) return;
             if (!active?.items?.length) return;
             if (e.key === 'e') archive(active.items[0].id).catch(e => toast.errorFromException(e, { fallbackTitle: 'Archive failed' }));
             else if (e.key === 's') setSnoozingItem(active.items[0]);

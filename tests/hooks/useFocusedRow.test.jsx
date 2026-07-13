@@ -80,6 +80,23 @@ describe('useFocusedRow', () => {
             expect(result.current.focusedIndex).toBe(1)
         })
 
+        it('still moves focus on j/k while an explicitly non-modal dialog is open', () => {
+            // e.g. the Header system-health popover renders role="dialog"
+            // aria-modal="false" — the page underneath stays interactive,
+            // so row navigation must keep working.
+            const popover = document.createElement('div')
+            popover.setAttribute('role', 'dialog')
+            popover.setAttribute('aria-modal', 'false')
+            document.body.appendChild(popover)
+
+            const { result } = renderHook(() => useFocusedRow(ITEMS))
+            act(() => result.current.setFocusedIndex(0))
+            act(() => {
+                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'j' }))
+            })
+            expect(result.current.focusedIndex).toBe(1)
+        })
+
         it('still moves focus on j/k when no dialog is open', () => {
             const { result } = renderHook(() => useFocusedRow(ITEMS))
             act(() => result.current.setFocusedIndex(0))
