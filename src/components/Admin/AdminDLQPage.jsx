@@ -167,7 +167,7 @@ export function AdminDLQPage() {
         >
             <PageHeader
                 eyebrow="Admin"
-                title="Dead-letter Queue Admin"
+                title="Dead-Letter Queue Admin"
                 description="Triage failed email deliveries and webhook events. Retry force-schedules the next worker tick; resolve is a soft-delete that preserves the audit trail."
                 icon={ShieldAlert}
                 actions={
