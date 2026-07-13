@@ -177,4 +177,25 @@ describe('createTenantLimiters — API-key bearer keying', () => {
             .set('Authorization', 'Bearer ghp_yetAnotherToken')
         expect(overflow.status).toBe(429)
     })
+
+    it("keeps IP keying for grm_live_ bearers on the 'auth' limiter (no per-token bucket rotation on brute-force routes)", async () => {
+        const limiter = await createTenantLimiters('auth')
+        const app = buildApp(limiter)
+
+        // API keys have no legitimate business on /api/auth/* (OAuth is
+        // cookie/redirect based). Without a type guard, a client rotating
+        // DISTINCT grm_live_ tokens would mint a fresh bucket per token and
+        // escape the tight prod auth budget (10/15min/IP), leaving only the
+        // 200/15min/IP global cap — a ~20x loosening on a brute-force bucket.
+        // Pin: 11 distinct bearers from one IP still share the IP bucket.
+        for (let i = 0; i < 10; i++) {
+            await request(app)
+                .get('/api/auth/login')
+                .set('Authorization', `Bearer grm_live_rotated${i}`)
+        }
+        const overflow = await request(app)
+            .get('/api/auth/login')
+            .set('Authorization', 'Bearer grm_live_rotatedFresh')
+        expect(overflow.status).toBe(429)
+    })
 })

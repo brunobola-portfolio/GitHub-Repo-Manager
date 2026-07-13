@@ -86,16 +86,25 @@ export async function createTenantLimiters(type = 'api', options = {}) {
             // (requireAuth routes grm_live_ bearers to apiKeyAuth even when
             // a session cookie is also present).
             //
+            // 'api'/'ai' ONLY — never 'auth'. API keys have no legitimate
+            // business on /api/auth/* (OAuth is cookie/redirect based), and
+            // per-token buckets there would let a client rotating forged
+            // grm_live_ values escape the tight prod auth budget (10/15min/
+            // IP) up to the 200/15min/IP global cap — a ~20x loosening of a
+            // brute-force bucket. Bearers on 'auth' stay IP-keyed.
+            //
             // Plain sha256, NOT api-key-auth.js's HMAC: this is bucket
             // separation, not credential storage — the hash only keeps the
             // raw token out of store keys/logs, and stays deterministic
             // across instances sharing a Redis store without needing
             // API_KEY_SECRET. Forged-token bucket rotation is bounded by the
             // pre-session globalLimiter (200 req/15min/IP in prod).
-            const bearer = bearerApiKey(req);
-            if (bearer) {
-                const tokenHash = createHash('sha256').update(bearer).digest('hex').slice(0, 32);
-                return `rl:key:${tokenHash}:${type}`;
+            if (type === 'api' || type === 'ai') {
+                const bearer = bearerApiKey(req);
+                if (bearer) {
+                    const tokenHash = createHash('sha256').update(bearer).digest('hex').slice(0, 32);
+                    return `rl:key:${tokenHash}:${type}`;
+                }
             }
             // ipKeyGenerator expects the IP STRING (it normalises IPv6 to a
             // /56). Passing the whole req object stringifies to a constant
