@@ -1,8 +1,8 @@
 /*
  * Chrome uniformity (audit task 11c): RepoDetail's header hand-rolled the
- * Private/Public/Archived/Fork pills instead of the canonical <Badge>. These
- * tests lock in the Badge-backed rendering (tone-driven palette, not raw
- * className color overrides) for each status pill.
+ * Private/Public/Archived/Fork pills and the topic tags instead of the
+ * canonical <Badge>. These tests lock in the Badge-backed rendering
+ * (tone-driven palette, not raw className color overrides) for each pill.
  *
  * SettingsTab / OverviewTab / TrackedChip are stubbed and fetchRepo rejects
  * so RepoDetail keeps rendering the exact `repo` prop passed in (same
@@ -65,6 +65,10 @@ describe('RepoDetail — status pills use the canonical Badge', () => {
         render(<RepoDetail repo={baseRepo({ archived: true })} onBack={vi.fn()} />)
         const pill = await screen.findByText('Archived')
         expect(pill.className).toContain('bg-slate-100')
+        // dark:bg-slate-700 discriminates Badge's neutral palette from the old
+        // hand-rolled span (which used dark:bg-slate-800).
+        expect(pill.className).toContain('dark:bg-slate-700')
+        expect(pill.className).not.toContain('dark:bg-slate-800')
     })
 
     it('renders Fork with Badge violet tone', async () => {
@@ -74,11 +78,15 @@ describe('RepoDetail — status pills use the canonical Badge', () => {
         expect(pill.className).toContain('dark:bg-violet-900/50')
     })
 
-    it('leaves topic pills as plain informational tags, not converted', async () => {
+    it('renders topic pills via Badge brand tone with a ring (old bordered-tag look)', async () => {
         render(<RepoDetail repo={baseRepo({ topics: ['react', 'vite'] })} onBack={vi.fn()} />)
         const topic = await screen.findByText('react')
-        // Still the original hand-rolled indigo tag styling (untouched per brief's
-        // escape hatch — topics are open-ended tags, not a genuine status pill).
-        expect(topic.className).toContain('bg-indigo-50')
+        // Badge brand palette + tone-matched ring — not the old hand-rolled
+        // bg-indigo-50 + border-indigo-200/50 span.
+        expect(topic.className).toContain('bg-indigo-100')
+        expect(topic.className).toContain('dark:bg-indigo-900/40')
+        expect(topic.className).toContain('ring-indigo-200')
+        expect(topic.className).not.toContain('bg-indigo-50')
+        expect(screen.getByText('vite')).toBeInTheDocument()
     })
 })

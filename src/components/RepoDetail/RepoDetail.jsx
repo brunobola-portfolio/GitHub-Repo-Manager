@@ -201,9 +201,9 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription,
                     {r.topics?.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-2">
                             {r.topics.map(topic => (
-                                <span key={topic} className="px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/50">
+                                <Badge key={topic} tone="brand" ring>
                                     {topic}
-                                </span>
+                                </Badge>
                             ))}
                         </div>
                     )}

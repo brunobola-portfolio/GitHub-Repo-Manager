@@ -92,7 +92,7 @@ export function WalkthroughTab({ walkthrough }) {
                             <tbody>
                                 {walkthrough.perFileTable.map((row, i) => (
                                     <tr key={i} className="border-t border-slate-200 dark:border-slate-800">
-                                        <td className="py-1 pr-2 font-mono">{row.path}</td>
+                                        <td className="py-1 pr-2 font-mono whitespace-nowrap">{row.path}</td>
                                         <td className="py-1 pr-2">{row.change}</td>
                                         <td className="py-1">{row.summary}</td>
                                     </tr>

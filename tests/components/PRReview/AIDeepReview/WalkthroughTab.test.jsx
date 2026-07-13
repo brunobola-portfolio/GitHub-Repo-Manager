@@ -32,6 +32,18 @@ describe('WalkthroughTab — file table overflow handling', () => {
         expect(wrapper.className).toContain('overflow-x-auto')
     })
 
+    it('keeps path cells on one line so long paths scroll instead of wrapping', () => {
+        // jsdom does no layout, so scroll-vs-wrap cannot be observed directly;
+        // this locks the class contract that produces it: whitespace-nowrap on
+        // the unpredictable-length cell forces the table wider than the
+        // container, which is what actually triggers the overflow-x scrollbar
+        // (same pairing AuditLogSection / DLQTable cells use).
+        render(<WalkthroughTab walkthrough={WALKTHROUGH} />)
+        const pathCell = screen.getByText('src/index.js')
+        expect(pathCell.tagName).toBe('TD')
+        expect(pathCell.className).toContain('whitespace-nowrap')
+    })
+
     it('still renders every row (behavior unchanged)', () => {
         render(<WalkthroughTab walkthrough={WALKTHROUGH} />)
         expect(screen.getByText('src/index.js')).toBeInTheDocument()
