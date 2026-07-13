@@ -14,6 +14,7 @@ import { invalidate as invalidateCache, getCached as getCacheRow, putCached as p
 import { githubApi } from '../lib/github-api.js';
 import { generateSummary } from '../lib/work-board-summary.js';
 import { mapAIErrorToResponse } from '../middleware/ai-error-mapper.js';
+import { checkUsageLimit, incrementUsage, quotaExceededResponse } from '../lib/usage-meter.js';
 import * as aggregations from '../lib/event-aggregations.js';
 import db from '../db.js';
 import { getSnapshots } from '../lib/work-board-kpi-snapshots.js';
@@ -101,6 +102,28 @@ const draftCommentLimiter = rateLimit({
     message: { error: 'Too many draft requests — try again in an hour', code: 'rate_limited' },
     skip: (req) => !req.session?.userId,
 });
+
+// /suggest-action has no per-repo/per-item cooldown (unlike /ai-summary's 5-min
+// cooldown or /draft-comment's existing limiter below) — its 30-min response
+// cache is keyed on attacker-controlled body values, so a caller can force a
+// fresh LLM call on every request just by varying repoFullName/itemNumber.
+// Mirrors draftCommentLimiter's shape (same window, cap, and 429 payload).
+const suggestActionLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 10,
+    keyGenerator: (req) => `suggest-action:${req.session?.userId ?? ipKeyGenerator(req)}`,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many suggestion requests — try again in an hour', code: 'rate_limited' },
+    skip: (req) => !req.session?.userId,
+});
+
+// Test-only: reset the per-user rate-limit bucket between test cases (mirrors
+// the _resetRateLimits()/_runRateLimitSweep() convention used by
+// ai/deep-review.js and ai/pr-chat.js for their in-memory limiters).
+export function _resetSuggestActionRateLimit(userId) {
+    suggestActionLimiter.resetKey(`suggest-action:${userId}`);
+}
 
 function cacheKeyForItemType(itemType) {
     return itemType === 'pr' ? 'my_reviews' : 'my_issues';
@@ -274,6 +297,15 @@ function loadDataSources(userId, userLogin) {
 
 router.post('/ai-summary', requireAuth, async (req, res) => {
     const userId = req.session.userId;
+
+    // Meter the AI query BEFORE any cache/generation work (OWASP LLM10, fail
+    // fast) — mirrors ai/deep-review.js and ai/pr-chat.js, which check the
+    // monthly ai_queries quota as the first thing in the handler.
+    const quota = checkUsageLimit(userId, 'ai_queries');
+    if (!quota.allowed) {
+        return res.status(429).json(quotaExceededResponse({ ...quota, metric: 'ai_queries' }));
+    }
+
     try {
         // Cache + cooldown are read defensively — a corrupt cache row should
         // never block the user from generating a fresh summary.
@@ -297,6 +329,7 @@ router.post('/ai-summary', requireAuth, async (req, res) => {
             logger.warn({ err: e, userId }, '[ai-summary] cache write failed');
         }
         aiSummaryLastCall.set(userId, now);
+        incrementUsage(userId, 'ai_queries');
         res.json({ data: summary, meta: { cached: false, generatedAt: new Date() } });
     } catch (e) {
         // Coded provider errors → friendly mapped responses. Order matters:
@@ -342,9 +375,16 @@ const SUGGEST_PING_SCHEMA = {
     properties: { pingComment: { type: 'string', maxLength: 280 } },
 };
 
-router.post('/suggest-action', requireAuth, validateBody(suggestActionBodySchema), async (req, res) => {
+router.post('/suggest-action', requireAuth, suggestActionLimiter, validateBody(suggestActionBodySchema), async (req, res) => {
     const userId = req.session.userId;
     const { repoFullName, itemType, itemNumber, title, ageDays, authorLogin } = req.validatedBody;
+
+    // Meter the AI query BEFORE resolving a provider or touching the cache —
+    // mirrors ai/deep-review.js and ai/pr-chat.js's quota-check-first order.
+    const quota = checkUsageLimit(userId, 'ai_queries');
+    if (!quota.allowed) {
+        return res.status(429).json(quotaExceededResponse({ ...quota, metric: 'ai_queries' }));
+    }
 
     try {
         const { createProviderForUser } = await import('../lib/ai-provider.js');
@@ -370,6 +410,7 @@ router.post('/suggest-action', requireAuth, validateBody(suggestActionBodySchema
                 pingComment = parsed.pingComment.trim().slice(0, 280);
             }
         } catch { /* fall back to default ping */ }
+        incrementUsage(userId, 'ai_queries');
 
         const itemPath = itemType === 'pr' ? 'pull' : 'issues';
         const suggestions = [
@@ -388,6 +429,13 @@ router.post('/suggest-action', requireAuth, validateBody(suggestActionBodySchema
 router.post('/draft-comment', requireAuth, draftCommentLimiter, validateBody(draftCommentBodySchema), async (req, res) => {
     const userId = req.session.userId;
     const { repoFullName, prNumber, intent } = req.validatedBody;
+
+    // Meter the AI query BEFORE resolving a provider — mirrors
+    // ai/deep-review.js and ai/pr-chat.js's quota-check-first order.
+    const quota = checkUsageLimit(userId, 'ai_queries');
+    if (!quota.allowed) {
+        return res.status(429).json(quotaExceededResponse({ ...quota, metric: 'ai_queries' }));
+    }
 
     try {
         const { createProviderForUser } = await import('../lib/ai-provider.js');
@@ -417,6 +465,7 @@ router.post('/draft-comment', requireAuth, draftCommentLimiter, validateBody(dra
 
         const result = await provider.generate({ prompt });
         const draft = (result?.text || result?.parsed?.text || '').trim().slice(0, 300);
+        incrementUsage(userId, 'ai_queries');
         res.json({ draft });
     } catch (e) {
         errorResponse(res, 500, safeError(e, 'Failed to draft comment'));

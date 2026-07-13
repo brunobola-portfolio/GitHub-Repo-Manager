@@ -55,7 +55,12 @@ vi.mock('../actions-service.js', () => ({
 }))
 vi.mock('../community-health-service.js', () => ({ communityHealthService: {} }))
 vi.mock('../lib/audit.js', () => ({ auditLog: vi.fn() }))
-vi.mock('../db.js', () => ({ default: { prepare: vi.fn(() => ({ get: vi.fn(), all: vi.fn(() => []), run: vi.fn() })) } }))
+// usage-meter.js (transitively imported via repos/actions-community.js) builds
+// a db.transaction() wrapper at module scope — the stub just needs to exist
+// so importing the real module doesn't throw; nothing here exercises it since
+// the 'pro' tier (mocked above) has Infinity quota and the license generator
+// tests below take the deterministic branch (no AI, no usage-meter calls).
+vi.mock('../db.js', () => ({ default: { prepare: vi.fn(() => ({ get: vi.fn(), all: vi.fn(() => []), run: vi.fn() })), transaction: (fn) => fn } }))
 
 // issues.js labels/assignees route through the outbox helper.
 const executeViaOutboxMock = vi.fn(async () => ({ queued: false, data: { ok: true } }))

@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import request from 'supertest'
 import express from 'express'
 
@@ -77,6 +77,20 @@ vi.mock('../middleware/require-tier.js', () => ({
     attachTier: (_req, _res, next) => next(),
 }))
 
+// checkUsageLimit/incrementUsage are overridden per-test for deterministic
+// quota control; quotaExceededResponse stays real so tests pin the exact
+// envelope shape the frontend's <QuotaExceededState /> expects.
+const mockCheckUsageLimit = vi.fn(() => ({ allowed: true, current: 0, limit: 200, remaining: 200 }))
+const mockIncrementUsage = vi.fn()
+vi.mock('../lib/usage-meter.js', async (importOriginal) => {
+    const actual = await importOriginal()
+    return {
+        ...actual,
+        checkUsageLimit: (...args) => mockCheckUsageLimit(...args),
+        incrementUsage: (...args) => mockIncrementUsage(...args),
+    }
+})
+
 const { default: workBoardActionsRouter } = await import('../routes/work-board-actions.js')
 
 const app = express()
@@ -84,6 +98,11 @@ app.use(express.json())
 app.use('/api/v1/work-board', workBoardActionsRouter)
 
 describe('POST /api/v1/work-board/draft-comment', () => {
+    beforeEach(() => {
+        mockCheckUsageLimit.mockReturnValue({ allowed: true, current: 0, limit: 200, remaining: 200 })
+        mockIncrementUsage.mockClear()
+    })
+
     it('returns { draft } on success', async () => {
         const res = await request(app)
             .post('/api/v1/work-board/draft-comment')
@@ -100,5 +119,26 @@ describe('POST /api/v1/work-board/draft-comment', () => {
             .post('/api/v1/work-board/draft-comment')
             .send({ repoFullName: 'acme/api', prNumber: 42, intent: 'comment' })
         expect(res.status).toBe(403)
+    })
+
+    it('increments ai_queries usage on a successful draft generation', async () => {
+        const res = await request(app)
+            .post('/api/v1/work-board/draft-comment')
+            .send({ repoFullName: 'acme/api', prNumber: 42, intent: 'request_changes' })
+        expect(res.status).toBe(200)
+        expect(mockIncrementUsage).toHaveBeenCalledWith(1, 'ai_queries')
+    })
+
+    it('returns 429 QUOTA_EXCEEDED when the ai_queries quota is exhausted, without calling the provider', async () => {
+        mockCheckUsageLimit.mockReturnValue({ allowed: false, current: 200, limit: 200, remaining: 0 })
+        const { createProviderForUser } = await import('../lib/ai-provider.js')
+        vi.mocked(createProviderForUser).mockClear()
+        const res = await request(app)
+            .post('/api/v1/work-board/draft-comment')
+            .send({ repoFullName: 'acme/api', prNumber: 42, intent: 'comment' })
+        expect(res.status).toBe(429)
+        expect(res.body.code).toBe('QUOTA_EXCEEDED')
+        expect(res.body.upgradeUrl).toBe('/pricing')
+        expect(createProviderForUser).not.toHaveBeenCalled()
     })
 })

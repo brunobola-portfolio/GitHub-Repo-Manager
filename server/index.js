@@ -277,8 +277,16 @@ const authLimiter = await createTenantLimiters('auth', {
     // the tight auth budget.
     skip: (req) => req.path === '/session',
 });
+// The per-tier 'ai' bucket (tenant-rate-limit.js) was defined but never
+// instantiated/mounted — every LLM-invoking route relied solely on the
+// broader apiLimiter above. Scoped to the ai.js barrel's routes, reachable at
+// both the back-compat `/api/ai/*` path and the `/api/v1/ai/*` path (both
+// map to the same router — see routes/ai.js and routes/v1/index.js).
+const aiLimiter = await createTenantLimiters('ai');
 app.use('/api/', apiLimiter);
 app.use('/api/auth/', authLimiter);
+app.use('/api/ai/', aiLimiter);
+app.use('/api/v1/ai/', aiLimiter);
 
 // ------------------------------------------------------------------
 // Health check (used by useOnlineStatus for connectivity detection)

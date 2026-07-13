@@ -52,7 +52,10 @@ vi.mock('../middleware/require-tier.js', () => ({
 vi.mock('../actions-service.js', () => ({ actionsService: {} }))
 vi.mock('../community-health-service.js', () => ({ communityHealthService: {} }))
 vi.mock('../lib/audit.js', () => ({ auditLog: vi.fn() }))
-vi.mock('../db.js', () => ({ default: { prepare: vi.fn(() => ({ get: vi.fn(), all: vi.fn(() => []), run: vi.fn() })) } }))
+// usage-meter.js (transitively imported via repos/actions-community.js) builds
+// a db.transaction() wrapper at module scope — this stub only needs to exist
+// so importing the real module doesn't throw.
+vi.mock('../db.js', () => ({ default: { prepare: vi.fn(() => ({ get: vi.fn(), all: vi.fn(() => []), run: vi.fn() })), transaction: (fn) => fn } }))
 
 // NOTE: validate-request.js and validators.js are intentionally NOT mocked so
 // the real schemas run.

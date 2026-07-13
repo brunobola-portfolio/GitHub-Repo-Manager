@@ -26,6 +26,29 @@ vi.mock('../middleware/auth.js', () => ({
     safeError: (err, fallback) => err.message || fallback,
 }));
 
+// require-tier is a transitive import of usage-meter.js (getUserTier). Stub it
+// so loading the real usage-meter.js (for its quotaExceededResponse envelope)
+// doesn't pull in config.js/license.js and their env-var requirements.
+vi.mock('../middleware/require-tier.js', () => ({
+    requireTier: () => (_req, _res, next) => next(),
+    getUserTier: vi.fn(() => 'free'),
+    attachTier: (_req, _res, next) => next(),
+}));
+
+// checkUsageLimit/incrementUsage are overridden per-test for deterministic
+// quota control; quotaExceededResponse stays real so tests pin the exact
+// envelope shape the frontend's <QuotaExceededState /> expects.
+const mockCheckUsageLimit = vi.fn(() => ({ allowed: true, current: 0, limit: 200, remaining: 200 }));
+const mockIncrementUsage = vi.fn();
+vi.mock('../lib/usage-meter.js', async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+        ...actual,
+        checkUsageLimit: (...args) => mockCheckUsageLimit(...args),
+        incrementUsage: (...args) => mockIncrementUsage(...args),
+    };
+});
+
 const { default: router } = await import('../routes/work-board-actions.js');
 const snoozeLib = await import('../lib/work-board-snooze.js');
 const cacheLib = await import('../lib/work-board-cache.js');
@@ -314,6 +337,7 @@ describe('POST /api/v1/work-board/ai-summary', () => {
         vi.clearAllMocks();
         // Default: cache miss, fresh summary.
         cacheLib.getCached.mockReturnValue(null);
+        mockCheckUsageLimit.mockReturnValue({ allowed: true, current: 0, limit: 200, remaining: 200 });
     });
 
     it('returns a summary on first call with meta.cached=false', async () => {
@@ -447,5 +471,20 @@ describe('POST /api/v1/work-board/ai-summary', () => {
         expect(summaryLib.generateSummary).toHaveBeenCalled();
         const callArgs = summaryLib.generateSummary.mock.calls[0][0];
         expect(callArgs.dataSources.reviews).toEqual([{ prNumber: 1 }]);
+    });
+
+    it('returns 429 QUOTA_EXCEEDED when the ai_queries quota is exhausted, without calling generateSummary', async () => {
+        mockCheckUsageLimit.mockReturnValue({ allowed: false, current: 200, limit: 200, remaining: 0 });
+        const res = await request(makeApp()).post('/api/v1/work-board/ai-summary').send({});
+        expect(res.status).toBe(429);
+        expect(res.body.code).toBe('QUOTA_EXCEEDED');
+        expect(res.body.upgradeUrl).toBe('/pricing');
+        expect(summaryLib.generateSummary).not.toHaveBeenCalled();
+    });
+
+    it('increments ai_queries usage on a successful summary generation', async () => {
+        const res = await request(makeApp()).post('/api/v1/work-board/ai-summary').send({});
+        expect(res.status).toBe(200);
+        expect(mockIncrementUsage).toHaveBeenCalledWith(1, 'ai_queries');
     });
 });
