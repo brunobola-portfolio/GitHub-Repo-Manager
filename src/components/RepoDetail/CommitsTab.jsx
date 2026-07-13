@@ -175,13 +175,17 @@ export function CommitsTab({ repo }) {
 
 // Tiny inline keyboard hint shown next to the row count. Linear-style
 // — visible enough to discover the affordance, subtle enough to ignore.
+// Colors use the AA-passing muted pair (slate-500 / dark slate-400 — same as
+// the row meta line) with explicit key-cap text matching the other kbd
+// components (WorkBoard KeyboardHelpModal, wizard ShortcutsOverlay); the
+// previous slate-400 / dark slate-500 failed the axe color-contrast gate.
 function KeyboardHint() {
     return (
-        <span className="hidden md:inline-flex items-center gap-1 ds-text-micro text-slate-400 dark:text-slate-500 ml-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono">j</kbd>
-            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono">k</kbd>
+        <span className="hidden md:inline-flex items-center gap-1 ds-text-micro text-slate-500 dark:text-slate-400 ml-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-slate-700 dark:text-slate-300">j</kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-slate-700 dark:text-slate-300">k</kbd>
             <span>to navigate</span>
-            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono">↵</kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-slate-700 dark:text-slate-300">↵</kbd>
             <span>to open</span>
         </span>
     )
