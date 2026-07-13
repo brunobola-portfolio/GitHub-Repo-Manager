@@ -181,6 +181,39 @@ describe('CommunityHealthDashboard', () => {
         expect(findTokenStrokedCircle()).toHaveAttribute('stroke', 'var(--ds-chart-series-2)');
     });
 
+    it('"Good" tier ring uses the blue accent-link token pair, matching its blue ScoreBadge hue family', async () => {
+        const goodScoreData = { ...mockHealthData, score: 65 };
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve(goodScoreData)
+        });
+        render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);
+        await waitFor(() => {
+            expect(screen.getByText('Overall Health Score')).toBeInTheDocument();
+        });
+        const ring = findTokenStrokedCircle();
+        // Light value via the stroke attribute; --ds-accent-link is a static
+        // pair (not auto-swapped in :root.dark), so the dark value comes from
+        // a dark: stroke class override on the same circle.
+        expect(ring).toHaveAttribute('stroke', 'var(--ds-accent-link)');
+        expect(ring).toHaveClass('dark:stroke-[color:var(--ds-accent-link-dark)]');
+        // The sibling ScoreBadge for the same score stays in the blue family.
+        expect(screen.getAllByText('Good')[0].className).toContain('blue');
+    });
+
+    it('"Fair" tier ring uses the attention chart-series token', async () => {
+        const fairScoreData = { ...mockHealthData, score: 45 };
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve(fairScoreData)
+        });
+        render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);
+        await waitFor(() => {
+            expect(screen.getByText('Overall Health Score')).toBeInTheDocument();
+        });
+        expect(findTokenStrokedCircle()).toHaveAttribute('stroke', 'var(--ds-chart-series-3)');
+    });
+
     it('high priority recommendations have pulse animation class', async () => {
         global.fetch.mockResolvedValueOnce({
             ok: true,

@@ -59,4 +59,16 @@ describe('RepoGrid — exit animation for filtered-out cards', () => {
             expect(screen.getAllByTestId('repo-card')).toHaveLength(1)
         })
     })
+
+    it('drops the AnimatePresence wrapper at/above the 50-card threshold — removals unmount instantly (mirrors the wizard virtualization threshold)', () => {
+        const repos = Array.from({ length: 51 }, (_, i) => makeRepo(i + 1))
+        const { rerender } = render(<RepoGrid {...baseProps(repos)} />)
+        expect(screen.getAllByTestId('repo-card')).toHaveLength(51)
+
+        rerender(<RepoGrid {...baseProps(repos.slice(1))} />)
+
+        // Static branch: no exit animation holds the removed card in the DOM —
+        // the count drops synchronously on the same render pass.
+        expect(screen.getAllByTestId('repo-card')).toHaveLength(50)
+    })
 })

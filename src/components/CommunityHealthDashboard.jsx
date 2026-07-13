@@ -52,12 +52,16 @@ function useIsDesktop() {
 }
 
 // `color` feeds the SVG ring stroke directly, so it must be theme-aware —
-// routed through design-system.css tokens instead of hardcoded hexes. No
-// literal "info blue" token is swapped for dark mode, so "Good" maps to the
-// brand token (chart-series-1) rather than inventing a new one.
+// routed through design-system.css tokens instead of hardcoded hexes, keeping
+// the ring in the same hue family as ScoreBadge's Tailwind classes per tier.
+// Excellent/Fair/danger tokens auto-swap in `:root.dark`; the blue "Good"
+// pair (--ds-accent-link / --ds-accent-link-dark) is two static variables,
+// so its dark value comes from `ringDarkClass` — a `dark:stroke-[...]` class
+// override on the circle (CSS beats the stroke presentation attribute),
+// mirroring the `dark:X-[color:var(--ds-*-dark)]` mechanism used app-wide.
 function getScoreConfig(score) {
     if (score >= 80) return { color: 'var(--ds-chart-series-2)', tailwind: 'emerald', label: 'Excellent' };
-    if (score >= 60) return { color: 'var(--ds-chart-series-1)', tailwind: 'blue', label: 'Good' };
+    if (score >= 60) return { color: 'var(--ds-accent-link)', ringDarkClass: 'dark:stroke-[color:var(--ds-accent-link-dark)]', tailwind: 'blue', label: 'Good' };
     if (score >= 40) return { color: 'var(--ds-chart-series-3)', tailwind: 'amber', label: 'Fair' };
     return { color: 'var(--ds-status-danger)', tailwind: 'red', label: 'Needs Improvement' };
 }
@@ -83,6 +87,7 @@ function HealthScoreRing({ score }) {
             <svg viewBox="0 0 128 128" className="w-full h-full -rotate-90" aria-label={`Health score: ${score}% — ${config.label}`} role="img">
                 <circle cx={center} cy={center} r={radius} fill="none" stroke="currentColor" strokeWidth={strokeWidth} className="text-slate-200/40 dark:text-slate-700/40" />
                 <motion.circle cx={center} cy={center} r={radius} fill="none" stroke={config.color} strokeWidth={strokeWidth} strokeLinecap="round"
+                    className={config.ringDarkClass}
                     initial={{ pathLength: reducedMotion ? normalizedScore : 0 }}
                     animate={{ pathLength: normalizedScore }}
                     transition={reducedMotion ? { duration: 0 } : { duration: 1.2, ease: 'easeOut' }}

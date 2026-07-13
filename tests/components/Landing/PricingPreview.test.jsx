@@ -19,6 +19,9 @@ describe('PricingPreview — motion contract (no spring/translate hover)', () =>
     // Free (default tier, index 0) — border hover, mirrors PricingCard's default tier.
     expect(bodies[0].className).toContain('hover:border-slate-300')
     expect(bodies[0].className).toContain('dark:hover:border-slate-600')
+    // Pro/popular (index 1) — NO hover treatment at all, mirroring PricingCard's
+    // highlighted tier which also has none.
+    expect(bodies[1].className).not.toMatch(/hover:/)
     // Enterprise (index 2) — shadow hover, mirrors PricingCard's enterprise tier.
     expect(bodies[2].className).toContain('hover:shadow-amber-500/30')
   })

@@ -131,7 +131,7 @@ describe('AISummaryCard', () => {
         await waitFor(() => expect(screen.getByText(/quota exceeded/i)).toBeInTheDocument())
     })
 
-    describe('urgency gauge stroke uses theme-aware design tokens (no hardcoded hex)', () => {
+    describe('urgency gauge stroke + severity label share the same theme-aware token (no hardcoded hex)', () => {
         // The gauge svg is identified by its `aria-label` ("urgency N%"); its
         // colored arc is the second <path> (the first is the always-visible
         // background track, stroke="currentColor").
@@ -140,25 +140,39 @@ describe('AISummaryCard', () => {
             return svg?.querySelectorAll('path')[1]?.getAttribute('stroke')
         }
 
-        it('critical urgency (>0.7) routes through var(--ds-status-danger)', async () => {
+        it('critical urgency (>0.7): gauge stroke AND "Critical" label both use var(--ds-status-danger)', async () => {
             mock2xx({ data: { headline: 'h', bullets: [{ text: 'b', severity: 'high' }], urgencyScore: 0.9 }, meta: {} })
             const { container } = render(<AISummaryCard />)
             await waitFor(() => expect(screen.getByText('h')).toBeInTheDocument())
             expect(arcStroke(container)).toBe('var(--ds-status-danger)')
+            expect(screen.getByText('Critical').style.color).toBe('var(--ds-status-danger)')
         })
 
-        it('elevated urgency (>0.3) routes through var(--ds-status-warning)', async () => {
+        it('elevated urgency (>0.3): gauge stroke AND "Elevated" label both use var(--ds-status-warning)', async () => {
             mock2xx({ data: { headline: 'h', bullets: [{ text: 'b', severity: 'medium' }], urgencyScore: 0.4 }, meta: {} })
             const { container } = render(<AISummaryCard />)
             await waitFor(() => expect(screen.getByText('h')).toBeInTheDocument())
             expect(arcStroke(container)).toBe('var(--ds-status-warning)')
+            expect(screen.getByText('Elevated').style.color).toBe('var(--ds-status-warning)')
         })
 
-        it('nominal urgency (<=0.3) routes through var(--ds-chart-series-1), matching the "Nominal" indigo label', async () => {
+        it('nominal urgency (<=0.3): gauge stroke AND "Nominal" label both use var(--ds-chart-series-1)', async () => {
             mock2xx({ data: { headline: 'h', bullets: [{ text: 'b', severity: 'info' }], urgencyScore: 0.1 }, meta: {} })
             const { container } = render(<AISummaryCard />)
             await waitFor(() => expect(screen.getByText('h')).toBeInTheDocument())
             expect(arcStroke(container)).toBe('var(--ds-chart-series-1)')
+            expect(screen.getByText('Nominal').style.color).toBe('var(--ds-chart-series-1)')
+        })
+
+        it('label and gauge severity flip at the SAME threshold — no drift band between 0.3 and 0.4', async () => {
+            // Before the shared mapping, the gauge switched at 0.3 but the label
+            // at 0.4, so a 0.35 score showed an amber arc with a "Nominal" label.
+            mock2xx({ data: { headline: 'h', bullets: [{ text: 'b', severity: 'medium' }], urgencyScore: 0.35 }, meta: {} })
+            const { container } = render(<AISummaryCard />)
+            await waitFor(() => expect(screen.getByText('h')).toBeInTheDocument())
+            expect(arcStroke(container)).toBe('var(--ds-status-warning)')
+            expect(screen.getByText('Elevated').style.color).toBe('var(--ds-status-warning)')
+            expect(screen.queryByText('Nominal')).not.toBeInTheDocument()
         })
     })
 })
