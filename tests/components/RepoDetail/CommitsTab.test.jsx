@@ -69,6 +69,7 @@ describe('CommitsTab — accessible row structure', () => {
     })
 
     it('the external-link anchor still opens GitHub in a new tab without opening the detail panel', async () => {
+        const user = userEvent.setup()
         render(<CommitsTab repo={repo} />)
 
         const link = await screen.findByRole('link', { name: /open on github/i })
@@ -76,8 +77,16 @@ describe('CommitsTab — accessible row structure', () => {
         expect(link).toHaveAttribute('target', '_blank')
         expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'))
 
-        // Clicking the anchor must not also trigger the row's onOpen — it isn't
-        // nested inside the button, so no bubbling reaches it.
+        // jsdom can't navigate — suppress only the default action so the click
+        // still BUBBLES normally and the isolation assertion below stays
+        // meaningful: with the anchor nested inside the row button (the old
+        // markup) and no stopPropagation, this click would bubble into the
+        // button's onClick and open the detail panel.
+        link.addEventListener('click', (e) => e.preventDefault())
+        await user.click(link)
+
+        // Clicking the anchor must not also trigger the row's onOpen — the
+        // anchor is a sibling of the row button, so no bubbling reaches it.
         expect(screen.queryByTestId('commit-detail-stub')).not.toBeInTheDocument()
     })
 })
