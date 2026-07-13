@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, vi, beforeAll } from 'vitest'
+import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest'
 import request from 'supertest'
 import express from 'express'
 
@@ -71,7 +71,21 @@ vi.mock('../middleware/require-tier.js', () => ({
     attachTier: (_req, _res, next) => next(),
 }))
 
-const { default: workBoardActionsRouter } = await import('../routes/work-board-actions.js')
+// checkUsageLimit/incrementUsage are overridden per-test for deterministic
+// quota control; quotaExceededResponse stays real so tests pin the exact
+// envelope shape the frontend's <QuotaExceededState /> expects.
+const mockCheckUsageLimit = vi.fn(() => ({ allowed: true, current: 0, limit: 200, remaining: 200 }))
+const mockIncrementUsage = vi.fn()
+vi.mock('../lib/usage-meter.js', async (importOriginal) => {
+    const actual = await importOriginal()
+    return {
+        ...actual,
+        checkUsageLimit: (...args) => mockCheckUsageLimit(...args),
+        incrementUsage: (...args) => mockIncrementUsage(...args),
+    }
+})
+
+const { default: workBoardActionsRouter, _resetSuggestActionRateLimit } = await import('../routes/work-board-actions.js')
 
 const app = express()
 app.use(express.json())
@@ -91,6 +105,12 @@ describe('POST /api/v1/work-board/suggest-action', () => {
         mockProvider.generate.mockResolvedValue({
             parsed: { pingComment: 'Hey @bob, any update on this PR?' },
         })
+    })
+
+    beforeEach(() => {
+        mockCheckUsageLimit.mockReturnValue({ allowed: true, current: 0, limit: 200, remaining: 200 })
+        mockIncrementUsage.mockClear()
+        _resetSuggestActionRateLimit(1)
     })
 
     it('returns 3 suggestions on success', async () => {
@@ -127,5 +147,55 @@ describe('POST /api/v1/work-board/suggest-action', () => {
             .post('/api/v1/work-board/suggest-action')
             .send({ repoFullName: 'bad' })
         expect(res.status).toBe(400)
+    })
+
+    it('increments ai_queries usage on a successful suggestion generation', async () => {
+        const res = await request(app)
+            .post('/api/v1/work-board/suggest-action')
+            .send(VALID_BODY)
+        expect(res.status).toBe(200)
+        expect(mockIncrementUsage).toHaveBeenCalledWith(1, 'ai_queries')
+    })
+
+    it('does NOT charge ai_queries when provider.generate rejects (200 fallback ping)', async () => {
+        mockProvider.generate.mockRejectedValueOnce(new Error('provider outage'))
+        const res = await request(app)
+            .post('/api/v1/work-board/suggest-action')
+            .send(VALID_BODY)
+        // Route degrades to the canned ping — still 200 with 3 suggestions —
+        // but a failed LLM attempt must not debit the monthly quota (charge
+        // on provider success only, matching every metered sibling).
+        expect(res.status).toBe(200)
+        expect(res.body.suggestions).toHaveLength(3)
+        const ping = res.body.suggestions.find(s => s.action === 'comment')
+        expect(ping.body).toBe('Hey @bob, any update on this?')
+        expect(mockIncrementUsage).not.toHaveBeenCalled()
+    })
+
+    it('returns 429 QUOTA_EXCEEDED when the ai_queries quota is exhausted, without calling the provider', async () => {
+        mockCheckUsageLimit.mockReturnValue({ allowed: false, current: 200, limit: 200, remaining: 0 })
+        const { createProviderForUser } = await import('../lib/ai-provider.js')
+        vi.mocked(createProviderForUser).mockClear()
+        const res = await request(app)
+            .post('/api/v1/work-board/suggest-action')
+            .send(VALID_BODY)
+        expect(res.status).toBe(429)
+        expect(res.body.code).toBe('QUOTA_EXCEEDED')
+        expect(res.body.upgradeUrl).toBe('/pricing')
+        expect(createProviderForUser).not.toHaveBeenCalled()
+    })
+
+    it('returns 429 rate_limited after 10 requests in an hour, keyed per user', async () => {
+        for (let i = 0; i < 10; i++) {
+            const ok = await request(app)
+                .post('/api/v1/work-board/suggest-action')
+                .send(VALID_BODY)
+            expect(ok.status).toBe(200)
+        }
+        const overflow = await request(app)
+            .post('/api/v1/work-board/suggest-action')
+            .send(VALID_BODY)
+        expect(overflow.status).toBe(429)
+        expect(overflow.body.code).toBe('rate_limited')
     })
 })

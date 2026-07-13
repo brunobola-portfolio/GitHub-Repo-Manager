@@ -18,7 +18,11 @@ vi.mock('../db.js', () => {
     const stmt = { run: runMock }
     const prepareMock = vi.fn(() => stmt)
     return {
-        default: { prepare: prepareMock, __runMock: runMock },
+        // usage-meter.js builds a db.transaction() wrapper at module scope
+        // (incrementAIUsageTxn) even though our mocked checkUsageLimit/
+        // incrementUsage below never call it — the passthrough stub just
+        // needs to exist so importing the real module doesn't throw.
+        default: { prepare: prepareMock, transaction: (fn) => fn, __runMock: runMock },
     }
 })
 
@@ -94,6 +98,29 @@ vi.mock('../middleware/ai-error-mapper.js', () => ({
     mapAIErrorToResponse: vi.fn(() => null),
 }))
 
+// require-tier is a transitive import of usage-meter.js (getUserTier). Stub it
+// so loading the real usage-meter.js (for its quotaExceededResponse envelope)
+// doesn't pull in config.js/license.js and their env-var requirements.
+vi.mock('../middleware/require-tier.js', () => ({
+    requireTier: () => (_req, _res, next) => next(),
+    getUserTier: vi.fn(() => 'free'),
+    attachTier: (_req, _res, next) => next(),
+}))
+
+// checkUsageLimit/incrementUsage are overridden per-test for deterministic
+// quota control; quotaExceededResponse stays real so tests pin the exact
+// envelope shape the frontend's <QuotaExceededState /> expects.
+const mockCheckUsageLimit = vi.fn(() => ({ allowed: true, current: 0, limit: 200, remaining: 200 }))
+const mockIncrementUsage = vi.fn()
+vi.mock('../lib/usage-meter.js', async (importOriginal) => {
+    const actual = await importOriginal()
+    return {
+        ...actual,
+        checkUsageLimit: (...args) => mockCheckUsageLimit(...args),
+        incrementUsage: (...args) => mockIncrementUsage(...args),
+    }
+})
+
 const { default: router } = await import('../routes/repos/actions-community.js')
 const dbMod = await import('../db.js')
 
@@ -108,6 +135,7 @@ beforeEach(() => {
     vi.clearAllMocks()
     createProviderMock.mockResolvedValue({ generate: async () => ({ text: 'x' }) })
     commitOrOpenPRMock.mockResolvedValue({ commitSha: 'abc123', mode: 'direct' })
+    mockCheckUsageLimit.mockReturnValue({ allowed: true, current: 0, limit: 200, remaining: 200 })
 })
 
 describe('POST /repos/:owner/:repo/community-health/generate', () => {
@@ -120,6 +148,9 @@ describe('POST /repos/:owner/:repo/community-health/generate', () => {
         expect(res.body.filePath).toBe('LICENSE')
         expect(res.body.content).toContain('MIT body for octocat')
         expect(createProviderMock).not.toHaveBeenCalled()
+        // Deterministic generators never touch AI, so they must never consume
+        // the ai_queries quota either.
+        expect(mockCheckUsageLimit).not.toHaveBeenCalled()
     })
 
     it('returns 400 invalid_file_type for an unknown fileType', async () => {
@@ -139,6 +170,27 @@ describe('POST /repos/:owner/:repo/community-health/generate', () => {
         expect(res.status).toBe(200)
         expect(res.body.filePath).toBe('CONTRIBUTING.md')
         expect(createProviderMock).toHaveBeenCalledOnce()
+    })
+
+    it('increments ai_queries usage on a successful AI generation', async () => {
+        const res = await request(makeApp())
+            .post('/api/v1/repos/octocat/hello/community-health/generate')
+            .send({ fileType: 'contributing' })
+
+        expect(res.status).toBe(200)
+        expect(mockIncrementUsage).toHaveBeenCalledWith(1, 'ai_queries')
+    })
+
+    it('returns 429 QUOTA_EXCEEDED when the ai_queries quota is exhausted, without calling the provider', async () => {
+        mockCheckUsageLimit.mockReturnValue({ allowed: false, current: 200, limit: 200, remaining: 0 })
+        const res = await request(makeApp())
+            .post('/api/v1/repos/octocat/hello/community-health/generate')
+            .send({ fileType: 'contributing' })
+
+        expect(res.status).toBe(429)
+        expect(res.body.code).toBe('QUOTA_EXCEEDED')
+        expect(res.body.upgradeUrl).toBe('/pricing')
+        expect(createProviderMock).not.toHaveBeenCalled()
     })
 
     it('returns 403 ai_not_configured when no provider is available', async () => {

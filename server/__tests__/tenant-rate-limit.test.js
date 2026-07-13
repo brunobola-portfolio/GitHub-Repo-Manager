@@ -99,3 +99,103 @@ describe('createTenantLimiters', () => {
         )
     })
 })
+
+describe('createTenantLimiters — API-key bearer keying', () => {
+    // The limiters mount app-level, BEFORE route-level auth resolves bearer
+    // identity (requireAuth → apiKeyAuth). A `Bearer grm_live_...` request
+    // therefore has no session.userId/tenantId at limiter time and must be
+    // keyed by (a hash of) the token itself — NOT by IP — so two keys behind
+    // one NAT/CI runner don't share a bucket and an invalid key only burns
+    // its own bucket. Prod 'ai' free budget = 10/15min.
+    const originalNodeEnv = process.env.NODE_ENV
+
+    beforeEach(() => {
+        process.env.NODE_ENV = 'production'
+    })
+
+    afterEach(() => {
+        if (originalNodeEnv === undefined) delete process.env.NODE_ENV
+        else process.env.NODE_ENV = originalNodeEnv
+    })
+
+    it('same bearer token shares one bucket; a different token from the same IP gets its own', async () => {
+        const limiter = await createTenantLimiters('ai')
+        const app = buildApp(limiter, '/api/ai')
+
+        // Burn token A's whole budget (10 identical-token requests share a bucket)...
+        for (let i = 0; i < 10; i++) {
+            const ok = await request(app)
+                .get('/api/ai/login')
+                .set('Authorization', 'Bearer grm_live_tokenAAAAAAAA')
+            expect(ok.status).toBe(200)
+        }
+        // ...the 11th on the SAME token is over the limit...
+        const overflow = await request(app)
+            .get('/api/ai/login')
+            .set('Authorization', 'Bearer grm_live_tokenAAAAAAAA')
+        expect(overflow.status).toBe(429)
+
+        // ...but a DIFFERENT token from the same client IP is unaffected.
+        const otherKey = await request(app)
+            .get('/api/ai/login')
+            .set('Authorization', 'Bearer grm_live_tokenBBBBBBBB')
+        expect(otherKey.status).toBe(200)
+    })
+
+    it('keeps IP keying for sessionless non-bearer requests, isolated from bearer buckets', async () => {
+        const limiter = await createTenantLimiters('ai')
+        const app = buildApp(limiter, '/api/ai')
+
+        // Anonymous requests (no bearer, no session) share the per-IP bucket...
+        for (let i = 0; i < 10; i++) {
+            await request(app).get('/api/ai/login')
+        }
+        const anonOverflow = await request(app).get('/api/ai/login')
+        expect(anonOverflow.status).toBe(429)
+
+        // ...while a bearer request from that same IP still has its own bucket.
+        const bearer = await request(app)
+            .get('/api/ai/login')
+            .set('Authorization', 'Bearer grm_live_tokenCCCCCCCC')
+        expect(bearer.status).toBe(200)
+    })
+
+    it('ignores non-grm_live_ bearer schemes (falls back to IP keying)', async () => {
+        const limiter = await createTenantLimiters('ai')
+        const app = buildApp(limiter, '/api/ai')
+
+        // A foreign bearer (e.g. a GitHub token pasted by mistake) is NOT an
+        // API key — it must land in the ordinary per-IP bucket, not mint a
+        // fresh bucket per unique value.
+        for (let i = 0; i < 10; i++) {
+            await request(app)
+                .get('/api/ai/login')
+                .set('Authorization', `Bearer ghp_someOtherToken${i}`)
+        }
+        const overflow = await request(app)
+            .get('/api/ai/login')
+            .set('Authorization', 'Bearer ghp_yetAnotherToken')
+        expect(overflow.status).toBe(429)
+    })
+
+    it("keeps IP keying for grm_live_ bearers on the 'auth' limiter (no per-token bucket rotation on brute-force routes)", async () => {
+        const limiter = await createTenantLimiters('auth')
+        const app = buildApp(limiter)
+
+        // API keys have no legitimate business on /api/auth/* (OAuth is
+        // cookie/redirect based). Without a type guard, a client rotating
+        // DISTINCT grm_live_ tokens would mint a fresh bucket per token and
+        // escape the tight prod auth budget (10/15min/IP), leaving only the
+        // 200/15min/IP global cap — a ~20x loosening on a brute-force bucket.
+        // Pin: 11 distinct bearers from one IP still share the IP bucket.
+        for (let i = 0; i < 10; i++) {
+            await request(app)
+                .get('/api/auth/login')
+                .set('Authorization', `Bearer grm_live_rotated${i}`)
+        }
+        const overflow = await request(app)
+            .get('/api/auth/login')
+            .set('Authorization', 'Bearer grm_live_rotatedFresh')
+        expect(overflow.status).toBe(429)
+    })
+})
