@@ -30,6 +30,35 @@ vi.mock('framer-motion', async (importOriginal) => {
     }
 })
 
+// The vi.resetAllMocks() in every describe's beforeEach strips the
+// implementation from the global window.matchMedia stub installed by
+// tests/setup.js (it is a vi.fn), leaving matchMedia() returning undefined.
+// The first render of a REAL framer-motion hook in the worker — the mock
+// above only replaces motion.div/motion.circle, so useReducedMotion inside
+// AIQuotaMeter's ProgressRing stays real — then throws
+// `Cannot read properties of undefined (reading 'addEventListener')` from
+// motion-dom's lazy initPrefersReducedMotion() mid-render. React recovers by
+// re-rendering synchronously, but the recovery can defer the NEXT act()
+// flush, making a later synchronous assertion miss (CI run 29232227290:
+// 'filters list when a section is clicked' failed exactly this way).
+// Reinstall a PLAIN-function stub — not a vi.fn — so mock resets cannot
+// strip it, keeping matchMedia alive for every test in this file.
+beforeEach(() => {
+    Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        value: (query) => ({
+            matches: false,
+            media: query,
+            onchange: null,
+            addListener: () => {},
+            removeListener: () => {},
+            addEventListener: () => {},
+            removeEventListener: () => {},
+            dispatchEvent: () => false,
+        }),
+    });
+});
+
 describe('InboxPanel', () => {
     beforeEach(() => {
         vi.resetAllMocks();
@@ -201,5 +230,55 @@ describe('InboxPanel — AI narrative fan-out', () => {
         render(<InboxPanel />);
         await waitFor(() => expect(api.fetchInbox).toHaveBeenCalled());
         expect(narrativeApi.fetchAttentionNarrative).not.toHaveBeenCalled();
+    });
+});
+
+describe('InboxPanel — load-failure state', () => {
+    beforeEach(() => {
+        vi.resetAllMocks();
+        aiStatusModule.useAIStatus.mockReturnValue({ configured: false, keyOk: false });
+        aiQuotaModule.useAIQuotaState.mockReturnValue(null);
+        aiUsageModule.useAIUsage.mockReturnValue({
+            tier: 'free',
+            aiQueries: null,
+            aiFeatures: {},
+            loading: false,
+        });
+    });
+
+    it('renders a formatted error message and a Try again button, not the raw error string', async () => {
+        api.fetchInbox.mockRejectedValue(new TypeError('Failed to fetch'));
+        render(<InboxPanel />);
+        expect(await screen.findByText('Could not reach the server')).toBeInTheDocument();
+        expect(screen.getByText('Check your connection and try again.')).toBeInTheDocument();
+        expect(screen.queryByText(/failed to fetch/i)).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
+    });
+
+    it('calls refresh() when Try again is clicked, recovering the panel on success', async () => {
+        let resolveRetry;
+        api.fetchInbox
+            .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+            .mockImplementationOnce(() => new Promise((resolve) => { resolveRetry = resolve; }));
+        render(<InboxPanel />);
+        await screen.findByRole('button', { name: /try again/i });
+        fireEvent.click(screen.getByRole('button', { name: /try again/i }));
+        // While the retry is in flight the skeleton must REPLACE the error
+        // card, never render stacked on top of it (refresh() sets loading=true
+        // immediately but only clears `error` on success).
+        expect(screen.getByRole('list', { name: 'Loading inbox' })).toBeInTheDocument();
+        expect(screen.queryByText('Could not reach the server')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
+        resolveRetry({ sections: [{ key: 'needs_review', label: 'Needs my review', items: [] }] });
+        await waitFor(() => expect(api.fetchInbox).toHaveBeenCalledTimes(2));
+        expect(await screen.findByText(/no prs waiting for your review/i)).toBeInTheDocument();
+    });
+
+    it('renders the error accent with a dark-mode variant class (AA-contrast fix)', async () => {
+        api.fetchInbox.mockRejectedValue(new TypeError('Failed to fetch'));
+        render(<InboxPanel />);
+        const alert = await screen.findByRole('alert');
+        expect(alert.innerHTML).toMatch(/text-red-600/);
+        expect(alert.innerHTML).toMatch(/dark:text-red-400/);
     });
 });

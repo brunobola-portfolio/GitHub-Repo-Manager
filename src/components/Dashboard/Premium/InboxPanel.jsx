@@ -7,12 +7,14 @@ import { useAIStatus } from '../../../hooks/useAIStatus';
 import { useAIQuotaState } from '../../../hooks/useAIQuotaState';
 import { useAIUsage } from '../../../hooks/useAIUsage';
 import { useToast } from '../../../hooks/useToast';
+import { formatUserError } from '../../../utils/errors';
 import { InboxRow } from './InboxRow';
 import { InboxSection } from './InboxSection';
 import { SnoozeModal } from './SnoozeModal';
 import { AIQuotaMeter } from '../../ui/AIQuotaMeter';
 import { AIQuotaExhaustedCard } from '../../ui/AIQuotaExhaustedCard';
 import { Skeleton } from '../../ui/Skeleton';
+import { FeatureError } from '../../states';
 
 const NARRATIVE_TOP_N = 3;
 
@@ -29,10 +31,17 @@ const EMPTY_STATE_COPY = {
 };
 
 export function InboxPanel({ onSelectItem }) {
-    const { sections, meta, loading, error, archive, snooze } = useInbox();
+    const { sections, meta, loading, error, refresh, archive, snooze } = useInbox();
     const { toast } = useToast();
     const [activeKey, setActiveKey] = useState(null);
     const [snoozingItem, setSnoozingItem] = useState(null);
+
+    // Format the raw fetch/network error through the shared error vocabulary
+    // instead of rendering `error.message` straight to the DOM (that leaked
+    // strings like "Failed to fetch" with no retry path). Memoized by error
+    // identity — same reasoning as <AIErrorState>: formatUserError warns once
+    // per distinct unmapped error, and this recomputes on every render otherwise.
+    const formattedError = useMemo(() => (error ? formatUserError(error) : null), [error]);
 
     // Default to the first non-empty section once data lands
     useEffect(() => {
@@ -183,7 +192,18 @@ export function InboxPanel({ onSelectItem }) {
                             ))}
                         </ul>
                     )}
-                    {error && <p className="p-6 text-sm text-red-600">{String(error.message || error)}</p>}
+                    {/* `!loading` guard: refresh() sets loading=true immediately but only
+                        clears `error` on success — without it the retry skeleton would
+                        render stacked on top of the error card. */}
+                    {!loading && formattedError && (
+                        <FeatureError
+                            tone="error"
+                            title={formattedError.title}
+                            hint={formattedError.body}
+                            onRetry={refresh}
+                            className="mx-5 my-3"
+                        />
+                    )}
                     {!loading && !error && active && active.items.length === 0 && (
                         <p className="p-6 text-sm text-slate-500">
                             {meta && meta.live === false
