@@ -391,6 +391,66 @@ describe('apiKeyAuth middleware', () => {
         expect(next).toHaveBeenCalled()
         expect(res.status).not.toHaveBeenCalled()
     })
+
+    // ── 'ai'-scope carve-out for AI routes ──────────────────────────────
+    // An `ai`-only key must be able to POST to the AI generation routes
+    // without `write`/`admin` (requireScope('ai') at the route level is the
+    // real authorizer there — this gate must simply get out of its way for
+    // those paths). Everywhere else the write/admin requirement is unchanged,
+    // so an `ai`-only key still can't mutate a non-AI endpoint.
+    it('allows an ai-only key to POST an AI route (/api/ai/*)', () => {
+        req.method = 'POST'
+        req.headers.authorization = 'Bearer grm_live_ai_only_post'
+        req.originalUrl = '/api/ai/chat'
+        seedKey(['ai'])
+
+        apiKeyAuth(req, res, next)
+
+        expect(next).toHaveBeenCalled()
+        expect(res.status).not.toHaveBeenCalled()
+    })
+
+    it('allows an ai-only key to POST the versioned AI route (/api/v1/ai/*)', () => {
+        req.method = 'POST'
+        req.headers.authorization = 'Bearer grm_live_ai_only_post_v1'
+        req.originalUrl = '/api/v1/ai/chat'
+        seedKey(['ai'])
+
+        apiKeyAuth(req, res, next)
+
+        expect(next).toHaveBeenCalled()
+        expect(res.status).not.toHaveBeenCalled()
+    })
+
+    it('403s an ai-only key on a non-AI mutating route (write scope still required)', () => {
+        req.method = 'POST'
+        req.headers.authorization = 'Bearer grm_live_ai_only_other'
+        req.originalUrl = '/api/repos/123/archive'
+        const mockRun = seedKey(['ai'])
+
+        apiKeyAuth(req, res, next)
+
+        expect(res.status).toHaveBeenCalledWith(403)
+        expect(res.json).toHaveBeenCalledWith({
+            error: 'This API key lacks the required "write" scope',
+            required: 'write',
+        })
+        expect(next).not.toHaveBeenCalled()
+        expect(mockRun).not.toHaveBeenCalled()
+    })
+
+    it('403s an ai-only key on an AI route when originalUrl is missing (fail closed)', () => {
+        req.method = 'POST'
+        req.headers.authorization = 'Bearer grm_live_ai_only_no_url'
+        // No req.originalUrl set at all (defensive default in case some
+        // caller doesn't populate it) — must NOT be treated as an AI route.
+        seedKey(['ai'])
+
+        apiKeyAuth(req, res, next)
+
+        expect(res.status).toHaveBeenCalledWith(403)
+        expect(next).not.toHaveBeenCalled()
+    })
 })
 
 describe('requireScope', () => {

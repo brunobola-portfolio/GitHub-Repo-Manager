@@ -51,6 +51,19 @@ function getClientIp(req) {
     return req.ip || req.socket?.remoteAddress || 'unknown';
 }
 
+// AI route prefixes recognized by the write-scope gate's `ai`-scope carve-out
+// below. Mirrors the isAiPath check in index.js's JSON body-size middleware.
+// req.originalUrl is used (never req.path) because this function runs deep
+// inside nested routers (via requireAuth called at the individual-route
+// level) where req.path/req.url have already been rebased relative to the
+// mount point — req.originalUrl is the one thing Express never rewrites.
+const AI_ROUTE_PREFIXES = ['/api/ai/', '/api/v1/ai/'];
+function isAiRoute(req) {
+    const url = req.originalUrl || '';
+    const path = url.split('?')[0];
+    return AI_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix));
+}
+
 // Note: API key authentication does not set req.session.accessToken.
 // GitHub proxy endpoints (repos, orgs, etc.) require OAuth session auth.
 // API keys are only valid for local-DB endpoints (audit, usage, teams, etc.)
@@ -95,8 +108,20 @@ export function apiKeyAuth(req, res, next) {
     // can't mutate ANY route, without annotating each one. Session/cookie
     // users never reach this branch (requireAuth only calls apiKeyAuth for
     // grm_live_ bearers), so the UI is unaffected.
+    //
+    // Carve-out: an `ai`-scoped key is allowed past THIS generic gate for the
+    // AI generation routes (POST /api/ai/* and /api/v1/ai/*) without
+    // `write`/`admin`. This does NOT itself grant access — those routes
+    // separately require `ai` scope via requireScope('ai'), which is what
+    // actually authorizes them (and still 403s a write-only key there,
+    // naming the missing `ai` scope). Without this carve-out, an ai-only key
+    // would never reach that check at all: it would 403 right here, before
+    // any route-level middleware runs. The carve-out is narrowly scoped to
+    // AI paths, so an ai-only key still can't mutate anything else.
     const MUTATION = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
-    if (MUTATION.has(req.method) && !(req.scopes.includes('write') || req.scopes.includes('admin'))) {
+    const hasWriteOrAdmin = req.scopes.includes('write') || req.scopes.includes('admin');
+    const hasAiScopeForAiRoute = req.scopes.includes('ai') && isAiRoute(req);
+    if (MUTATION.has(req.method) && !hasWriteOrAdmin && !hasAiScopeForAiRoute) {
         logger.warn({ ip: getClientIp(req), keyId: row.id, method: req.method }, 'API key auth failed: write scope required');
         return res.status(403).json({ error: 'This API key lacks the required "write" scope', required: 'write' });
     }
