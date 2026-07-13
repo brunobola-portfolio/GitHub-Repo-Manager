@@ -85,6 +85,16 @@ const VIEWS = [
     },
   },
   {
+    name: 'repo detail — commits tab',
+    async setup(page) {
+      await openFirstRepoDetail(page)
+      await page.getByRole('tab', { name: /commits/i }).click()
+      await page.waitForLoadState('networkidle')
+      // Exercises the commit row list — the nested-interactive fix (stretched
+      // message button over each row) is what this scan protects.
+    },
+  },
+  {
     name: 'migration wizard (first step)',
     async setup(page) {
       await page.goto('/')
