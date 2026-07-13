@@ -422,6 +422,20 @@ describe('apiKeyAuth middleware', () => {
         expect(res.status).not.toHaveBeenCalled()
     })
 
+    it('allows an ai-only key to POST an AI route with a query string', () => {
+        req.method = 'POST'
+        req.headers.authorization = 'Bearer grm_live_ai_only_qs'
+        // The exact-match allowlist must strip the querystring first —
+        // ?stream=true is how the chat SSE mode is actually invoked.
+        req.originalUrl = '/api/ai/chat?stream=true&x=1'
+        seedKey(['ai'])
+
+        apiKeyAuth(req, res, next)
+
+        expect(next).toHaveBeenCalled()
+        expect(res.status).not.toHaveBeenCalled()
+    })
+
     it('403s an ai-only key on a non-AI mutating route (write scope still required)', () => {
         req.method = 'POST'
         req.headers.authorization = 'Bearer grm_live_ai_only_other'

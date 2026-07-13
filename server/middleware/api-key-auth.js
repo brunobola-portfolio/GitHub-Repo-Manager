@@ -62,7 +62,12 @@ function getClientIp(req) {
 // other mutating endpoint. A prefix match would silently let an ai-only key
 // mutate those too (e.g. publish a deep-review comment, run a PR slash
 // command), which is well beyond what the `ai` scope is meant to grant.
-const AI_GENERATION_ROUTE_PATHS = [
+//
+// Exported for the parity test in
+// server/__tests__/ai-key-scope-enforcement.test.js, which walks the AI
+// router's layer stack and asserts this list and the requireScope('ai')
+// mounts can never drift apart (in EITHER direction).
+export const AI_GENERATION_ROUTE_PATHS = [
     '/ai/chat',
     '/ai/attention-narrative',
     '/ai/translate-search',
@@ -172,9 +177,15 @@ export function apiKeyAuth(req, res, next) {
 }
 
 export function requireScope(scope) {
-    return (req, res, next) => {
+    const middleware = (req, res, next) => {
         if (req.session?.userId && !req.apiKeyId) return next(); // Session has all scopes
         if (req.scopes?.includes(scope) || req.scopes?.includes('admin')) return next();
         return res.status(403).json({ error: 'Insufficient permissions', required: scope });
     };
+    // Introspection tag (no runtime behavior): the parity test walks the AI
+    // router's layer stack and identifies scope-gated routes by this property,
+    // keeping AI_GENERATION_ROUTE_PATHS and the requireScope('ai') mounts
+    // provably in sync.
+    middleware.requiredScope = scope;
+    return middleware;
 }

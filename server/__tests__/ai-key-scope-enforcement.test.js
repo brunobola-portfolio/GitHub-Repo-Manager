@@ -57,6 +57,7 @@ vi.mock('../lib/utils.js', () => ({
 // requireScope('ai') chain runs.
 const { default: aiRouter } = await import('../routes/ai.js')
 const { requireAuth } = await import('../middleware/auth.js')
+const { AI_GENERATION_ROUTE_PATHS } = await import('../middleware/api-key-auth.js')
 
 function makeApp() {
     const app = express()
@@ -189,5 +190,73 @@ describe('AI API-key scope enforcement (end-to-end)', () => {
         expect(res.status).toBe(200)
         // No API-key DB lookup should happen for a session (cookie) request.
         expect(mockPrepare).not.toHaveBeenCalled()
+    })
+})
+
+// ---------------------------------------------------------------------------
+// Parity: AI_GENERATION_ROUTE_PATHS ⇄ requireScope('ai') mounts
+// ---------------------------------------------------------------------------
+// The carve-out in apiKeyAuth and the requireScope('ai') mounts on the AI
+// generation routes are two halves of one invariant: every path the carve-out
+// lets an ai-only key reach MUST have requireScope('ai') behind it. If they
+// drift apart in the fail-open direction — a path added to the allowlist
+// without a matching mount, a gated route renamed, or a NEW METHOD registered
+// at an allowlisted path without the guard (the carve-out is deliberately
+// method-insensitive) — an ai-only key passes the generic write gate with no
+// scope check behind it: silent write access. These tests walk the real
+// barrel router's layer stack so the invariant is self-enforcing instead of
+// relying on code review to keep two lists in sync.
+
+describe('carve-out allowlist / requireScope("ai") parity', () => {
+    // Recursively collect every route registered on the router (the four
+    // generation sub-routers are mounted at '/', so their route paths are
+    // already the '/ai/...' strings the allowlist uses; the prefixed Pro
+    // sub-routers contribute only param-style paths that never collide).
+    function collectRoutes(router, out = []) {
+        for (const layer of router.stack) {
+            if (layer.route) {
+                const hasAiScope = layer.route.stack.some(
+                    (l) => l.handle?.requiredScope === 'ai'
+                )
+                for (const p of [].concat(layer.route.path)) {
+                    out.push({ path: p, hasAiScope })
+                }
+            } else if (layer.name === 'router' && layer.handle?.stack) {
+                collectRoutes(layer.handle, out)
+            }
+        }
+        return out
+    }
+
+    // EXPLICIT EXCEPTION — a decision, not drift: GET /ai/search carries
+    // requireScope('ai') (it is requireAI-gated, it burns provider tokens)
+    // but is deliberately NOT in the carve-out allowlist, because the generic
+    // write gate only inspects mutating methods — a GET never needs the
+    // carve-out to reach its route middleware. Anything else appearing in
+    // this gap must fail the set-equality test below.
+    const GATED_BUT_NOT_ALLOWLISTED = ['/ai/search']
+
+    it('every route registered at an allowlisted path carries requireScope("ai") — any method', () => {
+        const allow = new Set(AI_GENERATION_ROUTE_PATHS)
+        const unguarded = collectRoutes(aiRouter).filter(
+            (r) => allow.has(r.path) && !r.hasAiScope
+        )
+        // A non-empty list here means an ai-only key can pass the generic
+        // write gate for these routes with NO scope check behind it.
+        expect(unguarded).toEqual([])
+    })
+
+    it('requireScope("ai")-gated paths === allowlist + the explicit GET /ai/search exception', () => {
+        const gated = [...new Set(
+            collectRoutes(aiRouter).filter((r) => r.hasAiScope).map((r) => r.path)
+        )].sort()
+        const expected = [...new Set(
+            [...AI_GENERATION_ROUTE_PATHS, ...GATED_BUT_NOT_ALLOWLISTED]
+        )].sort()
+        // Fails BOTH drift directions: an allowlist entry with no gated route
+        // (fail-open — the dangerous one), and a gated route missing from the
+        // allowlist (fail-closed — an ai-only key silently 403s on a route
+        // that was meant to accept it).
+        expect(gated).toEqual(expected)
     })
 })
