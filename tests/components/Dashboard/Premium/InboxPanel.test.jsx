@@ -30,6 +30,35 @@ vi.mock('framer-motion', async (importOriginal) => {
     }
 })
 
+// The vi.resetAllMocks() in every describe's beforeEach strips the
+// implementation from the global window.matchMedia stub installed by
+// tests/setup.js (it is a vi.fn), leaving matchMedia() returning undefined.
+// The first render of a REAL framer-motion hook in the worker — the mock
+// above only replaces motion.div/motion.circle, so useReducedMotion inside
+// AIQuotaMeter's ProgressRing stays real — then throws
+// `Cannot read properties of undefined (reading 'addEventListener')` from
+// motion-dom's lazy initPrefersReducedMotion() mid-render. React recovers by
+// re-rendering synchronously, but the recovery can defer the NEXT act()
+// flush, making a later synchronous assertion miss (CI run 29232227290:
+// 'filters list when a section is clicked' failed exactly this way).
+// Reinstall a PLAIN-function stub — not a vi.fn — so mock resets cannot
+// strip it, keeping matchMedia alive for every test in this file.
+beforeEach(() => {
+    Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        value: (query) => ({
+            matches: false,
+            media: query,
+            onchange: null,
+            addListener: () => {},
+            removeListener: () => {},
+            addEventListener: () => {},
+            removeEventListener: () => {},
+            dispatchEvent: () => false,
+        }),
+    });
+});
+
 describe('InboxPanel', () => {
     beforeEach(() => {
         vi.resetAllMocks();
