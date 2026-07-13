@@ -451,6 +451,43 @@ describe('apiKeyAuth middleware', () => {
         expect(res.status).toHaveBeenCalledWith(403)
         expect(next).not.toHaveBeenCalled()
     })
+
+    // Other endpoints also live under /api/ai/* (deep-review, prompt-studio,
+    // pr-commands, pr-chat) but are NOT gated by requireScope('ai') — they
+    // stay behind requireTier('pro') only. A blanket "/api/ai/" prefix match
+    // would silently let an ai-only key mutate those too (e.g. publish a
+    // deep-review comment or run a PR slash command), well beyond the AI
+    // generation endpoints this carve-out is meant for. The carve-out must
+    // be an exact allowlist of the actual requireScope('ai')-gated paths.
+    it('403s an ai-only key on a non-gated /api/ai/* endpoint (e.g. deep-review)', () => {
+        req.method = 'POST'
+        req.headers.authorization = 'Bearer grm_live_ai_only_deep_review'
+        req.originalUrl = '/api/ai/deep-review/acme/widgets/42'
+        const mockRun = seedKey(['ai'])
+
+        apiKeyAuth(req, res, next)
+
+        expect(res.status).toHaveBeenCalledWith(403)
+        expect(res.json).toHaveBeenCalledWith({
+            error: 'This API key lacks the required "write" scope',
+            required: 'write',
+        })
+        expect(next).not.toHaveBeenCalled()
+        expect(mockRun).not.toHaveBeenCalled()
+    })
+
+    it('403s an ai-only key on a non-gated /api/ai/* endpoint (e.g. pr-commands)', () => {
+        req.method = 'POST'
+        req.headers.authorization = 'Bearer grm_live_ai_only_pr_commands'
+        req.originalUrl = '/api/v1/ai/pr-commands/acme/widgets/42/describe'
+        const mockRun = seedKey(['ai'])
+
+        apiKeyAuth(req, res, next)
+
+        expect(res.status).toHaveBeenCalledWith(403)
+        expect(next).not.toHaveBeenCalled()
+        expect(mockRun).not.toHaveBeenCalled()
+    })
 })
 
 describe('requireScope', () => {

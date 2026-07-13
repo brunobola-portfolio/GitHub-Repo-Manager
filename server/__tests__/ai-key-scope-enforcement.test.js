@@ -141,6 +141,27 @@ describe('AI API-key scope enforcement (end-to-end)', () => {
         })
     })
 
+    it('ai-only key gets 403 on a sibling /api/ai/* endpoint not gated by requireScope("ai") (deep-review)', async () => {
+        // Regression guard: deep-review, prompt-studio, pr-commands, and
+        // pr-chat also live under /api/ai/* but are Pro-tier features, not
+        // "AI generation" endpoints in the requireAI sense, and are NOT
+        // gated by requireScope('ai'). The `ai`-scope carve-out in
+        // apiKeyAuth must be an exact allowlist, not a blanket /api/ai/
+        // prefix match, or an ai-only key would gain write access here too.
+        seedApiKey(['ai'])
+
+        const res = await request(makeApp())
+            .post('/api/ai/deep-review/acme/widgets/42')
+            .set('Authorization', 'Bearer grm_live_ai_only_deep_review')
+            .send({})
+
+        expect(res.status).toBe(403)
+        expect(res.body).toEqual({
+            error: 'This API key lacks the required "write" scope',
+            required: 'write',
+        })
+    })
+
     it('admin-scoped key gets 200 on an AI generation POST endpoint', async () => {
         seedApiKey(['admin'])
 

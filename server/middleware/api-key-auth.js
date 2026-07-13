@@ -51,17 +51,52 @@ function getClientIp(req) {
     return req.ip || req.socket?.remoteAddress || 'unknown';
 }
 
-// AI route prefixes recognized by the write-scope gate's `ai`-scope carve-out
-// below. Mirrors the isAiPath check in index.js's JSON body-size middleware.
+// Exact paths of the AI generation routes gated by requireScope('ai') at the
+// route level (server/routes/ai/{core,dev-toolkit,indexing,migration}.js) —
+// the write-scope gate's `ai`-scope carve-out below only applies to these.
+//
+// This is deliberately an EXACT allowlist, not a blanket "/api/ai/" prefix
+// match: other endpoints also live under /api/ai/* (deep-review,
+// prompt-studio, pr-commands, pr-chat) but are NOT gated by
+// requireScope('ai') — they stay behind requireTier('pro') only, same as any
+// other mutating endpoint. A prefix match would silently let an ai-only key
+// mutate those too (e.g. publish a deep-review comment, run a PR slash
+// command), which is well beyond what the `ai` scope is meant to grant.
+const AI_GENERATION_ROUTE_PATHS = [
+    '/ai/chat',
+    '/ai/attention-narrative',
+    '/ai/translate-search',
+    '/ai/suggest',
+    '/ai/readme',
+    '/ai/readme/enhance',
+    '/ai/quality-report',
+    '/ai/review-summary',
+    '/ai/generate-commit',
+    '/ai/generate-pr',
+    '/ai/refine',
+    '/ai/analyze-context',
+    '/ai/chat-refine',
+    '/ai/index',
+    '/ai/batch-index',
+    '/ai/issue-to-plan',
+    '/ai/migration-risk',
+    '/ai/migration-size-strategy',
+    '/ai/migration-description',
+];
+// The AI router is mounted at both /api/ai/* (legacy alias) and /api/v1/ai/*
+// (see index.js), so both variants of each path are recognized.
+const AI_GENERATION_ROUTES = new Set(
+    AI_GENERATION_ROUTE_PATHS.flatMap((p) => [`/api${p}`, `/api/v1${p}`])
+);
+
 // req.originalUrl is used (never req.path) because this function runs deep
 // inside nested routers (via requireAuth called at the individual-route
 // level) where req.path/req.url have already been rebased relative to the
 // mount point — req.originalUrl is the one thing Express never rewrites.
-const AI_ROUTE_PREFIXES = ['/api/ai/', '/api/v1/ai/'];
 function isAiRoute(req) {
     const url = req.originalUrl || '';
     const path = url.split('?')[0];
-    return AI_ROUTE_PREFIXES.some((prefix) => path.startsWith(prefix));
+    return AI_GENERATION_ROUTES.has(path);
 }
 
 // Note: API key authentication does not set req.session.accessToken.
