@@ -169,7 +169,7 @@ describe('CommandPalette guard — extraction safety net', () => {
     expect(screen.queryByText('Mark current file as reviewed')).toBeNull()
 
     act(() => { emitAppEvent(APP_EVENTS.PR_REVIEW_FOCUSED) })
-    expect(screen.getByText('PR review')).toBeInTheDocument()
+    expect(screen.getByText('PR Review')).toBeInTheDocument()
     expect(screen.getByText('Mark current file as reviewed')).toBeInTheDocument()
 
     act(() => { emitAppEvent(APP_EVENTS.PR_REVIEW_BLURRED) })

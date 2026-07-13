@@ -11,6 +11,7 @@
 import express from 'express';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, isValidGitHubFullName } from '../../middleware/auth.js';
+import { requireScope } from '../../middleware/api-key-auth.js';
 import { aiIssueToPlanSchema, migrationSizeStrategySchema, migrationDescriptionSchema } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { REPO_DESCRIPTION_MAX } from '../../lib/repo-description.js';
@@ -61,6 +62,7 @@ function normaliseIssuePlan(raw) {
 router.post(
     '/ai/issue-to-plan',
     requireAuth,
+    requireScope('ai'),
     validateBody(aiIssueToPlanSchema),
     requireAI,
     async (req, res) => {
@@ -210,7 +212,7 @@ Keep "files" to at most 12 entries. If the issue is too vague to plan, return:
 //
 // Available to Free tier (capped at migrationRiskPerMonth, default 5/month).
 
-router.post('/ai/migration-risk', requireAuth, requireAI, async (req, res) => {
+router.post('/ai/migration-risk', requireAuth, requireScope('ai'), requireAI, async (req, res) => {
     const userId = req.session.userId;
     const check = checkAIFeatureLimit(userId, 'ai_migration_risk');
     if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
@@ -353,7 +355,7 @@ Rules:
 // AI Migration Size Strategy
 // ------------------------------------------------------------------
 
-router.post('/ai/migration-size-strategy', requireAuth, requireAI, async (req, res) => {
+router.post('/ai/migration-size-strategy', requireAuth, requireScope('ai'), requireAI, async (req, res) => {
     const userId = req.session.userId;
     const check = checkAIFeatureLimit(userId, 'migration_assist');
     if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
@@ -403,7 +405,7 @@ Respond with strict JSON only, no prose outside the JSON:
 // AI Migration Description
 // ------------------------------------------------------------------
 
-router.post('/ai/migration-description', requireAuth, requireAI, async (req, res) => {
+router.post('/ai/migration-description', requireAuth, requireScope('ai'), requireAI, async (req, res) => {
     const userId = req.session.userId;
     const check = checkAIFeatureLimit(userId, 'migration_assist');
     if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));

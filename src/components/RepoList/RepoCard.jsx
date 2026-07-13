@@ -118,6 +118,7 @@ export const RepoCard = memo(function RepoCard({
 			onContextMenu={onContextMenu}
 			initial={{ opacity: 0, y: 6 }}
 			animate={{ opacity: 1, y: 0 }}
+			exit={{ opacity: 0, y: 6, transition: TRANSITION.fast }}
 			transition={{ ...TRANSITION.entrance, delay: entranceDelay }}
 			style={stateStyle}
 			className={`

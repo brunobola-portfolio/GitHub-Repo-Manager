@@ -50,9 +50,16 @@ function useWorkBoardFetch(url, mockKey, { refreshIntervalMs = 60_000 } = {}) {
     const mountedRef = useRef(true)
     const intervalRef = useRef(null)
     const hasDataRef = useRef(Boolean(cached))
+    // Request-generation guard: a resolving fetch only commits state if it is
+    // still the latest request. Without this, a param change (e.g. url A ->
+    // url B) that leaves the OLD fetch in flight can have it resolve AFTER
+    // the new one and overwrite data/meta/lastFetchedAt for a query the user
+    // is no longer viewing. Same pattern as fetchIdRef in useYourWork.js.
+    const fetchIdRef = useRef(0)
 
     const fetchOnce = useCallback(async () => {
         if (!mountedRef.current) return
+        const id = ++fetchIdRef.current
         // If we already have data (from cache, a previous fetch, or a
         // prior refresh), flip the subtle `validating` flag instead of
         // wiping the UI with a full-page skeleton.
@@ -67,7 +74,7 @@ function useWorkBoardFetch(url, mockKey, { refreshIntervalMs = 60_000 } = {}) {
                 const { getMockWorkBoardData } = await import('../__mocks__/mockWorkBoard.js')
                 // Simulate a brief network delay for realistic UX
                 await new Promise(r => setTimeout(r, 80))
-                if (!mountedRef.current) return
+                if (!mountedRef.current || id !== fetchIdRef.current) return
                 setData(getMockWorkBoardData(mockKey))
                 setMeta(null)
                 setLastFetchedAt(new Date())
@@ -81,17 +88,22 @@ function useWorkBoardFetch(url, mockKey, { refreshIntervalMs = 60_000 } = {}) {
             const nextData = json.data ?? json
             const nextMeta = json.meta || null
             const nextFetchedAt = json.meta?.fetchedAt ? new Date(json.meta.fetchedAt) : new Date()
+            // The SWR cache is keyed by this request's own (closed-over) url,
+            // so writing it is always correct — even for a stale/superseded
+            // request — and keeps the cache warm for the next mount. Only the
+            // live state commit below needs the generation guard.
+            setCached(url, { data: nextData, meta: nextMeta, fetchedAt: nextFetchedAt })
+            if (id !== fetchIdRef.current) return
             setData(nextData)
             setMeta(nextMeta)
             setLastFetchedAt(nextFetchedAt)
-            setCached(url, { data: nextData, meta: nextMeta, fetchedAt: nextFetchedAt })
             hasDataRef.current = true
         } catch (err) {
             // On error, keep any previously-visible data so the UI does
             // not flash to empty. Consumers see `error` alongside stale data.
-            if (mountedRef.current) setError(err)
+            if (mountedRef.current && id === fetchIdRef.current) setError(err)
         } finally {
-            if (mountedRef.current) {
+            if (mountedRef.current && id === fetchIdRef.current) {
                 setLoading(false)
                 setValidating(false)
             }

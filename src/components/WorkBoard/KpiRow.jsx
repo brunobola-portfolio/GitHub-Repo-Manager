@@ -66,11 +66,16 @@ function DeltaBadge({ pct }) {
     )
 }
 
+// Sparkline strokes route through the theme-aware --ds-chart-series-* tokens
+// (design-system.css) instead of hardcoded hexes, matching ActivityChart's
+// pattern. Only 3 series tokens exist today; `purple` has no matching token
+// (--ds-logo-tertiary is brand-identity, not theme-swapped) so it keeps its
+// literal hex — see task-10 report for the note on inventing a 4th token.
 const KPI_ACCENTS = {
     purple:  { dot: 'bg-purple-500',  text: 'text-purple-600 dark:text-purple-300',  sparkColor: '#a78bfa' },
-    amber:   { dot: 'bg-amber-500',   text: 'text-amber-600 dark:text-amber-300',    sparkColor: '#fbbf24' },
-    emerald: { dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-300', sparkColor: '#34d399' },
-    indigo:  { dot: 'bg-indigo-500',  text: 'text-[color:var(--ds-accent-brand)] dark:text-indigo-300',  sparkColor: '#818cf8' },
+    amber:   { dot: 'bg-amber-500',   text: 'text-amber-600 dark:text-amber-300',    sparkColor: 'var(--ds-chart-series-3)' },
+    emerald: { dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-300', sparkColor: 'var(--ds-chart-series-2)' },
+    indigo:  { dot: 'bg-indigo-500',  text: 'text-[color:var(--ds-accent-brand)] dark:text-indigo-300',  sparkColor: 'var(--ds-chart-series-1)' },
 }
 
 function KpiTile({ icon: Icon, label, value, hint, loading, errored, accent = 'indigo', onClick, active, history }) {

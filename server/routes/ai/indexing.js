@@ -12,6 +12,7 @@ import express from 'express';
 import db from '../../db.js';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError } from '../../middleware/auth.js';
+import { requireScope } from '../../middleware/api-key-auth.js';
 import { aiIndexSchema, aiBatchIndexSchema } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { aiService } from '../../ai-service.js';
@@ -26,7 +27,7 @@ const router = express.Router();
 // ------------------------------------------------------------------
 
 // Trigger Indexing (Summarize + Embed)
-router.post('/ai/index', requireAuth, validateBody(aiIndexSchema), requireAI, async (req, res) => {
+router.post('/ai/index', requireAuth, requireScope('ai'), validateBody(aiIndexSchema), requireAI, async (req, res) => {
     const { repo } = req.validatedBody; // Full repo object from GitHub
     if (!repo) return res.status(400).json({ error: 'Repo data required' });
 
@@ -119,7 +120,7 @@ router.post('/ai/index', requireAuth, validateBody(aiIndexSchema), requireAI, as
 });
 
 // Semantic Search — available on Free tier (capped by per-feature quota, default 50/month)
-router.get('/ai/search', requireAuth, requireAI, async (req, res) => {
+router.get('/ai/search', requireAuth, requireScope('ai'), requireAI, async (req, res) => {
     // --- mode=similar-by-id: cosine similarity lookup by repo ID ---
     if (req.query.mode === 'similar-by-id') {
         const repoId = req.query.repoId
@@ -209,7 +210,7 @@ router.get('/ai/metadata', requireAuth, (req, res) => {
 });
 
 // Batch Index - Index multiple repos at once
-router.post('/ai/batch-index', requireAuth, validateBody(aiBatchIndexSchema), requireAI, async (req, res) => {
+router.post('/ai/batch-index', requireAuth, requireScope('ai'), validateBody(aiBatchIndexSchema), requireAI, async (req, res) => {
     const { repos } = req.validatedBody; // validated array of repo objects (each full_name regex-checked)
 
     const userId = req.session.userId;

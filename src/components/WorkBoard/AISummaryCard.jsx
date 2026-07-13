@@ -17,8 +17,21 @@ function bulletHref(link) {
     return `https://github.com/${link.repo}/${path}/${link.number}`
 }
 
-function UrgencyGauge({ score }) {
+// Single source of truth for urgency severity: one clamped threshold set
+// mapping to both the display label and the theme-aware design token
+// (design-system.css) shared by the gauge stroke AND the severity label —
+// the pair renders from the same token so they can never drift apart.
+// The nominal state uses the chart-series-1 (brand/indigo) token rather
+// than the grey neutral token, keeping the calm state visually branded.
+function urgencySeverity(score) {
     const clamped = Math.max(0, Math.min(1, Number(score) || 0))
+    if (clamped > 0.7) return { clamped, label: 'Critical', token: 'var(--ds-status-danger)' }
+    if (clamped > 0.3) return { clamped, label: 'Elevated', token: 'var(--ds-status-warning)' }
+    return { clamped, label: 'Nominal', token: 'var(--ds-chart-series-1)' }
+}
+
+function UrgencyGauge({ score }) {
+    const { clamped, token: stroke } = urgencySeverity(score)
     const angle = -180 + 180 * clamped
     const rad = (angle * Math.PI) / 180
     const cx = 28, cy = 28, r = 22
@@ -27,7 +40,6 @@ function UrgencyGauge({ score }) {
     const largeArc = clamped > 0.5 ? 1 : 0
     const start = `${cx - r},${cy}`
     const path = clamped === 0 ? '' : `M${start} A${r},${r} 0 ${largeArc} 1 ${x},${y}`
-    const stroke = clamped > 0.7 ? '#f43f5e' : clamped > 0.3 ? '#f59e0b' : '#6366f1'
     return (
         <svg width="56" height="34" viewBox="0 0 56 34" aria-label={`urgency ${(clamped * 100).toFixed(0)}%`}>
             <path d={`M${cx - r},${cy} A${r},${r} 0 0 1 ${cx + r},${cy}`} fill="none" stroke="currentColor" strokeOpacity="0.15" strokeWidth="4" strokeLinecap="round" />
@@ -148,8 +160,9 @@ export function AISummaryCard({ meta: metaProp } = {}) {
     const urgency = urgencyScore
     const isHigh = urgency > 0.8
 
-    const severityLabel = urgency > 0.7 ? 'Critical' : urgency > 0.4 ? 'Elevated' : 'Nominal'
-    const severityColor = urgency > 0.7 ? 'text-rose-400' : urgency > 0.4 ? 'text-amber-400' : 'text-indigo-400'
+    // Label + color come from the same mapping the gauge stroke uses, so the
+    // text, its color, and the arc always agree on severity and hue.
+    const severity = urgencySeverity(urgency)
 
     const trendMatch = headline?.match(/([\w\s]+)\s+(up|down)\s+(\d+%)/i)
     const trendLine = trendMatch
@@ -173,8 +186,8 @@ export function AISummaryCard({ meta: metaProp } = {}) {
                     AI summary
                 </div>
                 <UrgencyGauge score={urgency} />
-                <span className={clsx('text-xs font-semibold uppercase tracking-widest', severityColor)}>
-                    {severityLabel}
+                <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: severity.token }}>
+                    {severity.label}
                 </span>
                 {(provider || model) && (
                     <Badge tone="neutral" size="xs" className="mt-1 font-normal">

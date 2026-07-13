@@ -138,6 +138,15 @@ describe('CommunityHealthDashboard', () => {
         });
     });
 
+    // The HealthScoreRing svg has a static background <circle stroke="currentColor">
+    // and a colored progress <circle> — find the latter by its var(--ds-...) stroke
+    // instead of a CSS attribute selector (jsdom's selector engine chokes on the
+    // parens inside a quoted `[stroke^="var(--ds-"]` attribute value).
+    const findTokenStrokedCircle = () =>
+        Array.from(document.querySelectorAll('svg circle')).find((c) =>
+            (c.getAttribute('stroke') || '').startsWith('var(--ds-')
+        );
+
     it('applies correct color for different score ranges', async () => {
         const lowScoreData = { ...mockHealthData, score: 30 };
         global.fetch.mockResolvedValueOnce({
@@ -148,6 +157,61 @@ describe('CommunityHealthDashboard', () => {
         await waitFor(() => {
             expect(screen.getAllByText('Needs Improvement').length).toBeGreaterThan(0);
         });
+        // The header ScoreBadge (checked above) mounts as soon as `showContent`
+        // flips true, but the ring lives inside the body's `AnimatePresence
+        // mode="wait"` swap and only mounts once the skeleton's exit finishes —
+        // wait for its sibling text too, or the ring may not exist here yet.
+        await waitFor(() => {
+            expect(screen.getByText('Overall Health Score')).toBeInTheDocument();
+        });
+        // Danger tier routes through the theme-aware status token, not a hardcoded hex.
+        expect(findTokenStrokedCircle()).toHaveAttribute('stroke', 'var(--ds-status-danger)');
+    });
+
+    it('routes the health-score ring stroke through theme-aware chart-series tokens (no hardcoded hex)', async () => {
+        // mockHealthData.score === 85 → "Excellent" tier.
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve(mockHealthData)
+        });
+        render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);
+        await waitFor(() => {
+            expect(screen.getByText('Overall Health Score')).toBeInTheDocument();
+        });
+        expect(findTokenStrokedCircle()).toHaveAttribute('stroke', 'var(--ds-chart-series-2)');
+    });
+
+    it('"Good" tier ring uses the blue accent-link token pair, matching its blue ScoreBadge hue family', async () => {
+        const goodScoreData = { ...mockHealthData, score: 65 };
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve(goodScoreData)
+        });
+        render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);
+        await waitFor(() => {
+            expect(screen.getByText('Overall Health Score')).toBeInTheDocument();
+        });
+        const ring = findTokenStrokedCircle();
+        // Light value via the stroke attribute; --ds-accent-link is a static
+        // pair (not auto-swapped in :root.dark), so the dark value comes from
+        // a dark: stroke class override on the same circle.
+        expect(ring).toHaveAttribute('stroke', 'var(--ds-accent-link)');
+        expect(ring).toHaveClass('dark:stroke-[color:var(--ds-accent-link-dark)]');
+        // The sibling ScoreBadge for the same score stays in the blue family.
+        expect(screen.getAllByText('Good')[0].className).toContain('blue');
+    });
+
+    it('"Fair" tier ring uses the attention chart-series token', async () => {
+        const fairScoreData = { ...mockHealthData, score: 45 };
+        global.fetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve(fairScoreData)
+        });
+        render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);
+        await waitFor(() => {
+            expect(screen.getByText('Overall Health Score')).toBeInTheDocument();
+        });
+        expect(findTokenStrokedCircle()).toHaveAttribute('stroke', 'var(--ds-chart-series-3)');
     });
 
     it('high priority recommendations have pulse animation class', async () => {

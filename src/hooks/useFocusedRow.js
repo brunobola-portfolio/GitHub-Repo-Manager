@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { isBlockingDialogOpen } from '../utils/dialogState'
 
 /**
  * Linear-style row navigation for list views.
@@ -10,6 +11,11 @@ import { useState, useEffect, useCallback, useRef } from 'react'
  *
  * Disabled while the user is typing in INPUT/TEXTAREA/contenteditable so
  * j/k inside a search box don't hijack the keys.
+ *
+ * Also disabled while a blocking dialog is open (see `isBlockingDialogOpen`),
+ * so the keys don't silently move the hidden background list's selection
+ * while a ConfirmModal or similar sits on top of it. Explicitly non-modal
+ * dialogs (`aria-modal="false"` popovers) don't suppress navigation.
  *
  * @param {Array} items
  * @param {object} [opts]
@@ -24,6 +30,7 @@ export function useFocusedRow(items = [], opts = {}) {
         const tag = document.activeElement?.tagName;
         if (tag === 'INPUT' || tag === 'TEXTAREA') return;
         if (document.activeElement?.isContentEditable) return;
+        if (isBlockingDialogOpen()) return;
 
         if (e.key === 'j') {
             e.preventDefault();

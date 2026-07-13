@@ -38,7 +38,7 @@ export function UpgradeRequired({
     feature,
     benefits,
     variant = 'card',
-    pricingHref = '#pricing',
+    pricingHref = '#/pricing',
     onPricingClick,
     onDismiss,
     className,

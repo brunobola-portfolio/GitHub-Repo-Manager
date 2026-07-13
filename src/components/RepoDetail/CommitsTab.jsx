@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { GitCommit, ExternalLink, Clock } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { EmptyState } from '../ui/EmptyState'
+import { SectionPanel } from '../ui/SectionPanel'
 import { Skeleton } from '../ui/Skeleton'
 import { StaleDataBadge } from '../ui/StaleDataBadge'
 import { useResilientFetch } from '../../hooks/useResilientFetch'
@@ -78,18 +79,16 @@ export function CommitsTab({ repo }) {
     }
 
     return (
-        <div className="space-y-4">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-2">
-                    <GitCommit className="w-4 h-4 text-indigo-500" aria-hidden="true" />
-                    <h2 className="font-semibold text-sm text-slate-800 dark:text-slate-200">
-                        {commits.length} {commits.length === 1 ? 'commit' : 'commits'}
-                    </h2>
+        <SectionPanel
+            icon={GitCommit}
+            title={
+                <span className="inline-flex items-center gap-2">
+                    {commits.length} {commits.length === 1 ? 'commit' : 'commits'}
                     <KeyboardHint />
-                </div>
-                {stale && <StaleDataBadge fetchedAt={fetchedAt} onRetry={reload} />}
-            </div>
-
+                </span>
+            }
+            actions={stale ? <StaleDataBadge fetchedAt={fetchedAt} onRetry={reload} /> : null}
+        >
             <Card className="overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/60">
                 {commits.map((commit, idx) => {
                     const author = commit.author || commit.commit?.author
@@ -97,15 +96,13 @@ export function CommitsTab({ repo }) {
                     const sha = commit.sha?.slice(0, 7)
                     const isFocused = idx === focusedIndex
                     return (
-                        <motion.button
+                        <motion.div
                             key={commit.sha}
                             ref={(node) => { rowRefs.current[idx] = node }}
-                            type="button"
-                            onClick={() => setSelectedSha(commit.sha)}
                             initial={{ opacity: 0, y: 6 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.2, delay: Math.min(idx * 0.02, 0.3) }}
-                            className={`w-full flex items-start gap-3 p-4 text-left transition-colors group ${
+                            className={`relative flex items-start gap-3 p-4 transition-colors group ${
                                 isFocused
                                     ? 'bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-inset ring-indigo-300 dark:ring-indigo-700/60'
                                     : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
@@ -123,9 +120,20 @@ export function CommitsTab({ repo }) {
                                 </div>
                             )}
                             <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                {/* Message is the row's primary control; its `after`
+                                    overlay stretches over the whole row (the `relative`
+                                    row container above) so the entire row still opens
+                                    on click, while the external-link anchor sits above
+                                    it via z-10. Replaces the former motion.button
+                                    wrapping an <a> (nested-interactive). */}
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedSha(commit.sha)}
+                                    aria-label={`Open commit ${sha}: ${message}`}
+                                    className="block w-full text-left text-sm font-medium text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors rounded-sm ds-focus-ring after:absolute after:inset-0 after:content-['']"
+                                >
                                     {message}
-                                </div>
+                                </button>
                                 <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-2 flex-wrap">
                                     <span className="font-mono">{sha}</span>
                                     {author?.login && <span>· {author.login}</span>}
@@ -141,14 +149,14 @@ export function CommitsTab({ repo }) {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     onClick={(e) => e.stopPropagation()}
-                                    className="text-slate-400 hover:text-indigo-500 p-1 rounded transition-colors flex-shrink-0"
+                                    className="relative z-10 text-slate-400 hover:text-indigo-500 p-1 rounded transition-colors flex-shrink-0"
                                     aria-label="Open on GitHub"
                                     title="Open on GitHub"
                                 >
                                     <ExternalLink className="w-3.5 h-3.5" />
                                 </a>
                             )}
-                        </motion.button>
+                        </motion.div>
                     )
                 })}
             </Card>
@@ -161,19 +169,23 @@ export function CommitsTab({ repo }) {
                     onClose={() => setSelectedSha(null)}
                 />
             )}
-        </div>
+        </SectionPanel>
     )
 }
 
 // Tiny inline keyboard hint shown next to the row count. Linear-style
 // — visible enough to discover the affordance, subtle enough to ignore.
+// Colors use the AA-passing muted pair (slate-500 / dark slate-400 — same as
+// the row meta line) with explicit key-cap text matching the other kbd
+// components (WorkBoard KeyboardHelpModal, wizard ShortcutsOverlay); the
+// previous slate-400 / dark slate-500 failed the axe color-contrast gate.
 function KeyboardHint() {
     return (
-        <span className="hidden md:inline-flex items-center gap-1 ds-text-micro text-slate-400 dark:text-slate-500 ml-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono">j</kbd>
-            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono">k</kbd>
+        <span className="hidden md:inline-flex items-center gap-1 ds-text-micro text-slate-500 dark:text-slate-400 ml-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-slate-700 dark:text-slate-300">j</kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-slate-700 dark:text-slate-300">k</kbd>
             <span>to navigate</span>
-            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono">↵</kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-slate-700 dark:text-slate-300">↵</kbd>
             <span>to open</span>
         </span>
     )
