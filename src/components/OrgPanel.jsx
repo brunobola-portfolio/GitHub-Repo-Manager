@@ -206,7 +206,7 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 					: 'bg-white/80 dark:bg-slate-800/60 border-slate-200/50 dark:border-slate-700/40 hover:border-indigo-200 dark:hover:border-indigo-800/60 hover:shadow-xl'
 			} ${isGrid ? 'flex-col text-center p-5 min-h-[180px] justify-start' : 'p-3.5'}`}
 		>
-			{/* Gradient overlay animado no hover (estado selecionado) */}
+			{/* Animated gradient overlay on hover (selected state) */}
 			{isSelected && (
 				<motion.div
 					className="absolute inset-0 rounded-xl bg-indigo-500/5 dark:bg-indigo-500/10"
@@ -216,7 +216,7 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 				/>
 			)}
 
-			{/* Avatar com efeito de anel melhorado */}
+			{/* Avatar with improved ring effect */}
 			<div className="relative">
 				<img
 					src={org.avatar_url}
@@ -235,7 +235,7 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 					</div>
 				)}
 
-				{/* Indicador ativo com pulse */}
+				{/* Active indicator with pulse */}
 				{isSelected && !isPersonal && (
 					<motion.div
 						className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-indigo-500"
@@ -248,21 +248,21 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 			</div>
 
 			<div className={`flex-1 min-w-0 relative z-10 ${isGrid ? 'w-full flex flex-col items-center' : 'text-left'}`}>
-				{/* Nome da Organização */}
+				{/* Organization name */}
 				<h3 className={`font-semibold truncate w-full ${
 					isSelected ? 'text-indigo-900 dark:text-indigo-100' : 'text-slate-800 dark:text-slate-100'
 				} ${isGrid ? 'text-sm mb-1' : 'text-base mb-0.5'}`}>
 					{org.login}
 				</h3>
 
-				{/* Descrição (apenas em modo lista) */}
+				{/* Description (list mode only) */}
 				{!isGrid && (
 					<p className="text-xs text-slate-500 dark:text-slate-400 truncate w-full mb-2">
 						{org.description || 'No description'}
 					</p>
 				)}
 
-				{/* Grid de Estatísticas Melhorado */}
+				{/* Improved stats grid */}
 				<div className={`flex items-center gap-2 mt-2 ${isGrid ? 'flex-col w-full' : 'flex-row flex-wrap'}`}>
 					{/* Total Repos */}
 					<div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
@@ -300,7 +300,7 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 				</div>
 			</div>
 
-			{/* Indicador de seleção com animação melhorada */}
+			{/* Selection indicator with improved animation */}
 			{isSelected && !isGrid && (
 				<motion.div
 					layoutId="active-indicator"
