@@ -11,6 +11,10 @@ import { useState, useEffect, useCallback, useRef } from 'react'
  * Disabled while the user is typing in INPUT/TEXTAREA/contenteditable so
  * j/k inside a search box don't hijack the keys.
  *
+ * Also disabled while a dialog is open (`[role="dialog"]` / `[aria-modal="true"]`
+ * in the DOM), so the keys don't silently move the hidden background list's
+ * selection while a ConfirmModal or similar sits on top of it.
+ *
  * @param {Array} items
  * @param {object} [opts]
  * @param {(item:any) => void} [opts.onOpen] — invoked on Enter when focused
@@ -24,6 +28,7 @@ export function useFocusedRow(items = [], opts = {}) {
         const tag = document.activeElement?.tagName;
         if (tag === 'INPUT' || tag === 'TEXTAREA') return;
         if (document.activeElement?.isContentEditable) return;
+        if (document.querySelector('[role="dialog"], [aria-modal="true"]')) return;
 
         if (e.key === 'j') {
             e.preventDefault();
