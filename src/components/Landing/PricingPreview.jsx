@@ -76,7 +76,6 @@ function PreviewCard({ plan, i, onSignIn }) {
 			variants={cardVariants}
 			initial="hidden"
 			whileInView="visible"
-			whileHover={{ y: -8, transition: { type: 'spring', stiffness: 300, damping: 24 } }}
 			viewport={{ once: true, margin: '-60px' }}
 			className={`relative ${plan.popular ? 'scale-[1.03] md:scale-[1.05]' : ''}`}
 		>
@@ -99,14 +98,15 @@ function PreviewCard({ plan, i, onSignIn }) {
 				</div>
 			)}
 
-			{/* Card body */}
+			{/* Card body — hover treatment is CSS-only (bg/border/shadow), matching
+				the in-app Pricing/PricingCard.jsx contract: no translate/scale. */}
 			<div
 				className={`relative rounded-2xl p-7 flex flex-col gap-6 h-full transition-colors duration-200 overflow-hidden
 					${plan.popular
 						? 'bg-indigo-700 dark:bg-indigo-600 border-2 border-indigo-400/30 shadow-2xl'
 						: plan.enterprise
-							? 'bg-white/60 dark:bg-white/[0.04] border border-amber-400/30 dark:border-amber-500/20 backdrop-blur-sm shadow-lg shadow-amber-500/5'
-							: 'bg-white/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.08] backdrop-blur-sm'
+							? 'bg-white/60 dark:bg-white/[0.04] border border-amber-400/30 dark:border-amber-500/20 backdrop-blur-sm shadow-lg shadow-amber-500/5 hover:shadow-amber-500/30'
+							: 'bg-white/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.08] backdrop-blur-sm hover:border-slate-300 dark:hover:border-slate-600'
 					}`}
 			>
 				<div className="flex flex-col gap-6 h-full">

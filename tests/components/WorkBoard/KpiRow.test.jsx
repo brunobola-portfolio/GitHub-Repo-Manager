@@ -47,3 +47,25 @@ describe('KpiRow — honest error vs empty states', () => {
         expect(screen.getByText('all caught up')).toBeInTheDocument()
     })
 })
+
+describe('KpiRow — sparkline stroke uses theme-aware design tokens', () => {
+    it('amber/emerald/indigo tiles route stroke through var(--ds-chart-series-*); purple has no matching token yet', () => {
+        // 3+ finite points per history are required for a tile's Sparkline to render at all.
+        const snapshots = [
+            { reviews: 1, stalePRs: 5, issues: 2, techDebt: 8 },
+            { reviews: 2, stalePRs: 4, issues: 3, techDebt: 6 },
+            { reviews: 3, stalePRs: 3, issues: 4, techDebt: 4 },
+        ]
+        const { container } = renderRow({ snapshots })
+        const strokes = Array.from(container.querySelectorAll('polyline')).map((p) => p.getAttribute('stroke'))
+        expect(strokes).toHaveLength(4)
+        expect(strokes).toEqual(
+            expect.arrayContaining([
+                '#a78bfa', // purple (reviews) — no theme-aware chart-series token exists for it
+                'var(--ds-chart-series-3)', // amber (stale PRs)
+                'var(--ds-chart-series-2)', // emerald (issues)
+                'var(--ds-chart-series-1)', // indigo (tech debt)
+            ])
+        )
+    })
+})

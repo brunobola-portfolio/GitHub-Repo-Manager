@@ -1,4 +1,13 @@
+import { AnimatePresence } from 'framer-motion'
 import { RepoCard } from './RepoCard'
+
+// Mirrors the migration wizard's VIRTUALIZATION_THRESHOLD
+// (RepoSelectStep/RepoList.jsx): below it the wizard wraps rows in
+// AnimatePresence for exit animations; at/above it it switches to a plain
+// virtualized list with no AnimatePresence at all. We mirror the threshold
+// bypass only — above it cards render statically (removals unmount
+// instantly) — without adding react-virtual to the grid.
+const EXIT_ANIMATION_THRESHOLD = 50
 
 /**
  * Renders the repo collection as a grid or a list.
@@ -7,6 +16,17 @@ import { RepoCard } from './RepoCard'
  * list is hidden and skeleton placeholders are shown instead: 6 in grid
  * mode, 4 in list mode. This preserves the "results will swap" affordance
  * from the original file.
+ *
+ * Filtered-out cards exit-animate (RepoCard's `exit` prop) instead of
+ * disappearing instantly, mirroring the migration wizard's repo list
+ * (RepoSelectStep/RepoList.jsx) — including its scaling strategy: at/above
+ * EXIT_ANIMATION_THRESHOLD the AnimatePresence wrapper is dropped entirely,
+ * exactly like the wizard's virtualized branch. Below it, `initial={false}`
+ * matches the wizard too — only cards that enter/exit after mount animate
+ * through the presence, not the first paint. `mode="popLayout"` takes
+ * exiting cards out of the CSS grid flow immediately so the remaining cards
+ * reflow without waiting for the exit animation to finish — cheaper than
+ * giving every card a `layout` prop.
  */
 export function RepoGrid({
 	repos,
@@ -22,6 +42,23 @@ export function RepoGrid({
 }) {
 	const isGrid = viewMode === 'grid'
 	const skeletonCount = isGrid ? 6 : 4
+	const animateExits = repos.length < EXIT_ANIMATION_THRESHOLD
+
+	const cards = !isSearchingAI && repos.map((repo, i) => (
+		<RepoCard
+			key={repo.id}
+			index={i}
+			repo={repo}
+			viewMode={viewMode}
+			isSelected={selectedIds.has(repo.id)}
+			isContextTarget={contextTargetId === repo.id}
+			onToggle={() => onToggle(repo.id)}
+			onAction={onAction}
+			onContextMenu={(e) => onContextMenu(e, repo)}
+			onExplainHealth={onExplainHealth ? (r) => onExplainHealth(r) : undefined}
+			onRepoClick={onRepoClick}
+		/>
+	))
 
 	return (
 		<div
@@ -43,21 +80,13 @@ export function RepoGrid({
 					))}
 				</>
 			)}
-			{!isSearchingAI && repos.map((repo, i) => (
-				<RepoCard
-					key={repo.id}
-					index={i}
-					repo={repo}
-					viewMode={viewMode}
-					isSelected={selectedIds.has(repo.id)}
-					isContextTarget={contextTargetId === repo.id}
-					onToggle={() => onToggle(repo.id)}
-					onAction={onAction}
-					onContextMenu={(e) => onContextMenu(e, repo)}
-					onExplainHealth={onExplainHealth ? (r) => onExplainHealth(r) : undefined}
-					onRepoClick={onRepoClick}
-				/>
-			))}
+			{animateExits ? (
+				<AnimatePresence initial={false} mode="popLayout">
+					{cards}
+				</AnimatePresence>
+			) : (
+				cards
+			)}
 		</div>
 	)
 }
