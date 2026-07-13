@@ -12,6 +12,7 @@
 import express from 'express';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { requireScope } from '../../middleware/api-key-auth.js';
 import {
     aiChatSchema,
     attentionNarrativeSchema,
@@ -124,7 +125,7 @@ router.get('/config/ai-status', async (req, res) => {
 // AI Chat
 // ------------------------------------------------------------------
 
-router.post('/ai/chat', requireAuth, validateBody(aiChatSchema), requireAI, async (req, res) => {
+router.post('/ai/chat', requireAuth, requireScope('ai'), validateBody(aiChatSchema), requireAI, async (req, res) => {
     try {
         // Check usage limits — use the canonical quota response so the
         // frontend's <QuotaExceededState /> primitive can render a uniform
@@ -273,7 +274,7 @@ router.post('/ai/chat', requireAuth, validateBody(aiChatSchema), requireAI, asyn
 // dashboard top item. 1h cache per (user, repo, kind, signal-hash).
 // ------------------------------------------------------------------
 
-router.post('/ai/attention-narrative', requireAuth, validateBody(attentionNarrativeSchema), requireAI, async (req, res) => {
+router.post('/ai/attention-narrative', requireAuth, requireScope('ai'), validateBody(attentionNarrativeSchema), requireAI, async (req, res) => {
     const userId = req.session.userId;
     const { repo, kind, signal } = req.validatedBody;
 
@@ -341,7 +342,7 @@ const TRANSLATE_SEARCH_SCHEMA = {
     required: ['summary', 'queries'],
 };
 
-router.post('/ai/translate-search', requireAuth, validateBody(aiTranslateSearchSchema), requireAI, async (req, res) => {
+router.post('/ai/translate-search', requireAuth, requireScope('ai'), validateBody(aiTranslateSearchSchema), requireAI, async (req, res) => {
     const userId = req.session.userId;
     const { q } = req.validatedBody;
 
@@ -381,7 +382,7 @@ router.post('/ai/translate-search', requireAuth, validateBody(aiTranslateSearchS
 // AI Suggestions
 // ------------------------------------------------------------------
 
-router.post('/ai/suggest', requireAuth, validateBody(aiSuggestSchema), requireAI, async (req, res) => {
+router.post('/ai/suggest', requireAuth, requireScope('ai'), validateBody(aiSuggestSchema), requireAI, async (req, res) => {
     const userId = req.session.userId;
     const check = checkUsageLimit(userId, 'ai_queries');
     if (!check.allowed) {
@@ -439,7 +440,7 @@ router.post('/ai/suggest', requireAuth, validateBody(aiSuggestSchema), requireAI
 // AI README Generation
 // ------------------------------------------------------------------
 
-router.post('/ai/readme', requireAuth, validateBody(aiReadmeSchema), requireAI, async (req, res) => {
+router.post('/ai/readme', requireAuth, requireScope('ai'), validateBody(aiReadmeSchema), requireAI, async (req, res) => {
     const userId = req.session.userId;
     const check = checkAIFeatureLimit(userId, 'ai_readme');
     if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
@@ -485,7 +486,7 @@ router.post('/ai/readme', requireAuth, validateBody(aiReadmeSchema), requireAI, 
 });
 
 // Enhanced README endpoint - Improve existing README
-router.post('/ai/readme/enhance', requireAuth, validateBody(aiReadmeEnhanceSchema), requireAI, async (req, res) => {
+router.post('/ai/readme/enhance', requireAuth, requireScope('ai'), validateBody(aiReadmeEnhanceSchema), requireAI, async (req, res) => {
     const userId = req.session.userId;
     const check = checkAIFeatureLimit(userId, 'ai_readme');
     if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));

@@ -312,6 +312,11 @@ import envRouter from './routes/env.js';
 app.use('/api/env', envRouter);
 
 // API v1 routes
+// NOTE: these two mount prefixes are hardcoded into the ai-scope carve-out
+// Set in middleware/api-key-auth.js (AI_GENERATION_ROUTES builds `/api${p}`
+// + `/api/v1${p}`) — remounting the AI routes under a new prefix (e.g.
+// /api/v2) without updating that Set makes ai-only keys fail closed (403)
+// on the new prefix.
 app.use('/api/v1', v1Routes);
 // Backward compatibility: /api/* maps to /api/v1/*
 app.use('/api', v1Routes);
