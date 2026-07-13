@@ -1,7 +1,25 @@
+import { createHash } from 'crypto';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import logger from '../lib/logger.js';
 
 const isDev = () => process.env.NODE_ENV !== 'production';
+
+/**
+ * Extract the API-key bearer token when present (format check only — these
+ * limiters run app-level, BEFORE route-level auth (requireAuth → apiKeyAuth)
+ * validates the key against the DB, so the token is unauthenticated here).
+ *
+ * Returns the raw `grm_live_...` token, or null for cookie/anonymous requests
+ * and foreign bearer schemes (e.g. a GitHub `ghp_...` token) — those keep the
+ * ordinary session-user/IP keying.
+ */
+function bearerApiKey(req) {
+    const auth = req.headers?.authorization;
+    if (typeof auth === 'string' && auth.startsWith('Bearer grm_live_')) {
+        return auth.slice(7); // strip 'Bearer '
+    }
+    return null;
+}
 
 function computeTierLimits() {
     // Dev/test gets generous ceilings so React StrictMode double-invokes,
@@ -58,6 +76,27 @@ export async function createTenantLimiters(type = 'api', options = {}) {
             return tiers[tier]?.[type] ?? tiers.free[type];
         },
         keyGenerator: (req) => {
+            // API-key requests first: bearer identity is only resolved at
+            // route level (apiKeyAuth), AFTER these app-level limiters run,
+            // so req.session.userId / req.tenantId are absent here and the
+            // old fallthrough collapsed every key behind one NAT/CI runner
+            // into a single per-IP bucket (and invalid keys burned it
+            // pre-auth). Key by a hash of the token itself instead — one
+            // bucket per key, matching route-level identity precedence
+            // (requireAuth routes grm_live_ bearers to apiKeyAuth even when
+            // a session cookie is also present).
+            //
+            // Plain sha256, NOT api-key-auth.js's HMAC: this is bucket
+            // separation, not credential storage — the hash only keeps the
+            // raw token out of store keys/logs, and stays deterministic
+            // across instances sharing a Redis store without needing
+            // API_KEY_SECRET. Forged-token bucket rotation is bounded by the
+            // pre-session globalLimiter (200 req/15min/IP in prod).
+            const bearer = bearerApiKey(req);
+            if (bearer) {
+                const tokenHash = createHash('sha256').update(bearer).digest('hex').slice(0, 32);
+                return `rl:key:${tokenHash}:${type}`;
+            }
             // ipKeyGenerator expects the IP STRING (it normalises IPv6 to a
             // /56). Passing the whole req object stringifies to a constant
             // "[object Object]", collapsing every anonymous client into one
