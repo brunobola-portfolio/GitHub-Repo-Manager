@@ -439,7 +439,10 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus }) {
                     <motion.div
                         ref={chatRef}
                         role="dialog"
-                        aria-modal="true"
+                        // Floating panel, not a blocking dialog — the rest of the page
+                        // stays interactive while this is open (that's the point: browse
+                        // repos while chatting), so aria-modal must be false.
+                        aria-modal="false"
                         aria-label="Repo Advisor"
                         initial={{ opacity: 0, y: 20, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}

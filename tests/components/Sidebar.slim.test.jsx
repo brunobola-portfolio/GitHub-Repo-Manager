@@ -85,6 +85,15 @@ beforeEach(() => {
     vi.clearAllMocks()
 })
 
+describe('SlimSidebar — popover aria-modal', () => {
+    it('marks the popover aria-modal="false" — the page stays interactive while it is open', () => {
+        renderSlim()
+        fireEvent.click(screen.getByRole('button', { name: /action history/i }))
+        const dialog = screen.getByRole('dialog', { name: /action history/i })
+        expect(dialog).toHaveAttribute('aria-modal', 'false')
+    })
+})
+
 describe('SlimSidebar — real data in popovers', () => {
     it('Action History popover renders real result rows', () => {
         renderSlim({ results: sampleResults })

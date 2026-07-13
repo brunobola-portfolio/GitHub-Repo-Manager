@@ -58,6 +58,12 @@ describe('AIQuotaMeter', () => {
         expect(screen.getByRole('button', { name: /upgrade to pro/i })).toBeInTheDocument()
     })
 
+    it('marks the popover aria-modal="false" — it renders inside InboxPanel and must not block that panel\'s own shortcuts', () => {
+        render(<AIQuotaMeter current={47} limit={200} tier="free" />)
+        fireEvent.click(screen.getByRole('button', { name: /ai quota/i }))
+        expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'false')
+    })
+
     it('closes the popover on Escape', () => {
         render(<AIQuotaMeter current={47} limit={200} tier="free" />)
         fireEvent.click(screen.getByRole('button', { name: /ai quota/i }))

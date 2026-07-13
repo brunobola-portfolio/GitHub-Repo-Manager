@@ -36,6 +36,12 @@ describe('AIAssistant', () => {
         expect(await screen.findByText(/I'm Repo Advisor/i)).toBeInTheDocument()
     })
 
+    it('marks the chat surface aria-modal="false" — it stays open while the page is interactive', async () => {
+        renderAssistant({ askAI: vi.fn() })
+        await openAssistant()
+        expect(screen.getByRole('dialog', { name: /repo advisor/i })).toHaveAttribute('aria-modal', 'false')
+    })
+
     it('renders action chips from a successful reply', async () => {
         const askAI = vi.fn().mockResolvedValue({
             reply: 'Vou abrir o assistente de migração.',

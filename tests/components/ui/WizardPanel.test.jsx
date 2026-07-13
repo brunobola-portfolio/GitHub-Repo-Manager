@@ -69,6 +69,39 @@ describe('WizardPanel — maximized / mobile (no drag or resize)', () => {
   })
 })
 
+describe('WizardPanel — aria-modal (both floating and maximized are genuinely modal)', () => {
+  // Evidence (task 13a): unlike the AI chat / Sidebar popovers / AIQuotaMeter
+  // popover, WizardPanel blocks the rest of the page in EVERY mode, not just
+  // when maximized:
+  //   - useFocusTrap + useBodyScrollLock are called unconditionally (not
+  //     gated on `floating`/`isMaximized`) — Tab can never reach anything
+  //     outside the panel and body scroll is always locked while open.
+  //   - When maximized, the panel itself is `fixed inset-0` and opaque, so
+  //     there's nothing behind it to interact with.
+  //   - When floating (restored), WIZARD_BACKDROP_CLASS renders behind it
+  //     with `pointer-events: auto` (see the backdrop's inline style in
+  //     WizardPanel.jsx) — a real click-blocking backdrop, just a visually
+  //     lighter one than Modal's. The `_variants.js` comment calling it
+  //     "not a blocking dialog" describes the softer visual weight, not
+  //     click-through: the backdrop still swallows every pointer event.
+  // So both modes are correctly aria-modal="true" — no code change needed.
+  it('keeps aria-modal="true" while floating (restored desktop mode)', () => {
+    render(<WizardPanel {...base} isMaximized={false} isMobile={false}>body</WizardPanel>)
+    expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true')
+  })
+
+  it('keeps aria-modal="true" while maximized', () => {
+    render(<WizardPanel {...base} isMaximized={true} isMobile={false}>body</WizardPanel>)
+    expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true')
+  })
+
+  it('the floating backdrop actually blocks background pointer events (not just dims)', () => {
+    render(<WizardPanel {...base} isMaximized={false} isMobile={false}>body</WizardPanel>)
+    const backdrop = screen.getByTestId('wizard-backdrop')
+    expect(backdrop.style.pointerEvents).toBe('auto')
+  })
+})
+
 describe('WizardPanel — drag-constraints boundary (framer null-ref guard)', () => {
   // Regression: the boundary that backs dragConstraints={constraintsRef} must
   // stay mounted in BOTH floating and maximized modes. If it unmounts on a

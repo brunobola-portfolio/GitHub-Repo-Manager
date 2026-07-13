@@ -1904,6 +1904,14 @@ Get aggregated GitHub Actions statistics for all repositories assigned to a team
 
 All AI endpoints require both authentication and a configured AI provider key (`requireAI` middleware), unless noted otherwise. The provider is resolved per request: a user BYOK key (see [User AI configuration](#additional-endpoints-grouped)) takes precedence, falling back to the server-configured provider. When no key is available, `requireAI` returns `400 AI_NOT_CONFIGURED` (see [Shared Response Envelopes](#shared-response-envelopes)).
 
+**Scopes:** API-key callers additionally need the `ai` scope on these generation endpoints — see [Scope enforcement](#the-ai-scope-is-enforced-not-just-a-creation-option) under API Keys.
+
+**Rate limits:** beyond the per-feature `ai_queries` quota (see "AI quota / usage-limit exceeded — `429`" in [Shared Response Envelopes](#shared-response-envelopes) above):
+
+- AI routes sit behind a per-tier request bucket (`createTenantLimiters('ai')`, mounted on `/api/ai/` and `/api/v1/ai/`): 10/50/200 requests per 15 minutes for free/pro/enterprise in production. For `grm_live_` bearer callers the api/ai buckets are keyed per API key (SHA-256 of the bearer token) rather than per user, and bearer requests resolve to the conservative free-tier ceiling before auth runs — so with a Pro key, high-frequency API usage can hit this app-level ceiling before any route-level quota binds.
+- The Work Board AI actions carry dedicated per-user limiters: `suggest-action` is limited to 10/hour, mirroring `draft-comment`'s existing 10/hour. Exceeding either returns `429 { error, code: 'rate_limited' }`. See [WORK-BOARD-API.md](./WORK-BOARD-API.md).
+- Four previously unmetered endpoints now record `ai_queries` usage: `POST /api/v1/work-board/ai-summary`, `POST /api/v1/work-board/suggest-action`, `POST /api/v1/work-board/draft-comment`, and `POST /api/repos/:owner/:repo/community-health/generate` (its AI branch only — deterministic license/`.gitignore` generation stays unmetered). All four check quota first and charge only after a successful provider call, returning the standard quota-exceeded `429` envelope when the cap is hit.
+
 ### `GET /api/config/ai-status`
 
 Check whether AI features are configured.
@@ -4237,6 +4245,32 @@ Revoke an API key. The key is soft-deleted (marked with `revoked_at` timestamp) 
 
 **Error Codes:**
 - `404` - Key not found or already revoked
+
+### The `ai` scope is enforced, not just a creation option
+
+`ai` (one of the `scopes` values above) is checked by `requireScope('ai')`
+(`server/middleware/api-key-auth.js`) on the 20 AI *generation* endpoints
+under `/api/ai/*` — chat, suggest, readme, and the rest of the [AI](#ai-apiai)
+section below. A key needs `ai` or `admin` in its scopes to call them; a
+`read`/`write`-only key gets:
+
+```json
+{
+  "error": "Insufficient permissions",
+  "required": "ai"
+}
+```
+
+(`403`). Session/cookie auth is never scope-checked — `requireScope` only
+runs for API-key requests — so signed-in browser users are unaffected either
+way.
+
+The four Pro AI groups that mutate GitHub or persist beyond a single reply —
+[AI Deep Review](#ai-deep-review-apiaideep-review), AI Prompt Studio, AI PR
+Slash Commands, and AI PR Chat — are **not** covered by the `ai` scope. Their
+mutating routes stay behind the existing `write` scope gate (the central
+mutation check in `apiKeyAuth`) like every other GitHub-mutating endpoint, so
+an `ai`-only key still cannot use them.
 
 ---
 
