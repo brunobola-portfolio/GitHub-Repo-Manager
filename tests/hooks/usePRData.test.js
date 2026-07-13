@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { renderHook, waitFor, act } from '@testing-library/react'
 import { usePRData, _clearPRDataCache } from '../../src/hooks/usePRData'
 
 const mockApi = {
@@ -60,6 +60,56 @@ describe('usePRData', () => {
     renderHook(() =>
       usePRData(mockApi, { owner: 'acme', repo: 'backend', number: 1, enabled: false })
     )
+    expect(mockApi.fetchPull).not.toHaveBeenCalled()
+  })
+
+  it('captures the cache key at request time so a late-resolving stale request cannot cross-contaminate a different key\'s cache or state', async () => {
+    let resolvePR1
+    let resolvePR2
+    mockApi.fetchPull.mockImplementation((num) => {
+      if (num === 1) return new Promise((resolve) => { resolvePR1 = resolve })
+      return new Promise((resolve) => { resolvePR2 = resolve })
+    })
+    mockApi.fetchPullFiles.mockImplementation((num) =>
+      Promise.resolve(num === 1 ? FILES : [{ filename: 'other.js', additions: 1, deletions: 0, patch: '' }])
+    )
+
+    const { result, rerender } = renderHook(
+      ({ number }) => usePRData(mockApi, { owner: 'acme', repo: 'backend', number }),
+      { initialProps: { number: 1 } }
+    )
+
+    await waitFor(() => expect(mockApi.fetchPull).toHaveBeenCalledWith(1))
+
+    // The user navigates to a different PR before request #1 resolves.
+    rerender({ number: 2 })
+    await waitFor(() => expect(mockApi.fetchPull).toHaveBeenCalledWith(2))
+
+    // The current request (#2) resolves first.
+    resolvePR2({ number: 2, title: 'PR two', state: 'open' })
+    await waitFor(() => expect(result.current.detail?.number).toBe(2))
+
+    // The stale request (#1) resolves late, out of order.
+    resolvePR1(DETAIL)
+    // Flush the pending Promise.all -> setState microtask chain.
+    await act(async () => { await Promise.resolve(); await Promise.resolve() })
+
+    // Live state must still reflect #2, never clobbered by the late #1 response.
+    expect(result.current.detail?.number).toBe(2)
+
+    // The cache for each key must hold that key's own data — not
+    // cross-contaminated by being written under the wrong (current) key.
+    mockApi.fetchPull.mockClear()
+    const { result: cached1 } = renderHook(() =>
+      usePRData(mockApi, { owner: 'acme', repo: 'backend', number: 1 })
+    )
+    expect(cached1.current.detail).toEqual(DETAIL)
+    expect(mockApi.fetchPull).not.toHaveBeenCalled()
+
+    const { result: cached2 } = renderHook(() =>
+      usePRData(mockApi, { owner: 'acme', repo: 'backend', number: 2 })
+    )
+    expect(cached2.current.detail?.number).toBe(2)
     expect(mockApi.fetchPull).not.toHaveBeenCalled()
   })
 

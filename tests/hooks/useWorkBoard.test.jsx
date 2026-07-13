@@ -190,6 +190,65 @@ describe('useDORAMetrics', () => {
 // MOCK_MODE synthetic data
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Request-generation guard (stale-response race)
+// ---------------------------------------------------------------------------
+
+describe('useWorkBoardFetch race safety', () => {
+    it('drops a stale response when the url changes before the old request resolves', async () => {
+        let resolveA
+        let resolveB
+        mockFetch.mockImplementation((url) => {
+            if (url.includes('staleAfterDays=7')) {
+                return new Promise((resolve) => { resolveA = resolve })
+            }
+            if (url.includes('staleAfterDays=30')) {
+                return new Promise((resolve) => { resolveB = resolve })
+            }
+            return makeOkResponse([])
+        })
+
+        const { useStalePRs } = await import('@/hooks/useWorkBoard')
+        const { result, rerender } = renderHook(
+            ({ staleAfterDays }) => useStalePRs({ staleAfterDays }),
+            { initialProps: { staleAfterDays: 7 } }
+        )
+
+        // Request for the initial url (A) is in flight.
+        await waitFor(() => expect(mockFetch).toHaveBeenCalledWith(
+            expect.stringContaining('staleAfterDays=7'), expect.anything()
+        ))
+
+        // The user changes the filter before A resolves — url B is requested.
+        rerender({ staleAfterDays: 30 })
+        await waitFor(() => expect(mockFetch).toHaveBeenCalledWith(
+            expect.stringContaining('staleAfterDays=30'), expect.anything()
+        ))
+
+        // B (the current request) resolves first.
+        resolveB({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ data: [{ prNumber: 30 }] }),
+        })
+        await waitFor(() => expect(result.current.data).toEqual([{ prNumber: 30 }]))
+
+        // A (the stale request) resolves late, out of order.
+        resolveA({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ data: [{ prNumber: 7 }] }),
+        })
+        // Flush any pending microtasks from A's resolution.
+        await act(async () => { await Promise.resolve(); await Promise.resolve() })
+
+        // State must still reflect B (the current filter), never A.
+        expect(result.current.data).toEqual([{ prNumber: 30 }])
+        expect(result.current.loading).toBe(false)
+        expect(result.current.error).toBeNull()
+    })
+})
+
 describe('MOCK_MODE', () => {
     it('returns synthetic data without calling fetch', async () => {
         // Toggle the env stub to enable mocks for this test only.
