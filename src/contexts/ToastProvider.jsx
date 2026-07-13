@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { ToastContext } from './contexts'
 import { trackBreadcrumb } from '../lib/observability'
 import { formatUserError } from '../utils/errors'
-import { emitAppEvent, onAppEvent, APP_EVENTS } from '../utils/appEvents'
+import { emitAppEvent, onAppEvent, APP_EVENTS, navigateToPricing } from '../utils/appEvents'
 
 function dispatchAction(action, ctx = {}) {
     if (!action) return
@@ -17,7 +17,7 @@ function dispatchAction(action, ctx = {}) {
             emitAppEvent(APP_EVENTS.OPEN_SETTINGS, { tab: action.settingsTab })
             break
         case 'open-pricing':
-            window.location.hash = '#pricing'
+            navigateToPricing()
             break
         case 'open-quota':
             emitAppEvent(APP_EVENTS.SHOW_QUOTA_EXCEEDED, ctx.detail || {})

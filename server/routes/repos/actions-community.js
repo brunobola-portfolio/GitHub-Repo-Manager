@@ -49,6 +49,7 @@ import { auditLog } from '../../lib/audit.js';
 import { FILE_GENERATORS, commitOrOpenPR } from '../../lib/ai-features/community-health-fix.js';
 import { createProviderForUser } from '../../lib/ai-provider.js';
 import { mapAIErrorToResponse } from '../../middleware/ai-error-mapper.js';
+import { checkUsageLimit, incrementUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { applyOwnerRepoParamValidators } from './_shared.js';
 
 const router = express.Router();
@@ -520,8 +521,17 @@ router.post('/:owner/:repo/community-health/generate', requireAuth, validateBody
             return res.json(out);
         }
 
-        // AI branch.
-        const provider = await createProviderForUser(req.session.userId, 'completion', { featureKey: 'COMMUNITY_HEALTH_FIX' });
+        // AI branch. Meter the AI query BEFORE resolving a provider — mirrors
+        // ai/deep-review.js and ai/pr-chat.js's quota-check-first order. The
+        // deterministic branch above never reaches here, so template-only
+        // generations (license, gitignore) never consume the ai_queries quota.
+        const userId = req.session.userId;
+        const quota = checkUsageLimit(userId, 'ai_queries');
+        if (!quota.allowed) {
+            return res.status(429).json(quotaExceededResponse({ ...quota, metric: 'ai_queries' }));
+        }
+
+        const provider = await createProviderForUser(userId, 'completion', { featureKey: 'COMMUNITY_HEALTH_FIX' });
         if (!provider) {
             return res.status(403).json({ error: 'AI is not configured for this user', code: 'ai_not_configured' });
         }
@@ -531,6 +541,7 @@ router.post('/:owner/:repo/community-health/generate', requireAuth, validateBody
             email: overrides.email || req.session.userEmail,
             provider,
         });
+        incrementUsage(userId, 'ai_queries');
         res.json(out);
     } catch (e) {
         const mapped = mapAIErrorToResponse(res, e);

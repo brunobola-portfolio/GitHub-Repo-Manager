@@ -140,6 +140,55 @@ describe('useDevToolkit', () => {
         expect(result.current.contextAnalysis).toBeNull()
     })
 
+    // --- Race safety: fetchBranches must mirror fetchCompare's abortRef pattern ---
+    it('aborts the in-flight fetchBranches request when a new repo is selected before it resolves', async () => {
+        const abortedUrls = []
+        fetchSpy.mockImplementation((url, opts) => {
+            if (typeof url === 'string' && url.includes('/repos/user/repo-a/branches')) {
+                // Never resolves on its own — only rejects if aborted, mirroring
+                // how a real in-flight fetch reacts to AbortController#abort().
+                return new Promise((_resolve, reject) => {
+                    opts?.signal?.addEventListener('abort', () => {
+                        abortedUrls.push(url)
+                        const err = new Error('aborted')
+                        err.name = 'AbortError'
+                        reject(err)
+                    })
+                })
+            }
+            if (typeof url === 'string' && url.includes('/repos/user/repo-b/branches')) {
+                return Promise.resolve({
+                    ok: true,
+                    json: () => Promise.resolve([{ name: 'main' }, { name: 'repo-b-feature' }]),
+                })
+            }
+            return Promise.resolve({ ok: true, json: () => Promise.resolve([]) })
+        })
+
+        const { result } = renderHook(() => useDevToolkit({ repos: mockRepos }))
+
+        // Select repo A -- fetchBranches(A) starts and stays pending.
+        await act(async () => {
+            result.current.selectRepo(mockRepos[0])
+            await Promise.resolve()
+        })
+
+        // Select repo B before A resolves -- must abort A's in-flight request.
+        await act(async () => {
+            result.current.selectRepo(mockRepos[1])
+            await new Promise((r) => setTimeout(r, 0))
+        })
+
+        // The old repo's request must have been aborted...
+        expect(abortedUrls).toHaveLength(1)
+        expect(abortedUrls[0]).toContain('/repos/user/repo-a/branches')
+
+        // ...and only the new repo's branches/baseBranch reach state.
+        expect(result.current.selectedRepo).toEqual(mockRepos[1])
+        expect(result.current.branches).toEqual([{ name: 'main' }, { name: 'repo-b-feature' }])
+        expect(result.current.baseBranch).toBe('main')
+    })
+
     it('selectRepo with null does not fetch branches', () => {
         const { result } = renderHook(() => useDevToolkit())
 

@@ -80,24 +80,26 @@ export function WalkthroughTab({ walkthrough }) {
             {Array.isArray(walkthrough.perFileTable) && walkthrough.perFileTable.length > 0 ? (
                 <div>
                     <h4 className="font-medium mb-2 text-slate-700 dark:text-slate-300">Files</h4>
-                    <table className="w-full text-xs">
-                        <thead className="text-slate-500 dark:text-slate-400">
-                            <tr>
-                                <th className="text-left py-1 pr-2">File</th>
-                                <th className="text-left py-1 pr-2">Change</th>
-                                <th className="text-left py-1">Summary</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {walkthrough.perFileTable.map((row, i) => (
-                                <tr key={i} className="border-t border-slate-200 dark:border-slate-800">
-                                    <td className="py-1 pr-2 font-mono">{row.path}</td>
-                                    <td className="py-1 pr-2">{row.change}</td>
-                                    <td className="py-1">{row.summary}</td>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                            <thead className="text-slate-500 dark:text-slate-400">
+                                <tr>
+                                    <th className="text-left py-1 pr-2">File</th>
+                                    <th className="text-left py-1 pr-2">Change</th>
+                                    <th className="text-left py-1">Summary</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {walkthrough.perFileTable.map((row, i) => (
+                                    <tr key={i} className="border-t border-slate-200 dark:border-slate-800">
+                                        <td className="py-1 pr-2 font-mono whitespace-nowrap">{row.path}</td>
+                                        <td className="py-1 pr-2">{row.change}</td>
+                                        <td className="py-1">{row.summary}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             ) : null}
 

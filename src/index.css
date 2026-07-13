@@ -208,62 +208,6 @@
 
 @layer utilities {
 
-	/* Smart Glass Overlay Scrollbar */
-	.ds-scrollbar {
-		scrollbar-width: thin;
-		scrollbar-color: transparent transparent;
-		/* Hidden by default for Firefox */
-		transition: scrollbar-color 0.3s ease;
-	}
-
-	/* Show on hover */
-	.ds-scrollbar:hover {
-		scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
-		/* Slate-400/50 */
-	}
-
-	/* Webkit (Chrome, Edge, Safari) */
-	.ds-scrollbar::-webkit-scrollbar {
-		width: 6px;
-		height: 6px;
-	}
-
-	.ds-scrollbar::-webkit-scrollbar-track {
-		background: transparent;
-	}
-
-	.ds-scrollbar::-webkit-scrollbar-thumb {
-		background-color: transparent;
-		border-radius: 20px;
-		border: 2px solid transparent;
-		/* Creates padding effect */
-		background-clip: content-box;
-		transition: background-color 0.3s ease;
-	}
-
-	.ds-scrollbar:hover::-webkit-scrollbar-thumb {
-		background-color: rgba(148, 163, 184, 0.5);
-		/* Slate-400/50 */
-	}
-
-	.ds-scrollbar::-webkit-scrollbar-thumb:hover {
-		background-color: rgba(148, 163, 184, 0.8);
-		/* Slate-400/80 */
-	}
-
-	/* Dark mode adjustments */
-	.dark .ds-scrollbar:hover {
-		scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
-	}
-
-	.dark .ds-scrollbar:hover::-webkit-scrollbar-thumb {
-		background-color: rgba(255, 255, 255, 0.2);
-	}
-
-	.dark .ds-scrollbar::-webkit-scrollbar-thumb:hover {
-		background-color: rgba(255, 255, 255, 0.4);
-	}
-
 	/* Premium spinner — the centre renders `</>` glyph-by-glyph (typing
 	   effect) inside the rotating gradient ring. The whole mark also
 	   counter-rotates to cancel the parent SVG's `animate-spin`, so the

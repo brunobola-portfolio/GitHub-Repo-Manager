@@ -9,6 +9,7 @@ import { Card } from '../ui/Card'
 import { EmptyState } from '../ui/EmptyState'
 import { Skeleton } from '../ui/Skeleton'
 import { Field, Input } from '../ui/form'
+import { PanelHeader } from '../ui/PanelHeader'
 import { RowIconBadge } from '../ui/RowIconBadge'
 import { formatDate as formatDateBase } from '../../utils/format'
 import { apiCall } from '../../utils/api'
@@ -401,25 +402,24 @@ export function ApiKeysSection() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <RowIconBadge icon={Key} tone="indigo" size="lg" surface="soft" />
-                    <div>
-                        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">API Keys</h2>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Manage programmatic access to the API</p>
-                    </div>
-                </div>
-                {!showForm && !newKeyData && (
-                    <button
-                        onClick={() => setShowForm(true)}
-                        disabled={atLimit}
-                        className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-[color:var(--ds-accent-brand)] hover:bg-[color:var(--ds-accent-brand-hover)] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm transition-all"
-                        title={atLimit ? `Limit reached (${limits.max}). Upgrade your plan.` : 'Create a new API key'}
-                    >
-                        <Plus className="w-4 h-4" />
-                        Create New Key
-                    </button>
-                )}
+            <div className="flex items-start gap-3">
+                <RowIconBadge icon={Key} tone="indigo" size="lg" surface="soft" />
+                <PanelHeader
+                    className="flex-1"
+                    title="API Keys"
+                    description="Manage programmatic access to the API"
+                    actions={!showForm && !newKeyData && (
+                        <button
+                            onClick={() => setShowForm(true)}
+                            disabled={atLimit}
+                            className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-[color:var(--ds-accent-brand)] hover:bg-[color:var(--ds-accent-brand-hover)] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm transition-all"
+                            title={atLimit ? `Limit reached (${limits.max}). Upgrade your plan.` : 'Create a new API key'}
+                        >
+                            <Plus className="w-4 h-4" />
+                            Create New Key
+                        </button>
+                    )}
+                />
             </div>
 
             {/* Usage meter */}

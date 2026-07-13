@@ -36,6 +36,7 @@ export function useDevToolkit({ repos = [], initialTab, initialRepo, initialBran
         try { return sessionStorage.getItem(AUTO_DRAFT_KEY) !== 'false' } catch { return true }
     })
     const abortRef = useRef(null)
+    const branchesAbortRef = useRef(null)
 
     const setActiveTab = useCallback((tab) => {
         setActiveTabState(tab)
@@ -43,8 +44,14 @@ export function useDevToolkit({ repos = [], initialTab, initialRepo, initialBran
     }, [])
 
     const fetchBranches = useCallback(async (owner, repo) => {
+        // Mirror fetchCompare's abortRef pattern: cancel any in-flight branch
+        // fetch for a previous repo so a late (out-of-order) response can
+        // never overwrite the branches/baseBranch of the repo now selected.
+        branchesAbortRef.current?.abort()
+        const ctrl = new AbortController()
+        branchesAbortRef.current = ctrl
         try {
-            const res = await fetch(`${API_BASE}/repos/${owner}/${repo}/branches?per_page=100`, { credentials: 'include' })
+            const res = await fetch(`${API_BASE}/repos/${owner}/${repo}/branches?per_page=100`, { signal: ctrl.signal, credentials: 'include' })
             if (!res.ok) return
             const data = await res.json()
             setBranches(data)
@@ -52,7 +59,10 @@ export function useDevToolkit({ repos = [], initialTab, initialRepo, initialBran
             if (defaultBranch) {
                 setBaseBranch(prev => prev ?? defaultBranch.name)
             }
-        } catch { /* noop */ }
+        } catch {
+            // Aborts (repo changed) and real fetch failures are both silent
+            // here — there's no error state for branches, unlike fetchCompare.
+        }
     }, [])
 
     const fetchCompare = useCallback(async (owner, repo, base, head) => {

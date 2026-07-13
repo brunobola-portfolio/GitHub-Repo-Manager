@@ -37,7 +37,15 @@ describe('MigratedPill — batched via useMigratedRepos', () => {
 
     // Only owner/a is migrated → exactly one pill, with the tooltip date.
     expect(screen.getAllByLabelText('repo migrated')).toHaveLength(1)
-    expect(screen.getByTitle('Migrated on 2026-05-23')).toBeInTheDocument()
+    const pill = screen.getByTitle('Migrated on 2026-05-23')
+    expect(pill).toBeInTheDocument()
+
+    // Renders through the canonical <Badge tone="violet"> — not the old
+    // hand-rolled bg-violet-500/10 + ring-violet-500/30 combination.
+    expect(pill.className).toContain('bg-violet-100')
+    expect(pill.className).toContain('dark:bg-violet-900/50')
+    expect(pill.className).toContain('ring-violet-200')
+    expect(pill.className).not.toContain('bg-violet-500/10')
   })
 
   it('renders nothing when the user has no migrated repos', async () => {
