@@ -66,8 +66,10 @@ function getClientIp(req) {
 // Exported for the parity test in
 // server/__tests__/ai-key-scope-enforcement.test.js, which walks the AI
 // router's layer stack and asserts this list and the requireScope('ai')
-// mounts can never drift apart (in EITHER direction).
-export const AI_GENERATION_ROUTE_PATHS = [
+// mounts can never drift apart (in EITHER direction). Frozen because it is
+// exported authorization state — an importer mutating it (push/splice) would
+// silently widen or narrow the carve-out.
+export const AI_GENERATION_ROUTE_PATHS = Object.freeze([
     '/ai/chat',
     '/ai/attention-narrative',
     '/ai/translate-search',
@@ -87,7 +89,7 @@ export const AI_GENERATION_ROUTE_PATHS = [
     '/ai/migration-risk',
     '/ai/migration-size-strategy',
     '/ai/migration-description',
-];
+]);
 // The AI router is mounted at both /api/ai/* (legacy alias) and /api/v1/ai/*
 // (see index.js), so both variants of each path are recognized.
 const AI_GENERATION_ROUTES = new Set(
