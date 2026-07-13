@@ -30,12 +30,27 @@ const HORIZONTAL = {
  * `max-w-7xl ... p-6`, `max-w-6xl px-4 sm:px-6 py-16` and several more
  * variants used for the same role.
  *
+ * Two contracts, reconciled (2026-07 layout audit — see
+ * `docs/reports/` layout finding on nav-sibling width mismatch):
+ *   - **Primary nav destinations** (the tabs in `Header.jsx`'s main nav —
+ *     Dashboard, Repositories, Teams, Work Board, Pricing) must span the app
+ *     shell like their siblings, not clamp to a narrower column. Pass
+ *     `maxWidth="full"` (`max-w-none`) so the page inherits `<main>`'s
+ *     `--layout-max-w` (2400px, set 2026-06-25) instead of fighting it.
+ *   - **Deliberate reading-column surfaces** (settings-style forms, detail
+ *     panels, anything where a narrower measure genuinely helps
+ *     readability) keep the narrower `md`/`lg`/`xl`/`2xl`/`3xl` options.
+ *     These are unaffected by the shell-width decision above.
+ *
  * Defaults: `max-w-6xl` content column, responsive horizontal padding,
  * `py-6 sm:py-8` vertical rhythm — the most common combination in the
- * codebase as of the audit.
+ * codebase as of the audit. Callers that need the full shell width must
+ * opt in explicitly via `maxWidth="full"`.
  *
  * @param {object} props
- * @param {'md'|'lg'|'xl'|'2xl'|'3xl'|'full'} [props.maxWidth]
+ * @param {'md'|'lg'|'xl'|'2xl'|'3xl'|'full'} [props.maxWidth] - 'full' removes
+ *   the max-width cap entirely (`max-w-none`) for primary-nav pages that
+ *   should span `--layout-max-w`; the rest are fixed reading-column widths.
  * @param {'tight'|'default'|'spacious'} [props.padding]
  * @param {'none'|'tight'|'default'|'spacious'|'landing'} [props.verticalPadding]
  * @param {string} [props.className]

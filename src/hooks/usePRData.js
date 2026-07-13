@@ -19,6 +19,12 @@ export function usePRData(api, { owner, repo, number, enabled = true } = {}) {
 
   const load = useCallback(async () => {
     if (!enabled || !owner || !repo || !number) return
+    // Capture the key THIS request is for, in the closure, at request time.
+    // keyRef.current is mutable and reflects whichever key the hook is
+    // CURRENTLY rendering for — reading it after the awaits below (as this
+    // used to) can point at a different (newer) request than the one that
+    // just resolved, cross-contaminating that newer request's cache entry.
+    const requestKey = cacheKey(owner, repo, number)
     setState(s => ({ ...s, loading: true, error: null }))
     try {
       const [detail, files, reviews, comments] = await Promise.all([
@@ -28,10 +34,15 @@ export function usePRData(api, { owner, repo, number, enabled = true } = {}) {
         api.fetchIssueComments(number),
       ])
       const next = { detail, files, reviews, comments, loading: false, error: null }
-      _cache.set(keyRef.current, next)
-      setState(next)
+      _cache.set(requestKey, next)
+      // Only commit to live state if this is still the request for the
+      // key the hook currently represents — otherwise a late-resolving
+      // stale request would overwrite a newer one's state.
+      if (requestKey === keyRef.current) setState(next)
     } catch (e) {
-      setState(s => ({ ...s, loading: false, error: e?.message ?? 'Failed to load PR' }))
+      if (requestKey === keyRef.current) {
+        setState(s => ({ ...s, loading: false, error: e?.message ?? 'Failed to load PR' }))
+      }
     }
   }, [api, owner, repo, number, enabled])
 

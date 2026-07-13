@@ -391,6 +391,117 @@ describe('apiKeyAuth middleware', () => {
         expect(next).toHaveBeenCalled()
         expect(res.status).not.toHaveBeenCalled()
     })
+
+    // ── 'ai'-scope carve-out for AI routes ──────────────────────────────
+    // An `ai`-only key must be able to POST to the AI generation routes
+    // without `write`/`admin` (requireScope('ai') at the route level is the
+    // real authorizer there — this gate must simply get out of its way for
+    // those paths). Everywhere else the write/admin requirement is unchanged,
+    // so an `ai`-only key still can't mutate a non-AI endpoint.
+    it('allows an ai-only key to POST an AI route (/api/ai/*)', () => {
+        req.method = 'POST'
+        req.headers.authorization = 'Bearer grm_live_ai_only_post'
+        req.originalUrl = '/api/ai/chat'
+        seedKey(['ai'])
+
+        apiKeyAuth(req, res, next)
+
+        expect(next).toHaveBeenCalled()
+        expect(res.status).not.toHaveBeenCalled()
+    })
+
+    it('allows an ai-only key to POST the versioned AI route (/api/v1/ai/*)', () => {
+        req.method = 'POST'
+        req.headers.authorization = 'Bearer grm_live_ai_only_post_v1'
+        req.originalUrl = '/api/v1/ai/chat'
+        seedKey(['ai'])
+
+        apiKeyAuth(req, res, next)
+
+        expect(next).toHaveBeenCalled()
+        expect(res.status).not.toHaveBeenCalled()
+    })
+
+    it('allows an ai-only key to POST an AI route with a query string', () => {
+        req.method = 'POST'
+        req.headers.authorization = 'Bearer grm_live_ai_only_qs'
+        // The exact-match allowlist must strip the querystring first —
+        // ?stream=true is how the chat SSE mode is actually invoked.
+        req.originalUrl = '/api/ai/chat?stream=true&x=1'
+        seedKey(['ai'])
+
+        apiKeyAuth(req, res, next)
+
+        expect(next).toHaveBeenCalled()
+        expect(res.status).not.toHaveBeenCalled()
+    })
+
+    it('403s an ai-only key on a non-AI mutating route (write scope still required)', () => {
+        req.method = 'POST'
+        req.headers.authorization = 'Bearer grm_live_ai_only_other'
+        req.originalUrl = '/api/repos/123/archive'
+        const mockRun = seedKey(['ai'])
+
+        apiKeyAuth(req, res, next)
+
+        expect(res.status).toHaveBeenCalledWith(403)
+        expect(res.json).toHaveBeenCalledWith({
+            error: 'This API key lacks the required "write" scope',
+            required: 'write',
+        })
+        expect(next).not.toHaveBeenCalled()
+        expect(mockRun).not.toHaveBeenCalled()
+    })
+
+    it('403s an ai-only key on an AI route when originalUrl is missing (fail closed)', () => {
+        req.method = 'POST'
+        req.headers.authorization = 'Bearer grm_live_ai_only_no_url'
+        // No req.originalUrl set at all (defensive default in case some
+        // caller doesn't populate it) — must NOT be treated as an AI route.
+        seedKey(['ai'])
+
+        apiKeyAuth(req, res, next)
+
+        expect(res.status).toHaveBeenCalledWith(403)
+        expect(next).not.toHaveBeenCalled()
+    })
+
+    // Other endpoints also live under /api/ai/* (deep-review, prompt-studio,
+    // pr-commands, pr-chat) but are NOT gated by requireScope('ai') — they
+    // stay behind requireTier('pro') only. A blanket "/api/ai/" prefix match
+    // would silently let an ai-only key mutate those too (e.g. publish a
+    // deep-review comment or run a PR slash command), well beyond the AI
+    // generation endpoints this carve-out is meant for. The carve-out must
+    // be an exact allowlist of the actual requireScope('ai')-gated paths.
+    it('403s an ai-only key on a non-gated /api/ai/* endpoint (e.g. deep-review)', () => {
+        req.method = 'POST'
+        req.headers.authorization = 'Bearer grm_live_ai_only_deep_review'
+        req.originalUrl = '/api/ai/deep-review/acme/widgets/42'
+        const mockRun = seedKey(['ai'])
+
+        apiKeyAuth(req, res, next)
+
+        expect(res.status).toHaveBeenCalledWith(403)
+        expect(res.json).toHaveBeenCalledWith({
+            error: 'This API key lacks the required "write" scope',
+            required: 'write',
+        })
+        expect(next).not.toHaveBeenCalled()
+        expect(mockRun).not.toHaveBeenCalled()
+    })
+
+    it('403s an ai-only key on a non-gated /api/ai/* endpoint (e.g. pr-commands)', () => {
+        req.method = 'POST'
+        req.headers.authorization = 'Bearer grm_live_ai_only_pr_commands'
+        req.originalUrl = '/api/v1/ai/pr-commands/acme/widgets/42/describe'
+        const mockRun = seedKey(['ai'])
+
+        apiKeyAuth(req, res, next)
+
+        expect(res.status).toHaveBeenCalledWith(403)
+        expect(next).not.toHaveBeenCalled()
+        expect(mockRun).not.toHaveBeenCalled()
+    })
 })
 
 describe('requireScope', () => {

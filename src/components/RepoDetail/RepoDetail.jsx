@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react'
 import { useRepoDetail } from '../../hooks/useRepoDetail'
+import { Badge } from '../ui/Badge'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { OverviewTab } from './OverviewTab'
@@ -160,23 +161,19 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription,
                         titleAccessory={
                             <>
                                 <TrackedChip repoFullName={r.full_name || `${owner}/${repoName}`} />
-                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                                    r.private
-                                        ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                                        : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-                                }`}>
-                                    {r.private ? <Lock className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+                                <Badge
+                                    tone={r.private ? 'warning' : 'success'}
+                                    icon={r.private ? <Lock className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+                                >
                                     {r.private ? 'Private' : 'Public'}
-                                </span>
+                                </Badge>
                                 {r.archived && (
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                                        Archived
-                                    </span>
+                                    <Badge tone="neutral">Archived</Badge>
                                 )}
                                 {r.fork && (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">
-                                        <GitFork className="w-3 h-3" /> Fork
-                                    </span>
+                                    <Badge tone="violet" icon={<GitFork className="w-3 h-3" />}>
+                                        Fork
+                                    </Badge>
                                 )}
                             </>
                         }
@@ -204,9 +201,9 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription,
                     {r.topics?.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-2">
                             {r.topics.map(topic => (
-                                <span key={topic} className="px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/50">
+                                <Badge key={topic} tone="brand" ring>
                                     {topic}
-                                </span>
+                                </Badge>
                             ))}
                         </div>
                     )}

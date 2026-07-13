@@ -9,7 +9,7 @@ below links to the canonical page for that topic.
 | ------------ | ---- |
 | Understand the system at a glance | [Architecture overview](architecture/overview.md) |
 | Run a production instance | [Operations runbook](operations.md) |
-| Call the API | [API reference](api/API.md) (~280 endpoints) |
+| Call the API | [API reference](api/API.md) (315 endpoints) |
 | Configure an AI provider | [AI Providers (BYOK)](ai-providers.md) |
 | Use the AI Deep Review experience | [AI Deep Review feature guide](features/ai-deep-review.md) |
 | Register a GitHub App for bot identity (roadmap) | [GitHub App setup](setup/github-app.md) |
@@ -140,7 +140,7 @@ Full detail: [`CHANGELOG.md`](../CHANGELOG.md).
 
 ## API reference
 
-- [API Reference](api/API.md) — ~280 route handlers across 50 route
+- [API Reference](api/API.md) — 315 route handlers across 70 route
   modules. Every endpoint documented with auth requirements,
   request/response shape, and error codes.
 

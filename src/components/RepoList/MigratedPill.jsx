@@ -1,3 +1,4 @@
+import { Badge } from '../ui/Badge'
 import { useMigratedRepos } from '../../hooks/useMigratedRepos.js'
 
 /**
@@ -7,6 +8,9 @@ import { useMigratedRepos } from '../../hooks/useMigratedRepos.js'
  *
  * Reads from the shared {@link useMigratedRepos} batch (one request for the
  * whole grid) instead of fetching per card — fixes the prior N+1.
+ *
+ * Renders via the canonical <Badge> (tone="violet") instead of hand-rolling
+ * the tone+ring combination, so it inherits Badge's AA-contrast palette.
  */
 export function MigratedPill({ fullName }) {
   const { get, loading } = useMigratedRepos()
@@ -16,12 +20,16 @@ export function MigratedPill({ fullName }) {
   const date = entry.writtenAt ? entry.writtenAt.slice(0, 10) : null
 
   return (
-    <span
+    <Badge
+      tone="violet"
+      size="xs"
+      ring
+      icon={<span aria-hidden>✦</span>}
       title={`Migrated${date ? ` on ${date}` : ''}`}
       aria-label="repo migrated"
-      className="inline-flex items-center gap-1 rounded-full bg-violet-500/10 text-violet-700 dark:text-violet-300 ring-1 ring-inset ring-violet-500/30 px-2 py-0.5 ds-text-micro font-medium uppercase tracking-wider"
+      className="uppercase tracking-wider"
     >
-      <span aria-hidden>✦</span>migrated
-    </span>
+      migrated
+    </Badge>
   )
 }

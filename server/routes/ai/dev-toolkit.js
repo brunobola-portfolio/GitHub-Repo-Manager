@@ -14,6 +14,7 @@
 import express from 'express';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError, isValidGitHubFullName } from '../../middleware/auth.js';
+import { requireScope } from '../../middleware/api-key-auth.js';
 import { aiService, sanitizeForPrompt } from '../../ai-service.js';
 import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
@@ -37,7 +38,7 @@ import { resolveMaxOutputTokens } from '../../lib/ai-output-budget.js';
 const router = express.Router();
 
 // Quality Report - Comprehensive repo health analysis
-router.post('/ai/quality-report', requireAuth, validateBody(aiQualityReportSchema), requireAI, async (req, res) => {
+router.post('/ai/quality-report', requireAuth, requireScope('ai'), validateBody(aiQualityReportSchema), requireAI, async (req, res) => {
     const userId = req.session.userId;
     const check = checkAIFeatureLimit(userId, 'ai_insights');
     if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
@@ -87,7 +88,7 @@ router.post('/ai/quality-report', requireAuth, validateBody(aiQualityReportSchem
 // ------------------------------------------------------------------
 
 // Generate an AI-powered PR review summary
-router.post('/ai/review-summary', requireAuth, validateBody(aiReviewSummarySchema), requireAI, async (req, res) => {
+router.post('/ai/review-summary', requireAuth, requireScope('ai'), validateBody(aiReviewSummarySchema), requireAI, async (req, res) => {
     // Feature toggle BEFORE the quota check — disabling the feature should
     // never burn the user's quota or look like a 429.
     if (process.env.DISABLE_AI_REVIEW === 'true') {
@@ -201,7 +202,7 @@ File manifest: ${sanitizeForPrompt(JSON.stringify((fileManifest || []).map(f => 
 // Dev Toolkit — Generate Commit Message
 // ------------------------------------------------------------------
 
-router.post('/ai/generate-commit', requireAuth, validateBody(aiGenerateCommitSchema), requireAI, async (req, res) => {
+router.post('/ai/generate-commit', requireAuth, requireScope('ai'), validateBody(aiGenerateCommitSchema), requireAI, async (req, res) => {
     try {
         const { diff, format = 'conventional', repo_style, repo_context } = req.validatedBody;
 
@@ -314,7 +315,7 @@ Rules:
 // Dev Toolkit — Generate PR Description
 // ------------------------------------------------------------------
 
-router.post('/ai/generate-pr', requireAuth, validateBody(aiGeneratePrSchema), requireAI, async (req, res) => {
+router.post('/ai/generate-pr', requireAuth, requireScope('ai'), validateBody(aiGeneratePrSchema), requireAI, async (req, res) => {
     try {
         const { commits, diff_summary, top_patches, template, repo_context } = req.validatedBody;
 
@@ -461,7 +462,7 @@ const REFINEMENT_INSTRUCTIONS = {
     more_context: 'Add more context about what changed and why. Include background information and motivation.',
 };
 
-router.post('/ai/refine', requireAuth, validateBody(aiRefineSchema), requireAI, async (req, res) => {
+router.post('/ai/refine', requireAuth, requireScope('ai'), validateBody(aiRefineSchema), requireAI, async (req, res) => {
     try {
         const { original_content, original_diff, instruction, content_type } = req.validatedBody;
 
@@ -541,7 +542,7 @@ Return ONLY the refined content, no explanation, no markdown fences.`;
 // users with the same repo+diff stats never see each other's analysis.
 const contextCache = createCache({ ttlMs: 30_000, maxSize: 500 });
 
-router.post('/ai/analyze-context', requireAuth, validateBody(aiAnalyzeContextSchema), requireAI, async (req, res) => {
+router.post('/ai/analyze-context', requireAuth, requireScope('ai'), validateBody(aiAnalyzeContextSchema), requireAI, async (req, res) => {
     try {
         const { repo, diff_summary, commits, file_list } = req.validatedBody;
         const userId = req.session.userId;
@@ -606,7 +607,7 @@ Stats: ${diff_summary.files} files, +${diff_summary.additions} -${diff_summary.d
 // Dev Toolkit — Conversational Refine (always streaming)
 // ------------------------------------------------------------------
 
-router.post('/ai/chat-refine', requireAuth, validateBody(aiChatRefineSchema), requireAI, async (req, res) => {
+router.post('/ai/chat-refine', requireAuth, requireScope('ai'), validateBody(aiChatRefineSchema), requireAI, async (req, res) => {
     try {
         const { message, current_output, original_diff, content_type, history } = req.validatedBody;
 

@@ -88,7 +88,10 @@ vi.mock('../lib/validators.js', () => ({
     communityHealthCommitFixSchema: {},
     emptyBodySchema: {},
 }))
-vi.mock('../db.js', () => ({ default: { prepare: vi.fn(() => ({ get: vi.fn(), all: vi.fn(() => []), run: vi.fn() })) } }))
+// usage-meter.js (transitively imported via repos/actions-community.js) builds
+// a db.transaction() wrapper at module scope — this stub only needs to exist
+// so importing the real module doesn't throw.
+vi.mock('../db.js', () => ({ default: { prepare: vi.fn(() => ({ get: vi.fn(), all: vi.fn(() => []), run: vi.fn() })), transaction: (fn) => fn } }))
 
 // PR mutations now route through gh-outbox; bypass the SQLite-backed
 // outbox here so this tier-gate test stays focused on the requireTier

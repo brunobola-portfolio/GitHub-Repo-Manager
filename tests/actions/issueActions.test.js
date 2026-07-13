@@ -47,11 +47,13 @@ describe('issueActions — applicability + confirm', () => {
         expect(issueActions.reopen_issue.isApplicable(mkIssue({ state: 'open' }))).toBe(false)
     })
 
-    it('close_issue confirm uses warning variant + names the issue', () => {
-        const cfg = issueActions.close_issue.confirm(mkIssue())
-        expect(cfg.variant).toBe('warning')
-        expect(cfg.message).toContain('Fix navbar alignment')
-        expect(cfg.confirmText).toBe('Close')
+    it('close_issue declares no confirm — issue close/reopen is deliberately confirmless', () => {
+        // Codifies the decision (no surface routes close_issue through a
+        // confirm gate; unlike PR merge/close, closing an issue is trivially
+        // reversible). A `confirm` block here would be dead code — see the
+        // comment above close_issue in issueActions.js.
+        expect(issueActions.close_issue.confirm).toBeUndefined()
+        expect(issueActions.reopen_issue.confirm).toBeUndefined()
     })
 })
 

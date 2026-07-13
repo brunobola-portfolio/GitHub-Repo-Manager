@@ -641,10 +641,10 @@ export function CommandPalette({
 
           <CommandGroup heading={`Repo: ${selectedRepoDetail?.full_name ?? ''}`} commands={repoDetailCommands} iconMap={CONTEXT_CMD_ICONS} onRun={runContextCommand} onClose={onClose} />
 
-          <CommandGroup heading="PR review" commands={prReviewCommands} iconMap={CONTEXT_CMD_ICONS} onRun={runContextCommand} onClose={onClose} />
+          <CommandGroup heading="PR Review" commands={prReviewCommands} iconMap={CONTEXT_CMD_ICONS} onRun={runContextCommand} onClose={onClose} />
 
           {prCommands.length > 0 && (
-            <Command.Group heading="Pull request actions" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+            <Command.Group heading="Pull Request Actions" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
               {prCommands.map((item) => (
                 <Command.Item
                   key={item.id}
@@ -659,7 +659,7 @@ export function CommandPalette({
           )}
 
           {branchCommands.length > 0 && (
-            <Command.Group heading="Branch actions" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+            <Command.Group heading="Branch Actions" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
               {branchCommands.map((item) => (
                 <Command.Item
                   key={item.id}
@@ -674,7 +674,7 @@ export function CommandPalette({
           )}
 
           {issueCommands.length > 0 && (
-            <Command.Group heading="Issue actions" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+            <Command.Group heading="Issue Actions" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
               {issueCommands.map((item) => (
                 <Command.Item
                   key={item.id}
@@ -692,7 +692,7 @@ export function CommandPalette({
 
           <CommandGroup heading="Repositories" commands={reposCommands} iconMap={CONTEXT_CMD_ICONS} onRun={runContextCommand} onClose={onClose} />
 
-          <CommandGroup heading="Repo actions" commands={repoActionsCommands} iconMap={CONTEXT_CMD_ICONS} onRun={runContextCommand} onClose={onClose} />
+          <CommandGroup heading="Repo Actions" commands={repoActionsCommands} iconMap={CONTEXT_CMD_ICONS} onRun={runContextCommand} onClose={onClose} />
 
           {activeView === 'work-board' && (
             <Command.Group heading="Work Board" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>

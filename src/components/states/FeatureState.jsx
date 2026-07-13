@@ -21,7 +21,7 @@ export function FeatureState({
     contactEmail = 'bruno@bolalabs.pt',
     contactSubject,
     docsHref,
-    pricingHref = '#pricing',
+    pricingHref = '#/pricing',
     onPricingClick,
     variant = 'card',
     className,
