@@ -115,6 +115,13 @@ export const issueActions = {
     },
 
     // ───── Mutation ─────
+    // close_issue is deliberately confirmless on every surface (list row,
+    // detail panel, command palette): closing/reopening an issue is trivially
+    // reversible, unlike merging or closing a PR. No consumer of this
+    // registry routes an action through `.confirm` today (buildActionCommands
+    // calls `action.run` directly; IssuesTab's runIssueAction skips it on
+    // purpose — see the comment there), so a `confirm` block here would be
+    // dead code. Don't add one back without wiring a real confirm surface.
     close_issue: {
         id: 'close_issue',
         label: 'Close',
@@ -123,12 +130,6 @@ export const issueActions = {
         intent: 'mutation',
         surfaces: ['inlineButton', 'commandPalette'],
         isApplicable: (issue) => issue?.state === 'open',
-        confirm: (issue) => ({
-            title: `Close issue #${issue.number}?`,
-            message: `"${issue.title}" will be marked as closed. You can reopen it later.`,
-            confirmText: 'Close',
-            variant: 'warning',
-        }),
         run: async (issue, ctx) => {
             await ctx.api.updateIssue(issue.number, { state: 'closed' })
             ctx.toast?.success?.(`Closed issue #${issue.number}`)

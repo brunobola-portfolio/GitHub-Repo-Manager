@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { TabBar } from '../ui/TabBar'
+import { ConfirmModal } from '../ui/ConfirmModal'
 import {
     GitPullRequest, GitMerge, MessageSquare, Clock,
     ExternalLink, Send, CheckCircle2, XCircle,
@@ -18,6 +19,7 @@ import { Textarea } from '../ui/form'
 import { formatRelativeTime } from '../../utils/format'
 import { PRFilesTab } from './PRFilesTab'
 import { invalidatePRData } from '../../hooks/usePRData'
+import { prActions } from '../../actions/prActions'
 
 const REVIEW_STATES = {
     APPROVED: { label: 'Approved', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20', icon: ShieldCheck },
@@ -44,6 +46,15 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
     const [merging, setMerging] = useState(false)
     const [message, setMessage] = useState(null)
     const [activeTab, setActiveTab] = useState('overview')
+    // Confirm-gates Merge/Close in this panel to match the list-row behavior
+    // in PullRequestsTab (audit fix — a single click here used to merge or
+    // close with no prompt). Sources its title/message/confirmText from the
+    // prActions registry so the copy stays single-sourced with the list rows,
+    // but keeps this panel's own handleMerge/handleClose as the actual runner
+    // since api.mergePull needs the selected mergeMethod and handleClose has
+    // panel-local side effects (setDetail, invalidatePRData) the registry's
+    // generic run() doesn't perform.
+    const [confirmAction, setConfirmAction] = useState(null)
     const commentRef = useRef(null)
 
     useEffect(() => {
@@ -130,6 +141,13 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
             setMessage({ type: 'error', text: e.message })
             toast.errorFromException(e, { fallbackTitle: 'Failed to close PR' })
         }
+    }
+
+    const requestMerge = () => {
+        setConfirmAction({ ...prActions.merge_pr.confirm(pr), onConfirm: handleMerge })
+    }
+    const requestClose = () => {
+        setConfirmAction({ ...prActions.close_pr.confirm(pr), onConfirm: handleClose })
     }
 
     const current = detail || pr
@@ -327,7 +345,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                     <div className="flex items-center gap-2">
                                         <Button
                                             size="sm"
-                                            onClick={handleMerge}
+                                            onClick={requestMerge}
                                             disabled={merging}
                                             className="bg-green-600 hover:bg-green-700 text-white"
                                         >
@@ -338,7 +356,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                             )}
                                             {mergeMethod === 'merge' ? 'Merge' : mergeMethod === 'squash' ? 'Squash and merge' : 'Rebase and merge'}
                                         </Button>
-                                        <Button variant="ghost" size="sm" onClick={handleClose} className="text-red-500">
+                                        <Button variant="ghost" size="sm" onClick={requestClose} className="text-red-500">
                                             <XCircle className="w-4 h-4 mr-1" /> Close PR
                                         </Button>
                                     </div>
@@ -494,6 +512,16 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                     </div>
                 </>
             )}
+
+            <ConfirmModal
+                isOpen={!!confirmAction}
+                onClose={() => setConfirmAction(null)}
+                onConfirm={() => { confirmAction?.onConfirm(); setConfirmAction(null) }}
+                title={confirmAction?.title}
+                message={confirmAction?.message}
+                confirmText={confirmAction?.confirmText}
+                variant={confirmAction?.variant || 'warning'}
+            />
         </motion.div>
     )
 }
