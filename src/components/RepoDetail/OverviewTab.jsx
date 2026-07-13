@@ -1,3 +1,4 @@
+import { Badge } from '../ui/Badge'
 import { EmptyState } from '../ui/EmptyState'
 import { RepoMarkdown } from '../ui/RepoMarkdown'
 import { SectionPanel } from '../ui/SectionPanel'
@@ -193,9 +194,11 @@ export function OverviewTab({ api, repoData, onUpdate }) {
                     <SectionPanel title="Topics">
                         <div className="flex flex-wrap gap-1.5">
                             {repoData.topics.map(topic => (
-                                <span key={topic} className="px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300">
+                                // Same tone/ring as the RepoDetail header topic pills — a
+                                // single visual language for "topic" everywhere it appears.
+                                <Badge key={topic} tone="brand" ring>
                                     {topic}
-                                </span>
+                                </Badge>
                             ))}
                         </div>
                     </SectionPanel>

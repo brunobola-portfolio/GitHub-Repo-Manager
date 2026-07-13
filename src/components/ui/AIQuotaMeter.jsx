@@ -136,6 +136,10 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
                 {open && (
                     <motion.div
                         role="dialog"
+                        // Click-open popover, not a blocking dialog — it renders inside
+                        // InboxPanel, so it must not be treated as suppressing that
+                        // panel's own keyboard shortcuts.
+                        aria-modal="false"
                         aria-label="AI quota details"
                         initial={{ opacity: 0, y: -4 }}
                         animate={{ opacity: 1, y: 0 }}

@@ -54,7 +54,9 @@ function SlimPopover({ isOpen, onClose, children, triggerRef, ariaLabel = 'Quick
       ref={popoverRef}
       tabIndex={-1}
       role="dialog"
-      aria-modal="true"
+      // Floating anchored popover, not a blocking dialog — the rest of the
+      // sidebar/page stays interactive while this is open.
+      aria-modal="false"
       aria-label={ariaLabel}
       className="absolute right-full mr-2 top-0 w-72 max-h-80 overflow-y-auto rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white dark:bg-slate-900 backdrop-blur-md shadow-xl z-[var(--ds-z-popover)] p-3 outline-none"
     >

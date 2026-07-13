@@ -21,19 +21,38 @@ afterEach(() => {
   try { vi.clearAllTimers() } catch { /* no pending timers */ }
 })
 
-// Mock window.matchMedia for theme tests
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: vi.fn().mockImplementation(query => ({
+// Mock window.matchMedia for theme tests.
+//
+// IMPORTANT: this must be a PLAIN function, not `vi.fn()`. A vi.fn-based
+// stub gets its implementation stripped by any suite that calls
+// `vi.resetAllMocks()` / `vi.restoreAllMocks()` (a common pattern — see
+// InboxPanel.test.jsx, useInbox.test.jsx, AutoFixDrawer.test.jsx), which
+// makes `window.matchMedia(...)` return `undefined` afterwards. Any
+// component that then calls framer-motion's real `useReducedMotion()`
+// (which reads `matchMedia(...).addEventListener`) throws mid-render —
+// this caused a real CI failure on PR #196. A plain function is immune to
+// resetAllMocks/restoreAllMocks, so it survives no matter what a suite
+// resets. Suites that need their own controllable matchMedia (useTheme,
+// useMediaQuery, App.test.jsx, CommunityHealthDashboard.test.jsx) simply
+// reassign `window.matchMedia` themselves — that still works fine, since
+// they replace the whole property rather than mutating this one.
+function createMatchMediaStub(query) {
+  return {
     matches: false,
     media: query,
     onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn()
-  }))
+    addListener: function () {},
+    removeListener: function () {},
+    addEventListener: function () {},
+    removeEventListener: function () {},
+    dispatchEvent: function () { return true },
+  }
+}
+
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  configurable: true,
+  value: createMatchMediaStub,
 })
 
 // Mock IntersectionObserver for animation tests

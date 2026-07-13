@@ -38,3 +38,20 @@ describe('OverviewTab — README rendering', () => {
         expect(screen.queryByText('| h | i |')).toBeNull() // raw pipe text must NOT be visible
     })
 })
+
+describe('OverviewTab — Topics', () => {
+    it('renders each topic as a brand-toned ringed Badge (unified with the RepoDetail header pills)', async () => {
+        const api = makeApi('')
+        const repoWithTopics = { ...REPO, topics: ['react', 'vite'] }
+        renderWithProviders(<OverviewTab api={api} repoData={repoWithTopics} onUpdate={() => {}} />)
+
+        const pill = await screen.findByText('react')
+        // Badge's brand tone (see src/components/ui/Badge.jsx TONES.brand) +
+        // the `ring` prop's tone-matched inset ring (RINGS.brand).
+        expect(pill.className).toMatch(/bg-indigo-100/)
+        expect(pill.className).toMatch(/dark:bg-indigo-900\/40/)
+        expect(pill.className).toMatch(/ring-1 ring-inset/)
+        expect(pill.className).toMatch(/ring-indigo-200/)
+        expect(screen.getByText('vite')).toBeInTheDocument()
+    })
+})

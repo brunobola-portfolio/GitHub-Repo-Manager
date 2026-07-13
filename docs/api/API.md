@@ -1904,6 +1904,10 @@ Get aggregated GitHub Actions statistics for all repositories assigned to a team
 
 All AI endpoints require both authentication and a configured AI provider key (`requireAI` middleware), unless noted otherwise. The provider is resolved per request: a user BYOK key (see [User AI configuration](#additional-endpoints-grouped)) takes precedence, falling back to the server-configured provider. When no key is available, `requireAI` returns `400 AI_NOT_CONFIGURED` (see [Shared Response Envelopes](#shared-response-envelopes)).
 
+**Scopes:** API-key callers additionally need the `ai` scope on these generation endpoints — see [Scope enforcement](#the-ai-scope-is-enforced-not-just-a-creation-option) under API Keys.
+
+**Rate limits:** beyond the per-feature `ai_queries` quota (see "AI quota / usage-limit exceeded — `429`" in [Shared Response Envelopes](#shared-response-envelopes) above), AI routes also sit behind a per-tier request bucket (`createTenantLimiters('ai')`: 10/50/200 requests per 15 minutes for free/pro/enterprise in production) plus dedicated per-user limiters on the Work Board AI actions (`suggest-action`, `draft-comment` — see [WORK-BOARD-API.md](./WORK-BOARD-API.md)). A handful of AI endpoints that were previously unmetered now also record `ai_queries` usage.
+
 ### `GET /api/config/ai-status`
 
 Check whether AI features are configured.
@@ -4237,6 +4241,32 @@ Revoke an API key. The key is soft-deleted (marked with `revoked_at` timestamp) 
 
 **Error Codes:**
 - `404` - Key not found or already revoked
+
+### The `ai` scope is enforced, not just a creation option
+
+`ai` (one of the `scopes` values above) is checked by `requireScope('ai')`
+(`server/middleware/api-key-auth.js`) on the 20 AI *generation* endpoints
+under `/api/ai/*` — chat, suggest, readme, and the rest of the [AI](#ai-apiai)
+section below. A key needs `ai` or `admin` in its scopes to call them; a
+`read`/`write`-only key gets:
+
+```json
+{
+  "error": "Insufficient permissions",
+  "required": "ai"
+}
+```
+
+(`403`). Session/cookie auth is never scope-checked — `requireScope` only
+runs for API-key requests — so signed-in browser users are unaffected either
+way.
+
+The four Pro AI groups that mutate GitHub or persist beyond a single reply —
+[AI Deep Review](#ai-deep-review-apiaideep-review), AI Prompt Studio, AI PR
+Slash Commands, and AI PR Chat — are **not** covered by the `ai` scope. Their
+mutating routes stay behind the existing `write` scope gate (the central
+mutation check in `apiKeyAuth`) like every other GitHub-mutating endpoint, so
+an `ai`-only key still cannot use them.
 
 ---
 
