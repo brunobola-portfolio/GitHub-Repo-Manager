@@ -405,12 +405,18 @@ router.post('/suggest-action', requireAuth, suggestActionLimiter, validateBody(s
                 prompt: SUGGEST_PING_PROMPT({ itemType, title, authorLogin, ageDays }),
                 schema: SUGGEST_PING_SCHEMA,
             });
+            // Charge only after generate() resolves — the sibling order (all
+            // metered AI routes charge on provider success, never on a failed
+            // attempt). A provider outage falls through to the canned ping
+            // below without debiting the user's monthly ai_queries quota;
+            // abuse of the free fallback path is bounded by
+            // suggestActionLimiter (10/hr/user) above.
+            incrementUsage(userId, 'ai_queries');
             const parsed = result?.parsed || null;
             if (typeof parsed?.pingComment === 'string' && parsed.pingComment.trim()) {
                 pingComment = parsed.pingComment.trim().slice(0, 280);
             }
         } catch { /* fall back to default ping */ }
-        incrementUsage(userId, 'ai_queries');
 
         const itemPath = itemType === 'pr' ? 'pull' : 'issues';
         const suggestions = [

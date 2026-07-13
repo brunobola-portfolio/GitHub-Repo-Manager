@@ -157,6 +157,21 @@ describe('POST /api/v1/work-board/suggest-action', () => {
         expect(mockIncrementUsage).toHaveBeenCalledWith(1, 'ai_queries')
     })
 
+    it('does NOT charge ai_queries when provider.generate rejects (200 fallback ping)', async () => {
+        mockProvider.generate.mockRejectedValueOnce(new Error('provider outage'))
+        const res = await request(app)
+            .post('/api/v1/work-board/suggest-action')
+            .send(VALID_BODY)
+        // Route degrades to the canned ping — still 200 with 3 suggestions —
+        // but a failed LLM attempt must not debit the monthly quota (charge
+        // on provider success only, matching every metered sibling).
+        expect(res.status).toBe(200)
+        expect(res.body.suggestions).toHaveLength(3)
+        const ping = res.body.suggestions.find(s => s.action === 'comment')
+        expect(ping.body).toBe('Hey @bob, any update on this?')
+        expect(mockIncrementUsage).not.toHaveBeenCalled()
+    })
+
     it('returns 429 QUOTA_EXCEEDED when the ai_queries quota is exhausted, without calling the provider', async () => {
         mockCheckUsageLimit.mockReturnValue({ allowed: false, current: 200, limit: 200, remaining: 0 })
         const { createProviderForUser } = await import('../lib/ai-provider.js')
