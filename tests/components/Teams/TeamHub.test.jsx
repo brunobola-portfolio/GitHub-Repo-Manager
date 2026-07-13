@@ -59,4 +59,18 @@ describe('TeamHub — load error vs empty', () => {
         expect(await screen.findByText(/no teams yet/i, {}, { timeout: 5000 })).toBeInTheDocument()
         expect(listTeams).toHaveBeenCalledTimes(2)
     })
+
+    // ---------------------------------------------------------------------------
+    // Layout — Team Hub is a primary-nav sibling of Dashboard/Repos and must
+    // span the same --layout-max-w shell instead of clamping to a narrower
+    // reading column (see PageShell docs).
+    // ---------------------------------------------------------------------------
+
+    it('root PageShell spans the app shell width (no max-w-7xl cap)', async () => {
+        listTeams.mockResolvedValue({ teams: [], upgradeRequired: false, error: null })
+        const { container } = render(<TeamHub onTeamSelect={() => {}} />)
+        await screen.findByText(/no teams yet/i, {}, { timeout: 5000 })
+        expect(container.firstChild.className).toContain('max-w-none')
+        expect(container.firstChild.className).not.toMatch(/max-w-(3xl|4xl|5xl|6xl|7xl)\b/)
+    })
 })

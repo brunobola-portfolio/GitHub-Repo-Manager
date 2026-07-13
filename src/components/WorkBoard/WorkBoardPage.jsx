@@ -244,7 +244,7 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
 
     return (
         <PageMount>
-        <PageShell maxWidth="2xl" padding="tight" className="space-y-7">
+        <PageShell maxWidth="full" padding="tight" className="space-y-7">
             <PageHeader
                 eyebrow="Cross-repo activity"
                 title="Work Board"

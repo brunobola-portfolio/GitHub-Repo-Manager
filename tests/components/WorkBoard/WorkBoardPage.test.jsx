@@ -311,4 +311,18 @@ describe('WorkBoardPage', () => {
             expect(screen.getByRole('tab', { name: /tech debt/i })).toHaveAttribute('aria-selected', 'true')
         })
     })
+
+    // ---------------------------------------------------------------------------
+    // Layout — Work Board is a primary-nav sibling of Dashboard/Repos and must
+    // span the same --layout-max-w shell instead of clamping to a narrower
+    // reading column (see PageShell docs).
+    // ---------------------------------------------------------------------------
+
+    it('root PageShell spans the app shell width (no max-w-6xl cap)', () => {
+        const { container } = renderPage()
+        const shellRoot = container.querySelector('.space-y-7')
+        expect(shellRoot).toBeInTheDocument()
+        expect(shellRoot.className).toContain('max-w-none')
+        expect(shellRoot.className).not.toMatch(/max-w-(3xl|4xl|5xl|6xl|7xl)\b/)
+    })
 })
