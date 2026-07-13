@@ -203,3 +203,47 @@ describe('InboxPanel — AI narrative fan-out', () => {
         expect(narrativeApi.fetchAttentionNarrative).not.toHaveBeenCalled();
     });
 });
+
+describe('InboxPanel — load-failure state', () => {
+    beforeEach(() => {
+        vi.resetAllMocks();
+        aiStatusModule.useAIStatus.mockReturnValue({ configured: false, keyOk: false });
+        aiQuotaModule.useAIQuotaState.mockReturnValue(null);
+        aiUsageModule.useAIUsage.mockReturnValue({
+            tier: 'free',
+            aiQueries: null,
+            aiFeatures: {},
+            loading: false,
+        });
+    });
+
+    it('renders a formatted error message and a Try again button, not the raw error string', async () => {
+        api.fetchInbox.mockRejectedValue(new TypeError('Failed to fetch'));
+        render(<InboxPanel />);
+        expect(await screen.findByText('Could not reach the server')).toBeInTheDocument();
+        expect(screen.getByText('Check your connection and try again.')).toBeInTheDocument();
+        expect(screen.queryByText(/failed to fetch/i)).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
+    });
+
+    it('calls refresh() when Try again is clicked, recovering the panel on success', async () => {
+        api.fetchInbox
+            .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+            .mockResolvedValueOnce({
+                sections: [{ key: 'needs_review', label: 'Needs my review', items: [] }],
+            });
+        render(<InboxPanel />);
+        await screen.findByRole('button', { name: /try again/i });
+        fireEvent.click(screen.getByRole('button', { name: /try again/i }));
+        await waitFor(() => expect(api.fetchInbox).toHaveBeenCalledTimes(2));
+        expect(await screen.findByText(/no prs waiting for your review/i)).toBeInTheDocument();
+    });
+
+    it('renders the error accent with a dark-mode variant class (AA-contrast fix)', async () => {
+        api.fetchInbox.mockRejectedValue(new TypeError('Failed to fetch'));
+        render(<InboxPanel />);
+        const button = await screen.findByRole('button', { name: /try again/i });
+        expect(button.className).toMatch(/text-red-600/);
+        expect(button.className).toMatch(/dark:text-red-400/);
+    });
+});

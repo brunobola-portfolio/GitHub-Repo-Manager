@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Inbox } from 'lucide-react';
+import { Inbox, AlertTriangle } from 'lucide-react';
 import { useInbox } from '../../../hooks/useInbox';
 import { fetchAttentionNarrative } from '../../../api/attentionNarrative';
 import { AIQuotaExceededError } from '../../../api/aiFetch';
@@ -7,12 +7,14 @@ import { useAIStatus } from '../../../hooks/useAIStatus';
 import { useAIQuotaState } from '../../../hooks/useAIQuotaState';
 import { useAIUsage } from '../../../hooks/useAIUsage';
 import { useToast } from '../../../hooks/useToast';
+import { formatUserError } from '../../../utils/errors';
 import { InboxRow } from './InboxRow';
 import { InboxSection } from './InboxSection';
 import { SnoozeModal } from './SnoozeModal';
 import { AIQuotaMeter } from '../../ui/AIQuotaMeter';
 import { AIQuotaExhaustedCard } from '../../ui/AIQuotaExhaustedCard';
 import { Skeleton } from '../../ui/Skeleton';
+import { Button } from '../../ui/Button';
 
 const NARRATIVE_TOP_N = 3;
 
@@ -29,10 +31,17 @@ const EMPTY_STATE_COPY = {
 };
 
 export function InboxPanel({ onSelectItem }) {
-    const { sections, meta, loading, error, archive, snooze } = useInbox();
+    const { sections, meta, loading, error, refresh, archive, snooze } = useInbox();
     const { toast } = useToast();
     const [activeKey, setActiveKey] = useState(null);
     const [snoozingItem, setSnoozingItem] = useState(null);
+
+    // Format the raw fetch/network error through the shared error vocabulary
+    // instead of rendering `error.message` straight to the DOM (that leaked
+    // strings like "Failed to fetch" with no retry path). Memoized by error
+    // identity — same reasoning as <AIErrorState>: formatUserError warns once
+    // per distinct unmapped error, and this recomputes on every render otherwise.
+    const formattedError = useMemo(() => (error ? formatUserError(error) : null), [error]);
 
     // Default to the first non-empty section once data lands
     useEffect(() => {
@@ -183,7 +192,24 @@ export function InboxPanel({ onSelectItem }) {
                             ))}
                         </ul>
                     )}
-                    {error && <p className="p-6 text-sm text-red-600">{String(error.message || error)}</p>}
+                    {error && formattedError && (
+                        <div role="alert" className="flex flex-col items-center justify-center p-12 text-center">
+                            <div className="w-14 h-14 mb-4 rounded-2xl bg-red-50 dark:bg-red-950/30 flex items-center justify-center">
+                                <AlertTriangle className="w-7 h-7 text-red-600 dark:text-red-400" strokeWidth={2.5} aria-hidden="true" />
+                            </div>
+                            <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                                {formattedError.title}
+                            </h4>
+                            {formattedError.body && (
+                                <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mb-4">
+                                    {formattedError.body}
+                                </p>
+                            )}
+                            <Button variant="outline-danger" size="sm" onClick={refresh}>
+                                Try again
+                            </Button>
+                        </div>
+                    )}
                     {!loading && !error && active && active.items.length === 0 && (
                         <p className="p-6 text-sm text-slate-500">
                             {meta && meta.live === false
