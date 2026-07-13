@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
+// Hoisted so the same spy instance backs every render across this file's
+// tests — `vi.mock` factories run fresh on every `useToast()` call, and a
+// brand-new `vi.fn()` per call would make `toastMock.errorFromException`
+// unassertable from the test body below.
+const { toastMock } = vi.hoisted(() => ({
+    toastMock: { success: vi.fn(), error: vi.fn(), errorFromException: vi.fn() },
+}))
+
 vi.mock('@/hooks/useAIStatus', () => ({ useAIStatus: vi.fn() }))
 vi.mock('@/hooks/useModal', () => ({ useModal: () => ({ openModalWithData: vi.fn() }) }))
 vi.mock('@/api/ai', () => ({
@@ -10,7 +18,7 @@ vi.mock('@/api/repos', () => ({
     reposApi: { setTopics: vi.fn() },
 }))
 vi.mock('@/hooks/useToast', () => ({
-    useToast: () => ({ toast: { success: vi.fn(), error: vi.fn(), errorFromException: vi.fn() } }),
+    useToast: () => ({ toast: toastMock }),
 }))
 
 import { useAIStatus } from '@/hooks/useAIStatus'
@@ -81,5 +89,26 @@ describe('SettingsTab — webhook row accessibility', () => {
 
         expect(screen.getByRole('img', { name: 'Webhook active' })).toBeInTheDocument()
         expect(screen.getByRole('img', { name: 'Webhook inactive' })).toBeInTheDocument()
+    })
+})
+
+describe('SettingsTab — webhook load failure', () => {
+    it('surfaces a toast when loading webhooks fails, instead of failing silently', async () => {
+        const props = makeProps({
+            api: {
+                fetchWebhooks: vi.fn().mockRejectedValue(new Error('network down')),
+                deleteWebhook: vi.fn(),
+                pingWebhook: vi.fn(),
+            },
+        })
+        render(<SettingsTab {...props} />)
+        fireEvent.click(screen.getByRole('button', { name: /load webhooks/i }))
+
+        await waitFor(() =>
+            expect(toastMock.errorFromException).toHaveBeenCalledWith(
+                expect.any(Error),
+                expect.objectContaining({ fallbackTitle: 'Failed to load webhooks' }),
+            ),
+        )
     })
 })

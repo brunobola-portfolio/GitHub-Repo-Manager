@@ -3,8 +3,10 @@ import { Zap, Play, RefreshCw, Loader2, CheckCircle2, XCircle, Clock } from 'luc
 import { Spinner } from '../ui/Spinner'
 import { repoActionsApi } from '../../api/repo-actions'
 import { EmptyState } from '../ui/EmptyState'
+import { SectionPanel } from '../ui/SectionPanel'
 import { Skeleton } from '../ui/Skeleton'
 import { useTabData } from '../../hooks/useTabData'
+import { useToast } from '../../hooks/useToast'
 
 const STATUS_ICONS = {
   success: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
@@ -14,6 +16,7 @@ const STATUS_ICONS = {
 }
 
 export function ActionsTab({ repo }) {
+  const { toast } = useToast()
   const owner = repo.owner?.login || repo.full_name?.split('/')[0]
   const repoName = repo.name
 
@@ -37,9 +40,13 @@ export function ActionsTab({ repo }) {
   const handleSync = async () => {
     try {
       await repoActionsApi.syncRuns(owner, repoName)
-      await load()
-    } catch {
-      // load() will surface the error through useTabData's error state
+    } catch (err) {
+      // load() below re-fetches the independent workflows/runs endpoints,
+      // which typically still succeed even when the sync itself failed —
+      // so its error state would never reflect this failure. Surface it
+      // directly instead of leaving the sync failure invisible.
+      toast.errorFromException(err, { fallbackTitle: 'Failed to sync workflow runs' })
+    } finally {
       await load()
     }
   }
@@ -93,71 +100,77 @@ export function ActionsTab({ repo }) {
   }
 
   return (
-    <div data-testid="actions-tab" className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <aside className="lg:col-span-1 space-y-2">
-        <div className="flex justify-between items-center">
+    <SectionPanel
+      icon={Zap}
+      title="Actions"
+      subtitle="Workflow runs for this repository"
+      actions={
+        <button
+          onClick={handleSync}
+          className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 ds-hover-scale"
+          aria-label="Refresh"
+        >
+          <RefreshCw className="w-4 h-4" />
+        </button>
+      }
+    >
+      <div data-testid="actions-tab" className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <aside className="lg:col-span-1 space-y-2">
           <h3 className="text-sm font-semibold">Workflows</h3>
-          <button
-            onClick={handleSync}
-            className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 ds-hover-scale"
-            aria-label="Refresh"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
-        {workflows.map(wf => (
-          <button
-            key={wf.id}
-            onClick={() => setSelected(selected?.id === wf.id ? null : wf)}
-            className={`w-full text-left p-3 rounded-lg border transition ${
-              selected?.id === wf.id
-                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30'
-                : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium truncate">{wf.name}</span>
-              <Play className="w-3 h-3 text-slate-400 shrink-0 ml-2" />
-            </div>
-            {wf.state && (
-              <p className="text-xs text-slate-500 mt-0.5">{wf.state}</p>
-            )}
-          </button>
-        ))}
-      </aside>
-      <section className="lg:col-span-2 space-y-2">
-        <h3 className="text-sm font-semibold">
-          Recent Runs{selected ? ` — ${selected.name}` : ''}
-        </h3>
-        {filteredRuns.length === 0 ? (
-          <EmptyState
-            icon={Play}
-            title="No workflow runs"
-            description={selected ? `${selected.name} hasn't been triggered yet.` : 'No workflows have run for this repository yet.'}
-          />
-        ) : (
-          <ul className="space-y-2">
-            {filteredRuns.slice(0, 30).map(run => (
-              <li
-                key={run.id}
-                className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-between ds-hover-lift"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  {STATUS_ICONS[run.conclusion || run.status] || STATUS_ICONS.in_progress}
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {run.display_title || run.name || `Run #${run.run_number}`}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {run.head_branch} · {run.event} · {new Date(run.created_at).toLocaleString()}
-                    </p>
+          {workflows.map(wf => (
+            <button
+              key={wf.id}
+              onClick={() => setSelected(selected?.id === wf.id ? null : wf)}
+              className={`w-full text-left p-3 rounded-lg border transition ${
+                selected?.id === wf.id
+                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30'
+                  : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium truncate">{wf.name}</span>
+                <Play className="w-3 h-3 text-slate-400 shrink-0 ml-2" />
+              </div>
+              {wf.state && (
+                <p className="text-xs text-slate-500 mt-0.5">{wf.state}</p>
+              )}
+            </button>
+          ))}
+        </aside>
+        <section className="lg:col-span-2 space-y-2">
+          <h3 className="text-sm font-semibold">
+            Recent Runs{selected ? ` — ${selected.name}` : ''}
+          </h3>
+          {filteredRuns.length === 0 ? (
+            <EmptyState
+              icon={Play}
+              title="No workflow runs"
+              description={selected ? `${selected.name} hasn't been triggered yet.` : 'No workflows have run for this repository yet.'}
+            />
+          ) : (
+            <ul className="space-y-2">
+              {filteredRuns.slice(0, 30).map(run => (
+                <li
+                  key={run.id}
+                  className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-between ds-hover-lift"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    {STATUS_ICONS[run.conclusion || run.status] || STATUS_ICONS.in_progress}
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {run.display_title || run.name || `Run #${run.run_number}`}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {run.head_branch} · {run.event} · {new Date(run.created_at).toLocaleString()}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+    </SectionPanel>
   )
 }

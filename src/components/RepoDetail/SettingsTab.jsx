@@ -220,7 +220,9 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
             const data = await api.fetchWebhooks()
             setWebhooks(data.data || data || [])
             setHooksLoaded(true)
-        } catch { /* ignore */ } finally {
+        } catch (err) {
+            toast.errorFromException(err, { fallbackTitle: 'Failed to load webhooks' })
+        } finally {
             setLoadingHooks(false)
         }
     }
