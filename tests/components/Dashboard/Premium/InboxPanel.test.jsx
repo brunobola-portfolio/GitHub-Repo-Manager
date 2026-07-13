@@ -227,14 +227,20 @@ describe('InboxPanel — load-failure state', () => {
     });
 
     it('calls refresh() when Try again is clicked, recovering the panel on success', async () => {
+        let resolveRetry;
         api.fetchInbox
             .mockRejectedValueOnce(new TypeError('Failed to fetch'))
-            .mockResolvedValueOnce({
-                sections: [{ key: 'needs_review', label: 'Needs my review', items: [] }],
-            });
+            .mockImplementationOnce(() => new Promise((resolve) => { resolveRetry = resolve; }));
         render(<InboxPanel />);
         await screen.findByRole('button', { name: /try again/i });
         fireEvent.click(screen.getByRole('button', { name: /try again/i }));
+        // While the retry is in flight the skeleton must REPLACE the error
+        // card, never render stacked on top of it (refresh() sets loading=true
+        // immediately but only clears `error` on success).
+        expect(screen.getByRole('list', { name: 'Loading inbox' })).toBeInTheDocument();
+        expect(screen.queryByText('Could not reach the server')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
+        resolveRetry({ sections: [{ key: 'needs_review', label: 'Needs my review', items: [] }] });
         await waitFor(() => expect(api.fetchInbox).toHaveBeenCalledTimes(2));
         expect(await screen.findByText(/no prs waiting for your review/i)).toBeInTheDocument();
     });
@@ -242,8 +248,8 @@ describe('InboxPanel — load-failure state', () => {
     it('renders the error accent with a dark-mode variant class (AA-contrast fix)', async () => {
         api.fetchInbox.mockRejectedValue(new TypeError('Failed to fetch'));
         render(<InboxPanel />);
-        const button = await screen.findByRole('button', { name: /try again/i });
-        expect(button.className).toMatch(/text-red-600/);
-        expect(button.className).toMatch(/dark:text-red-400/);
+        const alert = await screen.findByRole('alert');
+        expect(alert.innerHTML).toMatch(/text-red-600/);
+        expect(alert.innerHTML).toMatch(/dark:text-red-400/);
     });
 });

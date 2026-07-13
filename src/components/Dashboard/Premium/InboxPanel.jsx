@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Inbox, AlertTriangle } from 'lucide-react';
+import { Inbox } from 'lucide-react';
 import { useInbox } from '../../../hooks/useInbox';
 import { fetchAttentionNarrative } from '../../../api/attentionNarrative';
 import { AIQuotaExceededError } from '../../../api/aiFetch';
@@ -14,7 +14,7 @@ import { SnoozeModal } from './SnoozeModal';
 import { AIQuotaMeter } from '../../ui/AIQuotaMeter';
 import { AIQuotaExhaustedCard } from '../../ui/AIQuotaExhaustedCard';
 import { Skeleton } from '../../ui/Skeleton';
-import { Button } from '../../ui/Button';
+import { FeatureError } from '../../states';
 
 const NARRATIVE_TOP_N = 3;
 
@@ -192,23 +192,17 @@ export function InboxPanel({ onSelectItem }) {
                             ))}
                         </ul>
                     )}
-                    {error && formattedError && (
-                        <div role="alert" className="flex flex-col items-center justify-center p-12 text-center">
-                            <div className="w-14 h-14 mb-4 rounded-2xl bg-red-50 dark:bg-red-950/30 flex items-center justify-center">
-                                <AlertTriangle className="w-7 h-7 text-red-600 dark:text-red-400" strokeWidth={2.5} aria-hidden="true" />
-                            </div>
-                            <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">
-                                {formattedError.title}
-                            </h4>
-                            {formattedError.body && (
-                                <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mb-4">
-                                    {formattedError.body}
-                                </p>
-                            )}
-                            <Button variant="outline-danger" size="sm" onClick={refresh}>
-                                Try again
-                            </Button>
-                        </div>
+                    {/* `!loading` guard: refresh() sets loading=true immediately but only
+                        clears `error` on success — without it the retry skeleton would
+                        render stacked on top of the error card. */}
+                    {!loading && formattedError && (
+                        <FeatureError
+                            tone="error"
+                            title={formattedError.title}
+                            hint={formattedError.body}
+                            onRetry={refresh}
+                            className="mx-5 my-3"
+                        />
                     )}
                     {!loading && !error && active && active.items.length === 0 && (
                         <p className="p-6 text-sm text-slate-500">
