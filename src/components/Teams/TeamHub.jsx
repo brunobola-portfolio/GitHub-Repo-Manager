@@ -124,7 +124,7 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
     };
 
     return (
-        <PageShell maxWidth="3xl">
+        <PageShell maxWidth="full">
             <PageHeader
                 eyebrow="Workspace"
                 title="Team Hub"

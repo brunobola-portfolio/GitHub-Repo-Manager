@@ -44,4 +44,11 @@ describe('PageShell', () => {
         expect(container.firstChild.id).toBe('page')
         expect(container.firstChild.getAttribute('role')).toBe('main')
     })
+
+    it('maxWidth="full" renders without any max-w cap, for primary-nav pages that span the app shell', () => {
+        const { container } = render(<PageShell maxWidth="full">x</PageShell>)
+        const cls = container.firstChild.className
+        expect(cls).toContain('max-w-none')
+        expect(cls).not.toMatch(/max-w-(3xl|4xl|5xl|6xl|7xl)\b/)
+    })
 })
