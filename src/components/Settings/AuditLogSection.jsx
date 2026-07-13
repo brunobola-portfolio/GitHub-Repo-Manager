@@ -8,6 +8,7 @@ import { Skeleton } from '../ui/Skeleton'
 import { Button } from '../ui/Button'
 import { Field, Input } from '../ui/form'
 import { Select } from '../ui/Select'
+import { PanelHeader } from '../ui/PanelHeader'
 import { RowIconBadge } from '../ui/RowIconBadge'
 import { FeatureState, parseApiError } from '../states'
 import { useStickyHeaderShadow } from '../../hooks/useStickyHeaderShadow'
@@ -103,12 +104,13 @@ export function AuditLogSection() {
     return (
         <div className="space-y-5">
             {/* Header */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-start gap-3">
                 <RowIconBadge icon={Shield} tone="purple" size="lg" surface="soft" />
-                <div>
-                    <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Audit Log</h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Track all account activity and changes</p>
-                </div>
+                <PanelHeader
+                    className="flex-1"
+                    title="Audit Log"
+                    description="Track all account activity and changes"
+                />
             </div>
 
             {/* Filters */}

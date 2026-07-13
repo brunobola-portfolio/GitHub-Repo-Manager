@@ -7,6 +7,7 @@ import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
 import { Skeleton } from '../ui/Skeleton'
 import { Spinner } from '../ui/Spinner'
+import { PanelHeader } from '../ui/PanelHeader'
 import { RowIconBadge } from '../ui/RowIconBadge'
 import { useModal } from '../../hooks/useModal'
 import { UsageDashboard } from './UsageDashboard'
@@ -378,12 +379,13 @@ export function LicensePlanSection() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-start gap-3">
                 <RowIconBadge icon={Shield} tone="purple" size="lg" surface="soft" />
-                <div>
-                    <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">License & Plan</h2>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">Manage your license, plan and usage</p>
-                </div>
+                <PanelHeader
+                    className="flex-1"
+                    title="License & Plan"
+                    description="Manage your license, plan and usage"
+                />
             </div>
 
             {loading ? (
