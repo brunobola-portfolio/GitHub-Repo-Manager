@@ -153,23 +153,31 @@ export function useOrgs(user) {
         }
     }, [setTimedError])
 
-    // Auto-refresh stats when selectedOrg changes
+    // Load orgs + stats on login, then re-fetch stats (scoped to the org)
+    // only when the user explicitly switches org. Consolidated from two
+    // effects that each fired a stats fetch on login — a redundant double
+    // request every time `user` transitioned to truthy.
+    const wasLoggedInRef = useRef(false)
     useEffect(() => {
         const mocksEnabled = import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true'
-        if (mocksEnabled || user) {
-            Promise.resolve().then(() => fetchStats(selectedOrg))
-        }
-    }, [selectedOrg, user, fetchStats])
+        const isLoggedIn = mocksEnabled || !!user
+        const justLoggedIn = isLoggedIn && !wasLoggedInRef.current
+        wasLoggedInRef.current = isLoggedIn
 
-    // Load orgs and stats when user is loaded
-    useEffect(() => {
-        if (user) {
+        if (!isLoggedIn) return
+
+        if (justLoggedIn) {
             Promise.resolve().then(() => {
-                fetchOrgs()
+                if (user) fetchOrgs()
                 fetchStats()
             })
+            return
         }
-    }, [user, fetchOrgs, fetchStats])
+
+        // Not the login transition — an explicit org switch (or a
+        // mock-mode selectedOrg change): scoped stats refetch only.
+        Promise.resolve().then(() => fetchStats(selectedOrg))
+    }, [user, selectedOrg, fetchOrgs, fetchStats])
 
     /**
      * Fetch activity feed for a user

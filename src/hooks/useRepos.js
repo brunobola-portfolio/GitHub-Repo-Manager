@@ -75,20 +75,6 @@ export function useRepos(user) {
     const [isPerforming, setIsPerforming] = useState(false)
     const [results, setResults] = useState([])
 
-    // Initialize with mock data (DEV + VITE_MOCK_MODE=true only)
-    useEffect(() => {
-        if (!(import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true')) return
-        let cancelled = false
-        ;(async () => {
-            const { generateMockRepos } = await import('../__mocks__/mockRepos.js')
-            if (cancelled) return
-            const { repos: mockRepos, totalPages: mockTotalPages } = generateMockRepos(1, perPage)
-            setRepos(mockRepos)
-            setTotalPages(mockTotalPages)
-        })()
-        return () => { cancelled = true }
-    }, [perPage])
-
     /**
      * Fetch repositories from API with pagination and retry logic
      */
@@ -172,7 +158,7 @@ export function useRepos(user) {
      * @param {string} org - Target organization for transfer/mirror
      * @param {object} options - Additional options like { makePublic: true }
      */
-    async function performAction(action, items = null, org = '', options = {}) {
+    const performAction = useCallback(async function performAction(action, items = null, org = '', options = {}) {
         const repoNames = items || []
 
         if (repoNames.length === 0) {
@@ -289,7 +275,7 @@ export function useRepos(user) {
         } finally {
             setIsPerforming(false)
         }
-    }
+    }, [fetchRepos, page, perPage])
 
     /**
      * Patch a single repo in the local list without refetching.
@@ -333,7 +319,7 @@ export function useRepos(user) {
     /**
      * Archive/unarchive repositories
      */
-    async function archiveRepos(repoNames, archive = true) {
+    const archiveRepos = useCallback(async function archiveRepos(repoNames, archive = true) {
         if (!repoNames || repoNames.length === 0) {
             const msg = 'Select at least 1 repository'
             setMessage(msg)
@@ -370,12 +356,12 @@ export function useRepos(user) {
         } finally {
             setIsPerforming(false)
         }
-    }
+    }, [fetchRepos, page, perPage])
 
     /**
      * Delete repositories (dangerous!)
      */
-    async function deleteRepos(repoNames, confirmToken = 'DELETE') {
+    const deleteRepos = useCallback(async function deleteRepos(repoNames, confirmToken = 'DELETE') {
         if (!repoNames || repoNames.length === 0) {
             const msg = 'Select at least 1 repository'
             setMessage(msg)
@@ -413,12 +399,12 @@ export function useRepos(user) {
         } finally {
             setIsPerforming(false)
         }
-    }
+    }, [fetchRepos, page, perPage])
 
     /**
      * Create a new repository
      */
-    async function createRepo(name, options = {}) {
+    const createRepo = useCallback(async function createRepo(name, options = {}) {
         if (MOCK_MODE) {
             setIsPerforming(true)
             await new Promise(r => setTimeout(r, 1000))
@@ -460,7 +446,7 @@ export function useRepos(user) {
         } finally {
             setIsPerforming(false)
         }
-    }
+    }, [fetchRepos, page, perPage])
 
     /**
      * Import from Azure DevOps
