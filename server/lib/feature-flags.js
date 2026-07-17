@@ -43,6 +43,12 @@ const TIER_FEATURES = {
         teamsMax: 3,
         teamMembersMax: 5,
         auditLog: false,
+
+        // Tier default for the monthly AI $ spend cap (cents). 0 = disabled —
+        // self-hosted deployments stay opt-in-only unless an operator sets an
+        // env override (see ai-spend-cap.js resolveSpendCapCents()). Hosted
+        // SaaS enables real per-tier ceilings via AI_SPEND_CAP_CENTS_FREE/etc.
+        aiSpendCapCents: 0,
     },
     pro: {
         maxRepos: Infinity,
@@ -73,6 +79,8 @@ const TIER_FEATURES = {
         teamsMax: Infinity,
         teamMembersMax: 15,
         auditLog: false,
+
+        aiSpendCapCents: 0,
     },
     enterprise: {
         maxRepos: Infinity,
@@ -106,6 +114,8 @@ const TIER_FEATURES = {
         // SSO/SAML is on the roadmap but NOT implemented (only GitHub OAuth
         // exists). Keep it false so no surface advertises it as delivered.
         sso: false,
+
+        aiSpendCapCents: 0,
     },
 };
 

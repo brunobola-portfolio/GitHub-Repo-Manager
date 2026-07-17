@@ -4,17 +4,25 @@
  * for the whole AI surface, not just the Work Board (which has its own per-user
  * opt-in cap). Keyed per user per UTC-ish month in the `ai_spend` table.
  *
- * Disabled by default: set `AI_SPEND_CAP_CENTS` to a positive monthly per-user
- * ceiling (US cents) to enforce it. 0 / unset / invalid = unlimited — so this
- * never breaks an existing deployment, but gives operators a hard cost knob.
+ * Disabled by default: self-hosted AGPL deployments keep today's opt-in-only
+ * behavior (0 = unlimited) unless an operator sets an env override. Hosted
+ * operation resolves a **tier-aware** cap; see resolveSpendCapCents() below.
  *
- * Mirrors the proven Work Board pattern (`work-board-ai-gate.js`); a future
- * slice can unify the two and add per-tier defaults.
+ * Mirrors the proven Work Board pattern (`work-board-ai-gate.js`) and the
+ * tier-resolution pattern in `usage-meter.js`'s `checkUsageLimit()`.
  */
 
 import db from '../db.js';
+import { getUserTier } from '../middleware/require-tier.js';
+import { getFeatures } from './feature-flags.js';
 
 export const SPEND_CAP_DISABLED = 0;
+
+const TIER_ENV_OVERRIDE = {
+    free: 'AI_SPEND_CAP_CENTS_FREE',
+    pro: 'AI_SPEND_CAP_CENTS_PRO',
+    enterprise: 'AI_SPEND_CAP_CENTS_ENTERPRISE',
+};
 
 export function getCurrentMonthKey() {
     return new Date().toISOString().slice(0, 7);
@@ -26,11 +34,36 @@ export function usdToCents(costUSD) {
     return cents > 0 ? cents : 0;
 }
 
-/** Resolve the monthly per-user cap (cents) from env. 0 = disabled. */
-export function resolveSpendCapCents() {
-    const raw = Number.parseInt(process.env.AI_SPEND_CAP_CENTS ?? '', 10);
-    if (!Number.isFinite(raw) || raw < 0) return SPEND_CAP_DISABLED;
-    return raw;
+/** Parse an env var into a non-negative integer cents value, or null if unset/invalid. */
+function parseCapEnv(raw) {
+    if (raw === undefined || raw === '') return null;
+    const parsed = Number.parseInt(raw, 10);
+    if (!Number.isFinite(parsed) || parsed < 0) return null;
+    return parsed;
+}
+
+/**
+ * Resolve the monthly per-user spend cap (cents) for a tier. 0 = disabled.
+ *
+ * Resolution order:
+ *   1. Tier-specific env override (AI_SPEND_CAP_CENTS_FREE/_PRO/_ENTERPRISE)
+ *   2. Legacy flat env override (AI_SPEND_CAP_CENTS) — a self-hoster's
+ *      one-number override-everything escape hatch, kept for back-compat.
+ *   3. The tier's TIER_FEATURES default (aiSpendCapCents)
+ *   4. 0 (disabled)
+ */
+export function resolveSpendCapCents(tier) {
+    const tierEnvName = TIER_ENV_OVERRIDE[tier];
+    const tierOverride = tierEnvName ? parseCapEnv(process.env[tierEnvName]) : null;
+    if (tierOverride !== null) return tierOverride;
+
+    const legacyOverride = parseCapEnv(process.env.AI_SPEND_CAP_CENTS);
+    if (legacyOverride !== null) return legacyOverride;
+
+    const tierDefault = getFeatures(tier)?.aiSpendCapCents;
+    if (Number.isFinite(tierDefault) && tierDefault > 0) return tierDefault;
+
+    return SPEND_CAP_DISABLED;
 }
 
 /** Accumulate a call's cost into the user's running monthly spend. No-op for
@@ -59,7 +92,8 @@ export function getAIMonthlySpend(userId) {
  * @returns {{ allowed: boolean, capCents: number, spentCents: number }}
  */
 export function checkAISpendCap(userId) {
-    const capCents = resolveSpendCapCents();
+    const tier = getUserTier(userId);
+    const capCents = resolveSpendCapCents(tier);
     if (capCents === SPEND_CAP_DISABLED) {
         return { allowed: true, capCents, spentCents: 0 };
     }

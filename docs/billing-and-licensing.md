@@ -77,6 +77,28 @@ const { privateKey, publicKey } = await generateKeyPair()
 // Store publicKey wherever license validation happens
 ```
 
+## AI monthly $ spend cap
+
+`server/lib/ai-spend-cap.js` enforces an optional monthly per-user dollar
+ceiling on AI spend, on top of the count-based quotas in `feature-flags.js`.
+
+**Self-hosted AGPL deployments stay disabled by default** — the cap only
+activates if an operator explicitly sets one of the env overrides below.
+There is no bill-shock risk from running the open-source project as-is.
+
+Hosted operation resolves a tier-aware cap in this order:
+
+1. Tier-specific env override — `AI_SPEND_CAP_CENTS_FREE` /
+   `AI_SPEND_CAP_CENTS_PRO` / `AI_SPEND_CAP_CENTS_ENTERPRISE` (cents).
+2. Legacy flat override — `AI_SPEND_CAP_CENTS` (cents), a one-number
+   escape hatch that applies to every tier.
+3. The tier's default in `TIER_FEATURES.<tier>.aiSpendCapCents` (ships as
+   `0`/disabled for every tier out of the box).
+4. `0` (disabled).
+
+See `.env.example` for the recommended hosted values (illustrative, not
+calibrated to real provider costs).
+
 ### Activating a license (user instructions)
 
 1. Open GitHub Repo Manager.
