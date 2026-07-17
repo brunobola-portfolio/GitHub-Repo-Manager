@@ -558,6 +558,16 @@ See [`docs/ai-providers.md`](docs/ai-providers.md) for per-provider setup instru
 
 For detailed architecture documentation, see [`docs/architecture/overview.md`](docs/architecture/overview.md).
 
+### Deployment
+
+This is a two-part app, not a one-click static deploy: the frontend
+(`dist/` after `npm run build`) is static-hostable on any CDN/static host,
+but the backend is a long-running Node process (Express + SQLite) that needs
+somewhere to run and a persistent volume for `server/data/`. There is no
+serverless-function deployment target for the backend today. See
+[`docs/operations.md`](docs/operations.md) for the day-two operations guide
+(backups, health probes, release flow).
+
 ---
 
 ## Tech Stack

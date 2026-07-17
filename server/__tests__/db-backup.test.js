@@ -95,9 +95,9 @@ describe('runDbBackupOnce', () => {
         expect(result).toEqual({ skipped: true, reason: 'disabled' });
     });
 
-    it('no-ops on a non-sqlite (Postgres) adapter', async () => {
-        const fakePg = { type: 'postgres' };
-        const result = await runDbBackupOnce({ database: fakePg, dir: path.join(tmpDir, 'backups') });
+    it('no-ops on a non-sqlite adapter (defensive — SQLite is the only supported backend)', async () => {
+        const fakeAdapter = { type: 'other' };
+        const result = await runDbBackupOnce({ database: fakeAdapter, dir: path.join(tmpDir, 'backups') });
         expect(result).toEqual({ skipped: true, reason: 'not-sqlite' });
     });
 

@@ -6,8 +6,8 @@
  * preserving backward compatibility with the existing codebase where every
  * route does `db.prepare('SQL').get/all/run(params)`.
  *
- * An async façade (run/get/all returning Promises) is also provided so that
- * future PostgreSQL-based code can use the same interface without branching.
+ * An async façade (run/get/all returning Promises) is also provided for
+ * interface parity with call sites written against an async db API.
  */
 
 import path from 'path';

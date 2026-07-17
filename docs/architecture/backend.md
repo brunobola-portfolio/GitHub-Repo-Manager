@@ -66,10 +66,9 @@ server/
 │   ├── utils.js                  # Shared utility functions
 │   ├── dashboard-aggregator.js   # Composes Live Inbox from event-aggregation helpers
 │   ├── validators.js             # Zod schemas for request validation
-│   ├── db-adapter.js             # Database adapter factory
+│   ├── db-adapter.js             # Database adapter factory (SQLite only)
 │   └── adapters/
-│       ├── sqlite-adapter.js     # better-sqlite3 wrapper
-│       └── postgres-adapter.js   # node-postgres (pg) wrapper
+│       └── sqlite-adapter.js     # better-sqlite3 wrapper
 ├── workers/
 │   ├── migration-worker.js       # BullMQ processor for migration plans
 │   └── ai-worker.js              # BullMQ processor for repo indexing
@@ -184,16 +183,16 @@ Business logic is extracted into dedicated service modules at the top level of
 
 ### Adapter Pattern
 
-The database layer uses an adapter pattern (`lib/db-adapter.js`) that selects
-the backend based on the `DATABASE_URL` environment variable:
+The database layer uses an adapter pattern (`lib/db-adapter.js`), but SQLite
+is the only supported backend:
 
 - **No URL or `sqlite:...`** -- `SQLiteAdapter` (default). Wraps `better-sqlite3`
   with its synchronous `db.prepare().get/all/run()` API. An async facade is also
-  provided for interface parity with PostgreSQL.
-- **`postgres://...`** -- `PostgresAdapter`. Wraps `node-postgres` with async
-  methods. Automatically converts `?` placeholders to `$N` positional params.
-  The `pg` package is dynamically imported only when needed, keeping
-  SQLite-only deployments lightweight.
+  provided for interface parity with call sites written against an async db API.
+- **`postgres://...` / `postgresql://...`** -- rejected. PostgreSQL support was
+  removed; the factory throws a clear error at boot instead of falling
+  through to a nonexistent adapter. See [`docs/operations.md`](../operations.md)
+  for the SQLite backup/restore/scale story.
 
 ### Schema Management
 
