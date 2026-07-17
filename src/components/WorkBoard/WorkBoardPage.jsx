@@ -111,7 +111,7 @@ function WorkBoardEmptyState({ webhookConnected, onRefresh }) {
                         )}
                     </span>
                 </div>
-                <div className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/5 p-3 text-left text-sm text-slate-400 dark:text-slate-400">
+                <div className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white/80 dark:bg-white/5 p-3 text-left text-sm text-slate-500 dark:text-slate-400">
                     <span className="h-4 w-4 rounded-full border-2 border-slate-300 dark:border-slate-600 shrink-0" />
                     Open a PR or issue
                 </div>

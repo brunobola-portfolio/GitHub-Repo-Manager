@@ -227,7 +227,7 @@ function AppContent() {
   // Warm the palette chunk during idle time — the entry bundle stays lean
   // but the first Ctrl+K doesn't pay a network round-trip.
   useEffect(() => {
-    const warm = () => { import('./components/CommandPalette') }
+    const warm = () => { import('./components/CommandPalette').catch(() => {}) }
     if (typeof window.requestIdleCallback === 'function') {
       const id = window.requestIdleCallback(warm, { timeout: 5000 })
       return () => window.cancelIdleCallback(id)
@@ -735,6 +735,7 @@ function AppContent() {
                     totalPages={totalPages}
                     onRefresh={refresh}
                     onRepoClick={handleOpenRepo}
+                    onLogin={handleLogin}
                     initialFilters={viewParams?.initialFilters}
                     initialSort={viewParams?.initialSort}
                   />

@@ -727,6 +727,11 @@ function ActionsTab({ assignedRepos, onShowStats }) {
             if (!wfRes.ok) {
                 setActionsError(true);
                 toast.error('Failed to load actions');
+            } else if (!runRes.ok) {
+                // Workflows loaded fine but runs didn't — a narrower failure
+                // than actionsError (which blanks the whole tab), so just
+                // toast it and leave the workflow list usable.
+                toast.error('Failed to load workflow runs');
             }
         } catch (error) {
             setActionsError(true);
