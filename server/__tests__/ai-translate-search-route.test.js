@@ -46,6 +46,13 @@ vi.mock('../db.js', () => ({
     },
 }))
 
+const checkAISpendCap = vi.fn(() => ({ allowed: true, capCents: 0, spentCents: 0 }))
+const recordAISpend = vi.fn()
+vi.mock('../lib/ai-spend-cap.js', () => ({
+    checkAISpendCap: (...a) => checkAISpendCap(...a),
+    recordAISpend: (...a) => recordAISpend(...a),
+}))
+
 vi.mock('../lib/github-api.js', () => ({ githubApi: vi.fn(() => Promise.resolve({ data: {} })) }))
 
 const { clearTranslateSearchCache } = await import('../lib/translate-search.js')
@@ -68,6 +75,7 @@ describe('POST /api/ai/translate-search', () => {
         vi.clearAllMocks()
         clearTranslateSearchCache()
         checkUsageLimit.mockImplementation(() => ({ allowed: true, current: 0, limit: 100, remaining: 100 }))
+        checkAISpendCap.mockImplementation(() => ({ allowed: true, capCents: 0, spentCents: 0 }))
     })
 
     it('returns the translated payload on first call', async () => {
@@ -128,5 +136,30 @@ describe('POST /api/ai/translate-search', () => {
             .send({ q: 'open PRs' })
         expect(res.status).toBe(429)
         expect(mockGenerate).not.toHaveBeenCalled()
+    })
+
+    // Regression coverage for FIX-2 (2026-07-17 audit): translate-search used
+    // to call providerGenerateWithRetry() directly, bypassing the monthly
+    // spend cap that guardedGenerate() enforces everywhere else.
+    it('routes through guardedGenerate: returns 429 AI_SPEND_CAP_REACHED and never calls the provider when over cap', async () => {
+        checkAISpendCap.mockImplementation(() => ({ allowed: false, capCents: 500, spentCents: 500 }))
+        const res = await request(await buildApp())
+            .post('/api/ai/translate-search')
+            .send({ q: 'open PRs' })
+        expect(res.status).toBe(429)
+        expect(res.body.code).toBe('AI_SPEND_CAP_REACHED')
+        expect(mockGenerate).not.toHaveBeenCalled()
+    })
+
+    it('records spend via guardedGenerate on a successful call', async () => {
+        mockGenerate.mockResolvedValue({
+            text: JSON.stringify({ summary: 's', queries: [{ type: 'pr', ghQuery: 'is:pr' }] }),
+            costUSD: 0.004,
+        })
+        const res = await request(await buildApp())
+            .post('/api/ai/translate-search')
+            .send({ q: 'open PRs, spend-tracked' })
+        expect(res.status).toBe(200)
+        expect(recordAISpend).toHaveBeenCalledWith(1, 0.004)
     })
 })

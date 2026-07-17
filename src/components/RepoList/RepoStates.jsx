@@ -21,7 +21,7 @@ export function LoadingState() {
  * variant gets its own visual (amber lock + copy); `BACKEND_UNAVAILABLE`
  * also appends the "how to fix" hint block.
  */
-export function ErrorState({ error, errorInfo, onRefresh }) {
+export function ErrorState({ error, errorInfo, onRefresh, onLogin }) {
 	if (errorInfo?.type === 'AUTHENTICATION') {
 		return (
 			<div className="flex flex-col items-center justify-center py-20">
@@ -32,6 +32,9 @@ export function ErrorState({ error, errorInfo, onRefresh }) {
 				<p className="text-slate-500 dark:text-slate-400 text-sm text-center max-w-md mb-4">
 					Your session has expired. Please login again to access your repositories.
 				</p>
+				{onLogin && (
+					<Button variant="primary" onClick={onLogin}>Log in again</Button>
+				)}
 			</div>
 		)
 	}

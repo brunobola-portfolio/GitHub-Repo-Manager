@@ -9,12 +9,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // ---------------------------------------------------------------------------
 // Initialise the database adapter.
 //
-// For SQLite (the default), this creates a thin wrapper around better-sqlite3
-// that preserves the synchronous `db.prepare('SQL').get/all/run()` API used
-// by every route in the codebase.
+// SQLite (better-sqlite3) is the only supported backend. This creates a thin
+// wrapper around better-sqlite3 that preserves the synchronous
+// `db.prepare('SQL').get/all/run()` API used by every route in the codebase.
 //
-// For PostgreSQL (when DATABASE_URL is set), the adapter uses node-postgres
-// and exposes the same interface with async methods.
+// A `DATABASE_URL` that points at PostgreSQL fails fast here with a clear
+// error — see docs/operations.md.
 //
 // Top-level await is supported because the project uses ESM ("type": "module").
 // ---------------------------------------------------------------------------

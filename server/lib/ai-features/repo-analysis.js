@@ -61,15 +61,21 @@ export async function analyzeRepo(ctx, repoData, readmeContent, fileStructure) {
         `;
 
     try {
-        const { text } = await provider.generate({ prompt });
+        const { text, usage, costUSD } = await provider.generate({ prompt });
         const aiAnalysis = JSON.parse(text);
 
-        return {
+        const result = {
             ...aiAnalysis,
             health_score: quality.overall,
             quality_breakdown: quality.breakdown,
             patterns: quality.patterns
         };
+        // Non-enumerable so JSON.stringify (route responses / DB writes that
+        // spread this object) never leak internal cost bookkeeping — callers
+        // that need it (spend-cap accounting) read the property directly.
+        Object.defineProperty(result, '_costUSD', { value: costUSD ?? null, enumerable: false });
+        Object.defineProperty(result, '_usage', { value: usage ?? null, enumerable: false });
+        return result;
     } catch (error) {
         logger.error({ err: error }, 'Repository analysis failed');
         if (error instanceof AIError && error.code === AI_ERROR_CODE.NOT_FOUND) {

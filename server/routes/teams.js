@@ -6,6 +6,7 @@ import { teamCreateSchema, teamMemberSchema, teamRepoSchema } from '../lib/valid
 import { validateBody } from '../middleware/validate-request.js';
 import { auditLog } from '../lib/audit.js';
 import { getFeatures } from '../lib/feature-flags.js';
+import { notifyMemberAdded } from '../lib/team-notify.js';
 
 const router = express.Router();
 
@@ -130,7 +131,7 @@ router.get('/:id', requireAuth, (req, res) => {
     }
 });
 
-// Add Member (Simulated Invite by Username)
+// Add Member by Username
 router.post('/:id/members', requireAuth, validateBody(teamMemberSchema), async (req, res) => {
     const { username } = req.validatedBody;
 
@@ -161,7 +162,7 @@ router.post('/:id/members', requireAuth, validateBody(teamMemberSchema), async (
                     VALUES (?, ?, ?, ?)
                     ON CONFLICT(id) DO UPDATE SET username=excluded.username
                 `).run(ghUser.id, ghUser.login, ghUser.avatar_url, ghUser.email);
-                user = { id: ghUser.id };
+                user = { id: ghUser.id, username: ghUser.login, email: ghUser.email };
             } catch (e) {
                 return errorResponse(res, 404, 'User not found on GitHub', 'USER_NOT_FOUND');
             }
@@ -173,7 +174,23 @@ router.post('/:id/members', requireAuth, validateBody(teamMemberSchema), async (
         `).run(req.params.id, user.id);
 
         auditLog(req, 'team.member.add', 'team', req.params.id, { username, role: 'member' });
-        res.status(201).json({ success: true });
+
+        // Notify the added user by email that they've joined the team.
+        // Best-effort: notifyMemberAdded never throws — a missing email or a
+        // delivery failure resolves to `notified: false` and is logged, it
+        // never fails the member-add itself. There is no in-app notification
+        // store today (see docs/architecture/teams.md), so email is the only
+        // channel; the UI surfaces `notified` to tell the admin whether the
+        // new member was actually told.
+        const team = db.prepare('SELECT name FROM teams WHERE id = ?').get(req.params.id);
+        const { notified } = await notifyMemberAdded({
+            email: user.email,
+            username,
+            teamName: team?.name || 'a team',
+            addedByUsername: req.session.userLogin || req.session.user?.username || null,
+        });
+
+        res.status(201).json({ success: true, notified });
     } catch (error) {
         if (error.message.includes('UNIQUE constraint failed')) {
             return errorResponse(res, 400, 'User is already a member', 'DUPLICATE_MEMBER');

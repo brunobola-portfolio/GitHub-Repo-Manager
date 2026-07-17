@@ -287,12 +287,15 @@ Key services:
 - `server/migration-engine.js` — Plan-based migration with task types: `repo`, `repo-tfvc`, `work-items`, `wiki`.
 - `server/migration-planner.js` — AI-assisted (Gemini) or fallback risk analysis for migrations.
 
-## Database Abstraction Layer
+## Database
 
-The application supports two database backends via `server/lib/db-adapter.js`:
-
-- **SQLite** (default): Uses `better-sqlite3` with WAL mode. The adapter preserves the synchronous `db.prepare().get/all/run()` API used throughout the route layer.
-- **PostgreSQL**: Activated when the `DATABASE_URL` environment variable is set. Uses `node-postgres` (`pg`) and exposes the same interface with async methods (top-level `await` is supported via ESM `"type": "module"`).
+SQLite (`better-sqlite3`, WAL mode) is the only supported backend, via
+`server/lib/db-adapter.js`. The adapter preserves the synchronous
+`db.prepare().get/all/run()` API used throughout the route layer. A
+`DATABASE_URL` pointing at PostgreSQL fails fast at boot with a clear error
+instead of silently doing something unsupported — see
+[`docs/operations.md`](../operations.md) for backup/restore and scale
+guidance.
 
 Schema management has a single source of truth — **there are no loose `.sql` files** (the old drifting `server/migrations/00X-*.sql` copies were removed). `server/db.js` (`initDB()`) applies the idempotent base schema (`CREATE TABLE/INDEX IF NOT EXISTS`), then `server/lib/db-migrations.js` applies the ordered, versioned migrations (currently **v28**) recorded in a `schema_migrations(version, name, applied_at)` ledger. Every `up(db)` is intentionally idempotent (`addColumnIfMissing` + `IF NOT EXISTS`), so the runner can safely re-apply on a database that predates the ledger. Add a new schema change by appending an entry to `MIGRATIONS` with the next version number — never by adding a `.sql` file.
 
@@ -391,8 +394,8 @@ keep a long-running instance healthy without operator babysitting:
   and an overlap guard prevents a slow pass from re-entering.
 - **Scheduled backups** ([`server/lib/db-backup.js`](../../server/lib/db-backup.js)) —
   better-sqlite3 online backup (`db.backup()`, WAL-safe) into `DB_BACKUP_DIR`
-  (default `<db dir>/backups`), keeping `DB_BACKUP_KEEP` (default 7). No-ops on
-  Postgres. Restore runbook in [`docs/operations.md`](../operations.md).
+  (default `<db dir>/backups`), keeping `DB_BACKUP_KEEP` (default 7). Restore
+  runbook in [`docs/operations.md`](../operations.md).
 - **Health probes** ([`server/routes/health.js`](../../server/routes/health.js)) —
   K8s-style `GET /api/health/live` (200 unless shutting down; never touches the
   DB) and `GET /api/health/ready` (DB + session-store checks, 100 ms budget

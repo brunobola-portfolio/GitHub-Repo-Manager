@@ -9,6 +9,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
+import { renderWithProviders } from '../../helpers/render-with-providers'
 
 vi.mock('framer-motion', async (importOriginal) => {
     const actual = await importOriginal()
@@ -54,6 +55,14 @@ function renderDetails() {
         <ToastProvider>
             <TeamDetails team={{ id: 1, name: 'Platform' }} user={{ login: 'me' }} userRepos={[]} onBack={() => {}} />
         </ToastProvider>
+    )
+}
+
+// Pairs ToastProvider with a real ToastContainer so a test can assert on
+// the rendered toast text — used by the notify-on-add coverage below.
+function renderDetailsWithToasts() {
+    return renderWithProviders(
+        <TeamDetails team={{ id: 1, name: 'Platform' }} user={{ login: 'me' }} userRepos={[]} onBack={() => {}} />
     )
 }
 
@@ -180,5 +189,46 @@ describe('TeamDetails — load errors surface (not empty states)', () => {
         fireEvent.click(access)
         expect(await screen.findByText(/couldn't load collaborators/i, {}, { timeout: 5000 })).toBeInTheDocument()
         expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
+    })
+})
+
+describe('TeamDetails — surfaces whether the added member was notified', () => {
+    const JSON_HEADERS = { get: () => 'application/json' }
+
+    function mockFetchWithMemberAddResponse(notifiedResponse) {
+        return vi.fn((url, opts = {}) => {
+            if (url === '/api/teams/1' && (!opts.method || opts.method === 'GET')) {
+                return Promise.resolve({ ok: true, headers: JSON_HEADERS, json: async () => ({ members: [BOB], repos: [], currentUserRole: 'owner' }) })
+            }
+            if (url.startsWith('/api/search/users')) {
+                return Promise.resolve({ ok: true, headers: JSON_HEADERS, json: async () => ([{ id: 9, login: 'newdev', avatar_url: '' }]) })
+            }
+            if (url === '/api/teams/1/members' && opts.method === 'POST') {
+                return Promise.resolve({ ok: true, headers: JSON_HEADERS, json: async () => notifiedResponse })
+            }
+            return Promise.resolve({ ok: true, headers: JSON_HEADERS, json: async () => ({}) })
+        })
+    }
+
+    it('toasts that the member was emailed when the server reports notified:true', { timeout: 20000 }, async () => {
+        global.fetch = mockFetchWithMemberAddResponse({ success: true, notified: true })
+        renderDetailsWithToasts()
+        await gotoMembers()
+        fireEvent.click(screen.getByRole('button', { name: /add member/i }))
+        const combo = await screen.findByRole('combobox', { name: /search github username/i }, { timeout: 5000 })
+        fireEvent.change(combo, { target: { value: 'newdev' } })
+        fireEvent.click(await screen.findByRole('option', { name: /newdev/i }, { timeout: 5000 }))
+        expect(await screen.findByText(/they've been emailed/i, {}, { timeout: 5000 })).toBeInTheDocument()
+    })
+
+    it('toasts that the member was not notified when the server reports notified:false', { timeout: 20000 }, async () => {
+        global.fetch = mockFetchWithMemberAddResponse({ success: true, notified: false })
+        renderDetailsWithToasts()
+        await gotoMembers()
+        fireEvent.click(screen.getByRole('button', { name: /add member/i }))
+        const combo = await screen.findByRole('combobox', { name: /search github username/i }, { timeout: 5000 })
+        fireEvent.change(combo, { target: { value: 'newdev' } })
+        fireEvent.click(await screen.findByRole('option', { name: /newdev/i }, { timeout: 5000 }))
+        expect(await screen.findByText(/wasn't notified by email/i, {}, { timeout: 5000 })).toBeInTheDocument()
     })
 })

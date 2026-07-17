@@ -96,6 +96,147 @@ export function incrementAIUsage(userId, featureMetric) {
     incrementAIUsageTxn(userId, featureMetric);
 }
 
+// ---------------------------------------------------------------------------
+// Atomic guarded increment — closes the check-then-increment TOCTOU race that
+// checkUsageLimit()/incrementUsage() (and checkAIFeatureLimit()/
+// incrementAIUsage()) have whenever a slow provider call sits between the
+// (read-only) check and the (write) increment: N concurrent requests can all
+// read count < limit before any of them writes, letting all N through even
+// though only `limit - count` should have been allowed.
+//
+// Mirrors `chargeMigrationQuotaTxn` (server/routes/migration.js): a single
+// guarded UPDATE (`WHERE count < ?`) so the check-and-increment is one atomic
+// step. Call BEFORE the guarded work (e.g. the AI provider call); on failure,
+// call the matching release function to give the unit(s) back (compensating
+// decrement) so a failed call doesn't permanently burn the user's quota.
+//
+// These are additive, opt-in primitives for new/updated call sites.
+// checkUsageLimit()/incrementUsage()/checkAIFeatureLimit()/incrementAIUsage()
+// above are UNCHANGED — every existing caller keeps working exactly as before.
+// ---------------------------------------------------------------------------
+
+// SQLite bind parameters can't be Infinity (better-sqlite3 rejects non-finite
+// numbers); substitute a ceiling no real monthly count will ever reach so an
+// "unlimited" tier's guarded UPDATE is still functionally unlimited.
+const UNBOUNDED_LIMIT = Number.MAX_SAFE_INTEGER;
+
+function guardedBump(userId, metricType, start, end, limit) {
+    db.prepare(`
+        INSERT INTO usage_metrics (user_id, metric_type, count, period_start, period_end)
+        VALUES (?, ?, 0, ?, ?)
+        ON CONFLICT(user_id, metric_type, period_start) DO NOTHING
+    `).run(userId, metricType, start, end);
+    return db.prepare(`
+        UPDATE usage_metrics SET count = count + 1, updated_at = datetime('now')
+        WHERE user_id = ? AND metric_type = ? AND period_start = ? AND count < ?
+    `).run(userId, metricType, start, limit);
+}
+
+function guardedUnbump(userId, metricType, start) {
+    db.prepare(`
+        UPDATE usage_metrics SET count = MAX(0, count - 1), updated_at = datetime('now')
+        WHERE user_id = ? AND metric_type = ? AND period_start = ?
+    `).run(userId, metricType, start);
+}
+
+const guardedIncrementTxn = db.transaction(guardedBump);
+
+/**
+ * Atomically check-and-consume one unit of `metricType` for `userId`, gated
+ * by the tier's resolved limit. Returns the same `{ allowed, current, limit,
+ * remaining }` shape as checkUsageLimit(), except when `allowed` is true the
+ * increment has ALREADY happened — callers must NOT also call incrementUsage()
+ * for this unit, and MUST call releaseGuardedIncrement() if the work that
+ * consumed the unit subsequently fails.
+ */
+export function guardedIncrement(userId, metricType) {
+    const tier = getUserTier(userId);
+    const features = getFeatures(tier);
+    const featureKey = METRIC_TO_FEATURE[metricType] || metricType;
+    const limit = features[featureKey] ?? Infinity;
+    const { start, end } = getCurrentPeriod();
+    const boundLimit = Number.isFinite(limit) ? limit : UNBOUNDED_LIMIT;
+
+    const r = guardedIncrementTxn(userId, metricType, start, end, boundLimit);
+    const current = getCurrentUsage(userId, metricType);
+    return {
+        allowed: r.changes > 0,
+        current,
+        limit,
+        remaining: Number.isFinite(limit) ? Math.max(0, limit - current) : Infinity,
+    };
+}
+
+/**
+ * Compensating decrement — releases one unit reserved by guardedIncrement()
+ * when the work it guarded (e.g. an AI provider call) fails after the
+ * reservation succeeded. Floors at 0 so a double-release can't go negative.
+ */
+export function releaseGuardedIncrement(userId, metricType) {
+    const { start } = getCurrentPeriod();
+    guardedUnbump(userId, metricType, start);
+}
+
+// Atomic analogue of incrementAIUsage(): reserves one unit of BOTH the
+// feature metric and the global ai_queries counter in a single transaction.
+// If either is at its limit, NEITHER is incremented (full rollback) and the
+// blocking metric is reported.
+const guardedIncrementAIUsageTxn = db.transaction((userId, featureMetric, start, end, featureLimit, queriesLimit) => {
+    const hasFeature = !!featureMetric && featureMetric !== 'ai_queries';
+    if (hasFeature) {
+        const fr = guardedBump(userId, featureMetric, start, end, featureLimit);
+        if (fr.changes === 0) return { blockedOn: featureMetric };
+    }
+    const qr = guardedBump(userId, 'ai_queries', start, end, queriesLimit);
+    if (qr.changes === 0) {
+        if (hasFeature) guardedUnbump(userId, featureMetric, start);
+        return { blockedOn: 'ai_queries' };
+    }
+    return { blockedOn: null };
+});
+
+/**
+ * Atomic analogue of checkAIFeatureLimit() + incrementAIUsage(): reserves one
+ * unit of `featureMetric` AND the global `ai_queries` counter atomically,
+ * gated by both limits — mirroring incrementAIUsage()'s existing pairing, but
+ * BEFORE the provider call instead of after. Returns `{ allowed, metric,
+ * current, limit, remaining }` (same shape checkAIFeatureLimit() returns, so
+ * `quotaExceededResponse()` accepts it unchanged). Call
+ * releaseGuardedAIUsage() if the guarded work subsequently fails.
+ */
+export function guardedIncrementAIUsage(userId, featureMetric) {
+    const { start, end } = getCurrentPeriod();
+    const tier = getUserTier(userId);
+    const features = getFeatures(tier);
+    const featureLimit = features[METRIC_TO_FEATURE[featureMetric] || featureMetric] ?? Infinity;
+    const queriesLimit = features[METRIC_TO_FEATURE.ai_queries] ?? Infinity;
+    const fBound = Number.isFinite(featureLimit) ? featureLimit : UNBOUNDED_LIMIT;
+    const qBound = Number.isFinite(queriesLimit) ? queriesLimit : UNBOUNDED_LIMIT;
+
+    const result = guardedIncrementAIUsageTxn(userId, featureMetric, start, end, fBound, qBound);
+    const metric = result.blockedOn || featureMetric;
+    const limit = metric === 'ai_queries' ? queriesLimit : featureLimit;
+    const current = getCurrentUsage(userId, metric);
+    return {
+        allowed: !result.blockedOn,
+        metric,
+        current,
+        limit,
+        remaining: Number.isFinite(limit) ? Math.max(0, limit - current) : Infinity,
+    };
+}
+
+/**
+ * Release the unit(s) reserved by guardedIncrementAIUsage() when the AI call
+ * it guarded fails. Mirrors incrementAIUsage()'s pairing: releases BOTH the
+ * feature metric (if any) and the global ai_queries counter.
+ */
+export function releaseGuardedAIUsage(userId, featureMetric) {
+    const { start } = getCurrentPeriod();
+    if (featureMetric && featureMetric !== 'ai_queries') guardedUnbump(userId, featureMetric, start);
+    guardedUnbump(userId, 'ai_queries', start);
+}
+
 // Build a standard 429 error body for quota-exceeded responses.
 // All AI endpoints should use this so clients can parse a consistent shape
 // (error, message, metric, limit, current, remaining, upgradeUrl).

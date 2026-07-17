@@ -358,11 +358,11 @@ router.post('/ai/translate-search', requireAuth, requireScope('ai'), validateBod
 
     try {
         const prompt = buildTranslatePrompt({ q });
-        const { text, parsed } = await providerGenerateWithRetry(req.aiProvider, {
+        const { text, parsed } = await guardedGenerate(req, {
             prompt,
             schema: TRANSLATE_SEARCH_SCHEMA,
             maxOutputTokens: TRANSLATE_SEARCH_LIMITS.maxOutputTokens,
-        });
+        }, { feature: 'translate_search' });
 
         const payload = parsed || safeJsonParse(text);
         const shaped = shapeTranslation(payload);

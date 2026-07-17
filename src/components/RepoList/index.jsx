@@ -35,6 +35,7 @@ export function RepoList({
 	totalPages,
 	onRefresh,
 	onRepoClick,
+	onLogin,
 	initialFilters,
 	initialSort,
 }) {
@@ -131,7 +132,7 @@ export function RepoList({
 			{loading ? (
 				<LoadingState />
 			) : error ? (
-				<ErrorState error={error} errorInfo={errorInfo} onRefresh={onRefresh} />
+				<ErrorState error={error} errorInfo={errorInfo} onRefresh={onRefresh} onLogin={onLogin} />
 			) : filteredRepos.length === 0 ? (
 				<EmptyState
 					hasRepos={repos.length > 0}

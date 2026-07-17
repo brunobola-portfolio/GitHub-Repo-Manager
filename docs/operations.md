@@ -58,9 +58,9 @@ green before and after the tag.
 
 ## Backup & restore
 
-**Applies to the default SQLite deployment.** If you run Postgres
-(`DATABASE_URL=postgres://…`), use that database's native backup tooling
-instead — the scheduled backup below no-ops with a log line on Postgres.
+SQLite (better-sqlite3) is the only supported database — there is no
+PostgreSQL option. A `DATABASE_URL` that points at Postgres fails fast at
+boot (see [`server/lib/db-adapter.js`](../server/lib/db-adapter.js)).
 
 The single SQLite file (`server/data/manager.db`) holds users, AES-GCM-encrypted
 BYOK credentials and Azure PATs, migration plans/marks, audit logs and sessions.
@@ -104,6 +104,24 @@ ship those files off-box (rsync/object storage) on your own schedule.
 
 > The backup files are full, self-contained SQLite databases — you can inspect
 > one read-only before restoring: `sqlite3 manager-<ISO>.db ".tables"`.
+
+### Scale expectations
+
+SQLite is a single-writer, single-file database. It comfortably handles this
+app's workload for a single-instance self-host (WAL mode allows concurrent
+readers alongside the one writer), but two things follow directly from that:
+
+- **No horizontal write scaling.** You cannot run multiple app instances
+  against the same `manager.db` for write throughput — pick one instance as
+  the writer, or scale vertically (more CPU/RAM/disk IOPS on that one box).
+- **No built-in replication.** High availability means restoring from the
+  most recent backup onto a standby, not automatic failover. Plan your
+  `DB_BACKUP_DIR` retention and off-box shipping cadence accordingly (see
+  above).
+
+If you outgrow a single SQLite file (very large teams, multi-region writes),
+that is a genuine re-architecture, not a config flag — there is no
+"just set DATABASE_URL" escape hatch.
 
 ---
 

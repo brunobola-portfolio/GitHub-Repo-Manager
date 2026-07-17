@@ -95,6 +95,22 @@ afterEach(() => {
 // ---------------------------------------------------------------------------
 
 describe('erasure registry completeness', () => {
+    it('scans the REAL production schema (initDB), not an empty/fixture db', () => {
+        // Guards against the scan trivially "passing" because _db has no
+        // tables (e.g. initDB silently no-op'd, or a future refactor swaps
+        // in a fixture db here) — an empty schema always reports zero
+        // unclassified tables, which would defeat this whole guardrail.
+        // `_db` is built by buildFullDb() -> initDB(db), where initDB is the
+        // *actual* server/db.js export (imported above before the module
+        // mock swaps only the `default` singleton) — the same function that
+        // creates the production schema. Threshold set comfortably below the
+        // current table count so routine schema growth doesn't rot this test.
+        const tableCount = _db
+            .prepare("SELECT COUNT(*) c FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+            .get().c;
+        expect(tableCount).toBeGreaterThanOrEqual(30);
+    });
+
     it('classifies every table that carries a user-keyed column', () => {
         const unclassified = scanSchemaForUnclassifiedUserTables(_db);
         expect(

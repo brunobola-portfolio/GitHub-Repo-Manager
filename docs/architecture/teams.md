@@ -64,7 +64,7 @@ with schemas from `server/lib/validators.js`.
 
 | Method | Path | Description | Permission |
 | ------ | ---- | ----------- | ---------- |
-| `POST` | `/api/teams/:id/members` | Add a member by GitHub username (fetches from GitHub API if not cached locally) | Owner / Admin |
+| `POST` | `/api/teams/:id/members` | Add a member by GitHub username (fetches from GitHub API if not cached locally); emails the new member and returns `{ notified: bool }` | Owner / Admin |
 | `PUT` | `/api/teams/:id/members/:userId` | Update member role (`admin` or `member`) | Owner / Admin |
 | `DELETE` | `/api/teams/:id/members/:userId` | Remove a member (cannot remove the owner) | Owner / Admin |
 
@@ -173,7 +173,21 @@ User searches for a GitHub username
       -> If not found: GET /users/{username} (GitHub API) and caches the result
         -> Inserts into team_members with role 'member'
           -> Audit log entry created
+          -> notifyMemberAdded() (server/lib/team-notify.js) sends a
+             transactional "you've been added" email via server/lib/email.js,
+             if the added user has a known email address
+          -> Response includes { notified: bool } so the UI can tell the
+             admin whether the new member was actually told
 ```
+
+The added user is notified by **email only** — there is no in-app notification
+store today (no `notifications` table; the bell in the UI is a computed
+digest over existing activity tables, see `server/lib/notifications-digest.js`).
+Sending the email is best-effort and never blocks or fails the member-add:
+if the user has no email on file, or the email provider errors, the member
+is still added and the endpoint returns `notified: false`. The frontend
+(`src/components/Teams/TeamDetails.jsx`) surfaces this via a toast so the
+admin knows to tell the new member directly when email notification failed.
 
 ### Assigning a Repository
 
@@ -215,6 +229,8 @@ resource id, and details as JSON.
 | `server/db.js` | Database schema including team tables |
 | `server/lib/validators.js` | Request validation schemas (`teamCreateSchema`, `teamMemberSchema`, `teamRepoSchema`) |
 | `server/lib/audit.js` | Audit logging helper |
+| `server/lib/team-notify.js` | Sends the "added to team" email (best-effort, never fails the add) |
+| `server/lib/email.js` | Resend/console email adapter used for all transactional email |
 | `server/lib/github-api.js` | GitHub API client used for user lookup |
 | `server/middleware/auth.js` | `requireAuth`, `safeError`, `errorResponse` |
 | `src/components/Teams/TeamHub.jsx` | Team list and CRUD UI |

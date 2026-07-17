@@ -16,7 +16,7 @@
  * Licensed under the GNU AGPL v3.0 only (SPDX: AGPL-3.0-only). See LICENSE in the project root.
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useAuth } from './useAuth'
 import { useRepos } from './useRepos'
 import { useOrgs } from './useOrgs'
@@ -123,10 +123,16 @@ export function useGitHub() {
         return result
     }, [refreshOrgData])
 
-    const performAction = withOrgRefresh(performActionRaw)
-    const createRepo = withOrgRefresh(createRepoRaw)
-    const deleteRepos = withOrgRefresh(deleteReposRaw)
-    const archiveRepos = withOrgRefresh(archiveReposRaw)
+    // performActionRaw/createRepoRaw/deleteReposRaw/archiveReposRaw are now
+    // useCallback-stable in useRepos, so memoizing the wrappers here gives
+    // performAction/createRepo/deleteRepos/archiveRepos stable identities
+    // too — otherwise every render produced a fresh closure via
+    // withOrgRefresh(...), which invalidated the sidebarProps useMemo in
+    // App.jsx (and any other consumer memoized on these callbacks).
+    const performAction = useMemo(() => withOrgRefresh(performActionRaw), [withOrgRefresh, performActionRaw])
+    const createRepo = useMemo(() => withOrgRefresh(createRepoRaw), [withOrgRefresh, createRepoRaw])
+    const deleteRepos = useMemo(() => withOrgRefresh(deleteReposRaw), [withOrgRefresh, deleteReposRaw])
+    const archiveRepos = useMemo(() => withOrgRefresh(archiveReposRaw), [withOrgRefresh, archiveReposRaw])
 
     // ---- Return the exact same shape the old monolith exposed ----
     return {

@@ -15,7 +15,8 @@
  *     (default: a `backups/` dir next to the live SQLite file).
  *   - Keeps the DB_BACKUP_KEEP most recent (default 7), pruning older ones.
  *   - Enabled by default; set DB_BACKUP_DIR='' (empty string) to disable.
- *   - No-ops with a log line on the Postgres adapter (use native pg tooling).
+ *   - Defensive no-op (with a log line) if ever run against a non-sqlite
+ *     adapter — SQLite is the only supported database, see docs/operations.md.
  *
  * Restore is a manual, documented procedure (docs/operations.md): stop the
  * server, replace manager.db with a chosen backup, remove the stale
@@ -115,11 +116,12 @@ export async function runDbBackupOnce({ database, dir, keep } = {}) {
     // Resolve the live db lazily so importing this module never opens the DB.
     const activeDb = database ?? (await import('../db.js')).default;
 
-    // Postgres (or any non-sqlite adapter): the online backup API doesn't apply.
+    // Defensive: the online backup API only applies to the SQLite adapter,
+    // the only supported backend. This should be unreachable in practice.
     if (activeDb?.type && activeDb.type !== 'sqlite') {
         logger.info(
             { type: activeDb.type },
-            '[db-backup] non-sqlite adapter — online backup skipped (use your database\'s native backup tooling)'
+            '[db-backup] non-sqlite adapter — online backup skipped'
         );
         return { skipped: true, reason: 'not-sqlite' };
     }

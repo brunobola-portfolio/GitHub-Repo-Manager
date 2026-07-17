@@ -96,12 +96,23 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
 
     const handleInviteGivenUsername = async (usernameToInvite) => {
         try {
-            await apiCall(`/api/teams/${team.id}/members`, {
+            const data = await apiCall(`/api/teams/${team.id}/members`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: usernameToInvite })
             });
-            toast.success('Member added successfully');
+            // The backend emails the new member when it has an address on
+            // file for them (server/lib/team-notify.js); it can't when the
+            // user has no public/cached email, or if delivery fails. Either
+            // way the member is added — surface whether they were actually
+            // told so the admin isn't left assuming a silent notification
+            // went out.
+            if (data?.notified) {
+                toast.success(`${usernameToInvite} added — they've been emailed`);
+            } else {
+                toast.success(`${usernameToInvite} added`);
+                toast.info(`${usernameToInvite} wasn't notified by email — let them know directly`);
+            }
             setInviteUsername('');
             setUserSearchResults([]);
             // Keep the search open or close it? Let's close it for cleaner UX
@@ -727,6 +738,11 @@ function ActionsTab({ assignedRepos, onShowStats }) {
             if (!wfRes.ok) {
                 setActionsError(true);
                 toast.error('Failed to load actions');
+            } else if (!runRes.ok) {
+                // Workflows loaded fine but runs didn't — a narrower failure
+                // than actionsError (which blanks the whole tab), so just
+                // toast it and leave the workflow list usable.
+                toast.error('Failed to load workflow runs');
             }
         } catch (error) {
             setActionsError(true);

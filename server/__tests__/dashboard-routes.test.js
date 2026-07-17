@@ -66,6 +66,30 @@ describe('POST /inbox/:id/archive', () => {
             .get('pr:foo/bar#1');
         expect(row?.archived_at).toBeTruthy();
     });
+
+    it('rejects an itemId that does not match the pr:/issue: shape with 400', async () => {
+        const res = await request(buildApp())
+            .post('/api/v1/dashboard/inbox/not-a-real-item-id/archive')
+            .send();
+        expect(res.status).toBe(400);
+        const row = db.prepare('SELECT * FROM dashboard_inbox_state WHERE item_id = ?').get('not-a-real-item-id');
+        expect(row).toBeUndefined();
+    });
+
+    it('rejects an oversized itemId with 400', async () => {
+        const huge = `pr:foo/${'x'.repeat(600)}#1`;
+        const res = await request(buildApp())
+            .post(`/api/v1/dashboard/inbox/${encodeURIComponent(huge)}/archive`)
+            .send();
+        expect(res.status).toBe(400);
+    });
+
+    it('rejects an itemId with an unknown prefix with 400', async () => {
+        const res = await request(buildApp())
+            .post('/api/v1/dashboard/inbox/commit%3Afoo%2Fbar%231/archive')
+            .send();
+        expect(res.status).toBe(400);
+    });
 });
 
 describe('POST /inbox/:id/restore', () => {
@@ -86,6 +110,13 @@ describe('POST /inbox/:id/restore', () => {
             .get('pr:foo/bar#1');
         expect(row.archived_at).toBeNull();
         expect(row.snoozed_until).toBeNull();
+    });
+
+    it('rejects an invalid itemId with 400 before touching the row', async () => {
+        const res = await request(buildApp())
+            .post('/api/v1/dashboard/inbox/garbage/restore')
+            .send();
+        expect(res.status).toBe(400);
     });
 });
 
@@ -118,6 +149,14 @@ describe('POST /inbox/:id/snooze', () => {
         const res = await request(buildApp())
             .post('/api/v1/dashboard/inbox/pr:foo%2Fbar%231/snooze')
             .send({ until: past });
+        expect(res.status).toBe(400);
+    });
+
+    it('rejects an invalid itemId with 400, before validating `until`', async () => {
+        const until = new Date(Date.now() + 7 * 86_400_000).toISOString();
+        const res = await request(buildApp())
+            .post('/api/v1/dashboard/inbox/garbage/snooze')
+            .send({ until });
         expect(res.status).toBe(400);
     });
 });

@@ -606,6 +606,29 @@ router.post('/plans/:id/tasks/:taskId/retry', requireAuth, requireMigrationQuota
   }
 });
 
+// Rolls back a destructive config mutation (onConflict='replace' / LFS
+// sizeStrategy) written by replace-retry / retry-lfs, but ONLY if the retry
+// never actually began. engine.retryTask() validates plan/task status
+// BEFORE resetting the task to 'pending' (migration-engine.js); every one of
+// its guard-clause rejections happens before that reset, so on rejection the
+// task's live status is still 'failed'. In that case the config write above
+// was wasted — the retry never ran with it — and leaving it persisted would
+// have a later plain /retry silently inherit onConflict='replace' (or the
+// LFS strategy) for an attempt that never happened. If the task DID
+// transition out of 'failed' (a genuine attempt started and failed later,
+// deeper in execution), the config is left as-is — that persistence is
+// intentional (mirrors the execute handler's charge rollback at ~line 503).
+function rollbackConfigIfRetryNeverStarted(taskId, previousConfig) {
+  try {
+    const current = db.prepare('SELECT status FROM migration_tasks WHERE id = ?').get(taskId);
+    if (current && current.status === 'failed') {
+      db.prepare('UPDATE migration_tasks SET config = ? WHERE id = ?').run(previousConfig, taskId);
+    }
+  } catch (rollbackErr) {
+    logger.error({ err: rollbackErr, taskId }, 'Failed to roll back destructive retry config');
+  }
+}
+
 // POST /api/migration/plans/:id/tasks/:taskId/replace-retry — destructive
 // recovery for a repo task that failed on an "already exists" conflict.
 // Patches the stored config with onConflict='replace' then re-runs the task,
@@ -627,6 +650,7 @@ router.post('/plans/:id/tasks/:taskId/replace-retry', requireAuth, requireMigrat
     if (retryPat.abort) return;
     // Carry the destructive intent into the stored config so retryTask, which
     // re-reads task.config from the DB, deletes and recreates the target.
+    const previousConfig = task.config;
     db.prepare('UPDATE migration_tasks SET config = ? WHERE id = ?')
       .run(withReplaceOnConflict(task.config), taskId);
     auditLog(req, 'migration.task.replace-retry', 'migration_task', taskId, { planId: id, targetRef: task.target_ref });
@@ -639,6 +663,7 @@ router.post('/plans/:id/tasks/:taskId/replace-retry', requireAuth, requireMigrat
     };
     engine.retryTask(id, taskId, retryCredentials).catch(err => {
       logger.error({ err, planId: id, taskId }, 'Replace-retry error');
+      rollbackConfigIfRetryNeverStarted(taskId, previousConfig);
     });
     res.json({ success: true });
   } catch (err) {
@@ -664,6 +689,7 @@ router.post('/plans/:id/tasks/:taskId/retry-lfs', requireAuth, requireMigrationQ
     }
     const retryPat = resolvePlanExecutionPat(req, res);
     if (retryPat.abort) return;
+    const previousConfig = task.config;
     db.prepare('UPDATE migration_tasks SET config = ? WHERE id = ?')
       .run(withLfsMigrate(task.config), taskId);
     auditLog(req, 'migration.task.retry-lfs', 'migration_task', taskId, { planId: id, targetRef: task.target_ref });
@@ -676,6 +702,7 @@ router.post('/plans/:id/tasks/:taskId/retry-lfs', requireAuth, requireMigrationQ
     };
     engine.retryTask(id, taskId, retryCredentials).catch(err => {
       logger.error({ err, planId: id, taskId }, 'LFS-retry error');
+      rollbackConfigIfRetryNeverStarted(taskId, previousConfig);
     });
     res.json({ success: true });
   } catch (err) {
