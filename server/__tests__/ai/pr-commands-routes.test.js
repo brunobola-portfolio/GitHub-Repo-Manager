@@ -224,7 +224,7 @@ describe('POST /api/ai/pr-commands/:owner/:repo/:pr/:command', () => {
     });
 
     it('returns 429 QUOTA_EXCEEDED when the monthly AI query cap is reached (provider not called)', async () => {
-        seedAiQueries(5000);
+        seedAiQueries(10000); // Pro cap
         const app = makeApp();
         const res = await request(app).post('/api/ai/pr-commands/acme/api/42/describe').send({});
         expect(res.status).toBe(429);

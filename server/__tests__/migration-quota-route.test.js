@@ -104,9 +104,9 @@ beforeEach(() => {
 const execute = (id = 5, body = {}) =>
   request(makeApp()).post(`/api/migration/plans/${id}/execute`).send(body)
 
-describe('requireMigrationQuota — Free-tier "1 full migration / month" enforcement', () => {
+describe('requireMigrationQuota — Free-tier "5 full migrations / month" enforcement', () => {
   it('denies a free full plan once the monthly allowance is used (403)', async () => {
-    h.state.currentUsage = 1 // cap is 1 for free
+    h.state.currentUsage = 5 // cap is 5 for free
     const res = await execute()
     expect(res.status).toBe(403)
     expect(res.body).toMatchObject({
@@ -175,14 +175,14 @@ describe('requireMigrationQuota — Free-tier "1 full migration / month" enforce
 
 describe('requireMigrationQuota — same gate guards resume + task retry', () => {
   it('denies resume when the free allowance is exhausted (403)', async () => {
-    h.state.currentUsage = 1
+    h.state.currentUsage = 5
     const res = await request(makeApp()).post('/api/migration/plans/5/resume').send({})
     expect(res.status).toBe(403)
     expect(res.body.code).toBe('MIGRATION_QUOTA_EXCEEDED')
   })
 
   it('denies task retry when the free allowance is exhausted (403)', async () => {
-    h.state.currentUsage = 1
+    h.state.currentUsage = 5
     const res = await request(makeApp()).post('/api/migration/plans/5/tasks/9/retry').send({})
     expect(res.status).toBe(403)
     expect(res.body.code).toBe('MIGRATION_QUOTA_EXCEEDED')

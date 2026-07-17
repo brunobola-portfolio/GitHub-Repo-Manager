@@ -232,7 +232,7 @@ describe('POST /api/ai/pr-chat/:owner/:repo/:pr', () => {
     });
 
     it('returns 429 QUOTA_EXCEEDED when the monthly AI query cap is reached (provider not called)', async () => {
-        seedAiQueries(5000); // Pro cap
+        seedAiQueries(10000); // Pro cap
         const app = makeApp();
         const res = await request(app)
             .post('/api/ai/pr-chat/acme/api/42')

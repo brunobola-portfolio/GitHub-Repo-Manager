@@ -184,7 +184,7 @@ describe('POST /api/ai/deep-review/:owner/:repo/:pr', () => {
     });
 
     it('returns 429 QUOTA_EXCEEDED when the monthly AI query cap is reached (provider not called)', async () => {
-        seedAiQueries(5000); // Pro cap is 5000/mo
+        seedAiQueries(10000); // Pro cap is 10,000/mo
         const app = makeApp();
         const res = await request(app).post('/api/ai/deep-review/acme/api/42').send({});
         expect(res.status).toBe(429);

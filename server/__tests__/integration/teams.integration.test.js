@@ -83,16 +83,16 @@ beforeEach(() => {
     tierHolder.tier = 'pro';
 });
 
-describe('Free-tier team cap (teamsMax = 3)', () => {
-    it('allows 3 owned teams then 403s the 4th', async () => {
+describe('Free-tier team cap (teamsMax = Infinity, 2026-07-18 rebalance)', () => {
+    // Free tier's teamsMax moved from 3 to Infinity in the "nearly everything
+    // free" rebalance (dissolves the seat-billing honesty gap — see
+    // .dev/prod-premium/2026-07-17/design-pricing-rebalance.md §1/§2 row 22).
+    it('does not cap Free tier team creation', async () => {
         tierHolder.tier = 'free';
-        for (let i = 1; i <= 3; i++) {
+        for (let i = 1; i <= 4; i++) {
             const ok = await request(makeApp()).post('/api/v1/teams').send({ name: `Team ${i}` });
             expect(ok.status).toBe(201);
         }
-        const blocked = await request(makeApp()).post('/api/v1/teams').send({ name: 'Team 4' });
-        expect(blocked.status).toBe(403);
-        expect(JSON.stringify(blocked.body)).toMatch(/limit/i);
     });
 
     it('does not cap Pro tier', async () => {

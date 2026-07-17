@@ -418,7 +418,7 @@ describe('POST /api/ai/prompt-studio/presets/:id/test', () => {
     });
 
     it('returns 429 QUOTA_EXCEEDED when the monthly AI query cap is reached (provider not called)', async () => {
-        seedAiQueries(5000); // Pro cap
+        seedAiQueries(10000); // Pro cap
         const res = await request(makeApp())
             .post('/api/ai/prompt-studio/presets/general/test').send({});
         expect(res.status).toBe(429);
