@@ -25,6 +25,9 @@ vi.mock('../../lib/audit.js', () => ({
     auditLog: vi.fn(),
 }));
 
+const { sendEmail: mockSendEmail } = vi.hoisted(() => ({ sendEmail: vi.fn() }));
+vi.mock('../../lib/email.js', () => ({ sendEmail: mockSendEmail }));
+
 // Mutable tier so individual tests can exercise the free-tier caps.
 const { tierHolder } = vi.hoisted(() => ({ tierHolder: { tier: 'pro' } }));
 
@@ -59,10 +62,12 @@ function makeApp() {
 }
 
 function seedUsers() {
-    testDb.prepare(`INSERT OR IGNORE INTO users (id, username, avatar_url) VALUES (?, ?, ?)`)
-        .run(1, 'alice', 'https://example.com/a.png');
-    testDb.prepare(`INSERT OR IGNORE INTO users (id, username, avatar_url) VALUES (?, ?, ?)`)
-        .run(2, 'bob', 'https://example.com/b.png');
+    testDb.prepare(`INSERT OR IGNORE INTO users (id, username, avatar_url, email) VALUES (?, ?, ?, ?)`)
+        .run(1, 'alice', 'https://example.com/a.png', null);
+    testDb.prepare(`INSERT OR IGNORE INTO users (id, username, avatar_url, email) VALUES (?, ?, ?, ?)`)
+        .run(2, 'bob', 'https://example.com/b.png', null);
+    testDb.prepare(`INSERT OR IGNORE INTO users (id, username, avatar_url, email) VALUES (?, ?, ?, ?)`)
+        .run(3, 'carol', 'https://example.com/c.png', 'carol@example.com');
 }
 
 beforeEach(() => {
@@ -74,6 +79,7 @@ beforeEach(() => {
     `);
     seedUsers();
     vi.clearAllMocks();
+    mockSendEmail.mockReset().mockResolvedValue({ ok: true, id: 'email_123' });
     tierHolder.tier = 'pro';
 });
 
@@ -157,6 +163,67 @@ describe('POST /api/v1/teams/:id/members (integration)', () => {
         ).all(teamId);
         expect(rows).toHaveLength(2);
         expect(rows.map(r => r.user_id).sort()).toEqual([1, 2]);
+    });
+
+    it('emails the added member and reports notified:true when they have an email on file', async () => {
+        const create = await request(makeApp())
+            .post('/api/v1/teams')
+            .send({ name: 'Platform' });
+        const teamId = create.body.teamId;
+
+        const add = await request(makeApp())
+            .post(`/api/v1/teams/${teamId}/members`)
+            .send({ username: 'carol' });
+
+        expect(add.status).toBe(201);
+        expect(add.body).toEqual({ success: true, notified: true });
+
+        expect(mockSendEmail).toHaveBeenCalledTimes(1);
+        const sentArgs = mockSendEmail.mock.calls[0][0];
+        expect(sentArgs.to).toBe('carol@example.com');
+        expect(sentArgs.subject).toMatch(/Platform/);
+    });
+
+    it('reports notified:false and does not call sendEmail when the member has no email on file', async () => {
+        const create = await request(makeApp())
+            .post('/api/v1/teams')
+            .send({ name: 'Platform' });
+        const teamId = create.body.teamId;
+
+        const add = await request(makeApp())
+            .post(`/api/v1/teams/${teamId}/members`)
+            .send({ username: 'bob' });
+
+        expect(add.status).toBe(201);
+        expect(add.body).toEqual({ success: true, notified: false });
+        expect(mockSendEmail).not.toHaveBeenCalled();
+
+        // The member was still added even though nobody could be notified.
+        const rows = testDb.prepare(
+            'SELECT * FROM team_members WHERE team_id = ? AND user_id = ?'
+        ).all(teamId, 2);
+        expect(rows).toHaveLength(1);
+    });
+
+    it('still adds the member and reports notified:false when email delivery fails', async () => {
+        mockSendEmail.mockResolvedValue({ ok: false, error: 'boom' });
+
+        const create = await request(makeApp())
+            .post('/api/v1/teams')
+            .send({ name: 'Platform' });
+        const teamId = create.body.teamId;
+
+        const add = await request(makeApp())
+            .post(`/api/v1/teams/${teamId}/members`)
+            .send({ username: 'carol' });
+
+        expect(add.status).toBe(201);
+        expect(add.body).toEqual({ success: true, notified: false });
+
+        const rows = testDb.prepare(
+            'SELECT * FROM team_members WHERE team_id = ? AND user_id = ?'
+        ).all(teamId, 3);
+        expect(rows).toHaveLength(1);
     });
 });
 
