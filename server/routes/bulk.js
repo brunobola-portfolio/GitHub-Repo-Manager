@@ -39,7 +39,7 @@ import { bulkVisibilitySchema, bulkArchiveSchema, bulkDeleteSchema, bulkTransfer
 import { validateBody } from '../middleware/validate-request.js';
 import { performBulk } from '../lib/bulk-helpers.js';
 import { parseRepoFullName } from '../lib/repo-full-name.js';
-import { checkDailyUsageLimit, incrementDailyUsage } from '../lib/usage-meter.js';
+import { guardedDailyIncrement, releaseGuardedDailyIncrement } from '../lib/usage-meter.js';
 
 const router = express.Router();
 
@@ -50,21 +50,33 @@ const router = express.Router();
 // meter (bounded by `bulkDestructiveDailyMax`, identical across tiers).
 // Only applied on real (non-dry-run) executions — a dry-run never touches
 // GitHub, so it costs nothing to attempt and isn't metered.
+//
+// Reserves one unit per repo via guardedDailyIncrement() — the same atomic
+// check-and-increment ("WHERE count < limit") primitive the monthly AI/
+// migration/sync caps use — instead of a plain read-then-loop-write, so
+// concurrent requests from the same account (including across horizontally
+// scaled server instances) can't both slip past a near-exhausted ceiling.
+// If the batch doesn't fully fit, any units already reserved this call are
+// released so a partially-successful reservation never burns quota for a
+// rejected request.
 // ---------------------------------------------------------------------------
 function enforceBulkDestructiveDailyCeiling(req, res, repoCount) {
     const userId = req.tenantId ?? req.session?.userId;
-    const check = checkDailyUsageLimit(userId, 'bulk_destructive_daily');
-    if (check.current + repoCount > check.limit) {
+    let reserved = 0;
+    let last = null;
+    for (; reserved < repoCount; reserved++) {
+        last = guardedDailyIncrement(userId, 'bulk_destructive_daily');
+        if (!last.allowed) break;
+    }
+    if (reserved < repoCount) {
+        for (let i = 0; i < reserved; i++) releaseGuardedDailyIncrement(userId, 'bulk_destructive_daily');
         errorResponse(
             res,
             429,
-            `Daily limit for destructive bulk operations (delete/transfer) reached: ${check.current}/${check.limit} repos today. Try again tomorrow.`,
+            `Daily limit for destructive bulk operations (delete/transfer) reached: ${last.current}/${last.limit} repos today. Try again tomorrow.`,
             'BULK_DESTRUCTIVE_DAILY_LIMIT',
         );
         return false;
-    }
-    for (let i = 0; i < repoCount; i++) {
-        incrementDailyUsage(userId, 'bulk_destructive_daily');
     }
     return true;
 }

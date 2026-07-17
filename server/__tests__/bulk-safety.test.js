@@ -32,12 +32,56 @@ vi.mock('../lib/validators.js', async () => {
 // `${userId}:${metricType}`) so the new daily anti-abuse-ceiling tests
 // (bulk_destructive_daily) can drive real accumulation/reset; every other
 // table keeps the old inert generic statement.
+//
+// bulk.js's daily ceiling goes through usage-meter.js's *atomic* guarded
+// primitives (guardedDailyIncrement/releaseGuardedDailyIncrement), which
+// issue a seed INSERT ... ON CONFLICT DO NOTHING, a guarded
+// `UPDATE ... WHERE count < ?` (only increments if under the limit), and a
+// compensating `UPDATE ... SET count = MAX(0, count - 1)` on release — so
+// the mock has to actually honor the WHERE-count-< -limit guard, not just
+// blindly increment on every INSERT, or a would-be-429 case would silently
+// pass.
 const dailyUsageCounts = new Map()
 function statementFor(sql) {
     if (/FROM usage_metrics/i.test(sql)) {
         return { get: (userId, metricType) => ({ count: dailyUsageCounts.get(`${userId}:${metricType}`) || 0 }) }
     }
+    if (/INSERT INTO usage_metrics/i.test(sql) && /DO NOTHING/i.test(sql)) {
+        // guardedBump's seed row — ensures the key exists at 0; never increments.
+        return {
+            run: (userId, metricType) => {
+                const key = `${userId}:${metricType}`
+                if (!dailyUsageCounts.has(key)) dailyUsageCounts.set(key, 0)
+                return { changes: 1 }
+            },
+        }
+    }
+    if (/UPDATE usage_metrics/i.test(sql) && /count - 1/i.test(sql)) {
+        // guardedUnbump's compensating release.
+        return {
+            run: (userId, metricType) => {
+                const key = `${userId}:${metricType}`
+                dailyUsageCounts.set(key, Math.max(0, (dailyUsageCounts.get(key) || 0) - 1))
+                return { changes: 1 }
+            },
+        }
+    }
+    if (/UPDATE usage_metrics/i.test(sql) && /count \+ 1/i.test(sql)) {
+        // guardedBump's guarded increment — only applies if current < limit.
+        return {
+            run: (userId, metricType, start, limit) => {
+                const key = `${userId}:${metricType}`
+                const current = dailyUsageCounts.get(key) || 0
+                if (current < limit) {
+                    dailyUsageCounts.set(key, current + 1)
+                    return { changes: 1 }
+                }
+                return { changes: 0 }
+            },
+        }
+    }
     if (/INSERT INTO usage_metrics/i.test(sql)) {
+        // Legacy plain incrementDailyUsage()'s INSERT ... ON CONFLICT DO UPDATE.
         return {
             run: (userId, metricType) => {
                 const key = `${userId}:${metricType}`
