@@ -6,6 +6,23 @@ import db from '../db.js';
 
 const router = Router();
 
+// Inbox item ids are always minted server-side by dashboard-aggregator.js as
+// `pr:{owner}/{repo}#{number}` or `issue:{owner}/{repo}#{number}` — never
+// user-composed. The archive/restore/snooze routes accept an arbitrary
+// client-supplied `:itemId`, so validate against that exact shape (plus a
+// length cap) before it reaches a write query; otherwise any opaque string
+// is silently persisted, allowing unbounded junk rows in
+// `dashboard_inbox_state`.
+const ITEM_ID_PATTERN = /^(pr|issue):[^/]+\/[^#]+#\d+$/;
+const ITEM_ID_MAX_LENGTH = 512;
+
+function isValidItemId(itemId) {
+    return typeof itemId === 'string'
+        && itemId.length > 0
+        && itemId.length <= ITEM_ID_MAX_LENGTH
+        && ITEM_ID_PATTERN.test(itemId);
+}
+
 router.get('/inbox', requireAuth, async (req, res) => {
     try {
         const sections = req.query.sections
@@ -34,6 +51,9 @@ router.get('/inbox', requireAuth, async (req, res) => {
 router.post('/inbox/:itemId/archive', requireAuth, (req, res) => {
     try {
         const itemId = decodeURIComponent(req.params.itemId);
+        if (!isValidItemId(itemId)) {
+            return res.status(400).json({ error: 'Invalid item id' });
+        }
         const now = new Date().toISOString();
         db.prepare(`
             INSERT INTO dashboard_inbox_state (user_id, item_id, archived_at)
@@ -50,6 +70,9 @@ router.post('/inbox/:itemId/archive', requireAuth, (req, res) => {
 router.post('/inbox/:itemId/restore', requireAuth, (req, res) => {
     try {
         const itemId = decodeURIComponent(req.params.itemId);
+        if (!isValidItemId(itemId)) {
+            return res.status(400).json({ error: 'Invalid item id' });
+        }
         db.prepare(`
             UPDATE dashboard_inbox_state
             SET archived_at = NULL, snoozed_until = NULL
@@ -65,6 +88,9 @@ router.post('/inbox/:itemId/restore', requireAuth, (req, res) => {
 router.post('/inbox/:itemId/snooze', requireAuth, (req, res) => {
     try {
         const itemId = decodeURIComponent(req.params.itemId);
+        if (!isValidItemId(itemId)) {
+            return res.status(400).json({ error: 'Invalid item id' });
+        }
         const until = req.body?.until;
         const ts = Date.parse(until);
         if (!until || Number.isNaN(ts)) {

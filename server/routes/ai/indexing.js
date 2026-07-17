@@ -16,9 +16,29 @@ import { requireScope } from '../../middleware/api-key-auth.js';
 import { aiIndexSchema, aiBatchIndexSchema } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { aiService } from '../../ai-service.js';
-import { checkUsageLimit, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import {
+    checkUsageLimit,
+    checkAIFeatureLimit,
+    incrementAIUsage,
+    quotaExceededResponse,
+    guardedIncrementAIUsage,
+    releaseGuardedAIUsage,
+} from '../../lib/usage-meter.js';
+import { checkAISpendCap, recordAISpend } from '../../lib/ai-spend-cap.js';
 import { auditLog } from '../../lib/audit.js';
 import { requireAI, handleAIError } from './shared.js';
+
+// Uniform 429 body for a monthly spend-cap denial — mirrors the shape used by
+// /ai/chat and guardedGenerate() so the frontend's cap-reached handling works
+// identically across every AI surface.
+function spendCapDeniedResponse(spend) {
+    return {
+        code: 'AI_SPEND_CAP_REACHED',
+        error: 'Monthly AI spend limit reached. Try again next month or raise the cap.',
+        spent_cents: spend.spentCents,
+        cap_cents: spend.capCents,
+    };
+}
 
 const router = express.Router();
 
@@ -32,8 +52,21 @@ router.post('/ai/index', requireAuth, requireScope('ai'), validateBody(aiIndexSc
     if (!repo) return res.status(400).json({ error: 'Repo data required' });
 
     const userId = req.session.userId;
-    const check = checkAIFeatureLimit(userId, 'ai_insights');
-    if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
+    // Atomic guarded reserve (not a read-only check) — closes the
+    // check-then-increment TOCTOU race a plain checkAIFeatureLimit() +
+    // later incrementAIUsage() pairing has across the awaited provider calls
+    // below. Reserved BEFORE any provider work; released on any failure path.
+    const reserved = guardedIncrementAIUsage(userId, 'ai_insights');
+    if (!reserved.allowed) return res.status(429).json(quotaExceededResponse(reserved));
+
+    // Monthly spend cap — this endpoint calls the provider twice (analyze +
+    // embed) with no per-call count limit for Pro/Enterprise (their count
+    // quotas resolve to Infinity), so the spend cap is the only cost guard.
+    const spend = checkAISpendCap(userId);
+    if (!spend.allowed) {
+        releaseGuardedAIUsage(userId, 'ai_insights');
+        return res.status(429).json(spendCapDeniedResponse(spend));
+    }
 
     try {
         req.log.info({ repo: repo.full_name }, 'AI indexing started');
@@ -109,11 +142,19 @@ router.post('/ai/index', requireAuth, requireScope('ai'), validateBody(aiIndexSc
             stmtEmbed.run(repo.id, userId, JSON.stringify(embedding));
         })();
 
-        incrementAIUsage(userId, 'ai_insights');
+        // embedText() has no cost/usage data to surface (Gemini's embed API
+        // reports no usageMetadata) — analysis._costUSD (from the analyzeRepo
+        // completion call) is the only spend this call can account for.
+        recordAISpend(userId, analysis._costUSD);
+        // Usage was already reserved atomically above — no separate
+        // incrementAIUsage() call (that would double-count this request).
         auditLog(req, 'ai.index', 'ai', repo.id, { repoName: repo.full_name });
         res.json({ success: true, analysis });
 
     } catch (error) {
+        // The reservation succeeded but the guarded work failed — give the
+        // unit back so a failed call doesn't permanently burn the user's quota.
+        releaseGuardedAIUsage(userId, 'ai_insights');
         req.log.error({ err: error }, 'AI indexing failed');
         handleAIError(res, error, 'Indexing failed');
     }
@@ -149,6 +190,12 @@ router.get('/ai/search', requireAuth, requireScope('ai'), requireAI, async (req,
         const userId = req.session.userId;
         const check = checkAIFeatureLimit(userId, 'ai_semantic_search');
         if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
+
+        // Monthly spend cap — semanticSearch() calls embedText() under the
+        // hood, an uncapped provider call for Pro/Enterprise. (embed() has no
+        // cost/usage data to record post-call — the pre-check is the guard.)
+        const spend = checkAISpendCap(userId);
+        if (!spend.allowed) return res.status(429).json(spendCapDeniedResponse(spend));
 
         // Get generic results (repo_ids and scores) scoped by user
         const results = await aiService.semanticSearch(q, 10, userId);
@@ -271,6 +318,19 @@ router.post('/ai/batch-index', requireAuth, requireScope('ai'), validateBody(aiB
 
     for (let i = 0; i < limit; i++) {
         const repo = repos[i];
+
+        // Monthly spend cap — re-checked per item (not just once up front)
+        // since a single batch call can make up to 20 provider calls (analyze
+        // + embed per repo), which can burn through the remaining allowance
+        // partway through a batch that started under cap. Stop processing
+        // further repos this call; already-analyzed repos are still saved
+        // below and count toward `processed`.
+        const spend = checkAISpendCap(userId);
+        if (!spend.allowed) {
+            req.log.warn({ repo: repo.full_name }, 'Batch index stopped: monthly AI spend cap reached');
+            break;
+        }
+
         try {
             // Fetch README
             let readmeContent = '';
@@ -292,6 +352,10 @@ router.post('/ai/batch-index', requireAuth, requireScope('ai'), validateBody(aiB
             // Generate embedding
             const textToEmbed = `${repo.name} ${repo.description || ''} ${analysis.summary} ${analysis.suggested_topics?.join(' ') || ''}`;
             const embedding = await aiService.embedText(textToEmbed);
+
+            // Record this item's spend (embedText has no cost data to add —
+            // see the /ai/index comment above).
+            recordAISpend(userId, analysis._costUSD);
 
             // Store for batch insert
             analyzedRepos.push({ repo, analysis, embedding });
@@ -323,9 +387,11 @@ router.post('/ai/batch-index', requireAuth, requireScope('ai'), validateBody(aiB
         success: true,
         processed: results.length,
         results,
-        // Anything not processed this call — over the per-call max of 10 or
-        // beyond the user's remaining quota.
-        skipped: Math.max(0, repos.length - limit)
+        // Anything not processed this call — over the per-call max of 10,
+        // beyond the user's remaining quota, or the spend cap was reached
+        // partway through (every attempted repo pushes exactly one results
+        // entry, success or failure, so this is exact either way).
+        skipped: Math.max(0, repos.length - results.length)
     });
 });
 

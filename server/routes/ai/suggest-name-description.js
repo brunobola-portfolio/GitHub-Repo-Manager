@@ -15,6 +15,7 @@ import logger from '../../lib/logger.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { checkUsageLimit, incrementUsage } from '../../lib/usage-meter.js';
+import { checkAISpendCap, recordAISpend } from '../../lib/ai-spend-cap.js';
 import { auditLog } from '../../lib/audit.js';
 import { githubApi } from '../../lib/github-api.js';
 import { safeJsonParse } from '../../lib/utils.js';
@@ -181,6 +182,15 @@ router.post(
             provider = await req.getAIProvider('completion').catch(() => null);
         }
 
+        // Monthly spend cap — this route doesn't fit guardedGenerate (its
+        // deterministic-fallback flow means a denial should silently drop to
+        // the deterministic generator, not error out). Skip the AI attempt
+        // entirely when over cap; `source` stays 'deterministic'.
+        if (provider && !checkAISpendCap(userId).allowed) {
+            req.log.info({ repoId }, 'suggest-name-description: AI spend cap reached, using deterministic');
+            provider = null;
+        }
+
         if (provider) {
             try {
                 const prompt = buildAIPrompt(userId, {
@@ -192,7 +202,8 @@ router.post(
                     readmeExcerpt: (ctx.sections.find((s) => s.kind === 'readme')?.content) || '',
                     signalsBlock,
                 });
-                const { text } = await provider.generate({ prompt, maxTokens: 200 });
+                const { text, costUSD } = await provider.generate({ prompt, maxTokens: 200 });
+                recordAISpend(userId, costUSD);
                 const parsed = safeJsonParse(text);
                 if (
                     parsed &&

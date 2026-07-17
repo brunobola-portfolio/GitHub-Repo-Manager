@@ -20,6 +20,12 @@ vi.mock('../lib/usage-meter.js', () => ({
 vi.mock('../lib/audit.js', () => ({
     auditLog: mockAuditLog,
 }));
+const mockCheckAISpendCap = vi.hoisted(() => vi.fn(() => ({ allowed: true, capCents: 0, spentCents: 0 })));
+const mockRecordAISpend = vi.hoisted(() => vi.fn());
+vi.mock('../lib/ai-spend-cap.js', () => ({
+    checkAISpendCap: mockCheckAISpendCap,
+    recordAISpend: mockRecordAISpend,
+}));
 // db.prepare(...).get(...) is used by loadIndexedAiMetadata. We expose a
 // per-test handle (`mockDbGet`) so each test can return null (no indexed
 // metadata) or a row, without instantiating a real SQLite connection.
@@ -75,7 +81,10 @@ beforeEach(() => {
     mockIncrementUsage.mockReset();
     mockAuditLog.mockReset();
     mockDbGet.mockReset();
+    mockCheckAISpendCap.mockReset();
+    mockRecordAISpend.mockReset();
     mockCheckUsageLimit.mockReturnValue({ allowed: true, current: 0, limit: 100 });
+    mockCheckAISpendCap.mockReturnValue({ allowed: true, capCents: 0, spentCents: 0 });
     mockDbGet.mockReturnValue(null);   // default: repo not indexed
     provideAIProviderInTest.enabled = true;  // default: AI provider available
     // First call: GET repo by id. Second: GET canonical README via /repos/.../readme.
@@ -214,5 +223,52 @@ describe('POST /ai/suggest-name-description', () => {
             .send({ repoId: 999 });
 
         expect(res.status).toBe(404);
+    });
+
+    // Regression coverage for FIX-2 (2026-07-17 audit): this route calls
+    // provider.generate() directly (it doesn't fit guardedGenerate() because
+    // of the deterministic-fallback flow) and previously had no spend
+    // accounting at all.
+    describe('monthly AI spend cap', () => {
+        it('falls back to deterministic (never calls the provider) when over cap, and still returns 200', async () => {
+            mockCheckAISpendCap.mockReturnValue({ allowed: false, capCents: 500, spentCents: 500 });
+
+            const res = await request(makeApp())
+                .post('/ai/suggest-name-description')
+                .send({ repoId: 42 });
+
+            expect(res.status).toBe(200);
+            expect(res.body.source).toBe('deterministic');
+            expect(mockProviderGenerate).not.toHaveBeenCalled();
+            // The route still meters usage for the deterministic path.
+            expect(mockIncrementUsage).toHaveBeenCalledWith(1, 'ai_queries');
+        });
+
+        it('records spend after a successful AI call', async () => {
+            mockProviderGenerate.mockResolvedValue({
+                text: JSON.stringify({ name: 'apos-pos', description: 'd', rationale: 'r' }),
+                costUSD: 0.007,
+            });
+
+            const res = await request(makeApp())
+                .post('/ai/suggest-name-description')
+                .send({ repoId: 42 });
+
+            expect(res.status).toBe(200);
+            expect(res.body.source).toBe('ai');
+            expect(mockRecordAISpend).toHaveBeenCalledWith(1, 0.007);
+        });
+
+        it('does not check the spend cap at all when no AI provider is configured', async () => {
+            provideAIProviderInTest.enabled = false;
+
+            const res = await request(makeApp())
+                .post('/ai/suggest-name-description')
+                .send({ repoId: 42 });
+
+            expect(res.status).toBe(200);
+            expect(res.body.source).toBe('deterministic');
+            expect(mockCheckAISpendCap).not.toHaveBeenCalled();
+        });
     });
 });

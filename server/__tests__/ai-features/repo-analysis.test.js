@@ -49,6 +49,40 @@ describe('ai-features/repo-analysis.analyzeRepo', () => {
         expect(result.patterns.hasInstallation).toBe(true);
     });
 
+    it('surfaces cost/usage as non-enumerable properties for spend-cap accounting', async () => {
+        const provider = buildProvider(async () => ({
+            text: JSON.stringify({
+                summary: 'TL;DR', project_type: 'tool', suggested_topics: [],
+                improvements: [], readme_suggestions: [], highlights: [],
+            }),
+            usage: { inputTokens: 100, outputTokens: 50 },
+            costUSD: 0.015,
+        }));
+
+        const result = await analyzeRepo({ provider }, repoData, 'readme', []);
+
+        expect(result._costUSD).toBe(0.015);
+        expect(result._usage).toEqual({ inputTokens: 100, outputTokens: 50 });
+        // Non-enumerable: must not leak into a JSON response or a spread copy.
+        expect(Object.keys(result)).not.toContain('_costUSD');
+        expect(Object.keys(result)).not.toContain('_usage');
+        expect(JSON.stringify(result)).not.toContain('_costUSD');
+    });
+
+    it('defaults cost/usage to null when the provider reports none', async () => {
+        const provider = buildProvider(async () => ({
+            text: JSON.stringify({
+                summary: 'TL;DR', project_type: 'tool', suggested_topics: [],
+                improvements: [], readme_suggestions: [], highlights: [],
+            }),
+        }));
+
+        const result = await analyzeRepo({ provider }, repoData, 'readme', []);
+
+        expect(result._costUSD).toBeNull();
+        expect(result._usage).toBeNull();
+    });
+
     it('translates NOT_FOUND AIError into human-friendly message', async () => {
         const provider = buildProvider(async () => {
             throw new AIError({ code: AI_ERROR_CODE.NOT_FOUND, message: 'model not found', status: 404 });
