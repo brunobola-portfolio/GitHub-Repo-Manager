@@ -155,6 +155,13 @@ function seedAiQueries(count) {
         'INSERT INTO usage_metrics (user_id, metric_type, count, period_start, period_end) VALUES (?, ?, ?, ?, ?)'
     ).run(USER_ID, 'ai_queries', count, start, end);
 }
+function seedMetric(metricType, count) {
+    const start = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)).toISOString();
+    const end = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 0, 23, 59, 59)).toISOString();
+    testDb.prepare(
+        'INSERT INTO usage_metrics (user_id, metric_type, count, period_start, period_end) VALUES (?, ?, ?, ?, ?)'
+    ).run(USER_ID, metricType, count, start, end);
+}
 
 describe('POST /api/ai/pr-commands/:owner/:repo/:pr/:command', () => {
     it('generates and persists a /describe result', async () => {
@@ -242,12 +249,23 @@ describe('POST /api/ai/pr-commands/:owner/:repo/:pr/:command', () => {
         expect(createProviderForUserMock).not.toHaveBeenCalled();
     });
 
-    it('returns 403 for free tier (Pro feature)', async () => {
+    it('Free tier can generate a /describe result (PR commands moved off the Pro paywall)', async () => {
         setTier('free');
         const app = makeApp();
         const res = await request(app).post('/api/ai/pr-commands/acme/api/42/describe').send({});
-        expect(res.status).toBe(403);
-        expect(res.body.error).toBe('upgrade_required');
+        expect(res.status).toBe(200);
+        expect(res.body.command).toBe('describe');
+    });
+
+    it('returns 429 QUOTA_EXCEEDED once the Free prCommandPerMonth cap (30/mo) is reached (provider not called)', async () => {
+        setTier('free');
+        seedMetric('ai_pr_command', 30);
+        const app = makeApp();
+        const res = await request(app).post('/api/ai/pr-commands/acme/api/42/describe').send({});
+        expect(res.status).toBe(429);
+        expect(res.body.code).toBe('QUOTA_EXCEEDED');
+        expect(res.body.metric).toBe('ai_pr_command');
+        expect(createProviderForUserMock).not.toHaveBeenCalled();
     });
 });
 
@@ -270,11 +288,13 @@ describe('GET /api/ai/pr-commands/:owner/:repo/:pr/:command', () => {
         expect(res.body.code).toBe('NOT_FOUND');
     });
 
-    it('returns 403 for free tier', async () => {
-        setTier('free');
+    it('Free tier can fetch a cached result', async () => {
+        setTier('pro');
         const app = makeApp();
+        await request(app).post('/api/ai/pr-commands/acme/api/42/describe').send({});
+        setTier('free');
         const res = await request(app).get('/api/ai/pr-commands/acme/api/42/describe');
-        expect(res.status).toBe(403);
+        expect(res.status).toBe(200);
     });
 });
 
@@ -316,11 +336,13 @@ describe('POST /api/ai/pr-commands/:owner/:repo/:pr/describe/publish', () => {
         expect(res.body.code).toBe('NOT_FOUND');
     });
 
-    it('returns 403 for free tier', async () => {
-        setTier('free');
+    it('Free tier can publish a describe result', async () => {
+        setTier('pro');
         const app = makeApp();
+        await request(app).post('/api/ai/pr-commands/acme/api/42/describe').send({});
+        setTier('free');
         const res = await request(app).post('/api/ai/pr-commands/acme/api/42/describe/publish').send({});
-        expect(res.status).toBe(403);
+        expect(res.status).toBe(200);
     });
 
     it('produces a different idempotency key when the describe body changes between publishes', async () => {

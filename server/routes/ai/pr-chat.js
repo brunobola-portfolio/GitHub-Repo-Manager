@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 /*
- * PR Chat routes (slice 2 — Pro).
+ * PR Chat routes. Free tier (2026-07-18 rebalance), metered against
+ * prChatMessagesPerMonth.
  *
  *   GET    /:owner/:repo/:pr   — fetch persisted conversation history
  *   POST   /:owner/:repo/:pr   — SSE-stream a new turn (body: { message })
@@ -20,11 +21,10 @@
 import express from 'express';
 
 import { requireAuth, errorResponse } from '../../middleware/auth.js';
-import { requireTier } from '../../middleware/require-tier.js';
 import { githubApi } from '../../lib/github-api.js';
 import { readThrough } from '../../lib/gh-cache.js';
 import { createProviderForUser } from '../../lib/ai-provider.js';
-import { checkUsageLimit, incrementUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { initSSE, streamToSSEWithUsage } from '../ai-streaming.js';
 import { denyIfSpendCapReached, recordStreamCompletion } from './shared.js';
 import {
@@ -123,7 +123,7 @@ router.param('pr', (req, res, next, val) => {
 // GET — return persisted history (no LLM call)
 // ---------------------------------------------------------------------------
 
-router.get('/:owner/:repo/:pr', requireAuth, requireTier('pro'), (req, res) => {
+router.get('/:owner/:repo/:pr', requireAuth, (req, res) => {
     const { owner, repo, pr } = req.params;
     const messages = listMessages(req.session.userId, owner, repo, Number(pr));
     res.json({ messages });
@@ -133,7 +133,7 @@ router.get('/:owner/:repo/:pr', requireAuth, requireTier('pro'), (req, res) => {
 // DELETE — wipe the conversation
 // ---------------------------------------------------------------------------
 
-router.delete('/:owner/:repo/:pr', requireAuth, requireTier('pro'), (req, res) => {
+router.delete('/:owner/:repo/:pr', requireAuth, (req, res) => {
     const { owner, repo, pr } = req.params;
     const removed = clearConversation(req.session.userId, owner, repo, Number(pr));
     res.json({ cleared: removed });
@@ -143,7 +143,7 @@ router.delete('/:owner/:repo/:pr', requireAuth, requireTier('pro'), (req, res) =
 // POST — SSE stream a new turn.
 // ---------------------------------------------------------------------------
 
-router.post('/:owner/:repo/:pr', requireAuth, requireTier('pro'), generateRateLimit, async (req, res) => {
+router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res) => {
     const { owner, repo, pr } = req.params;
     const userId = req.session.userId;
 
@@ -155,13 +155,14 @@ router.post('/:owner/:repo/:pr', requireAuth, requireTier('pro'), generateRateLi
         return errorResponse(res, 400, `message exceeds ${MAX_USER_MESSAGE_LEN} characters`, 'INVALID_INPUT');
     }
 
-    // Meter the AI query even for Pro (counts toward the monthly AI-query pool;
-    // Pro is capped at 5000/mo, Enterprise unlimited) and enforce the monthly
-    // spend cap — both BEFORE any provider call or GitHub fetch (OWASP LLM10).
-    // We have not opened the SSE stream yet, so a 429 JSON envelope is correct.
-    const quota = checkUsageLimit(userId, 'ai_queries');
+    // PR Chat moved off the Pro paywall to Free (2026-07-18 rebalance) — meter
+    // against prChatMessagesPerMonth AND the global ai_queries pool, and
+    // enforce the monthly spend cap — both BEFORE any provider call or GitHub
+    // fetch (OWASP LLM10). We have not opened the SSE stream yet, so a 429
+    // JSON envelope is correct.
+    const quota = checkAIFeatureLimit(userId, 'ai_pr_chat');
     if (!quota.allowed) {
-        return res.status(429).json(quotaExceededResponse({ ...quota, metric: 'ai_queries' }));
+        return res.status(429).json(quotaExceededResponse(quota));
     }
     if (denyIfSpendCapReached(req, res)) return;
 
@@ -279,7 +280,7 @@ router.post('/:owner/:repo/:pr', requireAuth, requireTier('pro'), generateRateLi
     // Meter the AI query + record monthly spend + a PII-safe audit entry
     // (OWASP LLM10). Usage/cost come from the stream; both may be null (provider
     // reported none, or the client disconnected) — recordAISpend no-ops on null.
-    incrementUsage(userId, 'ai_queries');
+    incrementAIUsage(userId, 'ai_pr_chat');
     recordStreamCompletion(req, {
         feature: 'pr_chat',
         model: provider?._modelName ?? null,

@@ -5,10 +5,11 @@
 /**
  * Cross-Repo Work Board API — E2 aggregation endpoints.
  *
- * Tier gating:
- *   Free        — my-reviews, my-issues, stale-prs, review-load, tech-debt
- *                 (all read-only dashboards — commodity, no marginal cost)
- *   Enterprise+ — deploy-freq, lead-time     (DORA metrics)
+ * Tier gating (2026-07-18 rebalance — "nearly everything free"):
+ *   Free — every endpoint, including DORA metrics (deploy-freq, lead-time,
+ *          change-failure-rate, mttr, /dora, /dora.csv). All read-only
+ *          git-history/webhook aggregation — commodity, no marginal $ cost,
+ *          so a tier paywall was never protecting anything but revenue.
  *
  * All endpoints require an authenticated session.
  *
@@ -24,7 +25,6 @@
 
 import express from 'express';
 import { requireAuth, errorResponse, safeError } from '../middleware/auth.js';
-import { requireTier } from '../middleware/require-tier.js';
 import {
     listMyPendingReviews,
     listStalePRs,
@@ -284,9 +284,9 @@ router.get('/review-load', requireAuth, (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// GET /api/v1/work-board/deploy-freq (Enterprise+)
+// GET /api/v1/work-board/deploy-freq (Free — DORA metrics, 2026-07-18 rebalance)
 // ---------------------------------------------------------------------------
-router.get('/deploy-freq', requireAuth, requireTier('enterprise'), (req, res) => {
+router.get('/deploy-freq', requireAuth, (req, res) => {
     try {
         const environment = req.query.environment || 'production';
         const repoIds = parseRepoIds(req.query.repoIds);
@@ -299,9 +299,9 @@ router.get('/deploy-freq', requireAuth, requireTier('enterprise'), (req, res) =>
 });
 
 // ---------------------------------------------------------------------------
-// GET /api/v1/work-board/lead-time   (Enterprise+)
+// GET /api/v1/work-board/lead-time   (Free — DORA metrics, 2026-07-18 rebalance)
 // ---------------------------------------------------------------------------
-router.get('/lead-time', requireAuth, requireTier('enterprise'), (req, res) => {
+router.get('/lead-time', requireAuth, (req, res) => {
     try {
         const repoIds = parseRepoIds(req.query.repoIds);
         const since = req.query.since ? new Date(req.query.since) : undefined;
@@ -313,9 +313,9 @@ router.get('/lead-time', requireAuth, requireTier('enterprise'), (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// GET /api/v1/work-board/change-failure-rate   (Enterprise+)
+// GET /api/v1/work-board/change-failure-rate   (Free — DORA metrics, 2026-07-18 rebalance)
 // ---------------------------------------------------------------------------
-router.get('/change-failure-rate', requireAuth, requireTier('enterprise'), (req, res) => {
+router.get('/change-failure-rate', requireAuth, (req, res) => {
     try {
         const environment = req.query.environment || 'production';
         const repoIds = parseRepoIds(req.query.repoIds);
@@ -328,9 +328,9 @@ router.get('/change-failure-rate', requireAuth, requireTier('enterprise'), (req,
 });
 
 // ---------------------------------------------------------------------------
-// GET /api/v1/work-board/mttr    (Enterprise+)
+// GET /api/v1/work-board/mttr    (Free — DORA metrics, 2026-07-18 rebalance)
 // ---------------------------------------------------------------------------
-router.get('/mttr', requireAuth, requireTier('enterprise'), (req, res) => {
+router.get('/mttr', requireAuth, (req, res) => {
     try {
         const environment = req.query.environment || 'production';
         const repoIds = parseRepoIds(req.query.repoIds);
@@ -343,9 +343,9 @@ router.get('/mttr', requireAuth, requireTier('enterprise'), (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// GET /api/v1/work-board/dora     (Enterprise+) — combined DORA summary
+// GET /api/v1/work-board/dora     (Free — combined DORA summary, 2026-07-18 rebalance)
 // ---------------------------------------------------------------------------
-router.get('/dora', requireAuth, requireTier('enterprise'), (req, res) => {
+router.get('/dora', requireAuth, (req, res) => {
     try {
         const environment = req.query.environment || 'production';
         const repoIds = parseRepoIds(req.query.repoIds);
@@ -382,7 +382,7 @@ router.get('/dora', requireAuth, requireTier('enterprise'), (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// GET /api/v1/work-board/dora.csv  (Enterprise+) — CSV export
+// GET /api/v1/work-board/dora.csv  (Free — CSV export, 2026-07-18 rebalance)
 // ---------------------------------------------------------------------------
 function csvEscape(v) {
     if (v == null) return '';
@@ -391,7 +391,7 @@ function csvEscape(v) {
     return s;
 }
 
-router.get('/dora.csv', requireAuth, requireTier('enterprise'), (req, res) => {
+router.get('/dora.csv', requireAuth, (req, res) => {
     try {
         const environment = req.query.environment || 'production';
         const repoIds = parseRepoIds(req.query.repoIds);

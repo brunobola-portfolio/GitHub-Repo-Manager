@@ -112,6 +112,13 @@ function seedAiQueries(count) {
         'INSERT INTO usage_metrics (user_id, metric_type, count, period_start, period_end) VALUES (?, ?, ?, ?, ?)'
     ).run(USER_ID, 'ai_queries', count, start, end);
 }
+function seedMetric(metricType, count) {
+    const start = aiQueriesStart();
+    const end = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 0, 23, 59, 59)).toISOString();
+    testDb.prepare(
+        'INSERT INTO usage_metrics (user_id, metric_type, count, period_start, period_end) VALUES (?, ?, ?, ?, ?)'
+    ).run(USER_ID, metricType, count, start, end);
+}
 
 describe('GET /api/ai/pr-chat/:owner/:repo/:pr', () => {
     it('returns the persisted history (empty initially)', async () => {
@@ -121,11 +128,11 @@ describe('GET /api/ai/pr-chat/:owner/:repo/:pr', () => {
         expect(res.body.messages).toEqual([]);
     });
 
-    it('returns 403 for free tier', async () => {
+    it('Free tier can fetch chat history (PR Chat moved off the Pro paywall)', async () => {
         setTier('free');
         const app = makeApp();
         const res = await request(app).get('/api/ai/pr-chat/acme/api/42');
-        expect(res.status).toBe(403);
+        expect(res.status).toBe(200);
     });
 });
 
@@ -149,13 +156,26 @@ describe('POST /api/ai/pr-chat/:owner/:repo/:pr', () => {
         expect(res.body.code).toBe('NO_AI_PROVIDER');
     });
 
-    it('returns 403 for free tier', async () => {
+    it('Free tier can send a chat message', async () => {
         setTier('free');
         const app = makeApp();
         const res = await request(app)
             .post('/api/ai/pr-chat/acme/api/42')
             .send({ message: 'hi' });
-        expect(res.status).toBe(403);
+        expect(res.status).toBe(200);
+    });
+
+    it('returns 429 QUOTA_EXCEEDED once the Free prChatMessagesPerMonth cap (100/mo) is reached (provider not called)', async () => {
+        setTier('free');
+        seedMetric('ai_pr_chat', 100);
+        const app = makeApp();
+        const res = await request(app)
+            .post('/api/ai/pr-chat/acme/api/42')
+            .send({ message: 'hi' });
+        expect(res.status).toBe(429);
+        expect(res.body.code).toBe('QUOTA_EXCEEDED');
+        expect(res.body.metric).toBe('ai_pr_chat');
+        expect(createProviderForUserMock).not.toHaveBeenCalled();
     });
 
     it('streams an SSE reply and persists user + assistant messages', async () => {

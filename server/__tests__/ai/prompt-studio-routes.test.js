@@ -106,6 +106,11 @@ function makeApp(userId = USER_ID) {
     app.use(express.json());
     app.use((req, _res, next) => {
         req.session = { userId, accessToken: 'fake-token', login: 'alice' };
+        // POST /presets' promptPresetsMax count-check reads req.userTier
+        // directly (mirrors server/index.js's globally-mounted attachTier
+        // middleware in production — see teams.integration.test.js for the
+        // same convention).
+        req.userTier = currentTier;
         req.log = { error: () => {}, warn: () => {}, info: () => {} };
         next();
     });
@@ -126,6 +131,13 @@ function seedAiQueries(count, uid = USER_ID) {
     testDb.prepare(
         'INSERT INTO usage_metrics (user_id, metric_type, count, period_start, period_end) VALUES (?, ?, ?, ?, ?)'
     ).run(uid, 'ai_queries', count, start, end);
+}
+function seedMetric(metricType, count, uid = USER_ID) {
+    const start = aiQueriesStart();
+    const end = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 0, 23, 59, 59)).toISOString();
+    testDb.prepare(
+        'INSERT INTO usage_metrics (user_id, metric_type, count, period_start, period_end) VALUES (?, ?, ?, ?, ?)'
+    ).run(uid, metricType, count, start, end);
 }
 
 beforeEach(() => {
@@ -232,11 +244,25 @@ describe('POST /api/ai/prompt-studio/presets', () => {
         severityFloor: 'warning',
     };
 
-    it('returns 403 for free tier', async () => {
+    it('Free tier can create a custom preset (Prompt Studio moved off the Pro paywall)', async () => {
         setTier('free');
         const res = await request(makeApp()).post('/api/ai/prompt-studio/presets').send(validBody);
+        expect(res.status).toBe(201);
+        expect(res.body.id).toBeGreaterThan(0);
+    });
+
+    it('returns 403 once the Free promptPresetsMax cap (10) is reached', async () => {
+        setTier('free');
+        for (let i = 0; i < 10; i++) {
+            savePreset(USER_ID, {
+                scope: 'user', scopeTarget: null, presetKey: `mine-${i}`,
+                name: `Mine ${i}`, systemPrompt: 'x', pathRules: [],
+                severityFloor: null, isDefault: false,
+            });
+        }
+        const res = await request(makeApp()).post('/api/ai/prompt-studio/presets').send(validBody);
         expect(res.status).toBe(403);
-        expect(res.body.error).toBe('upgrade_required');
+        expect(res.body.code).toBe('tier_limit_exceeded');
     });
 
     it('Pro user creates a custom preset → 201 with id', async () => {
@@ -284,7 +310,7 @@ describe('PATCH /api/ai/prompt-studio/presets/:id', () => {
         expect(res.body.changes).toBe(1);
     });
 
-    it('returns 403 for free tier', async () => {
+    it('Free tier can edit an owned preset', async () => {
         const id = savePreset(USER_ID, {
             scope: 'user', scopeTarget: null, presetKey: 'mine',
             name: 'X', systemPrompt: 'x', pathRules: [],
@@ -294,7 +320,7 @@ describe('PATCH /api/ai/prompt-studio/presets/:id', () => {
         const res = await request(makeApp())
             .patch(`/api/ai/prompt-studio/presets/${id}`)
             .send({ name: 'New' });
-        expect(res.status).toBe(403);
+        expect(res.status).toBe(200);
     });
 
     it('returns 404 for an id the caller does not own', async () => {
@@ -364,11 +390,22 @@ describe('POST /api/ai/prompt-studio/presets/:id/test', () => {
         }));
     });
 
-    it('returns 403 for free tier', async () => {
+    it('Free tier can run /test (Prompt Studio moved off the Pro paywall)', async () => {
         setTier('free');
         const res = await request(makeApp())
             .post('/api/ai/prompt-studio/presets/general/test').send({});
-        expect(res.status).toBe(403);
+        expect(res.status).toBe(200);
+    });
+
+    it('returns 429 QUOTA_EXCEEDED once the Free promptStudioTestPerMonth cap (30/mo) is reached (provider not called)', async () => {
+        setTier('free');
+        seedMetric('ai_prompt_test', 30);
+        const res = await request(makeApp())
+            .post('/api/ai/prompt-studio/presets/general/test').send({});
+        expect(res.status).toBe(429);
+        expect(res.body.code).toBe('QUOTA_EXCEEDED');
+        expect(res.body.metric).toBe('ai_prompt_test');
+        expect(createProviderForUserMock).not.toHaveBeenCalled();
     });
 
     it('returns 404 when no AI provider is configured', async () => {

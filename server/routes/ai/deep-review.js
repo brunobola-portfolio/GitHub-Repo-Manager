@@ -19,13 +19,12 @@
 import express from 'express';
 
 import { requireAuth, errorResponse } from '../../middleware/auth.js';
-import { requireTier } from '../../middleware/require-tier.js';
 import { createInMemoryRateLimiter } from '../../lib/in-memory-rate-limiter.js';
 import { githubApi } from '../../lib/github-api.js';
 import { readThrough } from '../../lib/gh-cache.js';
 import { executeViaOutbox } from '../../lib/outbox-helper.js';
 import { createProviderForUser } from '../../lib/ai-provider.js';
-import { checkUsageLimit, incrementUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { denyIfSpendCapReached, recordStreamCompletion } from './shared.js';
 import { runDeepReview } from '../../lib/ai-features/pr-deep-review.js';
 import { resolvePromptForGenerate } from '../../lib/ai-features/prompt-registry.js';
@@ -102,16 +101,17 @@ router.param('commentIdx', (req, res, next, val) => {
 // POST — generate (or refresh) a draft for a PR
 // ---------------------------------------------------------------------------
 
-router.post('/:owner/:repo/:pr', requireAuth, requireTier('pro'), generateRateLimit, async (req, res) => {
+router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res) => {
     const { owner, repo, pr } = req.params;
     const userId = req.session.userId;
 
-    // Meter the AI query even for Pro (counts toward the monthly AI-query pool;
-    // Pro is capped at 5000/mo, Enterprise unlimited) and enforce the monthly
-    // spend cap — BEFORE any provider call (OWASP LLM10, fail fast).
-    const quota = checkUsageLimit(userId, 'ai_queries');
+    // Deep Review moved off the Pro paywall to Free (2026-07-18 rebalance) —
+    // meter it against its own per-feature monthly cap AND the global
+    // ai_queries pool, and enforce the monthly spend cap — all BEFORE any
+    // provider call (OWASP LLM10, fail fast).
+    const quota = checkAIFeatureLimit(userId, 'ai_deep_review');
     if (!quota.allowed) {
-        return res.status(429).json(quotaExceededResponse({ ...quota, metric: 'ai_queries' }));
+        return res.status(429).json(quotaExceededResponse(quota));
     }
     if (denyIfSpendCapReached(req, res)) return;
 
@@ -252,7 +252,7 @@ router.post('/:owner/:repo/:pr', requireAuth, requireTier('pro'), generateRateLi
     // Meter the query + record spend + write a PII-safe cost audit. `costUsd`/
     // tokens are null when the provider can't surface usage — recordAISpend
     // no-ops on null cost and the audit still records feature + model.
-    incrementUsage(userId, 'ai_queries');
+    incrementAIUsage(userId, 'ai_deep_review');
     recordStreamCompletion(req, {
         feature: 'deep_review',
         action: 'ai.deep_review',
@@ -269,7 +269,7 @@ router.post('/:owner/:repo/:pr', requireAuth, requireTier('pro'), generateRateLi
 // GET — fetch cached draft for this PR
 // ---------------------------------------------------------------------------
 
-router.get('/:owner/:repo/:pr', requireAuth, requireTier('pro'), (req, res) => {
+router.get('/:owner/:repo/:pr', requireAuth, (req, res) => {
     const { owner, repo, pr } = req.params;
     const got = getDraft(req.session.userId, owner, repo, Number(pr));
     if (!got) return errorResponse(res, 404, 'No draft found.', 'NOT_FOUND');
@@ -287,7 +287,7 @@ router.get('/:owner/:repo/:pr', requireAuth, requireTier('pro'), (req, res) => {
 // PATCH — edit / dismiss a single line comment in the draft
 // ---------------------------------------------------------------------------
 
-router.patch('/:draftId/comments/:commentIdx', requireAuth, requireTier('pro'), (req, res) => {
+router.patch('/:draftId/comments/:commentIdx', requireAuth, (req, res) => {
     const draftId = Number(req.params.draftId);
     const idx = Number(req.params.commentIdx);
     const { action, body, suggestion } = req.body || {};
@@ -327,7 +327,7 @@ router.patch('/:draftId/comments/:commentIdx', requireAuth, requireTier('pro'), 
 // POST — publish the draft as a GitHub PR review
 // ---------------------------------------------------------------------------
 
-router.post('/:draftId/publish', requireAuth, requireTier('pro'), async (req, res) => {
+router.post('/:draftId/publish', requireAuth, async (req, res) => {
     const draftId = Number(req.params.draftId);
     const event = String(req.body?.event || 'COMMENT').toUpperCase();
     if (!['COMMENT', 'APPROVE', 'REQUEST_CHANGES'].includes(event)) {
@@ -393,7 +393,7 @@ router.post('/:draftId/publish', requireAuth, requireTier('pro'), async (req, re
 // DELETE — discard the draft
 // ---------------------------------------------------------------------------
 
-router.delete('/:draftId', requireAuth, requireTier('pro'), (req, res) => {
+router.delete('/:draftId', requireAuth, (req, res) => {
     const changes = deleteDraft(req.session.userId, Number(req.params.draftId));
     if (changes === 0) return errorResponse(res, 404, 'Draft not found.', 'NOT_FOUND');
     res.status(204).end();

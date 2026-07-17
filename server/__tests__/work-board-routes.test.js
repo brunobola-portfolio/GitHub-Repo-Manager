@@ -275,19 +275,18 @@ describe('GET /api/v1/work-board/review-load', () => {
 })
 
 // ---------------------------------------------------------------------------
-// deploy-freq  (Enterprise+)
+// deploy-freq  (Free — DORA metrics moved off the Enterprise paywall, 2026-07-18)
 // ---------------------------------------------------------------------------
 
 describe('GET /api/v1/work-board/deploy-freq', () => {
-    it('returns 403 for free user', async () => {
+    it('returns 200 for free user (DORA metrics are free)', async () => {
         const res = await request(makeApp('free')).get('/api/v1/work-board/deploy-freq')
-        expect(res.status).toBe(403)
+        expect(res.status).toBe(200)
     })
 
-    it('returns 403 for pro user', async () => {
+    it('returns 200 for pro user', async () => {
         const res = await request(makeApp('pro')).get('/api/v1/work-board/deploy-freq')
-        expect(res.status).toBe(403)
-        expect(res.body.requiredTier).toBe('enterprise')
+        expect(res.status).toBe(200)
     })
 
     it('returns 200 for enterprise user with DORA data shape', async () => {
@@ -303,13 +302,13 @@ describe('GET /api/v1/work-board/deploy-freq', () => {
 })
 
 // ---------------------------------------------------------------------------
-// lead-time  (Enterprise+)
+// lead-time  (Free — DORA metrics moved off the Enterprise paywall, 2026-07-18)
 // ---------------------------------------------------------------------------
 
 describe('GET /api/v1/work-board/lead-time', () => {
-    it('returns 403 for free user', async () => {
+    it('returns 200 for free user (DORA metrics are free)', async () => {
         const res = await request(makeApp('free')).get('/api/v1/work-board/lead-time')
-        expect(res.status).toBe(403)
+        expect(res.status).toBe(200)
     })
 
     it('returns 200 for enterprise user', async () => {
@@ -322,13 +321,14 @@ describe('GET /api/v1/work-board/lead-time', () => {
 })
 
 // ---------------------------------------------------------------------------
-// change-failure-rate + mttr  (Enterprise+)
+// change-failure-rate + mttr  (Free — DORA metrics moved off the Enterprise
+// paywall, 2026-07-18)
 // ---------------------------------------------------------------------------
 
 describe('GET /api/v1/work-board/change-failure-rate', () => {
-    it('returns 403 for pro user', async () => {
+    it('returns 200 for pro user (DORA metrics are free)', async () => {
         const res = await request(makeApp('pro')).get('/api/v1/work-board/change-failure-rate')
-        expect(res.status).toBe(403)
+        expect(res.status).toBe(200)
     })
 
     it('returns CFR shape for enterprise', async () => {
@@ -341,9 +341,9 @@ describe('GET /api/v1/work-board/change-failure-rate', () => {
 })
 
 describe('GET /api/v1/work-board/mttr', () => {
-    it('returns 403 for free user', async () => {
+    it('returns 200 for free user (DORA metrics are free)', async () => {
         const res = await request(makeApp('free')).get('/api/v1/work-board/mttr')
-        expect(res.status).toBe(403)
+        expect(res.status).toBe(200)
     })
 
     it('returns MTTR shape for enterprise', async () => {
@@ -362,9 +362,9 @@ describe('GET /api/v1/work-board/mttr', () => {
 // ---------------------------------------------------------------------------
 
 describe('GET /api/v1/work-board/dora', () => {
-    it('403 for free user', async () => {
+    it('200 for free user (DORA metrics are free)', async () => {
         const res = await request(makeApp('free')).get('/api/v1/work-board/dora')
-        expect(res.status).toBe(403)
+        expect(res.status).toBe(200)
     })
 
     it('returns all four DORA metrics for enterprise', async () => {
@@ -402,9 +402,14 @@ describe('GET /api/v1/work-board/dora.csv', () => {
         expect(res.text).toContain('2026-04-01,2')
     })
 
-    it('403 for pro user', async () => {
+    it('200 for pro user (DORA metrics are free)', async () => {
+        mockDeployFrequency.mockReturnValue({ totalDeployments: 0, perDay: [] })
+        mockLeadTimeForChanges.mockReturnValue({ sampleSize: 0, medianHours: null, p50: null, p90: null })
+        mockChangeFailureRate.mockReturnValue({ total: 0, failed: 0, successful: 0, rate: null })
+        mockMeanTimeToRecovery.mockReturnValue({ sampleSize: 0, medianHours: null, p50: null, p90: null, unresolved: 0 })
         const res = await request(makeApp('pro')).get('/api/v1/work-board/dora.csv')
-        expect(res.status).toBe(403)
+        expect(res.status).toBe(200)
+        expect(res.headers['content-type']).toContain('text/csv')
     })
 
     it('properly escapes commas and quotes in values', async () => {

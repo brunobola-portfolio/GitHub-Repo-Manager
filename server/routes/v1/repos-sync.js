@@ -6,8 +6,8 @@ import { rm, mkdtemp } from 'fs/promises'
 import db from '../../db.js'
 import { auditLog } from '../../lib/audit.js'
 import { requireAuth } from '../../middleware/auth.js'
-import { requireTier } from '../../middleware/require-tier.js'
 import { applyOwnerRepoParamValidators } from '../repos/_shared.js'
+import { checkUsageLimit, incrementUsage, quotaExceededResponse } from '../../lib/usage-meter.js'
 
 const router = Router()
 // Reject malformed :owner/:repo before they reach githubApi() or the git push
@@ -17,7 +17,8 @@ applyOwnerRepoParamValidators(router)
 // GET .../sync/preview — read-only sync preview, available on ALL tiers (Free
 // included). Returns the tracked mirror's source/target + last-sync metadata
 // with NO clone or push. The destructive apply (POST .../sync below) mirrors
-// the source over the target and stays Pro. Same user_id scoping as the apply
+// the source over the target and also moved to Free (2026-07-18 rebalance),
+// newly metered against syncApplyPerMonth. Same user_id scoping as the apply
 // path so the preview never discloses another user's mirror.
 router.get('/repos/:owner/:repo/sync/preview', requireAuth, (req, res) => {
   const { owner, repo } = req.params
@@ -28,6 +29,7 @@ router.get('/repos/:owner/:repo/sync/preview', requireAuth, (req, res) => {
      ORDER BY id DESC LIMIT 1`
   ).get(owner, repo, req.session.userId)
   if (!job) return res.status(404).json({ error: 'Not a tracked mirror' })
+  const quota = checkUsageLimit(req.session.userId, 'sync_apply_executions')
   res.json({
     tracked: true,
     sourceUrl: job.source_url,
@@ -36,16 +38,18 @@ router.get('/repos/:owner/:repo/sync/preview', requireAuth, (req, res) => {
     status: job.status || null,
     lastSyncedAt: job.completed_at || null,
     trackedSince: job.created_at || null,
-    // Running the sync (mirror clone + force-push) requires Pro.
-    applyRequiresPro: true,
+    // Running the sync (mirror clone + force-push) is free on every tier,
+    // capped at syncApplyPerMonth (see syncApplyRemaining below).
+    syncApplyLimit: quota.limit,
+    syncApplyRemaining: quota.remaining,
   })
 })
 
-router.post('/repos/:owner/:repo/sync', requireAuth, requireTier('pro'), async (req, res) => {
+router.post('/repos/:owner/:repo/sync', requireAuth, async (req, res) => {
   const { owner, repo } = req.params
   const token = req.session.accessToken  // requireAuth guarantees this exists
   // Scope the lookup to the caller's own mirror jobs. Without the user_id
-  // predicate, any Pro user with write access to owner/repo could trigger a
+  // predicate, any user with write access to owner/repo could trigger a
   // sync that a DIFFERENT user configured — disclosing that user's source_url
   // (response + audit log) and force-pushing the target from an upstream the
   // caller never set. migration_jobs.user_id is the same id written at mirror
@@ -56,6 +60,16 @@ router.post('/repos/:owner/:repo/sync', requireAuth, requireTier('pro'), async (
      ORDER BY id DESC LIMIT 1`
   ).get(owner, repo, req.session.userId)
   if (!job) return res.status(404).json({ error: 'Not a tracked mirror' })
+
+  // Mirror sync apply moved off the Pro paywall to Free (2026-07-18
+  // rebalance) — real bandwidth/compute cost like migration, so it's metered
+  // against syncApplyPerMonth (mirrors migration.js's requireMigrationQuota
+  // pattern) BEFORE the clone/push work starts.
+  const quota = checkUsageLimit(req.session.userId, 'sync_apply_executions')
+  if (!quota.allowed) {
+    return res.status(429).json(quotaExceededResponse({ ...quota, metric: 'sync_apply_executions' }))
+  }
+  incrementUsage(req.session.userId, 'sync_apply_executions')
 
   const workDir = await mkdtemp(join(tmpdir(), 'grm-sync-'))
   const startedAt = Date.now()

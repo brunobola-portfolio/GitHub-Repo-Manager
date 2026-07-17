@@ -106,7 +106,7 @@ describe('createTenantLimiters — API-key bearer keying', () => {
     // therefore has no session.userId/tenantId at limiter time and must be
     // keyed by (a hash of) the token itself — NOT by IP — so two keys behind
     // one NAT/CI runner don't share a bucket and an invalid key only burns
-    // its own bucket. Prod 'ai' free budget = 10/15min.
+    // its own bucket. Prod 'ai' free budget = 30/15min.
     const originalNodeEnv = process.env.NODE_ENV
 
     beforeEach(() => {
@@ -122,8 +122,8 @@ describe('createTenantLimiters — API-key bearer keying', () => {
         const limiter = await createTenantLimiters('ai')
         const app = buildApp(limiter, '/api/ai')
 
-        // Burn token A's whole budget (10 identical-token requests share a bucket)...
-        for (let i = 0; i < 10; i++) {
+        // Burn token A's whole budget (30 identical-token requests share a bucket)...
+        for (let i = 0; i < 30; i++) {
             const ok = await request(app)
                 .get('/api/ai/login')
                 .set('Authorization', 'Bearer grm_live_tokenAAAAAAAA')
@@ -147,7 +147,7 @@ describe('createTenantLimiters — API-key bearer keying', () => {
         const app = buildApp(limiter, '/api/ai')
 
         // Anonymous requests (no bearer, no session) share the per-IP bucket...
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 30; i++) {
             await request(app).get('/api/ai/login')
         }
         const anonOverflow = await request(app).get('/api/ai/login')
@@ -167,7 +167,7 @@ describe('createTenantLimiters — API-key bearer keying', () => {
         // A foreign bearer (e.g. a GitHub token pasted by mistake) is NOT an
         // API key — it must land in the ordinary per-IP bucket, not mint a
         // fresh bucket per unique value.
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 30; i++) {
             await request(app)
                 .get('/api/ai/login')
                 .set('Authorization', `Bearer ghp_someOtherToken${i}`)

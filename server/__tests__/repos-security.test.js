@@ -10,8 +10,6 @@ vi.mock('../middleware/auth.js', () => ({
     next()
   }
 }))
-vi.mock('../middleware/require-tier.js', () => ({ requireTier: () => (req, _res, next) => next() }))
-
 import { githubApi } from '../lib/github-api.js'
 
 describe('GET /api/v1/repos/:owner/:repo/security', () => {

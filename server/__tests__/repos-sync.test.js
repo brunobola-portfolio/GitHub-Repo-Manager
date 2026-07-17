@@ -13,12 +13,37 @@ vi.mock('../lib/audit.js', () => ({
   auditLog: vi.fn()
 }))
 
+// Two independent fake "tables" behind db.prepare(): migration_jobs (mirror
+// lookup, driven by mockDbGet as before) and usage_metrics (the
+// syncApplyPerMonth meter, driven by an in-memory count map so the new
+// checkUsageLimit/incrementUsage tests can exercise real accumulation).
 const mockDbGet = vi.fn()
-const mockPrepare = vi.fn(() => ({ get: mockDbGet }))
+const usageCounts = new Map() // key: `${userId}:${metricType}` -> count
+
+function statementFor(sql) {
+  if (/FROM usage_metrics/i.test(sql)) {
+    return {
+      get: (userId, metricType) => ({ count: usageCounts.get(`${userId}:${metricType}`) || 0 }),
+    }
+  }
+  if (/INSERT INTO usage_metrics/i.test(sql)) {
+    return {
+      run: (userId, metricType) => {
+        const key = `${userId}:${metricType}`
+        usageCounts.set(key, (usageCounts.get(key) || 0) + 1)
+        return { changes: 1 }
+      },
+    }
+  }
+  // migration_jobs lookups (GET preview + POST sync)
+  return { get: (...args) => mockDbGet(...args) }
+}
+const mockPrepare = vi.fn((sql) => statementFor(sql))
 vi.mock('../db.js', () => ({
   default: {
-    prepare: (...args) => mockPrepare(...args)
-  }
+    prepare: (...args) => mockPrepare(...args),
+    transaction: (fn) => fn,
+  },
 }))
 
 // Mock middlewares as passthrough (happy path; real auth tested separately)
@@ -30,13 +55,18 @@ vi.mock('../middleware/auth.js', () => ({
 }))
 
 vi.mock('../middleware/require-tier.js', () => ({
-  requireTier: () => (req, _res, next) => next()
+  requireTier: () => (req, _res, next) => next(),
+  // syncApplyPerMonth metering resolves tier internally (checkUsageLimit /
+  // incrementUsage) via getUserTier, independent of req.userTier. Fixed at
+  // 'free' so the tests below exercise the Free-tier cap (10/mo).
+  getUserTier: () => 'free',
 }))
 
 describe('POST /api/v1/repos/:owner/:repo/sync', () => {
   let app
   beforeEach(async () => {
     vi.clearAllMocks()
+    usageCounts.clear()
     app = express()
     app.use(express.json())
     app.use((req, _res, next) => {
@@ -111,7 +141,11 @@ describe('POST /api/v1/repos/:owner/:repo/sync', () => {
     expect(res.body.sourceUrl).toBe('https://dev.azure.com/org/proj/_git/repo')
     expect(res.body.target).toBe('alice/hello')
     expect(res.body.lastSyncedAt).toBe('2026-06-01 10:00:00')
-    expect(res.body.applyRequiresPro).toBe(true)
+    // Free tier now gets real apply, capped at syncApplyPerMonth (10/mo) —
+    // no more applyRequiresPro.
+    expect(res.body.applyRequiresPro).toBeUndefined()
+    expect(res.body.syncApplyLimit).toBe(10)
+    expect(res.body.syncApplyRemaining).toBe(10)
     // Preview must NEVER clone or push — it only reads metadata.
     expect(simpleGit).not.toHaveBeenCalled()
   })
@@ -122,10 +156,32 @@ describe('POST /api/v1/repos/:owner/:repo/sync', () => {
 
     const ownerRes = await request(app).get('/api/v1/repos/alice/hello/sync/preview').set('x-test-user', '1')
     expect(ownerRes.status).toBe(200)
-    const sql = mockPrepare.mock.calls.at(-1)[0]
-    expect(sql).toMatch(/user_id\s*=\s*\?/i)
+    const migrationJobsCall = mockPrepare.mock.calls.find(([sql]) => /FROM migration_jobs/i.test(sql))
+    expect(migrationJobsCall[0]).toMatch(/user_id\s*=\s*\?/i)
 
     const otherRes = await request(app).get('/api/v1/repos/alice/hello/sync/preview').set('x-test-user', '2')
     expect(otherRes.status).toBe(404)
+  })
+
+  // --- syncApplyPerMonth metering (2026-07-18 rebalance) --------------------
+
+  it('meters sync_apply_executions on a successful apply', async () => {
+    mockDbGet.mockReturnValue({ source_url: 'https://github.com/other/repo.git' })
+    const res = await request(app).post('/api/v1/repos/alice/hello/sync')
+    expect(res.status).toBe(200)
+    expect(usageCounts.get('1:sync_apply_executions')).toBe(1)
+  })
+
+  it('returns 429 QUOTA_EXCEEDED once the Free monthly sync-apply cap is reached (no clone/push)', async () => {
+    const { default: simpleGit } = await import('simple-git')
+    mockDbGet.mockReturnValue({ source_url: 'https://github.com/other/repo.git' })
+    usageCounts.set('1:sync_apply_executions', 10) // Free cap is 10/mo
+
+    const res = await request(app).post('/api/v1/repos/alice/hello/sync')
+    expect(res.status).toBe(429)
+    expect(res.body.code).toBe('QUOTA_EXCEEDED')
+    expect(simpleGit).not.toHaveBeenCalled()
+    // The failed attempt must not consume another unit.
+    expect(usageCounts.get('1:sync_apply_executions')).toBe(10)
   })
 })
