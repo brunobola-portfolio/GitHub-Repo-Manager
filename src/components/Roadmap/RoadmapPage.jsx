@@ -54,7 +54,7 @@ const STAGES = [
       { title: 'SOC 2 code hardening', description: 'Append-only audit log with SHA-256 hash chain, self-service data erasure, startup secrets check, retention pass', tier: 'Enterprise' },
       { title: 'Stripe billing + license key delivery', description: 'Ed25519-signed JWT license keys issued on checkout completion', tier: 'Pro + Enterprise' },
       { title: 'CODEOWNERS Parser + Generator', description: 'Parse existing CODEOWNERS OR suggest rules from recent commit authorship (hotspots + per-path owners + copy-to-clipboard preview)', tier: 'Free' },
-      { title: 'Security & Secrets Scan', description: 'Aggregates GitHub Dependabot + secret scanning alerts', tier: 'Free' },
+      { title: 'Security Posture report card', description: '10-check security report card (branch protection, secret scanning, Dependabot, workflow permissions, org 2FA) with an AI top-actions summary — plus the underlying Dependabot + secret scanning alert aggregation', tier: 'Free' },
       { title: 'Compare with Existing — side-by-side diff', description: 'From the Similar Repositories drawer, open a side-by-side README / package.json diff against any similar repo', tier: 'Pro' },
     ],
   },

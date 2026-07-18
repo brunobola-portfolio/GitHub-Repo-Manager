@@ -340,6 +340,34 @@ export const agentRulesCommitSchema = z.object({
     mode: z.enum(['direct', 'pr']).optional().default('direct'),
 }).strict();
 
+// Security Posture AI summary — POST /:owner/:repo/security/summary
+// (server/routes/v1/repos-security.js). The client submits back the SAME 10
+// check results the GET /security response just computed server-side — this
+// is the honesty-critical whitelist that keeps raw alert bodies (which could
+// contain secret/PII fragments) out of the AI prompt: only id/label/status/
+// severity survive `.strip()`, and `checks` is capped at 10 entries (the
+// deterministic report card never produces more).
+const SECURITY_POSTURE_CHECK_IDS = [
+    'branch_protection_review', 'branch_protection_force_push', 'alerts_clear',
+    'secret_scanning', 'secret_scanning_push_protection', 'dependabot_security_updates',
+    'code_scanning', 'security_md', 'workflow_permissions', 'org_two_factor',
+];
+
+const securityPostureCheckSchema = z.object({
+    id: z.enum(SECURITY_POSTURE_CHECK_IDS),
+    label: z.string().min(1).max(200),
+    status: z.enum(['pass', 'fail', 'unknown', 'not_applicable', 'informational']),
+    severity: z.enum(['critical', 'high', 'medium', 'low', 'informational']).nullable().optional(),
+}).strip();
+
+export const securityPostureSummarySchema = z.object({
+    repo: z.object({
+        full_name: z.string().min(3).max(200).regex(repoFullNameRegex),
+        private: z.boolean().optional(),
+    }).strip(),
+    checks: z.array(securityPostureCheckSchema).min(1).max(10),
+}).strict();
+
 // ---------------------------------------------------------------------------
 // Dev Toolkit endpoints (refine / chat-refine / analyze-context / generate-*)
 // ---------------------------------------------------------------------------
