@@ -62,6 +62,12 @@ const METRIC_TO_FEATURE = {
     ai_pr_chat: 'prChatMessagesPerMonth',
     ai_pr_command: 'prCommandPerMonth',
     ai_prompt_test: 'promptStudioTestPerMonth',
+    // Wave 6 (2026-07-18 community-launch WOW): AI Diagram Generator, Agent
+    // Rules Generator, Security Posture Panel AI summary — each gets its own
+    // per-feature monthly cap, mirroring the ai_readme/ai_commit pattern.
+    ai_diagram: 'diagramGenPerMonth',
+    ai_agent_rules: 'agentRulesPerMonth',
+    ai_security_posture: 'securityPostureAIPerMonth',
     // Mirror sync APPLY moved to Free but newly metered — mirrors
     // migration_full_executions's pattern exactly.
     sync_apply_executions: 'syncApplyPerMonth',
@@ -266,6 +272,9 @@ const FEATURE_LABELS = {
     ai_prompt_test: 'Prompt Studio Test',
     sync_apply_executions: 'Mirror Sync',
     bulk_destructive_daily: 'Bulk Delete/Transfer',
+    ai_diagram: 'AI Diagrams',
+    ai_agent_rules: 'Agent Rules',
+    ai_security_posture: 'Security Posture',
 };
 
 export function quotaExceededResponse(check, fallbackLabel = 'AI') {
