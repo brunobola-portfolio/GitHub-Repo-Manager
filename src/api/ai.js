@@ -494,6 +494,12 @@ export const aiApi = {
             }
             return handleAIResponse(res, 'README Studio improve');
         },
+
+        // Deterministic (zero-AI-cost) README patch fallback — never calls a
+        // provider, never mock-short-circuits. Offered by ReadmeStudioModal
+        // in place of a failed/unconfigured/quota-exceeded improve call
+        // (Addendum 6b.2).
+        deterministic: async (repo, config = {}) => postJson(`${API_BASE}/ai/readme-studio/improve/deterministic`, { repo, ...config }),
     },
 
     // AI Diagram Generator — grounded Mermaid generation (architecture/module

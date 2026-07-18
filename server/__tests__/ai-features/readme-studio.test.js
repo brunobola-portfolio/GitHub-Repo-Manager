@@ -10,6 +10,7 @@ const {
     deriveMissingSections,
     generateReadmeBadges,
     buildImprovePrompt,
+    buildDeterministicReadmePatch,
 } = await import('../../lib/ai-features/readme-studio.js');
 const { detectPatterns } = await import('../../lib/ai-features/quality-metrics.js');
 
@@ -177,5 +178,130 @@ describe('buildImprovePrompt', () => {
         const { prompt, badges } = buildImprovePrompt({ repo: baseRepo, context: baseContext, patterns: {}, missingSections: [] });
         expect(badges).toEqual([]);
         expect(prompt).toContain('Do not include badges.');
+    });
+});
+
+// ---------------------------------------------------------------------------
+// buildDeterministicReadmePatch — zero-AI-cost fallback (Addendum 6b.2)
+// ---------------------------------------------------------------------------
+
+describe('buildDeterministicReadmePatch', () => {
+    const baseRepo = { full_name: 'acme/lib' };
+
+    it('builds only the requested missing sections when a README already exists', () => {
+        const patterns = { hasTableOfContents: true, isNodeProject: true, licenseDetected: { spdxId: 'MIT', matched: true } };
+        const { markdown, sections, mode } = buildDeterministicReadmePatch({
+            repo: baseRepo,
+            readmeContent: '# lib\n\n## Usage\nx\n',
+            fileStructure: [{ name: 'package.json', type: 'file' }],
+            patterns,
+            missingSections: ['Installation', 'License'],
+        });
+        expect(mode).toBe('missing-sections');
+        expect(sections).toEqual(['License', 'Installation']);
+        expect(markdown).toContain('## License');
+        expect(markdown).toContain('MIT License');
+        expect(markdown).toContain('## Installation');
+        expect(markdown).toContain('npm install');
+        // TOC already present — not re-added.
+        expect(markdown).not.toContain('## Table of Contents');
+    });
+
+    it('adds a Table of Contents section when the README lacks one', () => {
+        const patterns = { hasTableOfContents: false, licenseDetected: null };
+        const { markdown, sections } = buildDeterministicReadmePatch({
+            repo: baseRepo,
+            readmeContent: '# lib\n\n## Usage\nx\n',
+            fileStructure: [],
+            patterns,
+            missingSections: [],
+        });
+        expect(sections).toEqual(['Table of Contents']);
+        expect(markdown).toContain('## Table of Contents');
+        expect(markdown).toContain('[Usage](#usage)');
+    });
+
+    it('never states a license the fingerprint did not match — labels custom/unrecognized', () => {
+        const patterns = { hasTableOfContents: true, licenseDetected: { spdxId: null, matched: false } };
+        const { markdown } = buildDeterministicReadmePatch({
+            repo: baseRepo,
+            readmeContent: '# lib\n',
+            fileStructure: [],
+            patterns,
+            missingSections: ['License'],
+        });
+        expect(markdown).toContain('TODO');
+        expect(markdown).toContain('custom/unrecognized');
+        expect(markdown).not.toMatch(/licensed under the null/i);
+    });
+
+    it('notes the absence of a LICENSE file rather than guessing', () => {
+        const patterns = { hasTableOfContents: true, licenseDetected: null };
+        const { markdown } = buildDeterministicReadmePatch({
+            repo: baseRepo,
+            readmeContent: '# lib\n',
+            fileStructure: [],
+            patterns,
+            missingSections: ['License'],
+        });
+        expect(markdown).toContain('no LICENSE file was found');
+    });
+
+    it('picks the install command from the detected lockfile, not a fixed default', () => {
+        const patterns = { hasTableOfContents: true, isNodeProject: true, licenseDetected: null };
+        const { markdown } = buildDeterministicReadmePatch({
+            repo: baseRepo,
+            readmeContent: '# lib\n',
+            fileStructure: [{ name: 'package.json', type: 'file' }, { name: 'pnpm-lock.yaml', type: 'file' }],
+            patterns,
+            missingSections: ['Installation'],
+        });
+        expect(markdown).toContain('pnpm install');
+    });
+
+    it('leaves a TODO for Installation when no manifest is detected', () => {
+        const patterns = { hasTableOfContents: true, licenseDetected: null };
+        const { markdown } = buildDeterministicReadmePatch({
+            repo: baseRepo,
+            readmeContent: '# lib\n',
+            fileStructure: [],
+            patterns,
+            missingSections: ['Installation'],
+        });
+        expect(markdown).toContain('## Installation');
+        expect(markdown).toContain('TODO');
+        expect(markdown).not.toContain('```sh');
+    });
+
+    it('forces full-rewrite mode and builds a minimal skeleton when there is no README at all', () => {
+        const patterns = { hasTableOfContents: false, isPythonProject: true, licenseDetected: { spdxId: 'Apache-2.0', matched: true } };
+        const { markdown, sections, mode } = buildDeterministicReadmePatch({
+            repo: { full_name: 'acme/tool' },
+            readmeContent: '',
+            fileStructure: [{ name: 'requirements.txt', type: 'file' }],
+            patterns,
+            missingSections: ['Installation', 'Usage', 'License'],
+        });
+        expect(mode).toBe('full-rewrite');
+        expect(markdown).toMatch(/^# tool/);
+        expect(markdown).toContain('Deterministic skeleton');
+        expect(markdown).toContain('## Table of Contents');
+        expect(markdown).toContain('## Installation');
+        expect(markdown).toContain('pip install -r requirements.txt');
+        expect(markdown).toContain('## License');
+        expect(sections).toEqual(expect.arrayContaining(['Installation', 'License']));
+    });
+
+    it('respects an explicit full-rewrite mode even when a README exists', () => {
+        const patterns = { hasTableOfContents: true, licenseDetected: null };
+        const { mode } = buildDeterministicReadmePatch({
+            repo: baseRepo,
+            readmeContent: '# lib\nSome content.\n',
+            fileStructure: [],
+            patterns,
+            missingSections: [],
+            mode: 'full-rewrite',
+        });
+        expect(mode).toBe('full-rewrite');
     });
 });

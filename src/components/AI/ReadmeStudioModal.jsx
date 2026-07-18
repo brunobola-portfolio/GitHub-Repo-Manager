@@ -18,6 +18,7 @@ import { STAGGER, TRANSITION } from '../ui/motion'
 import { useTheme } from '../../hooks/useTheme'
 import { getCsrfToken } from '../../utils/api'
 import { aiApi } from '../../api/ai'
+import { useToast } from '../../hooks/useToast'
 
 // Mirrors server/lib/ai-features/license-detect.js's SUPPORTED_LICENSES —
 // duplicated client-side since it's a tiny, stable list and pulling the
@@ -83,6 +84,7 @@ function deriveDefaultSections(patterns) {
  */
 export function ReadmeStudioModal({ isOpen, onClose, repo, onApplied }) {
     const { isDark } = useTheme()
+    const { toast } = useToast()
 
     const [step, setStep] = useState('score') // score | configure | preview | committed
     const [scoreLoading, setScoreLoading] = useState(true)
@@ -99,6 +101,7 @@ export function ReadmeStudioModal({ isOpen, onClose, repo, onApplied }) {
     const [generating, setGenerating] = useState(false)
     const [improveError, setImproveError] = useState(null)
     const [improveResult, setImproveResult] = useState(null)
+    const [fallbackLoading, setFallbackLoading] = useState(false)
 
     const [commitMessage, setCommitMessage] = useState('')
     const [committing, setCommitting] = useState(false)
@@ -122,6 +125,7 @@ export function ReadmeStudioModal({ isOpen, onClose, repo, onApplied }) {
         setGenerating(false)
         setImproveError(null)
         setImproveResult(null)
+        setFallbackLoading(false)
         setCommitMessage('')
         setCommitting(false)
         setCommitError(null)
@@ -187,6 +191,27 @@ export function ReadmeStudioModal({ isOpen, onClose, repo, onApplied }) {
             setGenerating(false)
         }
     }, [repo, mode, tone, sections, license, stackOverride, badges])
+
+    // Addendum 6b.2 fallback — reachable from the improve-stage error banner
+    // whenever the AI attempt above failed: no provider configured, a
+    // provider error, or the readmeGenPerMonth quota is exhausted (429).
+    // Builds the License/Install/TOC sections deterministically instead, so
+    // README Studio's improve stage never hard-blocks on AI availability.
+    const useDeterministicFallback = useCallback(async () => {
+        if (!repo?.full_name) return
+        setFallbackLoading(true)
+        try {
+            const res = await aiApi.readmeStudio.deterministic({ full_name: repo.full_name, language: repo.language }, { mode })
+            setImproveResult(res)
+            setCommitMessage(res.mode === 'full-rewrite' ? 'docs: add README skeleton (deterministic)' : 'docs: add missing README sections (deterministic)')
+            setImproveError(null)
+            setStep('preview')
+        } catch (e) {
+            toast.error(e?.message || 'Failed to build a deterministic README patch')
+        } finally {
+            setFallbackLoading(false)
+        }
+    }, [repo, mode, toast])
 
     const finalContent = improveResult
         ? (improveResult.mode === 'full-rewrite'
@@ -307,7 +332,12 @@ export function ReadmeStudioModal({ isOpen, onClose, repo, onApplied }) {
                 )}
 
                 {improveError && (
-                    <AIErrorState error={improveError} onRetry={generate} context="README Studio improve" variant="banner" />
+                    <>
+                        <AIErrorState error={improveError} onRetry={generate} context="README Studio improve" variant="banner" />
+                        <Button variant="secondary" size="sm" onClick={useDeterministicFallback} disabled={fallbackLoading}>
+                            {fallbackLoading ? 'Building…' : 'Use deterministic version instead'}
+                        </Button>
+                    </>
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -380,11 +410,22 @@ export function ReadmeStudioModal({ isOpen, onClose, repo, onApplied }) {
     const renderPreviewStage = () => (
         <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
-                <Badge tone={improveResult?.confidence === 'high' ? 'success' : improveResult?.confidence === 'medium' ? 'warning' : 'danger'} size="xs">
-                    {(improveResult?.confidence || 'low').toUpperCase()} CONFIDENCE
-                </Badge>
+                {improveResult?.deterministic ? (
+                    <Badge tone="neutral" size="xs">Deterministic (no AI)</Badge>
+                ) : (
+                    <Badge tone={improveResult?.confidence === 'high' ? 'success' : improveResult?.confidence === 'medium' ? 'warning' : 'danger'} size="xs">
+                        {(improveResult?.confidence || 'low').toUpperCase()} CONFIDENCE
+                    </Badge>
+                )}
                 <Badge tone="neutral" size="xs">{improveResult?.mode === 'full-rewrite' ? 'Full rewrite' : 'Missing sections'}</Badge>
             </div>
+
+            {improveResult?.deterministic && (
+                <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400">
+                    <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                    <span>Deterministic skeleton patch — sections that can&apos;t be derived from repo signals are left as TODO placeholders. Enable an AI provider for richer, prose-polished content.</span>
+                </div>
+            )}
 
             {improveResult?.warnings?.length > 0 && (
                 <div className="space-y-1.5">

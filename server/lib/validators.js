@@ -286,6 +286,17 @@ export const aiReadmeStudioImproveSchema = z.object({
     badges: z.boolean().optional().default(false),
 }).strict();
 
+// Deterministic (zero-AI-cost) README patch fallback — POST
+// /ai/readme-studio/improve/deterministic. Reachable directly whenever the AI
+// improve call is unavailable (no provider configured, a provider error, or
+// the readmeGenPerMonth quota is exhausted — Addendum 6b.2,
+// docs/specs/2026-07-18-community-wow-wave6.md §6b.2). No `tone`/`license`/
+// `stackOverride`/`badges` knobs — there's no model in the loop to steer.
+export const deterministicReadmeStudioSchema = z.object({
+    repo: aiRepoMetadataSchema.refine((v) => !!v.full_name, { message: 'repo.full_name is required' }),
+    mode: z.enum(['missing-sections', 'full-rewrite']).optional().default('missing-sections'),
+}).strict();
+
 // AI Diagram Generator — POST /api/ai/generate-diagram (server/routes/ai/diagrams.js).
 // `diagramType` is enum-limited to 'architecture' for v1; sequence/flow are
 // explicitly cut from scope (2026-07-18-community-wow-wave6.md) but the enum

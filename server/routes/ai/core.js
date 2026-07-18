@@ -8,6 +8,7 @@
  *   POST /ai/readme
  *   POST /ai/readme/enhance
  *   POST /ai/readme-studio/improve
+ *   POST /ai/readme-studio/improve/deterministic
  */
 
 import express from 'express';
@@ -22,6 +23,7 @@ import {
     aiReadmeSchema,
     aiReadmeEnhanceSchema,
     aiReadmeStudioImproveSchema,
+    deterministicReadmeStudioSchema,
 } from '../../lib/validators.js';
 import { isValidGitHubFullName } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate-request.js';
@@ -34,7 +36,7 @@ import { initSSE, streamReplyDeltasToSSE } from '../ai-streaming.js';
 import { extractReplyText } from '../../lib/ai-features/stream-json.js';
 import { buildChatPrompt } from '../../lib/ai-chat-prompt.js';
 import { buildReadmeEnhancePrompt } from '../../lib/ai-features/readme-enhance.js';
-import { buildImprovePrompt, deriveMissingSections, fetchReadmeStudioSignals } from '../../lib/ai-features/readme-studio.js';
+import { buildImprovePrompt, deriveMissingSections, fetchReadmeStudioSignals, buildDeterministicReadmePatch } from '../../lib/ai-features/readme-studio.js';
 import { detectPatterns } from '../../lib/ai-features/quality-metrics.js';
 import { buildContext } from '../../lib/repo-context-builder.js';
 import { resolveMaxOutputTokens } from '../../lib/ai-output-budget.js';
@@ -637,6 +639,55 @@ router.post('/ai/readme-studio/improve', requireAuth, requireScope('ai'), valida
     } catch (error) {
         req.log.error({ err: error }, 'README Studio improve failed');
         handleAIError(res, error, 'Failed to generate README improvements. Please try again later.');
+    }
+});
+
+// ------------------------------------------------------------------
+// Deterministic (zero-AI-cost) README patch fallback (Addendum 6b.2).
+//
+// Never calls a provider — builds the License/Install/TOC sections directly
+// from the same deterministic signals the free score stage already computes
+// (detectLicense()'s verified fingerprint, the detected stack manifest,
+// existing README headings). Reachable directly whenever the AI improve call
+// above is unavailable: no provider configured, a provider error, or the
+// user is over their readmeGenPerMonth quota. Mirrors the sibling pattern
+// already shipped for diagrams (POST /ai/generate-diagram/deterministic):
+// no requireAI, no quota check — the client offers this in place of, not
+// in addition to, a failed/quota-exceeded AI attempt.
+// ------------------------------------------------------------------
+
+router.post('/ai/readme-studio/improve/deterministic', requireAuth, requireScope('ai'), validateBody(deterministicReadmeStudioSchema), async (req, res) => {
+    const { repo, mode } = req.validatedBody;
+    if (!isValidGitHubFullName(repo.full_name)) {
+        return res.status(400).json({ error: 'Invalid repo.full_name', code: 'validation_failed' });
+    }
+    const [owner, repoName] = repo.full_name.split('/');
+
+    try {
+        const { readmeContent, fileStructure, licenseContent, workflowFiles } = await fetchReadmeStudioSignals({
+            owner, repo: repoName, accessToken: req.session.accessToken,
+        });
+        const patterns = detectPatterns(readmeContent, fileStructure, { licenseFileContent: licenseContent, workflowFiles });
+        const missingSections = deriveMissingSections(patterns, repo.language);
+
+        const { markdown, sections, mode: resolvedMode } = buildDeterministicReadmePatch({
+            repo, readmeContent, fileStructure, patterns, missingSections, mode,
+        });
+
+        auditLog(req, 'ai.readme_studio.improve_deterministic', 'ai', null, { repoName: repo.full_name, mode: resolvedMode });
+
+        res.json({
+            success: true,
+            deterministic: true,
+            markdown,
+            sections,
+            mode: resolvedMode,
+            missingSections,
+            currentReadme: readmeContent,
+        });
+    } catch (error) {
+        req.log.error({ err: error, repo: repo.full_name }, 'README Studio deterministic patch failed');
+        res.status(500).json({ error: 'Failed to build a deterministic README patch. Please try again later.', code: 'deterministic_readme_failed' });
     }
 });
 

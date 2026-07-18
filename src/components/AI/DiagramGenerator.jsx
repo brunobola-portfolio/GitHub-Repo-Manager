@@ -228,9 +228,12 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
         }
     }, [repo, diagramType, focus])
 
-    // Addendum 6b.2 fallback, reachable once the retry-once self-repair has
-    // also failed: a zero-AI-cost structure diagram, so a persistently broken
-    // AI diagram never blocks the embed flow.
+    // Addendum 6b.2 fallback: a zero-AI-cost structure diagram, reachable
+    // from two places — (1) the configure-stage error banner whenever the
+    // initial generate call fails (no provider configured, a provider
+    // error, or a 429 quota-exceeded), and (2) the result-stage error once
+    // the retry-once self-repair has also failed to render. Either way this
+    // never blocks the embed flow on AI availability.
     const useDeterministicFallback = useCallback(async () => {
         if (!repo?.full_name) return
         setFallbackLoading(true)
@@ -239,7 +242,9 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
             setTruncated(!!res.truncated)
             setIsDeterministic(true)
             setRenderError(null)
+            setGenerateError(null)
             setMermaidSource(res.mermaid)
+            setStep('result')
         } catch (e) {
             toast.error(e?.message || 'Failed to build a deterministic diagram')
         } finally {
@@ -334,7 +339,12 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
     const renderConfigureStage = () => (
         <div className="space-y-4">
             {generateError && (
-                <AIErrorState error={generateError} onRetry={generate} context="Diagram generator" variant="banner" />
+                <>
+                    <AIErrorState error={generateError} onRetry={generate} context="Diagram generator" variant="banner" />
+                    <Button variant="secondary" size="sm" onClick={useDeterministicFallback} disabled={fallbackLoading}>
+                        {fallbackLoading ? 'Building…' : 'Use deterministic diagram instead'}
+                    </Button>
+                </>
             )}
 
             <div className="grid grid-cols-1 gap-3">

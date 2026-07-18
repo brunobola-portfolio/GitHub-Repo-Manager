@@ -140,6 +140,50 @@ describe('DiagramGenerator — generate + render', () => {
     })
 })
 
+describe('DiagramGenerator — deterministic fallback offered at the configure stage (Addendum 6b.2)', () => {
+    const DETERMINISTIC_RESULT = {
+        success: true, deterministic: true, truncated: false,
+        mermaid: 'flowchart TD\n  root["repository root"]',
+        diagramType: 'architecture',
+    }
+
+    it('offers and applies a deterministic diagram when no AI provider is configured', async () => {
+        const user = userEvent.setup()
+        aiApi.diagrams.generate.mockResolvedValue({
+            success: true, mermaid: null, diagramType: 'architecture', truncated: false,
+            mock: true, aiConfigured: false,
+        })
+        aiApi.diagrams.deterministic.mockResolvedValue(DETERMINISTIC_RESULT)
+
+        render(<DiagramGenerator isOpen repo={REPO} onClose={() => {}} />)
+        await user.click(screen.getByRole('button', { name: /^generate$/i }))
+        expect(await screen.findByText(/ai is not configured/i)).toBeInTheDocument()
+
+        const fallbackBtn = screen.getByRole('button', { name: /use deterministic diagram instead/i })
+        await user.click(fallbackBtn)
+
+        await waitFor(() => expect(aiApi.diagrams.deterministic).toHaveBeenCalledTimes(1))
+        expect(await screen.findByText(/structure diagram \(deterministic\)/i)).toBeInTheDocument()
+        expect(await screen.findByTestId('diagram-mermaid-output')).toBeInTheDocument()
+    })
+
+    it('offers a deterministic diagram when the initial generate call is quota-exceeded (429)', async () => {
+        const user = userEvent.setup()
+        const quotaErr = Object.assign(new Error('AI query limit exceeded'), { status: 429, tierError: true })
+        aiApi.diagrams.generate.mockRejectedValue(quotaErr)
+        aiApi.diagrams.deterministic.mockResolvedValue(DETERMINISTIC_RESULT)
+
+        render(<DiagramGenerator isOpen repo={REPO} onClose={() => {}} />)
+        await user.click(screen.getByRole('button', { name: /^generate$/i }))
+
+        const fallbackBtn = await screen.findByRole('button', { name: /use deterministic diagram instead/i })
+        await user.click(fallbackBtn)
+
+        await waitFor(() => expect(aiApi.diagrams.deterministic).toHaveBeenCalledTimes(1))
+        expect(await screen.findByTestId('diagram-mermaid-output')).toBeInTheDocument()
+    })
+})
+
 describe('DiagramGenerator — retry-once self-repair', () => {
     it('silently retries once on a render failure, then renders the repaired diagram', async () => {
         const user = userEvent.setup()
