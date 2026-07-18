@@ -1,33 +1,70 @@
 name: Docker
 
+# Builds and publishes the container image to GHCR. Triggered automatically on
+# a v* tag, or manually (workflow_dispatch) against any branch/tag — the manual
+# path is the fail-safe: if a tag push didn't fire the workflow, an operator can
+# re-run it without re-cutting the tag.
 on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch or tag to build (defaults to the triggering ref)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  packages: write
+
+# One build per ref; a newer push supersedes an in-flight one.
+concurrency:
+  group: docker-${{ github.event.inputs.ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     env:
       IMAGE_NAME: ghcr.io/${{ github.repository }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
       - uses: docker/setup-buildx-action@v4
+
       - uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Lowercase image name
-        run: echo "IMAGE_LC=${IMAGE_NAME,,}" >> $GITHUB_ENV
+
+      - name: Compute image tags
+        id: tags
+        run: |
+          set -euo pipefail
+          IMAGE_LC="${IMAGE_NAME,,}"
+          REF="${{ github.event.inputs.ref || github.ref_name }}"
+          # Docker tags forbid '/' and other ref chars — sanitize to '-'.
+          SAFE_REF="${REF//[^a-zA-Z0-9._-]/-}"
+          TAGS="${IMAGE_LC}:${SAFE_REF}"
+          # Only advance :latest for real semver version tags, never a branch build.
+          if [[ "$REF" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            TAGS+=$'\n'"${IMAGE_LC}:latest"
+          fi
+          {
+            echo "tags<<__EOF__"
+            echo "$TAGS"
+            echo "__EOF__"
+          } >> "$GITHUB_OUTPUT"
+
       - uses: docker/build-push-action@v7
         with:
+          context: .
           push: true
-          tags: |
-            ${{ env.IMAGE_LC }}:${{ github.ref_name }}
-            ${{ env.IMAGE_LC }}:latest
+          tags: ${{ steps.tags.outputs.tags }}
+          provenance: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
