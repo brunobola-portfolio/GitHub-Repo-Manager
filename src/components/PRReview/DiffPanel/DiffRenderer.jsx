@@ -8,6 +8,7 @@ import { pickRenderStrategy } from './diffSize'
 import { DiffCollapser } from './DiffCollapser'
 import { DiffComputeOnDemand } from './DiffComputeOnDemand'
 import ErrorBoundary from '../../ErrorBoundary'
+import { splitPatchIntoHunks } from './hunkUtils'
 
 // Silence a dev-only sanity warning from @git-diff-view/core that fires
 // because we feed it GitHub patch fragments (no full file content). The
@@ -87,15 +88,11 @@ const LANG_MAP = {
  * GitHub API patches start with @@ (no --- / +++ header). The underlying
  * @git-diff-view/core DiffParser.parseDiffHeader() requires --- and +++ lines
  * before it will process hunks, so we synthesise minimal headers per chunk.
+ * Hunk-splitting itself lives in hunkUtils.splitPatchIntoHunks — shared with
+ * HunkRiskRail so there's one source of truth for hunk boundaries.
  */
 function parsePatchToHunks(patch, filename) {
-  if (!patch) return []
-
-  const parts = patch.split(/(?=^@@)/m)
-  const hunks = parts
-    .map(p => p.trim())
-    .filter(p => p.startsWith('@@'))
-
+  const hunks = splitPatchIntoHunks(patch)
   if (hunks.length === 0) return []
 
   const a = `a/${filename || 'file'}`

@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from 'react'
 import { InlineComment } from './InlineComment'
 import { AIInlineComment } from '../AIDeepReview/AIInlineComment'
+import { HunkRiskRail } from './HunkRiskRail'
 import { Textarea } from '../../ui/form'
 import { Skeleton } from '../../ui/Skeleton'
 import { emitAppEvent, APP_EVENTS } from '../../../utils/appEvents'
@@ -129,6 +130,7 @@ export function DiffPanel({
   const [commentBody, setCommentBody] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const textareaRef = useRef(null)
+  const diffScrollRef = useRef(null)
 
   // Group submitted comments into threads (root + replies)
   const commentThreads = useMemo(
@@ -225,23 +227,26 @@ export function DiffPanel({
         </span>
       </div>
 
-      {/* Diff content */}
-      <div className="flex-1 overflow-auto">
-        <Suspense fallback={<DiffLoadingSkeleton />}>
-          <DiffRenderer
-            filename={filename}
-            patch={patch}
-            viewMode={viewMode}
-            onAddComment={handleAddComment}
-            highlightLanguage={lang}
-            additions={additions}
-            deletions={deletions}
-            // No storageKey here — DiffPanel is used inside PRReviewView whose
-            // own state machine drives reviewed/expanded tracking. Falling back
-            // to undefined makes DiffCollapser a session-only fold (acceptable
-            // for the focused review surface).
-          />
-        </Suspense>
+      {/* Diff content + hunk risk rail */}
+      <div className="flex-1 flex min-h-0 overflow-hidden">
+        <div ref={diffScrollRef} className="flex-1 overflow-auto">
+          <Suspense fallback={<DiffLoadingSkeleton />}>
+            <DiffRenderer
+              filename={filename}
+              patch={patch}
+              viewMode={viewMode}
+              onAddComment={handleAddComment}
+              highlightLanguage={lang}
+              additions={additions}
+              deletions={deletions}
+              // No storageKey here — DiffPanel is used inside PRReviewView whose
+              // own state machine drives reviewed/expanded tracking. Falling back
+              // to undefined makes DiffCollapser a session-only fold (acceptable
+              // for the focused review surface).
+            />
+          </Suspense>
+        </div>
+        <HunkRiskRail filename={filename} patch={patch} containerRef={diffScrollRef} />
       </div>
 
       {/* Unified comment stack — synced threads + pending drafts + AI
