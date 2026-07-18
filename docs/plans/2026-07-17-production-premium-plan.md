@@ -1,6 +1,6 @@
 # Production Premium Plan — 2026-07-17
 
-**Status: COMPLETE.** All 4 waves shipped (PRs #206, #208, #209, #210, #211, and the wave-4 PR opened from this session). See per-wave checklists below for detail.
+**Status: COMPLETE.** All 5 waves shipped (PRs #206, #208, #209, #210, #211, #212, and the wave-5 PR opened from this session). See per-wave checklists below for detail.
 
 Owner directive (2026-07-17): make the whole product production-ready and premium-feeling, then write a launch article for a DevOps→GitHub migration forum. Work in cost-aware agent waves; persist state after every wave so any session can resume.
 
@@ -47,6 +47,14 @@ All audit FIX NOW items implemented + reviewed clean (run wf_98205922-e4b, 2026-
 - [x] Deferred-UX slice: SimpleProgressStep ARIA parity + reconnect indicator, plus one further a11y/resilience item; the third item in that slice was skipped with documented reasoning in the PR.
 - [x] Full validation: unit suite (632 files / 5629 tests passed, 24 skipped, 0 failures), production build clean, `npm run lint` clean (0 warnings), honesty gates (pricing-feature-parity, readme-honesty) re-run and green.
 - [x] Launch article for a DevOps→GitHub migration forum drafted at `.dev/prod-premium/2026-07-17/article-draft.md` (gitignored local workspace; not part of this PR — for owner review before any external posting).
+
+### Wave 5 — Deferred quality debt (branch `feat/prod-premium-wave5`) — DONE, this PR
+
+- [x] Hunk-level risk heat rail in PR review's diff panel (design doc §2.2, item #6 — previously twice-deferred R4 phase-2 item): `HunkRiskRail.jsx` + `hunkUtils.js` + `useHunkScrollSync.js`, wired into `DiffPanel`/`DiffRenderer`, unified with the existing `ds-risk` tokens. Commit `2c26c6de`.
+- [x] Dark-mode AA contrast debt: investigated and found already fully resolved on this branch (inherited from main's `d374a0f1` AA text-variant work). Verified via the existing `e2e/a11y-help*` specs rather than re-doing the work. No new commit needed.
+- [x] List virtualization: audited every list in the app for genuine unbounded row counts before windowizing (measure-before-windowizing). Only `RepoGrid`'s list view crosses the existing 50-row threshold with real accumulation, so only it got a dependency-free `useVirtualWindow` hook. Grid mode, `MigrationHistory`, RepoDetail's Issues/PRs tabs, and the WorkBoard cross-repo tabs are all bounded to <=100 rows by server-side pagination/search caps and were deliberately left unwindowed (documented in the commit body). Commit `1e2a16c5`.
+- [x] Validation: unit suite 635 files / 5676 tests passed (24 skipped, 0 failures), production build clean, honesty gates (`pricing-feature-parity`, `readme-honesty`) green, `npm run lint` clean.
+- [x] Nothing deferred out of this wave's own scope; j/k roving navigation and keyboard shortcuts re-verified unaffected by both the risk-rail and windowing changes.
 
 ## Resume instructions (any session)
 1. Read this file + memory `project-prod-premium-2026-07-17`.
