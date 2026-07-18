@@ -3,7 +3,7 @@ import { motion, AnimatePresence, useMotionValue, useSpring, useReducedMotion } 
 import { EASE } from './ui/motion'
 import {
     FileText, Users, Activity, CheckCircle,
-    XCircle, AlertCircle, TrendingUp, RefreshCw, Heart, Sparkles
+    XCircle, AlertCircle, TrendingUp, RefreshCw, Heart, Sparkles, Bot
 } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 import { Modal } from './ui/Modal';
@@ -11,6 +11,7 @@ import { Button } from './ui/Button';
 import { TabBar } from './ui/TabBar';
 import { Tooltip } from './ui/Tooltip';
 import { CommunityHealthFixModal } from './AI/CommunityHealthFixModal';
+import { AgentRulesModal } from './AI/AgentRulesModal';
 import { formatFileSize } from '../utils/format';
 
 /**
@@ -131,6 +132,9 @@ export function CommunityHealthDashboard({ repo, onClose }) {
     const [activeTab, setActiveTab] = useState('files');
     // Slice 4: Fix-with-AI modal — null when closed, fileType key when open.
     const [fixOpen, setFixOpen] = useState(null);
+    // Wave 6, Feature 3: Agent Rules Generator detection card + modal.
+    const [agentRulesOpen, setAgentRulesOpen] = useState(false);
+    const [agentRulesFiles, setAgentRulesFiles] = useState({ agentsExists: false, claudeExists: false });
 
     useEffect(() => {
         if (repo) {
@@ -139,6 +143,29 @@ export function CommunityHealthDashboard({ repo, onClose }) {
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [repo]);
+
+    // Presence check for AGENTS.md/CLAUDE.md via the existing generic repo-tree
+    // endpoint (server/routes/repos/tree.js) — no dedicated detection route.
+    // Best-effort only: any failure (network, non-ok, malformed body) just
+    // leaves the card showing "missing", never blocks the rest of the panel.
+    useEffect(() => {
+        if (!repo?.full_name) return undefined;
+        const [owner, repoName] = repo.full_name.split('/');
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch(`/api/repos/${owner}/${repoName}/tree`, { credentials: 'include' });
+                if (cancelled || !res?.ok) return;
+                const data = await res.json();
+                if (cancelled || !data) return;
+                const paths = new Set((data.entries || []).map((e) => e.path));
+                setAgentRulesFiles({ agentsExists: paths.has('AGENTS.md'), claudeExists: paths.has('CLAUDE.md') });
+            } catch {
+                // best-effort detection only
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [repo?.full_name]);
 
     const fetchHealth = async (repoFullName, refresh = false) => {
         try {
@@ -264,6 +291,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                                             {Object.entries(health.metrics.files).map(([file, data]) => (
                                                                 <FileCheckItem key={file} file={file} exists={data.exists} size={data.size} onFix={handleFix} />
                                                             ))}
+                                                            <AgentRulesCard exists={agentRulesFiles.agentsExists} onGenerate={() => setAgentRulesOpen(true)} />
                                                         </div>
                                                     </div>
                                                 )}
@@ -315,6 +343,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                                 {Object.entries(health.metrics.files).map(([file, data]) => (
                                                     <FileCheckItem key={file} file={file} exists={data.exists} size={data.size} />
                                                 ))}
+                                                <AgentRulesCard exists={agentRulesFiles.agentsExists} onGenerate={() => setAgentRulesOpen(true)} />
                                             </div>
                                         </motion.div>
 
@@ -377,7 +406,49 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                         onCommitted={handleFixCommitted}
                     />
                 )}
+                {repo && agentRulesOpen && (
+                    <AgentRulesModal
+                        isOpen={agentRulesOpen}
+                        onClose={() => setAgentRulesOpen(false)}
+                        repo={repo}
+                        hasExistingAgents={agentRulesFiles.agentsExists}
+                        onCommitted={() => {
+                            setAgentRulesFiles((prev) => ({ ...prev, agentsExists: true }));
+                            setAgentRulesOpen(false);
+                            toast.success('Agent rules updated');
+                        }}
+                    />
+                )}
         </Modal>
+    );
+}
+
+function AgentRulesCard({ exists, onGenerate }) {
+    return (
+        <motion.div
+            className={`flex items-center justify-between p-3 rounded-xl min-h-[44px] bg-white/60 dark:bg-slate-900/60 border ${exists ? 'border-slate-200/40 dark:border-slate-800/40' : 'border-red-300/40 dark:border-red-500/20'} transition-all`}>
+            <div className="flex items-center gap-3 min-w-0">
+                {exists ? (
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 0.2, ease: EASE.standard }}>
+                        <CheckCircle className="w-5 h-5 text-emerald-500" />
+                    </motion.div>
+                ) : (<XCircle className="w-5 h-5 text-red-400 dark:text-red-500" />)}
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">AGENTS.md</span>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+                <Tooltip label={exists ? 'Refresh AGENTS.md/CLAUDE.md, grounded in real repo signals' : 'Generate AGENTS.md/CLAUDE.md, grounded in real repo signals'}>
+                    <button
+                        type="button"
+                        onClick={onGenerate}
+                        className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] transition-colors"
+                        aria-label={exists ? 'Refresh agent rules with AI' : 'Generate agent rules with AI'}
+                    >
+                        <Bot className="w-3.5 h-3.5" aria-hidden="true" />
+                        {exists ? 'Refresh with AI' : 'Generate with AI'}
+                    </button>
+                </Tooltip>
+            </div>
+        </motion.div>
     );
 }
 

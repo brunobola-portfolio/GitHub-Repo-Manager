@@ -1,0 +1,234 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { ReadmeStudioModal } from '../../../src/components/AI/ReadmeStudioModal.jsx'
+
+vi.mock('../../../src/hooks/useTheme', () => ({
+    useTheme: () => ({ isDark: false }),
+}))
+
+vi.mock('@git-diff-view/react', () => ({
+    DiffModeEnum: { Unified: 'unified', Split: 'split' },
+    DiffView: ({ data }) => (
+        <pre data-testid="diff-view">{data?.oldFile?.content}\n---\n{data?.newFile?.content}</pre>
+    ),
+}))
+vi.mock('@git-diff-view/react/styles/diff-view.css', () => ({}))
+
+vi.mock('../../../src/api/ai', () => ({
+    aiApi: {
+        readmeStudio: {
+            getScore: vi.fn(),
+            improve: vi.fn(),
+        },
+    },
+}))
+
+vi.mock('../../../src/utils/api', () => ({
+    getCsrfToken: vi.fn().mockResolvedValue('csrf-token'),
+}))
+
+import { aiApi } from '../../../src/api/ai'
+
+const REPO = {
+    id: 1,
+    name: 'lib',
+    full_name: 'acme/lib',
+    owner: { login: 'acme' },
+    language: 'JavaScript',
+    topics: ['tool'],
+}
+
+const SCORE_WITH_README = {
+    success: true,
+    hasReadme: true,
+    hasLicense: true,
+    report: {
+        score: 62,
+        summary: 'Decent foundation. Consider adding documentation and tests.',
+        patterns: { licenseDetected: { spdxId: 'MIT', matched: true, confidence: 'high' } },
+        recommendations: [
+            { priority: 'high', action: 'Add usage examples to README' },
+            { priority: 'low', action: 'Add status badges to README' },
+        ],
+    },
+}
+
+const SCORE_NO_README = {
+    success: true,
+    hasReadme: false,
+    hasLicense: false,
+    report: {
+        score: 0,
+        summary: 'Needs attention. Focus on documentation and community standards.',
+        patterns: {},
+        recommendations: [{ priority: 'high', action: 'Add installation instructions to README' }],
+    },
+}
+
+const IMPROVE_RESULT = {
+    success: true,
+    markdown: '## Usage\n\nRun it.\n',
+    confidence: 'high',
+    warnings: [],
+    missingSections: ['Usage'],
+    mode: 'missing-sections',
+    currentReadme: '# lib\n',
+}
+
+beforeEach(() => {
+    aiApi.readmeStudio.getScore.mockReset()
+    aiApi.readmeStudio.improve.mockReset()
+    global.fetch = vi.fn()
+})
+
+describe('ReadmeStudioModal — score stage', () => {
+    it('loads and renders the score + recommendations on open', async () => {
+        aiApi.readmeStudio.getScore.mockResolvedValue(SCORE_WITH_README)
+        render(<ReadmeStudioModal isOpen repo={REPO} onClose={() => {}} />)
+
+        await waitFor(() => expect(aiApi.readmeStudio.getScore).toHaveBeenCalledWith('acme', 'lib'))
+        expect(await screen.findByText(/Decent foundation/i)).toBeInTheDocument()
+        expect(screen.getByText(/Add usage examples to README/i)).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /improve with ai/i })).toBeInTheDocument()
+    })
+
+    it('shows a "no README" empty state and skips the recommendations list', async () => {
+        aiApi.readmeStudio.getScore.mockResolvedValue(SCORE_NO_README)
+        render(<ReadmeStudioModal isOpen repo={REPO} onClose={() => {}} />)
+
+        expect(await screen.findByText(/no readme found/i)).toBeInTheDocument()
+    })
+
+    it('shows a retryable error state when the score fetch fails', async () => {
+        aiApi.readmeStudio.getScore.mockRejectedValue(new Error('boom'))
+        render(<ReadmeStudioModal isOpen repo={REPO} onClose={() => {}} />)
+
+        await waitFor(() => expect(aiApi.readmeStudio.getScore).toHaveBeenCalledTimes(1))
+        expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
+    })
+
+    it('never calls the metered improve endpoint just by opening', async () => {
+        aiApi.readmeStudio.getScore.mockResolvedValue(SCORE_WITH_README)
+        render(<ReadmeStudioModal isOpen repo={REPO} onClose={() => {}} />)
+        await waitFor(() => expect(aiApi.readmeStudio.getScore).toHaveBeenCalled())
+        expect(aiApi.readmeStudio.improve).not.toHaveBeenCalled()
+    })
+})
+
+describe('ReadmeStudioModal — improve + preview flow', () => {
+    it('walks configure → generate → diff preview', async () => {
+        const user = userEvent.setup()
+        aiApi.readmeStudio.getScore.mockResolvedValue(SCORE_WITH_README)
+        aiApi.readmeStudio.improve.mockResolvedValue(IMPROVE_RESULT)
+
+        render(<ReadmeStudioModal isOpen repo={REPO} onClose={() => {}} />)
+        await screen.findByText(/Decent foundation/i)
+
+        await user.click(screen.getByRole('button', { name: /improve with ai/i }))
+        expect(screen.getByRole('button', { name: /^generate$/i })).toBeInTheDocument()
+
+        await user.click(screen.getByRole('button', { name: /^generate$/i }))
+
+        await waitFor(() => expect(aiApi.readmeStudio.improve).toHaveBeenCalledTimes(1))
+        const [repoArg] = aiApi.readmeStudio.improve.mock.calls[0]
+        expect(repoArg.full_name).toBe('acme/lib')
+
+        expect(await screen.findByTestId('diff-view')).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /^apply$/i })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /open pr/i })).toBeInTheDocument()
+    })
+
+    it('surfaces a friendly error and lets the user retry when generation fails', async () => {
+        const user = userEvent.setup()
+        aiApi.readmeStudio.getScore.mockResolvedValue(SCORE_WITH_README)
+        aiApi.readmeStudio.improve.mockRejectedValueOnce(new Error('provider down'))
+        aiApi.readmeStudio.improve.mockResolvedValueOnce(IMPROVE_RESULT)
+
+        render(<ReadmeStudioModal isOpen repo={REPO} onClose={() => {}} />)
+        await screen.findByText(/Decent foundation/i)
+        await user.click(screen.getByRole('button', { name: /improve with ai/i }))
+        await user.click(screen.getByRole('button', { name: /^generate$/i }))
+
+        await waitFor(() => expect(aiApi.readmeStudio.improve).toHaveBeenCalledTimes(1))
+        // AIErrorState never renders the raw error message (formatUserError
+        // maps unknown codes to a generic, safe fallback) — assert on that.
+        expect(await screen.findByText(/something went wrong/i)).toBeInTheDocument()
+
+        await user.click(screen.getByRole('button', { name: /retry/i }))
+        await waitFor(() => expect(aiApi.readmeStudio.improve).toHaveBeenCalledTimes(2))
+        expect(await screen.findByTestId('diff-view')).toBeInTheDocument()
+    })
+
+    it('never auto-commits — Apply requires an explicit click and posts to the community-health write path', async () => {
+        const user = userEvent.setup()
+        aiApi.readmeStudio.getScore.mockResolvedValue(SCORE_WITH_README)
+        aiApi.readmeStudio.improve.mockResolvedValue(IMPROVE_RESULT)
+        global.fetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({ committed: true, mode: 'direct', branch: 'main' }),
+        })
+
+        render(<ReadmeStudioModal isOpen repo={REPO} onClose={() => {}} />)
+        await screen.findByText(/Decent foundation/i)
+        await user.click(screen.getByRole('button', { name: /improve with ai/i }))
+        await user.click(screen.getByRole('button', { name: /^generate$/i }))
+        await screen.findByTestId('diff-view')
+
+        // No write happened yet — fetch (the commit-fix path) hasn't been called.
+        expect(global.fetch).not.toHaveBeenCalled()
+
+        await user.click(screen.getByRole('button', { name: /^apply$/i }))
+
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1))
+        const [url, opts] = global.fetch.mock.calls[0]
+        expect(url).toBe('/api/repos/acme/lib/community-health/commit-fix')
+        const body = JSON.parse(opts.body)
+        expect(body.filePath).toBe('README.md')
+        expect(body.mode).toBe('direct')
+        expect(body.content).toContain('## Usage')
+
+        expect(await screen.findByText(/readme updated/i)).toBeInTheDocument()
+    })
+
+    it('opens a PR instead of a direct commit when "Open PR" is clicked', async () => {
+        const user = userEvent.setup()
+        aiApi.readmeStudio.getScore.mockResolvedValue(SCORE_WITH_README)
+        aiApi.readmeStudio.improve.mockResolvedValue(IMPROVE_RESULT)
+        global.fetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({ committed: true, mode: 'pr', branch: 'chore/x', prUrl: 'https://github.com/acme/lib/pull/1' }),
+        })
+
+        render(<ReadmeStudioModal isOpen repo={REPO} onClose={() => {}} />)
+        await screen.findByText(/Decent foundation/i)
+        await user.click(screen.getByRole('button', { name: /improve with ai/i }))
+        await user.click(screen.getByRole('button', { name: /^generate$/i }))
+        await screen.findByTestId('diff-view')
+
+        await user.click(screen.getByRole('button', { name: /open pr/i }))
+
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1))
+        const body = JSON.parse(global.fetch.mock.calls[0][1].body)
+        expect(body.mode).toBe('pr')
+        expect(await screen.findByText(/pull request opened/i)).toBeInTheDocument()
+        expect(screen.getByRole('link', { name: /view pr/i })).toHaveAttribute('href', 'https://github.com/acme/lib/pull/1')
+    })
+
+    it('shows AI-not-configured guidance instead of a fake diff when AI is unconfigured', async () => {
+        const user = userEvent.setup()
+        aiApi.readmeStudio.getScore.mockResolvedValue(SCORE_WITH_README)
+        aiApi.readmeStudio.improve.mockResolvedValue({
+            success: true, markdown: null, confidence: 'low', warnings: [], missingSections: [],
+            mode: 'missing-sections', currentReadme: null, mock: true, aiConfigured: false,
+        })
+
+        render(<ReadmeStudioModal isOpen repo={REPO} onClose={() => {}} />)
+        await screen.findByText(/Decent foundation/i)
+        await user.click(screen.getByRole('button', { name: /improve with ai/i }))
+        await user.click(screen.getByRole('button', { name: /^generate$/i }))
+
+        expect(await screen.findByText(/ai is not configured/i)).toBeInTheDocument()
+        expect(screen.queryByTestId('diff-view')).not.toBeInTheDocument()
+    })
+})

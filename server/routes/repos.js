@@ -19,6 +19,7 @@
  *   - ./repos/actions-community.js  — webhooks, GitHub Actions, community
  *                                     health, CODEOWNERS + suggest, PR
  *                                     template, commit-style detector
+ *   - ./repos/readme-studio.js      — README Studio free score endpoint
  *
  * Each sub-router replicates the `router.param('owner', ...)` and
  * `router.param('repo', ...)` validators — Express param validators are
@@ -35,6 +36,7 @@ import commitsRouter from './repos/commits.js';
 import branchesReleasesRouter from './repos/branches-releases.js';
 import actionsCommunityRouter from './repos/actions-community.js';
 import treeRouter from './repos/tree.js';
+import readmeStudioRouter from './repos/readme-studio.js';
 
 const router = express.Router();
 
@@ -45,5 +47,6 @@ router.use(commitsRouter);
 router.use(branchesReleasesRouter);
 router.use(actionsCommunityRouter);
 router.use(treeRouter);
+router.use(readmeStudioRouter);
 
 export default router;

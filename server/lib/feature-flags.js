@@ -48,12 +48,23 @@ const TIER_FEATURES = {
         // monthly metered cap since they're now the most expensive per-call
         // AI features and can't ride the generic ai_queries count alone.
         deepReviewPerMonth: 10,
+        // Wave 6 (2026-07-18 community-launch WOW): AI Diagram Generator —
+        // heavier context payload than a commit message, lighter than a full
+        // Deep Review.
+        diagramGenPerMonth: 15,
         prChatMessagesPerMonth: 100,
         prCommandPerMonth: 30,
         promptStudioTestPerMonth: 30,
         // Count (not monthly) cap on saved Prompt Studio presets — mirrors
         // teamsMax's count-check pattern, not a metered action.
         promptPresetsMax: 10,
+        // Wave 6: Agent Rules Generator (AGENTS.md/CLAUDE.md) — single-shot
+        // generation over a bounded signal set, comparable order of
+        // magnitude to readmeGenPerMonth.
+        agentRulesPerMonth: 20,
+        // Wave 6: Security Posture Panel AI summary — single-shot
+        // summarization call, same order of magnitude as repoInsightsPerMonth.
+        securityPostureAIPerMonth: 75,
 
         // Full (non-dry-run) migrations per month. Dry-run plans stay free +
         // unlimited; this caps only real executions (metered in usage_metrics
@@ -107,11 +118,14 @@ const TIER_FEATURES = {
         migrationAssistPerMonth: Infinity,
         migrationFullPerMonth: Infinity,
         deepReviewPerMonth: Infinity,
+        diagramGenPerMonth: Infinity,
         prChatMessagesPerMonth: Infinity,
         prCommandPerMonth: Infinity,
         promptStudioTestPerMonth: Infinity,
         promptPresetsMax: Infinity,
         syncApplyPerMonth: Infinity,
+        agentRulesPerMonth: Infinity,
+        securityPostureAIPerMonth: Infinity,
 
         migration: 'full',
         basicBulk: true,
@@ -146,11 +160,14 @@ const TIER_FEATURES = {
         migrationAssistPerMonth: Infinity,
         migrationFullPerMonth: Infinity,
         deepReviewPerMonth: Infinity,
+        diagramGenPerMonth: Infinity,
         prChatMessagesPerMonth: Infinity,
         prCommandPerMonth: Infinity,
         promptStudioTestPerMonth: Infinity,
         promptPresetsMax: Infinity,
         syncApplyPerMonth: Infinity,
+        agentRulesPerMonth: Infinity,
+        securityPostureAIPerMonth: Infinity,
 
         migration: 'full',
         basicBulk: true,

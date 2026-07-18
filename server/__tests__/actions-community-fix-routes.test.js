@@ -33,6 +33,8 @@ vi.mock('../lib/github-api.js', () => ({
 }))
 
 vi.mock('../middleware/auth.js', () => ({
+    // wave-6 import chain pulls ai/shared.js, which needs this factory export
+    createRequireAI: () => (_req, _res, next) => next(),
     requireAuth: (req, _res, next) => {
         req.session = {
             userId: 1,
@@ -50,7 +52,9 @@ vi.mock('../middleware/auth.js', () => ({
 vi.mock('../actions-service.js', () => ({ actionsService: {} }))
 vi.mock('../community-health-service.js', () => ({ communityHealthService: {} }))
 vi.mock('../lib/audit.js', () => ({ auditLog: vi.fn() }))
-vi.mock('../lib/validators.js', () => ({
+vi.mock('../lib/validators.js', async (importOriginal) => ({
+    // real module underneath so new wave-6 schema exports never break this suite
+    ...(await importOriginal()),
     webhookCreateSchema: { safeParse: () => ({ success: true, data: {} }) },
     webhookUpdateSchema: {},
     workflowDispatchSchema: {},
@@ -90,7 +94,8 @@ vi.mock('../lib/ai-features/community-health-fix.js', () => ({
 }))
 
 const createProviderMock = vi.fn(async () => ({ generate: async () => ({ text: 'x' }) }))
-vi.mock('../lib/ai-provider.js', () => ({
+vi.mock('../lib/ai-provider.js', async (importOriginal) => ({
+    ...(await importOriginal()),
     createProviderForUser: (...args) => createProviderMock(...args),
 }))
 

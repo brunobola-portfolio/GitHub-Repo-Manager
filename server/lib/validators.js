@@ -273,6 +273,101 @@ export const aiQualityReportSchema = z.object({
     repo: aiRepoMetadataSchema.refine((v) => !!v.full_name, { message: 'repo.full_name is required' }),
 });
 
+// README Studio — consolidated grounded improve endpoint (replaces the
+// ungrounded /ai/readme + /ai/readme/enhance pair for new call sites; those
+// two routes stay as-is for backward compatibility, see server/routes/ai/core.js).
+export const aiReadmeStudioImproveSchema = z.object({
+    repo: aiRepoMetadataSchema.refine((v) => !!v.full_name, { message: 'repo.full_name is required' }),
+    mode: z.enum(['missing-sections', 'full-rewrite']).optional().default('missing-sections'),
+    tone: z.enum(['professional', 'concise', 'enthusiastic']).optional().default('professional'),
+    sections: z.array(z.string().max(50)).max(20).optional(),
+    license: z.string().max(50).optional(),
+    stackOverride: z.string().max(100).optional(),
+    badges: z.boolean().optional().default(false),
+}).strict();
+
+// AI Diagram Generator — POST /api/ai/generate-diagram (server/routes/ai/diagrams.js).
+// `diagramType` is enum-limited to 'architecture' for v1; sequence/flow are
+// explicitly cut from scope (2026-07-18-community-wow-wave6.md) but the enum
+// shape is written so adding them later is a one-line change, not a rework.
+// `retry`/`failedSource`/`parseError` power the client's retry-once
+// self-repair flow: the client re-posts the same request with the Mermaid
+// text that failed to render client-side plus the parser error, and the
+// server re-prompts for a corrected diagram. `retry` requests must carry a
+// non-empty `failedSource` — there's nothing to repair otherwise.
+export const aiGenerateDiagramSchema = z.object({
+    repo: aiRepoMetadataSchema.refine((v) => !!v.full_name, { message: 'repo.full_name is required' }),
+    diagramType: z.enum(['architecture']).optional().default('architecture'),
+    focus: z.string().max(300).optional(),
+    retry: z.boolean().optional().default(false),
+    failedSource: z.string().max(8000).optional(),
+    parseError: z.string().max(2000).optional(),
+}).strict().refine((v) => !v.retry || !!v.failedSource, {
+    message: 'retry requires failedSource',
+    path: ['failedSource'],
+});
+
+// Agent Rules Generator — POST /:owner/:repo/agent-rules/generate and
+// /agent-rules/commit (server/routes/repos/actions-community.js). `sections`
+// mirrors server/lib/ai-features/agent-rules.js's SECTION_KEYS; unknown keys
+// are stripped rather than rejected so the section toggle set can grow
+// without a schema break.
+const agentRulesSectionsSchema = z.object({
+    setup: z.boolean().optional(),
+    codeStyle: z.boolean().optional(),
+    testing: z.boolean().optional(),
+    devEnv: z.boolean().optional(),
+    prInstructions: z.boolean().optional(),
+    security: z.boolean().optional(),
+    repoLayout: z.boolean().optional(),
+}).strip();
+
+export const agentRulesGenerateSchema = z.object({
+    targetFiles: z.array(z.enum(['AGENTS.md', 'CLAUDE.md'])).min(1).max(2).optional().default(['AGENTS.md']),
+    mode: z.enum(['create', 'refresh']).optional().default('create'),
+    sections: agentRulesSectionsSchema.optional().default({}),
+    strictness: z.enum(['concise', 'detailed']).optional().default('concise'),
+}).strict();
+
+// commit: one entry per target file (1-2), each independently committed via
+// commitOrOpenPR() — see server/lib/ai-features/community-health-fix.js.
+export const agentRulesCommitSchema = z.object({
+    files: z.array(z.object({
+        filePath: z.enum(['AGENTS.md', 'CLAUDE.md']),
+        content: z.string().min(1).max(2_000_000),
+        commitMessage: z.string().min(1).max(10_000),
+    })).min(1).max(2),
+    mode: z.enum(['direct', 'pr']).optional().default('direct'),
+}).strict();
+
+// Security Posture AI summary — POST /:owner/:repo/security/summary
+// (server/routes/v1/repos-security.js). The client submits back the SAME 10
+// check results the GET /security response just computed server-side — this
+// is the honesty-critical whitelist that keeps raw alert bodies (which could
+// contain secret/PII fragments) out of the AI prompt: only id/label/status/
+// severity survive `.strip()`, and `checks` is capped at 10 entries (the
+// deterministic report card never produces more).
+const SECURITY_POSTURE_CHECK_IDS = [
+    'branch_protection_review', 'branch_protection_force_push', 'alerts_clear',
+    'secret_scanning', 'secret_scanning_push_protection', 'dependabot_security_updates',
+    'code_scanning', 'security_md', 'workflow_permissions', 'org_two_factor',
+];
+
+const securityPostureCheckSchema = z.object({
+    id: z.enum(SECURITY_POSTURE_CHECK_IDS),
+    label: z.string().min(1).max(200),
+    status: z.enum(['pass', 'fail', 'unknown', 'not_applicable', 'informational']),
+    severity: z.enum(['critical', 'high', 'medium', 'low', 'informational']).nullable().optional(),
+}).strip();
+
+export const securityPostureSummarySchema = z.object({
+    repo: z.object({
+        full_name: z.string().min(3).max(200).regex(repoFullNameRegex),
+        private: z.boolean().optional(),
+    }).strip(),
+    checks: z.array(securityPostureCheckSchema).min(1).max(10),
+}).strict();
+
 // ---------------------------------------------------------------------------
 // Dev Toolkit endpoints (refine / chat-refine / analyze-context / generate-*)
 // ---------------------------------------------------------------------------

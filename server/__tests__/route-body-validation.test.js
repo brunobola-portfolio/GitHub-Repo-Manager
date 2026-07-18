@@ -33,6 +33,8 @@ vi.mock('../lib/github-api.js', () => ({
 }))
 
 vi.mock('../middleware/auth.js', () => ({
+    // wave-6 import chain pulls ai/shared.js, which needs this factory export
+    createRequireAI: () => (_req, _res, next) => next(),
     requireAuth: (req, res, next) => {
         if (!req.session?.accessToken) return res.status(401).json({ error: 'auth required' })
         next()
@@ -102,7 +104,8 @@ vi.mock('../lib/ai-features/community-health-fix.js', () => ({
     },
     commitOrOpenPR: (...a) => commitOrOpenPRMock(...a),
 }))
-vi.mock('../lib/ai-provider.js', () => ({
+vi.mock('../lib/ai-provider.js', async (importOriginal) => ({
+    ...(await importOriginal()),
     createProviderForUser: vi.fn(async () => ({ generate: async () => ({ text: 'x' }) })),
 }))
 vi.mock('../middleware/ai-error-mapper.js', () => ({ mapAIErrorToResponse: vi.fn(() => null) }))

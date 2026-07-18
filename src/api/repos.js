@@ -18,6 +18,27 @@ export const reposApi = {
   },
 
   /**
+   * Cached AI summary of a repo's Security Posture report card. The client
+   * submits back the SAME check results GET .../security just returned —
+   * the server whitelists id/label/status/severity server-side and never
+   * accepts raw alert content. Progressive enhancement only: callers should
+   * treat a rejection as "AI summary unavailable", never block the report
+   * card render on it.
+   *
+   * @param {string} owner
+   * @param {string} repo
+   * @param {{full_name:string, private?:boolean}} repoMeta
+   * @param {Array<{id:string,label:string,status:string,severity?:string|null}>} checks
+   */
+  getSecurityPostureSummary: async (owner, repo, repoMeta, checks) => {
+    return apiCall(`/api/v1/repos/${owner}/${repo}/security/summary`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ repo: repoMeta, checks }),
+    })
+  },
+
+  /**
    * Fetch auto-generated CODEOWNERS suggestions derived from recent commit
    * authorship. Backed by GET /api/v1/repos/:owner/:repo/codeowners/suggest.
    *
