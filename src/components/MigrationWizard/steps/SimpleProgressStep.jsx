@@ -5,7 +5,13 @@ import {
 } from 'lucide-react'
 import { Spinner, SpinnerIcon } from '../../ui/Spinner'
 import { Button } from '../../ui/Button'
+import { Badge } from '../../ui/Badge'
 import { useToast } from '../../../hooks/useToast'
+
+// Consecutive failed polls (silent `!res.ok` / network errors) before the
+// "Connection lost — retrying" pill appears. A single blip shouldn't alarm
+// the user — three in a row (6s at the 2s poll interval) is a real stall.
+const POLL_FAILURE_THRESHOLD = 3
 
 const STATUS_BADGES = {
   pending: { icon: Clock, color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800', label: 'Pending' },
@@ -38,16 +44,38 @@ function StatusIcon({ status, className = 'w-5 h-5' }) {
   return <Icon className={`${className} ${config.color} ${config.spin ? 'animate-spin' : ''}`} />
 }
 
-function ProgressBar({ pct = 0 }) {
+function ProgressBar({ pct = 0, label = 'Import progress' }) {
+  const clamped = Math.min(Math.max(pct, 0), 100)
   return (
-    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+    <div
+      className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden"
+      role="progressbar"
+      aria-label={label}
+      aria-valuenow={Math.round(clamped)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    >
       <motion.div
         className="h-full bg-indigo-500 rounded-full"
         initial={{ width: 0 }}
-        animate={{ width: `${Math.min(Math.max(pct, 0), 100)}%` }}
+        animate={{ width: `${clamped}%` }}
         transition={{ duration: 0.4, ease: 'easeOut' }}
       />
     </div>
+  )
+}
+
+// Subtle, non-blocking indicator that polling has stalled — reuses the
+// canonical Badge primitive (never a bespoke pill) so it matches every other
+// status chip in the app. Clears the instant the next poll succeeds.
+// Purely visual — the sr-only aria-live region alongside it (rendered by
+// callers) is the one source of truth for the assistive-tech announcement,
+// so this doesn't carry its own role="status" and risk a double announce.
+function ConnectionLostPill() {
+  return (
+    <Badge tone="warning" dot="bg-current animate-pulse">
+      Connection lost — retrying
+    </Badge>
   )
 }
 
@@ -86,6 +114,10 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
 
   const [cancellingSingle, setCancellingSingle] = useState(false)
   const [cancellingIds, setCancellingIds] = useState(() => new Set())
+  // Consecutive poll failures across whichever polling loop is active (single
+  // or batch) — both share one counter since only one mode renders at a time.
+  const [pollFailureCount, setPollFailureCount] = useState(0)
+  const connectionLost = pollFailureCount >= POLL_FAILURE_THRESHOLD
 
   const isBatchMode = importJobs.batchJobs && importJobs.batchJobs.length > 0
 
@@ -129,8 +161,12 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
           credentials: 'include',
           signal: abortRef.current?.signal,
         })
-        if (!res.ok) return
+        if (!res.ok) {
+          setPollFailureCount((c) => c + 1)
+          return
+        }
         const data = await res.json()
+        setPollFailureCount(0)
         onUpdate({ jobStatus: data })
 
         if (TERMINAL_STATUSES.has(data.status)) {
@@ -138,8 +174,10 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
           intervalRef.current = null
           onUpdate({ importing: false })
         }
-      } catch {
-        // Silently handle abort / network errors
+      } catch (err) {
+        // Abort is an intentional teardown (unmount / cancel), not a stall —
+        // don't count it toward the "connection lost" indicator.
+        if (err?.name !== 'AbortError') setPollFailureCount((c) => c + 1)
       }
     }, 2000)
   }, [importJobs.jobId, isBatchMode, onUpdate])
@@ -171,8 +209,12 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
             credentials: 'include',
             signal: abortControllers[job.jobId]?.signal,
           })
-          if (!res.ok) return
+          if (!res.ok) {
+            setPollFailureCount((c) => c + 1)
+            return
+          }
           const data = await res.json()
+          setPollFailureCount(0)
 
           onUpdate((prev) => ({
             batchStatuses: {
@@ -194,8 +236,10 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
               onUpdate({ importing: false })
             }
           }
-        } catch {
-          // Silently handle abort / network errors
+        } catch (err) {
+          // Abort is an intentional teardown (unmount / cancel), not a stall —
+          // don't count it toward the "connection lost" indicator.
+          if (err?.name !== 'AbortError') setPollFailureCount((c) => c + 1)
         }
       }, 2000)
     }
@@ -233,6 +277,22 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
 
     return (
       <div className="space-y-4">
+        {/* Announce status to assistive tech: polling is otherwise purely
+            visual, mirroring ProgressStep's SSE status region. */}
+        <span className="sr-only" role="status">
+          {connectionLost
+            ? 'Connection lost, retrying'
+            : TERMINAL_STATUSES.has(currentStatus)
+              ? `Import ${currentStatus}`
+              : message || defaultMessage}
+        </span>
+
+        {connectionLost && (
+          <div className="flex justify-end">
+            <ConnectionLostPill />
+          </div>
+        )}
+
         <AnimatePresence mode="wait">
           {!status ? (
             <motion.div
@@ -280,7 +340,7 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
               </div>
 
               {/* Progress bar */}
-              <ProgressBar pct={pct} />
+              <ProgressBar pct={pct} label="Import progress" />
 
               {/* Complete: repo link */}
               {(currentStatus === 'complete' || currentStatus === 'completed') && status.metadata?.repoUrl && (
@@ -350,12 +410,26 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-slate-500 dark:text-slate-400">
-        {completedCount}/{batchJobs.length} completed
-      </p>
+      {/* Announce status to assistive tech: polling is otherwise purely
+          visual, mirroring ProgressStep's SSE status region. */}
+      <span className="sr-only" role="status">
+        {connectionLost
+          ? 'Connection lost, retrying'
+          : `${completedCount} of ${batchJobs.length} imports completed`}
+      </span>
+
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          {completedCount}/{batchJobs.length} completed
+        </p>
+        {connectionLost && <ConnectionLostPill />}
+      </div>
 
       {/* Overall progress bar */}
-      <ProgressBar pct={batchJobs.length > 0 ? (completedCount / batchJobs.length) * 100 : 0} />
+      <ProgressBar
+        pct={batchJobs.length > 0 ? (completedCount / batchJobs.length) * 100 : 0}
+        label="Overall import progress"
+      />
 
       {/* Batch job list */}
       <div className="space-y-3">
@@ -405,7 +479,7 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
                 {/* Individual progress bar for running jobs */}
                 {currentStatus === 'running' && (
                   <div className="mt-2">
-                    <ProgressBar pct={pct} />
+                    <ProgressBar pct={pct} label={`Import progress for ${job.repoName || job.sourceUrl}`} />
                     {jobStatus?.progressMessage && (
                       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 truncate">
                         {jobStatus.progressMessage}
