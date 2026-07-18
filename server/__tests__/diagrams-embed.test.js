@@ -318,4 +318,34 @@ describe('POST /ai/generate-diagram/embed-commit', () => {
             .send({ repo: REPO, target: 'readme-mermaid', mode: 'direct' });
         expect(res.status).toBe(400);
     });
-});
+})
+
+describe('embed-commit path hardening', () => {
+    it('rejects an svg.path that does not match the diagram type', async () => {
+        const res = await request(makeApp())
+            .post('/ai/generate-diagram/embed-commit')
+            .send({
+                repo: { full_name: 'acme/app' },
+                diagramType: 'architecture',
+                target: 'svg-file',
+                svg: { path: 'docs/evil/../../secrets.svg', content: '<svg xmlns="http://www.w3.org/2000/svg"></svg>', commitMessage: 'x' },
+            })
+        expect(res.status).toBe(400)
+        expect(res.body.code).toBe('validation_failed')
+    })
+
+    it('rejects a readme.path that is not a README file or traverses', async () => {
+        for (const path of ['src/index.js', 'docs/../../README.md', '/README.md']) {
+            const res = await request(makeApp())
+                .post('/ai/generate-diagram/embed-commit')
+                .send({
+                    repo: { full_name: 'acme/app' },
+                    diagramType: 'architecture',
+                    target: 'readme-mermaid',
+                    readme: { path, content: '# x', commitMessage: 'x' },
+                })
+            expect(res.status).toBe(400)
+            expect(res.body.code).toBe('validation_failed')
+        }
+    })
+})

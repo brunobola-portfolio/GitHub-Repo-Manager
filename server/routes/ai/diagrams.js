@@ -419,9 +419,18 @@ router.post('/ai/generate-diagram/embed-preview', requireAuth, validateBody(embe
 });
 
 router.post('/ai/generate-diagram/embed-commit', requireAuth, validateBody(embedDiagramCommitSchema), async (req, res) => {
-    const { repo, target, readme, svg, mode } = req.validatedBody;
+    const { repo, diagramType, target, readme, svg, mode } = req.validatedBody;
     if (!isValidGitHubFullName(repo.full_name)) {
         return res.status(400).json({ error: 'Invalid repo.full_name', code: 'validation_failed' });
+    }
+    // Defence in depth: never trust client-echoed paths from preview. The SVG
+    // path is fully derivable from diagramType; the README path must be an
+    // actual README file with no traversal.
+    if (svg && svg.path !== svgPathFor(diagramType)) {
+        return res.status(400).json({ error: `svg.path must be ${svgPathFor(diagramType)} for this diagram type.`, code: 'validation_failed' });
+    }
+    if (readme && (!/(^|\/)README\.md$/i.test(readme.path) || readme.path.includes('..') || readme.path.startsWith('/'))) {
+        return res.status(400).json({ error: 'readme.path must be a README.md path inside the repository.', code: 'validation_failed' });
     }
     const [owner, repoName] = repo.full_name.split('/');
 
