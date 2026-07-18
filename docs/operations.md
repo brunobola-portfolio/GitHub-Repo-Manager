@@ -12,6 +12,7 @@ how-to-build side, see [`docs/index.md`](index.md).
 - [Dead-letter queues](#dead-letter-queues-email--webhook)
 - [Health probes (`/live` vs `/ready`)](#health-probes-live-vs-ready)
 - [Public status page](#public-status-page)
+- [Monitoring (Prometheus metrics)](#monitoring-prometheus-metrics)
 - [Bundle budget](#bundle-budget)
 - [Audit trail](#audit-trail)
 - [Admin access](#admin-access)
@@ -221,6 +222,59 @@ logged-in users, with a popover listing the failing checks.
 
 Add or remove checks in `server/routes/health.js`. Each check should be
 read-only and timeout-bounded (default 2 s).
+
+---
+
+## Monitoring (Prometheus metrics)
+
+`GET /metrics` exposes a Prometheus-format scrape endpoint — deliberately
+mounted at the root (`/metrics`, not `/api/metrics`) so scrapers bypass the
+CSRF / per-tenant rate-limit / tier-attachment middleware built for the app
+API. It is **never exposed unauthenticated**: every request must satisfy one
+of two gates (`server/middleware/metrics-auth.js`):
+
+1. **Admin session** — same `requireAdmin` check (`users.is_admin = 1`) used
+   everywhere else in the app.
+2. **Static bearer token** — `Authorization: Bearer <METRICS_TOKEN>`, for
+   unattended scrapers. Only active when the `METRICS_TOKEN` env var is set;
+   compared with `crypto.timingSafeEqual`. Leave it unset to restrict the
+   endpoint to admin sessions only.
+
+### Enabling it
+
+```bash
+# .env
+METRICS_TOKEN=<random 32+ byte value>
+```
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+### Metrics exposed
+
+| Metric | Type | Labels | Meaning |
+| ------ | ---- | ------ | ------- |
+| `http_request_duration_seconds` | Histogram | `method`, `route`, `status` | Request latency. `route` is the **normalized Express route path** (e.g. `/api/repos/:owner/:repo`), never the raw URL — this keeps label cardinality bounded regardless of how many distinct owner/repo/id values are requested. Unmatched routes (404s) report `route="unmatched"`. |
+| `http_requests_in_flight` | Gauge | — | Requests currently being handled, across the whole process. |
+| `process_*`, `nodejs_*` | Various | — | Standard Node.js process metrics from `prom-client`'s `collectDefaultMetrics()` (CPU, RSS/heap, event-loop lag, GC pauses, active handles, fd count). |
+
+Instrumentation is mounted in `server/index.js` before routing, so every
+request is counted — including ones that never match an `/api/` route. See
+`server/lib/metrics.js`.
+
+### Sample Prometheus scrape config
+
+```yaml
+scrape_configs:
+  - job_name: github-repo-manager
+    scheme: https
+    metrics_path: /metrics
+    authorization:
+      credentials: <METRICS_TOKEN>
+    static_configs:
+      - targets: ['your-host.example.com']
+```
 
 ---
 
