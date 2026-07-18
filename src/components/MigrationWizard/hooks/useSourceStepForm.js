@@ -1,4 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+
+// Demo mode has no backend session — both credential probes would 401, so the
+// state starts pre-resolved to the common self-host answer (no server PAT, no
+// OAuth app) and the fetch effect is skipped entirely.
+const MOCK_MODE = import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true'
 import { parseAzureUrl } from '../../../utils/azureUrlParser'
 import { classifyProvider } from '../../../utils/azureProvider'
 import { getCsrfToken } from '../../../utils/api'
@@ -19,9 +24,9 @@ const DEBOUNCE_MS = 400
  * Keeps the render surface of SourceStep focused on layout only.
  */
 export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
-  const [envAuthAvailable, setEnvAuthAvailable] = useState(null)
-  const [oauthConfigured, setOauthConfigured] = useState(null)
-  const [credLoading, setCredLoading] = useState(true)
+  const [envAuthAvailable, setEnvAuthAvailable] = useState(() => (MOCK_MODE ? false : null))
+  const [oauthConfigured, setOauthConfigured] = useState(() => (MOCK_MODE ? false : null))
+  const [credLoading, setCredLoading] = useState(() => !MOCK_MODE)
   const [showPat, setShowPat] = useState(false)
   const [projects, setProjects] = useState([])
   const [projectMeta, setProjectMeta] = useState({})
@@ -63,6 +68,10 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
 
   useEffect(() => {
     let cancelled = false
+    if (MOCK_MODE) {
+      if (!credentialModeRef.current) onChange({ credentialMode: 'personalPat' })
+      return undefined
+    }
     Promise.all([
       fetch('/api/azure/env-auth', { credentials: 'include' }).then((r) => r.json()),
       fetch('/api/azure/oauth-status', { credentials: 'include' }).then((r) => r.json()),

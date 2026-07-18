@@ -21,6 +21,60 @@ function pick(arr, n) {
     return arr[n % arr.length]
 }
 
+// Rich enough to exercise the premium README reader in demo mode: multiple
+// headings (sticky TOC), fenced code blocks (highlighting + copy button),
+// a table, links and inline code. Keep it ASCII-only — btoa() throws on
+// anything outside Latin-1.
+const MOCK_README = [
+    '# Demo Repository',
+    '',
+    'Machine learning pipeline for predictive customer behavior analysis.',
+    'This README is simulated so you can try the reading experience - headings feed the table of contents, and code blocks get syntax highlighting with one-click copy.',
+    '',
+    '## Quick start',
+    '',
+    '```bash',
+    'git clone https://github.com/dev-user/ai-analytics-platform.git',
+    'cd ai-analytics-platform',
+    'pip install -r requirements.txt',
+    'python -m pipeline.run --config configs/dev.yaml',
+    '```',
+    '',
+    '## Configuration',
+    '',
+    'All settings live in `configs/*.yaml` and can be overridden with environment variables:',
+    '',
+    '| Variable | Default | Purpose |',
+    '| --- | --- | --- |',
+    '| `PIPELINE_ENV` | `dev` | Selects the config profile |',
+    '| `BATCH_SIZE` | `512` | Rows per scoring batch |',
+    '| `MODEL_VERSION` | `latest` | Pinned model artifact tag |',
+    '',
+    '## Architecture',
+    '',
+    'The pipeline has three stages: ingestion, feature engineering and scoring.',
+    'Each stage is an independent worker communicating over a queue, so a slow',
+    'stage never blocks the others.',
+    '',
+    '```python',
+    'from pipeline import Stage',
+    '',
+    'class Scoring(Stage):',
+    '    def process(self, batch):',
+    '        features = self.featurize(batch)',
+    '        return self.model.predict(features)',
+    '```',
+    '',
+    '## Contributing',
+    '',
+    'Open an issue first for anything bigger than a typo fix. Run the test',
+    'suite with `pytest -q` before pushing.',
+    '',
+    '## License',
+    '',
+    'MIT - see [LICENSE](LICENSE) for details.',
+].join('\n')
+
 const USERS = ['alice', 'bob', 'carol', 'dave', 'eve', 'frank', 'grace', 'henry']
 const LABELS = [
     { name: 'bug', color: 'd73a4a' },
@@ -266,11 +320,37 @@ const RICH_PATCHES = [
  * coverage of the DiffCollapser fold-by-default path.
  */
 function makeLargePatch(additions, deletions) {
-    const oldRange = Math.max(deletions, 1)
-    const newRange = Math.max(additions, 1)
-    const lines = [`@@ -1,${oldRange} +1,${newRange} @@`]
-    for (let i = 0; i < deletions; i++) lines.push(`-old line ${i}`)
-    for (let i = 0; i < additions; i++) lines.push(`+new line ${i}`)
+    // Multi-hunk on purpose: single-hunk patches hide the hunk-level risk rail
+    // (shouldShowHunkRail needs >= 2 hunks), which made the rail invisible in
+    // demo mode. Themed line content varies the per-hunk risk heuristic so the
+    // rail shows a mix of colors instead of a uniform strip.
+    const HUNKS = 8
+    const themes = [
+        'refactor shared util',
+        'validate session token in auth middleware',
+        'extract query builder helper',
+        'rotate password hash secret',
+        'update schema migration for accounts table',
+        'tidy formatting and comments',
+        'wire crypt helper into login flow',
+        'simplify pagination math',
+    ]
+    const addPer = Math.max(1, Math.floor(additions / HUNKS))
+    const delPer = Math.max(1, Math.floor(deletions / HUNKS))
+    const lines = []
+    let oldStart = 1
+    let newStart = 1
+    for (let h = 0; h < HUNKS; h++) {
+        const adds = h === HUNKS - 1 ? Math.max(1, additions - addPer * (HUNKS - 1)) : addPer
+        const dels = h === HUNKS - 1 ? Math.max(1, deletions - delPer * (HUNKS - 1)) : delPer
+        lines.push(`@@ -${oldStart},${dels + 2} +${newStart},${adds + 2} @@ ${themes[h % themes.length]}`)
+        lines.push(` // section ${h + 1}: ${themes[h % themes.length]}`)
+        for (let i = 0; i < dels; i++) lines.push(`-const legacy${h}_${i} = compute(${i}) // ${themes[h % themes.length]}`)
+        for (let i = 0; i < adds; i++) lines.push(`+const next${h}_${i} = computeFast(${i}) // ${themes[h % themes.length]}`)
+        lines.push(' // end of section')
+        oldStart += dels + 2 + 40
+        newStart += adds + 2 + 40
+    }
     return lines.join('\n')
 }
 
@@ -406,9 +486,9 @@ export function mockRepoDetailFetch(url) {
     if (resource && _e2eRepoApiLiveResources?.has(resource)) return undefined
 
     // /api/repos/:owner/:repo
-    if (!resource) return { id: 1, name: repo, full_name: repoName, description: 'Demo repository', private: false, fork: false, owner: { login: owner }, default_branch: 'main', stargazers_count: 42, forks_count: 7, open_issues_count: 5 }
+    if (!resource) return { id: 1, name: repo, full_name: repoName, description: 'Demo repository', private: false, fork: false, owner: { login: owner }, default_branch: 'main', stargazers_count: 42, forks_count: 7, open_issues_count: 5, created_at: '2024-03-12T09:30:00Z', updated_at: '2026-07-15T18:04:00Z', pushed_at: '2026-07-16T07:41:00Z' }
 
-    if (resource === 'readme') return { content: btoa('# Demo Repository\n\nThis is a mock README for demo mode.'), encoding: 'base64' }
+    if (resource === 'readme') return { content: btoa(MOCK_README), encoding: 'base64' }
 
     if (resource === 'branches') {
         if (!sub1) return generateMockBranches(repoName)
@@ -685,7 +765,7 @@ export function mockCommitsFetch(url) {
         // Playwright spec supply its own README via page.route instead of this
         // generic demo content.
         if (_e2eRepoApiLiveResources?.has('readme')) return undefined
-        return { content: btoa('# Demo Repository\n\nThis is a mock README for demo mode.'), encoding: 'base64' }
+        return { content: btoa(MOCK_README), encoding: 'base64' }
     }
 
     const m = path.match(/^\/api\/v1\/repos\/([^/]+)\/([^/]+)\/commits(?:\/([^/]+))?/)

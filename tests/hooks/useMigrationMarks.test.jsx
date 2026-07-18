@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { useMigrationMarksFor, useMarksForPlan, __resetMarksAuthGateForTests } from '../../src/hooks/useMigrationMarks.js'
+
+// .env.test defaults VITE_MOCK_MODE=true, where the hook intentionally skips
+// all network activity; force the real-fetch branch before the module loads.
+vi.stubEnv('VITE_MOCK_MODE', 'false')
+
+const { useMigrationMarksFor, useMarksForPlan, __resetMarksAuthGateForTests } = await import('../../src/hooks/useMigrationMarks.js')
 
 beforeEach(() => {
   global.fetch = vi.fn()
