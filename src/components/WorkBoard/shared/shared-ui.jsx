@@ -6,6 +6,7 @@
 
 import { UpgradeRequired } from '../../states'
 import { Skeleton } from '../../ui/Skeleton'
+import { EmptyState as CanonicalEmptyState } from '../../ui/EmptyState'
 
 // ---------------------------------------------------------------------------
 // Skeleton — composed from the canonical <Skeleton> primitive so every
@@ -34,21 +35,15 @@ export function SkeletonList({ count = 5 }) {
 }
 
 // ---------------------------------------------------------------------------
-// Empty state
+// Empty state — thin adapter over the canonical <EmptyState> primitive
+// (src/components/ui/EmptyState.jsx) instead of a local fork, so Work Board
+// tabs share the same entrance motion, icon tile, and CTA support as the
+// other 29+ consumers. `subtitle` maps to the canonical `description` prop
+// so call sites here don't need to change.
 // ---------------------------------------------------------------------------
 
-export function EmptyState({ icon: Icon, title, subtitle }) {
-    return (
-        <div data-testid="empty-state" className="flex flex-col items-center justify-center py-20 px-6 text-slate-400">
-            <div className="relative w-20 h-20 mb-5">
-                <div className="relative w-20 h-20 rounded-3xl bg-slate-100 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/50 flex items-center justify-center shadow-sm">
-                    <Icon className="w-9 h-9 text-slate-400 dark:text-slate-500" />
-                </div>
-            </div>
-            <p className="text-base font-semibold text-slate-700 dark:text-slate-200 mb-1.5">{title}</p>
-            {subtitle && <p className="text-xs text-center max-w-sm leading-relaxed">{subtitle}</p>}
-        </div>
-    )
+export function EmptyState({ icon, title, subtitle, ...rest }) {
+    return <CanonicalEmptyState icon={icon} title={title} description={subtitle} {...rest} />
 }
 
 // ---------------------------------------------------------------------------

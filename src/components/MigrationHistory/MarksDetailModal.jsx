@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
+import { SPRING } from '../ui/motion'
 
 function statusIcon(s) {
   return s === 'written' ? '✓' : s === 'skipped' ? '⚠' : s === 'failed' ? '✗' : '·'
@@ -62,7 +63,7 @@ export function MarksDetailModal({ open, onClose, planId, byScope }) {
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+            transition={SPRING.drawer}
             onClick={e => e.stopPropagation()}
             className="max-w-2xl w-full rounded-2xl border border-white/10 bg-slate-900/90 backdrop-blur-md shadow-2xl p-6"
           >

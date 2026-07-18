@@ -23,6 +23,7 @@ import { Drawer } from './ui/Drawer'
 import { MobileQuickActionsFab } from './MobileQuickActionsFab'
 import { Tooltip } from './ui/Tooltip'
 import { Spinner } from './ui/Spinner'
+import { Kbd } from './ui/Kbd'
 import { emitAppEvent, APP_EVENTS } from '../utils/appEvents'
 
 export function Header({
@@ -117,15 +118,15 @@ export function Header({
                     </div>
                 </div>
 
-                {/* ⌘K command palette chip */}
-                <Tooltip label="Open command palette (Ctrl+K)">
+                {/* OS-aware command palette chip — ⌘K on Mac, Ctrl+K elsewhere */}
+                <Tooltip label="Open command palette">
                     <button
                         type="button"
                         onClick={onOpenCommandPalette}
-                        aria-label="Open command palette (Ctrl+K)"
+                        aria-label="Open command palette"
                         className="hidden nav:inline-flex items-center gap-1.5 px-2 h-[28px] rounded-lg ds-text-meta font-medium text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/50 bg-white/40 dark:bg-slate-800/40 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-colors"
                     >
-                        <kbd className="font-mono">⌘K</kbd>
+                        <Kbd modifier="mod">K</Kbd>
                     </button>
                 </Tooltip>
 

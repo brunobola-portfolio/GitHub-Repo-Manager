@@ -42,11 +42,9 @@ export function MarksBadge({ marks = [], onClick }) {
   return (
     <motion.button
       type="button"
-      whileHover={{ y: -1 }}
-      whileTap={{ y: 0 }}
       onClick={onClick}
       aria-label={v.label}
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${v.cls} transition`}
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${v.cls} transition-colors`}
     >
       <span aria-hidden>{v.icon}</span>
       <span>{summary(marks)}</span>

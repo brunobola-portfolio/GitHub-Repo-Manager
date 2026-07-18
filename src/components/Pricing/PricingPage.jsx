@@ -6,6 +6,7 @@ import { FeatureComparison } from './FeatureComparison'
 import { API_BASE_URL } from '../../config'
 import { getCsrfToken } from '../../utils/api'
 import { ServiceUnavailable, FeatureError } from '../states'
+import { SPRING } from '../ui/motion'
 
 /* ─── Tier definitions ─── */
 const TIERS_MONTHLY = [
@@ -365,7 +366,7 @@ export function PricingPage({ onGetStarted } = {}) {
                 layout
                 className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-md"
                 animate={{ left: isYearly ? 26 : 2 }}
-                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                transition={SPRING.knob}
               />
             </button>
 
