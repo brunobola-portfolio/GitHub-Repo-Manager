@@ -8,10 +8,11 @@
  * score. Kept framework-free so the honesty-critical unknown-vs-fail logic
  * can be unit tested with plain objects, no HTTP/GitHub API mocking.
  *
- * Every admin-gated check (secret scanning / push protection / Dependabot
- * security updates / workflow permissions / org 2FA, plus branch protection)
- * renders `'unknown'` — never `'fail'` — when the caller's token can't see
- * the underlying signal. Checks 3 (alerts), 7 (code scanning) and 8
+ * Every visibility-gated check (secret scanning / push protection /
+ * Dependabot security updates / workflow permissions / org 2FA / branch
+ * protection, plus check 3's alert sources — the `security_events` token
+ * scope) renders `'unknown'` — never `'fail'` — when the caller's token
+ * can't see the underlying signal. Checks 7 (code scanning) and 8
  * (SECURITY.md) never need admin access and are always 'pass' or 'fail'.
  *
  * Spec: docs/specs/2026-07-18-community-wow-wave6.md (Feature 4).
@@ -47,7 +48,7 @@ function checkRow(id, label, status, severity, why, fixHint = null) {
  *
  * @param {object} signals
  * @param {{status:'protected'|'unprotected'|'unknown', requiresReview?:boolean, allowsForcePush?:boolean, allowsDeletion?:boolean}} signals.branchProtection
- * @param {{critical:number, high:number, medium:number, low:number, total:number}} signals.alerts
+ * @param {{critical:number, high:number, medium:number, low:number, total:number, available?:boolean}} signals.alerts — `available` is false when none of the three alert sources (secret-scanning/code-scanning/dependabot) were reachable with the caller's token
  * @param {{status:'enabled'|'disabled'|'unknown'}} signals.secretScanning
  * @param {{status:'enabled'|'disabled'|'unknown'}} signals.secretScanningPushProtection
  * @param {{status:'enabled'|'disabled'|'unknown'}} signals.dependabotSecurityUpdates
@@ -102,9 +103,16 @@ export function buildChecks(signals) {
             'Force-push or deletion of the default branch can destroy history irrecoverably.', 'branch-protection'));
     }
 
-    // 3. Zero open critical/high alerts. Never admin-gated — the existing
-    // alerts endpoint already degrades unavailable sources to a 0 contribution.
-    if (alerts.critical > 0) {
+    // 3. Zero open critical/high alerts. Not admin-gated by GitHub itself, but
+    // the caller's token still needs the `security_events` scope to read any
+    // of the three alert sources — if none were reachable, a 0 count means
+    // "we can't see it", not "it's clean", so this must render unknown, same
+    // as every other visibility-gated check.
+    if (alerts.available === false) {
+        checks.push(checkRow('alerts_clear', 'Zero open critical/high security alerts',
+            CHECK_STATUS.UNKNOWN, null,
+            'Open critical alerts are the most direct, actionable security risk on a repo.'));
+    } else if (alerts.critical > 0) {
         checks.push(checkRow('alerts_clear', 'Zero open critical/high security alerts',
             CHECK_STATUS.FAIL, 'critical',
             'Open critical alerts are the most direct, actionable security risk on a repo.'));
@@ -139,7 +147,10 @@ export function buildChecks(signals) {
             'Secret scanning catches committed credentials before they leak.'));
     }
 
-    // 5. Secret scanning push protection enabled.
+    // 5. Secret scanning push protection enabled. Same GHAS-unavailable
+    // nuance as check #4: push protection is a sub-feature of secret
+    // scanning, so it cannot be enabled on a private repo without GHAS
+    // either — a plan limitation, not a fixable fail.
     if (pushProtection === 'unknown') {
         checks.push(checkRow('secret_scanning_push_protection', 'Secret scanning push protection enabled',
             CHECK_STATUS.UNKNOWN, null,
@@ -148,6 +159,10 @@ export function buildChecks(signals) {
         checks.push(checkRow('secret_scanning_push_protection', 'Secret scanning push protection enabled',
             CHECK_STATUS.PASS, null,
             'Push protection blocks a secret from ever being committed, not just after the fact.'));
+    } else if (isPrivate) {
+        checks.push(checkRow('secret_scanning_push_protection', 'Secret scanning push protection enabled',
+            CHECK_STATUS.INFORMATIONAL, 'informational',
+            'Push protection requires GitHub Advanced Security on private repos — not a toggle you forgot.'));
     } else {
         checks.push(checkRow('secret_scanning_push_protection', 'Secret scanning push protection enabled',
             CHECK_STATUS.FAIL, 'medium',

@@ -56,7 +56,7 @@ describe('security-posture-checks — buildChecks', () => {
         })
     })
 
-    describe('check 3 — alerts, never admin-gated', () => {
+    describe('check 3 — alerts, visibility-gated on the security_events token scope', () => {
         it('fails critical over high when both present', () => {
             const checks = buildChecks(baseSignals({ alerts: { critical: 1, high: 2, medium: 0, low: 0, total: 3 } }))
             const c = byId(checks, 'alerts_clear')
@@ -74,6 +74,18 @@ describe('security-posture-checks — buildChecks', () => {
         it('passes when only medium/low alerts are open', () => {
             const checks = buildChecks(baseSignals({ alerts: { critical: 0, high: 0, medium: 5, low: 5, total: 10 } }))
             expect(byId(checks, 'alerts_clear').status).toBe(CHECK_STATUS.PASS)
+        })
+
+        it('passes when zero alerts and at least one source was reachable (available defaults truthy)', () => {
+            const checks = buildChecks(baseSignals({ alerts: { critical: 0, high: 0, medium: 0, low: 0, total: 0, available: true } }))
+            expect(byId(checks, 'alerts_clear').status).toBe(CHECK_STATUS.PASS)
+        })
+
+        it('renders unknown (not pass) when none of the three alert sources were reachable', () => {
+            const checks = buildChecks(baseSignals({ alerts: { critical: 0, high: 0, medium: 0, low: 0, total: 0, available: false } }))
+            const c = byId(checks, 'alerts_clear')
+            expect(c.status).toBe(CHECK_STATUS.UNKNOWN)
+            expect(c.severity).toBeNull()
         })
     })
 
@@ -105,6 +117,27 @@ describe('security-posture-checks — buildChecks', () => {
 
             const failing = buildChecks(baseSignals({ dependabotSecurityUpdates: { status: 'disabled' } }))
             const c = byId(failing, 'dependabot_security_updates')
+            expect(c.status).toBe(CHECK_STATUS.FAIL)
+            expect(c.severity).toBe('medium')
+        })
+
+        it('fails (medium) push protection when disabled on a PUBLIC repo — an actual toggle to flip', () => {
+            const checks = buildChecks(baseSignals({ secretScanningPushProtection: { status: 'disabled' }, visibility: 'public' }))
+            const c = byId(checks, 'secret_scanning_push_protection')
+            expect(c.status).toBe(CHECK_STATUS.FAIL)
+            expect(c.severity).toBe('medium')
+        })
+
+        it('renders push protection informational (not fail) when disabled on a PRIVATE repo — GHAS plan limitation, same nuance as check 4', () => {
+            const checks = buildChecks(baseSignals({ secretScanningPushProtection: { status: 'disabled' }, visibility: 'private' }))
+            const c = byId(checks, 'secret_scanning_push_protection')
+            expect(c.status).toBe(CHECK_STATUS.INFORMATIONAL)
+            expect(c.severity).toBe('informational')
+        })
+
+        it('Dependabot security updates keeps a hard fail on a PRIVATE repo — the feature does not require GHAS', () => {
+            const checks = buildChecks(baseSignals({ dependabotSecurityUpdates: { status: 'disabled' }, visibility: 'private' }))
+            const c = byId(checks, 'dependabot_security_updates')
             expect(c.status).toBe(CHECK_STATUS.FAIL)
             expect(c.severity).toBe('medium')
         })
@@ -213,5 +246,28 @@ describe('security-posture-checks — scoreChecks', () => {
         expect(score.visible).toBe(10)
         expect(score.passing).toBe(9)
         expect(score.score).toBe(90)
+    })
+
+    it('an unreachable alert source (check 3 unknown) is excluded from the score like any other visibility gap', () => {
+        const checks = buildChecks(baseSignals({ alerts: { critical: 0, high: 0, medium: 0, low: 0, total: 0, available: false } }))
+        const score = scoreChecks(checks)
+        expect(score.unknown).toBe(1)
+        expect(score.passing).toBe(9)
+        expect(score.visible).toBe(9)
+        expect(score.score).toBe(100)
+        expect(score.partialVisibility).toBe(true)
+    })
+
+    it('both GHAS-informational checks (4 and 5) count in the denominator but not the numerator', () => {
+        const checks = buildChecks(baseSignals({
+            secretScanning: { status: 'disabled' },
+            secretScanningPushProtection: { status: 'disabled' },
+            visibility: 'private',
+        }))
+        const score = scoreChecks(checks)
+        expect(score.informational).toBe(2)
+        expect(score.visible).toBe(10)
+        expect(score.passing).toBe(8)
+        expect(score.score).toBe(80)
     })
 })
