@@ -76,6 +76,7 @@ export const AI_GENERATION_ROUTE_PATHS = Object.freeze([
     '/ai/suggest',
     '/ai/readme',
     '/ai/readme/enhance',
+    '/ai/readme-studio/improve',
     '/ai/quality-report',
     '/ai/review-summary',
     '/ai/generate-commit',

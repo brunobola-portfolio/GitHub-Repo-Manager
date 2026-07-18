@@ -1,18 +1,20 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { Badge } from '../ui/Badge'
 import { EmptyState } from '../ui/EmptyState'
 import { ReadmeToc } from '../ui/ReadmeToc'
 import { RepoMarkdown } from '../ui/RepoMarkdown'
 import { SectionPanel } from '../ui/SectionPanel'
 import { StaleDataBadge } from '../ui/StaleDataBadge'
-import { FileText, BookOpen, Sparkles, Info } from 'lucide-react'
+import { FileText, BookOpen, Sparkles, Info, Wand2 } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
+import { Button } from '../ui/Button'
 import { useModal } from '../../hooks/useModal'
 import { useResilientFetch } from '../../hooks/useResilientFetch'
 import { useToast } from '../../hooks/useToast'
 import { InlineEditField } from './InlineEditField'
 import { MigrationProvenanceCard } from './MigrationProvenanceCard'
 import { formatFileSize, formatDate } from '../../utils/format'
+import { ReadmeStudioModal } from '../AI/ReadmeStudioModal'
 
 /**
  * Decode a GitHub contents-API README payload into a UTF-8 string.
@@ -47,6 +49,7 @@ export function OverviewTab({ api, repoData, onUpdate }) {
     const { openModalWithData } = useModal()
     const { toast } = useToast()
     const readmeContainerRef = useRef(null)
+    const [readmeStudioOpen, setReadmeStudioOpen] = useState(false)
 
     const owner = repoData.owner?.login || repoData.full_name?.split('/')[0]
     const repoName = repoData.name
@@ -81,7 +84,7 @@ export function OverviewTab({ api, repoData, onUpdate }) {
             </div>
 
             {/* AI Insights entry point */}
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-3 flex flex-wrap gap-2">
                 <button
                     onClick={() => openModalWithData('showRepoInsights', { repo: repoData, initialTab: 'quality' })}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] ds-focus-ring transition"
@@ -89,7 +92,22 @@ export function OverviewTab({ api, repoData, onUpdate }) {
                     <Sparkles className="w-4 h-4" />
                     View AI Insights
                 </button>
+                <Button variant="secondary" onClick={() => setReadmeStudioOpen(true)}>
+                    <Wand2 className="w-4 h-4" />
+                    README Studio
+                </Button>
             </div>
+
+            {/* Lazy-mounted: only instantiated once opened, so the theme/diff-view
+                dependencies it pulls in never load on a plain Overview visit. */}
+            {readmeStudioOpen && (
+                <ReadmeStudioModal
+                    isOpen={readmeStudioOpen}
+                    onClose={() => setReadmeStudioOpen(false)}
+                    repo={repoData}
+                    onApplied={() => reload?.()}
+                />
+            )}
 
             {/* README */}
             <div className="lg:col-span-2">

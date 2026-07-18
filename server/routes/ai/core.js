@@ -7,6 +7,7 @@
  *   POST /ai/suggest
  *   POST /ai/readme
  *   POST /ai/readme/enhance
+ *   POST /ai/readme-studio/improve
  */
 
 import express from 'express';
@@ -20,6 +21,7 @@ import {
     aiSuggestSchema,
     aiReadmeSchema,
     aiReadmeEnhanceSchema,
+    aiReadmeStudioImproveSchema,
 } from '../../lib/validators.js';
 import { isValidGitHubFullName } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate-request.js';
@@ -32,6 +34,9 @@ import { initSSE, streamReplyDeltasToSSE } from '../ai-streaming.js';
 import { extractReplyText } from '../../lib/ai-features/stream-json.js';
 import { buildChatPrompt } from '../../lib/ai-chat-prompt.js';
 import { buildReadmeEnhancePrompt } from '../../lib/ai-features/readme-enhance.js';
+import { buildImprovePrompt, deriveMissingSections, fetchReadmeStudioSignals } from '../../lib/ai-features/readme-studio.js';
+import { detectPatterns } from '../../lib/ai-features/quality-metrics.js';
+import { buildContext } from '../../lib/repo-context-builder.js';
 import { resolveMaxOutputTokens } from '../../lib/ai-output-budget.js';
 import { checkAISpendCap, recordAISpend } from '../../lib/ai-spend-cap.js';
 import { buildAIAuditMeta } from '../../lib/ai-audit.js';
@@ -542,6 +547,96 @@ router.post('/ai/readme/enhance', requireAuth, requireScope('ai'), validateBody(
     } catch (error) {
         req.log.error({ err: error }, 'README enhancement failed');
         handleAIError(res, error, 'Failed to enhance README. Please try again later.');
+    }
+});
+
+// ------------------------------------------------------------------
+// README Studio — consolidated grounded improve endpoint.
+//
+// Replaces the un-grounded /ai/readme + the single-signal /ai/readme/enhance
+// for new call sites (ReadmeStudioModal). The two routes above are left
+// unchanged (not aliased) — they carry exact-shape test coverage and are
+// simple enough to keep working as documented, deprecated paths rather than
+// risk a behavior-changing rewrite. New README generation UX should use this
+// endpoint. See docs/specs/2026-07-18-community-wow-wave6.md (Feature 1).
+// ------------------------------------------------------------------
+
+router.post('/ai/readme-studio/improve', requireAuth, requireScope('ai'), validateBody(aiReadmeStudioImproveSchema), requireAI, async (req, res) => {
+    const userId = req.session.userId;
+    const check = checkAIFeatureLimit(userId, 'ai_readme');
+    if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
+    try {
+        const { repo, tone, sections, license, stackOverride, badges } = req.validatedBody;
+        // Resolved independently of the schema's zod default so the route
+        // behaves identically whether or not the caller supplied `mode` —
+        // matches buildImprovePrompt's own fallback.
+        const mode = req.validatedBody.mode === 'full-rewrite' ? 'full-rewrite' : 'missing-sections';
+        if (!isValidGitHubFullName(repo.full_name)) {
+            return res.status(400).json({ error: 'Invalid repo.full_name', code: 'validation_failed' });
+        }
+        const [owner, repoName] = repo.full_name.split('/');
+
+        // Full-fidelity signals for pattern detection + the diff panel's
+        // "before" content — untruncated, unredacted (server-side use only).
+        const { readmeContent, fileStructure, licenseContent, workflowFiles } = await fetchReadmeStudioSignals({
+            owner, repo: repoName, accessToken: req.session.accessToken,
+        });
+        const patterns = detectPatterns(readmeContent, fileStructure, { licenseFileContent: licenseContent, workflowFiles });
+        const missingSections = deriveMissingSections(patterns, repo.language);
+
+        // Grounded, budgeted, redacted signals for the actual prompt —
+        // manifest/entrypoints/folderStructure/topics/language + LICENSE as a
+        // customFiles entry, per repo-context-builder's "never invent" contract.
+        // A too-large LICENSE tripping buildContext's byte-budget guard degrades
+        // to a context without it rather than failing the whole request.
+        let context;
+        try {
+            context = await buildContext({
+                accessToken: req.session.accessToken,
+                owner,
+                repo: repoName,
+                signals: { readme: true, manifest: true, entrypoints: true, folderStructure: true, topics: true, language: true },
+                customFiles: ['LICENSE'],
+                topicsLanguageInputs: { topics: repo.topics || [], language: repo.language || null },
+            });
+        } catch (e) {
+            req.log.warn({ err: e, repo: repo.full_name }, 'README Studio: buildContext with LICENSE failed — retrying without it');
+            context = await buildContext({
+                accessToken: req.session.accessToken,
+                owner,
+                repo: repoName,
+                signals: { readme: true, manifest: true, entrypoints: true, folderStructure: true, topics: true, language: true },
+                topicsLanguageInputs: { topics: repo.topics || [], language: repo.language || null },
+            });
+        }
+
+        const { prompt, warnings, badges: generatedBadges } = buildImprovePrompt({
+            repo,
+            context,
+            patterns,
+            missingSections,
+            workflowFiles,
+            config: { mode, tone, sections, license, stackOverride, badges },
+        });
+
+        const { text } = await guardedGenerate(req, { prompt }, { feature: 'readme_studio' });
+
+        incrementAIUsage(userId, 'ai_readme');
+        auditLog(req, 'ai.readme_studio.improve', 'ai', null, { repoName: repo.full_name, mode });
+
+        res.json({
+            success: true,
+            markdown: text,
+            confidence: context.confidence,
+            warnings,
+            missingSections,
+            badges: generatedBadges,
+            mode,
+            currentReadme: readmeContent,
+        });
+    } catch (error) {
+        req.log.error({ err: error }, 'README Studio improve failed');
+        handleAIError(res, error, 'Failed to generate README improvements. Please try again later.');
     }
 });
 

@@ -420,6 +420,58 @@ export const aiApi = {
     // Check AI configuration status (uses shared cache)
     checkStatus: () => getAIStatus(),
 
+    // README Studio — free deterministic score + grounded, metered improve.
+    // See docs/specs/2026-07-18-community-wow-wave6.md (Feature 1). Apply/PR
+    // reuses the existing community-health/commit-fix write path directly
+    // from ReadmeStudioModal (no second commit mechanism).
+    readmeStudio: {
+        // Free, no quota — always a real HTTP call (no AI-configured gate).
+        getScore: async (owner, repo) => {
+            const res = await fetch(`${API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/readme-studio/score`, {
+                headers: getHeaders(),
+                credentials: 'include',
+            });
+            return handleAIResponse(res, 'README Studio score');
+        },
+
+        // Metered (readmeGenPerMonth via the existing ai_readme metric).
+        improve: async (repo, config = {}) => {
+            const shortCircuit = await withAIConfigured(() => ({
+                success: true,
+                markdown: null,
+                confidence: 'low',
+                warnings: [],
+                missingSections: [],
+                mode: config.mode || 'missing-sections',
+                currentReadme: null,
+            }));
+            if (shortCircuit) return shortCircuit;
+
+            const res = await fetch(`${API_BASE}/ai/readme-studio/improve`, {
+                method: 'POST',
+                headers: await mutationHeaders(),
+                credentials: 'include',
+                body: JSON.stringify({ repo, ...config }),
+            });
+
+            if (res.status === 503) {
+                return {
+                    success: true,
+                    markdown: null,
+                    confidence: 'low',
+                    warnings: [],
+                    missingSections: [],
+                    mode: config.mode || 'missing-sections',
+                    currentReadme: null,
+                    mock: true,
+                    aiConfigured: true,
+                    runtimeUnavailable: true,
+                };
+            }
+            return handleAIResponse(res, 'README Studio improve');
+        },
+    },
+
     // Post-migration polish — thin wrappers around existing endpoints, grouped
     // so useAIPolish can stay free of fetch wiring and stays easy to mock in
     // tests. See docs/specs/2026-05-08-post-migration-ai-polish.md for the

@@ -273,6 +273,19 @@ export const aiQualityReportSchema = z.object({
     repo: aiRepoMetadataSchema.refine((v) => !!v.full_name, { message: 'repo.full_name is required' }),
 });
 
+// README Studio — consolidated grounded improve endpoint (replaces the
+// ungrounded /ai/readme + /ai/readme/enhance pair for new call sites; those
+// two routes stay as-is for backward compatibility, see server/routes/ai/core.js).
+export const aiReadmeStudioImproveSchema = z.object({
+    repo: aiRepoMetadataSchema.refine((v) => !!v.full_name, { message: 'repo.full_name is required' }),
+    mode: z.enum(['missing-sections', 'full-rewrite']).optional().default('missing-sections'),
+    tone: z.enum(['professional', 'concise', 'enthusiastic']).optional().default('professional'),
+    sections: z.array(z.string().max(50)).max(20).optional(),
+    license: z.string().max(50).optional(),
+    stackOverride: z.string().max(100).optional(),
+    badges: z.boolean().optional().default(false),
+}).strict();
+
 // ---------------------------------------------------------------------------
 // Dev Toolkit endpoints (refine / chat-refine / analyze-context / generate-*)
 // ---------------------------------------------------------------------------
