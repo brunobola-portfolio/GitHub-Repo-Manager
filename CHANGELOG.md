@@ -7,6 +7,108 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Six production-premium waves plus the "Community WOW" feature set, executed
+directly on `main` following the 2026-07-17 audit: hardening and free-first
+pricing, a premium migration/reading pass, ops readiness, dark-mode/list
+performance, and four new AI-grounded repo tools with deterministic,
+zero-AI-cost fallbacks throughout.
+
+### Added
+
+- **Community WOW — README Studio, AI Diagrams, Agent Rules, Security
+  Posture, AI Images** — four new AI-grounded repo tools, all metered on
+  Free with generous caps and Pro/Enterprise unlimited:
+  - **README Studio** — a free deterministic README quality score (license
+    correctness, badge/reality consistency, install-vs-stack match,
+    screenshots, section order) plus a grounded, quota-gated improve flow
+    (25/month, shares the existing README Generator cap) that never invents
+    license claims, commands, or badges. A zero-AI-cost deterministic patch
+    (License/Install/TOC) is offered whenever the AI call is unavailable.
+  - **AI Diagram Generator** (15/month) — architecture diagrams grounded in
+    the repo's real file tree and README, with a retry-once self-repair pass
+    on invalid Mermaid, SSE streaming, and embedding into the repo as an
+    idempotent README Mermaid fence or a sanitized, size-guarded SVG file —
+    plus a zero-AI-cost deterministic fallback diagram.
+  - **Agent Rules Generator** (20/month) — AGENTS.md / CLAUDE.md generated
+    from real detected build/test/lint/CI signals (never a fabricated
+    command), diff-aware refresh mode, and a deterministic template fallback
+    that never hard-blocks on AI availability.
+  - **Security Posture Panel** — a 10-check deterministic report card
+    (branch protection, alert severity, secret scanning + push protection,
+    Dependabot security updates, code scanning, `SECURITY.md`, workflow
+    token permissions, org 2FA) layered on the existing alerts scan, now
+    Free tier, plus an optional cached AI narrative summary (75/month) fed
+    only whitelisted check results, never raw alert bodies.
+  - **AI Image Generation** (5/month) — repo banner / README hero / logo
+    draft images across three fixed presets, capability-gated per provider,
+    with typed refusal/pricing-unavailable handling and binary-safe commits.
+  - Demo mode gained matching mock branches (a realistic deterministic score
+    payload, a canvas-drawn "SIMULATED" watermark image) so exploring the
+    product with no API keys never errors on these four surfaces.
+- **Free-first pricing rebalance** — bulk ops (transfer/mirror/cross-org),
+  mirror sync apply, AI Deep Review, Prompt Studio, PR Chat, and PR slash
+  commands all moved off the Pro paywall to Free with generous per-feature
+  monthly caps; team size and API-key ceilings raised; a tier-independent
+  daily anti-abuse ceiling added for destructive bulk ops. Pro's role
+  shrinks to AI headroom (higher per-feature caps, a higher $ spend-cap
+  ceiling) and more API keys rather than feature unlocks.
+- **Premium migration experience** — cancel now actually stops the
+  in-flight clone/LFS/push (previously the background task kept running to
+  completion); the simple Import path gained matching cancel + crash
+  recovery; a completed mirror push landing during the cancellation window
+  is no longer discarded as failed; oversized-file LFS-upload failures gain
+  an actionable one-click retry; a Migration Health rollup card summarizes
+  per-task caveats (LFS failures, replaced/reused repos, empty sources) in
+  plain English.
+- **Premium README reading experience** — tokenized fenced code blocks,
+  gh-cache-backed reads with stale-data fallback on a GitHub outage, a
+  reading-width cap, a copy-code button, and a sticky "On this page" TOC.
+- **Risk-aware diff navigation** — a unified `ds-risk-*` risk-color
+  vocabulary across PR review, commit browsing, and diagrams; a file-level
+  risk heat rail with click-to-jump; commit browsing gains an on-demand AI
+  summary, real pagination, and shareable `?commit=<sha>` deep links.
+- **Ops readiness** — a Prometheus metrics endpoint, a reverse-proxy/TLS
+  deployment guide, ARIA progressbar + live-region semantics and a
+  "Connection lost — retrying" pill on migration progress, and cancellation
+  checkpoint parity for wiki migration.
+- **List virtualization** — a dependency-free windowed-rendering hook
+  applied to RepoGrid's list view above a 50-row threshold, so large
+  workspaces mount only the visible rows.
+- **Team invite notifications** — the previously-simulated "team member
+  added" invite now sends a real transactional email (best-effort; never
+  blocks the member-add on a delivery failure).
+
+### Changed
+
+- Non-functional PostgreSQL adapter path removed — SQLite (better-sqlite3)
+  is the only supported database; a `postgres://` `DATABASE_URL` now fails
+  fast at boot with an actionable error instead of silently exercising a
+  broken code path.
+- Binary-safe repo-content commits (`commitOrOpenPR` gains a base64
+  passthrough encoding) so AI-generated images are never corrupted by a
+  hardcoded UTF-8 re-encode.
+- Remaining Portuguese UI copy translated to English; AGENTS.md and
+  CLAUDE.md rebuilt on the shared agents.md standard.
+
+### Fixed
+
+- AI spend-cap gaps closed on `/ai/index`, `/ai/batch-index`, and the
+  semantic-search embed path; a check-then-increment usage-meter race
+  closed with atomic guarded-increment primitives, mirroring the existing
+  migration-quota pattern.
+- Dashboard inbox item-id shape validated on archive/restore/snooze;
+  destructive replace/LFS config mutations on migration retry are rolled
+  back when the retry never actually starts.
+- Truncated-README signal and image-generation-failure diagram fallback
+  handled honestly rather than silently misreported; security posture
+  checks render `unknown` (never a same-severity `fail`) wherever the
+  underlying signal genuinely can't be determined.
+- `HeroHalo` no longer overflows the viewport horizontally on mobile.
+
+### Security
+
+- `adm-zip` bumped to 0.6.0 (GHSA memory-allocation DoS).
+
 ## [4.5.0] - 2026-07-06
 
 The production-readiness release: a 10-specialist audit (88 findings) followed

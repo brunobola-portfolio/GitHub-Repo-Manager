@@ -269,6 +269,17 @@ feature identifiers and values are model name strings.
 | `README_ANALYSIS`       | README Analysis                                                         |
 | `WORK_BOARD_SUMMARY`    | Cross-Repo Work Board AI summary (headline + bullets + urgency score)   |
 | `EMBED`                 | Embeddings                                                              |
+| `README_STUDIO`         | README Studio — grounded improve flow (Wave 6)                          |
+| `DIAGRAM`               | AI Diagram Generator (Wave 6)                                           |
+| `AGENT_RULES`           | Agent Rules Generator — AGENTS.md / CLAUDE.md (Wave 6)                  |
+| `SECURITY_POSTURE`      | Security Posture Panel AI summary (Wave 6)                              |
+| `COMMUNITY_HEALTH_FIX`  | Community Health auto-fix generation (pre-dates this table)             |
+
+AI Image Generation (Wave 6c) is **not** in this table — it doesn't route
+through `guardedGenerate`'s per-feature model-override mechanism at all;
+image-capable model selection is a separate, dedicated resolution path in
+`server/lib/ai-features/image-provider.js` and isn't currently overridable
+per feature key.
 
 The Work Board summary is tuned conservatively (strict JSON schema, "never
 invent" clause, tolerant JSON extractor). Small, cheap models such as

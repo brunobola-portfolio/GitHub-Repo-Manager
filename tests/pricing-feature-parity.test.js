@@ -314,6 +314,67 @@ describe('FeatureComparison.jsx ↔ feature-flags parity', () => {
 })
 
 // ---------------------------------------------------------------------------
+// Wave 6 "Community WOW" (2026-07-18): four new metered AI features
+// (README Studio improve reuses readmeGenPerMonth — no new key; AI Diagram
+// Generator, Agent Rules Generator, Security Posture AI Summary, and AI Image
+// Generation each got a brand-new TIER_FEATURES cap). Tie all five to every
+// pricing surface so a future silent cap drift can't pass CI undetected, the
+// same way the rest of this file protects the pre-wave-6 features.
+// ---------------------------------------------------------------------------
+describe('Wave 6 features ↔ feature-flags parity', () => {
+    const free = getFeatures('free')
+    const pro = getFeatures('pro')
+    const enterprise = getFeatures('enterprise')
+
+    it('Free diagramGenPerMonth=15 / agentRulesPerMonth=20 / securityPostureAIPerMonth=75 / imageGenPerMonth=5', () => {
+        expect(free.diagramGenPerMonth).toBe(15)
+        expect(free.agentRulesPerMonth).toBe(20)
+        expect(free.securityPostureAIPerMonth).toBe(75)
+        expect(free.imageGenPerMonth).toBe(5)
+    })
+
+    it('Pro/Enterprise are unlimited on all four new wave-6 caps', () => {
+        for (const tier of [pro, enterprise]) {
+            expect(tier.diagramGenPerMonth).toBe(Infinity)
+            expect(tier.agentRulesPerMonth).toBe(Infinity)
+            expect(tier.securityPostureAIPerMonth).toBe(Infinity)
+            expect(tier.imageGenPerMonth).toBe(Infinity)
+        }
+    })
+
+    it('FeatureComparison Free cells reflect the four new caps', () => {
+        expect(comparisonFreeValue('AI Diagram Generator')).toContain(String(free.diagramGenPerMonth))
+        expect(comparisonFreeValue('Agent Rules Generator (AGENTS.md / CLAUDE.md)')).toContain(String(free.agentRulesPerMonth))
+        expect(comparisonFreeValue('Security Posture AI Summary')).toContain(String(free.securityPostureAIPerMonth))
+        expect(comparisonFreeValue('AI Image Generation (social / hero / logo)')).toContain(String(free.imageGenPerMonth))
+    })
+
+    it('FeatureComparison README Studio cell reuses readmeGenPerMonth (no new key)', () => {
+        expect(comparisonFreeValue('README Studio (AI improve)')).toContain(String(free.readmeGenPerMonth))
+    })
+
+    it('README pricing matrix cells reflect the four new caps', () => {
+        expect(readmeFreeCell('AI Diagram Generator')).toContain(String(free.diagramGenPerMonth))
+        expect(readmeFreeCell('Agent Rules Generator (AGENTS.md / CLAUDE.md)')).toContain(String(free.agentRulesPerMonth))
+        expect(readmeFreeCell('Security Posture AI Summary')).toContain(String(free.securityPostureAIPerMonth))
+        expect(readmeFreeCell('AI Image Generation (social / hero / logo)')).toContain(String(free.imageGenPerMonth))
+    })
+
+    it('README pricing matrix README Studio row reuses readmeGenPerMonth (no new key)', () => {
+        expect(readmeFreeCell('README Studio (AI improve)')).toContain(String(free.readmeGenPerMonth))
+    })
+
+    it('PricingPage Free card advertises all five wave-6 rows', () => {
+        const section = tierSection('Free')
+        expect(section).toMatch(/README Studio \(AI improve\)[^}]*included:\s*'25 \/ month'/)
+        expect(section).toMatch(/AI Diagram Generator[^}]*included:\s*'15 \/ month'/)
+        expect(section).toMatch(/Agent Rules Generator \(AGENTS\.md \/ CLAUDE\.md\)[^}]*included:\s*'20 \/ month'/)
+        expect(section).toMatch(/Security Posture AI Summary[^}]*included:\s*'75 \/ month'/)
+        expect(section).toMatch(/AI Image Generation \(social \/ hero \/ logo\)[^}]*included:\s*'5 \/ month'/)
+    })
+})
+
+// ---------------------------------------------------------------------------
 // PricingPreview.jsx (Landing) is the FOURTH pricing surface and the first a
 // prospect sees. Tie its Free caps back to feature-flags so it can't drift.
 // ---------------------------------------------------------------------------
