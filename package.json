@@ -23,7 +23,7 @@
     "url": "https://github.com/brunobola-portfolio/GitHub-Repo-Manager/issues"
   },
   "scripts": {
-    "prepare": "husky",
+    "prepare": "husky || true",
     "dev": "vite",
     "dev:server": "node server/index.js",
     "dev:all": "node scripts/dev.mjs",
