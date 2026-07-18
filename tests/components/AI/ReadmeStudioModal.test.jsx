@@ -29,7 +29,12 @@ vi.mock('../../../src/utils/api', () => ({
     getCsrfToken: vi.fn().mockResolvedValue('csrf-token'),
 }))
 
+vi.mock('../../../src/api/repos', () => ({
+    commitCommunityHealthFix: vi.fn(),
+}))
+
 import { aiApi } from '../../../src/api/ai'
+import { commitCommunityHealthFix } from '../../../src/api/repos'
 
 const REPO = {
     id: 1,
@@ -81,6 +86,7 @@ beforeEach(() => {
     aiApi.readmeStudio.getScore.mockReset()
     aiApi.readmeStudio.improve.mockReset()
     aiApi.readmeStudio.deterministic.mockReset()
+    commitCommunityHealthFix.mockReset()
     global.fetch = vi.fn()
 })
 
@@ -176,10 +182,7 @@ describe('ReadmeStudioModal — improve + preview flow', () => {
         const user = userEvent.setup()
         aiApi.readmeStudio.getScore.mockResolvedValue(SCORE_WITH_README)
         aiApi.readmeStudio.improve.mockResolvedValue(IMPROVE_RESULT)
-        global.fetch.mockResolvedValue({
-            ok: true,
-            json: async () => ({ committed: true, mode: 'direct', branch: 'main' }),
-        })
+        commitCommunityHealthFix.mockResolvedValue({ committed: true, mode: 'direct', branch: 'main' })
 
         render(<ReadmeStudioModal isOpen repo={REPO} onClose={() => {}} />)
         await screen.findByText(/Decent foundation/i)
@@ -187,18 +190,18 @@ describe('ReadmeStudioModal — improve + preview flow', () => {
         await user.click(screen.getByRole('button', { name: /^generate$/i }))
         await screen.findByTestId('diff-view')
 
-        // No write happened yet — fetch (the commit-fix path) hasn't been called.
-        expect(global.fetch).not.toHaveBeenCalled()
+        // No write happened yet — the commit-fix path hasn't been called.
+        expect(commitCommunityHealthFix).not.toHaveBeenCalled()
 
         await user.click(screen.getByRole('button', { name: /^apply$/i }))
 
-        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1))
-        const [url, opts] = global.fetch.mock.calls[0]
-        expect(url).toBe('/api/repos/acme/lib/community-health/commit-fix')
-        const body = JSON.parse(opts.body)
-        expect(body.filePath).toBe('README.md')
-        expect(body.mode).toBe('direct')
-        expect(body.content).toContain('## Usage')
+        await waitFor(() => expect(commitCommunityHealthFix).toHaveBeenCalledTimes(1))
+        const arg = commitCommunityHealthFix.mock.calls[0][0]
+        expect(arg.owner).toBe('acme')
+        expect(arg.repo).toBe('lib')
+        expect(arg.filePath).toBe('README.md')
+        expect(arg.mode).toBe('direct')
+        expect(arg.content).toContain('## Usage')
 
         expect(await screen.findByText(/readme updated/i)).toBeInTheDocument()
     })
@@ -207,10 +210,7 @@ describe('ReadmeStudioModal — improve + preview flow', () => {
         const user = userEvent.setup()
         aiApi.readmeStudio.getScore.mockResolvedValue(SCORE_WITH_README)
         aiApi.readmeStudio.improve.mockResolvedValue(IMPROVE_RESULT)
-        global.fetch.mockResolvedValue({
-            ok: true,
-            json: async () => ({ committed: true, mode: 'pr', branch: 'chore/x', prUrl: 'https://github.com/acme/lib/pull/1' }),
-        })
+        commitCommunityHealthFix.mockResolvedValue({ committed: true, mode: 'pr', branch: 'chore/x', prUrl: 'https://github.com/acme/lib/pull/1' })
 
         render(<ReadmeStudioModal isOpen repo={REPO} onClose={() => {}} />)
         await screen.findByText(/Decent foundation/i)
@@ -220,9 +220,8 @@ describe('ReadmeStudioModal — improve + preview flow', () => {
 
         await user.click(screen.getByRole('button', { name: /open pr/i }))
 
-        await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1))
-        const body = JSON.parse(global.fetch.mock.calls[0][1].body)
-        expect(body.mode).toBe('pr')
+        await waitFor(() => expect(commitCommunityHealthFix).toHaveBeenCalledTimes(1))
+        expect(commitCommunityHealthFix.mock.calls[0][0].mode).toBe('pr')
         expect(await screen.findByText(/pull request opened/i)).toBeInTheDocument()
         expect(screen.getByRole('link', { name: /view pr/i })).toHaveAttribute('href', 'https://github.com/acme/lib/pull/1')
     })

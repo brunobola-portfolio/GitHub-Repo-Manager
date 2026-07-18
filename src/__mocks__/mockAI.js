@@ -233,6 +233,7 @@ export const mockCommitImage = (repo, { preset = 'social' } = {}) => ({
     path: (IMAGE_PRESET_MOCKS[preset] || IMAGE_PRESET_MOCKS.social).path,
     mode: 'direct',
     committed: true,
+    branch: 'main',
 });
 
 // ---------------------------------------------------------------------------
@@ -336,8 +337,8 @@ export const mockDiagramEmbedPreview = (payload = {}) => {
     if (target === 'svg-file') {
         return {
             target,
-            svg: { path: 'docs/diagrams/' + type + '.svg', content: '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40"><rect width="100" height="40" fill="#4f46e5"/></svg>' },
-            readme: { path: 'README.md', before: '# Demo Repository\n', after: '# Demo Repository\n\n![' + type + ' diagram](docs/diagrams/' + type + '.svg)\n', action: 'append' },
+            svg: { path: 'docs/diagrams/' + type + '.svg', content: '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40"><rect width="100" height="40" fill="#4f46e5"/></svg>', commitMessage: 'docs: add ' + type + ' diagram SVG' },
+            readme: { path: 'README.md', before: '# Demo Repository\n', after: '# Demo Repository\n\n![' + type + ' diagram](docs/diagrams/' + type + '.svg)\n', action: 'append', commitMessage: 'docs: reference ' + type + ' diagram in README' },
             readmeTruncated: false,
         };
     }
@@ -350,17 +351,23 @@ export const mockDiagramEmbedPreview = (payload = {}) => {
             after: '# Demo Repository\n\nMachine learning pipeline for predictive customer behavior analysis.\n\n' + block + '\n',
             action: 'append',
             notice: null,
+            commitMessage: 'docs: embed ' + type + ' diagram in README',
         },
         readmeTruncated: false,
     };
 };
 
-export const mockDiagramEmbedCommit = (payload = {}) => ({
-    success: true,
-    target: payload.target || 'readme-mermaid',
-    mode: payload.mode || 'direct',
-    readme: { mode: payload.mode || 'direct', committed: true },
-});
+export const mockDiagramEmbedCommit = (payload = {}) => {
+    const mode = payload.mode || 'direct';
+    const branch = mode === 'pr' ? 'repo-manager/diagram-embed' : 'main';
+    const target = payload.target || 'readme-mermaid';
+    const out = { success: true, target, mode };
+    if (payload.readme) out.readme = { mode, branch, committed: mode !== 'pr' };
+    if (payload.svg) out.svg = { mode, branch, committed: mode !== 'pr' };
+    // readme-mermaid always writes the README; svg-file writes both
+    if (!payload.readme && !payload.svg) out.readme = { mode, branch, committed: mode !== 'pr' };
+    return out;
+};
 
 // Agent Rules: real AGENTS.md + CLAUDE.md generated from the (mock) repo signals.
 export const mockAgentRulesGenerate = (owner, repo, config = {}) => {

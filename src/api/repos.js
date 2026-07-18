@@ -1,4 +1,44 @@
-import { apiCall } from '../utils/api';
+import { apiCall, getCsrfToken } from '../utils/api';
+import { MOCK_MODE } from '../config';
+
+/**
+ * Commit (or open a PR for) a single repo file through the shared
+ * community-health/commit-fix write path — used by README Studio, Community
+ * Health fixes and (via the same server route family) other generated-file
+ * writes. Centralises the CSRF + error-shaping logic these callers duplicated,
+ * and short-circuits in demo mode with an honest simulated success (the global
+ * "Demo mode — simulated" banner is the context) instead of a real 403/CSRF
+ * failure the visitor would read as a broken feature.
+ *
+ * @returns {Promise<{committed:boolean, mode:string, path:string, prUrl?:string}>}
+ */
+export async function commitCommunityHealthFix({ owner, repo, filePath, content, commitMessage, mode = 'direct' }) {
+  if (MOCK_MODE) {
+    return {
+      committed: mode !== 'pr',
+      mode,
+      path: filePath,
+      branch: mode === 'pr' ? 'repo-manager/readme-studio' : 'main',
+      ...(mode === 'pr' ? { prUrl: `https://github.com/${owner}/${repo}/pull/1` } : {}),
+    };
+  }
+  const csrf = await getCsrfToken();
+  const res = await fetch(`/api/repos/${owner}/${repo}/community-health/commit-fix`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+    body: JSON.stringify({ filePath, content, commitMessage, mode }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(json.error || `status ${res.status}`);
+    err.status = res.status;
+    err.code = json.code;
+    err.data = json;
+    throw err;
+  }
+  return json;
+}
 
 export const reposApi = {
   syncMirror: async (owner, repo) => {

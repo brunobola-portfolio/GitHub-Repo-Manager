@@ -16,7 +16,7 @@ import { Input } from '../ui/form/Input'
 import { Switch } from '../ui/form/Switch'
 import { STAGGER, TRANSITION } from '../ui/motion'
 import { useTheme } from '../../hooks/useTheme'
-import { getCsrfToken } from '../../utils/api'
+import { commitCommunityHealthFix } from '../../api/repos'
 import { aiApi } from '../../api/ai'
 import { useToast } from '../../hooks/useToast'
 
@@ -224,21 +224,9 @@ export function ReadmeStudioModal({ isOpen, onClose, repo, onApplied }) {
         setCommitting(true)
         setCommitError(null)
         try {
-            const csrf = await getCsrfToken()
-            const res = await fetch(`/api/repos/${owner}/${repoName}/community-health/commit-fix`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-                body: JSON.stringify({ filePath: 'README.md', content: finalContent, commitMessage, mode: commitMode }),
+            const json = await commitCommunityHealthFix({
+                owner, repo: repoName, filePath: 'README.md', content: finalContent, commitMessage, mode: commitMode,
             })
-            const json = await res.json().catch(() => ({}))
-            if (!res.ok) {
-                const err = new Error(json.error || `status ${res.status}`)
-                err.status = res.status
-                err.code = json.code
-                setCommitError(err)
-                return
-            }
             setCommittedResult(json)
             setStep('committed')
             onApplied?.(json)
