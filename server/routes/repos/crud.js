@@ -363,12 +363,28 @@ router.delete('/:owner/:repo/contents', requireAuth, validateBody(contentsDelete
     }
 });
 
-// Get README
+// Get README — cached + resilient. READMEs change far less often than commits
+// (10 min TTL), and this is the same last-known-good fallback the commits
+// list/detail routes already use: if GitHub is down or rate-limited, we serve
+// the cached README with `X-Cache: stale` instead of a dead-end error card.
 router.get('/:owner/:repo/readme', requireAuth, async (req, res) => {
     try {
         const { owner, repo } = req.params;
-        const { data } = await githubApi(`/repos/${owner}/${repo}/readme`, req.session.accessToken);
-        res.json(data);
+        const result = await readThrough({
+            userId: req.session.userId,
+            resourceType: 'readme',
+            resourceKey: `${owner}/${repo}`,
+            ttlMs: 10 * 60 * 1000, // 10 min
+            fetcher: ({ ifNoneMatch }) => githubApi(
+                `/repos/${owner}/${repo}/readme`,
+                req.session.accessToken,
+                ifNoneMatch ? { headers: { 'If-None-Match': ifNoneMatch } } : {},
+            ),
+        });
+
+        if (result.stale) res.setHeader('X-Cache', 'stale');
+        res.setHeader('X-Cache-Fetched-At', result.fetchedAt);
+        res.json(result.data);
     } catch (error) {
         if (error.status === 404) {
             res.json({ exists: false });

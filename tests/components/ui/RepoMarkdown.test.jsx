@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { RepoMarkdown } from '../../../src/components/ui/RepoMarkdown'
 
 const PROPS = { owner: 'octocat', repo: 'demo', branch: 'main' }
@@ -79,12 +79,55 @@ describe('RepoMarkdown', () => {
         expect(a?.getAttribute('href')).toBe('#readme-hello-world')
     })
 
-    it('applies a Shiki language class to fenced code blocks for known languages', async () => {
+    it('applies a language class to fenced code blocks for known languages', async () => {
         const md = '```javascript\nconst x = 1\n```'
         const { container } = render(<RepoMarkdown source={md} {...PROPS} />)
-        // Shiki renders inline-styled spans; we don't assert exact tokens (theme-
-        // dependent), only that the language class survived.
         const code = container.querySelector('pre code')
         expect(code?.className || '').toMatch(/language-javascript/)
+    })
+
+    it('tokenizes fenced code blocks with lowlight (hljs-* spans) once the highlighter loads', async () => {
+        const md = '```javascript\nconst x = 1\n```'
+        const { container } = render(<RepoMarkdown source={md} {...PROPS} />)
+
+        await waitFor(() => {
+            expect(container.querySelector('.hljs-keyword')).toBeTruthy()
+        })
+        // The tokenized text content must still equal the original source —
+        // tokenizing must never lose or reorder code.
+        const code = container.querySelector('pre code')
+        expect(code?.textContent).toBe('const x = 1')
+        expect(code?.className || '').toMatch(/\bhljs\b/)
+    })
+
+    it('leaves an unrecognized language as plain (untokenized) text without throwing', async () => {
+        const md = '```not-a-real-lang\nsome text\n```'
+        const { container } = render(<RepoMarkdown source={md} {...PROPS} />)
+        await waitFor(() => {
+            // Highlighter has had a tick to load; no hljs-* spans should appear
+            // for an unregistered language.
+            expect(container.querySelector('pre code')?.textContent).toBe('some text')
+        })
+        expect(container.querySelector('.hljs-keyword')).toBeNull()
+    })
+
+    it('renders a copy-code button on fenced blocks that copies the exact code text', async () => {
+        const writeText = vi.fn().mockResolvedValue(undefined)
+        Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+
+        const md = '```javascript\nconst x = 1\nconst y = 2\n```'
+        render(<RepoMarkdown source={md} {...PROPS} />)
+
+        const button = await screen.findByRole('button', { name: /copy code/i })
+        await act(async () => { fireEvent.click(button) })
+
+        expect(writeText).toHaveBeenCalledWith('const x = 1\nconst y = 2')
+        expect(await screen.findByRole('button', { name: /copied to clipboard/i })).toBeInTheDocument()
+    })
+
+    it('does not render a copy button for inline code (only fenced blocks)', () => {
+        const md = 'Run `npm install` to set up.'
+        render(<RepoMarkdown source={md} {...PROPS} />)
+        expect(screen.queryByRole('button', { name: /copy code/i })).toBeNull()
     })
 })

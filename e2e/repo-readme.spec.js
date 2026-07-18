@@ -43,19 +43,24 @@ async function mockApi(page) {
         if (path === basePath) {
             return route.fulfill({ contentType: 'application/json', body: JSON.stringify(MOCK_REPO) })
         }
-        if (path === `${basePath}/readme`) {
-            return route.fulfill({ contentType: 'application/json', body: JSON.stringify(MOCK_README) })
-        }
         return route.fallback()
     })
+
+    // README is fetched separately via useResilientFetch against the v1
+    // read-through path (server/routes/repos/crud.js — gh-cache.readThrough),
+    // not the /api/repos/... base the rest of the repo-detail API uses.
+    await page.route(`**/api/v1/repos/${REPO_OWNER}/${REPO_NAME}/readme`, (route) =>
+        route.fulfill({ contentType: 'application/json', body: JSON.stringify(MOCK_README) }),
+    )
 }
 
 test.describe('Repo Overview — README rendering', () => {
     // Deep-linked via the hash router (#/repo/:owner/:name → Overview tab). The
     // original path-based goto('/repos/...') had no URL→state path and landed on
-    // the dashboard. `?e2eRepoApiLive=readme` makes the MOCK_MODE repo-detail
-    // layer yield the readme endpoint to the page.route stub below, so this
-    // spec's bespoke markdown (not the generic mock README) is rendered.
+    // the dashboard. `?e2eRepoApiLive=readme` makes the MOCK_MODE interceptor
+    // (mockCommitsFetch, which also fronts the v1 readme route) yield to the
+    // page.route stub above, so this spec's bespoke markdown — not the generic
+    // demo README — is what actually renders.
     test('renders the README as real markdown (table + code), not raw <pre>', async ({ page }) => {
         await mockApi(page)
         await page.goto(`/?e2eRepoApiLive=readme#/repo/${REPO_OWNER}/${REPO_NAME}`)

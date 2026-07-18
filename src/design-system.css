@@ -401,3 +401,113 @@
     contain-intrinsic-size: auto 600px;
   }
 }
+
+/* ===== README READER (RepoMarkdown) =====
+ * Scoped to `.ds-readme` (the RepoMarkdown wrapper) only — opt-in, never a
+ * global element selector. Token colors mirror DiffRenderer's GitHub
+ * light/dark `.hljs-*` theme (see @git-diff-view/react/dist/css) so a code
+ * block reads the same whether you're in a README or a diff. */
+
+/* Comfortable reading width for body text (~72ch) at desktop widths only —
+ * tables and code blocks stay full-width via the :not() exclusions below,
+ * since a wide table/diff squeezed into 72ch is worse, not better. */
+@media (min-width: 1024px) {
+  .ds-readme > :where(p, ul, ol, blockquote, h1, h2, h3, h4, h5, h6) {
+    max-width: 72ch;
+  }
+}
+
+/* Badge rows: shields.io-style status badges stacked at the top of a README
+ * are almost always <img> tags with no explicit width/height (unlike hero
+ * banners, which normally carry one). Render them as a compact inline row
+ * instead of Tailwind Typography's default full-margin block image. */
+.ds-readme p img:not([width]):not([height]) {
+  display: inline-block;
+  vertical-align: middle;
+  height: 20px;
+  width: auto;
+  max-width: none;
+  margin: 2px 6px 2px 0;
+}
+
+/* Fenced code block token theme — GitHub Light. */
+.ds-readme .hljs { color: #24292e; }
+.ds-readme .hljs-doctag,
+.ds-readme .hljs-keyword,
+.ds-readme .hljs-meta .hljs-keyword,
+.ds-readme .hljs-template-tag,
+.ds-readme .hljs-template-variable,
+.ds-readme .hljs-type,
+.ds-readme .hljs-variable.language_ { color: #d73a49; }
+.ds-readme .hljs-title,
+.ds-readme .hljs-title.class_,
+.ds-readme .hljs-title.function_ { color: #6f42c1; }
+.ds-readme .hljs-attr,
+.ds-readme .hljs-attribute,
+.ds-readme .hljs-literal,
+.ds-readme .hljs-meta,
+.ds-readme .hljs-number,
+.ds-readme .hljs-operator,
+.ds-readme .hljs-variable,
+.ds-readme .hljs-selector-attr,
+.ds-readme .hljs-selector-class,
+.ds-readme .hljs-selector-id { color: #005cc5; }
+.ds-readme .hljs-regexp,
+.ds-readme .hljs-string,
+.ds-readme .hljs-meta .hljs-string { color: #032f62; }
+.ds-readme .hljs-built_in,
+.ds-readme .hljs-symbol { color: #e36209; }
+.ds-readme .hljs-comment,
+.ds-readme .hljs-code,
+.ds-readme .hljs-formula { color: #6a737d; }
+.ds-readme .hljs-name,
+.ds-readme .hljs-quote,
+.ds-readme .hljs-selector-tag,
+.ds-readme .hljs-selector-pseudo { color: #22863a; }
+.ds-readme .hljs-section { color: #005cc5; font-weight: bold; }
+.ds-readme .hljs-bullet { color: #735c0f; }
+.ds-readme .hljs-emphasis { font-style: italic; }
+.ds-readme .hljs-strong { font-weight: bold; }
+.ds-readme .hljs-addition { color: #22863a; background-color: #f0fff4; }
+.ds-readme .hljs-deletion { color: #b31d28; background-color: #ffeef0; }
+
+/* Fenced code block token theme — GitHub Dark. */
+.dark .ds-readme .hljs { color: #c9d1d9; }
+.dark .ds-readme .hljs-doctag,
+.dark .ds-readme .hljs-keyword,
+.dark .ds-readme .hljs-meta .hljs-keyword,
+.dark .ds-readme .hljs-template-tag,
+.dark .ds-readme .hljs-template-variable,
+.dark .ds-readme .hljs-type,
+.dark .ds-readme .hljs-variable.language_ { color: #ff7b72; }
+.dark .ds-readme .hljs-title,
+.dark .ds-readme .hljs-title.class_,
+.dark .ds-readme .hljs-title.function_ { color: #d2a8ff; }
+.dark .ds-readme .hljs-attr,
+.dark .ds-readme .hljs-attribute,
+.dark .ds-readme .hljs-literal,
+.dark .ds-readme .hljs-meta,
+.dark .ds-readme .hljs-number,
+.dark .ds-readme .hljs-operator,
+.dark .ds-readme .hljs-variable,
+.dark .ds-readme .hljs-selector-attr,
+.dark .ds-readme .hljs-selector-class,
+.dark .ds-readme .hljs-selector-id { color: #79c0ff; }
+.dark .ds-readme .hljs-regexp,
+.dark .ds-readme .hljs-string,
+.dark .ds-readme .hljs-meta .hljs-string { color: #a5d6ff; }
+.dark .ds-readme .hljs-built_in,
+.dark .ds-readme .hljs-symbol { color: #ffa657; }
+.dark .ds-readme .hljs-comment,
+.dark .ds-readme .hljs-code,
+.dark .ds-readme .hljs-formula { color: #8b949e; }
+.dark .ds-readme .hljs-name,
+.dark .ds-readme .hljs-quote,
+.dark .ds-readme .hljs-selector-tag,
+.dark .ds-readme .hljs-selector-pseudo { color: #7ee787; }
+.dark .ds-readme .hljs-section { color: #1f6feb; font-weight: bold; }
+.dark .ds-readme .hljs-bullet { color: #f2cc60; }
+.dark .ds-readme .hljs-emphasis { font-style: italic; }
+.dark .ds-readme .hljs-strong { font-weight: bold; }
+.dark .ds-readme .hljs-addition { color: #aff5b4; background-color: #033a16; }
+.dark .ds-readme .hljs-deletion { color: #ffdcd7; background-color: #67060c; }

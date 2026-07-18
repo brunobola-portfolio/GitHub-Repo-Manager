@@ -675,9 +675,19 @@ export function mockGetPreset(id) {
     return null;
 }
 
-// Interceptor for /api/v1/repos/:owner/:repo/commits (used by useResilientFetch)
+// Interceptor for /api/v1/repos/:owner/:repo/{commits,readme} (used by useResilientFetch)
 export function mockCommitsFetch(url) {
     const [path] = url.split('?')
+
+    const readmeMatch = path.match(/^\/api\/v1\/repos\/([^/]+)\/([^/]+)\/readme$/)
+    if (readmeMatch) {
+        // Same e2e override as mockRepoDetailFetch: `?e2eRepoApiLive=readme` lets a
+        // Playwright spec supply its own README via page.route instead of this
+        // generic demo content.
+        if (_e2eRepoApiLiveResources?.has('readme')) return undefined
+        return { content: btoa('# Demo Repository\n\nThis is a mock README for demo mode.'), encoding: 'base64' }
+    }
+
     const m = path.match(/^\/api\/v1\/repos\/([^/]+)\/([^/]+)\/commits(?:\/([^/]+))?/)
     if (!m) return undefined
     const repoName = `${m[1]}/${m[2]}`
