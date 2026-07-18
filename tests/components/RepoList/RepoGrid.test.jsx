@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { render, screen, waitFor, act, within } from '@testing-library/react'
 import { RepoGrid } from '@/components/RepoList/RepoGrid'
 
 // Isolate RepoCard from its data hooks, same as RepoCard.test.jsx.
@@ -70,5 +70,73 @@ describe('RepoGrid — exit animation for filtered-out cards', () => {
         // Static branch: no exit animation holds the removed card in the DOM —
         // the count drops synchronously on the same render pass.
         expect(screen.getAllByTestId('repo-card')).toHaveLength(50)
+    })
+})
+
+describe('RepoGrid — list-mode windowing (useVirtualWindow)', () => {
+    beforeEach(() => {
+        // rAF-throttled recalculation — run synchronously so assertions right
+        // after a scroll/resize dispatch see the updated window.
+        vi.stubGlobal('requestAnimationFrame', (cb) => { cb(); return 0 })
+        vi.stubGlobal('cancelAnimationFrame', () => {})
+    })
+    afterEach(() => {
+        vi.unstubAllGlobals()
+    })
+
+    it('does not mount the full DOM for a large list — off-window rows are absent', () => {
+        const repos = Array.from({ length: 200 }, (_, i) => makeRepo(i + 1))
+        render(<RepoGrid {...baseProps(repos)} viewMode="list" />)
+
+        const rendered = screen.getAllByTestId('repo-card')
+        // happy-dom's default 0 scroll position + ~768px viewport / 100px rows
+        // mounts roughly the first screenful plus overscan — nowhere near 200.
+        expect(rendered.length).toBeGreaterThan(0)
+        expect(rendered.length).toBeLessThan(50)
+
+        // The first repo is inside the initial window; a repo far down the
+        // list is not — proving off-window rows are genuinely absent from the
+        // DOM, not just visually hidden.
+        expect(screen.queryByText('repo-1')).toBeInTheDocument()
+        expect(screen.queryByText('repo-199')).not.toBeInTheDocument()
+    })
+
+    it('stays under the windowing threshold as a plain static list — every row mounts', () => {
+        const repos = Array.from({ length: 49 }, (_, i) => makeRepo(i + 1))
+        render(<RepoGrid {...baseProps(repos)} viewMode="list" />)
+        expect(screen.getAllByTestId('repo-card')).toHaveLength(49)
+    })
+
+    it('mounts a previously off-window row once it scrolls into range, and it stays interactive', () => {
+        const repos = Array.from({ length: 200 }, (_, i) => makeRepo(i + 1))
+        const onToggle = vi.fn()
+        render(<RepoGrid {...baseProps(repos)} viewMode="list" onToggle={onToggle} />)
+
+        expect(screen.queryByText('repo-150')).not.toBeInTheDocument()
+
+        const container = screen.getByTestId('repo-grid-virtual-window')
+        // Simulate the list having scrolled ~15000px past the viewport top —
+        // row 150 (index 149, 100px/row) now falls inside the window.
+        vi.spyOn(container, 'getBoundingClientRect').mockReturnValue({
+            top: -15000, bottom: 5000, left: 0, right: 0, width: 0, height: 20000,
+        })
+        act(() => { window.dispatchEvent(new Event('scroll')) })
+
+        expect(screen.queryByText('repo-1')).not.toBeInTheDocument()
+        const row150Title = screen.getByText('repo-150')
+        expect(row150Title).toBeInTheDocument()
+
+        // The scrolled-in row's selection control is a real, working control —
+        // not an inert clone left over from the window shift.
+        const row150Card = row150Title.closest('[data-testid="repo-card"]')
+        within(row150Card).getByTestId('repo-card-select').click()
+        expect(onToggle).toHaveBeenCalledWith(150)
+    })
+
+    it('grid mode is never windowed, regardless of row count (responsive column count makes fixed-row windowing unsafe)', () => {
+        const repos = Array.from({ length: 200 }, (_, i) => makeRepo(i + 1))
+        render(<RepoGrid {...baseProps(repos)} viewMode="grid" />)
+        expect(screen.getAllByTestId('repo-card')).toHaveLength(200)
+        expect(screen.queryByTestId('repo-grid-virtual-window')).not.toBeInTheDocument()
     })
 })
