@@ -25,9 +25,9 @@ your-domain.example.com {
 	# Single upstream: Express serves the SPA + /api/* from one port.
 	reverse_proxy 127.0.0.1:3001 {
 		# SSE (Server-Sent Events) is used for AI chat streaming
-		# (/api/ai/chat, /api/ai/pr-chat, dev-toolkit endpoints) and the
-		# assisted-install tooling endpoint
-		# (/api/env/tooling/:id/install). Those responses are
+		# (/api/ai/chat, /api/ai/pr-chat, dev-toolkit endpoints), the
+		# assisted-install tooling endpoint (/api/env/tooling/:id/install),
+		# and migration progress (/api/migration/stream/:id). Those responses are
 		# `Content-Type: text/event-stream` and must reach the browser
 		# chunk-by-chunk, not batched — a proxy that buffers the whole
 		# response before forwarding it turns "streaming" into "one

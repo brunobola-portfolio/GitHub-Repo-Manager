@@ -125,14 +125,15 @@ server {
     }
 
     # SSE endpoints (AI chat streaming: /api/ai/chat, /api/ai/pr-chat,
-    # dev-toolkit; assisted-install: /api/env/tooling/*/install) send
-    # `Content-Type: text/event-stream` and must reach the client as each
-    # chunk is written, not batched. nginx buffers proxied responses by
-    # default, which turns streaming into one delayed blob and defeats the
+    # dev-toolkit; assisted-install: /api/env/tooling/*/install; migration
+    # progress: /api/migration/stream/:id) send `Content-Type:
+    # text/event-stream` and must reach the client as each chunk is
+    # written, not batched. nginx buffers proxied responses by default,
+    # which turns streaming into one delayed blob and defeats the
     # server's abort-on-client-disconnect handling. Disable buffering for
     # those paths (or globally — this app has no large non-streaming
     # response that benefits from proxy buffering):
-    location ~ ^/api/(ai/|env/tooling/) {
+    location ~ ^/api/(ai/|env/tooling/|migration/stream/) {
         proxy_pass http://127.0.0.1:3001;
         proxy_http_version 1.1;
         proxy_set_header Host              $host;
