@@ -472,6 +472,44 @@ export const aiApi = {
         },
     },
 
+    // AI Diagram Generator — grounded Mermaid generation (architecture/module
+    // graph, v1). Metered (diagramGenPerMonth via the ai_diagram metric) on
+    // the initial call only; `retry: true` calls (self-repair after a
+    // client-side render failure) skip the mock short-circuit's quota framing
+    // since they're not user-quota-visible — see
+    // docs/specs/2026-07-18-community-wow-wave6.md (Feature 2).
+    diagrams: {
+        generate: async (repo, config = {}) => {
+            const shortCircuit = await withAIConfigured(() => ({
+                success: true,
+                mermaid: null,
+                diagramType: config.diagramType || 'architecture',
+                truncated: false,
+            }));
+            if (shortCircuit) return shortCircuit;
+
+            const res = await fetch(`${API_BASE}/ai/generate-diagram`, {
+                method: 'POST',
+                headers: await mutationHeaders(),
+                credentials: 'include',
+                body: JSON.stringify({ repo, ...config }),
+            });
+
+            if (res.status === 503) {
+                return {
+                    success: true,
+                    mermaid: null,
+                    diagramType: config.diagramType || 'architecture',
+                    truncated: false,
+                    mock: true,
+                    aiConfigured: true,
+                    runtimeUnavailable: true,
+                };
+            }
+            return handleAIResponse(res, 'generate diagram');
+        },
+    },
+
     // Post-migration polish — thin wrappers around existing endpoints, grouped
     // so useAIPolish can stay free of fetch wiring and stays easy to mock in
     // tests. See docs/specs/2026-05-08-post-migration-ai-polish.md for the

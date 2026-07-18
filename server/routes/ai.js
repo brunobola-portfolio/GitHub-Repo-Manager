@@ -15,6 +15,7 @@
  *                                        + migration-description
  *   - ./ai/suggest-name-description.js — suggest-name-description
  *   - ./ai/prompts.js                  — list / set / clear user prompt overrides
+ *   - ./ai/diagrams.js                 — generate-diagram (Mermaid, retry-once self-repair)
  *
  * Shared helpers (requireAI, handleAIError, providerGenerateWithRetry) live
  * in ./ai/shared.js and are imported by each sub-router.
@@ -29,6 +30,7 @@ import devToolkitRouter from './ai/dev-toolkit.js';
 import migrationRouter from './ai/migration.js';
 import suggestNameDescriptionRouter from './ai/suggest-name-description.js';
 import promptsRouter from './ai/prompts.js';
+import diagramsRouter from './ai/diagrams.js';
 import deepReviewRouter from './ai/deep-review.js';
 import promptStudioRouter from './ai/prompt-studio.js';
 import prCommandsRouter from './ai/pr-commands.js';
@@ -41,6 +43,7 @@ router.use(devToolkitRouter);
 router.use(migrationRouter);
 router.use(suggestNameDescriptionRouter);
 router.use(promptsRouter);
+router.use(diagramsRouter);
 // Deep Review: full draft lifecycle (generate / get / patch / publish / delete).
 // Mounted under /api/ai/deep-review/* — keeps the engine + store + publish
 // builder behind a single namespace the frontend can hit.

@@ -286,6 +286,27 @@ export const aiReadmeStudioImproveSchema = z.object({
     badges: z.boolean().optional().default(false),
 }).strict();
 
+// AI Diagram Generator — POST /api/ai/generate-diagram (server/routes/ai/diagrams.js).
+// `diagramType` is enum-limited to 'architecture' for v1; sequence/flow are
+// explicitly cut from scope (2026-07-18-community-wow-wave6.md) but the enum
+// shape is written so adding them later is a one-line change, not a rework.
+// `retry`/`failedSource`/`parseError` power the client's retry-once
+// self-repair flow: the client re-posts the same request with the Mermaid
+// text that failed to render client-side plus the parser error, and the
+// server re-prompts for a corrected diagram. `retry` requests must carry a
+// non-empty `failedSource` — there's nothing to repair otherwise.
+export const aiGenerateDiagramSchema = z.object({
+    repo: aiRepoMetadataSchema.refine((v) => !!v.full_name, { message: 'repo.full_name is required' }),
+    diagramType: z.enum(['architecture']).optional().default('architecture'),
+    focus: z.string().max(300).optional(),
+    retry: z.boolean().optional().default(false),
+    failedSource: z.string().max(8000).optional(),
+    parseError: z.string().max(2000).optional(),
+}).strict().refine((v) => !v.retry || !!v.failedSource, {
+    message: 'retry requires failedSource',
+    path: ['failedSource'],
+});
+
 // ---------------------------------------------------------------------------
 // Dev Toolkit endpoints (refine / chat-refine / analyze-context / generate-*)
 // ---------------------------------------------------------------------------

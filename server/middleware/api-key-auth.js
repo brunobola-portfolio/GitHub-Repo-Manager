@@ -90,6 +90,7 @@ export const AI_GENERATION_ROUTE_PATHS = Object.freeze([
     '/ai/migration-risk',
     '/ai/migration-size-strategy',
     '/ai/migration-description',
+    '/ai/generate-diagram',
 ]);
 // The AI router is mounted at both /api/ai/* (legacy alias) and /api/v1/ai/*
 // (see index.js), so both variants of each path are recognized.
