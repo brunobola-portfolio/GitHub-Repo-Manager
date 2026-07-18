@@ -130,3 +130,107 @@ export const mockSuggestNameDescription = (repo, context) => {
         redactions: [],
     };
 };
+
+// README Studio — deterministic score payload for demo mode, mirroring the
+// exact shape of GET /:owner/:repo/readme-studio/score (server route wraps
+// generateQualityReport()). Score is deliberately mid-range so the demo shows
+// both the ring and a meaningful recommendation list.
+export const mockReadmeStudioScore = (owner, repo) => ({
+    success: true,
+    repo: `${owner}/${repo}`,
+    hasReadme: true,
+    hasLicense: true,
+    report: {
+        score: 72,
+        summary: 'Good quality. A few improvements would make it great.',
+        breakdown: { documentation: 24, community: 12, engineering: 16, polish: 10, trust: 10 },
+        patterns: {
+            hasInstallation: true,
+            hasUsage: true,
+            hasTests: true,
+            hasCI: true,
+            hasContributing: false,
+            hasLicense: true,
+            hasBadges: false,
+            hasScreenshots: false,
+            licenseDetected: { spdxId: 'MIT', confidence: 'high', matched: true },
+            licenseMismatch: false,
+            ciBadgeBroken: false,
+            installMatchesStack: true,
+        },
+        recommendations: [
+            { priority: 'medium', action: 'Add CONTRIBUTING.md for community guidelines' },
+            { priority: 'low', action: 'Add status badges to README' },
+            { priority: 'low', action: 'Add a screenshot or demo GIF near the top of the README' },
+        ],
+    },
+});
+
+// AI Image Generator — demo-mode capability + canvas-drawn simulated images.
+// Shapes mirror server/routes/ai/images.js exactly (capability route +
+// generate route + commit route). The generated PNG is drawn locally with a
+// visible "SIMULATED" watermark so demo output can never be mistaken for a
+// real provider image.
+const IMAGE_PRESET_MOCKS = {
+    social: { label: 'Social preview', dimensions: '1280x640', path: 'docs/images/social-preview.png', w: 1280, h: 640 },
+    hero: { label: 'README hero', dimensions: '1200x400', path: 'docs/images/readme-hero.png', w: 1200, h: 400 },
+    logo: { label: 'Logo draft', dimensions: '512x512', path: 'docs/images/logo-draft.png', w: 512, h: 512 },
+};
+
+export const mockImageCapability = () => ({
+    available: true,
+    provider: 'gemini',
+    model: 'gemini-2.5-flash-image',
+    reason: null,
+    substitutedFrom: null,
+    presets: Object.fromEntries(Object.entries(IMAGE_PRESET_MOCKS).map(([k, p]) => [
+        k, { label: p.label, dimensions: p.dimensions, path: p.path, cost: { cents: 4, estimated: false } },
+    ])),
+});
+
+export const mockGenerateImage = (repo, { preset = 'social' } = {}) => {
+    const cfg = IMAGE_PRESET_MOCKS[preset] || IMAGE_PRESET_MOCKS.social;
+    const canvas = document.createElement('canvas');
+    canvas.width = cfg.w;
+    canvas.height = cfg.h;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, cfg.w, cfg.h);
+    grad.addColorStop(0, '#4f46e5');
+    grad.addColorStop(1, '#0ea5e9');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, cfg.w, cfg.h);
+    ctx.fillStyle = 'rgba(255,255,255,0.14)';
+    for (let i = 0; i < 6; i++) {
+        ctx.beginPath();
+        ctx.arc((cfg.w / 6) * i + 80, cfg.h * ((i % 3) + 1) * 0.25, 60 + i * 18, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${Math.round(cfg.h / 8)}px system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    const name = (repo?.full_name || 'demo/repo').split('/')[1] || 'demo-repo';
+    ctx.fillText(name, cfg.w / 2, cfg.h / 2);
+    ctx.font = `${Math.round(cfg.h / 18)}px system-ui, sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillText('SIMULATED — demo mode', cfg.w / 2, cfg.h / 2 + Math.round(cfg.h / 7));
+    const base64 = canvas.toDataURL('image/png').split(',')[1];
+    return {
+        success: true,
+        preset,
+        path: cfg.path,
+        dimensions: cfg.dimensions,
+        base64,
+        mimeType: 'image/png',
+        provider: 'gemini',
+        model: 'gemini-2.5-flash-image',
+        costCents: 4,
+    };
+};
+
+export const mockCommitImage = (repo, { preset = 'social' } = {}) => ({
+    success: true,
+    preset,
+    path: (IMAGE_PRESET_MOCKS[preset] || IMAGE_PRESET_MOCKS.social).path,
+    mode: 'direct',
+    committed: true,
+});

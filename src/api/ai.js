@@ -451,6 +451,10 @@ export const aiApi = {
     readmeStudio: {
         // Free, no quota — always a real HTTP call (no AI-configured gate).
         getScore: async (owner, repo) => {
+            if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+                const { mockReadmeStudioScore } = await import('../__mocks__/mockAI.js');
+                return mockReadmeStudioScore(owner, repo);
+            }
             const res = await fetch(`${API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/readme-studio/score`, {
                 headers: getHeaders(),
                 credentials: 'include',
@@ -616,11 +620,19 @@ export const aiApi = {
     // generate/commit split as `diagrams` and `agentRules` above.
     images: {
         capability: async () => {
+            if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+                const { mockImageCapability } = await import('../__mocks__/mockAI.js');
+                return mockImageCapability();
+            }
             const res = await fetch(`${API_BASE}/ai/generate-image/capability`, { credentials: 'include' });
             if (!res.ok) throw new Error(`Image capability check failed: HTTP ${res.status}`);
             return res.json();
         },
         generate: async (repo, config = {}) => {
+            if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+                const { mockGenerateImage } = await import('../__mocks__/mockAI.js');
+                return mockGenerateImage(repo, config);
+            }
             const res = await fetch(`${API_BASE}/ai/generate-image`, {
                 method: 'POST',
                 headers: await mutationHeaders(),
@@ -659,7 +671,13 @@ export const aiApi = {
             }
             return res.json();
         },
-        commit: async (payload) => postJson(`${API_BASE}/ai/generate-image/commit`, payload),
+        commit: async (payload) => {
+            if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+                const { mockCommitImage } = await import('../__mocks__/mockAI.js');
+                return mockCommitImage(payload?.repo, payload);
+            }
+            return postJson(`${API_BASE}/ai/generate-image/commit`, payload);
+        },
     },
 
     // Post-migration polish — thin wrappers around existing endpoints, grouped
