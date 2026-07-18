@@ -38,6 +38,7 @@ describe('fetchReadmeStudioSignals', () => {
 
         const result = await fetchReadmeStudioSignals({ owner: 'acme', repo: 'lib', accessToken: 'tok' });
         expect(result.readmeContent).toBe('# lib\n');
+        expect(result.readmeTruncated).toBe(false);
         expect(result.fileStructure).toEqual([{ name: 'package.json', type: 'file' }]);
         expect(result.licenseContent).toBe('MIT License');
         expect(result.workflowFiles).toEqual(['ci.yml']);
@@ -48,7 +49,21 @@ describe('fetchReadmeStudioSignals', () => {
         githubApi.mockRejectedValue(err404);
 
         const result = await fetchReadmeStudioSignals({ owner: 'acme', repo: 'empty', accessToken: 'tok' });
-        expect(result).toEqual({ readmeContent: '', fileStructure: [], licenseContent: null, workflowFiles: [] });
+        expect(result).toEqual({ readmeContent: '', readmeTruncated: false, fileStructure: [], licenseContent: null, workflowFiles: [] });
+    });
+
+    it('flags a huge/binary README (encoding !== base64) as readmeTruncated, distinct from no README', async () => {
+        githubApi.mockImplementation(async (path) => {
+            // GitHub returns encoding: 'none' with empty content for files it
+            // won't inline (>1MB or non-UTF8-decodable).
+            if (path.endsWith('/readme')) return { data: { encoding: 'none', content: '', size: 2_000_000 } };
+            const err404 = Object.assign(new Error('not found'), { status: 404 });
+            throw err404;
+        });
+
+        const result = await fetchReadmeStudioSignals({ owner: 'acme', repo: 'huge', accessToken: 'tok' });
+        expect(result.readmeContent).toBe('');
+        expect(result.readmeTruncated).toBe(true);
     });
 });
 

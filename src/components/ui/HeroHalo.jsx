@@ -37,12 +37,21 @@ export function HeroHalo({
     const pos = positions[position] || positions.top
 
     return (
+        // The horizontal clip wrapper keeps the 120%-wide halo from expanding
+        // the document's scrollable width on narrow viewports (overflow-x:
+        // clip + overflow-y: visible preserves the intentional top bleed;
+        // blur-3xl makes the side trim imperceptible).
         <div
             aria-hidden="true"
-            data-testid="hero-halo"
-            data-palette={palette}
-            data-position={position}
-            className={`pointer-events-none absolute h-64 w-[120%] rounded-full bg-gradient-to-b blur-3xl ${p} ${i} ${pos} ${className}`.trim()}
-        />
+            className="pointer-events-none absolute inset-0 [overflow-x:clip] [overflow-y:visible]"
+        >
+            <div
+                aria-hidden="true"
+                data-testid="hero-halo"
+                data-palette={palette}
+                data-position={position}
+                className={`pointer-events-none absolute h-64 w-[120%] rounded-full bg-gradient-to-b blur-3xl ${p} ${i} ${pos} ${className}`.trim()}
+            />
+        </div>
     )
 }

@@ -59,9 +59,24 @@ describe('GET /:owner/:repo/readme-studio/score', () => {
         expect(res.body.success).toBe(true);
         expect(res.body.repo).toBe('acme/lib');
         expect(res.body.hasReadme).toBe(true);
+        expect(res.body.readmeTruncated).toBe(false);
         expect(res.body.hasLicense).toBe(true);
         expect(typeof res.body.report.score).toBe('number');
         expect(Array.isArray(res.body.report.recommendations)).toBe(true);
+    });
+
+    it('flags a huge/binary README as readmeTruncated, distinct from hasReadme: false', async () => {
+        githubApiMock.mockImplementation(async (path) => {
+            if (path === '/repos/acme/huge') return { data: { name: 'huge', description: 'A big repo', topics: [] } };
+            if (path.endsWith('/readme')) return { data: { encoding: 'none', content: '', size: 2_000_000 } };
+            const err404 = Object.assign(new Error('not found'), { status: 404 });
+            throw err404;
+        });
+
+        const res = await request(makeApp()).get('/acme/huge/readme-studio/score');
+        expect(res.status).toBe(200);
+        expect(res.body.hasReadme).toBe(false);
+        expect(res.body.readmeTruncated).toBe(true);
     });
 
     it('degrades gracefully with no README and no LICENSE (never 500s on a missing file)', async () => {
@@ -74,6 +89,7 @@ describe('GET /:owner/:repo/readme-studio/score', () => {
         const res = await request(makeApp()).get('/acme/empty/readme-studio/score');
         expect(res.status).toBe(200);
         expect(res.body.hasReadme).toBe(false);
+        expect(res.body.readmeTruncated).toBe(false);
         expect(res.body.hasLicense).toBe(false);
         expect(res.body.report.recommendations.some(r => /LICENSE/i.test(r.action))).toBe(true);
     });

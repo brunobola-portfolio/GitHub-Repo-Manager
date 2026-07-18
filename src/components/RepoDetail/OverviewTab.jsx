@@ -91,13 +91,10 @@ export function OverviewTab({ api, repoData, onUpdate }) {
 
             {/* AI Insights entry point */}
             <div className="lg:col-span-3 flex flex-wrap gap-2">
-                <button
-                    onClick={() => openModalWithData('showRepoInsights', { repo: repoData, initialTab: 'quality' })}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] ds-focus-ring transition"
-                >
+                <Button variant="primary" onClick={() => openModalWithData('showRepoInsights', { repo: repoData, initialTab: 'quality' })}>
                     <Sparkles className="w-4 h-4" />
                     View AI Insights
-                </button>
+                </Button>
                 <Button variant="secondary" onClick={() => setReadmeStudioOpen(true)}>
                     <Wand2 className="w-4 h-4" />
                     README Studio

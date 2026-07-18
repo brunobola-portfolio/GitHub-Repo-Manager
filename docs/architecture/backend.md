@@ -35,7 +35,12 @@ server/
 │   ├── health.js                 # /api/health/live + /ready probes
 │   ├── env.js                    # /api/env/* operator tooling status + install
 │   ├── dashboard.js              # /api/v1/dashboard/* — inbox, archive, restore, snooze
-│   ├── repos/  azure/  import/  ai/  # domain sub-routers (split from monoliths)
+│   ├── repos/                    # crud, pulls, issues, commits, branches-releases,
+│   │                             # actions-community (incl. agent-rules), tree, readme-studio
+│   ├── ai/                       # core, diagrams, images, indexing, migration, prompts,
+│   │                             # dev-toolkit, deep-review, prompt-studio, pr-commands, pr-chat
+│   ├── v1/repos-security.js      # GET security scan + 10-check posture card, POST AI summary
+│   ├── azure/  import/           # domain sub-routers (split from monoliths)
 │   └── … work-board*, admin-*, license, user-data, notifications, search, outbox
 ├── middleware/
 │   ├── auth.js                   # requireAuth, webhook signature, safeError
@@ -67,6 +72,12 @@ server/
 │   ├── dashboard-aggregator.js   # Composes Live Inbox from event-aggregation helpers
 │   ├── validators.js             # Zod schemas for request validation
 │   ├── db-adapter.js             # Database adapter factory (SQLite only)
+│   ├── ai-features/              # Per-feature AI prompt/signal builders — readme-studio.js,
+│   │                             # agent-rules.js, diagram-embed.js, image-provider.js,
+│   │                             # image-pricing.js, license-detect.js, quality-metrics.js,
+│   │                             # pr-review.js, semantic-search.js, and more (one file per
+│   │                             # AI capability; consumed by the matching routes/ai/* or
+│   │                             # routes/repos/* route)
 │   └── adapters/
 │       └── sqlite-adapter.js     # better-sqlite3 wrapper
 ├── workers/

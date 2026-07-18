@@ -102,6 +102,25 @@ describe('POST /ai/readme-studio/improve/deterministic', () => {
         expect(res.body.markdown).toContain('pip install -r requirements.txt');
     });
 
+    it('surfaces readmeTruncated and forces full-rewrite when the README exists but is huge/binary', async () => {
+        githubApiMock.mockImplementation(async (path) => {
+            if (path.endsWith('/readme')) return { data: { encoding: 'none', content: '', size: 2_000_000 } };
+            if (path.endsWith('/contents')) return { data: [{ name: 'package.json', type: 'file' }] };
+            const err = new Error('not found');
+            err.status = 404;
+            throw err;
+        });
+
+        const res = await request(makeApp())
+            .post('/ai/readme-studio/improve/deterministic')
+            .send({ repo: REPO, mode: 'missing-sections' });
+
+        expect(res.status).toBe(200);
+        expect(res.body.readmeTruncated).toBe(true);
+        expect(res.body.mode).toBe('full-rewrite');
+        expect(res.body.currentReadme).toBe('');
+    });
+
     it('never states a license the fingerprint did not verify', async () => {
         githubApiMock.mockImplementation(async (path) => {
             if (path.endsWith('/readme')) return { data: { content: b64('# api\n'), encoding: 'base64' } };

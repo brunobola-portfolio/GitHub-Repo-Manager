@@ -72,6 +72,7 @@ vi.mock('../../lib/github-api.js', () => ({
     }),
 }));
 
+const { githubApi } = await import('../../lib/github-api.js');
 const { default: coreRouter } = await import('../../routes/ai/core.js');
 
 function makeApp() {
@@ -140,6 +141,20 @@ describe('POST /ai/readme-studio/improve', () => {
         expect(res.status).toBe(429);
         expect(res.body.code).toBe('AI_SPEND_CAP_REACHED');
         expect(fakeProvider.generate).not.toHaveBeenCalled();
+    });
+
+    it('flags a huge/binary existing README as readmeTruncated with a low-confidence warning', async () => {
+        // First githubApi call in the route is fetchReadmeStudioSignals' own
+        // README fetch — override just that one call to GitHub's
+        // "encoding: none" shape for a file too large/binary to inline.
+        githubApi.mockImplementationOnce(async () => ({ data: { encoding: 'none', content: '', size: 2_000_000 } }));
+
+        const res = await request(makeApp()).post('/ai/readme-studio/improve').send({ repo: REPO });
+        expect(res.status).toBe(200);
+        expect(res.body.readmeTruncated).toBe(true);
+        expect(res.body.confidence).toBe('low');
+        expect(res.body.currentReadme).toBe('');
+        expect(res.body.warnings.some((w) => /could not be read/i.test(w))).toBe(true);
     });
 
     it('rejects an invalid repo.full_name', async () => {

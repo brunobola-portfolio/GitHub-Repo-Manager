@@ -116,6 +116,16 @@ describe('ReadmeStudioModal — score stage', () => {
         await waitFor(() => expect(aiApi.readmeStudio.getScore).toHaveBeenCalled())
         expect(aiApi.readmeStudio.improve).not.toHaveBeenCalled()
     })
+
+    it('renders the footer through ModalFooter — right-aligned with a gap between sibling buttons', async () => {
+        aiApi.readmeStudio.getScore.mockResolvedValue(SCORE_WITH_README)
+        render(<ReadmeStudioModal isOpen repo={REPO} onClose={() => {}} />)
+
+        const improveButton = await screen.findByRole('button', { name: /improve with ai/i })
+        const footer = improveButton.parentElement
+        expect(footer.className).toMatch(/justify-end/)
+        expect(footer.className).toMatch(/gap-3/)
+    })
 })
 
 describe('ReadmeStudioModal — improve + preview flow', () => {

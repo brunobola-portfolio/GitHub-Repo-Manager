@@ -7,6 +7,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { Select } from '@/components/ui/Select'
+import { Field } from '@/components/ui/form/Field'
 
 const OPTIONS = [
   { value: 'a', label: 'Alpha' },
@@ -46,5 +47,42 @@ describe('Select — aria-activedescendant', () => {
     expect(second).toBeTruthy()
     expect(second).not.toBe(first)
     expect(document.getElementById(second)).not.toBeNull()
+  })
+})
+
+/*
+ * Select — id/aria-describedby forwarding when composed inside <Field>.
+ * Field clones its single child with `id` + `aria-describedby` so the
+ * <label htmlFor> and hint/error text associate with the control (same
+ * contract Input/Textarea already honor). Select previously dropped both
+ * props on the floor — no ...rest spread, no explicit accept — so the
+ * label's htmlFor pointed at an id that didn't exist in the DOM and the
+ * hint text was never programmatically tied to the combobox.
+ */
+describe('Select — id/aria-describedby forwarding via Field', () => {
+  it('applies the id Field generates onto the trigger, and the label click focuses it', () => {
+    render(
+      <Field label="License" hint="Detected: MIT">
+        <Select label="License" options={OPTIONS} value="a" onChange={vi.fn()} />
+      </Field>
+    )
+    const combo = screen.getByRole('combobox', { name: 'License' })
+    const label = screen.getByText('License')
+    expect(combo).toHaveAttribute('id')
+    expect(label.closest('label')).toHaveAttribute('for', combo.id)
+  })
+
+  it('ties the hint text to the trigger via aria-describedby', () => {
+    render(
+      <Field label="License" hint="Detected: MIT">
+        <Select label="License" options={OPTIONS} value="a" onChange={vi.fn()} />
+      </Field>
+    )
+    const combo = screen.getByRole('combobox', { name: 'License' })
+    const describedBy = combo.getAttribute('aria-describedby')
+    expect(describedBy).toBeTruthy()
+    const hint = document.getElementById(describedBy)
+    expect(hint).not.toBeNull()
+    expect(hint).toHaveTextContent('Detected: MIT')
   })
 })

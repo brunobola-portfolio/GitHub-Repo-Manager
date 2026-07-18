@@ -5,7 +5,7 @@
 **Authentication:** GitHub OAuth via session cookies, or an API key sent as `Authorization: Bearer grm_live_...`. Most endpoints require an authenticated session (`requireAuth` middleware). The server never exposes raw access tokens to the client.
 **CSRF:** All mutating `/api/*` requests (non-GET/HEAD/OPTIONS) require a valid `X-CSRF-Token` header. The OAuth flow and signature-verified webhooks are exempt.
 **Request validation:** Write endpoints validate their JSON body with Zod (`validateBody` middleware). An invalid body returns `400 { error, code: 'validation_failed' }` — see [Shared Response Envelopes](#shared-response-envelopes).
-**Total Endpoints:** 315 route handlers (309 across `server/routes/**` — 70 route files — plus 6 app-level webhook and health routes mounted directly in `server/index.js`). This document gives full entries for the public-facing and recently-changed surface; lower-level internal routes are summarised under [Additional Endpoints](#additional-endpoints-grouped).
+**Total Endpoints:** 324 route handlers (318 across `server/routes/**` — 74 route files — plus 6 app-level webhook and health routes mounted directly in `server/index.js`). This document gives full entries for the public-facing and recently-changed surface; lower-level internal routes are summarised under [Additional Endpoints](#additional-endpoints-grouped).
 
 ---
 
@@ -1479,6 +1479,183 @@ Get or refresh community health analysis for a repository.
 
 ---
 
+### README Studio
+
+Free, deterministic scoring endpoint (Wave 6, Feature 1). The grounded AI
+"improve" call that pairs with it lives under [AI](#ai-apiai) as
+`POST /api/ai/readme-studio/improve` since it's metered — see there for the
+quota-gated half of this feature.
+
+#### `GET /api/repos/:owner/:repo/readme-studio/score`
+
+Compute a deterministic README quality score (license correctness,
+badge/reality consistency, install-vs-stack match, screenshots, section
+order) and the same signal set the grounded improve call re-uses. Zero AI
+cost — no `requireAI`, no quota check.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| AI required | No |
+| Quota | None (free, deterministic) |
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "report": { "score": 78, "checks": [ ... ] },
+  "repo": "owner/repo",
+  "hasReadme": true,
+  "readmeTruncated": false,
+  "hasLicense": true
+}
+```
+
+`readmeTruncated: true` means a README file exists but is too large or
+binary for GitHub to inline — a distinct state from "no README" so the UI
+never tells a repo with an unreadable README to "add one".
+
+---
+
+### Agent Rules Generator
+
+AGENTS.md / CLAUDE.md generator (Wave 6, Feature 3). Generation never
+hard-blocks on AI availability — see `deterministic`/`reason` in the
+response below.
+
+#### `POST /api/repos/:owner/:repo/agent-rules/generate`
+
+Detect real build/test/lint/CI signals (package.json scripts, lockfile
+family, test dirs, lint configs, workflow job names, LICENSE) and generate
+AGENTS.md and/or CLAUDE.md content grounded in them. Falls back to a
+zero-AI-cost deterministic template (same section skeleton, filled directly
+from detected signals) whenever no AI provider is configured, the provider
+errors, or the spend cap is hit — a quota-exceeded `429` still ships the
+deterministic fallback rather than a hard failure.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| AI required | No (degrades to a deterministic template) |
+| Scope | `ai` (API-key callers) |
+| Quota | Per-feature (`ai_agent_rules`, Free: 20/month) + global `ai_queries` — only charged when the AI path actually runs |
+
+**Request Body** (`agentRulesGenerateSchema`):
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `targetFiles` | `('AGENTS.md'\|'CLAUDE.md')[]` | No | Files to generate (1-2, default `['AGENTS.md']`) |
+| `mode` | `'create'\|'refresh'` | No | `refresh` feeds the existing file back and asks for only-changed-sections (default `create`) |
+| `sections` | object | No | Boolean toggles: `setup`, `codeStyle`, `testing`, `devEnv`, `prInstructions`, `security`, `repoLayout` |
+| `strictness` | `'concise'\|'detailed'` | No | Default `concise` |
+
+**Response (200):**
+```json
+{
+  "deterministic": false,
+  "files": [{ "filePath": "AGENTS.md", "content": "..." }],
+  "sections": { "setup": true, "testing": true },
+  "existing": {},
+  "notes": [],
+  "signals": { "language": "JavaScript", "testFramework": "vitest" }
+}
+```
+
+`deterministic: true` responses additionally carry `reason`
+(`ai_not_configured` | `spend_cap_reached` | `ai_error`) so the client can
+explain why it fell back.
+
+**Error Codes:**
+- `429 usage_limit_exceeded` — `ai_agent_rules` or `ai_queries` cap hit; response still includes `deterministic: true` + `files` so the caller isn't blocked
+
+---
+
+#### `POST /api/repos/:owner/:repo/agent-rules/commit`
+
+Commit previously generated AGENTS.md/CLAUDE.md content (client-echoed, not
+re-generated server-side) — one `commitOrOpenPR()` call per target file.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Quota | None — this is a plain write action; generation above already spent the AI call |
+
+**Request Body** (`agentRulesCommitSchema`):
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `files` | object[] | Yes | 1-2 entries: `{ filePath: 'AGENTS.md'\|'CLAUDE.md', content, commitMessage }` |
+| `mode` | `'direct'\|'pr'` | No | Default `direct` |
+
+**Response (200):** `{ "committed": true, "results": [ ... ] }` — one `commitOrOpenPR()` result per file.
+
+---
+
+### Security Posture
+
+10-check deterministic report card layered on the existing alerts scan
+(Wave 6, Feature 4) — moved off the Pro paywall to Free in the same
+2026-07-18 rebalance.
+
+#### `GET /api/repos/:owner/:repo/security`
+
+Aggregate secret-scanning / code-scanning / Dependabot alerts with a
+10-check deterministic report card (branch protection, alert severity,
+secret scanning + push protection, Dependabot security updates, code
+scanning, `SECURITY.md`, workflow token permissions, org 2FA). Every
+admin-gated check renders `unknown` on a `403` — distinct from `fail` — so
+a non-admin collaborator is never misinformed.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Tier | Free (moved off Pro 2026-07-18) |
+
+**Response (200):**
+```json
+{
+  "secretScanning": { "available": true, "alerts": [] },
+  "codeScanning": { "available": true, "alerts": [] },
+  "dependabot": { "available": true, "alerts": [] },
+  "summary": { "critical": 0, "high": 0, "medium": 0, "low": 0, "total": 0 },
+  "checks": [
+    { "id": "branch_protection_review", "label": "...", "status": "pass", "severity": null }
+  ],
+  "score": { "passing": 8, "total": 10 }
+}
+```
+
+---
+
+#### `POST /api/repos/:owner/:repo/security/summary`
+
+AI narrative summary of the report card `GET /security` just returned. The
+client submits back the *same* checks (id/label/status/severity only —
+never raw alert bodies) so the prompt can't be fed secret/PII fragments.
+Cached per `(user, repo, check-result-hash)` so re-opening the panel
+without a posture change doesn't re-bill the provider.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| AI required | Yes |
+| Scope | `ai` (API-key callers) |
+| Quota | Per-feature (`ai_security_posture`, Free: 75/month) + global `ai_queries` |
+
+**Request Body** (`securityPostureSummarySchema`):
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `repo` | object | Yes | `{ full_name, private? }` |
+| `checks` | object[] | Yes | 1-10 entries echoed back from `GET /security`'s `checks`, whitelisted to `id`/`label`/`status`/`severity` |
+
+**Response (200):** `{ "topActions": [...], "summary": "...", "cached": false }`
+
+**Error Codes:**
+- `429 usage_limit_exceeded` — `ai_security_posture` or `ai_queries` cap hit
+
+---
+
 ## Organizations (`/api/orgs/*`)
 
 ### `GET /api/orgs`
@@ -2244,6 +2421,256 @@ Index multiple repositories at once (max 10 per request).
 
 **Error Codes:**
 - `400` - Array of repos required
+
+---
+
+### `POST /api/ai/readme-studio/improve`
+
+Grounded README improve (Wave 6, Feature 1) — the metered counterpart to
+the free `GET /api/repos/:owner/:repo/readme-studio/score`. Replaces
+`/api/ai/readme` + `/api/ai/readme/enhance` for new call sites; those two
+routes stay unchanged for backward compatibility. Never invents license
+claims, commands, or badges — only what's grounded in real repo signals
+(manifest, entrypoints, folder structure, topics, language, LICENSE).
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| AI required | Yes |
+| Scope | `ai` (API-key callers) |
+| Quota | Per-feature (`ai_readme`, Free: 25/month — shared with `/api/ai/readme`) + global `ai_queries` |
+
+**Request Body** (`aiReadmeStudioImproveSchema`):
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `repo` | object | Yes | Repo object with `full_name` |
+| `mode` | `'missing-sections'\|'full-rewrite'` | No | Default `missing-sections` |
+| `tone` | `'professional'\|'concise'\|'enthusiastic'` | No | Default `professional` |
+| `sections` | string[] | No | Up to 20 section names to target |
+| `license` | string | No | Max 50 chars |
+| `stackOverride` | string | No | Max 100 chars |
+| `badges` | boolean | No | Default `false` |
+
+**Response (200):** `{ "success": true, "markdown": "...", "confidence": "high", "warnings": [], "missingSections": [], "badges": [], "mode": "missing-sections", "currentReadme": "...", "readmeTruncated": false }`
+
+**Error Codes:**
+- `429 usage_limit_exceeded` — `ai_readme` or `ai_queries` cap hit
+
+---
+
+### `POST /api/ai/readme-studio/improve/deterministic`
+
+Zero-AI-cost README patch fallback (License/Install/TOC sections built
+directly from `detectLicense()`'s verified fingerprint and the detected
+manifest/lockfile). Offered by the client whenever the AI improve call
+above is unavailable — no provider configured, a provider error, or the
+`readmeGenPerMonth` quota is exhausted.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| AI required | No |
+| Scope | `ai` (API-key callers) |
+| Quota | None (free, deterministic) |
+
+**Request Body** (`deterministicReadmeStudioSchema`): `{ repo: { full_name }, mode?: 'missing-sections'|'full-rewrite' }`
+
+**Response (200):** `{ "success": true, "deterministic": true, "markdown": "...", "sections": [...], "mode": "...", "missingSections": [...], "currentReadme": "...", "readmeTruncated": false }`
+
+---
+
+### `POST /api/ai/generate-diagram`
+
+Grounded architecture-diagram generator (Wave 6, Feature 2) — prompts for a
+Mermaid diagram from the repo's top-level tree + README. Supports
+`?stream=true` for SSE token streaming and a retry-once self-repair pass
+(`retry`/`failedSource`/`parseError`) when the client-side Mermaid render
+fails.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| AI required | Yes |
+| Scope | `ai` (API-key callers) |
+| Quota | Per-feature (`ai_diagram`, Free: 15/month) + global `ai_queries` — only the initial (non-retry) attempt is charged |
+
+**Request Body** (`aiGenerateDiagramSchema`):
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `repo` | object | Yes | Repo object with `full_name` |
+| `diagramType` | `'architecture'` | No | Enum-limited to `architecture` for v1 |
+| `focus` | string | No | Max 300 chars |
+| `retry` | boolean | No | Self-repair retry — requires `failedSource` |
+| `failedSource` | string | Retry only | The Mermaid text that failed to render, max 8000 chars |
+| `parseError` | string | No | Max 2000 chars |
+
+**Response (200):** `{ "success": true, "mermaid": "graph TD...", "diagramType": "architecture", "truncated": false }`
+
+**Error Codes:**
+- `429 usage_limit_exceeded` — `ai_diagram` or `ai_queries` cap hit
+
+---
+
+### `POST /api/ai/generate-diagram/deterministic`
+
+Zero-AI-cost fallback: a depth-2, node-capped `flowchart TD` of the
+top-level directory structure. Always succeeds, never calls a provider —
+used by the embed flow when the AI-generated Mermaid still fails to render
+after the retry-once self-repair attempt above.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| AI required | No |
+| Scope | `ai` (API-key callers) |
+| Quota | None (free, deterministic) |
+
+**Request Body** (`deterministicDiagramSchema`): `{ repo: { full_name }, diagramType?: 'architecture' }`
+
+**Response (200):** `{ "success": true, "mermaid": "...", "diagramType": "architecture", "truncated": false, "deterministic": true }`
+
+---
+
+### `POST /api/ai/generate-diagram/embed-preview`
+
+Build a preview of embedding an already-generated diagram into the repo —
+either as an idempotent README Mermaid fence (marker-delimited, regen
+replaces in place) or a sanitized SVG at `docs/diagrams/<type>.svg` with a
+README image reference. Never calls a provider — the Mermaid/SVG was
+already generated. Must be followed by `embed-commit` to actually write.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Quota | None — no `requireAI`/scope/quota gating, a plain read-and-diff action |
+
+**Request Body** (`embedDiagramPreviewSchema`):
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `repo` | object | Yes | Repo object with `full_name` |
+| `diagramType` | `'architecture'` | No | Default `architecture` |
+| `target` | `'readme-mermaid'\|'svg-file'` | Yes | Embed target |
+| `mermaid` | string | If `target=readme-mermaid` | Max 50,000 chars |
+| `svg` | string | If `target=svg-file` | Max 600,000 chars |
+| `placement` | `'top'\|'after-intro'\|'end'\|'custom'` | No | Default `after-intro` |
+| `customAnchor` | string | If `placement=custom` | Max 200 chars |
+| `truncated` | boolean | No | Default `false` |
+
+**Response (200):** `{ "success": true, "target": "readme-mermaid", "hasReadme": true, "readOnly": false, "action": "insert", "notice": null, "readme": { "path": "README.md", "before": "...", "after": "...", "commitMessage": "..." } }`
+
+**Error Codes:**
+- `422 invalid_svg` — generated SVG failed sanitizer validation and cannot be embedded
+
+---
+
+### `POST /api/ai/generate-diagram/embed-commit`
+
+Commit the previewed diagram embed. Embed paths are always server-derived
+(`svg.path` must equal `svgPathFor(diagramType)`; `readme.path` must be a
+`README.md` path with no traversal) — defence in depth against a client
+requesting an arbitrary write location.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Quota | None — no provider call, a plain GitHub write action |
+
+**Request Body** (`embedDiagramCommitSchema`):
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `repo` | object | Yes | Repo object with `full_name` |
+| `diagramType` | `'architecture'` | No | Default `architecture` |
+| `target` | `'readme-mermaid'\|'svg-file'` | Yes | Embed target |
+| `readme` | object | If `target=readme-mermaid` | `{ path?, content, commitMessage }` |
+| `svg` | object | If `target=svg-file` | `{ path, content, commitMessage }` |
+| `mode` | `'direct'\|'pr'` | No | Default `direct` |
+
+**Response (200):** `{ "success": true, "target": "readme-mermaid", "readme": { ... } }`
+
+**Error Codes:**
+- `400 validation_failed` — `svg.path`/`readme.path` don't match the server-derived path
+- `403 read_only_access` — caller lacks push access (PR-from-fork is not supported)
+- `422 invalid_svg` — SVG failed sanitizer re-validation at commit time
+
+---
+
+### `GET /api/ai/generate-image/capability`
+
+Resolve whether AI image generation is available for the caller's
+configured provider (static per-provider capability matrix + key-presence
+gate), and the three fixed presets' resolved dimensions.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| AI required | No (reports availability rather than requiring it) |
+
+**Response (200):** `{ "available": true, "provider": "openai", "model": "gpt-image-1", "reason": null, "substitutedFrom": null, "presets": { "social": { ... }, "hero": { ... }, "logo": { ... } } }`
+
+---
+
+### `POST /api/ai/generate-image`
+
+Generate an AI raster image (repo banner / README hero / logo draft) —
+Wave 6c. Three fixed presets (`social`/`hero`/`logo`) with a grounded,
+content-safety-constrained prompt; `promptExtras` is additive-only, never a
+free-text prompt replacement. Quota is checked before the provider call and
+only charged on a genuine successful generation (a capability failure,
+pricing failure, or content refusal never burns quota).
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| AI required | No (capability-gated instead — see `/generate-image/capability`) |
+| Scope | `ai` (API-key callers) |
+| Quota | Per-feature (`ai_image`, Free: 5/month) + global `ai_queries` — charged only after a successful generation |
+
+**Request Body** (`aiGenerateImageSchema`):
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `repo` | object | Yes | Repo object with `full_name` |
+| `preset` | `'social'\|'hero'\|'logo'` | Yes | Fixed output preset |
+| `promptExtras` | string | No | Max 150 chars — additive style/color hint only |
+
+**Response (200):** `{ "success": true, "preset": "hero", "path": "docs/images/hero.png", "dimensions": "1200x630", "base64": "...", "mimeType": "image/png", "provider": "openai", "model": "gpt-image-1", "costCents": 4, "estimatedCost": "$0.04" }`
+
+**Error Codes:**
+- `422 IMAGE_REFUSAL` — provider refused the prompt on content-safety grounds
+- `404` — no image-capable model available for the resolved provider
+- `501 image_pricing_unavailable` — no pricing entry for the resolved provider/model/quality combo
+- `429 usage_limit_exceeded` — `ai_image` or `ai_queries` cap hit
+
+---
+
+### `POST /api/ai/generate-image/commit`
+
+Commit a previously generated, client-echoed image (binary-safe base64
+passthrough — never re-encoded as UTF-8 text) to a server-derived
+`docs/images/<preset>.png` path. There is no `path` field in the request:
+the destination is always derived from `preset`, so a caller can't request
+an arbitrary write location.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Quota | None — no provider call, a plain GitHub write action |
+
+**Request Body** (`commitImageSchema`):
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `repo` | object | Yes | Repo object with `full_name` |
+| `preset` | `'social'\|'hero'\|'logo'` | Yes | Must match the preset the image was generated for |
+| `base64` | string | Yes | Base64-encoded PNG bytes, up to ~4 MB decoded |
+| `commitMessage` | string | No | Max 500 chars |
+| `mode` | `'direct'\|'pr'` | No | Default `direct` |
+
+**Response (200):** `{ "success": true, "preset": "hero", "path": "docs/images/hero.png", ... }`
 
 ---
 
@@ -4546,7 +4973,8 @@ Lower-level, internal, and operator routes that back specific UI surfaces. Every
 | --- | --- | --- | --- |
 | `GET` | `/api/repos/:owner/:repo/tree` | Yes | Full recursive git tree |
 | `GET` | `/api/repos/:owner/:repo/export` | Yes | Export repository metadata as JSON |
-| `GET` | `/api/repos/:owner/:repo/security` | Pro | Security overview (Dependabot/alerts) |
+| `GET` | `/api/repos/:owner/:repo/security` | Yes (Free — moved off Pro 2026-07-18) | Alerts + 10-check Security Posture report card — see [Security Posture](#security-posture) |
+| `POST` | `/api/repos/:owner/:repo/security/summary` | AI | AI narrative summary of the report card — see [Security Posture](#security-posture) |
 | `GET` | `/api/repos/:owner/:repo/sync/preview` | Yes | Preview a fork sync (free — no mutation) |
 | `POST` | `/api/repos/:owner/:repo/sync` | Pro | Sync a fork with its upstream |
 

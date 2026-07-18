@@ -4,7 +4,7 @@ import { DiffView, DiffModeEnum } from '@git-diff-view/react'
 import '@git-diff-view/react/styles/diff-view.css'
 import { motion } from 'framer-motion'
 import { Bot, CheckCircle, ExternalLink, AlertTriangle, ArrowLeft, Info } from 'lucide-react'
-import { Modal } from '../ui/Modal'
+import { Modal, ModalFooter } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
 import { SectionSpinner } from '../ui/Spinner'
@@ -35,11 +35,6 @@ const MODE_OPTIONS = [
 const STRICTNESS_OPTIONS = [
     { value: 'concise', label: 'Concise (< 150 lines)' },
     { value: 'detailed', label: 'Detailed' },
-]
-
-const COMMIT_MODE_OPTIONS = [
-    { value: 'direct', label: 'Commit directly' },
-    { value: 'pr', label: 'Open a pull request' },
 ]
 
 // Mirrors server/lib/ai-features/agent-rules.js's SECTION_KEYS/DEFAULT_SECTIONS.
@@ -81,11 +76,16 @@ export function AgentRulesModal({ isOpen, onClose, repo, hasExistingAgents = fal
     const [mode, setMode] = useState(hasExistingAgents ? 'refresh' : 'create')
     const [sections, setSections] = useState(DEFAULT_SECTIONS)
     const [strictness, setStrictness] = useState('concise')
-    const [commitMode, setCommitMode] = useState('direct')
 
     const [generating, setGenerating] = useState(false)
     const [generateError, setGenerateError] = useState(null)
     const [result, setResult] = useState(null) // { deterministic, reason, files, existing, notes, quotaExceeded }
+    // Quota-exceeded (429) responses still carry a usable deterministic
+    // fallback in the error body (Addendum 6b.2). Rather than silently
+    // auto-advancing past the failure, stash it here and require the same
+    // explicit "Use deterministic version instead" click README Studio /
+    // Diagram Generator require on their 429s — one 429 UX across all three.
+    const [pendingFallback, setPendingFallback] = useState(null)
 
     const [commitMessage, setCommitMessage] = useState('')
     const [committing, setCommitting] = useState(false)
@@ -101,10 +101,10 @@ export function AgentRulesModal({ isOpen, onClose, repo, hasExistingAgents = fal
         setMode(hasExistingAgents ? 'refresh' : 'create')
         setSections(DEFAULT_SECTIONS)
         setStrictness('concise')
-        setCommitMode('direct')
         setGenerating(false)
         setGenerateError(null)
         setResult(null)
+        setPendingFallback(null)
         setCommitMessage('')
         setCommitting(false)
         setCommitError(null)
@@ -122,6 +122,7 @@ export function AgentRulesModal({ isOpen, onClose, repo, hasExistingAgents = fal
         if (!owner || !repoName) return
         setGenerating(true)
         setGenerateError(null)
+        setPendingFallback(null)
         try {
             const res = await aiApi.agentRules.generate(owner, repoName, {
                 targetFiles: TARGET_TO_FILES[target], mode, sections, strictness,
@@ -135,16 +136,17 @@ export function AgentRulesModal({ isOpen, onClose, repo, hasExistingAgents = fal
             setStep('preview')
         } catch (e) {
             if (e?.status === 429 && e?.files) {
-                // Quota exceeded, but the server still shipped the
-                // deterministic fallback in the error body (Addendum 6b.2) —
-                // show it rather than a hard error.
-                setResult({
+                // Quota exceeded, but the server still shipped a deterministic
+                // fallback in the error body (Addendum 6b.2). Surface the same
+                // error-banner-then-manual-fallback step README Studio and
+                // Diagram Generator use for their 429s, instead of silently
+                // auto-advancing past the failure.
+                setPendingFallback({
                     deterministic: true, reason: 'quota_exceeded',
                     files: e.files, existing: e.existing || {}, notes: e.notes || [],
                     quotaExceeded: true,
                 })
-                setCommitMessage(mode === 'refresh' ? 'chore: refresh agent rules (AGENTS.md/CLAUDE.md)' : 'chore: add agent rules (AGENTS.md/CLAUDE.md)')
-                setStep('preview')
+                setGenerateError(e)
                 return
             }
             setGenerateError(e)
@@ -153,7 +155,16 @@ export function AgentRulesModal({ isOpen, onClose, repo, hasExistingAgents = fal
         }
     }, [owner, repoName, target, mode, sections, strictness])
 
-    const doCommit = useCallback(async () => {
+    const useDeterministicFallback = useCallback(() => {
+        if (!pendingFallback) return
+        setResult(pendingFallback)
+        setCommitMessage(mode === 'refresh' ? 'chore: refresh agent rules (AGENTS.md/CLAUDE.md)' : 'chore: add agent rules (AGENTS.md/CLAUDE.md)')
+        setGenerateError(null)
+        setPendingFallback(null)
+        setStep('preview')
+    }, [pendingFallback, mode])
+
+    const doCommit = useCallback(async (commitMode) => {
         if (!owner || !repoName || !result?.files || !commitMessage) return
         setCommitting(true)
         setCommitError(null)
@@ -168,14 +179,21 @@ export function AgentRulesModal({ isOpen, onClose, repo, hasExistingAgents = fal
         } finally {
             setCommitting(false)
         }
-    }, [owner, repoName, result, commitMessage, commitMode, onCommitted])
+    }, [owner, repoName, result, commitMessage, onCommitted])
 
     const targetFiles = TARGET_TO_FILES[target]
 
     const renderConfigureStage = () => (
         <div className="space-y-4">
             {generateError && (
-                <AIErrorState error={generateError} onRetry={generate} context="Agent Rules Generator" variant="banner" />
+                <>
+                    <AIErrorState error={generateError} onRetry={generate} context="Agent Rules Generator" variant="banner" />
+                    {pendingFallback && (
+                        <Button variant="secondary" size="sm" onClick={useDeterministicFallback}>
+                            Use deterministic version instead
+                        </Button>
+                    )}
+                </>
             )}
 
             <div className="flex items-start gap-2 px-3 py-2.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400">
@@ -192,9 +210,6 @@ export function AgentRulesModal({ isOpen, onClose, repo, hasExistingAgents = fal
                 </Field>
                 <Field label="Strictness">
                     <Select label="Strictness" value={strictness} onChange={setStrictness} options={STRICTNESS_OPTIONS} disabled={generating} />
-                </Field>
-                <Field label="Commit as">
-                    <Select label="Commit as" value={commitMode} onChange={setCommitMode} options={COMMIT_MODE_OPTIONS} disabled={generating} />
                 </Field>
             </div>
 
@@ -240,7 +255,7 @@ export function AgentRulesModal({ isOpen, onClose, repo, hasExistingAgents = fal
         >
             <div className="flex flex-wrap items-center gap-2">
                 {result?.deterministic ? (
-                    <Badge tone="warning" size="xs">Deterministic template (no AI polish)</Badge>
+                    <Badge tone="warning" size="xs">Deterministic (no AI)</Badge>
                 ) : (
                     <Badge tone="success" size="xs">AI-grounded</Badge>
                 )}
@@ -344,28 +359,31 @@ export function AgentRulesModal({ isOpen, onClose, repo, hasExistingAgents = fal
     const renderFooter = () => {
         if (step === 'configure') {
             return (
-                <>
+                <ModalFooter align="right">
                     <Button variant="ghost" onClick={onClose}>Close</Button>
                     <Button onClick={generate} disabled={generating}>
                         {generating ? 'Generating…' : 'Generate'}
                     </Button>
-                </>
+                </ModalFooter>
             )
         }
         if (step === 'preview') {
             return (
-                <>
+                <ModalFooter align="right">
                     <Button variant="ghost" onClick={() => setStep('configure')} disabled={committing}>
                         <ArrowLeft className="w-4 h-4" /> Back
                     </Button>
-                    <Button onClick={doCommit} disabled={committing || !commitMessage}>
-                        {committing ? 'Working…' : commitMode === 'pr' ? 'Open PR' : 'Commit'}
+                    <Button variant="secondary" onClick={() => doCommit('pr')} disabled={committing || !commitMessage}>
+                        {committing ? 'Working…' : 'Open PR'}
                     </Button>
-                </>
+                    <Button onClick={() => doCommit('direct')} disabled={committing || !commitMessage}>
+                        {committing ? 'Working…' : 'Apply'}
+                    </Button>
+                </ModalFooter>
             )
         }
         if (step === 'committed') {
-            return <Button onClick={onClose}>Done</Button>
+            return <ModalFooter align="right"><Button onClick={onClose}>Done</Button></ModalFooter>
         }
         return null
     }

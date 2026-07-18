@@ -141,6 +141,36 @@ describe('GET /api/v1/repos/:owner/:repo/security', () => {
     expect(byId('branch_protection_force_push').status).toBe('unknown')
   })
 
+  it('renders check 3 (alerts_clear) as unknown, not pass, when the token cannot see any alert source', async () => {
+    githubApi.mockImplementation(async (path) => {
+      if (path.includes('/secret-scanning/alerts') || path.includes('/code-scanning/alerts') || path.includes('/dependabot/alerts')) {
+        const err = new Error('Forbidden'); err.status = 403; throw err
+      }
+      if (path === '/repos/alice/hello') {
+        return { data: { default_branch: 'main', private: false, owner: { login: 'alice', type: 'User' } } }
+      }
+      return { data: [] }
+    })
+    const res = await request(await buildApp()).get('/api/v1/repos/alice/hello/security')
+    expect(res.status).toBe(200)
+    expect(res.body.summary.available).toBe(false)
+    const byId = (id) => res.body.checks.find((c) => c.id === id)
+    expect(byId('alerts_clear').status).toBe('unknown')
+  })
+
+  it('renders check 3 (alerts_clear) as pass when at least one alert source is reachable and clean', async () => {
+    githubApi.mockImplementation(async (path) => {
+      if (path.includes('/secret-scanning/alerts')) {
+        const err = new Error('Forbidden'); err.status = 403; throw err
+      }
+      return { data: [] }
+    })
+    const res = await request(await buildApp()).get('/api/v1/repos/alice/hello/security')
+    expect(res.body.summary.available).toBe(true)
+    const byId = (id) => res.body.checks.find((c) => c.id === id)
+    expect(byId('alerts_clear').status).toBe('pass')
+  })
+
   it('renders SECURITY.md presence from the community-health service (not refetched independently)', async () => {
     mockCheckCommunityFiles.mockResolvedValue({ 'SECURITY.md': { exists: true, size: 120 } })
     githubApi.mockImplementation(async () => ({ data: [] }))

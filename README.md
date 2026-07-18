@@ -331,6 +331,7 @@ The hosted product is **free-first**: nearly every product feature — bulk ops,
 | Migration Risk Analysis (AI)           | 25 / month      | Unlimited     | Unlimited  |
 | Repo Insights / Quality Report         | 75 / month      | Unlimited     | Unlimited  |
 | README Generator (AI)                  | 25 / month      | Unlimited     | Unlimited  |
+| README Studio (AI improve)             | 25 / month      | Unlimited     | Unlimited  |
 | Commit Generator (AI)                  | 250 / month     | Unlimited     | Unlimited  |
 | PR Review Experience (read + browse)   | ✓               | ✓             | ✓          |
 | Manual PR review write-back            | ✓               | ✓             | ✓          |
@@ -339,6 +340,10 @@ The hosted product is **free-first**: nearly every product feature — bulk ops,
 | AI Deep Review — org-shared prompts    | ✓               | ✓             | ✓          |
 | AI Deep Review — PR slash commands (`/describe`, `/test_plan`, `/improve`) | 30 / month | Unlimited | Unlimited |
 | AI Deep Review — PR Chat (streaming Q&A) | 100 messages / month | Unlimited | Unlimited |
+| AI Diagram Generator                   | 15 / month      | Unlimited     | Unlimited  |
+| Agent Rules Generator (AGENTS.md / CLAUDE.md) | 20 / month | Unlimited  | Unlimited  |
+| Security Posture AI Summary            | 75 / month      | Unlimited     | Unlimited  |
+| AI Image Generation (social / hero / logo) | 5 / month   | Unlimited     | Unlimited  |
 | Basic bulk on own repos                | ✓               | ✓             | ✓          |
 | Advanced bulk (transfer, mirror, cross-org) | ✓          | ✓             | ✓          |
 | Azure DevOps Cloud migration           | 5 / month       | Unlimited     | Unlimited  |

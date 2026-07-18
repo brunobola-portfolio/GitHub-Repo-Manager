@@ -163,7 +163,7 @@ describe('DiagramGenerator — deterministic fallback offered at the configure s
         await user.click(fallbackBtn)
 
         await waitFor(() => expect(aiApi.diagrams.deterministic).toHaveBeenCalledTimes(1))
-        expect(await screen.findByText(/structure diagram \(deterministic\)/i)).toBeInTheDocument()
+        expect(await screen.findByText(/deterministic \(no ai\)/i)).toBeInTheDocument()
         expect(await screen.findByTestId('diagram-mermaid-output')).toBeInTheDocument()
     })
 
@@ -240,6 +240,37 @@ describe('DiagramGenerator — retry-once self-repair', () => {
         await waitFor(() => expect(aiApi.diagrams.generate).toHaveBeenCalledTimes(3))
         const [, freshConfig] = aiApi.diagrams.generate.mock.calls[2]
         expect(freshConfig.retry).toBeUndefined()
+    })
+
+    it('shows loading feedback while Regenerate is in flight instead of leaving the stale error on screen', async () => {
+        const user = userEvent.setup()
+        aiApi.diagrams.generate
+            .mockResolvedValueOnce(GENERATE_RESULT)
+            .mockResolvedValueOnce({ ...GENERATE_RESULT, mermaid: 'graph TD\n  still broken' })
+
+        mermaidRenderMock.mockRejectedValue(new Error('always broken'))
+
+        render(<DiagramGenerator isOpen repo={REPO} onClose={() => {}} />)
+        await user.click(screen.getByRole('button', { name: /^generate$/i }))
+        await waitFor(() => expect(aiApi.diagrams.generate).toHaveBeenCalledTimes(2))
+        expect(await screen.findByText(/diagram failed to render/i)).toBeInTheDocument()
+
+        let resolveRegenerate
+        aiApi.diagrams.generate.mockImplementationOnce(() => new Promise((resolve) => { resolveRegenerate = resolve }))
+        const regenerateBtn = screen.getByRole('button', { name: /^regenerate$/i })
+        await user.click(regenerateBtn)
+
+        // Loading feedback replaces the stale error — never "click registered,
+        // nothing visibly happened".
+        expect(await screen.findByText(/regenerating diagram/i)).toBeInTheDocument()
+        expect(screen.queryByText(/diagram failed to render/i)).not.toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /regenerating/i })).toBeDisabled()
+
+        mermaidRenderMock.mockResolvedValueOnce({ svg: '<svg xmlns="http://www.w3.org/2000/svg"><text>ok</text></svg>' })
+        resolveRegenerate({ ...GENERATE_RESULT, mermaid: 'graph TD\n  fixed' })
+
+        await waitFor(() => expect(screen.queryByText(/regenerating diagram/i)).not.toBeInTheDocument())
+        expect(screen.getByTestId('diagram-mermaid-output')).toBeInTheDocument()
     })
 
     it('never retries on a sanitization failure (parseAndSanitizeSvg returning null)', async () => {
@@ -457,7 +488,7 @@ describe('DiagramGenerator — deterministic fallback after persistent render fa
 
         await user.click(fallbackBtn)
         await waitFor(() => expect(aiApi.diagrams.deterministic).toHaveBeenCalledTimes(1))
-        expect(await screen.findByText(/structure diagram \(deterministic\)/i)).toBeInTheDocument()
+        expect(await screen.findByText(/deterministic \(no ai\)/i)).toBeInTheDocument()
         // The diagram now renders (no more render error) and embedding is available.
         expect(screen.getByRole('button', { name: /embed in repo/i })).not.toBeDisabled()
     })

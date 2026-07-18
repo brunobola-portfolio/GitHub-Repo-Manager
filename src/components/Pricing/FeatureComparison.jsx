@@ -60,6 +60,10 @@ const CATEGORIES = [
         values: ['25 / month', 'Unlimited', 'Unlimited'],
       },
       {
+        feature: 'README Studio (AI improve)',
+        values: ['25 / month', 'Unlimited', 'Unlimited'],
+      },
+      {
         feature: 'Commit Generator (AI)',
         values: ['250 / month', 'Unlimited', 'Unlimited'],
       },
@@ -78,6 +82,22 @@ const CATEGORIES = [
       {
         feature: 'PR slash commands (/describe, /test_plan, /improve)',
         values: ['30 / month', 'Unlimited', 'Unlimited'],
+      },
+      {
+        feature: 'AI Diagram Generator',
+        values: ['15 / month', 'Unlimited', 'Unlimited'],
+      },
+      {
+        feature: 'Agent Rules Generator (AGENTS.md / CLAUDE.md)',
+        values: ['20 / month', 'Unlimited', 'Unlimited'],
+      },
+      {
+        feature: 'Security Posture AI Summary',
+        values: ['75 / month', 'Unlimited', 'Unlimited'],
+      },
+      {
+        feature: 'AI Image Generation (social / hero / logo)',
+        values: ['5 / month', 'Unlimited', 'Unlimited'],
       },
     ],
   },

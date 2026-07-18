@@ -4,7 +4,7 @@ import { DiffView, DiffModeEnum } from '@git-diff-view/react'
 import '@git-diff-view/react/styles/diff-view.css'
 import { motion } from 'framer-motion'
 import { Sparkles, CheckCircle, ExternalLink, AlertTriangle, ArrowLeft, BookOpen } from 'lucide-react'
-import { Modal } from '../ui/Modal'
+import { Modal, ModalFooter } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
 import { EmptyState } from '../ui/EmptyState'
@@ -254,14 +254,16 @@ export function ReadmeStudioModal({ isOpen, onClose, repo, onApplied }) {
         if (scoreError) return <AIErrorState error={scoreError} onRetry={loadScore} context="README Studio score" />
         if (!scoreData) return null
 
-        const { report, hasReadme } = scoreData
+        const { report, hasReadme, readmeTruncated } = scoreData
         if (!hasReadme) {
             return (
                 <div className="space-y-4">
                     <EmptyState
-                        icon={BookOpen}
-                        title="No README found"
-                        description="This is the top recommendation — generate a full README grounded in your repo's real signals."
+                        icon={readmeTruncated ? AlertTriangle : BookOpen}
+                        title={readmeTruncated ? 'README could not be read' : 'No README found'}
+                        description={readmeTruncated
+                            ? "A README exists but is too large or binary for GitHub to read — scoring can't inspect its content. Generating will treat it as a full rewrite grounded in your repo's other signals."
+                            : "This is the top recommendation — generate a full README grounded in your repo's real signals."}
                     />
                 </div>
             )
@@ -311,11 +313,13 @@ export function ReadmeStudioModal({ isOpen, onClose, repo, onApplied }) {
     }
 
     const renderConfigureStage = () => {
-        const hint = !scoreData?.hasReadme
-            ? { level: 'low', text: 'No README was found — grounding will rely on manifest/entrypoint signals only.' }
-            : !scoreData?.hasLicense
-                ? { level: 'medium', text: 'No LICENSE file was found — the license section will note it as unspecified rather than guessing.' }
-                : null
+        const hint = scoreData?.readmeTruncated
+            ? { level: 'low', text: 'The existing README is too large or binary to read — grounding will rely on manifest/entrypoint signals only.' }
+            : !scoreData?.hasReadme
+                ? { level: 'low', text: 'No README was found — grounding will rely on manifest/entrypoint signals only.' }
+                : !scoreData?.hasLicense
+                    ? { level: 'medium', text: 'No LICENSE file was found — the license section will note it as unspecified rather than guessing.' }
+                    : null
 
         return (
             <div className="space-y-4">
@@ -411,7 +415,7 @@ export function ReadmeStudioModal({ isOpen, onClose, repo, onApplied }) {
         <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
                 {improveResult?.deterministic ? (
-                    <Badge tone="neutral" size="xs">Deterministic (no AI)</Badge>
+                    <Badge tone="warning" size="xs">Deterministic (no AI)</Badge>
                 ) : (
                     <Badge tone={improveResult?.confidence === 'high' ? 'success' : improveResult?.confidence === 'medium' ? 'warning' : 'danger'} size="xs">
                         {(improveResult?.confidence || 'low').toUpperCase()} CONFIDENCE
@@ -500,31 +504,31 @@ export function ReadmeStudioModal({ isOpen, onClose, repo, onApplied }) {
 
     const renderFooter = () => {
         if (step === 'score') {
-            if (scoreLoading || scoreError || !scoreData) return <Button variant="ghost" onClick={onClose}>Close</Button>
+            if (scoreLoading || scoreError || !scoreData) return <ModalFooter align="right"><Button variant="ghost" onClick={onClose}>Close</Button></ModalFooter>
             return (
-                <>
+                <ModalFooter align="right">
                     <Button variant="ghost" onClick={onClose}>Close</Button>
                     <Button onClick={() => setStep('configure')}>
                         <Sparkles className="w-4 h-4" /> Improve with AI
                     </Button>
-                </>
+                </ModalFooter>
             )
         }
         if (step === 'configure') {
             return (
-                <>
+                <ModalFooter align="right">
                     <Button variant="ghost" onClick={() => setStep('score')} disabled={generating}>
                         <ArrowLeft className="w-4 h-4" /> Back
                     </Button>
                     <Button onClick={generate} disabled={generating}>
                         {generating ? 'Generating…' : 'Generate'}
                     </Button>
-                </>
+                </ModalFooter>
             )
         }
         if (step === 'preview') {
             return (
-                <>
+                <ModalFooter align="right">
                     <Button variant="ghost" onClick={() => setStep('configure')} disabled={committing}>
                         <ArrowLeft className="w-4 h-4" /> Back
                     </Button>
@@ -534,11 +538,11 @@ export function ReadmeStudioModal({ isOpen, onClose, repo, onApplied }) {
                     <Button onClick={() => doCommit('direct')} disabled={committing || !commitMessage}>
                         {committing ? 'Working…' : 'Apply'}
                     </Button>
-                </>
+                </ModalFooter>
             )
         }
         if (step === 'committed') {
-            return <Button onClick={onClose}>Done</Button>
+            return <ModalFooter align="right"><Button onClick={onClose}>Done</Button></ModalFooter>
         }
         return null
     }

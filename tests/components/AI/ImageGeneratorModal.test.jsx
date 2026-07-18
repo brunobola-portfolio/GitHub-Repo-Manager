@@ -138,6 +138,28 @@ describe('ImageGeneratorModal — configure → generate → preview', () => {
         expect(aiApi.images.commit).not.toHaveBeenCalled()
     })
 
+    it('shows loading feedback on Regenerate instead of leaving the stale image with no sign anything happened', async () => {
+        const user = userEvent.setup()
+        aiApi.images.generate.mockResolvedValueOnce(GENERATE_RESULT)
+        render(<ImageGeneratorModal isOpen repo={REPO} onClose={() => {}} />)
+
+        await user.click(await screen.findByRole('button', { name: /^generate$/i }))
+        expect(await screen.findByTestId('image-generator-preview')).toBeInTheDocument()
+
+        let resolveRegenerate
+        aiApi.images.generate.mockImplementationOnce(() => new Promise((resolve) => { resolveRegenerate = resolve }))
+        await user.click(screen.getByRole('button', { name: /^regenerate$/i }))
+
+        expect(await screen.findByTestId('image-generator-regenerating')).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /regenerating/i })).toBeDisabled()
+        // Stale preview stays mounted (visible under the overlay) — it's not
+        // yanked away, just visibly dimmed/overlaid while the new one loads.
+        expect(screen.getByTestId('image-generator-preview')).toBeInTheDocument()
+
+        resolveRegenerate({ ...GENERATE_RESULT, base64: 'bmV3aW1n' })
+        await waitFor(() => expect(screen.queryByTestId('image-generator-regenerating')).not.toBeInTheDocument())
+    })
+
     it('passes the user-typed style hint as promptExtras', async () => {
         const user = userEvent.setup()
         aiApi.images.generate.mockResolvedValue(GENERATE_RESULT)
@@ -173,6 +195,58 @@ describe('ImageGeneratorModal — configure → generate → preview', () => {
 
         await user.click(await screen.findByRole('button', { name: /^generate$/i }))
         expect(await screen.findByText(/quota exceeded/i)).toBeInTheDocument()
+    })
+
+    // r5 §4.7: "On any image-generation failure... the feature must never
+    // hard-fail the surrounding flow." The fallback must appear for every
+    // runtime failure mode, not just the pre-flight capability-absent stage.
+    it('offers the diagram fallback alongside a quota-exceeded runtime error', async () => {
+        const user = userEvent.setup()
+        const err = new Error('Image generation limit reached')
+        err.code = 'QUOTA_EXCEEDED'
+        err.status = 429
+        aiApi.images.generate.mockRejectedValue(err)
+        const onFallbackToDiagram = vi.fn()
+        render(<ImageGeneratorModal isOpen repo={REPO} onClose={() => {}} onFallbackToDiagram={onFallbackToDiagram} />)
+
+        await user.click(await screen.findByRole('button', { name: /^generate$/i }))
+        await screen.findByText(/quota exceeded/i)
+        await user.click(screen.getByRole('button', { name: /generate a diagram instead/i }))
+        expect(onFallbackToDiagram).toHaveBeenCalledTimes(1)
+    })
+
+    it('offers the diagram fallback alongside a refusal runtime error', async () => {
+        const user = userEvent.setup()
+        const err = new Error('The AI provider declined to generate this image.')
+        err.code = 'IMAGE_REFUSAL'
+        aiApi.images.generate.mockRejectedValue(err)
+        const onFallbackToDiagram = vi.fn()
+        render(<ImageGeneratorModal isOpen repo={REPO} onClose={() => {}} onFallbackToDiagram={onFallbackToDiagram} />)
+
+        await user.click(await screen.findByRole('button', { name: /^generate$/i }))
+        await screen.findByText(/image generation declined/i)
+        expect(screen.getByRole('button', { name: /generate a diagram instead/i })).toBeInTheDocument()
+    })
+
+    it('offers the diagram fallback alongside a generic provider-error runtime failure', async () => {
+        const user = userEvent.setup()
+        aiApi.images.generate.mockRejectedValue(new Error('Provider request failed'))
+        const onFallbackToDiagram = vi.fn()
+        render(<ImageGeneratorModal isOpen repo={REPO} onClose={() => {}} onFallbackToDiagram={onFallbackToDiagram} />)
+
+        await user.click(await screen.findByRole('button', { name: /^generate$/i }))
+        await screen.findByRole('alert')
+        expect(screen.getByRole('button', { name: /generate a diagram instead/i })).toBeInTheDocument()
+    })
+
+    it('omits the diagram fallback on a runtime error when no onFallbackToDiagram prop is provided', async () => {
+        const user = userEvent.setup()
+        aiApi.images.generate.mockRejectedValue(new Error('Provider request failed'))
+        render(<ImageGeneratorModal isOpen repo={REPO} onClose={() => {}} />)
+
+        await user.click(await screen.findByRole('button', { name: /^generate$/i }))
+        await screen.findByRole('alert')
+        expect(screen.queryByRole('button', { name: /generate a diagram instead/i })).not.toBeInTheDocument()
     })
 })
 

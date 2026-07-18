@@ -73,6 +73,10 @@ function computeSummary(result) {
   if (result.dependabot.available) {
     for (const a of result.dependabot.alerts) bumpSeverity(summary, a.security_advisory?.severity)
   }
+  // Zero across the board is only meaningful ("clean") if at least one of the
+  // three sources was actually reachable — otherwise it's "we can't see
+  // anything", which check #3 (alerts_clear) must render as unknown, not pass.
+  summary.available = result.secretScanning.available || result.codeScanning.available || result.dependabot.available
   result.summary = summary
 }
 

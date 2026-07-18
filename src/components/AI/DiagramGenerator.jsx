@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { DiffView, DiffModeEnum } from '@git-diff-view/react'
 import '@git-diff-view/react/styles/diff-view.css'
 import { Workflow, Copy, Download, RotateCcw, ArrowLeft, AlertTriangle, GitBranch, CheckCircle, ExternalLink, Lock } from 'lucide-react'
-import { Modal } from '../ui/Modal'
+import { Modal, ModalFooter } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
 import { SectionSpinner } from '../ui/Spinner'
@@ -12,6 +12,7 @@ import { AIErrorState } from '../ui/AIErrorState'
 import { Select } from '../ui/Select'
 import { Field } from '../ui/form/Field'
 import { Input } from '../ui/form/Input'
+import { TRANSITION } from '../ui/motion'
 import { aiApi } from '../../api/ai'
 import { copyToClipboard } from '../../utils/clipboard'
 import { parseAndSanitizeSvg } from '../../utils/sanitizeSvg'
@@ -389,7 +390,7 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
                     <Badge tone="warning" size="xs">Based on a partial (truncated) file listing</Badge>
                 )}
                 {isDeterministic && (
-                    <Badge tone="neutral" size="xs">Structure diagram (deterministic)</Badge>
+                    <Badge tone="warning" size="xs">Deterministic (no AI)</Badge>
                 )}
             </div>
 
@@ -405,19 +406,22 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
                 </span>
             </div>
 
-            {selfRepairing && (
+            {(selfRepairing || generating) && (
                 <div className="flex items-center justify-center py-4">
-                    <SectionSpinner label="Diagram failed to parse — attempting one automatic repair…" padding="py-2" />
+                    <SectionSpinner
+                        label={selfRepairing ? 'Diagram failed to parse — attempting one automatic repair…' : 'Regenerating diagram…'}
+                        padding="py-2"
+                    />
                 </div>
             )}
 
-            {!selfRepairing && renderError && (
+            {!selfRepairing && !generating && renderError && (
                 <div role="alert" className="px-3 py-2.5 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-sm text-red-600 dark:text-red-400">
                     Diagram failed to render: {renderError}
                 </div>
             )}
 
-            {!selfRepairing && !renderError && (
+            {!selfRepairing && !generating && !renderError && (
                 <div
                     ref={mermaidRef}
                     data-testid="diagram-mermaid-output"
@@ -585,29 +589,29 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
     const renderFooter = () => {
         if (step === 'configure') {
             return (
-                <>
+                <ModalFooter align="right">
                     <Button variant="ghost" onClick={onClose}>Close</Button>
                     <Button onClick={generate} disabled={generating}>
                         {generating ? 'Generating…' : 'Generate'}
                     </Button>
-                </>
+                </ModalFooter>
             )
         }
         if (step === 'result') {
             return (
-                <>
-                    <Button variant="ghost" onClick={() => setStep('configure')} disabled={selfRepairing}>
+                <ModalFooter align="right">
+                    <Button variant="ghost" onClick={() => setStep('configure')} disabled={selfRepairing || generating}>
                         <ArrowLeft className="w-4 h-4" /> Back
                     </Button>
-                    {renderError && (
-                        <>
-                            <Button variant="secondary" onClick={generate} disabled={generating}>
-                                <RotateCcw className="w-4 h-4" /> Regenerate
-                            </Button>
-                            <Button variant="secondary" onClick={useDeterministicFallback} disabled={fallbackLoading}>
-                                {fallbackLoading ? 'Building…' : 'Use deterministic diagram instead'}
-                            </Button>
-                        </>
+                    {(renderError || generating) && (
+                        <Button variant="secondary" onClick={generate} disabled={generating}>
+                            <RotateCcw className="w-4 h-4" /> {generating ? 'Regenerating…' : 'Regenerate'}
+                        </Button>
+                    )}
+                    {renderError && !generating && (
+                        <Button variant="secondary" onClick={useDeterministicFallback} disabled={fallbackLoading}>
+                            {fallbackLoading ? 'Building…' : 'Use deterministic diagram instead'}
+                        </Button>
                     )}
                     <Button variant="secondary" onClick={copyMermaid} disabled={!mermaidSource}>
                         <Copy className="w-4 h-4" /> Copy Mermaid
@@ -621,19 +625,19 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
                     <Button onClick={openEmbedConfig} disabled={!canEmbed}>
                         <GitBranch className="w-4 h-4" /> Embed in repo
                     </Button>
-                </>
+                </ModalFooter>
             )
         }
         if (step === 'embed-config') {
             return (
-                <>
+                <ModalFooter align="right">
                     <Button variant="ghost" onClick={() => setStep('result')} disabled={embedPreviewing}>
                         <ArrowLeft className="w-4 h-4" /> Back
                     </Button>
                     <Button onClick={previewEmbed} disabled={embedPreviewing || (embedPlacement === 'custom' && !embedCustomAnchor.trim())}>
                         {embedPreviewing ? 'Building…' : 'Preview'}
                     </Button>
-                </>
+                </ModalFooter>
             )
         }
         if (step === 'embed-preview') {
@@ -642,7 +646,7 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
                 || (embedPreviewData?.svg && !svgCommitMessage.trim())
             const blocked = embedPreviewData?.readOnly || noReadmeForMermaid || missingCommitMessage
             return (
-                <>
+                <ModalFooter align="right">
                     <Button variant="ghost" onClick={() => setStep('embed-config')} disabled={committing}>
                         <ArrowLeft className="w-4 h-4" /> Back
                     </Button>
@@ -652,11 +656,11 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
                     <Button onClick={() => doEmbedCommit('direct')} disabled={committing || blocked}>
                         {committing ? 'Working…' : 'Apply'}
                     </Button>
-                </>
+                </ModalFooter>
             )
         }
         if (step === 'embed-committed') {
-            return <Button onClick={onClose}>Done</Button>
+            return <ModalFooter align="right"><Button onClick={onClose}>Done</Button></ModalFooter>
         }
         return null
     }
@@ -685,7 +689,7 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
             footer={renderFooter()}
             closeOnBackdrop={!committing}
         >
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={TRANSITION.fast}>
                 {stageContent}
             </motion.div>
         </Modal>

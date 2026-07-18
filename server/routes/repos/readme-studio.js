@@ -29,7 +29,7 @@ router.get('/:owner/:repo/readme-studio/score', requireAuth, async (req, res) =>
     try {
         const { data: repoData } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken);
 
-        const { readmeContent, fileStructure, licenseContent, workflowFiles } = await fetchReadmeStudioSignals({
+        const { readmeContent, readmeTruncated, fileStructure, licenseContent, workflowFiles } = await fetchReadmeStudioSignals({
             owner, repo, accessToken: req.session.accessToken,
         });
 
@@ -43,6 +43,10 @@ router.get('/:owner/:repo/readme-studio/score', requireAuth, async (req, res) =>
             report,
             repo: `${owner}/${repo}`,
             hasReadme: !!readmeContent,
+            // A README that exists but is too large/binary for GitHub to inline
+            // is a distinct state from "no README" — surfaced separately so the
+            // UI never tells a repo with an unreadable README to "add" one.
+            readmeTruncated,
             hasLicense: !!licenseContent,
         });
     } catch (error) {

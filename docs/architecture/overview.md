@@ -14,7 +14,7 @@ adapter seam.
 - **Frontend**: React 19 + Vite 8 + Tailwind CSS 4 single-page app, heavy
   route-level lazy splits (WorkBoard, PRReview, Admin) kept under explicit
   gzip budgets (see [`scripts/check-bundle-size.mjs`](../../scripts/check-bundle-size.mjs)).
-- **Backend**: Express 5 with 315 route handlers across 70 route modules under
+- **Backend**: Express 5 with 324 route handlers across 74 route modules under
   `server/routes/`. CSRF double-submit, SSRF guard on import-from-URL,
   per-IP auth rate-limit, rolling session + 7-day absolute timeout.
 - **Auth**: GitHub OAuth App, session-based token storage, CSRF-protected
