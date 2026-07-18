@@ -56,6 +56,16 @@ All audit FIX NOW items implemented + reviewed clean (run wf_98205922-e4b, 2026-
 - [x] Validation: unit suite 635 files / 5676 tests passed (24 skipped, 0 failures), production build clean, honesty gates (`pricing-feature-parity`, `readme-honesty`) green, `npm run lint` clean.
 - [x] Nothing deferred out of this wave's own scope; j/k roving navigation and keyboard shortcuts re-verified unaffected by both the risk-rail and windowing changes.
 
+### Wave 6 — Community WOW (owner request 2026-07-18) — IN PROGRESS
+Goal: features that make the app community-launch worthy, all AI-powered via existing guarded paths, all configurable:
+- [ ] R: web-validated research (README-improvement tooling landscape; AGENTS.md/CLAUDE.md emerging standard + best practices; AI→mermaid→SVG feasibility — mermaid is already bundled in-app; security-posture analysis scope)
+- [ ] README Studio: analyze README vs detected stack/license → gaps + score → AI-improved README with configurable options → diff preview → apply via existing write paths (meter: readmeGenPerMonth)
+- [ ] Diagram generator: repo structure → AI mermaid (architecture/sequence/flow) → rendered in-app → SVG export
+- [ ] Agent rules generator: repo analysis → AGENTS.md / CLAUDE.md per best practices, configurable sections, preview + apply
+- [ ] Security posture panel: aggregate existing signals (branch protection, secrets patterns, workflow permissions, dependabot) + AI recommendations
+- [ ] Community polish: repo README refresh with screenshots for launch
+Research outputs → `.dev/prod-premium/2026-07-18/`. Same resumable slice pattern (implementer+reviewer, incremental commits, PR per wave).
+
 ## Resume instructions (any session)
 1. Read this file + memory `project-prod-premium-2026-07-17`.
 2. `git branch -a` + `gh pr list` to see which waves landed.
