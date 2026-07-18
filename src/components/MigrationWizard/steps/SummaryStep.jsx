@@ -5,7 +5,7 @@ import {
   CheckCircle2, XCircle, Clock, Package, ClipboardList, BookOpen,
   Download, Plus, History, Loader2, AlertTriangle, ExternalLink, Ban,
   Sparkles, Trophy, ChevronDown, ChevronUp, Lightbulb,
-  ArrowRight, Zap, Shield, ShieldCheck, BarChart3, Timer, RefreshCw,
+  ArrowRight, Zap, Shield, ShieldCheck, BarChart3, Timer, RefreshCw, Activity,
 } from 'lucide-react'
 import { AnimatedCopyIcon } from '../../ui/AnimatedCopyIcon'
 import { migrationApi } from '../../../api/migration'
@@ -19,6 +19,7 @@ import { OversizedFilesPanel } from '../ui/OversizedFilesPanel'
 import { decodeOversizedError } from '../ui/oversizedError'
 import { ReplaceConfirmModal } from './RepoConfigStep/ReplaceConfirmModal'
 import { isConflictError } from './conflictRecovery'
+import { computeMigrationHealth, buildHealthNarrative } from './migrationHealth'
 
 /* ═══════════════════════════════════════════
    CONSTANTS & CONFIGURATION
@@ -491,6 +492,68 @@ function PreflightSummary({ flags }) {
   )
 }
 
+/* ═══════════════════════════════════════════
+   MIGRATION HEALTH — deterministic caveat rollup
+   ═══════════════════════════════════════════ */
+
+function MigrationHealthCard({ tasks, onFixLfsUpload }) {
+  const [fixingItem, setFixingItem] = useState(null)
+  const health = computeMigrationHealth(tasks)
+  if (!health.hasCaveats) return null
+
+  const items = [...health.actionItems, ...health.notableItems]
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: EASE.emphasized }}
+      className="rounded-xl border border-amber-500/20 dark:border-amber-500/15 bg-amber-500/5 dark:bg-amber-500/5 p-4"
+    >
+      <div className="flex items-center gap-2 mb-2">
+        <Activity className="w-4 h-4 text-amber-500 shrink-0" />
+        <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Migration Health</h4>
+      </div>
+      <p className="text-sm text-slate-600 dark:text-slate-300 mb-3">
+        {buildHealthNarrative(health)}
+      </p>
+      <ul className="space-y-1.5">
+        {items.map((item) => (
+          <li key={item.taskId} className="flex items-center justify-between gap-3 text-xs">
+            <span className="text-slate-600 dark:text-slate-300 min-w-0">
+              <span className="font-medium text-slate-800 dark:text-slate-200">{item.targetRef}</span>
+              {' — '}{item.text}
+            </span>
+            {item.actionable && onFixLfsUpload && (
+              <Button
+                variant="soft-danger"
+                size="xs"
+                type="button"
+                className="shrink-0"
+                onClick={() => setFixingItem(item)}
+              >
+                <RefreshCw className="w-3 h-3" />
+                Fix now
+              </Button>
+            )}
+          </li>
+        ))}
+      </ul>
+      {fixingItem && (
+        <ReplaceConfirmModal
+          isOpen
+          repoFullName={fixingItem.targetRef || ''}
+          onCancel={() => setFixingItem(null)}
+          onConfirm={() => {
+            setFixingItem(null)
+            onFixLfsUpload({ id: fixingItem.taskId, targetRef: fixingItem.targetRef })
+          }}
+        />
+      )}
+    </motion.div>
+  )
+}
+
 export default function SummaryStep({ planId, onNewMigration, onViewHistory, onReplaceRetry, onLfsRetry, preflightFlags = [] }) {
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -645,6 +708,9 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
           </div>
         </div>
       </motion.div>
+
+      {/* ── Migration health rollup ── */}
+      <MigrationHealthCard tasks={tasks} onFixLfsUpload={onFixLfsUpload} />
 
       {/* ── Task results ── */}
       <div>
