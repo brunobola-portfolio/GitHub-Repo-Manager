@@ -43,6 +43,24 @@ function gitGrep(pattern) {
   }
 }
 
+// This guard uses `git grep`, so it only runs where git + a work tree exist
+// (CI and local dev). In a Docker image build or an extracted source tarball
+// there's no git, so skip gracefully rather than failing the production build —
+// the check is a dev-time lint already enforced on every PR.
+function gitAvailable() {
+  try {
+    execSync('git rev-parse --is-inside-work-tree', { stdio: 'ignore' })
+    return true
+  } catch {
+    return false
+  }
+}
+
+if (!gitAvailable()) {
+  console.warn('[check-killed-classes] git/work-tree unavailable — skipping (this guard runs in CI and locally where git is present).')
+  process.exit(0)
+}
+
 // --- Run checks ---
 
 const simpleOutput = gitGrep(SIMPLE_PATTERNS.join('|'))
