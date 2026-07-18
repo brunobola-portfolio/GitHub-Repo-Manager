@@ -895,3 +895,72 @@ export async function createProviderForUser(userId, kind = 'completion', opts = 
 
     return provider;
 }
+
+// ---------------------------------------------------------------------------
+// resolveImageProviderConfig — raw credential resolution for image generation
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve the same "which provider + credentials is this user's active
+ * configuration" question `createProviderForUser` answers, but return the
+ * RAW `{ provider, model, apiKey, baseURL }` shape instead of an instantiated
+ * SDK provider instance.
+ *
+ * Why not reuse `createProviderForUser`? Its return value is an opaque
+ * provider object built for the `generate()` SDK contract — for Gemini in
+ * particular, `.model` is a wrapped `GenerativeModel` instance, not a model
+ * id string, and there is no public accessor for the raw API key at all.
+ * `server/lib/ai-features/image-provider.js`'s raw-fetch image calls
+ * (Gemini REST, OpenAI Images, OpenRouter Image API — none of which reuse
+ * `generate()`) need the literal credentials, not a wrapped client — see that
+ * module's header comment for why image generation is a separate call shape.
+ *
+ * Mirrors `createProviderForUser`'s exact resolution order (user BYOK config
+ * -> server env fallback -> null) and the same SSRF hardening (the sync
+ * `assertSafeAIEndpoint` check plus the async DNS-rebinding recheck) for any
+ * stored completion `endpointUrl`, so a BYOK proxy endpoint gets identical
+ * protection whether it's used for text or image generation.
+ *
+ * @param {number} userId
+ * @returns {Promise<{ provider: string|null, model: string|null, apiKey: string|null, baseURL?: string }>}
+ */
+export async function resolveImageProviderConfig(userId) {
+    // Lazy import to avoid circular dependency at module load time (same
+    // reason createProviderForUser does this).
+    const { getDecryptedConfig } = await import('./user-ai-config.js');
+
+    const userConfig = getDecryptedConfig(userId);
+
+    if (userConfig?.completionProvider && userConfig?.completionCredentials?.apiKey) {
+        const endpointUrl = userConfig.completionCredentials.endpointUrl;
+        if (endpointUrl) {
+            assertSafeAIEndpoint(endpointUrl, { provider: userConfig.completionProvider });
+            await assertEndpointHostIsPublic(endpointUrl, userConfig.completionProvider);
+        }
+        return {
+            provider: userConfig.completionProvider,
+            model: userConfig.completionModel || null,
+            apiKey: userConfig.completionCredentials.apiKey,
+            ...(endpointUrl ? { baseURL: endpointUrl } : {}),
+        };
+    }
+
+    // AI_REQUIRE_USER_CONFIG=true means every user must bring their own key —
+    // no server-wide fallback, mirroring createProviderForUser.
+    if (process.env.AI_REQUIRE_USER_CONFIG === 'true') {
+        return { provider: null, model: null, apiKey: null };
+    }
+
+    const providerName = (process.env.AI_PROVIDER || 'gemini').toLowerCase();
+    const ENV = providerName.toUpperCase();
+    const apiKey = process.env[`${ENV}_API_KEY`];
+    if (!apiKey) {
+        return { provider: null, model: null, apiKey: null };
+    }
+
+    return {
+        provider: providerName,
+        model: process.env[`${ENV}_MODEL`] || null,
+        apiKey,
+    };
+}

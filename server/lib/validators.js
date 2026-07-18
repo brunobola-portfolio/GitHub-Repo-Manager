@@ -375,6 +375,46 @@ export const embedDiagramCommitSchema = z.object({
     .refine((v) => v.target !== 'readme-mermaid' || !!v.readme, { message: 'readme is required for target readme-mermaid', path: ['readme'] })
     .refine((v) => v.target !== 'svg-file' || !!v.svg, { message: 'svg is required for target svg-file', path: ['svg'] });
 
+// AI Image Generator (Wave 6c / R5) — POST /api/ai/generate-image
+// (server/routes/ai/images.js). Grounded in repo name/description/language/
+// topics; three fixed presets (social/hero/logo) rather than an arbitrary
+// size. `promptExtras` is deliberately short and additive-only — a
+// style/color-hint field appended to the fixed template, NOT a free-text
+// prompt replacement (r5 §4.6: exposing a fully free-text override is out of
+// scope for v1; the content-safety constraints are always appended AFTER
+// this field server-side so they can't be overridden by user-supplied text).
+export const aiGenerateImageSchema = z.object({
+    repo: aiRepoMetadataSchema.refine((v) => !!v.full_name, { message: 'repo.full_name is required' }),
+    preset: z.enum(['social', 'hero', 'logo']),
+    promptExtras: z.string().max(150).optional(),
+}).strict();
+
+// Commit a previously generated, client-echoed image into the repo — the
+// generate/commit split mirrors agent-rules and the diagram embed flow
+// (preview-before-commit, never re-generate server-side). The destination
+// path is ALWAYS derived server-side from `preset` (IMAGE_PRESETS in
+// server/routes/ai/images.js) — there is no `path` field here at all, which
+// is the hardening: the client cannot request an arbitrary write location,
+// mirroring the diagram embed-commit's `svg.path === svgPathFor(diagramType)`
+// defence-in-depth check.
+//
+// `base64` is capped at ~4 MB of decoded binary (~5.6 MB of base64 text) —
+// generous for a PNG at these presets' resolutions while still bounding a
+// single request's payload (same reasoning as `base64Content` below, scaled
+// up for images vs. the 2 MB text-file cap).
+const imageBase64Content = z.string()
+    .min(1)
+    .max(5_600_000)
+    .regex(/^[A-Za-z0-9+/=\s]+$/, 'base64 must be base64-encoded');
+
+export const commitImageSchema = z.object({
+    repo: aiRepoMetadataSchema.refine((v) => !!v.full_name, { message: 'repo.full_name is required' }),
+    preset: z.enum(['social', 'hero', 'logo']),
+    base64: imageBase64Content,
+    commitMessage: z.string().min(1).max(500).optional(),
+    mode: z.enum(['direct', 'pr']).optional().default('direct'),
+}).strict();
+
 // Agent Rules Generator — POST /:owner/:repo/agent-rules/generate and
 // /agent-rules/commit (server/routes/repos/actions-community.js). `sections`
 // mirrors server/lib/ai-features/agent-rules.js's SECTION_KEYS; unknown keys

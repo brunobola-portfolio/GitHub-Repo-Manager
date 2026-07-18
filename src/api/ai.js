@@ -604,6 +604,64 @@ export const aiApi = {
         },
     },
 
+    // AI Image Generator (Wave 6c / R5) — repo-grounded raster banners/logos
+    // (social preview / README hero / logo draft). Gated behind capability
+    // detection (`capability`, GET) since image output is NOT uniform across
+    // providers (see server/lib/ai-features/image-provider.js) — the UI
+    // should call this before offering "Generate" and show an honest
+    // "not available with the current provider" state otherwise, rather than
+    // a spinner-then-fail. `generate` NEVER writes to the repo (preview
+    // only); `commit` is a separate, explicit step that echoes back the
+    // exact accepted base64 instead of re-generating server-side — same
+    // generate/commit split as `diagrams` and `agentRules` above.
+    images: {
+        capability: async () => {
+            const res = await fetch(`${API_BASE}/ai/generate-image/capability`, { credentials: 'include' });
+            if (!res.ok) throw new Error(`Image capability check failed: HTTP ${res.status}`);
+            return res.json();
+        },
+        generate: async (repo, config = {}) => {
+            const res = await fetch(`${API_BASE}/ai/generate-image`, {
+                method: 'POST',
+                headers: await mutationHeaders(),
+                credentials: 'include',
+                body: JSON.stringify({ repo, ...config }),
+            });
+            if (res.status === 429) {
+                // Quota (ai_image cap) AND the monthly spend cap both surface
+                // as 429 here — carry the structured fields <QuotaExceededState />
+                // / <AIErrorState /> parse instead of the generic tier-error
+                // shape handleAIResponse() produces for the ambient surfaces.
+                const body = await res.json().catch(() => ({}));
+                const error = new Error(body.message || body.error || 'Image generation quota exceeded');
+                error.status = 429;
+                error.code = body.code || 'QUOTA_EXCEEDED';
+                error.tierError = body.code === 'QUOTA_EXCEEDED';
+                error.upgradeUrl = body.upgradeUrl || '/pricing';
+                error.limit = body.limit;
+                error.current = body.current;
+                error.feature = body.feature;
+                error.resetAt = body.resetAt;
+                error.upgradeTo = body.upgradeTo;
+                throw error;
+            }
+            if (!res.ok) {
+                // provider_no_image_support (404) / IMAGE_REFUSAL (422) /
+                // image_pricing_unavailable (501) — thrown with `.code`/
+                // `.reason` attached so the modal can render the specific,
+                // honest state rather than a generic failure message.
+                const body = await res.json().catch(() => ({}));
+                const error = new Error(body.error || `Generate image failed: HTTP ${res.status}`);
+                error.status = res.status;
+                error.code = body.code;
+                error.reason = body.reason;
+                throw error;
+            }
+            return res.json();
+        },
+        commit: async (payload) => postJson(`${API_BASE}/ai/generate-image/commit`, payload),
+    },
+
     // Post-migration polish — thin wrappers around existing endpoints, grouped
     // so useAIPolish can stay free of fetch wiring and stays easy to mock in
     // tests. See docs/specs/2026-05-08-post-migration-ai-polish.md for the

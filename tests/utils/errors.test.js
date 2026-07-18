@@ -145,6 +145,27 @@ describe('formatUserError', () => {
     expect(formatUserError({ code: 'PRESET_NOT_FOUND' }).action.type).toBe('retry')
   })
 
+  it('maps the server\'s lowercase provider_no_image_support to a configure action pointing at AI settings', () => {
+    const formatted = formatUserError({ code: 'provider_no_image_support' })
+    expect(formatted.code).toBe('PROVIDER_NO_IMAGE_SUPPORT')
+    expect(formatted.action.type).toBe('configure')
+    expect(formatted.action.settingsTab).toBe('ai')
+  })
+
+  it('maps IMAGE_REFUSAL to a retry action', () => {
+    expect(formatUserError({ code: 'IMAGE_REFUSAL' }).action.type).toBe('retry')
+  })
+
+  it('maps the server\'s lowercase image_pricing_unavailable to a configure action', () => {
+    const formatted = formatUserError({ code: 'image_pricing_unavailable' })
+    expect(formatted.code).toBe('IMAGE_PRICING_UNAVAILABLE')
+    expect(formatted.action.type).toBe('configure')
+  })
+
+  it('maps AI_SPEND_CAP_REACHED (emitted by every AI route) to a dismiss action', () => {
+    expect(formatUserError({ code: 'AI_SPEND_CAP_REACHED' }).action.type).toBe('dismiss')
+  })
+
   it('maps GITHUB_FETCH_FAILED to a retry action', () => {
     expect(formatUserError({ code: 'GITHUB_FETCH_FAILED' }).action.type).toBe('retry')
   })

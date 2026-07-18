@@ -203,6 +203,31 @@ const KNOWN_ERRORS = {
         body: 'The selected prompt preset is no longer available. Pick a different one and retry.',
         action: { label: 'Retry', kind: 'retry', type: 'retry' },
     },
+    // AI Image Generator (Wave 6c / R5, server/routes/ai/images.js).
+    PROVIDER_NO_IMAGE_SUPPORT: {
+        title: 'Image generation not available',
+        body: 'Your current AI provider doesn’t support image output. Switch to a provider that does (Gemini, OpenAI, or OpenRouter) in Settings → AI.',
+        action: { label: 'Open AI Settings', kind: 'open-settings', type: 'configure', settingsTab: 'ai' },
+    },
+    IMAGE_REFUSAL: {
+        title: 'Image generation declined',
+        body: 'The AI provider declined to generate this image. Try rephrasing the style hint.',
+        action: { label: 'Retry', kind: 'retry', type: 'retry' },
+    },
+    IMAGE_PRICING_UNAVAILABLE: {
+        title: 'Image pricing not configured',
+        body: 'This provider/model combination isn’t priced yet, so the request was declined rather than billed unpredictably. Try a different provider in Settings → AI.',
+        action: { label: 'Open AI Settings', kind: 'open-settings', type: 'configure', settingsTab: 'ai' },
+    },
+    // Emitted by handleAIError (server/routes/ai/shared.js) for EVERY AI
+    // route, not just image generation — added here because none of the
+    // AI surfaces had a specific mapping for it before (it fell through to
+    // the generic "Something went wrong" fallback).
+    AI_SPEND_CAP_REACHED: {
+        title: 'Monthly AI budget reached',
+        body: 'You have used your monthly AI spending allowance. It resets next month, or an admin can raise the cap.',
+        action: { label: 'Dismiss', kind: 'dismiss', type: 'dismiss' },
+    },
     GITHUB_FETCH_FAILED: {
         title: 'Could not load PR data from GitHub',
         body: 'GitHub did not return the PR contents. Check your connection and retry.',
@@ -309,6 +334,8 @@ const CODE_ALIASES = {
     ai_request_failed: 'AI_REQUEST_FAILED',
     ai_disabled: 'AI_DISABLED',
     ai_model_not_found: 'MODEL_NOT_FOUND',
+    provider_no_image_support: 'PROVIDER_NO_IMAGE_SUPPORT',
+    image_pricing_unavailable: 'IMAGE_PRICING_UNAVAILABLE',
     ai_canceled: 'AI_REQUEST_FAILED',
     ai_summary_failed: 'AI_SUMMARY_FAILED',
     // Non-AI server errors that follow the `{ error: '<snake_code>' }` shape.
