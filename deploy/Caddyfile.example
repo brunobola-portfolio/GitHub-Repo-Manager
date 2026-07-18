@@ -1,0 +1,80 @@
+# Example Caddyfile for self-hosting GitHub Repo Manager behind a reverse
+# proxy with automatic TLS (Let's Encrypt / ZeroSSL via Caddy's built-in ACME
+# client — no certbot, no manual renewal).
+#
+# The app is a single Node process: in production (`NODE_ENV=production`)
+# Express serves both the built frontend (`dist/`) AND the `/api/*` routes
+# from the same port (see `server/index.js`). That means this proxy only
+# needs ONE upstream — there's no separate "static site" origin to wire up.
+#
+# Usage:
+#   1. Copy this file to your server as `Caddyfile` (or point
+#      `caddy run --config` at it directly) and replace the placeholder
+#      domain below.
+#   2. Run `npm run build && npm start` (or your process manager of choice)
+#      so the app listens on 127.0.0.1:3001. Caddy talks to it over plain
+#      HTTP on localhost — TLS is terminated here, at the proxy.
+#   3. Start Caddy: `caddy run --config Caddyfile`. It requests and renews
+#      the certificate automatically the first time it binds :443 for the
+#      domain below (DNS A/AAAA record must already point at this host).
+#
+# See docs/operations.md → "Reverse proxy & TLS" for the `trust proxy`
+# setting this depends on, and for the equivalent nginx config.
+
+your-domain.example.com {
+	# Single upstream: Express serves the SPA + /api/* from one port.
+	reverse_proxy 127.0.0.1:3001 {
+		# SSE (Server-Sent Events) is used for AI chat streaming
+		# (/api/ai/chat, /api/ai/pr-chat, dev-toolkit endpoints) and the
+		# assisted-install tooling endpoint
+		# (/api/env/tooling/:id/install). Those responses are
+		# `Content-Type: text/event-stream` and must reach the browser
+		# chunk-by-chunk, not batched — a proxy that buffers the whole
+		# response before forwarding it turns "streaming" into "one
+		# big delayed blob" and breaks the abort-on-disconnect behavior
+		# the server relies on.
+		#
+		# flush_interval -1 tells Caddy to flush every write from the
+		# upstream to the client immediately, for ALL responses (not
+		# just SSE) — safe here because this app has no long-lived
+		# non-streaming download that would benefit from batching.
+		flush_interval -1
+
+		# Caddy sets X-Forwarded-For / X-Forwarded-Proto / X-Forwarded-Host
+		# automatically for every proxied request — this is what makes
+		# `app.set('trust proxy', 1)` in server/index.js resolve the
+		# correct client IP (rate limiting) and correct scheme (secure
+		# cookies). Nothing extra to configure, but see docs/operations.md
+		# if you insert a SECOND proxy hop (e.g. Caddy behind a load
+		# balancer) — the trust-proxy hop count must match the real
+		# number of hops or both of those break.
+	}
+
+	# Optional but recommended: HSTS once you've confirmed TLS works end
+	# to end. Caddy already redirects HTTP -> HTTPS by default; this just
+	# tells browsers to skip the plaintext round-trip on repeat visits.
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+	encode gzip zstd
+}
+
+# --- Notes -------------------------------------------------------------
+#
+# * Set these in the app's environment before starting it:
+#     NODE_ENV=production
+#     SESSION_SECRET=<random 32+ byte value>
+#     PORT=3001
+#   `NODE_ENV=production` is what flips on `trust proxy` AND the
+#   `secure: true` session-cookie flag — both require TLS to actually be
+#   present in front of the app (which Caddy provides here). Running
+#   NODE_ENV=production without a TLS-terminating proxy in front makes the
+#   session cookie unusable (browsers drop `Secure` cookies on plain HTTP).
+#
+# * Persist `server/data/` (SQLite + backups) on a volume that survives
+#   redeploys — see docs/operations.md "Backup & restore".
+#
+# * If you run Caddy itself behind another proxy/load balancer (Cloudflare,
+#   an internal LB, etc.), that's a SECOND hop — see the "Reverse proxy &
+#   TLS" section in docs/operations.md for how to adjust `trust proxy`
+#   accordingly. This example assumes Caddy is the only hop between the
+#   internet and the app.

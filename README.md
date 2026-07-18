@@ -568,7 +568,9 @@ but the backend is a long-running Node process (Express + SQLite) that needs
 somewhere to run and a persistent volume for `server/data/`. There is no
 serverless-function deployment target for the backend today. See
 [`docs/operations.md`](docs/operations.md) for the day-two operations guide
-(backups, health probes, release flow).
+(backups, health probes, release flow). For a TLS-terminating reverse proxy
+in front of it, see [Reverse proxy & TLS](docs/operations.md#reverse-proxy--tls)
+and the ready-to-copy [`deploy/Caddyfile.example`](deploy/Caddyfile.example).
 
 ---
 

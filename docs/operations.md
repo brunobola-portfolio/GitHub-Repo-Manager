@@ -6,6 +6,7 @@ how-to-build side, see [`docs/index.md`](index.md).
 ## Contents
 
 - [Quick reference](#quick-reference)
+- [Reverse proxy & TLS](#reverse-proxy--tls)
 - [Release flow](#release-flow)
 - [Backup & restore](#backup--restore)
 - [Data & event retention](#data--event-retention)
@@ -32,6 +33,134 @@ how-to-build side, see [`docs/index.md`](index.md).
 | Security boundaries | [`docs/security-hardening.md`](security-hardening.md) (G1–G9) |
 | Env reference | [`.env.example`](../.env.example) |
 | CI pipelines | `.github/workflows/` (`ci.yml`, `deploy.yml`) |
+
+---
+
+## Reverse proxy & TLS
+
+The app is a single Node process. In production (`NODE_ENV=production`)
+Express serves the built frontend (`dist/`) **and** every `/api/*` route from
+the same port (see `server/index.js`) — there is no separate static-site
+origin to configure. Put one TLS-terminating reverse proxy in front of it;
+a ready-to-copy Caddy config lives at
+[`deploy/Caddyfile.example`](../deploy/Caddyfile.example) (auto-TLS via
+Caddy's built-in ACME client, no certbot/manual renewal). An equivalent
+nginx config is below for nginx-based hosts.
+
+### `trust proxy` and why the hop count matters
+
+```js
+// server/index.js
+if (config.nodeEnv === 'production') {
+    app.set('trust proxy', 1);
+}
+```
+
+This tells Express "trust exactly one hop of `X-Forwarded-*` headers." Two
+things downstream depend on that being *correct*, not just present:
+
+- **Secure session cookies.** The session cookie is issued with `secure:
+  config.nodeEnv === 'production'` (`server/index.js`) and `sameSite: 'lax'`.
+  A `Secure` cookie is only sent by the browser over HTTPS, and Express only
+  considers the request "HTTPS" when it trusts the proxy's
+  `X-Forwarded-Proto: https` header. Get the trust-proxy setting wrong and
+  either (a) the app never sees itself as HTTPS and no cookie is ever set —
+  users can't stay logged in — or (b) with `trust proxy` misconfigured as a
+  bare `true`, the app trusts `X-Forwarded-Proto` from *any* upstream hop,
+  including ones an attacker could spoof if your edge doesn't strip
+  client-supplied forwarded headers.
+- **Rate-limit keying.** `express-rate-limit` and the per-tenant limiters
+  (`server/middleware/tenant-rate-limit.js`) key off `req.ip`, which Express
+  derives from `X-Forwarded-For` when `trust proxy` is set. If the hop count
+  is *too low* (e.g. `1` but there are actually two proxies — your reverse
+  proxy plus a CDN/load balancer in front of it), `req.ip` resolves to the
+  IP of your own inner proxy, not the client — every request looks like it
+  comes from the same address and the rate limiter either blocks everyone
+  together or effectively does nothing. If it's *too high*, a client can
+  forge extra `X-Forwarded-For` entries to spoof an IP the limiter will
+  trust.
+
+**Rule of thumb:** set the number to the exact count of proxies/load
+balancers between the internet and this Node process. One reverse proxy
+(Caddy or nginx) directly in front of the app = `1` (already the default
+above). Add a CDN or another load balancer in front of *that* and you have
+two hops — `app.set('trust proxy', 1)` would then be wrong and needs to
+become `2`, or better, an explicit list of trusted proxy IPs (see the
+[Express `trust proxy` docs](https://expressjs.com/en/guide/behind-proxies.html)
+for the array/subnet form). This is a code change, not an env var — update
+the literal `1` in `server/index.js` if your topology has more than one hop.
+
+### HTTPS is required in production, not optional
+
+Because of the `secure` cookie flag above, running `NODE_ENV=production`
+**without** a TLS-terminating proxy in front of the app leaves the session
+cookie unusable — the browser silently drops it on plain HTTP, and every
+request looks logged-out. There is no supported HTTP-only production mode;
+put Caddy, nginx, or your platform's managed TLS (Railway, Fly.io, etc.) in
+front before flipping `NODE_ENV=production`.
+
+### nginx equivalent
+
+```nginx
+# /etc/nginx/sites-available/github-repo-manager
+server {
+    listen 443 ssl http2;
+    server_name your-domain.example.com;
+
+    ssl_certificate     /etc/letsencrypt/live/your-domain.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/your-domain.example.com/privkey.pem;
+
+    # Single upstream — Express serves the SPA + /api/* from one port.
+    location / {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+
+        # These three headers are what `trust proxy` reads. Without them
+        # (or with a proxy in front of nginx that doesn't chain them)
+        # secure cookies and rate-limit keying both break — see above.
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # SSE endpoints (AI chat streaming: /api/ai/chat, /api/ai/pr-chat,
+    # dev-toolkit; assisted-install: /api/env/tooling/*/install) send
+    # `Content-Type: text/event-stream` and must reach the client as each
+    # chunk is written, not batched. nginx buffers proxied responses by
+    # default, which turns streaming into one delayed blob and defeats the
+    # server's abort-on-client-disconnect handling. Disable buffering for
+    # those paths (or globally — this app has no large non-streaming
+    # response that benefits from proxy buffering):
+    location ~ ^/api/(ai/|env/tooling/) {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_buffering off;
+        proxy_cache off;
+        chunked_transfer_encoding off;
+        # Long-lived AI generations should not be cut off mid-stream.
+        proxy_read_timeout 300s;
+    }
+}
+
+server {
+    listen 80;
+    server_name your-domain.example.com;
+    return 301 https://$host$request_uri;
+}
+```
+
+No WebSocket upgrade headers (`Upgrade`/`Connection: upgrade`) are needed
+anywhere in this config — the app has no WebSocket endpoints. All
+real-time delivery (AI chat, assisted-install progress) goes over plain
+SSE on top of a normal HTTP response, which is why the buffering setting
+above is the only special case; there's no `proxy_set_header Upgrade`
+dance to get right.
 
 ---
 
