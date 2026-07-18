@@ -86,6 +86,11 @@ vi.mock('../ai-service.js', () => ({
 
 vi.mock('../db.js', () => ({ default: { prepare: vi.fn() } }))
 
+vi.mock('../lib/ai-spend-cap.js', () => ({
+    checkAISpendCap: vi.fn(() => ({ allowed: true, capCents: 0, spentCents: 0 })),
+    recordAISpend: vi.fn(),
+}))
+
 const { default: aiRouter } = await import('../routes/ai.js')
 
 function makeApp() {
