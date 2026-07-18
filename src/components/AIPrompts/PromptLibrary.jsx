@@ -4,13 +4,13 @@ import { Button } from '../ui/Button';
 /**
  * Read-only/editable list of prompt presets shown on the Prompt Studio page.
  *
- * Free users see built-ins only with an "Upgrade to Pro" hint; the "+ New
- * preset" CTA is disabled and the per-row Edit/Delete/Set-default actions
- * are hidden. Pro/Enterprise users get the full management surface.
+ * Custom preset creation/management is free on every tier (2026-07-18
+ * rebalance), capped server-side at `promptPresetsMax` owned presets (Free:
+ * 10, Pro/Enterprise: unlimited) — the cap is enforced on save, not by
+ * hiding the CTA here.
  */
-export function PromptLibrary({ presets, loading, onNew, onEdit, onDelete, onSetDefault, currentTier }) {
+export function PromptLibrary({ presets, loading, onNew, onEdit, onDelete, onSetDefault }) {
     const [filter, setFilter] = useState('all'); // all | builtin | custom | org
-    const isPro = currentTier === 'pro' || currentTier === 'enterprise';
 
     const visible = (presets || []).filter((p) => {
         if (filter === 'builtin') return p.builtin;
@@ -45,19 +45,12 @@ export function PromptLibrary({ presets, loading, onNew, onEdit, onDelete, onSet
                     variant="primary"
                     size="sm"
                     onClick={onNew}
-                    disabled={!isPro}
-                    title={isPro ? 'Create a custom preset' : 'Upgrade to Pro to create custom presets'}
+                    title="Create a custom preset"
                     className="ml-2"
                 >
                     + New preset
                 </Button>
             </div>
-
-            {!isPro ? (
-                <div className="rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 p-3 text-xs text-amber-900 dark:text-amber-200">
-                    Free users can pick from built-in presets. <strong>Upgrade to Pro</strong> to author custom prompts, set per-repo defaults, and use path-scoped rules.
-                </div>
-            ) : null}
 
             <ul className="space-y-2">
                 {visible.length === 0 ? (
@@ -68,7 +61,7 @@ export function PromptLibrary({ presets, loading, onNew, onEdit, onDelete, onSet
                     // rows authored by someone else, hide the actions and show
                     // a read-only "shared" badge instead.
                     const isOrgShared = !p.builtin && p.scope === 'org';
-                    const canManage = !p.builtin && isPro && p.ownedByUser !== false;
+                    const canManage = !p.builtin && p.ownedByUser !== false;
                     return (
                         <li key={p.id} className="rounded-md border border-slate-200 dark:border-slate-700 p-3 flex items-start gap-3">
                             <div className="flex-1 min-w-0">

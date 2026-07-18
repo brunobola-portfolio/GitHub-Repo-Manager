@@ -24,14 +24,13 @@ export function PricingCard({
         />
       )}
 
-      {/* Subtle gold border for Enterprise */}
+      {/* Subtle gold ring for Enterprise — token-driven like the highlighted
+          (Pro) ring above, instead of an inline raw-hex gradient. */}
       {enterprise && (
         <div
-          className="absolute inset-0 rounded-2xl p-px"
-          style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706, #eab308)' }}
-        >
-          <div className="absolute inset-0 rounded-2xl bg-white dark:bg-slate-950" />
-        </div>
+          className="absolute inset-0 rounded-2xl pointer-events-none ring-2 ring-[color:var(--ds-accent-enterprise)] dark:ring-[color:var(--ds-accent-enterprise-dark)]"
+          aria-hidden="true"
+        />
       )}
 
       {/* Badge — absolute on the outer wrapper (no overflow-hidden here) */}

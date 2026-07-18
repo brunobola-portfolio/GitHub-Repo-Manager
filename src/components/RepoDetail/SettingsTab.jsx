@@ -359,10 +359,11 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">At least one merge style must remain enabled — GitHub blocks the save otherwise.</p>
                 </div>
 
-                {/* Save row — desktop inline; mobile sticky version is a TODO follow-up
-                    (slice 5 docs cover the pattern: md:hidden fixed bottom-0 inset-x-0 +
-                    md:flex inline). */}
-                <div className="flex items-center justify-between gap-2 pt-1">
+                {/* Save row — desktop inline; mobile gets a sticky bar (below) so
+                    long forms don't hide Save and the dirty-state indicator below
+                    the fold (slice 5 docs pattern: md:hidden fixed bottom-0 inset-x-0
+                    + md:flex inline). */}
+                <div className="hidden md:flex items-center justify-between gap-2 pt-1">
                     <span className={`text-xs transition-opacity ${isDirty ? 'opacity-100 text-amber-600 dark:text-amber-400' : 'opacity-0'}`} aria-live="polite">
                         {isDirty ? 'Unsaved changes' : ''}
                     </span>
@@ -378,6 +379,29 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
                         </Button>
                     </div>
                 </div>
+
+                {/* Mobile sticky save bar — only mounted while dirty, positioned
+                    above the fixed bottom nav (Header.jsx, 56px + safe-area) so it
+                    never overlaps in-app navigation. */}
+                {isDirty && (
+                    <div
+                        className="md:hidden fixed inset-x-0 z-[var(--ds-z-composer)] flex items-center justify-between gap-2 px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/60 dark:border-slate-700/50 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]"
+                        style={{ bottom: 'calc(56px + var(--safe-area-inset-bottom, 0px))' }}
+                    >
+                        <span className="text-xs text-amber-600 dark:text-amber-400" aria-live="polite">
+                            Unsaved changes
+                        </span>
+                        <div className="flex items-center gap-2">
+                            <Button variant="ghost" onClick={handleDiscard} disabled={saving}>
+                                <Undo2 className="w-4 h-4 mr-1" /> Discard
+                            </Button>
+                            <Button onClick={handleSave} disabled={saving || !isDirty}>
+                                {saving ? <Spinner size="sm" className="mr-1" /> : <Save className="w-4 h-4 mr-1" />}
+                                Save
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </Card>
 
             {/* Webhooks */}

@@ -7,7 +7,7 @@
  *   3. My Issues    — assigned open issues (Free+)
  *   4. Review Load  — reviewer distribution (Free+)
  *   5. Tech Debt    — labelled issues + hotspots (Free+)
- *   6. DORA         — deploy freq + lead time (Enterprise+)
+ *   6. DORA         — deploy freq + lead time (Free+, moved off Enterprise 2026-07-18)
  */
 
 import { useState, useEffect, lazy, Suspense } from 'react'
@@ -66,7 +66,7 @@ const TABS = [
     { id: 'issues',      label: 'My Issues',   icon: CircleDot,      component: MyIssuesTab,  accent: 'emerald' },
     { id: 'reviewload',  label: 'Review Load', icon: Users,          component: ReviewLoadTab, accent: 'sky' },
     { id: 'techdebt',    label: 'Tech Debt',   icon: Wrench,         component: TechDebtTab, accent: 'amber' },
-    { id: 'dora',        label: 'DORA',        icon: BarChart3,      component: DORATab, badge: 'Enterprise', accent: 'indigo' },
+    { id: 'dora',        label: 'DORA',        icon: BarChart3,      component: DORATab, accent: 'indigo' },
 ]
 
 // ---------------------------------------------------------------------------

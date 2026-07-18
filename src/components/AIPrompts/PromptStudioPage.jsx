@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Sparkles } from 'lucide-react';
 import { usePromptStudio } from '../../hooks/usePromptStudio';
 import { useDangerAction } from '../../hooks/useDangerAction';
+import { useToast } from '../../hooks/useToast';
 import { PageHeader } from '../ui/PageHeader';
 import { Button } from '../ui/Button';
 import { PromptLibrary } from './PromptLibrary';
@@ -9,12 +10,14 @@ import { PromptEditor } from './PromptEditor';
 
 /**
  * Page shell for the Prompt Studio. Defaults to the Library view; switches
- * to the Editor when the user clicks New / Edit. Tier gating happens in the
- * Library (CTA disabled / upgrade hint) and on the server (POST/PATCH/DELETE
- * are requireTier('pro')).
+ * to the Editor when the user clicks New / Edit. Custom preset CRUD is free
+ * on every tier (2026-07-18 rebalance) — the server caps creation at
+ * `promptPresetsMax` owned presets (Free: 10, Pro/Enterprise: unlimited) and
+ * returns a 403 once the cap is hit, surfaced below via toast.
  */
-export function PromptStudioPage({ currentTier = 'free' }) {
+export function PromptStudioPage() {
     const studio = usePromptStudio();
+    const { toast } = useToast();
     const [view, setView] = useState({ mode: 'library' }); // {mode:'library'} | {mode:'editor', initial?}
     const [saving, setSaving] = useState(false);
 
@@ -48,9 +51,14 @@ export function PromptStudioPage({ currentTier = 'free' }) {
                 void scope; void scopeTarget; void presetKey;
                 await studio.update(id, patch);
             } else {
+                // Free tier is capped at promptPresetsMax owned presets — the
+                // server 403s once the cap is hit; surface that (and any
+                // other save failure) instead of letting it go unhandled.
                 await studio.save(payload);
             }
             setView({ mode: 'library' });
+        } catch (err) {
+            toast.errorFromException(err, { fallbackTitle: 'Failed to save preset' });
         } finally {
             setSaving(false);
         }
@@ -91,7 +99,6 @@ export function PromptStudioPage({ currentTier = 'free' }) {
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onSetDefault={handleSetDefault}
-                    currentTier={currentTier}
                 />
             ) : (
                 <PromptEditor

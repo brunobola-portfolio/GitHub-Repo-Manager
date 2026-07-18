@@ -28,13 +28,77 @@ vi.mock('../lib/validators.js', async () => {
     return { ...actual }
 })
 
+// usage_metrics is faked with a real in-memory counter (keyed by
+// `${userId}:${metricType}`) so the new daily anti-abuse-ceiling tests
+// (bulk_destructive_daily) can drive real accumulation/reset; every other
+// table keeps the old inert generic statement.
+//
+// bulk.js's daily ceiling goes through usage-meter.js's *atomic* guarded
+// primitives (guardedDailyIncrement/releaseGuardedDailyIncrement), which
+// issue a seed INSERT ... ON CONFLICT DO NOTHING, a guarded
+// `UPDATE ... WHERE count < ?` (only increments if under the limit), and a
+// compensating `UPDATE ... SET count = MAX(0, count - 1)` on release — so
+// the mock has to actually honor the WHERE-count-< -limit guard, not just
+// blindly increment on every INSERT, or a would-be-429 case would silently
+// pass.
+const dailyUsageCounts = new Map()
+function statementFor(sql) {
+    if (/FROM usage_metrics/i.test(sql)) {
+        return { get: (userId, metricType) => ({ count: dailyUsageCounts.get(`${userId}:${metricType}`) || 0 }) }
+    }
+    if (/INSERT INTO usage_metrics/i.test(sql) && /DO NOTHING/i.test(sql)) {
+        // guardedBump's seed row — ensures the key exists at 0; never increments.
+        return {
+            run: (userId, metricType) => {
+                const key = `${userId}:${metricType}`
+                if (!dailyUsageCounts.has(key)) dailyUsageCounts.set(key, 0)
+                return { changes: 1 }
+            },
+        }
+    }
+    if (/UPDATE usage_metrics/i.test(sql) && /count - 1/i.test(sql)) {
+        // guardedUnbump's compensating release.
+        return {
+            run: (userId, metricType) => {
+                const key = `${userId}:${metricType}`
+                dailyUsageCounts.set(key, Math.max(0, (dailyUsageCounts.get(key) || 0) - 1))
+                return { changes: 1 }
+            },
+        }
+    }
+    if (/UPDATE usage_metrics/i.test(sql) && /count \+ 1/i.test(sql)) {
+        // guardedBump's guarded increment — only applies if current < limit.
+        return {
+            run: (userId, metricType, start, limit) => {
+                const key = `${userId}:${metricType}`
+                const current = dailyUsageCounts.get(key) || 0
+                if (current < limit) {
+                    dailyUsageCounts.set(key, current + 1)
+                    return { changes: 1 }
+                }
+                return { changes: 0 }
+            },
+        }
+    }
+    if (/INSERT INTO usage_metrics/i.test(sql)) {
+        // Legacy plain incrementDailyUsage()'s INSERT ... ON CONFLICT DO UPDATE.
+        return {
+            run: (userId, metricType) => {
+                const key = `${userId}:${metricType}`
+                dailyUsageCounts.set(key, (dailyUsageCounts.get(key) || 0) + 1)
+                return { changes: 1 }
+            },
+        }
+    }
+    return {
+        get: vi.fn(() => null),
+        all: vi.fn(() => []),
+        run: vi.fn(() => ({ changes: 1 })),
+    }
+}
 vi.mock('../db.js', () => ({
     default: {
-        prepare: vi.fn(() => ({
-            get: vi.fn(() => null),
-            all: vi.fn(() => []),
-            run: vi.fn(() => ({ changes: 1 })),
-        })),
+        prepare: vi.fn((sql) => statementFor(sql)),
         transaction: (fn) => fn,
     },
 }))
@@ -45,6 +109,10 @@ vi.mock('../lib/github-api.js', () => ({
 
 // requireTier mock: checks req.userTier. Default is 'pro' (authed tier).
 // Build helpers can set req.userTier = 'free' to test rejection.
+// getUserTier is also exported here — the daily anti-abuse ceiling
+// (usage-meter.js's checkDailyUsageLimit/incrementDailyUsage) resolves tier
+// internally via this function, independent of req.userTier. The limit is
+// tier-INDEPENDENT (bulkDestructiveDailyMax), so a fixed 'free' is fine.
 vi.mock('../middleware/require-tier.js', () => ({
     requireTier: (minTier) => (req, res, next) => {
         const tier = req.userTier || 'pro'
@@ -57,6 +125,7 @@ vi.mock('../middleware/require-tier.js', () => ({
             requiredTier: minTier,
         })
     },
+    getUserTier: () => 'free',
 }))
 
 // ---------------------------------------------------------------------------
@@ -104,6 +173,7 @@ describe('Bulk ops safety — dry-run + confirmation-token flow', () => {
 
     beforeEach(async () => {
         vi.clearAllMocks()
+        dailyUsageCounts.clear()
         bulkRouter = await getBulkRouter()
     })
 
@@ -279,11 +349,12 @@ describe('Bulk ops safety — dry-run + confirmation-token flow', () => {
     })
 
     // -------------------------------------------------------------------------
-    // Cases 7a–7c: advanced/destructive bulk stays Pro-gated on free tier → 403.
-    // De-gating basic bulk (visibility/archive) must NOT leak transfer, mirror,
-    // or delete to Free — those remain Pro.
+    // Cases 7a–7c: advanced/destructive bulk moved to Free (2026-07-18
+    // rebalance) — de-gating basic bulk (visibility/archive) previously left
+    // transfer/mirror/delete Pro-gated; now every tier can call them, still
+    // subject to the unchanged dry-run → confirmation-token safety flow.
     // -------------------------------------------------------------------------
-    it('case 7a: POST /bulk/transfer on free tier → 403 (advanced bulk stays Pro)', async () => {
+    it('case 7a: POST /bulk/transfer on free tier → 200 dry-run (advanced bulk is free)', async () => {
         const app = buildApp({ tier: 'free' })
         app.use('/bulk', bulkRouter)
 
@@ -291,11 +362,12 @@ describe('Bulk ops safety — dry-run + confirmation-token flow', () => {
             .post('/bulk/transfer')
             .send({ repos: ['owner/repo1'], toOrg: 'my-org', dryRun: true })
 
-        expect(res.status).toBe(403)
-        expect(res.body.error).toBe('upgrade_required')
+        expect(res.status).toBe(200)
+        expect(res.body.dryRun).toBe(true)
+        expect(typeof res.body.confirmationToken).toBe('string')
     })
 
-    it('case 7b: POST /bulk/mirror on free tier → 403 (advanced bulk stays Pro)', async () => {
+    it('case 7b: POST /bulk/mirror on free tier → 200 dry-run (advanced bulk is free)', async () => {
         const app = buildApp({ tier: 'free' })
         app.use('/bulk', bulkRouter)
 
@@ -303,11 +375,12 @@ describe('Bulk ops safety — dry-run + confirmation-token flow', () => {
             .post('/bulk/mirror')
             .send({ repos: ['owner/repo1'], toOrg: 'my-org', dryRun: true })
 
-        expect(res.status).toBe(403)
-        expect(res.body.error).toBe('upgrade_required')
+        expect(res.status).toBe(200)
+        expect(res.body.dryRun).toBe(true)
+        expect(typeof res.body.confirmationToken).toBe('string')
     })
 
-    it('case 7c: POST /bulk/delete on free tier → 403 (destructive bulk stays Pro)', async () => {
+    it('case 7c: POST /bulk/delete on free tier → 200 dry-run (destructive bulk is free)', async () => {
         const app = buildApp({ tier: 'free' })
         app.use('/bulk', bulkRouter)
 
@@ -315,8 +388,31 @@ describe('Bulk ops safety — dry-run + confirmation-token flow', () => {
             .post('/bulk/delete')
             .send({ repos: ['owner/repo1'], dryRun: true })
 
-        expect(res.status).toBe(403)
-        expect(res.body.error).toBe('upgrade_required')
+        expect(res.status).toBe(200)
+        expect(res.body.dryRun).toBe(true)
+        expect(typeof res.body.confirmationToken).toBe('string')
+    })
+
+    it('case 7d: POST /bulk/delete on free tier with a valid token → 200, GitHub called (no tier gate)', async () => {
+        const { githubApi } = await import('../lib/github-api.js')
+        const app = buildApp({ tier: 'free' })
+        app.use('/bulk', bulkRouter)
+        const repos = ['owner/repo1']
+
+        const token = await getDryRunToken(app, bulkRouter, repos)
+        vi.clearAllMocks()
+
+        const res = await request(app)
+            .post('/bulk/delete')
+            .set('X-Bulk-Confirmation-Token', token)
+            .send({ repos })
+
+        expect(res.status).toBe(200)
+        expect(githubApi).toHaveBeenCalledWith(
+            expect.stringContaining('/repos/owner/repo1'),
+            expect.any(String),
+            expect.objectContaining({ method: 'DELETE' })
+        )
     })
 
     // -------------------------------------------------------------------------
@@ -381,5 +477,95 @@ describe('Bulk ops safety — dry-run + confirmation-token flow', () => {
         expect(res.status).not.toBe(400)
         expect(res.status).toBeLessThan(500)
         expect(res.body.conflicts).toBeDefined()
+    })
+
+    // -------------------------------------------------------------------------
+    // Tier-independent daily anti-abuse ceiling on destructive bulk ops
+    // (bulkDestructiveDailyMax) — added alongside the bulkAdvanced de-gate so
+    // a Free (or any-tier) account can't run unbounded delete/transfer at
+    // scale now that the tier check no longer limits exposure.
+    // -------------------------------------------------------------------------
+    describe('Daily anti-abuse ceiling on destructive bulk ops (bulk_destructive_daily)', () => {
+        beforeEach(async () => {
+            // Earlier cases (9, 10) leave githubApi mocked to resolve/reject in
+            // ways `vi.clearAllMocks()` doesn't undo (mockResolvedValue/
+            // mockRejectedValue persist through mockClear). Pin a clean success
+            // default so these tests don't depend on suite ordering.
+            const { githubApi } = await import('../lib/github-api.js')
+            githubApi.mockReset().mockResolvedValue({ data: {} })
+        })
+
+        it('does not meter a dry-run request', async () => {
+            const app = buildApp()
+            app.use('/bulk', bulkRouter)
+
+            const res = await request(app)
+                .post('/bulk/delete')
+                .send({ repos: ['owner/repo1'], dryRun: true })
+
+            expect(res.status).toBe(200)
+            expect(dailyUsageCounts.get('user-123:bulk_destructive_daily')).toBeUndefined()
+        })
+
+        it('meters a real (non-dry-run) delete execution by repo count', async () => {
+            const app = buildApp()
+            app.use('/bulk', bulkRouter)
+            const repos = ['owner/repo1', 'owner/repo2']
+
+            const token = await getDryRunToken(app, bulkRouter, repos)
+            const res = await request(app)
+                .post('/bulk/delete')
+                .set('X-Bulk-Confirmation-Token', token)
+                .send({ repos })
+
+            expect(res.status).toBe(200)
+            expect(dailyUsageCounts.get('user-123:bulk_destructive_daily')).toBe(2)
+        })
+
+        it('returns 429 with a clear message once the daily ceiling is reached (GitHub not called)', async () => {
+            const { githubApi } = await import('../lib/github-api.js')
+            const app = buildApp()
+            app.use('/bulk', bulkRouter)
+            const repos = ['owner/repo1']
+
+            // Default bulkDestructiveDailyMax is 200 (BULK_DESTRUCTIVE_DAILY_MAX
+            // unset) — pre-seed the day's count at the ceiling.
+            dailyUsageCounts.set('user-123:bulk_destructive_daily', 200)
+
+            const token = await getDryRunToken(app, bulkRouter, repos)
+            const res = await request(app)
+                .post('/bulk/delete')
+                .set('X-Bulk-Confirmation-Token', token)
+                .send({ repos })
+
+            expect(res.status).toBe(429)
+            expect(res.body.code).toBe('BULK_DESTRUCTIVE_DAILY_LIMIT')
+            expect(res.body.error).toMatch(/daily limit/i)
+            expect(githubApi).not.toHaveBeenCalled()
+            // The denied attempt must not consume additional units.
+            expect(dailyUsageCounts.get('user-123:bulk_destructive_daily')).toBe(200)
+        })
+
+        it('applies the same ceiling to /transfer', async () => {
+            const { githubApi } = await import('../lib/github-api.js')
+            const app = buildApp()
+            app.use('/bulk', bulkRouter)
+            const repos = ['owner/repo1']
+            dailyUsageCounts.set('user-123:bulk_destructive_daily', 200)
+
+            const dryRes = await request(app)
+                .post('/bulk/transfer')
+                .send({ repos, toOrg: 'my-org', dryRun: true })
+            const token = dryRes.body.confirmationToken
+
+            const res = await request(app)
+                .post('/bulk/transfer')
+                .set('X-Bulk-Confirmation-Token', token)
+                .send({ repos, toOrg: 'my-org' })
+
+            expect(res.status).toBe(429)
+            expect(res.body.code).toBe('BULK_DESTRUCTIVE_DAILY_LIMIT')
+            expect(githubApi).not.toHaveBeenCalled()
+        })
     })
 })

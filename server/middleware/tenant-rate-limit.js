@@ -33,7 +33,10 @@ function computeTierLimits() {
         };
     }
     return {
-        free:       { api: 100,  ai: 10,  auth: 10 },
+        // 'ai' free budget raised 10 -> 30/15min (2026-07-18 rebalance): PR
+        // Chat is now a Free-tier, multi-message conversational feature and
+        // 10 requests/15min was too tight for a usable back-and-forth.
+        free:       { api: 100,  ai: 30,  auth: 10 },
         pro:        { api: 500,  ai: 50,  auth: 20 },
         enterprise: { api: 2000, ai: 200, auth: 50 },
     };

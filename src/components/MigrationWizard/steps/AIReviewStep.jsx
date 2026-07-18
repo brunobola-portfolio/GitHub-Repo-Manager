@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import { migrationApi } from '../../../api/migration'
 import { Button } from '../../ui/Button'
-import { TAP } from '../../ui/motion'
+import { TAP, SPRING } from '../../ui/motion'
 
 import { AnalysisLoadingState } from './AIReview/AnalysisLoadingState'
 import { MigrationRouteCard } from './AIReview/MigrationRouteCard'
@@ -358,7 +358,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
                 <motion.div
                   initial={{ opacity: 0, scale: 0.96 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  transition={SPRING.panel}
                   role="status"
                   aria-live="polite"
                   className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50/40 dark:bg-emerald-500/[0.04] border border-emerald-200/60 dark:border-emerald-500/20"
@@ -366,7 +366,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 15, delay: 0.1 }}
+                    transition={{ ...SPRING.knob, delay: 0.1 }}
                     className="shrink-0 w-9 h-9 rounded-lg bg-emerald-500 flex items-center justify-center shadow-md shadow-emerald-500/25"
                   >
                     <CheckCircle2 className="w-5 h-5 text-white" />

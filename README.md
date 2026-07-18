@@ -320,36 +320,38 @@ A premium PR review experience that turns the in-app PR view into a tool develop
 
 ## Plans & Pricing
 
-The hosted product ships three tiers. The **Free tier includes the full AI product surface** — Assistant, Semantic Search, Migration Risk Analysis, and PR Review — so you can evaluate the AI without a credit card. Each AI capability has its own monthly cap on Free so one feature can't drain your whole budget.
+The hosted product is **free-first**: nearly every product feature — bulk ops, mirror sync, Deep Review, Prompt Studio, PR Chat, PR slash commands, DORA metrics, and unlimited teams — ships on the Free tier with generous, non-infinite caps. Pro and Enterprise sell AI headroom (bigger monthly caps + a higher $ spend-cap ceiling), more API keys, and compliance/service deliverables (audit logs, SSO, priority support, white-glove migration) — not feature unlocks. Each AI capability has its own monthly cap on Free so one feature can't drain your whole budget. AI usage quotas are metered per individual account, even within a team.
 
 | Feature                                | Free            | Pro ($19/mo)  | Enterprise |
 |----------------------------------------|-----------------|---------------|------------|
-| Repositories managed                   | 200             | Unlimited     | Unlimited  |
+| Repositories managed                   | 1,000           | Unlimited     | Unlimited  |
 | Repo Advisor (conversational)          | ✓               | ✓             | ✓          |
-| AI queries / month (total)             | 200             | 5,000         | Unlimited  |
-| Semantic Search                        | 75 / month      | Unlimited     | Unlimited  |
-| Migration Risk Analysis (AI)           | 5 / month       | Unlimited     | Unlimited  |
-| Repo Insights / Quality Report         | 15 / month      | Unlimited     | Unlimited  |
-| README Generator (AI)                  | 5 / month       | Unlimited     | Unlimited  |
-| Commit Generator (AI)                  | 50 / month      | Unlimited     | Unlimited  |
+| AI queries / month (total)             | 1,000           | 10,000        | Unlimited  |
+| Semantic Search                        | 375 / month     | Unlimited     | Unlimited  |
+| Migration Risk Analysis (AI)           | 25 / month      | Unlimited     | Unlimited  |
+| Repo Insights / Quality Report         | 75 / month      | Unlimited     | Unlimited  |
+| README Generator (AI)                  | 25 / month      | Unlimited     | Unlimited  |
+| Commit Generator (AI)                  | 250 / month     | Unlimited     | Unlimited  |
 | PR Review Experience (read + browse)   | ✓               | ✓             | ✓          |
 | Manual PR review write-back            | ✓               | ✓             | ✓          |
-| AI Deep Review — walkthrough + comments + publish | ✗    | ✓             | ✓          |
-| AI Deep Review — Prompt Studio (custom presets, path rules, severity floor) | ✗ | ✓ | ✓ |
-| AI Deep Review — org-shared prompts    | ✗               | ✓             | ✓          |
-| AI Deep Review — PR slash commands (`/describe`, `/test_plan`, `/improve`) | ✗ | ✓ | ✓ |
-| AI Deep Review — PR Chat (streaming Q&A) | ✗             | ✓             | ✓          |
+| AI Deep Review — walkthrough + comments + publish | 10 / month | Unlimited | Unlimited |
+| AI Deep Review — Prompt Studio (custom presets, path rules, severity floor) | 10 presets · 30 tests / month | Unlimited | Unlimited |
+| AI Deep Review — org-shared prompts    | ✓               | ✓             | ✓          |
+| AI Deep Review — PR slash commands (`/describe`, `/test_plan`, `/improve`) | 30 / month | Unlimited | Unlimited |
+| AI Deep Review — PR Chat (streaming Q&A) | 100 messages / month | Unlimited | Unlimited |
 | Basic bulk on own repos                | ✓               | ✓             | ✓          |
-| Advanced bulk (transfer, mirror, cross-org) | ✗          | ✓             | ✓          |
-| Azure DevOps Cloud migration           | 1 / month       | Unlimited     | Unlimited  |
-| Mirror Sync (preview free, apply Pro)  | Preview         | ✓             | ✓          |
+| Advanced bulk (transfer, mirror, cross-org) | ✓          | ✓             | ✓          |
+| Azure DevOps Cloud migration           | 5 / month       | Unlimited     | Unlimited  |
+| Mirror Sync (preview free, apply metered) | 10 / month   | Unlimited     | Unlimited  |
 | Dry-Run migration                      | ✓               | ✓             | ✓          |
-| Teams                                  | Up to 3 (5 each)| 15 members    | Unlimited  |
+| Teams                                  | Unlimited       | Unlimited     | Unlimited  |
 | Audit Logs                             | ✗               | ✗             | ✓          |
 | SSO / SAML _(roadmap)_                 | ✗               | ✗             | ✗          |
-| API keys                               | 5               | 10            | 50         |
+| API keys                               | 25              | 50            | 100        |
+| Priority Support + SLA                 | ✗               | ✗             | ✓          |
+| White-glove migration services         | ✗               | ✗             | ✓          |
 
-Self-hosting under AGPL v3 is free forever — see [LICENSE](LICENSE). The matrix above describes the hosted SaaS.
+Self-hosting under AGPL v3 is free forever — see [LICENSE](LICENSE). The matrix above describes the hosted SaaS. "Advanced bulk" and "Mirror Sync apply" carry a tier-independent daily anti-abuse ceiling on top of the existing dry-run + confirmation-token safety flow, regardless of plan. Priority Support and White-glove migration are manual, service-based deliverables (support ticket + contract), not gated by a feature flag.
 
 See the [Free Tier Expansion spec](docs/specs/2026-04-15-free-tier-expansion.md) for the design rationale and enforcement details.
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { EASE } from '../../ui/motion'
+import { EASE, SPRING } from '../../ui/motion'
 import {
   CheckCircle2, XCircle, Clock, Package, ClipboardList, BookOpen,
   Download, Plus, History, Loader2, AlertTriangle, ExternalLink, Ban,
@@ -137,7 +137,7 @@ function CircularProgress({ score, size = 100, strokeWidth = 7 }) {
           className="absolute -top-1 -right-1"
           initial={{ scale: 0, rotate: -180 }}
           animate={{ scale: 1, rotate: 0 }}
-          transition={{ delay: 1.2, type: 'spring', stiffness: 300, damping: 15 }}
+          transition={{ ...SPRING.drawer, delay: 1.2 }}
         >
           <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
             <Sparkles className="w-3.5 h-3.5 text-white" />

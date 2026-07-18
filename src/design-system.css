@@ -94,6 +94,12 @@
    * never has to parse color-mix() inside a utility. */
   --ds-accent-ring: color-mix(in srgb, var(--ds-accent-brand) 30%, transparent);
 
+  /* Enterprise tier accent (PricingCard border/ring) — same light/dark pair
+   * shape as --ds-accent-brand above, so the "raw amber hex" gradient this
+   * replaces has a single tweak-point instead of an inline literal. */
+  --ds-accent-enterprise: #f59e0b;       /* amber-500 */
+  --ds-accent-enterprise-dark: #fbbf24;  /* amber-400 */
+
   /* ===== STATUS ===== */
   --ds-success: #1a7f37;     --ds-success-dark: #3fb950;
   --ds-attention: #9a6700;   --ds-attention-dark: #d29922;

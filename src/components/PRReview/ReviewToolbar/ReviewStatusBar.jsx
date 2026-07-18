@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { ShieldCheck, ShieldAlert, MessageCircle } from 'lucide-react'
+import { SPRING } from '../../ui/motion'
 
 /**
  * Sticky bottom action bar showing review progress + (when wired)
@@ -95,7 +96,7 @@ export function ReviewStatusBar({
                     transition={
                         reducedMotion
                             ? { duration: 0 }
-                            : { type: 'spring', stiffness: 220, damping: 22 }
+                            : SPRING.drawer
                     }
                     transform="rotate(-90 18 18)"
                 />

@@ -2,7 +2,6 @@ import { Router } from 'express'
 import { githubApi } from '../../lib/github-api.js'
 import { auditLog } from '../../lib/audit.js'
 import { requireAuth } from '../../middleware/auth.js'
-import { requireTier } from '../../middleware/require-tier.js'
 import { applyOwnerRepoParamValidators } from '../repos/_shared.js'
 
 const router = Router()
@@ -45,7 +44,10 @@ function computeSummary(result) {
   result.summary = summary
 }
 
-router.get('/repos/:owner/:repo/security', requireAuth, requireTier('pro'), async (req, res) => {
+// Repo security scan (secret-scanning / code-scanning / dependabot alerts) —
+// moved off the Pro paywall to Free (2026-07-18 rebalance). Read-only, no
+// marginal cost — the GitHub API calls run against the caller's own token.
+router.get('/repos/:owner/:repo/security', requireAuth, async (req, res) => {
   const { owner, repo } = req.params
   const token = req.session.accessToken
   const [secretScanning, codeScanning, dependabot] = await Promise.allSettled([

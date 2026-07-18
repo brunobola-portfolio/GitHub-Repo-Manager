@@ -164,9 +164,9 @@ describe('WorkBoardPage', () => {
         expect(screen.getByRole('tab', { name: /dora/i })).toBeInTheDocument()
     })
 
-    it('DORA tab has Enterprise badge', () => {
+    it('DORA tab has no Enterprise badge (moved to Free 2026-07-18)', () => {
         renderPage()
-        expect(screen.getByText('Enterprise')).toBeInTheDocument()
+        expect(screen.queryByText('Enterprise')).not.toBeInTheDocument()
     })
 
     // ---------------------------------------------------------------------------
@@ -244,15 +244,15 @@ describe('WorkBoardPage', () => {
     // Upsell / tier gating
     // ---------------------------------------------------------------------------
 
-    it('DORA tab shows upsell when 403 from backend', async () => {
-        const err403 = new Error('upgrade_required')
-        err403.status = 403
-        mockUseDORASummary.mockReturnValue({ data: null, loading: false, error: err403, refresh: vi.fn() })
+    it('DORA tab shows a generic error (not an upsell) on failure, since DORA is Free', async () => {
+        const err500 = new Error('Internal error')
+        err500.status = 500
+        mockUseDORASummary.mockReturnValue({ data: null, loading: false, error: err500, refresh: vi.fn() })
 
         renderPage()
         fireEvent.click(screen.getByRole('tab', { name: /dora/i }))
-        expect(await screen.findByText(/enterprise feature/i)).toBeInTheDocument()
-        expect(screen.getByRole('link', { name: /view enterprise pricing/i })).toBeInTheDocument()
+        expect(await screen.findByText(/failed to load dora metrics/i)).toBeInTheDocument()
+        expect(screen.queryByText(/enterprise feature/i)).not.toBeInTheDocument()
     })
 
     it('renders a refresh button', () => {

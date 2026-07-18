@@ -223,33 +223,35 @@ export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
                             Suggested rules
                         </p>
                         <Card glass={false} shadow="none" className="rounded-xl">
-                            <table className="w-full text-sm">
-                                <thead className="bg-slate-50 dark:bg-slate-900/60 text-left ds-text-meta uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                    <tr>
-                                        <th className="px-3 py-2 font-semibold">Path</th>
-                                        <th className="px-3 py-2 font-semibold">Owners</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                                    {data.rules.map((r) => (
-                                        <tr key={r.pattern}>
-                                            <td className="px-3 py-2 font-mono text-[13px] text-slate-800 dark:text-slate-200">
-                                                {r.pattern}
-                                            </td>
-                                            <td className="px-3 py-2 text-slate-700 dark:text-slate-300">
-                                                {r.owners.map((o) => (
-                                                    <span
-                                                        key={o}
-                                                        className="inline-block mr-1.5 mb-1 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-xs font-mono"
-                                                    >
-                                                        {o}
-                                                    </span>
-                                                ))}
-                                            </td>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-slate-50 dark:bg-slate-900/60 text-left ds-text-meta uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                        <tr>
+                                            <th className="px-3 py-2 font-semibold">Path</th>
+                                            <th className="px-3 py-2 font-semibold">Owners</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                                        {data.rules.map((r) => (
+                                            <tr key={r.pattern}>
+                                                <td className="px-3 py-2 font-mono text-[13px] text-slate-800 dark:text-slate-200">
+                                                    {r.pattern}
+                                                </td>
+                                                <td className="px-3 py-2 text-slate-700 dark:text-slate-300">
+                                                    {r.owners.map((o) => (
+                                                        <span
+                                                            key={o}
+                                                            className="inline-block mr-1.5 mb-1 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-xs font-mono"
+                                                        >
+                                                            {o}
+                                                        </span>
+                                                    ))}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </Card>
                     </div>
 

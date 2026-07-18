@@ -55,6 +55,20 @@ const METRIC_TO_FEATURE = {
     migration_assist: 'migrationAssistPerMonth',
     // Non-AI: Free gets N full (non-dry-run) migrations per calendar month.
     migration_full_executions: 'migrationFullPerMonth',
+    // 2026-07-18 rebalance: Deep Review / PR Chat / PR Commands / Prompt
+    // Studio "test preset" moved off the Pro paywall to Free, each with its
+    // own per-feature monthly cap (mirrors the ai_readme/ai_commit pattern).
+    ai_deep_review: 'deepReviewPerMonth',
+    ai_pr_chat: 'prChatMessagesPerMonth',
+    ai_pr_command: 'prCommandPerMonth',
+    ai_prompt_test: 'promptStudioTestPerMonth',
+    // Mirror sync APPLY moved to Free but newly metered — mirrors
+    // migration_full_executions's pattern exactly.
+    sync_apply_executions: 'syncApplyPerMonth',
+    // Tier-independent daily anti-abuse ceiling on destructive bulk ops
+    // (delete/transfer). Metered via the DAILY-window helpers below, not
+    // checkUsageLimit()/incrementUsage() (which are monthly-only).
+    bulk_destructive_daily: 'bulkDestructiveDailyMax',
 };
 
 export function checkUsageLimit(userId, metricType) {
@@ -246,6 +260,12 @@ const FEATURE_LABELS = {
     ai_insights: 'Repo Insights',
     ai_migration_risk: 'Migration Risk Analysis',
     ai_semantic_search: 'Semantic Search',
+    ai_deep_review: 'AI Deep Review',
+    ai_pr_chat: 'PR Chat',
+    ai_pr_command: 'PR Commands',
+    ai_prompt_test: 'Prompt Studio Test',
+    sync_apply_executions: 'Mirror Sync',
+    bulk_destructive_daily: 'Bulk Delete/Transfer',
 };
 
 export function quotaExceededResponse(check, fallbackLabel = 'AI') {
@@ -319,4 +339,101 @@ export function tierRequiredPayload(currentTier, requiredTier, feature) {
         currentTier,
         requiredTier,
     };
+}
+
+// ---------------------------------------------------------------------------
+// Daily-window metering — mirrors the monthly getCurrentPeriod()/
+// incrementUsage()/guardedIncrement() family above, but keyed to a UTC
+// calendar day instead of a UTC calendar month. Added for the 2026-07-18
+// pricing rebalance's `bulk_destructive_daily` metric: a tier-INDEPENDENT
+// anti-abuse ceiling on destructive bulk operations (delete/transfer) that
+// applies on top of the (now largely free) `bulkAdvanced` tier gate — see
+// `bulkDestructiveDailyMax` in feature-flags.js.
+//
+// Reuses the existing `usage_metrics` table: period_start/period_end just
+// span a day instead of a month. The unique index on
+// (user_id, metric_type, period_start) already keeps day-period rows and
+// month-period rows apart as long as callers don't mix a daily metric_type
+// with the monthly helpers (or vice versa) — bulk_destructive_daily is only
+// ever driven through the daily helpers below.
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the `{ start, end }` ISO bounds of the UTC calendar day containing
+ * `now`. Sibling of getCurrentPeriod() (month) for daily-window metrics.
+ */
+export function getCurrentDayPeriod(now = new Date()) {
+    const year = now.getUTCFullYear();
+    const month = now.getUTCMonth();
+    const date = now.getUTCDate();
+    const start = new Date(Date.UTC(year, month, date)).toISOString();
+    const end = new Date(Date.UTC(year, month, date, 23, 59, 59)).toISOString();
+    return { start, end };
+}
+
+export function incrementDailyUsage(userId, metricType) {
+    const { start, end } = getCurrentDayPeriod();
+    db.prepare(`
+        INSERT INTO usage_metrics (user_id, metric_type, count, period_start, period_end)
+        VALUES (?, ?, 1, ?, ?)
+        ON CONFLICT(user_id, metric_type, period_start) DO UPDATE SET
+            count = count + 1, updated_at = datetime('now')
+    `).run(userId, metricType, start, end);
+}
+
+export function getCurrentDailyUsage(userId, metricType) {
+    const { start } = getCurrentDayPeriod();
+    const row = db.prepare(
+        'SELECT count FROM usage_metrics WHERE user_id = ? AND metric_type = ? AND period_start = ?'
+    ).get(userId, metricType, start);
+    return row?.count || 0;
+}
+
+export function checkDailyUsageLimit(userId, metricType) {
+    const tier = getUserTier(userId);
+    const features = getFeatures(tier);
+    const featureKey = METRIC_TO_FEATURE[metricType] || metricType;
+    const limit = features[featureKey] ?? Infinity;
+    const current = getCurrentDailyUsage(userId, metricType);
+    return {
+        allowed: current < limit,
+        current,
+        limit,
+        remaining: Math.max(0, limit - current),
+    };
+}
+
+const guardedDailyIncrementTxn = db.transaction(guardedBump);
+
+/**
+ * Atomic daily analogue of guardedIncrement() — check-and-consume one unit of
+ * `metricType` for `userId` within the current UTC day, gated by the tier's
+ * resolved daily limit. Same return shape and same "already incremented on
+ * allowed:true, call releaseGuardedDailyIncrement() on failure" contract.
+ */
+export function guardedDailyIncrement(userId, metricType) {
+    const tier = getUserTier(userId);
+    const features = getFeatures(tier);
+    const featureKey = METRIC_TO_FEATURE[metricType] || metricType;
+    const limit = features[featureKey] ?? Infinity;
+    const { start, end } = getCurrentDayPeriod();
+    const boundLimit = Number.isFinite(limit) ? limit : UNBOUNDED_LIMIT;
+
+    const r = guardedDailyIncrementTxn(userId, metricType, start, end, boundLimit);
+    const current = getCurrentDailyUsage(userId, metricType);
+    return {
+        allowed: r.changes > 0,
+        current,
+        limit,
+        remaining: Number.isFinite(limit) ? Math.max(0, limit - current) : Infinity,
+    };
+}
+
+/**
+ * Compensating decrement for guardedDailyIncrement() — mirrors
+ * releaseGuardedIncrement() for the daily window.
+ */
+export function releaseGuardedDailyIncrement(userId, metricType) {
+    const { start } = getCurrentDayPeriod();
+    guardedUnbump(userId, metricType, start);
 }

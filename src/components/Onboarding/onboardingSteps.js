@@ -4,7 +4,7 @@ export const ONBOARDING_STEPS = [
     {
         id: 'cmdk',
         icon: Search,
-        title: 'Press Cmd+K from anywhere',
+        title: 'Press Ctrl+K (⌘K on Mac) from anywhere',
         body: 'The command palette finds repos, opens settings, and runs AI searches. Try it now or later.',
     },
     {

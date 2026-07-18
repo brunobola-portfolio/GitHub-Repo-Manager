@@ -18,7 +18,7 @@ describe('OnboardingTour', () => {
 
     it('renders the first step on mount', () => {
         render(<OnboardingTour {...baseProps()} />)
-        expect(screen.getByText(/Press Cmd\+K/i)).toBeInTheDocument()
+        expect(screen.getByText(/Press Ctrl\+K/i)).toBeInTheDocument()
         expect(screen.getByText(/Step 1 of 3/i)).toBeInTheDocument()
     })
 
@@ -64,7 +64,7 @@ describe('OnboardingTour', () => {
 
     it('announces the active step via aria-live', () => {
         render(<OnboardingTour {...baseProps()} />)
-        const live = screen.getByText(/Press Cmd\+K/i).closest('[aria-live]')
+        const live = screen.getByText(/Press Ctrl\+K/i).closest('[aria-live]')
         expect(live).toHaveAttribute('aria-live', 'polite')
     })
 })

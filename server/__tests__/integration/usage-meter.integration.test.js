@@ -28,6 +28,10 @@ const {
     getCurrentUsage,
     checkUsageLimit,
     incrementAIUsage,
+    checkDailyUsageLimit,
+    guardedDailyIncrement,
+    releaseGuardedDailyIncrement,
+    getCurrentDailyUsage,
 } = await import('../../lib/usage-meter.js');
 
 const FREE = 1;
@@ -47,17 +51,17 @@ afterEach(() => {
 });
 
 describe('usage-meter integration — counter + cap agreement', () => {
-    it('charges a real row and the free migration cap (1) agrees with getCurrentUsage', () => {
-        // Cap is read from feature-flags (free.migrationFullPerMonth === 1).
+    it('charges real rows and the free migration cap (5) agrees with getCurrentUsage', () => {
+        // Cap is read from feature-flags (free.migrationFullPerMonth === 5).
         expect(checkUsageLimit(FREE, 'migration_full_executions').allowed).toBe(true);
 
-        incrementUsage(FREE, 'migration_full_executions');
-        expect(getCurrentUsage(FREE, 'migration_full_executions')).toBe(1);
+        for (let i = 0; i < 5; i++) incrementUsage(FREE, 'migration_full_executions');
+        expect(getCurrentUsage(FREE, 'migration_full_executions')).toBe(5);
 
         const check = checkUsageLimit(FREE, 'migration_full_executions');
         expect(check.allowed).toBe(false);
-        expect(check.current).toBe(1);
-        expect(check.limit).toBe(1);
+        expect(check.current).toBe(5);
+        expect(check.limit).toBe(5);
     });
 
     it('ON CONFLICT increments the same row rather than inserting duplicates', () => {
@@ -83,6 +87,64 @@ describe('usage-meter integration — counter + cap agreement', () => {
         expect(getCurrentUsage(FREE, 'ai_readme')).toBe(1);
         expect(getCurrentUsage(FREE, 'ai_queries')).toBe(1);
     });
+
+    // 2026-07-18 rebalance: Deep Review / PR Chat / PR Commands / Prompt
+    // Studio test / sync apply moved to Free with their own metered caps.
+    it('resolves the new per-feature metrics against the new free-tier caps', () => {
+        expect(checkUsageLimit(FREE, 'ai_deep_review')).toMatchObject({ allowed: true, limit: 10 });
+        expect(checkUsageLimit(FREE, 'ai_pr_chat')).toMatchObject({ allowed: true, limit: 100 });
+        expect(checkUsageLimit(FREE, 'ai_pr_command')).toMatchObject({ allowed: true, limit: 30 });
+        expect(checkUsageLimit(FREE, 'ai_prompt_test')).toMatchObject({ allowed: true, limit: 30 });
+        expect(checkUsageLimit(FREE, 'sync_apply_executions')).toMatchObject({ allowed: true, limit: 10 });
+
+        for (let i = 0; i < 10; i++) incrementUsage(FREE, 'ai_deep_review');
+        expect(checkUsageLimit(FREE, 'ai_deep_review').allowed).toBe(false);
+    });
+
+    it('pro tier lifts the new per-feature caps to unlimited', () => {
+        expect(checkUsageLimit(PRO, 'ai_deep_review').limit).toBe(Infinity);
+        expect(checkUsageLimit(PRO, 'sync_apply_executions').limit).toBe(Infinity);
+    });
+});
+
+describe('usage-meter integration — daily-window metering (bulk_destructive_daily)', () => {
+    it('checkDailyUsageLimit resolves against bulkDestructiveDailyMax and agrees with getCurrentDailyUsage', () => {
+        expect(checkDailyUsageLimit(FREE, 'bulk_destructive_daily')).toMatchObject({ allowed: true, current: 0, limit: 200 });
+
+        expect(guardedDailyIncrement(FREE, 'bulk_destructive_daily').allowed).toBe(true);
+        expect(getCurrentDailyUsage(FREE, 'bulk_destructive_daily')).toBe(1);
+    });
+
+    it('guardedDailyIncrement blocks once the daily cap is exhausted, and resets on a new UTC day', () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-03-10T12:00:00Z'));
+
+        for (let i = 0; i < 200; i++) {
+            expect(guardedDailyIncrement(FREE, 'bulk_destructive_daily').allowed).toBe(true);
+        }
+        expect(getCurrentDailyUsage(FREE, 'bulk_destructive_daily')).toBe(200);
+        expect(guardedDailyIncrement(FREE, 'bulk_destructive_daily').allowed).toBe(false);
+        expect(checkDailyUsageLimit(FREE, 'bulk_destructive_daily').allowed).toBe(false);
+
+        // New UTC day → fresh bucket.
+        vi.setSystemTime(new Date('2026-03-11T00:00:00Z'));
+        expect(getCurrentDailyUsage(FREE, 'bulk_destructive_daily')).toBe(0);
+        expect(guardedDailyIncrement(FREE, 'bulk_destructive_daily').allowed).toBe(true);
+    });
+
+    it('releaseGuardedDailyIncrement gives back a reserved unit on a compensating failure', () => {
+        const r = guardedDailyIncrement(FREE, 'bulk_destructive_daily');
+        expect(r.allowed).toBe(true);
+        expect(getCurrentDailyUsage(FREE, 'bulk_destructive_daily')).toBe(1);
+
+        releaseGuardedDailyIncrement(FREE, 'bulk_destructive_daily');
+        expect(getCurrentDailyUsage(FREE, 'bulk_destructive_daily')).toBe(0);
+    });
+
+    it('the daily ceiling is identical across tiers (tier-independent anti-abuse guard)', () => {
+        expect(checkDailyUsageLimit(FREE, 'bulk_destructive_daily').limit).toBe(200);
+        expect(checkDailyUsageLimit(PRO, 'bulk_destructive_daily').limit).toBe(200);
+    });
 });
 
 describe('usage-meter integration — UTC month rollover', () => {
@@ -90,8 +152,8 @@ describe('usage-meter integration — UTC month rollover', () => {
         vi.useFakeTimers();
 
         vi.setSystemTime(new Date('2026-01-15T12:00:00Z'));
-        incrementUsage(FREE, 'migration_full_executions');
-        expect(getCurrentUsage(FREE, 'migration_full_executions')).toBe(1);
+        for (let i = 0; i < 5; i++) incrementUsage(FREE, 'migration_full_executions');
+        expect(getCurrentUsage(FREE, 'migration_full_executions')).toBe(5);
         expect(checkUsageLimit(FREE, 'migration_full_executions').allowed).toBe(false);
 
         // New month → fresh bucket, quota available again.

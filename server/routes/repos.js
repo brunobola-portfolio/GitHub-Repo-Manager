@@ -12,7 +12,8 @@
  *                                     labels, commits, compare
  *   - ./repos/pulls.js              — pull requests (CRUD, merge, reviews,
  *                                     files, diff, inline comments, replies).
- *                                     Write-back endpoints are requireTier('pro').
+ *                                     Write-back endpoints are free on every
+ *                                     tier (locked by pr-write-tier-gate.test.js).
  *   - ./repos/issues.js             — issues + issue comments
  *   - ./repos/branches-releases.js  — branches, branch protection, tags, releases
  *   - ./repos/actions-community.js  — webhooks, GitHub Actions, community

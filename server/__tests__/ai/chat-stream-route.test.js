@@ -119,7 +119,7 @@ describe('POST /api/ai/chat?stream=true', () => {
     });
 
     it('returns 429 QUOTA_EXCEEDED before streaming when the AI query cap is reached', async () => {
-        seedAiQueries(200); // free-tier cap
+        seedAiQueries(1000); // free-tier cap
         const res = await request(makeApp()).post('/api/ai/chat?stream=true').send({ message: 'hi' });
         expect(res.status).toBe(429);
         expect(res.body.code).toBe('QUOTA_EXCEEDED');

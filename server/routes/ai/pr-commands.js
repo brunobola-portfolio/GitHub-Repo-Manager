@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 /*
- * PR-context AI slash commands routes (slice 3 — Pro).
+ * PR-context AI slash commands routes. Free tier (2026-07-18 rebalance),
+ * metered against prCommandPerMonth.
  *
  *   POST   /:owner/:repo/:pr/:command            — generate (or refresh) cached result
  *   GET    /:owner/:repo/:pr/:command            — fetch cached result (no LLM call)
@@ -17,12 +18,11 @@ import express from 'express';
 import { createHash } from 'crypto';
 
 import { requireAuth, errorResponse } from '../../middleware/auth.js';
-import { requireTier } from '../../middleware/require-tier.js';
 import { githubApi } from '../../lib/github-api.js';
 import { readThrough } from '../../lib/gh-cache.js';
 import { executeViaOutbox } from '../../lib/outbox-helper.js';
 import { createProviderForUser } from '../../lib/ai-provider.js';
-import { checkUsageLimit, incrementUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { denyIfSpendCapReached, recordStreamCompletion } from './shared.js';
 import { runPRCommand, isSupportedCommand } from '../../lib/ai-features/pr-commands.js';
 import {
@@ -159,7 +159,7 @@ async function fetchPRContext(req, owner, repo, pr) {
 // POST — generate (or refresh) a cached result
 // ---------------------------------------------------------------------------
 
-router.post('/:owner/:repo/:pr/:command', requireAuth, requireTier('pro'), generateRateLimit, async (req, res) => {
+router.post('/:owner/:repo/:pr/:command', requireAuth, generateRateLimit, async (req, res) => {
     const { owner, repo, pr, command } = req.params;
     const userId = req.session.userId;
 
@@ -170,11 +170,12 @@ router.post('/:owner/:repo/:pr/:command', requireAuth, requireTier('pro'), gener
         return errorResponse(res, 400, 'Invalid command. Expected describe, test_plan, or improve.', 'INVALID_COMMAND');
     }
 
-    // Meter the AI query (Pro is capped at 5000/mo, Enterprise unlimited) and
-    // enforce the monthly spend cap BEFORE any provider call (OWASP LLM10).
-    const quota = checkUsageLimit(userId, 'ai_queries');
+    // PR commands moved off the Pro paywall to Free (2026-07-18 rebalance) —
+    // meter against prCommandPerMonth AND the global ai_queries pool, and
+    // enforce the monthly spend cap, all BEFORE any provider call (OWASP LLM10).
+    const quota = checkAIFeatureLimit(userId, 'ai_pr_command');
     if (!quota.allowed) {
-        return res.status(429).json(quotaExceededResponse({ ...quota, metric: 'ai_queries' }));
+        return res.status(429).json(quotaExceededResponse(quota));
     }
     if (denyIfSpendCapReached(req, res)) return;
 
@@ -255,7 +256,7 @@ router.post('/:owner/:repo/:pr/:command', requireAuth, requireTier('pro'), gener
     );
 
     // Meter the query + record spend + write a PII-safe cost audit.
-    incrementUsage(userId, 'ai_queries');
+    incrementAIUsage(userId, 'ai_pr_command');
     recordStreamCompletion(req, {
         feature: 'pr_command',
         action: 'ai.pr_command',
@@ -281,7 +282,7 @@ router.post('/:owner/:repo/:pr/:command', requireAuth, requireTier('pro'), gener
 // GET — fetch cached result (no LLM call)
 // ---------------------------------------------------------------------------
 
-router.get('/:owner/:repo/:pr/:command', requireAuth, requireTier('pro'), (req, res) => {
+router.get('/:owner/:repo/:pr/:command', requireAuth, (req, res) => {
     const { owner, repo, pr, command } = req.params;
     const got = getResult(req.session.userId, owner, repo, Number(pr), command);
     if (!got) return errorResponse(res, 404, 'No cached result.', 'NOT_FOUND');
@@ -300,7 +301,7 @@ router.get('/:owner/:repo/:pr/:command', requireAuth, requireTier('pro'), (req, 
 // DELETE — discard a cached result
 // ---------------------------------------------------------------------------
 
-router.delete('/:owner/:repo/:pr/:command', requireAuth, requireTier('pro'), (req, res) => {
+router.delete('/:owner/:repo/:pr/:command', requireAuth, (req, res) => {
     const { owner, repo, pr, command } = req.params;
     const changes = deleteResult(req.session.userId, owner, repo, Number(pr), command);
     if (changes === 0) return errorResponse(res, 404, 'No cached result.', 'NOT_FOUND');
@@ -314,7 +315,7 @@ router.delete('/:owner/:repo/:pr/:command', requireAuth, requireTier('pro'), (re
 // so we never overwrite the PR body on top of a stale review.
 // ---------------------------------------------------------------------------
 
-router.post('/:owner/:repo/:pr/describe/publish', requireAuth, requireTier('pro'), async (req, res) => {
+router.post('/:owner/:repo/:pr/describe/publish', requireAuth, async (req, res) => {
     const { owner, repo, pr } = req.params;
     const userId = req.session.userId;
 

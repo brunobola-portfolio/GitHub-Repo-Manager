@@ -247,7 +247,13 @@ export const repoActions = {
 		run: async (repo, ctx) => {
 			const p = await ctx.api.previewSync(repo.owner.login, repo.name)
 			const last = p.lastSyncedAt ? new Date(p.lastSyncedAt).toLocaleString() : 'never synced'
-			ctx.toast.success(`Mirror: ${p.sourceName || p.sourceUrl} → ${p.target} · last synced ${last}${p.applyRequiresPro ? ' · applying requires Pro' : ''}`)
+			// Sync apply is free on every tier (2026-07-18 rebalance), capped at
+			// syncApplyPerMonth — show remaining runs instead of the old
+			// (now-removed) applyRequiresPro gate.
+			const remaining = typeof p.syncApplyRemaining === 'number' && Number.isFinite(p.syncApplyRemaining)
+				? ` · ${p.syncApplyRemaining} sync applies left this month`
+				: ''
+			ctx.toast.success(`Mirror: ${p.sourceName || p.sourceUrl} → ${p.target} · last synced ${last}${remaining}`)
 		},
 	},
 

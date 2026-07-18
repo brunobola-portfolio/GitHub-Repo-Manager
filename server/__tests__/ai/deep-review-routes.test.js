@@ -4,7 +4,7 @@
 // Must come before any module that imports server/config.js (like middleware/auth.js).
 process.env.SESSION_SECRET = process.env.SESSION_SECRET || 'test-session-secret-at-least-32-chars-long';
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 
@@ -141,6 +141,13 @@ function seedAiQueries(count) {
         'INSERT INTO usage_metrics (user_id, metric_type, count, period_start, period_end) VALUES (?, ?, ?, ?, ?)'
     ).run(USER_ID, 'ai_queries', count, start, end);
 }
+function seedMetric(metricType, count) {
+    const start = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)).toISOString();
+    const end = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth() + 1, 0, 23, 59, 59)).toISOString();
+    testDb.prepare(
+        'INSERT INTO usage_metrics (user_id, metric_type, count, period_start, period_end) VALUES (?, ?, ?, ?, ?)'
+    ).run(USER_ID, metricType, count, start, end);
+}
 
 describe('POST /api/ai/deep-review/:owner/:repo/:pr', () => {
     it('generates a draft and persists it', async () => {
@@ -184,7 +191,7 @@ describe('POST /api/ai/deep-review/:owner/:repo/:pr', () => {
     });
 
     it('returns 429 QUOTA_EXCEEDED when the monthly AI query cap is reached (provider not called)', async () => {
-        seedAiQueries(5000); // Pro cap is 5000/mo
+        seedAiQueries(10000); // Pro cap is 10,000/mo
         const app = makeApp();
         const res = await request(app).post('/api/ai/deep-review/acme/api/42').send({});
         expect(res.status).toBe(429);
@@ -319,5 +326,56 @@ describe('rate limiting on POST generate', () => {
         _resetRateLimits();
         const after = await request(app).post('/api/ai/deep-review/acme/api/42').send({});
         expect(after.status).toBe(200);
+    });
+});
+
+// -----------------------------------------------------------------------
+// Free tier — Deep Review moved off the Pro paywall (2026-07-18 rebalance).
+// Regression-lock: a future refactor must not silently re-gate these routes
+// behind requireTier('pro'). Metered against deepReviewPerMonth (10/mo Free).
+// -----------------------------------------------------------------------
+describe('Free tier — Deep Review is free, metered against deepReviewPerMonth', () => {
+    afterEach(() => {
+        currentTier = 'pro';
+    });
+
+    it('Free tier can generate a deep review draft', async () => {
+        currentTier = 'free';
+        const app = makeApp();
+        const res = await request(app).post('/api/ai/deep-review/acme/api/42').send({});
+        expect(res.status).toBe(200);
+        expect(res.body.draftId).toBeGreaterThan(0);
+    });
+
+    it('Free tier can fetch/edit/publish/discard a draft', async () => {
+        currentTier = 'free';
+        const app = makeApp();
+        const created = await request(app).post('/api/ai/deep-review/acme/api/42').send({});
+        expect(created.status).toBe(200);
+        const draftId = created.body.draftId;
+
+        const got = await request(app).get('/api/ai/deep-review/acme/api/42');
+        expect(got.status).toBe(200);
+
+        const patched = await request(app)
+            .patch(`/api/ai/deep-review/${draftId}/comments/0`)
+            .send({ action: 'dismiss' });
+        expect(patched.status).toBe(200);
+
+        const published = await request(app)
+            .post(`/api/ai/deep-review/${draftId}/publish`)
+            .send({ event: 'COMMENT' });
+        expect(published.status).toBe(200);
+    });
+
+    it('returns 429 QUOTA_EXCEEDED once the Free deepReviewPerMonth cap (10/mo) is reached (provider not called)', async () => {
+        currentTier = 'free';
+        seedMetric('ai_deep_review', 10);
+        const app = makeApp();
+        const res = await request(app).post('/api/ai/deep-review/acme/api/42').send({});
+        expect(res.status).toBe(429);
+        expect(res.body.code).toBe('QUOTA_EXCEEDED');
+        expect(res.body.metric).toBe('ai_deep_review');
+        expect(createProviderForUserMock).not.toHaveBeenCalled();
     });
 });

@@ -33,7 +33,7 @@ async function stubStudio(page) {
 }
 
 test.describe('Prompt Studio (mock mode)', () => {
-    test('free user can browse built-in presets', async ({ page }) => {
+    test('free user can browse built-in presets and create custom ones', async ({ page }) => {
         await stubStudio(page)
 
         // ?mockPRNumber=42 keeps parity with other AI specs (the value is
@@ -47,12 +47,11 @@ test.describe('Prompt Studio (mock mode)', () => {
         await expect(page.getByText('General').first()).toBeVisible()
         await expect(page.getByText('Security audit').first()).toBeVisible()
 
-        // Free-tier upgrade hint visible (license endpoint defaults to 'free'
-        // in MOCK_MODE — see useLicense.js).
-        await expect(page.getByText(/upgrade to pro/i).first()).toBeVisible()
-
-        // The "+ New preset" button is disabled for free users.
+        // Custom preset creation is free on every tier (2026-07-18 rebalance,
+        // capped server-side at promptPresetsMax) — no upgrade banner, and
+        // the "+ New preset" button is enabled for the default (free) user.
+        await expect(page.getByText(/upgrade to pro/i)).toHaveCount(0)
         const newBtn = page.getByRole('button', { name: /new preset/i })
-        await expect(newBtn).toBeDisabled()
+        await expect(newBtn).toBeEnabled()
     })
 })
