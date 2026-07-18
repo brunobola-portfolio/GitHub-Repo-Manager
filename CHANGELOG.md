@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.6.0] - 2026-07-19
+
 Six production-premium waves plus the "Community WOW" feature set, executed
 directly on `main` following the 2026-07-17 audit: hardening and free-first
 pricing, a premium migration/reading pass, ops readiness, dark-mode/list
