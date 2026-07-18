@@ -16,17 +16,27 @@ function RiskPill({ level }) {
 }
 
 /**
- * Collapsible panel showing AI-generated PR review summary.
+ * Collapsible panel showing an AI-generated review summary. Used verbatim
+ * by both PR review (useReviewAI) and single-commit summaries (useCommitAI)
+ * — it's fully decoupled from PR-specific state, taking plain props.
  *
- * @param {object|null} summary          - AI summary object from useReviewAI
+ * @param {object|null} summary          - AI summary object from useReviewAI / useCommitAI
  * @param {boolean}     loading          - True while AI is fetching
  * @param {string|null} error            - Error message if AI fetch failed
  * @param {boolean}     collapsed        - Whether the panel body is collapsed
  * @param {Function}    onToggle         - Toggle collapsed state
  * @param {Function}    onRetry          - Retry AI fetch
  * @param {Function}    onFileClick      - Called with filename when a file risk entry is clicked
+ * @param {string}      [headerLabel]    - Header text (default: "AI Review Summary")
+ * @param {string}      [loadingLabel]   - Loading copy (default: "Analyzing PR...")
+ * @param {string}      [errorContext]   - Context string handed to AIErrorState (default: "PR review")
  */
-export function AISummaryPanel({ summary, loading, error, collapsed, onToggle, onRetry, onFileClick }) {
+export function AISummaryPanel({
+  summary, loading, error, collapsed, onToggle, onRetry, onFileClick,
+  headerLabel = 'AI Review Summary',
+  loadingLabel = 'Analyzing PR...',
+  errorContext = 'PR review',
+}) {
   // Don't render if there is nothing to show
   if (!summary && !loading && !error) return null
 
@@ -45,7 +55,7 @@ export function AISummaryPanel({ summary, loading, error, collapsed, onToggle, o
         <ChevronIcon size={14} className="shrink-0 text-slate-500 dark:text-slate-400" aria-hidden="true" />
         <AlertTriangle size={14} className="shrink-0 text-yellow-500 dark:text-yellow-400" aria-hidden="true" />
         <span className="flex-1 font-semibold text-slate-700 dark:text-slate-200">
-          AI Review Summary
+          {headerLabel}
         </span>
         {overallRisk && <RiskPill level={overallRisk} />}
       </button>
@@ -67,7 +77,7 @@ export function AISummaryPanel({ summary, loading, error, collapsed, onToggle, o
               {loading && (
                 <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                   <Spinner size="sm" className="shrink-0" />
-                  <span>Analyzing PR...</span>
+                  <span>{loadingLabel}</span>
                 </div>
               )}
 
@@ -76,7 +86,7 @@ export function AISummaryPanel({ summary, loading, error, collapsed, onToggle, o
                 <AIErrorState
                   error={typeof error === 'string' ? { message: error } : error}
                   onRetry={onRetry}
-                  context="PR review"
+                  context={errorContext}
                   variant="inline"
                 />
               )}
