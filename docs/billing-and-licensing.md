@@ -1,5 +1,45 @@
 # Billing and Licensing
 
+## Pricing philosophy (2026-07-18 rebalance)
+
+The hosted product is **free-first**. Free is the primary tier, not a crippled
+trial: nearly every product feature that costs the operator nothing marginal
+per use — bulk ops (transfer/mirror/delete), mirror sync apply, AI Deep
+Review, Prompt Studio, PR Chat, PR slash commands, DORA metrics, and
+unlimited-seat teams — ships on Free with generous, non-infinite caps. Only
+genuinely metered, per-call-cost items (AI generations, migration
+clone+push, sync clone+push) carry a monthly count cap plus the AI $ spend
+cap described below.
+
+Pro and Enterprise no longer sell feature unlocks. Their value is:
+
+- **Pro** — more AI headroom (10,000 AI queries/month vs. Free's 1,000),
+  a higher AI $ spend-cap ceiling, more API keys (50 vs. 25), and email
+  support. Pro is "raise the ceiling for a power user," not "unlock the
+  product."
+- **Enterprise** — compliance and service deliverables the owner has
+  explicitly scoped: SSO/SAML (roadmap, not yet implemented — never
+  advertised as delivered until real SAML exists), Audit Log with export,
+  Priority Support + SLA, and white-glove migration services. These are
+  either genuinely enterprise-grade (compliance trail) or delivered
+  out-of-band (support ticket + contract), never gated by a
+  `feature-flags.js` key the way product features are.
+
+See `docs/reports/2026-07-17-code-ui-ux-audit-panel.md` and
+`.dev/prod-premium/2026-07-17/design-pricing-rebalance.md` for the full
+tier-matrix design and rationale.
+
+### Per-individual AI-quota disclaimer
+
+Making Teams unlimited-seat on every tier does **not** change how AI usage is
+metered: `user_subscriptions` is keyed 1:1 on `user_id`, so AI query/feature
+quotas (Deep Review, PR Chat, README/commit generation, etc.) are still
+counted against each individual account's own subscription tier, even when
+that account is a member of a large free team. A team of ten Free members has
+ten separate 1,000-query/month budgets, not one shared pool. This is
+disclosed on every pricing surface (PricingPage, FeatureComparison, README)
+as defense-in-depth honesty.
+
 ## License delivery — Stripe → license key flow
 
 When a user completes a Stripe checkout, the server automatically mints a signed Ed25519 license key and emails it to the subscriber.

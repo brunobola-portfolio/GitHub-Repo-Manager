@@ -66,12 +66,14 @@ const pricingMatrix = readmeFull.slice(
 /**
  * Extract the Free-column value for a feature row in FeatureComparison.jsx.
  * Rows look like `{ feature: 'X', values: [free, pro, ent] }`; returns the
- * first array entry verbatim (e.g. "'200'", "true", "false").
+ * first array entry verbatim (e.g. "'1,000'", "true", "false"). The quoted-
+ * string branch is tried first so thousands-separator commas inside a value
+ * (e.g. '1,000') aren't mistaken for the array-element separator.
  */
 function comparisonFreeValue(label) {
     const idx = comparisonSource.indexOf(`feature: '${label}'`)
     if (idx === -1) return null
-    const m = comparisonSource.slice(idx).match(/values:\s*\[\s*([^,\]]+)/)
+    const m = comparisonSource.slice(idx).match(/values:\s*\[\s*('(?:[^'\\]|\\.)*'|[^,\]]+)/)
     return m ? m[1].trim() : null
 }
 
@@ -97,54 +99,74 @@ describe('Pricing page ↔ feature-flags parity', () => {
         }
     })
 
-    it('Free maxRepos=200 matches "200" on the Free pricing card', () => {
+    it('Free maxRepos=1000 matches "1,000" on the Free pricing card', () => {
         const free = getFeatures('free')
-        expect(free.maxRepos).toBe(200)
+        expect(free.maxRepos).toBe(1000)
         const section = tierSection('Free')
-        expect(section).toMatch(/Repositories managed[^}]*included:\s*'?200'?/)
+        expect(section).toMatch(/Repositories managed[^}]*included:\s*'1,000'/)
     })
 
-    it('Free aiQueriesPerMonth=200 matches "200" on the Free pricing card', () => {
+    it('Free aiQueriesPerMonth=1000 matches "1,000" on the Free pricing card', () => {
         const free = getFeatures('free')
-        expect(free.aiQueriesPerMonth).toBe(200)
+        expect(free.aiQueriesPerMonth).toBe(1000)
         const section = tierSection('Free')
-        expect(section).toMatch(/included:\s*'?200'?/)
+        expect(section).toMatch(/AI queries \/ month \(total\)[^}]*included:\s*'1,000'/)
     })
 
-    it('Free apiKeys=5 matches "5" on the Free pricing card', () => {
+    it('Free apiKeys=25 matches "25" on the Free pricing card', () => {
         const free = getFeatures('free')
-        expect(free.apiKeys).toBe(5)
+        expect(free.apiKeys).toBe(25)
         const section = tierSection('Free')
-        expect(section).toMatch(/API keys[^}]*included:\s*'?5'?/)
+        expect(section).toMatch(/API keys[^}]*included:\s*'?25'?/)
     })
 
-    it('Pro aiQueriesPerMonth=5000 matches "5,000" on the Pro pricing card', () => {
+    it('Free bulkAdvanced/syncRepository are true and advertised as Free bullets', () => {
+        const free = getFeatures('free')
+        expect(free.bulkAdvanced).toBe(true)
+        expect(free.syncRepository).toBe(true)
+        const section = tierSection('Free')
+        expect(section).toMatch(/Bulk ops incl\. transfer, mirror, cross-org/)
+        expect(section).toMatch(/Mirror Sync \(apply\)/)
+    })
+
+    it('Free deepReviewPerMonth=10 / prChatMessagesPerMonth=100 / prCommandPerMonth=30 are advertised as Free bullets', () => {
+        const free = getFeatures('free')
+        expect(free.deepReviewPerMonth).toBe(10)
+        expect(free.prChatMessagesPerMonth).toBe(100)
+        expect(free.prCommandPerMonth).toBe(30)
+        const section = tierSection('Free')
+        expect(section).toMatch(/AI Deep Review[^}]*included:\s*'10 \/ month'/)
+        expect(section).toMatch(/PR Chat[^}]*included:\s*'100 messages \/ month'/)
+        expect(section).toMatch(/PR slash commands[^}]*included:\s*'30 \/ month'/)
+    })
+
+    it('Pro aiQueriesPerMonth=10000 matches "10,000" on the Pro pricing card', () => {
         const pro = getFeatures('pro')
-        expect(pro.aiQueriesPerMonth).toBe(5000)
+        expect(pro.aiQueriesPerMonth).toBe(10000)
         const section = tierSection('Pro')
         // Page renders the formatted string with a thousands separator.
-        expect(section).toMatch(/included:\s*'5,000'/)
+        expect(section).toMatch(/included:\s*'10,000'/)
     })
 
-    it('Pro apiKeys=10 matches "10" on the Pro pricing card', () => {
+    it('Pro apiKeys=50 matches "50" on the Pro pricing card', () => {
         const pro = getFeatures('pro')
-        expect(pro.apiKeys).toBe(10)
+        expect(pro.apiKeys).toBe(50)
         const section = tierSection('Pro')
-        expect(section).toMatch(/API keys[^}]*included:\s*'?10'?/)
-    })
-
-    it('Pro teamMembersMax=15 matches "15 members" copy on the Pro pricing card', () => {
-        const pro = getFeatures('pro')
-        expect(pro.teamMembersMax).toBe(15)
-        const section = tierSection('Pro')
-        expect(section).toMatch(/up to 15 members/i)
-    })
-
-    it('Enterprise apiKeys=50 matches "50" on the Enterprise pricing card', () => {
-        const enterprise = getFeatures('enterprise')
-        expect(enterprise.apiKeys).toBe(50)
-        const section = tierSection('Enterprise')
         expect(section).toMatch(/API keys[^}]*included:\s*'?50'?/)
+    })
+
+    it('Pro teamMembersMax=Infinity matches "unlimited" team copy on the Pro pricing card', () => {
+        const pro = getFeatures('pro')
+        expect(pro.teamMembersMax).toBe(Infinity)
+        const section = tierSection('Pro')
+        expect(section).toMatch(/Teams.*unlimited/i)
+    })
+
+    it('Enterprise apiKeys=100 matches "100" on the Enterprise pricing card', () => {
+        const enterprise = getFeatures('enterprise')
+        expect(enterprise.apiKeys).toBe(100)
+        const section = tierSection('Enterprise')
+        expect(section).toMatch(/API keys[^}]*included:\s*'?100'?/)
     })
 
     it('Enterprise team-members copy reflects unlimited tier', () => {
@@ -170,31 +192,31 @@ describe('Pricing page ↔ feature-flags parity', () => {
 
 // ---------------------------------------------------------------------------
 // FeatureComparison.jsx is the SECOND pricing surface and was previously
-// unchecked — that is exactly how it drifted (50 repos / 2 keys / 50-mo
-// search / 10-mo insights while flags moved to 200 / 5 / 75 / 15). These
-// assertions tie every Free-column cell back to feature-flags so the table
-// can no longer silently diverge.
+// unchecked — that is exactly how it drifted. These assertions tie every
+// Free-column cell back to feature-flags so the table can no longer silently
+// diverge. Updated 2026-07-18 for the "nearly everything free" rebalance
+// (.dev/prod-premium/2026-07-17/design-pricing-rebalance.md §2).
 // ---------------------------------------------------------------------------
 describe('FeatureComparison.jsx ↔ feature-flags parity', () => {
     const free = getFeatures('free')
 
-    it('Free repositories-managed cell matches maxRepos (200)', () => {
-        expect(free.maxRepos).toBe(200)
-        expect(comparisonFreeValue('Repositories managed')).toBe(`'${free.maxRepos}'`)
+    it('Free repositories-managed cell matches maxRepos (1,000)', () => {
+        expect(free.maxRepos).toBe(1000)
+        expect(comparisonFreeValue('Repositories managed')).toBe(`'${free.maxRepos.toLocaleString('en-US')}'`)
     })
 
-    it('Free API-keys cell matches apiKeys (5)', () => {
-        expect(free.apiKeys).toBe(5)
+    it('Free API-keys cell matches apiKeys (25)', () => {
+        expect(free.apiKeys).toBe(25)
         expect(comparisonFreeValue('API keys')).toBe(`'${free.apiKeys}'`)
     })
 
-    it('Free Semantic Search cell reflects semanticSearchPerMonth (75)', () => {
-        expect(free.semanticSearchPerMonth).toBe(75)
+    it('Free Semantic Search cell reflects semanticSearchPerMonth (375)', () => {
+        expect(free.semanticSearchPerMonth).toBe(375)
         expect(comparisonFreeValue('Semantic Search')).toContain(String(free.semanticSearchPerMonth))
     })
 
-    it('Free Repo Insights cell reflects repoInsightsPerMonth (15)', () => {
-        expect(free.repoInsightsPerMonth).toBe(15)
+    it('Free Repo Insights cell reflects repoInsightsPerMonth (75)', () => {
+        expect(free.repoInsightsPerMonth).toBe(75)
         expect(comparisonFreeValue('Repo Insights / Quality Report')).toContain(String(free.repoInsightsPerMonth))
     })
 
@@ -203,15 +225,21 @@ describe('FeatureComparison.jsx ↔ feature-flags parity', () => {
         expect(comparisonFreeValue('Basic bulk on own repos')).toBe('true')
     })
 
-    it('Free advanced-bulk row is disabled (matches bulkAdvanced)', () => {
-        expect(free.bulkAdvanced).toBe(false)
-        expect(comparisonFreeValue('Advanced bulk (transfer, mirror, cross-org)')).toBe('false')
+    it('Free advanced-bulk row is ENABLED (matches bulkAdvanced — moved to Free 2026-07-18)', () => {
+        // Inversion: bulk transfer/mirror/delete moved off the Pro paywall.
+        // Safety is the existing dry-run + confirmation-token flow plus the
+        // new tier-independent bulkDestructiveDailyMax ceiling, not tier.
+        expect(free.bulkAdvanced).toBe(true)
+        expect(comparisonFreeValue('Advanced bulk (transfer, mirror, cross-org)')).toBe('true')
     })
 
-    it('Free sync row is preview-only — apply (syncRepository) is Pro, preview (syncPreview) is free', () => {
-        expect(free.syncRepository).toBe(false)
+    it('Free sync row now shows the metered apply cap (syncRepository moved to Free)', () => {
+        // Inversion: apply (clone + force-push) is free on every tier now,
+        // newly metered against syncApplyPerMonth.
+        expect(free.syncRepository).toBe(true)
         expect(free.syncPreview).toBe(true)
-        expect(comparisonFreeValue('Sync Repository (mirror sync)')).toBe("'Preview'")
+        expect(free.syncApplyPerMonth).toBe(10)
+        expect(comparisonFreeValue('Sync Repository (mirror sync)')).toBe(`'${free.syncApplyPerMonth} / month'`)
     })
 
     it('Free audit-logs row is disabled (matches auditLog)', () => {
@@ -219,16 +247,13 @@ describe('FeatureComparison.jsx ↔ feature-flags parity', () => {
         expect(comparisonFreeValue('Audit Logs')).toBe('false')
     })
 
-    it('Free team-collaboration row is ENABLED (matches teams) — never a bare false', () => {
-        // Regression: this cell shipped as `false` while feature-flags has
-        // teams:true (up to teamsMax/teamMembersMax) and PricingPage + README
-        // both advertise Free teams. A bare `false` here is a pricing lie.
+    it('Free team-collaboration row is Unlimited (matches teamsMax/teamMembersMax = Infinity)', () => {
+        // teamsMax/teamMembersMax flipped to Infinity 2026-07-18, dissolving
+        // the seat-billing honesty gap — no more tiered-team-size claim.
         expect(free.teams).toBe(true)
-        const cell = comparisonFreeValue('Team collaboration')
-        expect(cell).not.toBe('false')
-        // Reflects the Free caps (teamsMax=3, teamMembersMax=5).
-        expect(cell).toContain(String(free.teamsMax))
-        expect(cell).toContain(String(free.teamMembersMax))
+        expect(free.teamsMax).toBe(Infinity)
+        expect(free.teamMembersMax).toBe(Infinity)
+        expect(comparisonFreeValue('Team collaboration')).toBe("'Unlimited'")
     })
 
     it('Free PR-review row is NOT "Read-only" — write-back is free on every tier (prReview:true)', () => {
@@ -240,6 +265,52 @@ describe('FeatureComparison.jsx ↔ feature-flags parity', () => {
         const cell = comparisonFreeValue('PR Review Experience')
         expect(cell).not.toBe("'Read-only'")
     })
+
+    // ── New rows added 2026-07-18: Deep Review, Prompt Studio, PR Chat, PR
+    // Commands moved off the Pro paywall to Free with their own monthly caps.
+    it('Free Deep Review cell reflects deepReviewPerMonth (10)', () => {
+        expect(free.deepReviewPerMonth).toBe(10)
+        expect(comparisonFreeValue('AI Deep Review (walkthrough + comments + publish)')).toContain(String(free.deepReviewPerMonth))
+    })
+
+    it('Free Prompt Studio cell reflects promptPresetsMax (10) and promptStudioTestPerMonth (30)', () => {
+        expect(free.promptPresetsMax).toBe(10)
+        expect(free.promptStudioTestPerMonth).toBe(30)
+        const cell = comparisonFreeValue('Prompt Studio (custom presets + test runs)')
+        expect(cell).toContain(String(free.promptPresetsMax))
+        expect(cell).toContain(String(free.promptStudioTestPerMonth))
+    })
+
+    it('Free PR Chat cell reflects prChatMessagesPerMonth (100)', () => {
+        expect(free.prChatMessagesPerMonth).toBe(100)
+        expect(comparisonFreeValue('PR Chat (streaming Q&A)')).toContain(String(free.prChatMessagesPerMonth))
+    })
+
+    it('Free PR Commands cell reflects prCommandPerMonth (30)', () => {
+        expect(free.prCommandPerMonth).toBe(30)
+        expect(comparisonFreeValue('PR slash commands (/describe, /test_plan, /improve)')).toContain(String(free.prCommandPerMonth))
+    })
+
+    it('DORA metrics row is Free/Pro/Enterprise true — no requireTier gate remains in work-board.js', () => {
+        // DORA metrics have no feature-flags.js key (pure read-only git-history
+        // aggregation with no AI/marginal cost) — the row is checked against
+        // the literal table value, not a getFeatures() flag.
+        expect(comparisonFreeValue('DORA metrics (deploy frequency, lead time, change failure rate, MTTR)')).toBe('true')
+    })
+
+    // White-glove migration services and Priority Support + SLA are manual,
+    // service-based deliverables (support ticket + contract) — they have no
+    // feature-flags.js key, unlike every other row in this suite. Exempted
+    // from flag-backed parity by design (see design doc §4 "Keeping the
+    // parity gate honest about non-code items"); asserted against the
+    // literal Enterprise-only cell value instead.
+    it('White-glove migration services is Enterprise-only (no feature-flags key — manual service)', () => {
+        expect(comparisonFreeValue('White-glove migration services')).toBe('false')
+    })
+
+    it('Priority Support + SLA is Enterprise-only (no feature-flags key — manual service)', () => {
+        expect(comparisonFreeValue('Priority Support + SLA')).toBe('false')
+    })
 })
 
 // ---------------------------------------------------------------------------
@@ -249,15 +320,21 @@ describe('FeatureComparison.jsx ↔ feature-flags parity', () => {
 describe('PricingPreview.jsx (Landing) ↔ feature-flags parity', () => {
     const free = getFeatures('free')
 
-    it('Free repositories line matches maxRepos (200, not the stale 50)', () => {
-        expect(free.maxRepos).toBe(200)
-        expect(previewSource).toMatch(new RegExp(`Up to ${free.maxRepos} repositories`))
-        expect(previewSource).not.toMatch(/Up to 50 repositories/)
+    it('Free repositories line matches maxRepos (1,000, not the stale 200)', () => {
+        expect(free.maxRepos).toBe(1000)
+        expect(previewSource).toMatch(/Up to 1,000 repositories/)
+        expect(previewSource).not.toMatch(/Up to 200 repositories/)
     })
 
-    it('Free Semantic Search line matches semanticSearchPerMonth (75, not the stale 50)', () => {
-        expect(free.semanticSearchPerMonth).toBe(75)
+    it('Free Semantic Search line matches semanticSearchPerMonth (375, not the stale 75)', () => {
+        expect(free.semanticSearchPerMonth).toBe(375)
         expect(previewSource).toMatch(new RegExp(`Semantic Search \\(${free.semanticSearchPerMonth} / month\\)`))
+    })
+
+    it('Free preview no longer implies bulk/sync are Pro-exclusive', () => {
+        expect(free.bulkAdvanced).toBe(true)
+        expect(free.syncRepository).toBe(true)
+        expect(previewSource).toMatch(/Bulk ops.*Mirror Sync/)
     })
 })
 
@@ -268,6 +345,7 @@ describe('PricingPreview.jsx (Landing) ↔ feature-flags parity', () => {
 // ---------------------------------------------------------------------------
 describe('LicensePlanSection.jsx (Settings upsell) ↔ feature-flags parity', () => {
     const pro = getFeatures('pro')
+    const free = getFeatures('free')
 
     // The Pro upsell renders `{[...bullets].map(...)}` right after the
     // "For teams" subtitle. Grab that literal array so assertions are scoped
@@ -279,16 +357,29 @@ describe('LicensePlanSection.jsx (Settings upsell) ↔ feature-flags parity', ()
         return licenseSource.slice(arrStart, mapIdx + 1)
     }
 
-    it('Pro AI-queries bullet matches aiQueriesPerMonth (5,000 — not the stale 10,000)', () => {
-        expect(pro.aiQueriesPerMonth).toBe(5000)
+    it('Pro AI-queries bullet matches aiQueriesPerMonth (10,000 — not the stale 5,000)', () => {
+        expect(pro.aiQueriesPerMonth).toBe(10000)
         const list = proUpsellArray()
-        expect(list).toContain(pro.aiQueriesPerMonth.toLocaleString('en-US')) // "5,000"
-        expect(list).not.toMatch(/10,000/)
+        expect(list).toContain(pro.aiQueriesPerMonth.toLocaleString('en-US')) // "10,000"
+        expect(list).not.toMatch(/5,000/)
     })
 
-    it('Pro upsell reflects unlimited repositories (maxRepos = Infinity)', () => {
-        expect(pro.maxRepos).toBe(Infinity)
-        expect(proUpsellArray()).toMatch(/Unlimited repositories/i)
+    it('Pro upsell reflects the higher API-key ceiling (50 — not the stale 10)', () => {
+        expect(pro.apiKeys).toBe(50)
+        expect(proUpsellArray()).toContain(String(pro.apiKeys))
+    })
+
+    it('Pro upsell no longer claims bulk/sync/repos as Pro-exclusive (Free already has them)', () => {
+        // bulkAdvanced/syncRepository/maxRepos-generosity moved to Free
+        // 2026-07-18 — Pro's real differentiators are AI headroom, $
+        // spend-cap headroom, API keys, and email support (see design doc §1
+        // "Pro's role shrinks").
+        expect(free.bulkAdvanced).toBe(true)
+        expect(free.syncRepository).toBe(true)
+        const list = proUpsellArray()
+        expect(list).not.toMatch(/Unlimited repositories/i)
+        expect(list).not.toMatch(/Advanced bulk/i)
+        expect(list).not.toMatch(/mirror sync/i)
     })
 
     it('Pro upsell does not claim non-Pro deliverables (Priority support / Advanced analytics)', () => {
@@ -324,52 +415,84 @@ describe('Free-trial copy ↔ Stripe checkout reality', () => {
 
 // ---------------------------------------------------------------------------
 // README pricing matrix is the THIRD pricing surface. It also went unchecked,
-// which let the Free Semantic Search / Repo Insights caps drift AND let "AI
-// Deep Review — walkthrough + comments + publish" be advertised Free while
-// every deep-review.js endpoint is requireTier('pro').
+// which let the Free Semantic Search / Repo Insights caps drift. Updated
+// 2026-07-18 for the "nearly everything free" rebalance — Deep Review /
+// Prompt Studio / PR Chat / PR Commands flip from ✗ to their new metered Free
+// values, since every corresponding route dropped its requireTier('pro') gate.
 // ---------------------------------------------------------------------------
 describe('README pricing matrix ↔ feature-flags parity', () => {
     const free = getFeatures('free')
 
-    it('Free repositories-managed cap matches flags (200)', () => {
-        expect(readmeFreeCell('Repositories managed')).toBe(String(free.maxRepos))
+    it('Free repositories-managed cap matches flags (1,000)', () => {
+        expect(readmeFreeCell('Repositories managed')).toBe(free.maxRepos.toLocaleString('en-US'))
     })
 
-    it('Free API-keys cap matches flags (5)', () => {
+    it('Free API-keys cap matches flags (25)', () => {
         expect(readmeFreeCell('API keys')).toBe(String(free.apiKeys))
     })
 
-    it('Free Semantic Search cap matches flags (75)', () => {
+    it('Free Semantic Search cap matches flags (375)', () => {
         expect(readmeFreeCell('Semantic Search')).toContain(String(free.semanticSearchPerMonth))
     })
 
-    it('Free Repo Insights cap matches flags (15)', () => {
+    it('Free Repo Insights cap matches flags (75)', () => {
         expect(readmeFreeCell('Repo Insights / Quality Report')).toContain(String(free.repoInsightsPerMonth))
     })
 
-    it('Deep Review walkthrough/comments/publish is NOT free (every endpoint is Pro-gated)', () => {
-        // server/routes/ai/deep-review.js gates all 5 endpoints with requireTier('pro').
-        expect(readmeFreeCell('AI Deep Review — walkthrough + comments + publish')).toBe('✗')
+    it('Deep Review walkthrough/comments/publish IS free — metered at deepReviewPerMonth (10)', () => {
+        // server/routes/ai/deep-review.js dropped requireTier('pro') from all
+        // 5 endpoints 2026-07-18; now gated by checkAIFeatureLimit only.
+        expect(free.deepReviewPerMonth).toBe(10)
+        expect(readmeFreeCell('AI Deep Review — walkthrough + comments + publish')).toBe('10 / month')
     })
 
-    it('Basic bulk is free; advanced bulk is not', () => {
+    it('Prompt Studio is free — metered at promptPresetsMax (10) / promptStudioTestPerMonth (30)', () => {
+        expect(free.promptPresetsMax).toBe(10)
+        expect(free.promptStudioTestPerMonth).toBe(30)
+        const cell = readmeFreeCell('AI Deep Review — Prompt Studio (custom presets, path rules, severity floor)')
+        expect(cell).toContain(String(free.promptPresetsMax))
+        expect(cell).toContain(String(free.promptStudioTestPerMonth))
+    })
+
+    it('Org-shared prompts is free — no requireTier gate remains in prompt-studio.js', () => {
+        expect(readmeFreeCell('AI Deep Review — org-shared prompts')).toBe('✓')
+    })
+
+    it('PR slash commands is free — metered at prCommandPerMonth (30)', () => {
+        expect(free.prCommandPerMonth).toBe(30)
+        expect(readmeFreeCell('AI Deep Review — PR slash commands (`/describe`, `/test_plan`, `/improve`)')).toBe('30 / month')
+    })
+
+    it('PR Chat is free — metered at prChatMessagesPerMonth (100)', () => {
+        expect(free.prChatMessagesPerMonth).toBe(100)
+        expect(readmeFreeCell('AI Deep Review — PR Chat (streaming Q&A)')).toBe('100 messages / month')
+    })
+
+    it('Basic bulk is free; advanced bulk is ALSO free (moved 2026-07-18)', () => {
         expect(readmeFreeCell('Basic bulk on own repos')).toBe('✓')
-        expect(readmeFreeCell('Advanced bulk (transfer, mirror, cross-org)')).toBe('✗')
+        expect(readmeFreeCell('Advanced bulk (transfer, mirror, cross-org)')).toBe('✓')
     })
 
-    it('Free Azure DevOps migration shows the metered cap (1 / month)', () => {
-        expect(readmeFreeCell('Azure DevOps Cloud migration')).toBe('1 / month')
+    it('Free Azure DevOps migration shows the metered cap (5 / month)', () => {
+        expect(free.migrationFullPerMonth).toBe(5)
+        expect(readmeFreeCell('Azure DevOps Cloud migration')).toBe('5 / month')
+    })
+
+    it('White-glove migration services is Enterprise-only in the README table too', () => {
+        // No feature-flags key — manual service deliverable (see the
+        // FeatureComparison suite above for the same exemption rationale).
+        expect(readmeFreeCell('White-glove migration services')).toBe('✗')
     })
 })
 
 // ---------------------------------------------------------------------------
 // Migration metered-free: Free gets migrationFullPerMonth full (non-dry-run)
 // migrations per month (dry-run stays unlimited). All three surfaces must
-// reflect the same cap so the "1 / month" claim stays honest.
+// reflect the same cap so the "5 / month" claim stays honest.
 // ---------------------------------------------------------------------------
 describe('Migration metered-free ↔ feature-flags parity', () => {
-    it('Free migrationFullPerMonth is a finite metered cap (1); Pro/Enterprise unlimited', () => {
-        expect(getFeatures('free').migrationFullPerMonth).toBe(1)
+    it('Free migrationFullPerMonth is a finite metered cap (5); Pro/Enterprise unlimited', () => {
+        expect(getFeatures('free').migrationFullPerMonth).toBe(5)
         expect(getFeatures('pro').migrationFullPerMonth).toBe(Infinity)
         expect(getFeatures('enterprise').migrationFullPerMonth).toBe(Infinity)
     })
@@ -384,29 +507,35 @@ describe('Migration metered-free ↔ feature-flags parity', () => {
 
     it('PricingPage Free card advertises the metered migration row', () => {
         const section = tierSection('Free')
-        expect(section).toMatch(/Azure DevOps Cloud migration[^}]*included:\s*'1 \/ month'/)
+        expect(section).toMatch(/Azure DevOps Cloud migration[^}]*included:\s*'5 \/ month'/)
     })
 })
 
 // ---------------------------------------------------------------------------
-// Sync preview-free: Free gets a read-only sync PREVIEW (syncPreview), while
-// the destructive apply (syncRepository) stays Pro. All surfaces must show the
-// "Preview" capability for Free, not a flat ✗.
+// Sync apply metered-free: syncRepository (apply) moved off the Pro paywall
+// to Free 2026-07-18, newly metered against syncApplyPerMonth — mirroring the
+// migrationFullPerMonth pattern. syncPreview was already free and unchanged.
 // ---------------------------------------------------------------------------
-describe('Sync preview-free ↔ feature-flags parity', () => {
-    it('Free has sync preview but not apply', () => {
+describe('Sync apply metered-free ↔ feature-flags parity', () => {
+    it('Free has both sync preview and metered apply', () => {
         expect(getFeatures('free').syncPreview).toBe(true)
-        expect(getFeatures('free').syncRepository).toBe(false)
+        expect(getFeatures('free').syncRepository).toBe(true)
+        expect(getFeatures('free').syncApplyPerMonth).toBe(10)
     })
 
-    it('Pro/Enterprise have both preview and apply', () => {
+    it('Pro/Enterprise have unlimited preview and apply', () => {
         for (const tier of ['pro', 'enterprise']) {
             expect(getFeatures(tier).syncPreview).toBe(true)
             expect(getFeatures(tier).syncRepository).toBe(true)
+            expect(getFeatures(tier).syncApplyPerMonth).toBe(Infinity)
         }
     })
 
-    it('README Mirror Sync row shows preview-only on Free', () => {
-        expect(readmeFreeCell('Mirror Sync (preview free, apply Pro)')).toBe('Preview')
+    it('README Mirror Sync row shows the metered Free apply cap', () => {
+        expect(readmeFreeCell('Mirror Sync (preview free, apply metered)')).toBe('10 / month')
+    })
+
+    it('FeatureComparison Mirror Sync row shows the metered Free apply cap', () => {
+        expect(comparisonFreeValue('Sync Repository (mirror sync)')).toBe("'10 / month'")
     })
 })

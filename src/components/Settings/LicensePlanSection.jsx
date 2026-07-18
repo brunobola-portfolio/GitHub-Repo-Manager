@@ -124,10 +124,14 @@ function UpgradePrompt({ onUpgradePro, onUpgradeEnterprise }) {
                     </div>
                     <ul className="space-y-1.5 mb-4">
                         {/* Grounded in feature-flags.js (pro) + the Pro pricing card:
-                            maxRepos=Infinity, aiQueriesPerMonth=5000, bulkAdvanced +
-                            syncRepository=true, "Email support". Priority support and
-                            advanced analytics are NOT Pro deliverables (Enterprise). */}
-                        {['Unlimited repositories', '5,000 AI queries/month', 'Advanced bulk & mirror sync', 'Email support'].map((feat) => (
+                            maxRepos=Infinity, aiQueriesPerMonth=10000, apiKeys=50.
+                            Bulk/sync/Deep Review/Prompt Studio/PR Chat are Free on
+                            every tier as of the 2026-07-18 rebalance, so Pro's real
+                            differentiators are AI headroom, $ spend-cap headroom, API
+                            keys, and email support — NOT feature unlocks. Priority
+                            support and advanced analytics are NOT Pro deliverables
+                            (Enterprise). */}
+                        {['10,000 AI queries/month', 'Higher AI $ spend-cap headroom', '50 API keys', 'Email support'].map((feat) => (
                             <li key={feat} className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
                                 {feat}
@@ -152,7 +156,7 @@ function UpgradePrompt({ onUpgradePro, onUpgradeEnterprise }) {
                         </div>
                     </div>
                     <ul className="space-y-1.5 mb-4">
-                        {['Everything in Pro', 'Unlimited AI queries', 'SSO / SAML (coming soon)', 'SLA & dedicated support'].map((feat) => (
+                        {['Everything in Pro', 'Unlimited AI queries', 'Audit logs + SSO / SAML (coming soon)', 'White-glove migration + SLA support'].map((feat) => (
                             <li key={feat} className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
                                 {feat}

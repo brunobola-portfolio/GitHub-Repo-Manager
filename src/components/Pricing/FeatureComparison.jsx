@@ -12,11 +12,11 @@ const CATEGORIES = [
     rows: [
       {
         feature: 'Repositories managed',
-        values: ['200', 'Unlimited', 'Unlimited'],
+        values: ['1,000', 'Unlimited', 'Unlimited'],
       },
       {
         feature: 'API keys',
-        values: ['5', '10', '50'],
+        values: ['25', '50', '100'],
       },
       {
         feature: 'Basic bulk on own repos',
@@ -24,11 +24,11 @@ const CATEGORIES = [
       },
       {
         feature: 'Advanced bulk (transfer, mirror, cross-org)',
-        values: [false, true, true],
+        values: [true, true, true],
       },
       {
         feature: 'Sync Repository (mirror sync)',
-        values: ['Preview', true, true],
+        values: ['10 / month', 'Unlimited', 'Unlimited'],
       },
     ],
   },
@@ -41,27 +41,43 @@ const CATEGORIES = [
       },
       {
         feature: 'AI queries / month (total)',
-        values: ['200', '5,000', 'Unlimited'],
+        values: ['1,000', '10,000', 'Unlimited'],
       },
       {
         feature: 'Semantic Search',
-        values: ['75 / month', 'Unlimited', 'Unlimited'],
+        values: ['375 / month', 'Unlimited', 'Unlimited'],
       },
       {
         feature: 'Migration Risk Analysis (AI)',
-        values: ['5 / month', 'Unlimited', 'Unlimited'],
+        values: ['25 / month', 'Unlimited', 'Unlimited'],
       },
       {
         feature: 'Repo Insights / Quality Report',
-        values: ['15 / month', 'Unlimited', 'Unlimited'],
+        values: ['75 / month', 'Unlimited', 'Unlimited'],
       },
       {
         feature: 'README Generator (AI)',
-        values: ['5 / month', 'Unlimited', 'Unlimited'],
+        values: ['25 / month', 'Unlimited', 'Unlimited'],
       },
       {
         feature: 'Commit Generator (AI)',
-        values: ['50 / month', 'Unlimited', 'Unlimited'],
+        values: ['250 / month', 'Unlimited', 'Unlimited'],
+      },
+      {
+        feature: 'AI Deep Review (walkthrough + comments + publish)',
+        values: ['10 / month', 'Unlimited', 'Unlimited'],
+      },
+      {
+        feature: 'Prompt Studio (custom presets + test runs)',
+        values: ['10 presets · 30 tests / month', 'Unlimited', 'Unlimited'],
+      },
+      {
+        feature: 'PR Chat (streaming Q&A)',
+        values: ['100 messages / month', 'Unlimited', 'Unlimited'],
+      },
+      {
+        feature: 'PR slash commands (/describe, /test_plan, /improve)',
+        values: ['30 / month', 'Unlimited', 'Unlimited'],
       },
     ],
   },
@@ -78,7 +94,7 @@ const CATEGORIES = [
       },
       {
         feature: 'Azure DevOps Cloud migration',
-        values: ['1 / month', 'Unlimited', 'Unlimited'],
+        values: ['5 / month', 'Unlimited', 'Unlimited'],
       },
     ],
   },
@@ -97,6 +113,10 @@ const CATEGORIES = [
         feature: 'PR Review Experience',
         values: ['Full + write-back', 'Full + write-back', 'Full + write-back'],
       },
+      {
+        feature: 'DORA metrics (deploy frequency, lead time, change failure rate, MTTR)',
+        values: [true, true, true],
+      },
     ],
   },
   {
@@ -104,7 +124,7 @@ const CATEGORIES = [
     rows: [
       {
         feature: 'Team collaboration',
-        values: ['Up to 3 (5 each)', '15 members', 'Unlimited'],
+        values: ['Unlimited', 'Unlimited', 'Unlimited'],
       },
     ],
   },
@@ -122,11 +142,23 @@ const CATEGORIES = [
     ],
   },
   {
-    name: 'Support',
+    name: 'Support & Services',
     rows: [
       {
         feature: 'Support level',
         values: ['Community', 'Email', 'Priority + SLA'],
+      },
+      // Priority Support + SLA and White-glove migration services are manual,
+      // service-based deliverables (support ticket + contract) — they have no
+      // getFeatures() key to compare against, unlike every other row above.
+      // See tests/pricing-feature-parity.test.js for the explicit exemption.
+      {
+        feature: 'Priority Support + SLA',
+        values: [false, false, true],
+      },
+      {
+        feature: 'White-glove migration services',
+        values: [false, false, true],
       },
     ],
   },
@@ -255,6 +287,13 @@ export function FeatureComparison() {
         </table>
         </div>
       </Card>
+
+      {/* Per-individual AI-quota disclaimer — Teams are unlimited-seat on every
+          tier, but AI usage (queries, Deep Review, PR Chat, etc.) is metered
+          against each person's own account/subscription, not pooled per team. */}
+      <p className="mt-4 text-center text-xs text-slate-400 dark:text-slate-500 max-w-2xl mx-auto">
+        Teams are unlimited on every plan. AI usage quotas above are metered per individual account, even within a team.
+      </p>
     </motion.div>
   )
 }
