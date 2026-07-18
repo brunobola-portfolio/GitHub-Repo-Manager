@@ -671,8 +671,19 @@ export class MigrationEngine extends EventEmitter {
    * Retries a single failed task. Plan must be in 'completed' or 'failed' state.
    * @param {number} planId
    * @param {number} taskId
+   * @param {object|null} credentials
+   * @param {{ allowLfsPushFailedRetry?: boolean }} [opts] - allowLfsPushFailedRetry
+   *   opts into the one narrow exception to "only failed tasks can be
+   *   retried": a task that *completed* but whose Git LFS push failed after
+   *   retries (import-service.js sets metadata.lfsPushFailed) — the repo
+   *   content already landed on GitHub, but the target has orphaned LFS
+   *   pointers and will fail to clone until it's fixed. The retry-lfs route
+   *   is responsible for verifying metadata.lfsPushFailed before opting in;
+   *   this method only trusts the explicit flag so the plain /retry endpoint
+   *   can never resurrect an otherwise-successful task.
    */
-  async retryTask(planId, taskId, credentials = null) {
+  async retryTask(planId, taskId, credentials = null, opts = {}) {
+    const { allowLfsPushFailedRetry = false } = opts
     const plan = this.db.prepare('SELECT * FROM migration_plans WHERE id = ?').get(planId)
     if (!plan) {
       throw new Error(`Plan ${planId} not found`)
@@ -687,7 +698,8 @@ export class MigrationEngine extends EventEmitter {
     if (!task) {
       throw new Error(`Task ${taskId} not found in plan ${planId}`)
     }
-    if (task.status !== 'failed') {
+    const isRecoverableLfsPushFailure = allowLfsPushFailedRetry && task.status === 'completed'
+    if (task.status !== 'failed' && !isRecoverableLfsPushFailure) {
       throw new Error(`Cannot retry task with status '${task.status}'`)
     }
 

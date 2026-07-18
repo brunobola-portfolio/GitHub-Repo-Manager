@@ -1074,6 +1074,42 @@ describe('MigrationEngine', () => {
       await expect(engine.retryTask(planId, taskId))
         .rejects.toThrow(/Cannot retry tasks/)
     })
+
+    // lfsPushFailed recovery: a task that *completed* but whose Git LFS push
+    // failed after retries (import-service.js sets metadata.lfsPushFailed) is
+    // the one narrow exception to "only failed tasks can be retried" — see
+    // the retry-lfs route, which is the only caller allowed to opt in.
+    it('retries a completed task when allowLfsPushFailedRetry is set', async () => {
+      engine._executeTask = async () => ({ lfsPushFailed: false })
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      const taskId = engine.getPlanStatus(planId).tasks[0].id
+      db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('completed', planId)
+      db.prepare("UPDATE migration_tasks SET status = 'completed', metadata = ? WHERE id = ?")
+        .run(JSON.stringify({ lfsPushFailed: true }), taskId)
+
+      await engine.retryTask(planId, taskId, null, { allowLfsPushFailedRetry: true })
+
+      const task = engine.getPlanStatus(planId).tasks[0]
+      expect(task.status).toBe('completed')
+      expect(task.retries).toBe(1)
+    })
+
+    it('rejects retrying a completed task WITHOUT allowLfsPushFailedRetry (plain /retry stays narrow)', async () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      const taskId = engine.getPlanStatus(planId).tasks[0].id
+      db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('completed', planId)
+      db.prepare("UPDATE migration_tasks SET status = 'completed', metadata = ? WHERE id = ?")
+        .run(JSON.stringify({ lfsPushFailed: true }), taskId)
+
+      await expect(engine.retryTask(planId, taskId))
+        .rejects.toThrow(/Cannot retry task/)
+    })
   })
 
   describe('_updateTaskProgress', () => {

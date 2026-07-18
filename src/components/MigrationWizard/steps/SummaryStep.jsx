@@ -11,6 +11,9 @@ import { AnimatedCopyIcon } from '../../ui/AnimatedCopyIcon'
 import { migrationApi } from '../../../api/migration'
 import { SectionSpinner } from '../../ui/Spinner'
 import { RowIconBadge } from '../../ui/RowIconBadge'
+import { Badge } from '../../ui/Badge'
+import { Button } from '../../ui/Button'
+import { Tooltip } from '../../ui/Tooltip'
 import { formatDurationSeconds } from '../../../utils/format'
 import { OversizedFilesPanel } from '../ui/OversizedFilesPanel'
 import { decodeOversizedError } from '../ui/oversizedError'
@@ -38,7 +41,7 @@ const STATUS_CONFIG = {
     color: 'text-emerald-500',
     bg: 'bg-emerald-500/10 dark:bg-emerald-500/10',
     border: 'border-emerald-500/20 dark:border-emerald-500/20',
-    badge: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+    tone: 'success',
   },
   failed: {
     icon: XCircle,
@@ -46,7 +49,7 @@ const STATUS_CONFIG = {
     color: 'text-red-500',
     bg: 'bg-red-500/10 dark:bg-red-500/10',
     border: 'border-red-500/20 dark:border-red-500/20',
-    badge: 'bg-red-500/15 text-red-600 dark:text-red-400',
+    tone: 'danger',
   },
   skipped: {
     icon: Ban,
@@ -54,7 +57,7 @@ const STATUS_CONFIG = {
     color: 'text-slate-400',
     bg: 'bg-slate-500/5 dark:bg-slate-500/5',
     border: 'border-slate-300/30 dark:border-slate-600/30',
-    badge: 'bg-slate-500/10 text-slate-500 dark:text-slate-400',
+    tone: 'neutral',
   },
   cancelled: {
     icon: Ban,
@@ -62,7 +65,7 @@ const STATUS_CONFIG = {
     color: 'text-slate-400',
     bg: 'bg-slate-500/5 dark:bg-slate-500/5',
     border: 'border-slate-300/30 dark:border-slate-600/30',
-    badge: 'bg-slate-500/10 text-slate-500 dark:text-slate-400',
+    tone: 'neutral',
   },
 }
 
@@ -166,12 +169,13 @@ function StatPill({ icon: Icon, label, value, color }) {
    TASK RESULT ROW — individual migration item
    ═══════════════════════════════════════════ */
 
-function TaskResultRow({ task, index, maxIndex = 10 }) {
+function TaskResultRow({ task, index, maxIndex = 10, onFixLfsUpload }) {
   const status = normalizeStatus(task.status)
   const typeConfig = TYPE_CONFIG[task.type] || TYPE_CONFIG.repo
   const statusConfig = STATUS_CONFIG[status] || STATUS_CONFIG.complete
   const TypeIcon = typeConfig.icon
   const StatusIcon = statusConfig.icon
+  const [confirmingLfsFix, setConfirmingLfsFix] = useState(false)
 
   return (
     <motion.div
@@ -208,53 +212,56 @@ function TaskResultRow({ task, index, maxIndex = 10 }) {
           )}
         </div>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded ds-text-micro font-medium uppercase tracking-wider ${statusConfig.badge}`}>
+          <Badge tone={statusConfig.tone} size="xs" className="uppercase tracking-wider">
             {statusConfig.label}
-          </span>
-          <span className="ds-text-micro text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+          </Badge>
+          <Badge tone="neutral" size="xs" className="uppercase tracking-wider bg-transparent dark:bg-transparent text-slate-400 dark:text-slate-500">
             {typeConfig.label}
-          </span>
+          </Badge>
           {task.metadata?.reusedExistingRepo && (
-            <span
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded ds-text-micro font-medium bg-indigo-500/10 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]"
-              title="Pushed into an existing empty repo instead of creating a new one"
-            >
-              Reused
-            </span>
+            <Tooltip label="Pushed into an existing empty repo instead of creating a new one">
+              <Badge tone="brand" size="xs" tabIndex={0}>Reused</Badge>
+            </Tooltip>
           )}
           {task.metadata?.replacedExistingRepo && (
-            <span
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded ds-text-micro font-medium bg-red-500/10 text-red-600 dark:text-red-400"
-              title="Deleted the pre-existing repo and recreated it from source"
-            >
-              Replaced
-            </span>
+            <Tooltip label="Deleted the pre-existing repo and recreated it from source">
+              <Badge tone="danger" size="xs" tabIndex={0}>Replaced</Badge>
+            </Tooltip>
           )}
           {task.metadata?.emptySource && (
-            <span
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded ds-text-micro font-medium bg-slate-500/10 text-slate-500 dark:text-slate-400"
-              title="The source repository had no commits to migrate"
-            >
-              No commits
-            </span>
+            <Tooltip label="The source repository had no commits to migrate">
+              <Badge tone="neutral" size="xs" tabIndex={0}>No commits</Badge>
+            </Tooltip>
           )}
           {task.metadata?.lfsFetchFailed && (
-            <span
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded ds-text-micro font-medium bg-amber-500/15 text-amber-600 dark:text-amber-400"
-              title="LFS objects could not be fetched from source — target may have orphaned LFS pointers. Run `git lfs fetch --all` against the source and push to target manually."
-            >
-              <AlertTriangle className="w-2.5 h-2.5" />
-              LFS objects missing
-            </span>
+            <Tooltip label="LFS objects could not be fetched from source — target may have orphaned LFS pointers. Run `git lfs fetch --all` against the source and push to target manually.">
+              <Badge tone="warning" size="xs" tabIndex={0} icon={<AlertTriangle className="w-2.5 h-2.5" />}>
+                LFS objects missing
+              </Badge>
+            </Tooltip>
           )}
           {task.metadata?.lfsPushFailed && (
-            <span
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded ds-text-micro font-medium bg-red-500/15 text-red-600 dark:text-red-400"
-              title="LFS objects failed to upload to the target — the repo has pointers to missing objects and will fail on clone. Re-run the migration (or run `git lfs push --all` to the target) to upload them."
-            >
-              <AlertTriangle className="w-2.5 h-2.5" />
-              LFS upload failed
-            </span>
+            <>
+              <Tooltip label="LFS objects failed to upload to the target — the repo has pointers to missing objects and will fail on clone.">
+                <Badge tone="danger" size="xs" tabIndex={0} icon={<AlertTriangle className="w-2.5 h-2.5" />}>
+                  LFS upload failed
+                </Badge>
+              </Tooltip>
+              {onFixLfsUpload && (
+                <Tooltip label="Deletes and recreates the repository from source with Git LFS included — fixes the failed upload">
+                  <Button
+                    variant="soft-danger"
+                    size="xs"
+                    type="button"
+                    aria-label="Fix upload"
+                    onClick={() => setConfirmingLfsFix(true)}
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    Fix upload
+                  </Button>
+                </Tooltip>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -279,6 +286,15 @@ function TaskResultRow({ task, index, maxIndex = 10 }) {
           </a>
         )}
       </div>
+
+      {onFixLfsUpload && (
+        <ReplaceConfirmModal
+          isOpen={confirmingLfsFix}
+          repoFullName={task.targetRef || ''}
+          onCancel={() => setConfirmingLfsFix(false)}
+          onConfirm={() => { setConfirmingLfsFix(false); onFixLfsUpload(task) }}
+        />
+      )}
     </motion.div>
   )
 }
@@ -328,10 +344,9 @@ function ErrorCard({ error, index, onReplaceRetry, onLfsRetry }) {
             <span className="text-sm font-medium text-red-700 dark:text-red-300">
               Task #{error.taskId}
             </span>
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-500/10 ds-text-micro font-medium text-red-600 dark:text-red-400 uppercase tracking-wider">
-              <TypeIcon className="w-3 h-3" />
+            <Badge tone="danger" size="xs" className="uppercase tracking-wider" icon={<TypeIcon className="w-3 h-3" />}>
               {error.type}
-            </span>
+            </Badge>
           </div>
         </div>
         <div className="shrink-0">
@@ -358,15 +373,10 @@ function ErrorCard({ error, index, onReplaceRetry, onLfsRetry }) {
                 <>
                   <OversizedFilesPanel files={oversized.files} fallback={oversized.fallback} />
                   {onLfsRetry && (
-                    <button
-                      type="button"
-                      onClick={() => onLfsRetry(error)}
-                      className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg
-                        text-white bg-amber-600 hover:bg-amber-700 transition-colors ds-focus-ring"
-                    >
+                    <Button variant="warning" size="sm" type="button" onClick={() => onLfsRetry(error)}>
                       <RefreshCw className="w-3.5 h-3.5" />
                       Retry with Git LFS
-                    </button>
+                    </Button>
                   )}
                 </>
               ) : (
@@ -394,15 +404,10 @@ function ErrorCard({ error, index, onReplaceRetry, onLfsRetry }) {
                     </div>
                   )}
                   {isConflict && onReplaceRetry && (
-                    <button
-                      type="button"
-                      onClick={() => setConfirming(true)}
-                      className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg
-                        text-white bg-red-600 hover:bg-red-700 transition-colors ds-focus-ring"
-                    >
+                    <Button variant="danger" size="sm" type="button" onClick={() => setConfirming(true)}>
                       <RefreshCw className="w-3.5 h-3.5" />
                       Replace &amp; retry
-                    </button>
+                    </Button>
                   )}
                 </>
               )}
@@ -549,6 +554,13 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
   const failedTasks = tasks.filter(t => t.status === 'failed')
   const otherTasks = tasks.filter(t => normalizeStatus(t.status) !== 'complete' && t.status !== 'failed')
 
+  // Retrying a completed-but-lfsPushFailed task shares the exact same
+  // taskId-keyed retry-lfs endpoint as the oversized-blob failure case
+  // (onLfsRetry, already wired by the wizard) — same shape, same handler.
+  const onFixLfsUpload = onLfsRetry
+    ? (task) => onLfsRetry({ taskId: task.id, targetRef: task.targetRef })
+    : null
+
   return (
     <div className="space-y-5">
       {/* ── Pre-flight summary (risk engine output) ── */}
@@ -648,15 +660,15 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
         <div className="space-y-2">
           {/* Successful tasks first */}
           {successTasks.map((task, i) => (
-            <TaskResultRow key={task.id} task={task} index={i} />
+            <TaskResultRow key={task.id} task={task} index={i} onFixLfsUpload={onFixLfsUpload} />
           ))}
           {/* Failed tasks */}
           {failedTasks.map((task, i) => (
-            <TaskResultRow key={task.id} task={task} index={successTasks.length + i} />
+            <TaskResultRow key={task.id} task={task} index={successTasks.length + i} onFixLfsUpload={onFixLfsUpload} />
           ))}
           {/* Skipped/cancelled */}
           {otherTasks.map((task, i) => (
-            <TaskResultRow key={task.id} task={task} index={successTasks.length + failedTasks.length + i} />
+            <TaskResultRow key={task.id} task={task} index={successTasks.length + failedTasks.length + i} onFixLfsUpload={onFixLfsUpload} />
           ))}
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { forwardRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 /**
@@ -90,7 +91,11 @@ function resolveKey(tone, variant) {
     return variant
 }
 
-export function Badge({
+// forwardRef so a <Badge> can be the direct child of <Tooltip> (which clones
+// its child and needs a real ref onto the rendered node to measure/position
+// the bubble) — badges that carry an explanatory tooltip are the one case a
+// purely presentational primitive still needs to expose its DOM node.
+export const Badge = forwardRef(function Badge({
     children,
     variant = 'default',
     tone,
@@ -101,7 +106,7 @@ export function Badge({
     as: Component = 'span',
     className,
     ...rest
-}) {
+}, ref) {
     const key = resolveKey(tone, variant)
     const palette = TONES[key] || TONES.default
     const sizeCls = SIZES[size] || SIZES.sm
@@ -111,6 +116,7 @@ export function Badge({
 
     return (
         <Component
+            ref={ref}
             className={twMerge(
                 'inline-flex items-center rounded-full font-medium transition-colors',
                 sizeCls,
@@ -126,4 +132,4 @@ export function Badge({
             {children}
         </Component>
     )
-}
+})

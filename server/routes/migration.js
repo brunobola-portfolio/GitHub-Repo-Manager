@@ -611,17 +611,19 @@ router.post('/plans/:id/tasks/:taskId/retry', requireAuth, requireMigrationQuota
 // never actually began. engine.retryTask() validates plan/task status
 // BEFORE resetting the task to 'pending' (migration-engine.js); every one of
 // its guard-clause rejections happens before that reset, so on rejection the
-// task's live status is still 'failed'. In that case the config write above
-// was wasted — the retry never ran with it — and leaving it persisted would
-// have a later plain /retry silently inherit onConflict='replace' (or the
-// LFS strategy) for an attempt that never happened. If the task DID
-// transition out of 'failed' (a genuine attempt started and failed later,
-// deeper in execution), the config is left as-is — that persistence is
-// intentional (mirrors the execute handler's charge rollback at ~line 503).
-function rollbackConfigIfRetryNeverStarted(taskId, previousConfig) {
+// task's live status is still whatever it was when the route read it
+// (normally 'failed'; 'completed' for the lfsPushFailed-recovery retry-lfs
+// case below). In that case the config write above was wasted — the retry
+// never ran with it — and leaving it persisted would have a later plain
+// /retry silently inherit onConflict='replace' (or the LFS strategy) for an
+// attempt that never happened. If the task DID transition out of that status
+// (a genuine attempt started and failed later, deeper in execution), the
+// config is left as-is — that persistence is intentional (mirrors the
+// execute handler's charge rollback at ~line 503).
+function rollbackConfigIfRetryNeverStarted(taskId, previousConfig, previousStatus = 'failed') {
   try {
     const current = db.prepare('SELECT status FROM migration_tasks WHERE id = ?').get(taskId);
-    if (current && current.status === 'failed') {
+    if (current && current.status === previousStatus) {
       db.prepare('UPDATE migration_tasks SET config = ? WHERE id = ?').run(previousConfig, taskId);
     }
   } catch (rollbackErr) {
@@ -672,9 +674,20 @@ router.post('/plans/:id/tasks/:taskId/replace-retry', requireAuth, requireMigrat
 });
 
 // POST /api/migration/plans/:id/tasks/:taskId/retry-lfs — recovery for a repo
-// task that failed because files exceed GitHub's 100 MB per-file limit. Patches
-// the stored config with sizeStrategy='lfs-migrate' (so the re-run runs
-// `git lfs migrate import --above=100MiB` before pushing) and re-runs the task.
+// task's Git LFS story. Two recoverable shapes share this one endpoint:
+//   (1) the task itself FAILED (e.g. the oversized-blob pre-check rejected
+//       the push before anything was created on the target) — patches the
+//       config with sizeStrategy='lfs-migrate' and re-runs. Nothing exists on
+//       GitHub yet, so no destructive step is needed.
+//   (2) the task COMPLETED but its LFS push failed after 3 retries
+//       (import-service.js sets metadata.lfsPushFailed) — the repo content is
+//       already live on GitHub, so a bare re-run would hit "already exists".
+//       Recovering here reuses the same 'replace' delete+recreate path as
+//       replace-retry, PLUS sizeStrategy='lfs-migrate', so the re-run lands
+//       fresh with LFS wired in from the start. There is no narrower "push
+//       only the missing LFS objects" runner today — the wizard's own
+//       ReplaceConfirmModal gate is what the client shows before calling this
+//       for shape (2), since it is a genuinely destructive action.
 router.post('/plans/:id/tasks/:taskId/retry-lfs', requireAuth, requireMigrationQuota, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
@@ -683,16 +696,29 @@ router.post('/plans/:id/tasks/:taskId/retry-lfs', requireAuth, requireMigrationQ
     if (!plan) return res.status(404).json({ error: 'Plan not found' });
     const task = db.prepare('SELECT * FROM migration_tasks WHERE id = ? AND plan_id = ?').get(taskId, id);
     if (!task) return res.status(404).json({ error: 'Task not found' });
-    if (task.status !== 'failed') return res.status(409).json({ error: 'Only failed tasks can be retried' });
     if (task.type !== 'repo' && task.type !== 'repo-tfvc') {
       return res.status(400).json({ error: 'Git LFS migration only applies to repository tasks' });
+    }
+    let lfsPushFailedOnCompleted = false;
+    if (task.status === 'completed') {
+      try { lfsPushFailedOnCompleted = !!JSON.parse(task.metadata || '{}')?.lfsPushFailed; }
+      catch { /* malformed metadata — treat as not eligible */ }
+    }
+    if (task.status !== 'failed' && !lfsPushFailedOnCompleted) {
+      return res.status(409).json({ error: 'Only failed tasks, or completed tasks whose LFS upload failed, can be retried' });
     }
     const retryPat = resolvePlanExecutionPat(req, res);
     if (retryPat.abort) return;
     const previousConfig = task.config;
+    const previousStatus = task.status;
+    const nextConfig = lfsPushFailedOnCompleted
+      ? withReplaceOnConflict(withLfsMigrate(task.config))
+      : withLfsMigrate(task.config);
     db.prepare('UPDATE migration_tasks SET config = ? WHERE id = ?')
-      .run(withLfsMigrate(task.config), taskId);
-    auditLog(req, 'migration.task.retry-lfs', 'migration_task', taskId, { planId: id, targetRef: task.target_ref });
+      .run(nextConfig, taskId);
+    auditLog(req, 'migration.task.retry-lfs', 'migration_task', taskId, {
+      planId: id, targetRef: task.target_ref, deleteAndRecreate: lfsPushFailedOnCompleted,
+    });
     const retryCredentials = {
       githubToken: req.session.accessToken,
       azurePat: retryPat.pat,
@@ -700,11 +726,11 @@ router.post('/plans/:id/tasks/:taskId/retry-lfs', requireAuth, requireMigrationQ
       azureOrg: plan.source_org,
       azureProject: plan.source_project,
     };
-    engine.retryTask(id, taskId, retryCredentials).catch(err => {
+    engine.retryTask(id, taskId, retryCredentials, { allowLfsPushFailedRetry: lfsPushFailedOnCompleted }).catch(err => {
       logger.error({ err, planId: id, taskId }, 'LFS-retry error');
-      rollbackConfigIfRetryNeverStarted(taskId, previousConfig);
+      rollbackConfigIfRetryNeverStarted(taskId, previousConfig, previousStatus);
     });
-    res.json({ success: true });
+    res.json({ success: true, deleteAndRecreate: lfsPushFailedOnCompleted });
   } catch (err) {
     res.status(500).json({ error: safeError(err, 'Operation failed') });
   }

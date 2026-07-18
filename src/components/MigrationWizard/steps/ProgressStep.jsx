@@ -11,6 +11,7 @@ import { formatDurationSeconds } from '../../../utils/format'
 import { migrationApi } from '../../../api/migration'
 import { SectionSpinner, SpinnerIcon } from '../../ui/Spinner'
 import { Button } from '../../ui/Button'
+import { Tooltip } from '../../ui/Tooltip'
 import { ReplaceConfirmModal } from './RepoConfigStep/ReplaceConfirmModal'
 import { isReplaceableConflict, isOversizedFailure } from './conflictRecovery'
 import { emitAppEvent, APP_EVENTS } from '../../../utils/appEvents'
@@ -151,16 +152,18 @@ function TaskRow({ task, onRetry, onReplaceRetry, onLfsRetry }) {
         )}
 
         {isOversizedFailure(task) && onLfsRetry && (
-          <Button
-            variant="soft-warning"
-            size="xs"
-            type="button"
-            onClick={() => onLfsRetry(task.id)}
-            title="Re-run converting files over 100 MB to Git LFS"
-          >
-            <RotateCcw className="w-3 h-3" />
-            Retry with Git LFS
-          </Button>
+          <Tooltip label="Re-run converting files over 100 MB to Git LFS">
+            <Button
+              variant="soft-warning"
+              size="xs"
+              type="button"
+              aria-label="Retry with Git LFS"
+              onClick={() => onLfsRetry(task.id)}
+            >
+              <RotateCcw className="w-3 h-3" />
+              Retry with Git LFS
+            </Button>
+          </Tooltip>
         )}
 
         {isFailed && onRetry && !isReplaceableConflict(task) && !isOversizedFailure(task) && (
@@ -471,54 +474,31 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, o
       {isActive && (
         <div className="flex items-center gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
           {planStatus === 'paused' ? (
-            <button
-              type="button"
-              onClick={handleResume}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl
-                text-emerald-700 dark:text-emerald-300
-                bg-emerald-50 dark:bg-emerald-900/20
-                hover:bg-emerald-100 dark:hover:bg-emerald-900/40
-                transition-colors"
-            >
+            <Button variant="success" size="md" type="button" onClick={handleResume}>
               <Play className="w-4 h-4" />
               Resume
-            </button>
+            </Button>
           ) : (
-            <button
-              type="button"
-              onClick={handlePause}
-              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl
-                text-amber-700 dark:text-amber-300
-                bg-amber-50 dark:bg-amber-900/20
-                hover:bg-amber-100 dark:hover:bg-amber-900/40
-                transition-colors"
-            >
+            <Button variant="soft-warning" size="md" type="button" onClick={handlePause}>
               <Pause className="w-4 h-4" />
               Pause
-            </button>
+            </Button>
           )}
 
-          <button
+          <Button
+            variant={confirmCancel ? 'danger' : 'soft-danger'}
+            size="md"
             type="button"
             onClick={handleCancel}
-            className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl transition-colors
-              ${confirmCancel
-                ? 'text-white bg-red-600 hover:bg-red-700'
-                : 'text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40'
-              }`}
           >
             <Ban className="w-4 h-4" />
             {confirmCancel ? 'Confirm Cancel' : 'Cancel'}
-          </button>
+          </Button>
 
           {confirmCancel && (
-            <button
-              type="button"
-              onClick={() => setConfirmCancel(false)}
-              className="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
-            >
+            <Button variant="ghost" size="md" type="button" onClick={() => setConfirmCancel(false)}>
               Nevermind
-            </button>
+            </Button>
           )}
         </div>
       )}

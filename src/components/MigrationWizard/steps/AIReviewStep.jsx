@@ -8,7 +8,8 @@ import {
 } from 'lucide-react'
 import { migrationApi } from '../../../api/migration'
 import { Button } from '../../ui/Button'
-import { TAP, SPRING } from '../../ui/motion'
+import { Badge } from '../../ui/Badge'
+import { SPRING } from '../../ui/motion'
 
 import { AnalysisLoadingState } from './AIReview/AnalysisLoadingState'
 import { MigrationRouteCard } from './AIReview/MigrationRouteCard'
@@ -233,19 +234,19 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
                   </div>
                   <div className="flex items-center gap-1">
                     {highRisks.length > 0 && (
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-red-500 text-white shadow-sm">
+                      <Badge tone="danger" size="xs" className="uppercase tracking-wider font-bold">
                         {highRisks.length} high
-                      </span>
+                      </Badge>
                     )}
                     {mediumRisks.length > 0 && (
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-amber-500 text-white shadow-sm">
+                      <Badge tone="warning" size="xs" className="uppercase tracking-wider font-bold">
                         {mediumRisks.length} med
-                      </span>
+                      </Badge>
                     )}
                     {lowRisks.length > 0 && (
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-sky-500 text-white shadow-sm">
+                      <Badge tone="info" size="xs" className="uppercase tracking-wider font-bold">
                         {lowRisks.length} low
-                      </span>
+                      </Badge>
                     )}
                   </div>
                 </div>
@@ -339,21 +340,17 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
               transition={{ delay: 0.5 }}
             >
               {!approved ? (
-                <motion.button
+                <Button
+                  variant="success"
+                  size="lg"
                   type="button"
                   onClick={handleApprove}
-                  whileTap={TAP}
-                  className="relative w-full overflow-hidden inline-flex items-center justify-center gap-2.5 px-5 py-3.5 text-sm font-semibold rounded-xl
-                    text-white
-                    bg-emerald-600 dark:bg-emerald-500
-                    hover:bg-emerald-700 dark:hover:bg-emerald-600
-                    shadow-lg
-                    transition-colors duration-200"
+                  className="w-full shadow-lg"
                 >
                   <CheckCircle2 className="w-4.5 h-4.5" />
                   Approve Migration Plan
                   <ArrowRight className="w-4 h-4 ml-1" />
-                </motion.button>
+                </Button>
               ) : (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.96 }}

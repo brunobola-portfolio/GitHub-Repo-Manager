@@ -121,4 +121,60 @@ describe('SummaryStep conflict recovery', () => {
     render(<SummaryStep planId="p6" />)
     expect(await screen.findByText(/lfs upload failed/i)).toBeTruthy()
   })
+
+  it('shows a "Fix upload" action for a completed lfsPushFailed task; fires onLfsRetry with the taskId after type-to-confirm', async () => {
+    const lfsReport = {
+      plan: { status: 'completed', durationSeconds: 12 },
+      summary: { total: 1, success: 1, failed: 0, skipped: 0 },
+      tasks: [
+        {
+          id: 7,
+          type: 'repo',
+          status: 'completed',
+          sourceRef: 'org/lfs-repo',
+          targetRef: 'dest/lfs-repo',
+          durationSeconds: 12,
+          metadata: { lfsPushFailed: true },
+        },
+      ],
+      errors: [],
+    }
+    migrationApi.getReport.mockResolvedValueOnce(lfsReport)
+    const onLfsRetry = vi.fn()
+    render(<SummaryStep planId="p7" onLfsRetry={onLfsRetry} />)
+
+    const fixBtn = await screen.findByRole('button', { name: /fix upload/i })
+    fireEvent.click(fixBtn)
+
+    // Same destructive type-to-confirm gate as Replace & retry — the fix
+    // deletes and recreates the repo to land LFS objects cleanly.
+    const input = await screen.findByPlaceholderText('dest/lfs-repo')
+    fireEvent.change(input, { target: { value: 'dest/lfs-repo' } })
+    fireEvent.click(screen.getByRole('button', { name: /delete.*replace/i }))
+
+    expect(onLfsRetry).toHaveBeenCalledWith(expect.objectContaining({ taskId: 7, targetRef: 'dest/lfs-repo' }))
+  })
+
+  it('does NOT show "Fix upload" when no onLfsRetry handler is provided', async () => {
+    const lfsReport = {
+      plan: { status: 'completed', durationSeconds: 12 },
+      summary: { total: 1, success: 1, failed: 0, skipped: 0 },
+      tasks: [
+        {
+          id: 8,
+          type: 'repo',
+          status: 'completed',
+          sourceRef: 'org/lfs-repo',
+          targetRef: 'dest/lfs-repo',
+          durationSeconds: 12,
+          metadata: { lfsPushFailed: true },
+        },
+      ],
+      errors: [],
+    }
+    migrationApi.getReport.mockResolvedValueOnce(lfsReport)
+    render(<SummaryStep planId="p8" />)
+    await screen.findByText(/lfs upload failed/i)
+    expect(screen.queryByRole('button', { name: /fix upload/i })).toBeNull()
+  })
 })
