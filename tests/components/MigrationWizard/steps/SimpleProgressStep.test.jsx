@@ -1,8 +1,22 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import SimpleProgressStep from '../../../../src/components/MigrationWizard/steps/SimpleProgressStep'
+
+// Drives the fake-timer 2s poll interval forward one tick and lets any
+// pending microtasks (the async fetch handler) flush before returning.
+// Wrapped in act() so the resulting setState calls are applied and flushed
+// synchronously w.r.t. the test — findBy/waitFor's own polling can't drive
+// fake timers forward, so the state must already be settled by the time we
+// assert.
+async function advancePoll(ticks = 1) {
+  for (let i = 0; i < ticks; i++) {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000)
+    })
+  }
+}
 
 describe('SimpleProgressStep — cancel + honest status rendering', () => {
   beforeEach(() => {
@@ -169,6 +183,114 @@ describe('SimpleProgressStep — cancel + honest status rendering', () => {
 
       expect(screen.getByText('1/2 completed')).toBeInTheDocument()
       expect(screen.getByText('Import cancelled.')).toBeInTheDocument()
+    })
+  })
+
+  describe('ARIA parity with ProgressStep', () => {
+    it('exposes the single-import progress bar as a labeled progressbar with value bounds', () => {
+      const importJobs = {
+        jobId: 42,
+        importing: true,
+        jobStatus: { status: 'running', progressPct: 40, progressMessage: 'Cloning...' },
+      }
+      render(<SimpleProgressStep importJobs={importJobs} onUpdate={() => {}} source={{}} />)
+
+      const bar = screen.getByRole('progressbar', { name: /import progress/i })
+      expect(bar).toHaveAttribute('aria-valuenow', '40')
+      expect(bar).toHaveAttribute('aria-valuemin', '0')
+      expect(bar).toHaveAttribute('aria-valuemax', '100')
+    })
+
+    it('renders an aria-live status region announcing the current single-import state', () => {
+      const importJobs = {
+        jobId: 42,
+        importing: true,
+        jobStatus: { status: 'running', progressPct: 40, progressMessage: 'Cloning...' },
+      }
+      render(<SimpleProgressStep importJobs={importJobs} onUpdate={() => {}} source={{}} />)
+
+      expect(screen.getByRole('status')).toHaveTextContent('Cloning...')
+    })
+
+    it('exposes the batch overall progress bar as a labeled progressbar and announces batch progress via aria-live', () => {
+      const importJobs = {
+        batchJobs: [
+          { jobId: 1, repoName: 'repo-a' },
+          { jobId: 2, repoName: 'repo-b' },
+        ],
+        importing: true,
+        batchStatuses: {
+          1: { status: 'completed', progressPct: 100 },
+          2: { status: 'running', progressPct: 30 },
+        },
+      }
+      render(<SimpleProgressStep importJobs={importJobs} onUpdate={() => {}} source={{}} />)
+
+      const overallBar = screen.getByRole('progressbar', { name: /overall import progress/i })
+      expect(overallBar).toHaveAttribute('aria-valuenow', '50')
+      expect(screen.getByRole('status')).toHaveTextContent('1 of 2 imports completed')
+
+      // Per-job progress bar for the still-running job is its own labeled progressbar.
+      expect(screen.getByRole('progressbar', { name: /import progress for repo-b/i })).toHaveAttribute('aria-valuenow', '30')
+    })
+  })
+
+  describe('connection-lost indicator (stale/reconnect polling)', () => {
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('shows a "Connection lost — retrying" pill after 3 consecutive failed single-import polls, and clears it on the next success', async () => {
+      vi.useFakeTimers()
+      let calls = 0
+      global.fetch = vi.fn(async () => {
+        calls++
+        if (calls <= 3) return { ok: false, status: 500, json: async () => ({}) }
+        return { ok: true, json: async () => ({ status: 'running', progressPct: 50 }) }
+      })
+
+      const importJobs = { jobId: 42, importing: true, jobStatus: { status: 'running', progressPct: 10 } }
+      render(<SimpleProgressStep importJobs={importJobs} onUpdate={() => {}} source={{}} />)
+
+      expect(screen.queryByText(/connection lost/i)).not.toBeInTheDocument()
+
+      await advancePoll(2) // 2 failures — still under threshold
+      expect(screen.queryByText(/connection lost/i)).not.toBeInTheDocument()
+
+      await advancePoll(1) // 3rd consecutive failure — threshold reached
+      // The visible pill's exact copy — distinct from the sr-only aria-live
+      // announcement text ("Connection lost, retrying") so this doesn't
+      // accidentally match two elements.
+      expect(screen.getByText('Connection lost — retrying')).toBeInTheDocument()
+
+      await advancePoll(1) // next poll succeeds — pill clears
+      // State is already flushed by advancePoll's act() wrapper — a real
+      // waitFor here would hang forever under fake timers (its own polling
+      // setTimeout never fires without an explicit timer advance).
+      expect(screen.queryByText('Connection lost — retrying')).not.toBeInTheDocument()
+    })
+
+    it('shows the connection-lost pill for stalled batch polling too, sharing the same failure counter', async () => {
+      vi.useFakeTimers()
+      let calls = 0
+      global.fetch = vi.fn(async () => {
+        calls++
+        if (calls <= 3) return { ok: false, status: 500, json: async () => ({}) }
+        return { ok: true, json: async () => ({ status: 'running', progressPct: 20 }) }
+      })
+
+      const importJobs = {
+        batchJobs: [{ jobId: 1, repoName: 'repo-a' }],
+        importing: true,
+        batchStatuses: { 1: { status: 'running', progressPct: 10 } },
+      }
+      render(<SimpleProgressStep importJobs={importJobs} onUpdate={() => {}} source={{}} />)
+
+      await advancePoll(3)
+      // The visible pill's exact copy — distinct from the sr-only aria-live
+      // announcement text ("Connection lost, retrying") so this doesn't
+      // accidentally match two elements.
+      expect(screen.getByText('Connection lost — retrying')).toBeInTheDocument()
     })
   })
 })

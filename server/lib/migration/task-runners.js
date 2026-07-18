@@ -201,6 +201,9 @@ export async function runWiki(task, ctx) {
     resolvedCredentials.githubToken,
     targetOwner,
     targetRepo,
-    { onProgress: (status, message, pct) => callbacks.onProgress(pct, message) }
+    {
+      onProgress: (status, message, pct) => callbacks.onProgress(pct, message),
+      isCancelled: callbacks.isCancelled,
+    }
   )
 }

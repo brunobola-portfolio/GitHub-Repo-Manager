@@ -36,6 +36,7 @@ import { safeError } from './middleware/auth.js';
 import { createSQLiteStore } from './lib/session-store.js';
 import logger, { requestLoggerMiddleware } from './lib/logger.js';
 import { requestTiming } from './middleware/request-timing.js';
+import { metricsMiddleware } from './lib/metrics.js';
 import { verifySecretsAtStartup } from './lib/startup-secrets-check.js';
 import { startWorkBoardSweeper, stopWorkBoardSweeper, startKpiSnapshotJob, stopKpiSnapshotJob } from './lib/work-board-sweeper.js';
 import { startEmailRetryWorker, stopEmailRetryWorker } from './lib/email-retry-worker.js';
@@ -153,6 +154,10 @@ app.use(cors({
 // Per-request timing — mounted before session so we time the full request
 // lifecycle including session hydration, rate limiting, and the handler.
 app.use(requestTiming);
+// Prometheus request-duration/in-flight instrumentation — mounted this early
+// so every request (including ones that never reach an /api/ route) is
+// counted. See server/lib/metrics.js for the route-label normalization.
+app.use(metricsMiddleware);
 // Stripe webhooks need raw body (must be before express.json())
 import { stripeWebhookHandler } from './routes/stripe-webhooks.js';
 app.post('/api/v1/webhooks/stripe', express.raw({ type: 'application/json' }), stripeWebhookHandler);
@@ -250,6 +255,12 @@ if (config.redisUrl) {
 }
 
 app.use(session(sessionConfig));
+
+// Prometheus scrape endpoint — outside /api/* (see routes/metrics.js for
+// why), mounted after session() so the admin-session half of its auth gate
+// (metricsAuth -> requireAdmin) has req.session available.
+import metricsRouter from './routes/metrics.js';
+app.use('/metrics', metricsRouter);
 
 // Absolute session timeout (7 days from initial login) — runs right after
 // the session middleware so expired sessions never reach any route handler.

@@ -152,12 +152,21 @@ function walkDir(dir) {
  * @param {string} targetRepo - GitHub repository name
  * @param {Object} [callbacks] - Progress callbacks
  * @param {function} [callbacks.onProgress] - (status, message, pct) => void
- * @returns {Object} { pagesConverted, destination }
+ * @param {function} [callbacks.isCancelled] - Returns true once cancellation has
+ *   been requested. Checked between phase boundaries and between page batches
+ *   in the conversion loop — mirrors the checkpoint pattern importRepository
+ *   uses (see import-service.js), minus the hard-abort plumbing: there's no
+ *   long-running git child process here worth interrupting mid-call, so a
+ *   prompt return at the next checkpoint is enough for the engine's own
+ *   isCancelled(planId) check to land the task on 'cancelled' instead of
+ *   'completed'.
+ * @returns {Object} { pagesConverted, destination, cancelled? }
  */
 async function migrateWiki(config, azureCreds, githubToken, targetOwner, targetRepo, callbacks = {}) {
     const { org, project, wikiId, destination, host } = config;
     const { pat } = azureCreds;
     const onProgress = callbacks.onProgress || (() => {});
+    const isCancelled = callbacks.isCancelled || (() => false);
 
     const jobId = randomUUID();
     const workDir = join(TMP_DIR, `wiki-${jobId}`);
@@ -180,6 +189,8 @@ async function migrateWiki(config, azureCreds, githubToken, targetOwner, targetR
             throw new Error('Wiki URL resolves to a private or internal network address.');
         }
 
+        if (isCancelled()) return { pagesConverted: 0, destination, cancelled: true };
+
         // Step 2: Clone the wiki repo
         onProgress('cloning', 'Cloning wiki repository...', 15);
         mkdirSync(workDir, { recursive: true });
@@ -189,12 +200,24 @@ async function migrateWiki(config, azureCreds, githubToken, targetOwner, targetR
         const git = simpleGit({ timeout: { block: DEFAULT_TIMEOUT_MS } });
         await git.clone(authCloneUrl, workDir);
 
+        if (isCancelled()) return { pagesConverted: 0, destination, cancelled: true };
+
         // Step 3: Discover and convert all files
         onProgress('converting', 'Converting wiki content...', 35);
         const allFiles = walkDir(workDir);
         let pagesConverted = 0;
 
-        for (const filePath of allFiles) {
+        // Checkpoint between page batches rather than on every single file —
+        // cheap either way, but this keeps the intent explicit: a cancel mid
+        // conversion stops within a handful of pages, not after the whole batch.
+        const CANCEL_CHECK_BATCH_SIZE = 10;
+
+        for (let i = 0; i < allFiles.length; i++) {
+            if (i % CANCEL_CHECK_BATCH_SIZE === 0 && isCancelled()) {
+                return { pagesConverted, destination, cancelled: true };
+            }
+
+            const filePath = allFiles[i];
             const relPath = relative(workDir, filePath);
             const fileName = basename(filePath);
             const ext = extname(filePath).toLowerCase();
@@ -241,6 +264,10 @@ async function migrateWiki(config, azureCreds, githubToken, targetOwner, targetR
                 writeFileSync(destPath, content);
             }
         }
+
+        // Last checkpoint before the point of no return — once the push below
+        // starts, content lands on GitHub and cancelling can't undo it.
+        if (isCancelled()) return { pagesConverted, destination, cancelled: true };
 
         // Step 4: Push to destination
         onProgress('pushing', `Pushing to ${destination === 'wiki' ? 'GitHub Wiki' : 'docs/ folder'}...`, 65);
