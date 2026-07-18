@@ -286,6 +286,17 @@ export const aiReadmeStudioImproveSchema = z.object({
     badges: z.boolean().optional().default(false),
 }).strict();
 
+// Deterministic (zero-AI-cost) README patch fallback — POST
+// /ai/readme-studio/improve/deterministic. Reachable directly whenever the AI
+// improve call is unavailable (no provider configured, a provider error, or
+// the readmeGenPerMonth quota is exhausted — Addendum 6b.2,
+// docs/specs/2026-07-18-community-wow-wave6.md §6b.2). No `tone`/`license`/
+// `stackOverride`/`badges` knobs — there's no model in the loop to steer.
+export const deterministicReadmeStudioSchema = z.object({
+    repo: aiRepoMetadataSchema.refine((v) => !!v.full_name, { message: 'repo.full_name is required' }),
+    mode: z.enum(['missing-sections', 'full-rewrite']).optional().default('missing-sections'),
+}).strict();
+
 // AI Diagram Generator — POST /api/ai/generate-diagram (server/routes/ai/diagrams.js).
 // `diagramType` is enum-limited to 'architecture' for v1; sequence/flow are
 // explicitly cut from scope (2026-07-18-community-wow-wave6.md) but the enum
@@ -306,6 +317,63 @@ export const aiGenerateDiagramSchema = z.object({
     message: 'retry requires failedSource',
     path: ['failedSource'],
 });
+
+// Deterministic (zero-AI-cost) diagram fallback — POST /ai/generate-diagram/deterministic.
+// Reachable directly and used by the embed flow when the AI-generated Mermaid
+// still fails to render after the one automatic self-repair attempt (Addendum
+// 6b.1's "invalid mermaid after retry-once self-repair" edge case falls back
+// to this rather than failing the embed).
+export const deterministicDiagramSchema = z.object({
+    repo: aiRepoMetadataSchema.refine((v) => !!v.full_name, { message: 'repo.full_name is required' }),
+    diagramType: z.enum(['architecture']).optional().default('architecture'),
+}).strict();
+
+// Diagram embed (Addendum 6b.1, docs/specs/2026-07-18-community-wow-wave6.md
+// §6b.1) — writes an already-generated diagram INTO the repo. Neither route
+// calls a provider (the Mermaid/SVG the caller has was already generated via
+// POST /ai/generate-diagram or the deterministic fallback above), so — like
+// every other commit-only route in this codebase (community-health/commit-fix,
+// agent-rules/commit) — these don't need requireScope('ai') / requireAI /
+// quota gating; they're plain, auth-gated GitHub write actions.
+const diagramEmbedTargetSchema = z.enum(['readme-mermaid', 'svg-file']);
+const diagramEmbedPlacementSchema = z.enum(['top', 'after-intro', 'end', 'custom']);
+
+export const embedDiagramPreviewSchema = z.object({
+    repo: aiRepoMetadataSchema.refine((v) => !!v.full_name, { message: 'repo.full_name is required' }),
+    diagramType: z.enum(['architecture']).optional().default('architecture'),
+    target: diagramEmbedTargetSchema,
+    mermaid: z.string().min(1).max(50_000).optional(),
+    svg: z.string().min(1).max(600_000).optional(),
+    placement: diagramEmbedPlacementSchema.optional().default('after-intro'),
+    customAnchor: z.string().max(200).optional(),
+    truncated: z.boolean().optional().default(false),
+}).strict()
+    .refine((v) => v.target !== 'readme-mermaid' || !!v.mermaid, { message: 'mermaid is required for target readme-mermaid', path: ['mermaid'] })
+    .refine((v) => v.target !== 'svg-file' || !!v.svg, { message: 'svg is required for target svg-file', path: ['svg'] })
+    .refine((v) => v.placement !== 'custom' || !!v.customAnchor, { message: 'customAnchor is required for placement custom', path: ['customAnchor'] });
+
+// commit: each of readme/svg (whichever the target needs) is independently
+// committed via commitOrOpenPR() — same sequential-per-file pattern
+// agent-rules/commit already established for multi-file writes in this
+// codebase, rather than inventing a new atomic multi-file commit primitive.
+export const embedDiagramCommitSchema = z.object({
+    repo: aiRepoMetadataSchema.refine((v) => !!v.full_name, { message: 'repo.full_name is required' }),
+    diagramType: z.enum(['architecture']).optional().default('architecture'),
+    target: diagramEmbedTargetSchema,
+    readme: z.object({
+        path: z.string().min(1).max(1024).optional().default('README.md'),
+        content: z.string().min(1).max(2_000_000),
+        commitMessage: z.string().min(1).max(10_000),
+    }).optional(),
+    svg: z.object({
+        path: z.string().min(1).max(1024),
+        content: z.string().min(1).max(600_000),
+        commitMessage: z.string().min(1).max(10_000),
+    }).optional(),
+    mode: z.enum(['direct', 'pr']).optional().default('direct'),
+}).strict()
+    .refine((v) => v.target !== 'readme-mermaid' || !!v.readme, { message: 'readme is required for target readme-mermaid', path: ['readme'] })
+    .refine((v) => v.target !== 'svg-file' || !!v.svg, { message: 'svg is required for target svg-file', path: ['svg'] });
 
 // Agent Rules Generator — POST /:owner/:repo/agent-rules/generate and
 // /agent-rules/commit (server/routes/repos/actions-community.js). `sections`

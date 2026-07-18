@@ -16,6 +16,7 @@
  *   - ./ai/suggest-name-description.js — suggest-name-description
  *   - ./ai/prompts.js                  — list / set / clear user prompt overrides
  *   - ./ai/diagrams.js                 — generate-diagram (Mermaid, retry-once self-repair)
+ *                                        + deterministic fallback + embed-into-repo (Addendum 6b.1)
  *
  * Shared helpers (requireAI, handleAIError, providerGenerateWithRetry) live
  * in ./ai/shared.js and are imported by each sub-router.

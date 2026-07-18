@@ -13,6 +13,17 @@ vi.mock('mermaid', () => ({
     },
 }))
 
+// happy-dom can't run @git-diff-view/react's real canvas-based text
+// measurement — mocked to a plain, inspectable stand-in, same approach
+// ReadmeStudioModal.test.jsx already established for its own diff preview.
+vi.mock('@git-diff-view/react', () => ({
+    DiffModeEnum: { Unified: 'unified', Split: 'split' },
+    DiffView: ({ data }) => (
+        <pre data-testid="diagram-embed-diff">{data?.oldFile?.content}{'\n---\n'}{data?.newFile?.content}</pre>
+    ),
+}))
+vi.mock('@git-diff-view/react/styles/diff-view.css', () => ({}))
+
 // parseAndSanitizeSvg's real implementation runs by default (validates the
 // defence-in-depth sanitizer wiring end to end); one test overrides it to
 // return null to exercise the "sanitization failure never retries" path
@@ -29,6 +40,9 @@ vi.mock('../../../src/api/ai', () => ({
     aiApi: {
         diagrams: {
             generate: vi.fn(),
+            deterministic: vi.fn(),
+            embedPreview: vi.fn(),
+            embedCommit: vi.fn(),
         },
     },
 }))
@@ -55,6 +69,9 @@ import { aiApi } from '../../../src/api/ai'
 
 beforeEach(() => {
     aiApi.diagrams.generate.mockReset()
+    aiApi.diagrams.deterministic.mockReset()
+    aiApi.diagrams.embedPreview.mockReset()
+    aiApi.diagrams.embedCommit.mockReset()
     mermaidRenderMock.mockReset()
     mermaidInitializeMock.mockReset()
     mermaidRenderMock.mockResolvedValue({ svg: '<svg xmlns="http://www.w3.org/2000/svg"><text>diagram</text></svg>' })
@@ -120,6 +137,50 @@ describe('DiagramGenerator — generate + render', () => {
 
         expect(await screen.findByText(/ai is not configured/i)).toBeInTheDocument()
         expect(mermaidRenderMock).not.toHaveBeenCalled()
+    })
+})
+
+describe('DiagramGenerator — deterministic fallback offered at the configure stage (Addendum 6b.2)', () => {
+    const DETERMINISTIC_RESULT = {
+        success: true, deterministic: true, truncated: false,
+        mermaid: 'flowchart TD\n  root["repository root"]',
+        diagramType: 'architecture',
+    }
+
+    it('offers and applies a deterministic diagram when no AI provider is configured', async () => {
+        const user = userEvent.setup()
+        aiApi.diagrams.generate.mockResolvedValue({
+            success: true, mermaid: null, diagramType: 'architecture', truncated: false,
+            mock: true, aiConfigured: false,
+        })
+        aiApi.diagrams.deterministic.mockResolvedValue(DETERMINISTIC_RESULT)
+
+        render(<DiagramGenerator isOpen repo={REPO} onClose={() => {}} />)
+        await user.click(screen.getByRole('button', { name: /^generate$/i }))
+        expect(await screen.findByText(/ai is not configured/i)).toBeInTheDocument()
+
+        const fallbackBtn = screen.getByRole('button', { name: /use deterministic diagram instead/i })
+        await user.click(fallbackBtn)
+
+        await waitFor(() => expect(aiApi.diagrams.deterministic).toHaveBeenCalledTimes(1))
+        expect(await screen.findByText(/structure diagram \(deterministic\)/i)).toBeInTheDocument()
+        expect(await screen.findByTestId('diagram-mermaid-output')).toBeInTheDocument()
+    })
+
+    it('offers a deterministic diagram when the initial generate call is quota-exceeded (429)', async () => {
+        const user = userEvent.setup()
+        const quotaErr = Object.assign(new Error('AI query limit exceeded'), { status: 429, tierError: true })
+        aiApi.diagrams.generate.mockRejectedValue(quotaErr)
+        aiApi.diagrams.deterministic.mockResolvedValue(DETERMINISTIC_RESULT)
+
+        render(<DiagramGenerator isOpen repo={REPO} onClose={() => {}} />)
+        await user.click(screen.getByRole('button', { name: /^generate$/i }))
+
+        const fallbackBtn = await screen.findByRole('button', { name: /use deterministic diagram instead/i })
+        await user.click(fallbackBtn)
+
+        await waitFor(() => expect(aiApi.diagrams.deterministic).toHaveBeenCalledTimes(1))
+        expect(await screen.findByTestId('diagram-mermaid-output')).toBeInTheDocument()
     })
 })
 
@@ -236,12 +297,168 @@ describe('DiagramGenerator — export actions', () => {
         expect(global.URL.revokeObjectURL).toHaveBeenCalledWith('blob:mock')
     })
 
-    it('never auto-commits — there is no commit/apply/PR action anywhere in the modal', async () => {
+    it('never auto-commits from the result stage — Apply/Open PR only exist after the explicit embed preview flow', async () => {
         const user = userEvent.setup()
         await generateAndRender(user)
 
         expect(screen.queryByRole('button', { name: /^apply$/i })).not.toBeInTheDocument()
         expect(screen.queryByRole('button', { name: /open pr/i })).not.toBeInTheDocument()
-        expect(screen.queryByRole('button', { name: /commit/i })).not.toBeInTheDocument()
+        // "Embed in repo" is the only entry point into a write action, and it
+        // only navigates to a config step — nothing is written by this click.
+        expect(screen.getByRole('button', { name: /embed in repo/i })).toBeInTheDocument()
+        expect(aiApi.diagrams.embedPreview).not.toHaveBeenCalled()
+        expect(aiApi.diagrams.embedCommit).not.toHaveBeenCalled()
+    })
+})
+
+describe('DiagramGenerator — embed in repo (Addendum 6b.1)', () => {
+    async function generateAndRender(user) {
+        aiApi.diagrams.generate.mockResolvedValue(GENERATE_RESULT)
+        render(<DiagramGenerator isOpen repo={REPO} onClose={() => {}} />)
+        await user.click(screen.getByRole('button', { name: /^generate$/i }))
+        await waitFor(() => expect(mermaidRenderMock).toHaveBeenCalledTimes(1))
+        await screen.findByTestId('diagram-mermaid-output')
+    }
+
+    const README_PREVIEW = {
+        success: true, target: 'readme-mermaid', hasReadme: true, readOnly: false, action: 'inserted', notice: null,
+        readme: {
+            path: 'README.md',
+            before: '# acme/lib\n\nAn intro.',
+            after: '# acme/lib\n\nAn intro.\n\n<!-- repo-manager:diagram:architecture:start -->\n```mermaid\ngraph TD\n  A[src] --> B[server]\n```\n<!-- repo-manager:diagram:architecture:end -->',
+            commitMessage: 'docs: embed architecture diagram in README',
+        },
+    }
+
+    it('disables "Embed in repo" until a diagram has successfully rendered', () => {
+        render(<DiagramGenerator isOpen repo={REPO} onClose={() => {}} />)
+        // Still on the configure stage — no embed button is even reachable yet.
+        expect(screen.queryByRole('button', { name: /embed in repo/i })).not.toBeInTheDocument()
+    })
+
+    it('walks the full readme-mermaid embed flow: configure → preview (diff) → Apply → committed', async () => {
+        const user = userEvent.setup()
+        await generateAndRender(user)
+        aiApi.diagrams.embedPreview.mockResolvedValue(README_PREVIEW)
+        aiApi.diagrams.embedCommit.mockResolvedValue({ success: true, target: 'readme-mermaid', readme: { mode: 'direct', branch: 'main' } })
+
+        await user.click(screen.getByRole('button', { name: /embed in repo/i }))
+        expect(screen.getByText(/embed as/i)).toBeInTheDocument()
+
+        await user.click(screen.getByRole('button', { name: /^preview$/i }))
+        await waitFor(() => expect(aiApi.diagrams.embedPreview).toHaveBeenCalledTimes(1))
+        const [payload] = aiApi.diagrams.embedPreview.mock.calls[0]
+        expect(payload.target).toBe('readme-mermaid')
+        expect(payload.mermaid).toBe(GENERATE_RESULT.mermaid)
+
+        expect(await screen.findByTestId('diagram-embed-diff')).toBeInTheDocument()
+
+        await user.click(screen.getByRole('button', { name: /^apply$/i }))
+        await waitFor(() => expect(aiApi.diagrams.embedCommit).toHaveBeenCalledTimes(1))
+        expect(await screen.findByText(/diagram embedded/i)).toBeInTheDocument()
+    })
+
+    it('offers to switch to SVG when there is no README to embed a mermaid fence into', async () => {
+        const user = userEvent.setup()
+        await generateAndRender(user)
+        aiApi.diagrams.embedPreview.mockResolvedValue({
+            success: true, target: 'readme-mermaid', hasReadme: false, readOnly: false,
+            notice: 'No README found — create one first (README Studio), or embed as a committed SVG file instead.',
+        })
+
+        await user.click(screen.getByRole('button', { name: /embed in repo/i }))
+        await user.click(screen.getByRole('button', { name: /^preview$/i }))
+
+        expect(await screen.findByText(/no readme found/i)).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /switch to committed svg file/i })).toBeInTheDocument()
+    })
+
+    it('shows an honest read-only state and disables Apply/Open PR when the user lacks push rights', async () => {
+        const user = userEvent.setup()
+        await generateAndRender(user)
+        aiApi.diagrams.embedPreview.mockResolvedValue({ ...README_PREVIEW, readOnly: true })
+
+        await user.click(screen.getByRole('button', { name: /embed in repo/i }))
+        await user.click(screen.getByRole('button', { name: /^preview$/i }))
+
+        expect(await screen.findByText(/don't have push access/i)).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /^apply$/i })).toBeDisabled()
+        expect(screen.getByRole('button', { name: /open pr/i })).toBeDisabled()
+        expect(aiApi.diagrams.embedCommit).not.toHaveBeenCalled()
+    })
+
+    it('surfaces a malformed-marker notice from the preview response', async () => {
+        const user = userEvent.setup()
+        await generateAndRender(user)
+        aiApi.diagrams.embedPreview.mockResolvedValue({
+            ...README_PREVIEW,
+            action: 'appended-malformed',
+            notice: 'Existing diagram markers were malformed (only one of the start/end markers was found) — treated as absent; a fresh block was appended at the end.',
+        })
+
+        await user.click(screen.getByRole('button', { name: /embed in repo/i }))
+        await user.click(screen.getByRole('button', { name: /^preview$/i }))
+
+        expect(await screen.findByText(/malformed/i)).toBeInTheDocument()
+    })
+
+    it('commits the SVG-file target with both svg and readme payloads on Open PR', async () => {
+        const user = userEvent.setup()
+        await generateAndRender(user)
+        aiApi.diagrams.embedPreview.mockResolvedValue({
+            success: true, target: 'svg-file', hasReadme: true, readOnly: false,
+            svg: { path: 'docs/diagrams/architecture.svg', content: '<svg xmlns="http://www.w3.org/2000/svg"/>', commitMessage: 'docs: add diagram svg' },
+            readme: { path: 'README.md', before: '# x', after: '# x\n\n![Architecture diagram](docs/diagrams/architecture.svg)', commitMessage: 'docs: reference diagram svg', notice: null },
+            notice: null,
+        })
+        aiApi.diagrams.embedCommit.mockResolvedValue({
+            success: true, target: 'svg-file',
+            svg: { mode: 'pr', branch: 'chore/diagram', prUrl: 'https://github.com/acme/lib/pull/9' },
+            readme: { mode: 'pr', branch: 'chore/diagram', prUrl: 'https://github.com/acme/lib/pull/9' },
+        })
+
+        await user.click(screen.getByRole('button', { name: /embed in repo/i }))
+        // Switch target to "Committed SVG file" via the Select component.
+        await user.click(screen.getByRole('combobox', { name: /embed as/i }))
+        await user.click(await screen.findByRole('option', { name: /committed svg file/i }))
+
+        await user.click(screen.getByRole('button', { name: /^preview$/i }))
+        await waitFor(() => expect(aiApi.diagrams.embedPreview).toHaveBeenCalledTimes(1))
+        expect(aiApi.diagrams.embedPreview.mock.calls[0][0].target).toBe('svg-file')
+        expect(screen.getByTestId('diagram-embed-svg-path')).toBeInTheDocument()
+
+        await user.click(screen.getByRole('button', { name: /open pr/i }))
+        await waitFor(() => expect(aiApi.diagrams.embedCommit).toHaveBeenCalledTimes(1))
+        const [commitPayload] = aiApi.diagrams.embedCommit.mock.calls[0]
+        expect(commitPayload.svg).toBeTruthy()
+        expect(commitPayload.readme).toBeTruthy()
+        expect(commitPayload.mode).toBe('pr')
+
+        expect(await screen.findByRole('link', { name: /view pr/i })).toBeInTheDocument()
+    })
+})
+
+describe('DiagramGenerator — deterministic fallback after persistent render failure (Addendum 6b.2)', () => {
+    it('offers and applies a deterministic diagram once the retry-once self-repair also fails', async () => {
+        const user = userEvent.setup()
+        aiApi.diagrams.generate
+            .mockResolvedValueOnce(GENERATE_RESULT)
+            .mockResolvedValueOnce({ ...GENERATE_RESULT, mermaid: 'graph TD\n  still broken' })
+        mermaidRenderMock.mockRejectedValue(new Error('always broken'))
+
+        render(<DiagramGenerator isOpen repo={REPO} onClose={() => {}} />)
+        await user.click(screen.getByRole('button', { name: /^generate$/i }))
+        await waitFor(() => expect(aiApi.diagrams.generate).toHaveBeenCalledTimes(2))
+        expect(await screen.findByText(/diagram failed to render/i)).toBeInTheDocument()
+
+        const fallbackBtn = screen.getByRole('button', { name: /use a deterministic diagram instead|use deterministic diagram instead/i })
+        aiApi.diagrams.deterministic.mockResolvedValue({ success: true, mermaid: 'flowchart TD\n  root["repository root"]', diagramType: 'architecture', truncated: false, deterministic: true })
+        mermaidRenderMock.mockResolvedValueOnce({ svg: '<svg xmlns="http://www.w3.org/2000/svg"><text>fallback</text></svg>' })
+
+        await user.click(fallbackBtn)
+        await waitFor(() => expect(aiApi.diagrams.deterministic).toHaveBeenCalledTimes(1))
+        expect(await screen.findByText(/structure diagram \(deterministic\)/i)).toBeInTheDocument()
+        // The diagram now renders (no more render error) and embedding is available.
+        expect(screen.getByRole('button', { name: /embed in repo/i })).not.toBeDisabled()
     })
 })

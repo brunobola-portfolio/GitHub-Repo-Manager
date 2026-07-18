@@ -20,6 +20,7 @@ vi.mock('../../../src/api/ai', () => ({
         readmeStudio: {
             getScore: vi.fn(),
             improve: vi.fn(),
+            deterministic: vi.fn(),
         },
     },
 }))
@@ -79,6 +80,7 @@ const IMPROVE_RESULT = {
 beforeEach(() => {
     aiApi.readmeStudio.getScore.mockReset()
     aiApi.readmeStudio.improve.mockReset()
+    aiApi.readmeStudio.deterministic.mockReset()
     global.fetch = vi.fn()
 })
 
@@ -230,5 +232,63 @@ describe('ReadmeStudioModal — improve + preview flow', () => {
 
         expect(await screen.findByText(/ai is not configured/i)).toBeInTheDocument()
         expect(screen.queryByTestId('diff-view')).not.toBeInTheDocument()
+    })
+})
+
+describe('ReadmeStudioModal — deterministic fallback (Addendum 6b.2)', () => {
+    const DETERMINISTIC_RESULT = {
+        success: true,
+        deterministic: true,
+        markdown: '## License\n\nThis project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.',
+        sections: ['License'],
+        mode: 'missing-sections',
+        missingSections: ['License'],
+        currentReadme: '# lib\n',
+    }
+
+    it('offers a deterministic patch when no AI provider is configured, and applies it', async () => {
+        const user = userEvent.setup()
+        aiApi.readmeStudio.getScore.mockResolvedValue(SCORE_WITH_README)
+        aiApi.readmeStudio.improve.mockResolvedValue({
+            success: true, markdown: null, confidence: 'low', warnings: [], missingSections: [],
+            mode: 'missing-sections', currentReadme: null, mock: true, aiConfigured: false,
+        })
+        aiApi.readmeStudio.deterministic.mockResolvedValue(DETERMINISTIC_RESULT)
+
+        render(<ReadmeStudioModal isOpen repo={REPO} onClose={() => {}} />)
+        await screen.findByText(/Decent foundation/i)
+        await user.click(screen.getByRole('button', { name: /improve with ai/i }))
+        await user.click(screen.getByRole('button', { name: /^generate$/i }))
+
+        expect(await screen.findByText(/ai is not configured/i)).toBeInTheDocument()
+        const fallbackBtn = screen.getByRole('button', { name: /use deterministic version instead/i })
+
+        await user.click(fallbackBtn)
+
+        await waitFor(() => expect(aiApi.readmeStudio.deterministic).toHaveBeenCalledTimes(1))
+        expect(await screen.findByText(/deterministic \(no ai\)/i)).toBeInTheDocument()
+        expect(await screen.findByTestId('diff-view')).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /^apply$/i })).toBeInTheDocument()
+    })
+
+    it('offers the deterministic patch when the AI call is quota-exceeded (429)', async () => {
+        const user = userEvent.setup()
+        aiApi.readmeStudio.getScore.mockResolvedValue(SCORE_WITH_README)
+        const quotaErr = Object.assign(new Error('AI query limit exceeded'), { status: 429, tierError: true })
+        aiApi.readmeStudio.improve.mockRejectedValue(quotaErr)
+        aiApi.readmeStudio.deterministic.mockResolvedValue(DETERMINISTIC_RESULT)
+
+        render(<ReadmeStudioModal isOpen repo={REPO} onClose={() => {}} />)
+        await screen.findByText(/Decent foundation/i)
+        await user.click(screen.getByRole('button', { name: /improve with ai/i }))
+        await user.click(screen.getByRole('button', { name: /^generate$/i }))
+
+        await waitFor(() => expect(aiApi.readmeStudio.improve).toHaveBeenCalledTimes(1))
+        const fallbackBtn = await screen.findByRole('button', { name: /use deterministic version instead/i })
+
+        await user.click(fallbackBtn)
+
+        await waitFor(() => expect(aiApi.readmeStudio.deterministic).toHaveBeenCalledTimes(1))
+        expect(await screen.findByTestId('diff-view')).toBeInTheDocument()
     })
 })

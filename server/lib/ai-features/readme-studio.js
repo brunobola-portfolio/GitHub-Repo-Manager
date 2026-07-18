@@ -220,3 +220,145 @@ Each section should start with a ## heading.
 
     return { prompt, mode, warnings, missingSections, badges };
 }
+
+// ---------------------------------------------------------------------------
+// buildDeterministicReadmePatch — zero-AI-cost fallback (Addendum 6b.2)
+// ---------------------------------------------------------------------------
+
+// Manifest → install command mapping, refined by the lockfile actually
+// present in the top-level listing when the stack is Node (mirrors
+// agent-rules.js's `buildSetupSection` in spirit, at the coarser signal
+// granularity README Studio's `fileStructure` already fetches — no extra
+// GitHub call is made just for this fallback).
+const NODE_LOCKFILE_INSTALL_CMDS = [
+    ['pnpm-lock.yaml', 'pnpm install'],
+    ['yarn.lock', 'yarn install'],
+    ['package-lock.json', 'npm ci'],
+];
+
+function detectDeterministicInstallCommand(patterns, fileStructure) {
+    const names = (fileStructure || []).map((f) => f.name);
+    if (patterns.isNodeProject) {
+        const lock = NODE_LOCKFILE_INSTALL_CMDS.find(([file]) => names.includes(file));
+        return lock ? lock[1] : 'npm install';
+    }
+    if (patterns.isPythonProject) {
+        return names.includes('pyproject.toml') && !names.includes('requirements.txt')
+            ? 'pip install -e .  # or: poetry install, if this project uses Poetry'
+            : 'pip install -r requirements.txt';
+    }
+    if (patterns.isRustProject) return 'cargo build';
+    if (patterns.isGoProject) return 'go build ./...';
+    if (patterns.isJavaProject) return names.includes('pom.xml') ? 'mvn install' : './gradlew build';
+    return null;
+}
+
+/**
+ * Deterministic License section — built directly from `detectLicense()`'s
+ * verified fingerprint match against the actual LICENSE file content. Never
+ * states a license the fingerprint didn't match (same honesty contract as
+ * `buildImprovePrompt`'s AI path, applied without a model in the loop).
+ */
+function buildDeterministicLicenseSection(licenseDetected) {
+    if (licenseDetected?.matched) {
+        return `## License\n\nThis project is licensed under the ${licenseDetected.spdxId} License — see the [LICENSE](LICENSE) file for details.`;
+    }
+    if (licenseDetected && !licenseDetected.matched) {
+        return '## License\n\n<!-- TODO: a LICENSE file is present but its license could not be automatically verified — describe it here (custom/unrecognized license, verify manually). -->';
+    }
+    return '## License\n\n<!-- TODO: no LICENSE file was found in this repository. Add one and describe it here. -->';
+}
+
+/**
+ * Deterministic Installation section — from the manifest/lockfile the
+ * top-level file listing evidences. Leaves a TODO rather than guessing when
+ * no recognizable manifest is present.
+ */
+function buildDeterministicInstallSection(patterns, fileStructure) {
+    const cmd = detectDeterministicInstallCommand(patterns, fileStructure);
+    if (!cmd) {
+        return '## Installation\n\n<!-- TODO: no recognizable manifest (package.json, requirements.txt/pyproject.toml, Cargo.toml, go.mod, pom.xml/build.gradle) was detected — add install instructions here. -->';
+    }
+    return `## Installation\n\n\`\`\`sh\n${cmd}\n\`\`\``;
+}
+
+function toHeadingAnchor(title) {
+    return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-+|-+$)/g, '');
+}
+
+/**
+ * Table of contents built from the README's own existing `##` headings
+ * (refresh mode) plus whatever sections this same patch is about to add —
+ * never a heading that isn't actually present in the resulting document.
+ */
+function buildDeterministicTOCSection(readmeContent, addedSectionTitles = []) {
+    const existingHeadings = [...(readmeContent || '').matchAll(/^##\s+(.+)$/gm)].map((m) => m[1].trim());
+    const allTitles = [...new Set([...existingHeadings, ...addedSectionTitles])];
+    if (allTitles.length === 0) {
+        return "## Table of Contents\n\n<!-- TODO: add links to this README's sections here. -->";
+    }
+    const links = allTitles.map((t) => `- [${t}](#${toHeadingAnchor(t)})`);
+    return `## Table of Contents\n\n${links.join('\n')}`;
+}
+
+/**
+ * Deterministic, zero-AI-cost README patch — builds the same kind of
+ * "missing sections" content `buildImprovePrompt` would ask an AI to write,
+ * directly from the deterministic signals the free score stage already
+ * computes: License from `detectLicense()`'s verified fingerprint, Install
+ * from the detected stack manifest/lockfile, and a Table of Contents from
+ * the README's own headings — every section that can't be derived this way
+ * gets an explicit TODO placeholder rather than a guess.
+ *
+ * Used whenever the AI path is unavailable — no provider configured, a
+ * provider error, or the user is over their `readmeGenPerMonth` quota
+ * (Addendum 6b.2, docs/specs/2026-07-18-community-wow-wave6.md §6b.2) — so
+ * README Studio's improve stage never hard-blocks on AI availability; only
+ * the AI-authored prose polish is lost, never the ability to fill in a
+ * missing License/Install/TOC or stand up a minimal skeleton README.
+ *
+ * @param {object} args
+ * @param {object} args.repo — { full_name }
+ * @param {string} args.readmeContent — full current README ('' when absent)
+ * @param {Array<{name:string,type:string}>} args.fileStructure
+ * @param {object} args.patterns — `detectPatterns()` result
+ * @param {string[]} [args.missingSections] — `deriveMissingSections()` result
+ * @param {'missing-sections'|'full-rewrite'} [args.mode] — caller's requested
+ *   mode; forced to 'full-rewrite' when there's no README to patch either way
+ * @returns {{ markdown: string, sections: string[], mode: 'missing-sections'|'full-rewrite' }}
+ */
+export function buildDeterministicReadmePatch({ repo, readmeContent, fileStructure, patterns = {}, missingSections = [], mode }) {
+    const hasReadme = !!(readmeContent || '').trim();
+    const resolvedMode = (mode === 'full-rewrite' || !hasReadme) ? 'full-rewrite' : 'missing-sections';
+    const parts = [];
+    const sectionsAdded = [];
+
+    if (resolvedMode === 'full-rewrite') {
+        const repoName = String(repo?.full_name || '').split('/')[1] || repo?.full_name || 'Project';
+        parts.push(
+            `# ${repoName}\n\n`
+            + '> Deterministic skeleton — generated directly from detected repo signals (no AI). '
+            + 'Enable an AI provider in Settings for a richer, prose-polished README.\n\n'
+            + '<!-- TODO: describe what this project does in one or two sentences. -->'
+        );
+        sectionsAdded.push('Installation', 'License');
+        parts.push(buildDeterministicTOCSection('', sectionsAdded));
+        parts.push(buildDeterministicInstallSection(patterns, fileStructure));
+        parts.push(buildDeterministicLicenseSection(patterns.licenseDetected));
+    } else {
+        if (missingSections.includes('License')) {
+            parts.push(buildDeterministicLicenseSection(patterns.licenseDetected));
+            sectionsAdded.push('License');
+        }
+        if (missingSections.includes('Installation')) {
+            parts.push(buildDeterministicInstallSection(patterns, fileStructure));
+            sectionsAdded.push('Installation');
+        }
+        if (!patterns.hasTableOfContents) {
+            parts.push(buildDeterministicTOCSection(readmeContent, sectionsAdded));
+            sectionsAdded.push('Table of Contents');
+        }
+    }
+
+    return { markdown: parts.join('\n\n'), sections: sectionsAdded, mode: resolvedMode };
+}

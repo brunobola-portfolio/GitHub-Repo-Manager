@@ -1,8 +1,25 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { RepoMarkdown } from '../../../src/components/ui/RepoMarkdown'
 
 const PROPS = { owner: 'octocat', repo: 'demo', branch: 'main' }
+
+// Own-app mermaid-fence rendering parity (Addendum 6b.1's "RepoMarkdown must
+// render ```mermaid fences like WalkthroughTab does" requirement) — mocked the
+// same way DiagramGenerator.test.jsx mocks the pipeline.
+const mermaidRenderMock = vi.fn()
+const mermaidInitializeMock = vi.fn()
+vi.mock('mermaid', () => ({
+    default: {
+        initialize: (...args) => mermaidInitializeMock(...args),
+        render: (...args) => mermaidRenderMock(...args),
+    },
+}))
+
+beforeEach(() => {
+    mermaidRenderMock.mockReset().mockResolvedValue({ svg: '<svg xmlns="http://www.w3.org/2000/svg"><text>diagram</text></svg>' })
+    mermaidInitializeMock.mockReset()
+})
 
 describe('RepoMarkdown', () => {
     it('renders GFM tables', () => {
@@ -129,5 +146,52 @@ describe('RepoMarkdown', () => {
         const md = 'Run `npm install` to set up.'
         render(<RepoMarkdown source={md} {...PROPS} />)
         expect(screen.queryByRole('button', { name: /copy code/i })).toBeNull()
+    })
+
+    describe('```mermaid fence rendering (own-app diagram-embed parity)', () => {
+        it('renders a ```mermaid fence as a live diagram, not a plain code block', async () => {
+            const md = '```mermaid\ngraph TD\n  A --> B\n```'
+            const { container } = render(<RepoMarkdown source={md} {...PROPS} />)
+
+            await waitFor(() => expect(mermaidRenderMock).toHaveBeenCalledTimes(1))
+            expect(mermaidRenderMock.mock.calls[0][1]).toBe('graph TD\n  A --> B')
+            expect(await screen.findByTestId('readme-mermaid-output')).toBeInTheDocument()
+            // No fenced <pre><code> for the mermaid block — it was replaced by the diagram.
+            expect(container.querySelector('pre code.language-mermaid')).toBeNull()
+        })
+
+        it('still renders a normal fenced code block for a non-mermaid language', () => {
+            const md = '```js\nconst x = 1\n```'
+            render(<RepoMarkdown source={md} {...PROPS} />)
+            expect(screen.queryByTestId('readme-mermaid-output')).toBeNull()
+            expect(mermaidRenderMock).not.toHaveBeenCalled()
+        })
+
+        it('shows an inline error instead of throwing when the diagram fails to render', async () => {
+            mermaidRenderMock.mockRejectedValueOnce(new Error('Parse error on line 1'))
+            const md = '```mermaid\nnot valid mermaid\n```'
+            render(<RepoMarkdown source={md} {...PROPS} />)
+
+            expect(await screen.findByText(/diagram failed to render/i)).toBeInTheDocument()
+        })
+
+        it('renders diagrams embedded between the marker comments the embed flow inserts', async () => {
+            const md = [
+                '# acme/lib',
+                '',
+                'Intro paragraph.',
+                '',
+                '<!-- repo-manager:diagram:architecture:start -->',
+                '```mermaid',
+                'graph TD',
+                '  A --> B',
+                '```',
+                '<!-- repo-manager:diagram:architecture:end -->',
+            ].join('\n')
+            render(<RepoMarkdown source={md} {...PROPS} />)
+
+            await waitFor(() => expect(mermaidRenderMock).toHaveBeenCalledTimes(1))
+            expect(await screen.findByTestId('readme-mermaid-output')).toBeInTheDocument()
+        })
     })
 })
