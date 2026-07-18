@@ -13,13 +13,20 @@ Source of truth for findings: `docs/reports/2026-07-17-code-ui-ux-audit-panel.md
 
 ## Waves
 
-### Wave 1 — Production hardening (branch `feat/prod-premium-wave1`) — IN PROGRESS
-All audit FIX NOW items:
-- [ ] S1 backend-guardrails: AI spend-cap coverage for /ai/index, /ai/batch-index, /ai/search, /ai/translate-search, /ai/suggest-name-description; usage-meter TOCTOU atomic increment; dashboard itemId validation; migration retry config rollback; GDPR registry CI assertion. Tests in `server/__tests__/`.
-- [ ] S2 postgres-removal: remove postgres adapter + db.js branch (clear boot error if `postgres://` configured), fix `docs/operations.md` + `server/migrations/README.md`, delete orphaned `vercel.json`, README note on backend hosting.
-- [ ] S3 frontend-resilience: CommandPalette prefetch `.catch` (+ audit other bare background imports), "Log in again" button in RepoStates AUTHENTICATION branch, WorkBoard contrast fix, useGitHub/useRepos action memoization, duplicate global-stats fetch, redundant mock-init effect, TeamDetails runs-fetch error surfacing. Tests in `tests/`.
-- [ ] S4 team-invite: real notification on member add via `server/lib/email.js` (+ in-app fallback), docs update.
-- [ ] Finalize: lint + targeted tests, push, PR, CI green, merge.
+### Wave 1 — Production hardening (branch `feat/prod-premium-wave1`) — DONE, PR #206 awaiting CI/merge
+All audit FIX NOW items implemented + reviewed clean (run wf_98205922-e4b, 2026-07-18):
+- [x] S1 backend-guardrails — commit 6d2a0265 (spend caps on all 5 bypass routes; atomic guardedIncrement primitives; itemId validation; retry config rollback; GDPR assertion strengthened). 66 tests green.
+- [x] S2 postgres-removal — commit 580ea708 (boot error for postgres://, adapter + `pg` dep deleted, vercel.json deleted, docs/README honest SQLite-only).
+- [x] S3 frontend-resilience — commits 8b214c3b + 5ff46ea6 (prefetch .catch, Log-in-again CTA, contrast, hook memoization, stats-fetch consolidation, mock-init removal, runs-error toast). 65 tests green.
+- [x] S4 team-invite — commit 09b8323a (team-notify.js via Resend, notified flag + toasts, docs). 23 tests green.
+- [x] Finalize — lint clean, 118 targeted tests green, plan + audit report committed (b1209474, 3efae6e1), PR #206 opened.
+- [ ] CI green → squash-merge #206.
+
+### Research verdicts (2026-07-18)
+- **sqlite-vec: SKIP** — current JS cosine scan is sub-10ms at real scale (low hundreds of rows/tenant); sqlite-vec is pre-1.0, brute-force anyway, and has a documented silent Windows loading failure in our better-sqlite3 range. Revisit only if scale changes (`.dev/prod-premium/2026-07-17/research-sqlite-vec.md`).
+- **Pricing**: full matrix in `design-pricing-rebalance.md`. Owner-directive decisions applied autonomously: bulkAdvanced → Free WITH a new tier-independent daily anti-abuse ceiling; DORA → Free; spend caps become tier-aware but stay disabled-by-default for self-host (no hosted SaaS exists yet — env-overridable, documented); Pro repositioned as "AI headroom + support" in copy only.
+- **Migration**: engine is solid; real gaps = PT strings in step 1 (SourceUrlForm), cancel-mid-run doesn't stop the running task (orphaned row), simple-import path lacks cancel/crash-recovery parity, LFS-failed state not actionable (`design-migration-premium.md`).
+- **UI upgrades**: 12-item incremental plan, no new deps/endpoints (`design-ui-upgrades.md`).
 
 ### Wave 2 — Pricing rebalance + UI polish (design from R2)
 - [ ] Implement new free-first tier matrix across `feature-flags.js`, `require-tier.js`, `usage-meter.js`, Pricing UI, README; keep parity gate green; resolve the team-billing honesty gap (mostly dissolves when features go free).
