@@ -15,6 +15,7 @@
 
 import { resolvePromptTemplate } from './ai-prompt-registry.js';
 import { findErrorKbEntry } from './ai-features/error-kb.js';
+import { sanitizeForPrompt } from './ai-features/sanitize.js';
 
 // Mirrors src/utils/aiActions.js — keep in sync when adding new action types.
 const AI_ACTION_TYPES = [
@@ -166,7 +167,7 @@ export function buildChatPrompt({ message, context, userId = null }) {
         buildActionsBlock(),
         OUTPUT_SCHEMA,
         ...(kbEntry ? [buildKnownIssueBlock(kbEntry)] : []),
-        `## Conversation context\n\n${JSON.stringify(safeContext, null, 2)}`,
+        `## Conversation context\n\n${sanitizeForPrompt(JSON.stringify(safeContext, null, 2), 4000)}`,
         `## User message\n\n${message}`,
     ].join('\n\n');
 }

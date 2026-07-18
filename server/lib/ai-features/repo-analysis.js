@@ -2,6 +2,13 @@ import logger from '../logger.js';
 import { AIError, AI_ERROR_CODE } from '../ai-provider.js';
 import { sanitizeForPrompt } from './sanitize.js';
 import { detectPatterns, calculateQualityMetrics } from './quality-metrics.js';
+import { resolveMaxOutputTokens } from '../ai-output-budget.js';
+
+// Mirrors readme-studio.js's NEVER_INVENT_RULE — this is the highest-traffic
+// AI feature in the app (every AI Insights run, every batch-index item), so
+// it carries the same anti-hallucination guardrail the newer prompts do.
+const NEVER_INVENT_RULE = 'Never invent facts, features, metrics, or best-practice claims that are not evidenced by the repository data below. '
+    + 'If the repository has very little detectable structure or README content, say so plainly in the summary instead of giving generic advice.';
 
 /**
  * Generate a summary + structured insights for a GitHub repository.
@@ -49,11 +56,13 @@ export async function analyzeRepo(ctx, repoData, readmeContent, fileStructure) {
             - Has contributing guide: ${patterns.hasContributing}
             - Has license: ${patterns.hasLicense}
 
+            ${NEVER_INVENT_RULE}
+
             Provide a JSON response with:
             1. "summary": TL;DR (2 sentences max, focus on what it does and who it's for)
             2. "project_type": One of [library, framework, application, tool, template, documentation, other]
             3. "suggested_topics": Array of 3-5 relevant tags not already in topics
-            4. "improvements": Array of 3-4 specific, actionable improvements based on what's missing
+            4. "improvements": Array of 3-4 specific, actionable improvements, ranked by impact/effort (most impactful first). Each improvement must cite the specific signal above that motivated it (e.g. "no CI/CD detected", "missing usage examples in README") — never a generic best-practice bullet that could apply to any repo.
             5. "readme_suggestions": Array of specific README sections to add (if any are missing)
             6. "highlights": Array of 2-3 positive aspects of the project
 
@@ -61,7 +70,10 @@ export async function analyzeRepo(ctx, repoData, readmeContent, fileStructure) {
         `;
 
     try {
-        const { text, usage, costUSD } = await provider.generate({ prompt });
+        const { text, usage, costUSD } = await provider.generate({
+            prompt,
+            generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
+        });
         const aiAnalysis = JSON.parse(text);
 
         const result = {

@@ -99,4 +99,21 @@ describe('buildChatPrompt', () => {
         expect(sample).toMatch(/never invent|Never invent/)
         expect(sample).toMatch(/duplicate|at most one/)
     })
+
+    it('caps an oversized context payload instead of interpolating it unbounded', () => {
+        // A context blob whose serialized JSON is well over the 4000-char
+        // sanitizeForPrompt cap applied to the "Conversation context" block.
+        const bigContext = { blob: 'x'.repeat(10000) }
+        const prompt = buildChatPrompt({ message: 'hi', context: bigContext })
+        const contextSection = prompt.split('## Conversation context')[1]
+        // The whole rest of the prompt (context block onward) must be bounded
+        // by the 4000-char sanitizeForPrompt cap, not grow with the input.
+        expect(contextSection.length).toBeLessThan(4100)
+    })
+
+    it('still embeds a small context payload verbatim (cap does not truncate normal-sized context)', () => {
+        const prompt = buildChatPrompt({ message: 'hi', context: { errorCode: 'X', repo: 'acme/lib' } })
+        expect(prompt).toContain('"errorCode"')
+        expect(prompt).toContain('"acme/lib"')
+    })
 })

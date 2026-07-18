@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { analyzeRepo } from '../../lib/ai-features/repo-analysis.js';
 import { AIError, AI_ERROR_CODE } from '../../lib/ai-provider.js';
 
@@ -97,5 +97,79 @@ describe('ai-features/repo-analysis.analyzeRepo', () => {
         await expect(
             analyzeRepo({ provider: null }, repoData, 'readme', []),
         ).rejects.toThrow(/AI model not initialized/);
+    });
+
+    describe('output-token cap enforcement', () => {
+        const originalEnv = process.env.AI_MAX_OUTPUT_TOKENS;
+        afterEach(() => {
+            if (originalEnv === undefined) delete process.env.AI_MAX_OUTPUT_TOKENS;
+            else process.env.AI_MAX_OUTPUT_TOKENS = originalEnv;
+        });
+
+        it('merges the resolved max-output-tokens cap into generationConfig', async () => {
+            process.env.AI_MAX_OUTPUT_TOKENS = '1234';
+            let captured;
+            const provider = buildProvider(async (args) => {
+                captured = args;
+                return {
+                    text: JSON.stringify({
+                        summary: 'x', project_type: 'tool', suggested_topics: [],
+                        improvements: [], readme_suggestions: [], highlights: [],
+                    }),
+                };
+            });
+            await analyzeRepo({ provider }, repoData, 'readme', []);
+            expect(captured.generationConfig).toEqual({ maxOutputTokens: 1234 });
+        });
+
+        it('falls back to the default cap when AI_MAX_OUTPUT_TOKENS is unset', async () => {
+            delete process.env.AI_MAX_OUTPUT_TOKENS;
+            let captured;
+            const provider = buildProvider(async (args) => {
+                captured = args;
+                return {
+                    text: JSON.stringify({
+                        summary: 'x', project_type: 'tool', suggested_topics: [],
+                        improvements: [], readme_suggestions: [], highlights: [],
+                    }),
+                };
+            });
+            await analyzeRepo({ provider }, repoData, 'readme', []);
+            expect(captured.generationConfig.maxOutputTokens).toBe(2048);
+        });
+    });
+});
+
+describe('ai-features/repo-analysis prompt content', () => {
+    it('carries a never-invent guardrail', async () => {
+        let captured;
+        const provider = buildProvider(async (args) => {
+            captured = args.prompt;
+            return {
+                text: JSON.stringify({
+                    summary: 'x', project_type: 'tool', suggested_topics: [],
+                    improvements: [], readme_suggestions: [], highlights: [],
+                }),
+            };
+        });
+        await analyzeRepo({ provider }, repoData, 'readme', []);
+        expect(captured).toMatch(/never invent facts, features, metrics/i);
+        expect(captured).toMatch(/very little detectable structure/i);
+    });
+
+    it('asks for impact-ranked improvements that cite the motivating signal', async () => {
+        let captured;
+        const provider = buildProvider(async (args) => {
+            captured = args.prompt;
+            return {
+                text: JSON.stringify({
+                    summary: 'x', project_type: 'tool', suggested_topics: [],
+                    improvements: [], readme_suggestions: [], highlights: [],
+                }),
+            };
+        });
+        await analyzeRepo({ provider }, repoData, 'readme', []);
+        expect(captured).toMatch(/ranked by impact\/effort/i);
+        expect(captured).toMatch(/must cite the specific signal above/i);
     });
 });

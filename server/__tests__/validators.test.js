@@ -332,6 +332,22 @@ describe('aiChatSchema', () => {
         })
         expect(result.success).toBe(false)
     })
+
+    it('accepts a normal-sized context object', () => {
+        const result = aiChatSchema.safeParse({
+            message: 'Hi',
+            context: { errorCode: 'OVERSIZED_FILES', repo: 'acme/lib' }
+        })
+        expect(result.success).toBe(true)
+    })
+
+    it('rejects an oversized context payload', () => {
+        const result = aiChatSchema.safeParse({
+            message: 'Hi',
+            context: { blob: 'x'.repeat(25000) }
+        })
+        expect(result.success).toBe(false)
+    })
 })
 
 describe('aiIndexSchema', () => {
