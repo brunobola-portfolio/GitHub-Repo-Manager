@@ -206,6 +206,48 @@ describe('importRepository — cancellation', () => {
         expect(capturedAbortSignals[0].aborted).toBe(false);
     });
 
+    it('does NOT discard a completed mirror push as "cancelled" when cancellation lands right before the LFS-push step (main content already landed on GitHub)', async () => {
+        global.fetch.mockResolvedValue(okCreateResponse());
+        cloneMock.mockResolvedValue(undefined);
+        // Cancellation is only requested once the mirror push (the real content
+        // transfer) has actually happened — mirrors the real race where the user
+        // clicks Cancel while the (already-successful) push is settling.
+        let pushed = false;
+        const originalSimpleGit = (await import('simple-git')).simpleGit;
+        originalSimpleGit.mockImplementation((a, b) => {
+            const opts = typeof a === 'string' ? b : a;
+            if (opts && opts.abort) capturedAbortSignals.push(opts.abort);
+            return {
+                version: vi.fn(async () => ({ installed: true })),
+                clone: (...args) => cloneMock(...args),
+                push: vi.fn(async () => { pushed = true; }),
+                addRemote: vi.fn(async () => {}),
+                listRemote: vi.fn(async () => ''),
+                raw: vi.fn(async (args) => {
+                    if (Array.isArray(args) && args[0] === 'for-each-ref') return 'refs/heads/main\n';
+                    if (Array.isArray(args) && args[0] === 'symbolic-ref') return 'main\n';
+                    if (Array.isArray(args) && args[0] === 'lfs') return '';
+                    return '';
+                }),
+            };
+        });
+
+        const result = await importRepository({
+            sourceUrl: 'https://github.com/src/widget.git',
+            targetOwner: 'acme',
+            targetName: 'widget',
+            githubToken: 'gh',
+            sizeStrategy: 'lfs-migrate',
+            isCancelled: () => pushed,
+        });
+
+        // The mirror push already succeeded — cancelling at this boundary must
+        // not misreport a real, mostly-complete migration as cancelled.
+        expect(result.success).toBe(true);
+        expect(result.cancelled).toBeUndefined();
+        expect(result.lfsPushFailed).toBe(true);
+    });
+
     it('is backward compatible: omitting isCancelled behaves exactly as before (no cancellation)', async () => {
         global.fetch.mockResolvedValue(okCreateResponse());
         cloneMock.mockResolvedValue(undefined);

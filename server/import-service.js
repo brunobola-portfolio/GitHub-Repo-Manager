@@ -587,7 +587,16 @@ async function importRepository(params) {
         // this run — those objects exist only locally and must be uploaded, or
         // the target ends up with pointers to missing objects.
         if (lfsPushNeeded(hasLFS, sizeStrategy)) {
-            throwIfCancelled(isCancelled);
+            // NOTE: deliberately NOT throwIfCancelled() here. The mirror push
+            // above already landed the real repo content on GitHub — a cancel
+            // request arriving in this exact window can't undo that, and
+            // discarding the whole run as "cancelled" at this point would be
+            // dishonest: the task row would say 'cancelled' while a genuinely
+            // migrated repo (minus, at worst, LFS objects) actually exists on
+            // GitHub, unrecorded. Instead we just skip the LFS-push attempts
+            // (below) and let the run resolve as a real success, flagging the
+            // skipped LFS push the same way a retry-exhausted failure is
+            // flagged so SummaryStep still surfaces it as an actionable caveat.
             onProgress('lfs-push', 'Pushing LFS objects...', 80);
             // Retry transient failures (network/rate-limit). If it still fails we
             // do NOT silently succeed: flag it so the Summary warns the user that
@@ -598,7 +607,7 @@ async function importRepository(params) {
                 // The mirror push already landed the main repo content on GitHub —
                 // a cancel here can't undo that, but it should stop burning retries
                 // and backoff sleeps on a run the user already asked to stop.
-                if (isCancelled()) break;
+                if (isCancelled()) { lfsPushFailed = true; break; }
                 try {
                     await bareGit.raw(['lfs', 'push', '--all', 'github']);
                     lfsPushFailed = false;
