@@ -34,7 +34,10 @@ export function WalkthroughTab({ walkthrough }) {
             // securityLevel: 'strict' is the v11 default — pinned explicitly so
             // a future major version flip is a visible change rather than a
             // silent regression.
-            mermaid.initialize({ startOnLoad: false, theme, securityLevel: 'strict' });
+            // htmlLabels:false emits SVG <text> labels instead of <foreignObject>
+            // HTML — parseAndSanitizeSvg strips foreignObject as an XSS defence,
+            // which would otherwise erase every flowchart node label.
+            mermaid.initialize({ startOnLoad: false, theme, securityLevel: 'strict', htmlLabels: false, flowchart: { htmlLabels: false, useMaxWidth: true } });
             const id = `mermaid-${Math.random().toString(36).slice(2)}`;
             mermaid.render(id, src).then(({ svg }) => {
                 if (cancelled || !mermaidRef.current) return;

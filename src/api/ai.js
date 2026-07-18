@@ -464,6 +464,10 @@ export const aiApi = {
 
         // Metered (readmeGenPerMonth via the existing ai_readme metric).
         improve: async (repo, config = {}) => {
+            if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+                const { mockReadmeStudioImprove } = await import('../__mocks__/mockAI.js');
+                return mockReadmeStudioImprove(repo, config);
+            }
             const shortCircuit = await withAIConfigured(() => ({
                 success: true,
                 markdown: null,
@@ -503,7 +507,13 @@ export const aiApi = {
         // provider, never mock-short-circuits. Offered by ReadmeStudioModal
         // in place of a failed/unconfigured/quota-exceeded improve call
         // (Addendum 6b.2).
-        deterministic: async (repo, config = {}) => postJson(`${API_BASE}/ai/readme-studio/improve/deterministic`, { repo, ...config }),
+        deterministic: async (repo, config = {}) => {
+            if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+                const { mockReadmeStudioDeterministic } = await import('../__mocks__/mockAI.js');
+                return mockReadmeStudioDeterministic(repo, config);
+            }
+            return postJson(`${API_BASE}/ai/readme-studio/improve/deterministic`, { repo, ...config });
+        },
     },
 
     // AI Diagram Generator — grounded Mermaid generation (architecture/module
@@ -514,6 +524,10 @@ export const aiApi = {
     // docs/specs/2026-07-18-community-wow-wave6.md (Feature 2).
     diagrams: {
         generate: async (repo, config = {}) => {
+            if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+                const { mockDiagramGenerate } = await import('../__mocks__/mockAI.js');
+                return mockDiagramGenerate(repo, config);
+            }
             const shortCircuit = await withAIConfigured(() => ({
                 success: true,
                 mermaid: null,
@@ -547,7 +561,13 @@ export const aiApi = {
         // provider, never mock-short-circuits. Used directly by the embed
         // flow's "invalid mermaid after the retry-once self-repair" edge case
         // (Addendum 6b.1): rather than failing the embed, offer this instead.
-        deterministic: async (repo, config = {}) => postJson(`${API_BASE}/ai/generate-diagram/deterministic`, { repo, ...config }),
+        deterministic: async (repo, config = {}) => {
+            if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+                const { mockDiagramDeterministic } = await import('../__mocks__/mockAI.js');
+                return mockDiagramDeterministic(repo, config);
+            }
+            return postJson(`${API_BASE}/ai/generate-diagram/deterministic`, { repo, ...config });
+        },
 
         // Embed a generated diagram INTO the repo (Addendum 6b.1). Neither call
         // touches an AI provider (the caller already has the mermaid/svg), so
@@ -556,8 +576,20 @@ export const aiApi = {
         // with `.status`/`.code` attached (e.g. `read_only_access`,
         // `invalid_svg`) so the UI can render an honest, specific state rather
         // than a generic failure message.
-        embedPreview: async (payload) => postJson(`${API_BASE}/ai/generate-diagram/embed-preview`, payload),
-        embedCommit: async (payload) => postJson(`${API_BASE}/ai/generate-diagram/embed-commit`, payload),
+        embedPreview: async (payload) => {
+            if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+                const { mockDiagramEmbedPreview } = await import('../__mocks__/mockAI.js');
+                return mockDiagramEmbedPreview(payload);
+            }
+            return postJson(`${API_BASE}/ai/generate-diagram/embed-preview`, payload);
+        },
+        embedCommit: async (payload) => {
+            if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+                const { mockDiagramEmbedCommit } = await import('../__mocks__/mockAI.js');
+                return mockDiagramEmbedCommit(payload);
+            }
+            return postJson(`${API_BASE}/ai/generate-diagram/embed-commit`, payload);
+        },
     },
 
     // Agent Rules Generator — grounded AGENTS.md / CLAUDE.md generation
@@ -570,6 +602,10 @@ export const aiApi = {
     // See docs/specs/2026-07-18-community-wow-wave6.md (Feature 3).
     agentRules: {
         generate: async (owner, repo, config = {}) => {
+            if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+                const { mockAgentRulesGenerate } = await import('../__mocks__/mockAI.js');
+                return mockAgentRulesGenerate(owner, repo, config);
+            }
             const res = await fetch(`${API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/agent-rules/generate`, {
                 method: 'POST',
                 headers: await mutationHeaders(),
@@ -598,6 +634,10 @@ export const aiApi = {
             return handleAIResponse(res, 'agent rules generate');
         },
         commit: async (owner, repo, { files, mode = 'direct' }) => {
+            if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+                const { mockAgentRulesCommit } = await import('../__mocks__/mockAI.js');
+                return mockAgentRulesCommit(owner, repo, { mode });
+            }
             const res = await fetch(`${API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/agent-rules/commit`, {
                 method: 'POST',
                 headers: await mutationHeaders(),

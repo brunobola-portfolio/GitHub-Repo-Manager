@@ -234,3 +234,183 @@ export const mockCommitImage = (repo, { preset = 'social' } = {}) => ({
     mode: 'direct',
     committed: true,
 });
+
+// ---------------------------------------------------------------------------
+// Wave-6 generation features — demo-mode content.
+// The global "Demo mode — data and AI responses are simulated" banner supplies
+// the honesty context, so these return realistic generated output (no `mock`
+// flag) rather than an unconfigured placeholder — otherwise the flagship WOW
+// features would render an error/"connect a provider" state in the demo that
+// every community visitor sees first. Shapes mirror the real endpoints exactly.
+// ---------------------------------------------------------------------------
+
+const repoSlug = (repo) => (repo?.full_name || 'dev-user/demo-repo').split('/')[1] || 'demo-repo';
+
+// README Studio improve: fills the sections the score flagged missing
+// (Contributing, badges) as an additive "missing-sections" patch with the demo
+// README as the diff base.
+export const mockReadmeStudioImprove = (repo, config = {}) => {
+    const name = repoSlug(repo);
+    const mode = config.mode === 'full-rewrite' ? 'full-rewrite' : 'missing-sections';
+    const additions = [
+        '## Contributing',
+        '',
+        'Contributions are welcome. Open an issue to discuss anything larger than a',
+        'typo fix, then submit a pull request against `main`. Run the test suite and',
+        'make sure the linter is clean before pushing.',
+        '',
+        '## Badges',
+        '',
+        '![CI](https://img.shields.io/badge/CI-passing-brightgreen) ![License](https://img.shields.io/badge/license-MIT-blue)',
+        '',
+        '## Screenshots',
+        '',
+        '<!-- Add a screenshot or short demo GIF here to help newcomers grasp the',
+        'project at a glance. Recommended path: docs/images/' + name + '-demo.png -->',
+    ].join('\n');
+    const full = '# ' + name + '\n\nMachine learning pipeline for predictive customer behavior analysis.\n\n' + additions;
+    return {
+        success: true,
+        mode,
+        markdown: mode === 'full-rewrite' ? full : additions,
+        currentReadme: '# Demo Repository\n\nMachine learning pipeline for predictive customer behavior analysis.\n\n## Quick start\n\n```bash\nnpm install\nnpm run dev\n```\n',
+        confidence: 'high',
+        warnings: [],
+        missingSections: ['Contributing', 'Badges', 'Screenshots'],
+    };
+};
+
+export const mockReadmeStudioDeterministic = (repo, config = {}) => ({
+    ...mockReadmeStudioImprove(repo, config),
+    deterministic: true,
+    confidence: 'medium',
+});
+
+// A valid, repo-flavoured architecture graph so the Mermaid render pipeline
+// produces a real diagram in the demo (not a fallback message).
+const mockArchitectureMermaid = (repo) => {
+    const name = repoSlug(repo);
+    const id = name.replace(/[^a-zA-Z0-9]/g, '_');
+    return [
+        'flowchart TD',
+        '    subgraph ' + id + '["' + name + '"]',
+        '        A[Client / CLI] --> B[API Gateway]',
+        '        B --> C{Router}',
+        '        C -->|ingest| D[Ingestion Worker]',
+        '        C -->|score| E[Scoring Service]',
+        '        D --> F[(Feature Store)]',
+        '        E --> F',
+        '        E --> G[(Model Registry)]',
+        '        F --> H[Analytics DB]',
+        '    end',
+        '    B -.-> I[Auth / Session]',
+    ].join('\n');
+};
+
+export const mockDiagramGenerate = (repo, config = {}) => ({
+    success: true,
+    mermaid: mockArchitectureMermaid(repo),
+    diagramType: config.diagramType || 'architecture',
+    truncated: false,
+});
+
+export const mockDiagramDeterministic = (repo, config = {}) => ({
+    success: true,
+    mermaid: [
+        'flowchart TD',
+        '    root[repo root] --> src[src/]',
+        '    root --> server[server/]',
+        '    root --> tests[tests/]',
+        '    root --> docs[docs/]',
+        '    src --> components[components/]',
+        '    src --> hooks[hooks/]',
+    ].join('\n'),
+    diagramType: config.diagramType || 'architecture',
+    truncated: false,
+    deterministic: true,
+});
+
+export const mockDiagramEmbedPreview = (payload = {}) => {
+    const type = payload.diagramType || 'architecture';
+    const target = payload.target || 'readme-mermaid';
+    if (target === 'svg-file') {
+        return {
+            target,
+            svg: { path: 'docs/diagrams/' + type + '.svg', content: '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40"><rect width="100" height="40" fill="#4f46e5"/></svg>' },
+            readme: { path: 'README.md', before: '# Demo Repository\n', after: '# Demo Repository\n\n![' + type + ' diagram](docs/diagrams/' + type + '.svg)\n', action: 'append' },
+            readmeTruncated: false,
+        };
+    }
+    const block = '<!-- repo-manager:diagram:' + type + ':start -->\n```mermaid\n' + mockArchitectureMermaid(payload.repo) + '\n```\n<!-- repo-manager:diagram:' + type + ':end -->';
+    return {
+        target,
+        readme: {
+            path: 'README.md',
+            before: '# Demo Repository\n\nMachine learning pipeline for predictive customer behavior analysis.\n',
+            after: '# Demo Repository\n\nMachine learning pipeline for predictive customer behavior analysis.\n\n' + block + '\n',
+            action: 'append',
+            notice: null,
+        },
+        readmeTruncated: false,
+    };
+};
+
+export const mockDiagramEmbedCommit = (payload = {}) => ({
+    success: true,
+    target: payload.target || 'readme-mermaid',
+    mode: payload.mode || 'direct',
+    readme: { mode: payload.mode || 'direct', committed: true },
+});
+
+// Agent Rules: real AGENTS.md + CLAUDE.md generated from the (mock) repo signals.
+export const mockAgentRulesGenerate = (owner, repo, config = {}) => {
+    const name = repo || 'demo-repo';
+    const wantBoth = config.target === 'both' || !config.target;
+    const wantClaude = wantBoth || config.target === 'claude';
+    const wantAgents = wantBoth || config.target === 'agents';
+    const agents = [
+        '# AGENTS.md',
+        '',
+        'Agent instructions for ' + owner + '/' + name + '. The README is for humans; this file is for coding agents.',
+        '',
+        '## Setup commands',
+        '',
+        '- Install: `npm install`',
+        '- Dev: `npm run dev`',
+        '- Build: `npm run build`',
+        '',
+        '## Testing instructions',
+        '',
+        '- Run tests: `npm test`',
+        '- Lint: `npm run lint`',
+        '',
+        '## Code style',
+        '',
+        '- Follow the existing linter/formatter configuration in the repo.',
+        '- Keep changes focused; match the surrounding code.',
+        '',
+        '## PR instructions',
+        '',
+        '- Conventional Commits; ensure CI (build, lint, tests) is green before merge.',
+    ].join('\n');
+    const claude = ['@AGENTS.md', '', '# CLAUDE.md addendum', '', 'Everything in AGENTS.md applies. Claude-specific notes below.', '', '- Read files before editing.', '- Never add AI attribution to commits or PRs.'].join('\n');
+    const files = {};
+    if (wantAgents) files['AGENTS.md'] = agents;
+    if (wantClaude) files['CLAUDE.md'] = claude;
+    return {
+        success: true,
+        deterministic: false,
+        reason: null,
+        files,
+        existing: {},
+        notes: config.strictness === 'strict'
+            ? ['Test command inferred from package.json scripts.test — verify it matches your runner.']
+            : [],
+    };
+};
+
+export const mockAgentRulesCommit = (owner, repo, { mode = 'direct' } = {}) => ({
+    success: true,
+    mode,
+    committed: true,
+});

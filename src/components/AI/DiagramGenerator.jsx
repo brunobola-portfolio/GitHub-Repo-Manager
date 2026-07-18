@@ -175,7 +175,10 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
         import('mermaid').then((mod) => {
             if (cancelled) return
             const mermaid = mod.default || mod
-            mermaid.initialize({ startOnLoad: false, theme, securityLevel: 'strict' })
+            // htmlLabels:false forces SVG <text> labels instead of <foreignObject>
+            // HTML — parseAndSanitizeSvg strips foreignObject as an XSS defence,
+            // which would otherwise erase every flowchart node label.
+            mermaid.initialize({ startOnLoad: false, theme, securityLevel: 'strict', htmlLabels: false, flowchart: { htmlLabels: false, useMaxWidth: true } })
             const id = `diagram-${Math.random().toString(36).slice(2)}`
             mermaid.render(id, src).then(({ svg }) => {
                 if (cancelled || !mermaidRef.current) return
