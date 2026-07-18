@@ -19,6 +19,7 @@ import { getOrgRepoCount } from '../utils/orgRepoCount'
 import { useWorkBoardBadgeCounts } from '../hooks/useWorkBoardBadgeCounts'
 import { useNotificationsDigest } from '../hooks/useNotificationsDigest'
 import { useFocusTrap } from '../hooks/useFocusTrap'
+import { useBlockingDialogPresence } from '../hooks/useBlockingDialogPresence'
 import { Drawer } from './ui/Drawer'
 import { MobileQuickActionsFab } from './MobileQuickActionsFab'
 import { Tooltip } from './ui/Tooltip'
@@ -59,6 +60,10 @@ export function Header({
     const { isDark, toggleTheme } = useTheme()
     const { count: workBoardCount } = useWorkBoardBadgeCounts()
     const notif = useNotificationsDigest({ enabled: !!user })
+    // Hide the fixed mobile bottom nav while a modal is open — a bottom-sheet
+    // modal's action bar occupies the same bottom strip, and the nav would
+    // otherwise overlap (and steal taps from) the modal's primary button.
+    const modalOpen = useBlockingDialogPresence()
 
     // Stable close handlers so the focus-trap effect inside each dropdown
     // doesn't re-run (and re-grab focus) on every Header re-render.
@@ -308,6 +313,7 @@ export function Header({
 
         {user && (
           <>
+          {!modalOpen && (
           <nav
             className="fixed bottom-0 left-0 right-0 z-[var(--ds-z-composer)] md:hidden backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border-t border-slate-200/60 dark:border-slate-700/50"
             role="navigation"
@@ -357,6 +363,7 @@ export function Header({
               })}
             </div>
           </nav>
+          )}
           <Drawer side="bottom" isOpen={moreOpen} onClose={() => setMoreOpen(false)} title="More">
             <div className="space-y-1 px-4 py-3">
               <button

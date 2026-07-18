@@ -9,6 +9,7 @@ import { Input, Textarea } from '../ui/form'
 import { Select } from '../ui/Select'
 import { RowIconBadge } from '../ui/RowIconBadge'
 import { getCsrfToken } from '../../utils/api'
+import { commitCommunityHealthFix } from '../../api/repos'
 import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
 /**
@@ -115,23 +116,9 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 		if (!content || !filePath || !commitMessage) return
 		setState('committing')
 		try {
-			const csrf = await getCsrfToken()
-			const res = await fetch(`/api/repos/${repo.owner.login}/${repo.name}/community-health/commit-fix`, {
-				method: 'POST',
-				credentials: 'include',
-				headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-				body: JSON.stringify({ filePath, content, commitMessage, mode: 'direct' }),
+			const json = await commitCommunityHealthFix({
+				owner: repo.owner.login, repo: repo.name, filePath, content, commitMessage, mode: 'direct',
 			})
-			const json = await res.json().catch(() => ({}))
-			if (!res.ok) {
-				const err = new Error(json.error || `status ${res.status}`)
-				err.status = res.status
-				err.code = json.code
-				err.data = json
-				setError(err)
-				setState('error')
-				return
-			}
 			setCommittedResult(json)
 			setState('committed')
 			onCommitted?.(json)
