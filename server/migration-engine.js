@@ -340,8 +340,14 @@ export class MigrationEngine extends EventEmitter {
 
         const timeoutMs = this._taskTimeoutMs[task.type] ?? this._defaultTaskTimeoutMs
         const metadata = await this._withTimeout(this._executeTask(task, credentials), timeoutMs, task)
-        // Check for cancellation after execution
-        if (this._isCancelled(planId)) return
+        // Cancellation raced the task to completion — this task type either
+        // didn't get to check callbacks.isCancelled() in time or ran to success
+        // just as cancelPlan() flipped the plan. Either way the row must land on
+        // a real terminal status, not be left 'running' forever (the historical
+        // bug: returning here with no write orphaned the row — invisible to both
+        // cancelPlan's bulk update, which only touches 'pending' rows, and to
+        // crash recovery, which only scans plans still 'running').
+        if (this._isCancelled(planId)) { this._markTaskCancelled(task.id, planId); return }
 
         this.db.prepare(
           "UPDATE migration_tasks SET status = 'completed', progress_pct = 100, completed_at = datetime(?), metadata = ? WHERE id = ?"
@@ -349,7 +355,10 @@ export class MigrationEngine extends EventEmitter {
         this.emit('task-status', { planId, taskId: task.id, status: 'completed' })
         this.emit('task-complete', { planId, taskId: task.id, metadata })
       } catch (err) {
-        if (this._isCancelled(planId)) return
+        // Same reasoning as the success-path check above: a cancelled task that
+        // throws (the normal outcome now that runners actually honor the abort)
+        // must still reach a terminal 'cancelled' status, not be left 'running'.
+        if (this._isCancelled(planId)) { this._markTaskCancelled(task.id, planId); return }
 
         // Guard the failed-status write: if it throws (DB locked/corrupt) the row
         // would otherwise be left 'running' forever and skipped by every resume
@@ -552,19 +561,47 @@ export class MigrationEngine extends EventEmitter {
    *     credentials via POST /plans/:id/resume) — the UI already renders this
    *     state and ProgressStep listens for the `plan-interrupted` event.
    *
+   * Separately, also sweeps tasks stuck 'running' under a plan that already
+   * reached the terminal 'cancelled' status (a crash between cancelPlan()'s
+   * write and the in-flight task settling) — those are marked 'cancelled', not
+   * reset to 'pending', since the plan itself is done.
+   *
    * Idempotent and safe to call once at server startup. Synchronous DB work
    * (status resets) completes before returning; any auto-resume runs in the
    * background. Returns a summary for logging/tests.
    *
-   * @returns {{ recovered: number, autoResumed: number, awaitingManual: number, exhausted: number }}
+   * @returns {{ recovered: number, autoResumed: number, awaitingManual: number, exhausted: number, cancelledOrphans: number }}
    */
   recoverInterruptedPlans() {
     const orphans = this.db.prepare(
       "SELECT id FROM migration_plans WHERE status = 'running'"
     ).all()
 
-    const summary = { recovered: 0, autoResumed: 0, awaitingManual: 0, exhausted: 0 }
+    const summary = { recovered: 0, autoResumed: 0, awaitingManual: 0, exhausted: 0, cancelledOrphans: 0 }
     const toAutoResume = []
+
+    // A task can still be 'running' in the DB after a crash even though its
+    // plan already reached the terminal 'cancelled' status — this happens when
+    // the process dies between cancelPlan()'s write and the in-flight task's
+    // promise settling (the in-memory _cancelledPlans set that would normally
+    // drive that settlement is gone after restart). These rows are invisible to
+    // the 'running'-plan scan above and must never be reset to 'pending' (the
+    // plan is terminal) — mark them cancelled so they don't orphan forever.
+    const cancelledOrphanTasks = this.db.prepare(
+      `SELECT id, plan_id FROM migration_tasks
+       WHERE status = 'running' AND plan_id IN (SELECT id FROM migration_plans WHERE status = 'cancelled')`
+    ).all()
+    for (const t of cancelledOrphanTasks) {
+      try {
+        this.db.prepare(
+          "UPDATE migration_tasks SET status = 'cancelled', completed_at = datetime('now') WHERE id = ?"
+        ).run(t.id)
+        this.emit('task-status', { planId: t.plan_id, taskId: t.id, status: 'cancelled' })
+        summary.cancelledOrphans++
+      } catch (err) {
+        logger.error({ err, taskId: t.id, planId: t.plan_id }, 'migration-engine: failed to cancel orphaned task on recovery')
+      }
+    }
 
     const resetTask = this.db.prepare(
       "UPDATE migration_tasks SET status = 'pending', progress_pct = 0, progress_message = NULL, started_at = NULL, retries = ? WHERE id = ?"
@@ -869,6 +906,26 @@ export class MigrationEngine extends EventEmitter {
    */
   _isCancelled(planId) {
     return this._cancelledPlans.has(planId)
+  }
+
+  /**
+   * Writes the terminal 'cancelled' status for a task whose in-flight execution
+   * settled (success or error) after the plan was cancelled. The `status NOT IN`
+   * guard makes this safe to call even if the row already reached some other
+   * terminal status through a different path — never clobbers a real
+   * completed/failed outcome with 'cancelled'.
+   * @param {number} taskId
+   * @param {number} planId
+   */
+  _markTaskCancelled(taskId, planId) {
+    try {
+      this.db.prepare(
+        "UPDATE migration_tasks SET status = 'cancelled', completed_at = datetime(?) WHERE id = ? AND status NOT IN ('completed', 'failed', 'cancelled')"
+      ).run(new Date().toISOString(), taskId)
+    } catch (dbErr) {
+      logger.error({ err: dbErr, planId, taskId }, 'migration-engine: failed to persist task cancellation; task left running until restart recovery')
+    }
+    this.emit('task-status', { planId, taskId, status: 'cancelled' })
   }
 
   /**
