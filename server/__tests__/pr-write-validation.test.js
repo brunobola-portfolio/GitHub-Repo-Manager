@@ -32,6 +32,8 @@ vi.mock('../lib/github-api.js', () => ({
 // errorResponse that reproduces the real `{ error, code }` envelope so the
 // validation failures assert on the real shape.
 vi.mock('../middleware/auth.js', () => ({
+    // wave-6 import chain pulls ai/shared.js, which needs this factory export
+    createRequireAI: () => (_req, _res, next) => next(),
     requireAuth: (req, res, next) => {
         if (!req.session?.accessToken) return res.status(401).json({ error: 'auth required' })
         next()

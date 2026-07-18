@@ -19,6 +19,8 @@ vi.mock('../lib/github-api.js', () => ({
 }))
 
 vi.mock('../middleware/auth.js', () => ({
+    // wave-6 import chain pulls ai/shared.js, which needs this factory export
+    createRequireAI: () => (_req, _res, next) => next(),
     requireAuth: (req, res, next) => {
         if (!req.session?.accessToken) {
             return res.status(401).json({ error: 'auth required' })
@@ -55,7 +57,9 @@ vi.mock('../middleware/validate-request.js', () => ({
     validateQuery: () => (req, _res, next) => { req.validatedQuery = req.query; next(); },
     validateParams: () => (req, _res, next) => { req.validatedParams = req.params; next(); },
 }))
-vi.mock('../lib/validators.js', () => ({
+vi.mock('../lib/validators.js', async (importOriginal) => ({
+    // real module underneath so new wave-6 schema exports never break this suite
+    ...(await importOriginal()),
     validate: () => (_req, _res, next) => next(),
     createRepoSchema: {},
     repoUpdateSchema: {},
