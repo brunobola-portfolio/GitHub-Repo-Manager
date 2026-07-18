@@ -1,6 +1,6 @@
 import { Rocket, Download } from 'lucide-react'
 import { useDORASummary } from '../../../hooks/useWorkBoard'
-import { EmptyState, WebhookHint, UpsellCard, ErrorState } from '../shared/shared-ui'
+import { EmptyState, WebhookHint, ErrorState } from '../shared/shared-ui'
 import { hoursLabel } from '../shared/formatters'
 import { MOCK_MODE, API_BASE_URL } from '../../../config'
 import { Button } from '../../ui/Button'
@@ -58,8 +58,10 @@ export function DORATab() {
         )
     }
 
+    // DORA metrics moved off the Enterprise paywall to Free (2026-07-18
+    // rebalance) — the backend no longer 403s for tier, so any error here is
+    // a genuine failure, not an upsell signal.
     if (error) {
-        if (error.status === 403) return <UpsellCard tier="enterprise" />
         return <ErrorState error={error} what="DORA metrics" onRetry={refresh} />
     }
 

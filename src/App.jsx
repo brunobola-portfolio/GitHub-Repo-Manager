@@ -836,7 +836,7 @@ function AppContent() {
 
         {activeView === 'prompt-studio' && user && (
           <ViewShell name="Prompt Studio" onGoHome={() => setActiveView('dashboard')}>
-            <PromptStudioPage currentTier={currentTier} />
+            <PromptStudioPage />
           </ViewShell>
         )}
 

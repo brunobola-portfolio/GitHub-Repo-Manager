@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Modal } from '../ui/Modal'
 import { reposApi } from '../../api/repos'
-import { ShieldCheck, Lock } from 'lucide-react'
+import { ShieldCheck } from 'lucide-react'
 import { EmptyState } from '../ui/EmptyState'
 import { SectionSpinner } from '../ui/Spinner'
 
@@ -72,19 +72,13 @@ export function SecurityScanModal({ isOpen, onClose, repo }) {
       <div>
         {loading ? (
           <SectionSpinner label="Scanning…" />
-        ) : error ? (() => {
-          const isTierError = error.tierError || error.status === 403 || error.status === 429
-          return isTierError ? (
-            <EmptyState
-              icon={Lock}
-              title="Pro feature"
-              description="Security & Secrets Scan is available on Pro plans. Upgrade to unlock it for this repository."
-              action={{ label: 'View pricing', onClick: () => window.location.assign(error.upgradeUrl || '/pricing') }}
-            />
-          ) : (
-            <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-900 dark:text-red-300 text-sm">{error.message || error}</div>
-          )
-        })() : data && data.summary.total === 0 ? (
+        ) : error ? (
+          // Security & Secrets Scan moved off the Pro paywall to Free
+          // (2026-07-18 rebalance) — the backend no longer 403s for tier, so
+          // any error here is a genuine failure (network/GitHub API), not an
+          // upsell signal.
+          <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-900 dark:text-red-300 text-sm">{error.message || error}</div>
+        ) : data && data.summary.total === 0 ? (
           <EmptyState
             icon={ShieldCheck}
             title="No open security alerts"

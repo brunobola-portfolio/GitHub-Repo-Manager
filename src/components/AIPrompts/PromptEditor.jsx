@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Field, Input, Textarea } from '../ui/form';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
+import { AIErrorState } from '../ui/AIErrorState';
 
 const MAX_PATH_RULES = 20;
 
@@ -64,7 +65,11 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
             const result = await onTest(initial.id);
             setTestResult(result);
         } catch (err) {
-            setTestError(err.message || 'Test failed');
+            // Preserve the full error (not just err.message) so AIErrorState
+            // can map it — including the promptStudioTestPerMonth 429 the
+            // free tier can now hit — to the correct title/body/CTA instead
+            // of showing a raw code like "usage_limit_exceeded".
+            setTestError(err);
         } finally {
             setTesting(false);
         }
@@ -254,7 +259,12 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                     <p className="text-xs opacity-60">Save the preset first, then run a test against a fixed sample diff.</p>
                 ) : null}
                 {testError ? (
-                    <p className="text-xs text-red-600 dark:text-red-400">{testError}</p>
+                    <AIErrorState
+                        error={testError}
+                        variant="inline"
+                        onRetry={handleTest}
+                        onDismiss={() => setTestError(null)}
+                    />
                 ) : null}
                 {testResult ? (
                     <div className="rounded border border-slate-200 dark:border-slate-700 p-3 text-xs space-y-2">
