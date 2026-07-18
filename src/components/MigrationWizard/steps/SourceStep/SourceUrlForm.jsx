@@ -26,8 +26,8 @@ export default function SourceUrlForm({
       <Field
         label={
           <span className="flex items-center gap-1.5">
-            Cola URL Azure DevOps ou TFS
-            <span className="text-slate-400 font-normal">(opcional, acelera o preenchimento)</span>
+            Paste an Azure DevOps or TFS URL
+            <span className="text-slate-400 font-normal">(optional, speeds up filling the form)</span>
           </span>
         }
         htmlFor="source-azure-url"
@@ -63,8 +63,8 @@ export default function SourceUrlForm({
                   type="button"
                   onClick={onDismiss}
                   className="ml-auto p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors"
-                  aria-label="Descartar preview"
-                  title="Descartar"
+                  aria-label="Dismiss preview"
+                  title="Dismiss"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
