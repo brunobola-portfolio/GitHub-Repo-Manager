@@ -11,7 +11,7 @@ import {
 } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { assertSafeExternalUrl, resolveAndValidateHost } from '../../lib/url-validator.js';
-import { updateJobProgress } from './_shared.js';
+import { updateJobProgress, requestJobCancel, isJobCancelled, clearJobCancel } from './_shared.js';
 
 const router = express.Router();
 
@@ -97,10 +97,23 @@ router.post('/import/url', requireAuth, validateBody(importSchema), async (req, 
             githubToken: req.session.accessToken,
             onProgress: (status, message, pct) => {
                 updateJobProgress(status, message, pct, jobId);
-            }
+            },
+            // Reuses the same cancellation mechanics importRepository already
+            // honors for Azure 'repo' tasks (checked at every phase boundary +
+            // wired into an AbortController that hard-kills the active git
+            // child process) — see requestJobCancel/isJobCancelled in _shared.js.
+            isCancelled: () => isJobCancelled(jobId),
         }).then(result => {
             try {
-                if (result.success) {
+                if (result.cancelled) {
+                    // Distinct terminal outcome — a cancelled import is not a
+                    // failure, and must not be reported as one.
+                    db.prepare(`
+                        UPDATE migration_jobs SET status = 'cancelled', progress_message = 'Migration cancelled',
+                        completed_at = datetime('now')
+                        WHERE id = ?
+                    `).run(jobId);
+                } else if (result.success) {
                     db.prepare(`
                         UPDATE migration_jobs SET status = 'completed', target_full_name = ?, progress_pct = 100,
                         progress_message = 'Import completed successfully!', completed_at = datetime('now'),
@@ -132,11 +145,45 @@ router.post('/import/url', requireAuth, validateBody(importSchema), async (req, 
             } catch (dbErr) {
                 logger.error({ err: dbErr, jobId }, 'Failed to update migration job status after URL import error');
             }
+        }).finally(() => {
+            // Bound the in-memory cancellation registry to in-flight jobs only.
+            clearJobCancel(jobId);
         });
 
         res.status(201).json({ success: true, jobId, message: 'Import started' });
     } catch (error) {
         errorResponse(res, error.status || 500, safeError(error, 'Request failed'));
+    }
+});
+
+// ------------------------------------------------------------------
+// Cancel a running (or not-yet-started) simple import job
+// ------------------------------------------------------------------
+router.post('/import/:id/cancel', requireAuth, async (req, res) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        if (!Number.isInteger(id)) {
+            return errorResponse(res, 400, 'Invalid job id', 'INVALID_ID');
+        }
+        const job = db.prepare(
+            'SELECT id, status FROM migration_jobs WHERE id = ? AND user_id = ?'
+        ).get(id, req.session.userId);
+        if (!job) {
+            return errorResponse(res, 404, 'Import job not found', 'NOT_FOUND');
+        }
+        if (job.status !== 'running' && job.status !== 'pending') {
+            return errorResponse(res, 409, `Cannot cancel a job with status '${job.status}'`, 'NOT_CANCELLABLE');
+        }
+        // Best-effort: the in-flight importRepository() call polls this flag at
+        // every phase boundary and hard-aborts the active git child process.
+        // If the import settles (success/failure) before it gets checked, the
+        // .then() handler above already wrote a real terminal status and this
+        // request simply has no further effect — same race the Azure engine's
+        // cancelPlan() tolerates.
+        requestJobCancel(id);
+        res.json({ success: true });
+    } catch (error) {
+        errorResponse(res, 500, safeError(error, 'Operation failed'));
     }
 });
 

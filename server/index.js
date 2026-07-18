@@ -27,6 +27,7 @@ const pkg = require('../package.json');
 
 import { closeAllQueues } from './lib/queue.js';
 import { engine as migrationEngine } from './routes/migration.js';
+import { recoverInterruptedImportJobs } from './routes/import/_shared.js';
 import { config } from './config.js';
 import { initMonitoring, getSentryErrorHandler } from './lib/monitoring.js';
 import db, { initDB, seedMockData } from './db.js';
@@ -429,10 +430,8 @@ try {
 // job 'interrupted' to unblock re-import (the dedup check skips terminal jobs)
 // and surface the state instead of stalling at 'running' forever.
 try {
-    const r = db.prepare(
-        "UPDATE migration_jobs SET status = 'interrupted', completed_at = datetime('now'), error_message = COALESCE(error_message, 'Interrupted by a server restart') WHERE status IN ('running', 'pending')"
-    ).run();
-    if (r.changes > 0) logger.info({ count: r.changes }, 'recovered orphaned import jobs on startup');
+    const { recovered } = recoverInterruptedImportJobs();
+    if (recovered > 0) logger.info({ count: recovered }, 'recovered orphaned import jobs on startup');
 } catch (err) {
     logger.error({ err }, 'import-job startup recovery failed');
 }

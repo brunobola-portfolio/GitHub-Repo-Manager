@@ -1,17 +1,36 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  CheckCircle2, XCircle, ExternalLink, Clock,
+  CheckCircle2, XCircle, ExternalLink, Clock, Ban, RotateCcw,
 } from 'lucide-react'
 import { Spinner, SpinnerIcon } from '../../ui/Spinner'
+import { Button } from '../../ui/Button'
+import { useToast } from '../../../hooks/useToast'
 
 const STATUS_BADGES = {
   pending: { icon: Clock, color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800', label: 'Pending' },
   running: { icon: SpinnerIcon, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', label: 'Running', spin: false },
   complete: { icon: CheckCircle2, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20', label: 'Complete' },
+  // Backend's canonical terminal-success spelling is 'completed' (see
+  // server/__tests__/migration-status-vocabulary.test.js) — both keys map to
+  // the same badge so a genuinely finished import never silently falls back
+  // to the 'pending' look.
+  completed: { icon: CheckCircle2, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20', label: 'Complete' },
   failed: { icon: XCircle, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20', label: 'Failed' },
   skipped: { icon: Clock, color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800', label: 'Skipped' },
+  // Cancellation is a distinct, honest terminal outcome — never conflated
+  // with 'Failed' (mirrors the Azure ProgressStep's own cancelled styling).
+  cancelled: { icon: Ban, color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800', label: 'Cancelled' },
+  // Produced by recoverInterruptedImportJobs() on server boot for a job that
+  // was still running when the process died.
+  interrupted: { icon: RotateCcw, color: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-900/20', label: 'Interrupted' },
 }
+
+// Statuses that mean "nothing more is going to happen to this job" — used to
+// stop polling and to decide whether a Cancel control still makes sense.
+const TERMINAL_STATUSES = new Set([
+  'complete', 'completed', 'failed', 'cancelled', 'interrupted', 'skipped',
+])
 
 function StatusIcon({ status, className = 'w-5 h-5' }) {
   const config = STATUS_BADGES[status] || STATUS_BADGES.pending
@@ -43,13 +62,60 @@ function StatusBadge({ status }) {
   )
 }
 
+// Shared cancel call — POSTs to the same in-memory cancellation registry
+// importRepository() polls at every phase boundary (server/routes/import/
+// url.js, server/routes/import/_shared.js). Throws with a user-facing
+// message on failure so callers can surface it via toast.
+async function cancelImportJob(jobId) {
+  const res = await fetch(`/api/import/${jobId}/cancel`, {
+    method: 'POST',
+    credentials: 'include',
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    throw new Error(body?.error || body?.message || 'Failed to cancel import')
+  }
+}
+
 export default function SimpleProgressStep({ importJobs, onUpdate, source: _source }) {
   const abortRef = useRef(null)
   const intervalRef = useRef(null)
   const batchIntervalsRef = useRef({})
   const completedJobsRef = useRef(new Set())
+  const { toast } = useToast()
+
+  const [cancellingSingle, setCancellingSingle] = useState(false)
+  const [cancellingIds, setCancellingIds] = useState(() => new Set())
 
   const isBatchMode = importJobs.batchJobs && importJobs.batchJobs.length > 0
+
+  const handleCancelSingle = useCallback(async () => {
+    if (!importJobs.jobId || cancellingSingle) return
+    setCancellingSingle(true)
+    try {
+      await cancelImportJob(importJobs.jobId)
+      // Left true: the button unmounts on its own once the next poll reports
+      // the 'cancelled' terminal status — no separate reset needed.
+    } catch (err) {
+      toast.errorFromException(err, { fallbackTitle: 'Failed to cancel import' })
+      setCancellingSingle(false)
+    }
+  }, [importJobs.jobId, cancellingSingle, toast])
+
+  const handleCancelBatchJob = useCallback(async (jobId) => {
+    if (cancellingIds.has(jobId)) return
+    setCancellingIds((prev) => new Set(prev).add(jobId))
+    try {
+      await cancelImportJob(jobId)
+    } catch (err) {
+      toast.errorFromException(err, { fallbackTitle: 'Failed to cancel import' })
+      setCancellingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(jobId)
+        return next
+      })
+    }
+  }, [cancellingIds, toast])
 
   // --- Single import polling ---
   const pollSingleJob = useCallback(() => {
@@ -67,7 +133,7 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
         const data = await res.json()
         onUpdate({ jobStatus: data })
 
-        if (data.status === 'complete' || data.status === 'failed') {
+        if (TERMINAL_STATUSES.has(data.status)) {
           clearInterval(intervalRef.current)
           intervalRef.current = null
           onUpdate({ importing: false })
@@ -115,7 +181,7 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
             },
           }))
 
-          if (data.status === 'complete' || data.status === 'failed') {
+          if (TERMINAL_STATUSES.has(data.status)) {
             completedJobsRef.current.add(job.jobId)
             clearInterval(batchIntervalsRef.current[job.jobId])
             delete batchIntervalsRef.current[job.jobId]
@@ -151,6 +217,19 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
     const currentStatus = status?.status || 'pending'
     const pct = status?.progressPct || 0
     const message = status?.progressMessage || ''
+    // The job row already exists server-side (created synchronously before
+    // this step renders) even before the first poll response lands, so
+    // cancellation is valid the moment we have a jobId — not just once
+    // `status` has arrived.
+    const canCancel = !!importJobs.jobId && !TERMINAL_STATUSES.has(currentStatus)
+
+    const defaultMessage = currentStatus === 'complete' || currentStatus === 'completed'
+      ? 'Import complete'
+      : currentStatus === 'cancelled'
+        ? 'Import cancelled'
+        : currentStatus === 'interrupted'
+          ? 'Import was interrupted'
+          : 'Processing...'
 
     return (
       <div className="space-y-4">
@@ -161,10 +240,28 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex items-center gap-3 py-6 justify-center"
+              className="space-y-4"
             >
-              <Spinner size="lg" tone="primary" />
-              <span className="text-sm text-slate-500 dark:text-slate-400">Starting import...</span>
+              <div className="flex items-center gap-3 py-6 justify-center">
+                <Spinner size="lg" tone="primary" />
+                <span className="text-sm text-slate-500 dark:text-slate-400">Starting import...</span>
+              </div>
+              {/* The job already exists server-side at this point (created
+                  synchronously before this step renders) — cancellation is
+                  valid even before the first status poll lands. */}
+              {canCancel && (
+                <div className="flex justify-end">
+                  <Button
+                    variant="soft-danger"
+                    size="sm"
+                    onClick={handleCancelSingle}
+                    disabled={cancellingSingle}
+                  >
+                    <Ban className="w-4 h-4" />
+                    {cancellingSingle ? 'Cancelling...' : 'Cancel'}
+                  </Button>
+                </div>
+              )}
             </motion.div>
           ) : (
             <motion.div
@@ -177,7 +274,7 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
               <div className="flex items-center gap-3">
                 <StatusIcon status={currentStatus} />
                 <span className="text-sm text-slate-700 dark:text-slate-300 flex-1">
-                  {message || (currentStatus === 'complete' ? 'Import complete' : 'Processing...')}
+                  {message || defaultMessage}
                 </span>
                 <StatusBadge status={currentStatus} />
               </div>
@@ -186,7 +283,7 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
               <ProgressBar pct={pct} />
 
               {/* Complete: repo link */}
-              {currentStatus === 'complete' && status.metadata?.repoUrl && (
+              {(currentStatus === 'complete' || currentStatus === 'completed') && status.metadata?.repoUrl && (
                 <motion.a
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -200,8 +297,19 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
                 </motion.a>
               )}
 
-              {/* Failed: error message */}
-              {currentStatus === 'failed' && status.errorMessage && (
+              {/* Cancelled: neutral notice, never styled as a failure */}
+              {currentStatus === 'cancelled' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700"
+                >
+                  <p className="text-sm text-slate-600 dark:text-slate-300">Migration cancelled.</p>
+                </motion.div>
+              )}
+
+              {/* Failed / interrupted: error message */}
+              {(currentStatus === 'failed' || currentStatus === 'interrupted') && status.errorMessage && (
                 <motion.div
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -209,6 +317,21 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
                 >
                   <p className="text-sm text-red-700 dark:text-red-300">{status.errorMessage}</p>
                 </motion.div>
+              )}
+
+              {/* Cancel control */}
+              {canCancel && (
+                <div className="flex justify-end">
+                  <Button
+                    variant="soft-danger"
+                    size="sm"
+                    onClick={handleCancelSingle}
+                    disabled={cancellingSingle}
+                  >
+                    <Ban className="w-4 h-4" />
+                    {cancellingSingle ? 'Cancelling...' : 'Cancel'}
+                  </Button>
+                </div>
               )}
             </motion.div>
           )}
@@ -222,7 +345,7 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
   const batchStatuses = importJobs.batchStatuses || {}
   const completedCount = batchJobs.filter((j) => {
     const s = batchStatuses[j.jobId]?.status
-    return s === 'complete' || s === 'failed' || s === 'skipped'
+    return TERMINAL_STATUSES.has(s)
   }).length
 
   return (
@@ -241,6 +364,8 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
             const jobStatus = batchStatuses[job.jobId]
             const currentStatus = jobStatus?.status || 'pending'
             const pct = jobStatus?.progressPct || 0
+            const canCancelJob = !TERMINAL_STATUSES.has(currentStatus)
+            const isCancellingJob = cancellingIds.has(job.jobId)
 
             return (
               <motion.div
@@ -263,6 +388,18 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
                     )}
                   </div>
                   <StatusBadge status={currentStatus} />
+                  {canCancelJob && (
+                    <Button
+                      variant="soft-danger"
+                      size="xs"
+                      onClick={() => handleCancelBatchJob(job.jobId)}
+                      disabled={isCancellingJob}
+                      aria-label={`Cancel import of ${job.repoName || job.sourceUrl}`}
+                    >
+                      <Ban className="w-3 h-3" />
+                      {isCancellingJob ? 'Cancelling...' : 'Cancel'}
+                    </Button>
+                  )}
                 </div>
 
                 {/* Individual progress bar for running jobs */}
@@ -277,15 +414,20 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
                   </div>
                 )}
 
+                {/* Cancelled: neutral notice */}
+                {currentStatus === 'cancelled' && (
+                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Import cancelled.</p>
+                )}
+
                 {/* Error message */}
-                {currentStatus === 'failed' && jobStatus?.errorMessage && (
+                {(currentStatus === 'failed' || currentStatus === 'interrupted') && jobStatus?.errorMessage && (
                   <p className="mt-2 text-xs text-red-600 dark:text-red-400">
                     {jobStatus.errorMessage}
                   </p>
                 )}
 
                 {/* Repo link on complete */}
-                {currentStatus === 'complete' && jobStatus?.metadata?.repoUrl && (
+                {(currentStatus === 'complete' || currentStatus === 'completed') && jobStatus?.metadata?.repoUrl && (
                   <a
                     href={jobStatus.metadata.repoUrl}
                     target="_blank"
