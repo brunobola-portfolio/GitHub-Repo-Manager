@@ -254,14 +254,16 @@ export function ReadmeStudioModal({ isOpen, onClose, repo, onApplied }) {
         if (scoreError) return <AIErrorState error={scoreError} onRetry={loadScore} context="README Studio score" />
         if (!scoreData) return null
 
-        const { report, hasReadme } = scoreData
+        const { report, hasReadme, readmeTruncated } = scoreData
         if (!hasReadme) {
             return (
                 <div className="space-y-4">
                     <EmptyState
-                        icon={BookOpen}
-                        title="No README found"
-                        description="This is the top recommendation — generate a full README grounded in your repo's real signals."
+                        icon={readmeTruncated ? AlertTriangle : BookOpen}
+                        title={readmeTruncated ? 'README could not be read' : 'No README found'}
+                        description={readmeTruncated
+                            ? "A README exists but is too large or binary for GitHub to read — scoring can't inspect its content. Generating will treat it as a full rewrite grounded in your repo's other signals."
+                            : "This is the top recommendation — generate a full README grounded in your repo's real signals."}
                     />
                 </div>
             )
@@ -311,11 +313,13 @@ export function ReadmeStudioModal({ isOpen, onClose, repo, onApplied }) {
     }
 
     const renderConfigureStage = () => {
-        const hint = !scoreData?.hasReadme
-            ? { level: 'low', text: 'No README was found — grounding will rely on manifest/entrypoint signals only.' }
-            : !scoreData?.hasLicense
-                ? { level: 'medium', text: 'No LICENSE file was found — the license section will note it as unspecified rather than guessing.' }
-                : null
+        const hint = scoreData?.readmeTruncated
+            ? { level: 'low', text: 'The existing README is too large or binary to read — grounding will rely on manifest/entrypoint signals only.' }
+            : !scoreData?.hasReadme
+                ? { level: 'low', text: 'No README was found — grounding will rely on manifest/entrypoint signals only.' }
+                : !scoreData?.hasLicense
+                    ? { level: 'medium', text: 'No LICENSE file was found — the license section will note it as unspecified rather than guessing.' }
+                    : null
 
         return (
             <div className="space-y-4">

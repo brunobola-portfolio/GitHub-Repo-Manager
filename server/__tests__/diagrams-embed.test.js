@@ -36,7 +36,7 @@ const README_CONTENT = '# acme/api\n\nAn intro paragraph.\n\n## Installation\n\n
 
 // Mutable per-test state so each test can control what the fake GitHub API
 // returns without redefining the whole mock module.
-let readmeState = { exists: true, content: README_CONTENT, path: 'README.md' };
+let readmeState = { exists: true, content: README_CONTENT, path: 'README.md', truncated: false };
 let permissionsState = { push: true };
 let putCalls = [];
 let branchProtected = false;
@@ -51,6 +51,11 @@ vi.mock('../lib/github-api.js', () => ({
                 const err = new Error('not found');
                 err.status = 404;
                 throw err;
+            }
+            if (readmeState.truncated) {
+                // GitHub returns encoding: 'none' with empty content for
+                // files it won't inline (>1MB / non-UTF8-decodable).
+                return { data: { encoding: 'none', content: '', path: readmeState.path } };
             }
             return { data: { content: b64(readmeState.content), encoding: 'base64', path: readmeState.path } };
         }
@@ -95,7 +100,7 @@ const REPO = { full_name: 'acme/api', name: 'api', language: 'JavaScript' };
 const CLEAN_SVG = '<svg xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1"/></svg>';
 
 beforeEach(() => {
-    readmeState = { exists: true, content: README_CONTENT, path: 'README.md' };
+    readmeState = { exists: true, content: README_CONTENT, path: 'README.md', truncated: false };
     permissionsState = { push: true };
     putCalls = [];
     branchProtected = false;
@@ -174,6 +179,20 @@ describe('POST /ai/generate-diagram/embed-preview — readme-mermaid target', ()
         expect(res.body.readme).toBeUndefined();
     });
 
+    it('the huge/binary-README path is distinct from no-README — offers SVG-or-replace, not "create one first"', async () => {
+        readmeState.truncated = true;
+        const res = await request(makeApp())
+            .post('/ai/generate-diagram/embed-preview')
+            .send({ repo: REPO, target: 'readme-mermaid', mermaid: 'graph TD\n  A' });
+
+        expect(res.status).toBe(200);
+        expect(res.body.hasReadme).toBe(false);
+        expect(res.body.readmeTruncated).toBe(true);
+        expect(res.body.notice).not.toMatch(/no readme found/i);
+        expect(res.body.notice).toMatch(/too large or binary/i);
+        expect(res.body.readme).toBeUndefined();
+    });
+
     it('surfaces an honest read-only state when the user lacks push rights', async () => {
         permissionsState.push = false;
         const res = await request(makeApp())
@@ -225,6 +244,21 @@ describe('POST /ai/generate-diagram/embed-preview — svg-file target', () => {
         expect(res.body.readme).toBeNull();
         expect(res.body.svg.path).toBe('docs/diagrams/architecture.svg');
         expect(res.body.notice).toMatch(/no readme found/i);
+    });
+
+    it('embeds SVG-only with a distinct notice when the README exists but is huge/binary', async () => {
+        readmeState.truncated = true;
+        const res = await request(makeApp())
+            .post('/ai/generate-diagram/embed-preview')
+            .send({ repo: REPO, target: 'svg-file', svg: CLEAN_SVG });
+
+        expect(res.status).toBe(200);
+        expect(res.body.hasReadme).toBe(false);
+        expect(res.body.readmeTruncated).toBe(true);
+        expect(res.body.readme).toBeNull();
+        expect(res.body.svg.path).toBe('docs/diagrams/architecture.svg');
+        expect(res.body.notice).toMatch(/too large or binary/i);
+        expect(res.body.notice).not.toMatch(/no readme found/i);
     });
 });
 

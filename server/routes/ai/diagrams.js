@@ -333,12 +333,20 @@ function svgPathFor(diagramType) {
  * fetch above uses, or a marker insert/replace could clobber content beyond
  * what was actually read. Tolerant-404: no README is a legitimate, handled
  * state, not an error.
+ *
+ * A README that exists but is too large/binary for GitHub to inline comes
+ * back with `encoding !== 'base64'` (typically `'none'` with empty content)
+ * — a distinct state from "no README" (which the caller must not silently
+ * fold into the same "create one first" branch), surfaced via `truncated: true`.
  */
 async function fetchFullReadme({ owner, repo, accessToken, log }) {
     try {
         const { data } = await githubApi(`/repos/${owner}/${repo}/readme`, accessToken);
         if (data?.encoding === 'base64' && typeof data.content === 'string') {
             return { content: Buffer.from(data.content, 'base64').toString('utf-8'), path: data.path || 'README.md' };
+        }
+        if (data) {
+            return { content: null, path: data.path || 'README.md', truncated: true };
         }
         return null;
     } catch (e) {
@@ -375,9 +383,19 @@ router.post('/ai/generate-diagram/embed-preview', requireAuth, validateBody(embe
     try {
         const { push } = await hasPushAccess({ owner, repo: repoName, accessToken: req.session.accessToken, log: req.log });
         const readme = await fetchFullReadme({ owner, repo: repoName, accessToken: req.session.accessToken, log: req.log });
-        const hasReadme = !!readme;
+        // `readme.truncated` means a README file exists but GitHub couldn't
+        // inline it (too large/binary) — distinct from no README at all, so it
+        // must not fall into the "create one first" branch below.
+        const readmeTruncated = !!readme?.truncated;
+        const hasReadme = !!readme && !readmeTruncated;
 
         if (target === 'readme-mermaid') {
+            if (readmeTruncated) {
+                return res.json({
+                    success: true, target, hasReadme: false, readmeTruncated: true, readOnly: !push,
+                    notice: 'A README exists but is too large or binary to read — embed as a committed SVG file instead, or replace the README first.',
+                });
+            }
             if (!hasReadme) {
                 return res.json({
                     success: true, target, hasReadme: false, readOnly: !push,
@@ -407,10 +425,12 @@ router.post('/ai/generate-diagram/embed-preview', requireAuth, validateBody(embe
         }
 
         res.json({
-            success: true, target, hasReadme, readOnly: !push,
+            success: true, target, hasReadme, readmeTruncated, readOnly: !push,
             svg: { path, content: sanitized.svg, commitMessage: `docs: add ${diagramType} diagram SVG` },
             readme: readmeResult,
-            notice: !hasReadme ? 'No README found — the diagram SVG will be committed to docs/diagrams/ without a README reference.' : (readmeResult?.notice || null),
+            notice: readmeTruncated
+                ? 'A README exists but is too large or binary to read — the diagram SVG will be committed to docs/diagrams/ without a README reference.'
+                : (!hasReadme ? 'No README found — the diagram SVG will be committed to docs/diagrams/ without a README reference.' : (readmeResult?.notice || null)),
         });
     } catch (error) {
         req.log.error({ err: error, repo: repo.full_name }, 'Diagram embed preview failed');

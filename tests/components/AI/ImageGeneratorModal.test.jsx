@@ -174,6 +174,58 @@ describe('ImageGeneratorModal — configure → generate → preview', () => {
         await user.click(await screen.findByRole('button', { name: /^generate$/i }))
         expect(await screen.findByText(/quota exceeded/i)).toBeInTheDocument()
     })
+
+    // r5 §4.7: "On any image-generation failure... the feature must never
+    // hard-fail the surrounding flow." The fallback must appear for every
+    // runtime failure mode, not just the pre-flight capability-absent stage.
+    it('offers the diagram fallback alongside a quota-exceeded runtime error', async () => {
+        const user = userEvent.setup()
+        const err = new Error('Image generation limit reached')
+        err.code = 'QUOTA_EXCEEDED'
+        err.status = 429
+        aiApi.images.generate.mockRejectedValue(err)
+        const onFallbackToDiagram = vi.fn()
+        render(<ImageGeneratorModal isOpen repo={REPO} onClose={() => {}} onFallbackToDiagram={onFallbackToDiagram} />)
+
+        await user.click(await screen.findByRole('button', { name: /^generate$/i }))
+        await screen.findByText(/quota exceeded/i)
+        await user.click(screen.getByRole('button', { name: /generate a diagram instead/i }))
+        expect(onFallbackToDiagram).toHaveBeenCalledTimes(1)
+    })
+
+    it('offers the diagram fallback alongside a refusal runtime error', async () => {
+        const user = userEvent.setup()
+        const err = new Error('The AI provider declined to generate this image.')
+        err.code = 'IMAGE_REFUSAL'
+        aiApi.images.generate.mockRejectedValue(err)
+        const onFallbackToDiagram = vi.fn()
+        render(<ImageGeneratorModal isOpen repo={REPO} onClose={() => {}} onFallbackToDiagram={onFallbackToDiagram} />)
+
+        await user.click(await screen.findByRole('button', { name: /^generate$/i }))
+        await screen.findByText(/image generation declined/i)
+        expect(screen.getByRole('button', { name: /generate a diagram instead/i })).toBeInTheDocument()
+    })
+
+    it('offers the diagram fallback alongside a generic provider-error runtime failure', async () => {
+        const user = userEvent.setup()
+        aiApi.images.generate.mockRejectedValue(new Error('Provider request failed'))
+        const onFallbackToDiagram = vi.fn()
+        render(<ImageGeneratorModal isOpen repo={REPO} onClose={() => {}} onFallbackToDiagram={onFallbackToDiagram} />)
+
+        await user.click(await screen.findByRole('button', { name: /^generate$/i }))
+        await screen.findByRole('alert')
+        expect(screen.getByRole('button', { name: /generate a diagram instead/i })).toBeInTheDocument()
+    })
+
+    it('omits the diagram fallback on a runtime error when no onFallbackToDiagram prop is provided', async () => {
+        const user = userEvent.setup()
+        aiApi.images.generate.mockRejectedValue(new Error('Provider request failed'))
+        render(<ImageGeneratorModal isOpen repo={REPO} onClose={() => {}} />)
+
+        await user.click(await screen.findByRole('button', { name: /^generate$/i }))
+        await screen.findByRole('alert')
+        expect(screen.queryByRole('button', { name: /generate a diagram instead/i })).not.toBeInTheDocument()
+    })
 })
 
 describe('ImageGeneratorModal — preview → commit', () => {

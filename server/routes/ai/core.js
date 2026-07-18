@@ -580,7 +580,7 @@ router.post('/ai/readme-studio/improve', requireAuth, requireScope('ai'), valida
 
         // Full-fidelity signals for pattern detection + the diff panel's
         // "before" content — untruncated, unredacted (server-side use only).
-        const { readmeContent, fileStructure, licenseContent, workflowFiles } = await fetchReadmeStudioSignals({
+        const { readmeContent, readmeTruncated, fileStructure, licenseContent, workflowFiles } = await fetchReadmeStudioSignals({
             owner, repo: repoName, accessToken: req.session.accessToken,
         });
         const patterns = detectPatterns(readmeContent, fileStructure, { licenseFileContent: licenseContent, workflowFiles });
@@ -621,6 +621,15 @@ router.post('/ai/readme-studio/improve', requireAuth, requireScope('ai'), valida
             config: { mode, tone, sections, license, stackOverride, badges },
         });
 
+        // A README that exists but couldn't be read (too large/binary — see
+        // `fetchReadmeStudioSignals`) is grounded the same as "no README" for
+        // the prompt itself (there's no readable content to diff against), but
+        // the caller must be told this is a distinct, low-confidence state —
+        // not silently treated as if the repo simply has no README.
+        if (readmeTruncated) {
+            warnings.unshift('The existing README could not be read (likely too large or a binary/non-UTF8 file) — generating fresh content grounded in other repo signals instead of an incremental diff.');
+        }
+
         const { text } = await guardedGenerate(req, { prompt }, { feature: 'readme_studio' });
 
         incrementAIUsage(userId, 'ai_readme');
@@ -629,12 +638,13 @@ router.post('/ai/readme-studio/improve', requireAuth, requireScope('ai'), valida
         res.json({
             success: true,
             markdown: text,
-            confidence: context.confidence,
+            confidence: readmeTruncated ? 'low' : context.confidence,
             warnings,
             missingSections,
             badges: generatedBadges,
             mode,
             currentReadme: readmeContent,
+            readmeTruncated,
         });
     } catch (error) {
         req.log.error({ err: error }, 'README Studio improve failed');
@@ -664,7 +674,7 @@ router.post('/ai/readme-studio/improve/deterministic', requireAuth, requireScope
     const [owner, repoName] = repo.full_name.split('/');
 
     try {
-        const { readmeContent, fileStructure, licenseContent, workflowFiles } = await fetchReadmeStudioSignals({
+        const { readmeContent, readmeTruncated, fileStructure, licenseContent, workflowFiles } = await fetchReadmeStudioSignals({
             owner, repo: repoName, accessToken: req.session.accessToken,
         });
         const patterns = detectPatterns(readmeContent, fileStructure, { licenseFileContent: licenseContent, workflowFiles });
@@ -684,6 +694,7 @@ router.post('/ai/readme-studio/improve/deterministic', requireAuth, requireScope
             mode: resolvedMode,
             missingSections,
             currentReadme: readmeContent,
+            readmeTruncated,
         });
     } catch (error) {
         req.log.error({ err: error, repo: repo.full_name }, 'README Studio deterministic patch failed');

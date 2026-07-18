@@ -37,14 +37,22 @@ import { SUPPORTED_LICENSES } from './license-detect.js';
  * `/ai/readme/enhance`.
  *
  * @param {{ owner: string, repo: string, accessToken: string }} args
- * @returns {Promise<{ readmeContent: string, fileStructure: Array, licenseContent: string|null, workflowFiles: string[] }>}
+ * @returns {Promise<{ readmeContent: string, readmeTruncated: boolean, fileStructure: Array, licenseContent: string|null, workflowFiles: string[] }>}
  */
 export async function fetchReadmeStudioSignals({ owner, repo, accessToken }) {
     let readmeContent = '';
+    // GitHub's Contents/README API returns `encoding: 'none'` with empty
+    // `content` (instead of `encoding: 'base64'`) for files over ~1MB or that
+    // can't be decoded as UTF-8 — a README that exists but couldn't be read,
+    // distinct from no README at all. Flagged separately so callers never
+    // fold "huge/binary README" into "no README found".
+    let readmeTruncated = false;
     try {
         const { data } = await githubApi(`/repos/${owner}/${repo}/readme`, accessToken);
         if (data?.encoding === 'base64' && typeof data.content === 'string') {
             readmeContent = Buffer.from(data.content, 'base64').toString('utf-8');
+        } else if (data) {
+            readmeTruncated = true;
         }
     } catch (e) {
         if (e?.status !== 404) logger.warn({ err: e, owner, repo }, 'readme-studio: README fetch failed');
@@ -76,7 +84,7 @@ export async function fetchReadmeStudioSignals({ owner, repo, accessToken }) {
         if (e?.status !== 404) logger.warn({ err: e, owner, repo }, 'readme-studio: workflows listing failed');
     }
 
-    return { readmeContent, fileStructure, licenseContent, workflowFiles };
+    return { readmeContent, readmeTruncated, fileStructure, licenseContent, workflowFiles };
 }
 
 // ---------------------------------------------------------------------------

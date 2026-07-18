@@ -183,7 +183,14 @@ export function ImageGeneratorModal({ isOpen, onClose, repo, onFallbackToDiagram
     const renderConfigureStage = () => (
         <div className="space-y-4">
             {generateError && (
-                <AIErrorState error={generateError} onRetry={generate} context="Image generator" variant="banner" />
+                <>
+                    <AIErrorState error={generateError} onRetry={generate} context="Image generator" variant="banner" />
+                    {onFallbackToDiagram && (
+                        <Button variant="ghost" size="sm" onClick={useDiagramInstead}>
+                            <Workflow className="w-4 h-4" /> Generate a diagram instead
+                        </Button>
+                    )}
+                </>
             )}
 
             <div className="grid grid-cols-1 gap-3">
