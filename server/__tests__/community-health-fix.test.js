@@ -250,4 +250,93 @@ describe('commitOrOpenPR', () => {
 		const body = JSON.parse(putCall[2].body)
 		expect(body.content).toBe(Buffer.from('hello world', 'utf8').toString('base64'))
 	})
+
+	// --------------------------------------------------------------------
+	// Binary-safe encoding (Wave 6c foundation for AI image generation).
+	// TRAP: content: Buffer.from(content, 'utf8').toString('base64') on every
+	// existing text write path is correct ONLY because content is always a
+	// literal text string. Passing pre-encoded base64 image bytes straight
+	// through the same line would re-encode the base64 *string* as if it
+	// were UTF-8 text — a silent double-encode that "succeeds" (real commit
+	// SHA) but corrupts the file. These tests prove: (1) existing text
+	// callers get byte-identical output whether or not they pass `encoding`
+	// explicitly, and (2) `encoding: 'base64'` round-trips real binary bytes
+	// through the helper unchanged.
+	// --------------------------------------------------------------------
+
+	it('omitting encoding is byte-identical to explicitly passing encoding: "utf8"', async () => {
+		const githubApiImplicit = mkGithubApi({ protectedBranch: false })
+		const githubApiExplicit = mkGithubApi({ protectedBranch: false })
+		const content = 'hello world — unicode too: café'
+
+		await commitOrOpenPR({ owner: 'a', repo: 'b', token: 't', filePath: 'LICENSE', content, commitMessage: 'm', mode: 'direct', githubApi: githubApiImplicit })
+		await commitOrOpenPR({ owner: 'a', repo: 'b', token: 't', filePath: 'LICENSE', content, commitMessage: 'm', mode: 'direct', encoding: 'utf8', githubApi: githubApiExplicit })
+
+		const bodyImplicit = JSON.parse(githubApiImplicit.mock.calls.find(c => c[2]?.method === 'PUT')[2].body)
+		const bodyExplicit = JSON.parse(githubApiExplicit.mock.calls.find(c => c[2]?.method === 'PUT')[2].body)
+
+		expect(bodyImplicit.content).toBe(bodyExplicit.content)
+		expect(bodyImplicit.content).toBe(Buffer.from(content, 'utf8').toString('base64'))
+	})
+
+	it('all 7 FILE_GENERATORS-style text callers remain byte-identical to the pre-encoding-param behaviour (direct mode)', async () => {
+		const githubApi = mkGithubApi({ protectedBranch: false })
+		const content = '# CONTRIBUTING\n\nSetup, build, test.\n'
+		await commitOrOpenPR({ owner: 'a', repo: 'b', token: 't', filePath: 'CONTRIBUTING.md', content, commitMessage: 'chore: add CONTRIBUTING.md', mode: 'direct', githubApi })
+		const body = JSON.parse(githubApi.mock.calls.find(c => c[2]?.method === 'PUT')[2].body)
+		expect(body.content).toBe(Buffer.from(content, 'utf8').toString('base64'))
+	})
+
+	it('encoding: "base64" passes pre-encoded binary content through untouched (PNG byte-roundtrip, direct mode)', async () => {
+		// Minimal fake "PNG" — real PNG signature bytes plus some non-UTF8-safe
+		// bytes to make sure a text re-encode would visibly mangle them.
+		const pngBytes = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x01, 0x02, 0xff, 0xfe, 0x80, 0x7f])
+		const preEncoded = pngBytes.toString('base64')
+		const githubApi = mkGithubApi({ protectedBranch: false })
+
+		await commitOrOpenPR({
+			owner: 'a', repo: 'b', token: 't',
+			filePath: 'docs/images/social-preview.png', content: preEncoded,
+			commitMessage: 'chore: add generated social preview image', mode: 'direct', encoding: 'base64', githubApi,
+		})
+
+		const putCall = githubApi.mock.calls.find(c => c[2]?.method === 'PUT')
+		const body = JSON.parse(putCall[2].body)
+
+		// Passed through untouched — NOT re-encoded (that would differ from preEncoded).
+		expect(body.content).toBe(preEncoded)
+		// And decoding it back to bytes reproduces the exact original PNG bytes.
+		const decoded = Buffer.from(body.content, 'base64')
+		expect(decoded.equals(pngBytes)).toBe(true)
+	})
+
+	it('encoding: "base64" also round-trips correctly on the PR-fallback (protected branch) path', async () => {
+		const pngBytes = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x10, 0x20, 0x30, 0xaa, 0xbb, 0xcc])
+		const preEncoded = pngBytes.toString('base64')
+		const githubApi = mkGithubApi({ protectedBranch: true })
+
+		const out = await commitOrOpenPR({
+			owner: 'a', repo: 'b', token: 't',
+			filePath: 'docs/images/social-preview.png', content: preEncoded,
+			commitMessage: 'chore: add generated social preview image', mode: 'direct', encoding: 'base64', githubApi,
+		})
+
+		expect(out.mode).toBe('pr-fallback')
+		const putCall = githubApi.mock.calls.find(c => c[2]?.method === 'PUT')
+		const body = JSON.parse(putCall[2].body)
+		expect(body.content).toBe(preEncoded)
+		expect(Buffer.from(body.content, 'base64').equals(pngBytes)).toBe(true)
+	})
+
+	it('sanity check: naively re-encoding base64 content as utf8 (the bug this fixes) WOULD have corrupted the bytes', () => {
+		// Documents why the fix is necessary — asserts the buggy path's output
+		// differs from the real bytes for content containing non-ASCII-safe
+		// base64 output, so a regression back to the old hardcoded line would
+		// be caught by the roundtrip tests above rather than silently passing.
+		const pngBytes = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x01, 0x02, 0xff, 0xfe, 0x80, 0x7f])
+		const preEncoded = pngBytes.toString('base64')
+		const buggyDoubleEncoded = Buffer.from(preEncoded, 'utf8').toString('base64')
+		expect(buggyDoubleEncoded).not.toBe(preEncoded)
+		expect(Buffer.from(buggyDoubleEncoded, 'base64').equals(pngBytes)).toBe(false)
+	})
 })

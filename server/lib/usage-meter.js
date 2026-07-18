@@ -68,6 +68,11 @@ const METRIC_TO_FEATURE = {
     ai_diagram: 'diagramGenPerMonth',
     ai_agent_rules: 'agentRulesPerMonth',
     ai_security_posture: 'securityPostureAIPerMonth',
+    // Wave 6c: AI raster image generation (banner/hero/logo). Check-once at
+    // generate time, same as ai_diagram — the provider spend already
+    // happened once the image comes back, so quota tracks spend, not the
+    // later commit-to-repo step.
+    ai_image: 'imageGenPerMonth',
     // Mirror sync APPLY moved to Free but newly metered — mirrors
     // migration_full_executions's pattern exactly.
     sync_apply_executions: 'syncApplyPerMonth',
@@ -275,6 +280,7 @@ const FEATURE_LABELS = {
     ai_diagram: 'AI Diagrams',
     ai_agent_rules: 'Agent Rules',
     ai_security_posture: 'Security Posture',
+    ai_image: 'AI Image Generation',
 };
 
 export function quotaExceededResponse(check, fallbackLabel = 'AI') {
