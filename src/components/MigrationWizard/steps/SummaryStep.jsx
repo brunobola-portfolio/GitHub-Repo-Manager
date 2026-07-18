@@ -405,6 +405,7 @@ function ErrorCard({ error, index, onReplaceRetry, onLfsRetry }) {
                     </div>
                   )}
                   {isConflict && onReplaceRetry && (
+                    // danger-button-allowed: opens ReplaceConfirmModal below, which owns the destructive confirmation
                     <Button variant="danger" size="sm" type="button" onClick={() => setConfirming(true)}>
                       <RefreshCw className="w-3.5 h-3.5" />
                       Replace &amp; retry
