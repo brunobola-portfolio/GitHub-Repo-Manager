@@ -42,7 +42,7 @@ export function DemoModeBanner() {
             <button
                 type="button"
                 onClick={handleDismiss}
-                className="shrink-0 flex items-center justify-center w-5 h-5 rounded opacity-70 hover:opacity-100 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors ds-focus-ring"
+                className="shrink-0 flex items-center justify-center p-2 -m-2 rounded opacity-70 hover:opacity-100 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors ds-focus-ring"
                 aria-label="Dismiss demo mode banner"
             >
                 <X className="w-3.5 h-3.5" aria-hidden />

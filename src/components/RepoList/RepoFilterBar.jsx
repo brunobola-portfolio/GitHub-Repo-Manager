@@ -160,7 +160,7 @@ export function RepoFilterBar({
 							aria-haspopup="menu"
 							aria-expanded={showSelectionMenu}
 							onClick={(e) => { e.stopPropagation(); setShowSelectionMenu(!showSelectionMenu) }}
-							className="w-6 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
+							className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
 						>
 							<ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
 						</button>
@@ -209,7 +209,7 @@ export function RepoFilterBar({
 							<button
 								type="button"
 								onClick={() => { setIsAISearch(!isAISearch); setSearchQuery('') }}
-								className={`p-1.5 rounded-lg transition-all ${isAISearch ? 'text-purple-500 bg-purple-100 dark:bg-purple-900/30 shadow-sm' : 'text-slate-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20'}`}
+								className={`p-2 -m-0.5 rounded-lg transition-all ${isAISearch ? 'text-purple-500 bg-purple-100 dark:bg-purple-900/30 shadow-sm' : 'text-slate-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20'}`}
 								title="Toggle AI Semantic Search"
 								aria-label="Toggle AI Semantic Search"
 							>
@@ -229,7 +229,7 @@ export function RepoFilterBar({
 						onClick={() => setViewMode('grid')}
 						aria-label="Grid view"
 						aria-pressed={viewMode === 'grid'}
-						className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 shadow-sm text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+						className={`p-2 -m-0.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 shadow-sm text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
 					>
 						<LayoutGrid className="w-4 h-4" />
 					</button>
@@ -237,7 +237,7 @@ export function RepoFilterBar({
 						onClick={() => setViewMode('list')}
 						aria-label="List view"
 						aria-pressed={viewMode === 'list'}
-						className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+						className={`p-2 -m-0.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
 					>
 						<ListIcon className="w-4 h-4" />
 					</button>

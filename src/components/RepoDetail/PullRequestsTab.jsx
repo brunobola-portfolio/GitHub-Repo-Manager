@@ -163,7 +163,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                     <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
                         {['open', 'closed', 'all'].map(f => (
                             <button key={f} onClick={() => setFilter(f)}
-                                className={`px-3 py-1.5 text-xs font-medium transition-colors capitalize
+                                className={`px-3 h-8 text-xs font-medium transition-colors capitalize
                                     ${filter === f
                                         ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
                                         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
