@@ -2,34 +2,13 @@ import { ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react'
 import { Spinner } from '../../ui/Spinner'
 import { AIErrorState } from '../../ui/AIErrorState'
 import { motion, AnimatePresence } from 'framer-motion'
-
-const RISK_TEXT = {
-  low: 'text-green-700 dark:text-green-400',
-  medium: 'text-yellow-700 dark:text-yellow-400',
-  high: 'text-orange-700 dark:text-orange-400',
-  critical: 'text-red-700 dark:text-red-400',
-}
-
-const RISK_BG = {
-  low: 'bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-900/50',
-  medium: 'bg-yellow-100 dark:bg-yellow-900/30 hover:bg-yellow-200 dark:hover:bg-yellow-900/50',
-  high: 'bg-orange-100 dark:bg-orange-900/30 hover:bg-orange-200 dark:hover:bg-orange-900/50',
-  critical: 'bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50',
-}
-
-const RISK_HEADER_BG = {
-  low: 'bg-green-500 dark:bg-green-400',
-  medium: 'bg-yellow-500 dark:bg-yellow-400',
-  high: 'bg-orange-500 dark:bg-orange-400',
-  critical: 'bg-red-500 dark:bg-red-400',
-}
+import { normalizeRiskLevel, riskFillClass, riskTextClass, riskTintClass } from '../../../utils/riskTokens'
 
 function RiskPill({ level }) {
   if (!level) return null
-  const bg = RISK_HEADER_BG[level] ?? 'bg-slate-400'
   return (
     <span
-      className={`inline-flex items-center px-1.5 py-0.5 rounded text-white text-xs font-semibold uppercase tracking-wide ${bg}`}
+      className={`inline-flex items-center px-1.5 py-0.5 rounded text-white text-xs font-semibold uppercase tracking-wide ${riskFillClass(normalizeRiskLevel(level))}`}
     >
       {level}
     </span>
@@ -134,18 +113,16 @@ export function AISummaryPanel({ summary, loading, error, collapsed, onToggle, o
                       </h4>
                       <div className="space-y-1">
                         {topFileRisks.map((entry, i) => {
-                          const level = entry.level ?? entry.risk ?? 'medium'
-                          const textColor = RISK_TEXT[level] ?? 'text-slate-700 dark:text-slate-300'
-                          const bgColor = RISK_BG[level] ?? 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700'
+                          const level = normalizeRiskLevel(entry.level ?? entry.risk ?? 'medium')
                           const fname = entry.filename ?? entry.file
                           return (
                             <button
                               key={i}
                               onClick={() => onFileClick?.(fname)}
-                              className={`w-full flex items-center gap-2 px-2 py-1 rounded text-left transition-colors ${bgColor}`}
+                              className={`w-full flex items-center gap-2 px-2 py-1 rounded text-left transition-colors ${riskTintClass(level)}`}
                               title={fname}
                             >
-                              <span className={`shrink-0 text-xs font-semibold uppercase ${textColor}`}>
+                              <span className={`shrink-0 text-xs font-semibold uppercase ${riskTextClass(level)}`}>
                                 {level}
                               </span>
                               <span className="flex-1 truncate font-mono text-xs text-slate-700 dark:text-slate-300">

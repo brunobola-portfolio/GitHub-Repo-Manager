@@ -1,12 +1,6 @@
 import { AlertTriangle, Clock, FileText, Sparkles, Users } from 'lucide-react'
 import { computePRRisks } from '../../utils/prRisk'
-
-const TONE_CLASS = {
-    danger: 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-900/30 dark:text-red-200 dark:ring-red-800',
-    warning: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:ring-amber-800',
-    info: 'bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-900/30 dark:text-sky-200 dark:ring-sky-800',
-    neutral: 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700',
-}
+import { toneToLevel, riskFillClass, riskTextClass, riskTintClass, riskRingClass } from '../../utils/riskTokens'
 
 const ICON = {
     'very-stale': Clock,
@@ -38,13 +32,13 @@ export function PRRiskBadges({ pr, compact = false, max = 4, className = '' }) {
         <div className={`inline-flex flex-wrap items-center gap-1 ${className}`.trim()}>
             {risks.map((risk) => {
                 const Icon = ICON[risk.id]
-                const toneClass = TONE_CLASS[risk.tone] ?? TONE_CLASS.neutral
+                const level = toneToLevel(risk.tone)
                 if (compact) {
                     return (
                         <span
                             key={risk.id}
                             title={`${risk.label} — ${risk.hint}`}
-                            className={`inline-block w-2 h-2 rounded-full ring-2 ring-inset ${toneClass}`}
+                            className={`inline-block w-2 h-2 rounded-full ${riskFillClass(level)}`}
                             aria-label={`${risk.label}: ${risk.hint}`}
                         />
                     )
@@ -53,7 +47,7 @@ export function PRRiskBadges({ pr, compact = false, max = 4, className = '' }) {
                     <span
                         key={risk.id}
                         title={risk.hint}
-                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wide ring-1 ring-inset ${toneClass}`}
+                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wide ${riskTintClass(level)} ${riskTextClass(level)} ${riskRingClass(level)}`}
                     >
                         {Icon && <Icon className="w-3 h-3" aria-hidden="true" />}
                         {risk.label}

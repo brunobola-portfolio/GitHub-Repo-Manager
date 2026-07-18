@@ -2,6 +2,7 @@ import { useRef, useEffect, useMemo, useState, useId } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { ArrowUpDown } from 'lucide-react'
 import { FileTreeItem } from './FileTreeItem'
+import { RiskRail } from './RiskRail'
 import { heuristicRisk } from '../hooks/useReviewAI'
 
 /**
@@ -124,57 +125,68 @@ export function FileTree({
         </button>
       </div>
 
-      {/* Virtualized list. Focus lives here (single tab stop); arrow keys move
-          the active descendant. The sizer + row wrappers are presentational so
-          the treeitems read as direct children of the tree despite virtualization. */}
-      <div
-        ref={parentRef}
-        role="tree"
-        tabIndex={0}
-        aria-label="Changed files"
-        aria-activedescendant={files[activeDescendantIndex] ? itemId(activeDescendantIndex) : undefined}
-        onKeyDown={handleTreeKeyDown}
-        className="flex-1 overflow-y-auto overflow-x-hidden focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-blue-500"
-      >
-        <div
-          role="presentation"
-          style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}
-        >
-          {rowVirtualizer.getVirtualItems().map(virtualRow => {
-            const file = files[virtualRow.index]
-            const isActive = file.filename === activeFile
-            const isReviewed = reviewedFiles.includes(file.filename)
-            const aiRisk = aiRiskMap[file.filename]
-            const hScore = heuristicMap[file.filename]
+      {/* Row: risk rail (whole-PR heat overview) + the virtualized list. */}
+      <div className="flex flex-1 min-h-0">
+        <RiskRail
+          files={files}
+          aiRiskMap={aiRiskMap}
+          heuristicMap={heuristicMap}
+          activeFile={activeFile}
+          onFileSelect={onFileSelect}
+        />
 
-            return (
-              <div
-                key={file.filename}
-                role="presentation"
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: `${virtualRow.size}px`,
-                  transform: `translateY(${virtualRow.start}px)`,
-                }}
-              >
-                <FileTreeItem
-                  id={itemId(virtualRow.index)}
-                  file={file}
-                  isActive={isActive}
-                  isFocused={virtualRow.index === activeDescendantIndex}
-                  isReviewed={isReviewed}
-                  aiRisk={aiRisk}
-                  heuristicScore={hScore}
-                  posInSet={virtualRow.index + 1}
-                  setSize={files.length}
-                  onClick={() => { setFocusedIndex(virtualRow.index); onFileSelect?.(file.filename) }}
-                />
-              </div>
-            )
-          })}
+        {/* Virtualized list. Focus lives here (single tab stop); arrow keys move
+            the active descendant. The sizer + row wrappers are presentational so
+            the treeitems read as direct children of the tree despite virtualization. */}
+        <div
+          ref={parentRef}
+          role="tree"
+          tabIndex={0}
+          aria-label="Changed files"
+          aria-activedescendant={files[activeDescendantIndex] ? itemId(activeDescendantIndex) : undefined}
+          onKeyDown={handleTreeKeyDown}
+          className="flex-1 overflow-y-auto overflow-x-hidden focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-blue-500"
+        >
+          <div
+            role="presentation"
+            style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}
+          >
+            {rowVirtualizer.getVirtualItems().map(virtualRow => {
+              const file = files[virtualRow.index]
+              const isActive = file.filename === activeFile
+              const isReviewed = reviewedFiles.includes(file.filename)
+              const aiRisk = aiRiskMap[file.filename]
+              const hScore = heuristicMap[file.filename]
+
+              return (
+                <div
+                  key={file.filename}
+                  role="presentation"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: `${virtualRow.size}px`,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  <FileTreeItem
+                    id={itemId(virtualRow.index)}
+                    file={file}
+                    isActive={isActive}
+                    isFocused={virtualRow.index === activeDescendantIndex}
+                    isReviewed={isReviewed}
+                    aiRisk={aiRisk}
+                    heuristicScore={hScore}
+                    posInSet={virtualRow.index + 1}
+                    setSize={files.length}
+                    onClick={() => { setFocusedIndex(virtualRow.index); onFileSelect?.(file.filename) }}
+                  />
+                </div>
+              )
+            })}
+          </div>
         </div>
       </div>
     </div>

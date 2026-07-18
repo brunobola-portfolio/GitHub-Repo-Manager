@@ -176,6 +176,27 @@
 
   --ds-ease-row-expand: var(--ds-ease);
   --ds-duration-row-expand: var(--ds-duration);
+
+  /* ===== RISK (PR review) =====
+   * Single palette for AI + heuristic risk severity across the PR review
+   * surface (file-tree dots, risk rail, AI summary pills/rows, PR-level
+   * risk badges) — see src/utils/riskTokens.js for the level-normalizing
+   * helpers that pick these classes. */
+  --ds-risk-low: #22c55e;       /* green-500 */
+  --ds-risk-medium: #eab308;    /* yellow-500 */
+  --ds-risk-high: #f97316;      /* orange-500 */
+  --ds-risk-critical: #ef4444;  /* red-500 */
+  --ds-risk-neutral: #94a3b8;   /* slate-400 */
+  --ds-risk-low-tint: color-mix(in srgb, var(--ds-risk-low) 14%, transparent);
+  --ds-risk-medium-tint: color-mix(in srgb, var(--ds-risk-medium) 14%, transparent);
+  --ds-risk-high-tint: color-mix(in srgb, var(--ds-risk-high) 14%, transparent);
+  --ds-risk-critical-tint: color-mix(in srgb, var(--ds-risk-critical) 14%, transparent);
+  --ds-risk-neutral-tint: color-mix(in srgb, var(--ds-risk-neutral) 14%, transparent);
+  --ds-risk-low-tint-hover: color-mix(in srgb, var(--ds-risk-low) 26%, transparent);
+  --ds-risk-medium-tint-hover: color-mix(in srgb, var(--ds-risk-medium) 26%, transparent);
+  --ds-risk-high-tint-hover: color-mix(in srgb, var(--ds-risk-high) 26%, transparent);
+  --ds-risk-critical-tint-hover: color-mix(in srgb, var(--ds-risk-critical) 26%, transparent);
+  --ds-risk-neutral-tint-hover: color-mix(in srgb, var(--ds-risk-neutral) 26%, transparent);
 }
 
 /* Dark-mode token overrides. MUST use :root.dark (specificity 0,2,0) NOT
@@ -196,6 +217,13 @@
   --ds-chart-series-1: var(--ds-accent-brand-dark);
   --ds-chart-series-2: var(--ds-success-dark);
   --ds-chart-series-3: var(--ds-attention-dark);
+  /* Risk tokens — auto-swap to dark variants. The *-tint / *-tint-hover
+   * variables above reference these via var(), so they follow automatically. */
+  --ds-risk-low: #4ade80;      /* green-400 */
+  --ds-risk-medium: #facc15;   /* yellow-400 */
+  --ds-risk-high: #fb923c;     /* orange-400 */
+  --ds-risk-critical: #f87171; /* red-400 */
+  --ds-risk-neutral: #64748b;  /* slate-500 */
 }
 
 /* ===== KEYFRAMES (premium set only) ===== */
@@ -267,6 +295,41 @@
 
 .ds-surface-card { background-color: var(--ds-surface); }
 .dark .ds-surface-card { background-color: var(--ds-surface-subtle-dark); }
+
+/* ===== RISK UTILITIES (ds-risk-*) =====
+ * Backing classes for src/utils/riskTokens.js. Every risk-colored element in
+ * PR review (file-tree dots, risk rail segments, AI summary pill/rows,
+ * PR-level risk badges) reads from these instead of hardcoding Tailwind
+ * color utilities. Dark mode auto-swaps via the --ds-risk-* custom-property
+ * override above — no `dark:` variant needed at call sites. */
+.ds-risk-fill-low      { background-color: var(--ds-risk-low); }
+.ds-risk-fill-medium   { background-color: var(--ds-risk-medium); }
+.ds-risk-fill-high     { background-color: var(--ds-risk-high); }
+.ds-risk-fill-critical { background-color: var(--ds-risk-critical); }
+.ds-risk-fill-neutral  { background-color: var(--ds-risk-neutral); }
+
+.ds-risk-text-low      { color: var(--ds-risk-low); }
+.ds-risk-text-medium   { color: var(--ds-risk-medium); }
+.ds-risk-text-high     { color: var(--ds-risk-high); }
+.ds-risk-text-critical { color: var(--ds-risk-critical); }
+.ds-risk-text-neutral  { color: var(--ds-risk-neutral); }
+
+.ds-risk-tint-low      { background-color: var(--ds-risk-low-tint); }
+.ds-risk-tint-medium   { background-color: var(--ds-risk-medium-tint); }
+.ds-risk-tint-high     { background-color: var(--ds-risk-high-tint); }
+.ds-risk-tint-critical { background-color: var(--ds-risk-critical-tint); }
+.ds-risk-tint-neutral  { background-color: var(--ds-risk-neutral-tint); }
+.ds-risk-tint-low:hover      { background-color: var(--ds-risk-low-tint-hover); }
+.ds-risk-tint-medium:hover   { background-color: var(--ds-risk-medium-tint-hover); }
+.ds-risk-tint-high:hover     { background-color: var(--ds-risk-high-tint-hover); }
+.ds-risk-tint-critical:hover { background-color: var(--ds-risk-critical-tint-hover); }
+.ds-risk-tint-neutral:hover  { background-color: var(--ds-risk-neutral-tint-hover); }
+
+.ds-risk-ring-low      { box-shadow: inset 0 0 0 1px var(--ds-risk-low-tint-hover); }
+.ds-risk-ring-medium   { box-shadow: inset 0 0 0 1px var(--ds-risk-medium-tint-hover); }
+.ds-risk-ring-high     { box-shadow: inset 0 0 0 1px var(--ds-risk-high-tint-hover); }
+.ds-risk-ring-critical { box-shadow: inset 0 0 0 1px var(--ds-risk-critical-tint-hover); }
+.ds-risk-ring-neutral  { box-shadow: inset 0 0 0 1px var(--ds-risk-neutral-tint-hover); }
 
 /* ===== FOCUS RING (premium) ===== */
 .ds-focus-ring { outline: none; transition: box-shadow var(--ds-duration-fast) var(--ds-ease); }
