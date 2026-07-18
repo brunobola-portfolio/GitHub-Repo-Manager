@@ -12,17 +12,21 @@ export function __resetMarksAuthGateForTests() {
   marksUnauthorized = false
 }
 
+// Frontend-only demo mode has no backend session — skip the request entirely
+// instead of letting every repo surface log a guaranteed 401.
+const MOCK_MODE = import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true'
+
 /**
  * Fetches migration marks for a given target full name (e.g. "owner/repo").
  * Returns marks sorted by created_at DESC, plus loading/error state.
  */
 export function useMigrationMarksFor(targetFullName) {
   const [marks, setMarks] = useState([])
-  const [loading, setLoading] = useState(() => !!targetFullName && !marksUnauthorized)
+  const [loading, setLoading] = useState(() => !!targetFullName && !marksUnauthorized && !MOCK_MODE)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (!targetFullName || marksUnauthorized) return undefined
+    if (!targetFullName || marksUnauthorized || MOCK_MODE) return undefined
     let cancelled = false
     const url = `/api/migration/marks?targetFullName=${encodeURIComponent(targetFullName)}`
     fetch(url, { credentials: 'include' })

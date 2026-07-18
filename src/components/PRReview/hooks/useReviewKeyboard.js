@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { isBlockingDialogOpen } from '../../../utils/dialogState'
 
 const DEBOUNCE_MS = 80
 
@@ -36,6 +37,10 @@ export function useReviewKeyboard({
         if (!enabled) return
 
         function handleKeyDown(e) {
+            // A modal (e.g. the Migration Wizard) covering the review must
+            // swallow keys itself — Escape here would close the view UNDER it.
+            if (isBlockingDialogOpen()) return
+
             const target = e.target
             const isCtrlCombo = e.ctrlKey
 

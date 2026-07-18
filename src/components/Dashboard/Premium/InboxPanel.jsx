@@ -160,7 +160,7 @@ export function InboxPanel({ onSelectItem }) {
                     {sections.map(s => (
                         <InboxSection
                             key={s.key}
-                            label={s.label}
+                            label={s.label || s.key.replace(/_/g, ' ')}
                             count={s.items.length}
                             active={s.key === activeKey}
                             onClick={() => setActiveKey(s.key)}

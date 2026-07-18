@@ -16,6 +16,7 @@ function mockSeed() {
     return [
         {
             key: 'needs_review',
+            label: 'Needs my review',
             items: [
                 {
                     id: 'mock-inbox-review-1',
@@ -37,6 +38,7 @@ function mockSeed() {
         },
         {
             key: 'my_prs',
+            label: 'My open PRs',
             items: [
                 {
                     id: 'mock-inbox-mypr-1',

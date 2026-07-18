@@ -67,13 +67,18 @@ const cardVariants = {
   }),
 }
 
+// Demo mode has no backend session — the git-status probe would 401; the
+// state starts pre-resolved to "available" and the fetch effect is skipped.
+const MOCK_MODE = import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true'
+
 export default function SourceTypeStep({ source, onChange, onAdvance }) {
-  const [gitAvailable, setGitAvailable] = useState(null)
+  const [gitAvailable, setGitAvailable] = useState(() => (MOCK_MODE ? true : null))
   const [pendingType, setPendingType] = useState(null)
   const [hoveredType, setHoveredType] = useState(null)
   const timerRef = useRef(null)
 
   useEffect(() => {
+    if (MOCK_MODE) return
     fetch('/api/import/git-status', { credentials: 'include' })
       .then((r) => r.json())
       .then((data) => setGitAvailable(data.available !== false))

@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import SourceStep from '../../../src/components/MigrationWizard/steps/SourceStep'
+
+// .env.test defaults VITE_MOCK_MODE=true, where useSourceStepForm skips the
+// env-auth/oauth-status probes these tests exercise; force the real branch.
+vi.stubEnv('VITE_MOCK_MODE', 'false')
+
+const { default: SourceStep } = await import('../../../src/components/MigrationWizard/steps/SourceStep')
 
 const mockOauthHook = {
   oauthStatus: 'idle',
