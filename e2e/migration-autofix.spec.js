@@ -78,7 +78,9 @@ async function installMocks(page) {
 test.describe('Migration Auto-Fix Drawer', () => {
   test('reduces blockers after Apply selected', async ({ page }) => {
     await installMocks(page)
-    await page.goto('/')
+    // e2eLiveAzureAuth: the demo-mode guard in useSourceStepForm skips the
+    // env-auth/oauth-status fetches this spec stubs via page.route above.
+    await page.goto('/?e2eLiveAzureAuth=1')
 
     // Wait for mock-mode app to mount (keyboard shortcut only active once authenticated)
     await expect(page.getByRole('button', { name: 'Repositories' })).toBeVisible({ timeout: 15000 })

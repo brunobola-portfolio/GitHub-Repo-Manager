@@ -2,8 +2,14 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 
 // Demo mode has no backend session — both credential probes would 401, so the
 // state starts pre-resolved to the common self-host answer (no server PAT, no
-// OAuth app) and the fetch effect is skipped entirely.
-const MOCK_MODE = import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true'
+// OAuth app) and the fetch effect is skipped entirely. `?e2eLiveAzureAuth=1`
+// re-enables the real fetches so Playwright specs can stub them with
+// page.route (same seam style as mockRepoDetail's e2eRepoApiLive).
+const E2E_LIVE_AZURE_AUTH = (() => {
+  if (typeof window === 'undefined') return false
+  try { return new URLSearchParams(window.location.search).has('e2eLiveAzureAuth') } catch { return false }
+})()
+const MOCK_MODE = import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true' && !E2E_LIVE_AZURE_AUTH
 import { parseAzureUrl } from '../../../utils/azureUrlParser'
 import { classifyProvider } from '../../../utils/azureProvider'
 import { getCsrfToken } from '../../../utils/api'
