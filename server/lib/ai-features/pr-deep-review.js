@@ -1,6 +1,7 @@
 import { sanitizeForPrompt } from './sanitize.js';
 import { getResolvedPrompt } from '../ai-prompt-registry.js';
 import { AIError, AI_ERROR_CODE } from '../ai-provider.js';
+import { resolveMaxOutputTokens } from '../ai-output-budget.js';
 
 const MAX_LINE_COMMENTS = 25;
 const MAX_DIFF_CHARS = 80000;
@@ -122,6 +123,7 @@ ${sanitizeForPrompt(JSON.stringify(
         generationConfig: {
             responseMimeType: 'application/json',
             responseSchema: DEEP_REVIEW_SCHEMA,
+            maxOutputTokens: resolveMaxOutputTokens(),
         },
     });
 

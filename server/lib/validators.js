@@ -197,7 +197,10 @@ export const azureTfvcInPlaceSchema = z.object({
 
 export const aiChatSchema = z.object({
     message: z.string().min(1).max(10000),
-    context: z.record(z.string(), z.unknown()).optional(),
+    context: z.record(z.string(), z.unknown()).optional()
+        .refine((v) => !v || JSON.stringify(v).length <= 20000, {
+            message: 'context payload too large (max 20000 chars serialized)',
+        }),
     history: z.array(z.object({
         role: z.enum(['user', 'assistant']),
         content: z.string().max(10000)

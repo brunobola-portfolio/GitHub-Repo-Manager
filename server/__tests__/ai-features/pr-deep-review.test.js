@@ -106,6 +106,39 @@ describe('runDeepReview', () => {
             runDeepReview({ provider: null, ...baseCtx })
         ).rejects.toThrow(/provider/i);
     });
+
+    describe('output-token cap enforcement', () => {
+        const originalEnv = process.env.AI_MAX_OUTPUT_TOKENS;
+        afterEach(() => {
+            if (originalEnv === undefined) delete process.env.AI_MAX_OUTPUT_TOKENS;
+            else process.env.AI_MAX_OUTPUT_TOKENS = originalEnv;
+        });
+
+        it('merges the resolved max-output-tokens cap into generationConfig alongside the JSON schema', async () => {
+            process.env.AI_MAX_OUTPUT_TOKENS = '3333';
+            let captured;
+            const provider = buildProvider(async (args) => {
+                captured = args;
+                return { parsed: sampleParsed };
+            });
+            await runDeepReview({ provider, ...baseCtx });
+            expect(captured.generationConfig.maxOutputTokens).toBe(3333);
+            // Existing schema-enforcement fields must survive the merge.
+            expect(captured.generationConfig.responseMimeType).toBe('application/json');
+            expect(captured.generationConfig.responseSchema).toBe(DEEP_REVIEW_SCHEMA);
+        });
+
+        it('falls back to the default cap when AI_MAX_OUTPUT_TOKENS is unset', async () => {
+            delete process.env.AI_MAX_OUTPUT_TOKENS;
+            let captured;
+            const provider = buildProvider(async (args) => {
+                captured = args;
+                return { parsed: sampleParsed };
+            });
+            await runDeepReview({ provider, ...baseCtx });
+            expect(captured.generationConfig.maxOutputTokens).toBe(2048);
+        });
+    });
 });
 
 describe('runDeepReview with resolvedPrompt', () => {

@@ -17,7 +17,7 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
                     aria-label={expanded ? `Collapse: ${item.title}` : `Expand: ${item.title}`}
                     aria-expanded={expanded}
                     onClick={() => setExpanded(v => !v)}
-                    className="shrink-0 text-slate-400 hover:text-indigo-500"
+                    className="shrink-0 text-slate-400 hover:text-indigo-500 p-2 -m-2 rounded"
                     style={{
                         transition: `transform var(--ds-duration-row-expand) var(--ds-ease-row-expand)`,
                         transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
@@ -51,7 +51,7 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
                         type="button"
                         aria-label="Snooze item"
                         onClick={() => onSnooze?.(item)}
-                        className="p-1.5 rounded-md text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 focus-visible:opacity-100"
+                        className="p-2.5 -m-1 rounded-md text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 focus-visible:opacity-100"
                     >
                         <Clock className="w-3.5 h-3.5" />
                     </button>
@@ -59,7 +59,7 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
                         type="button"
                         aria-label="Archive item"
                         onClick={() => onArchive?.(item.id)}
-                        className="p-1.5 rounded-md text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus-visible:opacity-100"
+                        className="p-2.5 -m-1 rounded-md text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus-visible:opacity-100"
                     >
                         <Archive className="w-3.5 h-3.5" />
                     </button>

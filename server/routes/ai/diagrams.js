@@ -110,6 +110,13 @@ Rules:
 - Keep node labels short (folder/module names). Edges represent your best-effort inference of how modules relate from names and structure — this is an approximation, not a verified static-analysis dependency graph.
 - Output ONLY the raw Mermaid diagram source. No prose, no explanation, no markdown code fence — start directly with the diagram type declaration.${truncationNote}${sparseNote}
 
+Example of valid Mermaid flowchart SYNTAX only (format reference — this example's nodes are generic placeholders, not this repository's actual structure, do not reuse its content):
+flowchart TD
+  A[Client] --> B[API Layer]
+  B --> C[Service]
+  C --> D[(Database)]
+  B --> E[Auth]
+
 Top-level contents:
 ${topLevelList || '(none detected)'}
 

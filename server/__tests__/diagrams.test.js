@@ -130,6 +130,20 @@ describe('buildDiagramPrompt (pure)', () => {
         expect(prompt).toMatch(/very little detectable file structure/i);
     });
 
+    it('includes a few-shot Mermaid syntax example, clearly marked as format reference not content', () => {
+        const prompt = buildDiagramPrompt({
+            repo: { full_name: 'acme/api', language: 'JavaScript' },
+            diagramType: 'architecture',
+            topLevel: [{ name: 'src', type: 'dir' }],
+            treeEntries: [{ path: 'src/index.js' }, { path: 'server/index.js' }],
+            truncated: false,
+            readmeSnippet: '# api\n',
+        });
+        expect(prompt).toContain('flowchart TD');
+        expect(prompt).toMatch(/format reference/i);
+        expect(prompt).toMatch(/not this repository's actual structure/i);
+    });
+
     it('appends the failed source + parser error on retry', () => {
         const prompt = buildDiagramPrompt({
             repo: { full_name: 'acme/api' }, diagramType: 'architecture',
