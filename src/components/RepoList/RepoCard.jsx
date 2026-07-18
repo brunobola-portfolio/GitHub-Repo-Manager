@@ -40,7 +40,7 @@ function RepoCardQuickActions({ repo, onAction, onContextMenu }) {
 						<motion.button
 							onClick={(e) => { e.stopPropagation(); onAction(a.id, repo) }}
 							whileTap={TAP}
-							className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
+							className="p-2 -m-0.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
 							aria-label={label}
 						>
 							<Icon className="w-4 h-4" />
@@ -52,7 +52,7 @@ function RepoCardQuickActions({ repo, onAction, onContextMenu }) {
 				<motion.button
 					onClick={(e) => { e.stopPropagation(); onContextMenu(e) }}
 					whileTap={TAP}
-					className="p-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
+					className="p-2 -m-0.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
 					aria-label="More actions"
 				>
 					<MoreHorizontal className="w-4 h-4" />
