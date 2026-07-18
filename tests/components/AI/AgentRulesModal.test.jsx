@@ -85,7 +85,8 @@ describe('AgentRulesModal — AI-grounded generate + preview', () => {
 
         expect(screen.getByText(/AI-grounded/i)).toBeInTheDocument()
         expect(await screen.findByTestId('diff-view-AGENTS.md (generated)')).toHaveTextContent('npm ci')
-        expect(screen.getByRole('button', { name: /^commit$/i })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /^apply$/i })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /^open pr$/i })).toBeInTheDocument()
     })
 
     it('never fabricates a command that was not detected — no test command shown as fact', async () => {
@@ -108,12 +109,12 @@ describe('AgentRulesModal — deterministic no-AI fallback (Addendum 6b.2)', () 
         render(<AgentRulesModal isOpen repo={REPO} onClose={() => {}} />)
         await user.click(screen.getByRole('button', { name: /^generate$/i }))
 
-        expect(await screen.findByText(/deterministic template \(no ai polish\)/i)).toBeInTheDocument()
+        expect(await screen.findByText(/deterministic \(no ai\)/i)).toBeInTheDocument()
         expect(screen.getByText(/AI is not configured/i)).toBeInTheDocument()
         expect(screen.queryByText(/AI-grounded/i)).not.toBeInTheDocument()
     })
 
-    it('still ships a usable deterministic preview when the AI quota is exceeded (429)', async () => {
+    it('on quota-exceeded (429) shows the error banner first — same manual-fallback step as README Studio / Diagram Generator, no silent auto-advance', async () => {
         const user = userEvent.setup()
         const quotaError = new Error('Agent Rules limit reached')
         quotaError.status = 429
@@ -127,8 +128,15 @@ describe('AgentRulesModal — deterministic no-AI fallback (Addendum 6b.2)', () 
         render(<AgentRulesModal isOpen repo={REPO} onClose={() => {}} />)
         await user.click(screen.getByRole('button', { name: /^generate$/i }))
 
+        // Error banner shown first — the diff preview is NOT reached automatically.
+        expect(await screen.findByRole('alert')).toBeInTheDocument()
+        expect(screen.queryByTestId('diff-view-AGENTS.md (generated)')).not.toBeInTheDocument()
+
+        const fallbackButton = screen.getByRole('button', { name: /use deterministic version instead/i })
+        await user.click(fallbackButton)
+
         expect(await screen.findByTestId('diff-view-AGENTS.md (generated)')).toBeInTheDocument()
-        expect(screen.getByText(/deterministic template \(no ai polish\)/i)).toBeInTheDocument()
+        expect(screen.getByText(/deterministic \(no ai\)/i)).toBeInTheDocument()
     })
 
     it('surfaces a retryable error state for a genuine transport failure (not a quota/AI-availability case)', async () => {
@@ -157,7 +165,7 @@ describe('AgentRulesModal — commit flow', () => {
 
         expect(aiApi.agentRules.commit).not.toHaveBeenCalled()
 
-        await user.click(screen.getByRole('button', { name: /^commit$/i }))
+        await user.click(screen.getByRole('button', { name: /^apply$/i }))
 
         await waitFor(() => expect(aiApi.agentRules.commit).toHaveBeenCalledTimes(1))
         const [owner, repo, payload] = aiApi.agentRules.commit.mock.calls[0]
@@ -196,7 +204,7 @@ describe('AgentRulesModal — commit flow', () => {
         await screen.findByTestId('diff-view-AGENTS.md (generated)')
         await screen.findByTestId('diff-view-CLAUDE.md (generated)')
 
-        await user.click(screen.getByRole('button', { name: /^commit$/i }))
+        await user.click(screen.getByRole('button', { name: /^apply$/i }))
         await waitFor(() => expect(aiApi.agentRules.commit).toHaveBeenCalledTimes(1))
         const [, , payload] = aiApi.agentRules.commit.mock.calls[0]
         expect(payload.files.map((f) => f.filePath)).toEqual(['AGENTS.md', 'CLAUDE.md'])
@@ -213,7 +221,7 @@ describe('AgentRulesModal — commit flow', () => {
         render(<AgentRulesModal isOpen repo={REPO} onClose={() => {}} />)
         await user.click(screen.getByRole('button', { name: /^generate$/i }))
         await screen.findByTestId('diff-view-AGENTS.md (generated)')
-        await user.click(screen.getByRole('button', { name: /^commit$/i }))
+        await user.click(screen.getByRole('button', { name: /^apply$/i }))
 
         expect(await screen.findByText(/agent rules updated/i)).toBeInTheDocument()
         expect(screen.getByRole('link', { name: /view pr/i })).toHaveAttribute('href', 'https://github.com/acme/lib/pull/9')

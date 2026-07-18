@@ -138,6 +138,28 @@ describe('ImageGeneratorModal — configure → generate → preview', () => {
         expect(aiApi.images.commit).not.toHaveBeenCalled()
     })
 
+    it('shows loading feedback on Regenerate instead of leaving the stale image with no sign anything happened', async () => {
+        const user = userEvent.setup()
+        aiApi.images.generate.mockResolvedValueOnce(GENERATE_RESULT)
+        render(<ImageGeneratorModal isOpen repo={REPO} onClose={() => {}} />)
+
+        await user.click(await screen.findByRole('button', { name: /^generate$/i }))
+        expect(await screen.findByTestId('image-generator-preview')).toBeInTheDocument()
+
+        let resolveRegenerate
+        aiApi.images.generate.mockImplementationOnce(() => new Promise((resolve) => { resolveRegenerate = resolve }))
+        await user.click(screen.getByRole('button', { name: /^regenerate$/i }))
+
+        expect(await screen.findByTestId('image-generator-regenerating')).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /regenerating/i })).toBeDisabled()
+        // Stale preview stays mounted (visible under the overlay) — it's not
+        // yanked away, just visibly dimmed/overlaid while the new one loads.
+        expect(screen.getByTestId('image-generator-preview')).toBeInTheDocument()
+
+        resolveRegenerate({ ...GENERATE_RESULT, base64: 'bmV3aW1n' })
+        await waitFor(() => expect(screen.queryByTestId('image-generator-regenerating')).not.toBeInTheDocument())
+    })
+
     it('passes the user-typed style hint as promptExtras', async () => {
         const user = userEvent.setup()
         aiApi.images.generate.mockResolvedValue(GENERATE_RESULT)

@@ -99,3 +99,17 @@ describe('OverviewTab — Topics', () => {
         expect(screen.getByText('vite')).toBeInTheDocument()
     })
 })
+
+describe('OverviewTab — AI Insights entry row', () => {
+    it('renders "View AI Insights" as the shared Button primitive, matching the tap-target guarantee of its 4 row siblings', async () => {
+        mockReadme('')
+        renderWithProviders(<OverviewTab api={makeApi()} repoData={REPO} onUpdate={() => {}} />)
+
+        const insightsButton = await screen.findByRole('button', { name: /view ai insights/i })
+        const readmeStudioButton = screen.getByRole('button', { name: /readme studio/i })
+        // Button's primitive enforces min-h-[44px]/min-w-[44px] for every
+        // size except the explicit 'xs' opt-out — both buttons must carry it.
+        expect(insightsButton.className).toMatch(/min-h-\[44px\]/)
+        expect(readmeStudioButton.className).toMatch(/min-h-\[44px\]/)
+    })
+})

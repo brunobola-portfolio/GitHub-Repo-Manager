@@ -7,7 +7,8 @@
  * enhancement that never blocks or fails the report card render.
  */
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { screen, waitFor, cleanup, within } from '@testing-library/react'
+import { screen, waitFor, cleanup, within, fireEvent } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { SecurityScanModal } from '@/components/security/SecurityScanModal'
 import { renderWithProviders } from '../../helpers/render-with-providers'
 
@@ -161,5 +162,39 @@ describe('SecurityScanModal — report card', () => {
 
         expect(await screen.findByText(/network down/i)).toBeInTheDocument()
         expect(screen.queryByTestId('security-check-list')).not.toBeInTheDocument()
+    })
+
+    it('offers a Retry action on a load error, and recovers the report card on click', async () => {
+        const user = userEvent.setup()
+        mockGetSecurityScan.mockRejectedValueOnce(new Error('network down'))
+        mockGetSecurityPostureSummary.mockResolvedValue({ summary: 's', topActions: [] })
+        renderWithProviders(<SecurityScanModal isOpen onClose={vi.fn()} repo={REPO} />)
+
+        expect(await screen.findByText(/network down/i)).toBeInTheDocument()
+        const retryButton = screen.getByRole('button', { name: /retry/i })
+        const callsBeforeRetry = mockGetSecurityScan.mock.calls.length
+
+        mockGetSecurityScan.mockResolvedValueOnce(baseScanResponse())
+        await user.click(retryButton)
+
+        expect(await screen.findByTestId('security-check-list')).toBeInTheDocument()
+        // Mock accumulates calls across this file's earlier tests (it's never
+        // reset between `it`s here) — assert the retry click added exactly
+        // one more call rather than an absolute count.
+        expect(mockGetSecurityScan.mock.calls.length).toBe(callsBeforeRetry + 1)
+    })
+
+    it('allows backdrop-dismiss — this read-only surface has no in-flight write to protect', async () => {
+        mockGetSecurityScan.mockResolvedValue(baseScanResponse())
+        mockGetSecurityPostureSummary.mockResolvedValue({ summary: 's', topActions: [] })
+        const onClose = vi.fn()
+        renderWithProviders(<SecurityScanModal isOpen onClose={onClose} repo={REPO} />)
+
+        await screen.findByTestId('security-check-list')
+        const backdrop = document.querySelector('[data-modal-backdrop="true"]')
+        expect(backdrop).not.toBeNull()
+        fireEvent.click(backdrop)
+
+        expect(onClose).toHaveBeenCalledTimes(1)
     })
 })

@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Modal } from '../ui/Modal'
 import { SectionPanel } from '../ui/SectionPanel'
 import { reposApi } from '../../api/repos'
-import { ShieldCheck, CheckCircle2, XCircle, Lock, MinusCircle, Info, Sparkles } from 'lucide-react'
+import { ShieldCheck, CheckCircle2, XCircle, Lock, MinusCircle, Info, Sparkles, RotateCcw } from 'lucide-react'
 import { EmptyState } from '../ui/EmptyState'
 import { SectionSpinner, Spinner } from '../ui/Spinner'
 import { Badge } from '../ui/Badge'
+import { Button } from '../ui/Button'
 import { riskFillClass, riskTextClass, riskTintClass, riskRingClass, normalizeRiskLevel } from '../../utils/riskTokens'
 import { listContainer, listItem, fadeRise } from '../ui/motion'
 
@@ -228,22 +229,30 @@ export function SecurityScanModal({ isOpen, onClose, repo }) {
     const [data, setData] = useState(null)
     const [error, setError] = useState(null)
 
-    useEffect(() => {
-        if (!isOpen || !repo) return
+    // Shared by the mount effect below AND the error state's Retry button —
+    // both need to (re)kick off the same fetch, resetting loading/error
+    // synchronously first so a retry doesn't flash stale content.
+    const loadScan = useCallback(() => {
+        if (!repo) return undefined
         let cancelled = false
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset loading/error synchronously before the async fetch to avoid stale UI
         setLoading(true)
         setError(null)
         reposApi.getSecurityScan(repo.owner.login, repo.name)
             .then(d => { if (!cancelled) { setData(d); setLoading(false) } })
             .catch(err => { if (!cancelled) { setError(err); setLoading(false) } })
         return () => { cancelled = true }
-    }, [isOpen, repo])
+    }, [repo])
+
+    useEffect(() => {
+        if (!isOpen) return undefined
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: loadScan resets loading/error synchronously before the async fetch to avoid stale UI (it's also called directly from the Retry button, outside any effect)
+        return loadScan()
+    }, [isOpen, loadScan])
 
     const checks = data?.checks || []
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Security Posture" subtitle={repo?.full_name} size="lg" closeOnBackdrop={false} data-testid="security-scan-modal">
+        <Modal isOpen={isOpen} onClose={onClose} title="Security Posture" subtitle={repo?.full_name} size="lg" data-testid="security-scan-modal">
             <div>
                 {loading ? (
                     <SectionSpinner label="Scanning…" />
@@ -251,8 +260,16 @@ export function SecurityScanModal({ isOpen, onClose, repo }) {
                     // Security & Secrets Scan moved off the Pro paywall to Free
                     // (2026-07-18 rebalance) — the backend no longer 403s for tier, so
                     // any error here is a genuine failure (network/GitHub API), not an
-                    // upsell signal.
-                    <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-900 dark:text-red-300 text-sm">{error.message || String(error)}</div>
+                    // upsell signal. Kept as a raw message (not AIErrorState) since this
+                    // isn't an AI surface and the message is a real GitHub/network error,
+                    // not something to hide behind a generic code-mapped string — but it
+                    // still needs a way out other than closing the whole modal.
+                    <div role="alert" className="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-900 dark:text-red-300 text-sm space-y-2">
+                        <p>{error.message || String(error)}</p>
+                        <Button variant="secondary" size="sm" onClick={loadScan}>
+                            <RotateCcw className="w-3.5 h-3.5" /> Retry
+                        </Button>
+                    </div>
                 ) : data ? (
                     <div className="space-y-6">
                         <ScoreHeader score={data.score} />

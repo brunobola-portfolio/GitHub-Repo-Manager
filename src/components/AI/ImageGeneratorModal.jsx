@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { ImagePlus, AlertTriangle, ArrowLeft, RotateCcw, CheckCircle, ExternalLink, Settings, Workflow } from 'lucide-react'
-import { Modal } from '../ui/Modal'
+import { Modal, ModalFooter } from '../ui/Modal'
 import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
 import { SectionSpinner } from '../ui/Spinner'
@@ -10,6 +10,7 @@ import { AIErrorState } from '../ui/AIErrorState'
 import { Select } from '../ui/Select'
 import { Field } from '../ui/form/Field'
 import { Input } from '../ui/form/Input'
+import { TRANSITION } from '../ui/motion'
 import { aiApi } from '../../api/ai'
 import { openAISettings } from '../../utils/appEvents'
 
@@ -248,13 +249,18 @@ export function ImageGeneratorModal({ isOpen, onClose, repo, onFallbackToDiagram
                     </div>
                 )}
 
-                <div className="flex justify-center rounded-lg border border-slate-200 dark:border-slate-800 p-3 bg-white dark:bg-slate-900">
+                <div className="relative flex justify-center rounded-lg border border-slate-200 dark:border-slate-800 p-3 bg-white dark:bg-slate-900">
                     <img
                         src={`data:${imageResult.mimeType};base64,${imageResult.base64}`}
                         alt={`AI-generated ${activePreset?.label || imageResult.preset} preview`}
-                        className="max-w-full max-h-80 rounded-md object-contain"
+                        className={`max-w-full max-h-80 rounded-md object-contain ${generating ? 'opacity-40' : ''}`}
                         data-testid="image-generator-preview"
                     />
+                    {generating && (
+                        <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-white/60 dark:bg-slate-900/60" data-testid="image-generator-regenerating">
+                            <SectionSpinner label="Regenerating image…" padding="py-2" />
+                        </div>
+                    )}
                 </div>
 
                 <Field label="Commit message">
@@ -295,38 +301,38 @@ export function ImageGeneratorModal({ isOpen, onClose, repo, onFallbackToDiagram
 
     const renderFooter = () => {
         if (capabilityLoading || capabilityError || capability?.available === false) return (
-            <Button variant="ghost" onClick={onClose}>Close</Button>
+            <ModalFooter align="right"><Button variant="ghost" onClick={onClose}>Close</Button></ModalFooter>
         )
         if (step === 'configure') {
             return (
-                <>
+                <ModalFooter align="right">
                     <Button variant="ghost" onClick={onClose}>Close</Button>
                     <Button onClick={generate} disabled={generating}>
                         {generating ? 'Generating…' : 'Generate'}
                     </Button>
-                </>
+                </ModalFooter>
             )
         }
         if (step === 'result') {
             return (
-                <>
-                    <Button variant="ghost" onClick={backToConfigure} disabled={committing}>
+                <ModalFooter align="right">
+                    <Button variant="ghost" onClick={backToConfigure} disabled={committing || generating}>
                         <ArrowLeft className="w-4 h-4" /> Back
                     </Button>
                     <Button variant="secondary" onClick={generate} disabled={generating || committing}>
-                        <RotateCcw className="w-4 h-4" /> Regenerate
+                        <RotateCcw className="w-4 h-4" /> {generating ? 'Regenerating…' : 'Regenerate'}
                     </Button>
-                    <Button variant="secondary" onClick={() => doCommit('pr')} disabled={committing || !commitMessage.trim()}>
+                    <Button variant="secondary" onClick={() => doCommit('pr')} disabled={committing || generating || !commitMessage.trim()}>
                         {committing ? 'Working…' : 'Open PR'}
                     </Button>
-                    <Button onClick={() => doCommit('direct')} disabled={committing || !commitMessage.trim()}>
+                    <Button onClick={() => doCommit('direct')} disabled={committing || generating || !commitMessage.trim()}>
                         {committing ? 'Working…' : 'Apply'}
                     </Button>
-                </>
+                </ModalFooter>
             )
         }
         if (step === 'committed') {
-            return <Button onClick={onClose}>Done</Button>
+            return <ModalFooter align="right"><Button onClick={onClose}>Done</Button></ModalFooter>
         }
         return null
     }
@@ -359,7 +365,7 @@ export function ImageGeneratorModal({ isOpen, onClose, repo, onFallbackToDiagram
             footer={renderFooter()}
             closeOnBackdrop={!committing}
         >
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={TRANSITION.fast}>
                 {body}
             </motion.div>
         </Modal>

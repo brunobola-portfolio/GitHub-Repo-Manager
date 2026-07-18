@@ -49,6 +49,12 @@ export function Select({
     onOpen,
     extraOption,
     renderOption,
+    // Forwarded by <Field> (src/components/ui/form/Field.jsx) onto the single
+    // child it wraps so <label htmlFor> and hint/error text stay associated
+    // with the control — same contract Input/Textarea already honor. Without
+    // this the trigger button never receives either prop.
+    id,
+    'aria-describedby': ariaDescribedBy,
 }) {
     const [isOpen, setIsOpen] = useState(false)
     const [focusedIndex, setFocusedIndex] = useState(0)
@@ -274,6 +280,7 @@ export function Select({
         <div ref={selectRef} className={`relative ${className}`} onKeyDown={handleKeyDown}>
             {/* Select Trigger */}
             <button
+                id={id}
                 type="button"
                 role="combobox"
                 disabled={disabled}
@@ -282,6 +289,7 @@ export function Select({
                 aria-expanded={isOpen}
                 aria-controls={listboxId}
                 aria-activedescendant={isOpen && focusedIndex >= 0 ? `${listboxId}-opt-${focusedIndex}` : undefined}
+                aria-describedby={ariaDescribedBy}
                 aria-label={label}
                 className={`
                     w-full flex items-center justify-between gap-2
