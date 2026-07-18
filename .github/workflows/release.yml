@@ -29,8 +29,10 @@ jobs:
   release:
     runs-on: ubuntu-latest
     env:
+      # NOTE: NODE_ENV must NOT be 'production' at the job level — that makes
+      # `npm ci` skip devDependencies (vite, husky), breaking install + build.
+      # Production mode is set only on the build step below.
       TAG: ${{ github.event.inputs.tag || github.ref_name }}
-      NODE_ENV: production
     steps:
       - uses: actions/checkout@v7
         with:
@@ -45,6 +47,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
 
       - name: Build production bundle
+        env:
+          NODE_ENV: production
         run: npm run build
 
       - name: Package dist bundle
