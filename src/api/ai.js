@@ -510,6 +510,54 @@ export const aiApi = {
         },
     },
 
+    // Agent Rules Generator — grounded AGENTS.md / CLAUDE.md generation
+    // (metered via agentRulesPerMonth / ai_agent_rules), always with a
+    // deterministic zero-AI-cost fallback (Addendum 6b.2): the server never
+    // hard-fails when AI is unavailable — it returns `deterministic: true`
+    // with a real, usable template instead, so this wrapper never needs a
+    // `mock`/`withAIConfigured` short-circuit of its own. `commit` reuses the
+    // existing per-repo write path (community-health/commit-fix's sibling).
+    // See docs/specs/2026-07-18-community-wow-wave6.md (Feature 3).
+    agentRules: {
+        generate: async (owner, repo, config = {}) => {
+            const res = await fetch(`${API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/agent-rules/generate`, {
+                method: 'POST',
+                headers: await mutationHeaders(),
+                credentials: 'include',
+                body: JSON.stringify(config),
+            });
+            // Quota-exceeded (429) still carries a usable deterministic
+            // fallback in the body (Addendum 6b.2) — surface it on the
+            // thrown error instead of discarding it like the generic 429
+            // handler in handleAIResponse() does, so the modal can render
+            // the fallback template alongside the upgrade CTA.
+            if (res.status === 429) {
+                const body = await res.json().catch(() => ({}));
+                const error = new Error(body.message || body.error || 'Agent Rules quota exceeded');
+                error.status = 429;
+                error.tierError = true;
+                error.upgradeUrl = body.upgradeUrl || '/pricing';
+                error.limit = body.limit;
+                error.current = body.current;
+                error.deterministic = body.deterministic;
+                error.files = body.files;
+                error.existing = body.existing;
+                error.notes = body.notes;
+                throw error;
+            }
+            return handleAIResponse(res, 'agent rules generate');
+        },
+        commit: async (owner, repo, { files, mode = 'direct' }) => {
+            const res = await fetch(`${API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/agent-rules/commit`, {
+                method: 'POST',
+                headers: await mutationHeaders(),
+                credentials: 'include',
+                body: JSON.stringify({ files, mode }),
+            });
+            return handleAIResponse(res, 'agent rules commit');
+        },
+    },
+
     // Post-migration polish — thin wrappers around existing endpoints, grouped
     // so useAIPolish can stay free of fetch wiring and stays easy to mock in
     // tests. See docs/specs/2026-05-08-post-migration-ai-polish.md for the

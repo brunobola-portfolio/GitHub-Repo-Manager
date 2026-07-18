@@ -5,7 +5,7 @@ import { ReadmeToc } from '../ui/ReadmeToc'
 import { RepoMarkdown } from '../ui/RepoMarkdown'
 import { SectionPanel } from '../ui/SectionPanel'
 import { StaleDataBadge } from '../ui/StaleDataBadge'
-import { FileText, BookOpen, Sparkles, Info, Wand2, Workflow } from 'lucide-react'
+import { FileText, BookOpen, Sparkles, Info, Wand2, Workflow, Bot } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
 import { Button } from '../ui/Button'
 import { useModal } from '../../hooks/useModal'
@@ -16,6 +16,7 @@ import { MigrationProvenanceCard } from './MigrationProvenanceCard'
 import { formatFileSize, formatDate } from '../../utils/format'
 import { ReadmeStudioModal } from '../AI/ReadmeStudioModal'
 import { DiagramGenerator } from '../AI/DiagramGenerator'
+import { AgentRulesModal } from '../AI/AgentRulesModal'
 
 /**
  * Decode a GitHub contents-API README payload into a UTF-8 string.
@@ -52,6 +53,7 @@ export function OverviewTab({ api, repoData, onUpdate }) {
     const readmeContainerRef = useRef(null)
     const [readmeStudioOpen, setReadmeStudioOpen] = useState(false)
     const [diagramGeneratorOpen, setDiagramGeneratorOpen] = useState(false)
+    const [agentRulesOpen, setAgentRulesOpen] = useState(false)
 
     const owner = repoData.owner?.login || repoData.full_name?.split('/')[0]
     const repoName = repoData.name
@@ -102,6 +104,10 @@ export function OverviewTab({ api, repoData, onUpdate }) {
                     <Workflow className="w-4 h-4" />
                     Generate Diagram
                 </Button>
+                <Button variant="secondary" onClick={() => setAgentRulesOpen(true)}>
+                    <Bot className="w-4 h-4" />
+                    Agent Rules
+                </Button>
             </div>
 
             {/* Lazy-mounted: only instantiated once opened, so the theme/diff-view
@@ -119,6 +125,13 @@ export function OverviewTab({ api, repoData, onUpdate }) {
                 <DiagramGenerator
                     isOpen={diagramGeneratorOpen}
                     onClose={() => setDiagramGeneratorOpen(false)}
+                    repo={repoData}
+                />
+            )}
+            {agentRulesOpen && (
+                <AgentRulesModal
+                    isOpen={agentRulesOpen}
+                    onClose={() => setAgentRulesOpen(false)}
                     repo={repoData}
                 />
             )}

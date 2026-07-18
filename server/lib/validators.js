@@ -307,6 +307,39 @@ export const aiGenerateDiagramSchema = z.object({
     path: ['failedSource'],
 });
 
+// Agent Rules Generator — POST /:owner/:repo/agent-rules/generate and
+// /agent-rules/commit (server/routes/repos/actions-community.js). `sections`
+// mirrors server/lib/ai-features/agent-rules.js's SECTION_KEYS; unknown keys
+// are stripped rather than rejected so the section toggle set can grow
+// without a schema break.
+const agentRulesSectionsSchema = z.object({
+    setup: z.boolean().optional(),
+    codeStyle: z.boolean().optional(),
+    testing: z.boolean().optional(),
+    devEnv: z.boolean().optional(),
+    prInstructions: z.boolean().optional(),
+    security: z.boolean().optional(),
+    repoLayout: z.boolean().optional(),
+}).strip();
+
+export const agentRulesGenerateSchema = z.object({
+    targetFiles: z.array(z.enum(['AGENTS.md', 'CLAUDE.md'])).min(1).max(2).optional().default(['AGENTS.md']),
+    mode: z.enum(['create', 'refresh']).optional().default('create'),
+    sections: agentRulesSectionsSchema.optional().default({}),
+    strictness: z.enum(['concise', 'detailed']).optional().default('concise'),
+}).strict();
+
+// commit: one entry per target file (1-2), each independently committed via
+// commitOrOpenPR() — see server/lib/ai-features/community-health-fix.js.
+export const agentRulesCommitSchema = z.object({
+    files: z.array(z.object({
+        filePath: z.enum(['AGENTS.md', 'CLAUDE.md']),
+        content: z.string().min(1).max(2_000_000),
+        commitMessage: z.string().min(1).max(10_000),
+    })).min(1).max(2),
+    mode: z.enum(['direct', 'pr']).optional().default('direct'),
+}).strict();
+
 // ---------------------------------------------------------------------------
 // Dev Toolkit endpoints (refine / chat-refine / analyze-context / generate-*)
 // ---------------------------------------------------------------------------

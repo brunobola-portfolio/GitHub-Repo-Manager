@@ -25,6 +25,10 @@
  *
  *   Community:
  *     GET /:owner/:repo/community-health
+ *     POST /:owner/:repo/community-health/generate
+ *     POST /:owner/:repo/community-health/commit-fix
+ *     POST /:owner/:repo/agent-rules/generate
+ *     POST /:owner/:repo/agent-rules/commit
  *
  * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
  */
@@ -42,14 +46,23 @@ import {
     workflowDispatchSchema,
     communityHealthGenerateSchema,
     communityHealthCommitFixSchema,
+    agentRulesGenerateSchema,
+    agentRulesCommitSchema,
     emptyBodySchema,
 } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
+import { requireScope } from '../../middleware/api-key-auth.js';
 import { auditLog } from '../../lib/audit.js';
 import { FILE_GENERATORS, commitOrOpenPR } from '../../lib/ai-features/community-health-fix.js';
+import {
+    detectRepoSignals,
+    generateAgentRules,
+    buildDeterministicAgentRules,
+    buildClaudeImportContent,
+} from '../../lib/ai-features/agent-rules.js';
 import { createProviderForUser } from '../../lib/ai-provider.js';
 import { mapAIErrorToResponse } from '../../middleware/ai-error-mapper.js';
-import { checkUsageLimit, incrementUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { applyOwnerRepoParamValidators } from './_shared.js';
 
 const router = express.Router();
@@ -576,6 +589,138 @@ router.post('/:owner/:repo/community-health/commit-fix', requireAuth, validateBo
         res.json({ committed: true, ...result });
     } catch (e) {
         errorResponse(res, 500, safeError(e, 'community health fix commit failed'));
+    }
+});
+
+// ------------------------------------------------------------------
+// Agent Rules Generator (per-repo) — AGENTS.md / CLAUDE.md
+//   POST /:owner/:repo/agent-rules/generate — returns generated content (no commit)
+//   POST /:owner/:repo/agent-rules/commit   — commits user-confirmed content
+//
+// `generate` NEVER hard-fails when AI is unavailable: it resolves a provider
+// the same way requireAI would but, on failure (not configured, spend cap
+// reached, or a provider error even after guardedGenerate's built-in retry),
+// falls back to a deterministic, zero-AI-cost template built directly from
+// the detected repo signals (Addendum 6b.2, docs/specs/2026-07-18-
+// community-wow-wave6.md). The response's `deterministic` flag tells the
+// client which path was taken; `files` always contains a full preview for
+// every requested target file — nothing is ever written without the
+// separate, explicit `commit` call below.
+// ------------------------------------------------------------------
+
+function buildAgentRulesFiles(targetFiles, agentsMarkdown) {
+    const files = { 'AGENTS.md': agentsMarkdown };
+    if (targetFiles.includes('CLAUDE.md')) files['CLAUDE.md'] = buildClaudeImportContent();
+    return files;
+}
+
+function summarizeAgentRulesSignals(signals) {
+    return {
+        isMonorepo: signals.isMonorepo,
+        truncated: signals.truncated,
+        stack: signals.stack,
+        packageManager: signals.packageManager,
+        testRunner: signals.testRunner,
+        lintConfigured: (signals.lintConfigFiles || []).length > 0,
+        license: signals.license?.matched ? signals.license.spdxId : null,
+        workflowJobs: signals.workflowJobs,
+        existingTargets: Object.keys(signals.existingFiles || {}),
+    };
+}
+
+router.post('/:owner/:repo/agent-rules/generate', requireAuth, requireScope('ai'), validateBody(agentRulesGenerateSchema), async (req, res) => {
+    const { owner, repo } = req.params;
+    const { targetFiles, mode, sections, strictness } = req.validatedBody;
+    const userId = req.session.userId;
+
+    try {
+        const signals = await detectRepoSignals({ owner, repo, token: req.session.accessToken, githubApi, log: req.log });
+
+        const notes = [];
+        if (signals.isMonorepo) notes.push('This looks like a monorepo — nested AGENTS.md not yet supported; only a root-level AGENTS.md was generated.');
+        if (signals.truncated) notes.push('The file listing used for detection is truncated (large repo) — generated content is based on a partial signal set.');
+
+        const existing = {};
+        if (mode === 'refresh') {
+            for (const f of targetFiles) existing[f] = signals.existingFiles?.[f] || null;
+        }
+
+        const deterministicResult = buildDeterministicAgentRules(signals, { sections });
+        const deterministicFiles = buildAgentRulesFiles(targetFiles, deterministicResult.markdown);
+
+        // Resolve a provider WITHOUT hard-failing (unlike requireAI) so an
+        // unconfigured AI never blocks this feature — falls through to the
+        // deterministic template instead.
+        let provider = req.aiProvider;
+        if (!provider && typeof req.getAIProvider === 'function') {
+            provider = await req.getAIProvider('completion').catch(() => null);
+        }
+
+        if (!provider) {
+            return res.json({
+                deterministic: true, reason: 'ai_not_configured',
+                files: deterministicFiles, existing, notes,
+                signals: summarizeAgentRulesSignals(signals),
+            });
+        }
+        req.aiProvider = provider;
+
+        const quota = checkAIFeatureLimit(userId, 'ai_agent_rules');
+        if (!quota.allowed) {
+            // Quota-exceeded still ships the deterministic path (Addendum 6b.2)
+            // so the user isn't fully blocked just because their AI quota ran out.
+            return res.status(429).json({
+                ...quotaExceededResponse(quota),
+                deterministic: true, files: deterministicFiles, existing, notes,
+            });
+        }
+
+        try {
+            const { text, sections: usedSections } = await generateAgentRules(req, signals, { targetFiles, mode, sections, strictness });
+            incrementAIUsage(userId, 'ai_agent_rules');
+            auditLog(req, 'ai.generate_agent_rules', 'ai', null, { repo: `${owner}/${repo}`, targetFiles, mode });
+            res.json({
+                deterministic: false,
+                files: buildAgentRulesFiles(targetFiles, text),
+                sections: usedSections,
+                existing, notes,
+                signals: summarizeAgentRulesSignals(signals),
+            });
+        } catch (aiErr) {
+            // Provider error even after guardedGenerate's built-in retry (or
+            // the spend cap was hit) — degrade to the deterministic template
+            // rather than surfacing a hard error (Addendum 6b.2).
+            req.log.warn({ err: aiErr }, 'agent rules AI generation failed — falling back to deterministic template');
+            res.json({
+                deterministic: true,
+                reason: aiErr?.code === 'AI_SPEND_CAP_REACHED' ? 'spend_cap_reached' : 'ai_error',
+                files: deterministicFiles, existing, notes,
+                signals: summarizeAgentRulesSignals(signals),
+            });
+        }
+    } catch (e) {
+        req.log.error({ err: e }, 'Agent rules generation failed');
+        errorResponse(res, 500, safeError(e, 'agent rules generation failed'));
+    }
+});
+
+router.post('/:owner/:repo/agent-rules/commit', requireAuth, validateBody(agentRulesCommitSchema), async (req, res) => {
+    const { owner, repo } = req.params;
+    const { files, mode } = req.validatedBody;
+
+    try {
+        const results = [];
+        for (const f of files) {
+            const result = await commitOrOpenPR({
+                owner, repo, token: req.session.accessToken,
+                filePath: f.filePath, content: f.content, commitMessage: f.commitMessage, mode, githubApi,
+            });
+            results.push({ filePath: f.filePath, ...result });
+        }
+        auditLog(req, 'ai.commit_agent_rules', 'repo', `${owner}/${repo}`, { files: files.map((f) => f.filePath), mode });
+        res.json({ committed: true, results });
+    } catch (e) {
+        errorResponse(res, 500, safeError(e, 'agent rules commit failed'));
     }
 });
 
