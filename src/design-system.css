@@ -197,6 +197,14 @@
   --ds-risk-high-tint-hover: color-mix(in srgb, var(--ds-risk-high) 26%, transparent);
   --ds-risk-critical-tint-hover: color-mix(in srgb, var(--ds-risk-critical) 26%, transparent);
   --ds-risk-neutral-tint-hover: color-mix(in srgb, var(--ds-risk-neutral) 26%, transparent);
+  /* Text-on-tint variants: the 500-level fills fail WCAG AA as text on light
+   * tints (yellow-500 on white ≈ 1.9:1), so text reads from darker 800-level
+   * tokens in light mode; dark mode overrides back to the 400s. */
+  --ds-risk-low-text: #166534;      /* green-800 */
+  --ds-risk-medium-text: #854d0e;   /* yellow-800 */
+  --ds-risk-high-text: #9a3412;     /* orange-800 */
+  --ds-risk-critical-text: #b91c1c; /* red-700 */
+  --ds-risk-neutral-text: #475569;  /* slate-600 */
 }
 
 /* Dark-mode token overrides. MUST use :root.dark (specificity 0,2,0) NOT
@@ -224,6 +232,11 @@
   --ds-risk-high: #fb923c;     /* orange-400 */
   --ds-risk-critical: #f87171; /* red-400 */
   --ds-risk-neutral: #64748b;  /* slate-500 */
+  --ds-risk-low-text: #4ade80;      /* green-400 */
+  --ds-risk-medium-text: #facc15;   /* yellow-400 */
+  --ds-risk-high-text: #fb923c;     /* orange-400 */
+  --ds-risk-critical-text: #f87171; /* red-400 */
+  --ds-risk-neutral-text: #94a3b8;  /* slate-400 */
 }
 
 /* ===== KEYFRAMES (premium set only) ===== */
@@ -308,11 +321,11 @@
 .ds-risk-fill-critical { background-color: var(--ds-risk-critical); }
 .ds-risk-fill-neutral  { background-color: var(--ds-risk-neutral); }
 
-.ds-risk-text-low      { color: var(--ds-risk-low); }
-.ds-risk-text-medium   { color: var(--ds-risk-medium); }
-.ds-risk-text-high     { color: var(--ds-risk-high); }
-.ds-risk-text-critical { color: var(--ds-risk-critical); }
-.ds-risk-text-neutral  { color: var(--ds-risk-neutral); }
+.ds-risk-text-low      { color: var(--ds-risk-low-text); }
+.ds-risk-text-medium   { color: var(--ds-risk-medium-text); }
+.ds-risk-text-high     { color: var(--ds-risk-high-text); }
+.ds-risk-text-critical { color: var(--ds-risk-critical-text); }
+.ds-risk-text-neutral  { color: var(--ds-risk-neutral-text); }
 
 .ds-risk-tint-low      { background-color: var(--ds-risk-low-tint); }
 .ds-risk-tint-medium   { background-color: var(--ds-risk-medium-tint); }
