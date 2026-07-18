@@ -216,6 +216,31 @@ async function isDefaultBranchProtected({ owner, repo, defaultBranch, token, git
 }
 
 /**
+ * Encode `content` into the base64 payload the GitHub Contents API expects.
+ *
+ * `'utf8'` (the default, and the only mode every existing caller used before
+ * this option existed) treats `content` as a text string and base64-encodes
+ * it fresh — unchanged behaviour for CONTRIBUTING.md/SECURITY.md/LICENSE/etc.
+ *
+ * `'base64'` treats `content` as **already base64-encoded binary** (e.g. a
+ * PNG straight from an image-generation provider) and passes it through
+ * untouched. This matters because `Buffer.from(content, 'utf8').toString('base64')`
+ * re-encodes a base64 *string* as if it were literal UTF-8 text — that
+ * double-encodes the bytes into garbage that "commits" successfully (real
+ * SHA, 200 OK) but renders as a corrupted, unopenable file on GitHub. Binary
+ * write paths MUST pass `encoding: 'base64'` explicitly; there is no way to
+ * auto-detect base64-vs-text content reliably enough to default to it.
+ *
+ * @param {string} content
+ * @param {'utf8'|'base64'} encoding
+ * @returns {string} base64 payload suitable for the Contents API's `content` field
+ */
+function encodeCommitContent(content, encoding) {
+	if (encoding === 'base64') return content;
+	return Buffer.from(content, 'utf8').toString('base64');
+}
+
+/**
  * Commit a file to the repo's default branch. If the default branch is
  * protected (or `mode: 'pr'` is forced), instead create a topic branch off
  * the default, PUT the file there, and open a PR back to the default.
@@ -233,10 +258,13 @@ async function isDefaultBranchProtected({ owner, repo, defaultBranch, token, git
  * @param {string} args.content
  * @param {string} args.commitMessage
  * @param {'direct'|'pr'} [args.mode]
+ * @param {'utf8'|'base64'} [args.encoding] 'utf8' (default) encodes `content` as text; 'base64'
+ *   passes pre-encoded binary content (e.g. a generated PNG) through untouched — see
+ *   `encodeCommitContent`'s doc comment for why the distinction is load-bearing.
  * @param {Function} args.githubApi
  * @returns {Promise<{ mode: 'direct'|'pr'|'pr-fallback', branch: string, sha?: string, prUrl?: string }>}
  */
-export async function commitOrOpenPR({ owner, repo, token, filePath, content, commitMessage, mode = 'direct', githubApi }) {
+export async function commitOrOpenPR({ owner, repo, token, filePath, content, commitMessage, mode = 'direct', encoding = 'utf8', githubApi }) {
 	const { data: repoData } = await githubApi(`/repos/${owner}/${repo}`, token)
 	const defaultBranch = repoData?.default_branch || 'main'
 
@@ -255,7 +283,7 @@ export async function commitOrOpenPR({ owner, repo, token, filePath, content, co
 			method: 'PUT',
 			body: JSON.stringify({
 				message: commitMessage,
-				content: Buffer.from(content, 'utf8').toString('base64'),
+				content: encodeCommitContent(content, encoding),
 				branch,
 			}),
 		})
@@ -279,7 +307,7 @@ export async function commitOrOpenPR({ owner, repo, token, filePath, content, co
 		method: 'PUT',
 		body: JSON.stringify({
 			message: commitMessage,
-			content: Buffer.from(content, 'utf8').toString('base64'),
+			content: encodeCommitContent(content, encoding),
 			branch: defaultBranch,
 		}),
 	})

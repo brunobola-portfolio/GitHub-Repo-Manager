@@ -76,7 +76,7 @@ vi.mock('../lib/url-validator.js', async (orig) => {
 // Import SUT after mocks
 // ---------------------------------------------------------------------------
 
-const { createProviderForUser, GeminiProvider } = await import('../lib/ai-provider.js');
+const { createProviderForUser, resolveImageProviderConfig, GeminiProvider } = await import('../lib/ai-provider.js');
 
 // ---------------------------------------------------------------------------
 // Env management
@@ -426,5 +426,100 @@ describe('createProviderForUser()', () => {
         const provider = await createProviderForUser(1, 'completion');
         expect(provider).toBeInstanceOf(MockLocalProvider);
         expect(mockResolveAndValidate).not.toHaveBeenCalled();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// resolveImageProviderConfig() — raw-credential resolution for image
+// generation (Wave 6c / R5). Mirrors createProviderForUser's resolution
+// order (user BYOK -> server env fallback -> null) but returns the literal
+// { provider, model, apiKey, baseURL } shape image-provider.js's raw-fetch
+// calls need, instead of an instantiated SDK provider instance.
+// ---------------------------------------------------------------------------
+
+describe('resolveImageProviderConfig()', () => {
+    it('returns the user BYOK config verbatim when present', async () => {
+        _mockDecryptedConfig = {
+            userId: 1,
+            completionProvider: 'openai',
+            completionModel: 'gpt-image-1',
+            completionCredentials: { apiKey: 'sk-user' },
+            embeddingProvider: null,
+            embeddingModel: null,
+            embeddingCredentials: null,
+        };
+
+        const config = await resolveImageProviderConfig(1);
+        expect(config).toEqual({ provider: 'openai', model: 'gpt-image-1', apiKey: 'sk-user' });
+    });
+
+    it('includes baseURL only when the user configured a custom endpointUrl', async () => {
+        _mockDecryptedConfig = {
+            userId: 1,
+            completionProvider: 'openai',
+            completionModel: 'gpt-image-1',
+            completionCredentials: { apiKey: 'sk-user', endpointUrl: 'https://api.example.com/v1' },
+            embeddingProvider: null,
+            embeddingModel: null,
+            embeddingCredentials: null,
+        };
+
+        const config = await resolveImageProviderConfig(1);
+        expect(config.baseURL).toBe('https://api.example.com/v1');
+        expect(mockResolveAndValidate).toHaveBeenCalledWith('https://api.example.com/v1');
+    });
+
+    it('blocks a BYOK endpoint that resolves to a private address (DNS-rebinding recheck)', async () => {
+        mockResolveAndValidate.mockResolvedValue(false);
+        _mockDecryptedConfig = {
+            userId: 1,
+            completionProvider: 'openai',
+            completionModel: 'gpt-image-1',
+            completionCredentials: { apiKey: 'sk-user', endpointUrl: 'https://evil.example.com/v1' },
+            embeddingProvider: null,
+            embeddingModel: null,
+            embeddingCredentials: null,
+        };
+
+        await expect(resolveImageProviderConfig(1)).rejects.toThrow(/private or unreachable/);
+    });
+
+    it('falls back to the server-wide env provider when no user config exists', async () => {
+        process.env.AI_PROVIDER = 'gemini';
+        process.env.GEMINI_API_KEY = 'server-key';
+        process.env.GEMINI_MODEL = 'gemini-2.5-flash';
+
+        const config = await resolveImageProviderConfig(1);
+        expect(config).toEqual({ provider: 'gemini', model: 'gemini-2.5-flash', apiKey: 'server-key' });
+    });
+
+    it('returns a null provider when neither user config nor a server key is set', async () => {
+        const config = await resolveImageProviderConfig(1);
+        expect(config).toEqual({ provider: null, model: null, apiKey: null });
+    });
+
+    it('AI_REQUIRE_USER_CONFIG=true disables the server-env fallback entirely', async () => {
+        process.env.AI_REQUIRE_USER_CONFIG = 'true';
+        process.env.GEMINI_API_KEY = 'server-key';
+
+        const config = await resolveImageProviderConfig(1);
+        expect(config).toEqual({ provider: null, model: null, apiKey: null });
+    });
+
+    it('ignores an incomplete user config (provider set but no apiKey) and falls back to env', async () => {
+        _mockDecryptedConfig = {
+            userId: 1,
+            completionProvider: 'openai',
+            completionModel: 'gpt-image-1',
+            completionCredentials: null,
+            embeddingProvider: null,
+            embeddingModel: null,
+            embeddingCredentials: null,
+        };
+        process.env.AI_PROVIDER = 'gemini';
+        process.env.GEMINI_API_KEY = 'server-key';
+
+        const config = await resolveImageProviderConfig(1);
+        expect(config.provider).toBe('gemini');
     });
 });

@@ -65,6 +65,16 @@ const TIER_FEATURES = {
         // Wave 6: Security Posture Panel AI summary — single-shot
         // summarization call, same order of magnitude as repoInsightsPerMonth.
         securityPostureAIPerMonth: 75,
+        // Wave 6c: AI raster image generation (repo banner / README hero /
+        // logo draft). Capped hard and low relative to every other
+        // per-feature quota — image generation is the most expensive
+        // per-call AI action in the product (up to ~$0.25/image on OpenAI's
+        // high-quality tier per image-pricing.js), so the count cap is a
+        // secondary guardrail; the real dollar backstop is the existing
+        // per-tier aiSpendCapCents spend cap (see image-pricing.js and
+        // recordAISpend call sites). Mirrors migrationFullPerMonth's
+        // "expensive, cap it hard" precedent.
+        imageGenPerMonth: 5,
 
         // Full (non-dry-run) migrations per month. Dry-run plans stay free +
         // unlimited; this caps only real executions (metered in usage_metrics
@@ -126,6 +136,7 @@ const TIER_FEATURES = {
         syncApplyPerMonth: Infinity,
         agentRulesPerMonth: Infinity,
         securityPostureAIPerMonth: Infinity,
+        imageGenPerMonth: Infinity,
 
         migration: 'full',
         basicBulk: true,
@@ -168,6 +179,7 @@ const TIER_FEATURES = {
         syncApplyPerMonth: Infinity,
         agentRulesPerMonth: Infinity,
         securityPostureAIPerMonth: Infinity,
+        imageGenPerMonth: Infinity,
 
         migration: 'full',
         basicBulk: true,
