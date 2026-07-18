@@ -17,13 +17,25 @@ const REPO = {
     archived: false,
 }
 
-function makeApi(readmeContent) {
-    return {
-        fetchReadme: vi.fn().mockResolvedValue({
-            data: { content: btoa(readmeContent) },
-        }),
-        updateRepo: vi.fn(),
-    }
+const mockUseResilientFetch = vi.fn()
+vi.mock('@/hooks/useResilientFetch', () => ({
+    useResilientFetch: (...args) => mockUseResilientFetch(...args),
+}))
+
+function mockReadme(content, overrides = {}) {
+    mockUseResilientFetch.mockReturnValue({
+        data: { content: btoa(content) },
+        loading: false,
+        error: null,
+        stale: false,
+        fetchedAt: null,
+        reload: vi.fn(),
+        ...overrides,
+    })
+}
+
+function makeApi() {
+    return { updateRepo: vi.fn() }
 }
 
 beforeEach(() => {
@@ -31,19 +43,51 @@ beforeEach(() => {
 })
 
 describe('OverviewTab — README rendering', () => {
-    it('renders a markdown table from the README (not raw <pre>)', async () => {
-        const api = makeApi('| h | i |\n|---|---|\n| 1 | 2 |')
-        renderWithProviders(<OverviewTab api={api} repoData={REPO} onUpdate={() => {}} />)
+    it('fetches the README via the resilient read-through hook, not a bespoke api call', async () => {
+        mockReadme('| h | i |\n|---|---|\n| 1 | 2 |')
+        renderWithProviders(<OverviewTab api={makeApi()} repoData={REPO} onUpdate={() => {}} />)
+
+        expect(mockUseResilientFetch).toHaveBeenCalledWith('/api/v1/repos/octocat/demo/readme')
         await waitFor(() => expect(screen.getByRole('table')).toBeInTheDocument())
         expect(screen.queryByText('| h | i |')).toBeNull() // raw pipe text must NOT be visible
+    })
+
+    it('shows a StaleDataBadge with a retry action when the server served cached data', async () => {
+        const reload = vi.fn()
+        mockReadme('# Hello', { stale: true, fetchedAt: '2026-07-17 12:00:00', reload })
+        renderWithProviders(<OverviewTab api={makeApi()} repoData={REPO} onUpdate={() => {}} />)
+
+        expect(await screen.findByTestId('stale-data-badge')).toBeInTheDocument()
+    })
+
+    it('does not show a StaleDataBadge for a fresh (non-stale) read', async () => {
+        mockReadme('# Hello')
+        renderWithProviders(<OverviewTab api={makeApi()} repoData={REPO} onUpdate={() => {}} />)
+
+        await waitFor(() => expect(screen.getByRole('heading', { name: 'Hello' })).toBeInTheDocument())
+        expect(screen.queryByTestId('stale-data-badge')).toBeNull()
+    })
+})
+
+describe('OverviewTab — README error states', () => {
+    it('shows a friendly re-auth message on 401/403, not the raw server error', () => {
+        const err = new Error('Session expired')
+        err.status = 401
+        mockUseResilientFetch.mockReturnValue({
+            data: null, loading: false, error: err, stale: false, fetchedAt: null, reload: vi.fn(),
+        })
+        renderWithProviders(<OverviewTab api={makeApi()} repoData={REPO} onUpdate={() => {}} />)
+
+        expect(screen.getByText(/Sign in again to view this README/i)).toBeInTheDocument()
+        expect(screen.queryByText('Session expired')).toBeNull()
     })
 })
 
 describe('OverviewTab — Topics', () => {
     it('renders each topic as a brand-toned ringed Badge (unified with the RepoDetail header pills)', async () => {
-        const api = makeApi('')
+        mockReadme('')
         const repoWithTopics = { ...REPO, topics: ['react', 'vite'] }
-        renderWithProviders(<OverviewTab api={api} repoData={repoWithTopics} onUpdate={() => {}} />)
+        renderWithProviders(<OverviewTab api={makeApi()} repoData={repoWithTopics} onUpdate={() => {}} />)
 
         const pill = await screen.findByText('react')
         // Badge's brand tone (see src/components/ui/Badge.jsx TONES.brand) +

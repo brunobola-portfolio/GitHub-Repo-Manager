@@ -1,3 +1,4 @@
+import { forwardRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const variants = {
@@ -39,10 +40,15 @@ const sizes = {
 // adding another opt-out size is a deliberate accessibility decision.
 const SIZES_WITHOUT_MIN_TARGET = new Set(['xs'])
 
-export function Button({ className, variant = 'primary', size = 'md', type = 'button', children, ...props }) {
+// forwardRef so a <Button> can be the direct child of <Tooltip> (which clones
+// its child and needs a real ref onto the rendered <button> to measure/
+// position the bubble) — any button that wants an explanatory hover label
+// instead of native title= needs this.
+export const Button = forwardRef(function Button({ className, variant = 'primary', size = 'md', type = 'button', children, ...props }, ref) {
     const enforcesMinTarget = !SIZES_WITHOUT_MIN_TARGET.has(size)
     return (
         <button
+            ref={ref}
             // Default to type="button" so this shared primitive never submits a
             // surrounding <form> by accident. Submit buttons pass type="submit"
             // explicitly (every form in the app already does).
@@ -64,4 +70,4 @@ export function Button({ className, variant = 'primary', size = 'md', type = 'bu
             {children}
         </button>
     )
-}
+})

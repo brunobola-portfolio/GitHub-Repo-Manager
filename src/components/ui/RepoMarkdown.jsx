@@ -1,9 +1,10 @@
-import { useMemo } from 'react'
+import { cloneElement, createContext, createElement, useContext, useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import { rehypeSlugInline } from './__rehype-slug-inline'
+import { AnimatedCopyIcon } from './AnimatedCopyIcon'
 
 // Sanitize schema: defaults + relax a handful of attributes that GitHub
 // READMEs habitually use. Tag/attribute lists are explicit-allow only.
@@ -45,39 +46,180 @@ function rewriteLinkUri(uri, owner, repo, branch) {
     return `https://github.com/${owner}/${repo}/blob/${branch}/${clean}`
 }
 
+// ---------------------------------------------------------------------------
+// Fenced code block syntax highlighting.
+//
+// The app's real, already-bundled highlighter is `lowlight` (highlight.js
+// "common" ~40-language subset) via `src/lib/diff-highlighter-shim.js` — the
+// same one `DiffRenderer` pays for. We load it with a dynamic `import()`
+// (module-level singleton promise so every RepoMarkdown instance shares one
+// fetch) instead of a static import, so an eagerly-mounted Overview tab
+// doesn't pull the diff-viewer's `vendor-diff` chunk just to highlight a
+// README nobody has scrolled to yet. Until it resolves, code blocks render
+// as plain (unhighlighted) text — never blocking the README from painting.
+//
+// The loaded instance is threaded through React Context (not a prop closed
+// over by the `components` map) so that `components` itself — and therefore
+// every `pre`/`code`/`a` component reference handed to react-markdown — stays
+// referentially stable across renders. If `components` changed identity
+// whenever the highlighter finished loading, react-markdown/React would treat
+// the fenced-block renderer as a brand new component type and remount it,
+// wiping any local state (e.g. the copy button's "copied" flash).
+// ---------------------------------------------------------------------------
+const HighlighterContext = createContext(null)
+
+let highlighterPromise = null
+function loadHighlighter() {
+    if (!highlighterPromise) {
+        highlighterPromise = import('../../lib/diff-highlighter-shim.js').then((m) => m.highlighter)
+    }
+    return highlighterPromise
+}
+
+function useLazyHighlighter() {
+    const [highlighter, setHighlighter] = useState(null)
+    useEffect(() => {
+        let cancelled = false
+        loadHighlighter().then((h) => { if (!cancelled) setHighlighter(h) })
+        return () => { cancelled = true }
+    }, [])
+    return highlighter
+}
+
+function getLanguageFromClassName(className) {
+    if (!className) return null
+    const match = /language-(\S+)/.exec(className)
+    return match ? match[1] : null
+}
+
+// Flattens a React children tree (strings, arrays, nested elements) back into
+// plain text — used both to feed the highlighter and to power the copy button,
+// so "what gets copied" always matches "what got tokenized". Trailing newline
+// stripped once here so every downstream consumer (render + copy) agrees on
+// the exact same string (remark leaves a single trailing "\n" on fence content).
+function extractCodeText(node) {
+    function flatten(n) {
+        if (n == null) return ''
+        if (typeof n === 'string' || typeof n === 'number') return String(n)
+        if (Array.isArray(n)) return n.map(flatten).join('')
+        if (n?.props?.children != null) return flatten(n.props.children)
+        return ''
+    }
+    return flatten(node).replace(/\n$/, '')
+}
+
+// Converts a lowlight/hast token tree into React elements. This runs on
+// output WE generate from plain text (never on sanitizer-controlled user
+// HTML), so it's safe to build elements directly rather than routing back
+// through rehype-sanitize.
+function hastNodeToReact(node, key) {
+    if (node.type === 'text') return node.value
+    if (node.type === 'element') {
+        const props = { key }
+        const cls = node.properties?.className
+        if (cls) props.className = Array.isArray(cls) ? cls.join(' ') : cls
+        const children = (node.children || []).map((child, i) => hastNodeToReact(child, i))
+        return createElement(node.tagName, props, children)
+    }
+    return null
+}
+
+// Wraps every fenced code block: tokenizes it (once the highlighter has
+// loaded) and adds a copy-to-clipboard button (reusing AnimatedCopyIcon, the
+// same affordance CommitDetailPanel uses for SHA copy).
+function ReadmeCodeBlock({ children, ...preRest }) {
+    const highlighter = useContext(HighlighterContext)
+    const [copied, setCopied] = useState(false)
+
+    const codeElement = Array.isArray(children) ? children[0] : children
+    const codeClassName = codeElement?.props?.className || ''
+    const lang = getLanguageFromClassName(codeClassName)
+    const rawText = extractCodeText(codeElement?.props?.children)
+
+    // Default render: the same text, trailing newline normalized, so the
+    // visible block always matches what the copy button copies — whether or
+    // not tokenization below succeeds.
+    let renderedCode = codeElement ? cloneElement(codeElement, { className: codeClassName }, rawText) : children
+
+    if (highlighter && lang && codeElement && highlighter.hasRegisteredCurrentLang(lang)) {
+        try {
+            const ast = highlighter.getAST(rawText, undefined, lang)
+            if (ast?.children) {
+                renderedCode = cloneElement(
+                    codeElement,
+                    { className: `${codeClassName} hljs`.trim() },
+                    ast.children.map((node, i) => hastNodeToReact(node, i)),
+                )
+            }
+        } catch {
+            // Tokenization failed for this block (unexpected grammar edge case)
+            // — fall back to the plain, unhighlighted (but still normalized) text.
+        }
+    }
+
+    const handleCopy = async () => {
+        if (!rawText || !navigator.clipboard?.writeText) return
+        try {
+            await navigator.clipboard.writeText(rawText)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 1500)
+        } catch {
+            // Clipboard permission denied / unavailable — no-op, button stays idle.
+        }
+    }
+
+    return (
+        <div className="relative group/code">
+            <pre {...preRest}>{renderedCode}</pre>
+            {rawText ? (
+                <button
+                    type="button"
+                    onClick={handleCopy}
+                    aria-label={copied ? 'Copied to clipboard' : 'Copy code'}
+                    className="absolute top-2 right-2 inline-flex items-center justify-center w-7 h-7 rounded-md bg-slate-800/90 dark:bg-slate-700/90 text-slate-200 opacity-0 group-hover/code:opacity-100 focus-visible:opacity-100 hover:bg-slate-700 dark:hover:bg-slate-600 transition-opacity duration-150 ds-focus-ring"
+                >
+                    <AnimatedCopyIcon copied={copied} checkClassName="text-emerald-400" />
+                </button>
+            ) : null}
+        </div>
+    )
+}
+
+// Stable across every render (module scope) — passed as-is to react-markdown
+// so component identity never churns, regardless of highlighter load state.
+const README_COMPONENTS = {
+    a: ({ node, ...props }) => (
+        // eslint-disable-next-line jsx-a11y/anchor-has-content -- children come from react-markdown
+        <a {...props} target="_blank" rel="noopener noreferrer" />
+    ),
+    code: ({ inline, className: codeClassName, children, ...rest }) => {
+        if (inline) return <code className={codeClassName} {...rest}>{children}</code>
+        return <code className={codeClassName || ''} {...rest}>{children}</code>
+    },
+    pre: ({ children, ...rest }) => <ReadmeCodeBlock {...rest}>{children}</ReadmeCodeBlock>,
+}
+
 export function RepoMarkdown({ source, owner, repo, branch = 'main', className = '' }) {
-    const transformImage = useMemo(() => (uri) => rewriteImageUri(uri, owner, repo, branch), [owner, repo, branch])
-    const transformLink  = useMemo(() => (uri) => rewriteLinkUri(uri, owner, repo, branch), [owner, repo, branch])
+    const highlighter = useLazyHighlighter()
 
     if (!source) return null
 
     return (
         <div className={`prose prose-sm dark:prose-invert max-w-none ds-readme ${className}`}>
-            <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeRaw, rehypeSlugInline, [rehypeSanitize, SCHEMA]]}
-                urlTransform={(url, key) => {
-                    if (key === 'src') return transformImage(url)
-                    if (key === 'href') return transformLink(url)
-                    return url
-                }}
-                components={{
-                    a: ({ node, ...props }) => (
-                        // eslint-disable-next-line jsx-a11y/anchor-has-content -- children come from react-markdown
-                        <a {...props} target="_blank" rel="noopener noreferrer" />
-                    ),
-                    code: ({ inline, className, children, ...rest }) => {
-                        if (inline) return <code className={className} {...rest}>{children}</code>
-                        // Block code — preserve the language class so Shiki / our syntax CSS
-                        // can theme it. We don't tokenize at render-time (cost-prohibitive for
-                        // long READMEs); we add the class and let the existing Shiki theme CSS
-                        // bundle (loaded by @git-diff-view/shiki elsewhere) style it.
-                        return <code className={className || ''} {...rest}>{children}</code>
-                    },
-                }}
-            >
-                {source}
-            </ReactMarkdown>
+            <HighlighterContext.Provider value={highlighter}>
+                <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeRaw, rehypeSlugInline, [rehypeSanitize, SCHEMA]]}
+                    urlTransform={(url, key) => {
+                        if (key === 'src') return rewriteImageUri(url, owner, repo, branch)
+                        if (key === 'href') return rewriteLinkUri(url, owner, repo, branch)
+                        return url
+                    }}
+                    components={README_COMPONENTS}
+                >
+                    {source}
+                </ReactMarkdown>
+            </HighlighterContext.Provider>
         </div>
     )
 }

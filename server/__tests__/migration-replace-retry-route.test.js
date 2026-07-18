@@ -240,3 +240,91 @@ describe('POST .../tasks/:taskId/retry-lfs — config rollback on a retry that n
     expect(persisted.sizeStrategy).toBe('lfs-migrate')
   })
 })
+
+describe('POST .../tasks/:taskId/retry-lfs — completed task with a failed LFS push', () => {
+  it('accepts a completed task carrying metadata.lfsPushFailed: applies replace + lfs-migrate and opts the engine in', async () => {
+    const task = seedTask({
+      status: 'completed',
+      config: JSON.stringify({ makePrivate: true }),
+      metadata: JSON.stringify({ lfsPushFailed: true }),
+    })
+    h.retryTask.mockResolvedValue(undefined)
+
+    const res = await request(makeApp())
+      .post('/api/migration/plans/5/tasks/9/retry-lfs')
+      .send({ pat: 'x' })
+
+    expect(res.status).toBe(200)
+    expect(res.body).toMatchObject({ success: true, deleteAndRecreate: true })
+    expect(h.retryTask).toHaveBeenCalledWith(
+      5, 9, expect.any(Object), { allowLfsPushFailedRetry: true },
+    )
+
+    const persisted = JSON.parse(task.config)
+    expect(persisted.onConflict).toBe('replace')
+    expect(persisted.sizeStrategy).toBe('lfs-migrate')
+    expect(persisted.makePrivate).toBe(true)
+  })
+
+  it('rejects a completed task WITHOUT metadata.lfsPushFailed (409, no config mutation, engine never called)', async () => {
+    const task = seedTask({
+      status: 'completed',
+      config: JSON.stringify({ makePrivate: true }),
+      metadata: JSON.stringify({ reusedExistingRepo: true }),
+    })
+
+    const res = await request(makeApp())
+      .post('/api/migration/plans/5/tasks/9/retry-lfs')
+      .send({ pat: 'x' })
+
+    expect(res.status).toBe(409)
+    expect(h.retryTask).not.toHaveBeenCalled()
+    expect(JSON.parse(task.config)).toEqual({ makePrivate: true })
+  })
+
+  it('rolls back both onConflict and sizeStrategy when the retry never actually started (task still "completed")', async () => {
+    const task = seedTask({
+      status: 'completed',
+      config: JSON.stringify({ makePrivate: true }),
+      metadata: JSON.stringify({ lfsPushFailed: true }),
+    })
+    h.retryTask.mockImplementation(async () => {
+      throw new Error("Cannot retry tasks for plan with status 'running'")
+    })
+
+    const res = await request(makeApp())
+      .post('/api/migration/plans/5/tasks/9/retry-lfs')
+      .send({ pat: 'x' })
+    expect(res.status).toBe(200)
+
+    await flushMicrotasks()
+
+    const persisted = JSON.parse(task.config)
+    expect(persisted.onConflict).toBeUndefined()
+    expect(persisted.sizeStrategy).toBeUndefined()
+    expect(persisted.makePrivate).toBe(true)
+  })
+
+  it('keeps the destructive config when a genuine retry attempt began (task left "completed")', async () => {
+    const task = seedTask({
+      status: 'completed',
+      config: JSON.stringify({ makePrivate: true }),
+      metadata: JSON.stringify({ lfsPushFailed: true }),
+    })
+    h.retryTask.mockImplementation(async () => {
+      task.status = 'pending'
+      throw new Error('network error during re-clone')
+    })
+
+    const res = await request(makeApp())
+      .post('/api/migration/plans/5/tasks/9/retry-lfs')
+      .send({ pat: 'x' })
+    expect(res.status).toBe(200)
+
+    await flushMicrotasks()
+
+    const persisted = JSON.parse(task.config)
+    expect(persisted.onConflict).toBe('replace')
+    expect(persisted.sizeStrategy).toBe('lfs-migrate')
+  })
+})

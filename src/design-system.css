@@ -176,6 +176,35 @@
 
   --ds-ease-row-expand: var(--ds-ease);
   --ds-duration-row-expand: var(--ds-duration);
+
+  /* ===== RISK (PR review) =====
+   * Single palette for AI + heuristic risk severity across the PR review
+   * surface (file-tree dots, risk rail, AI summary pills/rows, PR-level
+   * risk badges) — see src/utils/riskTokens.js for the level-normalizing
+   * helpers that pick these classes. */
+  --ds-risk-low: #22c55e;       /* green-500 */
+  --ds-risk-medium: #eab308;    /* yellow-500 */
+  --ds-risk-high: #f97316;      /* orange-500 */
+  --ds-risk-critical: #ef4444;  /* red-500 */
+  --ds-risk-neutral: #94a3b8;   /* slate-400 */
+  --ds-risk-low-tint: color-mix(in srgb, var(--ds-risk-low) 14%, transparent);
+  --ds-risk-medium-tint: color-mix(in srgb, var(--ds-risk-medium) 14%, transparent);
+  --ds-risk-high-tint: color-mix(in srgb, var(--ds-risk-high) 14%, transparent);
+  --ds-risk-critical-tint: color-mix(in srgb, var(--ds-risk-critical) 14%, transparent);
+  --ds-risk-neutral-tint: color-mix(in srgb, var(--ds-risk-neutral) 14%, transparent);
+  --ds-risk-low-tint-hover: color-mix(in srgb, var(--ds-risk-low) 26%, transparent);
+  --ds-risk-medium-tint-hover: color-mix(in srgb, var(--ds-risk-medium) 26%, transparent);
+  --ds-risk-high-tint-hover: color-mix(in srgb, var(--ds-risk-high) 26%, transparent);
+  --ds-risk-critical-tint-hover: color-mix(in srgb, var(--ds-risk-critical) 26%, transparent);
+  --ds-risk-neutral-tint-hover: color-mix(in srgb, var(--ds-risk-neutral) 26%, transparent);
+  /* Text-on-tint variants: the 500-level fills fail WCAG AA as text on light
+   * tints (yellow-500 on white ≈ 1.9:1), so text reads from darker 800-level
+   * tokens in light mode; dark mode overrides back to the 400s. */
+  --ds-risk-low-text: #166534;      /* green-800 */
+  --ds-risk-medium-text: #854d0e;   /* yellow-800 */
+  --ds-risk-high-text: #9a3412;     /* orange-800 */
+  --ds-risk-critical-text: #b91c1c; /* red-700 */
+  --ds-risk-neutral-text: #475569;  /* slate-600 */
 }
 
 /* Dark-mode token overrides. MUST use :root.dark (specificity 0,2,0) NOT
@@ -196,6 +225,18 @@
   --ds-chart-series-1: var(--ds-accent-brand-dark);
   --ds-chart-series-2: var(--ds-success-dark);
   --ds-chart-series-3: var(--ds-attention-dark);
+  /* Risk tokens — auto-swap to dark variants. The *-tint / *-tint-hover
+   * variables above reference these via var(), so they follow automatically. */
+  --ds-risk-low: #4ade80;      /* green-400 */
+  --ds-risk-medium: #facc15;   /* yellow-400 */
+  --ds-risk-high: #fb923c;     /* orange-400 */
+  --ds-risk-critical: #f87171; /* red-400 */
+  --ds-risk-neutral: #64748b;  /* slate-500 */
+  --ds-risk-low-text: #4ade80;      /* green-400 */
+  --ds-risk-medium-text: #facc15;   /* yellow-400 */
+  --ds-risk-high-text: #fb923c;     /* orange-400 */
+  --ds-risk-critical-text: #f87171; /* red-400 */
+  --ds-risk-neutral-text: #94a3b8;  /* slate-400 */
 }
 
 /* ===== KEYFRAMES (premium set only) ===== */
@@ -267,6 +308,41 @@
 
 .ds-surface-card { background-color: var(--ds-surface); }
 .dark .ds-surface-card { background-color: var(--ds-surface-subtle-dark); }
+
+/* ===== RISK UTILITIES (ds-risk-*) =====
+ * Backing classes for src/utils/riskTokens.js. Every risk-colored element in
+ * PR review (file-tree dots, risk rail segments, AI summary pill/rows,
+ * PR-level risk badges) reads from these instead of hardcoding Tailwind
+ * color utilities. Dark mode auto-swaps via the --ds-risk-* custom-property
+ * override above — no `dark:` variant needed at call sites. */
+.ds-risk-fill-low      { background-color: var(--ds-risk-low); }
+.ds-risk-fill-medium   { background-color: var(--ds-risk-medium); }
+.ds-risk-fill-high     { background-color: var(--ds-risk-high); }
+.ds-risk-fill-critical { background-color: var(--ds-risk-critical); }
+.ds-risk-fill-neutral  { background-color: var(--ds-risk-neutral); }
+
+.ds-risk-text-low      { color: var(--ds-risk-low-text); }
+.ds-risk-text-medium   { color: var(--ds-risk-medium-text); }
+.ds-risk-text-high     { color: var(--ds-risk-high-text); }
+.ds-risk-text-critical { color: var(--ds-risk-critical-text); }
+.ds-risk-text-neutral  { color: var(--ds-risk-neutral-text); }
+
+.ds-risk-tint-low      { background-color: var(--ds-risk-low-tint); }
+.ds-risk-tint-medium   { background-color: var(--ds-risk-medium-tint); }
+.ds-risk-tint-high     { background-color: var(--ds-risk-high-tint); }
+.ds-risk-tint-critical { background-color: var(--ds-risk-critical-tint); }
+.ds-risk-tint-neutral  { background-color: var(--ds-risk-neutral-tint); }
+.ds-risk-tint-low:hover      { background-color: var(--ds-risk-low-tint-hover); }
+.ds-risk-tint-medium:hover   { background-color: var(--ds-risk-medium-tint-hover); }
+.ds-risk-tint-high:hover     { background-color: var(--ds-risk-high-tint-hover); }
+.ds-risk-tint-critical:hover { background-color: var(--ds-risk-critical-tint-hover); }
+.ds-risk-tint-neutral:hover  { background-color: var(--ds-risk-neutral-tint-hover); }
+
+.ds-risk-ring-low      { box-shadow: inset 0 0 0 1px var(--ds-risk-low-tint-hover); }
+.ds-risk-ring-medium   { box-shadow: inset 0 0 0 1px var(--ds-risk-medium-tint-hover); }
+.ds-risk-ring-high     { box-shadow: inset 0 0 0 1px var(--ds-risk-high-tint-hover); }
+.ds-risk-ring-critical { box-shadow: inset 0 0 0 1px var(--ds-risk-critical-tint-hover); }
+.ds-risk-ring-neutral  { box-shadow: inset 0 0 0 1px var(--ds-risk-neutral-tint-hover); }
 
 /* ===== FOCUS RING (premium) ===== */
 .ds-focus-ring { outline: none; transition: box-shadow var(--ds-duration-fast) var(--ds-ease); }
@@ -401,3 +477,113 @@
     contain-intrinsic-size: auto 600px;
   }
 }
+
+/* ===== README READER (RepoMarkdown) =====
+ * Scoped to `.ds-readme` (the RepoMarkdown wrapper) only — opt-in, never a
+ * global element selector. Token colors mirror DiffRenderer's GitHub
+ * light/dark `.hljs-*` theme (see @git-diff-view/react/dist/css) so a code
+ * block reads the same whether you're in a README or a diff. */
+
+/* Comfortable reading width for body text (~72ch) at desktop widths only —
+ * tables and code blocks stay full-width via the :not() exclusions below,
+ * since a wide table/diff squeezed into 72ch is worse, not better. */
+@media (min-width: 1024px) {
+  .ds-readme > :where(p, ul, ol, blockquote, h1, h2, h3, h4, h5, h6) {
+    max-width: 72ch;
+  }
+}
+
+/* Badge rows: shields.io-style status badges stacked at the top of a README
+ * are almost always <img> tags with no explicit width/height (unlike hero
+ * banners, which normally carry one). Render them as a compact inline row
+ * instead of Tailwind Typography's default full-margin block image. */
+.ds-readme p img:not([width]):not([height]) {
+  display: inline-block;
+  vertical-align: middle;
+  height: 20px;
+  width: auto;
+  max-width: none;
+  margin: 2px 6px 2px 0;
+}
+
+/* Fenced code block token theme — GitHub Light. */
+.ds-readme .hljs { color: #24292e; }
+.ds-readme .hljs-doctag,
+.ds-readme .hljs-keyword,
+.ds-readme .hljs-meta .hljs-keyword,
+.ds-readme .hljs-template-tag,
+.ds-readme .hljs-template-variable,
+.ds-readme .hljs-type,
+.ds-readme .hljs-variable.language_ { color: #d73a49; }
+.ds-readme .hljs-title,
+.ds-readme .hljs-title.class_,
+.ds-readme .hljs-title.function_ { color: #6f42c1; }
+.ds-readme .hljs-attr,
+.ds-readme .hljs-attribute,
+.ds-readme .hljs-literal,
+.ds-readme .hljs-meta,
+.ds-readme .hljs-number,
+.ds-readme .hljs-operator,
+.ds-readme .hljs-variable,
+.ds-readme .hljs-selector-attr,
+.ds-readme .hljs-selector-class,
+.ds-readme .hljs-selector-id { color: #005cc5; }
+.ds-readme .hljs-regexp,
+.ds-readme .hljs-string,
+.ds-readme .hljs-meta .hljs-string { color: #032f62; }
+.ds-readme .hljs-built_in,
+.ds-readme .hljs-symbol { color: #e36209; }
+.ds-readme .hljs-comment,
+.ds-readme .hljs-code,
+.ds-readme .hljs-formula { color: #6a737d; }
+.ds-readme .hljs-name,
+.ds-readme .hljs-quote,
+.ds-readme .hljs-selector-tag,
+.ds-readme .hljs-selector-pseudo { color: #22863a; }
+.ds-readme .hljs-section { color: #005cc5; font-weight: bold; }
+.ds-readme .hljs-bullet { color: #735c0f; }
+.ds-readme .hljs-emphasis { font-style: italic; }
+.ds-readme .hljs-strong { font-weight: bold; }
+.ds-readme .hljs-addition { color: #22863a; background-color: #f0fff4; }
+.ds-readme .hljs-deletion { color: #b31d28; background-color: #ffeef0; }
+
+/* Fenced code block token theme — GitHub Dark. */
+.dark .ds-readme .hljs { color: #c9d1d9; }
+.dark .ds-readme .hljs-doctag,
+.dark .ds-readme .hljs-keyword,
+.dark .ds-readme .hljs-meta .hljs-keyword,
+.dark .ds-readme .hljs-template-tag,
+.dark .ds-readme .hljs-template-variable,
+.dark .ds-readme .hljs-type,
+.dark .ds-readme .hljs-variable.language_ { color: #ff7b72; }
+.dark .ds-readme .hljs-title,
+.dark .ds-readme .hljs-title.class_,
+.dark .ds-readme .hljs-title.function_ { color: #d2a8ff; }
+.dark .ds-readme .hljs-attr,
+.dark .ds-readme .hljs-attribute,
+.dark .ds-readme .hljs-literal,
+.dark .ds-readme .hljs-meta,
+.dark .ds-readme .hljs-number,
+.dark .ds-readme .hljs-operator,
+.dark .ds-readme .hljs-variable,
+.dark .ds-readme .hljs-selector-attr,
+.dark .ds-readme .hljs-selector-class,
+.dark .ds-readme .hljs-selector-id { color: #79c0ff; }
+.dark .ds-readme .hljs-regexp,
+.dark .ds-readme .hljs-string,
+.dark .ds-readme .hljs-meta .hljs-string { color: #a5d6ff; }
+.dark .ds-readme .hljs-built_in,
+.dark .ds-readme .hljs-symbol { color: #ffa657; }
+.dark .ds-readme .hljs-comment,
+.dark .ds-readme .hljs-code,
+.dark .ds-readme .hljs-formula { color: #8b949e; }
+.dark .ds-readme .hljs-name,
+.dark .ds-readme .hljs-quote,
+.dark .ds-readme .hljs-selector-tag,
+.dark .ds-readme .hljs-selector-pseudo { color: #7ee787; }
+.dark .ds-readme .hljs-section { color: #1f6feb; font-weight: bold; }
+.dark .ds-readme .hljs-bullet { color: #f2cc60; }
+.dark .ds-readme .hljs-emphasis { font-style: italic; }
+.dark .ds-readme .hljs-strong { font-weight: bold; }
+.dark .ds-readme .hljs-addition { color: #aff5b4; background-color: #033a16; }
+.dark .ds-readme .hljs-deletion { color: #ffdcd7; background-color: #67060c; }

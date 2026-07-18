@@ -10,6 +10,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { TrackedChip } from '../../WorkBoard/TrackedChip'
+import { PRRiskBadges } from '../../RepoDetail/PRRiskBadges'
 import { Button } from '../../ui/Button'
 import { Textarea } from '../../ui/form'
 
@@ -131,6 +132,12 @@ export function ReviewToolbar({ pr, repoName, repoFullName, viewMode, onToggleVi
           isLast
         />
       </nav>
+
+      {/* PR-level risk pills (stale, no reviewers, breaking-change keywords,
+          ...) — free, instant heuristic signals surfaced here so reviewers
+          get PR-wide context before any AI call fires. Hidden below lg to
+          keep the toolbar from overflowing on narrow viewports. */}
+      {pr && <PRRiskBadges pr={pr} max={3} className="hidden lg:inline-flex shrink-0" />}
 
       {/* Tracked chip */}
       {repoFullName && <TrackedChip repoFullName={repoFullName} />}

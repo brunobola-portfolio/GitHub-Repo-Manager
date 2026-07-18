@@ -1,13 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { GitCommit, ExternalLink } from 'lucide-react'
+import { GitCommit, ExternalLink, Sparkles } from 'lucide-react'
 import { AnimatedCopyIcon } from '../ui/AnimatedCopyIcon'
 import { useState } from 'react'
+import { Button } from '../ui/Button'
 import { Modal } from '../ui/Modal'
 import { Spinner } from '../ui/Spinner'
 import { StaleDataBadge } from '../ui/StaleDataBadge'
 import { useResilientFetch } from '../../hooks/useResilientFetch'
+import { useCommitAI } from '../../hooks/useCommitAI'
 import { CodeReviewSurface } from '../diff/CodeReviewSurface'
+import { AISummaryPanel } from '../PRReview/AIInsights/AISummaryPanel'
+import { sortFilesByRisk } from '../PRReview/hooks/useReviewAI'
 import { formatRelativeTime } from '../../utils/format'
+import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
 function CommitMessageBody({ description }) {
     if (!description) return null
@@ -15,6 +20,47 @@ function CommitMessageBody({ description }) {
         <div className="px-4 py-3 mx-4 my-3 rounded-xl bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/40">
             <pre className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-300 font-sans leading-relaxed">{description}</pre>
         </div>
+    )
+}
+
+// AI summary for a single commit — cheap because a commit's diff is a
+// strict subset of a PR's (see useCommitAI). Loads on demand: a "Ask AI"
+// button until the user asks, then the same AISummaryPanel PR review uses.
+// The commitAI state is owned by the parent so the file tree can pick up
+// the AI's real per-file risk once it lands (same handoff PRFilesTab does
+// with useReviewAI), instead of staying on the heuristic fallback forever.
+function CommitAIPanel({ summary, loading, error, hasRequested, generate }) {
+    const [collapsed, setCollapsed] = useState(false)
+
+    if (!hasRequested) {
+        return (
+            <Button
+                variant="secondary"
+                size="sm"
+                onClick={generate}
+                className="w-full justify-center"
+            >
+                <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
+                Ask AI to summarize this commit
+            </Button>
+        )
+    }
+
+    return (
+        <AISummaryPanel
+            summary={summary}
+            loading={loading}
+            error={error}
+            collapsed={collapsed}
+            onToggle={() => setCollapsed((c) => !c)}
+            onRetry={generate}
+            onFileClick={(filename) => {
+                emitAppEvent(APP_EVENTS.CODE_REVIEW_SELECT_FILE, { filename })
+            }}
+            headerLabel="AI Commit Summary"
+            loadingLabel="Analyzing commit..."
+            errorContext="Commit summary"
+        />
     )
 }
 
@@ -48,6 +94,8 @@ export function CommitDetailPanel({ owner, repo, sha, onClose }) {
     const files = data?.files || []
     const stats = data?.stats || { additions: 0, deletions: 0 }
     const author = data?.commit?.author
+
+    const commitAI = useCommitAI(owner, repo, sha, files, subject)
 
     return (
         <Modal
@@ -94,7 +142,16 @@ export function CommitDetailPanel({ owner, repo, sha, onClose }) {
                         files={files}
                         storageKey={`commit-reviewed:${owner}/${repo}#${sha}`}
                         headerSlot={<CommitMessageBody description={description} />}
-                        rightSlot={null}
+                        rightSlot={files.length > 0 ? <CommitAIPanel {...commitAI} /> : null}
+                        // Risk-sorted, risk-colored file tree — same heuristic scorer
+                        // PR review uses, so a commit that touches auth/migration code
+                        // or hundreds of lines reads differently from a one-line typo
+                        // fix, matching PR review's file tree instead of the flat,
+                        // unscored order commits got before. Once the AI summary
+                        // lands, its real per-file risk takes over from the
+                        // heuristic fallback — same handoff PRFilesTab does.
+                        sortFiles={(f) => sortFilesByRisk(f, {})}
+                        fileMeta={{ aiFileRisks: commitAI.summary?.fileRisks ?? [] }}
                     />
                 )}
             </div>

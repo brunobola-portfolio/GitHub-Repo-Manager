@@ -214,6 +214,37 @@ export async function deleteGithubRepo(owner, repo, headers) {
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
+ * Throws a distinguishable cancellation error when the caller's isCancelled()
+ * flag is set. Checked at every phase boundary so a mid-run cancel stops the
+ * import at the next opportunity even during phases with no git child process
+ * to hard-abort (GitHub REST calls for create/reuse/replace, oversized-blob
+ * scan, etc). `importRepository`'s catch block recognizes `err.code === 'CANCELLED'`
+ * and reports the run as cancelled, not failed.
+ */
+function throwIfCancelled(isCancelled) {
+    if (isCancelled()) {
+        const err = new Error('Migration cancelled');
+        err.code = 'CANCELLED';
+        throw err;
+    }
+}
+
+/**
+ * Polls isCancelled() and trips the AbortController the moment it flips true —
+ * this is what turns a cancel request into a genuine hard-kill of whatever git
+ * child process (clone/LFS fetch/LFS migrate/push/LFS push) is running at that
+ * instant, via simple-git's built-in `abort` plugin (SIGINT to the spawned
+ * process). Returns the interval handle so the caller can clear it.
+ */
+function startCancelWatcher(isCancelled, abortController) {
+    const timer = setInterval(() => {
+        if (isCancelled()) abortController.abort();
+    }, 400);
+    if (timer.unref) timer.unref();
+    return timer;
+}
+
+/**
  * Create a GitHub repo, retrying while the name is still "already exists"
  * (GitHub frees a just-deleted name a beat after DELETE returns).
  * @returns {object} the created repo JSON
@@ -257,7 +288,11 @@ function safeUrl(url) {
  * @param {string} params.description - Target repo description
  * @param {string} params.githubToken - GitHub access token
  * @param {function} params.onProgress - Progress callback (status, message, pct)
- * @returns {Object} { success, targetFullName, branchCount, error }
+ * @param {function} [params.isCancelled] - Returns true once cancellation has been
+ *   requested. Polled between every phase (stops the import at the next boundary)
+ *   AND wired into an AbortController watcher that hard-kills the active git child
+ *   process (clone/LFS fetch/LFS migrate/push/LFS push) the moment it flips true.
+ * @returns {Object} { success, targetFullName, branchCount, error, cancelled? }
  */
 async function importRepository(params) {
     const {
@@ -270,7 +305,8 @@ async function importRepository(params) {
         sizeStrategy,
         onConflict = 'fail',
         githubToken,
-        onProgress = () => {}
+        onProgress = () => {},
+        isCancelled = () => false,
     } = params;
 
     const jobId = randomUUID();
@@ -281,8 +317,12 @@ async function importRepository(params) {
     let lfsFetchFailed = false;
     let lfsPushFailed = false;
 
+    const abortController = new AbortController();
+    const cancelWatcher = startCancelWatcher(isCancelled, abortController);
+
     try {
         // Step 1: Validate
+        throwIfCancelled(isCancelled);
         onProgress('validating', 'Validating source repository...', 5);
 
         const authSourceUrl = credentials ? embedCredentials(sourceUrl, credentials) : sourceUrl;
@@ -293,6 +333,7 @@ async function importRepository(params) {
         }
 
         // Step 2: Create GitHub repo (or reuse if it already exists and is empty)
+        throwIfCancelled(isCancelled);
         onProgress('creating', 'Creating target repository on GitHub...', 15);
 
         const endpoint = targetOwner
@@ -406,20 +447,22 @@ async function importRepository(params) {
         const targetFullName = createdRepo.full_name;
 
         // Step 3: Clone bare
+        throwIfCancelled(isCancelled);
         onProgress('cloning', `Cloning from source...`, 25);
 
         mkdirSync(workDir, { recursive: true });
-        const git = simpleGit({ timeout: { block: DEFAULT_TIMEOUT_MS } });
+        const git = simpleGit({ timeout: { block: DEFAULT_TIMEOUT_MS }, abort: abortController.signal });
         await git.clone(authSourceUrl, workDir, ['--bare']);
 
         // Step 4: Check for LFS
+        throwIfCancelled(isCancelled);
         const gitattrsPath = join(workDir, 'info', 'attributes');
         const hasLFS = existsSync(gitattrsPath) &&
             readFileSync(gitattrsPath, 'utf-8').includes('filter=lfs');
 
         if (hasLFS) {
             onProgress('lfs', 'Fetching LFS objects...', 40);
-            const lfsGit = simpleGit(workDir);
+            const lfsGit = simpleGit(workDir, { abort: abortController.signal });
             try {
                 await lfsGit.raw(['lfs', 'fetch', '--all']);
             } catch (e) {
@@ -433,8 +476,9 @@ async function importRepository(params) {
 
         // Step 4b: Apply sizeStrategy === 'lfs-migrate' (convert large blobs to LFS in-place).
         if (sizeStrategy === 'lfs-migrate') {
+            throwIfCancelled(isCancelled);
             onProgress('lfs-migrate', 'Converting large files to LFS...', 50);
-            const migrateGit = simpleGit(workDir);
+            const migrateGit = simpleGit(workDir, { abort: abortController.signal });
             // Fail fast with a clear message if git-lfs is missing — otherwise the
             // conversion silently no-ops and the run dies later at the opaque
             // "exceeds 100 MB" push error, which reads as if Replace/LFS did nothing.
@@ -463,6 +507,7 @@ async function importRepository(params) {
         // user has already opted into lfs-migrate or exclude — those paths
         // either fix the blobs in place or won't reach the push.
         if (sizeStrategy !== 'lfs-migrate' && sizeStrategy !== 'exclude') {
+            throwIfCancelled(isCancelled);
             onProgress('inspecting', 'Inspecting repository for oversized files...', 55);
             const oversized = await findOversizedBlobs(workDir, GITHUB_FILE_SIZE_LIMIT_BYTES);
             if (oversized.length > 0) {
@@ -500,10 +545,11 @@ async function importRepository(params) {
         }
 
         // Step 5: Push mirror
+        throwIfCancelled(isCancelled);
         onProgress('pushing', `Pushing to GitHub...`, 60);
 
         const pushUrl = `https://x-access-token:${githubToken}@github.com/${targetFullName}.git`;
-        const bareGit = simpleGit(workDir);
+        const bareGit = simpleGit(workDir, { abort: abortController.signal });
         await bareGit.addRemote('github', pushUrl);
         try {
             await bareGit.push('github', '--mirror');
@@ -541,6 +587,16 @@ async function importRepository(params) {
         // this run — those objects exist only locally and must be uploaded, or
         // the target ends up with pointers to missing objects.
         if (lfsPushNeeded(hasLFS, sizeStrategy)) {
+            // NOTE: deliberately NOT throwIfCancelled() here. The mirror push
+            // above already landed the real repo content on GitHub — a cancel
+            // request arriving in this exact window can't undo that, and
+            // discarding the whole run as "cancelled" at this point would be
+            // dishonest: the task row would say 'cancelled' while a genuinely
+            // migrated repo (minus, at worst, LFS objects) actually exists on
+            // GitHub, unrecorded. Instead we just skip the LFS-push attempts
+            // (below) and let the run resolve as a real success, flagging the
+            // skipped LFS push the same way a retry-exhausted failure is
+            // flagged so SummaryStep still surfaces it as an actionable caveat.
             onProgress('lfs-push', 'Pushing LFS objects...', 80);
             // Retry transient failures (network/rate-limit). If it still fails we
             // do NOT silently succeed: flag it so the Summary warns the user that
@@ -548,6 +604,10 @@ async function importRepository(params) {
             // and they should retry — instead of reporting a clean success.
             const LFS_PUSH_TRIES = 3;
             for (let attempt = 1; attempt <= LFS_PUSH_TRIES; attempt++) {
+                // The mirror push already landed the main repo content on GitHub —
+                // a cancel here can't undo that, but it should stop burning retries
+                // and backoff sleeps on a run the user already asked to stop.
+                if (isCancelled()) { lfsPushFailed = true; break; }
                 try {
                     await bareGit.raw(['lfs', 'push', '--all', 'github']);
                     lfsPushFailed = false;
@@ -615,6 +675,22 @@ async function importRepository(params) {
         };
 
     } catch (error) {
+        // Cancellation is not a failure. It reaches here either via an explicit
+        // throwIfCancelled() checkpoint (err.code === 'CANCELLED') or because the
+        // AbortController watcher killed the in-flight git child process (clone/
+        // LFS fetch/LFS migrate/push) — in that second case the rejection can be
+        // any simple-git abort error, so isCancelled() itself is the source of
+        // truth for whether this catch is a real failure or a requested stop.
+        if (error?.code === 'CANCELLED' || isCancelled()) {
+            onProgress('cancelled', 'Migration cancelled', 0);
+            return {
+                success: false,
+                cancelled: true,
+                error: 'Migration cancelled',
+                targetFullName: createdRepo?.full_name || null
+            };
+        }
+
         // Structured oversized-files errors get a sentinel-prefixed encoding so
         // the SummaryStep can render a premium panel instead of dumping stderr.
         const errorMessage = error?.code === 'OVERSIZED_FILES' && Array.isArray(error.files)
@@ -632,6 +708,7 @@ async function importRepository(params) {
             targetFullName: createdRepo?.full_name || null
         };
     } finally {
+        clearInterval(cancelWatcher);
         // Always cleanup temp directory
         try {
             if (existsSync(workDir)) {
@@ -649,5 +726,7 @@ export {
     sanitizeRepoName,
     importRepository,
     embedCredentials,
-    safeUrl
+    safeUrl,
+    throwIfCancelled,
+    startCancelWatcher
 };

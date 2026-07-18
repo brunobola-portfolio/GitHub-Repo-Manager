@@ -1,11 +1,14 @@
+import { useRef } from 'react'
 import { Badge } from '../ui/Badge'
 import { EmptyState } from '../ui/EmptyState'
+import { ReadmeToc } from '../ui/ReadmeToc'
 import { RepoMarkdown } from '../ui/RepoMarkdown'
 import { SectionPanel } from '../ui/SectionPanel'
+import { StaleDataBadge } from '../ui/StaleDataBadge'
 import { FileText, BookOpen, Sparkles, Info } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
 import { useModal } from '../../hooks/useModal'
-import { useTabData } from '../../hooks/useTabData'
+import { useResilientFetch } from '../../hooks/useResilientFetch'
 import { useToast } from '../../hooks/useToast'
 import { InlineEditField } from './InlineEditField'
 import { MigrationProvenanceCard } from './MigrationProvenanceCard'
@@ -43,12 +46,18 @@ function decodeBase64ReadmeUtf8(base64) {
 export function OverviewTab({ api, repoData, onUpdate }) {
     const { openModalWithData } = useModal()
     const { toast } = useToast()
-    const { data: readme, loading, error } = useTabData(
-        async () => {
-            const result = await api.fetchReadme()
-            return result.data || result
-        },
-        [api],
+    const readmeContainerRef = useRef(null)
+
+    const owner = repoData.owner?.login || repoData.full_name?.split('/')[0]
+    const repoName = repoData.name
+    const branch = repoData.default_branch || 'main'
+
+    // README read via the resilient read-through path (server-side
+    // gh-cache.readThrough) — same hook CommitsTab/CommitDetailPanel use, so
+    // a GitHub outage falls back to last-known-good content with a
+    // StaleDataBadge instead of a dead-end error card.
+    const { data: readme, loading, error, stale, fetchedAt, reload } = useResilientFetch(
+        owner && repoName ? `/api/v1/repos/${owner}/${repoName}/readme` : null,
     )
 
     const canEdit = !!onUpdate && !repoData.archived
@@ -84,7 +93,11 @@ export function OverviewTab({ api, repoData, onUpdate }) {
 
             {/* README */}
             <div className="lg:col-span-2">
-                <SectionPanel title="README" icon={BookOpen}>
+                <SectionPanel
+                    title="README"
+                    icon={BookOpen}
+                    actions={stale ? <StaleDataBadge fetchedAt={fetchedAt} onRetry={reload} /> : null}
+                >
                     {loading ? (
                         <div className="flex items-center justify-center py-12">
                             <Spinner size="lg" />
@@ -112,12 +125,17 @@ export function OverviewTab({ api, repoData, onUpdate }) {
                             </div>
                         )
                     ) : readme?.content ? (
-                        <RepoMarkdown
-                            source={decodeBase64ReadmeUtf8(readme.content)}
-                            owner={repoData.owner?.login || repoData.full_name?.split('/')[0]}
-                            repo={repoData.name}
-                            branch={repoData.default_branch || 'main'}
-                        />
+                        <div className="flex gap-6 items-start">
+                            <div ref={readmeContainerRef} className="flex-1 min-w-0">
+                                <RepoMarkdown
+                                    source={decodeBase64ReadmeUtf8(readme.content)}
+                                    owner={owner}
+                                    repo={repoName}
+                                    branch={branch}
+                                />
+                            </div>
+                            <ReadmeToc containerRef={readmeContainerRef} source={readme.content} />
+                        </div>
                     ) : (
                         <EmptyState
                             icon={BookOpen}

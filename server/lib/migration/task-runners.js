@@ -38,11 +38,14 @@ export async function runRepo(task, ctx) {
     sizeStrategy: config.sizeStrategy,
     onConflict: config.onConflict,
     githubToken: resolvedCredentials.githubToken,
-    onProgress: (status, message, pct) => callbacks.onProgress(pct, message)
+    onProgress: (status, message, pct) => callbacks.onProgress(pct, message),
+    isCancelled: callbacks.isCancelled
   })
 
   // importRepository catches errors and returns {success:false} instead of throwing —
   // we must check the result and throw so the engine marks the task as failed
+  // (or, for a cancelled run, so executeOne's isCancelled() check short-circuits
+  // it to a terminal 'cancelled' status instead of 'failed').
   if (!result.success) {
     throw new Error(result.error || 'GitHub import failed')
   }
@@ -156,7 +159,8 @@ export async function runTfvc(task, ctx) {
       sizeStrategy: config.sizeStrategy,
       onConflict: config.onConflict,
       githubToken: resolvedCredentials.githubToken,
-      onProgress: (status, message, pct) => callbacks.onProgress(45 + Math.floor((pct / 100) * 50), message)
+      onProgress: (status, message, pct) => callbacks.onProgress(45 + Math.floor((pct / 100) * 50), message),
+      isCancelled: callbacks.isCancelled
     })
 
     if (!result.success) {

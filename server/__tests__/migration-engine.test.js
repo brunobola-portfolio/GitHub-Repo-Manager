@@ -704,6 +704,102 @@ describe('MigrationEngine', () => {
     })
   })
 
+  // B1 regression: cancelPlan() only bulk-updates 'pending' tasks — the task
+  // that is actually 'running' at the moment of cancel used to be left
+  // untouched. When its promise later settled, executeOne's `if
+  // (this._isCancelled(planId)) return` swallowed the outcome with no DB
+  // write, orphaning the row at status='running' forever (invisible to both
+  // cancelPlan's own bulk update and to recoverInterruptedPlans, which only
+  // scans plans still 'running' — not 'cancelled'). These tests exploit the
+  // fact that executePlan dispatches every startable task synchronously,
+  // before its own first internal `await` — so by the time
+  // `engine.executePlan(planId)` returns a promise, the single task's row is
+  // already 'running' and the deferred `_executeTask` stub has already been
+  // invoked, letting the test call cancelPlan() and settle the task in
+  // whichever order it wants without timing hacks.
+  describe('cancel mid-run — task always reaches a terminal status', () => {
+    it('marks the in-flight task cancelled (not left running) when it resolves after cancelPlan()', async () => {
+      let resolveTask
+      engine._executeTask = () => new Promise(resolve => { resolveTask = resolve })
+
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+
+      const execPromise = engine.executePlan(planId)
+      expect(engine.getPlanStatus(planId).tasks[0].status).toBe('running')
+
+      engine.cancelPlan(planId)
+      // The in-flight import "finishes" (or, with real cancellation wired into
+      // import-service, is hard-aborted and rejects) after the cancel request —
+      // either way the row must not stay 'running'.
+      resolveTask({})
+      await execPromise
+
+      const plan = engine.getPlanStatus(planId)
+      expect(plan.status).toBe('cancelled')
+      expect(plan.tasks[0].status).toBe('cancelled')
+      expect(plan.tasks[0].status).not.toBe('running')
+      expect(plan.tasks[0].completed_at).not.toBeNull()
+    })
+
+    it('marks the in-flight task cancelled (not left running, not failed) when it rejects after cancelPlan()', async () => {
+      let rejectTask
+      engine._executeTask = () => new Promise((_, reject) => { rejectTask = reject })
+
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+
+      const execPromise = engine.executePlan(planId)
+      expect(engine.getPlanStatus(planId).tasks[0].status).toBe('running')
+
+      engine.cancelPlan(planId)
+      rejectTask(new Error('Migration cancelled'))
+      await execPromise
+
+      const plan = engine.getPlanStatus(planId)
+      expect(plan.status).toBe('cancelled')
+      expect(plan.tasks[0].status).toBe('cancelled')
+      expect(plan.tasks[0].status).not.toBe('failed')
+      expect(plan.tasks[0].error_message).toBeNull()
+    })
+
+    it('emits task-status cancelled for the in-flight task', async () => {
+      let resolveTask
+      engine._executeTask = () => new Promise(resolve => { resolveTask = resolve })
+
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      const events = []
+      engine.on('task-status', e => events.push(e))
+
+      const execPromise = engine.executePlan(planId)
+      engine.cancelPlan(planId)
+      resolveTask({})
+      await execPromise
+
+      expect(events.some(e => e.status === 'cancelled')).toBe(true)
+    })
+
+    it('does not touch a task that already reached a real terminal status (guard against clobbering completed/failed)', () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      const taskId = engine.getPlanStatus(planId).tasks[0].id
+      db.prepare("UPDATE migration_tasks SET status = 'completed', completed_at = datetime('now') WHERE id = ?").run(taskId)
+
+      engine._markTaskCancelled(taskId, planId)
+
+      expect(engine.getPlanStatus(planId).tasks.find(t => t.id === taskId).status).toBe('completed')
+    })
+  })
+
   describe('pausePlan / resumePlan', () => {
     it('pauses a running plan', () => {
       const planId = engine.createPlan(1,
@@ -834,7 +930,73 @@ describe('MigrationEngine', () => {
 
     it('is a no-op when there are no orphaned plans', () => {
       const summary = engine.recoverInterruptedPlans()
-      expect(summary).toEqual({ recovered: 0, autoResumed: 0, awaitingManual: 0, exhausted: 0 })
+      expect(summary).toEqual({ recovered: 0, autoResumed: 0, awaitingManual: 0, exhausted: 0, cancelledOrphans: 0 })
+    })
+
+    // B1 crash-mid-cancel case: the process dies between cancelPlan()'s
+    // synchronous write of plan.status='cancelled' and the in-flight task's
+    // promise settling. The main 'running'-plan scan above can't see this —
+    // the plan itself is already terminal — so it needs its own sweep. The
+    // row must be marked cancelled, never reset to 'pending' (there is no
+    // execution loop left to resume it into; the plan is done).
+    describe('cancelled-plan orphans (crash between cancelPlan() and task settlement)', () => {
+      it('marks a task stuck running under an already-cancelled plan as cancelled, not pending', () => {
+        const planId = engine.createPlan(1,
+          { type: 'azure', org: 'o', project: 'p' },
+          [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+        )
+        const taskId = engine.getPlanStatus(planId).tasks[0].id
+        db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('cancelled', planId)
+        db.prepare("UPDATE migration_tasks SET status = 'running', started_at = datetime('now') WHERE id = ?").run(taskId)
+
+        const summary = engine.recoverInterruptedPlans()
+
+        const plan = engine.getPlanStatus(planId)
+        expect(plan.status).toBe('cancelled') // untouched — already terminal
+        expect(plan.tasks[0].status).toBe('cancelled') // NOT reset to pending
+        expect(summary.cancelledOrphans).toBe(1)
+      })
+
+      it('emits task-status cancelled for the recovered orphan', () => {
+        const planId = engine.createPlan(1,
+          { type: 'azure', org: 'o', project: 'p' },
+          [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+        )
+        const taskId = engine.getPlanStatus(planId).tasks[0].id
+        db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('cancelled', planId)
+        db.prepare("UPDATE migration_tasks SET status = 'running' WHERE id = ?").run(taskId)
+
+        const events = []
+        engine.on('task-status', e => events.push(e))
+        engine.recoverInterruptedPlans()
+
+        expect(events).toEqual([{ planId, taskId, status: 'cancelled' }])
+      })
+
+      it('does not touch a still-pending task under a cancelled plan (only running rows are swept)', () => {
+        const planId = engine.createPlan(1,
+          { type: 'azure', org: 'o', project: 'p' },
+          [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+        )
+        db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('cancelled', planId)
+
+        const summary = engine.recoverInterruptedPlans()
+
+        expect(engine.getPlanStatus(planId).tasks[0].status).toBe('pending')
+        expect(summary.cancelledOrphans).toBe(0)
+      })
+
+      it('does not touch a task that is running under a plan still genuinely running (no double-handling)', () => {
+        engine.credentials.retrieve = () => null
+        const { planId, taskIds } = makeOrphan()
+
+        const summary = engine.recoverInterruptedPlans()
+
+        // The 'running'-plan path already resets it to pending; the
+        // cancelled-orphan sweep must not also touch it.
+        expect(engine.getPlanStatus(planId).tasks.find(t => t.id === taskIds[0]).status).toBe('pending')
+        expect(summary.cancelledOrphans).toBe(0)
+      })
     })
   })
 
@@ -911,6 +1073,42 @@ describe('MigrationEngine', () => {
       db.prepare("UPDATE migration_tasks SET status = 'failed' WHERE id = ?").run(taskId)
       await expect(engine.retryTask(planId, taskId))
         .rejects.toThrow(/Cannot retry tasks/)
+    })
+
+    // lfsPushFailed recovery: a task that *completed* but whose Git LFS push
+    // failed after retries (import-service.js sets metadata.lfsPushFailed) is
+    // the one narrow exception to "only failed tasks can be retried" — see
+    // the retry-lfs route, which is the only caller allowed to opt in.
+    it('retries a completed task when allowLfsPushFailedRetry is set', async () => {
+      engine._executeTask = async () => ({ lfsPushFailed: false })
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      const taskId = engine.getPlanStatus(planId).tasks[0].id
+      db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('completed', planId)
+      db.prepare("UPDATE migration_tasks SET status = 'completed', metadata = ? WHERE id = ?")
+        .run(JSON.stringify({ lfsPushFailed: true }), taskId)
+
+      await engine.retryTask(planId, taskId, null, { allowLfsPushFailedRetry: true })
+
+      const task = engine.getPlanStatus(planId).tasks[0]
+      expect(task.status).toBe('completed')
+      expect(task.retries).toBe(1)
+    })
+
+    it('rejects retrying a completed task WITHOUT allowLfsPushFailedRetry (plain /retry stays narrow)', async () => {
+      const planId = engine.createPlan(1,
+        { type: 'azure', org: 'o', project: 'p' },
+        [{ type: 'repo', sourceRef: 'r', targetRef: 't', config: {} }]
+      )
+      const taskId = engine.getPlanStatus(planId).tasks[0].id
+      db.prepare('UPDATE migration_plans SET status = ? WHERE id = ?').run('completed', planId)
+      db.prepare("UPDATE migration_tasks SET status = 'completed', metadata = ? WHERE id = ?")
+        .run(JSON.stringify({ lfsPushFailed: true }), taskId)
+
+      await expect(engine.retryTask(planId, taskId))
+        .rejects.toThrow(/Cannot retry task/)
     })
   })
 

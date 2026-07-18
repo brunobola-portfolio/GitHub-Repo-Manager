@@ -1,39 +1,30 @@
-const RISK_COLORS = {
-  critical: 'bg-red-500 dark:bg-red-400',
-  high: 'bg-red-400 dark:bg-red-500',
-  medium: 'bg-yellow-400 dark:bg-yellow-500',
-  low: 'bg-green-400 dark:bg-green-500',
-}
-
-const HEURISTIC_COLORS = [
-  'bg-green-400 dark:bg-green-500',   // 0
-  'bg-green-400 dark:bg-green-500',   // 1
-  'bg-yellow-400 dark:bg-yellow-500', // 2
-  'bg-orange-400 dark:bg-orange-500', // 3
-  'bg-red-400 dark:bg-red-500',       // 4
-  'bg-red-500 dark:bg-red-400',       // 5
-]
+import { normalizeRiskLevel, scoreToLevel, riskFillClass } from '../../../utils/riskTokens'
 
 /**
  * Small colored dot indicating file risk level.
+ *
+ * Color comes from the shared `ds-risk-*` token set (src/utils/riskTokens.js)
+ * — the same palette the risk rail, AI summary panel, and PR-level risk
+ * badges use, so risk reads consistently everywhere it shows up.
  *
  * @param {string}  [aiRisk]        - Named risk: 'low' | 'medium' | 'high' | 'critical'
  * @param {number}  [heuristicScore] - Numeric score 0–5 (used when aiRisk is absent)
  */
 export function FileRiskBadge({ aiRisk, heuristicScore }) {
-  let colorClass
+  let level
   let title
 
-  if (aiRisk && RISK_COLORS[aiRisk]) {
-    colorClass = RISK_COLORS[aiRisk]
+  const normalizedAiRisk = aiRisk ? normalizeRiskLevel(aiRisk) : 'neutral'
+  if (normalizedAiRisk !== 'neutral') {
+    level = normalizedAiRisk
     title = `AI risk: ${aiRisk}`
   } else if (typeof heuristicScore === 'number') {
     const idx = Math.max(0, Math.min(5, Math.round(heuristicScore)))
-    colorClass = HEURISTIC_COLORS[idx]
+    level = scoreToLevel(heuristicScore)
     title = `Heuristic risk score: ${idx}/5`
   } else {
     // No risk data — render a neutral dot
-    colorClass = 'bg-slate-300 dark:bg-slate-600'
+    level = 'neutral'
     title = 'Risk unknown'
   }
 
@@ -41,7 +32,7 @@ export function FileRiskBadge({ aiRisk, heuristicScore }) {
     <span
       role="img"
       aria-label={title}
-      className={`inline-block w-2 h-2 rounded-full shrink-0 ${colorClass}`}
+      className={`inline-block w-2 h-2 rounded-full shrink-0 ${riskFillClass(level)}`}
       title={title}
     />
   )
