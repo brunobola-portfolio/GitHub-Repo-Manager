@@ -1,58 +1,87 @@
 name: Release
 
-# Creates a GitHub Release when a v* tag is pushed, with auto-generated
-# notes and a production build bundle attached as an asset. Runs in
-# parallel with docker.yml (which publishes the container image).
-
+# Publishes a GitHub Release for a v* tag with the production dist bundle
+# attached and curated notes pulled from CHANGELOG.md. Idempotent: re-running
+# it (via workflow_dispatch, or a re-pushed tag) updates the existing release
+# and re-uploads assets instead of failing on "release already exists". Runs in
+# parallel with docker.yml.
+#
+# The tagged commit was already gated by CI on its PR before it reached main,
+# so this workflow does NOT re-run the test suite — it only builds, packages
+# and publishes, keeping releases fast.
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to (re)publish, e.g. v4.6.0'
+        required: true
 
 permissions:
   contents: write
+
+concurrency:
+  group: release-${{ github.event.inputs.tag || github.ref_name }}
+  cancel-in-progress: false
 
 jobs:
   release:
     runs-on: ubuntu-latest
     env:
-      SESSION_SECRET: ci-test-session-secret-not-real-32chars
-      NODE_ENV: test
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+      NODE_ENV: production
     steps:
       - uses: actions/checkout@v7
         with:
+          ref: ${{ github.event.inputs.tag || github.ref_name }}
           fetch-depth: 0
+
       - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
 
-      - name: Run unit tests
-        run: npx vitest run
+      - run: npm ci --no-audit --no-fund
 
-      - name: Build frontend
-        env:
-          NODE_ENV: production
+      - name: Build production bundle
         run: npm run build
 
       - name: Package dist bundle
         run: |
-          TAG="${GITHUB_REF_NAME}"
+          set -euo pipefail
           tar -czf "github-repo-manager-${TAG}-dist.tar.gz" dist/
           sha256sum "github-repo-manager-${TAG}-dist.tar.gz" \
             > "github-repo-manager-${TAG}-dist.tar.gz.sha256"
 
-      - name: Create GitHub Release
+      - name: Extract release notes from CHANGELOG
+        run: |
+          node scripts/extract-changelog.mjs "$TAG" > RELEASE_NOTES.md || true
+          if [ -s RELEASE_NOTES.md ]; then
+            echo "Using curated CHANGELOG notes for $TAG"
+          else
+            echo "No CHANGELOG section for $TAG — falling back to auto-generated notes"
+          fi
+
+      - name: Create or update the GitHub Release (idempotent)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ github.ref_name }}
         run: |
-          # --generate-notes builds release notes from merged PRs and commits
-          # since the previous tag. --verify-tag ensures we never publish an
-          # ad-hoc tag that was not actually pushed to the repo.
-          gh release create "$TAG" \
-            --title "$TAG" \
-            --generate-notes \
-            --verify-tag \
-            "github-repo-manager-${TAG}-dist.tar.gz" \
+          set -euo pipefail
+          if [ -s RELEASE_NOTES.md ]; then
+            NOTES=(--notes-file RELEASE_NOTES.md)
+          else
+            NOTES=(--generate-notes)
+          fi
+          ASSETS=(
+            "github-repo-manager-${TAG}-dist.tar.gz"
             "github-repo-manager-${TAG}-dist.tar.gz.sha256"
+          )
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG exists — updating notes and re-uploading assets"
+            gh release edit "$TAG" --verify-tag --title "$TAG" "${NOTES[@]}"
+            gh release upload "$TAG" "${ASSETS[@]}" --clobber
+          else
+            echo "Creating release $TAG"
+            gh release create "$TAG" --verify-tag --title "$TAG" "${NOTES[@]}" "${ASSETS[@]}"
+          fi
