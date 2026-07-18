@@ -1,10 +1,11 @@
-import { cloneElement, createContext, createElement, useContext, useEffect, useState } from 'react'
+import { cloneElement, createContext, createElement, useContext, useEffect, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import { rehypeSlugInline } from './__rehype-slug-inline'
 import { AnimatedCopyIcon } from './AnimatedCopyIcon'
+import { parseAndSanitizeSvg } from '../../utils/sanitizeSvg'
 
 // Sanitize schema: defaults + relax a handful of attributes that GitHub
 // READMEs habitually use. Tag/attribute lists are explicit-allow only.
@@ -185,6 +186,76 @@ function ReadmeCodeBlock({ children, ...preRest }) {
     )
 }
 
+// ---------------------------------------------------------------------------
+// ```mermaid fence rendering — own-app parity with the diagram embed flow.
+//
+// A README embedded via the AI Diagram Generator's embed action (Addendum
+// 6b.1, docs/specs/2026-07-18-community-wow-wave6.md) renders natively on
+// GitHub/GitLab; without this, our own README reader would show the same
+// fence as an inert, unhighlighted code block. Adapted from the identical
+// render pipeline in WalkthroughTab.jsx / DiagramGenerator.jsx: lazy `mermaid`
+// import, `securityLevel: 'strict'`, theme-reactive, `parseAndSanitizeSvg`
+// defence-in-depth before adopting the resulting Node.
+// ---------------------------------------------------------------------------
+function ReadmeMermaidBlock({ source }) {
+    const mermaidRef = useRef(null)
+    const [mermaidError, setMermaidError] = useState(null)
+    const [theme, setTheme] = useState(() =>
+        typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'default'
+    )
+
+    useEffect(() => {
+        if (typeof MutationObserver === 'undefined') return undefined
+        const root = document.documentElement
+        const observer = new MutationObserver(() => {
+            const next = root.classList.contains('dark') ? 'dark' : 'default'
+            setTheme((current) => (current === next ? current : next))
+        })
+        observer.observe(root, { attributes: true, attributeFilter: ['class'] })
+        return () => observer.disconnect()
+    }, [])
+
+    useEffect(() => {
+        let cancelled = false
+        const src = source?.trim()
+        if (!src || !mermaidRef.current) return undefined
+
+        import('mermaid').then((mod) => {
+            if (cancelled) return
+            const mermaid = mod.default || mod
+            mermaid.initialize({ startOnLoad: false, theme, securityLevel: 'strict' })
+            const id = `readme-mermaid-${Math.random().toString(36).slice(2)}`
+            mermaid.render(id, src).then(({ svg }) => {
+                if (cancelled || !mermaidRef.current) return
+                const node = parseAndSanitizeSvg(svg)
+                if (!node) {
+                    setMermaidError('Diagram failed to render safely')
+                    return
+                }
+                setMermaidError(null)
+                mermaidRef.current.replaceChildren(document.importNode(node, true))
+            }).catch((err) => {
+                if (!cancelled) setMermaidError(err?.message || 'Failed to render diagram')
+            })
+        }).catch((err) => {
+            if (!cancelled) setMermaidError(err?.message || 'Failed to load mermaid')
+        })
+
+        return () => { cancelled = true }
+    }, [source, theme])
+
+    if (mermaidError) {
+        return <p className="text-xs text-red-600 dark:text-red-400">Diagram failed to render: {mermaidError}</p>
+    }
+    return (
+        <div
+            ref={mermaidRef}
+            data-testid="readme-mermaid-output"
+            className="overflow-auto rounded-lg border border-slate-200 dark:border-slate-800 p-3 my-2 bg-white dark:bg-slate-900"
+        />
+    )
+}
+
 // Stable across every render (module scope) — passed as-is to react-markdown
 // so component identity never churns, regardless of highlighter load state.
 const README_COMPONENTS = {
@@ -196,7 +267,14 @@ const README_COMPONENTS = {
         if (inline) return <code className={codeClassName} {...rest}>{children}</code>
         return <code className={codeClassName || ''} {...rest}>{children}</code>
     },
-    pre: ({ children, ...rest }) => <ReadmeCodeBlock {...rest}>{children}</ReadmeCodeBlock>,
+    pre: ({ children, ...rest }) => {
+        const codeElement = Array.isArray(children) ? children[0] : children
+        const lang = getLanguageFromClassName(codeElement?.props?.className || '')
+        if (lang === 'mermaid') {
+            return <ReadmeMermaidBlock source={extractCodeText(codeElement?.props?.children)} />
+        }
+        return <ReadmeCodeBlock {...rest}>{children}</ReadmeCodeBlock>
+    },
 }
 
 export function RepoMarkdown({ source, owner, repo, branch = 'main', className = '' }) {

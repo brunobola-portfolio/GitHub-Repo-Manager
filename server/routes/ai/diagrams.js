@@ -2,7 +2,10 @@
  * GitHub Repo Manager - AI Diagram Generator Route
  *
  * Endpoints:
- *   POST /ai/generate-diagram
+ *   POST /ai/generate-diagram                 — AI-generated Mermaid (metered)
+ *   POST /ai/generate-diagram/deterministic   — zero-AI-cost fallback flowchart
+ *   POST /ai/generate-diagram/embed-preview   — compute the exact embed diff (no write)
+ *   POST /ai/generate-diagram/embed-commit    — write the diagram into the repo
  *
  * Generates a Mermaid diagram (v1: architecture/module graph only) grounded
  * in the repo's actual top-level contents, a capped recursive file tree, and
@@ -21,6 +24,15 @@
  * user request (docs/specs/2026-07-18-community-wow-wave6.md §Feature 2,
  * research §4a). A manual "Regenerate" after a second failure is a fully new
  * request (retry: false) and is metered normally.
+ *
+ * Embed into the repo (Addendum 6b.1): a generated diagram can be written
+ * into the repository — either as a ```mermaid fence directly in README.md
+ * (idempotent via `<!-- repo-manager:diagram:<type>:start/end -->` markers,
+ * see server/lib/ai-features/diagram-embed.js) or as a sanitized, size-guarded
+ * SVG committed to docs/diagrams/<type>.svg with a README image reference.
+ * Both paths go through a mandatory embed-preview → embed-commit round trip
+ * and commitOrOpenPR() (unmodified) for the actual write — no new commit
+ * primitive, no auto-write.
  */
 
 import express from 'express';
@@ -28,13 +40,18 @@ import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, isValidGitHubFullName } from '../../middleware/auth.js';
 import { requireScope } from '../../middleware/api-key-auth.js';
 import { validateBody } from '../../middleware/validate-request.js';
-import { aiGenerateDiagramSchema } from '../../lib/validators.js';
+import { aiGenerateDiagramSchema, deterministicDiagramSchema, embedDiagramPreviewSchema, embedDiagramCommitSchema } from '../../lib/validators.js';
 import { sanitizeForPrompt } from '../../ai-service.js';
 import { checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
 import { requireAI, guardedGenerate, handleAIError, denyIfSpendCapReached, recordStreamCompletion } from './shared.js';
 import { initSSE, streamToSSEWithUsage } from '../ai-streaming.js';
 import { resolveMaxOutputTokens } from '../../lib/ai-output-budget.js';
+import { commitOrOpenPR } from '../../lib/ai-features/community-health-fix.js';
+import {
+    buildDeterministicDiagram, buildMermaidEmbedBlock, buildSvgRefEmbedBlock,
+    insertOrReplaceBlock, sanitizeSvg,
+} from '../../lib/ai-features/diagram-embed.js';
 
 const router = express.Router();
 
@@ -140,7 +157,7 @@ export function cleanMermaidText(raw) {
  * empty signal set rather than failing the whole request on a missing
  * README or an empty repo.
  */
-async function fetchDiagramContext({ owner, repo, accessToken, log }) {
+export async function fetchDiagramContext({ owner, repo, accessToken, log }) {
     let topLevel = [];
     try {
         const { data } = await githubApi(`/repos/${owner}/${repo}/contents`, accessToken);
@@ -249,6 +266,198 @@ router.post('/ai/generate-diagram', requireAuth, requireScope('ai'), validateBod
     } catch (error) {
         req.log.error({ err: error, repo: repo.full_name }, 'Diagram generation failed');
         handleAIError(res, error, 'Failed to generate diagram. Please try again later.');
+    }
+});
+
+// ------------------------------------------------------------------
+// Deterministic (zero-AI-cost) fallback diagram.
+//
+// A depth-2, node-capped `flowchart TD` of the top-level directory
+// structure — always succeeds, never calls a provider. Used directly by the
+// embed flow's "invalid mermaid after the retry-once self-repair" edge case
+// (Addendum 6b.1): rather than failing the embed outright, the client offers
+// this as a substitute source. Not metered — reuses the same free tree/
+// contents fetch the main route already performs.
+// ------------------------------------------------------------------
+
+router.post('/ai/generate-diagram/deterministic', requireAuth, requireScope('ai'), validateBody(deterministicDiagramSchema), async (req, res) => {
+    const { repo, diagramType } = req.validatedBody;
+    if (!isValidGitHubFullName(repo.full_name)) {
+        return res.status(400).json({ error: 'Invalid repo.full_name', code: 'validation_failed' });
+    }
+    const [owner, repoName] = repo.full_name.split('/');
+
+    try {
+        const { topLevel, treeEntries, truncated } = await fetchDiagramContext({
+            owner, repo: repoName, accessToken: req.session.accessToken, log: req.log,
+        });
+        const mermaid = buildDeterministicDiagram({ topLevel, treeEntries, truncated });
+        res.json({ success: true, mermaid, diagramType, truncated, deterministic: true });
+    } catch (error) {
+        req.log.error({ err: error, repo: repo.full_name }, 'Deterministic diagram generation failed');
+        res.status(500).json({ error: 'Failed to build a deterministic diagram. Please try again later.', code: 'deterministic_diagram_failed' });
+    }
+});
+
+// ------------------------------------------------------------------
+// Embed diagrams into the repository (Addendum 6b.1).
+//
+// Neither route below calls an AI provider — the caller already has the
+// Mermaid/SVG (from POST /ai/generate-diagram, its retry-once self-repair, or
+// the deterministic fallback above), so these are plain, auth-gated GitHub
+// read/write actions, matching the shape of every other commit-only route in
+// this codebase (community-health/commit-fix, agent-rules/commit): no
+// requireScope('ai'), no requireAI, no quota check.
+//
+//   POST /ai/generate-diagram/embed-preview — computes the exact README
+//     diff (and/or sanitized SVG) WITHOUT writing anything; mandatory before
+//     embed-commit.
+//   POST /ai/generate-diagram/embed-commit  — performs the actual write(s)
+//     via commitOrOpenPR() (unmodified, verbatim — including its branch-
+//     protection-probe -> PR-fallback behavior).
+// ------------------------------------------------------------------
+
+const DIAGRAM_LABELS = { architecture: 'Architecture diagram' };
+
+function diagramLabel(diagramType) {
+    return DIAGRAM_LABELS[diagramType] || `${diagramType} diagram`;
+}
+
+function svgPathFor(diagramType) {
+    return `docs/diagrams/${diagramType}.svg`;
+}
+
+/**
+ * Fetch the FULL (untruncated) README content + its exact path — the embed
+ * flow must never operate on the truncated snippet the AI-prompt context
+ * fetch above uses, or a marker insert/replace could clobber content beyond
+ * what was actually read. Tolerant-404: no README is a legitimate, handled
+ * state, not an error.
+ */
+async function fetchFullReadme({ owner, repo, accessToken, log }) {
+    try {
+        const { data } = await githubApi(`/repos/${owner}/${repo}/readme`, accessToken);
+        if (data?.encoding === 'base64' && typeof data.content === 'string') {
+            return { content: Buffer.from(data.content, 'base64').toString('utf-8'), path: data.path || 'README.md' };
+        }
+        return null;
+    } catch (e) {
+        if (e?.status !== 404) log?.warn?.({ err: e, owner, repo }, 'Diagram embed: README fetch failed');
+        return null;
+    }
+}
+
+/**
+ * Repo-level push access via GitHub's `permissions.push` field on the
+ * authenticated user's view of the repo. Deliberately conservative: only a
+ * hard `false` is treated as read-only — a missing/undefined field (some
+ * GitHub App / token configurations omit it) does NOT block the flow, since
+ * a false positive here would incorrectly deny a user who can actually push.
+ * The real enforcement remains GitHub's own API on the write call itself.
+ */
+async function hasPushAccess({ owner, repo, accessToken, log }) {
+    try {
+        const { data } = await githubApi(`/repos/${owner}/${repo}`, accessToken);
+        return { push: data?.permissions?.push !== false, repoData: data };
+    } catch (e) {
+        log?.warn?.({ err: e, owner, repo }, 'Diagram embed: repo permissions fetch failed');
+        return { push: true, repoData: null };
+    }
+}
+
+router.post('/ai/generate-diagram/embed-preview', requireAuth, validateBody(embedDiagramPreviewSchema), async (req, res) => {
+    const { repo, diagramType, target, mermaid, svg, placement, customAnchor, truncated } = req.validatedBody;
+    if (!isValidGitHubFullName(repo.full_name)) {
+        return res.status(400).json({ error: 'Invalid repo.full_name', code: 'validation_failed' });
+    }
+    const [owner, repoName] = repo.full_name.split('/');
+
+    try {
+        const { push } = await hasPushAccess({ owner, repo: repoName, accessToken: req.session.accessToken, log: req.log });
+        const readme = await fetchFullReadme({ owner, repo: repoName, accessToken: req.session.accessToken, log: req.log });
+        const hasReadme = !!readme;
+
+        if (target === 'readme-mermaid') {
+            if (!hasReadme) {
+                return res.json({
+                    success: true, target, hasReadme: false, readOnly: !push,
+                    notice: 'No README found — create one first (README Studio), or embed as a committed SVG file instead.',
+                });
+            }
+            const block = buildMermaidEmbedBlock({ type: diagramType, mermaid, truncated });
+            const { content, action, notice } = insertOrReplaceBlock(readme.content, diagramType, block, { placement, customAnchor });
+            return res.json({
+                success: true, target, hasReadme: true, readOnly: !push, action, notice,
+                readme: { path: readme.path, before: readme.content, after: content, commitMessage: `docs: embed ${diagramType} diagram in README` },
+            });
+        }
+
+        // target === 'svg-file'
+        const sanitized = sanitizeSvg(svg);
+        if (!sanitized.ok) {
+            return res.status(422).json({ error: `Generated SVG failed validation (${sanitized.reason}) and cannot be embedded.`, code: 'invalid_svg' });
+        }
+        const path = svgPathFor(diagramType);
+
+        let readmeResult = null;
+        if (hasReadme) {
+            const block = buildSvgRefEmbedBlock({ type: diagramType, svgPath: path, label: diagramLabel(diagramType), truncated });
+            const { content, action, notice } = insertOrReplaceBlock(readme.content, diagramType, block, { placement, customAnchor });
+            readmeResult = { path: readme.path, before: readme.content, after: content, action, notice, commitMessage: `docs: reference ${diagramType} diagram SVG in README` };
+        }
+
+        res.json({
+            success: true, target, hasReadme, readOnly: !push,
+            svg: { path, content: sanitized.svg, commitMessage: `docs: add ${diagramType} diagram SVG` },
+            readme: readmeResult,
+            notice: !hasReadme ? 'No README found — the diagram SVG will be committed to docs/diagrams/ without a README reference.' : (readmeResult?.notice || null),
+        });
+    } catch (error) {
+        req.log.error({ err: error, repo: repo.full_name }, 'Diagram embed preview failed');
+        res.status(500).json({ error: 'Failed to build the diagram embed preview. Please try again later.', code: 'embed_preview_failed' });
+    }
+});
+
+router.post('/ai/generate-diagram/embed-commit', requireAuth, validateBody(embedDiagramCommitSchema), async (req, res) => {
+    const { repo, target, readme, svg, mode } = req.validatedBody;
+    if (!isValidGitHubFullName(repo.full_name)) {
+        return res.status(400).json({ error: 'Invalid repo.full_name', code: 'validation_failed' });
+    }
+    const [owner, repoName] = repo.full_name.split('/');
+
+    try {
+        const { push } = await hasPushAccess({ owner, repo: repoName, accessToken: req.session.accessToken, log: req.log });
+        if (!push) {
+            return res.status(403).json({ error: 'You do not have push access to this repository — a pull request cannot be opened on your behalf (PR-from-fork is not supported).', code: 'read_only_access' });
+        }
+
+        const results = {};
+
+        if (svg) {
+            // Defence in depth: re-validate at commit time too, in case a
+            // caller skipped embed-preview.
+            const sanitized = sanitizeSvg(svg.content);
+            if (!sanitized.ok) {
+                return res.status(422).json({ error: `Generated SVG failed validation (${sanitized.reason}) and cannot be committed.`, code: 'invalid_svg' });
+            }
+            results.svg = await commitOrOpenPR({
+                owner, repo: repoName, token: req.session.accessToken,
+                filePath: svg.path, content: sanitized.svg, commitMessage: svg.commitMessage, mode, githubApi,
+            });
+        }
+
+        if (readme) {
+            results.readme = await commitOrOpenPR({
+                owner, repo: repoName, token: req.session.accessToken,
+                filePath: readme.path, content: readme.content, commitMessage: readme.commitMessage, mode, githubApi,
+            });
+        }
+
+        auditLog(req, 'ai.embed_diagram', 'repo', `${owner}/${repoName}`, { target, mode });
+        res.json({ success: true, target, ...results });
+    } catch (error) {
+        req.log.error({ err: error, repo: repo.full_name }, 'Diagram embed commit failed');
+        res.status(500).json({ error: 'Failed to commit the diagram embed. Please try again later.', code: 'embed_commit_failed' });
     }
 });
 

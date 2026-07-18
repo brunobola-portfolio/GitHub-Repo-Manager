@@ -36,6 +36,30 @@ async function mutationHeaders() {
     return { 'Content-Type': 'application/json', 'X-CSRF-Token': token };
 }
 
+// POST + parse-JSON helper for routes that are NOT AI-gated (no mock
+// short-circuit, no 429/403-as-tier-error framing) — e.g. plain commit
+// actions. Throws a real Error with `.status`/`.code` attached from the
+// server's `{ error, code }` envelope so callers can branch on a specific
+// code (`read_only_access`, `invalid_svg`, …) rather than a generic message.
+// Mirrors the inline fetch pattern ReadmeStudioModal already uses for its
+// commit-fix call.
+async function postJson(url, body) {
+    const res = await fetch(url, {
+        method: 'POST',
+        headers: await mutationHeaders(),
+        credentials: 'include',
+        body: JSON.stringify(body),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        const err = new Error(json.error || `status ${res.status}`);
+        err.status = res.status;
+        err.code = json.code;
+        throw err;
+    }
+    return json;
+}
+
 // Short-circuit helper — when AI is not configured we skip the HTTP request
 // entirely and return the caller's mock payload. This keeps the browser
 // console clean (no 503) and gives the UI a stable `mock: true` contract to
@@ -508,6 +532,22 @@ export const aiApi = {
             }
             return handleAIResponse(res, 'generate diagram');
         },
+
+        // Deterministic (zero-AI-cost) fallback diagram — never calls a
+        // provider, never mock-short-circuits. Used directly by the embed
+        // flow's "invalid mermaid after the retry-once self-repair" edge case
+        // (Addendum 6b.1): rather than failing the embed, offer this instead.
+        deterministic: async (repo, config = {}) => postJson(`${API_BASE}/ai/generate-diagram/deterministic`, { repo, ...config }),
+
+        // Embed a generated diagram INTO the repo (Addendum 6b.1). Neither call
+        // touches an AI provider (the caller already has the mermaid/svg), so
+        // — unlike `generate` above — there's no mock short-circuit here; these
+        // are plain, auth-gated GitHub read/write actions. Errors are thrown
+        // with `.status`/`.code` attached (e.g. `read_only_access`,
+        // `invalid_svg`) so the UI can render an honest, specific state rather
+        // than a generic failure message.
+        embedPreview: async (payload) => postJson(`${API_BASE}/ai/generate-diagram/embed-preview`, payload),
+        embedCommit: async (payload) => postJson(`${API_BASE}/ai/generate-diagram/embed-commit`, payload),
     },
 
     // Agent Rules Generator — grounded AGENTS.md / CLAUDE.md generation
