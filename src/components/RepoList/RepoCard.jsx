@@ -85,6 +85,7 @@ export const RepoCard = memo(function RepoCard({
 	onExplainHealth,
 	onRepoClick,
 	index = 0,
+	skipEntranceAnimation = false,
 }) {
 	const isGrid = viewMode === 'grid'
 	// Staggered entrance: each card lands a beat after the previous one. Capped
@@ -116,7 +117,12 @@ export const RepoCard = memo(function RepoCard({
 		<motion.div
 			data-testid="repo-card"
 			onContextMenu={onContextMenu}
-			initial={{ opacity: 0, y: 6 }}
+			// Windowed lists mount/unmount cards as they scroll in and out of the
+			// virtualization window — replaying the entrance fade on every scroll
+			// would look like a flicker, not an animation. `skipEntranceAnimation`
+			// (set by RepoGrid's virtualized branch) renders the card at its final
+			// state immediately instead.
+			initial={skipEntranceAnimation ? false : { opacity: 0, y: 6 }}
 			animate={{ opacity: 1, y: 0 }}
 			exit={{ opacity: 0, y: 6, transition: TRANSITION.fast }}
 			transition={{ ...TRANSITION.entrance, delay: entranceDelay }}
@@ -277,6 +283,7 @@ export const RepoCard = memo(function RepoCard({
 		a.updated_at === b.updated_at &&
 		prevProps.viewMode === nextProps.viewMode &&
 		prevProps.isSelected === nextProps.isSelected &&
-		prevProps.isContextTarget === nextProps.isContextTarget
+		prevProps.isContextTarget === nextProps.isContextTarget &&
+		prevProps.skipEntranceAnimation === nextProps.skipEntranceAnimation
 	)
 })

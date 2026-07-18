@@ -1,13 +1,27 @@
 import { AnimatePresence } from 'framer-motion'
 import { RepoCard } from './RepoCard'
+import { useVirtualWindow } from '../../hooks/useVirtualWindow'
 
 // Mirrors the migration wizard's VIRTUALIZATION_THRESHOLD
 // (RepoSelectStep/RepoList.jsx): below it the wizard wraps rows in
 // AnimatePresence for exit animations; at/above it it switches to a plain
-// virtualized list with no AnimatePresence at all. We mirror the threshold
-// bypass only — above it cards render statically (removals unmount
-// instantly) — without adding react-virtual to the grid.
+// virtualized list with no AnimatePresence at all. We reuse the same
+// threshold for RepoGrid's own list-mode windowing below (isWindowed).
 const EXIT_ANIMATION_THRESHOLD = 50
+
+// Fixed per-row slot for the virtualized list view: RepoCard's list-mode
+// content-visibility estimate (88px — see the `contain-intrinsic-size` hint
+// in RepoCard.jsx, verified against real rendered height) plus the 12px
+// gap the unvirtualized `gap-3` flex column applies between cards.
+const LIST_ROW_HEIGHT = 100
+// Grid mode isn't windowed here: its column count depends on the runtime
+// container width (`repeat(auto-fill, minmax(...))`), so "how many cards
+// per virtual row" can't be computed without measuring — the kind of
+// variable-geometry case that makes hand-rolled fixed-height windowing
+// fragile. Grid mode instead keeps the CSS-only `content-visibility:auto`
+// paint-skip already on RepoCard, and its row count is capped at 100 by the
+// per-page limit (src/config.js PAGINATION.perPageOptions), so the DOM never
+// grows past a bounded worst case.
 
 /**
  * Renders the repo collection as a grid or a list.
@@ -27,6 +41,15 @@ const EXIT_ANIMATION_THRESHOLD = 50
  * exiting cards out of the CSS grid flow immediately so the remaining cards
  * reflow without waiting for the exit animation to finish — cheaper than
  * giving every card a `layout` prop.
+ *
+ * List mode additionally *windows* its DOM at/above EXIT_ANIMATION_THRESHOLD
+ * (`isWindowed`, via useVirtualWindow): only the rows in the scrolled
+ * viewport (plus overscan) are mounted, translated into place with a fixed
+ * per-row height. Entrance animation is skipped for these rows
+ * (`skipEntranceAnimation`) so scrolling a card into the window doesn't
+ * replay its fade-in — see RepoCard.jsx. Grid mode is left unwindowed (see
+ * the module-level comment above) and keeps the plain static/AnimatePresence
+ * branch below.
  */
 export function RepoGrid({
 	repos,
@@ -43,8 +66,16 @@ export function RepoGrid({
 	const isGrid = viewMode === 'grid'
 	const skeletonCount = isGrid ? 6 : 4
 	const animateExits = repos.length < EXIT_ANIMATION_THRESHOLD
+	const isWindowed = !isGrid && !isSearchingAI && repos.length >= EXIT_ANIMATION_THRESHOLD
 
-	const cards = !isSearchingAI && repos.map((repo, i) => (
+	const { containerRef, start: windowStart, end: windowEnd, totalHeight } = useVirtualWindow({
+		count: repos.length,
+		itemHeight: LIST_ROW_HEIGHT,
+		overscan: 8,
+		enabled: isWindowed,
+	})
+
+	const renderCard = (repo, i) => (
 		<RepoCard
 			key={repo.id}
 			index={i}
@@ -57,8 +88,41 @@ export function RepoGrid({
 			onContextMenu={(e) => onContextMenu(e, repo)}
 			onExplainHealth={onExplainHealth ? (r) => onExplainHealth(r) : undefined}
 			onRepoClick={onRepoClick}
+			skipEntranceAnimation={isWindowed}
 		/>
-	))
+	)
+
+	if (isWindowed) {
+		const visibleRepos = repos.slice(windowStart, windowEnd)
+		return (
+			<div
+				ref={containerRef}
+				style={{ position: 'relative', height: totalHeight }}
+				data-testid="repo-grid-virtual-window"
+			>
+				{visibleRepos.map((repo, i) => {
+					const realIndex = windowStart + i
+					return (
+						<div
+							key={repo.id}
+							style={{
+								position: 'absolute',
+								top: 0,
+								left: 0,
+								right: 0,
+								transform: `translateY(${realIndex * LIST_ROW_HEIGHT}px)`,
+								paddingBottom: 12,
+							}}
+						>
+							{renderCard(repo, realIndex)}
+						</div>
+					)
+				})}
+			</div>
+		)
+	}
+
+	const cards = !isSearchingAI && repos.map((repo, i) => renderCard(repo, i))
 
 	return (
 		<div
