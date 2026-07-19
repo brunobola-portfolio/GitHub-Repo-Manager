@@ -1,10 +1,16 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
+import { createRequire } from 'module';
 import logger from '../lib/logger.js';
 import db, { initDB } from '../db.js';
-import { safeError } from '../middleware/auth.js';
+import { requireAuth, safeError } from '../middleware/auth.js';
 import { validateBody } from '../middleware/validate-request.js';
 import { clientErrorSchema } from '../lib/validators.js';
+import { config } from '../config.js';
+import { checkForUpdate } from '../lib/update-check.js';
+
+const require = createRequire(import.meta.url);
+const pkg = require('../../package.json');
 
 // Rate-limit setup so an unauthenticated endpoint can't be hammered.
 const setupLimiter = rateLimit({
@@ -79,6 +85,24 @@ router.get('/source', (req, res) => {
         commercialLicenseUrl: 'https://bolalabs.pt/license',
         notice: 'Modified versions running as a network service must offer their corresponding source under AGPL §13.'
     });
+});
+
+// Self-hosted "new version available" signal (notify only — no auto-update).
+// Authenticated: unlike /source and /status, this makes an outbound request
+// on the caller's behalf and returns release metadata, so it isn't left open
+// to anonymous callers. Never throws — a check failure degrades to a safe
+// "inconclusive" result, never a 500.
+router.get('/update-check', requireAuth, async (req, res) => {
+    try {
+        const result = await checkForUpdate({
+            currentVersion: pkg.version,
+            disabled: !config.updateCheckEnabled,
+        });
+        res.json(result);
+    } catch (error) {
+        logger.error({ err: error }, 'update-check failed unexpectedly');
+        res.json({ current: pkg.version });
+    }
 });
 
 // Client error reporting endpoint (no auth required — errors may occur before

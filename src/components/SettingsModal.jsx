@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
-import { Moon, Sun, Monitor, Zap, Trash2, GitBranch, Key, Shield, BadgeCheck, Sparkles, Kanban, Wand2, Palette, Cloud, ShieldCheck, Wrench } from 'lucide-react'
+import { Moon, Sun, Monitor, Zap, Trash2, GitBranch, Key, Shield, BadgeCheck, Sparkles, Kanban, Wand2, Palette, Cloud, ShieldCheck, Wrench, Info } from 'lucide-react'
 import { useTheme } from '../hooks/useTheme'
 import { useToast } from '../hooks/useToast'
 import { API_BASE_URL } from '../config'
@@ -22,6 +22,7 @@ import { Input, Switch } from './ui/form'
 import { SectionSpinner } from './ui/Spinner'
 const ProbeStatsSection = lazy(() => import('./Settings/ProbeStatsSection').then(m => ({ default: m.ProbeStatsSection })))
 const EnvironmentToolingSection = lazy(() => import('./Settings/EnvironmentToolingSection').then(m => ({ default: m.EnvironmentToolingSection })))
+const AboutSection = lazy(() => import('./Settings/AboutSection').then(m => ({ default: m.AboutSection })))
 import { getCsrfToken } from '../utils/api'
 
 // SettingsIcon defined before TABS so it can be referenced in the array
@@ -52,6 +53,7 @@ const TABS = [
     { id: 'work-board', label: 'Work Board', icon: Kanban },
     { id: 'license', label: 'License & Plan', icon: BadgeCheck },
     { id: 'audit', label: 'Audit Log', icon: Shield },
+    { id: 'about', label: 'About', icon: Info },
 ]
 
 // Admin-only tabs appended when the user has admin powers. Built at render
@@ -193,6 +195,7 @@ export function SettingsModal({ isOpen, onClose, initialTab, isAdmin = false }) 
                     {activeTab === 'audit' && <div><AuditLogSection /></div>}
                     {activeTab === 'probe-stats' && <div><ProbeStatsSection isAdmin={isAdmin} /></div>}
                     {activeTab === 'env-tooling' && <div><EnvironmentToolingSection isAdmin={isAdmin} /></div>}
+                    {activeTab === 'about' && <div><AboutSection /></div>}
                 </Suspense>
             )}
         </Modal>

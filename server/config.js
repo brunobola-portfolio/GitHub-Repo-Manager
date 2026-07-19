@@ -142,6 +142,10 @@ function loadConfig() {
     // admin-gated /api/env/tooling/:id/install endpoint on hosted deployments.
     data.envToolingInstallEnabled = process.env.ENV_TOOLING_INSTALL_ENABLED !== 'false';
 
+    // Operator toggle: set UPDATE_CHECK=false to disable the outbound GitHub
+    // releases fetch behind GET /api/v1/system/update-check entirely.
+    data.updateCheckEnabled = process.env.UPDATE_CHECK !== 'false';
+
     return Object.freeze(data);
 }
 
