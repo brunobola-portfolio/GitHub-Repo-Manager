@@ -260,7 +260,6 @@ export function bulkUpdate(userId, repoFullNames, action) {
         skipped,
     };
 }
-export function deleteTrackedRepo() { throw new Error('not implemented'); }
 
 /**
  * Auto-insert a tracked_repos row when a webhook delivery references a repo

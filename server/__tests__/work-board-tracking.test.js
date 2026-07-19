@@ -46,7 +46,7 @@ testDb.exec(`
 
 vi.mock('../db.js', () => ({ default: testDb }));
 
-const { upsertTrackedRepo, getTrackedRepos, bulkUpdate, deleteTrackedRepo, getPrefs, patchPrefs } =
+const { upsertTrackedRepo, getTrackedRepos, bulkUpdate, getPrefs, patchPrefs } =
     await import('../lib/work-board-tracking.js');
 
 const USER_ID = 999002;
@@ -106,12 +106,6 @@ describe('upsertTrackedRepo', () => {
 
     it('throws on invalid action', () => {
         expect(() => upsertTrackedRepo(USER_ID, 'acme/backend', 'delete-everything')).toThrow(/invalid action/i);
-    });
-});
-
-describe('stub exports throw "not implemented"', () => {
-    it('deleteTrackedRepo throws', () => {
-        expect(() => deleteTrackedRepo()).toThrow('not implemented');
     });
 });
 
