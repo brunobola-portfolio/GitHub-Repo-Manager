@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.7.0] - 2026-07-19
+
+GitHub Repo Manager runs natively on Windows: a CI-boot-validated installer
+and portable ZIP, first-run bootstrap, and in-app update notifications.
+
 ### Added
 - **Windows distribution — installer + portable ZIP.** A self-contained
   Windows package (bundled Node.js runtime, no separate install, no admin
@@ -2191,7 +2196,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.6.1...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.7.0...HEAD
+[4.7.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.6.1...v4.7.0
 [4.6.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.6.0...v4.6.1
 [4.6.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.5.0...v4.6.0
 [4.5.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.4.0...v4.5.0
