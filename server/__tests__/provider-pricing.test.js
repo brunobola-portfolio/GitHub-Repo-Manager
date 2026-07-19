@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import { estimateCallCostCents, getPricingForModel, computeCostUSD, PROVIDER_PRICING } from '../lib/provider-pricing.js';
+import { PROVIDER_PRICING as FRONTEND_PRICING } from '../../src/utils/providerPricing.js';
+import { COMPLETION_MODELS } from '../../src/utils/providerModels.js';
 
 describe('getPricingForModel', () => {
     it('returns the exact entry when the model id matches', () => {
@@ -109,5 +111,55 @@ describe('estimateCallCostCents', () => {
         });
         // 1M tokens × $0.02 = 2 cents.
         expect(cost).toBe(2);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// Server ↔ frontend pricing parity (P1.4)
+//
+// This file (server/lib/provider-pricing.js) is a hand-maintained mirror of
+// src/utils/providerPricing.js, kept independent so server code never imports
+// from src/. That independence is exactly how they drifted before: this
+// suite previously missed gpt-5.4*/5.5*, claude-opus-4-7/4-6, and
+// gemini-2.5-flash-lite entirely, and had gemini-2.5-pro's output priced at
+// $5.00 instead of $10.00 — a real metering hole (BYOK claude-opus-4-7 fell
+// through to FALLBACK_PRICING, undercounting spend ~10x against the cap).
+// ---------------------------------------------------------------------------
+describe('server/frontend pricing parity', () => {
+    it('every model id present in BOTH pricing tables has equal input/output pricing', () => {
+        const sharedIds = Object.keys(PROVIDER_PRICING).filter((id) => id in FRONTEND_PRICING);
+        // Sanity: the intersection should not be trivially small — otherwise this
+        // assertion would pass vacuously while the two tables silently diverge.
+        expect(sharedIds.length).toBeGreaterThan(15);
+
+        for (const id of sharedIds) {
+            expect(PROVIDER_PRICING[id].input, `${id} input mismatch`).toBe(FRONTEND_PRICING[id].input);
+            expect(PROVIDER_PRICING[id].output, `${id} output mismatch`).toBe(FRONTEND_PRICING[id].output);
+        }
+    });
+
+    it('every id in the frontend model catalog (COMPLETION_MODELS) resolves to non-FALLBACK server pricing', () => {
+        const FALLBACK_INPUT = 0.50;
+        const FALLBACK_OUTPUT = 2.00;
+
+        for (const [provider, models] of Object.entries(COMPLETION_MODELS)) {
+            for (const model of models) {
+                // OpenRouter/local ids are aggregator-namespaced or user-defined —
+                // getPricingForModel strips a leading vendor/ prefix for OpenRouter,
+                // but local has no fixed catalogue to hold to a real-pricing bar.
+                if (provider === 'local') continue;
+
+                const pricing = getPricingForModel(model.id);
+                const isFallback = pricing.input === FALLBACK_INPUT && pricing.output === FALLBACK_OUTPUT;
+                expect(isFallback, `${provider}/${model.id} resolved to FALLBACK_PRICING — add it to server/lib/provider-pricing.js`).toBe(false);
+
+                // The resolved price must also match what the frontend catalog itself
+                // claims for this exact model — not just "some" non-fallback number.
+                if (model.pricing && typeof model.pricing.output === 'number') {
+                    expect(pricing.input, `${provider}/${model.id} input diverges from its own catalog entry`).toBe(model.pricing.input);
+                    expect(pricing.output, `${provider}/${model.id} output diverges from its own catalog entry`).toBe(model.pricing.output);
+                }
+            }
+        }
     });
 });

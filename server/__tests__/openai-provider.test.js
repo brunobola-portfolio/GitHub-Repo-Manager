@@ -62,9 +62,9 @@ describe('OpenAIProvider.getModelName()', () => {
         expect(p.getModelName()).toBe('gpt-4o-mini')
     })
 
-    it('defaults to gpt-4o-mini when no model is specified', () => {
+    it('defaults to gpt-5.6-luna when no model is specified', () => {
         const p = new OpenAIProvider({ apiKey: 'sk-test12345678' })
-        expect(p.getModelName()).toBe('gpt-4o-mini')
+        expect(p.getModelName()).toBe('gpt-5.6-luna')
     })
 })
 

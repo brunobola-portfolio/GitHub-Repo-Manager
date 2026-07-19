@@ -423,6 +423,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
             owner={owner}
             repo={repo}
             prNumber={pullNumber}
+            changedFilesCount={state.files?.length ?? 0}
           />
         </div>
       </div>
@@ -538,6 +539,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
           owner={owner}
           repo={repo}
           prNumber={pullNumber}
+          changedFilesCount={state.files?.length ?? 0}
         />
       </MobileAIPanelDrawer>
     </div>

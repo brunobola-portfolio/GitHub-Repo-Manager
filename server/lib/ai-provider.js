@@ -36,6 +36,12 @@ import { assertSafeAIEndpoint, resolveAndValidateHost } from './url-validator.js
 // four. Centralised here; consumers must call getGeminiModelDefaults() for
 // the resolved values (env override + fallback).
 
+// Deprecated per ai.google.dev/gemini-api/docs/deprecations (confirmed
+// 2026-07-19): Google will retire gemini-2.5-flash no earlier than
+// 2026-10-16, recommended replacement is gemini-3.5-flash. Left as the
+// server default deliberately — it still works, and self-hosted installs
+// shouldn't be silently switched to a different (pricier) model without an
+// explicit migration. Revisit before October 2026.
 export const GEMINI_DEFAULT_MODEL = 'gemini-2.5-flash';
 export const GEMINI_DEFAULT_EMBEDDING_MODEL = 'gemini-embedding-001';
 

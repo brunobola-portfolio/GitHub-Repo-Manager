@@ -37,6 +37,7 @@ import { extractReplyText } from '../../lib/ai-features/stream-json.js';
 import { buildChatPrompt } from '../../lib/ai-chat-prompt.js';
 import { buildReadmeEnhancePrompt } from '../../lib/ai-features/readme-enhance.js';
 import { buildImprovePrompt, deriveMissingSections, fetchReadmeStudioSignals, buildDeterministicReadmePatch } from '../../lib/ai-features/readme-studio.js';
+import { buildSuggestPrompt, buildReadmePrompt } from '../../lib/ai-features/grounded-prompts.js';
 import { detectPatterns } from '../../lib/ai-features/quality-metrics.js';
 import { buildContext } from '../../lib/repo-context-builder.js';
 import { resolveMaxOutputTokens } from '../../lib/ai-output-budget.js';
@@ -414,19 +415,7 @@ router.post('/ai/suggest', requireAuth, requireScope('ai'), validateBody(aiSugge
             open_issues_count: Number.isFinite(repo.open_issues_count) ? repo.open_issues_count : 0,
         };
 
-        const prompt = `Analyze this GitHub repository metadata and suggest 3 concrete improvements.
-    Focus on: Description clarity, Topics (SEO), and Community standards (License, Contributing).
-
-    Repository: ${JSON.stringify(safeRepo, null, 2)}
-
-    Return the response as a JSON object with this structure:
-    {
-      "suggestions": [
-        { "title": "...", "description": "...", "type": "improvement" }
-      ],
-      "analysis": "Brief summary of the repo's current state"
-    }
-    Do not include markdown formatting in the JSON output, just raw JSON.`;
+        const prompt = buildSuggestPrompt(safeRepo);
 
         const { text } = await guardedGenerate(req, { prompt }, { feature: 'suggest' });
 
@@ -463,22 +452,12 @@ router.post('/ai/readme', requireAuth, requireScope('ai'), validateBody(aiReadme
         const rawTopics = repo.topics || body.topics;
         const cleanTopics = sanitizeForPrompt(Array.isArray(rawTopics) ? rawTopics.join(', ') : (rawTopics || ''), 500);
 
-        const prompt = `Generate a professional, high-quality README.md for a GitHub repository.
-
-    Project Name: ${cleanName}
-    Description: ${cleanDescription || 'No description provided.'}
-    Primary Language: ${cleanLanguage || 'Not specified'}
-    Topics: ${cleanTopics || 'None'}
-
-    Structure:
-    1. Title & Badges
-    2. Project Description (Expanded)
-    3. Key Features
-    4. Installation & Usage
-    5. Contributing
-    6. License
-
-    Make it sound exciting and professional.`;
+        const prompt = buildReadmePrompt({
+            name: cleanName,
+            description: cleanDescription,
+            language: cleanLanguage,
+            topics: cleanTopics,
+        });
 
         const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
         const { text } = await guardedGenerate(req, { prompt }, { feature: 'readme' });

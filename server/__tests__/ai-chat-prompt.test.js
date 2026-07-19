@@ -53,6 +53,11 @@ describe('buildChatPrompt', () => {
         }
     })
 
+    it('resolves "this repo" to context.currentRepo instead of asking, per P1.2', () => {
+        expect(sample).toMatch(/currentRepo/)
+        expect(sample).toMatch(/this repo/i)
+    })
+
     it('documents the open_repo_settings payload shape and disambiguation rule', () => {
         // The model must learn that this action needs owner+repo, and that
         // it should ask if the repo is ambiguous instead of guessing.
@@ -98,6 +103,21 @@ describe('buildChatPrompt', () => {
     it('forbids inventing action types and duplicate actions', () => {
         expect(sample).toMatch(/never invent|Never invent/)
         expect(sample).toMatch(/duplicate|at most one/)
+    })
+
+    it('lists the WOW features shipped in #206-#219 so the advisor stops denying them', () => {
+        // Regression guard: rule 6 ("never invent features") previously made
+        // the assistant deny these because they weren't in the catalog at all.
+        expect(sample).toMatch(/README Studio/)
+        expect(sample).toMatch(/AI Diagrams/)
+        expect(sample).toMatch(/Agent Rules generator/)
+        expect(sample).toMatch(/Security Posture/)
+        expect(sample).toMatch(/AI image generation/)
+        expect(sample).toMatch(/AI Deep Review/)
+        expect(sample).toMatch(/PR slash commands/)
+        expect(sample).toMatch(/\/describe/)
+        expect(sample).toMatch(/\/test_plan/)
+        expect(sample).toMatch(/\/improve/)
     })
 
     it('caps an oversized context payload instead of interpolating it unbounded', () => {

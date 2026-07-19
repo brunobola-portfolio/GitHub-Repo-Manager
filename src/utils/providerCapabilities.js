@@ -105,20 +105,26 @@ export const PROVIDER_DEFAULTS = {
         apiKeyPlaceholder: 'AIza...',
         helpText: null,
         modelHelp: null,
+        // Verified reachable 2026-07-19.
+        apiKeyHelpUrl: 'https://aistudio.google.com/app/apikey',
+        apiKeyHelpLabel: 'Get a free Gemini key',
     },
     anthropic: {
-        model: 'claude-sonnet-4-6',
-        modelPlaceholder: 'claude-sonnet-4-6',
+        model: 'claude-sonnet-5',
+        modelPlaceholder: 'claude-sonnet-5',
         showEndpointUrl: false,
         apiKeyRequired: true,
         apiKeyLabel: 'Anthropic API Key',
         apiKeyPlaceholder: 'sk-ant-...',
         helpText: "Anthropic doesn't offer embeddings — configure an Embedding Provider below if you use semantic search features.",
         modelHelp: null,
+        // Verified reachable 2026-07-19.
+        apiKeyHelpUrl: 'https://console.anthropic.com/settings/keys',
+        apiKeyHelpLabel: 'Get an Anthropic API key',
     },
     openai: {
-        model: 'gpt-4o-mini',
-        modelPlaceholder: 'gpt-4o-mini',
+        model: 'gpt-5.6-luna',
+        modelPlaceholder: 'gpt-5.6-luna',
         embeddingModel: 'text-embedding-3-small',
         showEndpointUrl: false,
         apiKeyRequired: true,
@@ -126,10 +132,14 @@ export const PROVIDER_DEFAULTS = {
         apiKeyPlaceholder: 'sk-...',
         helpText: null,
         modelHelp: null,
+        // Verified reachable 2026-07-19 (curl gets a 403 from anti-bot
+        // protection on this domain, but a real browser loads it fine).
+        apiKeyHelpUrl: 'https://platform.openai.com/api-keys',
+        apiKeyHelpLabel: 'Get an OpenAI API key',
     },
     openrouter: {
         model: '',
-        modelPlaceholder: 'anthropic/claude-sonnet-4-6',
+        modelPlaceholder: 'anthropic/claude-sonnet-5',
         showEndpointUrl: false,
         apiKeyRequired: true,
         apiKeyLabel: 'OpenRouter API Key',
@@ -137,6 +147,9 @@ export const PROVIDER_DEFAULTS = {
         helpText: null,
         modelHelp: 'Browse models at openrouter.ai/models',
         modelHelpUrl: 'https://openrouter.ai/models',
+        // Verified reachable 2026-07-19.
+        apiKeyHelpUrl: 'https://openrouter.ai/settings/keys',
+        apiKeyHelpLabel: 'Get an OpenRouter API key',
     },
     local: {
         model: '',
@@ -148,5 +161,8 @@ export const PROVIDER_DEFAULTS = {
         apiKeyPlaceholder: 'Leave empty for no auth',
         helpText: 'Point at your LMStudio or Ollama server.',
         modelHelp: null,
+        // No provider account/key to get — local models need no signup.
+        apiKeyHelpUrl: null,
+        apiKeyHelpLabel: null,
     },
 }

@@ -12,20 +12,29 @@
  */
 
 export const PROVIDER_PRICING = {
-    // Gemini current
-    'gemini-2.5-flash':       { input: 0.30, output: 2.50, currency: 'USD', per: '1M tokens' },
+    // Gemini current — verified 2026-07-19 against ai.google.dev/gemini-api/docs/pricing
+    'gemini-3.5-flash':       { input: 1.50, output: 9.00, currency: 'USD', per: '1M tokens' },
     'gemini-2.5-flash-lite':  { input: 0.10, output: 0.40, currency: 'USD', per: '1M tokens' },
     'gemini-2.5-pro':         { input: 1.25, output: 10.00, currency: 'USD', per: '1M tokens' },
-    // Anthropic current
-    'claude-sonnet-4-6':      { input: 3.00, output: 15.00, currency: 'USD', per: '1M tokens' },
+    // Gemini legacy — deprecated, retires no earlier than 2026-10-16
+    'gemini-2.5-flash':       { input: 0.30, output: 2.50, currency: 'USD', per: '1M tokens' },
+    // Anthropic current — verified 2026-07-19 against platform.claude.com/docs/en/about-claude/pricing.
+    // claude-sonnet-5 is introductory pricing through 2026-08-31; standard $3.00/$15.00 from 2026-09-01.
+    'claude-sonnet-5':        { input: 2.00, output: 10.00, currency: 'USD', per: '1M tokens' },
     'claude-haiku-4-5':       { input: 1.00, output: 5.00, currency: 'USD', per: '1M tokens' },
-    'claude-opus-4-7':        { input: 5.00, output: 25.00, currency: 'USD', per: '1M tokens' },
+    'claude-opus-4-8':        { input: 5.00, output: 25.00, currency: 'USD', per: '1M tokens' },
     // Anthropic legacy
+    'claude-opus-4-7':        { input: 5.00, output: 25.00, currency: 'USD', per: '1M tokens' },
+    'claude-sonnet-4-6':      { input: 3.00, output: 15.00, currency: 'USD', per: '1M tokens' },
     'claude-opus-4-6':        { input: 5.00, output: 25.00, currency: 'USD', per: '1M tokens' },
     'claude-sonnet-4-5':      { input: 3.00, output: 15.00, currency: 'USD', per: '1M tokens' },
     'claude-opus-4-5':        { input: 5.00, output: 25.00, currency: 'USD', per: '1M tokens' },
     'claude-opus-4-1':        { input: 15.00, output: 75.00, currency: 'USD', per: '1M tokens' },
-    // OpenAI current
+    // OpenAI current — verified 2026-07-19 against developers.openai.com/api/docs/pricing (GA 2026-07-09)
+    'gpt-5.6-sol':            { input: 5.00, output: 30.00, currency: 'USD', per: '1M tokens' },
+    'gpt-5.6-terra':          { input: 2.50, output: 15.00, currency: 'USD', per: '1M tokens' },
+    'gpt-5.6-luna':           { input: 1.00, output: 6.00, currency: 'USD', per: '1M tokens' },
+    // OpenAI legacy — superseded by GPT-5.6, still callable
     'gpt-5.4-mini':           { input: 0.75, output: 4.50, currency: 'USD', per: '1M tokens' },
     'gpt-5.4-nano':           { input: 0.20, output: 1.25, currency: 'USD', per: '1M tokens' },
     'gpt-5.4':                { input: 2.50, output: 15.00, currency: 'USD', per: '1M tokens' },
@@ -37,13 +46,19 @@ export const PROVIDER_PRICING = {
     'gpt-5-mini':             { input: 0.15, output: 0.60, currency: 'USD', per: '1M tokens' },
     'gpt-4o':                 { input: 2.50, output: 10.00, currency: 'USD', per: '1M tokens' },
     'gpt-4o-mini':            { input: 0.15, output: 0.60, currency: 'USD', per: '1M tokens' },
+    // OpenRouter open-weights fallback option, keyed by the bare id (matches
+    // the server-side mirror). Note this frontend getPricingForModel does
+    // prefix matching only, not vendor-prefix stripping, so a literal lookup
+    // of 'meta-llama/llama-3.3-70b-instruct' still won't resolve here — the
+    // ModelCombobox displays this entry's own embedded `pricing` instead.
+    'llama-3.3-70b-instruct': { input: 0.30, output: 0.40, currency: 'USD', per: '1M tokens' },
     // Embeddings
     'text-embedding-3-small': { input: 0.02, currency: 'USD', per: '1M tokens' },
     'text-embedding-3-large': { input: 0.13, currency: 'USD', per: '1M tokens' },
     'gemini-embedding-001':   { input: 0.15, currency: 'USD', per: '1M tokens' },
 }
 
-export const PRICING_LAST_UPDATED = '2026-05-12'
+export const PRICING_LAST_UPDATED = '2026-07-19'
 
 /**
  * Look up pricing for a model name using prefix matching.

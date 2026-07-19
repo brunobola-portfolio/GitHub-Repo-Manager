@@ -5,10 +5,10 @@ import { ModalProvider } from '../../src/contexts/ModalContext.jsx'
 import { useModal } from '../../src/hooks/useModal'
 import { emitAppEvent, APP_EVENTS } from '../../src/utils/appEvents'
 
-function renderAssistant({ askAI, askAIStream, checkAIStatus = async () => ({ configured: true }) } = {}) {
+function renderAssistant({ askAI, askAIStream, checkAIStatus = async () => ({ configured: true }), currentRepo, currentView } = {}) {
     return render(
         <ModalProvider>
-            <AIAssistant askAI={askAI} askAIStream={askAIStream} user={{ login: 'alice' }} checkAIStatus={checkAIStatus} />
+            <AIAssistant askAI={askAI} askAIStream={askAIStream} user={{ login: 'alice' }} checkAIStatus={checkAIStatus} currentRepo={currentRepo} currentView={currentView} />
         </ModalProvider>
     )
 }
@@ -368,6 +368,38 @@ describe('AIAssistant', () => {
       expect(askAI).toHaveBeenCalledWith('how do I fix this?', expect.objectContaining({
         errorMessage: expect.stringContaining('unknown unit'),
       }))
+    })
+  })
+
+  describe('Repo/view context awareness (P1.2)', () => {
+    it('shows a "Looking at" chip when a repo is open', async () => {
+      renderAssistant({ askAI: vi.fn(), currentRepo: 'acme/widgets' })
+      await openAssistant()
+      expect(await screen.findByText(/Looking at:/i)).toBeInTheDocument()
+      expect(screen.getByText('acme/widgets')).toBeInTheDocument()
+    })
+
+    it('does not show the chip when no repo is open', async () => {
+      renderAssistant({ askAI: vi.fn() })
+      await openAssistant()
+      expect(screen.queryByText(/Looking at:/i)).not.toBeInTheDocument()
+    })
+
+    it('threads currentRepo and currentView into the askAI context', async () => {
+      const askAI = vi.fn().mockResolvedValue({ reply: 'ok', actions: [] })
+      renderAssistant({ askAI, currentRepo: 'acme/widgets', currentView: 'repo-detail:settings' })
+      await openAssistant()
+
+      const input = screen.getByRole('textbox', { name: /message the ai assistant/i })
+      await act(async () => {
+        fireEvent.change(input, { target: { value: 'can I archive this?' } })
+        fireEvent.submit(input.closest('form'))
+      })
+
+      await waitFor(() => expect(askAI).toHaveBeenCalledWith('can I archive this?', expect.objectContaining({
+        currentRepo: 'acme/widgets',
+        currentView: 'repo-detail:settings',
+      })))
     })
   })
 

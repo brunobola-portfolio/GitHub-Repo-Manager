@@ -70,3 +70,41 @@ describe('getCompletionModels (smoke)', () => {
         }
     })
 })
+
+describe('July 2026 model catalog refresh (P1.3)', () => {
+    it('recommends the current-generation model per provider', () => {
+        const recommendedId = (provider) => getCompletionModels(provider).find((m) => m.recommended)?.id
+        expect(recommendedId('gemini')).toBe('gemini-3.5-flash')
+        expect(recommendedId('anthropic')).toBe('claude-sonnet-5')
+        expect(recommendedId('openai')).toBe('gpt-5.6-luna')
+    })
+
+    it('demotes gemini-2.5-flash to legacy with an honest deprecation note', () => {
+        const entry = getCompletionModels('gemini').find((m) => m.id === 'gemini-2.5-flash')
+        expect(entry).toBeTruthy()
+        expect(entry.legacy).toBe(true)
+        expect(entry.recommended).toBe(false)
+        expect(entry.description).toMatch(/deprecated|retire/i)
+        expect(entry.description).toMatch(/gemini-3\.5-flash|Gemini 3\.5 Flash/)
+    })
+
+    it('demotes the previous-generation Anthropic and OpenAI defaults to legacy', () => {
+        const sonnet46 = getCompletionModels('anthropic').find((m) => m.id === 'claude-sonnet-4-6')
+        const opus47 = getCompletionModels('anthropic').find((m) => m.id === 'claude-opus-4-7')
+        expect(sonnet46.legacy).toBe(true)
+        expect(opus47.legacy).toBe(true)
+
+        for (const id of ['gpt-5.4-mini', 'gpt-5.4-nano', 'gpt-5.4', 'gpt-5.5', 'gpt-5.4-pro', 'gpt-5.5-pro', 'gpt-4.1']) {
+            const entry = getCompletionModels('openai').find((m) => m.id === id)
+            expect(entry.legacy, `${id} should be legacy`).toBe(true)
+        }
+    })
+
+    it('every legacy-flagged model uses the "legacy" tier bucket (required for the picker grouping)', () => {
+        for (const provider of ['anthropic', 'gemini', 'openai']) {
+            for (const m of getCompletionModels(provider)) {
+                if (m.legacy) expect(m.tier).toBe('legacy')
+            }
+        }
+    })
+})

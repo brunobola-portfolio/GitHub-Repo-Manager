@@ -11,16 +11,46 @@
  * reality within an order of magnitude rather than the previous flat 1¢.
  */
 
-// Prices in USD per 1,000,000 tokens. Update alongside src/utils/providerPricing.js.
+// Prices in USD per 1,000,000 tokens. Must mirror src/utils/providerPricing.js
+// exactly (input/output per model id) — server/__tests__/provider-pricing.test.js
+// asserts parity so a drift here can't silently under-meter BYOK spend caps.
 export const PROVIDER_PRICING = {
-    'gemini-2.5-flash':  { input: 0.30, output: 2.50 },
-    'gemini-2.5-pro':    { input: 1.25, output: 5.00 },
-    'claude-sonnet-4-6': { input: 3.00, output: 15.00 },
-    'claude-opus-4-5':   { input: 15.00, output: 75.00 },
-    'claude-haiku-4-5':  { input: 1.00, output: 5.00 },
-    'gpt-4o-mini':       { input: 0.15, output: 0.60 },
-    'gpt-4o':            { input: 2.50, output: 10.00 },
-    'gpt-5-mini':        { input: 0.15, output: 0.60 },
+    // Gemini current
+    'gemini-3.5-flash':       { input: 1.50, output: 9.00 },
+    'gemini-2.5-flash-lite':  { input: 0.10, output: 0.40 },
+    'gemini-2.5-pro':         { input: 1.25, output: 10.00 },
+    // Gemini legacy — deprecated, retires no earlier than 2026-10-16
+    'gemini-2.5-flash':       { input: 0.30, output: 2.50 },
+    // Anthropic current
+    'claude-sonnet-5':        { input: 2.00, output: 10.00 },
+    'claude-haiku-4-5':       { input: 1.00, output: 5.00 },
+    'claude-opus-4-8':        { input: 5.00, output: 25.00 },
+    // Anthropic legacy
+    'claude-opus-4-7':        { input: 5.00, output: 25.00 },
+    'claude-sonnet-4-6':      { input: 3.00, output: 15.00 },
+    'claude-opus-4-6':        { input: 5.00, output: 25.00 },
+    'claude-sonnet-4-5':      { input: 3.00, output: 15.00 },
+    'claude-opus-4-5':        { input: 5.00, output: 25.00 },
+    'claude-opus-4-1':        { input: 15.00, output: 75.00 },
+    // OpenAI current
+    'gpt-5.6-sol':            { input: 5.00, output: 30.00 },
+    'gpt-5.6-terra':          { input: 2.50, output: 15.00 },
+    'gpt-5.6-luna':           { input: 1.00, output: 6.00 },
+    // OpenAI legacy — superseded by GPT-5.6, still callable
+    'gpt-5.4-mini':           { input: 0.75, output: 4.50 },
+    'gpt-5.4-nano':           { input: 0.20, output: 1.25 },
+    'gpt-5.4':                { input: 2.50, output: 15.00 },
+    'gpt-5.5':                { input: 5.00, output: 30.00 },
+    'gpt-5.4-pro':            { input: 30.00, output: 180.00 },
+    'gpt-5.5-pro':            { input: 30.00, output: 180.00 },
+    'gpt-4.1':                { input: 2.00, output: 8.00 },
+    // OpenAI superseded but still callable
+    'gpt-5-mini':             { input: 0.15, output: 0.60 },
+    'gpt-4o':                 { input: 2.50, output: 10.00 },
+    'gpt-4o-mini':            { input: 0.15, output: 0.60 },
+    // OpenRouter open-weights fallback option — the vendor-prefix strip in
+    // getPricingForModel resolves 'meta-llama/llama-3.3-70b-instruct' here.
+    'llama-3.3-70b-instruct': { input: 0.30, output: 0.40 },
     // Embedding-only models — input-priced, no output column.
     'text-embedding-3-small': { input: 0.02 },
     'text-embedding-3-large': { input: 0.13 },
