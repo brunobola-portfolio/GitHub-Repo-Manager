@@ -6,7 +6,7 @@ import { FeatureComparison } from './FeatureComparison'
 import { API_BASE_URL } from '../../config'
 import { getCsrfToken } from '../../utils/api'
 import { ServiceUnavailable, FeatureError } from '../states'
-import { SPRING } from '../ui/motion'
+import { EASE, SPRING } from '../ui/motion'
 
 /* ─── Tier definitions ─── */
 const TIERS_MONTHLY = [
@@ -126,7 +126,7 @@ function FaqItem({ q, a, index }) {
       initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-40px' }}
-      transition={{ duration: 0.45, delay: index * 0.08, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.45, delay: index * 0.08, ease: EASE.emphasized }}
       className="rounded-xl border border-slate-200/60 dark:border-white/[0.08]
         bg-white/60 dark:bg-white/[0.04] backdrop-blur-sm overflow-hidden"
     >
@@ -155,7 +155,7 @@ function FaqItem({ q, a, index }) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.3, ease: EASE.emphasized }}
             className="overflow-hidden"
           >
             <p className="px-6 pb-5 text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
@@ -330,7 +330,7 @@ export function PricingPage({ onGetStarted } = {}) {
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.65, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.65, delay: 0.1, ease: EASE.emphasized }}
             className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight ds-font-display mb-5"
           >
             <span className="text-slate-800 dark:text-white">Plans that</span>{' '}
@@ -340,7 +340,7 @@ export function PricingPage({ onGetStarted } = {}) {
           <motion.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.6, delay: 0.2, ease: EASE.emphasized }}
             className="text-slate-500 dark:text-slate-400 text-lg max-w-xl mx-auto mb-10 leading-relaxed"
           >
             Start for free and upgrade only when you need more power.
@@ -426,7 +426,7 @@ export function PricingPage({ onGetStarted } = {}) {
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.65, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.65, delay: 0.4, ease: EASE.emphasized }}
           className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 mb-20 sm:mb-28 items-stretch pt-5"
         >
           {tiers.map((tier) => (
@@ -451,7 +451,7 @@ export function PricingPage({ onGetStarted } = {}) {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-60px' }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.6, ease: EASE.emphasized }}
             className="text-center mb-10"
           >
             <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-white ds-font-display mb-3">
@@ -477,7 +477,7 @@ export function PricingPage({ onGetStarted } = {}) {
           initial={{ opacity: 0, y: 28 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-60px' }}
-          transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.65, ease: EASE.emphasized }}
           className="relative overflow-hidden rounded-3xl border border-slate-200 dark:border-slate-700"
         >
           <div className="relative rounded-3xl px-8 py-14 text-center bg-slate-900 dark:bg-slate-900 overflow-hidden">
@@ -523,7 +523,7 @@ export function PricingPage({ onGetStarted } = {}) {
           initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-40px' }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.5, ease: EASE.emphasized }}
           className="mt-12 text-center"
         >
           <button

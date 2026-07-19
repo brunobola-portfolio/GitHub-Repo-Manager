@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useReducedMotion, useSpring } from 'framer-motion'
+import { SPRING } from './motion'
 
 /**
  * CountUp — Spring-animated number that tweens from 0 to value.
@@ -23,7 +24,7 @@ export function CountUp({
 }) {
     const reduced = useReducedMotion()
     const safeTarget = (typeof value === 'number' && Number.isFinite(value)) ? value : 0
-    const motionValue = useSpring(0, { stiffness: 60, damping: 20 })
+    const motionValue = useSpring(0, SPRING.counterSlow)
     const [displayed, setDisplayed] = useState(0)
 
     useEffect(() => {

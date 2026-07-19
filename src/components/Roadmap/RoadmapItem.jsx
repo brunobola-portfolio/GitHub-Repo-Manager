@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { EASE } from '../ui/motion'
 
 const TIER_STYLES = {
   Free: 'bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20',
@@ -16,7 +17,7 @@ export function RoadmapItem({ title, description, tier, index = 0 }) {
       initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-24px' }}
-      transition={{ duration: 0.4, delay: index * 0.06, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.4, delay: index * 0.06, ease: EASE.emphasized }}
       className="group relative rounded-xl p-4
         bg-white/70 dark:bg-white/[0.04] backdrop-blur-sm
         border border-slate-200/60 dark:border-white/[0.08]

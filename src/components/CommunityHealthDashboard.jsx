@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring, useReducedMotion } from 'framer-motion';
-import { EASE } from './ui/motion'
+import { EASE, SPRING } from './ui/motion'
 import {
     FileText, Users, Activity, CheckCircle,
     XCircle, AlertCircle, TrendingUp, RefreshCw, Heart, Sparkles, Bot
@@ -72,7 +72,7 @@ function HealthScoreRing({ score }) {
     const config = getScoreConfig(score);
     const normalizedScore = Math.min(Math.max(score, 0), 100) / 100;
     const motionValue = useMotionValue(0);
-    const springValue = useSpring(motionValue, { stiffness: 80, damping: 20, duration: reducedMotion ? 0 : 1.2 });
+    const springValue = useSpring(motionValue, { ...SPRING.counterRing, duration: reducedMotion ? 0 : 1.2 });
     const [displayScore, setDisplayScore] = useState(reducedMotion ? score : 0);
 
     useEffect(() => { motionValue.set(score); }, [score, motionValue]);
@@ -488,7 +488,7 @@ function FileCheckItem({ file, exists, size, onFix }) {
 function AnimatedNumber({ value }) {
     const reducedMotion = useReducedMotion();
     const motionValue = useMotionValue(0);
-    const springValue = useSpring(motionValue, { stiffness: 100, damping: 20, duration: reducedMotion ? 0 : 0.8 });
+    const springValue = useSpring(motionValue, { ...SPRING.counterNumber, duration: reducedMotion ? 0 : 0.8 });
     const [display, setDisplay] = useState(reducedMotion ? value : 0);
     useEffect(() => { motionValue.set(value); }, [value, motionValue]);
     useEffect(() => {

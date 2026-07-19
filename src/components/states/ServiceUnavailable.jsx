@@ -74,7 +74,7 @@ function CardService({ service, reason, docsHref, contactEmail, contactSubject, 
                 <motion.div
                     initial={{ scale: 0.7, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.08, duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
+                    transition={{ delay: 0.08, duration: 0.4, ease: EASE.emphasized }}
                     className="mb-5 inline-flex items-center justify-center w-14 h-14 rounded-2xl
                                bg-amber-500
                                shadow-md ring-1 ring-amber-500/20"

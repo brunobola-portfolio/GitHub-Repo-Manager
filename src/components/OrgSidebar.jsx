@@ -5,6 +5,7 @@ import CollapsiblePanel from './ui/CollapsiblePanel'
 import { Drawer } from './ui/Drawer'
 import { OrgPanel } from './OrgPanel'
 import { BREAKPOINTS } from '../hooks/useMediaQuery'
+import { SPRING } from './ui/motion'
 
 /**
  * OrgSidebar — the repos-view organization navigation.
@@ -154,7 +155,7 @@ export function OrgSidebar({ user, orgs, selectedOrg, stats, leftMode, onSelectO
               initial={{ x: -280 }}
               animate={{ x: 0 }}
               exit={{ x: -280 }}
-              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              transition={SPRING.drawer}
               className="fixed left-[60px] z-[var(--ds-z-floating)] w-[280px] rounded-3xl border border-slate-200/60 dark:border-slate-700/50 shadow-2xl bg-white dark:bg-slate-950 backdrop-blur-md overflow-y-auto"
               style={{
                 top: 'calc(var(--header-height) + var(--layout-py))',

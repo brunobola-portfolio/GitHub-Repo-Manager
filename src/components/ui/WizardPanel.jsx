@@ -6,6 +6,7 @@ import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import { useMobileKeyboardFix } from '../../hooks/useMobileKeyboardFix'
 import { VARIANT_ICON_STYLES, WIZARD_BACKDROP_CLASS } from './_variants'
 import { clampPanelSize } from './wizardPanelGeometry'
+import { SPRING } from './motion'
 
 const PANEL_SIZES = {
   sm: 'w-[min(92vw,520px)]',
@@ -123,12 +124,13 @@ export function WizardPanel({
   }, [])
 
   // Match Modal.jsx's spring timing exactly so the two shells animate in
-  // sync when a flow opens a wizard from inside a modal (or vice-versa).
+  // sync when a flow opens a wizard from inside a modal (or vice-versa) —
+  // both now share the vocabulary's SPRING.panel entry.
   // Reduced-motion users get a short fade so the entrance is calm but the
   // dialog still telegraphs the state change.
   const panelTransition = reduced
     ? { duration: 0.15 }
-    : { type: 'spring', duration: 0.4, bounce: 0.12 }
+    : SPRING.panel
   const backdropTransition = reduced ? { duration: 0 } : { duration: 0.18 }
 
   // Floating mode drives x/y via drag, so its entrance must not also animate y

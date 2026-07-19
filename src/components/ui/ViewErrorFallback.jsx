@@ -26,6 +26,7 @@ import { AlertTriangle, RotateCcw, Home, X } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 import { Heading } from './Heading'
+import { SPRING } from './motion'
 
 export function ViewErrorFallback({
   viewName = 'this view',
@@ -129,7 +130,7 @@ export function ViewErrorFallback({
             initial={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 16 }}
             animate={reducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
             exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 16 }}
-            transition={reducedMotion ? { duration: 0.15 } : { type: 'spring', duration: 0.4, bounce: 0.18 }}
+            transition={reducedMotion ? { duration: 0.15 } : SPRING.panel}
             onClick={(e) => e.stopPropagation()}
             className="relative max-w-md w-full bg-white dark:bg-slate-900 rounded-2xl shadow-lg ring-1 ring-slate-200/60 dark:ring-slate-700/60 p-7 overflow-hidden"
           >

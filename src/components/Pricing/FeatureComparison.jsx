@@ -1,5 +1,6 @@
 import React, { useRef } from 'react'
 import { motion } from 'framer-motion'
+import { EASE } from '../ui/motion'
 import { Check, X } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { useStickyHeaderShadow } from '../../hooks/useStickyHeaderShadow'
@@ -219,7 +220,7 @@ export function FeatureComparison() {
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-80px' }}
-      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.6, ease: EASE.emphasized }}
       className="w-full"
     >
       <div className="text-center mb-10">
