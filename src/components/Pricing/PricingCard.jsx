@@ -1,4 +1,52 @@
-import { Check, X, Zap, Crown } from 'lucide-react'
+import { useState } from 'react'
+import { motion } from 'framer-motion'
+import { Check, X, Zap, Crown, ChevronDown } from 'lucide-react'
+import { TRANSITION } from '../ui/motion'
+
+// Free's feature list runs ~3x longer than Pro's (the next-longest) — with the
+// grid's items-stretch that used to force ~450px of dead space above
+// Pro/Enterprise's CTA. Collapsing anything past Pro's bullet count keeps
+// first-paint card heights close across all three without touching any
+// feature-list content (the pricing matrix is honesty-gated verbatim).
+const COLLAPSE_THRESHOLD = 9
+
+function FeatureRow({ label, included, highlighted, enterprise }) {
+  const isIncluded = included !== false && included !== null
+  return (
+    <>
+      <span
+        className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center
+          ${isIncluded
+            ? highlighted
+              ? 'bg-indigo-500/20 text-indigo-400'
+              : enterprise
+                ? 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                : 'bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+            : 'bg-slate-100 dark:bg-white/[0.05] text-slate-300 dark:text-slate-600'
+          }`}
+      >
+        {isIncluded
+          ? <Check className="w-3 h-3" strokeWidth={2.5} />
+          : <X className="w-3 h-3" strokeWidth={2.5} />
+        }
+      </span>
+      <span
+        className={`text-sm leading-snug
+          ${isIncluded
+            ? highlighted
+              ? 'text-slate-200'
+              : 'text-slate-700 dark:text-slate-200'
+            : 'text-slate-400 dark:text-slate-500'
+          }`}
+      >
+        {typeof included === 'string' || typeof included === 'number'
+          ? <><strong className={highlighted ? 'text-white' : enterprise ? 'text-amber-700 dark:text-amber-300' : 'text-slate-900 dark:text-slate-100'}>{included}</strong> {label}</>
+          : label
+        }
+      </span>
+    </>
+  )
+}
 
 export function PricingCard({
   tier,
@@ -12,6 +60,10 @@ export function PricingCard({
   ctaText = 'Get started',
   ctaAction,
 }) {
+  const [expanded, setExpanded] = useState(false)
+  const shouldCollapse = features.length > COLLAPSE_THRESHOLD
+  const visibleFeatures = shouldCollapse ? features.slice(0, COLLAPSE_THRESHOLD) : features
+  const extraFeatures = shouldCollapse ? features.slice(COLLAPSE_THRESHOLD) : []
   const showStrike = originalPrice != null && originalPrice !== price && price > 0
 
   return (
@@ -125,45 +177,54 @@ export function PricingCard({
           )}
 
           {/* Feature list */}
-          <ul className="flex flex-col gap-3 flex-1 mb-8">
-            {features.map(({ label, included }) => {
-              const isIncluded = included !== false && included !== null
-              return (
-                <li key={label} className="flex items-start gap-3">
-                  <span
-                    className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center
-                      ${isIncluded
-                        ? highlighted
-                          ? 'bg-indigo-500/20 text-indigo-400'
-                          : enterprise
-                            ? 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400'
-                            : 'bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                        : 'bg-slate-100 dark:bg-white/[0.05] text-slate-300 dark:text-slate-600'
-                      }`}
-                  >
-                    {isIncluded
-                      ? <Check className="w-3 h-3" strokeWidth={2.5} />
-                      : <X className="w-3 h-3" strokeWidth={2.5} />
-                    }
-                  </span>
-                  <span
-                    className={`text-sm leading-snug
-                      ${isIncluded
-                        ? highlighted
-                          ? 'text-slate-200'
-                          : 'text-slate-700 dark:text-slate-200'
-                        : 'text-slate-400 dark:text-slate-500'
-                      }`}
-                  >
-                    {typeof included === 'string' || typeof included === 'number'
-                      ? <><strong className={highlighted ? 'text-white' : enterprise ? 'text-amber-700 dark:text-amber-300' : 'text-slate-900 dark:text-slate-100'}>{included}</strong> {label}</>
-                      : label
-                    }
-                  </span>
-                </li>
-              )
-            })}
+          <ul className={`flex flex-col gap-3 flex-1 ${shouldCollapse ? 'mb-4' : 'mb-8'}`}>
+            {visibleFeatures.map(({ label, included }) => (
+              <li key={label} className="flex items-start gap-3">
+                <FeatureRow label={label} included={included} highlighted={highlighted} enterprise={enterprise} />
+              </li>
+            ))}
+            {shouldCollapse && expanded && extraFeatures.map(({ label, included }) => (
+              // Enter-only reveal (no exit animation): collapsing removes these
+              // nodes immediately, which keeps the toggle deterministic and
+              // avoids AnimatePresence leaving exiting nodes mounted mid-transition.
+              <motion.li
+                key={label}
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                transition={TRANSITION.standard}
+                className="flex items-start gap-3 overflow-hidden"
+              >
+                <FeatureRow label={label} included={included} highlighted={highlighted} enterprise={enterprise} />
+              </motion.li>
+            ))}
           </ul>
+
+          {/* "Show all N features" toggle — only Free's list is long enough to
+              need it (see COLLAPSE_THRESHOLD above). Real button + aria-expanded
+              so it's keyboard-operable and announced correctly by AT. */}
+          {shouldCollapse && (
+            <button
+              type="button"
+              onClick={() => setExpanded(v => !v)}
+              aria-expanded={expanded}
+              className={`w-full flex items-center justify-center gap-1.5 mb-4 py-1 text-xs font-semibold rounded-lg transition-colors duration-200 ds-focus-ring
+                ${highlighted
+                  ? 'text-indigo-300 hover:text-indigo-200'
+                  : enterprise
+                    ? 'text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300'
+                    : 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline'
+                }`}
+            >
+              {expanded ? 'Show fewer features' : `Show all ${features.length} features`}
+              <motion.span
+                animate={{ rotate: expanded ? 180 : 0 }}
+                transition={TRANSITION.fast}
+                className="inline-flex"
+              >
+                <ChevronDown className="w-3.5 h-3.5" />
+              </motion.span>
+            </button>
+          )}
 
           {/* CTA button — each tier uses its own visual treatment but they
               all share ds-focus-ring so keyboard navigation feels intentional
