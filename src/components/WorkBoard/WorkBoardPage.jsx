@@ -55,6 +55,7 @@ import { SectionSpinner } from '../ui/Spinner'
 import { ManageReposButton } from './ManageReposButton'
 import { MOCK_MODE } from '../../config'
 import { emitAppEvent, onAppEvent, APP_EVENTS } from '../../utils/appEvents'
+import { SPRING } from '../ui/motion'
 
 // ---------------------------------------------------------------------------
 // Tab definitions
@@ -348,7 +349,7 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
                                     <motion.div
                                         layoutId="work-board-tab-indicator"
                                         className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full"
-                                        transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                                        transition={SPRING.knob}
                                     />
                                 )}
                             </button>

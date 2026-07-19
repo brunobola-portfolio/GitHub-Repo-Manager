@@ -19,7 +19,7 @@ describe('OnboardingTour', () => {
     it('renders the first step on mount', () => {
         render(<OnboardingTour {...baseProps()} />)
         expect(screen.getByText(/Press Ctrl\+K/i)).toBeInTheDocument()
-        expect(screen.getByText(/Step 1 of 3/i)).toBeInTheDocument()
+        expect(screen.getByText(/Step 1 of 4/i)).toBeInTheDocument()
     })
 
     it('Next advances the step', async () => {
@@ -27,14 +27,24 @@ describe('OnboardingTour', () => {
         fireEvent.click(screen.getByRole('button', { name: /next/i }))
         // framer-motion AnimatePresence mode="wait" requires async lookup
         expect(await screen.findByText(/AI key in Settings/i)).toBeInTheDocument()
-        expect(screen.getByText(/Step 2 of 3/i)).toBeInTheDocument()
+        expect(screen.getByText(/Step 2 of 4/i)).toBeInTheDocument()
     })
 
     it('Back goes to the previous step', async () => {
         render(<OnboardingTour {...baseProps()} />)
         fireEvent.click(screen.getByRole('button', { name: /next/i }))
         fireEvent.click(screen.getByRole('button', { name: /back/i }))
-        expect(await screen.findByText(/Step 1 of 3/i)).toBeInTheDocument()
+        expect(await screen.findByText(/Step 1 of 4/i)).toBeInTheDocument()
+    })
+
+    it('renders the launch-features step (README Studio, diagrams, Agent Rules, Security Posture) as the 4th and final step', async () => {
+        render(<OnboardingTour {...baseProps()} />)
+        fireEvent.click(screen.getByRole('button', { name: /next/i }))
+        fireEvent.click(screen.getByRole('button', { name: /next/i }))
+        fireEvent.click(screen.getByRole('button', { name: /next/i }))
+        expect(await screen.findByText(/README Studio, diagrams, Agent Rules & Security Posture/i)).toBeInTheDocument()
+        expect(screen.getByText(/Step 4 of 4/i)).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /got it/i })).toBeInTheDocument()
     })
 
     it('Skip calls onNeverShow and onClose', () => {
@@ -48,6 +58,7 @@ describe('OnboardingTour', () => {
     it('Got it on the final step calls onNeverShow and onClose', async () => {
         const props = baseProps()
         render(<OnboardingTour {...props} />)
+        fireEvent.click(screen.getByRole('button', { name: /next/i }))
         fireEvent.click(screen.getByRole('button', { name: /next/i }))
         fireEvent.click(screen.getByRole('button', { name: /next/i }))
         const gotIt = await screen.findByRole('button', { name: /got it/i })

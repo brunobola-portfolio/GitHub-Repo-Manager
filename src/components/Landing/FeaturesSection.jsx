@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { EASE } from '../ui/motion'
 import { Brain, Search, GitBranch, Users, FileText, LayoutDashboard } from 'lucide-react'
 
 const features = [
@@ -78,7 +79,7 @@ const cardVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
+    transition: { duration: 0.6, ease: EASE.emphasized },
   },
 }
 
@@ -102,7 +103,7 @@ export function FeaturesSection() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.7, ease: EASE.emphasized }}
           className="text-center mb-14 sm:mb-16"
         >
           <p className="text-xs font-semibold tracking-widest uppercase text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)] mb-3 ds-font-display">

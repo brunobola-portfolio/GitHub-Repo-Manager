@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { EASE } from '../ui/motion'
 import { Map } from 'lucide-react'
 import { RoadmapStage } from './RoadmapStage'
 import { Button } from '../ui/Button'
@@ -107,7 +108,7 @@ export function RoadmapPage({ onNavigatePricing } = {}) {
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.65, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.65, delay: 0.1, ease: EASE.emphasized }}
             className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight ds-font-display mb-5"
           >
             <span className="text-slate-800 dark:text-white">What we&apos;re</span>{' '}
@@ -117,7 +118,7 @@ export function RoadmapPage({ onNavigatePricing } = {}) {
           <motion.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.6, delay: 0.2, ease: EASE.emphasized }}
             className="text-slate-500 dark:text-slate-400 text-lg max-w-xl mx-auto leading-relaxed"
           >
             Our public roadmap. Everything here is planned — nothing is promised.
@@ -153,7 +154,7 @@ export function RoadmapPage({ onNavigatePricing } = {}) {
           initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-40px' }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.5, ease: EASE.emphasized }}
           className="text-center"
         >
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">

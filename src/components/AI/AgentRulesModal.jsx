@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { useCallback, useEffect, useState } from 'react'
-import { DiffView, DiffModeEnum } from '@git-diff-view/react'
+import { DiffView } from '@git-diff-view/react'
 import '@git-diff-view/react/styles/diff-view.css'
 import { motion } from 'framer-motion'
 import { Bot, CheckCircle, ExternalLink, AlertTriangle, ArrowLeft, Info } from 'lucide-react'
@@ -14,6 +14,7 @@ import { Field } from '../ui/form/Field'
 import { Input } from '../ui/form/Input'
 import { STAGGER, TRANSITION } from '../ui/motion'
 import { useTheme } from '../../hooks/useTheme'
+import { useResponsiveDiffMode } from '../../hooks/useResponsiveDiffMode'
 import { aiApi } from '../../api/ai'
 
 const TARGET_OPTIONS = [
@@ -70,6 +71,7 @@ const REASON_COPY = {
  */
 export function AgentRulesModal({ isOpen, onClose, repo, hasExistingAgents = false, onCommitted }) {
     const { isDark } = useTheme()
+    const diffViewMode = useResponsiveDiffMode()
 
     const [step, setStep] = useState('configure') // configure | preview | committed
     const [target, setTarget] = useState('agents')
@@ -313,7 +315,7 @@ export function AgentRulesModal({ isOpen, onClose, repo, hasExistingAgents = fal
                                     newFile: { fileName: `${filePath} (generated)`, content },
                                     hunks: [],
                                 }}
-                                diffViewMode={DiffModeEnum.Split}
+                                diffViewMode={diffViewMode}
                                 diffViewTheme={isDark ? 'dark' : 'light'}
                             />
                         </div>

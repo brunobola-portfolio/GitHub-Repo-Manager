@@ -448,7 +448,12 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus }) {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
                         transition={{ duration: 0.32, ease: EASE.standard }}
-                        className="fixed bottom-20 xl:bottom-6 right-3 sm:right-6 z-[45]"
+                        // z-popover (not a raw value): this panel replaces the closed-state
+                        // FAB above (mutually exclusive via isOpen), so it only needs to
+                        // clear other composer-level FABs, never coexist/compete with them —
+                        // z-[var(--ds-z-popover)] is the contract's next rung up and is
+                        // already reused for other fixed floating widgets in the app.
+                        className="fixed bottom-20 xl:bottom-6 right-3 sm:right-6 z-[var(--ds-z-popover)]"
                     >
                         <Card className={`w-[calc(100vw-2rem)] sm:w-[22rem] md:w-[26rem] flex flex-col shadow-[var(--ds-shadow-overlay)] border border-slate-200 dark:border-[color:var(--ds-border-dark)] bg-white dark:bg-[color:var(--ds-surface-dark)] overflow-hidden rounded-2xl transition-all duration-[var(--ds-duration-slow)] ${
                             isMinimized ? '' : 'h-[65vh] xl:h-[540px]'

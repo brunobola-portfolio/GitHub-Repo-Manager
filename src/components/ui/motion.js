@@ -39,6 +39,14 @@ export const SPRING = {
   panel: { type: 'spring', stiffness: 380, damping: 32 }, // modal / wizard panel
   drawer: { type: 'spring', stiffness: 280, damping: 28 }, // drawer slide-in
   knob: { type: 'spring', stiffness: 500, damping: 30 }, //   switch / toggle knob
+  // Slow numeric-reveal springs for `useSpring(motionValue, config)` counters —
+  // much softer than the UI-reveal springs above, so no `type: 'spring'` key
+  // (that hook's config takes bare stiffness/damping, unlike the `transition`
+  // prop). Each keeps its original component's exact feel rather than forcing
+  // a fit into panel/drawer/knob, which would visibly snap instead of count.
+  counterRing: { stiffness: 80, damping: 20 }, // CommunityHealthDashboard score ring
+  counterNumber: { stiffness: 100, damping: 20 }, // CommunityHealthDashboard animated number
+  counterSlow: { stiffness: 60, damping: 20 }, // CountUp's leisurely count-up
 }
 
 // Ready-made transition objects (duration + ease).

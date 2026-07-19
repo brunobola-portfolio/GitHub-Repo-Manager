@@ -65,7 +65,7 @@ export function SelectionBar({ repos, onAction, onClear, onSelectAll }) {
 		<div
 			role="region"
 			aria-label="Selection actions"
-			className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[45] max-w-[calc(100vw-3rem)] animate-in slide-in-from-bottom-4 fade-in duration-[var(--ds-duration-slow)]"
+			className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[var(--ds-z-popover)] max-w-[calc(100vw-3rem)] animate-in slide-in-from-bottom-4 fade-in duration-[var(--ds-duration-slow)]"
 		>
 			<div className="flex items-center gap-1 pl-4 pr-2 py-2 bg-slate-900/90 dark:bg-white/90 backdrop-blur-md text-white dark:text-slate-900 rounded-full shadow-2xl border border-white/10 dark:border-slate-200/20">
 				<div className="flex items-center gap-2 text-sm font-medium pr-3 mr-1 border-r border-white/20 dark:border-slate-900/10">

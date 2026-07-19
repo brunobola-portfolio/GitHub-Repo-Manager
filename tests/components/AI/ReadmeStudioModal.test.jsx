@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ReadmeStudioModal } from '../../../src/components/AI/ReadmeStudioModal.jsx'
@@ -9,8 +9,8 @@ vi.mock('../../../src/hooks/useTheme', () => ({
 
 vi.mock('@git-diff-view/react', () => ({
     DiffModeEnum: { Unified: 'unified', Split: 'split' },
-    DiffView: ({ data }) => (
-        <pre data-testid="diff-view">{data?.oldFile?.content}\n---\n{data?.newFile?.content}</pre>
+    DiffView: ({ data, diffViewMode }) => (
+        <pre data-testid="diff-view" data-diff-mode={diffViewMode}>{data?.oldFile?.content}\n---\n{data?.newFile?.content}</pre>
     ),
 }))
 vi.mock('@git-diff-view/react/styles/diff-view.css', () => ({}))
@@ -299,5 +299,53 @@ describe('ReadmeStudioModal — deterministic fallback (Addendum 6b.2)', () => {
 
         await waitFor(() => expect(aiApi.readmeStudio.deterministic).toHaveBeenCalledTimes(1))
         expect(await screen.findByTestId('diff-view')).toBeInTheDocument()
+    })
+})
+
+describe('ReadmeStudioModal — responsive diff mode (mobile auto-unified)', () => {
+    const realMatchMedia = window.matchMedia
+
+    afterEach(() => {
+        window.matchMedia = realMatchMedia
+    })
+
+    function mockViewport(isMobile) {
+        window.matchMedia = vi.fn((query) => ({
+            matches: isMobile,
+            media: query,
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            addListener: vi.fn(),
+            removeListener: vi.fn(),
+            dispatchEvent: vi.fn(),
+        }))
+    }
+
+    async function openDiffPreview(user) {
+        render(<ReadmeStudioModal isOpen repo={REPO} onClose={() => {}} />)
+        await screen.findByText(/Decent foundation/i)
+        await user.click(screen.getByRole('button', { name: /improve with ai/i }))
+        await user.click(screen.getByRole('button', { name: /^generate$/i }))
+        return screen.findByTestId('diff-view')
+    }
+
+    it('defaults to Split above the md breakpoint (desktop)', async () => {
+        mockViewport(false)
+        const user = userEvent.setup()
+        aiApi.readmeStudio.getScore.mockResolvedValue(SCORE_WITH_README)
+        aiApi.readmeStudio.improve.mockResolvedValue(IMPROVE_RESULT)
+
+        const diffView = await openDiffPreview(user)
+        expect(diffView).toHaveAttribute('data-diff-mode', 'split')
+    })
+
+    it('switches to Unified below the md breakpoint (mobile) — Split would be two ~180px columns', async () => {
+        mockViewport(true)
+        const user = userEvent.setup()
+        aiApi.readmeStudio.getScore.mockResolvedValue(SCORE_WITH_README)
+        aiApi.readmeStudio.improve.mockResolvedValue(IMPROVE_RESULT)
+
+        const diffView = await openDiffPreview(user)
+        expect(diffView).toHaveAttribute('data-diff-mode', 'unified')
     })
 })

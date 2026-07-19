@@ -6,6 +6,7 @@ import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import { useMobileKeyboardFix } from '../../hooks/useMobileKeyboardFix'
 import { TabBar } from './TabBar'
 import { HEADER_CLASS, MODAL_BACKDROP_CLASS, resolveIconTileClass } from './_variants'
+import { SPRING } from './motion'
 
 // Per non-LLM theme (docs/specs/2026-05-14-premium-non-llm-theme-design.md),
 // modal headers are GitHub-utilitarian: neutral surface, dark text, border-b.
@@ -156,7 +157,7 @@ export function Modal({
                             initial={reducedMotion ? { opacity: 0 } : (isSheet ? { opacity: 0, y: '4%' } : { opacity: 0, scale: 0.98, y: 24 })}
                             animate={reducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
                             exit={reducedMotion ? { opacity: 0 } : (isSheet ? { opacity: 0, y: '4%' } : { opacity: 0, scale: 0.98, y: 24 })}
-                            transition={reducedMotion ? { duration: 0.15 } : { type: 'spring', duration: 0.4, bounce: 0.12 }}
+                            transition={reducedMotion ? { duration: 0.15 } : SPRING.panel}
                             onClick={(e) => e.stopPropagation()}
                             className={`
                                 ${sizeClass}

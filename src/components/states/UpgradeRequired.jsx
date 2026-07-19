@@ -95,7 +95,7 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
                 <motion.div
                     initial={{ scale: 0.6, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.1, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+                    transition={{ delay: 0.1, duration: 0.5, ease: EASE.emphasized }}
                     className={twMerge(
                         'relative mb-5 inline-flex items-center justify-center',
                         'w-16 h-16 rounded-2xl',

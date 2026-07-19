@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { DiffView, DiffModeEnum } from '@git-diff-view/react'
+import { DiffView } from '@git-diff-view/react'
 import '@git-diff-view/react/styles/diff-view.css'
 import { aiApi } from '../../api/ai'
 import { Sparkles, Copy, Check } from 'lucide-react'
@@ -8,9 +8,11 @@ import { SectionSpinner } from '../ui/Spinner'
 import { AIErrorState } from '../ui/AIErrorState'
 import { isAbort } from '../../utils/errorClassification'
 import { useTheme } from '../../hooks/useTheme'
+import { useResponsiveDiffMode } from '../../hooks/useResponsiveDiffMode'
 
 export function ReadmeEnhanceDiffPanel({ repo }) {
   const { isDark } = useTheme()
+  const diffViewMode = useResponsiveDiffMode()
   const [loading, setLoading] = useState(true)
   const [enhanced, setEnhanced] = useState(null)
   const [currentReadme, setCurrentReadme] = useState('')
@@ -110,7 +112,7 @@ export function ReadmeEnhanceDiffPanel({ repo }) {
             newFile: { fileName: 'README.md (enhanced)', content: enhanced || '' },
             hunks: []
           }}
-          diffViewMode={DiffModeEnum.Split}
+          diffViewMode={diffViewMode}
           diffViewTheme={isDark ? 'dark' : 'light'}
         />
       </div>

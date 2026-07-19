@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion'
+import { EASE } from '../ui/motion'
 import { ArrowRight, ExternalLink } from 'lucide-react'
 import { Github } from '../icons/GithubIcon'
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 28 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] },
+  transition: { duration: 0.7, delay, ease: EASE.emphasized },
 })
 
 export function HeroSection({ onSignIn }) {

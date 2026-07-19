@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { DiffView, DiffModeEnum } from '@git-diff-view/react'
+import { DiffView } from '@git-diff-view/react'
 import '@git-diff-view/react/styles/diff-view.css'
 import { Workflow, Copy, Download, RotateCcw, ArrowLeft, AlertTriangle, GitBranch, CheckCircle, ExternalLink, Lock } from 'lucide-react'
 import { Modal, ModalFooter } from '../ui/Modal'
@@ -17,6 +17,7 @@ import { aiApi } from '../../api/ai'
 import { copyToClipboard } from '../../utils/clipboard'
 import { parseAndSanitizeSvg } from '../../utils/sanitizeSvg'
 import { useToast } from '../../hooks/useToast'
+import { useResponsiveDiffMode } from '../../hooks/useResponsiveDiffMode'
 
 // v1 ships architecture/module diagrams only (2026-07-18-community-wow-wave6.md
 // explicitly cuts sequence/flow from scope). The selector is still a real
@@ -61,6 +62,7 @@ const PLACEMENT_OPTIONS = [
  */
 export function DiagramGenerator({ isOpen, onClose, repo }) {
     const { toast } = useToast()
+    const diffViewMode = useResponsiveDiffMode()
     const [step, setStep] = useState('configure') // configure | result | embed-config | embed-preview | embed-committed
     const [diagramType, setDiagramType] = useState('architecture')
     const [focus, setFocus] = useState('')
@@ -544,7 +546,7 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
                                     newFile: { fileName: `${data.readme.path} (with diagram)`, content: data.readme.after },
                                     hunks: [],
                                 }}
-                                diffViewMode={DiffModeEnum.Split}
+                                diffViewMode={diffViewMode}
                                 diffViewTheme={theme === 'dark' ? 'dark' : 'light'}
                             />
                         </div>
