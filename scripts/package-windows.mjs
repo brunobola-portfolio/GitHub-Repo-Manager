@@ -111,6 +111,23 @@ export function getPackageVersion(repoRoot = REPO_ROOT_DEFAULT) {
     return pkg.version;
 }
 
+/**
+ * Single source of truth for the installer/winget "Publisher" field.
+ * package.json's "author" is "<person> - <company>" (e.g.
+ * "Bruno Marques - Bola Labs, Inc."); the company half is what ships as
+ * AppPublisher in installer.iss (passed in via /D, mirroring how
+ * MyAppVersion is threaded through) — never hardcode it a second time
+ * there. The winget locale template is a static reference file wingetcreate
+ * never reads, so it just documents this function as the source in a
+ * comment rather than being generated from it.
+ */
+export function getPublisher(repoRoot = REPO_ROOT_DEFAULT) {
+    const pkg = JSON.parse(readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
+    const author = String(pkg.author || '').trim();
+    const parts = author.split(' - ');
+    return parts.length > 1 ? parts[parts.length - 1].trim() : author;
+}
+
 export function assertDistBuilt(repoRoot) {
     const distPath = path.join(repoRoot, 'dist');
     if (!existsSync(distPath) || !existsSync(path.join(distPath, 'index.html'))) {

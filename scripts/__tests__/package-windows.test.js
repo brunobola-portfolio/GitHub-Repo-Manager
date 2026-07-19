@@ -13,6 +13,7 @@ import {
   sha256SidecarContents,
   writeSha256Sidecar,
   getPackageVersion,
+  getPublisher,
   assertDistBuilt,
   shouldSkipServerPath,
   betterSqlite3BinaryPath,
@@ -145,6 +146,28 @@ describe('getPackageVersion / assertDistBuilt (fake repo tree)', () => {
   it('reads the version field out of package.json', () => {
     writeFileSync(path.join(repoRoot, 'package.json'), JSON.stringify({ version: '9.9.9' }))
     expect(getPackageVersion(repoRoot)).toBe('9.9.9')
+  })
+
+  it('getPublisher extracts the company half of "<person> - <company>"', () => {
+    writeFileSync(path.join(repoRoot, 'package.json'), JSON.stringify({ author: 'Bruno Marques - Bola Labs, Inc.' }))
+    expect(getPublisher(repoRoot)).toBe('Bola Labs, Inc.')
+  })
+
+  it('getPublisher matches this repo\'s real package.json author field', () => {
+    // Regression guard: if the real author field's format ever changes,
+    // this fails loudly instead of installer.iss silently shipping a wrong
+    // Publisher via the /D define computed the same way in CI.
+    expect(getPublisher()).toBe('Bola Labs, Inc.')
+  })
+
+  it('getPublisher falls back to the whole author string when there is no " - " separator', () => {
+    writeFileSync(path.join(repoRoot, 'package.json'), JSON.stringify({ author: 'Solo Author' }))
+    expect(getPublisher(repoRoot)).toBe('Solo Author')
+  })
+
+  it('getPublisher returns an empty string rather than throwing when author is absent', () => {
+    writeFileSync(path.join(repoRoot, 'package.json'), JSON.stringify({}))
+    expect(getPublisher(repoRoot)).toBe('')
   })
 
   it('assertDistBuilt throws a clear error when dist/ is entirely missing', () => {
