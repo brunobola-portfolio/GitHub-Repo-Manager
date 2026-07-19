@@ -187,21 +187,11 @@ export async function refreshLicenseCache() {
   return null
 }
 
-// Warm the license cache at startup. Test envs skip the implicit boot
-// (NODE_ENV === 'test') so unit tests can call refreshLicenseCache()
-// explicitly with a controlled DB state.
-if (process.env.NODE_ENV !== 'test') {
-  refreshLicenseCache().then((payload) => {
-    if (payload) {
-      logger.info(
-        { tier: payload.tier, org: payload.org || 'N/A', source: cachedLicenseSource,
-          expires: payload.exp ? new Date(payload.exp * 1000).toISOString().split('T')[0] : 'never' },
-        'License validated'
-      )
-    }
-  }).catch((err) => {
-    // A DB failure here silently degrades the server to the free tier with no
-    // signal. Log it so a misconfigured deploy is diagnosable.
-    logger.warn({ err }, 'Failed to warm license cache at startup; serving default tier until next refresh')
-  })
-}
+// NOTE: the startup license-cache warm used to fire here, at module load —
+// but ESM import evaluation runs before server/index.js's own body (which
+// calls initDB()), so on a genuinely empty database this queried
+// `installed_license` before initDB() had created it. That was invisible in
+// practice (every long-lived dev/prod DB already has the full schema from
+// prior boots) until the Windows package made a truly fresh DB the NORMAL
+// first-launch case. The warm call now lives in server/index.js, fired
+// immediately after initDB() — see the comment there.
