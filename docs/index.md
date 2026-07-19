@@ -11,6 +11,7 @@ below links to the canonical page for that topic.
 | Run a production instance | [Operations runbook](operations.md) |
 | Call the API | [API reference](api/API.md) (324 endpoints) |
 | Configure an AI provider | [AI Providers (BYOK)](ai-providers.md) |
+| Run on Windows without Docker or Node.js | [Windows guide](windows.md) |
 | Use the AI Deep Review experience | [AI Deep Review feature guide](features/ai-deep-review.md) |
 | Register a GitHub App for bot identity (roadmap) | [GitHub App setup](setup/github-app.md) |
 | Wire a GitHub webhook | [Webhook setup guide](guides/github-webhook-setup.md) |
@@ -125,6 +126,9 @@ Full detail: [`CHANGELOG.md`](../CHANGELOG.md).
 - [Community WOW — README Studio, AI Diagrams, Agent Rules, Security Posture](features/community-wow.md) — four AI-grounded repo tools with deterministic zero-AI-cost fallbacks, metered on Free.
 - [AI Providers (BYOK)](ai-providers.md) — Anthropic, OpenAI, Gemini,
   OpenRouter, Ollama, LMStudio. Per-feature overrides + cost hints.
+- [Windows](windows.md) — installer + portable ZIP, first-run bootstrap,
+  data locations, updating, and honest limits (unsigned binaries, winget
+  pending).
 - [Cross-Repo Work Board](work-board.md) — review load, stale PRs, DORA
   metrics, presets, snooze, cache.
 - [GitHub Event Ingestion](event-ingestion.md) — webhook pipeline, event

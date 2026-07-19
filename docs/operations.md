@@ -77,6 +77,9 @@ whitelist (required secrets use Compose's `${VAR:?message}` form and abort
 `up` with an explicit error if unset) and the [Backup & restore](#backup--restore)
 section below for the `app-data` / `app-backups` volume split.
 
+Running on Windows without Docker → [`docs/windows.md`](windows.md) (native
+installer + portable ZIP, no Node.js install required).
+
 ---
 
 ## Reverse proxy & TLS

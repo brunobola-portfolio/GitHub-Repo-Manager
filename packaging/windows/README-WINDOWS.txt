@@ -17,4 +17,4 @@ Where your data lives:
 
 Updating: download the newer ZIP and replace the "app" and "runtime"
 folders (or reinstall via the setup wizard) — your data folder is untouched.
-Full guide: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/blob/main/docs/index.md
+Full guide: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/blob/main/docs/windows.md
