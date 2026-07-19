@@ -89,7 +89,7 @@ function CategoryCard({ category, data, onClick }) {
                 </span>
                 {showDelta && (
                     <span
-                        className={`inline-flex items-center gap-0.5 text-xs font-semibold ${delta > 0 ? 'text-emerald-500' : 'text-rose-500'}`}
+                        className={`inline-flex items-center gap-0.5 text-xs font-semibold ${delta > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}
                         aria-label={`${Math.abs(delta)} ${delta > 0 ? 'more than' : 'fewer than'} previous`}
                     >
                         {delta > 0 ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}

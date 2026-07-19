@@ -26,7 +26,7 @@ export function DiffSummary({ files = [], summary, loading }) {
                 <span className="text-xs text-slate-500">
                     <span className="text-emerald-600 dark:text-emerald-400">+{summary?.additions || 0}</span>
                     {' '}
-                    <span className="text-red-500 dark:text-red-400">−{summary?.deletions || 0}</span>
+                    <span className="text-red-600 dark:text-red-400">−{summary?.deletions || 0}</span>
                 </span>
             </div>
             <div className="max-h-48 overflow-auto">
@@ -41,7 +41,7 @@ export function DiffSummary({ files = [], summary, loading }) {
                             <FileCode className="w-3 h-3 text-slate-400 shrink-0" />
                             <span className="flex-1 text-left text-slate-700 dark:text-slate-300 font-mono truncate">{file.filename}</span>
                             <span className="text-emerald-600 dark:text-emerald-400">+{file.additions}</span>
-                            <span className="text-red-500 dark:text-red-400">−{file.deletions}</span>
+                            <span className="text-red-600 dark:text-red-400">−{file.deletions}</span>
                         </button>
                         <AnimatePresence>
                             {expandedFile === file.filename && file.patch && (
