@@ -397,9 +397,16 @@ app.use((err, req, res, _next) => {
 // Start Server
 // -----------------------------------------------------------------------------
 
-const server = app.listen(config.port, () => {
-    logger.info({ port: config.port, frontend: config.frontendUrl, mode: config.nodeEnv }, 'GitHub Repo Manager API is live');
-});
+// HOST is optional — passing it to listen() binds a single interface (the
+// Windows package sets 127.0.0.1 so the firewall prompt never appears and the
+// server isn't LAN-exposed by default). Omitting it preserves the historical
+// behavior of binding all interfaces.
+function onListening() {
+    logger.info({ port: config.port, host: config.host || '0.0.0.0 (all interfaces)', frontend: config.frontendUrl, mode: config.nodeEnv }, 'GitHub Repo Manager API is live');
+}
+const server = config.host
+    ? app.listen(config.port, config.host, onListening)
+    : app.listen(config.port, onListening);
 
 // Start background sweeper for Work Board cache + snooze TTL cleanup
 startWorkBoardSweeper();

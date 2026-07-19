@@ -6,6 +6,11 @@ const configSchema = z.object({
     // Server
     nodeEnv: z.enum(['development', 'production', 'test']).default('development'),
     port: z.coerce.number().default(3001),
+    // Bind address passed to app.listen(port, host). Unset preserves the
+    // historical behavior of binding all interfaces (Node's default when no
+    // host is passed). The Windows package sets this to 127.0.0.1 so the
+    // firewall prompt never appears and the server isn't LAN-exposed by default.
+    host: z.string().optional(),
 
     // Session
     sessionSecret: z.string().min(32, 'SESSION_SECRET must be at least 32 characters'),
@@ -85,6 +90,7 @@ function loadConfig() {
     const result = configSchema.safeParse({
         nodeEnv: process.env.NODE_ENV,
         port: process.env.PORT,
+        host: process.env.HOST || undefined,
         sessionSecret: process.env.SESSION_SECRET,
         githubClientId: process.env.GITHUB_CLIENT_ID,
         githubClientSecret: process.env.GITHUB_CLIENT_SECRET,
