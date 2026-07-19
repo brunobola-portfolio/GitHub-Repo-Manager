@@ -23,18 +23,35 @@ import { describe, it, expect, beforeAll } from 'vitest'
 // Budgets track current actuals (fresh `vite build --mode production`).
 // Raise these only after a deliberate, documented change. Lowering them is
 // fine — that's the ratchet direction.
-//   - Total eager: actual ~397 KB gz → budget 415 KB (unchanged since 2026-04-26)
-//   - index-*.js entry: 2026-07-19 re-baseline. This gate was accidentally
-//     dormant in CI (RUN_BUILD_TESTS was never set) between 2026-04-26 and
-//     2026-07-19, during which the entry chunk grew ~66 → ~89 KB gz as the
-//     v4.6 "Community WOW" work added code to the always-mounted app shell
-//     (Header/Sidebar/RepoList/OrgSidebar/NotificationLayer). Re-baselined to
-//     92 KB to LOCK the current ceiling and prevent further regression now that
-//     the gate is wired into CI. Reducing the entry back toward 72 KB via a
-//     dedicated shell code-split pass is tracked as perf follow-up — DO NOT
-//     raise this budget further to accommodate new eager growth.
-const EAGER_INDEX_GZ_BUDGET = 92 * 1024
-const EAGER_TOTAL_GZ_BUDGET = 415 * 1024
+//   - index-*.js entry: 2026-07-19 re-baselined to 92 KB (see git history) to
+//     lock the ceiling after this gate was found accidentally dormant in CI.
+//     2026-07-19 shell code-split follow-up landed and dropped the entry to
+//     ~78.8 KB gz actual:
+//       1. vite.config.js's manualChunks no longer force-groups recharts into
+//          its own 'vendor-charts' chunk — that grouping made rolldown hoist
+//          the chunk into a STATIC import of the entry even though recharts
+//          is only reachable via dynamic import() (ActivityChart/LanguageChart
+//          lazy behind DashboardPremium). Left to per-consumer chunking,
+//          recharts stays lazy and its d3-* deps can dedupe against mermaid's.
+//       2. OrgSidebar/MobileOrgDrawer (+OrgPanel), NotificationLayer, and
+//          HeaderBanners are now lazy() from App.jsx (null/skeleton
+//          Suspense fallbacks — none are needed for the dashboard first paint).
+//       3. SlimSidebar was split out of Sidebar.jsx into its own module and
+//          made lazy — Sidebar.jsx keeps the shared QuickActionButtons/
+//          ActionHistoryRow/ActivityRow the expanded sidebar also needs.
+//     Header/Sidebar/RepoList stay eager on purpose: Header renders for every
+//     view, and a hash deep-link (e.g. #/repos) can make Sidebar/RepoList the
+//     first-painted view on a cold load (useAppRouter resolves the hash before
+//     the user sees anything settle) — splitting them needs a layout-identical
+//     Suspense fallback to avoid a flash, which is a larger, separate effort.
+//     Budget re-baselined to 82 KB (~3 KB margin over the 78.82 KB actual) to
+//     lock this gain — DO NOT raise it further to accommodate new eager
+//     growth; find another lazy seam.
+//   - Total eager: dropped from ~397 KB to ~379.9 KB gz actual (the recharts
+//     fix mainly helped here too, even though it isn't in the index file
+//     itself). Budget re-baselined to 395 KB (~15 KB margin).
+const EAGER_INDEX_GZ_BUDGET = 82 * 1024
+const EAGER_TOTAL_GZ_BUDGET = 395 * 1024
 
 const RUN = process.env.RUN_BUILD_TESTS === '1'
 

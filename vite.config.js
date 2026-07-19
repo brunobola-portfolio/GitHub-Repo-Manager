@@ -78,7 +78,19 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return
           if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'vendor-react'
-          if (/[\\/]node_modules[\\/]recharts[\\/]/.test(id)) return 'vendor-charts'
+          // recharts is deliberately NOT force-grouped into its own manual chunk.
+          // ActivityChart/LanguageChart (its only 2 consumers) are React.lazy()
+          // behind DashboardPremium, itself lazy from App.jsx — recharts is only
+          // reachable via dynamic import(). Naming it as a manualChunks group here
+          // made rolldown hoist the chunk into a STATIC import of the entry
+          // (index-*.js), eagerly shipping ~100 KB gz of recharts to every user on
+          // every load (confirmed via a temporary generateBundle() dump: the entry
+          // chunk's own `imports` list included vendor-charts even though
+          // getModuleInfo showed zero static importers into recharts — the manual
+          // grouping itself caused the hoist). Left to the default per-consumer
+          // chunking, recharts stays lazy, and rolldown can dedupe its d3-*
+          // transitive deps against mermaid's (also d3-based) lazy diagram chunks —
+          // see tests/build/bundle-budget.test.js for the eager-entry budget this fixes.
           if (/[\\/]node_modules[\\/](framer-motion|motion-dom|motion-utils)[\\/]/.test(id)) return 'vendor-motion'
           // Split lucide-react into its own chunk so its gzipped footprint
           // is measurable and it doesn't pollute vendor-ui. Rollup already

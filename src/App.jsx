@@ -30,17 +30,38 @@ const CommandPalette = lazy(() =>
 )
 import { useResponsiveLayout } from './hooks/useResponsiveLayout'
 import CollapsiblePanel from './components/ui/CollapsiblePanel'
-import { SlimSidebar } from './components/Sidebar'
+// SlimSidebar lives in its own module (not co-located with the eager Sidebar)
+// specifically so it can be lazy: it's the collapsed-rail presentation of the
+// repos-view sidebar, shown only when CollapsiblePanel is in 'slim' mode —
+// never part of the dashboard first paint. CollapsiblePanel already reserves
+// the rail's width independent of its content, so a null Suspense fallback
+// causes no layout shift.
+const SlimSidebar = lazy(() => import('./components/SlimSidebar').then(m => ({ default: m.SlimSidebar })))
 import { RateLimitNotice } from './components/ui/RateLimitNotice'
-import { HeaderBanners } from './components/HeaderBanners'
+// HeaderBanners aggregates three banners (rate-limit, session-expired, BYOK
+// upgrade nudge) that are ALL false/null on a typical mount — each renders
+// nothing until its own trigger condition flips (async fetch, session-expiry
+// event, URL param). Lazy with a null fallback is visually identical to the
+// common no-banner case.
+const HeaderBanners = lazy(() => import('./components/HeaderBanners').then(m => ({ default: m.HeaderBanners })))
 import { onRetryQueueEvent } from './utils/retry-queue'
 import { LegalFooter } from './components/LegalFooter'
 import { DemoModeBanner } from './components/DemoModeBanner'
 import { RouteFallback } from './components/ui/RouteFallback'
 import { ViewErrorFallback } from './components/ui/ViewErrorFallback'
 import { ModalSurfaces } from './components/ModalSurfaces'
-import { OrgSidebar, MobileOrgDrawer } from './components/OrgSidebar'
-import { NotificationLayer } from './components/NotificationLayer'
+// OrgSidebar (+ its OrgPanel dependency, ~23 KB gz together) is repos-view-only
+// chrome plus a closed-by-default mobile drawer — neither is needed for the
+// dashboard first paint. Lazy so it stops inflating the entry chunk; the
+// CollapsiblePanel-shaped skeleton keeps the repos-view layout width stable
+// (no CLS) while the org-list chunk loads. MobileOrgDrawer renders fixed/
+// off-canvas when closed, so its Suspense fallback is safely null.
+const OrgSidebar = lazy(() => import('./components/OrgSidebar').then(m => ({ default: m.OrgSidebar })))
+const MobileOrgDrawer = lazy(() => import('./components/OrgSidebar').then(m => ({ default: m.MobileOrgDrawer })))
+// NotificationLayer (toasts/tour/quota-modal/offline-banner) renders nothing
+// visible on a typical first paint (no toasts yet, tour delayed 1.5s, no
+// quota modal) — lazy with a null fallback costs no perceptible UI.
+const NotificationLayer = lazy(() => import('./components/NotificationLayer').then(m => ({ default: m.NotificationLayer })))
 import { ViewShell } from './components/ui/ViewShell'
 import { startTransition } from './utils/viewTransitions'
 import { useAppRouter } from './hooks/useAppRouter'
@@ -651,21 +672,23 @@ function AppContent() {
         onOpenCommandPalette={commandPalette.open}
       />
 
-      <HeaderBanners
-        rateLimitBanner={rateLimitBanner}
-        onRateLimitRetry={() => {
-          setRateLimitBanner(null)
-          // After countdown, re-attempt the original action. For the login case,
-          // navigating directly to /api/auth/login restarts the OAuth flow.
-          window.location.href = '/api/auth/login'
-        }}
-        onRateLimitDismiss={() => setRateLimitBanner(null)}
-        sessionExpired={sessionExpired}
-        onSessionLogin={handleLogin}
-        onSessionDismiss={() => setSessionExpired(false)}
-        isAuthenticated={!!user}
-        onOpenAISettings={() => openModalWithData('showSettings', { initialTab: 'ai' })}
-      />
+      <Suspense fallback={null}>
+        <HeaderBanners
+          rateLimitBanner={rateLimitBanner}
+          onRateLimitRetry={() => {
+            setRateLimitBanner(null)
+            // After countdown, re-attempt the original action. For the login case,
+            // navigating directly to /api/auth/login restarts the OAuth flow.
+            window.location.href = '/api/auth/login'
+          }}
+          onRateLimitDismiss={() => setRateLimitBanner(null)}
+          sessionExpired={sessionExpired}
+          onSessionLogin={handleLogin}
+          onSessionDismiss={() => setSessionExpired(false)}
+          isAuthenticated={!!user}
+          onOpenAISettings={() => openModalWithData('showSettings', { initialTab: 'ai' })}
+        />
+      </Suspense>
 
       <main id="main-content" className="max-w-[var(--layout-max-w)] mx-auto px-[var(--layout-px)] pt-3 md:pt-4 lg:pt-5 pb-52 md:pb-6 transition-all duration-[var(--ds-duration-slow)] relative z-[1]">
         {activeView === 'pricing' && (
@@ -711,15 +734,20 @@ function AppContent() {
           <>
             <div className="flex gap-2 md:gap-3 lg:gap-4 min-h-0">
               {user && (
-                <OrgSidebar
-                  user={user}
-                  orgs={orgs}
-                  selectedOrg={selectedOrg}
-                  stats={stats}
-                  leftMode={leftMode}
-                  onSelectOrg={handleOrgSelect}
-                  onCreateOrg={handleOpenOrgManager}
-                />
+                // Fallback width mirrors CollapsiblePanel's own expandedWidth/slimWidth
+                // defaults so the repos-view layout doesn't shift once the lazy
+                // chunk resolves.
+                <Suspense fallback={<div className="flex-shrink-0" style={{ width: leftMode === 'slim' ? 60 : 280 }} />}>
+                  <OrgSidebar
+                    user={user}
+                    orgs={orgs}
+                    selectedOrg={selectedOrg}
+                    stats={stats}
+                    leftMode={leftMode}
+                    onSelectOrg={handleOrgSelect}
+                    onCreateOrg={handleOpenOrgManager}
+                  />
+                </Suspense>
               )}
 
               <div className="flex-1 min-w-0">
@@ -748,11 +776,13 @@ function AppContent() {
                   mode={rightMode}
                   expandedWidth={280}
                   slimContent={
-                    <SlimSidebar
-                      {...sidebarProps}
-                      onOpenImport={() => openModal('showMigrationWizard')}
-                      onNavigateWorkBoard={() => setActiveView('work-board')}
-                    />
+                    <Suspense fallback={null}>
+                      <SlimSidebar
+                        {...sidebarProps}
+                        onOpenImport={() => openModal('showMigrationWizard')}
+                        onNavigateWorkBoard={() => setActiveView('work-board')}
+                      />
+                    </Suspense>
                   }
                 >
                   <Sidebar {...sidebarProps} />
@@ -893,16 +923,18 @@ function AppContent() {
         MobileQuickActionsFab menu (Search item) so the right edge isn't a
         stack of FABs. Keyboard-only fallback is the ⌘K / Ctrl+K shortcut. */}
 
-      <NotificationLayer
-        toasts={toasts}
-        onDismissToast={dismissToast}
-        isAuthenticated={!!user}
-        tourOpen={tourOpen}
-        onCloseTour={() => { onboarding.markSeen(); setTourOpen(false) }}
-        onNeverShowTour={() => onboarding.markComplete()}
-        quotaModal={quotaModal}
-        onCloseQuota={() => setQuotaModal(null)}
-      />
+      <Suspense fallback={null}>
+        <NotificationLayer
+          toasts={toasts}
+          onDismissToast={dismissToast}
+          isAuthenticated={!!user}
+          tourOpen={tourOpen}
+          onCloseTour={() => { onboarding.markSeen(); setTourOpen(false) }}
+          onNeverShowTour={() => onboarding.markComplete()}
+          quotaModal={quotaModal}
+          onCloseQuota={() => setQuotaModal(null)}
+        />
+      </Suspense>
       <ErrorBoundary fallback={<ViewErrorFallback viewName="Repo Advisor" />}>
         <Suspense fallback={null}>
           <AIAssistant askAI={askAI} askAIStream={askAIStream} user={user} checkAIStatus={checkAIStatus} />
@@ -916,16 +948,18 @@ function AppContent() {
           covered on mobile by the MobileQuickActionsFab menu (Import / Create
           / AI / Search), the SelectionBar (bulk actions when items selected),
           and the bottom-nav More drawer (Pricing / History / Settings). */}
-      <MobileOrgDrawer
-        user={user}
-        orgs={orgs}
-        selectedOrg={selectedOrg}
-        stats={stats}
-        isOpen={orgDrawerOpen}
-        onClose={() => setOrgDrawerOpen(false)}
-        onSelectOrg={handleOrgSelect}
-        onCreateOrg={handleOpenOrgManager}
-      />
+      <Suspense fallback={null}>
+        <MobileOrgDrawer
+          user={user}
+          orgs={orgs}
+          selectedOrg={selectedOrg}
+          stats={stats}
+          isOpen={orgDrawerOpen}
+          onClose={() => setOrgDrawerOpen(false)}
+          onSelectOrg={handleOrgSelect}
+          onCreateOrg={handleOpenOrgManager}
+        />
+      </Suspense>
       <LegalFooter />
       </div>
     </>

@@ -95,6 +95,9 @@ vi.mock('@/components/OrgPanel', () => ({
 
 vi.mock('@/components/Sidebar', () => ({
     Sidebar: () => <div data-testid="bulk-sidebar">Sidebar</div>,
+}))
+
+vi.mock('@/components/SlimSidebar', () => ({
     SlimSidebar: () => <div data-testid="slim-sidebar">SlimSidebar</div>,
 }))
 

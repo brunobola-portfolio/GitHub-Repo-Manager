@@ -26,7 +26,7 @@ vi.mock('framer-motion', async (importOriginal) => {
     }
 })
 
-const { SlimSidebar } = await import('@/components/Sidebar')
+const { SlimSidebar } = await import('@/components/SlimSidebar')
 const { SelectionProvider } = await import('@/contexts/SelectionContext')
 const { ModalProvider } = await import('@/contexts/ModalContext')
 
