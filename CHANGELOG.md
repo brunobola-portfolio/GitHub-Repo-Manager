@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Windows distribution — installer + portable ZIP.** A self-contained
+  Windows package (bundled Node.js runtime, no separate install, no admin
+  rights for the installer) with `Start`/`Stop` launchers, automatic
+  next-free-port fallback, and CI boot-validation (headless boot + health
+  checks, plus a full install → uninstall cycle) on every PR and release.
+  See [`docs/windows.md`](docs/windows.md).
+- **First-run bootstrap for desktop/self-hosted installs.** A fresh install
+  generates its own random secrets and a sane local `.env` automatically
+  (`scripts/first-run.mjs`); new `HOST` (bind address) and `DATA_DIR`
+  (persisted-state root) env vars support installed layouts whose app
+  directory isn't writable; `ALLOW_CONSOLE_EMAIL` opts a single-user install
+  out of the hosted-deployment email-provider guard.
+- **In-app update notifications.** Settings → About shows a "new version
+  available" banner sourced from a single unauthenticated GitHub releases
+  check (no identifying data sent, cached 24h) — notify-only, no
+  self-updating. Disable the outbound check with `UPDATE_CHECK=false`.
+- **winget scaffolding.** Manifest templates and an automated
+  publish-on-release CI step exist, but nothing has been submitted to
+  `winget-pkgs` yet — `winget install` is not available yet.
+
 ## [4.6.1] - 2026-07-19
 
 Launch-readiness hardening: every finding from the 2026-07-19 seven-dimension
