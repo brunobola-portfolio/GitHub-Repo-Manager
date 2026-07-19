@@ -7,7 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **AI metering gaps closed (launch-readiness panel, 2026-07-19).**
+  `POST /api/migration/analyze` was completely unmetered (no quota, no spend
+  cap, no `recordAISpend`, no `requireScope('ai')`) and could inflate a
+  prompt across up to 200 repos in one call — now routed through
+  `guardedGenerate`. The non-streaming branches of `/ai/generate-commit`,
+  `/ai/generate-pr`, `/ai/refine`, `/ai/analyze-context`, and
+  `/ai/review-summary` called the AI provider directly, so a client could
+  bypass the per-tier $ spend cap simply by omitting `?stream` — converted to
+  `guardedGenerate` (the streaming branches were already guarded). Work
+  Board's AI summary/suggest-action/draft-comment routes and the Community
+  Health AI summary route charged quota but skipped the spend cap entirely —
+  both now call `checkAISpendCap`/`recordAISpend`.
+
+### Fixed
+- **Docker + CI gates (#227).** Fixed the license-key public-key path so the
+  production Docker image's health check no longer blocks image startup
+  (`keys/public.pem` now ships in the image); re-activated the
+  `build-honesty` and `bundle-budget` CI gates, which had been silently
+  skipping; re-baselined the honest gzip budget for the entry chunk
+  (66 → 89 KB, reflecting real growth rather than a stale number).
+- **Usage dashboard read bug on non-UTC hosts.** `GET /api/v1/usage` built
+  its `period_start` key from the server's *local* calendar
+  (`now.getFullYear()/getMonth()`) while every write path buckets in UTC
+  (`getCurrentPeriod()`) — on a host east of UTC, Settings → Usage could read
+  0 for the whole month. The read path now shares the exact same UTC period
+  helper every write uses.
+- **README FAQ false privacy claim.** "What data is sent to the AI
+  provider?" answered "never your code content" — untrue for AI Deep Review
+  (sends the full PR diff) and the Commit Generator (works from diffs).
+  Rewritten per-feature, and the exact phrase is now hard-gated by
+  `tests/build/readme-honesty.test.js` so it can't silently reappear.
+
+### Added
+- **10 previously-invisible Free-tier quotas surfaced** in
+  `GET /api/v1/usage` and the Settings → Usage dashboard: AI Deep Review, PR
+  Chat, PR Commands, Prompt Studio test runs, AI Diagrams, Agent Rules,
+  Security Posture AI summary, AI Image Generation, full migration
+  executions, and mirror-sync apply. All ten were already enforced
+  server-side — users previously only discovered the cap at the 429.
+- **Docker image quickstart.** README + `docs/operations.md` now lead with
+  `docker pull ghcr.io/brunobola-portfolio/github-repo-manager:latest` as
+  the primary Docker path, local build kept as the alternative.
+
 ### Changed
+- **License key duration now matches what was actually paid for.** A
+  monthly $19 subscription used to emit a 12-month, non-revocable JWT
+  regardless of billing cadence. `checkout.session.completed` now issues a
+  1-month key for monthly plans and a 12-month key for yearly; each paid
+  monthly renewal invoice (`invoice.paid`, `billing_reason:
+  subscription_cycle`) mints and emails a fresh 1-month key automatically,
+  so an active subscriber's key never actually expires. Documented in
+  `docs/billing-and-licensing.md`, including the honest caveat that keys
+  are not remotely revocable.
+- **docker-compose.yml forwards the vars a paying self-host customer
+  needs.** `LICENSE_KEY` was missing from the environment whitelist, so a
+  self-hosted Pro/Enterprise deployment silently ran as Free; also added
+  `DB_BACKUP_DIR`, `DB_BACKUP_KEEP`, and `ALLOWED_AZURE_HOSTS`. Database
+  backups now default to their own named volume (`app-backups`) instead of
+  landing in the same volume as the live database.
+- **Docs corrected to match free-first pricing.** The AI Deep Review guide,
+  `docs/api/API.md`, and `docs/index.md` still described Prompt Studio
+  presets, PR slash commands, and PR Chat as Pro-only and cited a
+  `requireTier('pro')` gate that no longer exists anywhere in
+  `server/routes/` — all three are Free with generous per-feature monthly
+  caps (unlimited on Pro). Numbers cross-checked against
+  `server/lib/feature-flags.js`.
 - **Documentation overhaul (README + docs excellence).** Restructured the
   README into a lean, premium landing page (1026 → ~490 lines): a theme-aware
   `<picture>` hero, curated badges, a scannable feature layout with the v4.6 AI
