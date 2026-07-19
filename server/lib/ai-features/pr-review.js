@@ -39,27 +39,20 @@ export const PR_REVIEW_SCHEMA = {
 };
 
 /**
- * Generate an AI-powered review summary for a GitHub pull request.
+ * Build the `provider.generate()` options for a PR review summary. Pure — no
+ * I/O, no provider call. Extracted so the route layer
+ * (server/routes/ai/dev-toolkit.js) can own the actual generation call
+ * through `guardedGenerate` (spend cap + audit + output-token cap), instead
+ * of `reviewPullRequest()` below reaching a provider directly — mirrors how
+ * server/routes/ai/core.js wraps `buildReadmeEnhancePrompt()`'s output around
+ * its own `guardedGenerate` call.
  *
- * Honors DISABLE_AI_REVIEW=true as a kill switch (returns null).
- *
- * @param {object} ctx
- * @param {object} ctx.provider
  * @param {Array} fileManifest - Array of file change objects from GitHub /files API
  * @param {string} topFilePatches - Raw diff patch text for key files
  * @param {object} prMetadata - PR metadata
- * @returns {Promise<object|null>} Structured review summary, or null if disabled
+ * @returns {{ parts: Array, schema: object, generationConfig: object }}
  */
-export async function reviewPullRequest(ctx, fileManifest, topFilePatches, prMetadata) {
-    if (process.env.DISABLE_AI_REVIEW === 'true') {
-        return null;
-    }
-
-    const provider = ctx?.provider;
-    if (!provider?.model) {
-        throw new Error('AI model not initialized. Please check GEMINI_API_KEY and GEMINI_MODEL configuration.');
-    }
-
+export function buildPrReviewGenerateOptions(fileManifest, topFilePatches, prMetadata) {
     const systemPrompt = `You are an expert code reviewer analyzing a GitHub pull request.
 Provide a structured review summary to help reviewers understand the scope, risk, and focus areas of this PR.
 Be concise and actionable. Focus on architectural impact, potential bugs, and review priority.`;
@@ -94,14 +87,39 @@ ${sanitizeForPrompt(JSON.stringify(
         { text: 'Diff patches for key files:\n```diff\n' + sanitizeForPrompt(topFilePatches, 80000) + '\n```' }
     ];
 
-    const { parsed } = await provider.generate({
+    return {
         parts,
         schema: PR_REVIEW_SCHEMA,
         generationConfig: {
             responseMimeType: 'application/json',
             responseSchema: PR_REVIEW_SCHEMA,
         },
-    });
+    };
+}
+
+/**
+ * Generate an AI-powered review summary for a GitHub pull request.
+ *
+ * Honors DISABLE_AI_REVIEW=true as a kill switch (returns null).
+ *
+ * @param {object} ctx
+ * @param {object} ctx.provider
+ * @param {Array} fileManifest - Array of file change objects from GitHub /files API
+ * @param {string} topFilePatches - Raw diff patch text for key files
+ * @param {object} prMetadata - PR metadata
+ * @returns {Promise<object|null>} Structured review summary, or null if disabled
+ */
+export async function reviewPullRequest(ctx, fileManifest, topFilePatches, prMetadata) {
+    if (process.env.DISABLE_AI_REVIEW === 'true') {
+        return null;
+    }
+
+    const provider = ctx?.provider;
+    if (!provider?.model) {
+        throw new Error('AI model not initialized. Please check GEMINI_API_KEY and GEMINI_MODEL configuration.');
+    }
+
+    const { parsed } = await provider.generate(buildPrReviewGenerateOptions(fileManifest, topFilePatches, prMetadata));
 
     return parsed;
 }
