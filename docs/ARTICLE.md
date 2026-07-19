@@ -136,7 +136,7 @@ The full matrix lives in the [README](../README.md#plans--pricing), and a parity
 
 This platform was built with **Claude Code** — Anthropic's CLI coding agent — as a development partner throughout: architecture trade-offs, the migration engine, test generation, security hardening, code review, documentation. The repo carries an `AGENTS.md` of persistent conventions, so the assistant compounds context instead of relearning the house style every session.
 
-The lesson isn't "AI replaces the developer." It's that the developer still owns the architecture, the problem domain, and the critical review of every diff — but with the mechanical work amortized, one person can ship and *maintain* 325 API routes, a full migration suite, five AI workflows, a native Windows distribution, and **6,298 passing tests across 676 test files**. That leverage is the actual headline.
+The lesson isn't "AI replaces the developer." It's that the developer still owns the architecture, the problem domain, and the critical review of every diff — but with the mechanical work amortized, one person can ship and *maintain* 325 API routes, a full migration suite, five AI workflows, a native Windows distribution, and **6,337 passing tests across 677 test files**. That leverage is the actual headline.
 
 ---
 
