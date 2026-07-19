@@ -1,5 +1,10 @@
 # Billing and Licensing
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/tier-gating.svg">
+  <img alt="Free-first gating model: feature-flags.js (TIER_FEATURES) plus usage-meter.js (METRIC_TO_FEATURE) and the require-tier middleware apply per-feature monthly caps on Free, which feed the pricing matrix — Pro and Enterprise sell AI headroom, not feature unlocks" src="images/tier-gating.svg" width="900">
+</picture>
+
 ## Pricing philosophy (2026-07-18 rebalance)
 
 The hosted product is **free-first**. Free is the primary tier, not a crippled
@@ -145,3 +150,11 @@ calibrated to real provider costs).
 2. Go to **Settings → License & Plan → Activate**.
 3. Paste the `grm_lic_...` key and click **Activate**.
 4. Pro/Enterprise features unlock immediately.
+
+## See also
+
+- [`guides/stripe-setup.md`](guides/stripe-setup.md) — configure Stripe
+  products, price IDs, and the webhook endpoint that drives the license flow
+  above.
+- [`LICENSE-COMMERCIAL.md`](LICENSE-COMMERCIAL.md) — the commercial license
+  terms and per-tier entitlements delivered by the license key.

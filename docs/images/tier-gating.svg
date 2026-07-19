@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" role="img" aria-label="Free-first tier gating: three sources of truth — feature-flags.js TIER_FEATURES, usage-meter.js METRIC_TO_FEATURE and the require-tier middleware — feed one gating decision that checks whether a feature is allowed and within its monthly cap, returning a 429 quota state on overflow. The pricing matrix shows nearly every feature available on Free with generous caps, while Pro and Enterprise raise AI headroom rather than unlocking features.">
+  <style>
+    svg{--bg:#ffffff;--bg2:#f6f8fa;--card:#ffffff;--stroke:#d0d7de;--text:#1f2328;--muted:#57606a;--blue:#2563eb;--violet:#7c3aed;--emerald:#059669;--amber:#b45309;--red:#cf222e}
+    @media (prefers-color-scheme: dark){svg{--bg:#0d1117;--bg2:#161b22;--card:#1c2128;--stroke:#30363d;--text:#e6edf3;--muted:#8b949e;--blue:#4f8cff;--violet:#a78bfa;--emerald:#10b981;--amber:#e3b341;--red:#f85149}}
+    .bg{fill:var(--bg)}.panel{fill:var(--bg2);stroke:var(--stroke);stroke-width:1}
+    .card{fill:var(--card);stroke:var(--stroke);stroke-width:1.5}
+    .t{fill:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
+    .m{fill:var(--muted);font-family:'Segoe UI',system-ui,sans-serif}
+    .mono{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+    .b{fill:var(--blue)}.v{fill:var(--violet)}.e{fill:var(--emerald)}.a{fill:var(--amber)}
+    .edge{stroke:var(--muted);stroke-width:1.5;fill:none}
+    .sep{stroke:var(--stroke);stroke-width:1}
+    .badge-a{fill:var(--amber);fill-opacity:.15;stroke:var(--amber);stroke-width:1}
+    .ah{fill:var(--muted)}
+  </style>
+  <defs>
+    <filter id="sh" x="-20%" y="-25%" width="140%" height="150%"><feDropShadow dx="0" dy="1.5" stdDeviation="2.5" flood-color="#000" flood-opacity="0.12"/></filter>
+    <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ah"/></marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="900" height="420" rx="14"/>
+  <text class="t" x="32" y="42" font-size="19" font-weight="700">Free-First Tier Gating</text>
+  <text class="m" x="32" y="64" font-size="12.5">One gating decision from three sources of truth · caps enforced per feature, per month</text>
+
+  <!-- Sources of truth -->
+  <rect class="card" x="32" y="90" width="250" height="64" rx="10" filter="url(#sh)"/>
+  <text class="t" x="48" y="118" font-size="12.5" font-weight="700">feature-flags.js</text>
+  <text class="m mono" x="48" y="138" font-size="10.5">TIER_FEATURES</text>
+
+  <rect class="card" x="32" y="166" width="250" height="64" rx="10" filter="url(#sh)"/>
+  <text class="t" x="48" y="194" font-size="12.5" font-weight="700">usage-meter.js</text>
+  <text class="m mono" x="48" y="214" font-size="10.5">METRIC_TO_FEATURE</text>
+
+  <rect class="card" x="32" y="242" width="250" height="64" rx="10" filter="url(#sh)"/>
+  <text class="t" x="48" y="270" font-size="12.5" font-weight="700">require-tier</text>
+  <text class="m" x="48" y="290" font-size="10.5">middleware · enforced per request</text>
+
+  <!-- Converging arrows -->
+  <line class="edge" x1="282" y1="122" x2="328" y2="176" marker-end="url(#ah)"/>
+  <line class="edge" x1="282" y1="198" x2="328" y2="205" marker-end="url(#ah)"/>
+  <line class="edge" x1="282" y1="274" x2="328" y2="236" marker-end="url(#ah)"/>
+
+  <!-- Gate -->
+  <rect class="card" x="330" y="150" width="200" height="120" rx="10" filter="url(#sh)"/>
+  <text class="t" x="430" y="180" text-anchor="middle" font-size="14" font-weight="700">Gating decision</text>
+  <text class="m" x="430" y="202" text-anchor="middle" font-size="10.5">is the feature allowed?</text>
+  <text class="m" x="430" y="219" text-anchor="middle" font-size="10.5">is it within the cap?</text>
+  <rect class="badge-a" x="350" y="232" width="160" height="24" rx="12"/>
+  <text class="a" x="430" y="248" text-anchor="middle" font-size="9.5" font-weight="700">429 · QuotaExceededState</text>
+
+  <line class="edge" x1="530" y1="210" x2="560" y2="210" marker-end="url(#ah)"/>
+
+  <!-- Pricing matrix -->
+  <rect class="panel" x="556" y="88" width="312" height="256" rx="12"/>
+  <text class="t" x="712" y="112" text-anchor="middle" font-size="12.5" font-weight="700">Pricing matrix</text>
+  <text class="m" x="738" y="134" text-anchor="middle" font-size="10.5" font-weight="700">Free</text>
+  <text class="m" x="792" y="134" text-anchor="middle" font-size="10.5" font-weight="700">Pro</text>
+  <text class="m" x="846" y="134" text-anchor="middle" font-size="10.5" font-weight="700">Ent</text>
+  <line class="sep" x1="570" y1="142" x2="854" y2="142"/>
+
+  <text class="t" x="572" y="166" font-size="10.5">Repos &amp; teams</text>
+  <text class="e" x="738" y="166" text-anchor="middle" font-size="12" font-weight="700">&#10003;</text>
+  <text class="e" x="792" y="166" text-anchor="middle" font-size="12" font-weight="700">&#10003;</text>
+  <text class="e" x="846" y="166" text-anchor="middle" font-size="12" font-weight="700">&#10003;</text>
+
+  <text class="t" x="572" y="194" font-size="10.5">Azure migration</text>
+  <text class="e" x="738" y="194" text-anchor="middle" font-size="12" font-weight="700">&#10003;</text>
+  <text class="e" x="792" y="194" text-anchor="middle" font-size="12" font-weight="700">&#10003;</text>
+  <text class="e" x="846" y="194" text-anchor="middle" font-size="12" font-weight="700">&#10003;</text>
+
+  <text class="t" x="572" y="222" font-size="10.5">AI features (BYOK)</text>
+  <text class="e" x="738" y="222" text-anchor="middle" font-size="12" font-weight="700">&#10003;</text>
+  <text class="e" x="792" y="222" text-anchor="middle" font-size="12" font-weight="700">&#10003;</text>
+  <text class="e" x="846" y="222" text-anchor="middle" font-size="12" font-weight="700">&#10003;</text>
+
+  <text class="t" x="572" y="250" font-size="10.5">Bulk &amp; automation</text>
+  <text class="e" x="738" y="250" text-anchor="middle" font-size="12" font-weight="700">&#10003;</text>
+  <text class="e" x="792" y="250" text-anchor="middle" font-size="12" font-weight="700">&#10003;</text>
+  <text class="e" x="846" y="250" text-anchor="middle" font-size="12" font-weight="700">&#10003;</text>
+
+  <line class="sep" x1="570" y1="266" x2="854" y2="266"/>
+  <text class="m" x="572" y="286" font-size="9.5" font-weight="700">AI monthly headroom grows with tier</text>
+  <rect class="e" x="572" y="296" width="48" height="8" rx="4"/><text class="m" x="628" y="303" font-size="9">Free</text>
+  <rect class="e" x="572" y="312" width="96" height="8" rx="4"/><text class="m" x="676" y="319" font-size="9">Pro</text>
+  <rect class="e" x="572" y="328" width="150" height="8" rx="4"/><text class="m" x="730" y="335" font-size="9">Enterprise</text>
+
+  <!-- Caption -->
+  <rect class="panel" x="32" y="360" width="836" height="44" rx="10"/>
+  <text class="e" x="450" y="387" text-anchor="middle" font-size="11" font-weight="700">Free-first: nearly everything on Free with generous per-feature caps — Pro/Enterprise sell AI headroom, not feature unlocks</text>
+</svg>

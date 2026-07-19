@@ -11,12 +11,12 @@
 
 Three months of feature shipping have left the product with a credibility debt:
 
-1. **Vaporware in the primary interaction surface.** The repository context menu exposes 6 items that do not work — three are `disabled: true` with "Coming soon" tooltips ([RepoContextMenu.jsx:68-85](../../src/components/RepoContextMenu.jsx#L68-L85)), one (`Sync Repository`) is disabled without a fix path, and two (`Dry-Run`, `Export Metadata`) are enabled but fall into the `default` handler fallback in [RepoList.jsx:524](../../src/components/RepoList.jsx#L524) and silently do nothing. Every user who right-clicks a repository can see the gaps.
+1. **Vaporware in the primary interaction surface.** The repository context menu exposes 6 items that do not work — three are `disabled: true` with "Coming soon" tooltips ([RepoContextMenu.jsx:68-85](../../src/components/RepoContextMenu.jsx#L68-L85)), one (`Sync Repository`) is disabled without a fix path, and two (`Dry-Run`, `Export Metadata`) are enabled but fall into the `default` handler fallback in `RepoList.jsx:524` and silently do nothing. Every user who right-clicks a repository can see the gaps.
 
 2. **Orphan AI endpoints and shallow entry points in the frontend.** Three complete AI features exist server-side but are either fully orphan or only reachable from a non-contextual global surface:
    - `POST /api/ai/readme/enhance` ([ai.js:376](../../server/routes/ai.js#L376)) — `aiApi.enhanceReadme()` exists in [api/ai.js:169](../../src/api/ai.js#L169) but no component calls it. Fully orphan.
    - `POST /api/ai/batch-index` ([ai.js:484](../../server/routes/ai.js#L484)) — `aiApi.batchIndex()` exists but no UI triggers it. Fully orphan.
-   - `CommitGeneratorModal` ([CommitGeneratorModal.jsx](../../src/components/CommitGeneratorModal.jsx)) is rendered by App.jsx and reachable **only** via a small Wand2 icon in [Header.jsx:132](../../src/components/Header.jsx#L132) (`onOpenCommitGen` → `openModal('showCommitGen')`). The feature is technically alive but has zero contextual discoverability — users inside a repo have no way to trigger it and the icon itself is unlabeled in the corner of the top bar.
+   - `CommitGeneratorModal` (`CommitGeneratorModal.jsx`) is rendered by App.jsx and reachable **only** via a small Wand2 icon in [Header.jsx:132](../../src/components/Header.jsx#L132) (`onOpenCommitGen` → `openModal('showCommitGen')`). The feature is technically alive but has zero contextual discoverability — users inside a repo have no way to trigger it and the icon itself is unlabeled in the corner of the top bar.
 
    Additionally, the hooks `suggestAI()` and `generateReadmeAI()` are exported from [useAI.js:66,98](../../src/hooks/useAI.js#L66) but destructured by no caller.
 
@@ -29,7 +29,7 @@ Three months of feature shipping have left the product with a credibility debt:
 
    `ds-card-shimmer`, `ds-btn-shimmer`, and `ds-gradient-text` each exist but are used in fewer than 10 places. [Skeleton.jsx:4](../../src/components/ui/Skeleton.jsx#L4) applies `animate-pulse` Tailwind instead of the premium `ds-skeleton` shimmer. [Card.jsx](../../src/components/ui/Card.jsx) accepts a `hover={true}` prop that does nothing. These are not new features — they are already-paid-for design investment that is not being applied.
 
-6. **Dead code.** [ProgressBar.jsx](../../src/components/ui/ProgressBar.jsx) (77 lines) is imported by nothing. [WelcomeHero.jsx](../../src/components/WelcomeHero.jsx) (337 lines) needs verification — if it is genuinely orphan, it must go.
+6. **Dead code.** `ProgressBar.jsx` (77 lines) is imported by nothing. `WelcomeHero.jsx` (337 lines) needs verification — if it is genuinely orphan, it must go.
 
 The sum of these issues is a product that feels larger than it is on the surface, while being more complete than it appears under the hood. This spec closes the gap in both directions.
 
@@ -115,12 +115,12 @@ One spec, one plan, three implementation waves. Each wave is independently shipp
 
 ### 1.1 Dry-Run (Simulate)
 
-**Current state:** [RepoContextMenu.jsx:55](../../src/components/RepoContextMenu.jsx#L55) dispatches `onAction('dryRun', repo)`. [RepoList.jsx:524](../../src/components/RepoList.jsx#L524) falls into the `default` case and calls `onQuickAction(action, data)`, which has no handler for `dryRun` → no-op.
+**Current state:** [RepoContextMenu.jsx:55](../../src/components/RepoContextMenu.jsx#L55) dispatches `onAction('dryRun', repo)`. `RepoList.jsx:524` falls into the `default` case and calls `onQuickAction(action, data)`, which has no handler for `dryRun` → no-op.
 
 **Solution:** Dry-Run opens the existing MigrationWizard with its `dryRun` flag pre-selected. The wizard already supports `isDryRun:true` on `POST /api/migration/plans` ([migration.js:56](../../server/routes/migration.js#L56)) and the `TransferModal` already has a "Simulate" checkbox.
 
 **Changes:**
-- [RepoList.jsx](../../src/components/RepoList.jsx): add a handler for `dryRun` that calls `openModalWithData('showMigrationWizard', { targetRepo: repo, initialDryRun: true })`.
+- `RepoList.jsx`: add a handler for `dryRun` that calls `openModalWithData('showMigrationWizard', { targetRepo: repo, initialDryRun: true })`.
 - [MigrationWizard/index.jsx](../../src/components/MigrationWizard/): accept `initialDryRun` prop from modal data and set it on the wizard's initial state.
 - Batch variant: `dryRun_selected` (from [RepoContextMenu.jsx:131](../../src/components/RepoContextMenu.jsx#L131)) opens the wizard with all selected repos and dryRun=true.
 - No backend changes.
@@ -135,7 +135,7 @@ One spec, one plan, three implementation waves. Each wave is independently shipp
 
 **Changes:**
 - [RepoContextMenu.jsx:68-73](../../src/components/RepoContextMenu.jsx#L68-L73): remove `disabled` and `tooltip`, keep `onClick`.
-- [RepoList.jsx](../../src/components/RepoList.jsx): handler for `aiRisk` opens wizard with `initialStep='ai-review'`.
+- `RepoList.jsx`: handler for `aiRisk` opens wizard with `initialStep='ai-review'`.
 - [MigrationWizard/index.jsx](../../src/components/MigrationWizard/): accept `initialStep` and jump directly to that step.
 - No new endpoint.
 
@@ -190,7 +190,7 @@ Mounted in [server/routes/v1/index.js](../../server/routes/v1/index.js) with the
 
 **Frontend:**
 - New api method `reposApi.exportMetadata(owner, repo)` in `src/api/repos.js` — fetches and triggers download via Blob + anchor element.
-- [RepoList.jsx](../../src/components/RepoList.jsx): handler for `exportMeta` calls the api method and shows a toast on success/failure.
+- `RepoList.jsx`: handler for `exportMeta` calls the api method and shows a toast on success/failure.
 - Batch variant: `exportMeta_selected` downloads a single bundle JSON containing an array of repo exports (re-uses the same endpoint in a loop or a new bulk endpoint `POST /api/v1/repos/bulk-export`).
 
 **Tier gate:** Free (per the new Tier Matrix). Available to all users for data portability.
@@ -235,7 +235,7 @@ router.post('/repos/:owner/:repo/sync', requireAuth, requireTier('pro'), async (
 })
 ```
 
-**Schema change:** `migration_jobs` table ([server/migrations/001-initial-schema.sql:164](../../server/migrations/001-initial-schema.sql#L164)) gets a new column `is_mirror INTEGER DEFAULT 0`. Add via a new migration file `server/migrations/002-migration-jobs-is-mirror.sql` with `ALTER TABLE migration_jobs ADD COLUMN is_mirror INTEGER DEFAULT 0;` plus an index `CREATE INDEX idx_migration_jobs_mirror ON migration_jobs(target_owner, target_repo, is_mirror);`. A repo is marked as mirror if it was created via the existing Mirror/Fork flow ([TransferModal.jsx](../../src/components/TransferModal.jsx) mirror mode → [bulk.js:204](../../server/routes/bulk.js#L204)). Backfill: an one-shot script `server/migrations/scripts/backfill-is-mirror.js` reads `metadata` JSON column and marks rows where the import was a `--mirror` clone.
+**Schema change:** `migration_jobs` table (`server/migrations/001-initial-schema.sql:164`) gets a new column `is_mirror INTEGER DEFAULT 0`. Add via a new migration file `server/migrations/002-migration-jobs-is-mirror.sql` with `ALTER TABLE migration_jobs ADD COLUMN is_mirror INTEGER DEFAULT 0;` plus an index `CREATE INDEX idx_migration_jobs_mirror ON migration_jobs(target_owner, target_repo, is_mirror);`. A repo is marked as mirror if it was created via the existing Mirror/Fork flow ([TransferModal.jsx](../../src/components/TransferModal.jsx) mirror mode → [bulk.js:204](../../server/routes/bulk.js#L204)). Backfill: an one-shot script `server/migrations/scripts/backfill-is-mirror.js` reads `metadata` JSON column and marks rows where the import was a `--mirror` clone.
 
 **Frontend:**
 - [RepoContextMenu.jsx:94](../../src/components/RepoContextMenu.jsx#L94): remove `disabled: true`, replace with conditional `disabled: !repo.isMirror` and tooltip "Only available for mirrored repos".
@@ -259,8 +259,8 @@ If aggregation proves too expensive for this spec, the fallback is to replace th
 
 | File | Action | Reason |
 |---|---|---|
-| [src/components/ui/ProgressBar.jsx](../../src/components/ui/ProgressBar.jsx) (77 lines) | Delete | Imported by zero files |
-| [src/components/WelcomeHero.jsx](../../src/components/WelcomeHero.jsx) (337 lines) | Verify, then delete if orphan | Possibly used by landing page — grep must confirm |
+| `src/components/ui/ProgressBar.jsx` (77 lines) | Delete | Imported by zero files |
+| `src/components/WelcomeHero.jsx` (337 lines) | Verify, then delete if orphan | Possibly used by landing page — grep must confirm |
 | `suggestAI()` in [src/hooks/useAI.js:66-91](../../src/hooks/useAI.js#L66) | Delete | Exported, destructured by nothing |
 | `generateReadmeAI()` in [src/hooks/useAI.js:98-116](../../src/hooks/useAI.js#L98) | Delete | Exported, destructured by nothing |
 
@@ -283,15 +283,15 @@ Deletion is done only after a `grep -r` confirms zero usages, and the imports in
 
 ### 2.1 Wire `CommitGeneratorModal` to a real entry point
 
-**Current state:** [CommitGeneratorModal.jsx](../../src/components/CommitGeneratorModal.jsx) is registered in ModalContext under the key `showCommitGen` and rendered in App.jsx. It is currently reachable **only** via the Wand2 icon in [Header.jsx:132](../../src/components/Header.jsx#L132), which is a small unlabeled icon in the top bar action cluster. Users inside a specific repository have no contextual way to invoke it, and it does not accept a repo or branch context today.
+**Current state:** `CommitGeneratorModal.jsx` is registered in ModalContext under the key `showCommitGen` and rendered in App.jsx. It is currently reachable **only** via the Wand2 icon in [Header.jsx:132](../../src/components/Header.jsx#L132), which is a small unlabeled icon in the top bar action cluster. Users inside a specific repository have no contextual way to invoke it, and it does not accept a repo or branch context today.
 
 **Solution:** Add contextual entry points inside repository scopes and extend the modal to receive `repo` and `branch` from modal data. The existing Header icon stays.
 
 **Changes:**
 - [RepoContextMenu.jsx:63](../../src/components/RepoContextMenu.jsx#L63): add new AI submenu entry "Generate Commit Message" that calls `onAction('aiCommit', repo)`.
 - [BranchesTab.jsx](../../src/components/RepoDetail/BranchesTab.jsx): per-branch "✨ AI Commit" button that opens the modal pre-populated with branch context.
-- [RepoList.jsx](../../src/components/RepoList.jsx): `aiCommit` handler → `openModalWithData('showCommitGen', { repo, branch })`.
-- [CommitGeneratorModal.jsx](../../src/components/CommitGeneratorModal.jsx): extend signature to accept `repo` + `branch` from modal data and pre-fill context; render a subtitle "For {repo.full_name} → {branch}" in the modal header when context is provided, otherwise keep the current no-context behaviour intact for the Header icon flow.
+- `RepoList.jsx`: `aiCommit` handler → `openModalWithData('showCommitGen', { repo, branch })`.
+- `CommitGeneratorModal.jsx`: extend signature to accept `repo` + `branch` from modal data and pre-fill context; render a subtitle "For {repo.full_name} → {branch}" in the modal header when context is provided, otherwise keep the current no-context behaviour intact for the Header icon flow.
 
 **Tier gate:** Free, with 20 generations / month limit per the new Tier Matrix.
 
@@ -312,12 +312,12 @@ Deletion is done only after a `grep -r` confirms zero usages, and the imports in
 
 **Current state:** `POST /api/ai/batch-index` exists, accepts up to 10 repos per call, no UI.
 
-**Solution:** New bulk action "AI → Batch Index Selected" in [RepoList.jsx](../../src/components/RepoList.jsx) bulk menu. Opens a progress modal showing live progress (N/M repos indexed), successes, failures.
+**Solution:** New bulk action "AI → Batch Index Selected" in `RepoList.jsx` bulk menu. Opens a progress modal showing live progress (N/M repos indexed), successes, failures.
 
 **Changes:**
 - [RepoContextMenu.jsx:117+](../../src/components/RepoContextMenu.jsx#L117) (batch section): new entry "Batch Index with AI" that calls `onAction('aiBatchIndex_selected', selected)`.
 - New component `src/components/AI/BatchIndexProgressModal.jsx`.
-- [RepoList.jsx](../../src/components/RepoList.jsx): `aiBatchIndex_selected` handler chunks the selection into groups of 10, calls the endpoint, aggregates results, updates progress modal.
+- `RepoList.jsx`: `aiBatchIndex_selected` handler chunks the selection into groups of 10, calls the endpoint, aggregates results, updates progress modal.
 
 **Tier gate:** Pro.
 
@@ -624,7 +624,7 @@ Sweeping update to [README.md](../../README.md):
 
 All new modals in this spec (`ReadmeEnhanceDiffPanel` as sub-panel, `BatchIndexProgressModal`, `CompareSimilarDrawer`, `SecurityScanModal`) use the existing `<Modal />` primitive from [src/components/ui/Modal.jsx](../../src/components/ui/Modal.jsx). None are hand-rolled.
 
-`CompareSimilarDrawer` is a drawer, not a modal. The existing [MobileDrawer.jsx](../../src/components/MobileDrawer.jsx) is constrained to `xl:hidden` (mobile-only) — it cannot be reused for a desktop side panel. This spec introduces a new thin `<SidePanel />` primitive in `src/components/ui/SidePanel.jsx` that wraps the shared `<Modal />` animation patterns but positions on the right edge at desktop widths (≥1280px) and falls back to a full-width bottom sheet on mobile. The primitive accepts the same `isOpen`, `onClose`, `title`, `children` props as `<Modal />` plus `width` (default `480px`) and `side` (`'right'` default, `'left'` for future use). `useFocusTrap` and `useBodyScrollLock` hooks are reused as-is.
+`CompareSimilarDrawer` is a drawer, not a modal. The existing `MobileDrawer.jsx` is constrained to `xl:hidden` (mobile-only) — it cannot be reused for a desktop side panel. This spec introduces a new thin `<SidePanel />` primitive in `src/components/ui/SidePanel.jsx` that wraps the shared `<Modal />` animation patterns but positions on the right edge at desktop widths (≥1280px) and falls back to a full-width bottom sheet on mobile. The primitive accepts the same `isOpen`, `onClose`, `title`, `children` props as `<Modal />` plus `width` (default `480px`) and `side` (`'right'` default, `'left'` for future use). `useFocusTrap` and `useBodyScrollLock` hooks are reused as-is.
 
 ### ModalContext registration
 

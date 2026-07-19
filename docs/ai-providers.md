@@ -351,3 +351,11 @@ This is useful for:
 - SaaS / hosted deployments where you don't want to subsidise AI API costs.
 - Compliance environments where every AI call must be traceable to a specific
   user's own account.
+
+---
+
+## See also
+
+- [`architecture/ai-client-contracts.md`](architecture/ai-client-contracts.md) —
+  the two frontend AI-client contracts (`aiApi` honest placeholders vs `aiFetch`
+  typed throws) that consume these providers.

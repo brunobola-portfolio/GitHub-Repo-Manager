@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Documentation overhaul (README + docs excellence).** Restructured the
+  README into a lean, premium landing page (1026 → ~490 lines): a theme-aware
+  `<picture>` hero, curated badges, a scannable feature layout with the v4.6 AI
+  screenshots, progressive-disclosure `<details>`, and a trailhead
+  `## Documentation` section. Version history now lives solely in `CHANGELOG.md`
+  + GitHub Releases (git tags as the source of truth) — the duplicated "Recently
+  Shipped" section was removed.
+- **Honesty fixes.** Corrected the README's "DORA Metrics (Enterprise)" label
+  (DORA is free on all tiers), the stale `v4.5.0` header link, the "5,200+"
+  test count (now 6,000+), the OAuth scope table (aligned to the code), and the
+  migration wizard step list. Refreshed stale docs (`work-board.md`,
+  `architecture/backend.md`, `architecture/overview.md`, `event-ingestion.md`,
+  `api/WORK-BOARD-API.md`, `setup/github-app.md`, `LICENSE-COMMERCIAL.md`) and
+  rewrote `docs/ARTICLE.md` for v4.6 (AGPL not MIT; Azure-only migration;
+  SSO/SAML marked roadmap).
+
+### Added
+- **Theme-aware SVG diagram set** (`docs/images/*.svg`) — architecture, AI
+  spend-cap flow, action dispatch, migration flow, tier gating, event
+  ingestion, and AI Deep Review, all rendering correctly on GitHub light and
+  dark (embedded `prefers-color-scheme`), SQLite-only and provider-neutral.
+- **`npm run docs:linkcheck`** — a zero-dependency relative-link checker over
+  every Markdown file (0 broken links across the repo, including historical
+  plans/specs/reports).
+
+### Removed
+- Archived 47 orphaned/superseded screenshots and one legacy dark-only SVG to
+  `docs/images/archive/` (curated the live image set from 84 to 42).
+
 ## [4.6.0] - 2026-07-19
 
 Six production-premium waves plus the "Community WOW" feature set, executed
@@ -1877,8 +1907,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ### Fixed
 - **Version Synchronization**: Updated package.json version to match CHANGELOG (2.3.0 → 2.3.1)
-- **Security Enhancement**: Removed hardcoded GitHub Client ID from [`App.jsx`](src/App.jsx:158), delegating OAuth to backend
-- **Code Quality**: Fixed ESLint warnings for unused variables in [`App.jsx`](src/App.jsx:26)
+- **Security Enhancement**: Removed hardcoded GitHub Client ID from `src/App.jsx:158`, delegating OAuth to backend
+- **Code Quality**: Fixed ESLint warnings for unused variables in `src/App.jsx:26`
 - **Documentation**: Updated README.md placeholder links from 'yourusername' to 'YOUR_USERNAME'
 - **Repository URLs**: Standardized all GitHub repository references in documentation
 

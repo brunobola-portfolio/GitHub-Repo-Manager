@@ -3,7 +3,7 @@
 **Date:** 2026-05-03
 **Status:** Approved — ready for implementation planning
 **Slice:** 1a (free core) + 1b (premium Prompt Studio) of 5; chat / slash-commands / GitHub App identity / org-shared prompts deferred to slices 2–5
-**Related work:** [2026-05-03-pr-review-premium.md](2026-05-03-pr-review-premium.md) (3-column UI just landed); [project_resilient_pr_issue_commit.md](../../C:/Users/bruno/.claude/projects/s--Git-Hub-Repo-Manager/memory/project_resilient_pr_issue_commit.md) (gh-cache + gh-outbox patterns to consume)
+**Related work:** [2026-05-03-pr-review-premium.md](2026-05-03-pr-review-premium.md) (3-column UI just landed); `project_resilient_pr_issue_commit.md` (gh-cache + gh-outbox patterns to consume)
 
 ---
 

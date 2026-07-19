@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 460" role="img" aria-label="Azure DevOps to GitHub migration flow: sources (Git repos, TFVC with 180-day history, Boards to Issues, Wikis to Markdown) feed an 8 to 10 step wizard, then a risk engine with AI review, a dry-run, execution via clone bare and push mirror with Git LFS, conflict resolution (replace, rename or skip) and finally provenance tagging. Writes go through commitOrOpenPR preview-first.">
+  <style>
+    svg{--bg:#ffffff;--bg2:#f6f8fa;--card:#ffffff;--stroke:#d0d7de;--text:#1f2328;--muted:#57606a;--blue:#2563eb;--violet:#7c3aed;--emerald:#059669;--amber:#b45309;--red:#cf222e}
+    @media (prefers-color-scheme: dark){svg{--bg:#0d1117;--bg2:#161b22;--card:#1c2128;--stroke:#30363d;--text:#e6edf3;--muted:#8b949e;--blue:#4f8cff;--violet:#a78bfa;--emerald:#10b981;--amber:#e3b341;--red:#f85149}}
+    .bg{fill:var(--bg)}.panel{fill:var(--bg2);stroke:var(--stroke);stroke-width:1}
+    .card{fill:var(--card);stroke:var(--stroke);stroke-width:1.5}
+    .t{fill:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
+    .m{fill:var(--muted);font-family:'Segoe UI',system-ui,sans-serif}
+    .mono{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+    .b{fill:var(--blue)}.v{fill:var(--violet)}.e{fill:var(--emerald)}.a{fill:var(--amber)}
+    .edge{stroke:var(--muted);stroke-width:1.5;fill:none}
+    .badge-b{fill:var(--blue);fill-opacity:.13;stroke:var(--blue);stroke-width:1}
+    .badge-v{fill:var(--violet);fill-opacity:.13;stroke:var(--violet);stroke-width:1}
+    .badge-e{fill:var(--emerald);fill-opacity:.13;stroke:var(--emerald);stroke-width:1}
+    .badge-a{fill:var(--amber);fill-opacity:.15;stroke:var(--amber);stroke-width:1}
+    .ah{fill:var(--muted)}
+  </style>
+  <defs>
+    <filter id="sh" x="-20%" y="-25%" width="140%" height="150%"><feDropShadow dx="0" dy="1.5" stdDeviation="2.5" flood-color="#000" flood-opacity="0.12"/></filter>
+    <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ah"/></marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="980" height="460" rx="14"/>
+  <text class="t" x="32" y="42" font-size="19" font-weight="700">Azure DevOps &#8594; GitHub Migration</text>
+  <text class="m" x="32" y="64" font-size="12.5">Sources &#8594; wizard &#8594; risk-reviewed dry-run &#8594; mirror execute &#8594; conflict resolution &#8594; provenance</text>
+
+  <!-- Sources panel -->
+  <rect class="panel" x="32" y="92" width="200" height="300" rx="12"/>
+  <text class="t" x="132" y="118" text-anchor="middle" font-size="13" font-weight="700">Azure DevOps sources</text>
+  <text class="m" x="132" y="136" text-anchor="middle" font-size="10">PAT auth · API v7.1</text>
+
+  <rect class="card" x="48" y="150" width="168" height="44" rx="9" filter="url(#sh)"/>
+  <text class="t" x="132" y="170" text-anchor="middle" font-size="11.5" font-weight="600">Git repositories</text>
+  <text class="m" x="132" y="185" text-anchor="middle" font-size="9.5">full history &amp; branches</text>
+
+  <rect class="card" x="48" y="204" width="168" height="44" rx="9" filter="url(#sh)"/>
+  <text class="t" x="132" y="224" text-anchor="middle" font-size="11.5" font-weight="600">TFVC &#8594; Git</text>
+  <text class="m" x="132" y="239" text-anchor="middle" font-size="9.5">last 180 days of history</text>
+
+  <rect class="card" x="48" y="258" width="168" height="44" rx="9" filter="url(#sh)"/>
+  <text class="t" x="132" y="278" text-anchor="middle" font-size="11.5" font-weight="600">Boards &#8594; Issues</text>
+  <text class="m" x="132" y="293" text-anchor="middle" font-size="9.5">work items imported</text>
+
+  <rect class="card" x="48" y="312" width="168" height="44" rx="9" filter="url(#sh)"/>
+  <text class="t" x="132" y="332" text-anchor="middle" font-size="11.5" font-weight="600">Wikis &#8594; Markdown</text>
+  <text class="m" x="132" y="347" text-anchor="middle" font-size="9.5">docs preserved</text>
+
+  <line class="edge" x1="232" y1="156" x2="256" y2="156" marker-end="url(#ah)"/>
+
+  <!-- Row 1 -->
+  <rect class="card" x="256" y="100" width="200" height="112" rx="10" filter="url(#sh)"/>
+  <circle class="badge-b" cx="278" cy="124" r="12"/><text class="b" x="278" y="128" text-anchor="middle" font-size="11" font-weight="700">1</text>
+  <text class="t" x="356" y="150" text-anchor="middle" font-size="14" font-weight="700">Migration Wizard</text>
+  <text class="m" x="356" y="172" text-anchor="middle" font-size="10.5">8&#8211;10 guided steps</text>
+  <text class="m" x="356" y="190" text-anchor="middle" font-size="10.5">source · target · schedule</text>
+
+  <line class="edge" x1="456" y1="156" x2="502" y2="156" marker-end="url(#ah)"/>
+
+  <rect class="card" x="502" y="100" width="200" height="112" rx="10" filter="url(#sh)"/>
+  <circle class="badge-v" cx="524" cy="124" r="12"/><text class="v" x="524" y="128" text-anchor="middle" font-size="11" font-weight="700">2</text>
+  <text class="t" x="602" y="150" text-anchor="middle" font-size="13.5" font-weight="700">Risk engine + AI</text>
+  <text class="m" x="602" y="172" text-anchor="middle" font-size="10.5">risk rules score repos</text>
+  <text class="v" x="602" y="190" text-anchor="middle" font-size="10.5" font-weight="600">AI (BYOK) plan review</text>
+
+  <line class="edge" x1="702" y1="156" x2="748" y2="156" marker-end="url(#ah)"/>
+
+  <rect class="card" x="748" y="100" width="200" height="112" rx="10" filter="url(#sh)"/>
+  <circle class="badge-b" cx="770" cy="124" r="12"/><text class="b" x="770" y="128" text-anchor="middle" font-size="11" font-weight="700">3</text>
+  <text class="t" x="848" y="150" text-anchor="middle" font-size="14" font-weight="700">Dry-run</text>
+  <text class="m" x="848" y="172" text-anchor="middle" font-size="10.5">validate the plan</text>
+  <text class="m" x="848" y="190" text-anchor="middle" font-size="10.5">preview · no writes</text>
+
+  <!-- Down connector -->
+  <line class="edge" x1="848" y1="212" x2="848" y2="272" marker-end="url(#ah)"/>
+
+  <!-- Row 2 -->
+  <rect class="card" x="748" y="272" width="200" height="112" rx="10" filter="url(#sh)"/>
+  <circle class="badge-e" cx="770" cy="296" r="12"/><text class="e" x="770" y="300" text-anchor="middle" font-size="11" font-weight="700">4</text>
+  <text class="t" x="848" y="322" text-anchor="middle" font-size="14" font-weight="700">Execute</text>
+  <text class="m mono" x="848" y="344" text-anchor="middle" font-size="9.5">clone --bare · push --mirror</text>
+  <text class="m" x="848" y="362" text-anchor="middle" font-size="10.5">Git LFS objects</text>
+
+  <line class="edge" x1="748" y1="328" x2="704" y2="328" marker-end="url(#ah)"/>
+
+  <rect class="card" x="502" y="272" width="200" height="112" rx="10" filter="url(#sh)"/>
+  <circle class="badge-a" cx="524" cy="296" r="12"/><text class="a" x="524" y="300" text-anchor="middle" font-size="11" font-weight="700">5</text>
+  <text class="t" x="602" y="322" text-anchor="middle" font-size="13.5" font-weight="700">Conflict resolution</text>
+  <text class="m" x="602" y="344" text-anchor="middle" font-size="10.5">replace · rename · skip</text>
+  <text class="m" x="602" y="362" text-anchor="middle" font-size="10.5">resolution-aware risk</text>
+
+  <line class="edge" x1="502" y1="328" x2="458" y2="328" marker-end="url(#ah)"/>
+
+  <rect class="card" x="256" y="272" width="200" height="112" rx="10" filter="url(#sh)"/>
+  <circle class="badge-e" cx="278" cy="296" r="12"/><text class="e" x="278" y="300" text-anchor="middle" font-size="11" font-weight="700">6</text>
+  <text class="t" x="356" y="322" text-anchor="middle" font-size="13.5" font-weight="700">Provenance tagging</text>
+  <text class="m" x="356" y="344" text-anchor="middle" font-size="10.5">topics · props · git tag</text>
+  <text class="m mono" x="356" y="362" text-anchor="middle" font-size="9.5">migration_marks</text>
+
+  <!-- Footer -->
+  <rect class="panel" x="32" y="406" width="916" height="40" rx="10"/>
+  <text class="e" x="490" y="431" text-anchor="middle" font-size="11.5" font-weight="700">Preview-first: repository writes go through commitOrOpenPR() · provenance recorded on success</text>
+</svg>

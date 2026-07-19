@@ -1,17 +1,24 @@
 # GitHub Event Ingestion Pipeline (Phase E1)
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/event-ingestion.svg">
+  <img alt="Event ingestion pipeline: a GitHub webhook is verified by HMAC X-Hub-Signature-256, ingested and de-duplicated, then fans out to Work Board auto-track and the gh-cache / gh-outbox layer, feeding the Dashboard Live Inbox" src="images/event-ingestion.svg" width="900">
+</picture>
+
 ## What it is
 
-A webhook sink that captures GitHub repository events into four SQLite tables,
-providing the foundational data layer for upcoming features:
+A webhook sink that captures GitHub repository events into four SQLite tables.
+This is the foundational data layer for the delivery-analytics features:
 
-- **Work Board** (cross-org PR / issue queue) — E3
-- **DORA Metrics** (deploy frequency, MTTR) — E2+
-- **Tech Debt tracking** — uses PR/issue lifecycle data
-- **Dependency Risk** — uses PR metadata
+- **Work Board** (cross-repo PR / issue queue) — shipped in v3.5.0
+- **DORA Metrics** (deploy frequency, lead time, change-failure rate, MTTR) —
+  live, computed from `deployment_events`
+- **Tech Debt tracking** — live, uses PR/issue lifecycle data
+- **Dependency Risk** — uses PR metadata (planned)
 
-No aggregation queries or UI exist yet — those are E2 (aggregation) and E3
-(first Work Board consumer).
+The aggregation queries (`server/lib/event-aggregations.js`) and the Work Board
+UI (`src/components/WorkBoard/`) are shipped and read from these tables. See the
+[See also](#see-also) links below for the consumer and setup guides.
 
 ## Webhook setup
 
@@ -64,14 +71,11 @@ value to ensure idempotency — GitHub retries are harmless.
 
 ## What is NOT here yet
 
-- **Aggregation queries** — DORA metrics computation, Work Board roll-ups
-  (Phase E2).
-- **UI consumers** — Work Board component, DORA dashboard panels (Phase E3).
-- **Scheduled backfill** — historical data can be seeded via the GitHub REST
-  API in a future task.
+- **Scheduled backfill** — a freshly-installed webhook only sees events from
+  install time forward; historical data can be seeded via the GitHub REST API
+  in a future task.
 - **Queue / retry layer** — handlers run synchronously inside the webhook
-  process. BullMQ can be added in E2 if write latency becomes an issue at
-  scale.
+  process. BullMQ can be added if write latency becomes an issue at scale.
 
 ## Handler architecture
 
@@ -90,3 +94,11 @@ value to ensure idempotency — GitHub retries are harmless.
 The 200 response is returned immediately after signature verification. Handler
 processing is asynchronous — if a handler throws, the error is logged but
 GitHub never sees a non-2xx response and will not retry.
+
+## See also
+
+- [`guides/github-webhook-setup.md`](guides/github-webhook-setup.md) — the
+  end-to-end webhook configuration walkthrough (secret generation, target
+  selection, handshake verification, troubleshooting).
+- [`work-board.md`](work-board.md) — the Work Board, the first consumer of these
+  tables (My Reviews, Stale PRs, Review Load, Tech Debt, DORA).

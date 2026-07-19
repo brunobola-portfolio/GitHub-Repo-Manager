@@ -95,7 +95,7 @@ The flag controls a `React.lazy()` split; disabling it restores the legacy Atten
 
 ## API reference
 
-See [API Reference — Dashboard](../api/API.md#dashboard-apiv1dashboardx) for the four endpoint signatures (GET inbox, POST archive, POST restore, POST snooze).
+See [API Reference — Dashboard](../api/API.md#dashboard-apiv1dashboard) for the four endpoint signatures (GET inbox, POST archive, POST restore, POST snooze).
 
 ## Related
 

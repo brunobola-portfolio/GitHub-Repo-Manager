@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" role="img" aria-label="AI request and spend-cap flow: an AI generation request resolves the per-user bring-your-own-key provider (AES-256-GCM), passes checkAISpendCap and guardedGenerate, applies a per-call output-token cap per OWASP LLM10, records spend with a PII-safe audit entry, then streams over SSE with partial text preserved on disconnect. If the cap is exceeded the request returns a 429 quota error.">
+  <style>
+    svg{--bg:#ffffff;--bg2:#f6f8fa;--card:#ffffff;--stroke:#d0d7de;--text:#1f2328;--muted:#57606a;--blue:#2563eb;--violet:#7c3aed;--emerald:#059669;--amber:#b45309;--red:#cf222e}
+    @media (prefers-color-scheme: dark){svg{--bg:#0d1117;--bg2:#161b22;--card:#1c2128;--stroke:#30363d;--text:#e6edf3;--muted:#8b949e;--blue:#4f8cff;--violet:#a78bfa;--emerald:#10b981;--amber:#e3b341;--red:#f85149}}
+    .bg{fill:var(--bg)}.panel{fill:var(--bg2);stroke:var(--stroke);stroke-width:1}
+    .card{fill:var(--card);stroke:var(--stroke);stroke-width:1.5}
+    .t{fill:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
+    .m{fill:var(--muted);font-family:'Segoe UI',system-ui,sans-serif}
+    .mono{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+    .b{fill:var(--blue)}.v{fill:var(--violet)}.e{fill:var(--emerald)}.a{fill:var(--amber)}.r{fill:var(--red)}
+    .edge{stroke:var(--muted);stroke-width:1.5;fill:none}
+    .edge-r{stroke:var(--red);stroke-width:1.5;fill:none;stroke-dasharray:5 3}
+    .badge-b{fill:var(--blue);fill-opacity:.13;stroke:var(--blue);stroke-width:1}
+    .badge-v{fill:var(--violet);fill-opacity:.13;stroke:var(--violet);stroke-width:1}
+    .badge-e{fill:var(--emerald);fill-opacity:.13;stroke:var(--emerald);stroke-width:1}
+    .badge-a{fill:var(--amber);fill-opacity:.15;stroke:var(--amber);stroke-width:1}
+    .badge-r{fill:var(--red);fill-opacity:.12;stroke:var(--red);stroke-width:1}
+    .ah{fill:var(--muted)}.ahr{fill:var(--red)}
+  </style>
+  <defs>
+    <filter id="sh" x="-20%" y="-25%" width="140%" height="150%"><feDropShadow dx="0" dy="1.5" stdDeviation="2.5" flood-color="#000" flood-opacity="0.12"/></filter>
+    <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ah"/></marker>
+    <marker id="ahr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ahr"/></marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="960" height="360" rx="14"/>
+  <text class="t" x="32" y="42" font-size="19" font-weight="700">AI Request &amp; Spend-Cap Flow</text>
+  <text class="m" x="32" y="64" font-size="12.5">Every generation is metered — BYOK provider, per-call token cap, spend cap, PII-safe audit</text>
+
+  <!-- Stage cards: y 104..224, centre y 164 -->
+  <!-- 1 Request -->
+  <rect class="card" x="26" y="104" width="140" height="120" rx="10" filter="url(#sh)"/>
+  <rect class="badge-b" x="38" y="116" width="22" height="22" rx="11"/><text class="b" x="49" y="131" text-anchor="middle" font-size="11" font-weight="700">1</text>
+  <text class="t" x="96" y="160" text-anchor="middle" font-size="12.5" font-weight="700">Request</text>
+  <text class="m" x="96" y="182" text-anchor="middle" font-size="10">AI generation route</text>
+  <text class="m mono" x="96" y="199" text-anchor="middle" font-size="9.5">requireScope('ai')</text>
+
+  <line class="edge" x1="166" y1="164" x2="180" y2="164" marker-end="url(#ah)"/>
+
+  <!-- 2 Resolve BYOK -->
+  <rect class="card" x="180" y="104" width="140" height="120" rx="10" filter="url(#sh)"/>
+  <rect class="badge-v" x="192" y="116" width="22" height="22" rx="11"/><text class="v" x="203" y="131" text-anchor="middle" font-size="11" font-weight="700">2</text>
+  <text class="t" x="250" y="160" text-anchor="middle" font-size="12.5" font-weight="700">Resolve BYOK</text>
+  <text class="m" x="250" y="182" text-anchor="middle" font-size="10">per-user provider key</text>
+  <text class="m" x="250" y="199" text-anchor="middle" font-size="10">AES-256-GCM decrypt</text>
+
+  <line class="edge" x1="320" y1="164" x2="334" y2="164" marker-end="url(#ah)"/>
+
+  <!-- 3 Spend cap -->
+  <rect class="card" x="334" y="104" width="140" height="120" rx="10" filter="url(#sh)"/>
+  <rect class="badge-a" x="346" y="116" width="22" height="22" rx="11"/><text class="a" x="357" y="131" text-anchor="middle" font-size="11" font-weight="700">3</text>
+  <text class="t" x="404" y="160" text-anchor="middle" font-size="12.5" font-weight="700">Spend cap</text>
+  <text class="m mono" x="404" y="182" text-anchor="middle" font-size="9.5">checkAISpendCap</text>
+  <text class="m mono" x="404" y="199" text-anchor="middle" font-size="9.5">guardedGenerate</text>
+
+  <line class="edge" x1="474" y1="164" x2="488" y2="164" marker-end="url(#ah)"/>
+
+  <!-- 4 Token cap -->
+  <rect class="card" x="488" y="104" width="140" height="120" rx="10" filter="url(#sh)"/>
+  <rect class="badge-a" x="500" y="116" width="22" height="22" rx="11"/><text class="a" x="511" y="131" text-anchor="middle" font-size="11" font-weight="700">4</text>
+  <text class="t" x="558" y="160" text-anchor="middle" font-size="12.5" font-weight="700">Output-token cap</text>
+  <text class="m" x="558" y="182" text-anchor="middle" font-size="10">per-call max tokens</text>
+  <text class="m" x="558" y="199" text-anchor="middle" font-size="10">OWASP LLM10</text>
+
+  <line class="edge" x1="628" y1="164" x2="642" y2="164" marker-end="url(#ah)"/>
+
+  <!-- 5 Record + audit -->
+  <rect class="card" x="642" y="104" width="140" height="120" rx="10" filter="url(#sh)"/>
+  <rect class="badge-e" x="654" y="116" width="22" height="22" rx="11"/><text class="e" x="665" y="131" text-anchor="middle" font-size="11" font-weight="700">5</text>
+  <text class="t" x="712" y="160" text-anchor="middle" font-size="12.5" font-weight="700">Record + audit</text>
+  <text class="m mono" x="712" y="182" text-anchor="middle" font-size="9.5">recordAISpend</text>
+  <text class="m" x="712" y="199" text-anchor="middle" font-size="10">PII-safe audit log</text>
+
+  <line class="edge" x1="782" y1="164" x2="796" y2="164" marker-end="url(#ah)"/>
+
+  <!-- 6 SSE stream -->
+  <rect class="card" x="796" y="104" width="140" height="120" rx="10" filter="url(#sh)"/>
+  <rect class="badge-b" x="808" y="116" width="22" height="22" rx="11"/><text class="b" x="819" y="131" text-anchor="middle" font-size="11" font-weight="700">6</text>
+  <text class="t" x="866" y="160" text-anchor="middle" font-size="12.5" font-weight="700">SSE stream</text>
+  <text class="m" x="866" y="182" text-anchor="middle" font-size="10">partial text kept</text>
+  <text class="m" x="866" y="199" text-anchor="middle" font-size="10">on disconnect</text>
+
+  <!-- cap exceeded branch from stage 3 -->
+  <line class="edge-r" x1="404" y1="224" x2="404" y2="272" marker-end="url(#ahr)"/>
+  <text class="r" x="414" y="250" font-size="10" font-weight="600">cap exceeded</text>
+  <rect class="badge-r" x="300" y="274" width="208" height="60" rx="10"/>
+  <text class="r" x="404" y="298" text-anchor="middle" font-size="12.5" font-weight="700">429 quota exceeded</text>
+  <text class="m" x="404" y="318" text-anchor="middle" font-size="10">QuotaExceededState · no provider call</text>
+</svg>

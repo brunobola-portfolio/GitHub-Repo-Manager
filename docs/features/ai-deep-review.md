@@ -6,6 +6,11 @@ walkthrough, line-level review comments with one-click code suggestions,
 PR-context slash commands, and a streaming Q&A chat — then publishing the
 whole thing back to GitHub as one batched review.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../images/ai-deep-review.svg">
+  <img alt="AI Deep Review: a pull request feeds four surfaces — Walkthrough, Comments with suggestion blocks, Commands (/describe, /test_plan, /improve), and a streaming Chat — which are published as one batched GitHub review through the outbox with an idempotency key" src="../images/ai-deep-review.svg" width="900">
+</picture>
+
 Open any PR inside the app, click **Generate AI Review**, and within
 seconds you get a four-tab panel covering the entire conversation a
 reviewer would normally write by hand.
@@ -30,7 +35,7 @@ reviewer would normally write by hand.
 Free is the full review-and-publish loop with the built-in `general`
 preset; Pro adds the prompt customisation, the slash commands, and the
 chat tab. Tier gates are enforced server-side by `requireTier('pro')` —
-documented per-route in [`docs/api/API.md`](../api/API.md#ai-deep-review-apiaideep-reviewx).
+documented per-route in [`docs/api/API.md`](../api/API.md#ai-deep-review-apiaideep-review).
 
 ---
 

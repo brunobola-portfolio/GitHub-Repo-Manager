@@ -1248,7 +1248,7 @@ git commit -m "feat(ai-assistant): intercept pasted URLs and drive populate flow
 **Files:**
 - Create: `e2e/assistant-paste-url.spec.js`
 
-The E2E suite uses Playwright against `npm run dev:all`. Per project convention (see [feedback_avoid_long_local_tests.md](../../C:/Users/bruno/.claude/projects/s--Git-Hub-Repo-Manager/memory/feedback_avoid_long_local_tests.md)), write the test but **do not** run the full E2E suite locally — push the branch and let CI validate.
+The E2E suite uses Playwright against `npm run dev:all`. Per project convention (see `feedback_avoid_long_local_tests.md`), write the test but **do not** run the full E2E suite locally — push the branch and let CI validate.
 
 - [ ] **Step 1: Create the E2E test file.**
 

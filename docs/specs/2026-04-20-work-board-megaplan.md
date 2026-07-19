@@ -9,7 +9,7 @@
 
 The Work Board (`/work-board`) is the cross-repo activity hub. In its current shape it has two fundamental problems:
 
-1. **It is webhook-only.** All six endpoints ([`server/routes/work-board.js`](server/routes/work-board.js)) read from local SQLite tables (`pr_events`, `issue_events`, `review_assignments`, `deployment_events`). If the user has not configured a GitHub webhook against `POST /api/v1/webhooks/github`, every tab renders `0`. For a new install this is indistinguishable from a broken product — which is exactly what the screenshot shows today (30 repos tracked, every KPI at 0).
+1. **It is webhook-only.** All six endpoints ([`server/routes/work-board.js`](../../server/routes/work-board.js)) read from local SQLite tables (`pr_events`, `issue_events`, `review_assignments`, `deployment_events`). If the user has not configured a GitHub webhook against `POST /api/v1/webhooks/github`, every tab renders `0`. For a new install this is indistinguishable from a broken product — which is exactly what the screenshot shows today (30 repos tracked, every KPI at 0).
 2. **It is a passive list.** Even with data, the user can only *look*. No filters, no keyboard navigation, no inline actions, no context synthesis. The board is a read-only digest, not a cockpit.
 
 This spec defines a single large upgrade that closes both gaps: the board becomes **zero-config** (populates from the live GitHub API when webhook data is missing), **live** (auto-refreshes, pushes updates), **interactive** (filter, keyboard-drive, approve/snooze inline), and **intelligent** (LLM-generated headline summary across all configured BYOK providers).
@@ -49,11 +49,11 @@ The upgrade is split into five cohesive layers that ship together:
 
 | Layer | Responsibility | New code | Reused code |
 |-------|----------------|----------|-------------|
-| **L1 — Live fetch** | Pull missing data directly from GitHub API, cache with ETag | `server/lib/work-board-github.js`, `server/lib/work-board-cache.js` | [`server/lib/github-api.js`](server/lib/github-api.js) for HTTP + rate-limit |
+| **L1 — Live fetch** | Pull missing data directly from GitHub API, cache with ETag | `server/lib/work-board-github.js`, `server/lib/work-board-cache.js` | [`server/lib/github-api.js`](../../server/lib/github-api.js) for HTTP + rate-limit |
 | **L2 — Unified route layer** | Merge webhook data + live data, serve single envelope | Modifications to `server/routes/work-board.js` | existing `requireAuth`, `requireTier`, `errorResponse` |
 | **L3 — Mutations** | Approve / request-changes / snooze, via GitHub PR review API + local snooze table | `server/routes/work-board-actions.js`, `server/lib/work-board-snooze.js` | Existing middleware stack |
-| **L4 — AI summary** | BYOK-aware cross-provider headline generator | `server/lib/work-board-summary.js`, `server/routes/work-board-ai.js` | [`server/lib/ai-provider.js`](server/lib/ai-provider.js) + `createProviderForUser` |
-| **L5 — Frontend** | Auto-refresh, filter bar, keyboard, AI card, palette extension | Modifications to [`src/components/WorkBoard/WorkBoardPage.jsx`](src/components/WorkBoard/WorkBoardPage.jsx) + 5 new files | `useCommandPalette`, `useKeyboardShortcuts`, `useToast`, `useModal`, `Chip`, design-system classes |
+| **L4 — AI summary** | BYOK-aware cross-provider headline generator | `server/lib/work-board-summary.js`, `server/routes/work-board-ai.js` | [`server/lib/ai-provider.js`](../../server/lib/ai-provider.js) + `createProviderForUser` |
+| **L5 — Frontend** | Auto-refresh, filter bar, keyboard, AI card, palette extension | Modifications to [`src/components/WorkBoard/WorkBoardPage.jsx`](../../src/components/WorkBoard/WorkBoardPage.jsx) + 5 new files | `useCommandPalette`, `useKeyboardShortcuts`, `useToast`, `useModal`, `Chip`, design-system classes |
 
 All five layers are deployed in a single release. No feature flag; rollout is controlled by standard git merge + CI.
 
@@ -63,7 +63,7 @@ All five layers are deployed in a single release. No feature flag; rollout is co
 
 ### `server/lib/work-board-github.js`
 
-Four pure functions, each returns `{ items: [...], etag: string, fetchedAt: Date }`. All accept `{ token, login, ...params }` and call the existing [`githubApi()`](server/lib/github-api.js) wrapper so ETag caching and rate-limit handling happen for free.
+Four pure functions, each returns `{ items: [...], etag: string, fetchedAt: Date }`. All accept `{ token, login, ...params }` and call the existing [`githubApi()`](../../server/lib/github-api.js) wrapper so ETag caching and rate-limit handling happen for free.
 
 ```js
 // Pseudo-signatures
@@ -140,7 +140,7 @@ Body: `{ repoFullName, prNumber, action: "approve" | "request_changes" | "commen
 - Calls `POST /repos/:owner/:repo/pulls/:prNumber/reviews` with `event: APPROVE | REQUEST_CHANGES | COMMENT`.
 - On `401`/`403` with missing-scope hint → returns `403 { code: "scope_required", requiredScopes: ["repo"] }`.
 - Invalidates `work_board_cache` entry for `my_reviews` on success (so next poll re-fetches fresh).
-- Audit-logged via existing [`auditLog()`](server/lib/audit.js).
+- Audit-logged via existing [`auditLog()`](../../server/lib/audit.js).
 
 ### `POST /api/v1/work-board/snooze` (Free+)
 
@@ -162,7 +162,7 @@ Returns all active snoozes for the user. Used by the Filters → "Show snoozed" 
 
 ### Why this works cross-provider
 
-The existing abstraction ([`server/lib/ai-provider.js:12-23`](server/lib/ai-provider.js#L12-L23)) already exposes:
+The existing abstraction ([`server/lib/ai-provider.js:12-23`](../../server/lib/ai-provider.js#L12-L23)) already exposes:
 
 - `generate({ prompt, systemPrompt, schema })` → `{ text, parsed }`
 - JSON-schema-constrained output across Gemini, Anthropic, OpenAI, OpenRouter, Local.
@@ -177,7 +177,7 @@ Request body: none (reads data from `work_board_cache`).
 Behaviour:
 
 1. If `createProviderForUser(userId, 'completion', { featureKey: 'WORK_BOARD_SUMMARY' })` returns `null` → `404 { code: "ai_not_configured" }`.
-2. Enforce `1 call / 5 min / user` rate limit (in-memory `Map<userId, lastCalledAt>`, mirrors existing [`testLastCall`](server/routes/user-ai-config.js) pattern).
+2. Enforce `1 call / 5 min / user` rate limit (in-memory `Map<userId, lastCalledAt>`, mirrors existing [`testLastCall`](../../server/routes/user-ai-config.js) pattern).
 3. Load the four cached summaries (my_reviews, stale_prs, my_issues, tech_debt). If all absent, populate them first via L1.
 4. Build a compact fact sheet (≤ 1 500 tokens) — counts + top 5 items per category.
 5. Call `provider.generate({ systemPrompt: SYSTEM_PROMPT, prompt: factSheet, schema: SUMMARY_SCHEMA })`.
@@ -255,14 +255,14 @@ const SUMMARY_SCHEMA = {
 
 ### Anthropic cache_control optimisation (optional)
 
-When `provider.type === 'anthropic'`, wrap the system prompt in a `cache_control: { type: 'ephemeral' }` block. This is a future patch to [`server/lib/providers/anthropic.js`](server/lib/providers/anthropic.js); the abstraction is extended to forward `systemPromptCacheable: true` from the caller. Cost saving: ~90 % of system tokens reused across the 5-minute cache window. **Not blocking for v1** — documented in Rollout § "Follow-up optimisations".
+When `provider.type === 'anthropic'`, wrap the system prompt in a `cache_control: { type: 'ephemeral' }` block. This is a future patch to [`server/lib/providers/anthropic.js`](../../server/lib/providers/anthropic.js); the abstraction is extended to forward `systemPromptCacheable: true` from the caller. Cost saving: ~90 % of system tokens reused across the 5-minute cache window. **Not blocking for v1** — documented in Rollout § "Follow-up optimisations".
 
 ### Provider validation notes
 
 - **Gemini 2.5 Flash** (free tier available): handles 1 500-token fact sheet + schema reliably; ~1 s latency.
 - **GPT-4o-mini** (cheap): same.
 - **Claude Sonnet 4.5**: best bullet quality in manual spot-check; benefits most from cache_control once wired.
-- **OpenRouter Llama 3.3 70B** (free on some backends): usable; occasional schema drift → relies on existing `extractJson()` helper ([server/lib/ai-provider.js](server/lib/ai-provider.js)).
+- **OpenRouter Llama 3.3 70B** (free on some backends): usable; occasional schema drift → relies on existing `extractJson()` helper ([server/lib/ai-provider.js](../../server/lib/ai-provider.js)).
 - **Local (Ollama qwen2.5:7b)**: works; slower (5-8 s); adequate for offline users.
 
 The prompt is tuned conservatively (rules before data, schema strict, "never invent" clause) so quality is consistent across providers.
@@ -273,7 +273,7 @@ The prompt is tuned conservatively (rules before data, schema strict, "never inv
 
 ### 5.1 — Auto-refresh + "updated Ns ago"
 
-`useWorkBoardFetch` in [`src/hooks/useWorkBoard.js`](src/hooks/useWorkBoard.js) gains:
+`useWorkBoardFetch` in [`src/hooks/useWorkBoard.js`](../../src/hooks/useWorkBoard.js) gains:
 
 - `refreshIntervalMs` (default 60 000).
 - Page Visibility API: pauses polling when `document.hidden`, triggers immediate refresh on return.
@@ -288,7 +288,7 @@ The KPI row gains a "refresh" icon button (top-right, inside the header area) th
 New components in `src/components/WorkBoard/filters/`:
 
 - `WorkBoardFilterBar.jsx` — horizontal chip strip (repo / author / label / age bucket / "hide snoozed").
-- `FilterChip.jsx` — adapts the existing pattern from [`QuickFilters.jsx`](src/components/MigrationWizard/steps/RepoSelectStep/QuickFilters.jsx).
+- `FilterChip.jsx` — adapts the existing pattern from [`QuickFilters.jsx`](../../src/components/MigrationWizard/steps/RepoSelectStep/QuickFilters.jsx).
 - `PresetDropdown.jsx` — save / load / rename / delete named filter presets.
 
 URL sync via `useUrlParams(['repos','authors','labels','age','tab'])` — a light wrapper around `URLSearchParams` + `history.replaceState`. No React Router.
@@ -321,7 +321,7 @@ Bindings registered via an extended `useKeyboardShortcuts` (adding context-scope
 | `?` | Show keyboard help modal |
 | `g` then `r`/`s`/`i`/`t`/`l`/`d` | Go-to tab (reviews / stale / issues / techdebt / review-load / dora) |
 
-Help modal lists everything; reuses [`ModalContext`](src/contexts/ModalContext.jsx).
+Help modal lists everything; reuses [`ModalContext`](../../src/contexts/ModalContext.jsx).
 
 ### 5.4 — Inline action UI
 
@@ -345,7 +345,7 @@ Uses `ds-card-shimmer` + `ds-glass` for premium feel. Framer Motion `AnimatePres
 
 ### 5.6 — Command palette extension
 
-Extend the existing [`CommandPalette`](src/components/CommandPalette.jsx) with a dynamic "Work Board" group (only shown when page === 'work-board'). Items:
+Extend the existing [`CommandPalette`](../../src/components/CommandPalette.jsx) with a dynamic "Work Board" group (only shown when page === 'work-board'). Items:
 
 - `Open My Reviews` / `Stale PRs` / `My Issues` / `Tech Debt` / `DORA`
 - `Approve current row` (enabled only if a PR row has keyboard focus)
@@ -358,7 +358,7 @@ Extend the existing [`CommandPalette`](src/components/CommandPalette.jsx) with a
 
 ## Data Model
 
-Three new tables + indices. All follow the existing `try/catch duplicate column` migration pattern in [`server/db.js`](server/db.js).
+Three new tables + indices. All follow the existing `try/catch duplicate column` migration pattern in [`server/db.js`](../../server/db.js).
 
 ```sql
 -- M010: live-data cache
@@ -401,7 +401,7 @@ CREATE TABLE IF NOT EXISTS work_board_presets (
 CREATE INDEX IF NOT EXISTS idx_wbp_user ON work_board_presets(user_id);
 ```
 
-A background sweeper runs every 10 min to delete `work_board_cache` rows where `expires_at < NOW() - 1 day` and `work_board_snooze` rows where `until_at < NOW() - 1 day`. Implementation: new file `server/lib/work-board-sweeper.js` exporting `startWorkBoardSweeper()` / `stopWorkBoardSweeper()`, invoked from [`server/index.js`](server/index.js) startup sequence alongside the existing migration-engine scheduler and cleared on graceful shutdown.
+A background sweeper runs every 10 min to delete `work_board_cache` rows where `expires_at < NOW() - 1 day` and `work_board_snooze` rows where `until_at < NOW() - 1 day`. Implementation: new file `server/lib/work-board-sweeper.js` exporting `startWorkBoardSweeper()` / `stopWorkBoardSweeper()`, invoked from [`server/index.js`](../../server/index.js) startup sequence alongside the existing migration-engine scheduler and cleared on graceful shutdown.
 
 ---
 
@@ -466,7 +466,7 @@ Cross-provider AI validation: a single parametrised test that mocks four provide
 
 **Post-merge follow-ups** (not in this spec):
 
-- Anthropic `cache_control` optimisation in [`server/lib/providers/anthropic.js`](server/lib/providers/anthropic.js).
+- Anthropic `cache_control` optimisation in [`server/lib/providers/anthropic.js`](../../server/lib/providers/anthropic.js).
 - Slack / email digest of the daily AI summary (opt-in).
 - Team-scoped work board (requires Teams product decisions).
 
@@ -508,4 +508,4 @@ Cost of server storage: ≤ 100 bytes per snooze, ~100 active snoozes per power 
 
 ## Appendix C — Why all providers in v1?
 
-The abstraction ([`server/lib/ai-provider.js`](server/lib/ai-provider.js)) already pipes all five provider families through a uniform `generate({ prompt, systemPrompt, schema })` interface. Supporting them all is a single code path; restricting to Anthropic would mean hiding capability that users have already paid for via BYOK. Small-model providers (Gemini Flash, Llama 3.3 70B free on OpenRouter, Qwen 2.5 7B local) can produce acceptable summaries at zero or near-zero cost — the strict prompt + schema keeps output quality consistent.
+The abstraction ([`server/lib/ai-provider.js`](../../server/lib/ai-provider.js)) already pipes all five provider families through a uniform `generate({ prompt, systemPrompt, schema })` interface. Supporting them all is a single code path; restricting to Anthropic would mean hiding capability that users have already paid for via BYOK. Small-model providers (Gemini Flash, Llama 3.3 70B free on OpenRouter, Qwen 2.5 7B local) can produce acceptable summaries at zero or near-zero cost — the strict prompt + schema keeps output quality consistent.

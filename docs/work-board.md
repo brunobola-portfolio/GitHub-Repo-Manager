@@ -10,30 +10,34 @@ every tracked repository.
 
 | Tab | Who can see it | Description |
 |-----|---------------|-------------|
-| **My Reviews** | Free+ | PRs where you are a requested reviewer and the review is still pending |
-| **Stale PRs** | Pro+ | Open PRs that have not been merged or closed within a configurable threshold (default 7 days) |
-| **My Issues** | Free+ | Open issues that are assigned to your GitHub login |
-| **Review Load** | Pro+ | Per-reviewer submitted vs pending counts over the last 30 days — stacked-bar view to spot imbalanced review queues |
-| **Tech Debt** | Pro+ | Open issues labelled `tech-debt`, `technical-debt`, `technical debt` (with space), `debt`, `refactor`, `refactoring`, `code-smell`, or `cleanup`, grouped by repo with hotspot ranking |
-| **DORA** | Enterprise+ | Four-metric dashboard: deploy frequency, lead-time p50/p90, change failure rate, MTTR p50/p90 — plus CSV export |
+| **My Reviews** | Free | PRs where you are a requested reviewer and the review is still pending |
+| **Stale PRs** | Free | Open PRs that have not been merged or closed within a configurable threshold (default 7 days) |
+| **My Issues** | Free | Open issues that are assigned to your GitHub login |
+| **Review Load** | Free | Per-reviewer submitted vs pending counts over the last 30 days — stacked-bar view to spot imbalanced review queues |
+| **Tech Debt** | Free | Open issues labelled `tech-debt`, `technical-debt`, `technical debt` (with space), `debt`, `refactor`, `refactoring`, `code-smell`, or `cleanup`, grouped by repo with hotspot ranking |
+| **DORA** | Free | Four-metric dashboard: deploy frequency, lead-time p50/p90, change failure rate, MTTR p50/p90 — plus CSV export |
+
+> **Free-first since the 2026-07-18 rebalance.** Every Work Board tab — including
+> DORA metrics and CSV export — is available to all tiers behind `requireAuth`
+> only. There is no tier gate on any Work Board read endpoint.
 
 ## Pricing tier gating
+
+Every tab is free on every tier. The table below is retained for completeness;
+all cells are "Yes".
 
 | Feature | Free | Pro | Enterprise |
 |---------|------|-----|------------|
 | My Reviews | Yes | Yes | Yes |
 | My Issues | Yes | Yes | Yes |
-| Stale PRs | — | Yes | Yes |
-| Review Load | — | Yes | Yes |
-| Tech Debt | — | Yes | Yes |
-| DORA — deploy frequency | — | — | Yes |
-| DORA — lead time (p50/p90) | — | — | Yes |
-| DORA — change failure rate | — | — | Yes |
-| DORA — MTTR (p50/p90) | — | — | Yes |
-| DORA — CSV export | — | — | Yes |
-
-Users who attempt to access a higher-tier tab see an "Upgrade" card with a link
-to the pricing page.
+| Stale PRs | Yes | Yes | Yes |
+| Review Load | Yes | Yes | Yes |
+| Tech Debt | Yes | Yes | Yes |
+| DORA — deploy frequency | Yes | Yes | Yes |
+| DORA — lead time (p50/p90) | Yes | Yes | Yes |
+| DORA — change failure rate | Yes | Yes | Yes |
+| DORA — MTTR (p50/p90) | Yes | Yes | Yes |
+| DORA — CSV export | Yes | Yes | Yes |
 
 ## How it works — the ingestion pipeline
 
@@ -60,14 +64,16 @@ No data appears until at least one webhook delivery has been processed.
 All endpoints live under `/api/v1/work-board/` and require an authenticated
 session.
 
+All are `requireAuth` only — no tier gate:
+
 | Method | Path | Tier | Notes |
 |--------|------|------|-------|
-| GET | `/my-reviews` | Free+ | `?limit=N` |
-| GET | `/my-issues` | Free+ | `?limit=N` |
-| GET | `/stale-prs` | Pro+ | `?staleAfterDays=7&repoIds=1,2,3&limit=50` |
-| GET | `/review-load` | Pro+ | `?since=ISO&repoIds=…` |
-| GET | `/deploy-freq` | Enterprise+ | `?environment=production&since=ISO&repoIds=…` |
-| GET | `/lead-time` | Enterprise+ | `?since=ISO&repoIds=…` |
+| GET | `/my-reviews` | Free | `?limit=N` |
+| GET | `/my-issues` | Free | `?limit=N` |
+| GET | `/stale-prs` | Free | `?staleAfterDays=7&repoIds=1,2,3&limit=50` |
+| GET | `/review-load` | Free | `?since=ISO&repoIds=…` |
+| GET | `/deploy-freq` | Free | `?environment=production&since=ISO&repoIds=…` |
+| GET | `/lead-time` | Free | `?since=ISO&repoIds=…` |
 
 ## Webhook setup
 
@@ -81,7 +87,9 @@ organisation or repository you want to track:
 5. Select **individual events**: `Pull requests`, `Pull request reviews`,
    `Issues`, `Deployments`, `Deployment statuses`.
 
-See also: `docs/event-ingestion.md` for the full ingestion reference.
+See also: [`event-ingestion.md`](event-ingestion.md) for the full ingestion
+reference, and [`guides/github-webhook-setup.md`](guides/github-webhook-setup.md)
+for the end-to-end webhook walkthrough.
 
 ## Zero-config data source
 

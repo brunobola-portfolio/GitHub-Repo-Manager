@@ -20,7 +20,7 @@ The spec listed three open questions in §8. All three are resolved here and the
 
 **Q2 — Largest file extensions endpoint.** No such endpoint exists in `server/azure-service.js`. Azure DevOps does not expose a cheap "biggest blobs by extension" query. V1 sends only `{size, hasLfsMarker, branches, lastCommitDate}` to the AI endpoint; the prompt is adjusted to reason from those signals alone.
 
-**Q3 — 401 reconnect flow.** The project-wide pattern (e.g., [SourceStep.jsx:363](../../src/components/MigrationWizard/steps/SourceStep.jsx#L363)) is to surface the error inline; the wizard does not have an automatic "navigate back to Connect step" helper. For the drawer we use the simpler pattern: toast `"Azure DevOps token expired — please reconnect."` and close the drawer. The user returns to the Connect step via the wizard's `Back` button.
+**Q3 — 401 reconnect flow.** The project-wide pattern (e.g., `SourceStep.jsx:363`) is to surface the error inline; the wizard does not have an automatic "navigate back to Connect step" helper. For the drawer we use the simpler pattern: toast `"Azure DevOps token expired — please reconnect."` and close the drawer. The user returns to the Connect step via the wizard's `Back` button.
 
 **Scope narrowing (not a spec question, a plan decision).** The spec mentioned three size-critical strategies: `exclude`, `lfs-migrate`, `history-split`. `history-split` requires `git filter-repo` or equivalent history rewriting — a significant engineering effort that deserves its own spec. V1 ships **two** strategies: `exclude` (fully implemented) and `lfs-migrate` (fully implemented via `git-lfs migrate import --above=100M`). The AI prompt in Phase 7 restricts suggestions to these two. `history-split` is filed as future work.
 

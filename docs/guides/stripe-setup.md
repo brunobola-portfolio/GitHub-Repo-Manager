@@ -85,3 +85,10 @@ User clicks "Get Pro"
 - **NEVER** share `sk_live_...` keys in chats, issues, or PRs
 - If a key is leaked, rotate it immediately in Stripe Dashboard > Developers > API keys
 - Use `sk_test_...` keys for development, `sk_live_...` only in production
+
+## See also
+
+- [`../billing-and-licensing.md`](../billing-and-licensing.md) — how a completed
+  Stripe checkout mints and emails the signed license key.
+- [`../LICENSE-COMMERCIAL.md`](../LICENSE-COMMERCIAL.md) — the commercial license
+  terms and per-tier entitlements.

@@ -1,118 +1,87 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 280" font-family="Segoe UI, system-ui, -apple-system, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420" role="img" aria-label="Conversational action dispatch: a natural-language user intent goes to the AI (bring-your-own-key) layer, which returns structured actions. The aiActions.js allow-list validates and de-duplicates them, dispatching only known types to the Migration Wizard, Create Repo, Transfer, History and Settings modals plus two payload-validated app events. Any unknown action type is dropped silently.">
+  <style>
+    svg{--bg:#ffffff;--bg2:#f6f8fa;--card:#ffffff;--stroke:#d0d7de;--text:#1f2328;--muted:#57606a;--blue:#2563eb;--violet:#7c3aed;--emerald:#059669;--amber:#b45309;--red:#cf222e}
+    @media (prefers-color-scheme: dark){svg{--bg:#0d1117;--bg2:#161b22;--card:#1c2128;--stroke:#30363d;--text:#e6edf3;--muted:#8b949e;--blue:#4f8cff;--violet:#a78bfa;--emerald:#10b981;--amber:#e3b341;--red:#f85149}}
+    .bg{fill:var(--bg)}.panel{fill:var(--bg2);stroke:var(--stroke);stroke-width:1}
+    .card{fill:var(--card);stroke:var(--stroke);stroke-width:1.5}
+    .t{fill:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
+    .m{fill:var(--muted);font-family:'Segoe UI',system-ui,sans-serif}
+    .mono{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+    .b{fill:var(--blue)}.v{fill:var(--violet)}.e{fill:var(--emerald)}.a{fill:var(--amber)}.r{fill:var(--red)}
+    .edge{stroke:var(--muted);stroke-width:1.5;fill:none}
+    .edge-e{stroke:var(--emerald);stroke-width:1.5;fill:none}
+    .edge-r{stroke:var(--red);stroke-width:1.5;fill:none;stroke-dasharray:5 3}
+    .badge-v{fill:var(--violet);fill-opacity:.13;stroke:var(--violet);stroke-width:1}
+    .badge-a{fill:var(--amber);fill-opacity:.15;stroke:var(--amber);stroke-width:1}
+    .badge-e{fill:var(--emerald);fill-opacity:.13;stroke:var(--emerald);stroke-width:1}
+    .badge-r{fill:var(--red);fill-opacity:.12;stroke:var(--red);stroke-width:1}
+    .pill-e{fill:var(--emerald);fill-opacity:.10;stroke:var(--emerald);stroke-width:1.2}
+    .ah{fill:var(--muted)}.ahe{fill:var(--emerald)}.ahr{fill:var(--red)}
+  </style>
   <defs>
-    <linearGradient id="adBg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#0d1117"/>
-      <stop offset="100%" stop-color="#161b22"/>
-    </linearGradient>
-    <linearGradient id="adCard" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#1e293b"/>
-      <stop offset="100%" stop-color="#0f172a"/>
-    </linearGradient>
-    <linearGradient id="adViolet" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#7c3aed"/>
-      <stop offset="100%" stop-color="#a78bfa"/>
-    </linearGradient>
-    <linearGradient id="adAmber" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#b45309"/>
-      <stop offset="100%" stop-color="#fbbf24"/>
-    </linearGradient>
-    <linearGradient id="adEmerald" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#047857"/>
-      <stop offset="100%" stop-color="#34d399"/>
-    </linearGradient>
-    <linearGradient id="adSky" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0369a1"/>
-      <stop offset="100%" stop-color="#38bdf8"/>
-    </linearGradient>
-    <filter id="adShadow" x="-4%" y="-4%" width="108%" height="112%">
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
-    </filter>
-    <marker id="adArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
-    </marker>
-    <marker id="adArrowRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444"/>
-    </marker>
+    <filter id="sh" x="-20%" y="-25%" width="140%" height="150%"><feDropShadow dx="0" dy="1.5" stdDeviation="2.5" flood-color="#000" flood-opacity="0.12"/></filter>
+    <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ah"/></marker>
+    <marker id="ahe" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ahe"/></marker>
+    <marker id="ahr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ahr"/></marker>
   </defs>
 
-  <!-- Background -->
-  <rect width="840" height="280" rx="12" fill="url(#adBg)"/>
+  <rect class="bg" x="0" y="0" width="900" height="420" rx="14"/>
+  <text class="t" x="32" y="42" font-size="19" font-weight="700">Conversational Action Dispatch</text>
+  <text class="m" x="32" y="64" font-size="12.5">Natural-language intent &#8594; allow-listed app actions — unknown types are dropped</text>
 
-  <!-- Title pill -->
-  <rect x="20" y="16" width="260" height="24" rx="12" fill="url(#adViolet)" filter="url(#adShadow)"/>
-  <text x="150" y="33" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">CONVERSATIONAL TASK AUTOMATION · v3.3.0</text>
+  <!-- Top flow -->
+  <rect class="card" x="40" y="82" width="210" height="90" rx="10" filter="url(#sh)"/>
+  <text class="t" x="145" y="110" text-anchor="middle" font-size="14" font-weight="700">User intent</text>
+  <text class="m" x="145" y="132" text-anchor="middle" font-size="10.5">"migrate from Azure"</text>
+  <text class="m" x="145" y="149" text-anchor="middle" font-size="10.5">"create a repo"</text>
+  <text class="m" x="145" y="165" text-anchor="middle" font-size="9.5">free text · any phrasing</text>
 
-  <!-- Step 1: User intent -->
-  <rect x="20" y="58" width="150" height="78" rx="10" fill="url(#adCard)" stroke="#334155" stroke-width="1" filter="url(#adShadow)"/>
-  <text x="95" y="82" text-anchor="middle" fill="#e2e8f0" font-size="12" font-weight="600">User intent</text>
-  <text x="95" y="102" text-anchor="middle" fill="#94a3b8" font-size="10">"migrate from Azure"</text>
-  <text x="95" y="118" text-anchor="middle" fill="#94a3b8" font-size="10">"create a repo"</text>
-  <text x="95" y="131" text-anchor="middle" fill="#64748b" font-size="9" font-style="italic">free text, any phrasing</text>
+  <line class="edge" x1="250" y1="127" x2="292" y2="127" marker-end="url(#ah)"/>
 
-  <!-- Arrow 1 -->
-  <line x1="170" y1="97" x2="200" y2="97" stroke="#64748b" stroke-width="1.5" marker-end="url(#adArrow)"/>
+  <rect class="card" x="292" y="82" width="210" height="90" rx="10" filter="url(#sh)"/>
+  <rect class="badge-v" x="304" y="92" width="96" height="22" rx="11"/>
+  <text class="v" x="352" y="107" text-anchor="middle" font-size="11.5" font-weight="700">AI (BYOK)</text>
+  <text class="t" x="397" y="134" text-anchor="middle" font-size="11.5" font-weight="600">returns reply + actions</text>
+  <text class="m mono" x="397" y="154" text-anchor="middle" font-size="10">JSON { type, label, payload }</text>
 
-  <!-- Step 2: Gemini -->
-  <rect x="200" y="58" width="160" height="78" rx="10" fill="url(#adCard)" stroke="#8b5cf6" stroke-width="1.5" filter="url(#adShadow)"/>
-  <rect x="208" y="66" width="70" height="18" rx="9" fill="url(#adViolet)"/>
-  <text x="243" y="79" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">GEMINI AI</text>
-  <text x="280" y="102" text-anchor="middle" fill="#c4b5fd" font-size="11" font-weight="500">Returns reply +</text>
-  <text x="280" y="117" text-anchor="middle" fill="#c4b5fd" font-size="11" font-weight="500">structured actions</text>
-  <text x="280" y="131" text-anchor="middle" fill="#64748b" font-size="9" font-style="italic">JSON: { type, label }</text>
+  <line class="edge" x1="502" y1="127" x2="544" y2="127" marker-end="url(#ah)"/>
 
-  <!-- Arrow 2 -->
-  <line x1="360" y1="97" x2="390" y2="97" stroke="#64748b" stroke-width="1.5" marker-end="url(#adArrow)"/>
+  <rect class="card" x="544" y="82" width="316" height="90" rx="10" filter="url(#sh)"/>
+  <rect class="badge-a" x="556" y="92" width="150" height="22" rx="11"/>
+  <text class="a" x="631" y="107" text-anchor="middle" font-size="11" font-weight="700">aiActions.js allow-list</text>
+  <text class="t mono" x="702" y="136" text-anchor="middle" font-size="11.5" font-weight="600">sanitizeActions · validateAction</text>
+  <text class="m" x="702" y="156" text-anchor="middle" font-size="10.5">strict schema · dedup · unknown keys dropped</text>
 
-  <!-- Step 3: Validation -->
-  <rect x="390" y="58" width="160" height="78" rx="10" fill="url(#adCard)" stroke="#fbbf24" stroke-width="1.5" filter="url(#adShadow)"/>
-  <rect x="398" y="66" width="92" height="18" rx="9" fill="url(#adAmber)"/>
-  <text x="444" y="79" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">ALLOW-LIST</text>
-  <text x="470" y="102" text-anchor="middle" fill="#fde68a" font-size="11" font-weight="500">sanitizeActions</text>
-  <text x="470" y="117" text-anchor="middle" fill="#fde68a" font-size="11" font-weight="500">validateAction</text>
-  <text x="470" y="131" text-anchor="middle" fill="#64748b" font-size="9" font-style="italic">strict schema, dedup</text>
+  <!-- Dispatch panel (lower-left) -->
+  <line class="edge-e" x1="640" y1="172" x2="330" y2="212" marker-end="url(#ahe)"/>
+  <rect class="panel" x="40" y="214" width="556" height="176" rx="12"/>
+  <rect class="badge-e" x="56" y="226" width="150" height="22" rx="11"/>
+  <text class="e" x="131" y="241" text-anchor="middle" font-size="11" font-weight="700">DISPATCH &#8594; APP</text>
+  <text class="m mono" x="360" y="241" text-anchor="middle" font-size="9.5">openModal(...) · emitAppEvent(...)</text>
 
-  <!-- Arrow 3 (valid) -->
-  <line x1="550" y1="97" x2="580" y2="97" stroke="#64748b" stroke-width="1.5" marker-end="url(#adArrow)"/>
+  <!-- 5 modal targets -->
+  <rect class="pill-e" x="56" y="258" width="164" height="34" rx="9"/>
+  <text class="e" x="138" y="280" text-anchor="middle" font-size="12" font-weight="600">Migration Wizard</text>
+  <rect class="pill-e" x="232" y="258" width="164" height="34" rx="9"/>
+  <text class="e" x="314" y="280" text-anchor="middle" font-size="12" font-weight="600">Create Repo</text>
+  <rect class="pill-e" x="408" y="258" width="164" height="34" rx="9"/>
+  <text class="e" x="490" y="280" text-anchor="middle" font-size="12" font-weight="600">Transfer</text>
+  <rect class="pill-e" x="56" y="302" width="164" height="34" rx="9"/>
+  <text class="e" x="138" y="324" text-anchor="middle" font-size="12" font-weight="600">History</text>
+  <rect class="pill-e" x="232" y="302" width="164" height="34" rx="9"/>
+  <text class="e" x="314" y="324" text-anchor="middle" font-size="12" font-weight="600">Settings</text>
+  <rect class="badge-v" x="408" y="302" width="164" height="34" rx="9"/>
+  <text class="v" x="490" y="324" text-anchor="middle" font-size="11.5" font-weight="600">+2 app events</text>
 
-  <!-- Step 4: Dispatch / UI change -->
-  <rect x="580" y="58" width="160" height="78" rx="10" fill="url(#adCard)" stroke="#10b981" stroke-width="1.5" filter="url(#adShadow)"/>
-  <rect x="588" y="66" width="68" height="18" rx="9" fill="url(#adEmerald)"/>
-  <text x="622" y="79" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">DISPATCH</text>
-  <text x="660" y="102" text-anchor="middle" fill="#6ee7b7" font-size="11" font-weight="500">openModal(entry)</text>
-  <text x="660" y="117" text-anchor="middle" fill="#6ee7b7" font-size="11" font-weight="500">Wizard opens</text>
-  <text x="660" y="131" text-anchor="middle" fill="#64748b" font-size="9" font-style="italic">UI state change</text>
+  <text class="m mono" x="56" y="360" font-size="9.6">AI_ACTION_TYPES (7): 5 modal + 2 payload-validated events</text>
+  <text class="m mono" x="56" y="377" font-size="9.6">events &#8594; open_repo_settings · open_ai_polish</text>
 
-  <!-- Rejected branch -->
-  <line x1="470" y1="136" x2="470" y2="188" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#adArrowRed)"/>
-  <text x="500" y="160" fill="#ef4444" font-size="10" font-weight="600">unknown type</text>
-  <rect x="380" y="196" width="190" height="44" rx="8" fill="url(#adCard)" stroke="#ef4444" stroke-width="1" filter="url(#adShadow)"/>
-  <text x="475" y="217" text-anchor="middle" fill="#fca5a5" font-size="11" font-weight="600">Rejected silently</text>
-  <text x="475" y="232" text-anchor="middle" fill="#94a3b8" font-size="9">no arbitrary app mutations</text>
-
-  <!-- Allow-list panel -->
-  <rect x="20" y="160" width="340" height="98" rx="10" fill="url(#adCard)" stroke="#334155" stroke-width="1" filter="url(#adShadow)"/>
-  <rect x="32" y="168" width="90" height="18" rx="9" fill="url(#adSky)"/>
-  <text x="77" y="181" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">ALLOW-LIST</text>
-  <text x="135" y="182" fill="#94a3b8" font-size="10" font-style="italic">src/utils/aiActions.js · 5 actions</text>
-
-  <!-- 5 action badges -->
-  <rect x="32" y="196" width="155" height="20" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1"/>
-  <text x="109" y="210" text-anchor="middle" fill="#cbd5e1" font-size="10" font-family="ui-monospace, monospace">open_migration_wizard</text>
-
-  <rect x="195" y="196" width="155" height="20" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1"/>
-  <text x="272" y="210" text-anchor="middle" fill="#cbd5e1" font-size="10" font-family="ui-monospace, monospace">open_migration_history</text>
-
-  <rect x="32" y="222" width="100" height="20" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1"/>
-  <text x="82" y="236" text-anchor="middle" fill="#cbd5e1" font-size="10" font-family="ui-monospace, monospace">open_create_repo</text>
-
-  <rect x="140" y="222" width="92" height="20" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1"/>
-  <text x="186" y="236" text-anchor="middle" fill="#cbd5e1" font-size="10" font-family="ui-monospace, monospace">open_transfer</text>
-
-  <rect x="240" y="222" width="92" height="20" rx="10" fill="#1e293b" stroke="#475569" stroke-width="1"/>
-  <text x="286" y="236" text-anchor="middle" fill="#cbd5e1" font-size="10" font-family="ui-monospace, monospace">open_settings</text>
-
-  <!-- Tier availability pill -->
-  <rect x="610" y="160" width="210" height="22" rx="11" fill="#1e293b" stroke="#10b981" stroke-width="1"/>
-  <text x="715" y="175" text-anchor="middle" fill="#6ee7b7" font-size="10" font-weight="600">Free · Pro · Enterprise</text>
-  <text x="715" y="200" text-anchor="middle" fill="#64748b" font-size="9" font-style="italic">counts toward AI queries cap</text>
+  <!-- Reject path (lower-right) -->
+  <line class="edge-r" x1="760" y1="172" x2="742" y2="248" marker-end="url(#ahr)"/>
+  <text class="r" x="770" y="212" font-size="10" font-weight="600">unknown type</text>
+  <rect class="badge-r" x="624" y="250" width="236" height="140" rx="12"/>
+  <text class="r" x="742" y="292" text-anchor="middle" font-size="13" font-weight="700">Dropped silently</text>
+  <text class="m" x="742" y="318" text-anchor="middle" font-size="11">type not in allow-list</text>
+  <text class="m" x="742" y="338" text-anchor="middle" font-size="11">no arbitrary app mutation</text>
+  <text class="m" x="742" y="362" text-anchor="middle" font-size="10">the allow-list is the gate</text>
 </svg>

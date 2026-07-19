@@ -2,7 +2,7 @@
 
 **Mount path:** `/api/v1/work-board` (also reachable via the legacy `/api/work-board` alias)
 **Router files:** `server/routes/work-board-tracking.js` (tracked repos, prefs, discovery — documented in full below), plus `work-board.js` (analytics/DORA), `work-board-actions.js` (snooze, presets, review actions), and `work-board-ai.js` (mounted at `/api/v1/work-board/ai`). The latter three are summarised under [Additional Work Board routes](#actions-and-presets).
-**Last updated:** 2026-07-06
+**Last updated:** 2026-07-19
 
 All endpoints require an authenticated session (`requireAuth`). Authentication
 is via session cookie (GitHub OAuth) or an API key passed as
@@ -462,9 +462,10 @@ and AI-assisted review actions.
 
 ### Analytics and DORA metrics
 
-`server/routes/work-board.js`. Personal queues and delivery metrics. The DORA
-family requires the **Enterprise** tier (`requireTier('enterprise')` →
-`403 TIER_REQUIRED_ENTERPRISE`); the rest are available to all tiers.
+`server/routes/work-board.js`. Personal queues and delivery metrics. Every
+route here — including the DORA family — is `requireAuth` only, available on
+all tiers (**Free-first since the 2026-07-18 rebalance**). There is no
+`requireTier` gate and no `TIER_REQUIRED_ENTERPRISE` response on any of them.
 
 | Method | Path | Auth | Purpose |
 | --- | --- | --- | --- |
@@ -474,12 +475,12 @@ family requires the **Enterprise** tier (`requireTier('enterprise')` →
 | `GET` | `/review-load` | Yes | Reviewer-load distribution |
 | `GET` | `/tech-debt` | Yes | Tech-debt signals across tracked repos |
 | `GET` | `/kpi-snapshots` | Yes | Stored KPI snapshots |
-| `GET` | `/deploy-freq` | Enterprise | DORA: deployment frequency |
-| `GET` | `/lead-time` | Enterprise | DORA: lead time for changes |
-| `GET` | `/change-failure-rate` | Enterprise | DORA: change-failure rate |
-| `GET` | `/mttr` | Enterprise | DORA: mean time to restore |
-| `GET` | `/dora` | Enterprise | Combined DORA metrics |
-| `GET` | `/dora.csv` | Enterprise | Combined DORA metrics as CSV |
+| `GET` | `/deploy-freq` | Yes | DORA: deployment frequency |
+| `GET` | `/lead-time` | Yes | DORA: lead time for changes |
+| `GET` | `/change-failure-rate` | Yes | DORA: change-failure rate |
+| `GET` | `/mttr` | Yes | DORA: mean time to restore |
+| `GET` | `/dora` | Yes | Combined DORA metrics |
+| `GET` | `/dora.csv` | Yes | Combined DORA metrics as CSV |
 
 ### Work Board AI assistant
 

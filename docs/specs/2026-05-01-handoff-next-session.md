@@ -49,12 +49,12 @@ These came up during slice 1 brainstorming and apply to all remaining work:
 | **Action DI hook** | [`src/actions/repoActionContext.jsx`](../../src/actions/repoActionContext.jsx) | `useRepoActionContext()` — packages api/toast/modal/refresh/confirmGate |
 | **Pure repo mutations** | [`src/utils/repoMutations.js`](../../src/utils/repoMutations.js) | Non-React callers needing `archiveRepos` / `deleteRepos` / `performAction` |
 | **Confirmation hook** | [`src/hooks/useDangerAction.js`](../../src/hooks/useDangerAction.js) | Outside the action registry: `useDangerAction({ title, message, variant, requiresInput, onConfirm }).run()` |
-| **Mobile FAB** | [`src/components/ui/MobileFAB.jsx`](../../src/components/ui/MobileFAB.jsx) | `<MobileFAB icon={…} label={…} onClick={…} shiftAboveBottomBar />` — renders only `< md` |
+| **Mobile FAB** | `src/components/ui/MobileFAB.jsx` | `<MobileFAB icon={…} label={…} onClick={…} shiftAboveBottomBar />` — renders only `< md` |
 | **Sticky modal** | [`src/components/ui/ModalSticky.jsx`](../../src/components/ui/ModalSticky.jsx) | Replace `<Modal>` when the modal has action buttons that should stay visible on mobile |
 | **Viewport-safe height** | [`src/hooks/useViewportSafeHeight.js`](../../src/hooks/useViewportSafeHeight.js) | iOS URL-bar-aware sizing (already used by `<ModalSticky>`) |
-| **Mobile drawer** | [`src/components/MobileDrawer.jsx`](../../src/components/MobileDrawer.jsx) | `<MobileDrawer isOpen onClose side="…">` (left / right / bottom) |
+| **Mobile drawer** | `src/components/MobileDrawer.jsx` | `<MobileDrawer isOpen onClose side="…">` (left / right / bottom) |
 | **Mobile breakpoint hook** | [`src/hooks/useMobileBreakpoint.jsx`](../../src/hooks/useMobileBreakpoint.jsx) | Returns boolean for `< md` (768 px) |
-| **Friendly AI errors (client)** | [`src/utils/aiErrorFriendly.js`](../../src/utils/aiErrorFriendly.js) | `friendlyAiError({ status, body }) → { headline, detail }` |
+| **Friendly AI errors (client)** | `src/utils/aiErrorFriendly.js` | `friendlyAiError({ status, body }) → { headline, detail }` |
 | **Friendly AI errors (server)** | [`server/middleware/ai-error-mapper.js`](../../server/middleware/ai-error-mapper.js) | `mapAIErrorToResponse(res, err)` — returns the response or null |
 | **Confirm modal** | [`src/components/ui/ConfirmModal.jsx`](../../src/components/ui/ConfirmModal.jsx) | `{ title, message, variant, requiresInput, onConfirm, onClose }` |
 | **Lint guard** | [`tests/lint/no-bare-destructive-buttons.test.js`](../../tests/lint/no-bare-destructive-buttons.test.js) | Fails CI if a red Button has no recognised confirm pattern |

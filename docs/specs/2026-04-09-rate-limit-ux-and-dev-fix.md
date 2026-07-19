@@ -31,10 +31,10 @@ Two things are wrong:
 
 ## Root Cause (Evidence)
 
-- [server/middleware/tenant-rate-limit.js:5-8](server/middleware/tenant-rate-limit.js#L5-L8): `TIER_LIMITS.free.auth = 10`.
-- [server/middleware/tenant-rate-limit.js:48](server/middleware/tenant-rate-limit.js#L48): all categories share `message: { error: 'Rate limit exceeded...' }`. No `handler`, so `express-rate-limit` responds with the JSON regardless of `Accept`.
-- [server/index.js:170](server/index.js#L170): `app.use('/api/auth/', authLimiter)` — applied to every auth endpoint.
-- [src/App.jsx:180](src/App.jsx#L180): frontend calls `fetch('/api/auth/session', ...)` on mount. React Strict Mode double-invokes effects in dev; HMR remounts providers on every save. 10 reqs disappear fast.
+- [server/middleware/tenant-rate-limit.js:5-8](../../server/middleware/tenant-rate-limit.js#L5-L8): `TIER_LIMITS.free.auth = 10`.
+- [server/middleware/tenant-rate-limit.js:48](../../server/middleware/tenant-rate-limit.js#L48): all categories share `message: { error: 'Rate limit exceeded...' }`. No `handler`, so `express-rate-limit` responds with the JSON regardless of `Accept`.
+- [server/index.js:170](../../server/index.js#L170): `app.use('/api/auth/', authLimiter)` — applied to every auth endpoint.
+- [src/App.jsx:180](../../src/App.jsx#L180): frontend calls `fetch('/api/auth/session', ...)` on mount. React Strict Mode double-invokes effects in dev; HMR remounts providers on every save. 10 reqs disappear fast.
 
 ## Design
 
@@ -134,7 +134,7 @@ Pure, deterministic, easy to unit-test with fake timers.
 
 #### 3. `useAuth` / `fetchWithRetry` integration
 
-`fetchWithRetry` already categorizes 429s as `ErrorType.RATE_LIMIT` ([src/utils/api.js:113-114](src/utils/api.js#L113-L114)). Two additions:
+`fetchWithRetry` already categorizes 429s as `ErrorType.RATE_LIMIT` ([src/utils/api.js:113-114](../../src/utils/api.js#L113-L114)). Two additions:
 
 1. **Parse `Retry-After`** from the 429 response and attach `retryAfterSec` to `ApiError.data`. This flows to consumers via `getErrorInfo`.
 2. **Emit a global rate-limit event** via a thin event bus (mirror of the existing `onSessionExpired` pattern) so any 429 — from any call site — surfaces a toast without every caller having to wire it up.
