@@ -125,7 +125,8 @@ review, and refresh the Work Board.
 | GitHub shows "Delivery succeeded" but data never lands | Handler failed after the 200 ack | `/api/v1/webhooks/github` uses a **fast-ack** pattern: we 200 the request and then dispatch handlers asynchronously so slow DB writes never block the response. A handler error is logged with `eventType`, `deliveryId`, `repoFullName` and the affected PR/issue number. Grep the logs for that delivery ID, fix the underlying cause, then hit **Redeliver** in the GitHub webhook UI to replay — every handler is idempotent via `INSERT OR IGNORE` on `github_event_id`. |
 
 See [docs/event-ingestion.md](../event-ingestion.md) for the full list of
-event tables and the schema each event writes to.
+event tables and the schema each event writes to, and
+[docs/work-board.md](../work-board.md) for the Work Board that consumes them.
 
 ---
 

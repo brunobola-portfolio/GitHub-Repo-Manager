@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 440" role="img" aria-label="AI Deep Review: a pull request feeds four review surfaces — a Walkthrough summary, inline Comments with suggestion blocks, slash Commands (describe, test_plan, improve) and a streaming Chat — all powered by the bring-your-own-key AI layer. Findings are posted as a single batched GitHub review through the gh-outbox, keyed for idempotency by pr-deep-review draft id and event.">
+  <style>
+    svg{--bg:#ffffff;--bg2:#f6f8fa;--card:#ffffff;--stroke:#d0d7de;--text:#1f2328;--muted:#57606a;--blue:#2563eb;--violet:#7c3aed;--emerald:#059669;--amber:#b45309;--red:#cf222e}
+    @media (prefers-color-scheme: dark){svg{--bg:#0d1117;--bg2:#161b22;--card:#1c2128;--stroke:#30363d;--text:#e6edf3;--muted:#8b949e;--blue:#4f8cff;--violet:#a78bfa;--emerald:#10b981;--amber:#e3b341;--red:#f85149}}
+    .bg{fill:var(--bg)}.panel{fill:var(--bg2);stroke:var(--stroke);stroke-width:1}
+    .card{fill:var(--card);stroke:var(--stroke);stroke-width:1.5}
+    .t{fill:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
+    .m{fill:var(--muted);font-family:'Segoe UI',system-ui,sans-serif}
+    .mono{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+    .b{fill:var(--blue)}.v{fill:var(--violet)}.e{fill:var(--emerald)}.a{fill:var(--amber)}
+    .edge{stroke:var(--muted);stroke-width:1.5;fill:none}
+    .badge-b{fill:var(--blue);fill-opacity:.13;stroke:var(--blue);stroke-width:1}
+    .badge-v{fill:var(--violet);fill-opacity:.13;stroke:var(--violet);stroke-width:1}
+    .badge-e{fill:var(--emerald);fill-opacity:.13;stroke:var(--emerald);stroke-width:1}
+    .badge-a{fill:var(--amber);fill-opacity:.15;stroke:var(--amber);stroke-width:1}
+    .ah{fill:var(--muted)}
+  </style>
+  <defs>
+    <filter id="sh" x="-20%" y="-25%" width="140%" height="150%"><feDropShadow dx="0" dy="1.5" stdDeviation="2.5" flood-color="#000" flood-opacity="0.12"/></filter>
+    <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ah"/></marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="960" height="440" rx="14"/>
+  <text class="t" x="32" y="42" font-size="19" font-weight="700">AI Deep Review</text>
+  <text class="m" x="32" y="64" font-size="12.5">PR &#8594; four review surfaces &#8594; one batched GitHub review via the outbox</text>
+
+  <!-- PR -->
+  <rect class="card" x="32" y="155" width="150" height="130" rx="10" filter="url(#sh)"/>
+  <text class="t" x="107" y="200" text-anchor="middle" font-size="14" font-weight="700">Pull Request</text>
+  <text class="m" x="107" y="222" text-anchor="middle" font-size="10.5">diff · files · hunks</text>
+  <text class="m" x="107" y="240" text-anchor="middle" font-size="10.5">risk-aware</text>
+
+  <line class="edge" x1="182" y1="220" x2="214" y2="220" marker-end="url(#ah)"/>
+
+  <!-- Four surfaces panel -->
+  <rect class="panel" x="214" y="70" width="470" height="300" rx="12"/>
+  <text class="t" x="234" y="98" font-size="13" font-weight="700">Four review surfaces</text>
+  <rect class="badge-v" x="516" y="82" width="154" height="22" rx="11"/>
+  <text class="v" x="593" y="97" text-anchor="middle" font-size="9.3" font-weight="700">AI (BYOK) · guardedGenerate</text>
+
+  <!-- Walkthrough -->
+  <rect class="card" x="230" y="116" width="214" height="110" rx="10" filter="url(#sh)"/>
+  <rect class="badge-b" x="242" y="126" width="104" height="20" rx="10"/>
+  <text class="b" x="294" y="140" text-anchor="middle" font-size="9" font-weight="700">WALKTHROUGH</text>
+  <text class="t" x="337" y="170" text-anchor="middle" font-size="12.5" font-weight="700">AI PR summary</text>
+  <text class="m" x="337" y="190" text-anchor="middle" font-size="10">file-by-file overview</text>
+  <text class="m" x="337" y="208" text-anchor="middle" font-size="10">what changed &amp; why</text>
+
+  <!-- Comments -->
+  <rect class="card" x="456" y="116" width="214" height="110" rx="10" filter="url(#sh)"/>
+  <rect class="badge-e" x="468" y="126" width="92" height="20" rx="10"/>
+  <text class="e" x="514" y="140" text-anchor="middle" font-size="9" font-weight="700">COMMENTS</text>
+  <text class="t" x="563" y="170" text-anchor="middle" font-size="12.5" font-weight="700">Inline findings</text>
+  <text class="m" x="563" y="190" text-anchor="middle" font-size="10">line-anchored</text>
+  <text class="m" x="563" y="208" text-anchor="middle" font-size="10">suggestion blocks</text>
+
+  <!-- Commands -->
+  <rect class="card" x="230" y="244" width="214" height="110" rx="10" filter="url(#sh)"/>
+  <rect class="badge-v" x="242" y="254" width="96" height="20" rx="10"/>
+  <text class="v" x="290" y="268" text-anchor="middle" font-size="9" font-weight="700">COMMANDS</text>
+  <text class="t mono" x="337" y="298" text-anchor="middle" font-size="11" font-weight="700">/describe · /test_plan</text>
+  <text class="t mono" x="337" y="318" text-anchor="middle" font-size="11" font-weight="700">/improve</text>
+  <text class="m" x="337" y="337" text-anchor="middle" font-size="10">slash commands</text>
+
+  <!-- Chat -->
+  <rect class="card" x="456" y="244" width="214" height="110" rx="10" filter="url(#sh)"/>
+  <rect class="badge-a" x="468" y="254" width="66" height="20" rx="10"/>
+  <text class="a" x="501" y="268" text-anchor="middle" font-size="9" font-weight="700">CHAT</text>
+  <text class="t" x="563" y="298" text-anchor="middle" font-size="12.5" font-weight="700">Streaming chat</text>
+  <text class="m" x="563" y="318" text-anchor="middle" font-size="10">SSE · grounded Q&amp;A</text>
+  <text class="m" x="563" y="337" text-anchor="middle" font-size="10">source citations</text>
+
+  <line class="edge" x1="684" y1="220" x2="716" y2="220" marker-end="url(#ah)"/>
+
+  <!-- Outbox -->
+  <rect class="card" x="716" y="150" width="212" height="140" rx="10" filter="url(#sh)"/>
+  <text class="t" x="822" y="184" text-anchor="middle" font-size="14" font-weight="700">Batched review</text>
+  <text class="m" x="822" y="206" text-anchor="middle" font-size="10.5">one GitHub review</text>
+  <text class="m mono" x="822" y="224" text-anchor="middle" font-size="10">via gh-outbox</text>
+  <text class="m" x="822" y="250" text-anchor="middle" font-size="9.3" font-weight="700">idempotency key</text>
+  <text class="v mono" x="822" y="266" text-anchor="middle" font-size="9.3">pr-deep-review:</text>
+  <text class="v mono" x="822" y="280" text-anchor="middle" font-size="9.3">{draftId}:{event}</text>
+
+  <!-- Caption -->
+  <rect class="panel" x="32" y="390" width="896" height="40" rx="10"/>
+  <text class="e" x="480" y="415" text-anchor="middle" font-size="11" font-weight="700">One batched review — not N separate comment calls · the idempotency key dedupes retries</text>
+</svg>

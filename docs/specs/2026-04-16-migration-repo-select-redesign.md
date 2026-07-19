@@ -100,7 +100,7 @@ Called at same time as activity batch. Non-blocking to render.
 
 #### 2.3 `POST /api/import/check-duplicates` *(existing, now called in batch at Select step)*
 
-Already exists at [server/routes/import.js:923](server/routes/import.js#L923). Currently called per-repo in Configure; move to a **single batched call** right after fetching the repo list, with all repo names. Re-runs when `source.targetOrg` changes (debounced 500ms).
+Already exists at [server/routes/import.js:923](../../server/routes/import.js#L923). Currently called per-repo in Configure; move to a **single batched call** right after fetching the repo list, with all repo names. Re-runs when `source.targetOrg` changes (debounced 500ms).
 
 Configure step reads `repo.conflictStatus` from state and only re-checks a specific repo when the user edits its `targetName`.
 
@@ -211,7 +211,7 @@ DETAIL PANEL (slides from right, 420px, closes on Esc/backdrop)
 
 #### Styling notes (matches existing wizard language)
 
-* **Hero dashboard** — exact class signature of [RepoConfigStep.jsx:238](src/components/MigrationWizard/steps/RepoConfigStep.jsx#L238)
+* **Hero dashboard** — exact class signature of [RepoConfigStep.jsx:238](../../src/components/MigrationWizard/steps/RepoConfigStep.jsx#L238)
 * **Stat cards** — `bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center` with `text-xl font-bold` number + `text-[10px] uppercase tracking-wider` label
 * **Row accent** — `absolute top-0 left-0 bottom-0 w-[3px] rounded-l-xl bg-gradient-to-b from-{riskColor}`; color driven by `risk.level`:
   * `blocker` → `from-red-500 to-red-600`

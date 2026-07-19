@@ -74,7 +74,7 @@ Single spec, four small slices. Each is committable + pushable independently. To
 
 ### Tests
 
-- Extend [tests/components/DevToolkit/CommitTab.test.jsx](../../tests/components/DevToolkit/CommitTab.test.jsx) (or create) with one case: AI not configured → Generate button disabled + tooltip visible.
+- Extend `tests/components/DevToolkit/CommitTab.test.jsx` (or create) with one case: AI not configured → Generate button disabled + tooltip visible.
 
 ---
 

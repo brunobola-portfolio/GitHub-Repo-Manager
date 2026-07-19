@@ -2594,7 +2594,7 @@ git commit -m "feat(wizard): rebuild RepoSelectStep with risk engine + detail pa
 
 - [ ] **Step 1: Seed conflicts from cached state, remove mount-time recheck**
 
-Replace the `useEffect` block at [RepoConfigStep.jsx:116-123](src/components/MigrationWizard/steps/RepoConfigStep.jsx#L116-L123) with:
+Replace the `useEffect` block at [RepoConfigStep.jsx:116-123](../../src/components/MigrationWizard/steps/RepoConfigStep.jsx#L116-L123) with:
 
 ```jsx
 // Seed conflict state from cached repo.conflictStatus (set by Select step).

@@ -145,7 +145,7 @@ These are real, verified, and either **block production** or **expose legal risk
 
 #### **P0-5 — Delete stray `server/actions_routes.txt`** [MEDIUM, but trivial]
 - **From:** Specialist #8
-- **Where:** [server/actions_routes.txt](../../server/actions_routes.txt)
+- **Where:** `server/actions_routes.txt`
 - **Verified:** ✅ file exists; tracked
 - **Why:** breaks the rule in [CLAUDE.md](../../CLAUDE.md) ("Never place loose files outside `.dev/`"); creates noise.
 - **Fix:** `git rm server/actions_routes.txt` (content already mirrored in `docs/api/API.md`).
@@ -386,7 +386,7 @@ These are real, verified, and either **block production** or **expose legal risk
 
 #### **P3-1 — Filter selects need `aria-label`** [HIGH a11y]
 - **From:** Specialist #5
-- **Where:** [src/components/RepoList.jsx](../../src/components/RepoList.jsx) (type/visibility/language filters)
+- **Where:** `src/components/RepoList.jsx` (type/visibility/language filters)
 - **Fix:** pass `label="Filter by type"` etc. to `<Select>` (component already supports it).
 - **Effort:** S
 

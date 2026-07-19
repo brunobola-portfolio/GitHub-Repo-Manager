@@ -1,6 +1,6 @@
 # Teams Architecture
 
-Last Updated: 2026-04-03
+Last Updated: 2026-07-19
 
 ## Overview
 
@@ -8,6 +8,16 @@ Teams in GitHub Repo Manager are **local groupings** managed in SQLite. All GitH
 operations (activity feeds, collaborator management, Actions workflows) go through the
 GitHub REST API. Azure DevOps is used exclusively for repository migration and is not
 involved in day-to-day team management.
+
+> **Free with unlimited seats since the 2026-07-18 rebalance.** Teams are not a
+> paid tier unlock: `teams.js` mounts without `requireTier`, and
+> `feature-flags.js` sets `teamsMax` / `teamMembersMax` to `Infinity` on Free,
+> Pro, and Enterprise alike. AI usage is still metered per individual account —
+> a large free team does not pool one member's AI quota (see
+> [`../billing-and-licensing.md`](../billing-and-licensing.md)).
+
+**See also:** [API Reference — Teams](../api/API.md#teams-apiteams) ·
+[Documentation map](../index.md).
 
 ---
 

@@ -1,9 +1,9 @@
 # Backend Architecture
 
 The backend is a modular Express server that handles GitHub OAuth authentication,
-proxies the GitHub REST API, manages local data in SQLite (or PostgreSQL), and
-provides services for AI analysis, repository migration, Azure DevOps integration,
-billing, and more.
+proxies the GitHub REST API, manages local data in SQLite, and provides services
+for AI analysis, repository migration, Azure DevOps integration, billing, and
+more.
 
 ## Directory Layout
 
@@ -141,8 +141,9 @@ The entry point is a compact orchestration file responsible for:
 ## Route Aggregation: `server/routes/v1/index.js`
 
 The route modules are mounted by the V1 aggregator (the table below is a
-representative subset — the full set spans 40+ modules under `server/routes/`,
-including several domain sub-routers). Some routes are tier-gated at mount time:
+representative subset — the full set spans 74 route modules (324 route handlers)
+under `server/routes/`, including several domain sub-routers). Some routes are
+tier-gated at mount time:
 
 | Mount path | Module | Tier gate |
 | --- | --- | --- |
@@ -155,8 +156,8 @@ including several domain sub-routers). Some routes are tier-gated at mount time:
 | `/billing` | billing.js | -- |
 | `/usage` | usage.js | -- |
 | `/system` | system.js | -- |
-| `/teams` | teams.js | pro |
-| `/` | migration.js | pro |
+| `/teams` | teams.js | -- |
+| `/` | migration.js | -- |
 | `/` | ai.js | -- |
 | `/` | azure.js | -- |
 | `/` | import.js | -- |
@@ -164,6 +165,12 @@ including several domain sub-routers). Some routes are tier-gated at mount time:
 | `/` | user.js | -- |
 | `/` | bulk.js | -- |
 | `/dashboard` | dashboard.js | -- |
+
+> **Free-first since the 2026-07-18 rebalance.** `teams.js` and `migration.js`
+> mount without `requireTier` — teams are free with unlimited seats, and
+> migration dry-run/risk analysis is free while a full clone+push migration is
+> metered (5/month on Free, unlimited on Pro/Enterprise) rather than tier-gated
+> at the router. Per-route metering lives in `usage-meter.js`, not at mount time.
 
 The aggregator also defines two inline team endpoints (team activity stream and
 team actions stats) that query GitHub events and actions data in batched,
@@ -336,17 +343,17 @@ table and a parity CI gate track the same values):
 
 | Feature | Free | Pro | Enterprise |
 | --- | --- | --- | --- |
-| Max repos | 200 | Unlimited | Unlimited |
-| AI queries / month (global) | 200 | 5,000 | Unlimited |
-| Semantic search / month | 75 | Unlimited | Unlimited |
-| Migration risk analysis / month | 5 | Unlimited | Unlimited |
-| Full migrations / month | 1 (metered; dry-run free) | Unlimited | Unlimited |
-| Teams | Up to 3 (5 members each) | 15 members | Unlimited |
+| Max repos | 1,000 | Unlimited | Unlimited |
+| AI queries / month (global) | 1,000 | 10,000 | Unlimited |
+| Semantic search / month | 375 | Unlimited | Unlimited |
+| Migration risk analysis / month | 25 | Unlimited | Unlimited |
+| Full migrations / month | 5 (metered; dry-run free) | Unlimited | Unlimited |
+| Teams | Unlimited (unlimited seats) | Unlimited | Unlimited |
 | Basic bulk (own repos) | Yes | Yes | Yes |
-| Advanced bulk (transfer / mirror / cross-org) | -- | Yes | Yes |
-| Mirror sync | Preview only | Apply | Apply |
+| Advanced bulk (transfer / mirror / cross-org) | Yes | Yes | Yes |
+| Mirror sync apply / month | 10 (metered) | Unlimited | Unlimited |
 | Audit log | -- | -- | Yes + export |
-| API keys | 5 | 10 | 50 |
+| API keys | 25 | 50 | 100 |
 | SSO / SAML | -- (roadmap) | -- (roadmap) | -- (roadmap) |
 
 > The AI capabilities (Assistant, Semantic Search, Migration Risk Analysis, PR

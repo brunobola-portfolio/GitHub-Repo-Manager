@@ -22,8 +22,13 @@ This commercial license covers:
 
 | Tier | Features | Seats |
 |------|----------|-------|
-| **Pro** | Unlimited repos, 500 AI queries/month, semantic search, basic migration, teams (up to seat limit), 5 API keys | As purchased |
-| **Enterprise** | Everything in Pro + unlimited AI queries, full migration (Azure + GitLab), SSO/SAML, audit logs, unlimited teams, 20 API keys, priority support + SLA | As purchased |
+| **Pro** | Unlimited repos, 10,000 AI queries/month, semantic search, unlimited migrations (Azure DevOps + GitHub), unlimited teams, 50 API keys | As purchased |
+| **Enterprise** | Everything in Pro + unlimited AI queries, audit logs (with export), unlimited teams, 100 API keys, priority support + SLA | As purchased |
+
+> **Note.** Migration supports **Azure DevOps and GitHub** sources only — GitLab
+> is not supported. **SSO / SAML is on the roadmap and not yet implemented**;
+> only GitHub OAuth exists today, so it is never sold as a delivered feature.
+> Teams are unlimited-seat on every tier (2026-07-18 rebalance).
 
 ## 4. License Key
 
@@ -53,3 +58,10 @@ is required for validation.
 For licensing inquiries:
 - Email: bruno@bolalabs.pt
 - Website: https://bolalabs.pt/license
+
+## See also
+
+- [`billing-and-licensing.md`](billing-and-licensing.md) — the Stripe → license
+  key issuance flow and the AI spend-cap model.
+- [`guides/stripe-setup.md`](guides/stripe-setup.md) — Stripe product, price ID,
+  and webhook configuration.

@@ -1067,7 +1067,7 @@ git commit -m "feat(roadmap): add Roadmap page with Now/Next/Later stages"
 Open `README.md`. Search for:
 - `"Full migration (Azure + GitLab)"`, `"GitLab migration"`, `"GitLab import support"`, `"Bitbucket import"`, `"GitHub Enterprise Server"`, `"Plugin system"`, `"Mobile app"`, `"Custom AI model"`, `"SSO/SAML"`.
 
-For each occurrence inside the Features, Pricing, or "What you get" sections, either delete the line or rewrite it to link to the Roadmap page (e.g., "See our [Roadmap](docs/plans/2026-04-12-roadmap.md) for upcoming features").
+For each occurrence inside the Features, Pricing, or "What you get" sections, either delete the line or rewrite it to link to the Roadmap page (e.g., "See our [Roadmap](../../ROADMAP.md) for upcoming features").
 
 - [ ] **Step 2: Add Recently Shipped subsection**
 

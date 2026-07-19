@@ -59,7 +59,7 @@ A registered GitHub App fixes all three:
      `http://localhost:3001/api/auth/github-app/callback`.
    - **Setup URL (optional):** the same domain root — GitHub redirects users
      here after they install the App on a new org.
-   - **Webhook URL:** `https://<your-domain>/api/v1/github-events/webhook`
+   - **Webhook URL:** `https://<your-domain>/api/v1/webhooks/github`
      (the existing event-ingestion endpoint; see
      [`docs/event-ingestion.md`](../event-ingestion.md)).
    - **Webhook secret:** paste the same value as `WEBHOOK_SECRET` from your

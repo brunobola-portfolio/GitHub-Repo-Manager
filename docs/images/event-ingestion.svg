@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 360" role="img" aria-label="GitHub webhook ingestion pipeline: a GitHub webhook is verified with an HMAC X-Hub-Signature-256 signature, ingested and de-duplicated by delivery id, then fans out to Work Board auto-tracking and the gh-cache and gh-outbox layers, finally surfacing in the Dashboard Live Inbox. Signature-verified, deduplicated and persisted to SQLite.">
+  <style>
+    svg{--bg:#ffffff;--bg2:#f6f8fa;--card:#ffffff;--stroke:#d0d7de;--text:#1f2328;--muted:#57606a;--blue:#2563eb;--violet:#7c3aed;--emerald:#059669;--amber:#b45309;--red:#cf222e}
+    @media (prefers-color-scheme: dark){svg{--bg:#0d1117;--bg2:#161b22;--card:#1c2128;--stroke:#30363d;--text:#e6edf3;--muted:#8b949e;--blue:#4f8cff;--violet:#a78bfa;--emerald:#10b981;--amber:#e3b341;--red:#f85149}}
+    .bg{fill:var(--bg)}.panel{fill:var(--bg2);stroke:var(--stroke);stroke-width:1}
+    .card{fill:var(--card);stroke:var(--stroke);stroke-width:1.5}
+    .t{fill:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
+    .m{fill:var(--muted);font-family:'Segoe UI',system-ui,sans-serif}
+    .mono{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+    .b{fill:var(--blue)}.v{fill:var(--violet)}.e{fill:var(--emerald)}.a{fill:var(--amber)}
+    .edge{stroke:var(--muted);stroke-width:1.5;fill:none}
+    .badge-a{fill:var(--amber);fill-opacity:.15;stroke:var(--amber);stroke-width:1}
+    .badge-e{fill:var(--emerald);fill-opacity:.13;stroke:var(--emerald);stroke-width:1}
+    .badge-v{fill:var(--violet);fill-opacity:.13;stroke:var(--violet);stroke-width:1}
+    .ah{fill:var(--muted)}
+  </style>
+  <defs>
+    <filter id="sh" x="-20%" y="-25%" width="140%" height="150%"><feDropShadow dx="0" dy="1.5" stdDeviation="2.5" flood-color="#000" flood-opacity="0.12"/></filter>
+    <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ah"/></marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="960" height="360" rx="14"/>
+  <text class="t" x="32" y="42" font-size="19" font-weight="700">GitHub Webhook Ingestion</text>
+  <text class="m" x="32" y="64" font-size="12.5">Signature-verified &#8594; deduplicated &#8594; fanned out &#8594; surfaced live in the Dashboard</text>
+
+  <!-- 1 Webhook -->
+  <rect class="card" x="24" y="143" width="168" height="110" rx="10" filter="url(#sh)"/>
+  <text class="t" x="108" y="180" text-anchor="middle" font-size="13.5" font-weight="700">GitHub webhook</text>
+  <text class="m" x="108" y="202" text-anchor="middle" font-size="10.5">push · pull_request</text>
+  <text class="m" x="108" y="219" text-anchor="middle" font-size="10.5">issues · release</text>
+
+  <line class="edge" x1="192" y1="198" x2="214" y2="198" marker-end="url(#ah)"/>
+
+  <!-- 2 HMAC verify -->
+  <rect class="card" x="214" y="143" width="168" height="110" rx="10" filter="url(#sh)"/>
+  <rect class="badge-a" x="226" y="155" width="72" height="20" rx="10"/>
+  <text class="a" x="262" y="169" text-anchor="middle" font-size="9.5" font-weight="700">VERIFY</text>
+  <text class="t" x="298" y="196" text-anchor="middle" font-size="13.5" font-weight="700">HMAC verify</text>
+  <text class="m mono" x="298" y="218" text-anchor="middle" font-size="9.5">X-Hub-Signature-256</text>
+  <text class="m" x="298" y="235" text-anchor="middle" font-size="10">reject if invalid</text>
+
+  <line class="edge" x1="382" y1="198" x2="404" y2="198" marker-end="url(#ah)"/>
+
+  <!-- 3 Ingest + dedup -->
+  <rect class="card" x="404" y="143" width="168" height="110" rx="10" filter="url(#sh)"/>
+  <text class="t" x="488" y="180" text-anchor="middle" font-size="13.5" font-weight="700">Ingest + dedup</text>
+  <text class="m" x="488" y="202" text-anchor="middle" font-size="10.5">delivery-id guard</text>
+  <text class="m" x="488" y="219" text-anchor="middle" font-size="10.5">idempotent · to SQLite</text>
+
+  <!-- fan out -->
+  <line class="edge" x1="572" y1="188" x2="594" y2="150" marker-end="url(#ah)"/>
+  <line class="edge" x1="572" y1="208" x2="594" y2="256" marker-end="url(#ah)"/>
+
+  <!-- 4a Work Board -->
+  <rect class="card" x="594" y="100" width="180" height="90" rx="10" filter="url(#sh)"/>
+  <rect class="badge-e" x="606" y="112" width="90" height="20" rx="10"/>
+  <text class="e" x="651" y="126" text-anchor="middle" font-size="9.5" font-weight="700">WORK BOARD</text>
+  <text class="t" x="684" y="154" text-anchor="middle" font-size="12.5" font-weight="700">Auto-track items</text>
+  <text class="m" x="684" y="174" text-anchor="middle" font-size="10">from event payloads</text>
+
+  <!-- 4b gh-cache / gh-outbox -->
+  <rect class="card" x="594" y="214" width="180" height="90" rx="10" filter="url(#sh)"/>
+  <rect class="badge-v" x="606" y="226" width="106" height="20" rx="10"/>
+  <text class="v" x="659" y="240" text-anchor="middle" font-size="9.5" font-weight="700">DURABILITY</text>
+  <text class="t mono" x="684" y="268" text-anchor="middle" font-size="11.5" font-weight="700">gh-cache · gh-outbox</text>
+  <text class="m" x="684" y="288" text-anchor="middle" font-size="10">read-through · durable writes</text>
+
+  <!-- converge to inbox -->
+  <line class="edge" x1="774" y1="150" x2="796" y2="188" marker-end="url(#ah)"/>
+  <line class="edge" x1="774" y1="256" x2="796" y2="208" marker-end="url(#ah)"/>
+
+  <!-- 5 Live Inbox -->
+  <rect class="card" x="796" y="143" width="140" height="110" rx="10" filter="url(#sh)"/>
+  <text class="t" x="866" y="180" text-anchor="middle" font-size="13.5" font-weight="700">Live Inbox</text>
+  <text class="m" x="866" y="202" text-anchor="middle" font-size="10.5">real-time feed</text>
+  <text class="m" x="866" y="219" text-anchor="middle" font-size="10.5">Dashboard</text>
+
+  <text class="m" x="480" y="336" text-anchor="middle" font-size="10.5">Every event is signature-verified, deduplicated by delivery id, and persisted to SQLite</text>
+</svg>

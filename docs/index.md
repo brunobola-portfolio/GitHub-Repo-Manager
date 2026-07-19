@@ -23,8 +23,8 @@ below links to the canonical page for that topic.
 
 Full detail: [`CHANGELOG.md`](../CHANGELOG.md).
 
-- **Unreleased — Community WOW + six production-premium waves.** Four new
-  AI-grounded repo tools, all metered on Free with deterministic zero-AI-cost
+- **v4.6.0 (2026-07-19) — Community WOW + six production-premium waves.** Four
+  new AI-grounded repo tools, all metered on Free with deterministic zero-AI-cost
   fallbacks: **README Studio** (free quality score + grounded improve),
   **AI Diagram Generator** (architecture diagrams with embed-into-repo and
   retry-once self-repair), **Agent Rules Generator** (AGENTS.md/CLAUDE.md
@@ -108,6 +108,8 @@ Full detail: [`CHANGELOG.md`](../CHANGELOG.md).
 - [Backend](architecture/backend.md) — Express routes, middleware stack,
   DB adapter seam.
 - [Teams](architecture/teams.md) — teams feature data model.
+- [Work Board tracking](architecture/work-board-tracking.md) — tracked-repo set,
+  five-signal discovery, KPI snapshots, and the sweeper job.
 - [AI client contracts (ADR)](architecture/ai-client-contracts.md) — why
   `aiApi` (placeholders) and `aiFetch` (typed throws) coexist, which to use,
   and the deferred unification plan.
@@ -156,6 +158,8 @@ Full detail: [`CHANGELOG.md`](../CHANGELOG.md).
 - [API Reference](api/API.md) — 324 route handlers across 74 route
   modules. Every endpoint documented with auth requirements,
   request/response shape, and error codes.
+- [Work Board API](api/WORK-BOARD-API.md) — the `/api/v1/work-board/*` surface:
+  tabs, KPI snapshots, discovery, presets, and DORA metrics (free on all tiers).
 
 ## Specs & plans
 

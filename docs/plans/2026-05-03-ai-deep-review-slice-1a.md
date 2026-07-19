@@ -2409,7 +2409,7 @@ Expected: All tests pass.
 - [ ] **Sanity-check bundle size**
 
 Run: `npm run build`
-Expected: build succeeds, bundle-budget gate (per [feedback_vite_inline_dce_guards.md](../../C:/Users/bruno/.claude/projects/s--Git-Hub-Repo-Manager/memory/feedback_vite_inline_dce_guards.md)) does not fail. The `mermaid` chunk should be lazy and not in the main bundle.
+Expected: build succeeds, bundle-budget gate (per `feedback_vite_inline_dce_guards.md`) does not fail. The `mermaid` chunk should be lazy and not in the main bundle.
 
 Run: `ls -lah dist/assets/*.js | sort -k5 -h | tail -10`
 Expected: a separate `mermaid-*.js` chunk (~200kB), not bundled into `index-*.js`.

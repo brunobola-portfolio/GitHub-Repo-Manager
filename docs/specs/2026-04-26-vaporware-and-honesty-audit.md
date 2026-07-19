@@ -562,7 +562,7 @@ Each wave: commit (conventional, no Co-Authored-By, ≤72 char subject) + push t
 
 ## Open questions
 
-1. **Where exactly does the rate-limit middleware live** on the backend? Plan-time investigation: grep `server/` for `429`, `checkUsageLimit`, `incrementUsage`. Likely [server/middleware/rate-limit.js](../../server/middleware/rate-limit.js) but to be confirmed.
+1. **Where exactly does the rate-limit middleware live** on the backend? Plan-time investigation: grep `server/` for `429`, `checkUsageLimit`, `incrementUsage`. Likely `server/middleware/rate-limit.js` but to be confirmed.
 2. **Is there an existing `data-testid` convention** on `<EmptyState />`? If not, add `data-testid="empty-state"` as part of Wave 1.
 3. **Should the build honesty test live in the default vitest run** (slow but always-on) or be opt-in? Recommendation: opt-in via `RUN_BUILD_TESTS=1` to keep dev iteration fast; CI workflow runs both.
 4. **Does the toast component support a body-with-action shape today** or do we need to extend it? To be confirmed in plan; if not, the action becomes a separate inline button rendered in the `description` slot.

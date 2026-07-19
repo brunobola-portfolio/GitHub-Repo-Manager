@@ -106,3 +106,5 @@ scheduled.
 - `src/api/aiFetch.js` — the typed error classes, `aiFetch`, the quota gate
   (`recordQuotaExceeded` / `getAIQuotaState` / `QUOTA_TTL_MS`).
 - `src/api/aiStatus.js` — the cached `/config/ai-status` both modules consult.
+- [`../ai-providers.md`](../ai-providers.md) — the BYOK provider guide (Gemini,
+  Anthropic, OpenAI, OpenRouter, local) these clients call into.

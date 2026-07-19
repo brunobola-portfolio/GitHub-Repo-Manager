@@ -1,141 +1,172 @@
-# I Built an AI-Powered GitHub Management Platform -- Here's What I Learned
+# The GitHub Dashboard That Thinks: Building an AI-Native Repository Platform
 
-*By Bruno Silva Marques, Bola Labs*
-
----
-
-## The Problem Nobody Talks About
-
-If you manage more than a handful of repositories, you know the pain. Scattered dashboards. Manual quality checks. Tedious migrations between platforms. No unified view of what's actually going on across your projects.
-
-Now multiply that by an organization with dozens of teams and hundreds of repos, and you're spending more time managing infrastructure than actually building software.
-
-I decided to fix that -- and I used AI to do it, both as a feature of the product and as a co-developer in the process.
-
-The result is **GitHub Repo Manager**: a comprehensive, AI-powered dashboard for managing your entire GitHub ecosystem with intelligence, automation, and a polished modern interface.
-
-**GitHub Repository**: [github.com/brunobola-portfolio/GitHub-Repo-Manager](https://github.com/brunobola-portfolio/GitHub-Repo-Manager)
+*By Bruno Silva Marques, Bola Labs — GitHub Repo Manager v4.6.0, July 2026*
 
 ---
 
-## What GitHub Repo Manager Actually Does
+## The problem nobody schedules time for
 
-At its core, this is a full-stack web application that gives you a single pane of glass over your GitHub world -- repositories, organizations, teams, CI/CD pipelines, and community health metrics -- enhanced with AI intelligence at every layer.
+If you look after more than a handful of repositories, you already know the tax. Reviews you're the blocker on, buried in email. Pull requests that quietly went stale two weeks ago. A migration off Azure DevOps that everyone agrees is "important" and nobody wants to own. Documentation that drifts out of sync with the code the moment it's written.
 
-But it goes far beyond a read-only dashboard. Here's what makes it stand out:
+None of this is hard, exactly. It's just scattered — spread across a dozen tabs, several org dashboards, and the part of your memory you were hoping to use for actual engineering. Multiply it across teams and hundreds of repos, and you spend more time *administering* software than building it.
 
-### AI-Powered Intelligence
+I built **GitHub Repo Manager** to collapse that surface area into one place — and to put AI where it actually saves time, not where it demos well. It's a full-stack, AI-native dashboard for managing, reviewing, and migrating repositories, released today as **v4.6.0**.
 
-This isn't AI bolted on as an afterthought. AI is woven throughout the platform:
+**Repository:** [github.com/brunobola-portfolio/GitHub-Repo-Manager](https://github.com/brunobola-portfolio/GitHub-Repo-Manager)
 
-- **Repo Advisor** -- Ask questions about your repositories in natural language. "Which of my repos need better documentation?" "What's the tech stack breakdown across my organization?" The assistant knows your project context.
-- **Semantic Search** -- Go beyond keyword matching. Search your repositories by meaning, not just text.
-- **README Generation and Enhancement** -- Point it at a project and get a professional README, or intelligently fill in missing sections of an existing one.
-- **Quality Reports** -- Comprehensive analysis of code health, documentation completeness, community standards, and engineering practices, scored on a 0-100 scale with prioritized recommendations.
-- **Smart Topic Suggestions** -- AI-generated tags for better discoverability.
-- **Commit Message Generation** -- Context-aware commit messages based on your changes.
-- **Migration Risk Analysis** -- Before you migrate, AI evaluates complexity, identifies potential issues, and recommends a strategy.
-
-That's **10+ distinct AI-powered features**, all working together to make repository management genuinely intelligent.
-
-> **Screenshot suggestion**: Upload `docs/images/09_ai_assistant_dark_hd.png` as a post image showing the Repo Advisor chat interface.
-
-### Full Azure DevOps Migration Suite
-
-This is the feature I'm most proud of. Migrating from Azure DevOps to GitHub is notoriously painful -- especially if you have TFVC repositories, work items, and wikis to bring over.
-
-GitHub Repo Manager handles the entire migration through a guided, multi-step wizard:
-
-- **Git Repositories** -- Complete history, branches, and tags preserved.
-- **TFVC Repositories** -- Automatic TFVC-to-Git conversion via the Azure DevOps Import API (up to 180 days of history), with a ZIP snapshot fallback for edge cases.
-- **Work Items** -- Azure Boards work items migrate to GitHub Issues with full field mapping, state conversion, and comment history.
-- **Wiki Migration** -- Clone Azure DevOps project wikis into GitHub repositories.
-- **AI-Assisted Planning** -- Gemini analyzes your migration and provides risk scores, time estimates, and strategy recommendations before you commit.
-- **Scheduled Migrations** -- Queue plans for off-peak execution with AES-256-GCM encrypted credential storage.
-- **Pause/Resume and Task Retry** -- Interrupt long-running migrations without data loss. Retry individual failed tasks without re-running the entire plan.
-- **Full Audit Trail** -- Per-task status, duration, and detailed error reporting with actionable suggestions.
-
-> **Screenshot suggestion**: Upload `docs/images/08_migration_wizard_hd.png` showing the Migration Wizard source selection screen.
-
-### Comprehensive Repository Management
-
-The day-to-day management features are equally polished:
-
-- **Dashboard** with real-time statistics, activity trends, language distribution, and organization insights.
-- **Advanced Search and Filtering** -- Find repositories by name, language, visibility, type, or use AI semantic search.
-- **Bulk Actions** -- Archive, delete, transfer, or update multiple repositories simultaneously.
-- **Team Collaboration Hub** -- Centralized view of all teams, member management, and role-based access tracking.
-- **GitHub Actions Statistics** -- Workflow metrics, success rates, duration analysis, daily trends, and CSV export.
-- **Community Health Scoring** -- 0-100 health ratings with smart recommendations for improving documentation, community files, and contributor activity.
-- **Repository Starring and Pinning** -- Quick access to your most important projects.
-
-> **Screenshot suggestions**: Upload these as a carousel or multi-image post:
-> - `docs/images/01_dashboard_dark_hd.png` -- Dashboard overview
-> - `docs/images/06_repositories_dark_hd.png` -- Repository management
-> - `docs/images/07_teams_dark_hd.png` -- Team Hub
+![Dashboard](images/01_dashboard_dark_hd.png)
 
 ---
 
-## The Tech Stack: Latest Everything
+## What it actually does
 
-I deliberately chose the newest stable versions of every technology to push the boundaries and demonstrate proficiency with modern tooling:
+At its core, this is a single pane of glass over your GitHub world — repositories, organizations, teams, CI/CD, and community-health signals — with AI woven through the layers where it earns its place. But the interesting part isn't the dashboard. It's the four workflows the product is genuinely built around.
 
-| Layer | Technology | Version |
-|-------|-----------|---------|
-| **Frontend** | React | 19 |
-| **Build** | Vite | 7 |
-| **Styling** | Tailwind CSS | 4 |
-| **Backend** | Express | 5 |
-| **Database** | better-sqlite3 | Local, zero-config |
-| **AI** | Google Gemini API | Latest |
-| **Animations** | Framer Motion | 12 |
-| **Charts** | Recharts | 3 |
-| **Validation** | Zod | 4 |
-| **Logging** | Pino | Structured JSON |
-| **Security** | Helmet.js, express-rate-limit | Production-hardened |
+### 1. A dashboard with a Live Inbox
 
-**By the numbers:**
+The home screen opens with a personalized greeting and a "What needs you" grid: reviews waiting on you, stale PRs, and open issues, each with week-over-week deltas and a real empty state when you're actually caught up.
 
-- **143+ API endpoints** across 13 route modules
-- **109+ passing tests** (Vitest unit + Playwright E2E)
-- **87 mock repositories** in demo mode for instant exploration
-- **AES-256-GCM** encrypted credential storage for migration scheduling
-- **0-100 health scoring** with multi-dimensional analysis
-- Production security: rate limiting, parameterized SQL queries, input validation, ETag caching, Helmet.js headers, httpOnly session cookies
+The centerpiece is the **Live Inbox** — a sectioned, keyboard-driven queue (needs review, my open PRs, mentions, stale drafts) that replaces the usual static activity feed. Archive an item with `e`, snooze it with `s`; both actions persist per user and are free on every tier. The top items in the active section can carry a one-line AI narrative so you understand *why* something needs you before you click in.
 
-The UI features a **Glassmorphism design system** with depth-rich layers, subtle blurs, and smooth animations -- plus full dark/light mode support, responsive design down to mobile, accessibility features (focus traps, keyboard navigation, ARIA attributes), and touch-optimized targets.
+![Live Inbox](images/10_dashboard_live_inbox_needs_review_hd.png)
 
----
+### 2. A cross-repo Work Board
 
-## How AI Built This App
+The Work Board is a cockpit across every repository you touch — no manual registration required. It seeds itself from five signal collectors (review-requested, authored, assigned, owned, recently-committed) so you never start with an empty board, and it live-fetches from GitHub Search when no webhook is configured, cached five minutes with ETag revalidation.
 
-Here's the part that excites me the most from a professional development perspective.
+Tabs cover **My Reviews**, **My Issues**, **Stale PRs**, **Review Load** (submitted-vs-pending per reviewer, to spot who's drowning), and **Tech Debt** (issues grouped by hotspot). It also surfaces **DORA metrics** — deploy frequency, lead-time p50/p90, change-failure rate, MTTR — with CSV export, available on every tier as part of the free-first rebalance.
 
-**GitHub Repo Manager was built with AI as a development partner.** Specifically, I used **Claude Code** -- Anthropic's CLI-based AI coding assistant powered by Claude -- throughout the entire development lifecycle.
+Everything is keyboard-first (`j`/`k` navigation, `.` to approve, `x` to request changes, `s` to snooze) and every filter round-trips through the URL, so a filtered view is shareable by copy-pasting the link. Inline actions — approve, request changes, snooze, re-request review — happen right on the row with optimistic UI and a clean re-auth fallback when an OAuth scope is missing.
 
-This wasn't "AI generated some boilerplate." Claude Code was involved in:
+![Work Board](images/33_work_board_dark_hd.png)
 
-- **Architecture decisions** -- Discussing trade-offs between different approaches, database schema design, API structure.
-- **Feature implementation** -- Writing and iterating on complex features like the migration engine, AI service integration, and the guided wizard flow.
-- **Testing** -- Generating comprehensive unit and end-to-end tests, identifying edge cases I hadn't considered.
-- **Security hardening** -- Auditing for SQL injection, implementing rate limiting, adding input validation, configuring security headers.
-- **Code review** -- Reviewing changes before committing, catching bugs and suggesting improvements.
-- **Documentation** -- Generating API docs, architecture diagrams, and user-facing documentation.
-- **Debugging** -- Diagnosing complex issues like TFVC credential encoding bugs and Azure DevOps API edge cases.
+### 3. AI Deep Review
 
-The project has a `CLAUDE.md` file that serves as persistent instructions for the AI -- coding standards, architecture decisions, file organization rules. This creates a feedback loop where the AI gets better at working within the project's conventions over time.
+This is the feature that turns the in-app PR view into something developers choose over github.com. Point it at a pull request and it produces a structured **walkthrough** (markdown summary, per-file change table, a Mermaid sequence diagram), up to 25 **line-level comments** with one-click `suggestion` blocks you can edit before publishing, PR-context **slash commands** (`/describe`, `/test_plan`, `/improve`), and a **streaming Q&A chat** grounded in the PR. One click batches the whole thing into a single GitHub review — through an idempotent outbox, so a double-click across a server restart still collapses into one review row — with an honest AI-generated footer.
 
-**What I learned:** AI-assisted development isn't about replacing the developer. It's about amplifying your capabilities. The developer still needs to make architectural decisions, understand the problem domain, review AI output critically, and maintain a clear vision for the product. But with AI handling the mechanical aspects of coding, you can ship faster, at higher quality, and tackle more ambitious projects than you could alone.
+A built-in **Prompt Studio** lets you layer custom review presets at user, repo, or org scope, with path-scoped rules, a severity floor, and a `${REPO_STYLE_GUIDE}` token that inlines your repo's own `.repomanager/review-rules.md`.
 
-This project is proof of that. A single developer, with AI assistance, built a production-quality platform with 143+ endpoints, 10+ AI features, a complete migration suite, and 109+ passing tests.
+### 4. The "Community WOW" tools (new in v4.6)
+
+The v4.6 wave adds four AI-grounded repo tools, each metered generously on Free with a *deterministic, zero-AI-cost fallback* so nothing hard-blocks when a key or quota is unavailable:
+
+- **README Studio** — a free deterministic README quality score (license correctness, badge-vs-reality consistency, install-vs-stack match, screenshots, section order) plus a grounded improve flow that will never invent a license claim, command, or badge that isn't real.
+- **AI Diagram Generator** — architecture diagrams grounded in the repo's real file tree and README, with a retry-once self-repair pass on invalid Mermaid, SSE streaming, and embed-into-repo as either an idempotent README fence or a sanitized SVG.
+- **Agent Rules Generator** — `AGENTS.md` / `CLAUDE.md` generated from *actually detected* build/test/lint/CI signals, never a fabricated command, with a diff-aware refresh mode.
+- **Security Posture Panel** — a 10-check deterministic report card (branch protection, alert severity, secret scanning + push protection, Dependabot updates, code scanning, `SECURITY.md`, workflow token permissions, org 2FA) with an optional AI narrative fed only whitelisted check results — never raw alert bodies.
+- **AI Image Generation** — repo banner / README hero / logo drafts across three fixed presets, capability-gated per provider, with binary-safe commits and typed refusal handling.
 
 ---
 
-## Try It Yourself
+## The engineering decisions I'd defend in a review
 
-GitHub Repo Manager is **open source** under the MIT license. You can explore it right now without any API keys:
+A product is the sum of the choices you're willing to argue for. Here are the ones that shaped this codebase.
 
-### Quick Start (Demo Mode)
+### Grounded honesty is a build-time gate, not a value statement
+
+Every AI product claims to be "honest." Very few enforce it. Here, generated content is not allowed to claim a feature, limit, or price that doesn't exist — and that's checked in CI. Pricing surfaces are compared cell-for-cell against the README by a parity test; a README-honesty regression guard fails the build if the docs drift from the flags. The four Community WOW tools all ship a deterministic fallback precisely so the product degrades into *truthful* output instead of a hallucinated one when AI is unavailable. Honesty is a property of the pipeline, not a promise in the copy.
+
+### Provider-neutral AI, with the guardrails an LLM product actually needs
+
+The AI layer is BYOK (bring your own key) and provider-neutral behind a single `AI_PROVIDER` seam: **Anthropic, OpenAI, Google Gemini, OpenRouter, and local runtimes (Ollama / LMStudio)** are interchangeable per feature. Per-user keys are encrypted at rest with AES-256-GCM (PBKDF2-HMAC-SHA256 key derivation).
+
+Around that seam sit the controls a production LLM feature needs and most skip: a **global spend cap** plus a **per-call output-token cap** (OWASP LLM10), **PII-safe audit metadata** on every generation, **SSE streaming** that preserves partial text on disconnect, BYOK hardening (key rotation, model-id validation, DNS re-checks), and a **golden-eval suite gated in CI**. Repo Advisor answers are answer-first, grounded, and cited. Without any key configured, the app returns high-quality mock responses so the full UI is explorable with zero setup.
+
+### SQLite on purpose — and PostgreSQL rejected on purpose
+
+The datastore is **better-sqlite3 in WAL mode**, and that's a deliberate ceiling, not a starting point I never got around to raising. SQLite keeps the operational surface tiny: one file, an online `db.backup()` that's WAL-safe, and no separate database to run. The non-functional PostgreSQL adapter path was removed outright — a `postgres://` `DATABASE_URL` now fails fast at boot with an actionable error instead of silently exercising a broken code path. Schema changes flow through a single versioned migration ledger, not loose `.sql` files, and every migration is written to be idempotent so it can safely re-apply.
+
+### Accessibility gated on *both* themes
+
+Dark and light aren't a cosmetic toggle bolted on at the end — both are hard-gated for color contrast in the Playwright/axe suite (nine views × two themes). Risk colors come from a dedicated token system where the graphic fills and the text variants are separate, because a fill that reads fine as a chart bar fails WCAG AA as text. The visual language itself was deliberately walked *back* in v4.3.0, from a gradient-and-glow "AI template" look to a restrained, GitHub-tasteful aesthetic. Restraint reads as premium; shimmer reads as a demo.
+
+### Preview-first writes, metered generation, parameterized SQL
+
+Anything that writes to a user's repository goes preview-first through a single `commitOrOpenPR()` primitive — never an auto-commit, never a new bespoke write path, and file paths are always derived server-side rather than trusted from the client. Every AI generation route is metered through a guarded path that records cost and writes an audit entry; an unmetered provider call is treated as a regression class with its own tests. SQL is parameterized throughout.
+
+---
+
+## Architecture at a glance
+
+It's a two-part application, and honest about being one.
+
+- **Frontend** — React 19.2 + Vite 8.0 + Tailwind CSS 4.1, a single-page app with heavy route-level code-splitting (Work Board, PR Review, Admin, RepoDetail) held under explicit gzip budgets by a CI bundle-size gate. Framer Motion 12 drives animation from a shared motion vocabulary; Recharts 3 handles charts.
+- **Backend** — Express 5.2 with **324 route handlers across 74 route modules**, fronted by Helmet, tier-aware and per-IP rate limiting, CSRF double-submit tokens, an SSRF + DNS-rebinding guard on import-from-URL, and rolling sessions with a 7-day absolute ceiling. Zod schemas validate request bodies behind a consistent `validation_failed` envelope.
+- **Data** — better-sqlite3 12.9 (WAL), all per-user tables keyed by `user_id` for multi-tenant isolation, with WAL-safe scheduled backups and maintenance janitors that keep a long-running instance healthy without babysitting.
+- **Integrations** — GitHub REST API, Azure DevOps API v7.1, Stripe billing, Resend email (with retry + dead-letter queue), and the BYOK AI providers. A GitHub API circuit breaker keeps upstream degradations from cascading into a retry storm.
+
+Full detail lives in [`docs/architecture/overview.md`](architecture/overview.md) and the [API reference](api/API.md).
+
+---
+
+## The migration suite (and exactly what it covers)
+
+Migrating off Azure DevOps is genuinely painful, especially with TFVC history, work items, and wikis in the mix. GitHub Repo Manager handles it through a guided eight-step wizard.
+
+| Source | What migrates | How |
+|--------|---------------|-----|
+| **Git repos** | Full history, branches, tags | Direct clone with complete preservation |
+| **TFVC repos** | Up to 180 days of history | Automatic TFVC-to-Git conversion via the Azure Import API, ZIP-snapshot fallback |
+| **Work items** | Types, states, comments, attachments | Azure Boards → GitHub Issues with field mapping |
+| **Wikis** | All pages and content | Git-based clone with markdown conversion |
+
+Beyond the transfer itself: an **AI Review step** with severity-ranked risk analysis; a 10-rule risk engine on repo selection; **dry-run mode**; inline **conflict resolution** (replace / rename / skip) with a type-to-confirm modal for destructive replaces and one-click **Replace & retry**; **Git LFS retry** for oversized-file failures; **provenance tagging** that marks every successful migration; PATs encrypted at rest with AES-256-GCM; and a full per-task audit trail. In v4.6, cancel actually stops the in-flight clone/LFS/push instead of letting the background job run to completion, and a Migration Health card summarizes per-task caveats in plain English.
+
+To be precise about scope: **migration is Azure DevOps → GitHub only.** GitLab and Bitbucket are not supported. If you need them, this isn't your tool yet.
+
+![Migration Wizard](images/08_migration_wizard_hd.png)
+
+---
+
+## Pricing: free-first, on purpose
+
+The hosted product is deliberately **free-first**. Nearly every capability — bulk operations, mirror sync, AI Deep Review, Prompt Studio, PR Chat, PR slash commands, DORA metrics, and unlimited teams — ships on the **Free** tier with generous, non-infinite monthly caps. Each AI capability carries its own cap so one feature can't drain the whole budget, and usage is metered per individual account even within a team.
+
+Pro ($19/mo) and Enterprise don't unlock features. They sell **AI headroom** (bigger caps, a higher spend-cap ceiling), more API keys, and compliance/service deliverables — audit logs, priority support with an SLA, white-glove migration. Self-hosting under AGPL v3 is free forever. The full matrix lives in the [README](../README.md#plans--pricing), and a parity test keeps it honest against the code.
+
+---
+
+## Building it with AI as a co-developer
+
+Worth saying plainly, because it's part of the story: this platform was built with AI as a development partner. I used **Claude Code** — Anthropic's CLI coding agent — throughout the lifecycle: architecture trade-offs, the migration engine and AI-service integration, test generation, security hardening, code review, and documentation. The repo carries a `CLAUDE.md` (and now a generated `AGENTS.md`) of persistent conventions, so the assistant compounds context over time instead of relearning the house style every session.
+
+The lesson isn't "AI replaces the developer." It's that the developer still owns the architecture, the problem domain, and the critical review of every diff — but with the mechanical work amortized, one person can ship and *maintain* something with 324 route handlers, a full migration suite, four flagship AI workflows, and **6,000+ passing tests**. That leverage is the actual headline.
+
+---
+
+## Honest capabilities and limits
+
+A launch article that only lists wins isn't worth reading. So, the boundaries:
+
+- **Migration is Azure DevOps → GitHub only.** No GitLab, no Bitbucket.
+- **SSO / SAML is roadmap**, not shipped — it's honestly flagged as such on the pricing page and in the feature flags.
+- **GitHub Enterprise Server support is roadmap.** Today the target is GitHub.com via OAuth.
+- **A GitHub App bot identity is roadmap** — AI Deep Review currently publishes under the authenticated OAuth user, not a `[bot]` account.
+- **The backend is a long-running process, not a serverless function.** The `dist/` frontend is static-hostable anywhere; the Express + SQLite backend needs a host and a persistent volume. There's no serverless deploy target for it today, and that's stated plainly in the ops guide.
+
+Everything on the pricing page works today. Upcoming items are scoped honestly as Shipping Now / Next / Later on the in-app roadmap.
+
+---
+
+## The stack
+
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 19.2, Vite 8.0, Tailwind CSS 4.1 |
+| Animation / UI | Framer Motion 12, Recharts 3, Lucide, Radix UI, cmdk |
+| Backend | Node.js 20+, Express 5.2 |
+| Database | better-sqlite3 12.9 (WAL) — SQLite only |
+| AI (BYOK) | Anthropic, OpenAI, Google Gemini, OpenRouter, Ollama / LMStudio — provider-neutral (`AI_PROVIDER`) |
+| Validation | Zod 4 |
+| Security | Helmet, express-rate-limit, CSRF double-submit, SSRF + DNS-rebinding guard, AES-256-GCM at rest |
+| Logging | Pino (structured JSON, credential redaction) + Sentry breadcrumbs |
+| Testing | Vitest (6,000+ unit tests) + Testing Library + Playwright, dual-theme axe a11y gate |
+
+---
+
+## Try it yourself
+
+Demo mode runs the full UI with 87 realistic mock repositories, simulated orgs and teams, and mock AI responses — **no GitHub account and no API keys required**.
 
 ```bash
 git clone https://github.com/brunobola-portfolio/GitHub-Repo-Manager.git
@@ -144,101 +175,16 @@ npm install
 npm run dev:all
 ```
 
-Open `http://localhost:5173` -- demo mode is enabled by default with 87 realistic mock repositories, simulated organizations, teams, and mock AI responses. No GitHub account or API keys required to explore the full UI.
-
-### Full Mode
-
-Add your GitHub OAuth credentials and a Google Gemini API key (free tier available) to unlock real repository management and AI features.
+Open [http://localhost:5173](http://localhost:5173) and explore. For real mode, add your GitHub OAuth credentials, and configure any AI provider key you like under **Settings → AI Configuration** — it's encrypted at rest the moment you paste it. Full detail is in the [README](../README.md) and the [changelog](../CHANGELOG.md).
 
 ---
 
-## What's New in v3.5.0 — Work Board Mega-Upgrade
+## Licensing
 
-Shipped April 2026: the cross-repo Work Board graduated from a webhook-only digest to a zero-config, keyboard-driven cockpit.
+GitHub Repo Manager is **open-core under the GNU Affero General Public License v3 (AGPL-3.0)** — free to self-host forever, with contributions accepted under a CLA. If you run a modified version as a network service, AGPL §13 applies, and the app ships a machine-readable source-offer endpoint (`GET /api/v1/system/source`) to make that easy to honor.
 
-- **Zero-config data** — PRs, issues, stale PRs, and tech-debt queries now fall back to live GitHub Search when webhook data is missing. No setup required to see value on day one. Results cached 5 minutes with ETag revalidation.
-- **Auto-refresh + filters + server-side presets** — 60-second polling pauses when the tab is hidden; filters (repo / author / label / age) are URL-synced and saveable as named presets that persist across devices.
-- **Inline actions** — approve, request-changes, snooze, or re-request review on any PR directly from the board with optimistic UI and proper `scope_required` fallback.
-- **AI summary card (BYOK, cross-provider)** — Anthropic, OpenAI, Gemini, OpenRouter, and Local (Ollama/LMStudio) all produce a headline + severity-ranked bullets + urgency gauge from the same JSON-schema-constrained prompt.
-- **Command palette group** — `⌘K` on `/work-board` surfaces six navigate-to-tab actions plus regenerate-AI and save-preset.
-
-Full changelog: [CHANGELOG.md](../CHANGELOG.md) · [Release notes](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v3.5.0).
-
-## What's Next
-
-The roadmap includes advanced analytics with commit activity heatmaps, custom themes, repository templates, GitHub Enterprise support, and an ambitious v3.0 with automated code review agents, semantic search across all repositories, and multi-platform migration support for GitLab and Bitbucket.
+A **commercial license** is available for organizations that need to use the software without AGPL obligations, along with hosted Pro/Enterprise plans backed by signed license keys. For terms, licensing, or anything else, reach me at **[bruno@bolalabs.pt](mailto:bruno@bolalabs.pt)**.
 
 ---
 
-## Get Involved
-
-If this project resonates with you:
-
-- **Star the repo** -- It helps with visibility and motivates continued development.
-- **Try the demo** -- Explore mock mode and see what's possible.
-- **Contribute** -- Bug fixes, features, documentation improvements -- all welcome.
-- **Share feedback** -- Open an issue or start a discussion.
-
-**Repository**: [github.com/brunobola-portfolio/GitHub-Repo-Manager](https://github.com/brunobola-portfolio/GitHub-Repo-Manager)
-
-Built with genuine passion for developer tools, modern web technology, and the belief that AI is transforming how we build software -- not by replacing developers, but by making us significantly more effective.
-
----
-
-*Bruno Silva Marques is the founder of Bola Labs, focused on building modern developer tools and exploring the intersection of AI and software engineering.*
-
----
-
-**LinkedIn Hashtags** (copy separately):
-
-#OpenSource #GitHub #AI #ArtificialIntelligence #GoogleGemini #ReactJS #WebDevelopment #FullStack #DevOps #AzureDevOps #Migration #DeveloperTools #SoftwareEngineering #AIAssistedDevelopment #ClaudeAI #Anthropic #Portfolio #JavaScript #NodeJS #TailwindCSS #Vite
-
----
-
-## Posting Guide
-
-### LinkedIn
-
-1. Copy the article text above (from "The Problem Nobody Talks About" to the bio line)
-2. Create a new LinkedIn article or long-form post
-3. Upload `docs/images/01_dashboard_dark_hd.png` as the **cover/hero image**
-4. Add additional images inline or as a carousel:
-   - `docs/images/09_ai_assistant_dark_hd.png` (Repo Advisor)
-   - `docs/images/08_migration_wizard_hd.png` (Migration Wizard)
-   - `docs/images/06_repositories_dark_hd.png` (Repository Management)
-5. Paste hashtags at the end of the post
-
-### Facebook
-
-Use the shorter version below. Upload 3-4 screenshots as a photo album.
-
----
-
-## Facebook Version (Shorter)
-
-After months of development, I'm excited to share my latest project: **GitHub Repo Manager** -- a full-stack platform for managing your entire GitHub ecosystem, powered by your configured AI provider.
-
-**What it does:**
-- Manages repositories, teams, organizations, and CI/CD pipelines from a single dashboard
-- 10+ AI features: semantic search, README generation, quality reports, smart recommendations
-- Full Azure DevOps to GitHub migration -- including TFVC repos, work items, and wikis
-- 0-100 health scoring for every repository with actionable improvement suggestions
-
-**The interesting part:** The app was built using AI-assisted development with Claude Code (Anthropic's Claude AI). A single developer + AI produced 143+ API endpoints, 109+ passing tests, and a complete migration suite.
-
-**Tech stack:** React 19, Vite 7, Express 5, Tailwind CSS 4, Google Gemini AI, SQLite -- the latest versions of everything.
-
-**Try it now** (no API keys needed for demo mode):
-
-```
-git clone https://github.com/brunobola-portfolio/GitHub-Repo-Manager.git
-cd GitHub-Repo-Manager
-npm install
-npm run dev:all
-```
-
-It's open source (MIT license). Stars, contributions, and feedback are all welcome!
-
-Link: [github.com/brunobola-portfolio/GitHub-Repo-Manager](https://github.com/brunobola-portfolio/GitHub-Repo-Manager)
-
-#OpenSource #GitHub #AI #WebDevelopment #DevTools #ReactJS #FullStack
+*Bruno Silva Marques is the founder of Bola Labs, building modern developer tools at the intersection of AI and software engineering. If GitHub Repo Manager is useful to you, a star on the [repository](https://github.com/brunobola-portfolio/GitHub-Repo-Manager) genuinely helps.*

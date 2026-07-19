@@ -8,7 +8,7 @@
 
 **Tech Stack:** Node/Express + better-sqlite3 + pino backend; React 19 + Vite 7 + Tailwind v4 + Framer Motion + cmdk frontend; vitest for unit, supertest for route integration, Playwright for E2E.
 
-**Reference spec:** [docs/specs/2026-04-20-work-board-megaplan.md](docs/specs/2026-04-20-work-board-megaplan.md)
+**Reference spec:** [docs/specs/2026-04-20-work-board-megaplan.md](../specs/2026-04-20-work-board-megaplan.md)
 
 **Execution stages:**
 - **Stage A — Backend (tasks 1-12)** — all endpoints fully tested; no UI. Can merge independently.
@@ -78,7 +78,7 @@
 
 - [ ] **Step 1: Add the three migrations at the end of the migration block**
 
-Open [server/db.js](server/db.js) and locate the `Migration 009` block (the `ALTER TABLE issue_events ADD COLUMN title TEXT`). Immediately after its closing `}`, add:
+Open [server/db.js](../../server/db.js) and locate the `Migration 009` block (the `ALTER TABLE issue_events ADD COLUMN title TEXT`). Immediately after its closing `}`, add:
 
 ```js
     // Migration 010 (Work Board mega-upgrade): live-data cache keyed by user+query.
@@ -448,7 +448,7 @@ Expected: FAIL — module not found.
 
 - [ ] **Step 3: Check existing githubApi wrapper contract**
 
-Read [server/lib/github-api.js](server/lib/github-api.js). Confirm that:
+Read [server/lib/github-api.js](../../server/lib/github-api.js). Confirm that:
 - Signature is `githubApi(path, token, options)`.
 - Returns parsed JSON on success, with `_etag` and `_status` metadata fields.
 - On 304, returns a minimal object `{ _status: 304, _etag }`.
@@ -592,7 +592,7 @@ git commit -m "feat(work-board): live GitHub fetchers via /search/issues"
 
 - [ ] **Step 1: Read the existing file to locate the 4 endpoints to modify**
 
-Read [server/routes/work-board.js](server/routes/work-board.js). The endpoints to modify are `/my-reviews`, `/my-issues`, `/stale-prs`, `/tech-debt`.
+Read [server/routes/work-board.js](../../server/routes/work-board.js). The endpoints to modify are `/my-reviews`, `/my-issues`, `/stale-prs`, `/tech-debt`.
 
 - [ ] **Step 2: Add a shared helper near the top of the file (under the existing `parseRepoIds` helper)**
 
@@ -690,7 +690,7 @@ For `/review-load` and `/dora` (webhook-only): wrap responses in the new envelop
 
 - [ ] **Step 4: Extend route tests**
 
-Open [server/__tests__/work-board-routes.test.js](server/__tests__/work-board-routes.test.js). Add a new `describe('live fallback')` block that mocks `fetchMyPendingReviews` and `getCached/putCached` and asserts:
+Open [server/__tests__/work-board-routes.test.js](../../server/__tests__/work-board-routes.test.js). Add a new `describe('live fallback')` block that mocks `fetchMyPendingReviews` and `getCached/putCached` and asserts:
 - Cache hit short-circuits the fetcher (fetcher not called).
 - Cache miss invokes fetcher, stores response, returns `meta.source: 'live'`.
 - 304 on fetcher preserves cached payload and returns `meta.source: 'cache'`.
@@ -876,7 +876,7 @@ Expected: PASS — 7 tests.
 
 - [ ] **Step 5: Apply snooze filter in read endpoints**
 
-In [server/routes/work-board.js](server/routes/work-board.js), after each call to `resolveTabData`, pipe the result through `filterOutSnoozed` (unless `?includeSnoozed=1` is set). Example for `/my-reviews`:
+In [server/routes/work-board.js](../../server/routes/work-board.js), after each call to `resolveTabData`, pipe the result through `filterOutSnoozed` (unless `?includeSnoozed=1` is set). Example for `/my-reviews`:
 
 ```js
 const { data, meta } = await resolveTabData({ /* … */ });
@@ -1842,7 +1842,7 @@ describe('work-board-sweeper', () => {
 
 - [ ] **Step 2: Extend snooze lib with `purgeExpiredSnoozes`**
 
-In [server/lib/work-board-snooze.js](server/lib/work-board-snooze.js), add:
+In [server/lib/work-board-snooze.js](../../server/lib/work-board-snooze.js), add:
 
 ```js
 export function purgeExpiredSnoozes({ gracePeriodDays = 1 } = {}) {
@@ -1888,7 +1888,7 @@ export function stopWorkBoardSweeper() {
 
 - [ ] **Step 4: Wire into server startup**
 
-In [server/index.js](server/index.js), near the existing migration-engine startup (look for `MigrationEngine` or `_startScheduler`), add:
+In [server/index.js](../../server/index.js), near the existing migration-engine startup (look for `MigrationEngine` or `_startScheduler`), add:
 
 ```js
 import { startWorkBoardSweeper, stopWorkBoardSweeper } from './lib/work-board-sweeper.js';
@@ -2499,7 +2499,7 @@ export function useRowNavigation({ rows, onOpen, onKey }) {
 
 - [ ] **Step 3: Extend `useKeyboardShortcuts` for context-scoped shortcuts**
 
-In [src/hooks/useKeyboardShortcuts.js](src/hooks/useKeyboardShortcuts.js), add a second export:
+In [src/hooks/useKeyboardShortcuts.js](../../src/hooks/useKeyboardShortcuts.js), add a second export:
 
 ```js
 export function useContextShortcut({ key, handler, when = true, deps = [] }) {
@@ -2709,7 +2709,7 @@ Reuse `ModalContext`:
 openModalWithData('workBoardHelp', {});
 ```
 
-Add `'workBoardHelp'` to the modal list in [src/contexts/ModalContext.jsx](src/contexts/ModalContext.jsx).
+Add `'workBoardHelp'` to the modal list in [src/contexts/ModalContext.jsx](../../src/contexts/ModalContext.jsx).
 
 - [ ] **Step 2: Wire `?` shortcut**
 
@@ -2838,7 +2838,7 @@ git commit -m "feat(work-board): AI summary card with headline + urgency gauge"
 - Modify: `src/components/CommandPalette.jsx`
 - Modify: `tests/components/CommandPalette.test.jsx` (if exists)
 
-- [ ] **Step 1: Read current palette** ([src/components/CommandPalette.jsx](src/components/CommandPalette.jsx))
+- [ ] **Step 1: Read current palette** ([src/components/CommandPalette.jsx](../../src/components/CommandPalette.jsx))
 
 Identify the pattern for adding a new group — likely `<Command.Group heading="...">`. Also identify how the current page is detected (prop, context, or window.location).
 
@@ -2940,7 +2940,7 @@ Otherwise skip.
 
 - [ ] **Step 1: Read existing e2e harness**
 
-Read [e2e/](e2e/) to confirm Playwright config, auth stub pattern, baseURL. Mirror existing specs for the skeleton.
+Read [e2e/](../../e2e/) to confirm Playwright config, auth stub pattern, baseURL. Mirror existing specs for the skeleton.
 
 - [ ] **Step 2: Write the spec**
 
@@ -2993,7 +2993,7 @@ git commit -m "test(work-board): e2e zero-config flow"
 - Modify: `docs/work-board.md`
 - Modify: `CHANGELOG.md`
 
-- [ ] **Step 1: Update [docs/work-board.md](docs/work-board.md)**
+- [ ] **Step 1: Update [docs/work-board.md](../work-board.md)**
 
 Add new sections covering:
 - Zero-config data source + merge policy per endpoint (include a table copied from the spec).
@@ -3053,7 +3053,7 @@ Expected: PASS.
 
 - [ ] **Step 5: Create PR**
 
-Use the standard `gh pr create` flow; body references [docs/specs/2026-04-20-work-board-megaplan.md](docs/specs/2026-04-20-work-board-megaplan.md) and this plan.
+Use the standard `gh pr create` flow; body references [docs/specs/2026-04-20-work-board-megaplan.md](../specs/2026-04-20-work-board-megaplan.md) and this plan.
 
 ---
 

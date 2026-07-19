@@ -8,7 +8,7 @@
 
 **Tech Stack:** Node/Express + express-rate-limit (backend), React 19 + framer-motion + Tailwind v4 + lucide-react (frontend), Vitest + @testing-library/react (tests).
 
-**Reference spec:** [docs/specs/2026-04-09-rate-limit-ux-and-dev-fix.md](docs/specs/2026-04-09-rate-limit-ux-and-dev-fix.md)
+**Reference spec:** [docs/specs/2026-04-09-rate-limit-ux-and-dev-fix.md](../specs/2026-04-09-rate-limit-ux-and-dev-fix.md)
 
 ---
 

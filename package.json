@@ -61,7 +61,8 @@
     "lint:css": "node scripts/check-killed-classes.mjs",
     "prebuild": "npm run lint:css",
     "doctor": "node scripts/doctor.mjs",
-    "doctor:fix": "node scripts/doctor.mjs --fix"
+    "doctor:fix": "node scripts/doctor.mjs --fix",
+    "docs:linkcheck": "node scripts/check-doc-links.mjs"
   },
   "dependencies": {
     "@git-diff-view/react": "^0.1.3",
