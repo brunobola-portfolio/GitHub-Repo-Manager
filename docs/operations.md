@@ -6,6 +6,7 @@ how-to-build side, see [`docs/index.md`](index.md).
 ## Contents
 
 - [Quick reference](#quick-reference)
+- [Deployment](#deployment)
 - [Reverse proxy & TLS](#reverse-proxy--tls)
 - [Release flow](#release-flow)
 - [Backup & restore](#backup--restore)
@@ -33,6 +34,48 @@ how-to-build side, see [`docs/index.md`](index.md).
 | Security boundaries | [`docs/security-hardening.md`](security-hardening.md) (G1–G9) |
 | Env reference | [`.env.example`](../.env.example) |
 | CI pipelines | `.github/workflows/` (`ci.yml`, `deploy.yml`) |
+
+---
+
+## Deployment
+
+**Prebuilt image (primary path).** A multi-arch image is published to GHCR
+on every tagged release by `.github/workflows/docker.yml`:
+
+```bash
+docker pull ghcr.io/brunobola-portfolio/github-repo-manager:latest
+```
+
+> The `ghcr.io/brunobola-portfolio/github-repo-manager` package currently
+> ships as a **private** GHCR package (28 versions published) — `docker pull`
+> above will 401 until the repository owner flips it to public in the GHCR
+> package settings (two clicks, no code change). Until then, use the local
+> build below, which works today with zero extra steps.
+
+Point `docker-compose.yml`'s `app.build: .` at the pulled image instead
+(`image: ghcr.io/brunobola-portfolio/github-repo-manager:latest`, drop
+`build: .`) once the package is public, or run it directly:
+
+```bash
+docker run --env-file .env -p 3001:3001 \
+  -v app-data:/app/server/data \
+  -v app-backups:/app/server/data-backups \
+  ghcr.io/brunobola-portfolio/github-repo-manager:latest
+```
+
+**Local build (alternative, always available).**
+
+```bash
+git clone https://github.com/brunobola-portfolio/GitHub-Repo-Manager.git
+cd GitHub-Repo-Manager
+cp .env.example .env      # edit your values
+docker compose up -d      # app at http://localhost:3001
+```
+
+See [`docker-compose.yml`](../docker-compose.yml) for the full environment
+whitelist (required secrets use Compose's `${VAR:?message}` form and abort
+`up` with an explicit error if unset) and the [Backup & restore](#backup--restore)
+section below for the `app-data` / `app-backups` volume split.
 
 ---
 
