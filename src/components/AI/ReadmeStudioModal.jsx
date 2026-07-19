@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { useCallback, useEffect, useState } from 'react'
-import { DiffView, DiffModeEnum } from '@git-diff-view/react'
+import { DiffView } from '@git-diff-view/react'
 import '@git-diff-view/react/styles/diff-view.css'
 import { motion } from 'framer-motion'
 import { Sparkles, CheckCircle, ExternalLink, AlertTriangle, ArrowLeft, BookOpen } from 'lucide-react'
@@ -16,6 +16,7 @@ import { Input } from '../ui/form/Input'
 import { Switch } from '../ui/form/Switch'
 import { STAGGER, TRANSITION } from '../ui/motion'
 import { useTheme } from '../../hooks/useTheme'
+import { useResponsiveDiffMode } from '../../hooks/useResponsiveDiffMode'
 import { commitCommunityHealthFix } from '../../api/repos'
 import { aiApi } from '../../api/ai'
 import { useToast } from '../../hooks/useToast'
@@ -85,6 +86,7 @@ function deriveDefaultSections(patterns) {
 export function ReadmeStudioModal({ isOpen, onClose, repo, onApplied }) {
     const { isDark } = useTheme()
     const { toast } = useToast()
+    const diffViewMode = useResponsiveDiffMode()
 
     const [step, setStep] = useState('score') // score | configure | preview | committed
     const [scoreLoading, setScoreLoading] = useState(true)
@@ -453,7 +455,7 @@ export function ReadmeStudioModal({ isOpen, onClose, repo, onApplied }) {
                         newFile: { fileName: 'README.md (improved)', content: finalContent },
                         hunks: [],
                     }}
-                    diffViewMode={DiffModeEnum.Split}
+                    diffViewMode={diffViewMode}
                     diffViewTheme={isDark ? 'dark' : 'light'}
                 />
             </div>
