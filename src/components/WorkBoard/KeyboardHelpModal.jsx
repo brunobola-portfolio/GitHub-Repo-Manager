@@ -5,7 +5,7 @@ const ROWS = [
     { group: 'Navigate', items: [
         ['j  /  ↓', 'next row'],
         ['k  /  ↑', 'previous row'],
-        ['Click a tab', 'switch section (or use ⌘K command palette)'],
+        ['Click a tab', 'switch section (or use ⌘K / Ctrl+K command palette)'],
     ]},
     { group: 'Actions', items: [
         ['Enter', 'open the active row on GitHub'],
