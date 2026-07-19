@@ -10,14 +10,18 @@ import { MOCK_MODE } from '../config';
  * "Demo mode — simulated" banner is the context) instead of a real 403/CSRF
  * failure the visitor would read as a broken feature.
  *
+ * `fileType` (not `filePath`) selects the destination — the server derives
+ * the canonical path from its own FILE_GENERATORS registry (2026-07-19
+ * hardening: the client no longer gets to name an arbitrary write path).
+ *
  * @returns {Promise<{committed:boolean, mode:string, path:string, prUrl?:string}>}
  */
-export async function commitCommunityHealthFix({ owner, repo, filePath, content, commitMessage, mode = 'direct' }) {
+export async function commitCommunityHealthFix({ owner, repo, fileType, content, commitMessage, mode = 'direct' }) {
   if (MOCK_MODE) {
     return {
       committed: mode !== 'pr',
       mode,
-      path: filePath,
+      path: fileType,
       branch: mode === 'pr' ? 'repo-manager/readme-studio' : 'main',
       ...(mode === 'pr' ? { prUrl: `https://github.com/${owner}/${repo}/pull/1` } : {}),
     };
@@ -27,7 +31,7 @@ export async function commitCommunityHealthFix({ owner, repo, filePath, content,
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-    body: JSON.stringify({ filePath, content, commitMessage, mode }),
+    body: JSON.stringify({ fileType, content, commitMessage, mode }),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {

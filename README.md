@@ -505,7 +505,7 @@ npm rebuild better-sqlite3   # or manual rebuild
 
 **Do I have to pay for AI?** No — several providers have free tiers, and everything works with local models or algorithmic fallbacks. See [`docs/ai-providers.md`](docs/ai-providers.md).
 
-**What data is sent to the AI provider?** Repository metadata (name, description, topics, README) — never your code content.
+**What data is sent to the AI provider?** Depends on the feature. Repo insights, semantic search, and README generation send only repository metadata (name, description, topics, existing README) — never code. Diff-aware features — AI Deep Review, PR Chat, PR slash commands, and the Commit/PR-description generators — work from the PR or commit you're acting on (title, file manifest, and — for all but PR Chat — the full unified diff); nothing from unrelated repos or your session ever goes along, and BYOK sends everything straight to your own provider, never ours. Full breakdown: [Privacy & data handling](docs/features/ai-deep-review.md#privacy--data-handling).
 
 **Can I migrate TFVC?** Yes — automatic TFVC-to-Git conversion with up to 180 days of history. Work items become Issues, wikis are cloned with markdown conversion.
 

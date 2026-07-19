@@ -13,10 +13,10 @@ describe('commitCommunityHealthFix', () => {
         vi.stubGlobal('fetch', fetchSpy)
         const { commitCommunityHealthFix } = await import('../../src/api/repos')
 
-        const res = await commitCommunityHealthFix({ owner: 'acme', repo: 'lib', filePath: 'README.md', content: '# x', commitMessage: 'docs: x', mode: 'direct' })
+        const res = await commitCommunityHealthFix({ owner: 'acme', repo: 'lib', fileType: 'readme_stub', content: '# x', commitMessage: 'docs: x', mode: 'direct' })
 
         expect(fetchSpy).not.toHaveBeenCalled()
-        expect(res).toMatchObject({ committed: true, mode: 'direct', path: 'README.md', branch: 'main' })
+        expect(res).toMatchObject({ committed: true, mode: 'direct', path: 'readme_stub', branch: 'main' })
     })
 
     it('returns a PR shape (no direct commit) in mock mode when mode=pr', async () => {
@@ -24,7 +24,7 @@ describe('commitCommunityHealthFix', () => {
         vi.stubGlobal('fetch', vi.fn())
         const { commitCommunityHealthFix } = await import('../../src/api/repos')
 
-        const res = await commitCommunityHealthFix({ owner: 'acme', repo: 'lib', filePath: 'AGENTS.md', content: '# x', commitMessage: 'x', mode: 'pr' })
+        const res = await commitCommunityHealthFix({ owner: 'acme', repo: 'lib', fileType: 'contributing', content: '# x', commitMessage: 'x', mode: 'pr' })
 
         expect(res.committed).toBe(false)
         expect(res.mode).toBe('pr')
@@ -38,13 +38,13 @@ describe('commitCommunityHealthFix', () => {
         vi.doMock('../../src/utils/api', () => ({ getCsrfToken: vi.fn().mockResolvedValue('tok-123') }))
         const { commitCommunityHealthFix } = await import('../../src/api/repos')
 
-        const res = await commitCommunityHealthFix({ owner: 'acme', repo: 'lib', filePath: 'README.md', content: '# x', commitMessage: 'docs: x', mode: 'direct' })
+        const res = await commitCommunityHealthFix({ owner: 'acme', repo: 'lib', fileType: 'readme_stub', content: '# x', commitMessage: 'docs: x', mode: 'direct' })
 
         expect(fetchSpy).toHaveBeenCalledTimes(1)
         const [url, opts] = fetchSpy.mock.calls[0]
         expect(url).toBe('/api/repos/acme/lib/community-health/commit-fix')
         expect(opts.headers['X-CSRF-Token']).toBe('tok-123')
-        expect(JSON.parse(opts.body)).toMatchObject({ filePath: 'README.md', mode: 'direct' })
+        expect(JSON.parse(opts.body)).toMatchObject({ fileType: 'readme_stub', mode: 'direct' })
         expect(res.branch).toBe('main')
     })
 
@@ -54,7 +54,7 @@ describe('commitCommunityHealthFix', () => {
         vi.doMock('../../src/utils/api', () => ({ getCsrfToken: vi.fn().mockResolvedValue('tok') }))
         const { commitCommunityHealthFix } = await import('../../src/api/repos')
 
-        await expect(commitCommunityHealthFix({ owner: 'a', repo: 'b', filePath: 'README.md', content: 'x', commitMessage: 'x' }))
+        await expect(commitCommunityHealthFix({ owner: 'a', repo: 'b', fileType: 'readme_stub', content: 'x', commitMessage: 'x' }))
             .rejects.toMatchObject({ status: 403, code: 'FORBIDDEN' })
     })
 })

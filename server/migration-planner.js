@@ -1,4 +1,3 @@
-import { aiService } from './ai-service.js';
 import logger from './lib/logger.js';
 
 // A repo only counts as a *size* risk above this. Below it, "this repo is large"
@@ -227,31 +226,28 @@ export function fallbackAnalysis(context) {
 }
 
 /**
- * Analyze a migration context using AI (Gemini) if available, or fall back to
- * programmatic analysis.
+ * Build the grounded AI prompt for a migration context. Pure — no I/O, no
+ * provider call. Extracted so the route layer (server/routes/migration.js)
+ * owns the actual generation call through `guardedGenerate` (spend cap +
+ * audit + output-token cap), the same way server/routes/ai/core.js wraps
+ * `buildReadmeEnhancePrompt()` around its own `guardedGenerate` call instead
+ * of letting a nested lib function reach the provider directly.
  *
  * @param {Object} context - Migration context from the wizard
- * @returns {Promise<Object>} Analysis result
+ * @returns {string}
  */
-export async function analyzeMigration(context) {
-  // If AI is not configured, use fallback. Still run it through the sanitizer so
-  // both paths return analyses with the same honesty guarantees.
-  if (!aiService.provider) {
-    return sanitizeAnalysis(fallbackAnalysis(context), context);
-  }
+export function buildMigrationAnalysisPrompt(context) {
+  const repos = context.repos || [];
+  const workItems = context.workItems || {};
+  const wikis = context.wikis || [];
 
-  try {
-    const repos = context.repos || [];
-    const workItems = context.workItems || {};
-    const wikis = context.wikis || [];
+  const tfvcInfo = repos.some(r => r.isTfvc)
+    ? `\n\nTFVC Note: Some repositories use Team Foundation Version Control (TFVC) and must be converted to Git before migration. TFVC conversion preserves up to 180 days of history and takes 2-10 minutes per folder. If conversion fails (>1GB or timeout), a snapshot without history is used as fallback. TFVC folders: ${repos.filter(r => r.isTfvc).map(r => r.name).join(', ')}`
+    : '';
 
-    const tfvcInfo = repos.some(r => r.isTfvc)
-      ? `\n\nTFVC Note: Some repositories use Team Foundation Version Control (TFVC) and must be converted to Git before migration. TFVC conversion preserves up to 180 days of history and takes 2-10 minutes per folder. If conversion fails (>1GB or timeout), a snapshot without history is used as fallback. TFVC folders: ${repos.filter(r => r.isTfvc).map(r => r.name).join(', ')}`
-      : '';
-
-    // Every fact the model needs is supplied below. The repo line states LFS and
-    // TFVC status explicitly, so the model must NEVER say these are "unconfirmed".
-    const prompt = `You are a migration expert reviewing a plan to move repositories from Azure DevOps to GitHub. Produce a grounded, specific analysis a professional engineer would trust.
+  // Every fact the model needs is supplied below. The repo line states LFS and
+  // TFVC status explicitly, so the model must NEVER say these are "unconfirmed".
+  return `You are a migration expert reviewing a plan to move repositories from Azure DevOps to GitHub. Produce a grounded, specific analysis a professional engineer would trust.
 
 KNOWN FACTS (this is the complete picture — anything not listed here is unknown to you):
 Repositories to migrate:
@@ -277,25 +273,64 @@ Return a JSON object with exactly this structure (no markdown, raw JSON only):
   "estimatedMinutes": number,
   "warnings": ["string"]
 }`;
+}
 
-    const { text } = await aiService.provider.generate({ prompt });
+/**
+ * Analyze a migration context using AI if a `generate` function is supplied,
+ * or fall back to programmatic analysis otherwise.
+ *
+ * `generate` is injected by the caller (server/routes/migration.js binds it to
+ * `guardedGenerate`, which enforces the monthly AI spend cap + output-token
+ * cap + spend/audit recording — see server/routes/ai/shared.js) so this
+ * module never talks to a provider directly. Any failure from `generate()`
+ * degrades gracefully to the deterministic fallback (unchanged reliability
+ * behavior) EXCEPT a spend-cap denial, which is rethrown so the route can
+ * surface the standard 429 rather than silently absorbing a cap hit into a
+ * free 200 response.
+ *
+ * @param {Object} context - Migration context from the wizard
+ * @param {(opts: { prompt: string }) => Promise<{ text: string }>} [generate]
+ * @returns {Promise<Object & { aiUsed: boolean }>} Analysis result; `aiUsed`
+ *   tells the route whether a real provider call happened (and thus whether
+ *   to charge the ai_migration_risk quota) — callers must strip it before
+ *   sending the analysis to the client.
+ */
+export async function analyzeMigration(context, generate) {
+  // No provider available — deterministic-only, same as before this call
+  // accepted an injected `generate`. Still run it through the sanitizer so
+  // both paths return analyses with the same honesty guarantees.
+  if (!generate) {
+    return { ...sanitizeAnalysis(fallbackAnalysis(context), context), aiUsed: false };
+  }
+
+  try {
+    const prompt = buildMigrationAnalysisPrompt(context);
+    const { text } = await generate({ prompt });
 
     try {
       const parsed = JSON.parse(text);
-      return sanitizeAnalysis({
-        executionOrder: parsed.executionOrder || [],
-        risks: parsed.risks || [],
-        suggestions: (parsed.suggestions || []).map((s, i) => ({ ...s, id: s.id || `ai-${i}` })),
-        estimatedMinutes: parsed.estimatedMinutes || 0,
-        warnings: parsed.warnings || [],
-      }, context);
+      return {
+        ...sanitizeAnalysis({
+          executionOrder: parsed.executionOrder || [],
+          risks: parsed.risks || [],
+          suggestions: (parsed.suggestions || []).map((s, i) => ({ ...s, id: s.id || `ai-${i}` })),
+          estimatedMinutes: parsed.estimatedMinutes || 0,
+          warnings: parsed.warnings || [],
+        }, context),
+        aiUsed: true,
+      };
     } catch {
-      // If AI returns unparseable response, fall back
+      // If AI returns unparseable response, fall back. The provider call
+      // still happened (and was billed), so this counts as a used attempt.
       logger.warn('Migration planner: AI response was not valid JSON, using fallback');
-      return sanitizeAnalysis(fallbackAnalysis(context), context);
+      return { ...sanitizeAnalysis(fallbackAnalysis(context), context), aiUsed: true };
     }
   } catch (err) {
+    // A spend-cap denial must reach the caller as a real error (OWASP LLM10)
+    // — everything else (timeout, rate limit, provider outage) degrades to
+    // the deterministic fallback exactly as before this route was metered.
+    if (err?.code === 'AI_SPEND_CAP_REACHED') throw err;
     logger.error({ err }, 'Migration planner: AI analysis failed, using fallback');
-    return sanitizeAnalysis(fallbackAnalysis(context), context);
+    return { ...sanitizeAnalysis(fallbackAnalysis(context), context), aiUsed: false };
   }
 }

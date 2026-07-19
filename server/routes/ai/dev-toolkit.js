@@ -19,7 +19,7 @@ import { aiService, sanitizeForPrompt } from '../../ai-service.js';
 import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
 import { initSSE, streamToSSEWithUsage } from '../ai-streaming.js';
-import { requireAI, denyIfSpendCapReached, recordStreamCompletion } from './shared.js';
+import { requireAI, denyIfSpendCapReached, recordStreamCompletion, guardedGenerate, handleAIError } from './shared.js';
 import { mapAIErrorToResponse } from '../../middleware/ai-error-mapper.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import {
@@ -34,6 +34,7 @@ import {
 } from '../../lib/validators.js';
 import { createCache } from '../../lib/memory-cache.js';
 import { resolveMaxOutputTokens } from '../../lib/ai-output-budget.js';
+import { buildPrReviewGenerateOptions } from '../../lib/ai-features/pr-review.js';
 
 const router = express.Router();
 
@@ -174,15 +175,16 @@ File manifest: ${sanitizeForPrompt(JSON.stringify((fileManifest || []).map(f => 
             return;
         }
 
-        // Non-streaming (existing behavior)
-        const summary = await aiService.reviewPullRequest(fileManifest, topFilePatches, prMetadata);
-
-        if (summary === null) {
-            return res.status(404).json({
-                error: 'AI review summaries are disabled on this server.',
-                code: 'AI_REVIEW_DISABLED'
-            });
-        }
+        // Non-streaming (existing behavior). Routed through guardedGenerate —
+        // like the streaming branch above — so a spend-cap denial and the
+        // output-token cap apply here too; this also fixes a latent BYOK gap
+        // (aiService.reviewPullRequest used the server-wide provider, never
+        // the per-user one the streaming branch already used).
+        const { parsed: summary } = await guardedGenerate(
+            req,
+            buildPrReviewGenerateOptions(fileManifest, topFilePatches, prMetadata),
+            { feature: 'review_summary' },
+        );
 
         incrementUsage(userId, 'ai_queries');
         auditLog(req, 'ai.review_summary', 'ai', null, {
@@ -192,6 +194,7 @@ File manifest: ${sanitizeForPrompt(JSON.stringify((fileManifest || []).map(f => 
         });
         res.json({ success: true, summary });
     } catch (error) {
+        if (error?.code === 'AI_SPEND_CAP_REACHED') return handleAIError(res, error);
         req.log.error({ err: error }, 'AI PR review summary failed');
         if (mapAIErrorToResponse(res, error)) return;
         res.status(500).json({ error: safeError(error, 'Failed to generate review summary') });
@@ -278,10 +281,7 @@ Rules:
             return;
         }
 
-        const { text: raw } = await req.aiProvider.generate({
-            prompt: userMessage,
-            systemPrompt,
-        });
+        const { text: raw } = await guardedGenerate(req, { prompt: userMessage, systemPrompt }, { feature: 'generate_commit' });
 
         let parsed;
         try {
@@ -305,6 +305,7 @@ Rules:
             format_used: format,
         });
     } catch (error) {
+        if (error?.code === 'AI_SPEND_CAP_REACHED') return handleAIError(res, error);
         req.log.error({ err: error }, 'Generate commit message failed');
         if (mapAIErrorToResponse(res, error)) return;
         res.status(500).json({ error: safeError(error, 'Failed to generate commit message') });
@@ -402,10 +403,7 @@ Rules:
             return;
         }
 
-        const { text: raw } = await req.aiProvider.generate({
-            prompt: userMessage,
-            systemPrompt,
-        });
+        const { text: raw } = await guardedGenerate(req, { prompt: userMessage, systemPrompt }, { feature: 'generate_pr' });
 
         let parsed;
         try {
@@ -436,6 +434,7 @@ Rules:
             suggested_reviewers: parsed.suggested_reviewers || [],
         });
     } catch (error) {
+        if (error?.code === 'AI_SPEND_CAP_REACHED') return handleAIError(res, error);
         req.log.error({ err: error }, 'Generate PR description failed');
         if (mapAIErrorToResponse(res, error)) return;
         res.status(500).json({ error: safeError(error, 'Failed to generate PR description') });
@@ -516,10 +515,7 @@ Return ONLY the refined content, no explanation, no markdown fences.`;
             return;
         }
 
-        const { text: rawRefined } = await req.aiProvider.generate({
-            prompt: userMessage,
-            systemPrompt,
-        });
+        const { text: rawRefined } = await guardedGenerate(req, { prompt: userMessage, systemPrompt }, { feature: 'refine' });
         const refined = rawRefined.trim();
 
         incrementUsage(userId, 'ai_queries');
@@ -527,6 +523,7 @@ Return ONLY the refined content, no explanation, no markdown fences.`;
 
         res.json({ refined_content: refined });
     } catch (error) {
+        if (error?.code === 'AI_SPEND_CAP_REACHED') return handleAIError(res, error);
         req.log.error({ err: error }, 'Refine content failed');
         if (mapAIErrorToResponse(res, error)) return;
         res.status(500).json({ error: safeError(error, 'Failed to refine content') });
@@ -568,7 +565,7 @@ Files: ${sanitizeForPrompt(files, 2000)}
 Commits: ${sanitizeForPrompt(commitMessages, 2000)}
 Stats: ${diff_summary.files} files, +${diff_summary.additions} -${diff_summary.deletions}`;
 
-        const { text: raw } = await req.aiProvider.generate({ prompt });
+        const { text: raw } = await guardedGenerate(req, { prompt }, { feature: 'analyze_context' });
 
         let parsed;
         try {
@@ -597,6 +594,7 @@ Stats: ${diff_summary.files} files, +${diff_summary.additions} -${diff_summary.d
 
         res.json(responseData);
     } catch (error) {
+        if (error?.code === 'AI_SPEND_CAP_REACHED') return handleAIError(res, error);
         req.log.error({ err: error }, 'Analyze context failed');
         if (mapAIErrorToResponse(res, error)) return;
         res.status(500).json({ error: safeError(error, 'Failed to analyze context') });

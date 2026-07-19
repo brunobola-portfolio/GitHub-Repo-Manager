@@ -199,7 +199,7 @@ describe('ReadmeStudioModal — improve + preview flow', () => {
         const arg = commitCommunityHealthFix.mock.calls[0][0]
         expect(arg.owner).toBe('acme')
         expect(arg.repo).toBe('lib')
-        expect(arg.filePath).toBe('README.md')
+        expect(arg.fileType).toBe('readme_stub')
         expect(arg.mode).toBe('direct')
         expect(arg.content).toContain('## Usage')
 

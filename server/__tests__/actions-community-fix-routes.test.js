@@ -87,6 +87,7 @@ vi.mock('../lib/ai-features/community-health-fix.js', () => ({
                 filePath: 'CONTRIBUTING.md',
                 content: '# Contributing\nfrom ' + (provider ? 'ai' : 'none'),
                 suggestedCommitMessage: 'chore: add CONTRIBUTING.md',
+                costUSD: 0.015,
             })),
         },
     },
@@ -110,6 +111,15 @@ vi.mock('../middleware/require-tier.js', () => ({
     requireTier: () => (_req, _res, next) => next(),
     getUserTier: vi.fn(() => 'free'),
     attachTier: (_req, _res, next) => next(),
+}))
+
+// Monthly AI spend cap (OWASP LLM10) — controllable per test, independent of
+// the ai_queries count quota above.
+const mockCheckAISpendCap = vi.fn(() => ({ allowed: true, capCents: 0, spentCents: 0 }))
+const mockRecordAISpend = vi.fn()
+vi.mock('../lib/ai-spend-cap.js', () => ({
+    checkAISpendCap: (...args) => mockCheckAISpendCap(...args),
+    recordAISpend: (...args) => mockRecordAISpend(...args),
 }))
 
 // checkUsageLimit/incrementUsage are overridden per-test for deterministic
@@ -141,6 +151,7 @@ beforeEach(() => {
     createProviderMock.mockResolvedValue({ generate: async () => ({ text: 'x' }) })
     commitOrOpenPRMock.mockResolvedValue({ commitSha: 'abc123', mode: 'direct' })
     mockCheckUsageLimit.mockReturnValue({ allowed: true, current: 0, limit: 200, remaining: 200 })
+    mockCheckAISpendCap.mockReturnValue({ allowed: true, capCents: 0, spentCents: 0 })
 })
 
 describe('POST /repos/:owner/:repo/community-health/generate', () => {
@@ -208,6 +219,36 @@ describe('POST /repos/:owner/:repo/community-health/generate', () => {
         expect(res.body.code).toBe('ai_not_configured')
     })
 
+    it('returns the canonical 429 AI_SPEND_CAP_REACHED envelope and never resolves a provider when over the monthly cap', async () => {
+        mockCheckAISpendCap.mockReturnValue({ allowed: false, capCents: 100, spentCents: 150 })
+        const res = await request(makeApp())
+            .post('/api/v1/repos/octocat/hello/community-health/generate')
+            .send({ fileType: 'contributing' })
+
+        expect(res.status).toBe(429)
+        expect(res.body.code).toBe('AI_SPEND_CAP_REACHED')
+        expect(createProviderMock).not.toHaveBeenCalled()
+    })
+
+    it('never checks the spend cap for the deterministic (no-AI) branch', async () => {
+        const res = await request(makeApp())
+            .post('/api/v1/repos/octocat/hello/community-health/generate')
+            .send({ fileType: 'license', overrides: { licenseId: 'MIT' } })
+
+        expect(res.status).toBe(200)
+        expect(mockCheckAISpendCap).not.toHaveBeenCalled()
+    })
+
+    it('records spend on a successful AI generation and strips costUSD from the client response', async () => {
+        const res = await request(makeApp())
+            .post('/api/v1/repos/octocat/hello/community-health/generate')
+            .send({ fileType: 'contributing' })
+
+        expect(res.status).toBe(200)
+        expect(mockRecordAISpend).toHaveBeenCalledWith(1, 0.015)
+        expect(res.body.costUSD).toBeUndefined()
+    })
+
     it('rejects invalid owner names with 400 INVALID_PARAM', async () => {
         const res = await request(makeApp())
             .post('/api/v1/repos/!!bad!!/hello/community-health/generate')
@@ -223,7 +264,7 @@ describe('POST /repos/:owner/:repo/community-health/commit-fix', () => {
         const res = await request(makeApp())
             .post('/api/v1/repos/octocat/hello/community-health/commit-fix')
             .send({
-                filePath: 'LICENSE',
+                fileType: 'license',
                 content: 'MIT License...',
                 commitMessage: 'chore: add MIT license',
                 mode: 'direct',
@@ -233,6 +274,7 @@ describe('POST /repos/:owner/:repo/community-health/commit-fix', () => {
         expect(res.body.committed).toBe(true)
         expect(res.body.commitSha).toBe('abc123')
         expect(commitOrOpenPRMock).toHaveBeenCalledOnce()
+        expect(commitOrOpenPRMock.mock.calls[0][0]).toMatchObject({ filePath: 'LICENSE' })
 
         // Health cache invalidated for this user + repo.
         expect(dbMod.default.prepare).toHaveBeenCalledWith(
@@ -241,10 +283,37 @@ describe('POST /repos/:owner/:repo/community-health/commit-fix', () => {
         expect(dbMod.default.__runMock).toHaveBeenCalledWith(1, 123)
     })
 
+    it('derives filePath from the fileType registry, ignoring any client-supplied filePath', async () => {
+        // 2026-07-19 hardening (A4): the server must never trust a client-echoed
+        // path for the write destination — it derives it from
+        // FILE_GENERATORS[fileType].path regardless of what else is in the body.
+        const res = await request(makeApp())
+            .post('/api/v1/repos/octocat/hello/community-health/commit-fix')
+            .send({
+                fileType: 'contributing',
+                filePath: '../../etc/passwd',
+                content: 'malicious payload',
+                commitMessage: 'chore: add CONTRIBUTING.md',
+            })
+
+        expect(res.status).toBe(200)
+        expect(commitOrOpenPRMock.mock.calls[0][0]).toMatchObject({ filePath: 'CONTRIBUTING.md' })
+    })
+
+    it('returns 400 invalid_file_type for an unknown fileType', async () => {
+        const res = await request(makeApp())
+            .post('/api/v1/repos/octocat/hello/community-health/commit-fix')
+            .send({ fileType: 'totally_made_up', content: 'x', commitMessage: 'c' })
+
+        expect(res.status).toBe(400)
+        expect(res.body.code).toBe('invalid_file_type')
+        expect(commitOrOpenPRMock).not.toHaveBeenCalled()
+    })
+
     it('returns 400 invalid_body when required fields are missing', async () => {
         const res = await request(makeApp())
             .post('/api/v1/repos/octocat/hello/community-health/commit-fix')
-            .send({ filePath: 'LICENSE' })
+            .send({ fileType: 'license' })
 
         expect(res.status).toBe(400)
         expect(res.body.code).toBe('invalid_body')
@@ -256,7 +325,7 @@ describe('POST /repos/:owner/:repo/community-health/commit-fix', () => {
         const res = await request(makeApp())
             .post('/api/v1/repos/octocat/hello/community-health/commit-fix')
             .send({
-                filePath: 'LICENSE',
+                fileType: 'license',
                 content: 'body',
                 commitMessage: 'chore: add MIT license',
             })
