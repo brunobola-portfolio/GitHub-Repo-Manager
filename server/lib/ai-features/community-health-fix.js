@@ -138,6 +138,10 @@ export async function generateContributing({ repo, provider }) {
 		filePath: 'CONTRIBUTING.md',
 		content: result?.text || '',
 		suggestedCommitMessage: 'chore: add CONTRIBUTING.md',
+		// Additive — the route strips this before responding; it exists so
+		// the caller can record the monthly AI spend cap (OWASP LLM10)
+		// without this module reaching the spend-cap ledger itself.
+		costUSD: result?.costUSD ?? null,
 	}
 }
 
@@ -151,6 +155,7 @@ export async function generateSecurityMd({ repo, email = 'security@example.com',
 		filePath: 'SECURITY.md',
 		content: result?.text || '',
 		suggestedCommitMessage: 'chore: add SECURITY.md',
+		costUSD: result?.costUSD ?? null,
 	}
 }
 
@@ -164,6 +169,7 @@ export async function generateIssueTemplate({ repo, provider }) {
 		filePath: '.github/ISSUE_TEMPLATE/bug_report.md',
 		content: result?.text || '',
 		suggestedCommitMessage: 'chore: add bug report issue template',
+		costUSD: result?.costUSD ?? null,
 	}
 }
 
@@ -176,6 +182,7 @@ export async function generatePRTemplate({ repo, provider }) {
 		filePath: '.github/PULL_REQUEST_TEMPLATE.md',
 		content: result?.text || '',
 		suggestedCommitMessage: 'chore: add pull request template',
+		costUSD: result?.costUSD ?? null,
 	}
 }
 
@@ -190,6 +197,7 @@ export async function generateReadmeStub({ repo, provider }) {
 		filePath: 'README.md',
 		content: result?.text || '',
 		suggestedCommitMessage: 'chore: add README stub',
+		costUSD: result?.costUSD ?? null,
 	}
 }
 

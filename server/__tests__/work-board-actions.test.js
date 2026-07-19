@@ -49,6 +49,15 @@ vi.mock('../lib/usage-meter.js', async (importOriginal) => {
     };
 });
 
+// Monthly AI spend cap (OWASP LLM10) — controllable per test, independent of
+// the ai_queries count quota above.
+const mockCheckAISpendCap = vi.fn(() => ({ allowed: true, capCents: 0, spentCents: 0 }));
+const mockRecordAISpend = vi.fn();
+vi.mock('../lib/ai-spend-cap.js', () => ({
+    checkAISpendCap: (...args) => mockCheckAISpendCap(...args),
+    recordAISpend: (...args) => mockRecordAISpend(...args),
+}));
+
 const { default: router } = await import('../routes/work-board-actions.js');
 const snoozeLib = await import('../lib/work-board-snooze.js');
 const cacheLib = await import('../lib/work-board-cache.js');
@@ -486,5 +495,25 @@ describe('POST /api/v1/work-board/ai-summary', () => {
         const res = await request(makeApp()).post('/api/v1/work-board/ai-summary').send({});
         expect(res.status).toBe(200);
         expect(mockIncrementUsage).toHaveBeenCalledWith(1, 'ai_queries');
+    });
+
+    it('returns the canonical 429 AI_SPEND_CAP_REACHED envelope and never calls generateSummary when over the monthly cap', async () => {
+        mockCheckAISpendCap.mockReturnValueOnce({ allowed: false, capCents: 100, spentCents: 150 });
+        const res = await request(makeApp()).post('/api/v1/work-board/ai-summary').send({});
+        expect(res.status).toBe(429);
+        expect(res.body.code).toBe('AI_SPEND_CAP_REACHED');
+        expect(summaryLib.generateSummary).not.toHaveBeenCalled();
+    });
+
+    it('records spend (in addition to the ai_queries quota) and strips costUSD from both the cache and the client response', async () => {
+        summaryLib.generateSummary.mockResolvedValueOnce({
+            headline: 'All quiet', bullets: [{ text: 'Nothing urgent', severity: 'info' }],
+            urgencyScore: 0.1, model: 'claude', provider: 'anthropic', costUSD: 0.03,
+        });
+        const res = await request(makeApp()).post('/api/v1/work-board/ai-summary').send({});
+        expect(res.status).toBe(200);
+        expect(mockRecordAISpend).toHaveBeenCalledWith(1, 0.03);
+        expect(res.body.data.costUSD).toBeUndefined();
+        expect(cacheLib.putCached).toHaveBeenCalledWith(1, 'ai_summary', expect.not.objectContaining({ costUSD: expect.anything() }), null, 300);
     });
 });
