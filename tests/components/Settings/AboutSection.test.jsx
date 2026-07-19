@@ -82,6 +82,21 @@ describe('AboutSection', () => {
         expect(screen.queryByText(/up to date/i)).not.toBeInTheDocument();
     });
 
+    it('Dismiss button uses the AA-contrast house pattern on its light-theme base (not text-slate-400)', async () => {
+        apiCall.mockResolvedValue({
+            current: CURRENT, latest: '99.0.0', updateAvailable: true,
+            releaseUrl: 'https://example.com/release', checkedAt: new Date().toISOString(),
+        });
+        render(<AboutSection />);
+        const dismissButton = await screen.findByRole('button', { name: /dismiss/i });
+        // text-slate-400 on bg-indigo-50/60 measures ~2.8:1, below WCAG AA — the
+        // house pattern (see CommandPalette.jsx) is text-slate-500 in light mode,
+        // text-slate-400 only under the dark: variant.
+        expect(dismissButton.className).toMatch(/(^|\s)text-slate-500(\s|$)/);
+        expect(dismissButton.className).toMatch(/dark:text-slate-400/);
+        expect(dismissButton.className).not.toMatch(/(^|\s)text-slate-400(\s|$)/);
+    });
+
     it('dismiss persists per version: hides the banner, and a re-mount for the same version stays hidden', async () => {
         apiCall.mockResolvedValue({
             current: CURRENT, latest: '99.0.0', updateAvailable: true,

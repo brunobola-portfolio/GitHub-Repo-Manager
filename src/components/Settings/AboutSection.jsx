@@ -110,7 +110,7 @@ export function AboutSection() {
                         <button
                             type="button"
                             onClick={() => dismiss(data.latest)}
-                            className="ds-text-meta text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                            className="ds-text-meta text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                         >
                             Dismiss
                         </button>
