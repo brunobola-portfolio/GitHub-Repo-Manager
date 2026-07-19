@@ -225,7 +225,7 @@ export function ReadmeStudioModal({ isOpen, onClose, repo, onApplied }) {
         setCommitError(null)
         try {
             const json = await commitCommunityHealthFix({
-                owner, repo: repoName, filePath: 'README.md', content: finalContent, commitMessage, mode: commitMode,
+                owner, repo: repoName, fileType: 'readme_stub', content: finalContent, commitMessage, mode: commitMode,
             })
             setCommittedResult(json)
             setStep('committed')

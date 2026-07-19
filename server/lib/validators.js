@@ -1160,13 +1160,16 @@ export const communityHealthGenerateSchema = z.object({
     }).strip().optional().default({}),
 }).strict();
 
-// commit-fix: filePath/content/commitMessage stay OPTIONAL here because the
+// commit-fix: fileType/content/commitMessage stay OPTIONAL here because the
 // handler's presence check emits the domain-specific `invalid_body` code that
 // the route contract (and its test) already established; the schema bounds
 // lengths, validates `mode`, and rejects unknown keys. `content` is capped like
-// the raw contents route.
+// the raw contents route. `filePath` is deliberately NOT accepted — the
+// server derives the write destination from FILE_GENERATORS[fileType].path
+// (2026-07-19 hardening: a client-supplied path must never reach the write
+// layer, even echoed back from a prior /generate response).
 export const communityHealthCommitFixSchema = z.object({
-    filePath: z.string().max(1024).optional(),
+    fileType: z.string().min(1).max(60).optional(),
     content: z.string().max(2_000_000).optional(),
     commitMessage: z.string().max(10_000).optional(),
     mode: z.enum(['direct', 'pr']).optional().default('direct'),

@@ -91,6 +91,15 @@ vi.mock('../lib/usage-meter.js', async (importOriginal) => {
     }
 })
 
+// Monthly AI spend cap (OWASP LLM10) — controllable per test, independent of
+// the ai_queries count quota above.
+const mockCheckAISpendCap = vi.fn(() => ({ allowed: true, capCents: 0, spentCents: 0 }))
+const mockRecordAISpend = vi.fn()
+vi.mock('../lib/ai-spend-cap.js', () => ({
+    checkAISpendCap: (...args) => mockCheckAISpendCap(...args),
+    recordAISpend: (...args) => mockRecordAISpend(...args),
+}))
+
 const { default: workBoardActionsRouter } = await import('../routes/work-board-actions.js')
 
 const app = express()
@@ -101,6 +110,8 @@ describe('POST /api/v1/work-board/draft-comment', () => {
     beforeEach(() => {
         mockCheckUsageLimit.mockReturnValue({ allowed: true, current: 0, limit: 200, remaining: 200 })
         mockIncrementUsage.mockClear()
+        mockCheckAISpendCap.mockReturnValue({ allowed: true, capCents: 0, spentCents: 0 })
+        mockRecordAISpend.mockClear()
     })
 
     it('returns { draft } on success', async () => {
@@ -140,5 +151,26 @@ describe('POST /api/v1/work-board/draft-comment', () => {
         expect(res.body.code).toBe('QUOTA_EXCEEDED')
         expect(res.body.upgradeUrl).toBe('/pricing')
         expect(createProviderForUser).not.toHaveBeenCalled()
+    })
+
+    it('returns the canonical 429 AI_SPEND_CAP_REACHED envelope and never resolves a provider when over the monthly cap', async () => {
+        mockCheckAISpendCap.mockReturnValue({ allowed: false, capCents: 100, spentCents: 150 })
+        const { createProviderForUser } = await import('../lib/ai-provider.js')
+        vi.mocked(createProviderForUser).mockClear()
+        const res = await request(app)
+            .post('/api/v1/work-board/draft-comment')
+            .send({ repoFullName: 'acme/api', prNumber: 42, intent: 'comment' })
+        expect(res.status).toBe(429)
+        expect(res.body.code).toBe('AI_SPEND_CAP_REACHED')
+        expect(createProviderForUser).not.toHaveBeenCalled()
+    })
+
+    it('records spend on a successful draft generation', async () => {
+        mockProvider.generate.mockResolvedValueOnce({ text: 'Looks good, one nit.', costUSD: 0.02 })
+        const res = await request(app)
+            .post('/api/v1/work-board/draft-comment')
+            .send({ repoFullName: 'acme/api', prNumber: 42, intent: 'comment' })
+        expect(res.status).toBe(200)
+        expect(mockRecordAISpend).toHaveBeenCalledWith(1, 0.02)
     })
 })

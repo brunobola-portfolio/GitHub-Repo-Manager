@@ -63,6 +63,7 @@ import {
 import { createProviderForUser } from '../../lib/ai-provider.js';
 import { mapAIErrorToResponse } from '../../middleware/ai-error-mapper.js';
 import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { checkAISpendCap, recordAISpend } from '../../lib/ai-spend-cap.js';
 import { applyOwnerRepoParamValidators } from './_shared.js';
 
 const router = express.Router();
@@ -544,17 +545,33 @@ router.post('/:owner/:repo/community-health/generate', requireAuth, validateBody
             return res.status(429).json(quotaExceededResponse({ ...quota, metric: 'ai_queries' }));
         }
 
+        // Monthly AI spend cap (OWASP LLM10) — additive to the ai_queries
+        // quota above; mirrors the manual checkAISpendCap/recordAISpend pair
+        // used across the AI surface wherever a route can't go through
+        // guardedGenerate directly (see server/routes/ai/core.js's /ai/chat
+        // for the canonical shape).
+        const spend = checkAISpendCap(userId);
+        if (!spend.allowed) {
+            return res.status(429).json({
+                code: 'AI_SPEND_CAP_REACHED',
+                error: 'Monthly AI spend limit reached. Try again next month or raise the cap.',
+                spent_cents: spend.spentCents,
+                cap_cents: spend.capCents,
+            });
+        }
+
         const provider = await createProviderForUser(userId, 'completion', { featureKey: 'COMMUNITY_HEALTH_FIX' });
         if (!provider) {
             return res.status(403).json({ error: 'AI is not configured for this user', code: 'ai_not_configured' });
         }
 
-        const out = await gen.generator({
+        const { costUSD, ...out } = await gen.generator({
             repo: repoData,
             email: overrides.email || req.session.userEmail,
             provider,
         });
         incrementUsage(userId, 'ai_queries');
+        recordAISpend(userId, costUSD);
         res.json(out);
     } catch (e) {
         const mapped = mapAIErrorToResponse(res, e);
@@ -565,13 +582,25 @@ router.post('/:owner/:repo/community-health/generate', requireAuth, validateBody
 
 router.post('/:owner/:repo/community-health/commit-fix', requireAuth, validateBody(communityHealthCommitFixSchema), async (req, res) => {
     const { owner, repo } = req.params;
-    const { filePath, content, commitMessage, mode = 'direct' } = req.validatedBody;
+    const { fileType, content, commitMessage, mode = 'direct' } = req.validatedBody;
 
     // Presence check kept inline: it emits the domain-specific `invalid_body`
     // code the route contract established (the schema only bounds/strict-checks).
-    if (!filePath || !content || !commitMessage) {
+    if (!fileType || !content || !commitMessage) {
         return res.status(400).json({ error: 'missing required fields', code: 'invalid_body' });
     }
+
+    // filePath is ALWAYS derived server-side from the fileType registry —
+    // this used to accept req.body.filePath directly, letting a tampered
+    // request pick an arbitrary destination inside the repo for the write
+    // (2026-07-19 hardening, item A4). Same registry the /generate route
+    // above already uses, so the two endpoints can never disagree on a
+    // fileType's canonical path.
+    const gen = FILE_GENERATORS[fileType];
+    if (!gen) {
+        return res.status(400).json({ error: `unknown fileType: ${fileType}`, code: 'invalid_file_type' });
+    }
+    const filePath = gen.path;
 
     try {
         const result = await commitOrOpenPR({

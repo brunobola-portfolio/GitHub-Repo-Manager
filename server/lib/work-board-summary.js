@@ -213,9 +213,11 @@ export async function generateSummary({ userId, dataSources }) {
     // or ignore response_format entirely and trip the provider's strict
     // JSON.parse — that path raises AIError(INVALID_RESPONSE).
     let parsed = null;
+    let costUSD = null;
     try {
         const result = await provider.generate({ ...baseArgs, schema: SUMMARY_SCHEMA });
         parsed = result?.parsed || extractJsonFromText(result?.text);
+        costUSD = result?.costUSD ?? null;
     } catch (firstErr) {
         // Auth, rate-limit, quota, network, timeout — rethrow as-is so the
         // route can map them to the right HTTP status. Only INVALID_RESPONSE
@@ -238,6 +240,7 @@ export async function generateSummary({ userId, dataSources }) {
         try {
             const fallbackResult = await provider.generate(baseArgs);
             parsed = extractJsonFromText(fallbackResult?.text);
+            costUSD = fallbackResult?.costUSD ?? costUSD;
         } catch (secondErr) {
             // A second-attempt failure on a non-parse axis (auth, network…)
             // is the *real* error — preserve its AIError code.
@@ -256,5 +259,9 @@ export async function generateSummary({ userId, dataSources }) {
         urgencyScore: Math.min(1, Math.max(0, Number(parsed.urgencyScore) || 0)),
         model: provider.modelName || null,
         provider: provider.type || null,
+        // Additive — the route strips this before caching/responding; it
+        // exists so the caller can record the monthly AI spend cap without
+        // this module reaching the spend-cap ledger itself.
+        costUSD,
     };
 }

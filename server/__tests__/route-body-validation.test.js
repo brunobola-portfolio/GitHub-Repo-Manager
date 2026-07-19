@@ -387,7 +387,7 @@ describe('POST /community-health/commit-fix — envelope validation', () => {
     it('accepts a valid commit-fix', async () => {
         const res = await request(makeApp())
             .post(`${base}/community-health/commit-fix`)
-            .send({ filePath: 'LICENSE', content: 'MIT License...', commitMessage: 'chore: add license', mode: 'direct' })
+            .send({ fileType: 'license', content: 'MIT License...', commitMessage: 'chore: add license', mode: 'direct' })
         expect(res.status).toBe(200)
         expect(res.body.committed).toBe(true)
     })
@@ -395,15 +395,15 @@ describe('POST /community-health/commit-fix — envelope validation', () => {
     it('400s on an invalid mode', async () => {
         const res = await request(makeApp())
             .post(`${base}/community-health/commit-fix`)
-            .send({ filePath: 'LICENSE', content: 'x', commitMessage: 'c', mode: 'evil' })
+            .send({ fileType: 'license', content: 'x', commitMessage: 'c', mode: 'evil' })
         expect(res.status).toBe(400)
         expect(res.body.code).toBe('validation_failed')
     })
 
-    it('400s on an unknown key (strict)', async () => {
+    it('400s on an unknown key (strict) — filePath is no longer accepted', async () => {
         const res = await request(makeApp())
             .post(`${base}/community-health/commit-fix`)
-            .send({ filePath: 'LICENSE', content: 'x', commitMessage: 'c', badkey: 1 })
+            .send({ fileType: 'license', filePath: 'LICENSE', content: 'x', commitMessage: 'c' })
         expect(res.status).toBe(400)
     })
 })

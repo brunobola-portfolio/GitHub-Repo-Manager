@@ -117,7 +117,7 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 		setState('committing')
 		try {
 			const json = await commitCommunityHealthFix({
-				owner: repo.owner.login, repo: repo.name, filePath, content, commitMessage, mode: 'direct',
+				owner: repo.owner.login, repo: repo.name, fileType, content, commitMessage, mode: 'direct',
 			})
 			setCommittedResult(json)
 			setState('committed')
@@ -126,7 +126,7 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 			setError(e)
 			setState('error')
 		}
-	}, [content, filePath, commitMessage, repo, onCommitted])
+	}, [content, filePath, commitMessage, fileType, repo, onCommitted])
 
 	const renderBody = () => {
 		if (state === 'generating') {
