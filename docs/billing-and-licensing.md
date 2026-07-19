@@ -49,6 +49,38 @@ as defense-in-depth honesty.
 
 When a user completes a Stripe checkout, the server automatically mints a signed Ed25519 license key and emails it to the subscriber.
 
+### License duration policy
+
+The emailed key's validity always matches what was actually paid for — it is
+**never** a flat 12 months regardless of billing cadence:
+
+- **Monthly plan** → the key is valid for **1 month**. Each renewal invoice
+  (`invoice.paid` with `billing_reason: 'subscription_cycle'`) mints and
+  emails a **fresh** 1-month key automatically, so an active monthly
+  subscriber's key never actually expires — it just gets replaced every
+  billing cycle. The very first invoice of a new subscription
+  (`billing_reason: 'subscription_create'`) does **not** trigger a second
+  reissue — the initial `checkout.session.completed` handler already emailed
+  the first key, and reissuing again would double-email day one.
+- **Yearly plan** → the key is valid for **12 months**, matching the annual
+  billing cycle. No mid-year reissue.
+- The billing cadence is read from `session.metadata.billingPeriod` (set by
+  `routes/billing.js` at checkout) and persisted on
+  `user_subscriptions.billing_period` so the renewal path can look it up
+  without needing the original checkout session.
+
+**Keys are not remotely revocable.** Cancelling a subscription
+(`customer.subscription.deleted`) only downgrades the Stripe-tracked tier —
+it does not invalidate any already-issued JWT. A monthly subscriber who
+cancels keeps a working key for up to the remainder of that key's 1-month
+window (at most); a yearly subscriber's key keeps working for up to the
+remainder of its 12-month window. This is a deliberate simplicity trade-off
+(no revocation list to maintain) — self-hosted activation is offline by
+design, so there is no server call to check against at runtime. If stronger
+revocation guarantees are ever needed, the fix is a checked-online
+allowlist/denylist, not a shorter key — that is out of scope today and not
+advertised as a security control.
+
 ### Flow overview
 
 ```
@@ -59,9 +91,9 @@ stripeWebhookHandler (stripe-webhooks.js)
         │
         ├─ reconcileTierFromPrice()  ← cross-checks price metadata vs session metadata
         │
-        ├─ INSERT/UPDATE user_subscriptions
+        ├─ INSERT/UPDATE user_subscriptions (stores billing_period too)
         │
-        └─ issueLicenseForCheckout() (lib/license-issuer.js)
+        └─ issueLicenseForCheckout() (lib/license-issuer.js), months=1 or 12
                 │
                 ├─ Check issued_licenses WHERE stripe_session_id = ?  ← idempotency guard
                 │
@@ -70,6 +102,12 @@ stripeWebhookHandler (stripe-webhooks.js)
                 ├─ INSERT INTO issued_licenses
                 │
                 └─ sendEmail()  ← delivery via EMAIL_PROVIDER adapter
+
+Stripe invoice.paid (billing_reason=subscription_cycle, monthly sub only)
+        │
+        ▼
+stripeWebhookHandler → issueLicenseForCheckout() again, months=1,
+stripeSessionId=invoice.id (one license per paid invoice)
 ```
 
 ### Idempotency
@@ -95,7 +133,7 @@ If email delivery fails:
 | `stripe_session_id` | Stripe checkout session ID (unique — idempotency key) |
 | `tier` | `'pro'` or `'enterprise'` |
 | `license_key` | Full signed license key string (`grm_lic_...`) |
-| `expires_at` | Expiry timestamp (12 months from issue) |
+| `expires_at` | Expiry timestamp — 1 month from issue for a monthly plan, 12 months for yearly (see "License duration policy" above) |
 | `issued_at` | Row creation timestamp |
 | `email_delivered` | `1` if the email was sent successfully, `0` otherwise |
 | `email_delivered_at` | Timestamp of successful delivery |

@@ -466,6 +466,21 @@ export const MIGRATIONS = [
             db.exec(`DROP TABLE IF EXISTS license_keys`);
         },
     },
+    {
+        version: 29,
+        name: 'user_subscriptions.billing_period',
+        up(db) {
+            // Populated from the checkout session's billingPeriod metadata
+            // (routes/billing.js) at checkout.session.completed. Read back at
+            // invoice.paid to decide whether a subscription is due a fresh
+            // 1-month license key on renewal (monthly subs) or not (yearly subs
+            // already hold a 12-month key) — see stripe-webhooks.js and
+            // docs/billing-and-licensing.md. Defaults 'monthly' so rows written
+            // before this migration (all monthly-billed historically, since
+            // yearly checkout only recently shipped) don't need a backfill.
+            addColumnIfMissing(db, 'user_subscriptions', 'billing_period', "TEXT NOT NULL DEFAULT 'monthly'");
+        },
+    },
 ];
 
 /**

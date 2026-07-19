@@ -109,6 +109,13 @@ export async function stripeWebhookHandler(req, res) {
                 const userId = parseInt(session.metadata?.userId);
                 const rawTier = session.metadata?.tier || 'pro';
                 const tier = await reconcileTierFromPrice(stripe, session, rawTier, session.id);
+                // billingPeriod comes from the checkout session metadata
+                // (routes/billing.js ~line 89); default 'monthly' covers older
+                // clients/webhooks that predate the yearly toggle. The emailed
+                // license's validity must match what was actually paid for — a
+                // monthly $19 sub must not carry a 12-month irrevocable key.
+                const billingPeriod = session.metadata?.billingPeriod === 'yearly' ? 'yearly' : 'monthly';
+                const licenseMonths = billingPeriod === 'yearly' ? 12 : 1;
 
                 if (userId) {
                     // Synchronous subscription write wrapped in a transaction so
@@ -120,11 +127,11 @@ export async function stripeWebhookHandler(req, res) {
                     try {
                         db.transaction(() => {
                             db.prepare(`
-                                INSERT INTO user_subscriptions (user_id, tier, stripe_customer_id, stripe_subscription_id, status)
-                                VALUES (?, ?, ?, ?, 'active')
+                                INSERT INTO user_subscriptions (user_id, tier, stripe_customer_id, stripe_subscription_id, status, billing_period)
+                                VALUES (?, ?, ?, ?, 'active', ?)
                                 ON CONFLICT(user_id) DO UPDATE SET
-                                    tier = ?, stripe_customer_id = ?, stripe_subscription_id = ?, status = 'active', updated_at = datetime('now')
-                            `).run(userId, tier, session.customer, session.subscription, tier, session.customer, session.subscription);
+                                    tier = ?, stripe_customer_id = ?, stripe_subscription_id = ?, status = 'active', billing_period = ?, updated_at = datetime('now')
+                            `).run(userId, tier, session.customer, session.subscription, billingPeriod, tier, session.customer, session.subscription, billingPeriod);
                         })();
                     } catch (err) {
                         logger.error({ err, sessionId: session.id }, 'stripe-webhook: subscription upsert failed — rolling back idempotency');
@@ -153,7 +160,7 @@ export async function stripeWebhookHandler(req, res) {
                                 email: recipientEmail,
                                 tier,
                                 seats: parseInt(session.metadata?.seats) || 1,
-                                months: 12,
+                                months: licenseMonths,
                                 stripeSubscriptionId: session.subscription,
                                 stripeSessionId: session.id,
                             });
@@ -208,6 +215,48 @@ export async function stripeWebhookHandler(req, res) {
                         UPDATE user_subscriptions SET status = 'active', updated_at = datetime('now')
                         WHERE stripe_subscription_id = ?
                     `).run(invoice.subscription);
+
+                    // Renewal license reissue: a monthly sub's emailed key is
+                    // only valid 1 month (see checkout.session.completed
+                    // above), so each paid renewal invoice needs its own
+                    // fresh one — otherwise the license silently expires
+                    // mid-subscription. Yearly subs already hold a 12-month
+                    // key from checkout and don't need a reissue here.
+                    //
+                    // billing_reason='subscription_cycle' is Stripe's marker
+                    // for a recurring renewal invoice, as opposed to
+                    // 'subscription_create' — which fires for that SAME
+                    // subscription's very first invoice and would otherwise
+                    // double-email a brand-new subscriber alongside the
+                    // checkout.session.completed handler above.
+                    if (invoice.billing_reason === 'subscription_cycle') {
+                        const subRow = db.prepare(
+                            'SELECT user_id, tier, billing_period FROM user_subscriptions WHERE stripe_subscription_id = ?'
+                        ).get(invoice.subscription);
+
+                        if (subRow?.user_id && subRow.billing_period !== 'yearly') {
+                            const user = db.prepare('SELECT email FROM users WHERE id = ?').get(subRow.user_id);
+                            const recipientEmail = invoice.customer_email || user?.email;
+                            if (recipientEmail) {
+                                await issueLicenseForCheckout({
+                                    userId: subRow.user_id,
+                                    email: recipientEmail,
+                                    tier: subRow.tier,
+                                    seats: 1,
+                                    months: 1,
+                                    stripeSubscriptionId: invoice.subscription,
+                                    // invoice.id is the natural idempotency key
+                                    // for a renewal reissue — one license per
+                                    // paid invoice, mirroring
+                                    // issueLicenseForCheckout's per-checkout-
+                                    // session idempotency for initial issuance.
+                                    stripeSessionId: invoice.id,
+                                });
+                            } else {
+                                logger.warn({ subscriptionId: invoice.subscription, invoiceId: invoice.id }, 'stripe-webhook: no email for renewal license delivery');
+                            }
+                        }
+                    }
                 }
                 break;
             }
