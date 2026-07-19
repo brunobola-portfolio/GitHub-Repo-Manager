@@ -3,14 +3,30 @@ import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { getUserTier } from '../middleware/require-tier.js';
 import { getFeatures } from '../lib/feature-flags.js';
+import { getCurrentPeriod, METRIC_TO_FEATURE } from '../lib/usage-meter.js';
 
 const router = Router();
+
+// Build a `{ current, limit }` pair for one usage_metrics row, resolving the
+// limit via the canonical METRIC_TO_FEATURE mapping (usage-meter.js) so this
+// route never maintains a second copy of the per-tier limit table — the same
+// mapping checkUsageLimit()/guardedIncrement() use to enforce these caps.
+function usageRow(byType, features, metricType) {
+    const featureKey = METRIC_TO_FEATURE[metricType] || metricType;
+    return {
+        current: byType[metricType] || 0,
+        limit: features[featureKey] ?? Infinity,
+    };
+}
 
 // Get current usage across all metrics
 router.get('/', requireAuth, (req, res) => {
     const userId = req.session.userId;
-    const now = new Date();
-    const periodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    // period_start is read via the SAME UTC-month helper every write path uses
+    // (incrementUsage/guardedIncrement in usage-meter.js) — using a locally
+    // computed key here previously made the Settings→Usage panel read 0 on
+    // any host west/east of UTC (see docs/reports/2026-07-19-launch-readiness-panel.md #7).
+    const { start: periodStart } = getCurrentPeriod();
 
     const metrics = db.prepare(
         'SELECT metric_type, count FROM usage_metrics WHERE user_id = ? AND period_start = ?'
@@ -29,11 +45,6 @@ router.get('/', requireAuth, (req, res) => {
     for (const m of metrics) byType[m.metric_type] = m.count;
 
     const aiQueries = { current: byType.ai_queries || 0, limit: features.aiQueriesPerMonth };
-    const readme = { current: byType.ai_readme || 0, limit: features.readmeGenPerMonth };
-    const commit = { current: byType.ai_commit || 0, limit: features.commitGenPerMonth };
-    const insights = { current: byType.ai_insights || 0, limit: features.repoInsightsPerMonth };
-    const migrationRisk = { current: byType.ai_migration_risk || 0, limit: features.migrationRiskPerMonth };
-    const semanticSearch = { current: byType.ai_semantic_search || 0, limit: features.semanticSearchPerMonth };
 
     res.json({
         tier,
@@ -43,13 +54,30 @@ router.get('/', requireAuth, (req, res) => {
         apiKeys: { current: apiKeyCount, limit: features.apiKeys },
         repos: { limit: features.maxRepos },
         teams: { limit: features.teamMembersMax ?? null },
-        // Per-feature AI quotas (Free-tier caps, Unlimited on Pro/Enterprise)
+        // Per-feature AI quotas (Free-tier caps, Unlimited on Pro/Enterprise).
+        // Every metric here is already enforced server-side (checkAIFeatureLimit/
+        // guardedIncrementAIUsage callers) — this just surfaces it so Free users
+        // discover a cap before they hit the 429 (launch-readiness panel #7).
         aiFeatures: {
-            readme,
-            commit,
-            insights,
-            migrationRisk,
-            semanticSearch,
+            readme: usageRow(byType, features, 'ai_readme'),
+            commit: usageRow(byType, features, 'ai_commit'),
+            insights: usageRow(byType, features, 'ai_insights'),
+            migrationRisk: usageRow(byType, features, 'ai_migration_risk'),
+            semanticSearch: usageRow(byType, features, 'ai_semantic_search'),
+            deepReview: usageRow(byType, features, 'ai_deep_review'),
+            prChat: usageRow(byType, features, 'ai_pr_chat'),
+            prCommand: usageRow(byType, features, 'ai_pr_command'),
+            promptTest: usageRow(byType, features, 'ai_prompt_test'),
+            diagram: usageRow(byType, features, 'ai_diagram'),
+            agentRules: usageRow(byType, features, 'ai_agent_rules'),
+            securityPosture: usageRow(byType, features, 'ai_security_posture'),
+            image: usageRow(byType, features, 'ai_image'),
+        },
+        // Non-AI metered actions — separate group so the dashboard can label
+        // them distinctly from AI generation quotas.
+        migrationAndSync: {
+            migrationFull: usageRow(byType, features, 'migration_full_executions'),
+            syncApply: usageRow(byType, features, 'sync_apply_executions'),
         },
         // Legacy nested shape kept for backwards compatibility
         metrics: {

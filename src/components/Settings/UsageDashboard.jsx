@@ -35,6 +35,41 @@ function formatLimit(value) {
   return value
 }
 
+// Rows rendered inside a quota group, keyed to the API's per-metric `{
+// current, limit }` objects (server/routes/usage.js). Grouping mirrors
+// METRIC_TO_FEATURE (server/lib/usage-meter.js) — a new metered metric only
+// needs an entry here, not new rendering logic.
+const AI_FEATURE_ROWS = [
+  { key: 'readme', label: 'README Generator' },
+  { key: 'commit', label: 'Commit Generator' },
+  { key: 'insights', label: 'Repo Insights' },
+  { key: 'migrationRisk', label: 'Migration Risk Analysis' },
+  { key: 'semanticSearch', label: 'Semantic Search' },
+  { key: 'deepReview', label: 'AI Deep Review' },
+  { key: 'prChat', label: 'PR Chat' },
+  { key: 'prCommand', label: 'PR Commands' },
+  { key: 'promptTest', label: 'Prompt Studio Test' },
+  { key: 'diagram', label: 'AI Diagrams' },
+  { key: 'agentRules', label: 'Agent Rules Generator' },
+  { key: 'securityPosture', label: 'Security Posture AI Summary' },
+  { key: 'image', label: 'AI Image Generation' },
+]
+
+const MIGRATION_SYNC_ROWS = [
+  { key: 'migrationFull', label: 'Full Migration Executions' },
+  { key: 'syncApply', label: 'Mirror Sync Apply' },
+]
+
+// A quota group only earns its own section when at least one row in it has a
+// real (finite) cap — on Pro/Enterprise every metric here resolves to
+// Infinity (JSON-serialised as null), so there is nothing informative to bar-chart.
+function hasAnyRealLimit(rows, source) {
+  return rows.some((r) => {
+    const l = source[r.key]?.limit
+    return l !== undefined && l !== null && l !== Infinity && l !== 'Infinity'
+  })
+}
+
 export function UsageDashboard() {
   const [usage, setUsage] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -84,19 +119,12 @@ export function UsageDashboard() {
   const teamsLimit = usage.teams?.limit ?? null
   const tier = usage.tier || 'free'
   const aiFeatures = usage.aiFeatures || {}
+  const migrationAndSync = usage.migrationAndSync || {}
 
-  // Per-feature AI quotas (only render when caps apply — Pro/Enterprise return Infinity)
-  const featureRows = [
-    { key: 'readme', label: 'README Generator' },
-    { key: 'commit', label: 'Commit Generator' },
-    { key: 'insights', label: 'Repo Insights' },
-    { key: 'migrationRisk', label: 'Migration Risk Analysis' },
-    { key: 'semanticSearch', label: 'Semantic Search' },
-  ]
-  const perFeatureHasLimits = featureRows.some(r => {
-    const l = aiFeatures[r.key]?.limit
-    return l !== undefined && l !== null && l !== Infinity && l !== 'Infinity'
-  })
+  // Per-feature AI / migration / sync quotas (only render a group when at
+  // least one row in it has a real cap — Pro/Enterprise return Infinity).
+  const showAiFeatures = hasAnyRealLimit(AI_FEATURE_ROWS, aiFeatures)
+  const showMigrationSync = hasAnyRealLimit(MIGRATION_SYNC_ROWS, migrationAndSync)
 
   return (
     <div className="space-y-6" data-testid="usage-dashboard">
@@ -110,12 +138,32 @@ export function UsageDashboard() {
         </div>
       </div>
 
-      {perFeatureHasLimits && (
+      {showAiFeatures && (
         <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
           <h3 className="text-sm font-semibold mb-3">AI Features</h3>
           <div className="space-y-4">
-            {featureRows.map(({ key, label }) => {
+            {AI_FEATURE_ROWS.map(({ key, label }) => {
               const f = aiFeatures[key]
+              if (!f) return null
+              return (
+                <UsageBar
+                  key={key}
+                  label={label}
+                  current={f.current || 0}
+                  limit={f.limit}
+                />
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {showMigrationSync && (
+        <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
+          <h3 className="text-sm font-semibold mb-3">Migration &amp; Sync</h3>
+          <div className="space-y-4">
+            {MIGRATION_SYNC_ROWS.map(({ key, label }) => {
+              const f = migrationAndSync[key]
               if (!f) return null
               return (
                 <UsageBar
