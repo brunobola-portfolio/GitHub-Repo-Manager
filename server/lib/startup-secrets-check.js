@@ -59,14 +59,29 @@ export function verifySecretsAtStartup({ nodeEnv }) {
         // EMAIL_PROVIDER=console silently succeeds (logs, never sends). In
         // production that means license-key emails and data-retention warnings
         // are dropped on the floor. Default of 'console' is development-only.
+        //
+        // ALLOW_CONSOLE_EMAIL=true is an explicit, documented, single-purpose
+        // opt-out for single-user/local installs (e.g. the Windows package)
+        // where email delivery is meaningless — there is no one else to email,
+        // and license-key/retention notices just log. It downgrades ONLY this
+        // check to a warning; every other production guard still hard-aborts.
         const emailProvider = process.env.EMAIL_PROVIDER;
+        const allowConsoleEmail = process.env.ALLOW_CONSOLE_EMAIL === 'true';
         if (!emailProvider || emailProvider === 'console') {
-            errors.push(
+            const message =
                 'EMAIL_PROVIDER must be set to a real delivery driver in production ' +
                 "(got '" + (emailProvider || '<unset>') + "'). Set EMAIL_PROVIDER=resend " +
                 'and configure RESEND_API_KEY + EMAIL_FROM, otherwise license keys and ' +
-                'retention warnings will never be delivered.'
-            );
+                'retention warnings will never be delivered.';
+            if (allowConsoleEmail) {
+                warnings.push(
+                    message + ' Downgraded to a warning because ALLOW_CONSOLE_EMAIL=true ' +
+                    '— only set that for single-user/local installs where email delivery ' +
+                    'is not needed.'
+                );
+            } else {
+                errors.push(message);
+            }
         } else if (emailProvider === 'resend' && !process.env.RESEND_API_KEY) {
             errors.push(
                 'RESEND_API_KEY must be set when EMAIL_PROVIDER=resend'
