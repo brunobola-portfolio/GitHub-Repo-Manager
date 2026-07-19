@@ -20,8 +20,15 @@
   #define OutputDir "..\..\.dev\package-windows\out"
 #endif
 
+; MyAppPublisher: single source of truth is scripts/package-windows.mjs's
+; getPublisher() (derives it from package.json's "author" field) - CI passes
+; it in via /DMyAppPublisher, same mechanism as MyAppVersion. The fallback
+; here exists only so a bare local `iscc installer.iss` still works.
+#ifndef MyAppPublisher
+  #define MyAppPublisher "Bola Labs, Inc."
+#endif
+
 #define MyAppName "GitHub Repo Manager"
-#define MyAppPublisher "Bola Labs, Inc."
 #define MyAppURL "https://github.com/brunobola-portfolio/GitHub-Repo-Manager"
 #define MyAppExeName "Start GitHub Repo Manager.cmd"
 #define MyDataDir "{localappdata}\GitHubRepoManager\data"
@@ -90,27 +97,37 @@ Source: "{#StagingRoot}\Stop GitHub Repo Manager.cmd"; DestDir: "{app}"; Flags: 
 Source: "{#StagingRoot}\README-WINDOWS.txt"; DestDir: "{app}"; Flags: ignoreversion isreadme
 
 [Icons]
-; Parameters passes --data-dir so the installed app's data lives under
-; LocalAppData, never inside {app} (which is itself under LocalAppData\
-; Programs here, but kept separate so reinstall/uninstall of the app
-; payload can never collide with user data -see installer.iss [Dirs]).
-Name: "{group}\Start GitHub Repo Manager"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--data-dir ""{#MyDataDir}"""; WorkingDir: "{app}"
+; No --data-dir Parameters here (deliberately, as of the marker-file fix
+; below): a user launching {app}\Start GitHub Repo Manager.cmd DIRECTLY
+; (README-WINDOWS.txt tells them this works) never goes through these
+; shortcuts at all, so a Parameters-only fix would leave that path
+; defaulting to the portable ".\data" layout under {app} - wrong for an
+; installed copy, and exactly what [UninstallDelete]'s "Type: filesandordirs;
+; Name: {app}" would then delete on uninstall. install-config.txt (written
+; in [Code] below, read by start.ps1) makes EVERY launch path - shortcut or
+; raw .cmd - resolve to the same LocalAppData data dir, so there is only one
+; mechanism to keep correct instead of two that can disagree.
+Name: "{group}\Start GitHub Repo Manager"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"
 Name: "{group}\Stop GitHub Repo Manager"; Filename: "{app}\Stop GitHub Repo Manager.cmd"; WorkingDir: "{app}"
 Name: "{group}\Open data folder"; Filename: "{win}\explorer.exe"; Parameters: """{#MyDataDir}"""
 Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
-Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--data-dir ""{#MyDataDir}"""; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Code]
 // Detects a currently-running instance via the pidfile Start writes next to
-// app\.env (packaging/windows/start.ps1), and -since this repo's Node
-// server has no OS-level named mutex to hook AppMutex into -confirms via
+// app\.env (packaging/windows/start.ps1), and - since this repo's Node
+// server has no OS-level named mutex to hook AppMutex into - confirms via
 // `tasklist` that the PID is actually our bundled node.exe before treating
 // it as "running". Blocks the install/upgrade rather than silently
 // proceeding over a live process, which could corrupt the SQLite DB
 // mid-write. This intentionally blocks even under /SUPPRESSMSGBOXES: the
 // safest default for an unattended upgrade over a live instance is to abort,
 // not to guess. CI/local smoke tests never hit this path (always a fresh
-// install with nothing running yet).
+// install with nothing running yet). Only ever called from
+// PrepareToInstall (below) - {app} must already be resolved to the user's
+// actual chosen directory (default or a custom /DIR=), which is NOT true
+// yet at InitializeSetup time, before the directory-selection page/switch
+// has been processed.
 function IsAppRunning(): Boolean;
 var
   PidFile, TasklistOut, PidStr: string;
@@ -118,7 +135,7 @@ var
   ResultCode, I: Integer;
 begin
   Result := False;
-  PidFile := ExpandConstant('{localappdata}\Programs\GitHubRepoManager\app\.grm.pid');
+  PidFile := ExpandConstant('{app}\app\.grm.pid');
   if not FileExists(PidFile) then
     exit;
   if not LoadStringsFromFile(PidFile, Lines) or (GetArrayLength(Lines) = 0) then
@@ -139,16 +156,40 @@ begin
       Result := True;
 end;
 
-function InitializeSetup(): Boolean;
+// PrepareToInstall runs after the destination directory is fully resolved
+// (the wizard page or a silent /DIR= switch has already been applied), so
+// ExpandConstant('{app}') above is trustworthy here - unlike in
+// InitializeSetup, which fires before that. Returning a non-empty string
+// makes Setup stop at the "Preparing to Install" page with that message and
+// exit with Inno's dedicated PrepareToInstall-failure exit code; per Inno's
+// own docs this does not require an interactive dialog to be shown to
+// terminate, so a /VERYSILENT /SUPPRESSMSGBOXES run still fails closed
+// (aborts, non-zero exit) instead of hanging or installing over a live
+// process.
+function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
-  Result := True;
+  Result := '';
   if IsAppRunning() then
+    Result := 'GitHub Repo Manager appears to be running. Please close it first ' +
+      '(Start Menu -> Stop GitHub Repo Manager), then run Setup again.';
+end;
+
+// Writes {app}\install-config.txt after files are copied (ssPostInstall),
+// recording the resolved data dir so start.ps1 can find it regardless of
+// how the app is launched (Start Menu shortcut, desktop shortcut, or the
+// raw .cmd README-WINDOWS.txt tells users they can double-click directly).
+// The value itself ({#MyDataDir}, under LocalAppData) does not depend on
+// {app}, but WHERE this marker lives does - so a custom /DIR= install still
+// gets a correct, self-describing copy of the app that finds its own data
+// dir without needing the installer to also update a Start Menu shortcut's
+// Parameters (removed above) that a raw .cmd launch would never see anyway.
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
   begin
-    SuppressibleMsgBox(
-      'GitHub Repo Manager appears to be running. Please close it first ' +
-      '(Start Menu -> Stop GitHub Repo Manager), then run Setup again.',
-      mbError, MB_OK, IDOK);
-    Result := False;
+    SaveStringToFile(ExpandConstant('{app}\install-config.txt'),
+      'DATA_DIR=' + ExpandConstant('{#MyDataDir}') + #13#10,
+      False);
   end;
 end;
 

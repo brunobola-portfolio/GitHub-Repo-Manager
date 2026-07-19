@@ -99,13 +99,17 @@ jobs:
       - name: Build the installer
         run: |
           $version = '${{ steps.meta.outputs.version }}'
+          # package-windows.mjs is ESM; --input-type=module lets a bare `node
+          # -e` import it directly instead of duplicating getPublisher()'s
+          # "<person> - <company>" parsing here as a second source of truth.
+          $publisher = node --input-type=module -e "import { getPublisher } from './scripts/package-windows.mjs'; console.log(getPublisher());"
           # choco's innosetup package installs machine-wide (the runner's user
           # is an admin) to Program Files (x86); ISCC.exe is not put on PATH.
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path -LiteralPath $iscc)) {
               $iscc = "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe"
           }
-          & $iscc "/DMyAppVersion=$version" packaging\windows\installer.iss
+          & $iscc "/DMyAppVersion=$version" "/DMyAppPublisher=$publisher" packaging\windows\installer.iss
           if ($LASTEXITCODE -ne 0) {
               Write-Host "::error::ISCC exited with code $LASTEXITCODE"
               exit $LASTEXITCODE
@@ -117,6 +121,14 @@ jobs:
           $port = 18081
           $installDir = "$env:LOCALAPPDATA\Programs\GitHubRepoManager"
           $dataDir = "$env:LOCALAPPDATA\GitHubRepoManager\data"
+          $correctDbFile = Join-Path $dataDir 'manager.db'
+          # The wrong-location file a broken install-config.txt/marker read
+          # would produce (the portable ".\data" default, resolved against
+          # the install dir instead of LocalAppData). Asserting this is
+          # ABSENT is what makes this test able to fail: launching the raw
+          # .cmd (no --data-dir, no GRM_DATA_DIR) with the marker mechanism
+          # reverted would put manager.db here instead of under LocalAppData.
+          $wrongDbFile = Join-Path $installDir 'data\manager.db'
 
           $proc = Start-Process -FilePath '${{ steps.meta.outputs.setupPath }}' `
               -ArgumentList '/VERYSILENT', '/NORESTART', '/SUPPRESSMSGBOXES' `
@@ -129,9 +141,19 @@ jobs:
               Write-Host "::error::installed Start launcher not found at $installDir"
               exit 1
           }
+          if (-not (Test-Path (Join-Path $installDir 'install-config.txt'))) {
+              Write-Host "::error::install-config.txt marker not written by the installer at $installDir"
+              exit 1
+          }
 
+          # Deliberately launch the RAW .cmd, not a Start Menu shortcut, and
+          # deliberately do not set --data-dir/GRM_DATA_DIR: this is exactly
+          # the path README-WINDOWS.txt tells users works, and the one the
+          # original bug affected (only the shortcut's Parameters got this
+          # right before the install-config.txt marker fix).
           $env:GRM_NO_BROWSER = '1'
           $env:GRM_PORT = "$port"
+          Remove-Item Env:\GRM_DATA_DIR -ErrorAction SilentlyContinue
           & (Join-Path $installDir 'Start GitHub Repo Manager.cmd')
 
           $live = $false
@@ -146,8 +168,12 @@ jobs:
               Write-Host "::error::installed package never became live within 60s"
               exit 1
           }
-          if (-not (Test-Path $dataDir)) {
-              Write-Host "::error::installed data dir not found at $dataDir (--data-dir wiring broken)"
+          if (-not (Test-Path $correctDbFile)) {
+              Write-Host "::error::no SQLite DB at $correctDbFile — the install-config.txt data-dir marker is not being read correctly"
+              exit 1
+          }
+          if (Test-Path $wrongDbFile) {
+              Write-Host "::error::SQLite DB found at $wrongDbFile — the raw .cmd launch fell back to the portable ./data default instead of the installed LocalAppData dir"
               exit 1
           }
 
@@ -184,11 +210,11 @@ jobs:
               Get-ChildItem -LiteralPath $installDir -Recurse -ErrorAction SilentlyContinue
               exit 1
           }
-          if (-not (Test-Path $dataDir)) {
-              Write-Host "::error::data dir was deleted by uninstall — should have been left in place: $dataDir"
+          if (-not (Test-Path $correctDbFile)) {
+              Write-Host "::error::the SQLite DB itself was deleted by uninstall — should have been left in place: $correctDbFile"
               exit 1
           }
-          Write-Host "installer smoke test passed (install, boot, stop, uninstall — app dir gone, data dir preserved)"
+          Write-Host "installer smoke test passed (install, boot, stop, uninstall — app dir gone, real DB file preserved at the correct LocalAppData path, nothing written under the install dir)"
 
       - uses: actions/upload-artifact@v4
         with:

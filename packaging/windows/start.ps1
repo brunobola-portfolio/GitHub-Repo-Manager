@@ -2,11 +2,16 @@
 #
 # Boots GitHub Repo Manager using the bundled runtime\node.exe. Shared by both
 # distribution forms:
-#   - portable ZIP:  Start GitHub Repo Manager.cmd -> this script, no args
-#                    -> DataDir defaults to ".\data" next to this script.
-#   - Inno installer: the Start Menu shortcut passes
-#                    -DataDir "%LOCALAPPDATA%\GitHubRepoManager\data"
-#                    so user data survives reinstall/uninstall (installer.iss).
+#   - portable ZIP:      no install-config.txt next to this script -> DataDir
+#                        defaults to ".\data" next to this script.
+#   - Inno installer:    installer.iss writes install-config.txt (DATA_DIR=
+#                        %LOCALAPPDATA%\GitHubRepoManager\data) next to this
+#                        script right after install, so DataDir resolves
+#                        there for EVERY launch path -- Start Menu shortcut,
+#                        desktop shortcut, or double-clicking this .cmd
+#                        directly -- with no dependence on how it was
+#                        launched. User data survives reinstall/uninstall
+#                        because that dir lives outside {app} entirely.
 #
 # -NoBrowser is the CI/automation switch: skip opening a browser, skip the
 # window-title dance (no visible window is wanted), and return as soon as the
@@ -50,9 +55,36 @@ $ServerEntry = Join-Path $AppDir 'server\index.js'
 $FirstRun = Join-Path $AppDir 'scripts\first-run.mjs'
 $EnvFile = Join-Path $AppDir '.env'
 $PidFile = Join-Path $AppDir '.grm.pid'
+$InstallConfigFile = Join-Path $Root 'install-config.txt'
+
+# installer.iss writes install-config.txt (DATA_DIR=<LocalAppData path>)
+# right after copying files, into the SAME directory as this script -- so an
+# installed copy defaults correctly here regardless of how it's launched
+# (Start Menu shortcut, desktop shortcut, or double-clicking this .cmd
+# directly, which README-WINDOWS.txt explicitly tells users works). Without
+# this, only a shortcut's --data-dir Parameters would get it right, and a
+# direct launch would silently default to the portable ".\data" layout
+# under the install dir -- which [UninstallDelete] then deletes wholesale on
+# uninstall. A portable ZIP extraction never has this file, so it keeps the
+# portable default below untouched.
+function Get-InstalledDataDir {
+    if (Test-Path -LiteralPath $InstallConfigFile) {
+        foreach ($line in Get-Content -LiteralPath $InstallConfigFile) {
+            if ($line -match '^\s*DATA_DIR\s*=\s*(.+?)\s*$') {
+                return $Matches[1]
+            }
+        }
+    }
+    return $null
+}
 
 if (-not $DataDir) {
-    $DataDir = Join-Path $Root 'data'
+    $installedDataDir = Get-InstalledDataDir
+    if ($installedDataDir) {
+        $DataDir = $installedDataDir
+    } else {
+        $DataDir = Join-Path $Root 'data'
+    }
 }
 
 if (-not (Test-Path -LiteralPath $NodeExe)) {

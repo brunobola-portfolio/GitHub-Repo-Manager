@@ -178,11 +178,15 @@ jobs:
       - name: Build the installer
         run: |
           $version = '${{ steps.meta.outputs.version }}'
+          # package-windows.mjs is ESM; --input-type=module lets a bare `node
+          # -e` import it directly instead of duplicating getPublisher()'s
+          # "<person> - <company>" parsing here as a second source of truth.
+          $publisher = node --input-type=module -e "import { getPublisher } from './scripts/package-windows.mjs'; console.log(getPublisher());"
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path -LiteralPath $iscc)) {
               $iscc = "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe"
           }
-          & $iscc "/DMyAppVersion=$version" packaging\windows\installer.iss
+          & $iscc "/DMyAppVersion=$version" "/DMyAppPublisher=$publisher" packaging\windows\installer.iss
           if ($LASTEXITCODE -ne 0) {
               Write-Host "::error::ISCC exited with code $LASTEXITCODE"
               exit $LASTEXITCODE
