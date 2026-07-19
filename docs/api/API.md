@@ -5,7 +5,7 @@
 **Authentication:** GitHub OAuth via session cookies, or an API key sent as `Authorization: Bearer grm_live_...`. Most endpoints require an authenticated session (`requireAuth` middleware). The server never exposes raw access tokens to the client.
 **CSRF:** All mutating `/api/*` requests (non-GET/HEAD/OPTIONS) require a valid `X-CSRF-Token` header. The OAuth flow and signature-verified webhooks are exempt.
 **Request validation:** Write endpoints validate their JSON body with Zod (`validateBody` middleware). An invalid body returns `400 { error, code: 'validation_failed' }` — see [Shared Response Envelopes](#shared-response-envelopes).
-**Total Endpoints:** 324 route handlers (318 across `server/routes/**` — 74 route files — plus 6 app-level webhook and health routes mounted directly in `server/index.js`). This document gives full entries for the public-facing and recently-changed surface; lower-level internal routes are summarised under [Additional Endpoints](#additional-endpoints-grouped).
+**Total Endpoints:** 331 route handlers (325 across `server/routes/**` — 74 route files, recounted via `grep -rEc "^\s*router\.(get|post|put|patch|delete)\(" server/routes` — plus 6 app-level webhook and health routes mounted directly in `server/index.js`). This document gives full entries for the public-facing and recently-changed surface; lower-level internal routes are summarised under [Additional Endpoints](#additional-endpoints-grouped).
 
 ---
 
@@ -4333,6 +4333,66 @@ Run initial system setup (create tables, verify schema, seed data).
 ```json
 {
   "success": true
+}
+```
+
+---
+
+### `GET /api/system/source`
+
+AGPL §13 source-offer endpoint (machine-readable). Unauthenticated by design — a network operator running a modified version must be able to point at this from anywhere to satisfy the source-disclosure obligation. Forks should edit [`server/routes/system.js`](../../server/routes/system.js) to update `sourceUrl` to their own modified source.
+
+| Detail | Value |
+|---|---|
+| Auth required | No |
+
+**Response (200):**
+```json
+{
+  "license": "AGPL-3.0-only",
+  "sourceUrl": "https://github.com/brunobola-portfolio/GitHub-Repo-Manager",
+  "commercialLicenseUrl": "https://bolalabs.pt/license",
+  "notice": "Modified versions running as a network service must offer their corresponding source under AGPL §13."
+}
+```
+
+---
+
+### `GET /api/system/update-check`
+
+Self-hosted "new version available" signal for Settings → About (notify-only — the app never self-updates). Forwards to [`checkForUpdate()`](../../server/lib/update-check.js), which makes a single unauthenticated `GET` to GitHub's public releases API (no query params, no identifying data) and caches the result — 24h on success, 1h after a failure so a transient outage retries sooner. Never throws: a network failure, a malformed release payload, or a dev build running ahead of the last tag all degrade to an "inconclusive" result rather than a 500, and an unexpected error in the route handler itself still returns `200 { current }`.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+
+**Response (200) — update check enabled:**
+```json
+{
+  "current": "4.7.0",
+  "latest": "4.7.0",
+  "updateAvailable": false,
+  "releaseUrl": "https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v4.7.0",
+  "checkedAt": "2026-07-19T12:00:00.000Z"
+}
+```
+
+**Response (200) — disabled via `UPDATE_CHECK=false`:**
+```json
+{
+  "current": "4.7.0",
+  "disabled": true
+}
+```
+
+**Response (200) — inconclusive (fetch failed, timed out, or a non-2xx from GitHub):** `latest`, `updateAvailable`, and `releaseUrl` are all `null` — the check never claims an update is or isn't available when it can't tell.
+```json
+{
+  "current": "4.7.0",
+  "latest": null,
+  "updateAvailable": null,
+  "releaseUrl": null,
+  "checkedAt": "2026-07-19T12:00:00.000Z"
 }
 ```
 

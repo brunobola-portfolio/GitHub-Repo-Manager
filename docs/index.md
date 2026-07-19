@@ -9,7 +9,7 @@ below links to the canonical page for that topic.
 | ------------ | ---- |
 | Understand the system at a glance | [Architecture overview](architecture/overview.md) |
 | Run a production instance | [Operations runbook](operations.md) |
-| Call the API | [API reference](api/API.md) (324 endpoints) |
+| Call the API | [API reference](api/API.md) (331 route handlers — recounted via `grep`, see API.md header) |
 | Configure an AI provider | [AI Providers (BYOK)](ai-providers.md) |
 | Run on Windows without Docker or Node.js | [Windows guide](windows.md) |
 | Use the AI Deep Review experience | [AI Deep Review feature guide](features/ai-deep-review.md) |
@@ -22,8 +22,30 @@ below links to the canonical page for that topic.
 
 ## Recent releases
 
-Full detail: [`CHANGELOG.md`](../CHANGELOG.md).
+The 3 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.7.0 (2026-07-19) — Native Windows distribution.** A CI-boot-validated
+  installer and portable ZIP, both bundling their own Node.js runtime — no
+  Docker, no separate Node.js install, no admin rights for the installer.
+  First-run bootstrap generates its own random secrets and a sane local
+  `.env` (`scripts/first-run.mjs`); new `HOST` (bind address) and `DATA_DIR`
+  (persisted-state root) env vars support installed layouts whose app
+  directory isn't writable; `ALLOW_CONSOLE_EMAIL` opts a single-user install
+  out of the hosted-deployment email-provider guard. Settings → About shows
+  an in-app "new version available" banner sourced from a single
+  unauthenticated GitHub releases check, disable with `UPDATE_CHECK=false`.
+  winget manifest scaffolding exists but submission to `winget-pkgs` is
+  still pending. See [Windows guide](windows.md).
+- **v4.6.1 (2026-07-19) — Launch-readiness hardening.** Every finding from
+  the 2026-07-19 seven-dimension launch-readiness panel fixed: closed AI
+  spend-cap gaps (`POST /api/migration/analyze` was fully unmetered; five
+  non-streaming AI routes could bypass the spend cap by omitting
+  `?stream`), a UTC/local-calendar usage-dashboard read bug, a README FAQ
+  privacy overclaim, and small-text WCAG AA contrast fixes. Plus 10
+  previously-invisible Free-tier quotas surfaced in Settings → Usage, the
+  Docker image quickstart promoted to primary, and license-key duration now
+  matching the actual billing cadence. See the
+  [panel report](reports/2026-07-19-launch-readiness-panel.md).
 - **v4.6.0 (2026-07-19) — Community WOW + six production-premium waves.** Four
   new AI-grounded repo tools, all metered on Free with deterministic zero-AI-cost
   fallbacks: **README Studio** (free quality score + grounded improve),
@@ -36,71 +58,6 @@ Full detail: [`CHANGELOG.md`](../CHANGELOG.md).
   pass, ops readiness (Prometheus metrics, reverse-proxy guide), and list
   virtualization. See [Production Premium Plan](plans/2026-07-17-production-premium-plan.md)
   and [Community WOW spec](specs/2026-07-18-community-wow-wave6.md).
-- **v4.5.0 (2026-07-06)** — **Production readiness.** A 10-specialist audit (88 findings) followed by eight remediation waves on `main`. Repo Advisor rebuilt end-to-end (provider-neutral `AI_PROVIDER`, spend caps + audit metadata, SSE streaming, BYOK hardening, golden evals + CI gate); end-to-end migration Replace (resolve conflicts, Replace & retry, LFS retry); environment-tooling readiness (`npm run doctor`, `/api/env`, per-plan preflight); GDPR registry-driven erasure + export; ops hardening (WAL-safe scheduled backups, daily/hourly janitors, `/live` + `/ready` probes, compression, SSE-aware shutdown); shared Zod request-validation layer (`validation_failed`); versioned migration ledger replacing loose `.sql` files. Quality gates: 5,200+ unit tests + a dual-theme axe a11y gate (9 views × 2 themes) + design-token anti-drift lint.
-- **v4.4.0 (2026-06-13)** — **Azure/TFS credential hardening + production-readiness pass.** Self-fix host-allowlist UX (1-click admin add, audited), structured `HOST_NOT_ALLOWED` / `UNSAFE_URL` / `PRIVATE_ADDRESS` codes, PBKDF2-SHA512 credential-vault KDF. Fixes a boot-stopping Express 5 SPA-fallback bug and a login DoS surfaced by a full multi-dimension audit.
-- **v4.3.0 (2026-05-18)** — **Premium-through-restraint.** Visual language pivots from "AI-template" (rainbow gradients, glow shadows, shimmer) to a GitHub-tasteful aesthetic across every modal, toast, banner and empty/error state (see [theme spec](specs/2026-05-14-premium-non-llm-theme-design.md)). Mobile gets a peek-out FAB with breathing halo + edge stripe + spring reveal; hash deep-linking (`#/repos`, `#/work`, `#/teams`, `#/roadmap`, `#/pricing`, `#/ai/prompts`) syncs bidirectionally with view state; the page scrollbar becomes a premium overlay (transparent by default, slate-400/50 on hover) and fully hides on touch devices. RepoDetail tabs, WorkBoard tabs, SettingsModal sections and MigrationWizard late steps now lazy-loaded — **~91 KB gzipped deferred from first paint** (RepoDetail alone: 331 → 188 KB, -43 %). 121 commits, 3896 unit + 84 e2e green.
-- **v4.2.0 (2026-05-13)** — **Premium Dashboard Phase 1: Live Inbox.** Replaces the always-empty Attention Feed with a sectioned, keyboard-driven inbox (needs review, my PRs, mentions, stale drafts). Archive (`e`) / snooze (`s`) state persisted in `dashboard_inbox_state` SQLite table. AI narrative on top-3 items. Four new endpoints under `/api/v1/dashboard/*`. `dependabot_ready` and `failing_ci` are stubs (data wired in Phase 2/3). Lazy-loaded; gated behind `localStorage` flag `dashboard_premium_v2_inbox`. All actions free-tier.
-- **v4.1.0 (2026-05-10)** — **PR review premium pass.** Layered render
-  strategy for huge diffs: `<DiffCollapser>` fold-by-default above
-  500 lines, `<DiffComputeOnDemand>` above 50 000, `useDeferredValue`
-  on tab expansion, and `content-visibility: auto`. Mobile parity: file-tree
-  `<MobileFileTreeSheet>` and AI panel drawer below `lg`, both
-  reusing the existing Modal sheet primitive. Sticky review action
-  bar with animated SVG progress ring + thumb-zone Approve/Comment/
-  Request changes. Floating composer that doesn't trap the user.
-  Layout-animated FileTreeItem on mark-as-viewed. Keyboard help
-  overlay (`?`) + PR-scoped Command Palette commands. Unified
-  comment chrome (synced/pending/AI all share one card with status
-  badges). Z-index design tokens consumed across 37 surfaces with a
-  pre-commit guard against raw `z-N`. Bundle hygiene: dynamic mock
-  imports + a CI guard so fixture data can't leak to production.
-  Bundles Phase A of the post-migration AI Polish work. **3679 unit
-  tests + the iPhone-13 mobile e2e pass; ESLint clean; main entry
-  64.5 KB gzip.**
-- **v4.0.0 (2026-05-08)** — **AI Deep Review.** Slice 1a free core
-  engine (walkthrough + line comments + `suggestion` blocks + Mermaid +
-  batched publish through outbox); slice 1a-2 hardening (provider
-  `usageMetadata` threading, `computeCostUSD`, rate-limiter LRU sweep,
-  `useFocusTrap`); slice 1b Prompt Studio (5 built-ins + user/repo/org
-  custom presets, path-scoped rules, severity floor,
-  `${REPO_STYLE_GUIDE}` token); PR slash commands (`/describe`,
-  `/test_plan`, `/improve`); PR Chat tab (streaming SSE Q&A with
-  per-`(user, PR)` history + `MAX_HISTORY_TURNS = 10`). Plus org-shared
-  prompts, premium UX unification (17-code AI error vocabulary,
-  `<AIErrorState>`, `<SafeMarkdown>`, honest mock-mode publish), AI
-  polish sweep, surface uniformity primitives (`<SectionPanel>`,
-  `<HeroHalo>`, `<CountUp>`, `<PageMount>`), and drawer consolidation
-  (unified `<Drawer>` primitive — fixed `side="bottom"` routing bug).
-  Closes with a multi-agent audit pass: prompt-injection guards on
-  every `/ai/*` body, DNS-rebinding defence on import, cross-user
-  cache isolation, license-cache TTL, `closeOnBackdrop=false` on every
-  state-bearing modal/drawer (no more accidental dismiss), and 600+
-  lines of dedup (shared rate limiter, repos `_shared.js`, banner
-  motion, `appEvents`). **5241 tests pass** (1740 server + 3501
-  frontend). See [feature guide](features/ai-deep-review.md).
-- **v3.8.0 (2026-04-28)** — Dashboard hero redesign (`DashboardHero`,
-  `WhatNeedsYouGrid`, `AIPromoStrip`, `AttentionFeed`); mobile UX overhaul
-  (bottom-nav, `MobileQuickActionsFab`, drawer); Work Board tracked-repos
-  and AI upgrade across seven phases; premium AI Configuration with
-  per-feature key-health probes; honest error handling (`formatUserError`
-  with `QuotaExceededState`); CSRF coverage on every mutating call site;
-  onboarding tour; UI primitive consolidation; and CI bundle-budget,
-  build-honesty, and README honesty guards. **2782 unit tests**
-  (up from 2060).
-- **v3.7.2 (2026-04-23)** — Docs pass: `docs/index.md` rewrite,
-  `docs/operations.md` runbook, `docs/guides/admin-dlq.md`.
-- **v3.7.1 (2026-04-22)** — CI pipeline unbroken after 10+ red commits;
-  `useRepoDetail` memoised (fixed real RepoDetail tab churn); a11y critical
-  gate landed clean; `pr-review` e2e greened.
-- **v3.7.0 (2026-04-22)** — Admin DLQ UI + CLI, public `/status` page,
-  session-expiry UX, husky v9 + lint-staged pre-commit (rejects lint
-  warnings and `console.log` / `debugger`).
-- **v3.6.0 (2026-04-22)** — Security depth (CSRF, SSRF, rolling session,
-  mandatory credential encryption key), resilience (GitHub circuit breaker,
-  email + webhook DLQs, AI retry taxonomy), observability (Server-Timing,
-  Sentry breadcrumbs), route-level lazy splits + bundle-budget gate.
-- **v3.5.0 (2026-04-21)** — Work Board initial release (zero-config data,
-  auto-refresh, inline actions, presets, snooze, DORA tab).
 
 ## Architecture
 
@@ -160,8 +117,9 @@ Full detail: [`CHANGELOG.md`](../CHANGELOG.md).
 
 ## API reference
 
-- [API Reference](api/API.md) — 324 route handlers across 74 route
-  modules. Every endpoint documented with auth requirements,
+- [API Reference](api/API.md) — 331 route handlers across 74 route
+  modules (recounted via `grep`; see the API.md header for the exact
+  command). Every endpoint documented with auth requirements,
   request/response shape, and error codes.
 - [Work Board API](api/WORK-BOARD-API.md) — the `/api/v1/work-board/*` surface:
   tabs, KPI snapshots, discovery, presets, and DORA metrics (free on all tiers).

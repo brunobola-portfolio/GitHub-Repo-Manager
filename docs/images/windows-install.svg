@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" role="img" aria-label="Windows install flow: download the setup.exe or portable ZIP with its .sha256 checksum sidecar; first run generates four independent random secrets into a local .env and binds the server to 127.0.0.1 only, so there is no Windows Firewall prompt and no LAN exposure; then the browser opens at localhost. No Docker, no Node.js install, no admin rights required — the package is CI boot-validated on every PR and release.">
+  <style>
+    svg{--bg:#ffffff;--bg2:#f6f8fa;--card:#ffffff;--stroke:#d0d7de;--text:#1f2328;--muted:#57606a;--blue:#2563eb;--violet:#7c3aed;--emerald:#059669;--amber:#b45309;--red:#cf222e}
+    @media (prefers-color-scheme: dark){svg{--bg:#0d1117;--bg2:#161b22;--card:#1c2128;--stroke:#30363d;--text:#e6edf3;--muted:#8b949e;--blue:#4f8cff;--violet:#a78bfa;--emerald:#10b981;--amber:#e3b341;--red:#f85149}}
+    .bg{fill:var(--bg)}.panel{fill:var(--bg2);stroke:var(--stroke);stroke-width:1}
+    .card{fill:var(--card);stroke:var(--stroke);stroke-width:1.5}
+    .t{fill:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
+    .m{fill:var(--muted);font-family:'Segoe UI',system-ui,sans-serif}
+    .mono{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+    .b{fill:var(--blue)}.v{fill:var(--violet)}.e{fill:var(--emerald)}.a{fill:var(--amber)}
+    .edge{stroke:var(--muted);stroke-width:1.5;fill:none}
+    .badge-b{fill:var(--blue);fill-opacity:.13;stroke:var(--blue);stroke-width:1}
+    .badge-v{fill:var(--violet);fill-opacity:.13;stroke:var(--violet);stroke-width:1}
+    .badge-e{fill:var(--emerald);fill-opacity:.13;stroke:var(--emerald);stroke-width:1}
+    .ah{fill:var(--muted)}
+  </style>
+  <defs>
+    <filter id="sh" x="-20%" y="-25%" width="140%" height="150%"><feDropShadow dx="0" dy="1.5" stdDeviation="2.5" flood-color="#000" flood-opacity="0.12"/></filter>
+    <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ah"/></marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="900" height="400" rx="14"/>
+  <text class="t" x="32" y="42" font-size="19" font-weight="700">Windows Install Flow</text>
+  <text class="m" x="32" y="64" font-size="12.5">Download &#8594; first run &#8594; browser opens — no Docker, no Node.js install, no admin rights</text>
+
+  <!-- 1 Download -->
+  <rect class="card" x="50" y="100" width="230" height="170" rx="10" filter="url(#sh)"/>
+  <rect class="badge-b" x="66" y="114" width="24" height="24" rx="12"/><text class="b" x="78" y="130.5" text-anchor="middle" font-size="12" font-weight="700">1</text>
+  <text class="t" x="165" y="152" text-anchor="middle" font-size="13.5" font-weight="700">Download</text>
+  <text class="m" x="165" y="176" text-anchor="middle" font-size="10.5">setup.exe or portable ZIP</text>
+  <text class="m mono" x="165" y="196" text-anchor="middle" font-size="10">+ .sha256 sidecar</text>
+  <text class="m" x="165" y="216" text-anchor="middle" font-size="10.5">from the latest release</text>
+
+  <line class="edge" x1="280" y1="185" x2="334" y2="185" marker-end="url(#ah)"/>
+
+  <!-- 2 Start -->
+  <rect class="card" x="335" y="100" width="230" height="170" rx="10" filter="url(#sh)"/>
+  <rect class="badge-v" x="351" y="114" width="24" height="24" rx="12"/><text class="v" x="363" y="130.5" text-anchor="middle" font-size="12" font-weight="700">2</text>
+  <text class="t" x="450" y="152" text-anchor="middle" font-size="13.5" font-weight="700">Start</text>
+  <text class="m" x="450" y="176" text-anchor="middle" font-size="10.5">first run generates 4 random</text>
+  <text class="m" x="450" y="193" text-anchor="middle" font-size="10.5">secrets into a local .env</text>
+  <text class="m mono" x="450" y="213" text-anchor="middle" font-size="9.8">binds 127.0.0.1</text>
+  <text class="m" x="450" y="231" text-anchor="middle" font-size="10.5">no firewall prompt · no LAN</text>
+
+  <line class="edge" x1="565" y1="185" x2="619" y2="185" marker-end="url(#ah)"/>
+
+  <!-- 3 Browser opens -->
+  <rect class="card" x="620" y="100" width="230" height="170" rx="10" filter="url(#sh)"/>
+  <rect class="badge-e" x="636" y="114" width="24" height="24" rx="12"/><text class="e" x="648" y="130.5" text-anchor="middle" font-size="12" font-weight="700">3</text>
+  <text class="t" x="735" y="152" text-anchor="middle" font-size="13.5" font-weight="700">Browser opens</text>
+  <text class="m mono" x="735" y="176" text-anchor="middle" font-size="10.5">http://localhost</text>
+  <text class="m" x="735" y="196" text-anchor="middle" font-size="10.5">once the health check</text>
+  <text class="m" x="735" y="214" text-anchor="middle" font-size="10.5">passes</text>
+
+  <!-- Side ribbon -->
+  <rect class="badge-b" x="50" y="290" width="800" height="32" rx="16"/>
+  <text class="b" x="450" y="311" text-anchor="middle" font-size="11.5" font-weight="700">No Docker &#183; No Node.js install &#183; No admin rights</text>
+
+  <!-- Footer caption -->
+  <rect class="panel" x="50" y="342" width="800" height="40" rx="10"/>
+  <text class="e" x="450" y="367" text-anchor="middle" font-size="11" font-weight="700">CI boot-validated on every PR and release</text>
+</svg>

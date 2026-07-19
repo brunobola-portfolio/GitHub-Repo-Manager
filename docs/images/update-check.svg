@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 400" role="img" aria-label="Update-check flow: Settings About triggers an authenticated GET to /api/system/update-check, cached 24 hours on success or 1 hour after a failure, which makes a plain unauthenticated GET to GitHub's releases/latest API with no query parameters, no identifying data, and a 5 second timeout, then compares versions with strict semver-newer logic before showing a dismissable banner. UPDATE_CHECK=false skips the outbound call entirely; a failed fetch degrades to an inconclusive result that never claims an update either way.">
+  <style>
+    svg{--bg:#ffffff;--bg2:#f6f8fa;--card:#ffffff;--stroke:#d0d7de;--text:#1f2328;--muted:#57606a;--blue:#2563eb;--violet:#7c3aed;--emerald:#059669;--amber:#b45309;--red:#cf222e}
+    @media (prefers-color-scheme: dark){svg{--bg:#0d1117;--bg2:#161b22;--card:#1c2128;--stroke:#30363d;--text:#e6edf3;--muted:#8b949e;--blue:#4f8cff;--violet:#a78bfa;--emerald:#10b981;--amber:#e3b341;--red:#f85149}}
+    .bg{fill:var(--bg)}.panel{fill:var(--bg2);stroke:var(--stroke);stroke-width:1}
+    .card{fill:var(--card);stroke:var(--stroke);stroke-width:1.5}
+    .t{fill:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
+    .m{fill:var(--muted);font-family:'Segoe UI',system-ui,sans-serif}
+    .mono{font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace}
+    .b{fill:var(--blue)}.v{fill:var(--violet)}.e{fill:var(--emerald)}.a{fill:var(--amber)}.r{fill:var(--red)}
+    .edge{stroke:var(--muted);stroke-width:1.5;fill:none}
+    .edge-a{stroke:var(--amber);stroke-width:1.5;fill:none;stroke-dasharray:5 3}
+    .edge-r{stroke:var(--red);stroke-width:1.5;fill:none;stroke-dasharray:5 3}
+    .badge-b{fill:var(--blue);fill-opacity:.13;stroke:var(--blue);stroke-width:1}
+    .badge-v{fill:var(--violet);fill-opacity:.13;stroke:var(--violet);stroke-width:1}
+    .badge-e{fill:var(--emerald);fill-opacity:.13;stroke:var(--emerald);stroke-width:1}
+    .badge-a{fill:var(--amber);fill-opacity:.15;stroke:var(--amber);stroke-width:1}
+    .badge-r{fill:var(--red);fill-opacity:.12;stroke:var(--red);stroke-width:1}
+    .ah{fill:var(--muted)}.aha{fill:var(--amber)}.ahr{fill:var(--red)}
+  </style>
+  <defs>
+    <filter id="sh" x="-20%" y="-25%" width="140%" height="150%"><feDropShadow dx="0" dy="1.5" stdDeviation="2.5" flood-color="#000" flood-opacity="0.12"/></filter>
+    <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ah"/></marker>
+    <marker id="aha" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="aha"/></marker>
+    <marker id="ahr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ahr"/></marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="960" height="400" rx="14"/>
+  <text class="t" x="20" y="38" font-size="19" font-weight="700">Update-Check Flow</text>
+  <text class="m" x="20" y="60" font-size="12.5">Settings &#8594; About &#8594; cached releases check &#8594; strict semver compare &#8594; dismissable banner</text>
+
+  <!-- 1 Settings -> About -->
+  <rect class="card" x="20" y="96" width="168" height="150" rx="10" filter="url(#sh)"/>
+  <rect class="badge-b" x="34" y="108" width="22" height="22" rx="11"/><text class="b" x="45" y="123.5" text-anchor="middle" font-size="11" font-weight="700">1</text>
+  <text class="t" x="104" y="150" text-anchor="middle" font-size="12.5" font-weight="700">Settings &#8594; About</text>
+  <text class="m" x="104" y="174" text-anchor="middle" font-size="9.8">page load triggers</text>
+  <text class="m" x="104" y="192" text-anchor="middle" font-size="9.8">the check</text>
+
+  <line class="edge" x1="188" y1="171" x2="207" y2="171" marker-end="url(#ah)"/>
+
+  <!-- 2 GET update-check -->
+  <rect class="card" x="208" y="96" width="168" height="150" rx="10" filter="url(#sh)"/>
+  <rect class="badge-v" x="222" y="108" width="22" height="22" rx="11"/><text class="v" x="233" y="123.5" text-anchor="middle" font-size="11" font-weight="700">2</text>
+  <text class="t" x="292" y="150" text-anchor="middle" font-size="12" font-weight="700">GET update-check</text>
+  <rect class="badge-v" x="255" y="160" width="74" height="18" rx="9"/>
+  <text class="v" x="292" y="173" text-anchor="middle" font-size="8.5" font-weight="700">AUTH</text>
+  <text class="m mono" x="292" y="196" text-anchor="middle" font-size="8.7">/api/system/</text>
+  <text class="m mono" x="292" y="210" text-anchor="middle" font-size="8.7">update-check</text>
+
+  <line class="edge" x1="376" y1="171" x2="395" y2="171" marker-end="url(#ah)"/>
+
+  <!-- dashed disabled branch under card 2 -->
+  <path class="edge-a" d="M292 246 L292 300" marker-end="url(#aha)" fill="none"/>
+  <rect class="badge-a" x="200" y="304" width="184" height="46" rx="10"/>
+  <text class="a" x="292" y="322" text-anchor="middle" font-size="9.8" font-weight="700">UPDATE_CHECK=false</text>
+  <text class="a" x="292" y="338" text-anchor="middle" font-size="9" font-weight="600">no outbound call at all</text>
+
+  <!-- 3 Cache -->
+  <rect class="card" x="396" y="96" width="168" height="150" rx="10" filter="url(#sh)"/>
+  <rect class="badge-a" x="410" y="108" width="22" height="22" rx="11"/><text class="a" x="421" y="123.5" text-anchor="middle" font-size="11" font-weight="700">3</text>
+  <text class="t" x="480" y="150" text-anchor="middle" font-size="12.5" font-weight="700">Cache</text>
+  <text class="m" x="480" y="174" text-anchor="middle" font-size="9.8">24h on success</text>
+  <text class="m" x="480" y="192" text-anchor="middle" font-size="9.8">1h after a failure</text>
+
+  <line class="edge" x1="564" y1="171" x2="583" y2="171" marker-end="url(#ah)"/>
+
+  <!-- 4 GitHub releases -->
+  <rect class="card" x="584" y="96" width="168" height="150" rx="10" filter="url(#sh)"/>
+  <rect class="badge-b" x="598" y="108" width="22" height="22" rx="11"/><text class="b" x="609" y="123.5" text-anchor="middle" font-size="11" font-weight="700">4</text>
+  <text class="t" x="668" y="150" text-anchor="middle" font-size="12" font-weight="700">GitHub releases</text>
+  <text class="m" x="668" y="172" text-anchor="middle" font-size="9">plain GET · no auth</text>
+  <text class="m" x="668" y="188" text-anchor="middle" font-size="9">no query · no ID data</text>
+  <text class="m mono" x="668" y="206" text-anchor="middle" font-size="9">5s timeout</text>
+
+  <line class="edge" x1="752" y1="171" x2="771" y2="171" marker-end="url(#ah)"/>
+
+  <!-- dashed inconclusive branch under card 4 -->
+  <path class="edge-r" d="M668 246 L668 300" marker-end="url(#ahr)" fill="none"/>
+  <rect class="badge-r" x="576" y="304" width="184" height="46" rx="10"/>
+  <text class="r" x="668" y="322" text-anchor="middle" font-size="9.8" font-weight="700">fetch fails</text>
+  <text class="r" x="668" y="338" text-anchor="middle" font-size="9" font-weight="600">inconclusive — never claims either way</text>
+
+  <!-- 5 Compare + banner -->
+  <rect class="card" x="772" y="96" width="168" height="150" rx="10" filter="url(#sh)"/>
+  <rect class="badge-e" x="786" y="108" width="22" height="22" rx="11"/><text class="e" x="797" y="123.5" text-anchor="middle" font-size="11" font-weight="700">5</text>
+  <text class="t" x="856" y="150" text-anchor="middle" font-size="12" font-weight="700">Compare + banner</text>
+  <text class="m" x="856" y="174" text-anchor="middle" font-size="9.5">strictly-newer semver</text>
+  <text class="m" x="856" y="192" text-anchor="middle" font-size="9.5">dismissable banner</text>
+  <text class="m" x="856" y="210" text-anchor="middle" font-size="9.5">never self-updates</text>
+
+  <!-- Footer caption -->
+  <rect class="panel" x="20" y="362" width="920" height="30" rx="10"/>
+  <text class="e" x="480" y="382" text-anchor="middle" font-size="10.5" font-weight="700">Notify-only — the app never modifies itself</text>
+</svg>

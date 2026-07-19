@@ -8,7 +8,7 @@ const STAGE_STYLES = {
     dot: 'bg-emerald-500',
     badge: 'text-emerald-700 dark:text-emerald-400',
     label: 'Shipping Now',
-    period: 'Q2 2026',
+    period: 'Q3 2026',
   },
   next: {
     header: 'bg-amber-500/10 dark:bg-amber-500/15 border-amber-500/20',
@@ -29,7 +29,7 @@ const STAGE_STYLES = {
     dot: 'bg-indigo-500',
     badge: 'text-indigo-700 dark:text-[color:var(--ds-accent-brand-dark)]',
     label: 'Recently Shipped',
-    period: 'March–April 2026',
+    period: 'May–July 2026',
   },
 }
 
