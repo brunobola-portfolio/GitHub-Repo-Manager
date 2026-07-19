@@ -117,9 +117,10 @@ Full detail: [`CHANGELOG.md`](../CHANGELOG.md).
 ## Feature guides
 
 - [AI Deep Review](features/ai-deep-review.md) — walkthrough, line
-  comments with `suggestion` blocks, Prompt Studio (Pro), PR slash
-  commands (Pro), streaming PR Chat (Pro), org-shared prompts, BYOK
-  provider matrix, mock-mode behaviour, privacy & data handling.
+  comments with `suggestion` blocks, Prompt Studio, PR slash commands,
+  streaming PR Chat (all Free with monthly caps, unlimited on Pro),
+  org-shared prompts, BYOK provider matrix, mock-mode behaviour,
+  privacy & data handling.
 - [Premium Dashboard — Live Inbox](features/dashboard-live-inbox.md) — sectioned inbox, archive/snooze, AI narrative, keyboard shortcuts, feature flag, Phase 1 scope and stubs.
 - [Community WOW — README Studio, AI Diagrams, Agent Rules, Security Posture](features/community-wow.md) — four AI-grounded repo tools with deterministic zero-AI-cost fallbacks, metered on Free.
 - [AI Providers (BYOK)](ai-providers.md) — Anthropic, OpenAI, Gemini,

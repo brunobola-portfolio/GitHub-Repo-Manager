@@ -2678,7 +2678,16 @@ an arbitrary write location.
 
 All bulk operations process repositories sequentially and return multi-status responses (HTTP 207) when some operations succeed and others fail.
 
-**Tier gating:** `POST /api/visibility`, `POST /api/archive`, and `POST /api/community-health/compare` are available on all tiers. `POST /api/transfer`, `POST /api/transfer/check-conflicts`, `POST /api/mirror`, and `POST /api/delete` require the **Pro** tier (`requireTier('pro')` → `403 TIER_REQUIRED_PRO` otherwise).
+**Tier gating:** none of these routes are tier-gated — `bulkAdvanced`
+(transfer / mirror / cross-org / delete) moved to Free in the 2026-07-18
+free-first rebalance, and every route below is `requireAuth` only; there is
+no `requireTier('pro')` anywhere in `bulk.js`. `POST /api/transfer`,
+`POST /api/mirror`, and `POST /api/delete` instead share a
+**tier-independent** daily anti-abuse ceiling (`bulk_destructive_daily`,
+default 200/day, overridable via `BULK_DESTRUCTIVE_DAILY_MAX`) enforced
+atomically through `guardedDailyIncrement()` — see
+[`server/lib/feature-flags.js`](../../server/lib/feature-flags.js) and
+[`server/lib/usage-meter.js`](../../server/lib/usage-meter.js).
 
 ### `POST /api/visibility`
 
@@ -4758,33 +4767,42 @@ guide](../features/ai-deep-review.md) and the
 
 ## AI Prompt Studio (`/api/ai/prompt-studio/*`)
 
-Backs the premium Prompt Studio (`/ai/prompts` page). All mutating
-endpoints require `requireTier('pro')`; GETs are free so the picker
-renders for every tier with the 5 built-in presets visible. See the
-[slice 1b plan](../plans/2026-05-04-ai-deep-review-slice-1b.md).
+Backs Prompt Studio (`/ai/prompts` page). Every endpoint — including the
+mutating ones — is `requireAuth` only (moved off the Pro paywall in the
+2026-07-18 free-first rebalance); there is no `requireTier('pro')` gate
+anywhere in this route file. Free is metered instead: up to 10 saved
+presets (`promptPresetsMax`) and 30 test-preset runs/month
+(`promptStudioTestPerMonth`, checked via `checkAIFeatureLimit(userId,
+'ai_prompt_test')`); Pro/Enterprise are unlimited. See the
+[slice 1b plan](../plans/2026-05-04-ai-deep-review-slice-1b.md) and
+[`server/lib/feature-flags.js`](../../server/lib/feature-flags.js) for the
+authoritative numbers.
 
 | Method | Path | Auth | Purpose |
 | --- | --- | --- | --- |
 | `GET` | `/api/ai/prompt-studio/presets` | requireAuth | List visible presets: 5 built-ins + the caller's user/repo customs + org-shared presets visible to the caller via `getCurrentUserOrgs` + `isOrgMember`. Each row tagged with `builtin`, `shared`, `ownedByUser`. |
 | `GET` | `/api/ai/prompt-studio/presets/:id` | requireAuth | Full preset body. Built-in keys (`general`, `security`, …) served from code; numeric ids enforce ownership unless the row is `scope='org'` and the caller is a member. |
-| `POST` | `/api/ai/prompt-studio/presets` | requireAuth + Pro | Create a custom preset at `scope='user'` / `'repo'` / `'org'`. Org scope checks membership before saving (403 `NOT_ORG_MEMBER`). Rejects built-in keys (409 `RESERVED_KEY`). Validated by `promptPresetCreateSchema`. |
-| `PATCH` | `/api/ai/prompt-studio/presets/:id` | requireAuth + Pro | Author-only edit (`WHERE user_id = ?`); other org members get 404. |
-| `DELETE` | `/api/ai/prompt-studio/presets/:id` | requireAuth + Pro | Author-only. |
-| `POST` | `/api/ai/prompt-studio/presets/:id/test` | requireAuth + Pro | Run the preset against a fixed sample diff and return the structured output. Per-user 1/10s rate limit. |
-| `POST` | `/api/ai/prompt-studio/presets/:id/set-default` | requireAuth + Pro | Mark the preset as the default for its scope; clears `is_default` on siblings inside the same `(user_id, scope, scope_target)` group. |
+| `POST` | `/api/ai/prompt-studio/presets` | requireAuth | Create a custom preset at `scope='user'` / `'repo'` / `'org'`, capped at `promptPresetsMax` per user (10 on Free, unlimited on Pro/Enterprise). Org scope checks membership before saving (403 `NOT_ORG_MEMBER`). Rejects built-in keys (409 `RESERVED_KEY`). Validated by `promptPresetCreateSchema`. |
+| `PATCH` | `/api/ai/prompt-studio/presets/:id` | requireAuth | Author-only edit (`WHERE user_id = ?`); other org members get 404. |
+| `DELETE` | `/api/ai/prompt-studio/presets/:id` | requireAuth | Author-only. |
+| `POST` | `/api/ai/prompt-studio/presets/:id/test` | requireAuth | Run the preset against a fixed sample diff and return the structured output. Metered: 30 runs/month on Free (`ai_prompt_test`), unlimited on Pro/Enterprise. Per-user 1/10s rate limit. |
+| `POST` | `/api/ai/prompt-studio/presets/:id/set-default` | requireAuth | Mark the preset as the default for its scope; clears `is_default` on siblings inside the same `(user_id, scope, scope_target)` group. |
 
 ## AI PR Slash Commands (`/api/ai/pr-commands/*`)
 
 Backs the Commands tab in `<AIReviewPanel>` — `/describe`, `/test_plan`,
-`/improve`. All routes require `requireTier('pro')`. Per-user 20/h
-rate limit with LRU sweep. Results persist in `ai_pr_commands`.
+`/improve`. Every route is `requireAuth` only — no `requireTier('pro')`
+gate. The generate/refresh endpoint is metered instead: 30/month on Free
+(`ai_pr_command`, via `checkAIFeatureLimit`), unlimited on Pro/Enterprise.
+Per-user 20/h rate limit with LRU sweep. Results persist in
+`ai_pr_commands`.
 
 | Method | Path | Auth | Purpose |
 | --- | --- | --- | --- |
-| `POST` | `/api/ai/pr-commands/:owner/:repo/:pr/:command` | requireAuth + Pro | Generate (or refresh). `:command` ∈ `{describe, test_plan, improve}`. Returns `{id, output, modelUsed, costUsd}`. |
-| `GET` | `/api/ai/pr-commands/:owner/:repo/:pr/:command` | requireAuth + Pro | Cached result (no LLM). 404 when none. |
-| `DELETE` | `/api/ai/pr-commands/:owner/:repo/:pr/:command` | requireAuth + Pro | Discard. |
-| `POST` | `/api/ai/pr-commands/:owner/:repo/:pr/describe/publish` | requireAuth + Pro | Apply the `/describe` output by PATCHing the PR body via `executeViaOutbox`. Idempotency key includes a SHA-256 hash of `${title}\n${body}` so a regenerate-then-republish produces a fresh key (silent dedupe was a bug fixed in commit `c90eeb0`). |
+| `POST` | `/api/ai/pr-commands/:owner/:repo/:pr/:command` | requireAuth | Generate (or refresh). `:command` ∈ `{describe, test_plan, improve}`. Metered: 30/month on Free, unlimited on Pro/Enterprise. Returns `{id, output, modelUsed, costUsd}`. |
+| `GET` | `/api/ai/pr-commands/:owner/:repo/:pr/:command` | requireAuth | Cached result (no LLM, not metered). 404 when none. |
+| `DELETE` | `/api/ai/pr-commands/:owner/:repo/:pr/:command` | requireAuth | Discard. |
+| `POST` | `/api/ai/pr-commands/:owner/:repo/:pr/describe/publish` | requireAuth | Apply the `/describe` output by PATCHing the PR body via `executeViaOutbox`. Idempotency key includes a SHA-256 hash of `${title}\n${body}` so a regenerate-then-republish produces a fresh key (silent dedupe was a bug fixed in commit `c90eeb0`). |
 
 ## AI PR Chat (`/api/ai/pr-chat/*`)
 
