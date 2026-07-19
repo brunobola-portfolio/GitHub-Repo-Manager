@@ -98,6 +98,8 @@ const SUGGESTED_PROMPTS = [
     'Create a new repository',
     'Why did my migration fail?',
     'Find repositories similar to one of mine',
+    'Draft a README for one of my repos',
+    'Generate a security posture report',
 ]
 
 // Session-scoped persistence: keep chat history across panel close/open and

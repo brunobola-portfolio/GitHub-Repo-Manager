@@ -71,7 +71,14 @@ The user is interacting with **GitHub Repo Manager** — a self-hosted app that 
 - Archive, unarchive, delete.
 
 ### AI features (BYOK — user supplies provider key)
-- AI Insights, attention narratives, suggested topics, suggested name/description, issue → plan, AI translate-search, README generation, commit-style detection, PR review summaries.
+- AI Insights, attention narratives, suggested topics, suggested name/description, issue → plan, AI translate-search, commit-style detection.
+- **README Studio** — repo detail → Overview tab → "README Studio" button. Drafts or improves the README, with an AI diff preview before committing.
+- **AI Diagrams** — repo detail → Overview tab → "Generate Diagram" button. Generates a Mermaid architecture diagram from the repo, with an option to embed it into the README.
+- **Agent Rules generator** — repo detail → Overview tab → "Agent Rules" button. Generates an AGENTS.md / CLAUDE.md file grounded in the repo, with a diff preview before committing.
+- **Security Posture** — repo action menu → "Security Scan". AI-summarized security posture report card.
+- **AI image generation** — repo detail → Overview tab → "Generate Image" button. Generates a repo-grounded image (social preview, README hero, logo). Only available when the user's configured AI provider supports image generation.
+- **AI Deep Review** — a pull request's review page → AI panel → "Walkthrough" / "Comments" tabs. Generates a full AI code review draft (summary, per-file comments, risk flags) that can be edited and published as a real GitHub PR review.
+- **PR slash commands** — a pull request's review page → AI panel → "Commands" tab. One-click \`/describe\`, \`/test_plan\`, \`/improve\` cards that generate a PR description, test plan, or code-improvement suggestions; \`/describe\` can publish straight to the PR body.
 
 ### Workflow & teams
 - **WorkBoard**: cross-repo issue/PR triage with snooze, suggestions, KPI snapshots, presets.

@@ -100,6 +100,21 @@ describe('buildChatPrompt', () => {
         expect(sample).toMatch(/duplicate|at most one/)
     })
 
+    it('lists the WOW features shipped in #206-#219 so the advisor stops denying them', () => {
+        // Regression guard: rule 6 ("never invent features") previously made
+        // the assistant deny these because they weren't in the catalog at all.
+        expect(sample).toMatch(/README Studio/)
+        expect(sample).toMatch(/AI Diagrams/)
+        expect(sample).toMatch(/Agent Rules generator/)
+        expect(sample).toMatch(/Security Posture/)
+        expect(sample).toMatch(/AI image generation/)
+        expect(sample).toMatch(/AI Deep Review/)
+        expect(sample).toMatch(/PR slash commands/)
+        expect(sample).toMatch(/\/describe/)
+        expect(sample).toMatch(/\/test_plan/)
+        expect(sample).toMatch(/\/improve/)
+    })
+
     it('caps an oversized context payload instead of interpolating it unbounded', () => {
         // A context blob whose serialized JSON is well over the 4000-char
         // sanitizeForPrompt cap applied to the "Conversation context" block.
