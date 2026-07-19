@@ -15,6 +15,19 @@ import { describe, it, expect } from 'vitest'
 // outside the Roadmap section, the README is overpromising.
 const FORBIDDEN_IN_README = [
   'Full migration (Azure + GitLab)',
+  // Launch-readiness panel 2026-07-19 finding #1: the FAQ claimed the AI
+  // provider "never" receives code content, which is false — AI Deep Review
+  // sends the full PR diff and the Commit Generator works from diffs. The
+  // FAQ answer must stay per-feature-accurate instead of this blanket claim.
+  'never your code content',
+  // Precise vaporware phrases chosen so they can never false-positive on
+  // honest text elsewhere in the README (e.g. "DORA Metrics" tab label,
+  // "SSO / SAML (roadmap)" table row, "PostgreSQL is intentionally
+  // rejected") — only the exact affirmative-shipping phrasing is forbidden.
+  'DORA metrics dashboard',
+  'SAML SSO included',
+  'PostgreSQL support',
+  'SOC 2 certified',
 ]
 
 describe('README honesty', () => {

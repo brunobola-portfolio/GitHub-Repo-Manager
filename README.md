@@ -254,7 +254,7 @@ The hosted product is **free-first**: nearly every product feature — bulk ops,
 | Priority Support + SLA                 | ✗               | ✗             | ✓          |
 | White-glove migration services         | ✗               | ✗             | ✓          |
 
-Self-hosting under AGPL v3 is free forever — see [LICENSE](LICENSE). The matrix above describes the hosted SaaS. "Advanced bulk" and "Mirror Sync apply" carry a tier-independent daily anti-abuse ceiling on top of the existing dry-run + confirmation-token safety flow, regardless of plan. Priority Support and White-glove migration are manual, service-based deliverables (support ticket + contract), not gated by a feature flag.
+Self-hosting under AGPL v3 is free forever — see [LICENSE](LICENSE). The matrix above applies to self-hosted Pro/Enterprise licenses today (Stripe checkout → emailed license key — see [`docs/billing-and-licensing.md`](docs/billing-and-licensing.md)), and will apply equally to the hosted SaaS once it launches. "Advanced bulk" and "Mirror Sync apply" carry a tier-independent daily anti-abuse ceiling on top of the existing dry-run + confirmation-token safety flow, regardless of plan. Priority Support and White-glove migration are manual, service-based deliverables (support ticket + contract), not gated by a feature flag.
 
 See the [Free Tier Expansion spec](docs/specs/2026-04-15-free-tier-expansion.md) for the design rationale and enforcement details.
 
@@ -338,12 +338,25 @@ npm run dev:kill        # free stuck ports (3001 + 5173–5180), then re-run
 
 `npm run dev:all` prints one banner with both URLs, the `/api` proxy, the active env/log level, and backend health, tagging every log line `WEB` or `API`.
 
-**Docker Compose:**
+**Docker — prebuilt image (primary):**
+
+```bash
+docker pull ghcr.io/brunobola-portfolio/github-repo-manager:latest
+```
+
+> Until the repository owner flips the GHCR package to public, this pull
+> 401s — use the Compose build below in the meantime; it works today with no
+> extra steps.
+
+**Docker Compose (local build):**
 
 ```bash
 cp .env.example .env      # edit your values
 docker compose up -d      # app at http://localhost:3001
 ```
+
+See [`docs/operations.md`](docs/operations.md#deployment) for the full
+deployment guide, including the `docker run` form for the prebuilt image.
 
 </details>
 

@@ -496,4 +496,250 @@ describe('stripeWebhookHandler', () => {
         expect(res.body).toEqual({ received: true })
         expect(updateRun).not.toHaveBeenCalled()
     })
+
+    // ------------------------------------------------------------------
+    // B3: license key duration matches the actual billing period —
+    // checkout.session.completed issues months=1 for monthly, months=12
+    // for yearly (session.metadata.billingPeriod, set by routes/billing.js).
+    // ------------------------------------------------------------------
+    describe('B3 — checkout.session.completed license duration by billingPeriod', () => {
+        it('monthly checkout issues a 1-month license and persists billing_period=monthly', async () => {
+            const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
+            issueLicenseForCheckout.mockReset()
+            issueLicenseForCheckout.mockResolvedValueOnce({ licenseKey: 'lic_m', emailDelivered: true })
+
+            mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+                id: 'evt_monthly',
+                type: 'checkout.session.completed',
+                data: {
+                    object: {
+                        id: 'cs_monthly',
+                        metadata: { userId: '55', tier: 'pro', billingPeriod: 'monthly' },
+                        customer: 'cus_monthly',
+                        subscription: 'sub_monthly',
+                    },
+                },
+            })
+            mockStripeInstance.checkout.sessions.listLineItems.mockResolvedValue({
+                data: [{ price: { metadata: { tier: 'pro' } } }],
+            })
+            mockStripeInstance.customers.retrieve.mockResolvedValueOnce({ email: 'monthly@example.com' })
+
+            let capturedUpsertArgs = null
+            mockPrepare.mockImplementation((sql) => {
+                if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+                if (/INSERT INTO user_subscriptions/.test(sql)) {
+                    return { run: vi.fn((...args) => { capturedUpsertArgs = args; return { changes: 1 } }) }
+                }
+                return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+            })
+
+            const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+            await stripeWebhookHandler(req, res)
+
+            expect(res.statusCode).toBe(200)
+            expect(issueLicenseForCheckout).toHaveBeenCalledWith(
+                expect.objectContaining({ months: 1, tier: 'pro', userId: 55 })
+            )
+            // billing_period is threaded through to the upsert (positional
+            // bind params include the string 'monthly' twice — INSERT + ON
+            // CONFLICT UPDATE branches).
+            expect(capturedUpsertArgs).toContain('monthly')
+        })
+
+        it('yearly checkout issues a 12-month license and persists billing_period=yearly', async () => {
+            const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
+            issueLicenseForCheckout.mockReset()
+            issueLicenseForCheckout.mockResolvedValueOnce({ licenseKey: 'lic_y', emailDelivered: true })
+
+            mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+                id: 'evt_yearly',
+                type: 'checkout.session.completed',
+                data: {
+                    object: {
+                        id: 'cs_yearly',
+                        metadata: { userId: '56', tier: 'pro', billingPeriod: 'yearly' },
+                        customer: 'cus_yearly',
+                        subscription: 'sub_yearly',
+                    },
+                },
+            })
+            mockStripeInstance.checkout.sessions.listLineItems.mockResolvedValue({
+                data: [{ price: { metadata: { tier: 'pro' } } }],
+            })
+            mockStripeInstance.customers.retrieve.mockResolvedValueOnce({ email: 'yearly@example.com' })
+
+            let capturedUpsertArgs = null
+            mockPrepare.mockImplementation((sql) => {
+                if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+                if (/INSERT INTO user_subscriptions/.test(sql)) {
+                    return { run: vi.fn((...args) => { capturedUpsertArgs = args; return { changes: 1 } }) }
+                }
+                return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+            })
+
+            const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+            await stripeWebhookHandler(req, res)
+
+            expect(res.statusCode).toBe(200)
+            expect(issueLicenseForCheckout).toHaveBeenCalledWith(
+                expect.objectContaining({ months: 12, tier: 'pro', userId: 56 })
+            )
+            expect(capturedUpsertArgs).toContain('yearly')
+        })
+
+        it('missing billingPeriod metadata defaults to monthly (1-month key) for older/malformed sessions', async () => {
+            const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
+            issueLicenseForCheckout.mockReset()
+            issueLicenseForCheckout.mockResolvedValueOnce({ licenseKey: 'lic_default', emailDelivered: true })
+
+            mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+                id: 'evt_no_period',
+                type: 'checkout.session.completed',
+                data: {
+                    object: {
+                        id: 'cs_no_period',
+                        metadata: { userId: '58', tier: 'pro' }, // no billingPeriod
+                        customer: 'cus_no_period',
+                        subscription: 'sub_no_period',
+                    },
+                },
+            })
+            mockStripeInstance.checkout.sessions.listLineItems.mockResolvedValue({
+                data: [{ price: { metadata: { tier: 'pro' } } }],
+            })
+            mockStripeInstance.customers.retrieve.mockResolvedValueOnce({ email: 'default@example.com' })
+            mockPrepare.mockImplementation((sql) => {
+                if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+                if (/INSERT INTO user_subscriptions/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+                return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+            })
+
+            const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+            await stripeWebhookHandler(req, res)
+
+            expect(res.statusCode).toBe(200)
+            expect(issueLicenseForCheckout).toHaveBeenCalledWith(expect.objectContaining({ months: 1 }))
+        })
+    })
+
+    // ------------------------------------------------------------------
+    // B3: invoice.paid renewal reissues a fresh 1-month license for
+    // monthly subs, so the emailed key never outlives the paid period.
+    // ------------------------------------------------------------------
+    describe('B3 — invoice.paid renewal license reissue', () => {
+        it('reissues a fresh 1-month license on a monthly subscription_cycle renewal', async () => {
+            const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
+            issueLicenseForCheckout.mockReset()
+            issueLicenseForCheckout.mockResolvedValueOnce({ licenseKey: 'lic_renew', emailDelivered: true })
+
+            mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+                id: 'evt_renew_1',
+                type: 'invoice.paid',
+                data: {
+                    object: { id: 'in_renew_1', subscription: 'sub_renew', billing_reason: 'subscription_cycle' },
+                },
+            })
+            mockPrepare.mockImplementation((sql) => {
+                if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+                if (/UPDATE user_subscriptions SET status = 'active'/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+                if (/SELECT user_id, tier, billing_period FROM user_subscriptions/.test(sql)) {
+                    return { get: vi.fn(() => ({ user_id: 77, tier: 'pro', billing_period: 'monthly' })) }
+                }
+                if (/SELECT email FROM users/.test(sql)) return { get: vi.fn(() => ({ email: 'renew@example.com' })) }
+                return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+            })
+
+            const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+            await stripeWebhookHandler(req, res)
+
+            expect(res.statusCode).toBe(200)
+            expect(issueLicenseForCheckout).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    userId: 77,
+                    tier: 'pro',
+                    months: 1,
+                    email: 'renew@example.com',
+                    stripeSubscriptionId: 'sub_renew',
+                    stripeSessionId: 'in_renew_1',
+                })
+            )
+        })
+
+        it('does NOT reissue for a yearly subscription renewal (already holds a 12-month key)', async () => {
+            const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
+            issueLicenseForCheckout.mockReset()
+
+            mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+                id: 'evt_renew_yearly',
+                type: 'invoice.paid',
+                data: {
+                    object: { id: 'in_renew_yearly', subscription: 'sub_renew_yearly', billing_reason: 'subscription_cycle' },
+                },
+            })
+            mockPrepare.mockImplementation((sql) => {
+                if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+                if (/UPDATE user_subscriptions SET status = 'active'/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+                if (/SELECT user_id, tier, billing_period FROM user_subscriptions/.test(sql)) {
+                    return { get: vi.fn(() => ({ user_id: 78, tier: 'pro', billing_period: 'yearly' })) }
+                }
+                return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+            })
+
+            const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+            await stripeWebhookHandler(req, res)
+
+            expect(res.statusCode).toBe(200)
+            expect(issueLicenseForCheckout).not.toHaveBeenCalled()
+        })
+
+        it('does NOT reissue on the very first invoice of a new subscription (billing_reason=subscription_create), avoiding a double-email alongside checkout.session.completed', async () => {
+            const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
+            issueLicenseForCheckout.mockReset()
+
+            mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+                id: 'evt_first_invoice',
+                type: 'invoice.paid',
+                data: {
+                    object: { id: 'in_first', subscription: 'sub_first', billing_reason: 'subscription_create' },
+                },
+            })
+            mockPrepare.mockImplementation((sql) => {
+                if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+                if (/UPDATE user_subscriptions SET status = 'active'/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+                return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+            })
+
+            const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+            await stripeWebhookHandler(req, res)
+
+            expect(res.statusCode).toBe(200)
+            expect(issueLicenseForCheckout).not.toHaveBeenCalled()
+        })
+
+        it('skips reissue gracefully (still 200) when no matching subscription row is found', async () => {
+            const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
+            issueLicenseForCheckout.mockReset()
+
+            mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+                id: 'evt_renew_orphan',
+                type: 'invoice.paid',
+                data: {
+                    object: { id: 'in_orphan', subscription: 'sub_orphan', billing_reason: 'subscription_cycle' },
+                },
+            })
+            mockPrepare.mockImplementation((sql) => {
+                if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+                if (/UPDATE user_subscriptions SET status = 'active'/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+                if (/SELECT user_id, tier, billing_period FROM user_subscriptions/.test(sql)) return { get: vi.fn(() => undefined) }
+                return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+            })
+
+            const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+            await stripeWebhookHandler(req, res)
+
+            expect(res.statusCode).toBe(200)
+            expect(issueLicenseForCheckout).not.toHaveBeenCalled()
+        })
+    })
 })

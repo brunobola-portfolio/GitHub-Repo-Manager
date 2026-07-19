@@ -44,7 +44,11 @@ export function getCurrentUsage(userId, metricType) {
 // Maps a usage metric to the tier-feature key that bounds it.
 // New per-feature Free-tier metrics let us enforce meaningful trial caps
 // (e.g. 5 README generations / month) independently of the global ai_queries quota.
-const METRIC_TO_FEATURE = {
+// Exported so callers that need to resolve a metric's limit without going
+// through checkUsageLimit() (e.g. the /api/v1/usage route, which already has
+// a batched usage_metrics query and just needs the mapping) reuse this table
+// instead of duplicating it.
+export const METRIC_TO_FEATURE = {
     ai_queries: 'aiQueriesPerMonth',
     repos_managed: 'maxRepos',
     ai_readme: 'readmeGenPerMonth',

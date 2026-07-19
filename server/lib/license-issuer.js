@@ -8,14 +8,37 @@ import db from '../db.js'
 import logger from './logger.js'
 
 /**
+ * Describe a license's actual validity window in plain language, matching
+ * whatever `months` was really signed into the JWT (see generateLicenseKey).
+ * Monthly subs get a 1-month key reissued automatically each renewal
+ * (stripe-webhooks.js `invoice.paid` / billing_reason=subscription_cycle);
+ * yearly subs get a single 12-month key. Never say "cannot be reissued" —
+ * that used to be true for every plan when this always said 12 months
+ * regardless of what was actually paid for; it no longer is for monthly.
+ *
+ * @param {number} months
+ * @returns {string}
+ */
+function describeLicenseValidity(months) {
+    if (months >= 12) {
+        return `This key is valid for ${months} months, matching your annual billing cycle. Renewing next year issues a fresh key automatically.`
+    }
+    if (months === 1) {
+        return `This key is valid for 1 month, matching your monthly billing cycle. While your subscription stays active, we email you a fresh key automatically at the start of every billing period — no action needed.`
+    }
+    return `This key is valid for ${months} month${months === 1 ? '' : 's'}.`
+}
+
+/**
  * Build the HTML email body for a license delivery.
  *
  * @param {object} opts
  * @param {string} opts.tier
  * @param {string} opts.licenseKey
+ * @param {number} opts.months
  * @returns {string} HTML
  */
-function buildLicenseEmailHtml({ tier, licenseKey }) {
+function buildLicenseEmailHtml({ tier, licenseKey, months }) {
     const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1)
     return `<!DOCTYPE html>
 <html>
@@ -31,7 +54,8 @@ function buildLicenseEmailHtml({ tier, licenseKey }) {
     <li>Paste the key above and click <strong>Activate</strong>.</li>
     <li>Your ${tierLabel} features will unlock immediately.</li>
   </ol>
-  <p>Keep this key safe — it is tied to your subscription and cannot be reissued automatically.</p>
+  <p>${describeLicenseValidity(months)}</p>
+  <p>Keep this key safe — it is not remotely revocable, so treat it like a password.</p>
   <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
   <p style="font-size: 13px; color: #666;">
     Need help? Contact us at
@@ -47,9 +71,10 @@ function buildLicenseEmailHtml({ tier, licenseKey }) {
  * @param {object} opts
  * @param {string} opts.tier
  * @param {string} opts.licenseKey
+ * @param {number} opts.months
  * @returns {string}
  */
-function buildLicenseEmailText({ tier, licenseKey }) {
+function buildLicenseEmailText({ tier, licenseKey, months }) {
     const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1)
     return `Your GitHub Repo Manager license key
 ======================================
@@ -66,7 +91,9 @@ Activation
 2. Paste the key above and click Activate.
 3. Your ${tierLabel} features will unlock immediately.
 
-Keep this key safe — it is tied to your subscription and cannot be reissued automatically.
+${describeLicenseValidity(months)}
+
+Keep this key safe — it is not remotely revocable, so treat it like a password.
 
 Need help? Contact us at bruno@bolalabs.pt`
 }
@@ -83,7 +110,8 @@ Need help? Contact us at bruno@bolalabs.pt`
  * @param {string} opts.email
  * @param {string} opts.tier           — 'pro' | 'enterprise'
  * @param {number} [opts.seats=1]
- * @param {number} [opts.months=12]
+ * @param {number} [opts.months=1] — 1 for a monthly billing period, 12 for
+ *   yearly (see stripe-webhooks.js checkout.session.completed / invoice.paid).
  * @param {string} opts.stripeSubscriptionId
  * @param {string} opts.stripeSessionId
  * @returns {Promise<{ licenseKey: string|null, emailDelivered: boolean }>}
@@ -94,7 +122,7 @@ export async function issueLicenseForCheckout(opts) {
         email,
         tier,
         seats = 1,
-        months = 12,
+        months = 1,
         stripeSubscriptionId,
         stripeSessionId,
     } = opts
@@ -158,8 +186,8 @@ export async function issueLicenseForCheckout(opts) {
         const result = await sendEmail({
             to: email,
             subject: `Your GitHub Repo Manager license — ${tier} plan`,
-            html: buildLicenseEmailHtml({ tier, licenseKey }),
-            text: buildLicenseEmailText({ tier, licenseKey }),
+            html: buildLicenseEmailHtml({ tier, licenseKey, months }),
+            text: buildLicenseEmailText({ tier, licenseKey, months }),
         })
 
         if (result.ok) {

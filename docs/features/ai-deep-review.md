@@ -21,21 +21,29 @@ reviewer would normally write by hand.
 
 | Capability | Free | Pro |
 | --- | --- | --- |
-| Walkthrough (summary + per-file table + Mermaid sequence diagram) | ✓ | ✓ |
-| Line comments with `suggestion` blocks | ✓ | ✓ |
+| Walkthrough + line comments with `suggestion` blocks (generation) | 10 / month | Unlimited |
 | Edit / dismiss individual comments before publishing | ✓ | ✓ |
 | Publish as single batched GitHub review | ✓ | ✓ |
-| Built-in prompt presets (General / Security / Performance / Accessibility / Refactor) | read-only | read-only |
-| **Custom Prompt Studio presets** (user / repo / org scope) | — | ✓ |
-| `${REPO_STYLE_GUIDE}` token + path-scoped rules + severity floor | — | ✓ |
-| **PR Slash Commands** — `/describe`, `/test_plan`, `/improve` | — | ✓ |
-| **PR Chat** — streaming Q&A with persisted history | — | ✓ |
-| Org-shared prompts (read for org members, edit for author) | — | ✓ |
+| Built-in prompt presets (General / Security / Performance / Accessibility / Refactor) | ✓ | ✓ |
+| **Custom Prompt Studio presets** (user / repo / org scope) | 10 saved presets | Unlimited |
+| Prompt Studio "test preset" runs | 30 / month | Unlimited |
+| `${REPO_STYLE_GUIDE}` token + path-scoped rules + severity floor | ✓ | ✓ |
+| **PR Slash Commands** — `/describe`, `/test_plan`, `/improve` | 30 / month | Unlimited |
+| **PR Chat** — streaming Q&A with persisted history | 100 messages / month | Unlimited |
+| Org-shared prompts (read for org members, edit for author) | ✓ | ✓ |
 
-Free is the full review-and-publish loop with the built-in `general`
-preset; Pro adds the prompt customisation, the slash commands, and the
-chat tab. Tier gates are enforced server-side by `requireTier('pro')` —
-documented per-route in [`docs/api/API.md`](../api/API.md#ai-deep-review-apiaideep-review).
+Free ships the entire review-and-publish loop — prompt customisation,
+slash commands, and PR Chat included — with a generous per-feature
+monthly cap on each AI-generating action (2026-07-18 free-first
+rebalance). Pro removes the caps (unlimited). There is no
+`requireTier('pro')` gate anywhere in this feature: every route is
+`requireAuth` plus per-feature quota metering
+(`checkAIFeatureLimit`/`guardedIncrementAIUsage`), documented per-route in
+[`docs/api/API.md`](../api/API.md#ai-deep-review-apiaideep-review). See
+[`docs/billing-and-licensing.md`](../billing-and-licensing.md) for the
+pricing philosophy and [`server/lib/feature-flags.js`](../../server/lib/feature-flags.js)
+for the exact numbers (source of truth — cross-check before quoting a cap
+elsewhere).
 
 ---
 
