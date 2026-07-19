@@ -25,6 +25,10 @@ const ROOTS = [
   'src/utils',
   'src/hooks',
   'src/api',
+  'src/contexts',
+  'src/actions',
+  'src/config',
+  'src/__mocks__',
 ]
 
 // Portuguese-specific accented letters. These do not appear in English UI copy
