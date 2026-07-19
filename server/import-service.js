@@ -8,11 +8,10 @@ import { simpleGit } from 'simple-git';
 import { existsSync, mkdirSync, rmSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import logger from './lib/logger.js';
 import { detectTool } from './lib/env/detect.js';
 import { isInternalUrl, resolveAndValidateHost } from './lib/url-validator.js';
+import { getDataDir } from './lib/data-dir.js';
 import {
     findOversizedBlobs,
     parseOversizedPushError,
@@ -20,13 +19,13 @@ import {
     GITHUB_FILE_SIZE_LIMIT_BYTES,
 } from './lib/oversized-blobs.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 // Canonical temp root for ALL import workdirs (git clones, git-tfs, TFVC
 // snapshots). Exported so route-level strategies don't re-derive it with
 // their own __dirname arithmetic — that's how multi-GB clones ended up
-// inside server/routes/ once already.
-export const TMP_DIR = join(__dirname, 'data', 'tmp');
+// inside server/routes/ once already. Lives under the resolved DATA_DIR so a
+// DATA_DIR override (e.g. the Windows package) also relocates scratch space
+// off a read-only install directory.
+export const TMP_DIR = join(getDataDir(), 'tmp');
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 // Ensure tmp dir exists
