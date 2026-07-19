@@ -4,6 +4,11 @@ A native Windows distribution — an installer and a portable ZIP, both
 bundling their own Node.js runtime. No Docker, no separate Node.js install,
 no admin rights required.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/windows-first-run.svg">
+  <img alt="Windows first-run flow: Start.cmd launches the bundled runtime, first run idempotently generates a local .env with four random secrets (an existing .env is left untouched), a port check falls back to the next free port if the configured one is busy, the server boots bound to 127.0.0.1 with data under DATA_DIR, and once the health check passes the browser opens" src="images/windows-first-run.svg" width="900">
+</picture>
+
 > Windows assets ship from **v4.7.0** onward. On an earlier release, use
 > [Docker](operations.md#deployment) or a manual Node.js install (see the
 > [README](../README.md#installation)) instead.
@@ -74,6 +79,13 @@ backups the app already writes on its own schedule (see
 [Backup & restore](operations.md#backup--restore)). It survives both
 **updates** and **uninstalls**. Back it up by copying the folder.
 
+Under the hood this is just the `DATA_DIR` env var (see
+[Runtime layout & bind](operations.md#runtime-layout--bind-v470)): the
+installer writes it into `install-config.txt` next to `start.ps1` right
+after install, and a portable-ZIP launch defaults to `.\data` unless you
+override it with the `GRM_DATA_DIR` environment variable before running
+`Start GitHub Repo Manager.cmd`.
+
 ---
 
 ## Updating
@@ -98,6 +110,11 @@ GitHub's public releases API — no query params, no identifying data
 attached — cached for 24 hours. It only notifies; nothing self-updates. To
 disable the outbound check entirely, add `UPDATE_CHECK=false` to `app\.env`
 and restart.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="images/update-check.svg">
+  <img alt="Update-check flow: Settings About triggers an authenticated GET to /api/system/update-check, cached 24 hours on success or 1 hour after a failure, which makes a plain unauthenticated GET to GitHub's releases/latest API with no query parameters, no identifying data, and a 5 second timeout, then compares versions with strict semver-newer logic before showing a dismissable banner — UPDATE_CHECK=false skips the outbound call entirely, and a failed fetch degrades to an inconclusive result that never claims an update either way" src="images/update-check.svg" width="900">
+</picture>
 
 ---
 
