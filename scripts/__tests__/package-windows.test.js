@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import {
@@ -17,6 +17,8 @@ import {
   assertDistBuilt,
   shouldSkipServerPath,
   betterSqlite3BinaryPath,
+  readCachedZipIfValid,
+  verifyAndCacheDownload,
 } from '../package-windows.mjs'
 
 describe('NODE_VERSION', () => {
@@ -223,6 +225,91 @@ describe('betterSqlite3BinaryPath', () => {
     expect(betterSqlite3BinaryPath(appDir)).toBe(
       path.join(appDir, 'node_modules', 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node'),
     )
+  })
+})
+
+describe('readCachedZipIfValid (no existsSync-then-readFileSync check-then-act)', () => {
+  let cacheDir
+
+  beforeEach(() => {
+    cacheDir = mkdtempSync(path.join(tmpdir(), 'grm-pkg-cache-'))
+  })
+
+  afterEach(() => {
+    rmSync(cacheDir, { recursive: true, force: true })
+  })
+
+  it('returns null (not a thrown ENOENT) when the cache file does not exist at all', () => {
+    const missing = path.join(cacheDir, 'node-vX-win-x64.zip')
+    expect(readCachedZipIfValid(missing, 'a'.repeat(64))).toBeNull()
+  })
+
+  it('returns the buffer when the cached file matches the expected hash', () => {
+    const content = Buffer.from('a cached node runtime zip, pretend')
+    const hash = sha256Hex(content)
+    const cachedZipPath = path.join(cacheDir, 'node-vX-win-x64.zip')
+    writeFileSync(cachedZipPath, content)
+    const result = readCachedZipIfValid(cachedZipPath, hash)
+    expect(result).not.toBeNull()
+    expect(Buffer.compare(result, content)).toBe(0)
+  })
+
+  it('returns null (a safe cache miss, not the stale bytes) when the cached file exists but the hash no longer matches', () => {
+    const content = Buffer.from('a cached node runtime zip, pretend')
+    const cachedZipPath = path.join(cacheDir, 'node-vX-win-x64.zip')
+    writeFileSync(cachedZipPath, content)
+    expect(readCachedZipIfValid(cachedZipPath, 'f'.repeat(64))).toBeNull()
+  })
+
+  it('propagates a real fs error other than ENOENT rather than silently treating it as a cache miss', () => {
+    // A directory where a file is expected: readFileSync throws EISDIR, which
+    // must NOT be swallowed the way a genuine "file absent" ENOENT is.
+    const dirAsFile = path.join(cacheDir, 'oops-a-directory')
+    mkdirSync(dirAsFile)
+    expect(() => readCachedZipIfValid(dirAsFile, 'a'.repeat(64))).toThrow()
+  })
+})
+
+describe('verifyAndCacheDownload (verify BEFORE any byte reaches disk, atomic write)', () => {
+  let cacheDir
+
+  beforeEach(() => {
+    cacheDir = mkdtempSync(path.join(tmpdir(), 'grm-pkg-cache-'))
+  })
+
+  afterEach(() => {
+    rmSync(cacheDir, { recursive: true, force: true })
+  })
+
+  it('writes the verified buffer to cachedZipPath and returns it, with no leftover temp file', () => {
+    const content = Buffer.from('freshly downloaded node runtime zip, pretend')
+    const hash = sha256Hex(content)
+    const cachedZipPath = path.join(cacheDir, 'node-vX-win-x64.zip')
+
+    const result = verifyAndCacheDownload(content, hash, 'node-vX-win-x64.zip', cachedZipPath)
+
+    expect(Buffer.compare(result, content)).toBe(0)
+    expect(existsSync(cachedZipPath)).toBe(true)
+    expect(Buffer.compare(readFileSync(cachedZipPath), content)).toBe(0)
+    // No stray `<cachedZipPath>.<pid>-<timestamp>.tmp` files left in cacheDir —
+    // the rename must have moved (not copied) the verified bytes into place.
+    const leftoverTemp = readdirSync(cacheDir).filter((f) => f.endsWith('.tmp'))
+    expect(leftoverTemp).toEqual([])
+  })
+
+  it('throws on a hash mismatch and never writes anything to cachedZipPath at all', () => {
+    const content = Buffer.from('tampered or corrupted download')
+    const cachedZipPath = path.join(cacheDir, 'node-vX-win-x64.zip')
+
+    expect(() =>
+      verifyAndCacheDownload(content, 'f'.repeat(64), 'node-vX-win-x64.zip', cachedZipPath),
+    ).toThrow(/SHA256 verification/)
+
+    // The whole point of verify-before-write: an unverified/mismatched
+    // download must never reach the final path, not even partially.
+    expect(existsSync(cachedZipPath)).toBe(false)
+    const files = readdirSync(cacheDir)
+    expect(files).toEqual([])
   })
 })
 

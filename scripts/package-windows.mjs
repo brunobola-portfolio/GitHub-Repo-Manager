@@ -32,6 +32,8 @@ import {
     copyFileSync,
     cpSync,
     readdirSync,
+    renameSync,
+    unlinkSync,
 } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
@@ -238,6 +240,54 @@ async function downloadToBuffer(url) {
 }
 
 /**
+ * Reads a cached copy of the Node runtime zip iff it exists AND matches the
+ * expected hash. A direct try/catch on ENOENT rather than an
+ * existsSync-then-readFileSync pair: the latter is a check-then-act — the
+ * file could be removed (or be mid-write from a concurrent packaging run
+ * sharing the same cache dir) in the gap between the check and the read.
+ * Returns null on any cache miss (absent or hash mismatch), never throws for
+ * that case — only a real unexpected fs error propagates.
+ */
+export function readCachedZipIfValid(cachedZipPath, expectedHash) {
+    let cached;
+    try {
+        cached = readFileSync(cachedZipPath);
+    } catch (err) {
+        if (err.code === 'ENOENT') return null;
+        throw err;
+    }
+    return sha256Hex(cached) === expectedHash ? cached : null;
+}
+
+/**
+ * Verifies a freshly-downloaded buffer against the expected hash BEFORE any
+ * byte of it ever reaches the cache path (never write-then-verify) — a
+ * mismatch throws before any write is attempted. Once verified, the buffer
+ * is committed to cachedZipPath atomically: written to a unique temp file
+ * first, then `renameSync`'d into place, so cachedZipPath is never
+ * observable half-written and a crash mid-download can never leave a
+ * corrupt file where readCachedZipIfValid would later find (and trust) it.
+ */
+export function verifyAndCacheDownload(buffer, expectedHash, zipName, cachedZipPath) {
+    const actualHash = sha256Hex(buffer);
+    if (actualHash !== expectedHash) {
+        throw new Error(
+            `Node.js runtime download failed SHA256 verification: ${zipName}\n` +
+            `  expected ${expectedHash}\n  actual   ${actualHash}`,
+        );
+    }
+    const tempPath = `${cachedZipPath}.${process.pid}-${Date.now()}.tmp`;
+    writeFileSync(tempPath, buffer);
+    try {
+        renameSync(tempPath, cachedZipPath);
+    } catch (err) {
+        try { unlinkSync(tempPath); } catch { /* best-effort cleanup, original error wins */ }
+        throw err;
+    }
+    return buffer;
+}
+
+/**
  * Downloads (or reuses a hash-verified cache of) the official Node win-x64
  * build, verifies it against nodejs.org's own SHASUMS256.txt, and extracts
  * only node.exe + its LICENSE into runtimeDir — never the full zip (npm/npx
@@ -257,23 +307,10 @@ export async function ensureNodeRuntime({ version = NODE_VERSION, cacheDir, runt
     }
 
     const cachedZipPath = path.join(cacheDir, zipName);
-    let zipBuffer;
-    if (existsSync(cachedZipPath)) {
-        const cached = readFileSync(cachedZipPath);
-        if (sha256Hex(cached) === expectedHash) {
-            zipBuffer = cached;
-        }
-    }
+    let zipBuffer = readCachedZipIfValid(cachedZipPath, expectedHash);
     if (!zipBuffer) {
-        zipBuffer = await downloadToBuffer(zipUrl);
-        const actualHash = sha256Hex(zipBuffer);
-        if (actualHash !== expectedHash) {
-            throw new Error(
-                `Node.js runtime download failed SHA256 verification: ${zipName}\n` +
-                `  expected ${expectedHash}\n  actual   ${actualHash}`,
-            );
-        }
-        writeFileSync(cachedZipPath, zipBuffer);
+        const downloaded = await downloadToBuffer(zipUrl);
+        zipBuffer = verifyAndCacheDownload(downloaded, expectedHash, zipName, cachedZipPath);
     }
 
     const zip = new AdmZip(zipBuffer);

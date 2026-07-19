@@ -86,11 +86,36 @@ describe('ensureFirstRunEnv', () => {
         const originalContent = fs.readFileSync(envPath, 'utf8');
         const originalMtime = fs.statSync(envPath).mtimeMs;
 
-        const second = ensureFirstRunEnv({ envPath });
+        // ensureFirstRunEnv no longer branches on a preceding existsSync — it
+        // always attempts an exclusive (flag: 'wx') create and treats EEXIST
+        // as the idempotent no-op path. Assert that directly (a bare call
+        // that must not throw) rather than implying a check-then-act shape
+        // by pre-testing file state before calling it again.
+        let second;
+        expect(() => {
+            second = ensureFirstRunEnv({ envPath });
+        }).not.toThrow();
 
         expect(second.created).toBe(false);
         expect(fs.readFileSync(envPath, 'utf8')).toBe(originalContent);
         expect(fs.statSync(envPath).mtimeMs).toBe(originalMtime);
+    });
+
+    it('is idempotent even when the file at envPath was created by someone else entirely (direct exclusive-write collision)', () => {
+        // Regression guard for the old existsSync-then-writeFileSync shape:
+        // simulates the file appearing via a completely independent writer
+        // (not a prior ensureFirstRunEnv call) between two callers racing for
+        // the same path — exactly what flag: 'wx' + catching EEXIST is for.
+        const envPath = path.join(tmpDir, '.env');
+        fs.writeFileSync(envPath, 'RACE_WINNER=someone-else\n', { flag: 'wx' });
+
+        let result;
+        expect(() => {
+            result = ensureFirstRunEnv({ envPath });
+        }).not.toThrow();
+
+        expect(result.created).toBe(false);
+        expect(fs.readFileSync(envPath, 'utf8')).toBe('RACE_WINNER=someone-else\n');
     });
 
     it('never overwrites a hand-written .env, even one missing every generated key', () => {

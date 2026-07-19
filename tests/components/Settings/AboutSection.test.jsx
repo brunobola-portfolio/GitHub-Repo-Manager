@@ -30,7 +30,12 @@ describe('AboutSection', () => {
     it('always shows the current version and a Changelog link', async () => {
         apiCall.mockResolvedValue({ current: CURRENT, disabled: true });
         render(<AboutSection />);
-        expect(screen.getByText(new RegExp(`v${CURRENT.replace(/\./g, '\\.')}`))).toBeInTheDocument();
+        // Full regex-metacharacter escape (not just "."): CURRENT is a version
+        // string today, but a partial escape here is exactly the incomplete-
+        // sanitization shape a static scanner flags regardless of the current
+        // value's actual content.
+        const escapedCurrent = CURRENT.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        expect(screen.getByText(new RegExp(`v${escapedCurrent}`))).toBeInTheDocument();
         const link = screen.getByRole('link', { name: /changelog/i });
         expect(link).toHaveAttribute('href', expect.stringContaining('CHANGELOG.md'));
         await waitFor(() => expect(apiCall).toHaveBeenCalledWith('/api/system/update-check'));
