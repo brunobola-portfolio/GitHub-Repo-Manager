@@ -27,10 +27,13 @@ vi.mock('framer-motion', async (importOriginal) => {
 })
 
 // ---------------------------------------------------------------------------
-// Import after mocks. Both Sidebar and SlimSidebar are exported from the
-// same module.
+// Import after mocks. SlimSidebar lives in its own module (lazy-loaded from
+// App.jsx) so its rail-exclusive code stays out of the eager entry chunk;
+// Sidebar remains in Sidebar.jsx and exports the shared sub-components
+// (QuickActionButtons/ActionHistoryRow/ActivityRow) SlimSidebar imports.
 // ---------------------------------------------------------------------------
-const { Sidebar, SlimSidebar } = await import('@/components/Sidebar')
+const { Sidebar } = await import('@/components/Sidebar')
+const { SlimSidebar } = await import('@/components/SlimSidebar')
 const { SelectionProvider } = await import('@/contexts/SelectionContext')
 const { ModalProvider } = await import('@/contexts/ModalContext')
 
