@@ -38,6 +38,11 @@ vi.mock('../lib/usage-meter.js', () => ({
 vi.mock('../middleware/auth.js', () => ({
   requireAuth: (_req, _res, next) => next(),
   safeError: (_err, fallback) => fallback,
+  // routes/migration.js now imports ./ai/shared.js (for guardedGenerate on
+  // POST /analyze), which instantiates requireAI via createRequireAI at
+  // module load — the wholesale mock must supply it or importing the router
+  // throws before any test in this file runs.
+  createRequireAI: () => (_req, _res, next) => next(),
 }))
 vi.mock('../db.js', () => ({
   default: {

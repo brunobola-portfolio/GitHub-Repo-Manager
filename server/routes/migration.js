@@ -1,14 +1,16 @@
 import express from 'express';
 import logger from '../lib/logger.js';
 import { requireAuth, safeError } from '../middleware/auth.js';
+import { requireScope } from '../middleware/api-key-auth.js';
 import { getUserTier } from '../middleware/require-tier.js';
 import { getTierOrder, getFeatures } from '../lib/feature-flags.js';
-import { getCurrentUsage, incrementUsage } from '../lib/usage-meter.js';
+import { getCurrentUsage, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../lib/usage-meter.js';
 import { migrationQuotaDecision } from '../lib/migration-quota.js';
 import { handlePlanComplete } from '../lib/migration-plan-complete.js';
 import { MigrationEngine } from '../migration-engine.js';
 import { createPlanSchema, updatePlanSchema } from '../lib/validators.js';
 import { analyzeMigration } from '../migration-planner.js';
+import { guardedGenerate, handleAIError } from './ai/shared.js';
 import { validateAzureHost } from '../lib/azure-host-validator.js';
 import { auditLog } from '../lib/audit.js';
 import { withReplaceOnConflict, withLfsMigrate } from '../lib/migration-task-config.js';
@@ -742,15 +744,44 @@ router.get('/stream/:id', requireAuth, (req, res) => {
 });
 
 // POST /api/migration/analyze — AI-powered or fallback analysis
-router.post('/analyze', requireAuth, async (req, res) => {
+//
+// AI is opportunistic here: when a per-user provider is available the
+// response is enriched with a grounded risk/suggestion analysis (metered
+// against the same ai_migration_risk quota as the sibling POST /ai/migration-risk
+// endpoint); when it isn't, or the provider call fails for a transient
+// reason, the endpoint still returns a full deterministic analysis via
+// fallbackAnalysis() so the wizard never blocks on AI availability. Only a
+// monthly spend-cap denial is NOT swallowed into that fallback — it must
+// surface as a real 429 (OWASP LLM10: a request left unmetered here could
+// ride up to 200 repos' worth of prompt on the server's key for free).
+//
+// requireScope('ai') is NOT paired with an AI_GENERATION_ROUTE_PATHS entry:
+// this route lives in server/routes/migration.js, not the server/routes/ai/*
+// barrel the parity test in ai-key-scope-enforcement.test.js walks, so it
+// falls outside that allowlist's carve-out mechanism entirely (mirrors
+// server/routes/v1/repos-security.js's /security/summary, which is in the
+// same position). The practical effect: only session users and admin-scoped
+// API keys can reach this route; a write-only key no longer can.
+router.post('/analyze', requireAuth, requireScope('ai'), async (req, res) => {
   try {
     const context = req.body;
     if (!context || !Array.isArray(context.repos) || context.repos.length > 200) {
       return res.status(400).json({ error: 'Invalid context: repos array required (max 200)' });
     }
-    const result = await analyzeMigration(context);
+
+    const userId = req.session.userId;
+    let generate;
+    if (req.aiProvider) {
+      const check = checkAIFeatureLimit(userId, 'ai_migration_risk');
+      if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
+      generate = (opts) => guardedGenerate(req, opts, { feature: 'migration_analyze' });
+    }
+
+    const { aiUsed, ...result } = await analyzeMigration(context, generate);
+    if (aiUsed) incrementAIUsage(userId, 'ai_migration_risk');
     res.json(result);
   } catch (err) {
+    if (err?.code === 'AI_SPEND_CAP_REACHED') return handleAIError(res, err);
     res.status(500).json({ error: safeError(err, 'Operation failed') });
   }
 });
