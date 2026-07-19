@@ -1,13 +1,13 @@
 # Roadmap
 
-A thin mirror of the in-app Roadmap page (`/roadmap`). Everything here is either in progress or planned — items that aren't genuinely close to shipping live in **Next** so the "Shipping Now" list stays honest.
-
-## Shipping Now (Q2 2026)
-
-- **Security & Secrets Scan** — Pro. Aggregates GitHub's native Dependabot / secret scanning alerts.
+A thin mirror of the in-app Roadmap page (`/roadmap`). Everything here is either in progress or planned — the in-app page no longer carries a separate "Shipping Now" stage, so this mirror doesn't either; everything not yet shipped lives in **Next** or **Later**.
 
 ## Next (Q3 2026)
 
+- **Pierre diff + tree primitives** — All tiers. Adopt `@pierre/diffs` (Apache-2.0, AGPL-compatible) as the canonical PR / commit diff renderer, `@pierre/trees` as the repo file-tree primitive.
+- **Vercel AI Elements migration** — Pro. Port Repo Advisor, AI Issue Planner, and the Dashboard AI narrative onto Vercel's shadcn-shaped AI Elements (streaming, reasoning, tool calls).
+- **Premium Dashboard Phase 2 (DORA)** — Enterprise. KPI cards + area charts with sparklines, delta badges, and CSV export.
+- **Cross-repo Command Palette (Ctrl+K / ⌘K v2)** — All tiers. Cross-repo jump, recent-PR / issue search, AI-driven action quick-fire.
 - **Azure DevOps Server (on-premise)** — Enterprise. PAT + URL adaptation for self-hosted Azure DevOps.
 - **GitLab Migration Importer** — Pro + Enterprise. Clone GitLab repos with history. Scope: sources, branches, default protections, issues (best-effort).
 - **Bitbucket Migration Importer** — Pro + Enterprise.
@@ -28,14 +28,22 @@ A thin mirror of the in-app Roadmap page (`/roadmap`). Everything here is either
 - **Dependabot Aggregation** — Pro.
 - **Custom Workflow Templates** — Pro.
 
-## Recently Shipped (v4.0.0, unreleased — May 2026)
+## Recently Shipped (v4.6.0–v4.7.0 — July 2026)
+
+- **Native Windows distribution** (v4.7.0) — a CI-boot-validated installer and portable ZIP, both bundling their own Node.js runtime; first-run bootstrap generates its own secrets and a local `.env`; new `HOST` / `DATA_DIR` / `ALLOW_CONSOLE_EMAIL` env vars for installed layouts; in-app update notifications (`UPDATE_CHECK=false` to disable); winget manifests scaffolded, submission still pending.
+- **Community WOW** (v4.6.0) — four new AI-grounded repo tools, all metered on Free with deterministic zero-AI-cost fallbacks: **README Studio** (free quality score + grounded improve), **AI Diagram Generator** (embed-into-repo + retry-once self-repair), **Agent Rules Generator** (AGENTS.md / CLAUDE.md from real detected build/test/CI signals), and **Security Posture Panel** (10-check report card + optional AI narrative).
+- **Free-first pricing rebalance** (v4.6.0) — bulk ops (transfer/mirror/cross-org), mirror sync apply, AI Deep Review, Prompt Studio, PR Chat, and PR slash commands all moved off the Pro paywall to Free with generous monthly caps; Pro's role narrows to AI headroom and more API keys rather than feature unlocks.
+- **Ops readiness** (v4.6.0) — a Prometheus `/metrics` endpoint (admin-session or bearer-token gated), a reverse-proxy/TLS deployment guide, and list virtualization for large repo grids.
+- **Launch-readiness hardening** (v4.6.1) — every finding from the 2026-07-19 seven-dimension audit fixed, including AI spend-cap gaps on routes that could bypass metering entirely, plus 10 previously-invisible Free-tier quotas surfaced in Settings → Usage.
+
+## Recently Shipped (v4.0.0 — May 2026)
 
 - **AI Deep Review — slice 1a (free).** `runDeepReview` engine producing a markdown walkthrough, per-file change table, Mermaid sequence diagram, and up to 25 line comments with editable `suggestion` blocks; one-click batched publish through the outbox with idempotency-key collapse; 5 routes under `/api/ai/deep-review/*`; honest MOCK_MODE publish.
 - **AI Deep Review — slice 1a-2 hardening.** Provider `usageMetadata` threading across Gemini / Anthropic / OpenAI / OpenRouter / local; unified `computeCostUSD`; LRU sweep on the rate limiter; mermaid theme observer; shared `useFocusTrap`.
-- **Premium Prompt Studio (Pro).** 5 built-in preset lenses + per-user / per-repo / per-org custom presets, path-scoped rules, severity floor, `${REPO_STYLE_GUIDE}` token from `.repomanager/review-rules.md`. `/ai/prompts` page with Library + Editor + PromptPicker.
-- **PR Slash Commands (Pro).** `/describe`, `/test_plan`, `/improve` from a Commands tab in the AI Review Panel; `/describe → Apply to PR` PATCHes the body via the outbox with body-hash + `updatedAt` idempotency.
-- **PR Chat tab (Pro).** Streaming SSE Q&A on the PR with per-`(user, PR)` history persisted in `ai_pr_chat_messages` (`MAX_HISTORY_TURNS = 10`); every PR-derived string sanitised via `sanitizeForPrompt`; cancellable AbortController on unmount + new send.
-- **Org-shared prompts (Pro).** `scope='org'` end-to-end with GitHub org-membership gating cached 5 min; resolution chain extends to `org-default`. Read-only badges in the Library.
+- **Premium Prompt Studio** (launched Pro; now Free with monthly caps — free-first rebalance v4.6.0). 5 built-in preset lenses + per-user / per-repo / per-org custom presets, path-scoped rules, severity floor, `${REPO_STYLE_GUIDE}` token from `.repomanager/review-rules.md`. `/ai/prompts` page with Library + Editor + PromptPicker.
+- **PR Slash Commands** (launched Pro; now Free with monthly caps — free-first rebalance v4.6.0). `/describe`, `/test_plan`, `/improve` from a Commands tab in the AI Review Panel; `/describe → Apply to PR` PATCHes the body via the outbox with body-hash + `updatedAt` idempotency.
+- **PR Chat tab** (launched Pro; now Free with monthly caps — free-first rebalance v4.6.0). Streaming SSE Q&A on the PR with per-`(user, PR)` history persisted in `ai_pr_chat_messages` (`MAX_HISTORY_TURNS = 10`); every PR-derived string sanitised via `sanitizeForPrompt`; cancellable AbortController on unmount + new send.
+- **Org-shared prompts** (launched Pro; now Free with monthly caps — free-first rebalance v4.6.0). `scope='org'` end-to-end with GitHub org-membership gating cached 5 min; resolution chain extends to `org-default`. Read-only badges in the Library.
 - **Premium UX unification.** Unified 17-code AI error vocabulary + shared `<AIErrorState>`; global `<DemoModeBanner>`; `<SafeMarkdown>` for every model-output surface; 401→422 fix decoupling AI auth from session expiry; PRFilesTab "reviewed" state persisted.
 - **Surface uniformity primitives.** `<SectionPanel>`, `<HeroHalo>`, `<CountUp>`, `<PageMount>` applied across Dashboard / RepoDetail / WorkBoard, all honouring `prefers-reduced-motion`.
 - **Drawer consolidation.** Unified `<Drawer side="left|right|bottom">` replacing Sheet, MobileDrawer, SidePanel and AutoFixDrawer's bespoke shells. Bottom variant adds drag handle + `safe-area-inset-bottom` + swipe-to-dismiss. Fixes a pre-existing bug where `MobileDrawer side="bottom"` silently routed to `right`.
@@ -68,8 +76,8 @@ A thin mirror of the in-app Roadmap page (`/roadmap`). Everything here is either
 - **Stripe billing + license key delivery** (v3.0.0) — Ed25519-signed JWT license keys issued and emailed on checkout completion.
 - **CODEOWNERS Parser + Suggest endpoint + UI** (v3.4.0).
 - **Compare-with-existing side-by-side diff** (v3.4.0) — README + package.json side-by-side from any similar-repo result.
-- **README Enhance** (v3.0.1) — Pro. AI-generated diff against your current README.
-- **Batch Indexing** (v3.0.1) — Pro. Bulk AI indexing with progress modal.
+- **README Enhance** (v3.0.1) — launched Pro; now Free with monthly caps (free-first rebalance v4.6.0). AI-generated diff against your current README.
+- **Batch Indexing** (v3.0.1) — launched Pro; now Free with monthly caps (free-first rebalance v4.6.0). Bulk AI indexing with progress modal.
 - **Bulk operations safety** — confirmation dialogs, dry-run mode, tier-gated destructive actions.
 - **PR Review write-back** (v3.4.0) — approve / request-changes / comment / merge from the app. Available on all tiers: the original Pro gating was deliberately removed in the v4.x pricing rebalance (locked by tier-gate tests).
 - **PR Review Experience** (v3.0.x) — file tree, diff viewer, AI insights, threads.
