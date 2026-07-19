@@ -116,6 +116,21 @@ const VIEWS = [
       await page.waitForLoadState('networkidle')
     },
   },
+  {
+    name: 'settings dialog — about tab',
+    async setup(page) {
+      await page.goto('/')
+      await expect(page.getByAltText(MOCK_USER.login)).toBeVisible({ timeout: 15000 })
+      await page.getByLabel(/open user menu/i).click()
+      await page.getByRole('button', { name: 'Settings' }).click()
+      await expect(page.getByRole('dialog', { name: /^settings$/i })).toBeVisible({ timeout: 10000 })
+      await page.getByRole('tab', { name: /about/i }).click()
+      await page.waitForLoadState('networkidle')
+      // Exercises AboutSection's version badge, Changelog link, and (when an
+      // update is available) the dismissable banner — this scan is what
+      // caught the Dismiss button's sub-AA contrast on the indigo-50 banner.
+    },
+  },
 ]
 
 /**

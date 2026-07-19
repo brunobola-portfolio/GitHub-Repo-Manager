@@ -11,16 +11,14 @@
  */
 
 import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
 import logger from '../logger.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { getDataDir } from '../data-dir.js';
 
 export class SQLiteAdapter {
     /**
      * @param {string} [url] - Optional `sqlite:` URL or file path.
-     *   If omitted, defaults to `<server>/data/manager.db`.
+     *   If omitted, defaults to `<DATA_DIR>/manager.db` (DATA_DIR itself
+     *   defaults to `<server>/data` — see lib/data-dir.js).
      */
     constructor(url) {
         this.type = 'sqlite';
@@ -30,11 +28,7 @@ export class SQLiteAdapter {
             // sqlite:/path/to/db or sqlite:relative/path
             this.dbPath = url.replace(/^sqlite:/, '');
         } else {
-            const dataDir = path.resolve(__dirname, '..', '..', 'data');
-            if (!fs.existsSync(dataDir)) {
-                fs.mkdirSync(dataDir, { recursive: true });
-            }
-            this.dbPath = path.join(dataDir, 'manager.db');
+            this.dbPath = path.join(getDataDir(), 'manager.db');
         }
 
         // Import better-sqlite3 synchronously (the module is CJS under the hood)

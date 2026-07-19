@@ -338,6 +338,13 @@ npm run dev:kill        # free stuck ports (3001 + 5173–5180), then re-run
 
 `npm run dev:all` prints one banner with both URLs, the `/api` proxy, the active env/log level, and backend health, tagging every log line `WEB` or `API`.
 
+**Windows — no Docker, no Node.js install:**
+
+Download `github-repo-manager-<version>-setup.exe` or the portable ZIP from
+the [latest release](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest),
+run **Start GitHub Repo Manager**, and your browser opens once it's ready.
+Full guide: [`docs/windows.md`](docs/windows.md).
+
 **Docker — prebuilt image (primary):**
 
 ```bash

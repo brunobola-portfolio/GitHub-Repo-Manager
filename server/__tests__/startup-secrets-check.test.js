@@ -26,7 +26,7 @@ const TRACKED_KEYS = [
     'SESSION_SECRET', 'WEBHOOK_SECRET', 'CREDENTIAL_ENCRYPTION_KEY',
     'DISABLE_HTTPS_ENFORCEMENT', 'STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET',
     'LICENSE_SIGNING_PRIVATE_KEY_PEM', 'EMAIL_PROVIDER', 'RESEND_API_KEY',
-    'FRONTEND_URL', 'ALLOW_MOCK_AUTH', 'VITE_MOCK_MODE',
+    'FRONTEND_URL', 'ALLOW_MOCK_AUTH', 'VITE_MOCK_MODE', 'ALLOW_CONSOLE_EMAIL',
 ];
 
 beforeEach(() => {
@@ -269,6 +269,71 @@ describe('G4 — verifySecretsAtStartup', () => {
         process.env.EMAIL_PROVIDER = 'console';
         const { errors } = verifySecretsAtStartup({ nodeEnv: 'development' });
         expect(errors).toHaveLength(0);
+    });
+
+    // -----------------------------------------------------------------------
+    // ALLOW_CONSOLE_EMAIL — W1.3.2 opt-out for single-user/local installs
+    // -----------------------------------------------------------------------
+
+    it('production + EMAIL_PROVIDER=console + ALLOW_CONSOLE_EMAIL=true → warning, not an error', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
+        process.env.EMAIL_PROVIDER = 'console';
+        process.env.ALLOW_CONSOLE_EMAIL = 'true';
+        const { errors, warnings } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(errors.some(e => e.includes('EMAIL_PROVIDER'))).toBe(false);
+        expect(warnings.some(w => w.includes('EMAIL_PROVIDER') && w.includes('ALLOW_CONSOLE_EMAIL=true'))).toBe(true);
+    });
+
+    it('production + EMAIL_PROVIDER unset + ALLOW_CONSOLE_EMAIL=true → warning, not an error', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
+        delete process.env.EMAIL_PROVIDER;
+        process.env.ALLOW_CONSOLE_EMAIL = 'true';
+        const { errors, warnings } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(errors.some(e => e.includes('EMAIL_PROVIDER'))).toBe(false);
+        expect(warnings.some(w => w.includes('EMAIL_PROVIDER'))).toBe(true);
+    });
+
+    it('production + EMAIL_PROVIDER=console + ALLOW_CONSOLE_EMAIL unset → still an error (default behavior unchanged)', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
+        process.env.EMAIL_PROVIDER = 'console';
+        delete process.env.ALLOW_CONSOLE_EMAIL;
+        const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(errors.some(e => e.includes('EMAIL_PROVIDER'))).toBe(true);
+    });
+
+    it('production + EMAIL_PROVIDER=console + ALLOW_CONSOLE_EMAIL=false → still an error', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
+        process.env.EMAIL_PROVIDER = 'console';
+        process.env.ALLOW_CONSOLE_EMAIL = 'false';
+        const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(errors.some(e => e.includes('EMAIL_PROVIDER'))).toBe(true);
+    });
+
+    it('production + EMAIL_PROVIDER=resend (missing RESEND_API_KEY) + ALLOW_CONSOLE_EMAIL=true → still an error (opt-out only covers the console case)', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
+        process.env.EMAIL_PROVIDER = 'resend';
+        delete process.env.RESEND_API_KEY;
+        process.env.ALLOW_CONSOLE_EMAIL = 'true';
+        const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(errors.some(e => e.includes('RESEND_API_KEY'))).toBe(true);
+    });
+
+    it('development + ALLOW_CONSOLE_EMAIL=true → no-op (development never errors on EMAIL_PROVIDER anyway)', () => {
+        process.env.EMAIL_PROVIDER = 'console';
+        process.env.ALLOW_CONSOLE_EMAIL = 'true';
+        const { errors, warnings } = verifySecretsAtStartup({ nodeEnv: 'development' });
+        expect(errors).toHaveLength(0);
+        expect(warnings.some(w => w.includes('ALLOW_CONSOLE_EMAIL'))).toBe(false);
     });
 
     // -----------------------------------------------------------------------

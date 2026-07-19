@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.12.0.schema.json
+#
+# Winget installer manifest template — see README.md for how <VERSION>/
+# <SHA256>/<URL> get filled in and submitted.
+#
+# InstallerType: inno + Scope: user matches installer.iss exactly
+# (PrivilegesRequired=lowest, installs under {localappdata}\Programs\
+# GitHubRepoManager — no admin, no UAC prompt). InstallerSwitches are spelled
+# out explicitly rather than relied on as winget's built-in inno default,
+# since they must match installer.iss's silent-flags requirement exactly.
+
+PackageIdentifier: BolaLabs.GitHubRepoManager
+PackageVersion: <VERSION>
+InstallerType: inno
+Scope: user
+InstallModes:
+- silent
+- silentWithProgress
+InstallerSwitches:
+  Silent: /VERYSILENT /NORESTART /SUPPRESSMSGBOXES
+  SilentWithProgress: /SILENT /NORESTART /SUPPRESSMSGBOXES
+UpgradeBehavior: install
+Installers:
+- Architecture: x64
+  InstallerUrl: <URL>
+  InstallerSha256: <SHA256>
+ManifestType: installer
+ManifestVersion: 1.12.0

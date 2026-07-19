@@ -89,3 +89,159 @@ jobs:
             echo "Creating release $TAG"
             gh release create "$TAG" --verify-tag --title "$TAG" "${NOTES[@]}" "${ASSETS[@]}"
           fi
+
+  windows:
+    # Independent of the linux `release` job (own build, own smoke test) but
+    # must not upload before the release object exists — `needs:` both
+    # orders it after `release` and guarantees `release` succeeded, so the
+    # `gh release create/edit` call above has already returned by the time
+    # this job starts. This job never creates or edits the release itself
+    # (title/notes/generate-notes stay the linux job's job) — it only
+    # uploads two more assets to whatever release already exists.
+    needs: release
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref_name }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Build production bundle
+        env:
+          NODE_ENV: production
+        run: npm run build
+
+      - name: Package the Windows ZIP
+        run: node scripts/package-windows.mjs
+
+      - name: Compute version + paths
+        id: meta
+        run: |
+          $version = node -p "require('./package.json').version"
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "zipPath=.dev/package-windows/out/github-repo-manager-$version-win-x64.zip" >> $env:GITHUB_OUTPUT
+          "setupPath=.dev/package-windows/out/github-repo-manager-$version-setup.exe" >> $env:GITHUB_OUTPUT
+
+      - name: Smoke test — never publish a package that doesn't boot
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $extractDir = Join-Path $env:RUNNER_TEMP 'grm-release-zip-smoke'
+          Expand-Archive -Path '${{ steps.meta.outputs.zipPath }}' -DestinationPath $extractDir -Force
+
+          $port = 18080
+          $env:GRM_NO_BROWSER = '1'
+          $env:GRM_PORT = "$port"
+          & "$extractDir\Start GitHub Repo Manager.cmd"
+
+          $live = $false
+          for ($i = 0; $i -lt 60; $i++) {
+              try {
+                  $r = Invoke-WebRequest -Uri "http://127.0.0.1:$port/api/health/live" -TimeoutSec 2 -UseBasicParsing
+                  if ($r.StatusCode -eq 200) { $live = $true; break }
+              } catch {}
+              Start-Sleep -Seconds 1
+          }
+          if (-not $live) {
+              Write-Host "::error::packaged zip never became live within 60s — refusing to publish"
+              exit 1
+          }
+          $ready = Invoke-WebRequest -Uri "http://127.0.0.1:$port/api/health/ready" -TimeoutSec 5 -UseBasicParsing
+          if ($ready.StatusCode -ne 200) {
+              Write-Host "::error::packaged zip /api/health/ready returned $($ready.StatusCode) — refusing to publish"
+              exit 1
+          }
+          $pidFile = Join-Path $extractDir 'app\.grm.pid'
+          $serverPid = Get-Content -LiteralPath $pidFile
+          & "$extractDir\Stop GitHub Repo Manager.cmd"
+          Start-Sleep -Seconds 2
+          if (Get-Process -Id $serverPid -ErrorAction SilentlyContinue) {
+              Write-Host "::error::server process $serverPid still running after Stop — refusing to publish"
+              exit 1
+          }
+          Write-Host "smoke test passed — package boots, stops cleanly"
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Build the installer
+        run: |
+          $version = '${{ steps.meta.outputs.version }}'
+          # package-windows.mjs is ESM; --input-type=module lets a bare `node
+          # -e` import it directly instead of duplicating getPublisher()'s
+          # "<person> - <company>" parsing here as a second source of truth.
+          $publisher = node --input-type=module -e "import { getPublisher } from './scripts/package-windows.mjs'; console.log(getPublisher());"
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path -LiteralPath $iscc)) {
+              $iscc = "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe"
+          }
+          & $iscc "/DMyAppVersion=$version" "/DMyAppPublisher=$publisher" packaging\windows\installer.iss
+          if ($LASTEXITCODE -ne 0) {
+              Write-Host "::error::ISCC exited with code $LASTEXITCODE"
+              exit $LASTEXITCODE
+          }
+
+      - name: Upload Windows assets to the release (idempotent)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $zipPath = '${{ steps.meta.outputs.zipPath }}'
+          $setupPath = '${{ steps.meta.outputs.setupPath }}'
+
+          function Write-Sha256Sidecar([string]$Path) {
+              $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $Path).Hash.ToLower()
+              $fileName = Split-Path -Leaf $Path
+              [System.IO.File]::WriteAllText("$Path.sha256", "$hash  $fileName`n")
+          }
+          Write-Sha256Sidecar $zipPath
+          Write-Sha256Sidecar $setupPath
+
+          # `needs: release` already guarantees the release job (which calls
+          # `gh release create`/`edit` synchronously) finished successfully
+          # before this job started; this short retry is defense-in-depth
+          # against GitHub API eventual-consistency, not the primary wait.
+          $releaseExists = $false
+          for ($i = 0; $i -lt 5; $i++) {
+              gh release view "$env:TAG" *> $null
+              if ($LASTEXITCODE -eq 0) { $releaseExists = $true; break }
+              Start-Sleep -Seconds 5
+          }
+          if (-not $releaseExists) {
+              Write-Host "::error::release $env:TAG does not exist — the linux release job should have created it"
+              exit 1
+          }
+
+          gh release upload "$env:TAG" "$zipPath" "$zipPath.sha256" "$setupPath" "$setupPath.sha256" --clobber
+
+      - name: Submit to winget (best-effort — never blocks the release)
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          if (-not $env:WINGET_TOKEN) {
+              Write-Host "WINGET_TOKEN secret not set — skipping winget submission. See packaging/winget/README.md to configure it."
+              exit 0
+          }
+          $version = '${{ steps.meta.outputs.version }}'
+          $releaseUrl = "https://github.com/${{ github.repository }}/releases/download/$env:TAG/$(Split-Path -Leaf '${{ steps.meta.outputs.setupPath }}')"
+
+          # wingetcreate is a self-contained portable exe; no chocolatey/winget
+          # client needed on the runner to build+submit a manifest with it.
+          Invoke-WebRequest -Uri 'https://aka.ms/wingetcreate/latest' -OutFile "$env:RUNNER_TEMP\wingetcreate.exe"
+          & "$env:RUNNER_TEMP\wingetcreate.exe" update BolaLabs.GitHubRepoManager `
+              --version $version `
+              --urls $releaseUrl `
+              --token $env:WINGET_TOKEN `
+              --submit
+        continue-on-error: true

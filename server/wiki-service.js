@@ -8,15 +8,14 @@ import { simpleGit } from 'simple-git';
 import { existsSync, mkdirSync, rmSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 import { join, relative, dirname, basename, extname } from 'path';
 import { randomUUID } from 'crypto';
-import { fileURLToPath } from 'url';
-import { dirname as pathDirname } from 'path';
 import { getWikiCloneUrl, buildAuthenticatedCloneUrl, orgBaseFor } from './azure-service.js';
 import { isInternalUrl, resolveAndValidateHost } from './lib/url-validator.js';
+import { getDataDir } from './lib/data-dir.js';
 import logger from './lib/logger.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = pathDirname(__filename);
-const TMP_DIR = join(__dirname, 'data', 'tmp');
+// Lives under the resolved DATA_DIR (see lib/data-dir.js) so a DATA_DIR
+// override also relocates this scratch space off a read-only install dir.
+export const TMP_DIR = join(getDataDir(), 'tmp');
 const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 // Ensure tmp dir exists

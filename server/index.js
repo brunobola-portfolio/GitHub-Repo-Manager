@@ -65,6 +65,32 @@ await initMonitoring();
 
 initDB();
 
+// Warm the license cache now that the schema exists. This used to fire at
+// require-tier.js's module-load time — but ESM import evaluation runs before
+// this file's own body (including the initDB() call above), so on a
+// genuinely empty database it queried `installed_license` before initDB()
+// had created it. That was invisible in practice (every long-lived dev/prod
+// DB already has the full schema from prior boots) until the Windows
+// package made a truly fresh DB the NORMAL first-launch case. Test envs
+// skip this so unit tests can call refreshLicenseCache() explicitly against
+// a controlled DB state.
+import { refreshLicenseCache, getLicenseSource } from './middleware/require-tier.js';
+if (config.nodeEnv !== 'test') {
+    refreshLicenseCache().then((payload) => {
+        if (payload) {
+            logger.info(
+                { tier: payload.tier, org: payload.org || 'N/A', source: getLicenseSource(),
+                    expires: payload.exp ? new Date(payload.exp * 1000).toISOString().split('T')[0] : 'never' },
+                'License validated'
+            );
+        }
+    }).catch((err) => {
+        // A DB failure here silently degrades the server to the free tier with no
+        // signal. Log it so a misconfigured deploy is diagnosable.
+        logger.warn({ err }, 'Failed to warm license cache at startup; serving default tier until next refresh');
+    });
+}
+
 // Seed mock data only when explicitly enabled (for demo/development)
 if (config.mockMode === 'true') {
     seedMockData();
@@ -397,9 +423,16 @@ app.use((err, req, res, _next) => {
 // Start Server
 // -----------------------------------------------------------------------------
 
-const server = app.listen(config.port, () => {
-    logger.info({ port: config.port, frontend: config.frontendUrl, mode: config.nodeEnv }, 'GitHub Repo Manager API is live');
-});
+// HOST is optional — passing it to listen() binds a single interface (the
+// Windows package sets 127.0.0.1 so the firewall prompt never appears and the
+// server isn't LAN-exposed by default). Omitting it preserves the historical
+// behavior of binding all interfaces.
+function onListening() {
+    logger.info({ port: config.port, host: config.host || '0.0.0.0 (all interfaces)', frontend: config.frontendUrl, mode: config.nodeEnv }, 'GitHub Repo Manager API is live');
+}
+const server = config.host
+    ? app.listen(config.port, config.host, onListening)
+    : app.listen(config.port, onListening);
 
 // Start background sweeper for Work Board cache + snooze TTL cleanup
 startWorkBoardSweeper();

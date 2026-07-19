@@ -1,0 +1,226 @@
+name: Windows Package
+
+# Builds + boots the Windows distribution (portable ZIP and Inno Setup
+# installer) on every PR that touches packaging inputs, and on demand. This
+# is the only thing standing between "the packaging script ran" and "the
+# packaged app actually works" — every step here is a real boot + HTTP health
+# check + graceful stop, never just a file-existence assertion.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'packaging/**'
+      - 'scripts/package-windows.mjs'
+      - 'scripts/first-run.mjs'
+      - '.github/workflows/windows-package.yml'
+      - '.github/workflows/release.yml'
+
+concurrency:
+  group: windows-package-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package-and-smoke:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Build production bundle
+        env:
+          NODE_ENV: production
+        run: npm run build
+
+      - name: Package the Windows ZIP
+        run: node scripts/package-windows.mjs
+
+      - name: Compute version + paths
+        id: meta
+        run: |
+          $version = node -p "require('./package.json').version"
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "zipPath=.dev/package-windows/out/github-repo-manager-$version-win-x64.zip" >> $env:GITHUB_OUTPUT
+          "setupPath=.dev/package-windows/out/github-repo-manager-$version-setup.exe" >> $env:GITHUB_OUTPUT
+
+      - name: Zip smoke test — extract, boot headless, health-check, stop
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $extractDir = Join-Path $env:RUNNER_TEMP 'grm-zip-smoke'
+          Expand-Archive -Path '${{ steps.meta.outputs.zipPath }}' -DestinationPath $extractDir -Force
+
+          $port = 18080
+          $env:GRM_NO_BROWSER = '1'
+          $env:GRM_PORT = "$port"
+          & "$extractDir\Start GitHub Repo Manager.cmd"
+
+          $live = $false
+          for ($i = 0; $i -lt 60; $i++) {
+              try {
+                  $r = Invoke-WebRequest -Uri "http://127.0.0.1:$port/api/health/live" -TimeoutSec 2 -UseBasicParsing
+                  if ($r.StatusCode -eq 200) { $live = $true; break }
+              } catch {}
+              Start-Sleep -Seconds 1
+          }
+          if (-not $live) {
+              Write-Host "::error::zip package never became live within 60s"
+              Get-Content (Join-Path $extractDir 'app\.env') -ErrorAction SilentlyContinue
+              exit 1
+          }
+          Write-Host "zip package live after ${i}s"
+
+          $ready = Invoke-WebRequest -Uri "http://127.0.0.1:$port/api/health/ready" -TimeoutSec 5 -UseBasicParsing
+          if ($ready.StatusCode -ne 200) {
+              Write-Host "::error::zip package /api/health/ready returned $($ready.StatusCode)"
+              exit 1
+          }
+
+          $pidFile = Join-Path $extractDir 'app\.grm.pid'
+          $serverPid = Get-Content -LiteralPath $pidFile
+          & "$extractDir\Stop GitHub Repo Manager.cmd"
+          Start-Sleep -Seconds 2
+          if (Get-Process -Id $serverPid -ErrorAction SilentlyContinue) {
+              Write-Host "::error::server process $serverPid still running after Stop launcher"
+              exit 1
+          }
+          Write-Host "zip smoke test passed (bundled runtime boots, native module loads, first-run + launchers work headless)"
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Build the installer
+        run: |
+          $version = '${{ steps.meta.outputs.version }}'
+          # package-windows.mjs is ESM; --input-type=module lets a bare `node
+          # -e` import it directly instead of duplicating getPublisher()'s
+          # "<person> - <company>" parsing here as a second source of truth.
+          $publisher = node --input-type=module -e "import { getPublisher } from './scripts/package-windows.mjs'; console.log(getPublisher());"
+          # choco's innosetup package installs machine-wide (the runner's user
+          # is an admin) to Program Files (x86); ISCC.exe is not put on PATH.
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path -LiteralPath $iscc)) {
+              $iscc = "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe"
+          }
+          & $iscc "/DMyAppVersion=$version" "/DMyAppPublisher=$publisher" packaging\windows\installer.iss
+          if ($LASTEXITCODE -ne 0) {
+              Write-Host "::error::ISCC exited with code $LASTEXITCODE"
+              exit $LASTEXITCODE
+          }
+
+      - name: Installer smoke test — silent install, boot, stop, silent uninstall
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $port = 18081
+          $installDir = "$env:LOCALAPPDATA\Programs\GitHubRepoManager"
+          $dataDir = "$env:LOCALAPPDATA\GitHubRepoManager\data"
+          $correctDbFile = Join-Path $dataDir 'manager.db'
+          # The wrong-location file a broken install-config.txt/marker read
+          # would produce (the portable ".\data" default, resolved against
+          # the install dir instead of LocalAppData). Asserting this is
+          # ABSENT is what makes this test able to fail: launching the raw
+          # .cmd (no --data-dir, no GRM_DATA_DIR) with the marker mechanism
+          # reverted would put manager.db here instead of under LocalAppData.
+          $wrongDbFile = Join-Path $installDir 'data\manager.db'
+
+          $proc = Start-Process -FilePath '${{ steps.meta.outputs.setupPath }}' `
+              -ArgumentList '/VERYSILENT', '/NORESTART', '/SUPPRESSMSGBOXES' `
+              -PassThru -Wait
+          if ($proc.ExitCode -ne 0) {
+              Write-Host "::error::installer exited with code $($proc.ExitCode)"
+              exit 1
+          }
+          if (-not (Test-Path (Join-Path $installDir 'Start GitHub Repo Manager.cmd'))) {
+              Write-Host "::error::installed Start launcher not found at $installDir"
+              exit 1
+          }
+          if (-not (Test-Path (Join-Path $installDir 'install-config.txt'))) {
+              Write-Host "::error::install-config.txt marker not written by the installer at $installDir"
+              exit 1
+          }
+
+          # Deliberately launch the RAW .cmd, not a Start Menu shortcut, and
+          # deliberately do not set --data-dir/GRM_DATA_DIR: this is exactly
+          # the path README-WINDOWS.txt tells users works, and the one the
+          # original bug affected (only the shortcut's Parameters got this
+          # right before the install-config.txt marker fix).
+          $env:GRM_NO_BROWSER = '1'
+          $env:GRM_PORT = "$port"
+          Remove-Item Env:\GRM_DATA_DIR -ErrorAction SilentlyContinue
+          & (Join-Path $installDir 'Start GitHub Repo Manager.cmd')
+
+          $live = $false
+          for ($i = 0; $i -lt 60; $i++) {
+              try {
+                  $r = Invoke-WebRequest -Uri "http://127.0.0.1:$port/api/health/live" -TimeoutSec 2 -UseBasicParsing
+                  if ($r.StatusCode -eq 200) { $live = $true; break }
+              } catch {}
+              Start-Sleep -Seconds 1
+          }
+          if (-not $live) {
+              Write-Host "::error::installed package never became live within 60s"
+              exit 1
+          }
+          if (-not (Test-Path $correctDbFile)) {
+              Write-Host "::error::no SQLite DB at $correctDbFile — the install-config.txt data-dir marker is not being read correctly"
+              exit 1
+          }
+          if (Test-Path $wrongDbFile) {
+              Write-Host "::error::SQLite DB found at $wrongDbFile — the raw .cmd launch fell back to the portable ./data default instead of the installed LocalAppData dir"
+              exit 1
+          }
+
+          $pidFile = Join-Path $installDir 'app\.grm.pid'
+          $serverPid = Get-Content -LiteralPath $pidFile
+          & (Join-Path $installDir 'Stop GitHub Repo Manager.cmd')
+          Start-Sleep -Seconds 2
+          if (Get-Process -Id $serverPid -ErrorAction SilentlyContinue) {
+              Write-Host "::error::server process $serverPid still running after installed Stop launcher"
+              exit 1
+          }
+
+          $uninstaller = Get-ChildItem -LiteralPath $installDir -Filter 'unins*.exe' | Select-Object -First 1
+          if (-not $uninstaller) {
+              Write-Host "::error::no uninstaller found in $installDir"
+              exit 1
+          }
+          $uninstProc = Start-Process -FilePath $uninstaller.FullName -ArgumentList '/VERYSILENT', '/NORESTART', '/SUPPRESSMSGBOXES' -PassThru -Wait
+          if ($uninstProc.ExitCode -ne 0) {
+              Write-Host "::error::uninstaller exited with code $($uninstProc.ExitCode)"
+              exit 1
+          }
+
+          # Uninstaller self-deletes its own exe via a deferred OS rename/delete
+          # trick — give the filesystem a moment before asserting the app dir
+          # is gone, to avoid a flaky false failure.
+          $appDirGone = $false
+          for ($i = 0; $i -lt 10; $i++) {
+              if (-not (Test-Path $installDir)) { $appDirGone = $true; break }
+              Start-Sleep -Seconds 1
+          }
+          if (-not $appDirGone) {
+              Write-Host "::error::app dir still present after uninstall: $installDir"
+              Get-ChildItem -LiteralPath $installDir -Recurse -ErrorAction SilentlyContinue
+              exit 1
+          }
+          if (-not (Test-Path $correctDbFile)) {
+              Write-Host "::error::the SQLite DB itself was deleted by uninstall — should have been left in place: $correctDbFile"
+              exit 1
+          }
+          Write-Host "installer smoke test passed (install, boot, stop, uninstall — app dir gone, real DB file preserved at the correct LocalAppData path, nothing written under the install dir)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-package-${{ steps.meta.outputs.version }}
+          path: |
+            .dev/package-windows/out/*.zip
+            .dev/package-windows/out/*.sha256
+            .dev/package-windows/out/*setup.exe
+          retention-days: 7
