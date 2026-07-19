@@ -107,8 +107,8 @@ export const PROVIDER_DEFAULTS = {
         modelHelp: null,
     },
     anthropic: {
-        model: 'claude-sonnet-4-6',
-        modelPlaceholder: 'claude-sonnet-4-6',
+        model: 'claude-sonnet-5',
+        modelPlaceholder: 'claude-sonnet-5',
         showEndpointUrl: false,
         apiKeyRequired: true,
         apiKeyLabel: 'Anthropic API Key',
@@ -117,8 +117,8 @@ export const PROVIDER_DEFAULTS = {
         modelHelp: null,
     },
     openai: {
-        model: 'gpt-4o-mini',
-        modelPlaceholder: 'gpt-4o-mini',
+        model: 'gpt-5.6-luna',
+        modelPlaceholder: 'gpt-5.6-luna',
         embeddingModel: 'text-embedding-3-small',
         showEndpointUrl: false,
         apiKeyRequired: true,

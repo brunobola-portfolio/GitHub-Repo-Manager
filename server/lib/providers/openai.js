@@ -116,13 +116,14 @@ export class OpenAIProvider {
     /**
      * @param {object} opts
      * @param {string} opts.apiKey
-     * @param {string} [opts.model]           — default: 'gpt-4o-mini'
+     * @param {string} [opts.model]           — default: 'gpt-5.6-luna' (verified
+     *                                           2026-07-19 against developers.openai.com/api/docs/models/gpt-5.6-luna)
      * @param {string} [opts.embeddingModel]  — default: 'text-embedding-3-small'
      * @param {string} [opts.baseURL]         — default: 'https://api.openai.com/v1'
      */
     constructor({
         apiKey,
-        model = 'gpt-4o-mini',
+        model = 'gpt-5.6-luna',
         embeddingModel = 'text-embedding-3-small',
         baseURL = 'https://api.openai.com/v1',
     } = {}) {
