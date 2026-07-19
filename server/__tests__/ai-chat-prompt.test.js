@@ -53,6 +53,11 @@ describe('buildChatPrompt', () => {
         }
     })
 
+    it('resolves "this repo" to context.currentRepo instead of asking, per P1.2', () => {
+        expect(sample).toMatch(/currentRepo/)
+        expect(sample).toMatch(/this repo/i)
+    })
+
     it('documents the open_repo_settings payload shape and disambiguation rule', () => {
         // The model must learn that this action needs owner+repo, and that
         // it should ask if the repo is ambiguous instead of guessing.

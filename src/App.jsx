@@ -332,6 +332,24 @@ function AppContent() {
     [selectedRepoDetail, repoDetailEntities],
   )
 
+  // Ambient context handed to Repo Advisor so it can resolve "this repo"
+  // without asking (P1.2). Only set while a specific repo is genuinely open
+  // (repo-detail or its PR review), not merely remembered from a prior visit —
+  // selectedRepoDetail can stay populated after navigating away.
+  const aiCurrentRepo = useMemo(() => {
+    if (!selectedRepoDetail) return null
+    if (activeView !== 'repo-detail' && activeView !== 'pr-review') return null
+    return selectedRepoDetail.full_name || `${selectedRepoDetail.owner?.login}/${selectedRepoDetail.name}`
+  }, [selectedRepoDetail, activeView])
+
+  // Coarse view identifier, refined with the active repo-detail tab when
+  // applicable (e.g. "repo-detail:settings") so the assistant's grounding
+  // is a little more specific than just "the user is in repo detail".
+  const aiCurrentView = useMemo(
+    () => (activeView === 'repo-detail' ? `repo-detail:${repoDetailActiveTab}` : activeView),
+    [activeView, repoDetailActiveTab],
+  )
+
   // Rate-limit toasts — one at a time, auto-dismisses after the countdown ends.
   const rateLimitToastIdRef = useRef(null)
   useEffect(() => {
@@ -937,7 +955,7 @@ function AppContent() {
       </Suspense>
       <ErrorBoundary fallback={<ViewErrorFallback viewName="Repo Advisor" />}>
         <Suspense fallback={null}>
-          <AIAssistant askAI={askAI} askAIStream={askAIStream} user={user} checkAIStatus={checkAIStatus} />
+          <AIAssistant askAI={askAI} askAIStream={askAIStream} user={user} checkAIStatus={checkAIStatus} currentRepo={aiCurrentRepo} currentView={aiCurrentView} />
         </Suspense>
       </ErrorBoundary>
 

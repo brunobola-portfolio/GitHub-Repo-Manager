@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { X, Send, Sparkles, Loader2, Settings, Key, Minus, ArrowRight, AlertTriangle, RotateCw, ExternalLink, Copy, Check, Square } from 'lucide-react'
+import { X, Send, Sparkles, Loader2, Settings, Key, Minus, ArrowRight, AlertTriangle, RotateCw, ExternalLink, Copy, Check, Square, FolderGit2 } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
 import { Button } from './ui/Button'
 import { Card } from './ui/Card'
@@ -120,7 +120,7 @@ function loadInitialMessages() {
     }
 }
 
-export function AIAssistant({ askAI, askAIStream, user, checkAIStatus }) {
+export function AIAssistant({ askAI, askAIStream, user, checkAIStatus, currentRepo, currentView }) {
     const [isOpen, setIsOpen] = useState(false)
     const [isMinimized, setIsMinimized] = useState(false)
     // The persisted slice is already capped at CHAT_STORAGE_MAX_MESSAGES, but
@@ -304,6 +304,10 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus }) {
         const ctx = { user: user?.login }
         if (activeContext?.errorMessage) ctx.errorMessage = activeContext.errorMessage
         if (activeContext?.errorCode) ctx.errorCode = activeContext.errorCode
+        // Ambient repo/view context (P1.2) — lets the backend resolve "this
+        // repo" instead of asking which one the user means.
+        if (currentRepo) ctx.currentRepo = currentRepo
+        if (currentView) ctx.currentView = currentView
 
         const surfaceError = (err) => {
             if (err?.code === 'AI_NOT_CONFIGURED' || err?.code === 'AI_NOT_INITIALIZED') {
@@ -378,7 +382,7 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus }) {
         } finally {
             setIsLoading(false)
         }
-    }, [askAI, askAIStream, user?.login, setMessages, activeContext])
+    }, [askAI, askAIStream, user?.login, setMessages, activeContext, currentRepo, currentView])
 
     const handleSubmit = (e) => {
         e.preventDefault()
@@ -560,6 +564,17 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus }) {
                                                 {isLoading && !messages.some(m => m.streaming) && <TypingIndicator />}
                                                 <div ref={messagesEndRef} />
                                             </div>
+
+                                            {currentRepo && (
+                                                <div className="px-3 pt-2 overflow-hidden shrink-0">
+                                                    <div className="flex items-center gap-2 rounded-lg bg-slate-100/80 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/60 px-2.5 py-1.5">
+                                                        <FolderGit2 size={12} className="text-slate-400 dark:text-slate-500 shrink-0" aria-hidden="true" />
+                                                        <span className="text-xs text-slate-500 dark:text-slate-400 truncate flex-1 min-w-0">
+                                                            Looking at: <span className="font-medium text-slate-700 dark:text-slate-300">{currentRepo}</span>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            )}
 
                                             <AnimatePresence>
                                                 {activeContext && (
