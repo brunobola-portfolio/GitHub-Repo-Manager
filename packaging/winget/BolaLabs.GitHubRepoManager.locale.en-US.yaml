@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.12.0.schema.json
+#
+# Winget defaultLocale manifest template — see README.md. ShortDescription
+# is copied verbatim from package.json's "description" field so this can
+# never drift into a claim the product itself doesn't make.
+
+PackageIdentifier: BolaLabs.GitHubRepoManager
+PackageVersion: <VERSION>
+PackageLocale: en-US
+Publisher: Bola Labs, Inc.
+PublisherUrl: https://github.com/brunobola-portfolio
+PublisherSupportUrl: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/issues
+PackageName: GitHub Repo Manager
+PackageUrl: https://github.com/brunobola-portfolio/GitHub-Repo-Manager
+License: AGPL-3.0-only
+LicenseUrl: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/blob/main/LICENSE
+ShortDescription: Modern GitHub repository management dashboard with AI-powered insights, team collaboration, and Azure DevOps migration.
+Moniker: github-repo-manager
+Tags:
+- github
+- devops
+- dashboard
+- repository-management
+ManifestType: defaultLocale
+ManifestVersion: 1.12.0

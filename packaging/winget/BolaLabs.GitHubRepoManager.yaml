@@ -1,0 +1,12 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.version.1.12.0.schema.json
+#
+# Winget version manifest template. <VERSION> is substituted by `wingetcreate
+# update` (release.yml's windows job) — this file is a reference for manual
+# reconciliation only; wingetcreate generates the manifest it actually
+# submits from the installer URL + this identity. See README.md.
+
+PackageIdentifier: BolaLabs.GitHubRepoManager
+PackageVersion: <VERSION>
+DefaultLocale: en-US
+ManifestType: version
+ManifestVersion: 1.12.0
