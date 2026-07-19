@@ -1,5 +1,5 @@
 # Stage 1: Build frontend
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 # `npm ci` runs better-sqlite3's install script (prebuild-install || node-gyp
 # rebuild); Alpine/musl has no prebuilt binary, so it compiles from source and
@@ -12,7 +12,7 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Production
-FROM node:20-alpine AS production
+FROM node:22-alpine AS production
 WORKDIR /app
 
 # Install only production deps + build tools for better-sqlite3
@@ -23,6 +23,11 @@ RUN npm ci --omit=dev && apk del .build-deps
 # Copy built frontend + server
 COPY --from=builder /app/dist ./dist
 COPY server ./server
+# Offline JWT license verification needs the Ed25519 public key at runtime.
+# Without it require-tier.js/license.js resolve PUBLIC_KEY=null and every
+# self-hosted LICENSE_KEY silently degrades to the Free tier. Public key only —
+# keys/private.pem stays gitignored + .dockerignored.
+COPY keys/public.pem ./keys/public.pem
 
 # Create data directory
 RUN mkdir -p server/data && chown -R node:node server/data

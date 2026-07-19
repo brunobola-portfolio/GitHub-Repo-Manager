@@ -78,6 +78,13 @@ jobs:
       - if: steps.nm.outputs.cache-hit != 'true'
         run: npm ci --no-audit --no-fund
       - run: npm run build
+      # Build-gated honesty checks: no mock/demo data leaked into the production
+      # bundle (build-honesty) and the eager bundle stays within budget
+      # (bundle-budget). Both scan dist/, so they must run AFTER the build, and
+      # they self-skip unless RUN_BUILD_TESTS=1 — which nothing set before, so
+      # they silently skipped on every CI run until now.
+      - name: Build-gated honesty checks
+        run: RUN_BUILD_TESTS=1 npx vitest run tests/build/build-honesty.test.js tests/build/bundle-budget.test.js
 
   e2e:
     needs: [build]

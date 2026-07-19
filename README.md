@@ -218,7 +218,7 @@ Full details in the [Community WOW feature guide](docs/features/community-wow.md
 
 ## Plans & Pricing
 
-The hosted product is **free-first**: nearly every product feature — bulk ops, mirror sync, Deep Review, Prompt Studio, PR Chat, PR slash commands, DORA metrics, and unlimited teams — ships on the Free tier with generous, non-infinite caps. Pro and Enterprise sell AI headroom (bigger monthly caps + a higher $ spend-cap ceiling), more API keys, and compliance/service deliverables (audit logs, SSO, priority support, white-glove migration) — not feature unlocks. Each AI capability has its own monthly cap on Free so one feature can't drain your whole budget. AI usage quotas are metered per individual account, even within a team.
+The hosted product is **free-first**: nearly every product feature — bulk ops, mirror sync, Deep Review, Prompt Studio, PR Chat, PR slash commands, DORA metrics, and unlimited teams — ships on the Free tier with generous, non-infinite caps. Pro and Enterprise sell AI headroom (bigger monthly caps + a higher $ spend-cap ceiling), more API keys, and compliance/service deliverables (audit logs, SSO _(roadmap)_, priority support, white-glove migration) — not feature unlocks. Each AI capability has its own monthly cap on Free so one feature can't drain your whole budget. AI usage quotas are metered per individual account, even within a team.
 
 | Feature                                | Free            | Pro ($19/mo)  | Enterprise |
 |----------------------------------------|-----------------|---------------|------------|

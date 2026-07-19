@@ -1,5 +1,11 @@
 # Phase 2: Cloud Deployment & Infrastructure
 
+> **⚠️ Superseded (historical plan).** This early plan targets Vercel + Railway +
+> **PostgreSQL** + Redis. The shipped product is **SQLite-only** (a `postgres://`
+> `DATABASE_URL` fails fast at boot) and the frontend/backend deploy is
+> documented in [`docs/operations.md`](../operations.md), not Vercel. Read this
+> for history only; follow the operations runbook for current deployment.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Deploy the platform to production with Vercel (frontend) + Railway (backend + PostgreSQL + Redis). Set up monitoring, logging, error tracking, and automated deployments.
