@@ -28,6 +28,7 @@ how-to-build side, see [`docs/index.md`](index.md).
 | ------- | ----- |
 | Liveness probe | `GET /api/health/live` (kill-if-dead; no dependency checks) |
 | Readiness probe | `GET /api/health/ready` and public [`/status`](#public-status-page) |
+| Update notifications | Settings → About, sourced from `GET /api/v1/system/update-check`; disable with `UPDATE_CHECK=false` |
 | Admin DLQ UI | `/admin/dlq` (requires `users.is_admin = 1`) |
 | Admin DLQ CLI | `npm run admin:dlq -- --help` |
 | Release notes | [`CHANGELOG.md`](../CHANGELOG.md) + [GitHub Releases](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases) |
@@ -40,21 +41,16 @@ how-to-build side, see [`docs/index.md`](index.md).
 ## Deployment
 
 **Prebuilt image (primary path).** A multi-arch image is published to GHCR
-on every tagged release by `.github/workflows/docker.yml`:
+on every tagged release by `.github/workflows/docker.yml`. The package is
+public — no login required:
 
 ```bash
 docker pull ghcr.io/brunobola-portfolio/github-repo-manager:latest
 ```
 
-> The `ghcr.io/brunobola-portfolio/github-repo-manager` package currently
-> ships as a **private** GHCR package (28 versions published) — `docker pull`
-> above will 401 until the repository owner flips it to public in the GHCR
-> package settings (two clicks, no code change). Until then, use the local
-> build below, which works today with zero extra steps.
-
 Point `docker-compose.yml`'s `app.build: .` at the pulled image instead
 (`image: ghcr.io/brunobola-portfolio/github-repo-manager:latest`, drop
-`build: .`) once the package is public, or run it directly:
+`build: .`), or run it directly:
 
 ```bash
 docker run --env-file .env -p 3001:3001 \
@@ -79,6 +75,18 @@ section below for the `app-data` / `app-backups` volume split.
 
 Running on Windows without Docker → [`docs/windows.md`](windows.md) (native
 installer + portable ZIP, no Node.js install required).
+
+### Runtime layout & bind (v4.7.0+)
+
+Four env vars, introduced for the Windows package but equally usable by any
+self-host, control where the app binds and where it persists state:
+
+| Var | Default | Meaning |
+| --- | ------- | ------- |
+| `HOST` | unset (binds all interfaces) | Bind address passed to `app.listen(port, host)`. Set to `127.0.0.1` to restrict the server to loopback only — no OS firewall prompt, no LAN exposure. The Windows package sets this by default. |
+| `DATA_DIR` | unset (`server/data`) | Root directory for **all** persisted state: the SQLite DB + session store, the default backups directory (unless `DB_BACKUP_DIR` overrides it), and import/wiki clone scratch space. Set an absolute path when the app directory is read-only (resolver: [`server/lib/data-dir.js`](../server/lib/data-dir.js)). |
+| `ALLOW_CONSOLE_EMAIL` | unset (`false`) | Single-user/local installs only. Downgrades the production `EMAIL_PROVIDER=console` boot error to a warning — there's no one else to email, so license/retention notices just log. Every other production secret/config guard is unaffected; do **not** set this on a hosted, multi-user deployment. |
+| `UPDATE_CHECK` | unset (enabled) | Notify-only "new version available" signal for Settings → About. Set to `false` to disable the outbound `GET /api/v1/system/update-check` call entirely — the endpoint then just echoes the current version. |
 
 ---
 
@@ -231,6 +239,12 @@ green before and after the tag.
 
 **Do not force-push tags.** If a release is wrong, cut a `vX.Y.(Z+1)` patch.
 
+Publishing the GitHub Release (step 8) is also what lights the "new version
+available" banner in Settings → About for every self-hosted install that
+hasn't disabled `UPDATE_CHECK` — the check reads the same public releases
+API endpoint, so a tag pushed but not yet published as a Release doesn't
+count.
+
 ---
 
 ## Backup & restore
@@ -239,7 +253,13 @@ SQLite (better-sqlite3) is the only supported database — there is no
 PostgreSQL option. A `DATABASE_URL` that points at Postgres fails fast at
 boot (see [`server/lib/db-adapter.js`](../server/lib/db-adapter.js)).
 
-The single SQLite file (`server/data/manager.db`) holds users, AES-GCM-encrypted
+`server/data` is the default data directory — every path below assumes it.
+If `DATA_DIR` is set (see [Runtime layout & bind](#runtime-layout--bind-v470)
+above), the database, its WAL sidecars, and the default backups directory
+all live under that path instead, and every command in this section shifts
+accordingly (e.g. `<DATA_DIR>/manager.db` rather than `server/data/manager.db`).
+
+The single SQLite file (`manager.db`) holds users, AES-GCM-encrypted
 BYOK credentials and Azure PATs, migration plans/marks, audit logs and sessions.
 The DB runs in **WAL mode**, so a naive `cp manager.db` produces an
 *inconsistent* snapshot (recent pages live in the `-wal` sidecar). Use the
