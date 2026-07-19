@@ -6,7 +6,8 @@ import { ONBOARDING_STEPS } from './onboardingSteps'
 import { Button } from '../ui/Button'
 
 /**
- * OnboardingTour — 3-step modal carousel for first-run users.
+ * OnboardingTour — modal carousel for first-run users (steps come from
+ * ONBOARDING_STEPS; step count is not hardcoded here).
  *
  * Behaviour:
  *   - Skip / Got it: persist "don't show again" via onNeverShow

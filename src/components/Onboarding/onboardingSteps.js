@@ -1,4 +1,4 @@
-import { Search, Sparkles, Layers } from 'lucide-react'
+import { Search, Sparkles, Layers, Rocket } from 'lucide-react'
 
 export const ONBOARDING_STEPS = [
     {
@@ -18,5 +18,11 @@ export const ONBOARDING_STEPS = [
         icon: Layers,
         title: 'Cross-repo Work Board',
         body: 'One inbox for all your reviews, stale PRs, and DORA metrics across every repo you track. Open from the sidebar.',
+    },
+    {
+        id: 'launch-features',
+        icon: Rocket,
+        title: 'New: README Studio, diagrams, Agent Rules & Security Posture',
+        body: "From a repo's Overview tab: generate a polished README, an architecture diagram, or AGENTS.md/CLAUDE.md rules. Right-click a repo for a Security Posture scan.",
     },
 ]
