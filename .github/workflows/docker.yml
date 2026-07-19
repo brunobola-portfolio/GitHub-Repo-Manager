@@ -62,6 +62,49 @@ jobs:
             echo "__EOF__"
           } >> "$GITHUB_OUTPUT"
 
+      # Build the amd64 leg locally first and boot it once. The public.pem
+      # regression (fixed in #227) shipped because build success was the only
+      # gate — the image had never been started in CI. This catches
+      # boot-aborts (missing bundled files, startup secret checks, native
+      # module mismatches) before anything is pushed.
+      - name: Build amd64 image for smoke test
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: false
+          load: true
+          platforms: linux/amd64
+          tags: smoke-test:local
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test — boot the container and hit /api/health/live
+        run: |
+          set -euo pipefail
+          docker run -d --name smoke \
+            -e NODE_ENV=production \
+            -e SESSION_SECRET="$(openssl rand -hex 32)" \
+            -e WEBHOOK_SECRET="$(openssl rand -hex 32)" \
+            -e CREDENTIAL_ENCRYPTION_KEY="$(openssl rand -hex 32)" \
+            -e API_KEY_SECRET="$(openssl rand -hex 32)" \
+            -e EMAIL_PROVIDER=resend \
+            -e RESEND_API_KEY=re_smoke_dummy_key \
+            -e EMAIL_FROM=smoke@example.invalid \
+            -p 3001:3001 \
+            smoke-test:local
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:3001/api/health/live >/dev/null 2>&1; then
+              echo "container is live after ${i}s"
+              docker rm -f smoke
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::container never became healthy — boot log follows"
+          docker logs smoke
+          docker rm -f smoke
+          exit 1
+
       - uses: docker/build-push-action@v7
         with:
           context: .

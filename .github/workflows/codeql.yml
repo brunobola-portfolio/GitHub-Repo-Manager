@@ -1,0 +1,35 @@
+name: CodeQL
+
+# Static security analysis for the JavaScript/JSX codebase. The product ships
+# a Security Posture feature — the repo itself should clear the same bar.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '24 5 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          # security-extended adds the audit-grade queries without the noisy
+          # maintainability set.
+          queries: security-extended
+
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: '/language:javascript-typescript'

@@ -7,6 +7,11 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # ci.yml already runs lint+test+build+e2e on every push to main. This job
+    # exists only as the pre-deploy gate, so while deploys are opt-out
+    # (DEPLOY_ENABLED unset) it would just burn a duplicate ~5min suite per
+    # push. Skip it together with the deploy jobs it guards.
+    if: github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
     env:
       SESSION_SECRET: ci-test-session-secret-not-real-32chars
       NODE_ENV: test
