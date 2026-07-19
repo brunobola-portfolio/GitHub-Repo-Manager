@@ -11,22 +11,16 @@
 
 <br>
 
-![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
-![Express](https://img.shields.io/badge/Express-5-000000?style=for-the-badge&logo=express&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-WAL-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
-![BYOK AI](https://img.shields.io/badge/BYOK-AI-8E75B2?style=for-the-badge)
-
 [![CI](https://img.shields.io/github/actions/workflow/status/brunobola-portfolio/GitHub-Repo-Manager/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI)](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/actions/workflows/ci.yml)
 [![Build Verify](https://img.shields.io/github/actions/workflow/status/brunobola-portfolio/GitHub-Repo-Manager/deploy.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=Build%20Verify)](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/actions/workflows/deploy.yml)
 ![Tests](https://img.shields.io/badge/Tests-6%2C000%2B_passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
 ![License](https://img.shields.io/badge/License-AGPL_v3-blue?style=for-the-badge&logo=gnu&logoColor=white)
 [![Release](https://img.shields.io/github/v/release/brunobola-portfolio/GitHub-Repo-Manager?style=for-the-badge&logo=github&logoColor=white)](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases)
+[![Windows](https://img.shields.io/badge/Windows-installer_%2B_portable_ZIP-0078D4?style=for-the-badge)](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest)
 
-**One dashboard for repositories, teams, CI/CD, Azure DevOps migration, and AI-assisted PR review — free-first, self-hostable, and honest about its limits.**
+**Free-first** (full AI surface + every Work Board tab + unlimited teams on Free) · **Self-hosting free forever** (AGPL v3) · **Native on Windows**
 
-[**Try the Demo**](#quick-start-demo-mode) · [Features](#features) · [Installation](#installation) · [Documentation](docs/index.md) · [Pricing](#plans--pricing) · [What's new in v4.6.0](CHANGELOG.md#460---2026-07-19)
+[**Try the Demo**](#quick-start-demo-mode) · [Features](#features) · [Installation](#installation) · [Documentation](docs/index.md) · [Pricing](#plans--pricing) · [Download for Windows](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest) · [What's new in v4.7.0 — native Windows app](CHANGELOG.md#470---2026-07-19)
 
 <sub>Production-hardened — AES-256-GCM BYOK · rolling sessions + CSRF double-submit · GitHub API circuit breaker · SSRF + DNS-rebinding guard · dual-theme a11y gate.</sub>
 
@@ -64,6 +58,7 @@ Managing a real GitHub estate means juggling several disconnected tools: dozens 
 - **A cross-repo Work Board** that surfaces reviews waiting on you, stale PRs, and tech debt across every repository — no manual registration.
 - **AI Deep Review** that turns the in-app PR view into a tool you'd choose over github.com.
 - **An Azure DevOps migration suite** (Git, TFVC, Boards, Wikis) with risk analysis, dry-run, and conflict resolution.
+- **Native on Windows** — an installer or a portable ZIP, both with a bundled Node.js runtime: download, double-click, your browser opens. No Docker, no Node.js install, no admin rights. See [`docs/windows.md`](docs/windows.md).
 - **Zero setup to try** — Demo Mode ships with 87 pre-loaded mock repositories.
 
 > Built on React 19, Vite 8, Express 5, Tailwind CSS 4, and better-sqlite3 — self-hostable under AGPL v3, with a free-first hosted plan.
@@ -82,6 +77,8 @@ npm run dev:all
 ```
 
 Open **[http://localhost:5173](http://localhost:5173)** — Vite (:5173) proxies `/api` to Express (:3001). Explore with **87 mock repositories**, simulated organizations, teams, and AI responses. For real mode (your GitHub account), see [Installation](#installation).
+
+> **On Windows?** Skip the toolchain — download from the [latest release](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest) and double-click **Start**.
 
 ---
 
@@ -169,6 +166,11 @@ The full AI surface ships on **every tier including Free**, each capability with
 | **AI Image Generation** | Social preview / hero / logo images, capability-gated with honest cost pills |
 | **Commit Generator** | Conventional commit messages from a diff |
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/ai-deep-review.svg">
+  <img alt="AI Deep Review: a pull request feeds four review surfaces — Walkthrough, inline Comments with suggestion blocks, slash Commands, and streaming Chat — all powered by the BYOK AI layer, batched into one GitHub review through the idempotent outbox" src="docs/images/ai-deep-review.svg" width="900">
+</picture>
+
 <details>
 <summary><strong>See the v4.6 "Community WOW" tools</strong></summary>
 
@@ -219,6 +221,11 @@ Full details in the [Community WOW feature guide](docs/features/community-wow.md
 ## Plans & Pricing
 
 The hosted product is **free-first**: nearly every product feature — bulk ops, mirror sync, Deep Review, Prompt Studio, PR Chat, PR slash commands, DORA metrics, and unlimited teams — ships on the Free tier with generous, non-infinite caps. Pro and Enterprise sell AI headroom (bigger monthly caps + a higher $ spend-cap ceiling), more API keys, and compliance/service deliverables (audit logs, SSO _(roadmap)_, priority support, white-glove migration) — not feature unlocks. Each AI capability has its own monthly cap on Free so one feature can't drain your whole budget. AI usage quotas are metered per individual account, even within a team.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/tier-gating.svg">
+  <img alt="Free-first tier gating: three sources of truth — feature-flags.js TIER_FEATURES, usage-meter.js METRIC_TO_FEATURE, and the require-tier middleware — feed one gating decision checking whether a feature is allowed and within its monthly cap, returning a 429 quota state on overflow" src="docs/images/tier-gating.svg" width="900">
+</picture>
 
 | Feature                                | Free            | Pro ($19/mo)  | Enterprise |
 |----------------------------------------|-----------------|---------------|------------|
@@ -309,10 +316,24 @@ A two-part app: a **React 19 + Vite 8** SPA and an **Express 5 + better-sqlite3*
 
 ### Prerequisites
 
-- **Node.js 20+**
+- **Node.js 20+** — not needed for the Windows package (bundled runtime); see below.
 - **npm** (or yarn)
 - **GitHub account** — for real mode (OAuth)
 - **AI provider key** — optional; add your own in `Settings → AI Configuration` after first login ([per-provider setup](docs/ai-providers.md))
+
+### Windows — no Docker, no Node required
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/windows-install.svg">
+  <img alt="Windows install flow: download setup.exe or the portable ZIP plus its .sha256 sidecar, first run generates four random secrets into a local .env and binds to 127.0.0.1 with no firewall prompt or LAN exposure, then the browser opens at localhost — no Docker, no Node.js install, no admin rights, CI boot-validated on every PR and release" src="docs/images/windows-install.svg" width="900">
+</picture>
+
+Download `github-repo-manager-<version>-setup.exe` or the portable ZIP from
+the [latest release](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest),
+run **Start GitHub Repo Manager**, and your browser opens once it's ready.
+Windows SmartScreen will likely warn the binary is unsigned — click **More
+info → Run anyway** and verify the download against the published `.sha256`
+sidecar if you want to double-check first. Full guide: [`docs/windows.md`](docs/windows.md).
 
 ### Setup
 
@@ -338,24 +359,15 @@ npm run dev:kill        # free stuck ports (3001 + 5173–5180), then re-run
 
 `npm run dev:all` prints one banner with both URLs, the `/api` proxy, the active env/log level, and backend health, tagging every log line `WEB` or `API`.
 
-**Windows — no Docker, no Node.js install:**
-
-Download `github-repo-manager-<version>-setup.exe` or the portable ZIP from
-the [latest release](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest),
-run **Start GitHub Repo Manager**, and your browser opens once it's ready.
-Full guide: [`docs/windows.md`](docs/windows.md).
-
 **Docker — prebuilt image (primary):**
 
 ```bash
 docker pull ghcr.io/brunobola-portfolio/github-repo-manager:latest
 ```
 
-> Until the repository owner flips the GHCR package to public, this pull
-> 401s — use the Compose build below in the meantime; it works today with no
-> extra steps.
+The GHCR package is public — no login required. Multi-arch (amd64/arm64), with SBOM + provenance, booted and health-checked in CI before every push.
 
-**Docker Compose (local build):**
+**Docker Compose (local build, alternative):**
 
 ```bash
 cp .env.example .env      # edit your values
@@ -424,6 +436,13 @@ See [`docs/ai-providers.md`](docs/ai-providers.md) for per-provider setup and fr
 ---
 
 ## Tech Stack
+
+![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Express](https://img.shields.io/badge/Express-5-000000?style=for-the-badge&logo=express&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-WAL-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
+![BYOK AI](https://img.shields.io/badge/BYOK-AI-8E75B2?style=for-the-badge)
 
 | Category | Technologies |
 |----------|-------------|
