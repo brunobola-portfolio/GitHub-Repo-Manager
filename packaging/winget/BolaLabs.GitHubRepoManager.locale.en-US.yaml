@@ -1,8 +1,17 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.12.0.schema.json
 #
-# Winget defaultLocale manifest template — see README.md. ShortDescription
-# is copied verbatim from package.json's "description" field so this can
-# never drift into a claim the product itself doesn't make.
+# Winget defaultLocale manifest template - see README.md. ShortDescription
+# below is copied byte-for-byte from package.json's "description" field
+# (verified verbatim, no trailing punctuation added) so this can never
+# silently drift into a claim the product itself doesn't make.
+#
+# Publisher is the same value scripts/package-windows.mjs's getPublisher()
+# derives from package.json's "author" field ("<person> - <company>", the
+# company half) - that function is the single source of truth (also used
+# for installer.iss's MyAppPublisher /D define); this template is a static
+# reference only (wingetcreate generates and submits the real manifest
+# itself), so keep this literal in sync with getPublisher()'s output by hand
+# if the author field's company name ever changes.
 
 PackageIdentifier: BolaLabs.GitHubRepoManager
 PackageVersion: <VERSION>
@@ -14,7 +23,7 @@ PackageName: GitHub Repo Manager
 PackageUrl: https://github.com/brunobola-portfolio/GitHub-Repo-Manager
 License: AGPL-3.0-only
 LicenseUrl: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/blob/main/LICENSE
-ShortDescription: Modern GitHub repository management dashboard with AI-powered insights, team collaboration, and Azure DevOps migration.
+ShortDescription: Modern GitHub repository management dashboard with AI-powered insights, team collaboration, and Azure DevOps migration
 Moniker: github-repo-manager
 Tags:
 - github
