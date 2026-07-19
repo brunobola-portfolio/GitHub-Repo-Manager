@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.6.1] - 2026-07-19
+
+Launch-readiness hardening: every finding from the 2026-07-19 seven-dimension
+panel (`docs/reports/2026-07-19-launch-readiness-panel.md`) fixed, plus the
+docs overhaul and CI/CD hardening that landed since v4.6.0.
+
 ### Security
 - **AI metering gaps closed (launch-readiness panel, 2026-07-19).**
   `POST /api/migration/analyze` was completely unmetered (no quota, no spend
@@ -39,6 +45,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (sends the full PR diff) and the Commit Generator (works from diffs).
   Rewritten per-feature, and the exact phrase is now hard-gated by
   `tests/build/readme-honesty.test.js` so it can't silently reappear.
+- **WCAG AA contrast on small status text.** Delta badges on the Dashboard
+  "What needs you" grid and deletion counts/error text in the Dev Toolkit
+  used 500-level colors (~2.3:1 on light backgrounds) — moved to the
+  600/400 light/dark pattern used everywhere else.
 
 ### Added
 - **10 previously-invisible Free-tier quotas surfaced** in
@@ -102,6 +112,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Archived 47 orphaned/superseded screenshots and one legacy dark-only SVG to
   `docs/images/archive/` (curated the live image set from 84 to 42).
+
+### Performance
+- **App shell code-split: entry chunk 88.7 → 78.8 KB gzipped (−11%).** Most
+  of the win came from fixing a `manualChunks` misconfiguration that forced
+  Recharts into the eager graph even though it is only reachable via dynamic
+  import; conditional shell pieces (org sidebar, notification layer) are now
+  lazy with paint-safe fallbacks. The CI bundle budget was lowered to lock
+  the gain.
+
+### UI polish
+- The Pricing page's Free card (29 feature rows) now collapses behind an
+  accessible "Show all features" toggle, so the three plan cards sit at a
+  balanced height; hardcoded easing/spring literals across
+  Landing/Pricing/Roadmap were replaced with the shared motion vocabulary;
+  raw `z-[45]` layers were tokenized and the z-index guard now catches any
+  raw value ≥ 30; the four AI diff modals (README Studio, README Enhance,
+  Diagrams, Agent Rules) switch to unified diff view below the `md`
+  breakpoint; the Work Board keyboard help shows OS-aware `⌘K / Ctrl+K`; and
+  onboarding gained a fourth step introducing README Studio, AI Diagrams,
+  Agent Rules and the Security Posture panel. The anti-Portuguese UI guard
+  now also covers `src/contexts`, `src/actions`, `src/config`, and
+  `src/__mocks__`.
+
+### CI/CD
+- The Docker publish workflow now boots the freshly built amd64 image with
+  production-shaped dummy secrets and polls `/api/health/live` before
+  pushing anything to GHCR; CodeQL (`security-extended`) runs on pushes,
+  PRs, and weekly; the redundant duplicate test suite on every main push
+  was removed (it only existed to gate deploys, which are opt-in).
 
 ## [4.6.0] - 2026-07-19
 
@@ -2131,7 +2170,10 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.4.0...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.6.1...HEAD
+[4.6.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.6.0...v4.6.1
+[4.6.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.5.0...v4.6.0
+[4.5.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.4.0...v4.5.0
 [4.4.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.3.0...v4.4.0
 [4.0.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.8.0...v4.0.0
 [3.8.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.7.2...v3.8.0
