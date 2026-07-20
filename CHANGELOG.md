@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.0] - 2026-07-20
+
 First-run experience overhaul for the Windows package and self-hosts: signing
 in now works out of the box, GitHub connection is a guided 2-minute in-app
 setup instead of hand-editing `.env`, and the database self-heals from
@@ -2254,7 +2256,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.7.0...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.8.0...HEAD
+[4.8.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.7.0...v4.8.0
 [4.7.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.6.1...v4.7.0
 [4.6.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.6.0...v4.6.1
 [4.6.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.5.0...v4.6.0
