@@ -69,7 +69,11 @@ function Get-InstalledDataDir {
     if (Test-Path -LiteralPath $InstallConfigFile) {
         foreach ($line in Get-Content -LiteralPath $InstallConfigFile) {
             if ($line -match '^\s*DATA_DIR\s*=\s*(.+?)\s*$') {
-                return $Matches[1]
+                # 4.8.2+ markers hold %LOCALAPPDATA%\... unexpanded so each
+                # user resolves their OWN data dir even when another account
+                # (admin rollout) ran the installer. Pre-4.8.2 markers hold an
+                # absolute path — expansion is a no-op on those.
+                return [System.Environment]::ExpandEnvironmentVariables($Matches[1])
             }
         }
     }

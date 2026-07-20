@@ -42,11 +42,39 @@ Both options are attached to the [latest release](https://github.com/brunobola-p
 3. It installs **per-user** to `%LocalAppData%\Programs\GitHubRepoManager` —
    no UAC prompt.
 
-**Silent install** (admins / scripted rollout):
+**Scripted / unattended install** (admins, fleet rollout):
 
 ```bat
-github-repo-manager-<version>-setup.exe /VERYSILENT /NORESTART /SUPPRESSMSGBOXES
+github-repo-manager-<version>-setup.exe /VERYSILENT /NORESTART /SUPPRESSMSGBOXES ^
+    /LOG="%TEMP%\grm-setup.log" [/DIR="D:\Apps\GitHubRepoManager"]
 ```
+
+- **Exit codes:** `0` = success; non-zero = failure — including the
+  deliberate abort when a running instance is detected (stop the app first,
+  then re-run). `/LOG=` writes a full transcript for diagnostics.
+- **Per-user data, even when an admin installs:** the installer records the
+  data-directory marker in its unexpanded `%LOCALAPPDATA%` form and the
+  launchers expand it at run time, so each Windows account that launches the
+  app gets its own database and configuration.
+- **Pre-provisioning (zero-touch GitHub/license config):** the first launch
+  never overwrites an existing `.env`, so a rollout script can create
+  `%LOCALAPPDATA%\GitHubRepoManager\data\.env` *before* first start with
+  `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` (and optionally `LICENSE_KEY`)
+  pre-filled — users then skip the in-app setup entirely. Note that the
+  automatic secret generation only runs when the file is **absent**, so a
+  pre-provisioned `.env` must also include `SESSION_SECRET`,
+  `WEBHOOK_SECRET`, `CREDENTIAL_ENCRYPTION_KEY` and `API_KEY_SECRET` —
+  generate a strong unique value per machine for each with
+  `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`
+  (plus `NODE_ENV=production`, `HOST=127.0.0.1`, `ALLOW_CONSOLE_EMAIL=true`,
+  matching what first-run would have written).
+- **Launcher overrides:** `GRM_PORT`, `GRM_DATA_DIR`, `GRM_NO_BROWSER=1`
+  environment variables are honoured by `Start GitHub Repo Manager.cmd`.
+- **Verify downloads** against the published `.sha256` files (see
+  [Troubleshooting](#troubleshooting)).
+- **winget:** planned but not submitted yet — see
+  [Limits](#limits-honest); until then, the silent installer above is the
+  supported scripted channel.
 
 ### Option B — Portable ZIP
 
