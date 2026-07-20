@@ -8,6 +8,11 @@ vi.mock('../../../src/utils/api', () => ({
     apiCall: vi.fn(),
 }));
 
+// .env.test defaults VITE_MOCK_MODE=true; force the real-fetch branch so
+// every test here exercises the mocked apiCall() path (and the resolved
+// values it sets up) rather than the src/__mocks__/mockSystem.js fixture.
+vi.stubEnv('VITE_MOCK_MODE', 'false');
+
 const STORAGE = (() => {
     let store = {};
     return {
@@ -87,18 +92,21 @@ describe('AboutSection', () => {
         expect(screen.queryByText(/up to date/i)).not.toBeInTheDocument();
     });
 
-    it('Dismiss button uses the AA-contrast house pattern on its light-theme base (not text-slate-400)', async () => {
+    it('Dismiss button clears AA contrast on its light-theme base (not text-slate-400 or -500)', async () => {
         apiCall.mockResolvedValue({
             current: CURRENT, latest: '99.0.0', updateAvailable: true,
             releaseUrl: 'https://example.com/release', checkedAt: new Date().toISOString(),
         });
         render(<AboutSection />);
         const dismissButton = await screen.findByRole('button', { name: /dismiss/i });
-        // text-slate-400 on bg-indigo-50/60 measures ~2.8:1, below WCAG AA — the
-        // house pattern (see CommandPalette.jsx) is text-slate-500 in light mode,
-        // text-slate-400 only under the dark: variant.
-        expect(dismissButton.className).toMatch(/(^|\s)text-slate-500(\s|$)/);
+        // Measured via axe against the real rendered banner: text-slate-400 on
+        // bg-indigo-50/60 is ~2.8:1 (well below AA), and text-slate-500 — the
+        // house pattern that clears AA on a plain white surface — still only
+        // measures 4.41:1 against this banner's indigo-tinted background,
+        // just under the 4.5:1 threshold. text-slate-600 clears it (~7:1).
+        expect(dismissButton.className).toMatch(/(^|\s)text-slate-600(\s|$)/);
         expect(dismissButton.className).toMatch(/dark:text-slate-400/);
+        expect(dismissButton.className).not.toMatch(/(^|\s)text-slate-500(\s|$)/);
         expect(dismissButton.className).not.toMatch(/(^|\s)text-slate-400(\s|$)/);
     });
 
@@ -128,5 +136,19 @@ describe('AboutSection', () => {
         });
         render(<AboutSection />);
         await waitFor(() => expect(screen.getByText(/v99\.1\.0 available/i)).toBeInTheDocument());
+    });
+});
+
+describe('AboutSection — mock-mode fixture (real backend 401s here, so this must not depend on apiCall)', () => {
+    it('renders the update-available banner from the mock fixture when VITE_MOCK_MODE=true, never calling apiCall', async () => {
+        vi.stubEnv('VITE_MOCK_MODE', 'true');
+        try {
+            render(<AboutSection />);
+            expect(await screen.findByText(/v99\.0\.0 available/i)).toBeInTheDocument();
+            expect(apiCall).not.toHaveBeenCalled();
+        } finally {
+            // Restore the file-level default (real-fetch branch) for every other test.
+            vi.stubEnv('VITE_MOCK_MODE', 'false');
+        }
     });
 });

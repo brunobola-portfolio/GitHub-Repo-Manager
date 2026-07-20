@@ -30,7 +30,17 @@ function safeSetItem(key, value) {
  */
 export function AboutSection() {
     const currentVersion = import.meta.env.VITE_APP_VERSION
-    const { data } = useTabData(() => apiCall('/api/system/update-check'), [])
+    const { data } = useTabData(async () => {
+        // Mock mode has no authenticated session, so the real endpoint 401s
+        // and this section's update banner/badge never renders — inline
+        // guard (never aliased, see Vite DCE note in AGENTS.md) so prod
+        // bundles never carry the mock branch.
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+            const { getMockUpdateCheck } = await import('../../__mocks__/mockSystem.js')
+            return getMockUpdateCheck()
+        }
+        return apiCall('/api/system/update-check')
+    }, [])
     const [dismissedVersion, setDismissedVersion] = useState(() => safeGetItem(DISMISS_KEY))
 
     const dismiss = useCallback((version) => {
@@ -110,7 +120,7 @@ export function AboutSection() {
                         <button
                             type="button"
                             onClick={() => dismiss(data.latest)}
-                            className="ds-text-meta text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                            className="ds-text-meta text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
                         >
                             Dismiss
                         </button>
