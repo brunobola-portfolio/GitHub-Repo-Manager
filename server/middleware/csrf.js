@@ -105,6 +105,22 @@ function safeEqual(a, b) {
 }
 
 /**
+ * True when the request carries an X-CSRF-Token header that matches the
+ * session's token (timing-safe). Exported for routes living under a
+ * BYPASS_PREFIXES path (e.g. /api/auth/setup-oauth) that still want
+ * explicit CSRF enforcement — the global middleware skips the whole
+ * /api/auth/ subtree for the OAuth redirect flow's sake.
+ *
+ * @param {import('express').Request} req
+ * @returns {boolean}
+ */
+export function csrfHeaderMatchesSession(req) {
+    const headerToken = req.headers['x-csrf-token'];
+    const sessionToken = req.session?.csrfToken;
+    return Boolean(headerToken && sessionToken && safeEqual(headerToken, sessionToken));
+}
+
+/**
  * Express middleware: enforce CSRF tokens on mutation requests.
  *
  * Applied globally (before any per-route handlers). Skips GET/HEAD/OPTIONS
@@ -128,10 +144,7 @@ export function requireCsrfToken(req, res, next) {
     // Bypass list — OAuth callback, webhooks, etc.
     if (isCsrfBypassed(req.originalUrl || req.url || '')) return next();
 
-    const headerToken = req.headers['x-csrf-token'];
-    const sessionToken = req.session?.csrfToken;
-
-    if (!headerToken || !sessionToken || !safeEqual(headerToken, sessionToken)) {
+    if (!csrfHeaderMatchesSession(req)) {
         return res.status(403).json({
             error: 'Invalid CSRF token',
             code: 'csrf_invalid',

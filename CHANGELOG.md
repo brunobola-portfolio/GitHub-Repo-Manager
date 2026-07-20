@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+First-run experience overhaul for the Windows package and self-hosts: signing
+in now works out of the box, GitHub connection is a guided 2-minute in-app
+setup instead of hand-editing `.env`, and the database self-heals from
+corruption.
+
+### Added
+- **Guided GitHub connection setup.** On an install without OAuth
+  credentials, clicking **Sign in** opens an in-app wizard that pre-fills
+  GitHub's "New OAuth App" form with the exact Homepage/Callback URLs for
+  that install (real port included), accepts the Client ID/Secret, persists
+  them to `.env` and applies them live — no restart, no manual file editing.
+  New endpoints `GET /api/auth/setup-status` and `POST /api/auth/setup-oauth`
+  (only while unconfigured, loopback-only with Host-header allowlist against
+  DNS rebinding, CSRF-enforced, rate-limited, atomic allowlisted `.env`
+  writes; disable outright with `GRM_DISABLE_WEB_SETUP=true`). Hosted
+  deployments get operator instructions instead of the form.
+- **Automatic database corruption recovery.** Every boot runs a SQLite
+  `quick_check`; a damaged database is quarantined (renamed alongside its
+  WAL/SHM sidecars — never deleted) and replaced by the newest healthy
+  scheduled backup, or a fresh database when none exists. What happened is
+  reported through `GET /api/system/status` and surfaced in-app.
+- **Human-readable OAuth failure messages.** Every `?error=` code from the
+  sign-in flow (cancelled on GitHub, callback URL mismatch, rejected
+  credentials, expired state, …) now shows a clear explanation; the GitHub
+  callback forwards GitHub's own sanitized error code instead of a generic
+  one.
+
+### Fixed
+- **Windows package sign-in was impossible.** Production builds set the
+  session cookie `Secure`-only, which a plain `http://127.0.0.1` install can
+  never store — OAuth state died across the GitHub redirect
+  (`invalid_state`) and no CSRF token ever matched. The cookie is now
+  `secure: 'auto'` (still `Secure` behind a TLS-terminating proxy via
+  `trust proxy`), and the packaging CI asserts session persistence over
+  plain-HTTP loopback so it can't regress.
+- **`Sign in` without OAuth configured dead-ended on a GitHub 404**
+  (`client_id=undefined`). `/api/auth/login` now validates credentials first
+  and redirects back to the app with `error=oauth_not_configured`, which
+  opens the guided setup.
+- **Post-login redirect defaulted to the Vite dev server**
+  (`http://localhost:5173`) when `FRONTEND_URL` was unset — a dead port on
+  any packaged/self-host install. All OAuth redirects now fall back to the
+  request's own origin, following the real port automatically (including the
+  launcher's next-free-port fallback).
+
+### Changed
+- **Windows package: all writable state now lives in the data directory**
+  (`.env` and the launcher pidfile moved out of the install dir). The `.env`
+  — which holds the credential-vault encryption key — now survives
+  uninstall/reinstall with the database it unlocks, and the install dir can
+  be read-only. Existing installs are migrated automatically on next start;
+  a still-running pre-4.8.0 instance is still detected by the installer and
+  Stop launcher via the legacy pidfile path.
+- `docs/windows.md` rewritten around the guided setup, with exact manual
+  OAuth values for the package (`127.0.0.1`, not `localhost` — GitHub
+  compares callback URLs character-for-character), in-app license
+  activation, and the new data-directory layout.
+
 ## [4.7.0] - 2026-07-19
 
 GitHub Repo Manager runs natively on Windows: a CI-boot-validated installer

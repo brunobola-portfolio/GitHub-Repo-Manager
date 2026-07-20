@@ -417,6 +417,13 @@ See [`.env.example`](.env.example) for the full list, including AI config (`GEMI
 2. Homepage URL `http://localhost:5173`, Authorization callback URL `http://localhost:3001/api/auth/callback`
 3. Copy the **Client ID** and **Client Secret** into `.env`
 
+> The values above are for **development** (Vite on :5173 proxying the API).
+> GitHub matches callback URLs character-for-character — `localhost` and
+> `127.0.0.1` are *not* interchangeable; register whichever host your
+> browser actually shows. **Windows package / self-host:** skip this section
+> entirely — the app offers a guided in-app setup with the exact URLs
+> pre-filled (see [`docs/windows.md`](docs/windows.md#connecting-to-github--ai)).
+
 ### AI features (BYOK)
 
 Each user configures their own provider key in `Settings → AI Configuration` — encrypted at rest with AES-256-GCM.

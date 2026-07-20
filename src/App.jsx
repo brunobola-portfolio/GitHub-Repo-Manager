@@ -9,6 +9,7 @@ import { useToast } from './hooks/useToast'
 import ErrorBoundary from './components/ErrorBoundary'
 import { AUTH_ENDPOINTS, MOCK_MODE } from './config'
 import { listTeams } from './api/teams'
+import { getAuthSetupStatus } from './api/authSetup'
 import { onSessionExpired, onRateLimit, resetSessionExpired, fetchWithRetry, safeParseJson } from './utils/api'
 import { trackBreadcrumb, mark } from './lib/observability'
 import { SelectionProvider } from './contexts/SelectionContext'
@@ -89,6 +90,10 @@ const PromptStudioPage = lazy(() => import('./components/AIPrompts/PromptStudioP
 // Lazy-load the landing page: only rendered for unauthenticated visitors,
 // so its sub-components stay out of the authenticated main bundle.
 const LandingPage = lazy(() => import('./components/Landing/LandingPage').then(m => ({ default: m.LandingPage })))
+// First-run GitHub OAuth wizard — only ever needed before the first login on
+// an install without GITHUB_CLIENT_ID/SECRET, so it stays out of every bundle
+// until that exact situation occurs.
+const ConnectGitHubSetup = lazy(() => import('./components/Setup/ConnectGitHubSetup').then(m => ({ default: m.ConnectGitHubSetup })))
 
 // Loading fallback component (kept as local alias for legacy callsites below)
 const LoadingFallback = RouteFallback
@@ -140,6 +145,11 @@ function AppContent() {
   const [orgDrawerOpen, setOrgDrawerOpen] = useState(false)
   const [sessionExpired, setSessionExpired] = useState(false)
   const [rateLimitBanner, setRateLimitBanner] = useState(null) // { retryAt: number } | null
+  // First-run GitHub OAuth setup: /api/auth/setup-status result (null until
+  // fetched) + whether the guided wizard modal is open. Only relevant while
+  // unauthenticated on an install without GITHUB_CLIENT_ID/SECRET.
+  const [authSetupStatus, setAuthSetupStatus] = useState(null)
+  const [showGitHubSetup, setShowGitHubSetup] = useState(false)
   // Quota-exceeded modal: detail object emitted via the global
   // 'app:show-quota-exceeded' event by toast.errorFromException's
   // 'open-quota' action. Cleared when the modal is dismissed.
@@ -421,6 +431,55 @@ function AppContent() {
     window.history.replaceState({}, '', cleanUrl)
   }, [])
 
+  // OAuth-flow error redirects (?error=<code> from /api/auth/login|callback).
+  // Every code gets a human explanation instead of a silently-stripped param;
+  // oauth_not_configured opens the guided setup wizard directly.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('error')
+    if (!code || code === 'rate_limited') return // rate_limited handled above
+    const AUTH_ERROR_COPY = {
+      auth_failed: ['error', 'GitHub sign-in failed. Please try again.'],
+      no_code: ['error', 'GitHub did not complete the sign-in. Please try again.'],
+      invalid_state: ['error', 'That sign-in link expired or was already used. Please try again.'],
+      session_error: ['error', 'Your session could not be saved. Please try signing in again.'],
+      access_denied: ['info', 'GitHub sign-in was cancelled.'],
+      redirect_uri_mismatch: ['error', 'GitHub rejected the sign-in: the OAuth App’s callback URL does not match this app. Update it on GitHub (Settings → Developer settings → OAuth Apps) to end in /api/auth/callback on this exact address.'],
+      bad_verification_code: ['error', 'The sign-in code expired before it could be used. Please try again.'],
+      incorrect_client_credentials: ['error', 'GitHub rejected the configured Client ID/Secret. Re-check the values in your configuration.'],
+      application_suspended: ['error', 'The configured GitHub OAuth App is suspended. Check its status on GitHub.'],
+    }
+    if (code === 'oauth_not_configured') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot wizard-open from URL param, mirrors the rate-limit effect above
+      setShowGitHubSetup(true)
+    } else if (AUTH_ERROR_COPY[code]) {
+      const [tone, message] = AUTH_ERROR_COPY[code]
+      toast[tone](message)
+    } else {
+      return // unknown code — leave the URL untouched for other handlers
+    }
+    params.delete('error')
+    const cleanUrl = window.location.pathname + (params.toString() ? `?${params}` : '')
+    window.history.replaceState({}, '', cleanUrl)
+  }, [toast])
+
+  // Know whether "Sign in" can work BEFORE the user clicks it: on installs
+  // without GitHub OAuth configured the click opens the guided setup wizard
+  // instead of bouncing off a GitHub 404. One cheap GET, unauthenticated only.
+  const authSetupChecked = useRef(false)
+  useEffect(() => {
+    if (MOCK_MODE || user || authSetupChecked.current) return
+    if (systemInitialized === false) return // system setup screen is showing
+    authSetupChecked.current = true
+    let cancelled = false
+    getAuthSetupStatus()
+      .then((status) => {
+        if (!cancelled) setAuthSetupStatus(status)
+      })
+      .catch(() => { /* endpoint unavailable → handleLogin falls through to the server guard */ })
+    return () => { cancelled = true }
+  }, [user, systemInitialized])
+
   useEffect(() => {
     // Run system-status init exactly once per mount lifetime. No cleanup reset:
     // resetting initCalled on cleanup defeated the guard under StrictMode (the
@@ -452,6 +511,16 @@ function AppContent() {
     try {
       const res = await fetchWithRetry('/api/system/status', { credentials: 'include' })
       const data = await safeParseJson(res)
+      // Boot-time corruption recovery happened (sqlite-adapter quarantined the
+      // damaged file). Tell the user — their data either came from the most
+      // recent backup or is a fresh start; silence would look like data loss.
+      if (data.dbRecovery) {
+        toast.warning(
+          data.dbRecovery.restoredFrom
+            ? 'Database corruption was detected at startup. Your data was automatically restored from the most recent backup — recent changes may be missing.'
+            : 'Database corruption was detected at startup and no healthy backup was found. A fresh database was started; the damaged file was preserved in the data folder for manual recovery.'
+        )
+      }
       setSystemInitialized(data.initialized)
       if (data.initialized) {
         checkAuth()
@@ -554,6 +623,14 @@ function AppContent() {
   const handleLogin = () => {
     resetSessionExpired()
     setSessionExpired(false)
+    // No OAuth credentials on this install → the redirect would dead-end on a
+    // GitHub 404. Open the guided setup wizard instead. When the status fetch
+    // failed (null), fall through — the server guard redirects back with
+    // ?error=oauth_not_configured, which also opens the wizard.
+    if (authSetupStatus && !authSetupStatus.oauthConfigured) {
+      setShowGitHubSetup(true)
+      return
+    }
     window.location.href = AUTH_ENDPOINTS.login
   }
 
@@ -641,6 +718,15 @@ function AppContent() {
         <Suspense fallback={<RouteFallback />}>
           <LandingPage onSignIn={handleLogin} />
         </Suspense>
+        {showGitHubSetup && (
+          <Suspense fallback={null}>
+            <ConnectGitHubSetup
+              isOpen={showGitHubSetup}
+              onClose={() => setShowGitHubSetup(false)}
+              status={authSetupStatus}
+            />
+          </Suspense>
+        )}
       </>
     )
   }

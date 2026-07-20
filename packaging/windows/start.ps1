@@ -53,8 +53,6 @@ $AppDir = Join-Path $Root 'app'
 $NodeExe = Join-Path $Root 'runtime\node.exe'
 $ServerEntry = Join-Path $AppDir 'server\index.js'
 $FirstRun = Join-Path $AppDir 'scripts\first-run.mjs'
-$EnvFile = Join-Path $AppDir '.env'
-$PidFile = Join-Path $AppDir '.grm.pid'
 $InstallConfigFile = Join-Path $Root 'install-config.txt'
 
 # installer.iss writes install-config.txt (DATA_DIR=<LocalAppData path>)
@@ -87,6 +85,30 @@ if (-not $DataDir) {
     }
 }
 
+# All WRITABLE state lives in the data dir (v4.8.0+): the SQLite DB, .env
+# (it holds CREDENTIAL_ENCRYPTION_KEY — losing it on uninstall/reinstall
+# would strand every encrypted credential in the surviving database), and
+# the pidfile. The app/install dir can be read-only (e.g. an elevated
+# custom /DIR= under Program Files) without breaking anything.
+New-Item -ItemType Directory -Force -Path $DataDir | Out-Null
+$EnvFile = Join-Path $DataDir '.env'
+$PidFile = Join-Path $DataDir '.grm.pid'
+
+# One-time migration from the pre-4.8.0 layout, where .env lived at
+# app\.env inside the install/extract dir. Move (not copy) so exactly one
+# copy of the secrets exists; fall back to copy if the app dir turns out
+# to be read-only.
+$LegacyEnvFile = Join-Path $AppDir '.env'
+if ((Test-Path -LiteralPath $LegacyEnvFile) -and -not (Test-Path -LiteralPath $EnvFile)) {
+    try {
+        Move-Item -LiteralPath $LegacyEnvFile -Destination $EnvFile
+        Write-Host "Migrated app\.env to the data directory: $EnvFile"
+    } catch {
+        Copy-Item -LiteralPath $LegacyEnvFile -Destination $EnvFile
+        Write-Host "Copied app\.env to the data directory: $EnvFile (could not remove the old copy)"
+    }
+}
+
 if (-not (Test-Path -LiteralPath $NodeExe)) {
     Write-Error "Bundled Node runtime not found at: $NodeExe`nThis package looks corrupt or incomplete -re-download it."
     exit 1
@@ -96,10 +118,10 @@ if (-not (Test-Path -LiteralPath $ServerEntry)) {
     exit 1
 }
 
-# Idempotent: only writes app\.env (with fresh random secrets) if it does not
-# already exist. An existing .env is never touched, so a user's own edits
-# (e.g. a custom PORT) survive every subsequent launch.
-& $NodeExe $FirstRun '--data-dir' $DataDir
+# Idempotent: only writes the data-dir .env (with fresh random secrets) if it
+# does not already exist. An existing .env is never touched, so a user's own
+# edits (e.g. a custom PORT) survive every subsequent launch.
+& $NodeExe $FirstRun $EnvFile '--data-dir' $DataDir
 if ($LASTEXITCODE -ne 0) {
     Write-Error "first-run bootstrap failed (exit $LASTEXITCODE) -see output above."
     exit 1
@@ -164,6 +186,9 @@ if (Test-PortBusy $configuredPort) {
 
 $env:PORT = "$actualPort"
 $env:DATA_DIR = $DataDir
+# Tell the server exactly which .env to load (server/config.js) — it no
+# longer sits at the app dir default location.
+$env:GRM_ENV_FILE = $EnvFile
 # Set as a real process env var, not left to app\.env's NODE_ENV=production
 # line: server/lib/logger.js reads process.env.NODE_ENV at its own top-level
 # module-load time, and server/routes/migration.js (imported before

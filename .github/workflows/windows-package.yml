@@ -72,7 +72,7 @@ jobs:
           }
           if (-not $live) {
               Write-Host "::error::zip package never became live within 60s"
-              Get-Content (Join-Path $extractDir 'app\.env') -ErrorAction SilentlyContinue
+              Get-Content (Join-Path $extractDir 'data\.env') -ErrorAction SilentlyContinue
               exit 1
           }
           Write-Host "zip package live after ${i}s"
@@ -83,7 +83,61 @@ jobs:
               exit 1
           }
 
-          $pidFile = Join-Path $extractDir 'app\.grm.pid'
+          # Writable state must live in data\, not app\ (v4.8.0 layout): .env
+          # holds the credential-vault key and must survive updates/uninstall.
+          if (-not (Test-Path (Join-Path $extractDir 'data\.env'))) {
+              Write-Host "::error::.env not found at data\.env — first-run wrote it to the wrong place"
+              exit 1
+          }
+          if (Test-Path (Join-Path $extractDir 'app\.env')) {
+              Write-Host "::error::legacy app\.env exists — launcher fell back to the pre-4.8.0 layout"
+              exit 1
+          }
+
+          # Unconfigured-OAuth guard: /api/auth/login must redirect back to the
+          # app with a machine-readable code — NOT to GitHub with
+          # client_id=undefined (the pre-4.8.0 dead end this test pins down).
+          # Raw HttpClient with AllowAutoRedirect=false: Invoke-WebRequest's
+          # -MaximumRedirection 0 behavior differs across PS versions.
+          $handler = [System.Net.Http.HttpClientHandler]::new()
+          $handler.AllowAutoRedirect = $false
+          $client = [System.Net.Http.HttpClient]::new($handler)
+          $loginResp = $client.GetAsync("http://127.0.0.1:$port/api/auth/login").GetAwaiter().GetResult()
+          $loginStatus = [int]$loginResp.StatusCode
+          $loc = "$($loginResp.Headers.Location)"
+          $client.Dispose()
+          if ($loginStatus -lt 300 -or $loginStatus -ge 400 -or $loc -notlike '*error=oauth_not_configured*') {
+              Write-Host "::error::/api/auth/login without OAuth config returned $loginStatus Location=$loc — expected a redirect carrying error=oauth_not_configured"
+              exit 1
+          }
+          if ($loc -like '*client_id=undefined*') {
+              Write-Host "::error::/api/auth/login redirected to GitHub with client_id=undefined"
+              exit 1
+          }
+
+          # Guided-setup availability: a loopback client of a fresh install
+          # must be offered the in-app OAuth wizard.
+          $setup = Invoke-WebRequest -Uri "http://127.0.0.1:$port/api/auth/setup-status" -TimeoutSec 5 -UseBasicParsing | ConvertFrom-Json
+          if ($setup.oauthConfigured -ne $false -or $setup.canConfigure -ne $true) {
+              Write-Host "::error::setup-status returned oauthConfigured=$($setup.oauthConfigured) canConfigure=$($setup.canConfigure) — expected false/true on a fresh loopback install"
+              exit 1
+          }
+
+          # Session persistence over plain-HTTP loopback: the package runs a
+          # production build without TLS, so the session cookie must NOT be
+          # marked Secure-only (cookie.secure='auto', server/index.js). If it
+          # regresses, no session ever persists → OAuth state dies across the
+          # GitHub redirect and CSRF never matches. Two csrf-token reads
+          # through one cookie jar must return the SAME token.
+          $ws = $null
+          $tok1 = (Invoke-WebRequest -Uri "http://127.0.0.1:$port/api/auth/csrf-token" -SessionVariable ws -UseBasicParsing).Content | ConvertFrom-Json
+          $tok2 = (Invoke-WebRequest -Uri "http://127.0.0.1:$port/api/auth/csrf-token" -WebSession $ws -UseBasicParsing).Content | ConvertFrom-Json
+          if (-not $tok1.token -or $tok1.token -ne $tok2.token) {
+              Write-Host "::error::session cookie did not persist across requests over plain HTTP loopback — Secure-cookie regression (login + CSRF are broken in the package)"
+              exit 1
+          }
+
+          $pidFile = Join-Path $extractDir 'data\.grm.pid'
           $serverPid = Get-Content -LiteralPath $pidFile
           & "$extractDir\Stop GitHub Repo Manager.cmd"
           Start-Sleep -Seconds 2
@@ -176,8 +230,19 @@ jobs:
               Write-Host "::error::SQLite DB found at $wrongDbFile — the raw .cmd launch fell back to the portable ./data default instead of the installed LocalAppData dir"
               exit 1
           }
+          # v4.8.0 layout: .env lives in the data dir (it must survive
+          # uninstall/reinstall — it holds the credential-vault key), and
+          # nothing writable may be created under the install dir.
+          if (-not (Test-Path (Join-Path $dataDir '.env'))) {
+              Write-Host "::error::.env not found in the data dir — first-run wrote it to the wrong place"
+              exit 1
+          }
+          if (Test-Path (Join-Path $installDir 'app\.env')) {
+              Write-Host "::error::legacy app\.env exists under the install dir"
+              exit 1
+          }
 
-          $pidFile = Join-Path $installDir 'app\.grm.pid'
+          $pidFile = Join-Path $dataDir '.grm.pid'
           $serverPid = Get-Content -LiteralPath $pidFile
           & (Join-Path $installDir 'Stop GitHub Repo Manager.cmd')
           Start-Sleep -Seconds 2
@@ -214,7 +279,11 @@ jobs:
               Write-Host "::error::the SQLite DB itself was deleted by uninstall — should have been left in place: $correctDbFile"
               exit 1
           }
-          Write-Host "installer smoke test passed (install, boot, stop, uninstall — app dir gone, real DB file preserved at the correct LocalAppData path, nothing written under the install dir)"
+          if (-not (Test-Path (Join-Path $dataDir '.env'))) {
+              Write-Host "::error::.env was deleted by uninstall — it must survive (holds the credential-vault encryption key)"
+              exit 1
+          }
+          Write-Host "installer smoke test passed (install, boot, stop, uninstall — app dir gone, DB + .env preserved at the correct LocalAppData path, nothing written under the install dir)"
 
       - uses: actions/upload-artifact@v4
         with:

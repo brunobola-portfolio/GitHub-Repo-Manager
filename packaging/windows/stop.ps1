@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 #
 # Stops the server started by start.ps1. Reads the PID that Start wrote to
-# app\.grm.pid (next to app\.env) and terminates it -but only after
+# .grm.pid in the data directory (pre-4.8.0: app\.grm.pid) and terminates
+# it -but only after
 # confirming the PID still belongs to OUR bundled node.exe. A stale pidfile
 # (crash, manual kill, reboot) can point at a PID that Windows has since
 # reassigned to an unrelated process; killing blindly by PID alone would be
@@ -25,7 +26,33 @@ $ErrorActionPreference = 'Stop'
 $Root = $PSScriptRoot
 $AppDir = Join-Path $Root 'app'
 $NodeExe = Join-Path $Root 'runtime\node.exe'
-$PidFile = Join-Path $AppDir '.grm.pid'
+$InstallConfigFile = Join-Path $Root 'install-config.txt'
+
+# Resolve the data dir exactly like start.ps1 does (GRM_DATA_DIR env var →
+# installer's install-config.txt marker → portable .\data default): the
+# pidfile lives there since v4.8.0 so the install dir can be read-only.
+$DataDir = $env:GRM_DATA_DIR
+if (-not $DataDir -and (Test-Path -LiteralPath $InstallConfigFile)) {
+    foreach ($line in Get-Content -LiteralPath $InstallConfigFile) {
+        if ($line -match '^\s*DATA_DIR\s*=\s*(.+?)\s*$') {
+            $DataDir = $Matches[1]
+            break
+        }
+    }
+}
+if (-not $DataDir) {
+    $DataDir = Join-Path $Root 'data'
+}
+
+$PidFile = Join-Path $DataDir '.grm.pid'
+if (-not (Test-Path -LiteralPath $PidFile)) {
+    # Pre-4.8.0 layout fallback: a still-running instance started by an older
+    # launcher wrote its pidfile next to app\.env inside the install dir.
+    $LegacyPidFile = Join-Path $AppDir '.grm.pid'
+    if (Test-Path -LiteralPath $LegacyPidFile) {
+        $PidFile = $LegacyPidFile
+    }
+}
 
 if (-not (Test-Path -LiteralPath $PidFile)) {
     Write-Host "GitHub Repo Manager is not running (no pidfile found)."

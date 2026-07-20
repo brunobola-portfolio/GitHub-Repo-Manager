@@ -405,3 +405,103 @@ describe('GitHub OAuth /callback fail-closed', () => {
         expect(res.headers.location).toBe(FRONTEND_URL)
     })
 })
+
+// ── /login unconfigured-OAuth guard + same-origin FRONTEND_URL fallback ──
+// routes/auth.js: without GITHUB_CLIENT_ID/SECRET, /login must redirect back
+// to the app carrying error=oauth_not_configured — never to GitHub with
+// client_id=undefined (which strands the user on a GitHub 404). And when
+// FRONTEND_URL is unset (packaged/self-host installs where Express serves
+// the frontend itself), every redirect must fall back to the request's own
+// origin, not the historical hardcoded http://localhost:5173.
+describe('GitHub OAuth /login guard + same-origin fallback', () => {
+    const savedEnv = {}
+
+    function buildApp() {
+        const app = express()
+        app.use(session({
+            secret: 'test-secret',
+            resave: false,
+            saveUninitialized: true,
+            cookie: { secure: false, httpOnly: true, sameSite: 'lax' },
+        }))
+        app.use('/api/auth', authRouter)
+        return app
+    }
+
+    beforeEach(() => {
+        for (const k of ['GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET', 'FRONTEND_URL']) {
+            savedEnv[k] = process.env[k]
+            delete process.env[k]
+        }
+    })
+
+    afterEach(() => {
+        for (const k of ['GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET', 'FRONTEND_URL']) {
+            if (savedEnv[k] === undefined) delete process.env[k]
+            else process.env[k] = savedEnv[k]
+        }
+    })
+
+    it('unconfigured + FRONTEND_URL set → redirects there with error=oauth_not_configured', async () => {
+        process.env.FRONTEND_URL = 'http://localhost:5173'
+        const res = await request(buildApp()).get('/api/auth/login')
+        expect(res.status).toBe(302)
+        expect(res.headers.location).toBe('http://localhost:5173/?error=oauth_not_configured')
+    })
+
+    it('unconfigured + no FRONTEND_URL → redirects to the request origin (same-origin fallback)', async () => {
+        const res = await request(buildApp()).get('/api/auth/login')
+        expect(res.status).toBe(302)
+        // supertest binds an ephemeral 127.0.0.1 port; the redirect must go
+        // back to that exact origin, never to GitHub or localhost:5173.
+        expect(res.headers.location).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/\?error=oauth_not_configured$/)
+    })
+
+    it('configured → redirects to GitHub authorize with the real client_id', async () => {
+        process.env.GITHUB_CLIENT_ID = 'test-client-id'
+        process.env.GITHUB_CLIENT_SECRET = 'test-client-secret'
+        const res = await request(buildApp()).get('/api/auth/login')
+        expect(res.status).toBe(302)
+        expect(res.headers.location).toContain('https://github.com/login/oauth/authorize')
+        expect(res.headers.location).toContain('client_id=test-client-id')
+        expect(res.headers.location).not.toContain('client_id=undefined')
+    })
+
+    it('client_id set but secret missing → still guards (half-configured cannot complete the flow)', async () => {
+        process.env.GITHUB_CLIENT_ID = 'test-client-id'
+        process.env.FRONTEND_URL = 'http://localhost:5173'
+        const res = await request(buildApp()).get('/api/auth/login')
+        expect(res.status).toBe(302)
+        expect(res.headers.location).toBe('http://localhost:5173/?error=oauth_not_configured')
+    })
+
+    it('/callback with no code + no FRONTEND_URL → error redirect stays same-origin', async () => {
+        process.env.GITHUB_CLIENT_ID = 'test-client-id'
+        process.env.GITHUB_CLIENT_SECRET = 'test-client-secret'
+        const res = await request(buildApp()).get('/api/auth/callback')
+        expect(res.status).toBe(302)
+        expect(res.headers.location).toMatch(/^http:\/\/127\.0\.0\.1:\d+\?error=no_code$/)
+    })
+
+    it('/callback forwards GitHub\'s own error code (user cancelled → access_denied)', async () => {
+        process.env.GITHUB_CLIENT_ID = 'test-client-id'
+        process.env.GITHUB_CLIENT_SECRET = 'test-client-secret'
+        process.env.FRONTEND_URL = 'http://localhost:5173'
+        const res = await request(buildApp())
+            .get('/api/auth/callback')
+            .query({ error: 'access_denied' })
+        expect(res.status).toBe(302)
+        expect(res.headers.location).toBe('http://localhost:5173?error=access_denied')
+    })
+
+    it('/callback sanitizes a malicious error param instead of reflecting it', async () => {
+        process.env.GITHUB_CLIENT_ID = 'test-client-id'
+        process.env.GITHUB_CLIENT_SECRET = 'test-client-secret'
+        process.env.FRONTEND_URL = 'http://localhost:5173'
+        const res = await request(buildApp())
+            .get('/api/auth/callback')
+            .query({ error: '<script>alert(1)</script>' })
+        expect(res.status).toBe(302)
+        expect(res.headers.location).toBe('http://localhost:5173?error=no_code')
+    })
+})

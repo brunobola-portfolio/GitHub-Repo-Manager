@@ -6,6 +6,7 @@ import { requireAuth, safeError } from '../../middleware/auth.js';
 
 
 import authRoutes from '../auth.js';
+import authSetupRoutes from '../auth-setup.js';
 import teamsRoutes from '../teams.js';
 import systemRoutes from '../system.js';
 import azureRoutes from '../azure.js';
@@ -47,6 +48,8 @@ const router = Router();
 
 // Mount routes — tier-gated where appropriate
 router.use('/auth', authRoutes);
+// First-run GitHub OAuth setup (guided in-app configuration; see auth-setup.js)
+router.use('/auth', authSetupRoutes);
 // Teams are free (capped: see feature-flags free.teamsMax / teamMembersMax,
 // enforced per-op in teams.js). attachTier sets req.userTier for those caps.
 router.use('/teams', attachTier, teamsRoutes);
