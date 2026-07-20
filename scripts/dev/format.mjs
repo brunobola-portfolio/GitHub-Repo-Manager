@@ -12,7 +12,10 @@ export const ANSI = {
   magenta: '\x1b[35m',
 }
 
-// Matches SGR colors plus cursor/clear control sequences Vite emits.
+// Matches SGR colors plus cursor/clear control sequences Vite emits. The
+// \x1b (ESC) control character is intentional -- that's the actual byte
+// terminals use to start an ANSI escape sequence, not a stray character.
+// eslint-disable-next-line no-control-regex
 const ANSI_RE = /\x1b\[[0-9;]*[A-Za-z]/g
 
 export function stripAnsi(s) {

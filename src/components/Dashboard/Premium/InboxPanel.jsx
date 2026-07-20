@@ -110,6 +110,12 @@ export function InboxPanel({ onSelectItem }) {
     // 's' opens snooze modal for the first item of the active section
     useEffect(() => {
         function onKey(e) {
+            // Bail on any modifier so browser/OS shortcuts pass through
+            // untouched — Ctrl+S (save page) and Ctrl+E both collide with
+            // the bare 's'/'e' single-key shortcuts below, and would
+            // otherwise silently snooze/archive the top inbox item instead
+            // of doing what the user actually pressed the modifier for.
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
             if (
                 e.target.tagName === 'INPUT' ||
                 e.target.tagName === 'TEXTAREA' ||

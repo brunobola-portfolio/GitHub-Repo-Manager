@@ -374,11 +374,11 @@ export function DashboardPremium({
                                         <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
                                             <span className="flex items-center gap-1">
                                                 <Users className="w-3.5 h-3.5" />
-                                                {team.members?.length || 0} members
+                                                {team.member_count ?? team.members?.length ?? 0} members
                                             </span>
                                             <span className="flex items-center gap-1">
                                                 <Folder className="w-3.5 h-3.5" />
-                                                {team.repos?.length || 0} repos
+                                                {team.repo_count ?? team.repos?.length ?? 0} repos
                                             </span>
                                         </div>
                                     </>

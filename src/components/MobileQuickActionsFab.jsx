@@ -124,7 +124,7 @@ export function MobileQuickActionsFab(props) {
                         animate={{ rotate: open ? 45 : 0 }}
                         whileTap={TAP}
                         transition={{ ...SPRING.panel, mass: 0.7 }}
-                        className={`relative w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 dark:from-indigo-400 dark:to-violet-500 shadow-xl shadow-indigo-500/40 dark:shadow-indigo-500/30 ring-1 ring-white/15 flex items-center justify-center text-white ds-focus-ring transition-[transform,opacity,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:shadow-2xl hover:shadow-indigo-500/50 ${
+                        className={`relative w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 dark:from-indigo-400 dark:to-violet-500 shadow-xl shadow-indigo-500/40 dark:shadow-indigo-500/30 ring-1 ring-white/15 flex items-center justify-center text-white ds-focus-ring transition-[transform,opacity,box-shadow] duration-500 ease-[var(--ds-ease-emphasized)] hover:shadow-2xl hover:shadow-indigo-500/50 ${
                             open
                                 ? 'translate-x-0'
                                 : 'translate-x-[55%] opacity-95 group-hover:translate-x-0 group-hover:opacity-100 group-focus-within:translate-x-0 group-focus-within:opacity-100 group-active:translate-x-0'

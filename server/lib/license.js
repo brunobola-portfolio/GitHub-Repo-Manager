@@ -16,12 +16,29 @@ export async function generateKeyPair() {
   }
 }
 
+/**
+ * Add a whole number of calendar months to a unix timestamp, returning the
+ * resulting unix timestamp (seconds). Calendar-month arithmetic — not a flat
+ * `months * 30 days` multiplication — because a 12-month key must cover a
+ * real Stripe yearly billing cycle (365 or 366 days, never 360), and a
+ * monthly key must not go dead a day early in 31-day months.
+ *
+ * @param {number} unixSeconds
+ * @param {number} months
+ * @returns {number}
+ */
+export function addCalendarMonths(unixSeconds, months) {
+  const d = new Date(unixSeconds * 1000)
+  d.setUTCMonth(d.getUTCMonth() + months)
+  return Math.floor(d.getTime() / 1000)
+}
+
 export async function generateLicenseKey(opts, privateKeyPem) {
   const { org, email, tier, seats, months, features, kid } = opts
   const lid = randomUUID()
   const now = Math.floor(Date.now() / 1000)
   const exp = months > 0
-    ? now + (months * 30 * 24 * 60 * 60)
+    ? addCalendarMonths(now, months)
     : now - 1
 
   const payload = { lid, org, email, tier, seats }

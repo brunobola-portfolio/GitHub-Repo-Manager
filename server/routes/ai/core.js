@@ -31,7 +31,7 @@ import { aiService, sanitizeForPrompt } from '../../ai-service.js';
 import { safeJsonParse } from '../../lib/utils.js';
 import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
-import { requireAI, handleAIError, providerGenerateWithRetry, guardedGenerate, recordStreamCompletion } from './shared.js';
+import { requireAI, handleAIError, providerGenerateWithRetry, guardedGenerate, recordStreamCompletion, stripJsonFences } from './shared.js';
 import { initSSE, streamReplyDeltasToSSE } from '../ai-streaming.js';
 import { extractReplyText } from '../../lib/ai-features/stream-json.js';
 import { buildChatPrompt } from '../../lib/ai-chat-prompt.js';
@@ -200,7 +200,7 @@ router.post('/ai/chat', requireAuth, requireScope('ai'), validateBody(aiChatSche
             // Parse the full envelope for actions. We've already streamed prose
             // and committed a 200, so on a parse miss we fall back to the
             // streamed reply text + no actions instead of erroring.
-            const cleaned = result.raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+            const cleaned = stripJsonFences(result.raw);
             const parsed = safeJsonParse(cleaned);
             const reply = parsed && typeof parsed.reply === 'string' ? parsed.reply : result.reply;
             const actions = parsed && Array.isArray(parsed.actions) ? parsed.actions : [];

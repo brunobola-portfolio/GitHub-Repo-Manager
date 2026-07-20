@@ -233,6 +233,76 @@ describe('InboxPanel — AI narrative fan-out', () => {
     });
 });
 
+describe('InboxPanel — keyboard shortcuts modifier guard', () => {
+    beforeEach(() => {
+        vi.resetAllMocks();
+        aiStatusModule.useAIStatus.mockReturnValue({ configured: false, keyOk: false });
+        aiQuotaModule.useAIQuotaState.mockReturnValue(null);
+        aiUsageModule.useAIUsage.mockReturnValue({
+            tier: 'free',
+            aiQueries: { current: 47, limit: 200, percent: 47 / 200 },
+            aiFeatures: {},
+            loading: false,
+        });
+        narrativeApi.fetchAttentionNarrative.mockResolvedValue({ narrative: null });
+        api.fetchInbox.mockResolvedValue({
+            sections: [
+                { key: 'needs_review', label: 'Needs my review', items: [{ id: 'pr:foo/bar#1', kind: 'pr', section: 'needs_review', title: 'Fix the thing', repoFullName: 'foo/bar' }] },
+                { key: 'my_prs', label: 'My open PRs', items: [] },
+            ],
+        });
+        api.archiveInboxItem.mockResolvedValue({});
+        api.snoozeInboxItem.mockResolvedValue({});
+        api.restoreInboxItem.mockResolvedValue({});
+    });
+
+    it('bare "e" archives the top item (sanity check the shortcut still works unmodified)', async () => {
+        render(<InboxPanel />);
+        await screen.findByText('Fix the thing');
+        fireEvent.keyDown(window, { key: 'e' });
+        await waitFor(() => expect(api.archiveInboxItem).toHaveBeenCalledWith('pr:foo/bar#1'));
+    });
+
+    it('bare "s" opens the snooze modal for the top item (sanity check)', async () => {
+        render(<InboxPanel />);
+        await screen.findByText('Fix the thing');
+        fireEvent.keyDown(window, { key: 's' });
+        expect(await screen.findByRole('dialog', { name: /snooze/i })).toBeInTheDocument();
+    });
+
+    it('Ctrl+S does not archive/snooze — browser save must not be hijacked', async () => {
+        render(<InboxPanel />);
+        await screen.findByText('Fix the thing');
+        fireEvent.keyDown(window, { key: 's', ctrlKey: true });
+        expect(screen.queryByRole('dialog', { name: /snooze/i })).not.toBeInTheDocument();
+        expect(api.snoozeInboxItem).not.toHaveBeenCalled();
+    });
+
+    it('Ctrl+E does not archive the top item', async () => {
+        render(<InboxPanel />);
+        await screen.findByText('Fix the thing');
+        fireEvent.keyDown(window, { key: 'e', ctrlKey: true });
+        await new Promise(r => setTimeout(r, 0));
+        expect(api.archiveInboxItem).not.toHaveBeenCalled();
+    });
+
+    it('Cmd+E (metaKey) does not archive the top item', async () => {
+        render(<InboxPanel />);
+        await screen.findByText('Fix the thing');
+        fireEvent.keyDown(window, { key: 'e', metaKey: true });
+        await new Promise(r => setTimeout(r, 0));
+        expect(api.archiveInboxItem).not.toHaveBeenCalled();
+    });
+
+    it('Alt+E does not archive the top item', async () => {
+        render(<InboxPanel />);
+        await screen.findByText('Fix the thing');
+        fireEvent.keyDown(window, { key: 'e', altKey: true });
+        await new Promise(r => setTimeout(r, 0));
+        expect(api.archiveInboxItem).not.toHaveBeenCalled();
+    });
+});
+
 describe('InboxPanel — load-failure state', () => {
     beforeEach(() => {
         vi.resetAllMocks();

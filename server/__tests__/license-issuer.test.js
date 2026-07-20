@@ -21,7 +21,8 @@ vi.mock('../lib/logger.js', () => ({
     },
 }))
 
-vi.mock('../lib/license.js', () => ({
+vi.mock('../lib/license.js', async (importOriginal) => ({
+    ...(await importOriginal()),
     generateLicenseKey: vi.fn(),
 }))
 

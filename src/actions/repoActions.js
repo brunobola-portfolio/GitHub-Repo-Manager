@@ -357,7 +357,7 @@ export const repoActions = {
 	},
 	ai_security: {
 		id: 'ai_security',
-		label: 'Security / Secrets Scan',
+		label: 'Security Posture',
 		description: 'Scans the repo for committed secrets and risky patterns.',
 		icon: ShieldAlert,
 		intent: 'read-only',

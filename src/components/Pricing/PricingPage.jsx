@@ -427,7 +427,7 @@ export function PricingPage({ onGetStarted } = {}) {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.65, delay: 0.4, ease: EASE.emphasized }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 mb-20 sm:mb-28 items-stretch pt-5"
+          className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 mb-20 sm:mb-28 items-start pt-5"
         >
           {tiers.map((tier) => (
             <PricingCard

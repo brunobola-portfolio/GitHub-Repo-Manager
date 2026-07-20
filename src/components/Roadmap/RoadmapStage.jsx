@@ -3,13 +3,6 @@ import { EASE } from '../ui/motion'
 import { RoadmapItem } from './RoadmapItem'
 
 const STAGE_STYLES = {
-  now: {
-    header: 'bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500/20',
-    dot: 'bg-emerald-500',
-    badge: 'text-emerald-700 dark:text-emerald-400',
-    label: 'Shipping Now',
-    period: 'Q3 2026',
-  },
   next: {
     header: 'bg-amber-500/10 dark:bg-amber-500/15 border-amber-500/20',
     dot: 'bg-amber-500',

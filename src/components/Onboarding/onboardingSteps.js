@@ -10,7 +10,7 @@ export const ONBOARDING_STEPS = [
     {
         id: 'ai-config',
         icon: Sparkles,
-        title: 'Add your AI key in Settings → AI',
+        title: 'Add your AI key in Settings → AI Configuration',
         body: 'Power semantic search, README enhance, commit AI, and topic suggestions with your own AI provider key (Gemini, Anthropic, OpenAI, OpenRouter, or local). Free tier works without it but most AI features need a key.',
     },
     {

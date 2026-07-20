@@ -501,7 +501,7 @@ export function AIConfigSection() {
 
                             <Button variant="primary" onClick={handleSave} disabled={saving || !isDirty}>
                                 {saving ? <Spinner size="md" tone="onPrimary" /> : <Check className="w-4 h-4" />}
-                                {saving ? 'Saving...' : 'Save'}
+                                {saving ? 'Saving…' : 'Save'}
                             </Button>
                         </div>
                     </div>

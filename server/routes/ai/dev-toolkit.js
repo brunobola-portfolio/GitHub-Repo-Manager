@@ -19,7 +19,7 @@ import { aiService, sanitizeForPrompt } from '../../ai-service.js';
 import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
 import { initSSE, streamToSSEWithUsage } from '../ai-streaming.js';
-import { requireAI, denyIfSpendCapReached, recordStreamCompletion, guardedGenerate, handleAIError } from './shared.js';
+import { requireAI, denyIfSpendCapReached, recordStreamCompletion, guardedGenerate, handleAIError, stripJsonFences } from './shared.js';
 import { mapAIErrorToResponse } from '../../middleware/ai-error-mapper.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import {
@@ -139,7 +139,7 @@ File manifest: ${sanitizeForPrompt(JSON.stringify((fileManifest || []).map(f => 
 
                 let parsed;
                 try {
-                    parsed = JSON.parse(raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, ''));
+                    parsed = JSON.parse(stripJsonFences(raw));
                 } catch {
                     parsed = { overview: raw, riskLevel: 'medium', keyChanges: [], fileRisks: [], suggestedReviewOrder: [], estimatedReviewTime: 'unknown' };
                 }
@@ -257,7 +257,7 @@ Rules:
 
                 let parsed;
                 try {
-                    const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+                    const cleaned = stripJsonFences(raw);
                     parsed = JSON.parse(cleaned);
                 } catch {
                     parsed = { subject: raw.split('\n')[0], body: '' };
@@ -285,7 +285,7 @@ Rules:
 
         let parsed;
         try {
-            const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+            const cleaned = stripJsonFences(raw);
             parsed = JSON.parse(cleaned);
         } catch {
             parsed = { subject: raw.split('\n')[0], body: '' };
@@ -376,7 +376,7 @@ Rules:
 
                 let parsed;
                 try {
-                    const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+                    const cleaned = stripJsonFences(raw);
                     parsed = JSON.parse(cleaned);
                 } catch {
                     parsed = { title: commits[0]?.message?.split('\n')[0] || 'Update', summary: raw, test_plan: '', breaking_changes: null, related_issues: [], suggested_labels: [], suggested_reviewers: [] };
@@ -407,7 +407,7 @@ Rules:
 
         let parsed;
         try {
-            const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+            const cleaned = stripJsonFences(raw);
             parsed = JSON.parse(cleaned);
         } catch {
             parsed = {

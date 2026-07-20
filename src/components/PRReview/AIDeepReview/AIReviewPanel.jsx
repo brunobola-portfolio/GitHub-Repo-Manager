@@ -147,7 +147,7 @@ export function AIReviewPanel({
                         type="button"
                         variant="primary"
                         size="sm"
-                        onClick={() => onGenerate(activePresetKey)}
+                        onClick={() => onGenerate(activePresetKey).catch(() => {})}
                     >
                         Generate AI Review
                     </Button>
@@ -155,7 +155,7 @@ export function AIReviewPanel({
                         <div className="mt-3 w-full max-w-md">
                             <AIErrorState
                                 error={error}
-                                onRetry={() => onGenerate(activePresetKey)}
+                                onRetry={() => onGenerate(activePresetKey).catch(() => {})}
                                 context="AI Deep Review"
                                 variant="inline"
                             />
@@ -228,14 +228,26 @@ export function AIReviewPanel({
                     />
                     <button
                         type="button"
-                        onClick={() => onGenerate(activePresetKey)}
+                        onClick={() => onGenerate(activePresetKey).catch(() => {})}
+                        disabled={loading}
                         title="Re-run review"
-                        className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                        className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-50"
                     >
-                        ↻
+                        {loading ? <Spinner size="xs" tone="primary" label="Re-running review" /> : '↻'}
                     </button>
                 </div>
             </div>
+
+            {error ? (
+                <div className="px-3 pt-3">
+                    <AIErrorState
+                        error={error}
+                        onRetry={() => onGenerate(activePresetKey).catch(() => {})}
+                        context="AI Deep Review"
+                        variant="inline"
+                    />
+                </div>
+            ) : null}
 
             <div className="flex-1 min-h-0 overflow-y-auto">
                 {tab === 'walkthrough' ? (
