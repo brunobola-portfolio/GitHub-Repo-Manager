@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Branded Windows installer.** The setup wizard now carries the BolaLabs
+  identity: branded `setup.exe` icon, Welcome/Finish banner and header tile,
+  Add/Remove Programs icon, and Start Menu/desktop shortcuts that show the
+  product icon instead of the generic console icon (the launchers are `.cmd`
+  files). Assets live in `packaging/windows/assets/`, generated at 2x from
+  the master art so DPI scaling only ever scales down.
+
 ## [4.8.0] - 2026-07-20
 
 First-run experience overhaul for the Windows package and self-hosts: signing
