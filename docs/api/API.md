@@ -4327,7 +4327,7 @@ Run initial system setup (create tables, verify schema, seed data).
 
 | Detail | Value |
 |---|---|
-| Auth required | Yes |
+| Auth required | No — intentionally public; rate-limited (5/min) and a no-op after the first run |
 
 **Response (200):**
 ```json

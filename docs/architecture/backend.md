@@ -141,7 +141,7 @@ The entry point is a compact orchestration file responsible for:
 ## Route Aggregation: `server/routes/v1/index.js`
 
 The route modules are mounted by the V1 aggregator (the table below is a
-representative subset — the full set spans 74 route modules (324 route handlers)
+representative subset — the full set spans 74 route modules (325 route handlers)
 under `server/routes/`, including several domain sub-routers). Some routes are
 tier-gated at mount time:
 

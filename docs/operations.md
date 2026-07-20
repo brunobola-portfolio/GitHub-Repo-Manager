@@ -56,6 +56,7 @@ Point `docker-compose.yml`'s `app.build: .` at the pulled image instead
 docker run --env-file .env -p 3001:3001 \
   -v app-data:/app/server/data \
   -v app-backups:/app/server/data-backups \
+  -e DB_BACKUP_DIR=/app/server/data-backups \
   ghcr.io/brunobola-portfolio/github-repo-manager:latest
 ```
 

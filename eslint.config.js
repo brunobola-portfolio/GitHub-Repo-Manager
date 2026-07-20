@@ -43,7 +43,7 @@ const layoutAntiDriftRules = [
 export default defineConfig([
   globalIgnores(['dist', '**/dist/**', '.claude/worktrees/**', '.dev/**', 'coverage/**']),
   {
-    files: ['**/*.{js,jsx}'],
+    files: ['**/*.{js,mjs,jsx}'],
     extends: [
       js.configs.recommended,
       reactHooks.configs.flat.recommended,
