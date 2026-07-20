@@ -96,3 +96,60 @@ describe('AIReviewPanel — loaded state still renders after the loading-state r
         expect(screen.getByText('All good.')).toBeInTheDocument();
     });
 });
+
+describe('AIReviewPanel — re-run (↻) feedback when a draft already exists', () => {
+    const draft = { walkthrough: { summary: 'All good.' }, lineComments: [] };
+
+    it('disables the re-run button while a re-generate request is loading', () => {
+        render(<AIReviewPanel draft={draft} loading error={null} onGenerate={vi.fn()} onPublish={vi.fn()} />);
+        expect(screen.getByTitle('Re-run review')).toBeDisabled();
+    });
+
+    it('does not disable the re-run button when idle', () => {
+        render(<AIReviewPanel draft={draft} loading={false} error={null} onGenerate={vi.fn()} onPublish={vi.fn()} />);
+        expect(screen.getByTitle('Re-run review')).not.toBeDisabled();
+    });
+
+    it('renders an inline AIErrorState above the tab content when a re-run fails but the previous draft is still shown', () => {
+        render(<AIReviewPanel draft={draft} loading={false} error={new Error('boom')} onGenerate={vi.fn()} onPublish={vi.fn()} />);
+        expect(screen.getByRole('alert')).toBeInTheDocument();
+        // The existing draft content must stay visible — re-run failure is
+        // not a full-panel error takeover.
+        expect(screen.getByText('All good.')).toBeInTheDocument();
+    });
+
+    it('does not render an error state when there is no error, even with a draft present', () => {
+        render(<AIReviewPanel draft={draft} loading={false} error={null} onGenerate={vi.fn()} onPublish={vi.fn()} />);
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('clicking re-run when generation rejects does not produce an unhandled promise rejection', async () => {
+        const rejectionSpy = vi.fn();
+        window.addEventListener('unhandledrejection', rejectionSpy);
+        try {
+            const onGenerate = vi.fn(() => Promise.reject(new Error('boom')));
+            render(<AIReviewPanel draft={draft} loading={false} error={null} onGenerate={onGenerate} onPublish={vi.fn()} />);
+            fireEvent.click(screen.getByTitle('Re-run review'));
+            await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+            expect(onGenerate).toHaveBeenCalledWith('general');
+            expect(rejectionSpy).not.toHaveBeenCalled();
+        } finally {
+            window.removeEventListener('unhandledrejection', rejectionSpy);
+        }
+    });
+
+    it('clicking Generate AI Review in the empty state when generation rejects does not produce an unhandled promise rejection', async () => {
+        const rejectionSpy = vi.fn();
+        window.addEventListener('unhandledrejection', rejectionSpy);
+        try {
+            const onGenerate = vi.fn(() => Promise.reject(new Error('boom')));
+            render(<AIReviewPanel draft={null} loading={false} error={null} onGenerate={onGenerate} onPublish={vi.fn()} />);
+            fireEvent.click(screen.getByRole('button', { name: /generate ai review/i }));
+            await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+            expect(onGenerate).toHaveBeenCalledWith('general');
+            expect(rejectionSpy).not.toHaveBeenCalled();
+        } finally {
+            window.removeEventListener('unhandledrejection', rejectionSpy);
+        }
+    });
+});
