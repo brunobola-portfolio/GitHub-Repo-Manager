@@ -2,7 +2,7 @@
 // Copyright (c) 2025-2026 Bola Labs. All rights reserved.
 // Commercial license: https://bolalabs.pt/license
 
-import { generateLicenseKey } from './license.js'
+import { generateLicenseKey, addCalendarMonths } from './license.js'
 import { sendEmail } from './email.js'
 import db from '../db.js'
 import logger from './logger.js'
@@ -10,11 +10,12 @@ import logger from './logger.js'
 /**
  * Describe a license's actual validity window in plain language, matching
  * whatever `months` was really signed into the JWT (see generateLicenseKey).
- * Monthly subs get a 1-month key reissued automatically each renewal
- * (stripe-webhooks.js `invoice.paid` / billing_reason=subscription_cycle);
- * yearly subs get a single 12-month key. Never say "cannot be reissued" —
- * that used to be true for every plan when this always said 12 months
- * regardless of what was actually paid for; it no longer is for monthly.
+ * Both monthly and yearly subs get a fresh key reissued automatically on
+ * each paid renewal invoice (stripe-webhooks.js `invoice.paid` /
+ * billing_reason=subscription_cycle) — monthly gets a 1-month key, yearly a
+ * 12-month key. Never say "cannot be reissued" — that used to be true for
+ * every plan when this always said 12 months regardless of what was
+ * actually paid for; it no longer is for either billing period.
  *
  * @param {number} months
  * @returns {string}
@@ -163,9 +164,11 @@ export async function issueLicenseForCheckout(opts) {
         return { licenseKey: null, emailDelivered: false }
     }
 
-    // Compute expiry date for storage (months=12 → 12 * 30 days)
+    // Compute expiry date for storage using the same calendar-month
+    // arithmetic as the signed JWT's `exp` (license.js) — otherwise this
+    // stored record would drift from what the key actually enforces.
     const expiresAt = months > 0
-        ? new Date(Date.now() + months * 30 * 24 * 60 * 60 * 1000).toISOString()
+        ? new Date(addCalendarMonths(Math.floor(Date.now() / 1000), months) * 1000).toISOString()
         : null
 
     // Persist first (so a partial failure still has the record)

@@ -216,12 +216,14 @@ export async function stripeWebhookHandler(req, res) {
                         WHERE stripe_subscription_id = ?
                     `).run(invoice.subscription);
 
-                    // Renewal license reissue: a monthly sub's emailed key is
-                    // only valid 1 month (see checkout.session.completed
-                    // above), so each paid renewal invoice needs its own
-                    // fresh one — otherwise the license silently expires
-                    // mid-subscription. Yearly subs already hold a 12-month
-                    // key from checkout and don't need a reissue here.
+                    // Renewal license reissue: an emailed key's validity
+                    // matches exactly what was paid for (1 month, or 12 for
+                    // yearly — see checkout.session.completed above and
+                    // license.js's calendar-month exp), so each paid renewal
+                    // invoice needs its own fresh one. This applies to BOTH
+                    // billing periods: a yearly customer's year-2 renewal is
+                    // this exact event, and without a reissue here they'd pay
+                    // and never receive a new key.
                     //
                     // billing_reason='subscription_cycle' is Stripe's marker
                     // for a recurring renewal invoice, as opposed to
@@ -234,7 +236,7 @@ export async function stripeWebhookHandler(req, res) {
                             'SELECT user_id, tier, billing_period FROM user_subscriptions WHERE stripe_subscription_id = ?'
                         ).get(invoice.subscription);
 
-                        if (subRow?.user_id && subRow.billing_period !== 'yearly') {
+                        if (subRow?.user_id) {
                             const user = db.prepare('SELECT email FROM users WHERE id = ?').get(subRow.user_id);
                             const recipientEmail = invoice.customer_email || user?.email;
                             if (recipientEmail) {
@@ -243,7 +245,7 @@ export async function stripeWebhookHandler(req, res) {
                                     email: recipientEmail,
                                     tier: subRow.tier,
                                     seats: 1,
-                                    months: 1,
+                                    months: subRow.billing_period === 'yearly' ? 12 : 1,
                                     stripeSubscriptionId: invoice.subscription,
                                     // invoice.id is the natural idempotency key
                                     // for a renewal reissue — one license per

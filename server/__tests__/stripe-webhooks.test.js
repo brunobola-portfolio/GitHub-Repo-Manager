@@ -666,9 +666,10 @@ describe('stripeWebhookHandler', () => {
             )
         })
 
-        it('does NOT reissue for a yearly subscription renewal (already holds a 12-month key)', async () => {
+        it('reissues a fresh 12-month license on a yearly subscription_cycle renewal (year-2 customer must get a new key)', async () => {
             const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
             issueLicenseForCheckout.mockReset()
+            issueLicenseForCheckout.mockResolvedValueOnce({ licenseKey: 'lic_renew_yearly', emailDelivered: true })
 
             mockStripeInstance.webhooks.constructEvent.mockReturnValue({
                 id: 'evt_renew_yearly',
@@ -683,6 +684,7 @@ describe('stripeWebhookHandler', () => {
                 if (/SELECT user_id, tier, billing_period FROM user_subscriptions/.test(sql)) {
                     return { get: vi.fn(() => ({ user_id: 78, tier: 'pro', billing_period: 'yearly' })) }
                 }
+                if (/SELECT email FROM users/.test(sql)) return { get: vi.fn(() => ({ email: 'yearly-renew@example.com' })) }
                 return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
             })
 
@@ -690,7 +692,16 @@ describe('stripeWebhookHandler', () => {
             await stripeWebhookHandler(req, res)
 
             expect(res.statusCode).toBe(200)
-            expect(issueLicenseForCheckout).not.toHaveBeenCalled()
+            expect(issueLicenseForCheckout).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    userId: 78,
+                    tier: 'pro',
+                    months: 12,
+                    email: 'yearly-renew@example.com',
+                    stripeSubscriptionId: 'sub_renew_yearly',
+                    stripeSessionId: 'in_renew_yearly',
+                })
+            )
         })
 
         it('does NOT reissue on the very first invoice of a new subscription (billing_reason=subscription_create), avoiding a double-email alongside checkout.session.completed', async () => {
