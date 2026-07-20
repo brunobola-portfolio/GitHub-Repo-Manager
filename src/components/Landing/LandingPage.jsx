@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { Sun, Moon } from 'lucide-react'
+import { EASE } from '../ui/motion'
 import { Github } from '../icons/GithubIcon'
 import { HeroSection } from './HeroSection'
 import { FeaturesSection } from './FeaturesSection'
@@ -96,7 +97,7 @@ export function LandingPage({ onSignIn }) {
       <motion.nav
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.5, ease: EASE.emphasized }}
         className="sticky top-0 z-20 backdrop-blur-md bg-white/75 dark:bg-slate-950/75 border-b border-slate-200/50 dark:border-white/[0.06]"
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
