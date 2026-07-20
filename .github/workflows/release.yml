@@ -162,7 +162,9 @@ jobs:
               Write-Host "::error::packaged zip /api/health/ready returned $($ready.StatusCode) — refusing to publish"
               exit 1
           }
-          $pidFile = Join-Path $extractDir 'app\.grm.pid'
+          # v4.8.0 layout: writable state (pidfile, .env) lives in data\,
+          # not app\ — keep in sync with windows-package.yml's smoke test.
+          $pidFile = Join-Path $extractDir 'data\.grm.pid'
           $serverPid = Get-Content -LiteralPath $pidFile
           & "$extractDir\Stop GitHub Repo Manager.cmd"
           Start-Sleep -Seconds 2
