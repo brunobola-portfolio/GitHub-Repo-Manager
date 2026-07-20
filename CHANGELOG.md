@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.1] - 2026-07-21
+
 ### Added
 - **Branded Windows installer.** The setup wizard now carries the BolaLabs
   identity: branded `setup.exe` icon, Welcome/Finish banner and header tile,
@@ -2264,7 +2266,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.8.0...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.8.1...HEAD
+[4.8.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.8.0...v4.8.1
 [4.8.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.7.0...v4.8.0
 [4.7.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.6.1...v4.7.0
 [4.6.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.6.0...v4.6.1
