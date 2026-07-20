@@ -131,7 +131,7 @@ export function LanguageChart({ data = [], loading }) {
 
                         <div
                             data-testid="language-chart-pie"
-                            className="hidden sm:flex flex-col lg:flex-row items-center gap-4 sm:gap-8"
+                            className="hidden sm:flex flex-col xl:flex-row items-center gap-4 sm:gap-8"
                             style={{ minHeight: `${chartHeight}px` }}
                         >
                             {/* Chart */}
@@ -180,11 +180,11 @@ export function LanguageChart({ data = [], loading }) {
                             </div>
 
                             {/* Language Legend - Dynamic and scrollable */}
-                            <div className="flex-1 w-full lg:w-auto overflow-y-auto max-h-[340px] ds-scrollbar pr-2">
+                            <div className="flex-1 w-full xl:w-auto overflow-y-auto max-h-[340px] ds-scrollbar pr-2">
                                 <div
                                     className="grid gap-3"
                                     style={{
-                                        gridTemplateColumns: enrichedData.length > 8 ? 'repeat(2, minmax(0, 1fr))' : '1fr',
+                                        gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
                                         gridAutoRows: 'minmax(0, auto)'
                                     }}
                                 >

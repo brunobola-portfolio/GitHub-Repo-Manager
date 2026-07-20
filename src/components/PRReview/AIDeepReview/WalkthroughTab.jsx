@@ -89,7 +89,7 @@ export function WalkthroughTab({ walkthrough }) {
                                 <tr>
                                     <th className="text-left py-1 pr-2">File</th>
                                     <th className="text-left py-1 pr-2">Change</th>
-                                    <th className="text-left py-1">Summary</th>
+                                    <th className="text-left py-1 min-w-[12rem]">Summary</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -97,7 +97,7 @@ export function WalkthroughTab({ walkthrough }) {
                                     <tr key={i} className="border-t border-slate-200 dark:border-slate-800">
                                         <td className="py-1 pr-2 font-mono whitespace-nowrap">{row.path}</td>
                                         <td className="py-1 pr-2">{row.change}</td>
-                                        <td className="py-1">{row.summary}</td>
+                                        <td className="py-1 min-w-[12rem]">{row.summary}</td>
                                     </tr>
                                 ))}
                             </tbody>
