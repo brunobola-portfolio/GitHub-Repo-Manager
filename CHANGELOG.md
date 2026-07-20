@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.2] - 2026-07-21
+
 ### Added
 - **"Launch GitHub Repo Manager" checkbox** on the installer's finish page
   (checked by default; skipped in silent installs).
@@ -2283,7 +2285,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.8.1...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.8.2...HEAD
+[4.8.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.8.1...v4.8.2
 [4.8.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.8.0...v4.8.1
 [4.8.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.7.0...v4.8.0
 [4.7.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.6.1...v4.7.0
