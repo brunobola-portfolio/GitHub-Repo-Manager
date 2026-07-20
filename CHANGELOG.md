@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **"Launch GitHub Repo Manager" checkbox** on the installer's finish page
+  (checked by default; skipped in silent installs).
+- **Scripted / unattended install guide** in `docs/windows.md`: silent
+  flags with `/LOG=` and `/DIR=`, exit-code semantics (including the
+  deliberate abort over a running instance), launcher env-var overrides,
+  and a zero-touch pre-provisioning recipe for `.env` (GitHub OAuth +
+  license) so fleet rollouts skip the in-app setup entirely. winget remains
+  documented as planned, not yet submitted.
+
+### Fixed
+- **Admin-driven installs no longer pin every user to the installing
+  account's data directory.** The installer now records the data-dir marker
+  in its unexpanded `%LOCALAPPDATA%` form and the launchers expand it at
+  run time, so each Windows account resolves its own database and `.env`.
+  Markers from older installs (absolute paths) keep working unchanged.
+
 ## [4.8.1] - 2026-07-21
 
 ### Added

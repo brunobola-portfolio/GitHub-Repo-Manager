@@ -35,7 +35,8 @@ $DataDir = $env:GRM_DATA_DIR
 if (-not $DataDir -and (Test-Path -LiteralPath $InstallConfigFile)) {
     foreach ($line in Get-Content -LiteralPath $InstallConfigFile) {
         if ($line -match '^\s*DATA_DIR\s*=\s*(.+?)\s*$') {
-            $DataDir = $Matches[1]
+            # Same runtime env-var expansion as start.ps1's Get-InstalledDataDir.
+            $DataDir = [System.Environment]::ExpandEnvironmentVariables($Matches[1])
             break
         }
     }

@@ -199,6 +199,15 @@ jobs:
               Write-Host "::error::install-config.txt marker not written by the installer at $installDir"
               exit 1
           }
+          # The marker must carry the UNEXPANDED %LOCALAPPDATA% form so every
+          # user resolves their own data dir (admin-driven rollouts): the
+          # launchers expand it at run time. An absolute path here would pin
+          # all users to the installing account's directory.
+          $marker = Get-Content (Join-Path $installDir 'install-config.txt') -Raw
+          if ($marker -notmatch [regex]::Escape('%LOCALAPPDATA%')) {
+              Write-Host "::error::install-config.txt holds an expanded path instead of %LOCALAPPDATA%: $marker"
+              exit 1
+          }
 
           # Deliberately launch the RAW .cmd, not a Start Menu shortcut, and
           # deliberately do not set --data-dir/GRM_DATA_DIR: this is exactly

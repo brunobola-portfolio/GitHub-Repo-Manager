@@ -32,6 +32,12 @@
 #define MyAppURL "https://github.com/brunobola-portfolio/GitHub-Repo-Manager"
 #define MyAppExeName "Start GitHub Repo Manager.cmd"
 #define MyDataDir "{localappdata}\GitHubRepoManager\data"
+; The UNEXPANDED form written into install-config.txt (see CurStepChanged):
+; the launchers expand it at run time, so an install performed by one user
+; (an admin pushing a scripted rollout, or a custom /ALLUSERS-style setup)
+; still resolves to EACH user's own LocalAppData instead of pinning every
+; user to the installing account's data directory.
+#define MyDataDirMarker "%LOCALAPPDATA%\GitHubRepoManager\data"
 
 [Setup]
 ; Fixed forever once published -this is the winget / Add-or-Remove-Programs
@@ -130,6 +136,13 @@ Name: "{group}\Open data folder"; Filename: "{win}\explorer.exe"; Parameters: ""
 Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
 Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\bolalabs.ico"; Tasks: desktopicon
 
+[Run]
+; Finish-page "launch now" checkbox (checked by default, like every polished
+; installer). nowait: the launcher opens the server console + browser on its
+; own; Setup must not sit blocked behind it. skipifsilent: unattended
+; installs decide themselves when to first start the app.
+Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; WorkingDir: "{app}"; Flags: postinstall nowait skipifsilent
+
 [Code]
 // Detects a currently-running instance via the pidfile Start writes into the
 // data dir (packaging/windows/start.ps1; pre-4.8.0 launchers wrote it to
@@ -207,8 +220,13 @@ procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
   begin
+    // Deliberately the UNEXPANDED %LOCALAPPDATA% form (not ExpandConstant):
+    // the launchers expand env vars at run time, so whichever user launches
+    // the app gets their own data dir — see MyDataDirMarker above. Markers
+    // written by pre-4.8.2 installers hold an absolute path; runtime
+    // expansion leaves those untouched (no env vars to expand).
     SaveStringToFile(ExpandConstant('{app}\install-config.txt'),
-      'DATA_DIR=' + ExpandConstant('{#MyDataDir}') + #13#10,
+      'DATA_DIR={#MyDataDirMarker}' + #13#10,
       False);
   end;
 end;
