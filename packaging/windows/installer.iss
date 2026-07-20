@@ -57,11 +57,19 @@ ArchitecturesInstallIn64BitMode=x64compatible
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
+; BolaLabs brand assets (packaging/windows/assets, generated from the master
+; art at 2x so Inno's DPI scaling only ever scales DOWN). BMP is required by
+; Inno for wizard images; the .ico carries PNG-compressed 16..256 entries.
+SetupIconFile=assets\bolalabs.ico
+WizardImageFile=assets\wizard-banner.bmp
+WizardSmallImageFile=assets\wizard-small.bmp
 OutputDir={#OutputDir}
 OutputBaseFilename=github-repo-manager-{#MyAppVersion}-setup
 ; better-sqlite3's .node binary and node.exe itself are already-compressed/
 ; signed-ish binaries; nothing here needs special uncompressed handling.
 UninstallDisplayName={#MyAppName}
+; Branded icon in Add/Remove Programs (the file is installed by [Files] below).
+UninstallDisplayIcon={app}\bolalabs.ico
 ; ChangesEnvironment not needed -the app binds to loopback only and never
 ; touches PATH/registry beyond its own uninstall key.
 
@@ -98,6 +106,9 @@ Source: "{#StagingRoot}\stop.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StagingRoot}\Start GitHub Repo Manager.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StagingRoot}\Stop GitHub Repo Manager.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StagingRoot}\README-WINDOWS.txt"; DestDir: "{app}"; Flags: ignoreversion isreadme
+; Brand icon for shortcuts + Add/Remove Programs. Sourced from the repo (next
+; to this script), not the staging tree — it's installer-only branding.
+Source: "assets\bolalabs.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; No --data-dir Parameters here (deliberately, as of the marker-file fix
@@ -110,11 +121,14 @@ Source: "{#StagingRoot}\README-WINDOWS.txt"; DestDir: "{app}"; Flags: ignorevers
 ; in [Code] below, read by start.ps1) makes EVERY launch path - shortcut or
 ; raw .cmd - resolve to the same LocalAppData data dir, so there is only one
 ; mechanism to keep correct instead of two that can disagree.
-Name: "{group}\Start GitHub Repo Manager"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"
-Name: "{group}\Stop GitHub Repo Manager"; Filename: "{app}\Stop GitHub Repo Manager.cmd"; WorkingDir: "{app}"
+; IconFilename: the launchers are .cmd files, which would otherwise show the
+; generic console icon on the Start Menu / desktop — the brand icon installed
+; by [Files] above keeps every entry point looking like the same product.
+Name: "{group}\Start GitHub Repo Manager"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\bolalabs.ico"
+Name: "{group}\Stop GitHub Repo Manager"; Filename: "{app}\Stop GitHub Repo Manager.cmd"; WorkingDir: "{app}"; IconFilename: "{app}\bolalabs.ico"
 Name: "{group}\Open data folder"; Filename: "{win}\explorer.exe"; Parameters: """{#MyDataDir}"""
 Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
-Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\bolalabs.ico"; Tasks: desktopicon
 
 [Code]
 // Detects a currently-running instance via the pidfile Start writes into the
