@@ -77,6 +77,8 @@ server/data/
 # Exception: documentation images are part of the repo
 !docs/images/*.png
 !docs/images/*.jpg
+# Exception: Windows installer branding assets are part of the repo
+!packaging/windows/assets/*.bmp
 
 # Test reports and results
 playwright-report/
