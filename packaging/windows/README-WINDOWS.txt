@@ -8,11 +8,14 @@ be installed.
 Getting started:
   1. Double-click "Start GitHub Repo Manager.cmd". Your browser opens
      automatically once the server is ready.
-  2. To stop it, double-click "Stop GitHub Repo Manager.cmd".
+  2. Click "Sign in" — the app walks you through connecting your GitHub
+     account (a one-time, ~2 minute guided setup).
+  3. To stop it, double-click "Stop GitHub Repo Manager.cmd".
 
 Where your data lives:
   - Portable ZIP: the ".\data" folder next to this file (SQLite database,
-    backups, clone scratch space). Back it up by copying that folder.
+    backups, clone scratch space, and the .env configuration file with
+    this install's secrets). Back it up by copying that folder.
   - Installed via the setup wizard: %LOCALAPPDATA%\GitHubRepoManager\data.
 
 Updating: download the newer ZIP and replace the "app" and "runtime"

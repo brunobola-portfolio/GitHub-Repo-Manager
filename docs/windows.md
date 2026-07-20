@@ -57,9 +57,14 @@ github-repo-manager-<version>-setup.exe /VERYSILENT /NORESTART /SUPPRESSMSGBOXES
 
 ### What first run does (both options)
 
-- Generates a local `app\.env` with four independent random secrets
-  (session, webhook signing, credential encryption, API key signing) —
-  nothing leaves your machine and nothing is shared between installs.
+- Generates a `.env` file **inside your data directory** with four
+  independent random secrets (session, webhook signing, credential
+  encryption, API key signing) — nothing leaves your machine and nothing is
+  shared between installs. Because it lives with your data (not with the
+  app files), it survives updates *and* uninstall/reinstall — important,
+  since the credential-encryption key inside it is what unlocks any API
+  keys/PATs you save in the app. (Installs made before v4.8.0 kept it at
+  `app\.env`; the launcher migrates it automatically on the next start.)
 - Binds the server to `127.0.0.1` only — **no Windows Firewall prompt, no
   LAN exposure.** The app is reachable only from the machine it runs on.
 - Opens your default browser to the app once the server answers its health
@@ -74,9 +79,10 @@ github-repo-manager-<version>-setup.exe /VERYSILENT /NORESTART /SUPPRESSMSGBOXES
 | Installer | `%LocalAppData%\GitHubRepoManager\data` |
 | Portable ZIP | `.\data` next to `Start GitHub Repo Manager.cmd` |
 
-This folder holds the SQLite database, its WAL sidecars, and the automatic
+This folder holds the SQLite database, its WAL sidecars, the automatic
 backups the app already writes on its own schedule (see
-[Backup & restore](operations.md#backup--restore)). It survives both
+[Backup & restore](operations.md#backup--restore)), and the `.env`
+configuration file with this install's secrets. It survives both
 **updates** and **uninstalls**. Back it up by copying the folder.
 
 Under the hood this is just the `DATA_DIR` env var (see
@@ -84,7 +90,8 @@ Under the hood this is just the `DATA_DIR` env var (see
 installer writes it into `install-config.txt` next to `start.ps1` right
 after install, and a portable-ZIP launch defaults to `.\data` unless you
 override it with the `GRM_DATA_DIR` environment variable before running
-`Start GitHub Repo Manager.cmd`.
+`Start GitHub Repo Manager.cmd`. Whenever this guide says "your `.env`
+file", it means the one **inside that data directory**.
 
 ---
 
@@ -94,13 +101,13 @@ override it with the `GRM_DATA_DIR` environment variable before running
 — the installer detects a running instance via its pidfile and refuses to
 proceed rather than upgrade over a live process, so if you skip this step it
 simply aborts with a message telling you to stop it. Download the new
-`setup.exe` and run it over the existing install. Your data directory and
-`app\.env` are untouched.
+`setup.exe` and run it over the existing install. Your data directory
+(database, backups, `.env`) is untouched.
 
 **Portable ZIP:** stop the app, extract the new ZIP over the existing
 folder (overwrite when prompted), then Start again. The distributed ZIP
-never contains a `data\` folder or an `app\.env` file, so neither is touched
-by the overwrite.
+never contains a `data\` folder, so your database and `.env` are never
+touched by the overwrite.
 
 ### The in-app update notification
 
@@ -108,8 +115,8 @@ Settings → About (after logging in) shows a "vX.Y.Z available" banner when a
 newer GitHub release exists. The check is a single unauthenticated `GET` to
 GitHub's public releases API — no query params, no identifying data
 attached — cached for 24 hours. It only notifies; nothing self-updates. To
-disable the outbound check entirely, add `UPDATE_CHECK=false` to `app\.env`
-and restart.
+disable the outbound check entirely, add `UPDATE_CHECK=false` to your
+`.env` file and restart.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="images/update-check.svg">
@@ -120,19 +127,70 @@ and restart.
 
 ## Connecting to GitHub / AI
 
-- **GitHub OAuth** — see the [README's GitHub OAuth section](../README.md#github-oauth)
-  for creating an OAuth App and adding `GITHUB_CLIENT_ID` /
-  `GITHUB_CLIENT_SECRET` to `app\.env`. If the launcher had to move to a
-  different port because the configured one was busy, update the OAuth
-  app's callback URL (and `FRONTEND_URL` in `app\.env`) to match.
-- **AI providers (BYOK)** — see the [AI Providers guide](ai-providers.md);
-  each user adds their own key in Settings → AI Configuration once logged
-  in.
-- **No zero-config demo mode here.** The mock/demo data layer is a
-  development-only build feature — it's compiled out of every production
-  bundle regardless of any setting, and this package ships a production
-  build. A GitHub OAuth app (above) is required to actually use the
-  packaged app; there's no key-free way to explore it first.
+### GitHub — guided setup (recommended)
+
+Click **Sign in** on the landing page. On a fresh install the app detects
+that GitHub isn't connected yet and opens a guided, one-time setup:
+
+1. It opens GitHub's **New OAuth App** form for you, **pre-filled with the
+   exact Homepage and Callback URLs for your install** (including the real
+   port, even if the launcher had to pick a different one). You just click
+   **Register application**.
+2. Click **Generate a new client secret** on the page GitHub shows next.
+3. Paste the **Client ID** and **Client Secret** back into the app.
+
+That's it — the app saves them into your `.env`, applies them immediately
+(no restart), and takes you to GitHub sign-in. For security, this in-app
+setup only works from the machine the server runs on, only while OAuth is
+not yet configured, and can be disabled outright with
+`GRM_DISABLE_WEB_SETUP=true` in `.env`.
+
+### GitHub — manual setup (fallback)
+
+If you prefer editing files: create an OAuth App at
+<https://github.com/settings/applications/new> with **exactly** these values
+(the host must match what your browser shows — `127.0.0.1`, not
+`localhost`; GitHub compares callback URLs character-for-character):
+
+| Field | Value |
+| --- | --- |
+| Homepage URL | `http://127.0.0.1:3001` |
+| Authorization callback URL | `http://127.0.0.1:3001/api/auth/callback` |
+
+Then add to the `.env` file in your data directory and restart:
+
+```ini
+GITHUB_CLIENT_ID=<your Client ID>
+GITHUB_CLIENT_SECRET=<your Client Secret>
+```
+
+You do **not** need to set `FRONTEND_URL` — the app defaults to the
+address it's actually serving on, so post-login redirects follow the real
+port automatically. Only the OAuth App's callback URL on GitHub needs
+updating if you later change the port.
+
+### AI providers (BYOK)
+
+See the [AI Providers guide](ai-providers.md); each user adds their own key
+in Settings → AI Configuration once logged in.
+
+### License (Pro / Enterprise)
+
+The package runs on the Free tier out of the box. If you purchased a
+license key (`grm_lic_…`, delivered by email after checkout), activate it
+**in-app**: Settings → License & Plan → paste the key. Activation is
+validated and applied immediately — no `.env` editing, no restart — and the
+key is stored in your database, so it survives updates and
+uninstall/reinstall along with the rest of your data. (Setting `LICENSE_KEY`
+in `.env` also works, for scripted installs.)
+
+### No zero-config demo mode here
+
+The mock/demo data layer is a development-only build feature — it's
+compiled out of every production bundle regardless of any setting, and this
+package ships a production build. Connecting a GitHub account (above) is
+required to actually use the packaged app; there's no key-free way to
+explore it first.
 
 ---
 
@@ -141,7 +199,11 @@ and restart.
 **Port already in use.** The launcher checks the configured port (default
 `3001`) and automatically picks the next free one if something else is
 already using it — the browser tab that opens always follows the port
-actually used. Your configured port in `app\.env` is left untouched.
+actually used, and so do login redirects. Your configured port in `.env`
+is left untouched. The one thing that can't follow automatically is your
+GitHub OAuth App's callback URL — if sign-in starts failing with a
+callback/redirect error after a port change, update the callback URL on
+GitHub to the new port.
 
 **Antivirus / SmartScreen flags the download.** The binaries are unsigned
 (see [Install](#install)). Verify the download against the published
@@ -157,11 +219,20 @@ download on the same release page.
 **Where are the logs?** There's no log file by default — the app prints
 structured JSON to the console window that opens when you start it (titled
 "GitHub Repo Manager Server"). Closing that window stops the server. Set
-`LOG_LEVEL=debug` in `app\.env` for more detail.
+`LOG_LEVEL=debug` in `.env` for more detail.
+
+**Database won't open / corruption.** The app verifies the database on
+every start. If it's damaged (crash, disk fault), it automatically
+quarantines the broken file (renamed `manager.db.corrupt-<timestamp>`, kept
+for manual recovery) and restores the most recent healthy automatic backup
+— or starts fresh when no backup exists — telling you what it did in-app.
+Nothing is ever deleted.
 
 **Fully reset the app.** Stop it, then delete the data directory (see
 [Where your data lives](#where-your-data-lives)). The next Start recreates
-an empty database.
+an empty database with fresh secrets. Careful: this also deletes `.env` —
+GitHub OAuth will need to be set up again, and anything encrypted with the
+old secrets is gone with the database that held it.
 
 **Stop a stuck instance.** Open Task Manager → Details tab, find the
 `node.exe` process whose **Image path** points inside this app's install or
@@ -175,9 +246,10 @@ still there.
 
 **Installer:** Start Menu → GitHub Repo Manager → **Uninstall**, or
 **Settings → Apps** in Windows. This removes the app files only — your data
-directory (`%LocalAppData%\GitHubRepoManager\data`) is left in place; the
-uninstaller tells you the exact path and you can delete it yourself if you
-no longer need it.
+directory (`%LocalAppData%\GitHubRepoManager\data`, including the database
+and `.env`) is left in place, so reinstalling later picks up exactly where
+you left off; the uninstaller tells you the exact path and you can delete
+it yourself if you no longer need it.
 
 **Portable ZIP:** delete the extracted folder. To also remove your data,
 delete the `data\` folder inside it first — there's no separate uninstall

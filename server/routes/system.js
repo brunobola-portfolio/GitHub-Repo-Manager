@@ -32,12 +32,17 @@ const clientErrorLimiter = rateLimit({
 const router = express.Router();
 
 router.get('/status', (req, res) => {
+    // Boot-time corruption recovery report (adapters/sqlite-adapter.js):
+    // null in the overwhelmingly common healthy case. Lets the UI tell the
+    // user their database was auto-restored from a backup (or started
+    // fresh) instead of silently presenting different data.
+    const dbRecovery = db.recovery ?? null;
     try {
         const meta = db.prepare('SELECT value FROM system_meta WHERE key = ?').get('setup_completed');
-        res.json({ initialized: meta?.value === 'true' });
+        res.json({ initialized: meta?.value === 'true', dbRecovery });
     } catch (error) {
         // If table doesn't exist (very fresh), valid to say not initialized
-        res.json({ initialized: false });
+        res.json({ initialized: false, dbRecovery });
     }
 });
 

@@ -259,7 +259,17 @@ const sessionConfig = {
     // ceiling is enforced separately by sessionAbsoluteTimeout middleware.
     rolling: true,
     cookie: {
-        secure: config.nodeEnv === 'production',
+        // 'auto': Secure only when the request actually arrived over TLS
+        // (req.secure — which, with `trust proxy` set above, honours the
+        // X-Forwarded-Proto a TLS-terminating proxy like the documented
+        // Caddy setup sends). The previous `nodeEnv === 'production'` flag
+        // refused to set the cookie AT ALL for the Windows package (a
+        // production build served over plain http://127.0.0.1): no session
+        // ⇒ no oauthState across the GitHub redirect ⇒ login always died
+        // with invalid_state, and no CSRF token ever matched. Loopback
+        // traffic never crosses a wire, so a non-Secure cookie there gives
+        // up nothing; hosted HTTPS deployments still get Secure cookies.
+        secure: config.nodeEnv === 'production' ? 'auto' : false,
         httpOnly: true,
         sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000 // 24 hours — refreshed on every request

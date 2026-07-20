@@ -79,12 +79,15 @@ Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription:
 Name: "{#MyDataDir}"; Flags: uninsneveruninstall
 
 [UninstallDelete]
-; The running app writes files under {app}\app that were never part of the
-; [Files] manifest (app\.env, app\.grm.pid) -Inno's uninstaller only removes
-; files/dirs it tracked from [Files], so without this, those orphans would
-; block {app} from being removed cleanly. {#MyDataDir} lives outside {app}
-; entirely (LocalAppData\GitHubRepoManager\data, not LocalAppData\Programs\
-; GitHubRepoManager\...), so this blanket removal can never touch user data.
+; Since v4.8.0 the launcher keeps ALL writable state (.env, .grm.pid, DB) in
+; {#MyDataDir}, so {app} normally holds only [Files]-tracked content — but a
+; pre-4.8.0 install being uninstalled may still have legacy app\.env /
+; app\.grm.pid orphans that would block {app} removal (Inno only removes
+; files it tracked). {#MyDataDir} lives outside {app} entirely
+; (LocalAppData\GitHubRepoManager\data, not LocalAppData\Programs\
+; GitHubRepoManager\...), so this blanket removal can never touch user data —
+; including the .env that now lives there and must survive reinstall (it
+; holds the credential-vault encryption key).
 Type: filesandordirs; Name: "{app}"
 
 [Files]
@@ -114,20 +117,21 @@ Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
 Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Code]
-// Detects a currently-running instance via the pidfile Start writes next to
-// app\.env (packaging/windows/start.ps1), and - since this repo's Node
-// server has no OS-level named mutex to hook AppMutex into - confirms via
-// `tasklist` that the PID is actually our bundled node.exe before treating
-// it as "running". Blocks the install/upgrade rather than silently
-// proceeding over a live process, which could corrupt the SQLite DB
-// mid-write. This intentionally blocks even under /SUPPRESSMSGBOXES: the
-// safest default for an unattended upgrade over a live instance is to abort,
-// not to guess. CI/local smoke tests never hit this path (always a fresh
-// install with nothing running yet). Only ever called from
-// PrepareToInstall (below) - {app} must already be resolved to the user's
-// actual chosen directory (default or a custom /DIR=), which is NOT true
-// yet at InitializeSetup time, before the directory-selection page/switch
-// has been processed.
+// Detects a currently-running instance via the pidfile Start writes into the
+// data dir (packaging/windows/start.ps1; pre-4.8.0 launchers wrote it to
+// {app}\app\.grm.pid instead, so that legacy location is checked too), and -
+// since this repo's Node server has no OS-level named mutex to hook AppMutex
+// into - confirms via `tasklist` that the PID is actually our bundled
+// node.exe before treating it as "running". Blocks the install/upgrade
+// rather than silently proceeding over a live process, which could corrupt
+// the SQLite DB mid-write. This intentionally blocks even under
+// /SUPPRESSMSGBOXES: the safest default for an unattended upgrade over a
+// live instance is to abort, not to guess. CI/local smoke tests never hit
+// this path (always a fresh install with nothing running yet). Only ever
+// called from PrepareToInstall (below) - {app} must already be resolved to
+// the user's actual chosen directory (default or a custom /DIR=), which is
+// NOT true yet at InitializeSetup time, before the directory-selection
+// page/switch has been processed.
 function IsAppRunning(): Boolean;
 var
   PidFile, TasklistOut, PidStr: string;
@@ -135,7 +139,9 @@ var
   ResultCode, I: Integer;
 begin
   Result := False;
-  PidFile := ExpandConstant('{app}\app\.grm.pid');
+  PidFile := ExpandConstant('{#MyDataDir}\.grm.pid');
+  if not FileExists(PidFile) then
+    PidFile := ExpandConstant('{app}\app\.grm.pid');
   if not FileExists(PidFile) then
     exit;
   if not LoadStringsFromFile(PidFile, Lines) or (GetArrayLength(Lines) = 0) then

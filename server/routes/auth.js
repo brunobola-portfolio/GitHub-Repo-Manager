@@ -19,9 +19,29 @@ const authRouteLimiter = createAuthRouteLimiter();
 // SQLite read isn't on the polling hot path.
 const ADMIN_FLAG_TTL_MS = 10 * 60_000;
 
+// Where to send the browser after the OAuth dance (or an OAuth error).
+// FRONTEND_URL when the operator set one (dev: the Vite server on :5173,
+// hosted: the public URL); otherwise the request's own origin. The
+// same-origin fallback is what makes a packaged/self-host install — where
+// Express serves the built frontend itself — work with zero configuration,
+// on whatever host:port the launcher actually bound (127.0.0.1:3001, or the
+// next free port when 3001 was busy).
+export function resolveFrontendUrl(req) {
+    const configured = process.env.FRONTEND_URL;
+    if (configured) return configured.replace(/\/+$/, '');
+    return `${req.protocol}://${req.get('host')}`;
+}
+
 // Initiates the GitHub OAuth flow
 router.get('/login', authRouteLimiter, (req, res) => {
-    const { GITHUB_CLIENT_ID } = process.env;
+    const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } = process.env;
+    // Fail helpfully, not at GitHub: without credentials the authorize URL
+    // would carry client_id=undefined and strand the user on a GitHub 404.
+    // Redirecting home with a machine-readable code lets the frontend open
+    // the guided "Connect GitHub" setup instead.
+    if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
+        return res.redirect(`${resolveFrontendUrl(req)}/?error=oauth_not_configured`);
+    }
     // Scopes needed:
     // - repo: Full control of private repositories
     // - delete_repo: Ability to delete repositories
@@ -38,11 +58,22 @@ router.get('/login', authRouteLimiter, (req, res) => {
 
 // Handles the callback from GitHub
 router.get('/callback', authRouteLimiter, async (req, res) => {
-    const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, FRONTEND_URL = 'http://localhost:5173' } = process.env;
+    const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } = process.env;
+    // Same-origin fallback (not the old hardcoded http://localhost:5173):
+    // in a packaged install the Vite dev server does not exist, so every
+    // redirect below — including the post-login success one — must land on
+    // the origin Express itself is serving.
+    const FRONTEND_URL = resolveFrontendUrl(req);
     const { code, state } = req.query;
 
     if (!code) {
-        return res.redirect(`${FRONTEND_URL}?error=no_code`);
+        // GitHub reports user-facing failures (e.g. the user clicked Cancel →
+        // ?error=access_denied) with no ?code. Forward the sanitized code so
+        // the UI can say what actually happened instead of a generic failure.
+        const ghError = typeof req.query.error === 'string' && /^[a-z_]{1,64}$/.test(req.query.error)
+            ? req.query.error
+            : 'no_code';
+        return res.redirect(`${FRONTEND_URL}?error=${ghError}`);
     }
 
     // Validate OAuth state parameter to prevent CSRF (timing-safe comparison)
