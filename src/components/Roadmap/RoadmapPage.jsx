@@ -126,7 +126,7 @@ export function RoadmapPage({ onNavigatePricing } = {}) {
           </motion.p>
         </div>
 
-        {/* ── Stage grid (Now / Next / Later) ── */}
+        {/* ── Stage grid (Next / Later) ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
           {STAGES.filter(s => s.id !== 'shipped').map((stage, i) => (
             <RoadmapStage

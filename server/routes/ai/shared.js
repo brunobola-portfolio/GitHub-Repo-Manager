@@ -279,3 +279,18 @@ export function recordStreamCompletion(req, { feature, model, usage, costUSD, ac
         ...buildAIAuditMeta({ feature, model, usage, costUSD }),
     });
 }
+
+// ---------------------------------------------------------------------------
+// stripJsonFences — strips a markdown ```json ... ``` (or bare ``` ... ```)
+// fence LLMs commonly wrap structured output in, so JSON.parse doesn't choke
+// on the fence markers. Every route under server/routes/ai/ that parses a
+// JSON completion needs this — kept here once instead of re-declaring the
+// same regex pair at each callsite.
+// ---------------------------------------------------------------------------
+/**
+ * @param {string} text
+ * @returns {string}
+ */
+export function stripJsonFences(text) {
+    return text.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+}

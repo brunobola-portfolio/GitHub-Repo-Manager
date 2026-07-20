@@ -32,7 +32,7 @@ import { config } from './config.js';
 import { initMonitoring, getSentryErrorHandler } from './lib/monitoring.js';
 import db, { initDB, seedMockData } from './db.js';
 import { aiService } from './ai-service.js';
-import { safeError } from './middleware/auth.js';
+import { safeError, attachAIProvider } from './middleware/auth.js';
 import { createSQLiteStore } from './lib/session-store.js';
 import logger, { requestLoggerMiddleware } from './lib/logger.js';
 import { requestTiming } from './middleware/request-timing.js';
@@ -74,7 +74,7 @@ initDB();
 // package made a truly fresh DB the NORMAL first-launch case. Test envs
 // skip this so unit tests can call refreshLicenseCache() explicitly against
 // a controlled DB state.
-import { refreshLicenseCache, getLicenseSource } from './middleware/require-tier.js';
+import { refreshLicenseCache, getLicenseSource, attachTier } from './middleware/require-tier.js';
 if (config.nodeEnv !== 'test') {
     refreshLicenseCache().then((payload) => {
         if (payload) {
@@ -299,12 +299,10 @@ import { requireCsrfToken } from './middleware/csrf.js';
 app.use('/api/', requireCsrfToken);
 
 // Attach user tier after session (for rate limiting and feature gating)
-import { attachTier } from './middleware/require-tier.js';
 app.use('/api/', attachTier);
 
 // Attach BYOK AI provider (lazy) — makes req.getAIProvider(kind) available on
 // all /api/* requests and shims req.aiProvider / req.genAI for legacy call-sites.
-import { attachAIProvider } from './middleware/auth.js';
 app.use('/api/', attachAIProvider());
 
 // Per-tenant limiters AFTER session + tier attachment so req.userTier is available
