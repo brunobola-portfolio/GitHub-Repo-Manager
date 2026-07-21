@@ -297,4 +297,102 @@ describe('startUpdate — download failure', () => {
         expect(getUpdateProgress().phase).toBe('error');
         expect(getUpdateProgress().error).toBe('download_failed');
     });
+
+    it('cleans up the partially-downloaded asset when the sidecar download fails', async () => {
+        const fetchImpl = vi.fn(async (url) => {
+            if (url === RELEASES_URL) return jsonResponse(releaseJson());
+            if (url === ZIP_URL) return assetResponse();
+            if (url === ZIP_SHA_URL) return new Response('nope', { status: 500 });
+            throw new Error(`unexpected fetch: ${url}`);
+        });
+        await expect(
+            startUpdate({ currentVersion: CURRENT_VERSION, dataDir, packageRoot, fetchImpl })
+        ).rejects.toMatchObject({ code: 'download_failed' });
+        expect(existsSync(path.join(updatesDir(dataDir), 'grm-win-x64.zip'))).toBe(false);
+    });
+});
+
+describe('startUpdate — state machine resilience', () => {
+    it('resets progress to error (not stuck) when a precondition throws synchronously, and permits a retry', async () => {
+        const fetchImpl = makeFetch();
+        const { spawnImpl } = recordingSpawn();
+        const requestShutdownImpl = vi.fn();
+        const runDbBackupOnceImpl = vi.fn().mockResolvedValue({ skipped: true });
+
+        // packageRoot: undefined reproduces the pre-Task-5 condition where
+        // GRM_PACKAGE_ROOT isn't wired yet — isInstalledMode(undefined) ->
+        // path.join(undefined, ...) throws synchronously, well after the
+        // busy-phase claim at the top of startUpdate.
+        await expect(
+            startUpdate({ currentVersion: CURRENT_VERSION, dataDir, packageRoot: undefined, fetchImpl, spawnImpl, requestShutdownImpl, runDbBackupOnceImpl })
+        ).rejects.toBeInstanceOf(TypeError);
+
+        expect(getUpdateProgress().phase).toBe('error');
+        expect(getUpdateProgress().error).toBe('unexpected');
+        expect(spawnImpl).not.toHaveBeenCalled();
+
+        // A subsequent call must be accepted, not bounced with
+        // already_running — the whole point of resetting progress above.
+        resetUpdateCheckCacheForTests();
+        writeFileSync(path.join(packageRoot, 'apply-update.ps1'), '# fixture\n', 'utf8');
+        await expect(
+            startUpdate({ currentVersion: CURRENT_VERSION, dataDir, packageRoot, fetchImpl, spawnImpl, requestShutdownImpl, runDbBackupOnceImpl })
+        ).resolves.toBeUndefined();
+        expect(getUpdateProgress().phase).toBe('restarting');
+    });
+});
+
+describe('startUpdate — malicious release metadata', () => {
+    it('rejects a path-traversal asset name from the release payload without ever spawning', async () => {
+        writeFileSync(path.join(packageRoot, 'install-config.txt'), 'InstallMode=CurrentUser\n', 'utf8');
+        const fetchImpl = vi.fn(async (url) => {
+            if (url === RELEASES_URL) {
+                return jsonResponse({
+                    tag_name: `v${LATEST_VERSION}`,
+                    html_url: 'https://github.com/example/releases/tag/v4.9.0',
+                    assets: [
+                        { name: '..\\..\\evil-setup.exe', browser_download_url: SETUP_URL, size: ASSET_CONTENT.length },
+                        { name: 'grm-setup.exe.sha256', browser_download_url: SETUP_SHA_URL, size: 65 },
+                    ],
+                });
+            }
+            throw new Error(`unexpected fetch during malicious-asset test: ${url}`);
+        });
+        const { spawnImpl } = recordingSpawn();
+        const requestShutdownImpl = vi.fn();
+        const runDbBackupOnceImpl = vi.fn().mockResolvedValue({ skipped: true });
+
+        await expect(
+            startUpdate({ currentVersion: CURRENT_VERSION, dataDir, packageRoot, fetchImpl, spawnImpl, requestShutdownImpl, runDbBackupOnceImpl })
+        ).rejects.toMatchObject({ code: 'invalid_asset' });
+
+        expect(getUpdateProgress().phase).toBe('error');
+        expect(getUpdateProgress().error).toBe('invalid_asset');
+        expect(spawnImpl).not.toHaveBeenCalled();
+        expect(requestShutdownImpl).not.toHaveBeenCalled();
+    });
+
+    it('rejects a `../` path-traversal asset name (forward-slash form) without ever spawning', async () => {
+        // No install-config.txt in packageRoot -> portable (zip) mode.
+        writeFileSync(path.join(packageRoot, 'apply-update.ps1'), '# fixture\n', 'utf8');
+        const fetchImpl = vi.fn(async (url) => {
+            if (url === RELEASES_URL) {
+                return jsonResponse({
+                    tag_name: `v${LATEST_VERSION}`,
+                    html_url: 'https://github.com/example/releases/tag/v4.9.0',
+                    assets: [
+                        { name: 'evil/../x-win-x64.zip', browser_download_url: ZIP_URL, size: ASSET_CONTENT.length },
+                        { name: 'grm-win-x64.zip.sha256', browser_download_url: ZIP_SHA_URL, size: 65 },
+                    ],
+                });
+            }
+            throw new Error(`unexpected fetch during malicious-asset test: ${url}`);
+        });
+        const { spawnImpl } = recordingSpawn();
+
+        await expect(
+            startUpdate({ currentVersion: CURRENT_VERSION, dataDir, packageRoot, fetchImpl, spawnImpl })
+        ).rejects.toMatchObject({ code: 'invalid_asset' });
+        expect(spawnImpl).not.toHaveBeenCalled();
+    });
 });

@@ -202,6 +202,33 @@ export class UpdateError extends Error {
     }
 }
 
+// Release metadata (asset names, the release tag) comes from GitHub's API —
+// untrusted for the purposes of building filesystem paths. Only a plain
+// filename is ever accepted; path.basename first collapses any directory
+// components a hostile name could carry (both `/` and `\` are separators on
+// win32), and requiring the result to equal the input catches traversal
+// attempts (`../evil.exe`, `..\\..\\evil.exe`) that basename would otherwise
+// silently reduce to something that *looks* safe. The charset allowlist then
+// rejects anything else unexpected (spaces, quotes, a bare `..`, etc.) that
+// basename alone wouldn't.
+const SAFE_ASSET_NAME_RE = /^[A-Za-z0-9._-]+$/;
+
+function sanitizeAssetName(rawName) {
+    const name = typeof rawName === 'string' ? rawName : '';
+    const base = path.basename(name);
+    if (!base || base !== name || base === '.' || base === '..' || !SAFE_ASSET_NAME_RE.test(base)) {
+        throw new UpdateError('invalid_asset', 'Release asset name failed validation');
+    }
+    return base;
+}
+
+// The release tag is only cosmetic in the log filename, so sanitize rather
+// than reject a tag that fails the strict allowlist above.
+function sanitizeForLogName(value) {
+    const cleaned = String(value ?? '').replace(/[^A-Za-z0-9._-]/g, '_');
+    return cleaned || 'unknown';
+}
+
 const IDLE_PROGRESS = Object.freeze({ phase: 'idle', percent: 0, error: null, target: null });
 
 // Module singleton: there is exactly one update in flight per running
@@ -276,86 +303,106 @@ export async function startUpdate({
     // phase instead of racing through the same guard.
     progress = { phase: 'downloading', percent: 0, error: null, target: null };
 
-    const checkResult = await checkForUpdate({ currentVersion, fetchImpl });
-    if (checkResult.updateAvailable !== true) {
-        progress = { phase: 'error', percent: 0, error: 'no_update', target: null };
-        throw new UpdateError('no_update', 'No update is available');
-    }
-
-    const installed = isInstalledMode(packageRoot);
-    const pair = selectUpdateAssets(checkResult, installed);
-    if (!pair) {
-        progress = { phase: 'error', percent: 0, error: 'no_assets', target: null };
-        throw new UpdateError('no_assets', 'The latest release is missing required update assets for this install type');
-    }
-
-    const latest = checkResult.latest;
-    const mode = installed ? 'installed' : 'portable';
-    const dir = updatesDir(dataDir);
-    mkdirSync(dir, { recursive: true });
-    progress = { phase: 'downloading', percent: 0, error: null, target: { from: currentVersion, to: latest, mode } };
-
-    const assetPath = path.join(dir, pair.asset.name);
-    const shaPath = path.join(dir, pair.sha.name);
-
+    // Everything below can throw synchronously (bad packageRoot, a marker
+    // write failing, spawn itself throwing) as well as asynchronously
+    // (fetch/checksum/IO). Any of it leaving `progress` stuck on a non-idle,
+    // non-error phase would wedge every future call behind the
+    // already_running guard above until the process restarts, so every exit
+    // path here funnels through this catch to reset it before rethrowing —
+    // the route still needs the real error to map its HTTP status.
     try {
-        await downloadToFile(fetchImpl, pair.asset.url, assetPath, (percent) => {
-            progress = { ...progress, percent };
-        });
-        await downloadToFile(fetchImpl, pair.sha.url, shaPath, () => {});
-    } catch {
-        progress = { phase: 'error', percent: 0, error: 'download_failed', target: progress.target };
-        throw new UpdateError('download_failed', 'Failed to download the update');
-    }
-
-    progress = { ...progress, phase: 'verifying', percent: 100 };
-    const expectedHex = parseSha256Sidecar(readFileSync(shaPath, 'utf8'));
-    const verified = expectedHex ? await verifyFileSha256(assetPath, expectedHex) : false;
-    if (!verified) {
-        try { unlinkSync(assetPath); } catch { /* best-effort cleanup */ }
-        try { unlinkSync(shaPath); } catch { /* best-effort cleanup */ }
-        progress = { phase: 'error', percent: 0, error: 'checksum_mismatch', target: progress.target };
-        throw new UpdateError('checksum_mismatch', 'Downloaded update failed checksum verification');
-    }
-
-    // Best-effort: a snapshot failure must never block the update itself —
-    // the worst case is a rollback that can't restore the DB, not a
-    // blocked update. apply-update.ps1 only uses the snapshot if present.
-    try {
-        const backup = await runDbBackupOnceImpl();
-        if (backup?.destPath) {
-            copyFileSync(backup.destPath, path.join(dir, `pre-update-${currentVersion}.db`));
+        const checkResult = await checkForUpdate({ currentVersion, fetchImpl });
+        if (checkResult.updateAvailable !== true) {
+            throw new UpdateError('no_update', 'No update is available');
         }
-    } catch { /* see above */ }
 
-    writeUpdateIntent(dataDir, { from: currentVersion, to: latest, mode, at: new Date().toISOString() });
+        const installed = isInstalledMode(packageRoot);
+        const pair = selectUpdateAssets(checkResult, installed);
+        if (!pair) {
+            throw new UpdateError('no_assets', 'The latest release is missing required update assets for this install type');
+        }
 
-    progress = { ...progress, phase: 'restarting' };
+        // Untrusted release metadata: reject anything that isn't a plain
+        // filename before it ever reaches path.join.
+        const assetName = sanitizeAssetName(pair.asset.name);
+        const shaName = sanitizeAssetName(pair.sha.name);
 
-    if (installed) {
-        const logPath = path.join(dir, `update-${latest}.log`);
-        spawnImpl(
-            assetPath,
-            ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/LOG=' + logPath, '/UPDATED=1'],
-            { detached: true, stdio: 'ignore' }
-        ).unref();
-    } else {
-        const scriptDest = path.join(dir, 'apply-update.ps1');
-        copyFileSync(path.join(packageRoot, 'apply-update.ps1'), scriptDest);
-        spawnImpl(
-            'powershell.exe',
-            [
-                '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', scriptDest,
-                '-PackageRoot', packageRoot, '-DataDir', dataDir, '-ZipPath', assetPath,
-                '-FromVersion', currentVersion, '-ToVersion', latest,
-                '-ServerPid', String(process.pid), '-Port', String(process.env.PORT || 3001),
-            ],
-            { detached: true, stdio: 'ignore', windowsHide: true }
-        ).unref();
+        const latest = checkResult.latest;
+        const mode = installed ? 'installed' : 'portable';
+        const dir = updatesDir(dataDir);
+        mkdirSync(dir, { recursive: true });
+        progress = { phase: 'downloading', percent: 0, error: null, target: { from: currentVersion, to: latest, mode } };
+
+        const assetPath = path.join(dir, assetName);
+        const shaPath = path.join(dir, shaName);
+
+        try {
+            await downloadToFile(fetchImpl, pair.asset.url, assetPath, (percent) => {
+                progress = { ...progress, percent };
+            });
+            await downloadToFile(fetchImpl, pair.sha.url, shaPath, () => {});
+        } catch {
+            try { unlinkSync(assetPath); } catch { /* best-effort cleanup */ }
+            try { unlinkSync(shaPath); } catch { /* best-effort cleanup */ }
+            throw new UpdateError('download_failed', 'Failed to download the update');
+        }
+
+        progress = { ...progress, phase: 'verifying', percent: 100 };
+        const expectedHex = parseSha256Sidecar(readFileSync(shaPath, 'utf8'));
+        const verified = expectedHex ? await verifyFileSha256(assetPath, expectedHex) : false;
+        if (!verified) {
+            try { unlinkSync(assetPath); } catch { /* best-effort cleanup */ }
+            try { unlinkSync(shaPath); } catch { /* best-effort cleanup */ }
+            throw new UpdateError('checksum_mismatch', 'Downloaded update failed checksum verification');
+        }
+
+        // Best-effort: a snapshot failure must never block the update itself —
+        // the worst case is a rollback that can't restore the DB, not a
+        // blocked update. apply-update.ps1 only uses the snapshot if present.
+        try {
+            const backup = await runDbBackupOnceImpl();
+            if (backup?.destPath) {
+                copyFileSync(backup.destPath, path.join(dir, `pre-update-${currentVersion}.db`));
+            }
+        } catch { /* see above */ }
+
+        writeUpdateIntent(dataDir, { from: currentVersion, to: latest, mode, at: new Date().toISOString() });
+
+        progress = { ...progress, phase: 'restarting' };
+
+        if (installed) {
+            const logPath = path.join(dir, `update-${sanitizeForLogName(latest)}.log`);
+            spawnImpl(
+                assetPath,
+                ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/LOG=' + logPath, '/UPDATED=1'],
+                { detached: true, stdio: 'ignore' }
+            ).unref();
+        } else {
+            const scriptDest = path.join(dir, 'apply-update.ps1');
+            copyFileSync(path.join(packageRoot, 'apply-update.ps1'), scriptDest);
+            spawnImpl(
+                'powershell.exe',
+                [
+                    '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', scriptDest,
+                    '-PackageRoot', packageRoot, '-DataDir', dataDir, '-ZipPath', assetPath,
+                    '-FromVersion', currentVersion, '-ToVersion', latest,
+                    '-ServerPid', String(process.pid), '-Port', String(process.env.PORT || 3001),
+                ],
+                { detached: true, stdio: 'ignore', windowsHide: true }
+            ).unref();
+        }
+
+        // Delayed rather than immediate: the response to POST /update needs to
+        // reach the caller before this process starts tearing itself down.
+        const timer = setTimeout(() => requestShutdownImpl('update'), 500);
+        timer.unref();
+    } catch (err) {
+        progress = {
+            phase: 'error',
+            percent: 0,
+            error: err instanceof UpdateError ? err.code : 'unexpected',
+            target: progress.target,
+        };
+        throw err;
     }
-
-    // Delayed rather than immediate: the response to POST /update needs to
-    // reach the caller before this process starts tearing itself down.
-    const timer = setTimeout(() => requestShutdownImpl('update'), 500);
-    timer.unref();
 }
