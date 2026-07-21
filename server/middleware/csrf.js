@@ -20,6 +20,9 @@
  *   - /api/v1/auth/*      — same, under the versioned mount
  *   - /api/webhooks/*     — signature-verified (GitHub, Stripe) webhooks
  *   - /api/v1/webhooks/*  — same, under the versioned mount
+ *   - /api/system/shutdown, /api/v1/system/shutdown
+ *                         — managed-mode graceful stop, authenticated by
+ *                           loopback + secret token file (routes/system.js)
  *
  * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
  */
@@ -39,6 +42,10 @@ const BYPASS_PREFIXES = [
     '/api/v1/auth/',
     '/api/webhooks/',
     '/api/v1/webhooks/',
+    // Managed-mode graceful stop: authenticated by loopback + secret token
+    // file (see routes/system.js) — its callers have no session to CSRF.
+    '/api/system/shutdown',
+    '/api/v1/system/shutdown',
 ];
 
 /**
