@@ -13,11 +13,19 @@ vi.mock('../lib/logger.js', () => ({
     default: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }));
 
-import { checkForUpdate, resetUpdateCheckCacheForTests } from '../lib/update-check.js';
+import { checkForUpdate, extractReleaseAssets, resetUpdateCheckCacheForTests } from '../lib/update-check.js';
 
 function jsonResponse(body, ok = true, status = 200) {
     return { ok, status, json: async () => body };
 }
+
+const RELEASE_ASSETS = [
+    { name: 'GitHub-Repo-Manager-1.2.3-setup.exe', browser_download_url: 'https://x/setup.exe', size: 1000 },
+    { name: 'GitHub-Repo-Manager-1.2.3-setup.exe.sha256', browser_download_url: 'https://x/setup.exe.sha256', size: 64 },
+    { name: 'GitHub-Repo-Manager-1.2.3-win-x64.zip', browser_download_url: 'https://x/win-x64.zip', size: 2000 },
+    { name: 'GitHub-Repo-Manager-1.2.3-win-x64.zip.sha256', browser_download_url: 'https://x/win-x64.zip.sha256', size: 64 },
+    { name: 'Source code (zip)', browser_download_url: 'https://x/source.zip', size: 3000 },
+];
 
 beforeEach(() => {
     resetUpdateCheckCacheForTests();
@@ -31,7 +39,7 @@ describe('checkForUpdate', () => {
     it('disabled=true skips the outbound fetch entirely', async () => {
         const fetchImpl = vi.fn();
         const result = await checkForUpdate({ currentVersion: '1.0.0', disabled: true, fetchImpl });
-        expect(result).toEqual({ current: '1.0.0', disabled: true });
+        expect(result).toEqual({ current: '1.0.0', disabled: true, assets: null });
         expect(fetchImpl).not.toHaveBeenCalled();
     });
 
@@ -45,6 +53,25 @@ describe('checkForUpdate', () => {
         expect(result.releaseUrl).toBe('https://github.com/x/y/releases/tag/v2.0.0');
         expect(result.current).toBe('1.0.0');
         expect(result.checkedAt).toEqual(expect.any(String));
+    });
+
+    it('maps GitHub release assets by suffix into setup/setupSha256/zip/zipSha256, ignoring decoys', async () => {
+        const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({
+            tag_name: 'v2.0.0', html_url: 'https://x', assets: RELEASE_ASSETS,
+        }));
+        const result = await checkForUpdate({ currentVersion: '1.0.0', fetchImpl });
+        expect(result.assets).toEqual({
+            setup: { name: 'GitHub-Repo-Manager-1.2.3-setup.exe', url: 'https://x/setup.exe', size: 1000 },
+            setupSha256: { name: 'GitHub-Repo-Manager-1.2.3-setup.exe.sha256', url: 'https://x/setup.exe.sha256', size: 64 },
+            zip: { name: 'GitHub-Repo-Manager-1.2.3-win-x64.zip', url: 'https://x/win-x64.zip', size: 2000 },
+            zipSha256: { name: 'GitHub-Repo-Manager-1.2.3-win-x64.zip.sha256', url: 'https://x/win-x64.zip.sha256', size: 64 },
+        });
+    });
+
+    it('a release payload with no assets array yields all-null assets', async () => {
+        const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({ tag_name: 'v2.0.0', html_url: 'https://x' }));
+        const result = await checkForUpdate({ currentVersion: '1.0.0', fetchImpl });
+        expect(result.assets).toEqual({ setup: null, setupSha256: null, zip: null, zipSha256: null });
     });
 
     it('equal version -> updateAvailable: false (genuinely current)', async () => {
@@ -64,6 +91,7 @@ describe('checkForUpdate', () => {
         const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({}, false, 503));
         const result = await checkForUpdate({ currentVersion: '1.0.0', fetchImpl });
         expect(result).toMatchObject({ current: '1.0.0', latest: null, updateAvailable: null, releaseUrl: null });
+        expect(result.assets).toBeNull();
         expect(result.checkedAt).toEqual(expect.any(String));
     });
 
@@ -71,6 +99,7 @@ describe('checkForUpdate', () => {
         const fetchImpl = vi.fn().mockRejectedValue(new Error('timeout'));
         const result = await checkForUpdate({ currentVersion: '1.0.0', fetchImpl });
         expect(result).toMatchObject({ current: '1.0.0', latest: null, updateAvailable: null, releaseUrl: null });
+        expect(result.assets).toBeNull();
     });
 
     it('a malformed payload (missing tag_name) is inconclusive, not a crash', async () => {
@@ -78,6 +107,7 @@ describe('checkForUpdate', () => {
         const result = await checkForUpdate({ currentVersion: '1.0.0', fetchImpl });
         expect(result.latest).toBeNull();
         expect(result.updateAvailable).toBeNull();
+        expect(result.assets).toEqual({ setup: null, setupSha256: null, zip: null, zipSha256: null });
     });
 
     it('caches a successful result for 24h — a second call inside the window does not refetch', async () => {
@@ -126,5 +156,26 @@ describe('checkForUpdate', () => {
         resetUpdateCheckCacheForTests();
         await checkForUpdate({ currentVersion: '1.0.0', fetchImpl });
         expect(fetchImpl).toHaveBeenCalledTimes(2);
+    });
+});
+
+describe('extractReleaseAssets', () => {
+    it('selects each installer asset by suffix and ignores the source-code decoy', () => {
+        expect(extractReleaseAssets(RELEASE_ASSETS)).toEqual({
+            setup: { name: 'GitHub-Repo-Manager-1.2.3-setup.exe', url: 'https://x/setup.exe', size: 1000 },
+            setupSha256: { name: 'GitHub-Repo-Manager-1.2.3-setup.exe.sha256', url: 'https://x/setup.exe.sha256', size: 64 },
+            zip: { name: 'GitHub-Repo-Manager-1.2.3-win-x64.zip', url: 'https://x/win-x64.zip', size: 2000 },
+            zipSha256: { name: 'GitHub-Repo-Manager-1.2.3-win-x64.zip.sha256', url: 'https://x/win-x64.zip.sha256', size: 64 },
+        });
+    });
+
+    it('returns all-null fields when no asset matches a given suffix', () => {
+        expect(extractReleaseAssets([{ name: 'Source code (zip)', browser_download_url: 'https://x/source.zip', size: 1 }]))
+            .toEqual({ setup: null, setupSha256: null, zip: null, zipSha256: null });
+    });
+
+    it('is safe against a non-array input', () => {
+        expect(extractReleaseAssets(undefined)).toEqual({ setup: null, setupSha256: null, zip: null, zipSha256: null });
+        expect(extractReleaseAssets(null)).toEqual({ setup: null, setupSha256: null, zip: null, zipSha256: null });
     });
 });

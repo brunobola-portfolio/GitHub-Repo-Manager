@@ -115,10 +115,13 @@ router.get('/update-check', requireAuth, async (req, res) => {
             currentVersion: pkg.version,
             disabled: !config.updateCheckEnabled,
         });
-        res.json(result);
+        // Self-update (download + run the packaged installer) only makes sense
+        // for a managed Windows install — anything else must fall back to the
+        // manual releaseUrl link.
+        res.json({ ...result, canSelfUpdate: isManaged() && process.platform === 'win32' });
     } catch (error) {
         logger.error({ err: error }, 'update-check failed unexpectedly');
-        res.json({ current: pkg.version });
+        res.json({ current: pkg.version, canSelfUpdate: false });
     }
 });
 
