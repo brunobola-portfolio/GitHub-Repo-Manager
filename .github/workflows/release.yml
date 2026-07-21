@@ -189,11 +189,21 @@ jobs:
 
           $port = 18081
           $env:GRM_PORT = "$port"
+
+          # Helper to dump recent log lines on failures
+          function Dump-ServerLog {
+              Get-ChildItem 'data\logs\server-*.log' -ErrorAction SilentlyContinue | ForEach-Object {
+                  Write-Host "Last 40 lines of $($_.Name):"
+                  Get-Content $_.FullName -Tail 40 -ErrorAction SilentlyContinue
+              }
+          }
+
           # The launcher is a GUI-subsystem exe: PowerShell's & operator does
           # NOT wait for those (and $LASTEXITCODE stays stale). Start-Process
           # -Wait is the correct way to get its real exit code.
           $launch = Start-Process -FilePath '.\GitHub Repo Manager.exe' -ArgumentList '--no-browser' -Wait -PassThru
           if ($launch.ExitCode -ne 0) {
+              Dump-ServerLog
               Write-Host "::error::launcher exited $($launch.ExitCode)"
               exit 1
           }
@@ -208,34 +218,40 @@ jobs:
           }
           if (-not $live) {
               Write-Host "::error::server never became live via exe"
-              Get-Content (Get-ChildItem 'data\logs\server-*.log' | Select-Object -First 1) -ErrorAction SilentlyContinue
+              Dump-ServerLog
               exit 1
           }
           if (-not (Test-Path 'data\.grm.shutdown-token')) {
+              Dump-ServerLog
               Write-Host "::error::shutdown token missing"
               exit 1
           }
           if (-not (Test-Path 'data\.grm.port')) {
+              Dump-ServerLog
               Write-Host "::error::port marker missing"
               exit 1
           }
           $log = Get-ChildItem 'data\logs\server-*.log' | Select-Object -First 1
           if (-not $log -or (Get-Item $log).Length -eq 0) {
+              Dump-ServerLog
               Write-Host "::error::log file missing or empty"
               exit 1
           }
 
           $srvPid = [int](Get-Content 'data\.grm.pid' | Select-Object -First 1)
-          & '.\GitHub Repo Manager.exe' stop
-          if ($LASTEXITCODE -ne 0) {
-              Write-Host "::error::stop exited $LASTEXITCODE"
+          $stopProc = Start-Process -FilePath '.\GitHub Repo Manager.exe' -ArgumentList 'stop' -Wait -PassThru
+          if ($stopProc.ExitCode -ne 0) {
+              Dump-ServerLog
+              Write-Host "::error::stop exited $($stopProc.ExitCode)"
               exit 1
           }
           if (Get-Process -Id $srvPid -ErrorAction SilentlyContinue) {
+              Dump-ServerLog
               Write-Host "::error::server still running after stop"
               exit 1
           }
           if (Test-Path 'data\.grm.shutdown-token') {
+              Dump-ServerLog
               Write-Host "::error::token not cleaned up on graceful exit"
               exit 1
           }
