@@ -79,15 +79,27 @@ function Restore-FromBackup {
             if (Test-Path -LiteralPath $liveSub) {
                 Remove-Item -Recurse -Force -LiteralPath $liveSub -ErrorAction SilentlyContinue | Out-Null
             }
-            Move-Item -LiteralPath $backupSub -Destination $liveSub -ErrorAction SilentlyContinue | Out-Null
-            # -ErrorAction SilentlyContinue means a held handle above leaves
-            # this a silent no-op instead of a throw, so the only honest
-            # signal is the resulting filesystem state: the live dir must now
-            # exist AND the backup must be gone (consumed by the move).
-            $restored = (Test-Path -LiteralPath $liveSub) -and -not (Test-Path -LiteralPath $backupSub)
-            if (-not $restored) {
-                Log ("restore verification FAILED for '" + $sub + "' - live present: " + (Test-Path -LiteralPath $liveSub) + ", backup still present: " + (Test-Path -LiteralPath $backupSub))
+            if (Test-Path -LiteralPath $liveSub) {
+                # A held file handle survived the remove attempt, so $liveSub
+                # still exists as a (partial) directory. Move-Item onto an
+                # EXISTING directory nests the source inside it (app\app\...)
+                # instead of replacing it - moving here would silently
+                # corrupt the tree while a naive Test-Path check would still
+                # call it restored. Refuse the move and leave the backup in
+                # place for manual recovery instead.
+                Log ("restore verification FAILED for '" + $sub + "' - live dir survived removal (held file?), refusing to move over it")
                 $ok = $false
+            } else {
+                Move-Item -LiteralPath $backupSub -Destination $liveSub -ErrorAction SilentlyContinue | Out-Null
+                # -ErrorAction SilentlyContinue means a held handle above leaves
+                # this a silent no-op instead of a throw, so the only honest
+                # signal is the resulting filesystem state: the live dir must now
+                # exist AND the backup must be gone (consumed by the move).
+                $restored = (Test-Path -LiteralPath $liveSub) -and -not (Test-Path -LiteralPath $backupSub)
+                if (-not $restored) {
+                    Log ("restore verification FAILED for '" + $sub + "' - live present: " + (Test-Path -LiteralPath $liveSub) + ", backup still present: " + (Test-Path -LiteralPath $backupSub))
+                    $ok = $false
+                }
             }
         }
         # else: nothing was backed up for this sub -> PackageRoot still has the
