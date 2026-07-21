@@ -30,7 +30,8 @@
 
 #define MyAppName "GitHub Repo Manager"
 #define MyAppURL "https://github.com/brunobola-portfolio/GitHub-Repo-Manager"
-#define MyAppExeName "Start GitHub Repo Manager.cmd"
+#define MyAppExeName "GitHub Repo Manager.exe"
+#define MyStartupShortcut "{userstartup}\GitHub Repo Manager.lnk"
 #define MyDataDir "{localappdata}\GitHubRepoManager\data"
 ; The UNEXPANDED form written into install-config.txt (see CurStepChanged):
 ; the launchers expand it at run time, so an install performed by one user
@@ -79,17 +80,29 @@ UninstallDisplayIcon={app}\bolalabs.ico
 ; ChangesEnvironment not needed -the app binds to loopback only and never
 ; touches PATH/registry beyond its own uninstall key.
 
+; Dormant code-signing hook: CI defines SIGN only when signing secrets exist
+; (release.yml). With SignTool= set, Inno signs Setup.exe AND the embedded
+; uninstaller — signing only the final artifact post-build would leave
+; unins000.exe unsigned on user machines.
+#ifdef SIGN
+SignTool=ts
+#endif
+
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: unchecked
+Name: "autostart"; Description: "Start GitHub Repo Manager when Windows starts (background, no browser window)"; GroupDescription: "Additional shortcuts:"; Flags: unchecked
 
 [Dirs]
-; uninsneveruninstall: the data dir must survive uninstall unconditionally
-; (brief requirement), not merely "survives because it happened to be
+; uninsneveruninstall: keeps Inno's own uninstall-log-driven removal from
+; ever touching this dir, not merely "survives because it happened to be
 ; non-empty" -pre-created here so the "Open data folder" shortcut works
-; immediately after install, before the app has ever been launched.
+; immediately after install, before the app has ever been launched. Deletion
+; is still possible, but only as the explicit, user-chosen DelTree in
+; CurUninstallStepChanged below (the "Also delete your local data?" prompt /
+; /PURGEDATA) -never as a side effect of the standard file-removal pass.
 Name: "{#MyDataDir}"; Flags: uninsneveruninstall
 
 [UninstallDelete]
@@ -111,6 +124,7 @@ Source: "{#StagingRoot}\start.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StagingRoot}\stop.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StagingRoot}\Start GitHub Repo Manager.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StagingRoot}\Stop GitHub Repo Manager.cmd"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#StagingRoot}\GitHub Repo Manager.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StagingRoot}\README-WINDOWS.txt"; DestDir: "{app}"; Flags: ignoreversion isreadme
 ; Brand icon for shortcuts + Add/Remove Programs. Sourced from the repo (next
 ; to this script), not the staging tree — it's installer-only branding.
@@ -127,14 +141,16 @@ Source: "assets\bolalabs.ico"; DestDir: "{app}"; Flags: ignoreversion
 ; in [Code] below, read by start.ps1) makes EVERY launch path - shortcut or
 ; raw .cmd - resolve to the same LocalAppData data dir, so there is only one
 ; mechanism to keep correct instead of two that can disagree.
-; IconFilename: the launchers are .cmd files, which would otherwise show the
-; generic console icon on the Start Menu / desktop — the brand icon installed
-; by [Files] above keeps every entry point looking like the same product.
-Name: "{group}\Start GitHub Repo Manager"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\bolalabs.ico"
-Name: "{group}\Stop GitHub Repo Manager"; Filename: "{app}\Stop GitHub Repo Manager.cmd"; WorkingDir: "{app}"; IconFilename: "{app}\bolalabs.ico"
+; No IconFilename on the exe-based entries below: the flashless launcher exe
+; carries the brand icon in its own resources, unlike the old .cmd launchers
+; which needed an explicit IconFilename to avoid the generic console icon.
+Name: "{group}\GitHub Repo Manager"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"
+Name: "{group}\Stop GitHub Repo Manager"; Filename: "{app}\{#MyAppExeName}"; Parameters: "stop"; WorkingDir: "{app}"
+Name: "{group}\View server logs"; Filename: "{win}\explorer.exe"; Parameters: """{#MyDataDir}\logs"""
 Name: "{group}\Open data folder"; Filename: "{win}\explorer.exe"; Parameters: """{#MyDataDir}"""
 Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
-Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; IconFilename: "{app}\bolalabs.ico"; Tasks: desktopicon
+Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{userstartup}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--no-browser"; WorkingDir: "{app}"; Tasks: autostart
 
 [Run]
 ; Finish-page "launch now" checkbox (checked by default, like every polished
@@ -189,22 +205,240 @@ begin
       Result := True;
 end;
 
+function CmdLineParamExists(const Value: string): Boolean;
+var
+  I: Integer;
+begin
+  Result := False;
+  for I := 1 to ParamCount do
+    if CompareText(ParamStr(I), Value) = 0 then
+    begin
+      Result := True;
+      exit;
+    end;
+end;
+
+function GetUninstallString(): string;
+begin
+  Result := '';
+  // PrivilegesRequired=lowest => per-user key in HKCU. The _is1 suffix and
+  // the retained brace prefix are Inno's registered-key format quirks.
+  if not RegQueryStringValue(HKCU,
+      'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#emit SetupSetting("AppId")}_is1',
+      'UninstallString', Result) then
+    RegQueryStringValue(HKLM,
+      'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#emit SetupSetting("AppId")}_is1',
+      'UninstallString', Result);
+end;
+
+function GetInstalledVersion(): string;
+begin
+  Result := '';
+  if not RegQueryStringValue(HKCU,
+      'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#emit SetupSetting("AppId")}_is1',
+      'DisplayVersion', Result) then
+    RegQueryStringValue(HKLM,
+      'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#emit SetupSetting("AppId")}_is1',
+      'DisplayVersion', Result);
+end;
+
+// Numeric dotted compare; non-numeric fragments (e.g. "0.0.0-dev") count as
+// 0 so a dev build never outranks a release. >0 A newer, <0 B newer.
+function CompareVersionStrings(const A, B: string): Integer;
+var
+  PA, PB: TArrayOfString;
+  I, NA, NB, Count: Integer;
+begin
+  PA := StringSplitEx(A, ['.', '-'], '"', stExcludeEmpty);
+  PB := StringSplitEx(B, ['.', '-'], '"', stExcludeEmpty);
+  Count := GetArrayLength(PA);
+  if GetArrayLength(PB) > Count then Count := GetArrayLength(PB);
+  Result := 0;
+  for I := 0 to Count - 1 do
+  begin
+    NA := 0; NB := 0;
+    if I < GetArrayLength(PA) then NA := StrToIntDef(PA[I], 0);
+    if I < GetArrayLength(PB) then NB := StrToIntDef(PB[I], 0);
+    if NA <> NB then
+    begin
+      if NA > NB then Result := 1 else Result := -1;
+      exit;
+    end;
+  end;
+end;
+
+// Same-or-older setup run over an existing install: offer Repair (proceed —
+// reinstall-over-itself IS Inno's repair) or Uninstall. A NEWER setup skips
+// this entirely: the normal wizard is the update path. Silent runs skip it
+// too (scripted installs must never grow an interactive fork).
+function InitializeSetup(): Boolean;
+var
+  UninstPath: string;
+  Form: TSetupForm;
+  RepairBtn, UninstallBtn, CancelBtn: TNewButton;
+  Prompt: TNewStaticText;
+  ResultCode: Integer;
+begin
+  Result := True;
+  if WizardSilent() then exit;
+  UninstPath := RemoveQuotes(GetUninstallString());
+  if UninstPath = '' then exit;
+  if CompareVersionStrings('{#MyAppVersion}', GetInstalledVersion()) > 0 then exit;
+
+  // CreateCustomForm's signature (ClientWidth, ClientHeight, KeepSizeX,
+  // KeepSizeY) as of Inno 6.4+ takes the initial size directly instead of
+  // the pre-6.4 no-arg form + separate ClientWidth/ClientHeight assignment;
+  // KeepSizeX/KeepSizeY True on both axes pins this dialog at its authored
+  // size since none of its controls are meant to auto-expand it.
+  Form := CreateCustomForm(ScaleX(380), ScaleY(150), True, True);
+  try
+    Form.Caption := 'GitHub Repo Manager Maintenance';
+    Form.CenterOnShow := True;
+
+    Prompt := TNewStaticText.Create(Form);
+    Prompt.Parent := Form;
+    Prompt.Left := ScaleX(16);
+    Prompt.Top := ScaleY(16);
+    Prompt.Width := Form.ClientWidth - ScaleX(32);
+    Prompt.AutoSize := False;
+    Prompt.WordWrap := True;
+    Prompt.Height := ScaleY(40);
+    Prompt.Caption := 'GitHub Repo Manager ' + GetInstalledVersion() +
+      ' is already installed. What would you like to do?';
+
+    RepairBtn := TNewButton.Create(Form);
+    RepairBtn.Parent := Form;
+    RepairBtn.Left := ScaleX(16);
+    RepairBtn.Top := ScaleY(76);
+    RepairBtn.Width := ScaleX(108);
+    RepairBtn.Caption := 'Repair';
+    RepairBtn.ModalResult := mrYes;
+    RepairBtn.Default := True;
+
+    UninstallBtn := TNewButton.Create(Form);
+    UninstallBtn.Parent := Form;
+    UninstallBtn.Left := ScaleX(136);
+    UninstallBtn.Top := ScaleY(76);
+    UninstallBtn.Width := ScaleX(108);
+    UninstallBtn.Caption := 'Uninstall';
+    UninstallBtn.ModalResult := mrNo;
+
+    CancelBtn := TNewButton.Create(Form);
+    CancelBtn.Parent := Form;
+    CancelBtn.Left := ScaleX(256);
+    CancelBtn.Top := ScaleY(76);
+    CancelBtn.Width := ScaleX(108);
+    CancelBtn.Caption := 'Cancel';
+    CancelBtn.ModalResult := mrCancel;
+    CancelBtn.Cancel := True;
+
+    case Form.ShowModal() of
+      mrYes: Result := True;
+      mrNo:
+      begin
+        Result := False;
+        Exec(UninstPath, '', '', SW_SHOW, ewNoWait, ResultCode);
+      end;
+    else
+      Result := False;
+    end;
+  finally
+    Form.Free();
+  end;
+end;
+
+function ReadFirstLine(const FileName: string): string;
+var
+  Lines: TArrayOfString;
+begin
+  Result := '';
+  if LoadStringsFromFile(FileName, Lines) and (GetArrayLength(Lines) > 0) then
+    Result := Trim(Lines[0]);
+end;
+
+function GetShutdownPort(): string;
+var
+  PortText: string;
+begin
+  PortText := ReadFirstLine(ExpandConstant('{#MyDataDir}\.grm.port'));
+  if PortText = '' then PortText := '3001';
+  Result := PortText;
+end;
+
+// Ask the running server to exit cleanly (in-box curl.exe, Win10 1803+),
+// wait, then escalate to a PID-targeted kill. Never kill by image name —
+// node.exe may belong to anything.
+function TryStopRunningApp(): Boolean;
+var
+  Token, PidStr: string;
+  ResultCode, I: Integer;
+begin
+  Token := ReadFirstLine(ExpandConstant('{#MyDataDir}\.grm.shutdown-token'));
+  if Token <> '' then
+  begin
+    Exec(ExpandConstant('{sys}\curl.exe'),
+      '-s -m 5 -X POST -H "X-GRM-Shutdown-Token: ' + Token + '" ' +
+      'http://127.0.0.1:' + GetShutdownPort() + '/api/system/shutdown',
+      '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    for I := 1 to 20 do
+    begin
+      if not IsAppRunning() then
+      begin
+        Result := True;
+        exit;
+      end;
+      Sleep(500);
+    end;
+  end;
+  PidStr := ReadFirstLine(ExpandConstant('{#MyDataDir}\.grm.pid'));
+  if PidStr <> '' then
+  begin
+    Exec(ExpandConstant('{sys}\taskkill.exe'), '/PID ' + PidStr + ' /T /F',
+      '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    for I := 1 to 10 do
+    begin
+      if not IsAppRunning() then
+      begin
+        Result := True;
+        exit;
+      end;
+      Sleep(500);
+    end;
+  end;
+  Result := not IsAppRunning();
+end;
+
 // PrepareToInstall runs after the destination directory is fully resolved
 // (the wizard page or a silent /DIR= switch has already been applied), so
 // ExpandConstant('{app}') above is trustworthy here - unlike in
-// InitializeSetup, which fires before that. Returning a non-empty string
-// makes Setup stop at the "Preparing to Install" page with that message and
-// exit with Inno's dedicated PrepareToInstall-failure exit code; per Inno's
-// own docs this does not require an interactive dialog to be shown to
-// terminate, so a /VERYSILENT /SUPPRESSMSGBOXES run still fails closed
-// (aborts, non-zero exit) instead of hanging or installing over a live
-// process.
+// InitializeSetup, which fires before that. Unlike the old blocking-only
+// behavior, a running app is no longer a hard stop: interactive runs get a
+// confirm prompt then a graceful-stop attempt (curl shutdown endpoint, then
+// PID kill - see TryStopRunningApp); silent runs skip the prompt and go
+// straight to the stop attempt, since a scripted upgrade wants "make it so"
+// rather than aborting with the process still alive.
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
   Result := '';
-  if IsAppRunning() then
-    Result := 'GitHub Repo Manager appears to be running. Please close it first ' +
-      '(Start Menu -> Stop GitHub Repo Manager), then run Setup again.';
+  if not IsAppRunning() then exit;
+  if not WizardSilent() then
+  begin
+    if MsgBox('GitHub Repo Manager is currently running.' + #13#10 +
+        'Close the application and continue with Setup?',
+        mbConfirmation, MB_YESNO) <> IDYES then
+    begin
+      Result := 'Setup cannot continue while GitHub Repo Manager is running. ' +
+        'Close it (Start Menu -> Stop GitHub Repo Manager) and run Setup again.';
+      exit;
+    end;
+  end;
+  // Silent installs proceed straight to the graceful stop: a scripted
+  // upgrade wants "make it so", and graceful-then-PID-kill is strictly safer
+  // than the old behavior of refusing (which forced admins to taskkill
+  // themselves, without the graceful attempt).
+  if not TryStopRunningApp() then
+    Result := 'Could not stop the running GitHub Repo Manager instance. ' +
+      'Close it manually, then run Setup again.';
 end;
 
 // Writes {app}\install-config.txt after files are copied (ssPostInstall),
@@ -232,13 +466,39 @@ begin
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  PurgeData: Boolean;
 begin
-  if CurUninstallStep = usPostUninstall then
+  if CurUninstallStep = usUninstall then
   begin
-    SuppressibleMsgBox(
-      'GitHub Repo Manager has been removed. Your data was left untouched at:' + #13#10 +
-      ExpandConstant('{#MyDataDir}') + #13#10 +
-      'Delete that folder yourself if you no longer need it.',
-      mbInformation, MB_OK, IDOK);
+    // Stop a running instance before files are removed — same policy as
+    // install-time (graceful endpoint, then PID kill).
+    if IsAppRunning() then
+      TryStopRunningApp();
+
+    // usUninstall (not usPostUninstall): the main uninstaller process
+    // terminates before usPostUninstall runs in its temp-copied clone, so a
+    // prompt there fires after any waiting caller already moved on.
+    PurgeData := False;
+    if UninstallSilent() then
+      PurgeData := CmdLineParamExists('/PURGEDATA')
+    else
+      PurgeData := MsgBox('Also delete your local data?' + #13#10 + #13#10 +
+        'This removes the database, settings, encryption keys and license at:' + #13#10 +
+        ExpandConstant('{localappdata}\GitHubRepoManager') + #13#10 + #13#10 +
+        'Choose No to keep it for a future reinstall.',
+        mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES;
+
+    if PurgeData then
+      DelTree(ExpandConstant('{localappdata}\GitHubRepoManager'), True, True, True)
+    else
+      SuppressibleMsgBox(
+        'Your data was left untouched at:' + #13#10 +
+        ExpandConstant('{#MyDataDir}') + #13#10 +
+        'Delete that folder yourself if you no longer need it.',
+        mbInformation, MB_OK, IDOK);
+
+    // App-created artifacts outside the uninstall log must go explicitly.
+    DeleteFile(ExpandConstant('{#MyStartupShortcut}'));
   end;
 end;
