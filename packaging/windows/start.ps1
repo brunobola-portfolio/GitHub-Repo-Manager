@@ -220,6 +220,12 @@ $env:NODE_ENV = 'production'
 # Managed mode: the server writes a per-boot shutdown token so stop.ps1 and
 # the installer can request a graceful exit (POST /api/system/shutdown).
 $env:GRM_MANAGED = '1'
+# Read by server/routes/system.js's POST /update (server/lib/updater.js's
+# startUpdate) to find apply-update.ps1 and the app/runtime dirs it swaps -
+# $Root is this script's own directory, which for both distribution forms
+# (portable ZIP extraction or an Inno-installed {app}) is exactly the
+# package root apply-update.ps1 needs to operate on.
+$env:GRM_PACKAGE_ROOT = $Root
 # The ACTUAL port for this run (may differ from .env's PORT after the
 # busy-port scan) — stop.ps1 and installer.iss read this to target the
 # shutdown endpoint correctly.

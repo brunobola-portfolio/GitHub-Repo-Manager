@@ -363,7 +363,7 @@ export async function ensureNodeRuntime({ version = NODE_VERSION, cacheDir, runt
 }
 
 function copyLaunchers(packagingWindowsDir, stagingRoot) {
-    const files = ['Start GitHub Repo Manager.cmd', 'Stop GitHub Repo Manager.cmd', 'start.ps1', 'stop.ps1', 'README-WINDOWS.txt'];
+    const files = ['Start GitHub Repo Manager.cmd', 'Stop GitHub Repo Manager.cmd', 'start.ps1', 'stop.ps1', 'apply-update.ps1', 'README-WINDOWS.txt'];
     for (const name of files) {
         const src = path.join(packagingWindowsDir, name);
         if (!existsSync(src)) {

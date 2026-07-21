@@ -122,6 +122,7 @@ Source: "{#StagingRoot}\app\*"; DestDir: "{app}\app"; Flags: ignoreversion recur
 Source: "{#StagingRoot}\runtime\*"; DestDir: "{app}\runtime"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#StagingRoot}\start.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StagingRoot}\stop.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#StagingRoot}\apply-update.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StagingRoot}\Start GitHub Repo Manager.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StagingRoot}\Stop GitHub Repo Manager.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StagingRoot}\GitHub Repo Manager.exe"; DestDir: "{app}"; Flags: ignoreversion
