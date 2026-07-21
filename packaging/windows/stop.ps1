@@ -28,6 +28,10 @@
 # instead of 'interrupted' after a crash) -a UI accuracy nicety, not a
 # correctness or data-loss concern.
 
+param(
+    [string]$DataDir
+)
+
 $ErrorActionPreference = 'Stop'
 
 $Root = $PSScriptRoot
@@ -35,10 +39,12 @@ $AppDir = Join-Path $Root 'app'
 $NodeExe = Join-Path $Root 'runtime\node.exe'
 $InstallConfigFile = Join-Path $Root 'install-config.txt'
 
-# Resolve the data dir exactly like start.ps1 does (GRM_DATA_DIR env var →
+# Resolve the data dir exactly like start.ps1 does (param → GRM_DATA_DIR env var →
 # installer's install-config.txt marker → portable .\data default): the
 # pidfile lives there since v4.8.0 so the install dir can be read-only.
-$DataDir = $env:GRM_DATA_DIR
+if (-not $DataDir) {
+    $DataDir = $env:GRM_DATA_DIR
+}
 if (-not $DataDir -and (Test-Path -LiteralPath $InstallConfigFile)) {
     foreach ($line in Get-Content -LiteralPath $InstallConfigFile) {
         if ($line -match '^\s*DATA_DIR\s*=\s*(.+?)\s*$') {

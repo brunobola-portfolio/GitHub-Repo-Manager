@@ -13,10 +13,9 @@
 #                        launched. User data survives reinstall/uninstall
 #                        because that dir lives outside {app} entirely.
 #
-# -NoBrowser is the CI/automation switch: skip opening a browser, skip the
-# window-title dance (no visible window is wanted), and return as soon as the
-# server process has been spawned so the caller (a CI workflow) can poll
-# /api/health/live itself on its own schedule.
+# -NoBrowser is the CI/automation switch: skip opening a browser and never
+# show an error dialog; the script still waits for the health check (or an
+# early server exit) before returning so callers get a meaningful exit code.
 #
 # $PSScriptRoot resolves to this script's own directory regardless of spaces
 # or non-ASCII characters in the install path, and every path built from it
