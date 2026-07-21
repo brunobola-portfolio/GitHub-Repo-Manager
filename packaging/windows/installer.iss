@@ -356,12 +356,28 @@ begin
     Result := Trim(Lines[0]);
 end;
 
+function IsAllDigits(const S: string): Boolean;
+var
+  I: Integer;
+begin
+  Result := (Length(S) > 0) and (Length(S) <= 5);
+  if Result then
+    for I := 1 to Length(S) do
+      if (S[I] < '0') or (S[I] > '9') then
+      begin
+        Result := False;
+        exit;
+      end;
+end;
+
 function GetShutdownPort(): string;
 var
   PortText: string;
 begin
   PortText := ReadFirstLine(ExpandConstant('{#MyDataDir}\.grm.port'));
-  if PortText = '' then PortText := '3001';
+  // Corrupt or malformed marker must degrade to default port, not produce
+  // a malformed curl URL that fails unpredictably.
+  if not IsAllDigits(PortText) then PortText := '3001';
   Result := PortText;
 end;
 
