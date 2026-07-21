@@ -20,6 +20,35 @@ static class Program
     static extern int SetCurrentProcessExplicitAppUserModelID(
         [MarshalAs(UnmanagedType.LPWStr)] string appId);
 
+    // Win32 argv quoting: backslashes are literal except before a quote or
+    // the closing quote, where they must be doubled; embedded quotes are
+    // backslash-escaped. Without this, a data dir like D:\ eats the closing
+    // quote and corrupts the rest of the command line.
+    static string QuoteArg(string value)
+    {
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        sb.Append('"');
+        int backslashes = 0;
+        foreach (char c in value)
+        {
+            if (c == '\\') { backslashes++; continue; }
+            if (c == '"')
+            {
+                sb.Append(new string('\\', backslashes * 2 + 1));
+                sb.Append('"');
+            }
+            else
+            {
+                sb.Append(new string('\\', backslashes));
+                sb.Append(c);
+            }
+            backslashes = 0;
+        }
+        sb.Append(new string('\\', backslashes * 2));
+        sb.Append('"');
+        return sb.ToString();
+    }
+
     [STAThread]
     static int Main(string[] args)
     {
@@ -41,7 +70,7 @@ static class Program
         }
 
         string script = Path.Combine(root, stop ? "stop.ps1" : "start.ps1");
-        string psArgs = "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"" + script + "\"";
+        string psArgs = "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File " + QuoteArg(script);
         for (int i = argStart; i < args.Length; i++)
         {
             if (args[i] == "--no-browser")
@@ -51,7 +80,7 @@ static class Program
             else if (args[i] == "--data-dir" && i + 1 < args.Length)
             {
                 i++;
-                psArgs += " -DataDir \"" + args[i] + "\"";
+                psArgs += " -DataDir " + QuoteArg(args[i]);
             }
         }
 
