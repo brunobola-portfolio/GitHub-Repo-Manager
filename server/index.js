@@ -44,6 +44,9 @@ import { startWebhookRetryWorker, stopWebhookRetryWorker } from './lib/webhook-r
 import { startGhOutboxWorker, stopGhOutboxWorker } from './lib/gh-outbox.js';
 import { startMaintenanceJanitors, stopMaintenanceJanitors } from './lib/maintenance-janitors.js';
 import { createSessionTokenLookup } from './lib/session-token-lookup.js';
+import { registerShutdown, requestShutdown } from './lib/shutdown.js';
+import { isManaged, initManagedRuntime, clearManagedRuntime } from './lib/managed-runtime.js';
+import { getDataDir } from './lib/data-dir.js';
 
 // API v1 route aggregator
 import v1Routes from './routes/v1/index.js';
@@ -437,6 +440,10 @@ app.use((err, req, res, _next) => {
 // behavior of binding all interfaces.
 function onListening() {
     logger.info({ port: config.port, host: config.host || '0.0.0.0 (all interfaces)', frontend: config.frontendUrl, mode: config.nodeEnv }, 'GitHub Repo Manager API is live');
+    if (isManaged()) {
+        initManagedRuntime(getDataDir());
+        logger.info('[managed] shutdown token ready');
+    }
 }
 const server = config.host
     ? app.listen(config.port, config.host, onListening)
@@ -591,6 +598,10 @@ function gracefulShutdown(signal) {
             logger.warn({ err: e }, 'Could not close database');
         }
 
+        if (isManaged()) {
+            clearManagedRuntime(getDataDir());
+        }
+
         logger.info('Server shut down complete');
         process.exit(0);
     });
@@ -623,8 +634,9 @@ function gracefulShutdown(signal) {
     }, 10000);
 }
 
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+registerShutdown(gracefulShutdown);
+process.on('SIGTERM', () => requestShutdown('SIGTERM'));
+process.on('SIGINT', () => requestShutdown('SIGINT'));
 
 // Backstop unhandled promise rejections (e.g. a fire-and-forget import/migration
 // write that throws). Since Node 15 the default is to TERMINATE the process on an

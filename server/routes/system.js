@@ -8,6 +8,10 @@ import { validateBody } from '../middleware/validate-request.js';
 import { clientErrorSchema } from '../lib/validators.js';
 import { config } from '../config.js';
 import { checkForUpdate } from '../lib/update-check.js';
+import { isLoopbackRequest } from '../lib/loopback.js';
+import { isManaged, verifyShutdownToken } from '../lib/managed-runtime.js';
+import { requestShutdown } from '../lib/shutdown.js';
+import { getDataDir } from '../lib/data-dir.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../../package.json');
@@ -27,6 +31,14 @@ const clientErrorLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Too many error reports, please try again later' }
+});
+
+const shutdownLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many shutdown attempts, please try again in a minute' }
 });
 
 const router = express.Router();
@@ -124,6 +136,26 @@ router.post('/client-error', clientErrorLimiter, validateBody(clientErrorSchema)
         reportedAt: new Date().toISOString(),
     }, 'Client error reported');
     res.json({ received: true });
+});
+
+// Managed-mode (packaged Windows) graceful stop. Auth is loopback + a
+// per-boot secret file token (managed-runtime.js) instead of session/CSRF:
+// the legitimate callers — stop.ps1 and the installer's curl — have no
+// browser session, while a browser page can never read the token file. The
+// path is CSRF-bypassed for exactly that reason (middleware/csrf.js).
+router.post('/shutdown', shutdownLimiter, (req, res) => {
+    if (!isManaged()) {
+        return res.status(404).json({ error: 'Not found' });
+    }
+    if (!isLoopbackRequest(req)) {
+        return res.status(403).json({ error: 'Shutdown is only accepted from this machine' });
+    }
+    if (!verifyShutdownToken(getDataDir(), req.get('X-GRM-Shutdown-Token'))) {
+        return res.status(403).json({ error: 'Invalid shutdown token' });
+    }
+    res.status(202).json({ shuttingDown: true });
+    // Respond first, then tear down — the caller polls process exit, not the body.
+    setImmediate(() => requestShutdown('api'));
 });
 
 export default router;

@@ -16,6 +16,9 @@
  *   Start GitHub Repo Manager.cmd / Stop GitHub Repo Manager.cmd / *.ps1
  *                           launchers, copied verbatim from packaging/windows/
  *                           (the Inno Setup installer stages the same tree).
+ *   GitHub Repo Manager.exe flashless launcher stub, compiled at package
+ *                           time from packaging/windows/launcher/Launcher.cs
+ *                           by the in-box .NET Framework 4.8 csc.exe.
  *   README-WINDOWS.txt
  *
  * Exported as pure/orchestration functions so the version pin, hashing, and
@@ -128,6 +131,33 @@ export function getPublisher(repoRoot = REPO_ROOT_DEFAULT) {
     const author = String(pkg.author || '').trim();
     const parts = author.split(' - ');
     return parts.length > 1 ? parts[parts.length - 1].trim() : author;
+}
+
+export const LAUNCHER_EXE_NAME = 'GitHub Repo Manager.exe';
+
+/**
+ * The legacy Framework 4.8 compiler ships inside Windows itself (and on
+ * every GitHub windows-latest runner) — zero toolchain to install, and the
+ * produced exe needs only the Framework 4.8 runtime preinstalled on all
+ * supported Windows 10/11. Do not "upgrade" this to dotnet publish: that
+ * either adds a runtime dependency or a 100x bigger AOT binary.
+ */
+export function frameworkCscPath() {
+    const winDir = process.env.WINDIR || 'C:\\Windows';
+    return path.join(winDir, 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe');
+}
+
+export function launcherCscArgs({ source, out, icon }) {
+    return [
+        '/nologo',
+        '/target:winexe',
+        '/platform:anycpu',
+        '/optimize+',
+        '/r:System.Windows.Forms.dll',
+        `/win32icon:${icon}`,
+        `/out:${out}`,
+        source,
+    ];
 }
 
 export function assertDistBuilt(repoRoot) {
@@ -343,6 +373,20 @@ function copyLaunchers(packagingWindowsDir, stagingRoot) {
     }
 }
 
+function compileLauncher(packagingWindowsDir, stagingDir) {
+    const csc = frameworkCscPath();
+    if (!existsSync(csc)) {
+        throw new Error(
+            `csc.exe not found at ${csc} — the launcher stub needs the in-box .NET Framework 4.8 compiler (present on all stock Windows 10/11 and CI runners).`,
+        );
+    }
+    execFileSync(csc, launcherCscArgs({
+        source: path.join(packagingWindowsDir, 'launcher', 'Launcher.cs'),
+        out: path.join(stagingDir, LAUNCHER_EXE_NAME),
+        icon: path.join(packagingWindowsDir, 'assets', 'bolalabs.ico'),
+    }), { stdio: 'inherit' });
+}
+
 function listAllFiles(dir, base = dir) {
     const out = [];
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -406,7 +450,9 @@ export async function packageWindows({
 
     await ensureNodeRuntime({ version: nodeVersion, cacheDir, runtimeDir });
 
-    copyLaunchers(path.join(repoRoot, 'packaging', 'windows'), stagingDir);
+    const packagingWindowsDir = path.join(repoRoot, 'packaging', 'windows');
+    copyLaunchers(packagingWindowsDir, stagingDir);
+    compileLauncher(packagingWindowsDir, stagingDir);
 
     const version = getPackageVersion(repoRoot);
     const zipName = zipFileNameFor(version);

@@ -73,6 +73,14 @@ describe('CSRF middleware', () => {
         expect(isCsrfBypassed('/api/auth/csrf-token?foo=bar')).toBe(true)
     })
 
+    it('isCsrfBypassed recognises the managed-mode shutdown path (loopback + token auth, no session)', () => {
+        expect(isCsrfBypassed('/api/system/shutdown')).toBe(true)
+        expect(isCsrfBypassed('/api/v1/system/shutdown')).toBe(true)
+        expect(isCsrfBypassed('/api/system/shutdown?x=1')).toBe(true)
+        expect(isCsrfBypassed('/api/system/status')).toBe(false)
+        expect(isCsrfBypassed('/api/system/shutdown-foo')).toBe(false)
+    })
+
     it('GET /api/auth/csrf-token returns a base64url token >= 32 chars and persists in session', async () => {
         const agent = request.agent(app)
         const res = await agent.get('/api/auth/csrf-token')

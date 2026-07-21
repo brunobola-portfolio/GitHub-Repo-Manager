@@ -9,17 +9,28 @@
 # a real (if rare) footgun, so this checks both process name and, when
 # accessible, the exact executable path against runtime\node.exe.
 #
-# Termination is a hard TerminateProcess (Stop-Process -Force), not a POSIX
+# A managed-mode run (started with GRM_MANAGED=1, i.e. via start.ps1) gets a
+# graceful shutdown attempt first: POST /api/system/shutdown, authorized by
+# the per-boot token in .grm.shutdown-token, runs server/index.js's
+# gracefulShutdown() in-process (workers stopped, DB closed, in-flight
+# migration_jobs/migration_plans rows marked 'interrupted'). Only when that
+# is unavailable (no token/port file - portable or pre-4.8.2 launch), fails,
+# or times out does this fall back to the historical hard kill below.
+#
+# The fallback is a hard TerminateProcess (Stop-Process -Force), not a POSIX
 # SIGTERM -verified empirically on this machine: neither `Stop-Process`
 # without -Force nor `taskkill` without /F can deliver any catchable signal
 # to a node.exe console process (taskkill refuses outright: "This process
-# can only be terminated forcefully"), so server/index.js's gracefulShutdown()
-# handler (SIGTERM/SIGINT) never runs via this path on Windows. Data safety
-# does not depend on it: better-sqlite3 runs in WAL mode, which is crash-safe
-# by design. The only thing lost versus a POSIX SIGTERM is gracefulShutdown's
-# cosmetic bookkeeping (marking in-flight migration_jobs/migration_plans rows
-# as 'interrupted' instead of leaving them 'running' after a crash) -a UI
-# accuracy nicety, not a correctness or data-loss concern.
+# can only be terminated forcefully"), so gracefulShutdown() never runs via
+# this path on Windows. Data safety does not depend on it: better-sqlite3
+# runs in WAL mode, which is crash-safe by design. The only thing lost is
+# gracefulShutdown's cosmetic bookkeeping (those same rows staying 'running'
+# instead of 'interrupted' after a crash) -a UI accuracy nicety, not a
+# correctness or data-loss concern.
+
+param(
+    [string]$DataDir
+)
 
 $ErrorActionPreference = 'Stop'
 
@@ -28,10 +39,12 @@ $AppDir = Join-Path $Root 'app'
 $NodeExe = Join-Path $Root 'runtime\node.exe'
 $InstallConfigFile = Join-Path $Root 'install-config.txt'
 
-# Resolve the data dir exactly like start.ps1 does (GRM_DATA_DIR env var →
+# Resolve the data dir exactly like start.ps1 does (param → GRM_DATA_DIR env var →
 # installer's install-config.txt marker → portable .\data default): the
 # pidfile lives there since v4.8.0 so the install dir can be read-only.
-$DataDir = $env:GRM_DATA_DIR
+if (-not $DataDir) {
+    $DataDir = $env:GRM_DATA_DIR
+}
 if (-not $DataDir -and (Test-Path -LiteralPath $InstallConfigFile)) {
     foreach ($line in Get-Content -LiteralPath $InstallConfigFile) {
         if ($line -match '^\s*DATA_DIR\s*=\s*(.+?)\s*$') {
@@ -95,5 +108,50 @@ if ($procPath) {
     }
 }
 
-Stop-Process -Id $targetPid -Force
-Write-Host "GitHub Repo Manager stopped (PID $targetPid)."
+# Graceful first: ask the server to shut itself down (workers stopped, DB
+# closed, migration rows marked interrupted) and only escalate to the
+# historical hard kill if that fails or stalls.
+$TokenFile = Join-Path $DataDir '.grm.shutdown-token'
+$PortFile = Join-Path $DataDir '.grm.port'
+$targetPort = 3001
+if (Test-Path -LiteralPath $PortFile) {
+    $portText = (Get-Content -LiteralPath $PortFile -ErrorAction SilentlyContinue | Select-Object -First 1)
+    if ($portText -match '^\d+$') { $targetPort = [int]$portText }
+}
+if (Test-Path -LiteralPath $TokenFile) {
+    $token = (Get-Content -LiteralPath $TokenFile -ErrorAction SilentlyContinue | Select-Object -First 1)
+    if ($token) {
+        try {
+            Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:$targetPort/api/system/shutdown" `
+                -Headers @{ 'X-GRM-Shutdown-Token' = $token } -TimeoutSec 5 | Out-Null
+            for ($i = 0; $i -lt 20; $i++) {
+                if (-not (Get-Process -Id $targetPid -ErrorAction SilentlyContinue)) {
+                    Remove-Item -LiteralPath $PortFile -ErrorAction SilentlyContinue
+                    Write-Host "GitHub Repo Manager stopped gracefully (PID $targetPid)."
+                    exit 0
+                }
+                Start-Sleep -Milliseconds 500
+            }
+            Write-Host "Graceful shutdown timed out - stopping the process directly."
+        } catch {
+            Write-Host "Graceful shutdown request failed ($($_.Exception.Message)) - stopping the process directly."
+        }
+    }
+}
+
+# The graceful poll can lose a race with a slow-but-successful shutdown:
+# the process may exit between the last poll and this call, and under
+# ErrorActionPreference=Stop an unguarded Stop-Process on a dead PID would
+# abort the script before the cleanup lines below run.
+if (Get-Process -Id $targetPid -ErrorAction SilentlyContinue) {
+    try {
+        Stop-Process -Id $targetPid -Force -ErrorAction Stop
+        Write-Host "GitHub Repo Manager stopped (PID $targetPid)."
+    } catch {
+        Write-Host "GitHub Repo Manager already exited (PID $targetPid)."
+    }
+} else {
+    Write-Host "GitHub Repo Manager stopped on its own just after the graceful wait (PID $targetPid)."
+}
+Remove-Item -LiteralPath $PortFile -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath $TokenFile -ErrorAction SilentlyContinue

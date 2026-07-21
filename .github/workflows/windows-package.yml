@@ -147,6 +147,93 @@ jobs:
           }
           Write-Host "zip smoke test passed (bundled runtime boots, native module loads, first-run + launchers work headless)"
 
+      - name: Smoke test launcher exe (graceful stop path)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          # A fresh extraction, separate from the .cmd smoke test's dir above:
+          # that dir's data\ already holds today's log file and a used port
+          # (18080), so extracting again keeps this run's assertions (log
+          # file, port marker, shutdown token) self-contained instead of
+          # inheriting leftover state.
+          $extractDir = Join-Path $env:RUNNER_TEMP 'grm-exe-smoke'
+          Expand-Archive -Path '${{ steps.meta.outputs.zipPath }}' -DestinationPath $extractDir -Force
+          Set-Location $extractDir
+
+          $port = 18082
+          $env:GRM_PORT = "$port"
+
+          # Helper to dump recent log lines on failures
+          function Dump-ServerLog {
+              Get-ChildItem 'data\logs\server-*.log' -ErrorAction SilentlyContinue | ForEach-Object {
+                  Write-Host "Last 40 lines of $($_.Name):"
+                  Get-Content $_.FullName -Tail 40 -ErrorAction SilentlyContinue
+              }
+          }
+
+          # The launcher is a GUI-subsystem exe: PowerShell's & operator does
+          # NOT wait for those (and $LASTEXITCODE stays stale). Start-Process
+          # -Wait would block on the entire descendant tree (including the
+          # long-lived node server), so wait on the launcher alone via .NET
+          # WaitForExit instead.
+          $launch = Start-Process -FilePath '.\GitHub Repo Manager.exe' -ArgumentList '--no-browser' -PassThru
+          $launch.WaitForExit()
+          if ($launch.ExitCode -ne 0) {
+              Dump-ServerLog
+              Write-Host "::error::launcher exited $($launch.ExitCode)"
+              exit 1
+          }
+
+          $live = $false
+          for ($i = 0; $i -lt 60; $i++) {
+              try {
+                  $r = Invoke-WebRequest -Uri "http://127.0.0.1:$port/api/health/live" -TimeoutSec 2 -UseBasicParsing
+                  if ($r.StatusCode -eq 200) { $live = $true; break }
+              } catch {}
+              Start-Sleep -Seconds 1
+          }
+          if (-not $live) {
+              Write-Host "::error::server never became live via exe"
+              Dump-ServerLog
+              exit 1
+          }
+          if (-not (Test-Path 'data\.grm.shutdown-token')) {
+              Dump-ServerLog
+              Write-Host "::error::shutdown token missing"
+              exit 1
+          }
+          if (-not (Test-Path 'data\.grm.port')) {
+              Dump-ServerLog
+              Write-Host "::error::port marker missing"
+              exit 1
+          }
+          $log = Get-ChildItem 'data\logs\server-*.log' | Select-Object -First 1
+          if (-not $log -or (Get-Item $log).Length -eq 0) {
+              Dump-ServerLog
+              Write-Host "::error::log file missing or empty"
+              exit 1
+          }
+
+          $srvPid = [int](Get-Content 'data\.grm.pid' | Select-Object -First 1)
+          $stopProc = Start-Process -FilePath '.\GitHub Repo Manager.exe' -ArgumentList 'stop' -PassThru
+          $stopProc.WaitForExit()
+          if ($stopProc.ExitCode -ne 0) {
+              Dump-ServerLog
+              Write-Host "::error::stop exited $($stopProc.ExitCode)"
+              exit 1
+          }
+          if (Get-Process -Id $srvPid -ErrorAction SilentlyContinue) {
+              Dump-ServerLog
+              Write-Host "::error::server still running after stop"
+              exit 1
+          }
+          if (Test-Path 'data\.grm.shutdown-token') {
+              Dump-ServerLog
+              Write-Host "::error::token not cleaned up on graceful exit"
+              exit 1
+          }
+          Write-Host "exe smoke test passed — launcher boots headless, stops gracefully, cleans up its shutdown token"
+
       - name: Install Inno Setup
         run: choco install innosetup -y --no-progress
 

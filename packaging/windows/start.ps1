@@ -13,10 +13,9 @@
 #                        launched. User data survives reinstall/uninstall
 #                        because that dir lives outside {app} entirely.
 #
-# -NoBrowser is the CI/automation switch: skip opening a browser, skip the
-# window-title dance (no visible window is wanted), and return as soon as the
-# server process has been spawned so the caller (a CI workflow) can poll
-# /api/health/live itself on its own schedule.
+# -NoBrowser is the CI/automation switch: skip opening a browser and never
+# show an error dialog; the script still waits for the health check (or an
+# early server exit) before returning so callers get a meaningful exit code.
 #
 # $PSScriptRoot resolves to this script's own directory regardless of spaces
 # or non-ASCII characters in the install path, and every path built from it
@@ -95,6 +94,18 @@ if (-not $DataDir) {
 # the pidfile. The app/install dir can be read-only (e.g. an elevated
 # custom /DIR= under Program Files) without breaking anything.
 New-Item -ItemType Directory -Force -Path $DataDir | Out-Null
+
+# All server output (including pre-boot crashes that never reach pino) goes
+# to a dated log file: with the launcher running everything hidden there is
+# no console buffer anymore, and "closing the window" no longer exists as a
+# way to lose diagnostics. 7-day retention, pruned on every launch.
+$LogsDir = Join-Path $DataDir 'logs'
+New-Item -ItemType Directory -Force -Path $LogsDir | Out-Null
+Get-ChildItem -LiteralPath $LogsDir -Filter 'server-*.log' -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-7) } |
+    Remove-Item -Force -ErrorAction SilentlyContinue
+$LogFile = Join-Path $LogsDir ("server-{0}.log" -f (Get-Date -Format 'yyyy-MM-dd'))
+
 $EnvFile = Join-Path $DataDir '.env'
 $PidFile = Join-Path $DataDir '.grm.pid'
 
@@ -206,66 +217,82 @@ $env:GRM_ENV_FILE = $EnvFile
 # same reason; this mirrors that instead of relying on dotenv timing.
 $env:NODE_ENV = 'production'
 
-# Spawn via raw ProcessStartInfo/Process.Start() rather than the Start-Process
-# cmdlet's -ArgumentList parameter. Verified empirically on this machine
-# (both pwsh and Windows PowerShell 5.1): Start-Process -ArgumentList mangles
-# a non-ASCII path in the argument array (the process launches with a
-# corrupted path and exits immediately, silently, under -WindowStyle Hidden)
-# - a known Start-Process quirk. A single manually-quoted Arguments string
-# via ProcessStartInfo does not have this problem. UseShellExecute differs
-# per branch: ShellExecuteEx (=true) is what gives a console app its own new
-# window for WindowStyle to apply to; CreateNoWindow (=false path) is the
-# correct way to fully suppress a window when none is wanted. Either way the
-# child inherits this process's environment block (PORT/DATA_DIR/NODE_ENV
-# above), since EnvironmentVariables is never touched here.
+# Managed mode: the server writes a per-boot shutdown token so stop.ps1 and
+# the installer can request a graceful exit (POST /api/system/shutdown).
+$env:GRM_MANAGED = '1'
+# The ACTUAL port for this run (may differ from .env's PORT after the
+# busy-port scan) — stop.ps1 and installer.iss read this to target the
+# shutdown endpoint correctly.
+Set-Content -LiteralPath (Join-Path $DataDir '.grm.port') -Value "$actualPort" -Encoding ascii
+
+# Spawn node through a hidden cmd wrapper that appends ALL output to the log
+# file. cmd (not PowerShell redirection) so no pipe pumping is needed: this
+# script exits right after launch, and an unpumped .NET redirect would
+# deadlock node once the pipe buffer filled. The wrapper waits on node, so
+# its lifetime mirrors the server's; the pidfile below records the NODE pid
+# (found via the wrapper's child list) because every kill/verify path
+# (stop.ps1, installer.iss) checks name+path against runtime\node.exe.
 $psi = [System.Diagnostics.ProcessStartInfo]::new()
-$psi.FileName = $NodeExe
-$psi.Arguments = '"' + $ServerEntry + '"'
+$psi.FileName = $env:ComSpec
+$psi.Arguments = '/d /s /c ""' + $NodeExe + '" "' + $ServerEntry + '" >> "' + $LogFile + '" 2>&1"'
 $psi.WorkingDirectory = $AppDir
-if ($NoBrowser) {
-    $psi.UseShellExecute = $false
-    $psi.CreateNoWindow = $true
-} else {
-    $psi.UseShellExecute = $true
-    $psi.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Normal
+$psi.UseShellExecute = $false
+$psi.CreateNoWindow = $true
+$wrapper = [System.Diagnostics.Process]::Start($psi)
+
+$nodePid = $null
+for ($i = 0; $i -lt 40; $i++) {
+    if ($wrapper.HasExited) { break }
+    $child = Get-CimInstance Win32_Process -Filter "ParentProcessId = $($wrapper.Id) AND Name = 'node.exe'" -ErrorAction SilentlyContinue
+    if ($child) {
+        $nodePid = [int](($child | Select-Object -First 1).ProcessId)
+        break
+    }
+    Start-Sleep -Milliseconds 250
 }
-$proc = [System.Diagnostics.Process]::Start($psi)
-Set-Content -LiteralPath $PidFile -Value "$($proc.Id)" -Encoding ascii
+if ($nodePid) {
+    Set-Content -LiteralPath $PidFile -Value "$nodePid" -Encoding ascii
+    Write-Host "GitHub Repo Manager starting (PID $nodePid, port $actualPort). Log: $LogFile"
+} else {
+    Write-Host "GitHub Repo Manager did not spawn correctly - checking health anyway. Log: $LogFile"
+}
 
-Write-Host "GitHub Repo Manager starting (PID $($proc.Id), port $actualPort)..."
-
-if (-not $NoBrowser) {
-    # Best-effort console window title -cosmetic only, never fatal. Polls
-    # briefly because the child process needs a moment to allocate its
-    # console window before MainWindowHandle is populated.
+function Show-StartupFailure([string]$LogPath) {
+    # CI (-NoBrowser) must stay dialog-free; a human launch gets a real
+    # error surface instead of "nothing happened".
+    if ($NoBrowser) { return }
     try {
-        Add-Type -Name Win32Title -Namespace GRM -MemberDefinition @'
-[DllImport("user32.dll", CharSet = CharSet.Auto)]
-public static extern bool SetWindowText(IntPtr hWnd, string lpString);
-'@ -ErrorAction SilentlyContinue
-        for ($i = 0; $i -lt 20; $i++) {
-            Start-Sleep -Milliseconds 150
-            $proc.Refresh()
-            if ($proc.MainWindowHandle -ne [IntPtr]::Zero) {
-                [GRM.Win32Title]::SetWindowText($proc.MainWindowHandle, 'GitHub Repo Manager Server') | Out-Null
-                break
-            }
+        Add-Type -AssemblyName System.Windows.Forms
+        $choice = [System.Windows.Forms.MessageBox]::Show(
+            ("GitHub Repo Manager failed to start.`n`nThe server log may explain why:`n{0}`n`nOpen the log now?" -f $LogPath),
+            'GitHub Repo Manager',
+            [System.Windows.Forms.MessageBoxButtons]::YesNo,
+            [System.Windows.Forms.MessageBoxIcon]::Error)
+        if ($choice -eq [System.Windows.Forms.DialogResult]::Yes) {
+            Start-Process notepad.exe -ArgumentList $LogPath
         }
     } catch {
-        # Cosmetic only -a failure here must never stop the server launch.
+        Write-Host "Startup failed - see $LogPath"
     }
+}
 
-    # Bounded readiness wait so the browser doesn't open to a connection
-    # error; the workflow-driven CI path (-NoBrowser) does its own longer,
-    # independent poll and never reaches this branch.
-    $ready = $false
-    for ($i = 0; $i -lt 30; $i++) {
-        if (Test-HealthLive $actualPort) {
-            $ready = $true
-            break
-        }
-        Start-Sleep -Milliseconds 500
+$ready = $false
+for ($i = 0; $i -lt 30; $i++) {
+    if (Test-HealthLive $actualPort) {
+        $ready = $true
+        break
     }
+    if ($wrapper.HasExited -and -not (Test-HealthLive $actualPort)) { break }
+    Start-Sleep -Milliseconds 500
+}
+
+if (-not $ready -and $wrapper.HasExited) {
+    Remove-Item -LiteralPath $PidFile -ErrorAction SilentlyContinue
+    Show-StartupFailure $LogFile
+    Write-Error "Server process exited during startup - see $LogFile"
+    exit 1
+}
+if (-not $NoBrowser) {
     if (-not $ready) {
         Write-Host "Server is taking longer than usual to start -opening the browser anyway; refresh if it errors."
     }
