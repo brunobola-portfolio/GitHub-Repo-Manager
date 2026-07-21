@@ -38,11 +38,38 @@ function Restore-FromBackup {
     # relaunch. Safe to call from a mid-swap throw (some moves done, some not),
     # from the health-timeout path, and from an early failure where nothing was
     # moved yet (backup dirs absent -> PackageRoot already holds the original).
+    #
+    # Returns [bool]: $true only if every sub that had a backup was verifiably
+    # restored to PackageRoot; $false if restoration could not be confirmed
+    # (e.g. the half-started new instance still held a file handle after the
+    # wait below, so Remove/Move silently no-op'd). Callers must not report
+    # 'rolled-back' on $false - PackageRoot may still hold the broken new
+    # version, and telling the user otherwise would be a lie.
     param([string]$Reason)
     Log ("restoring from backup: " + $Reason)
+    # Capture the half-started new instance's PID *before* calling stop below:
+    # stop deletes the pidfile as soon as it reads it (see stop.ps1), so by
+    # the time stop returns there is nothing left here to read.
+    $newInstancePidFile = Join-Path $DataDir '.grm.pid'
+    $newInstancePid = $null
+    if (Test-Path -LiteralPath $newInstancePidFile) {
+        $pidText = (Get-Content -LiteralPath $newInstancePidFile -ErrorAction SilentlyContinue | Select-Object -First 1)
+        if ($pidText -match '^\d+$') { $newInstancePid = [int]$pidText }
+    }
     # Stop any half-started new instance before touching its files.
     try { & (Join-Path $PackageRoot 'GitHub Repo Manager.exe') stop 2>$null | Out-Null } catch { }
+    # The 2s sleep is only a floor. When the new instance's PID is known, poll
+    # up to ~8s more for it to actually exit - a held file handle is exactly
+    # what makes the Remove/Move below silently no-op, which is why the
+    # end-state gets verified below instead of trusting cmdlet "success".
     Start-Sleep -Seconds 2
+    if ($newInstancePid) {
+        $handleDeadline = (Get-Date).AddSeconds(8)
+        while ((Get-Process -Id $newInstancePid -ErrorAction SilentlyContinue) -and ((Get-Date) -lt $handleDeadline)) {
+            Start-Sleep -Milliseconds 500
+        }
+    }
+    [bool]$ok = $true
     foreach ($sub in @('app', 'runtime')) {
         $backupSub = Join-Path $Backup $sub
         $liveSub = Join-Path $PackageRoot $sub
@@ -50,9 +77,18 @@ function Restore-FromBackup {
             # We have a backed-up original -> it is the source of truth. Remove
             # whatever partial/new copy is live, then move the original back.
             if (Test-Path -LiteralPath $liveSub) {
-                Remove-Item -Recurse -Force -LiteralPath $liveSub -ErrorAction SilentlyContinue
+                Remove-Item -Recurse -Force -LiteralPath $liveSub -ErrorAction SilentlyContinue | Out-Null
             }
-            Move-Item -LiteralPath $backupSub -Destination $liveSub -ErrorAction SilentlyContinue
+            Move-Item -LiteralPath $backupSub -Destination $liveSub -ErrorAction SilentlyContinue | Out-Null
+            # -ErrorAction SilentlyContinue means a held handle above leaves
+            # this a silent no-op instead of a throw, so the only honest
+            # signal is the resulting filesystem state: the live dir must now
+            # exist AND the backup must be gone (consumed by the move).
+            $restored = (Test-Path -LiteralPath $liveSub) -and -not (Test-Path -LiteralPath $backupSub)
+            if (-not $restored) {
+                Log ("restore verification FAILED for '" + $sub + "' - live present: " + (Test-Path -LiteralPath $liveSub) + ", backup still present: " + (Test-Path -LiteralPath $backupSub))
+                $ok = $false
+            }
         }
         # else: nothing was backed up for this sub -> PackageRoot still has the
         # original in place; leave it.
@@ -61,11 +97,14 @@ function Restore-FromBackup {
     if (Test-Path -LiteralPath $Snapshot) {
         # App and schema must revert together - the new version may have
         # migrated the DB past what the old app's downgrade guard accepts.
+        # Best-effort regardless of $ok: a DB revert is still worth attempting
+        # even when app/runtime restoration could not be confirmed.
         $DbPath = Join-Path $DataDir 'manager.db'
-        Copy-Item -LiteralPath $Snapshot -Destination $DbPath -Force -ErrorAction SilentlyContinue
-        Remove-Item -LiteralPath ($DbPath + '-wal'), ($DbPath + '-shm') -ErrorAction SilentlyContinue
+        Copy-Item -LiteralPath $Snapshot -Destination $DbPath -Force -ErrorAction SilentlyContinue | Out-Null
+        Remove-Item -LiteralPath ($DbPath + '-wal'), ($DbPath + '-shm') -ErrorAction SilentlyContinue | Out-Null
     }
     Start-Process -FilePath (Join-Path $PackageRoot 'GitHub Repo Manager.exe') -ArgumentList '--no-browser' | Out-Null
+    return $ok
 }
 
 try {
@@ -151,14 +190,20 @@ try {
         exit 0
     }
 
-    Restore-FromBackup 'health check failed'
-    Write-Result 'rolled-back'
+    if (Restore-FromBackup 'health check failed') {
+        Write-Result 'rolled-back'
+    } else {
+        Write-Result 'failed'
+    }
     exit 1
 } catch {
     $fatalMessage = $_.Exception.Message
     try {
-        Restore-FromBackup ('fatal: ' + $fatalMessage)
-        Write-Result 'rolled-back'
+        if (Restore-FromBackup ('fatal: ' + $fatalMessage)) {
+            Write-Result 'rolled-back'
+        } else {
+            Write-Result 'failed'
+        }
     } catch {
         # Last resort: recovery itself failed (e.g. backup also inaccessible).
         # PackageRoot may be left unbootable, but we must still report status
