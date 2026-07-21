@@ -42,8 +42,16 @@ const BYPASS_PREFIXES = [
     '/api/v1/auth/',
     '/api/webhooks/',
     '/api/v1/webhooks/',
-    // Managed-mode graceful stop: authenticated by loopback + secret token
-    // file (see routes/system.js) — its callers have no session to CSRF.
+];
+
+/**
+ * Exact-path bypasses (no subtree semantics): routes with no descendants that
+ * should bypass CSRF. The managed-mode shutdown routes authenticate via
+ * loopback + secret token file (see routes/system.js), so their callers have
+ * neither session nor ability to send a CSRF header — but nothing beneath them
+ * (e.g. /api/system/shutdown-history) may inherit the bypass.
+ */
+const BYPASS_EXACT = [
     '/api/system/shutdown',
     '/api/v1/system/shutdown',
 ];
@@ -58,9 +66,12 @@ const BYPASS_PREFIXES = [
  */
 export function isCsrfBypassed(url) {
     if (typeof url !== 'string') return false;
-    // Strip querystring so `?foo=bar` doesn't break prefix matches.
+    // Strip querystring so `?foo=bar` doesn't break prefix or exact matches.
     const path = url.split('?')[0];
-    return BYPASS_PREFIXES.some((prefix) => path.startsWith(prefix));
+    return (
+        BYPASS_PREFIXES.some((prefix) => path.startsWith(prefix))
+        || BYPASS_EXACT.includes(path)
+    );
 }
 
 /**

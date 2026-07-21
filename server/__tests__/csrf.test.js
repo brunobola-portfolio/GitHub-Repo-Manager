@@ -78,6 +78,7 @@ describe('CSRF middleware', () => {
         expect(isCsrfBypassed('/api/v1/system/shutdown')).toBe(true)
         expect(isCsrfBypassed('/api/system/shutdown?x=1')).toBe(true)
         expect(isCsrfBypassed('/api/system/status')).toBe(false)
+        expect(isCsrfBypassed('/api/system/shutdown-foo')).toBe(false)
     })
 
     it('GET /api/auth/csrf-token returns a base64url token >= 32 chars and persists in session', async () => {
