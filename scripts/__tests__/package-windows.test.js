@@ -19,6 +19,9 @@ import {
   betterSqlite3BinaryPath,
   readCachedZipIfValid,
   verifyAndCacheDownload,
+  frameworkCscPath,
+  launcherCscArgs,
+  LAUNCHER_EXE_NAME,
 } from '../package-windows.mjs'
 
 describe('NODE_VERSION', () => {
@@ -318,3 +321,25 @@ describe('existsSync sanity (guards against a bad tmpdir cleanup in earlier test
     expect(existsSync(tmpdir())).toBe(true)
   })
 })
+
+describe('launcher stub compilation', () => {
+    it('uses the in-box .NET Framework 4.8 csc (guaranteed on Windows + CI)', () => {
+        const csc = frameworkCscPath();
+        expect(csc.toLowerCase()).toContain('framework64');
+        expect(csc.toLowerCase()).toContain('v4.0.30319');
+        expect(csc.toLowerCase().endsWith('csc.exe')).toBe(true);
+    });
+    it('compiles a flashless GUI-subsystem exe with the brand icon', () => {
+        const args = launcherCscArgs({ source: 'L.cs', out: 'G.exe', icon: 'b.ico' });
+        expect(args).toContain('/target:winexe');
+        expect(args).toContain('/platform:anycpu');
+        expect(args).toContain('/optimize+');
+        expect(args).toContain('/r:System.Windows.Forms.dll');
+        expect(args).toContain('/win32icon:b.ico');
+        expect(args).toContain('/out:G.exe');
+        expect(args[args.length - 1]).toBe('L.cs');
+    });
+    it('names the exe like the product', () => {
+        expect(LAUNCHER_EXE_NAME).toBe('GitHub Repo Manager.exe');
+    });
+});
