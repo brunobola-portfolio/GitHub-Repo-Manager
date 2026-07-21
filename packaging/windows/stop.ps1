@@ -133,7 +133,19 @@ if (Test-Path -LiteralPath $TokenFile) {
     }
 }
 
-Stop-Process -Id $targetPid -Force
+# The graceful poll can lose a race with a slow-but-successful shutdown:
+# the process may exit between the last poll and this call, and under
+# ErrorActionPreference=Stop an unguarded Stop-Process on a dead PID would
+# abort the script before the cleanup lines below run.
+if (Get-Process -Id $targetPid -ErrorAction SilentlyContinue) {
+    try {
+        Stop-Process -Id $targetPid -Force -ErrorAction Stop
+        Write-Host "GitHub Repo Manager stopped (PID $targetPid)."
+    } catch {
+        Write-Host "GitHub Repo Manager already exited (PID $targetPid)."
+    }
+} else {
+    Write-Host "GitHub Repo Manager stopped on its own just after the graceful wait (PID $targetPid)."
+}
 Remove-Item -LiteralPath $PortFile -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath $TokenFile -ErrorAction SilentlyContinue
-Write-Host "GitHub Repo Manager stopped (PID $targetPid)."
