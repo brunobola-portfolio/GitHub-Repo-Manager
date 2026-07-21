@@ -48,6 +48,7 @@ import { createSessionTokenLookup } from './lib/session-token-lookup.js';
 import { registerShutdown, requestShutdown } from './lib/shutdown.js';
 import { isManaged, initManagedRuntime, clearManagedRuntime } from './lib/managed-runtime.js';
 import { getDataDir } from './lib/data-dir.js';
+import { resolveIntentOnBoot } from './lib/updater.js';
 
 // API v1 route aggregator
 import v1Routes from './routes/v1/index.js';
@@ -452,6 +453,14 @@ app.use((err, req, res, _next) => {
 function onListening() {
     logger.info({ port: config.port, host: config.host || '0.0.0.0 (all interfaces)', frontend: config.frontendUrl, mode: config.nodeEnv }, 'GitHub Repo Manager API is live');
     if (isManaged()) {
+        // Must run before initManagedRuntime: a boot that follows an
+        // apply-update.ps1 handoff needs its intent marker reconciled (and
+        // the resulting success/failure recorded for /api/system/status)
+        // before anything else about this boot is logged.
+        const outcome = resolveIntentOnBoot(getDataDir(), pkg.version);
+        if (outcome !== 'none') {
+            logger.info({ outcome, version: pkg.version }, '[managed] update intent resolved');
+        }
         initManagedRuntime(getDataDir());
         logger.info('[managed] shutdown token ready');
     }
