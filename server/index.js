@@ -31,6 +31,7 @@ import { recoverInterruptedImportJobs } from './routes/import/_shared.js';
 import { config } from './config.js';
 import { initMonitoring, getSentryErrorHandler } from './lib/monitoring.js';
 import db, { initDB, seedMockData } from './db.js';
+import { DBSchemaFromFutureError } from './lib/db-migrations.js';
 import { aiService } from './ai-service.js';
 import { safeError, attachAIProvider } from './middleware/auth.js';
 import { createSQLiteStore } from './lib/session-store.js';
@@ -66,7 +67,17 @@ await initMonitoring();
     secretsReport.warnings.forEach(w => logger.warn(`[secrets] ${w}`));
 }
 
-initDB();
+try {
+    initDB();
+} catch (error) {
+    if (error instanceof DBSchemaFromFutureError) {
+        // start.ps1's failure dialog points users at the log — this line is
+        // the whole story they need, so it must not be a raw stack trace.
+        logger.fatal({ dbVersion: error.dbVersion, appVersion: error.appVersion }, error.message);
+        process.exit(1);
+    }
+    throw error;
+}
 
 // Warm the license cache now that the schema exists. This used to fire at
 // require-tier.js's module-load time — but ESM import evaluation runs before
