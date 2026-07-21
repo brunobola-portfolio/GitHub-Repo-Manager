@@ -1,9 +1,18 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest'
 import Database from 'better-sqlite3'
-import { MIGRATIONS } from '../lib/db-migrations.js'
+import { MIGRATIONS, runMigrations, APP_SCHEMA_VERSION, DBSchemaFromFutureError } from '../lib/db-migrations.js'
+import { makeIntegrationDb } from './helpers/integration-db.js'
 
 const migration = (v) => MIGRATIONS.find((m) => m.version === v)
+
+// initDB pulls in server/db.js, which opens the real database adapter as a
+// module-level side effect — import lazily (like the other integration
+// tests in this suite) so a bare `vitest run` on this file doesn't touch it.
+async function makeFullDb() {
+    const { initDB } = await import('../db.js')
+    return makeIntegrationDb(initDB)
+}
 
 function seed() {
   const db = new Database(':memory:')
@@ -46,5 +55,42 @@ describe("migration 27 — unify migration_jobs.status 'complete' → 'completed
     expect(() => migration(27).up(db)).not.toThrow()
     expect(db.prepare(`SELECT COUNT(*) c FROM migration_jobs WHERE status='completed'`).get().c).toBe(3)
     expect(db.prepare(`SELECT COUNT(*) c FROM migration_jobs WHERE status='complete'`).get().c).toBe(0)
+  })
+})
+
+describe('runMigrations — refuses to boot against a schema from a newer app version', () => {
+  it('applies cleanly against the current schema (sanity baseline)', async () => {
+    const db = await makeFullDb()
+    const maxApplied = db.prepare('SELECT MAX(version) AS v FROM schema_migrations').get().v
+    expect(maxApplied).toBe(APP_SCHEMA_VERSION)
+  })
+
+  it('throws DBSchemaFromFutureError when the ledger records a version the app does not know', async () => {
+    const db = await makeFullDb()
+    const futureVersion = APP_SCHEMA_VERSION + 1
+    db.prepare('INSERT INTO schema_migrations (version, name) VALUES (?, ?)').run(futureVersion, 'from-the-future')
+
+    let thrown
+    try {
+      runMigrations(db)
+    } catch (e) {
+      thrown = e
+    }
+
+    expect(thrown).toBeInstanceOf(DBSchemaFromFutureError)
+    expect(thrown.dbVersion).toBe(futureVersion)
+    expect(thrown.appVersion).toBe(APP_SCHEMA_VERSION)
+    expect(thrown.message).toContain(String(futureVersion))
+    expect(thrown.message).toContain(String(APP_SCHEMA_VERSION))
+    expect(thrown.message).toMatch(/pre-update snapshot/i)
+  })
+
+  it('does not throw when the ledger is empty (MAX is null) — fresh DB / idempotent re-run', async () => {
+    // Schema already fully applied by makeFullDb(); clearing the ledger only
+    // simulates the "no rows yet" MAX(version) IS NULL case the guard must
+    // let through — every up() is idempotent, so re-applying is a no-op.
+    const db = await makeFullDb()
+    db.exec('DELETE FROM schema_migrations')
+    expect(() => runMigrations(db)).not.toThrow()
   })
 })

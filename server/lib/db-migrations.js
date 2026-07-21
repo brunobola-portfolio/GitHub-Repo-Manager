@@ -483,11 +483,38 @@ export const MIGRATIONS = [
     },
 ];
 
+// The highest version this build of the app knows how to apply. Used to
+// detect a DB ledger written by a newer build (e.g. after a rollback to an
+// older installer) so runMigrations() can refuse to touch it instead of
+// silently treating unrecognized future rows as "nothing to do".
+export const APP_SCHEMA_VERSION = Math.max(...MIGRATIONS.map((m) => m.version));
+
+// Thrown by runMigrations() when the schema_migrations ledger's highest
+// recorded version is newer than APP_SCHEMA_VERSION — i.e. this DB was last
+// written by a newer app build than the one currently running. Applying
+// migrations in that state would be guessing at a schema this build has
+// never seen, so boot must stop before anything is touched.
+export class DBSchemaFromFutureError extends Error {
+    constructor(dbVersion, appVersion) {
+        super(
+            `This database was created by a NEWER version of GitHub Repo Manager ` +
+            `(schema v${dbVersion}; this app knows up to v${appVersion}). Refusing to start ` +
+            `to protect your data. Reinstall the newer version, or restore the pre-update ` +
+            `snapshot from the data directory's updates folder.`,
+        );
+        this.name = 'DBSchemaFromFutureError';
+        this.dbVersion = dbVersion;
+        this.appVersion = appVersion;
+    }
+}
+
 /**
  * Apply all not-yet-recorded migrations in version order, recording each in the
  * schema_migrations ledger. Safe to run on every boot and on databases that
  * predate the ledger (every up() is idempotent).
  * @param {import('better-sqlite3').Database} db
+ * @throws {DBSchemaFromFutureError} if the ledger's newest version is beyond
+ *   what this build knows — checked before any migration is applied.
  */
 export function runMigrations(db) {
     db.exec(`
@@ -497,6 +524,10 @@ export function runMigrations(db) {
             applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
     `);
+    const dbVersion = db.prepare('SELECT MAX(version) AS v FROM schema_migrations').get().v;
+    if (dbVersion !== null && dbVersion > APP_SCHEMA_VERSION) {
+        throw new DBSchemaFromFutureError(dbVersion, APP_SCHEMA_VERSION);
+    }
     const applied = new Set(
         db.prepare('SELECT version FROM schema_migrations').all().map((r) => r.version)
     );
