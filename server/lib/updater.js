@@ -358,7 +358,11 @@ async function runUpdateDownloadAndHandoff({
                 [
                     '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', scriptDest,
                     '-PackageRoot', packageRoot, '-DataDir', dataDir, '-ZipPath', assetPath,
-                    '-FromVersion', currentVersion, '-ToVersion', latest,
+                    // latest is a GitHub release tag: sanitize before it reaches
+                    // apply-update.ps1, which builds staging-/log filesystem paths
+                    // from it (a legit semver tag is unchanged). Defense-in-depth,
+                    // mirroring the installed-mode log-name sanitize above.
+                    '-FromVersion', currentVersion, '-ToVersion', sanitizeForLogName(latest),
                     '-ServerPid', String(process.pid), '-Port', String(process.env.PORT || 3001),
                 ],
                 { detached: true, stdio: 'ignore', windowsHide: true }
