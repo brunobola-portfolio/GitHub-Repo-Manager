@@ -45,7 +45,10 @@ Both options are attached to the [latest release](https://github.com/brunobola-p
 Once installed, launch it from the finish-page **Launch** checkbox, the Start
 Menu, or the desktop shortcut (if you added one). The server starts **hidden
 in the background** — no console window — and your browser opens
-automatically once it's ready.
+automatically once it's ready. A **tray icon** (bottom-right, near the clock)
+shows it's running; right-click it for **Open in browser**, **View server
+logs**, **Restart server**, **Start with Windows**, and **Quit**. Double-click
+the tray icon to reopen the app in your browser.
 
 **Scripted / unattended install** (admins, fleet rollout):
 
@@ -397,10 +400,6 @@ old secrets is gone with the database that held it.
 - **Unsigned binaries.** Both the installer and the ZIP's contents are
   unsigned for now; expect the SmartScreen prompt above until code-signing
   is set up.
-- **Not a tray app.** The backend is a local web server that runs hidden in
-  the background — but it is **not** a system-tray app: there's no tray
-  icon and no minimize-to-tray. Start and stop it from the Start Menu (or
-  `GitHub Repo Manager.exe` / `GitHub Repo Manager.exe stop`).
 - **Installed-mode updates roll back manually.** A failed one-click update
   reverts automatically on the **portable** ZIP, but **not** on an installed
   copy — recovery there is a manual reinstall or snapshot restore (see

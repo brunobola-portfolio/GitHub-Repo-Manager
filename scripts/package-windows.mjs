@@ -154,6 +154,11 @@ export function launcherCscArgs({ source, out, icon }) {
         '/platform:anycpu',
         '/optimize+',
         '/r:System.Windows.Forms.dll',
+        // System.Drawing: the tray NotifyIcon loads the exe's own embedded
+        // brand icon (Icon.ExtractAssociatedIcon). System.dll (HttpWebRequest
+        // for the health poll, Microsoft.Win32.Registry for autostart) is in
+        // the compiler's default reference set.
+        '/r:System.Drawing.dll',
         `/win32icon:${icon}`,
         `/out:${out}`,
         source,

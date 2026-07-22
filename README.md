@@ -334,7 +334,8 @@ Node install, no admin rights.
 1. **Download** `github-repo-manager-<version>-setup.exe` or the portable ZIP
    from the [latest release](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest).
 2. **Double-click `GitHub Repo Manager.exe`** — the server starts hidden in the
-   background (no console window) and your browser opens once it's ready.
+   background (no console window), a tray icon shows it's running (open, view
+   logs, restart, quit), and your browser opens once it's ready.
 3. **Sign in** and connect your GitHub account through the one-time guided setup.
 
 Windows SmartScreen will likely warn the binary is unsigned — click **More info

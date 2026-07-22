@@ -167,9 +167,13 @@ Name: "{userstartup}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Parameter
 Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; WorkingDir: "{app}"; Flags: postinstall nowait skipifsilent
 ; Self-update relaunch: setup.exe re-invoked with /UPDATED=1 runs under
 ; /VERYSILENT, so the postinstall+skipifsilent entry above never fires and
-; the app would otherwise stay closed after an update. --no-browser: the
-; user's existing browser tab is already polling for the restart.
-Filename: "{app}\{#MyAppExeName}"; Parameters: "--no-browser"; WorkingDir: "{app}"; Check: IsUpdatedMode; Flags: nowait
+; the app would otherwise stay closed after an update. --start-only (server
+; only, not a tray): a tray resident from before the update holds the
+; single-instance mutex and would bounce a fresh tray launch without
+; restarting the server, so relaunch the server directly and let any resident
+; tray pick it back up. --no-browser: the user's existing tab is already
+; polling for the restart.
+Filename: "{app}\{#MyAppExeName}"; Parameters: "--start-only --no-browser"; WorkingDir: "{app}"; Check: IsUpdatedMode; Flags: nowait
 
 [Code]
 const

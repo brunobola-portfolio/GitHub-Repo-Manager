@@ -115,7 +115,11 @@ function Restore-FromBackup {
         Copy-Item -LiteralPath $Snapshot -Destination $DbPath -Force -ErrorAction SilentlyContinue | Out-Null
         Remove-Item -LiteralPath ($DbPath + '-wal'), ($DbPath + '-shm') -ErrorAction SilentlyContinue | Out-Null
     }
-    Start-Process -FilePath (Join-Path $PackageRoot 'GitHub Repo Manager.exe') -ArgumentList '--no-browser' | Out-Null
+    # --start-only (server only), not tray mode: a resident tray holds the
+    # single-instance mutex, so relaunching as a tray would not restart the
+    # server. --start-only brings the (rolled-back) server back and the tray
+    # picks it up.
+    Start-Process -FilePath (Join-Path $PackageRoot 'GitHub Repo Manager.exe') -ArgumentList '--start-only','--no-browser' | Out-Null
     return $ok
 }
 
@@ -180,12 +184,22 @@ try {
     Move-Item -LiteralPath (Join-Path $PackageRoot 'runtime') -Destination (Join-Path $Backup 'runtime')
     Move-Item -LiteralPath (Join-Path $Staging 'app') -Destination (Join-Path $PackageRoot 'app')
     Move-Item -LiteralPath (Join-Path $Staging 'runtime') -Destination (Join-Path $PackageRoot 'runtime')
+    # Root launchers (the .exe, .ps1, .cmd). SilentlyContinue tolerates a
+    # resident tray holding a lock on its own "GitHub Repo Manager.exe": the
+    # stub is version-stable, so the old stub running against the new
+    # app/runtime is fine, and it refreshes on the next non-resident launch.
     Get-ChildItem -LiteralPath $Staging -File | ForEach-Object {
-        Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $PackageRoot $_.Name) -Force
+        Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $PackageRoot $_.Name) -Force -ErrorAction SilentlyContinue
     }
 
+    # --start-only, not tray mode: this restarts the SERVER only. A tray already
+    # resident from before the update holds the single-instance mutex and would
+    # bounce a fresh tray launch to "reopen browser" without restarting the
+    # server; --start-only sidesteps the mutex and the resident tray picks the
+    # restarted server back up via its health poll. With no tray, the server
+    # simply runs headless as it did before.
     Log "relaunching"
-    Start-Process -FilePath (Join-Path $PackageRoot 'GitHub Repo Manager.exe') -ArgumentList '--no-browser' | Out-Null
+    Start-Process -FilePath (Join-Path $PackageRoot 'GitHub Repo Manager.exe') -ArgumentList '--start-only','--no-browser' | Out-Null
     $deadline = (Get-Date).AddSeconds(60)
     $healthy = $false
     while ((Get-Date) -lt $deadline) {

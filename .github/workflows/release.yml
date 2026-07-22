@@ -198,12 +198,15 @@ jobs:
               }
           }
 
+          # --start-only: a bare "--no-browser" launch is now the resident tray
+          # (stays alive until Quit), which would hang WaitForExit forever.
+          # --start-only is the blocking "start the server and return" path.
           # The launcher is a GUI-subsystem exe: PowerShell's & operator does
           # NOT wait for those (and $LASTEXITCODE stays stale). Start-Process
           # -Wait would block on the entire descendant tree (including the
           # long-lived node server), so wait on the launcher alone via .NET
           # WaitForExit instead.
-          $launch = Start-Process -FilePath '.\GitHub Repo Manager.exe' -ArgumentList '--no-browser' -PassThru
+          $launch = Start-Process -FilePath '.\GitHub Repo Manager.exe' -ArgumentList '--start-only','--no-browser' -PassThru
           $launch.WaitForExit()
           if ($launch.ExitCode -ne 0) {
               Dump-ServerLog
@@ -299,7 +302,9 @@ jobs:
               }
           }
 
-          $launch = Start-Process -FilePath (Join-Path $extractDir 'GitHub Repo Manager.exe') -ArgumentList '--no-browser' -PassThru
+          # --start-only (blocking server start), not the resident tray that a
+          # bare "--no-browser" now launches — the tray would hang WaitForExit.
+          $launch = Start-Process -FilePath (Join-Path $extractDir 'GitHub Repo Manager.exe') -ArgumentList '--start-only','--no-browser' -PassThru
           $launch.WaitForExit()
           if ($launch.ExitCode -ne 0) {
               Dump-ServerLog
