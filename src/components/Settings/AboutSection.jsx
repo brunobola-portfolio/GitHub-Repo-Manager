@@ -46,7 +46,7 @@ const HEALTH_POLL_TIMEOUT_MS = 3 * 60 * 1000
 // Matches the primary-CTA button convention used across Settings sections
 // (e.g. AzureCredentialsSection, AzureHostsAllowlistSection) — no new class
 // combination invented for this one button.
-const UPDATE_BUTTON_CLASS = 'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors'
+const UPDATE_BUTTON_CLASS = 'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors ds-focus-ring'
 
 // Renders the server's phase/percent verbatim ("downloading 42%",
 // "verifying") — no cosmetic reformatting, so the label a user sees stays
@@ -321,18 +321,20 @@ export function AboutSection() {
                                         Update guide
                                     </a>
                                 </p>
-                                {updatePhase === UPDATE_PHASE.PROGRESS && updateProgress && (
-                                    <p className="mt-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
-                                        <SpinnerIcon className="w-3 h-3" />
-                                        Update: {updateStatusLabel(updateProgress)}
-                                    </p>
-                                )}
-                                {updatePhase === UPDATE_PHASE.RESTARTING && (
-                                    <p className="mt-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
-                                        <SpinnerIcon className="w-3 h-3" />
-                                        Restarting — this page will reload automatically
-                                    </p>
-                                )}
+                                <div role="status" aria-live="polite">
+                                    {updatePhase === UPDATE_PHASE.PROGRESS && updateProgress && (
+                                        <p className="mt-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                                            <SpinnerIcon className="w-3 h-3" />
+                                            Update: {updateStatusLabel(updateProgress)}
+                                        </p>
+                                    )}
+                                    {updatePhase === UPDATE_PHASE.RESTARTING && (
+                                        <p className="mt-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                                            <SpinnerIcon className="w-3 h-3" />
+                                            Restarting — this page will reload automatically
+                                        </p>
+                                    )}
+                                </div>
                                 {updatePhase === UPDATE_PHASE.ERROR && updateErrorMessage && (
                                     <p role="alert" className="mt-1.5 text-xs font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5">
                                         <AlertCircle className="w-3 h-3 shrink-0" aria-hidden="true" />
@@ -356,7 +358,7 @@ export function AboutSection() {
                                 <button
                                     type="button"
                                     onClick={() => dismiss(data.latest)}
-                                    className="ds-text-meta text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                                    className="ds-text-meta text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 ds-focus-ring"
                                 >
                                     Dismiss
                                 </button>

@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { Button } from './Button'
-import { EASE } from './motion'
+import { listContainer, listItem } from './motion'
 
 /**
  * EmptyState - Elegant placeholder when no data is available
@@ -32,16 +32,14 @@ export function EmptyState({
   return (
     <motion.div
       data-testid="empty-state"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      variants={listContainer}
+      initial="hidden"
+      animate="show"
       className="flex flex-col items-center justify-center p-12 text-center"
     >
       {/* Icon container */}
       <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.1, duration: 0.2, ease: EASE.standard }}
+        variants={listItem}
         className="w-20 h-20 mb-6 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shadow-sm"
       >
         {Icon && <Icon className="w-10 h-10 text-slate-500 dark:text-slate-400" strokeWidth={2.5} />}
@@ -49,9 +47,7 @@ export function EmptyState({
 
       {/* Title */}
       <motion.h3
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.5 }}
+        variants={listItem}
         className="text-md font-semibold ds-font-display text-slate-900 dark:text-slate-100 mb-2"
       >
         {title}
@@ -59,9 +55,7 @@ export function EmptyState({
 
       {/* Description */}
       <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.3, duration: 0.5 }}
+        variants={listItem}
         className="text-sm text-[color:var(--ds-fg-muted)] max-w-md mb-6"
       >
         {description}
@@ -69,11 +63,7 @@ export function EmptyState({
 
       {/* Optional CTA Button */}
       {resolvedLabel && (resolvedOnClick || resolvedHref) && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-        >
+        <motion.div variants={listItem}>
           {resolvedHref ? (
             <a
               href={resolvedHref}

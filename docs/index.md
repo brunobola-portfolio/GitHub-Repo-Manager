@@ -24,40 +24,29 @@ below links to the canonical page for that topic.
 
 The 3 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
-- **v4.7.0 (2026-07-19) — Native Windows distribution.** A CI-boot-validated
-  installer and portable ZIP, both bundling their own Node.js runtime — no
-  Docker, no separate Node.js install, no admin rights for the installer.
-  First-run bootstrap generates its own random secrets and a sane local
-  `.env` (`scripts/first-run.mjs`); new `HOST` (bind address) and `DATA_DIR`
-  (persisted-state root) env vars support installed layouts whose app
-  directory isn't writable; `ALLOW_CONSOLE_EMAIL` opts a single-user install
-  out of the hosted-deployment email-provider guard. Settings → About shows
-  an in-app "new version available" banner sourced from a single
-  unauthenticated GitHub releases check, disable with `UPDATE_CHECK=false`.
-  winget manifest scaffolding exists but submission to `winget-pkgs` is
-  still pending. See [Windows guide](windows.md).
-- **v4.6.1 (2026-07-19) — Launch-readiness hardening.** Every finding from
-  the 2026-07-19 seven-dimension launch-readiness panel fixed: closed AI
-  spend-cap gaps (`POST /api/migration/analyze` was fully unmetered; five
-  non-streaming AI routes could bypass the spend cap by omitting
-  `?stream`), a UTC/local-calendar usage-dashboard read bug, a README FAQ
-  privacy overclaim, and small-text WCAG AA contrast fixes. Plus 10
-  previously-invisible Free-tier quotas surfaced in Settings → Usage, the
-  Docker image quickstart promoted to primary, and license-key duration now
-  matching the actual billing cadence. See the
-  [panel report](reports/2026-07-19-launch-readiness-panel.md).
-- **v4.6.0 (2026-07-19) — Community WOW + six production-premium waves.** Four
-  new AI-grounded repo tools, all metered on Free with deterministic zero-AI-cost
-  fallbacks: **README Studio** (free quality score + grounded improve),
-  **AI Diagram Generator** (architecture diagrams with embed-into-repo and
-  retry-once self-repair), **Agent Rules Generator** (AGENTS.md/CLAUDE.md
-  from real detected build/test/CI signals), and **Security Posture Panel**
-  (10-check report card + optional AI narrative). Plus a free-first pricing
-  rebalance (bulk ops, mirror sync, Deep Review, Prompt Studio, PR Chat/
-  commands moved off the Pro paywall), a premium migration/README-reading
-  pass, ops readiness (Prometheus metrics, reverse-proxy guide), and list
-  virtualization. See [Production Premium Plan](plans/2026-07-17-production-premium-plan.md)
-  and [Community WOW spec](specs/2026-07-18-community-wow-wave6.md).
+- **v4.8.2 (2026-07-21) — Installer finish-page launch + scripted rollouts.**
+  A "Launch GitHub Repo Manager" checkbox on the installer's finish page
+  (checked by default, skipped in silent installs), a per-user `DATA_DIR`
+  marker written unexpanded (`%LOCALAPPDATA%\...`) so an admin-run rollout
+  resolves each user's own data directory, and a scripted/unattended install
+  guide (silent flags, `/LOG=` and `/DIR=`, exit-code semantics, `.env`
+  pre-provisioning for zero-touch fleet rollouts). See
+  [Windows guide](windows.md).
+- **v4.8.1 (2026-07-21) — BolaLabs installer branding.** The Inno Setup
+  installer wears the BolaLabs identity — branded icon, wizard banner and
+  imagery (assets generated from the master art at 2x so Inno's DPI scaling
+  only ever scales down).
+- **v4.8.0 (2026-07-20) — Windows first-run overhaul.** Signing in works out
+  of the box: a plain `http://127.0.0.1` install could never store the
+  `Secure`-only session cookie, so sign-in was impossible — now `secure:
+  'auto'` (still `Secure` behind a TLS proxy). GitHub connection is a guided
+  in-app wizard that pre-fills the OAuth "New App" form with the exact
+  Homepage/Callback URLs for that install (`GET /api/auth/setup-status`,
+  `POST /api/auth/setup-oauth`, loopback-only + CSRF + rate-limited), instead
+  of hand-editing `.env`. Every boot runs a SQLite `quick_check` and
+  self-heals a corrupted database from the newest healthy backup (quarantine,
+  never delete). All writable state (`.env`, pidfile) moved into `DATA_DIR`
+  with automatic migration. See [Windows guide](windows.md).
 
 ## Architecture
 

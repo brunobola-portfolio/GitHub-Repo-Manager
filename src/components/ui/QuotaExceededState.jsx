@@ -1,5 +1,6 @@
 import { Gauge, Key } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { TRANSITION } from './motion'
 import { openAISettings } from '../../utils/appEvents'
 import { Heading } from './Heading'
 import { TIER_LABEL } from './quotaShared'
@@ -33,7 +34,7 @@ export function QuotaExceededState({
       aria-live="polite"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={TRANSITION.entrance}
       className="p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 max-w-lg mx-auto text-center"
     >
       <div className="w-16 h-16 mb-5 mx-auto rounded-2xl bg-amber-500 flex items-center justify-center">

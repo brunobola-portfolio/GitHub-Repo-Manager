@@ -11,7 +11,7 @@ import { Field, Input } from '../ui/form'
 import { AnimatedCheck } from '../ui/AnimatedCheck'
 import { AnimatedCopyIcon } from '../ui/AnimatedCopyIcon'
 import { Spinner } from '../ui/Spinner'
-import { EASE } from '../ui/motion'
+import { TRANSITION } from '../ui/motion'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import { getAuthSetupStatus, submitOAuthSetup } from '../../api/authSetup'
 import { AUTH_ENDPOINTS } from '../../config'
@@ -22,7 +22,7 @@ const STEP_MOTION = {
     initial: { opacity: 0, x: 16 },
     animate: { opacity: 1, x: 0 },
     exit: { opacity: 0, x: -16 },
-    transition: { duration: 0.25, ease: EASE.emphasized },
+    transition: TRANSITION.entrance,
 }
 
 /** Read-only value row with a copy affordance — the URLs the user must
