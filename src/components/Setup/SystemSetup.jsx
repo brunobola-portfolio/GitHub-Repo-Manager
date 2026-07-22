@@ -146,7 +146,7 @@ function SetupStep({ label, icon: Icon, status }) {
                 {status === 'done' ? (
                     <CheckCircle className="w-5 h-5" />
                 ) : status === 'active' ? (
-                    <Spinner size="lg" tone="primary" />
+                    <Spinner size="lg" tone="onPrimary" />
                 ) : (
                     <Icon className="w-5 h-5" />
                 )}
