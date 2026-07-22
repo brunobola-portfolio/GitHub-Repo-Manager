@@ -93,7 +93,7 @@ export function AIErrorState({ error, onRetry, onDismiss, context, variant = 'ca
                         <button
                             type="button"
                             onClick={handleAction}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded bg-amber-600 text-white hover:bg-amber-700"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded bg-amber-600 text-white hover:bg-amber-700 ds-focus-ring"
                         >
                             <ActionIcon className="w-3.5 h-3.5" aria-hidden />
                             {action?.label ?? 'Retry'}
@@ -102,7 +102,7 @@ export function AIErrorState({ error, onRetry, onDismiss, context, variant = 'ca
                             <button
                                 type="button"
                                 onClick={onRetry}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded hover:bg-amber-100 dark:hover:bg-amber-900/40 ds-focus-ring"
                             >
                                 <RotateCcw className="w-3.5 h-3.5" aria-hidden /> Retry
                             </button>
@@ -111,7 +111,7 @@ export function AIErrorState({ error, onRetry, onDismiss, context, variant = 'ca
                             <button
                                 type="button"
                                 onClick={() => openAppSettings('ai')}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-900 dark:text-amber-100"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded hover:bg-amber-100 dark:hover:bg-amber-900/40 text-amber-900 dark:text-amber-100 ds-focus-ring"
                             >
                                 <Settings className="w-3.5 h-3.5" aria-hidden /> AI settings
                             </button>
@@ -124,7 +124,7 @@ export function AIErrorState({ error, onRetry, onDismiss, context, variant = 'ca
                     type="button"
                     onClick={onDismiss}
                     aria-label="Dismiss"
-                    className="opacity-60 hover:opacity-100"
+                    className="opacity-60 hover:opacity-100 ds-focus-ring"
                 >
                     <X className="w-4 h-4" aria-hidden />
                 </button>
