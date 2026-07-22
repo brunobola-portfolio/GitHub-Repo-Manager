@@ -234,6 +234,163 @@ jobs:
           }
           Write-Host "exe smoke test passed — launcher boots headless, stops gracefully, cleans up its shutdown token"
 
+      - name: Portable self-update dry-run smoke (same-version apply-update.ps1 handoff)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = '${{ steps.meta.outputs.version }}'
+          # A fresh extraction, separate from every other smoke test's dir
+          # above — apply-update.ps1 replaces app\ and runtime\ wholesale, so
+          # this run must not share state (or a port) with any of them.
+          $extractDir = Join-Path $env:RUNNER_TEMP 'grm-update-smoke'
+          Expand-Archive -Path '${{ steps.meta.outputs.zipPath }}' -DestinationPath $extractDir -Force
+
+          $dataDir = Join-Path $env:RUNNER_TEMP 'grm-update-smoke-data'
+          Remove-Item -Recurse -Force -LiteralPath $dataDir -ErrorAction SilentlyContinue
+          $updatesDir = Join-Path $dataDir 'updates'
+
+          # apply-update.ps1 deletes -ZipPath once the swap comes up healthy
+          # (see its success path) — operate on a scratch copy so the real
+          # build output survives for the upload-artifact step later in this
+          # job.
+          $zipCopy = Join-Path $env:RUNNER_TEMP 'grm-update-smoke.zip'
+          Copy-Item -LiteralPath '${{ steps.meta.outputs.zipPath }}' -Destination $zipCopy -Force
+
+          $port = 18083
+          $env:GRM_DATA_DIR = $dataDir
+          $env:GRM_PORT = "$port"
+
+          function Dump-ServerLog {
+              Get-ChildItem (Join-Path $dataDir 'logs\server-*.log') -ErrorAction SilentlyContinue | ForEach-Object {
+                  Write-Host "Last 40 lines of $($_.Name):"
+                  Get-Content $_.FullName -Tail 40 -ErrorAction SilentlyContinue
+              }
+          }
+          function Dump-ApplyUpdateLog {
+              Get-ChildItem (Join-Path $updatesDir 'apply-update-*.log') -ErrorAction SilentlyContinue | ForEach-Object {
+                  Write-Host "---- $($_.Name) ----"
+                  Get-Content $_.FullName -ErrorAction SilentlyContinue
+              }
+          }
+
+          $launch = Start-Process -FilePath (Join-Path $extractDir 'GitHub Repo Manager.exe') -ArgumentList '--no-browser' -PassThru
+          $launch.WaitForExit()
+          if ($launch.ExitCode -ne 0) {
+              Dump-ServerLog
+              Write-Host "::error::update-smoke launcher exited $($launch.ExitCode)"
+              exit 1
+          }
+
+          $live = $false
+          for ($i = 0; $i -lt 60; $i++) {
+              try {
+                  $r = Invoke-WebRequest -Uri "http://127.0.0.1:$port/api/health/live" -TimeoutSec 2 -UseBasicParsing
+                  if ($r.StatusCode -eq 200) { $live = $true; break }
+              } catch {}
+              Start-Sleep -Seconds 1
+          }
+          if (-not $live) {
+              Write-Host "::error::update-smoke server never became live"
+              Dump-ServerLog
+              exit 1
+          }
+
+          # Simulate the server-side handoff without a GitHub download: the
+          # real flow (server/lib/updater.js's runUpdateDownloadAndHandoff)
+          # copies apply-update.ps1 into <data>\updates\, writes the intent
+          # marker, then spawns the copy. from/to both equal this build's own
+          # version — a same-version dry run exercises the full swap +
+          # relaunch + boot-resolution path without needing a second release.
+          New-Item -ItemType Directory -Force -Path $updatesDir | Out-Null
+          $copiedScript = Join-Path $updatesDir 'apply-update.ps1'
+          Copy-Item -LiteralPath (Join-Path $extractDir 'apply-update.ps1') -Destination $copiedScript -Force
+
+          $intent = @{ from = $version; to = $version; mode = 'portable'; at = (Get-Date -Format o) } | ConvertTo-Json
+          Set-Content -LiteralPath (Join-Path $updatesDir 'update-intent.json') -Value $intent -Encoding utf8
+
+          $srvPid = [int](Get-Content (Join-Path $dataDir '.grm.pid') | Select-Object -First 1)
+
+          # Start-Process -Wait would block on the entire descendant tree
+          # (apply-update.ps1 relaunches the long-lived node server as part
+          # of a SUCCESSFUL run) — wait on the script process alone via .NET
+          # WaitForExit instead, exactly like the exe launcher above.
+          $applyProc = Start-Process -FilePath 'powershell.exe' -ArgumentList @(
+              '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', $copiedScript,
+              '-PackageRoot', $extractDir, '-DataDir', $dataDir, '-ZipPath', $zipCopy,
+              '-FromVersion', $version, '-ToVersion', $version,
+              '-ServerPid', "$srvPid", '-Port', "$port"
+          ) -PassThru
+          $applyProc.WaitForExit()
+          if ($applyProc.ExitCode -ne 0) {
+              Write-Host "::error::apply-update.ps1 exited $($applyProc.ExitCode)"
+              Dump-ApplyUpdateLog
+              Dump-ServerLog
+              exit 1
+          }
+
+          $ready = $false
+          for ($i = 0; $i -lt 60; $i++) {
+              try {
+                  $r = Invoke-WebRequest -Uri "http://127.0.0.1:$port/api/health/ready" -TimeoutSec 2 -UseBasicParsing
+                  if ($r.StatusCode -eq 200) { $ready = $true; break }
+              } catch {}
+              Start-Sleep -Seconds 1
+          }
+          if (-not $ready) {
+              Write-Host "::error::relaunched server never became ready after apply-update.ps1"
+              Dump-ApplyUpdateLog
+              Dump-ServerLog
+              exit 1
+          }
+
+          $backupAppDir = Join-Path (Join-Path $updatesDir ("backup-{0}" -f $version)) 'app'
+          if (-not (Test-Path -LiteralPath $backupAppDir)) {
+              Write-Host "::error::$backupAppDir not found — apply-update.ps1 did not back up the pre-update app dir"
+              Dump-ApplyUpdateLog
+              exit 1
+          }
+
+          # Success is written by the RELAUNCHED server at boot, from the
+          # intent marker (resolveIntentOnBoot — intent.to matches its own
+          # version), not by the script itself — poll rather than assume it
+          # landed the instant health/ready went green.
+          $resultPath = Join-Path $updatesDir 'last-update-result.json'
+          $resultOk = $false
+          for ($i = 0; $i -lt 30; $i++) {
+              if (Test-Path -LiteralPath $resultPath) {
+                  try {
+                      $result = Get-Content -LiteralPath $resultPath -Raw | ConvertFrom-Json
+                      if ($result.status -eq 'success') { $resultOk = $true; break }
+                  } catch {}
+              }
+              Start-Sleep -Seconds 1
+          }
+          if (-not $resultOk) {
+              Write-Host "::error::last-update-result.json missing or status != success within 30s"
+              if (Test-Path -LiteralPath $resultPath) { Get-Content -LiteralPath $resultPath -Raw | Write-Host }
+              Dump-ApplyUpdateLog
+              Dump-ServerLog
+              exit 1
+          }
+
+          $newPid = [int](Get-Content (Join-Path $dataDir '.grm.pid') | Select-Object -First 1)
+          $stopProc = Start-Process -FilePath (Join-Path $extractDir 'GitHub Repo Manager.exe') -ArgumentList 'stop' -PassThru
+          $stopProc.WaitForExit()
+          if ($stopProc.ExitCode -ne 0) {
+              Dump-ServerLog
+              Write-Host "::error::update-smoke stop exited $($stopProc.ExitCode)"
+              exit 1
+          }
+          if (Get-Process -Id $newPid -ErrorAction SilentlyContinue) {
+              Write-Host "::error::relaunched server still running after update-smoke stop"
+              exit 1
+          }
+
+          Remove-Item -Recurse -Force -LiteralPath $extractDir -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force -LiteralPath $dataDir -ErrorAction SilentlyContinue
+          Remove-Item -Force -LiteralPath $zipCopy -ErrorAction SilentlyContinue
+          Write-Host "portable self-update dry-run smoke passed (same-version handoff: swap, relaunch, health, backup, last-update-result=success)"
+
       - name: Install Inno Setup
         run: choco install innosetup -y --no-progress
 
