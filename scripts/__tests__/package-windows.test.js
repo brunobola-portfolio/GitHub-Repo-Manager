@@ -336,6 +336,7 @@ describe('launcher stub compilation', () => {
     expect(args).toContain('/platform:anycpu')
     expect(args).toContain('/optimize+')
     expect(args).toContain('/r:System.Windows.Forms.dll')
+    expect(args).toContain('/r:System.Drawing.dll')
     expect(args).toContain('/win32icon:b.ico')
     expect(args).toContain('/out:G.exe')
     expect(args[args.length - 1]).toBe('L.cs')

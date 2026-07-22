@@ -167,8 +167,11 @@ Name: "{userstartup}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Parameter
 Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; WorkingDir: "{app}"; Flags: postinstall nowait skipifsilent
 ; Self-update relaunch: setup.exe re-invoked with /UPDATED=1 runs under
 ; /VERYSILENT, so the postinstall+skipifsilent entry above never fires and
-; the app would otherwise stay closed after an update. --no-browser: the
-; user's existing browser tab is already polling for the restart.
+; the app would otherwise stay closed after an update. Tray mode
+; (--no-browser, not --start-only): PrepareToInstall/TryStopRunningApp already
+; stopped the old tray so the exe could be replaced, so a fresh tray must
+; start here — it brings the server back AND restores the running indicator.
+; --no-browser: the user's existing tab is already polling for the restart.
 Filename: "{app}\{#MyAppExeName}"; Parameters: "--no-browser"; WorkingDir: "{app}"; Check: IsUpdatedMode; Flags: nowait
 
 [Code]
@@ -405,14 +408,59 @@ begin
   Result := PortText;
 end;
 
+// The resident tray records its own PID in .grm.tray.pid. It holds a lock on
+// {app}\GitHub Repo Manager.exe (which would block the [Files] replace and
+// leave the update aborted with no server running) and the single-instance
+// mutex, so it must be stopped before an update swaps files. Verify the PID is
+// really our exe (tasklist by PID + image name) before killing, so a reused
+// PID can never take down an unrelated process.
+procedure StopTrayIfRunning();
+var
+  PidStr, TasklistOut: string;
+  Lines: TArrayOfString;
+  ResultCode, I: Integer;
+  killedByPid: Boolean;
+begin
+  killedByPid := False;
+  PidStr := ReadFirstLine(ExpandConstant('{#MyDataDir}\.grm.tray.pid'));
+  if PidStr <> '' then
+  begin
+    TasklistOut := ExpandConstant('{tmp}\grm-tray-tasklist.txt');
+    if Exec(ExpandConstant('{cmd}'),
+        '/C tasklist /FI "PID eq ' + PidStr + '" /FI "IMAGENAME eq {#MyAppExeName}" /NH > "' + TasklistOut + '" 2>&1',
+        '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and LoadStringsFromFile(TasklistOut, Lines) then
+      for I := 0 to GetArrayLength(Lines) - 1 do
+        if Pos(Lowercase('{#MyAppExeName}'), Lowercase(Lines[I])) > 0 then
+        begin
+          Exec(ExpandConstant('{sys}\taskkill.exe'), '/PID ' + PidStr + ' /T /F',
+            '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+          killedByPid := True;
+          break;
+        end;
+  end;
+  // Fallback (no pidfile / stale-or-mismatched PID / a tray that crashed before
+  // writing it): the launcher exe has a UNIQUE product name, so an image-name
+  // kill can only hit our own tray — the setup binary is named differently, and
+  // the /UPDATED relaunch happens only after [Files]. This is what makes the
+  // exe replaceable even for a tray that predates the pidfile mechanism.
+  if not killedByPid then
+    Exec(ExpandConstant('{sys}\taskkill.exe'), '/IM "{#MyAppExeName}" /F',
+      '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  // Let the OS release the exe image lock before [Files] runs.
+  Sleep(1000);
+  DeleteFile(ExpandConstant('{#MyDataDir}\.grm.tray.pid'));
+end;
+
 // Ask the running server to exit cleanly (in-box curl.exe, Win10 1803+),
 // wait, then escalate to a PID-targeted kill. Never kill by image name —
-// node.exe may belong to anything.
+// node.exe may belong to anything. Also stops the resident tray first so the
+// exe it locks can be replaced.
 function TryStopRunningApp(): Boolean;
 var
   Token, PidStr: string;
   ResultCode, I: Integer;
 begin
+  StopTrayIfRunning();
   Token := ReadFirstLine(ExpandConstant('{#MyDataDir}\.grm.shutdown-token'));
   if Token <> '' then
   begin
