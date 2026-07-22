@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Premium Windows experience: a native launcher that runs the server hidden with
+no console window, one-click in-app updates with automatic rollback on the
+portable build, and full installer maintenance.
+
+### Added
+- **Native launcher `GitHub Repo Manager.exe`.** A flashless GUI-subsystem
+  stub (compiled at package time with the in-box .NET Framework 4.8 `csc.exe`
+  — no toolchain added, no runtime dependency on stock Windows 10/11) that
+  launches the server hidden: no console window, no window flash, proper
+  taskbar identity and icon. Start Menu shortcuts for launch, **Stop**, and
+  **View server logs**; an opt-in "start with Windows" (background) task.
+- **File-based server logs.** All server output goes to
+  `data\logs\server-YYYY-MM-DD.log` with 7-day retention (previously a
+  console buffer that vanished with the window), and a native error dialog
+  surfaces a failed startup with a one-click "open the log".
+- **Graceful shutdown endpoint.** `POST /api/system/shutdown` — loopback-only,
+  authenticated by a per-boot secret token file, CSRF-exempt by design (its
+  callers have no browser session), rate-limited. `Stop` and the installer
+  ask the server to exit cleanly (workers stopped, DB closed, in-flight
+  migration rows marked interrupted) before any hard kill.
+- **One-click updates.** Settings → About gains **Update now** on the packaged
+  Windows build (installer or portable): it downloads the new release,
+  verifies its SHA-256, snapshots the database, applies the update, restarts,
+  and reports the result as a toast. Progress (downloading / verifying /
+  restarting) streams to the UI while the server stays responsive.
+- **Automatic rollback (portable ZIP).** A failed post-update health check
+  reverts the app, runtime, and the pre-update database snapshot together and
+  relaunches — so a bad update can't leave a broken install or a mismatched
+  schema. Installer-mode recovery is manual (the previous `setup.exe` is
+  retained under `data\updates\`).
+- **Installer maintenance.** Re-running Setup over an existing install offers
+  **Repair / Uninstall**; installing over a running instance stops it
+  gracefully instead of aborting; uninstall keeps your data by default (or
+  deletes it via the prompt / silent `/PURGEDATA`).
+- **Schema-downgrade guard.** The app refuses to boot (with a clear message,
+  not a stack trace) if the database was migrated by a newer version than it
+  knows, pointing at the retained pre-update snapshot — an old build can never
+  silently corrupt a newer-schema database.
+
+### Changed
+- Windows documentation (`docs/windows.md`, README, docs index) rewritten for
+  the launcher, one-click update, and maintenance flows, correcting the prior
+  console-window / manual-update description.
+
 ## [4.8.2] - 2026-07-21
 
 ### Added

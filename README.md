@@ -20,7 +20,7 @@
 
 **Free-first** (full AI surface + every Work Board tab + unlimited teams on Free) · **Self-hosting free forever** (AGPL v3) · **Native on Windows**
 
-[**Try the Demo**](#quick-start-demo-mode) · [Features](#features) · [Installation](#installation) · [Documentation](docs/index.md) · [Pricing](#plans--pricing) · [Download for Windows](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest) · [What's new in v4.7.0 — native Windows app](CHANGELOG.md#470---2026-07-19)
+[**Try the Demo**](#quick-start-demo-mode) · [Features](#features) · [Installation](#installation) · [Documentation](docs/index.md) · [Pricing](#plans--pricing) · [Download for Windows](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest) · [What's new in v4.8 — guided Windows setup](CHANGELOG.md#480---2026-07-20)
 
 <sub>Production-hardened — AES-256-GCM BYOK · rolling sessions + CSRF double-submit · GitHub API circuit breaker · SSRF + DNS-rebinding guard · dual-theme a11y gate.</sub>
 
@@ -78,7 +78,7 @@ npm run dev:all
 
 Open **[http://localhost:5173](http://localhost:5173)** — Vite (:5173) proxies `/api` to Express (:3001). Explore with **87 mock repositories**, simulated organizations, teams, and AI responses. For real mode (your GitHub account), see [Installation](#installation).
 
-> **On Windows?** Skip the toolchain — download from the [latest release](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest) and double-click **Start**.
+> **On Windows?** Skip the toolchain — download from the [latest release](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest) and double-click **GitHub Repo Manager**.
 
 ---
 
