@@ -419,24 +419,36 @@ var
   PidStr, TasklistOut: string;
   Lines: TArrayOfString;
   ResultCode, I: Integer;
+  killedByPid: Boolean;
 begin
+  killedByPid := False;
   PidStr := ReadFirstLine(ExpandConstant('{#MyDataDir}\.grm.tray.pid'));
-  if PidStr = '' then exit;
-  TasklistOut := ExpandConstant('{tmp}\grm-tray-tasklist.txt');
-  if not Exec(ExpandConstant('{cmd}'),
-      '/C tasklist /FI "PID eq ' + PidStr + '" /FI "IMAGENAME eq {#MyAppExeName}" /NH > "' + TasklistOut + '" 2>&1',
-      '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then exit;
-  if not LoadStringsFromFile(TasklistOut, Lines) then exit;
-  for I := 0 to GetArrayLength(Lines) - 1 do
-    if Pos(Lowercase('{#MyAppExeName}'), Lowercase(Lines[I])) > 0 then
-    begin
-      Exec(ExpandConstant('{sys}\taskkill.exe'), '/PID ' + PidStr + ' /T /F',
-        '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-      // Give the OS a moment to release the exe file lock before [Files] runs.
-      Sleep(1000);
-      DeleteFile(ExpandConstant('{#MyDataDir}\.grm.tray.pid'));
-      exit;
-    end;
+  if PidStr <> '' then
+  begin
+    TasklistOut := ExpandConstant('{tmp}\grm-tray-tasklist.txt');
+    if Exec(ExpandConstant('{cmd}'),
+        '/C tasklist /FI "PID eq ' + PidStr + '" /FI "IMAGENAME eq {#MyAppExeName}" /NH > "' + TasklistOut + '" 2>&1',
+        '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and LoadStringsFromFile(TasklistOut, Lines) then
+      for I := 0 to GetArrayLength(Lines) - 1 do
+        if Pos(Lowercase('{#MyAppExeName}'), Lowercase(Lines[I])) > 0 then
+        begin
+          Exec(ExpandConstant('{sys}\taskkill.exe'), '/PID ' + PidStr + ' /T /F',
+            '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+          killedByPid := True;
+          break;
+        end;
+  end;
+  // Fallback (no pidfile / stale-or-mismatched PID / a tray that crashed before
+  // writing it): the launcher exe has a UNIQUE product name, so an image-name
+  // kill can only hit our own tray — the setup binary is named differently, and
+  // the /UPDATED relaunch happens only after [Files]. This is what makes the
+  // exe replaceable even for a tray that predates the pidfile mechanism.
+  if not killedByPid then
+    Exec(ExpandConstant('{sys}\taskkill.exe'), '/IM "{#MyAppExeName}" /F',
+      '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  // Let the OS release the exe image lock before [Files] runs.
+  Sleep(1000);
+  DeleteFile(ExpandConstant('{#MyDataDir}\.grm.tray.pid'));
 end;
 
 // Ask the running server to exit cleanly (in-box curl.exe, Win10 1803+),

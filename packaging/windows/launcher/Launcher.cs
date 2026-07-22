@@ -378,7 +378,7 @@ class TrayContext : ApplicationContext
             File.WriteAllText(_trayPidPath,
                 Process.GetCurrentProcess().Id.ToString(CultureInfo.InvariantCulture));
         }
-        catch { /* best effort — update fallbacks (taskkill by image) still work */ }
+        catch { /* best effort — the installer also has an image-name taskkill fallback */ }
     }
 
     void RemoveTrayPid()
@@ -434,7 +434,11 @@ class TrayContext : ApplicationContext
         {
             int port = Program.ReadPort(_dataDir);
             bool up = Program.IsHealthy(port);
-            _ui.Post(delegate { UpdateStatusUi(up, port); }, null);
+            // A tick can still be in flight when Quit tears the loop down; a
+            // Post into a dead sync context throws on this pool thread and would
+            // otherwise crash the (already-exiting) process.
+            try { _ui.Post(delegate { UpdateStatusUi(up, port); }, null); }
+            catch { /* loop exited during Quit */ }
         }
         finally
         {
@@ -477,7 +481,12 @@ class TrayContext : ApplicationContext
                 using (Process r = SpawnHidden("start.ps1")) { r.WaitForExit(); }
             }
             catch { /* health tick reports the resulting state */ }
-            _ui.Post(delegate { _busy = false; HealthTick(); }, null);
+            // Clear _busy on the UI thread, then run HealthTick HERE on the pool
+            // thread — wrapping it in the Post would put the blocking health HTTP
+            // back on the message loop (the freeze this rewrite exists to avoid).
+            // Post FIFO guarantees _busy=false lands before HealthTick's own Post.
+            _ui.Post(delegate { _busy = false; }, null);
+            HealthTick();
         });
     }
 
