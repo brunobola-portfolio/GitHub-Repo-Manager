@@ -129,8 +129,13 @@ static class Program
         {
             if (!createdNew)
             {
-                string dd = ResolveDataDir(root, dataDirArg);
-                OpenBrowser(ReadPort(dd));
+                // A human re-clicking the shortcut wants the browser; an
+                // autostart double-launch (--no-browser) must NOT pop a tab.
+                if (!noBrowser)
+                {
+                    string dd = ResolveDataDir(root, dataDirArg);
+                    OpenBrowser(ReadPort(dd));
+                }
                 return 0;
             }
 
@@ -270,16 +275,31 @@ class TrayContext : ApplicationContext
 {
     readonly string _root;
     readonly string _dataDir;
+    readonly string _trayPidPath;
+    readonly bool _noBrowser;
     readonly NotifyIcon _icon;
-    readonly System.Windows.Forms.Timer _healthTimer;
     readonly ToolStripMenuItem _statusItem;
     readonly ToolStripMenuItem _autostartItem;
-    bool _busy;
+    readonly SynchronizationContext _ui;
+    System.Threading.Timer _healthTimer;
+    int _polling;   // 0/1 guard so overlapping health ticks can't stack
+    bool _busy;     // guards Restart/Quit re-entry (set/read on the UI thread)
 
     public TrayContext(string root, string dataDirArg, bool noBrowser)
     {
         _root = root;
         _dataDir = Program.ResolveDataDir(root, dataDirArg);
+        _trayPidPath = Path.Combine(_dataDir, ".grm.tray.pid");
+        _noBrowser = noBrowser;
+
+        // All blocking work (spawning powershell, WaitForExit, health HTTP) runs
+        // on background threads; UI mutations are marshalled back here via _ui so
+        // the message loop never freezes and the icon never ghosts as
+        // "(Not Responding)". WinForms installs its sync context lazily, so make
+        // sure one exists on this (the UI) thread before Application.Run.
+        if (SynchronizationContext.Current == null)
+            SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
+        _ui = SynchronizationContext.Current;
 
         ContextMenuStrip menu = new ContextMenuStrip();
 
@@ -321,21 +341,18 @@ class TrayContext : ApplicationContext
         _icon.ContextMenuStrip = menu;
         _icon.DoubleClick += delegate { Program.OpenBrowser(Program.ReadPort(_dataDir)); };
 
-        // Start the server hidden (detached node via start.ps1), then let the
-        // health timer flip the UI to "running" and open the browser once ready.
-        StartServer(noBrowser);
+        // Record this tray's PID so an update (installer /UPDATED or
+        // apply-update.ps1) can stop it — a resident tray holds a lock that
+        // blocks replacing the exe, and holds the single-instance mutex.
+        WriteTrayPid();
 
-        _healthTimer = new System.Windows.Forms.Timer();
-        _healthTimer.Interval = 4000;
-        _healthTimer.Tick += delegate { RefreshHealth(); };
-        _healthTimer.Start();
+        // Start the server off the UI thread so the icon is responsive
+        // immediately; the completion callback opens the browser and shows the
+        // balloon once the loop is running.
+        ThreadPool.QueueUserWorkItem(delegate { StartServerWork(); });
 
-        _icon.ShowBalloonTip(3000, AppDisplayNameFor(),
-            "Running in the background — click the tray icon for options.",
-            ToolTipIcon.Info);
+        _healthTimer = new System.Threading.Timer(delegate { HealthTick(); }, null, 4000, 4000);
     }
-
-    static string AppDisplayNameFor() { return "GitHub Repo Manager"; }
 
     static string AppTooltip(string state) { return "GitHub Repo Manager — " + state; }
 
@@ -353,36 +370,51 @@ class TrayContext : ApplicationContext
         }
     }
 
-    void StartServer(bool noBrowser)
+    void WriteTrayPid()
     {
         try
         {
-            // -NoBrowser: the tray owns browser-opening (below) and failure
-            // surfacing, so start.ps1 stays a pure "spawn the server" step.
-            using (Process p = SpawnHidden("start.ps1"))
-            {
-                p.WaitForExit();
-            }
+            Directory.CreateDirectory(_dataDir);
+            File.WriteAllText(_trayPidPath,
+                Process.GetCurrentProcess().Id.ToString(CultureInfo.InvariantCulture));
         }
-        catch (Exception)
-        {
-            // A spawn failure surfaces on the first health refresh as "not
-            // running"; nothing to do here beyond letting the timer report it.
-        }
+        catch { /* best effort — update fallbacks (taskkill by image) still work */ }
+    }
 
-        if (!noBrowser)
+    void RemoveTrayPid()
+    {
+        try { if (File.Exists(_trayPidPath)) File.Delete(_trayPidPath); }
+        catch { /* best effort */ }
+    }
+
+    // Background: spawn the server, then marshal the browser-open + balloon +
+    // first status onto the UI thread.
+    void StartServerWork()
+    {
+        try
         {
-            // start.ps1 already waits for readiness before returning, so the
-            // browser opens to a live server rather than a connection error.
-            Program.OpenBrowser(Program.ReadPort(_dataDir));
+            using (Process p = SpawnHidden("start.ps1")) { p.WaitForExit(); }
         }
+        catch { /* first health tick will report "not responding" */ }
+
+        _ui.Post(delegate
+        {
+            if (!_noBrowser) Program.OpenBrowser(Program.ReadPort(_dataDir));
+            _icon.ShowBalloonTip(3000, "GitHub Repo Manager",
+                "Running in the background — click the tray icon for options.",
+                ToolTipIcon.Info);
+        }, null);
+
+        HealthTick();
     }
 
     Process SpawnHidden(string scriptName)
     {
         string script = Path.Combine(_root, scriptName);
+        // Forward the resolved data dir so the server the tray manages uses the
+        // exact same directory the tray reads for Open/Logs/port.
         string psArgs = "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "
-            + Program.QuoteArg(script) + " -NoBrowser";
+            + Program.QuoteArg(script) + " -NoBrowser -DataDir " + Program.QuoteArg(_dataDir);
 
         ProcessStartInfo psi = new ProcessStartInfo();
         psi.FileName = "powershell.exe";
@@ -393,17 +425,29 @@ class TrayContext : ApplicationContext
         return Process.Start(psi);
     }
 
-    void RefreshHealth()
+    // Background timer callback: the HTTP health probe runs here (off the UI
+    // thread), and only the resulting label update is marshalled back.
+    void HealthTick()
     {
-        int port = Program.ReadPort(_dataDir);
-        bool up = Program.IsHealthy(port);
-        string state = up
-            ? "Running on port " + port.ToString(CultureInfo.InvariantCulture)
-            : "Not responding";
-        _statusItem.Text = up
-            ? "● Running on port " + port.ToString(CultureInfo.InvariantCulture)
-            : "○ Not responding";
-        _icon.Text = AppTooltip(state);
+        if (Interlocked.Exchange(ref _polling, 1) == 1) return;
+        try
+        {
+            int port = Program.ReadPort(_dataDir);
+            bool up = Program.IsHealthy(port);
+            _ui.Post(delegate { UpdateStatusUi(up, port); }, null);
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _polling, 0);
+        }
+    }
+
+    void UpdateStatusUi(bool up, int port)
+    {
+        if (_busy) return;   // Restart owns the label while it runs
+        string p = port.ToString(CultureInfo.InvariantCulture);
+        _statusItem.Text = up ? "● Running on port " + p : "○ Not responding";
+        _icon.Text = AppTooltip(up ? "Running on port " + p : "Not responding");
     }
 
     void OpenLogs()
@@ -425,38 +469,44 @@ class TrayContext : ApplicationContext
         _busy = true;
         _statusItem.Text = "Restarting…";
         _icon.Text = AppTooltip("Restarting…");
-        try
+        ThreadPool.QueueUserWorkItem(delegate
         {
-            using (Process s = SpawnHidden("stop.ps1")) { s.WaitForExit(); }
-            using (Process r = SpawnHidden("start.ps1")) { r.WaitForExit(); }
-        }
-        catch { /* health timer reports the resulting state */ }
-        finally
-        {
-            _busy = false;
-            RefreshHealth();
-        }
+            try
+            {
+                using (Process s = SpawnHidden("stop.ps1")) { s.WaitForExit(); }
+                using (Process r = SpawnHidden("start.ps1")) { r.WaitForExit(); }
+            }
+            catch { /* health tick reports the resulting state */ }
+            _ui.Post(delegate { _busy = false; HealthTick(); }, null);
+        });
     }
 
     void Quit()
     {
         if (_busy) return;
         _busy = true;
-        _healthTimer.Stop();
-        try
+        if (_healthTimer != null) { _healthTimer.Dispose(); _healthTimer = null; }
+        ThreadPool.QueueUserWorkItem(delegate
         {
-            using (Process s = SpawnHidden("stop.ps1")) { s.WaitForExit(); }
-        }
-        catch { /* exiting regardless */ }
-        _icon.Visible = false;
-        _icon.Dispose();
-        ExitThread();
+            try
+            {
+                using (Process s = SpawnHidden("stop.ps1")) { s.WaitForExit(); }
+            }
+            catch { /* exiting regardless */ }
+            _ui.Post(delegate
+            {
+                RemoveTrayPid();
+                _icon.Visible = false;
+                _icon.Dispose();
+                ExitThread();
+            }, null);
+        });
     }
 
-    // Autostart is toggled via the HKCU Run key (self-contained, no COM
-    // shortcut). start.ps1's single-instance guard makes it safe even if the
-    // installer's optional {userstartup} shortcut also exists — the second
-    // login launch just reopens the browser.
+    // Autostart via the HKCU Run key (self-contained, no COM shortcut).
+    // start.ps1's single-instance guard, and the tray's own single-instance
+    // mutex, keep it safe if the installer's optional {userstartup} shortcut
+    // also exists — the second login launch just no-ops.
     bool IsAutostartEnabled()
     {
         try
@@ -494,7 +544,8 @@ class TrayContext : ApplicationContext
     {
         if (disposing)
         {
-            if (_healthTimer != null) _healthTimer.Dispose();
+            if (_healthTimer != null) { _healthTimer.Dispose(); _healthTimer = null; }
+            RemoveTrayPid();
             if (_icon != null) { _icon.Visible = false; _icon.Dispose(); }
         }
         base.Dispose(disposing);
