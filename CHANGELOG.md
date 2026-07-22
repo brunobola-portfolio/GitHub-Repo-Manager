@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.9.0] - 2026-07-22
+
 Premium Windows experience: a native launcher that runs the server hidden with
 no console window, one-click in-app updates with automatic rollback on the
 portable build, and full installer maintenance.
@@ -2329,7 +2331,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.8.2...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.9.0...HEAD
+[4.9.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.8.2...v4.9.0
 [4.8.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.8.1...v4.8.2
 [4.8.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.8.0...v4.8.1
 [4.8.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.7.0...v4.8.0
