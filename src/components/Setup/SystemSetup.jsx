@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Database, CheckCircle, Server, HardDrive, ShieldCheck, ArrowRight } from 'lucide-react';
 import { Spinner } from '../ui/Spinner';
+import { Button } from '../ui/Button';
 import { PageHeader } from '../ui/PageHeader';
 import { getCsrfToken } from '../../utils/api';
 
@@ -100,14 +101,15 @@ export function SystemSetup({ onComplete }) {
                 </div>
 
                 {error && (
-                    <div className="mt-8 px-4 py-3 bg-red-950/30 border border-red-800/50 rounded-xl text-sm text-red-400">
-                        {error}
-                        <button
+                    <div className="mt-8 px-4 py-3 bg-red-950/30 border border-red-800/50 rounded-xl text-sm text-red-400 flex items-center justify-between gap-3">
+                        <span>{error}</span>
+                        <Button
+                            variant="secondary"
+                            size="sm"
                             onClick={() => { setStep(0); setError(null); startSetup(); }}
-                            className="ml-3 underline hover:text-red-300 transition-colors"
                         >
                             Retry
-                        </button>
+                        </Button>
                     </div>
                 )}
 
@@ -118,13 +120,15 @@ export function SystemSetup({ onComplete }) {
                             animate={{ opacity: 1, y: 0 }}
                             className="mt-12"
                         >
-                            <button
+                            <Button
+                                variant="secondary"
+                                size="lg"
                                 onClick={onComplete}
-                                className="w-full py-4 bg-white text-slate-900 rounded-xl font-bold text-lg hover:bg-slate-100 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-white/10"
+                                className="w-full"
                             >
                                 <span>Launch Workspace</span>
-                                <ArrowRight className="w-5 h-5" />
-                            </button>
+                                <ArrowRight className="w-5 h-5" aria-hidden="true" />
+                            </Button>
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -135,24 +139,24 @@ export function SystemSetup({ onComplete }) {
 
 function SetupStep({ label, icon: Icon, status }) {
     return (
-        <div className={`flex items-center gap-4 p-4 rounded-xl border transition-all duration-500 ${status === 'active'
+        <div className={`flex items-center gap-4 p-4 rounded-xl border transition-colors duration-[var(--ds-duration)] ${status === 'active'
                 ? 'bg-white/10 border-white/20'
                 : 'border-transparent'
             }`}>
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-500 ${status === 'done' ? 'bg-green-500 text-white' :
-                    status === 'active' ? 'bg-indigo-500 text-white' :
-                        'bg-slate-800 text-slate-600'
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-[var(--ds-duration)] ${status === 'done' ? 'bg-emerald-500 text-white' :
+                    status === 'active' ? 'bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] text-white' :
+                        'bg-white/5 text-slate-500'
                 }`}>
                 {status === 'done' ? (
-                    <CheckCircle className="w-5 h-5" />
+                    <CheckCircle className="w-5 h-5" aria-hidden="true" />
                 ) : status === 'active' ? (
                     <Spinner size="lg" tone="onPrimary" />
                 ) : (
-                    <Icon className="w-5 h-5" />
+                    <Icon className="w-5 h-5" aria-hidden="true" />
                 )}
             </div>
             <div className="flex-1">
-                <span className={`font-medium transition-colors duration-[var(--ds-duration)] ${status === 'pending' ? 'text-slate-600' : 'text-white'
+                <span className={`font-medium transition-colors duration-[var(--ds-duration)] ${status === 'pending' ? 'text-slate-500' : 'text-white'
                     }`}>
                     {label}
                 </span>
