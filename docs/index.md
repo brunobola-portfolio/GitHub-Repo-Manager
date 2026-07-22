@@ -84,8 +84,9 @@ The 3 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHAN
 - [AI Providers (BYOK)](ai-providers.md) — Anthropic, OpenAI, Gemini,
   OpenRouter, Ollama, LMStudio. Per-feature overrides + cost hints.
 - [Windows](windows.md) — installer + portable ZIP, first-run bootstrap,
-  data locations, updating, and honest limits (unsigned binaries, winget
-  pending).
+  data locations, one-click update (installed) and automatic rollback
+  (portable), repair/uninstall maintenance, and honest limits (unsigned
+  binaries, winget pending).
 - [Cross-Repo Work Board](work-board.md) — review load, stale PRs, DORA
   metrics, presets, snooze, cache.
 - [GitHub Event Ingestion](event-ingestion.md) — webhook pipeline, event

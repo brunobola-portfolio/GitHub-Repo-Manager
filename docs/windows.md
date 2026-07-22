@@ -6,7 +6,7 @@ no admin rights required.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="images/windows-first-run.svg">
-  <img alt="Windows first-run flow: Start.cmd launches the bundled runtime, first run idempotently generates a local .env with four random secrets (an existing .env is left untouched), a port check falls back to the next free port if the configured one is busy, the server boots bound to 127.0.0.1 with data under DATA_DIR, and once the health check passes the browser opens" src="images/windows-first-run.svg" width="900">
+  <img alt="Windows first-run flow: GitHub Repo Manager.exe launches the bundled runtime, first run idempotently generates a local .env with four random secrets (an existing .env is left untouched), a port check falls back to the next free port if the configured one is busy, the server boots bound to 127.0.0.1 with data under DATA_DIR, and once the health check passes the browser opens" src="images/windows-first-run.svg" width="900">
 </picture>
 
 > Windows assets ship from **v4.7.0** onward. On an earlier release, use
