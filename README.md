@@ -328,12 +328,32 @@ A two-part app: a **React 19 + Vite 8** SPA and an **Express 5 + better-sqlite3*
   <img alt="Windows install flow: download setup.exe or the portable ZIP plus its .sha256 sidecar, first run generates four random secrets into a local .env and binds to 127.0.0.1 with no firewall prompt or LAN exposure, then the browser opens at localhost — no Docker, no Node.js install, no admin rights, CI boot-validated on every PR and release" src="docs/images/windows-install.svg" width="900">
 </picture>
 
-Download `github-repo-manager-<version>-setup.exe` or the portable ZIP from
-the [latest release](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest),
-run **Start GitHub Repo Manager**, and your browser opens once it's ready.
-Windows SmartScreen will likely warn the binary is unsigned — click **More
-info → Run anyway** and verify the download against the published `.sha256`
-sidecar if you want to double-check first. Full guide: [`docs/windows.md`](docs/windows.md).
+A self-contained build with its own bundled Node.js runtime — no Docker, no
+Node install, no admin rights.
+
+1. **Download** `github-repo-manager-<version>-setup.exe` or the portable ZIP
+   from the [latest release](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest).
+2. **Double-click `GitHub Repo Manager.exe`** — the server starts hidden in the
+   background (no console window) and your browser opens once it's ready.
+3. **Sign in** and connect your GitHub account through the one-time guided setup.
+
+Windows SmartScreen will likely warn the binary is unsigned — click **More info
+→ Run anyway**, and verify the download against the published `.sha256` sidecar
+first if you want to double-check.
+
+- **One-click updates** — the packaged Windows build (installer or portable)
+  self-updates from **Settings → About → Update now**: it downloads, verifies
+  the SHA-256, snapshots the database, and restarts. The portable ZIP also
+  rolls back automatically if the new version fails its health check; on the
+  installer, recovery is manual (reinstall the previous `setup.exe`). This is
+  the packaged Windows build only — not the Docker, self-hosted, or dev app.
+- **Shortcuts & autostart** — setup adds Start Menu entries (launch, stop, view
+  server logs, open data folder, uninstall) and can optionally start the app in
+  the background on Windows login (opt-in, off by default).
+- **Silent install** (admins) — `setup.exe /VERYSILENT /NORESTART /SUPPRESSMSGBOXES`
+  installs per-user with no UAC prompt.
+
+Full guide: [`docs/windows.md`](docs/windows.md).
 
 ### Setup
 
