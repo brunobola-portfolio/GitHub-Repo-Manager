@@ -150,7 +150,13 @@ Name: "{group}\Stop GitHub Repo Manager"; Filename: "{app}\{#MyAppExeName}"; Par
 Name: "{group}\View server logs"; Filename: "{win}\explorer.exe"; Parameters: """{#MyDataDir}\logs"""
 Name: "{group}\Open data folder"; Filename: "{win}\explorer.exe"; Parameters: """{#MyDataDir}"""
 Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
-Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
+; {autodesktop}, not {commondesktop}: this installer is PrivilegesRequired=lowest
+; (per-user, no UAC), and the all-users desktop ({commondesktop} =
+; C:\Users\Public\Desktop) is not writable without admin — creating the
+; shortcut there raised "access denied". {autodesktop} resolves to the current
+; user's own Desktop for a per-user install (and to the common desktop only
+; when Setup is actually running elevated).
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 Name: "{userstartup}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Parameters: "--no-browser"; WorkingDir: "{app}"; Tasks: autostart
 
 [Run]
@@ -166,6 +172,18 @@ Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; WorkingDi
 Filename: "{app}\{#MyAppExeName}"; Parameters: "--no-browser"; WorkingDir: "{app}"; Check: IsUpdatedMode; Flags: nowait
 
 [Code]
+const
+  // Inno's uninstall registry subkey uses the RESOLVED AppId, which has a
+  // SINGLE leading brace: "{A6F13D8E-...}_is1". SetupSetting("AppId") returns
+  // the RAW escaped form "{{A6F13D8E-...}" (double brace), so emitting it built
+  // a lookup path that never matched the real key — GetUninstallString/
+  // GetInstalledVersion always returned empty and the Repair/Uninstall
+  // maintenance form was silently skipped on reinstall. Verified against a real
+  // v4.9.0 install: the actual key is "{A6F13D8E-...}_is1", and the double-brace
+  // path did not exist. The GUID is the fixed AppId (must never change), so
+  // hard-coding the single-brace form here is the correct single source.
+  UninstallRegKey = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{A6F13D8E-2B4C-4A9F-8E3D-7C5B9A1F0D26}_is1';
+
 // Detects a currently-running instance via the pidfile Start writes into the
 // data dir (packaging/windows/start.ps1; pre-4.8.0 launchers wrote it to
 // {app}\app\.grm.pid instead, so that legacy location is checked too), and -
@@ -235,25 +253,17 @@ end;
 function GetUninstallString(): string;
 begin
   Result := '';
-  // PrivilegesRequired=lowest => per-user key in HKCU. The _is1 suffix and
-  // the retained brace prefix are Inno's registered-key format quirks.
-  if not RegQueryStringValue(HKCU,
-      'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#emit SetupSetting("AppId")}_is1',
-      'UninstallString', Result) then
-    RegQueryStringValue(HKLM,
-      'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#emit SetupSetting("AppId")}_is1',
-      'UninstallString', Result);
+  // PrivilegesRequired=lowest => the key is normally under HKCU; HKLM is the
+  // fallback for a machine-wide install performed elevated.
+  if not RegQueryStringValue(HKCU, UninstallRegKey, 'UninstallString', Result) then
+    RegQueryStringValue(HKLM, UninstallRegKey, 'UninstallString', Result);
 end;
 
 function GetInstalledVersion(): string;
 begin
   Result := '';
-  if not RegQueryStringValue(HKCU,
-      'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#emit SetupSetting("AppId")}_is1',
-      'DisplayVersion', Result) then
-    RegQueryStringValue(HKLM,
-      'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#emit SetupSetting("AppId")}_is1',
-      'DisplayVersion', Result);
+  if not RegQueryStringValue(HKCU, UninstallRegKey, 'DisplayVersion', Result) then
+    RegQueryStringValue(HKLM, UninstallRegKey, 'DisplayVersion', Result);
 end;
 
 // Numeric dotted compare; non-numeric fragments (e.g. "0.0.0-dev") count as
