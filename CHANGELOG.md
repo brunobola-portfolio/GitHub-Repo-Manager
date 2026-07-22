@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.10.0] - 2026-07-22
+
+A system-tray app for the Windows build, plus two installer fixes found in
+real-world v4.9.0 testing.
+
+### Added
+- **System-tray app.** Launching the Windows build now shows a tray icon (near
+  the clock) that indicates the server is running (**● Running on port N**) and
+  offers **Open in browser**, **View server logs**, **Restart server**,
+  **Start with Windows**, and **Quit** (graceful shutdown). Double-click the
+  icon to reopen the app. Still the same in-box-compiled launcher — no extra
+  toolchain, no runtime dependency — and a single-instance guard means clicking
+  the shortcut again just reopens the browser. Updates stop and relaunch the
+  tray cleanly so a self-update never leaves the app without its indicator.
+
+### Fixed
+- **Desktop shortcut "access denied".** The optional desktop shortcut was
+  created on the all-users desktop, which a per-user (no-UAC) install cannot
+  write to. It now uses the current user's own Desktop.
+- **Installer Repair/Uninstall menu never appeared.** Re-running Setup over an
+  existing install silently did a plain over-install instead of offering
+  **Repair / Uninstall**, because the existing-install lookup read the wrong
+  registry key (a brace-escaping mismatch). The maintenance dialog now appears
+  as intended.
+
 ## [4.9.0] - 2026-07-22
 
 Premium Windows experience: a native launcher that runs the server hidden with
@@ -2331,7 +2356,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.9.0...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.10.0...HEAD
+[4.10.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.9.0...v4.10.0
 [4.9.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.8.2...v4.9.0
 [4.8.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.8.1...v4.8.2
 [4.8.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.8.0...v4.8.1
