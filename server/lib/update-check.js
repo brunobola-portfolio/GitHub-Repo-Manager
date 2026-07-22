@@ -27,19 +27,42 @@ function stripLeadingV(tag) {
     return String(tag ?? '').replace(/^v/i, '').trim();
 }
 
+function pickAsset(assets, suffix) {
+    const found = Array.isArray(assets)
+        ? assets.find((a) => typeof a?.name === 'string' && a.name.endsWith(suffix))
+        : null;
+    if (!found || typeof found.browser_download_url !== 'string') return null;
+    return { name: found.name, url: found.browser_download_url, size: Number(found.size) || 0 };
+}
+
+/**
+ * Picks the Windows self-update artifacts out of a GitHub release's
+ * `assets[]`, ignoring anything else (source-code archives, other
+ * platforms). Suffix-matched so the version-stamped filename doesn't need
+ * to be parsed.
+ */
+export function extractReleaseAssets(assets) {
+    return {
+        setup: pickAsset(assets, '-setup.exe'),
+        setupSha256: pickAsset(assets, '-setup.exe.sha256'),
+        zip: pickAsset(assets, '-win-x64.zip'),
+        zipSha256: pickAsset(assets, '-win-x64.zip.sha256'),
+    };
+}
+
 /**
  * @param {object} [opts]
  * @param {string} opts.currentVersion - app's package.json version (no leading v)
  * @param {boolean} [opts.disabled] - UPDATE_CHECK=false: skip the outbound call entirely
  * @param {typeof fetch} [opts.fetchImpl] - injectable for tests
- * @returns {Promise<object>} `{ current, disabled: true }` when disabled, otherwise
- *   `{ current, latest, updateAvailable, releaseUrl, checkedAt }` (latest/updateAvailable/
- *   releaseUrl are null when the check is inconclusive — a failed fetch never claims
- *   an update and never claims "up to date" either).
+ * @returns {Promise<object>} `{ current, disabled: true, assets: null }` when disabled,
+ *   otherwise `{ current, latest, updateAvailable, releaseUrl, checkedAt, assets }`
+ *   (latest/updateAvailable/releaseUrl/assets are null when the check is inconclusive —
+ *   a failed fetch never claims an update and never claims "up to date" either).
  */
 export async function checkForUpdate({ currentVersion, disabled = false, fetchImpl = fetch } = {}) {
     if (disabled) {
-        return { current: currentVersion, disabled: true };
+        return { current: currentVersion, disabled: true, assets: null };
     }
 
     const now = Date.now();
@@ -72,6 +95,7 @@ export async function checkForUpdate({ currentVersion, disabled = false, fetchIm
             updateAvailable,
             releaseUrl: typeof data?.html_url === 'string' ? data.html_url : null,
             checkedAt: new Date().toISOString(),
+            assets: extractReleaseAssets(data?.assets),
         };
         cache = { result, expiresAt: now + CACHE_TTL_OK_MS };
         return result;
@@ -83,6 +107,7 @@ export async function checkForUpdate({ currentVersion, disabled = false, fetchIm
             updateAvailable: null,
             releaseUrl: null,
             checkedAt: new Date().toISOString(),
+            assets: null,
         };
         cache = { result, expiresAt: now + CACHE_TTL_FAIL_MS };
         return result;

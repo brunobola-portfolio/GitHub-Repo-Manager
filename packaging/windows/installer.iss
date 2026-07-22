@@ -122,6 +122,7 @@ Source: "{#StagingRoot}\app\*"; DestDir: "{app}\app"; Flags: ignoreversion recur
 Source: "{#StagingRoot}\runtime\*"; DestDir: "{app}\runtime"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#StagingRoot}\start.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StagingRoot}\stop.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#StagingRoot}\apply-update.ps1"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StagingRoot}\Start GitHub Repo Manager.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StagingRoot}\Stop GitHub Repo Manager.cmd"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#StagingRoot}\GitHub Repo Manager.exe"; DestDir: "{app}"; Flags: ignoreversion
@@ -158,6 +159,11 @@ Name: "{userstartup}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Parameter
 ; own; Setup must not sit blocked behind it. skipifsilent: unattended
 ; installs decide themselves when to first start the app.
 Filename: "{app}\{#MyAppExeName}"; Description: "Launch {#MyAppName}"; WorkingDir: "{app}"; Flags: postinstall nowait skipifsilent
+; Self-update relaunch: setup.exe re-invoked with /UPDATED=1 runs under
+; /VERYSILENT, so the postinstall+skipifsilent entry above never fires and
+; the app would otherwise stay closed after an update. --no-browser: the
+; user's existing browser tab is already polling for the restart.
+Filename: "{app}\{#MyAppExeName}"; Parameters: "--no-browser"; WorkingDir: "{app}"; Check: IsUpdatedMode; Flags: nowait
 
 [Code]
 // Detects a currently-running instance via the pidfile Start writes into the
@@ -216,6 +222,14 @@ begin
       Result := True;
       exit;
     end;
+end;
+
+// Set by the app's self-update flow (setup.exe ... /UPDATED=1): a silent
+// update must relaunch the app itself, because postinstall+skipifsilent
+// [Run] entries never execute under /VERYSILENT.
+function IsUpdatedMode(): Boolean;
+begin
+  Result := CmdLineParamExists('/UPDATED=1');
 end;
 
 function GetUninstallString(): string;

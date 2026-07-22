@@ -31,6 +31,7 @@ import { recoverInterruptedImportJobs } from './routes/import/_shared.js';
 import { config } from './config.js';
 import { initMonitoring, getSentryErrorHandler } from './lib/monitoring.js';
 import db, { initDB, seedMockData } from './db.js';
+import { DBSchemaFromFutureError } from './lib/db-migrations.js';
 import { aiService } from './ai-service.js';
 import { safeError, attachAIProvider } from './middleware/auth.js';
 import { createSQLiteStore } from './lib/session-store.js';
@@ -47,6 +48,7 @@ import { createSessionTokenLookup } from './lib/session-token-lookup.js';
 import { registerShutdown, requestShutdown } from './lib/shutdown.js';
 import { isManaged, initManagedRuntime, clearManagedRuntime } from './lib/managed-runtime.js';
 import { getDataDir } from './lib/data-dir.js';
+import { resolveIntentOnBoot } from './lib/updater.js';
 
 // API v1 route aggregator
 import v1Routes from './routes/v1/index.js';
@@ -66,7 +68,17 @@ await initMonitoring();
     secretsReport.warnings.forEach(w => logger.warn(`[secrets] ${w}`));
 }
 
-initDB();
+try {
+    initDB();
+} catch (error) {
+    if (error instanceof DBSchemaFromFutureError) {
+        // start.ps1's failure dialog points users at the log — this line is
+        // the whole story they need, so it must not be a raw stack trace.
+        logger.fatal({ dbVersion: error.dbVersion, appVersion: error.appVersion }, error.message);
+        process.exit(1);
+    }
+    throw error;
+}
 
 // Warm the license cache now that the schema exists. This used to fire at
 // require-tier.js's module-load time — but ESM import evaluation runs before
@@ -441,6 +453,14 @@ app.use((err, req, res, _next) => {
 function onListening() {
     logger.info({ port: config.port, host: config.host || '0.0.0.0 (all interfaces)', frontend: config.frontendUrl, mode: config.nodeEnv }, 'GitHub Repo Manager API is live');
     if (isManaged()) {
+        // Must run before initManagedRuntime: a boot that follows an
+        // apply-update.ps1 handoff needs its intent marker reconciled (and
+        // the resulting success/failure recorded for /api/system/status)
+        // before anything else about this boot is logged.
+        const outcome = resolveIntentOnBoot(getDataDir(), pkg.version);
+        if (outcome !== 'none') {
+            logger.info({ outcome, version: pkg.version }, '[managed] update intent resolved');
+        }
         initManagedRuntime(getDataDir());
         logger.info('[managed] shutdown token ready');
     }

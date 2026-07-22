@@ -29,9 +29,16 @@ vi.mock('../config.js', () => ({ config: { updateCheckEnabled: true } }));
 const checkForUpdateMock = vi.fn();
 vi.mock('../lib/update-check.js', () => ({ checkForUpdate: (...args) => checkForUpdateMock(...args) }));
 
+const isManagedMock = vi.fn();
+vi.mock('../lib/managed-runtime.js', () => ({
+    isManaged: (...args) => isManagedMock(...args),
+    verifyShutdownToken: vi.fn(),
+}));
+
 let router;
 beforeEach(async () => {
     vi.clearAllMocks();
+    isManagedMock.mockReturnValue(false);
     router = (await import('../routes/system.js')).default;
     mockedConfig = (await import('../config.js')).config;
     mockedConfig.updateCheckEnabled = true;
@@ -62,6 +69,7 @@ describe('GET /api/system/update-check', () => {
         expect(res.body).toEqual({
             current: pkg.version, latest: '99.0.0', updateAvailable: true,
             releaseUrl: 'https://example.com', checkedAt: '2026-01-01T00:00:00.000Z',
+            canSelfUpdate: false,
         });
     });
 
@@ -71,13 +79,27 @@ describe('GET /api/system/update-check', () => {
         const res = await request(app()).get('/api/system/update-check').set('x-authed', '1');
         expect(res.status).toBe(200);
         expect(checkForUpdateMock).toHaveBeenCalledWith({ currentVersion: pkg.version, disabled: true });
-        expect(res.body).toEqual({ current: pkg.version, disabled: true });
+        expect(res.body).toEqual({ current: pkg.version, disabled: true, canSelfUpdate: false });
     });
 
     it('never surfaces a 500 — an unexpected throw degrades to a bare current-version payload', async () => {
         checkForUpdateMock.mockRejectedValue(new Error('boom'));
         const res = await request(app()).get('/api/system/update-check').set('x-authed', '1');
         expect(res.status).toBe(200);
-        expect(res.body).toEqual({ current: pkg.version });
+        expect(res.body).toEqual({ current: pkg.version, canSelfUpdate: false });
+    });
+
+    it('canSelfUpdate is false when the process is unmanaged, regardless of platform', async () => {
+        isManagedMock.mockReturnValue(false);
+        checkForUpdateMock.mockResolvedValue({ current: pkg.version });
+        const res = await request(app()).get('/api/system/update-check').set('x-authed', '1');
+        expect(res.body.canSelfUpdate).toBe(false);
+    });
+
+    it('canSelfUpdate reflects isManaged() && platform === win32', async () => {
+        isManagedMock.mockReturnValue(true);
+        checkForUpdateMock.mockResolvedValue({ current: pkg.version });
+        const res = await request(app()).get('/api/system/update-check').set('x-authed', '1');
+        expect(res.body.canSelfUpdate).toBe(isManagedMock() && process.platform === 'win32');
     });
 });
