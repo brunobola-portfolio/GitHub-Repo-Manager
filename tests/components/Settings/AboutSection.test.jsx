@@ -1,12 +1,17 @@
 // tests/components/Settings/AboutSection.test.jsx
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { AboutSection } from '../../../src/components/Settings/AboutSection.jsx';
-import { apiCall } from '../../../src/utils/api';
+import { apiCall, ErrorType } from '../../../src/utils/api';
 
-vi.mock('../../../src/utils/api', () => ({
-    apiCall: vi.fn(),
-}));
+// Spread the real module rather than replacing it wholesale: AboutSection.jsx
+// imports ErrorType (for its connection-drop error-type check) alongside
+// apiCall, and a hand-rolled mock without it would leave ErrorType undefined
+// there, silently breaking that check for every test in this file.
+vi.mock('../../../src/utils/api', async (importOriginal) => {
+    const actual = await importOriginal();
+    return { ...actual, apiCall: vi.fn() };
+});
 
 // .env.test defaults VITE_MOCK_MODE=true; force the real-fetch branch so
 // every test here exercises the mocked apiCall() path (and the resolved
@@ -213,6 +218,28 @@ describe('AboutSection — one-click self-update (managed Windows only)', () => 
         expect(screen.queryByText(/already in progress/i)).not.toBeInTheDocument();
     });
 
+    it('an early BACKEND_UNAVAILABLE-shaped POST reject shows the neutral connection-drop message, never the npm dev-server string', async () => {
+        // Shaped exactly like the real ApiError categorizeError() builds for a
+        // dropped connection (src/utils/api.js) — userMessage carries the
+        // hardcoded dev string, which must never reach an end user mid-update.
+        const backendDown = Object.assign(new Error('Failed to fetch'), {
+            type: ErrorType.BACKEND_UNAVAILABLE,
+            userMessage: 'Backend server is not running. Please start the server with "npm run dev:server" or "npm run dev:all".',
+        });
+        apiCall.mockImplementation((url, options) => {
+            if (url === '/api/system/update-check') return Promise.resolve({ ...baseUpdateCheck, canSelfUpdate: true });
+            if (url === '/api/system/update' && options?.method === 'POST') return Promise.reject(backendDown);
+            throw new Error(`unexpected apiCall: ${url}`);
+        });
+        render(<AboutSection />);
+        fireEvent.click(await screen.findByRole('button', { name: /update now/i }));
+
+        await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/lost connection.*updating/i));
+        expect(screen.queryByText(/npm run dev:server/i)).not.toBeInTheDocument();
+        // Recoverable — the CTA reappears so the user can retry.
+        expect(screen.getByRole('button', { name: /update now/i })).toBeInTheDocument();
+    });
+
     it('a status poll rejecting while still downloading/verifying surfaces an inline error, not a silent restart', async () => {
         apiCall.mockImplementation((url, options) => {
             if (url === '/api/system/update-check') return Promise.resolve({ ...baseUpdateCheck, canSelfUpdate: true });
@@ -243,6 +270,70 @@ describe('AboutSection — one-click self-update (managed Windows only)', () => 
         await waitFor(() => expect(screen.getByText(/restarting.*reload automatically/i)).toBeInTheDocument());
         await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/api/health/ready'));
         await waitFor(() => expect(window.location.reload).toHaveBeenCalledTimes(1));
+    });
+
+    it('a stale overlapping status-poll tick rejecting with a BACKEND_UNAVAILABLE-shaped error after "restarting" was already observed stays on the restarting UI, never surfacing an error', async () => {
+        apiCall.mockImplementation((url, options) => {
+            if (url === '/api/system/update-check') return Promise.resolve({ ...baseUpdateCheck, canSelfUpdate: true });
+            if (url === '/api/system/update' && options?.method === 'POST') return Promise.resolve({ updating: true });
+            throw new Error(`unexpected apiCall: ${url}`);
+        });
+        render(<AboutSection />);
+        const updateButton = await screen.findByRole('button', { name: /update now/i });
+
+        // Switch to fake timers only now — everything from here on (the
+        // status-poll interval created inside the click handler) runs under
+        // fake time, so the two overlapping ticks below can be sequenced
+        // deterministically instead of racing real 1s wall-clock intervals.
+        vi.useFakeTimers();
+        try {
+            let statusCallCount = 0;
+            let rejectFirstTick;
+            const firstTickPromise = new Promise((_resolve, reject) => { rejectFirstTick = reject; });
+            apiCall.mockImplementation((url, options) => {
+                if (url === '/api/system/update-check') return Promise.resolve({ ...baseUpdateCheck, canSelfUpdate: true });
+                if (url === '/api/system/update' && options?.method === 'POST') return Promise.resolve({ updating: true });
+                if (url === '/api/system/update/status') {
+                    statusCallCount += 1;
+                    // Tick #1 (the immediate poll right after the POST) stays
+                    // pending until rejectFirstTick() below — simulating a
+                    // slow request still in flight when a later tick resolves.
+                    if (statusCallCount === 1) return firstTickPromise;
+                    return Promise.resolve({ phase: 'restarting', percent: 100, error: null, target: null });
+                }
+                throw new Error(`unexpected apiCall: ${url}`);
+            });
+
+            fireEvent.click(updateButton);
+            await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+            expect(statusCallCount).toBe(1);
+
+            // Interval tick #2 fires 1s later, resolves 'restarting', and
+            // enters the restarting UI — tick #1 is still pending underneath.
+            await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+            expect(statusCallCount).toBe(2);
+            expect(screen.getByText(/restarting.*reload automatically/i)).toBeInTheDocument();
+
+            // Tick #1 now rejects with a connection-drop-shaped error.
+            // Because "restarting" was already observed, this must be
+            // treated as the expected handoff, not a fresh failure — and per
+            // Finding B, even if it weren't, this error shape must never
+            // reach the user as the npm dev-server string.
+            const backendDown = Object.assign(new Error('Failed to fetch'), {
+                type: ErrorType.BACKEND_UNAVAILABLE,
+                userMessage: 'Backend server is not running. Please start the server with "npm run dev:server" or "npm run dev:all".',
+            });
+            await act(async () => {
+                rejectFirstTick(backendDown);
+                await Promise.resolve();
+            });
+
+            expect(screen.getByText(/restarting.*reload automatically/i)).toBeInTheDocument();
+            expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+            expect(screen.queryByText(/npm run dev:server/i)).not.toBeInTheDocument();
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('the server reporting phase "error" during the poll surfaces the server error inline', async () => {

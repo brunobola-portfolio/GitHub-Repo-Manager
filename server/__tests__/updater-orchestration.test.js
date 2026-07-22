@@ -13,7 +13,7 @@ import { createHash } from 'crypto';
 import path from 'path';
 import {
     startUpdate, getUpdateProgress, resetUpdaterForTests, UpdateError,
-    updatesDir, updateIntentPath,
+    updatesDir, updateIntentPath, awaitUpdateRunForTests,
 } from '../lib/updater.js';
 import { resetUpdateCheckCacheForTests } from '../lib/update-check.js';
 
@@ -104,7 +104,13 @@ describe('startUpdate — installed mode (setup.exe handoff)', () => {
         const requestShutdownImpl = vi.fn();
         const runDbBackupOnceImpl = vi.fn().mockResolvedValue({ skipped: false, destPath: null });
 
-        await startUpdate({ currentVersion: CURRENT_VERSION, dataDir, packageRoot, fetchImpl, spawnImpl, requestShutdownImpl, runDbBackupOnceImpl });
+        await expect(
+            startUpdate({ currentVersion: CURRENT_VERSION, dataDir, packageRoot, fetchImpl, spawnImpl, requestShutdownImpl, runDbBackupOnceImpl })
+        ).resolves.toEqual({ started: true });
+        // startUpdate() now only awaits the preconditions phase — the route
+        // needs it to return before the download even starts — so the
+        // download/verify/handoff run must be awaited separately here.
+        await awaitUpdateRunForTests();
 
         expect(getUpdateProgress().phase).toBe('restarting');
         expect(getUpdateProgress().target).toEqual({ from: CURRENT_VERSION, to: LATEST_VERSION, mode: 'installed' });
@@ -142,6 +148,7 @@ describe('startUpdate — installed mode (setup.exe handoff)', () => {
         const runDbBackupOnceImpl = vi.fn().mockResolvedValue({ skipped: false, destPath: fakeBackupPath });
 
         await startUpdate({ currentVersion: CURRENT_VERSION, dataDir, packageRoot, fetchImpl, spawnImpl, requestShutdownImpl, runDbBackupOnceImpl });
+        await awaitUpdateRunForTests();
 
         const snapshotPath = path.join(updatesDir(dataDir), `pre-update-${CURRENT_VERSION}.db`);
         expect(existsSync(snapshotPath)).toBe(true);
@@ -162,6 +169,7 @@ describe('startUpdate — portable mode (apply-update.ps1 handoff)', () => {
         process.env.PORT = '3001';
         try {
             await startUpdate({ currentVersion: CURRENT_VERSION, dataDir, packageRoot, fetchImpl, spawnImpl, requestShutdownImpl, runDbBackupOnceImpl });
+            await awaitUpdateRunForTests();
         } finally {
             if (originalPort === undefined) delete process.env.PORT; else process.env.PORT = originalPort;
         }
@@ -216,6 +224,9 @@ describe('startUpdate — preconditions', () => {
 
         releaseDeferred();
         await first;
+        // Let the first call's background run finish so its spawn/shutdown
+        // timer aren't still in flight when afterEach removes dataDir/packageRoot.
+        await awaitUpdateRunForTests();
     });
 
     it('rejects with no_update when checkForUpdate reports no update available', async () => {
@@ -257,12 +268,13 @@ describe('startUpdate — preconditions', () => {
         const runDbBackupOnceImpl = vi.fn().mockResolvedValue({ skipped: true });
         await expect(
             startUpdate({ currentVersion: CURRENT_VERSION, dataDir, packageRoot, fetchImpl: okFetch, spawnImpl, requestShutdownImpl, runDbBackupOnceImpl })
-        ).resolves.toBeUndefined();
+        ).resolves.toEqual({ started: true });
+        await awaitUpdateRunForTests();
     });
 });
 
 describe('startUpdate — checksum verification', () => {
-    it('rejects with checksum_mismatch and deletes the downloaded asset when the sidecar does not match', async () => {
+    it('surfaces checksum_mismatch via progress and deletes the downloaded asset when the sidecar does not match', async () => {
         writeFileSync(path.join(packageRoot, 'apply-update.ps1'), '# fixture\n', 'utf8');
         const fetchImpl = makeFetch({ assetHex: CORRUPT_HEX });
         const spawnFns = recordingSpawn();
@@ -271,7 +283,10 @@ describe('startUpdate — checksum verification', () => {
 
         await expect(
             startUpdate({ currentVersion: CURRENT_VERSION, dataDir, packageRoot, fetchImpl, spawnImpl: spawnFns.spawnImpl, requestShutdownImpl, runDbBackupOnceImpl })
-        ).rejects.toMatchObject({ code: 'checksum_mismatch' });
+        ).resolves.toEqual({ started: true });
+        // Checksum verification happens in the background download/verify
+        // phase now — the preconditions call above no longer sees it.
+        await awaitUpdateRunForTests();
 
         expect(getUpdateProgress().phase).toBe('error');
         expect(getUpdateProgress().error).toBe('checksum_mismatch');
@@ -283,7 +298,7 @@ describe('startUpdate — checksum verification', () => {
 });
 
 describe('startUpdate — download failure', () => {
-    it('rejects with download_failed on a non-2xx asset response', async () => {
+    it('surfaces download_failed via progress on a non-2xx asset response', async () => {
         mkdirSync(updatesDir(dataDir), { recursive: true });
         const fetchImpl = vi.fn(async (url) => {
             if (url === RELEASES_URL) return jsonResponse(releaseJson());
@@ -293,7 +308,8 @@ describe('startUpdate — download failure', () => {
         });
         await expect(
             startUpdate({ currentVersion: CURRENT_VERSION, dataDir, packageRoot, fetchImpl })
-        ).rejects.toMatchObject({ code: 'download_failed' });
+        ).resolves.toEqual({ started: true });
+        await awaitUpdateRunForTests();
         expect(getUpdateProgress().phase).toBe('error');
         expect(getUpdateProgress().error).toBe('download_failed');
     });
@@ -307,7 +323,9 @@ describe('startUpdate — download failure', () => {
         });
         await expect(
             startUpdate({ currentVersion: CURRENT_VERSION, dataDir, packageRoot, fetchImpl })
-        ).rejects.toMatchObject({ code: 'download_failed' });
+        ).resolves.toEqual({ started: true });
+        await awaitUpdateRunForTests();
+        expect(getUpdateProgress().error).toBe('download_failed');
         expect(existsSync(path.join(updatesDir(dataDir), 'grm-win-x64.zip'))).toBe(false);
     });
 });
@@ -337,7 +355,8 @@ describe('startUpdate — state machine resilience', () => {
         writeFileSync(path.join(packageRoot, 'apply-update.ps1'), '# fixture\n', 'utf8');
         await expect(
             startUpdate({ currentVersion: CURRENT_VERSION, dataDir, packageRoot, fetchImpl, spawnImpl, requestShutdownImpl, runDbBackupOnceImpl })
-        ).resolves.toBeUndefined();
+        ).resolves.toEqual({ started: true });
+        await awaitUpdateRunForTests();
         expect(getUpdateProgress().phase).toBe('restarting');
     });
 });

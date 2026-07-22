@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Info, ExternalLink, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react'
-import { apiCall } from '../../utils/api'
+import { apiCall, ErrorType } from '../../utils/api'
 import { useTabData } from '../../hooks/useTabData.js'
 import { PanelHeader } from '../ui/PanelHeader'
 import { Card } from '../ui/Card'
@@ -24,8 +24,9 @@ function safeSetItem(key, value) {
 // One-click self-update state machine (managed Windows installs only —
 // gated by data.canSelfUpdate, see server/routes/system.js isManaged()).
 //   idle       — nothing in flight; Update now / Dismiss both available
-//   starting   — POST /api/system/update in flight (can block for the
-//                whole download+verify span — see server/lib/updater.js)
+//   starting   — POST /api/system/update in flight; returns fast (202) once
+//                preconditions pass, before the download starts — see
+//                server/lib/updater.js's split preconditions/background split
 //   progress   — polling /api/system/update/status every 1s
 //   restarting — the server has reported (or stopped responding during)
 //                the file-swap handoff; polling /api/health/ready instead
@@ -54,7 +55,21 @@ function updateStatusLabel({ phase, percent }) {
     return phase === 'downloading' ? `${phase} ${percent}%` : phase
 }
 
+// A connection drop mid-update is expected — the server tears itself down
+// for the file swap and the port goes dark for a few seconds. err.userMessage
+// for BACKEND_UNAVAILABLE is the hardcoded dev string ("...npm run
+// dev:server..."), which is actively wrong/confusing for an end user mid
+// self-update, so these types are never shown verbatim — see
+// NEUTRAL_CONNECTION_DROP_MESSAGE below instead.
+const CONNECTION_DROP_ERROR_TYPES = new Set([ErrorType.BACKEND_UNAVAILABLE, ErrorType.TIMEOUT, ErrorType.NETWORK])
+const NEUTRAL_CONNECTION_DROP_MESSAGE = "Lost connection to the server while updating — it may be restarting; this page will reload when it's back."
+
+function isConnectionDropError(err) {
+    return CONNECTION_DROP_ERROR_TYPES.has(err?.type)
+}
+
 function extractErrorMessage(err, fallback) {
+    if (isConnectionDropError(err)) return NEUTRAL_CONNECTION_DROP_MESSAGE
     return err?.data?.error || err?.userMessage || err?.message || fallback
 }
 
@@ -105,8 +120,18 @@ export function AboutSection() {
     // download/verify, which must surface as an error rather than silently
     // being treated as the start of a restart.
     const lastObservedPhaseRef = useRef(null)
+    // Bumped every time clearStatusPoll() runs (a fresh poll session
+    // starting, a terminal transition, or unmount). setInterval doesn't wait
+    // for a slow tick's promise before scheduling the next one, so two ticks
+    // can be in flight together; a tick captures this value when it starts
+    // and re-checks it after its await settles, bailing out (no state
+    // mutation at all) if a newer tick or transition already moved things on
+    // in the meantime — otherwise a slow tick's stale result could clobber
+    // state a faster, later tick already set correctly.
+    const pollEpochRef = useRef(0)
 
     const clearStatusPoll = useCallback(() => {
+        pollEpochRef.current += 1
         if (statusPollRef.current) {
             clearInterval(statusPollRef.current)
             statusPollRef.current = null
@@ -167,8 +192,13 @@ export function AboutSection() {
         setUpdateProgress(null)
         setUpdateErrorMessage(null)
         const pollStatus = async () => {
+            const epoch = pollEpochRef.current
             try {
                 const status = await apiCall('/api/system/update/status')
+                // A newer tick (or a transition triggered independently, e.g.
+                // by that newer tick) already moved state on — this result is
+                // stale, apply none of it.
+                if (pollEpochRef.current !== epoch) return
                 lastObservedPhaseRef.current = status.phase
                 if (status.phase === 'restarting') {
                     enterRestarting()
@@ -184,10 +214,16 @@ export function AboutSection() {
                 }
                 if (mountedRef.current) setUpdateProgress(status)
             } catch (err) {
+                // Checked before the epoch guard below: once "restarting" has
+                // been observed, a stale/overlapping tick failing is exactly
+                // the expected handoff (the server going dark for the file
+                // swap), not a new failure — re-entering is a harmless no-op
+                // if another tick already got there first.
                 if (lastObservedPhaseRef.current === 'restarting') {
                     enterRestarting()
                     return
                 }
+                if (pollEpochRef.current !== epoch) return
                 clearStatusPoll()
                 if (mountedRef.current) {
                     setUpdatePhase(UPDATE_PHASE.ERROR)

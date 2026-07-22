@@ -236,6 +236,13 @@ const IDLE_PROGRESS = Object.freeze({ phase: 'idle', percent: 0, error: null, ta
 // to read it without threading state through the request that started it.
 let progress = IDLE_PROGRESS;
 
+// The background download/verify/handoff run kicked off by the most recent
+// startUpdate() call. Nothing in production awaits this — the route only
+// awaits the fast preconditions phase — so it's stored here purely for
+// awaitUpdateRunForTests() to give tests a deterministic hook instead of
+// racing real timers/IO.
+let inFlightRun = null;
+
 /** @returns {{phase: string, percent: number, error: string|null, target: object|null}} */
 export function getUpdateProgress() {
     return progress;
@@ -244,6 +251,18 @@ export function getUpdateProgress() {
 /** Test-only: reset the module singleton between test cases. */
 export function resetUpdaterForTests() {
     progress = IDLE_PROGRESS;
+    inFlightRun = null;
+}
+
+/**
+ * Test-only: await the background download/verify/handoff run kicked off by
+ * the most recent startUpdate() call, so assertions on spawn/requestShutdown/
+ * checksum-cleanup/etc. can run deterministically after it settles instead of
+ * racing it. Resolves immediately if no run is in flight. This promise never
+ * rejects — background failures are captured in `progress`, not thrown here.
+ */
+export function awaitUpdateRunForTests() {
+    return inFlightRun || Promise.resolve();
 }
 
 /**
@@ -272,70 +291,24 @@ async function downloadToFile(fetchImpl, url, destPath, onProgress) {
 }
 
 /**
- * Runs the full self-update sequence: precondition checks, download,
- * checksum verification, a DB snapshot for rollback, an update-intent
- * marker for the next boot to reconcile, then handoff to either the signed
- * installer (installed mode) or apply-update.ps1 (portable mode) followed
- * by a graceful shutdown so the handoff process can replace files this
- * process currently has open.
+ * Heavy phase of the self-update: download, checksum verify, DB snapshot,
+ * the update-intent marker, handoff spawn, and the deferred shutdown. Kicked
+ * off by startUpdate() but never awaited there — the route needs to respond
+ * before a 128MB download even starts, so this runs in the background while
+ * the client polls getUpdateProgress() via /update/status for percent.
  *
- * Every side effect that crosses a process/network boundary is injectable
- * so this can be exercised end-to-end without a real release, installer,
- * or process exit — see updater-orchestration.test.js.
- *
- * @throws {UpdateError}
+ * Every exit path funnels through the same hardening catch as the
+ * preconditions phase so a background failure still resets `progress` to
+ * 'error' rather than wedging future calls behind the already_running guard.
+ * Nothing in production awaits this promise, so it must never reject —
+ * failures are recorded in `progress`, and tests observe them there (via
+ * awaitUpdateRunForTests()) rather than via a caught rejection.
  */
-export async function startUpdate({
-    currentVersion,
-    dataDir,
-    packageRoot,
-    fetchImpl = fetch,
-    spawnImpl = spawn,
-    requestShutdownImpl = requestShutdown,
-    runDbBackupOnceImpl = runDbBackupOnce,
+async function runUpdateDownloadAndHandoff({
+    currentVersion, dataDir, packageRoot, fetchImpl, spawnImpl, requestShutdownImpl, runDbBackupOnceImpl,
+    pair, assetPath, shaPath, dir, latest, mode, installed,
 }) {
-    if (progress.phase !== 'idle' && progress.phase !== 'error') {
-        throw new UpdateError('already_running', 'An update is already in progress');
-    }
-
-    // Claimed before the network check (not after) so a second call that
-    // arrives while checkForUpdate is still in flight also sees a busy
-    // phase instead of racing through the same guard.
-    progress = { phase: 'downloading', percent: 0, error: null, target: null };
-
-    // Everything below can throw synchronously (bad packageRoot, a marker
-    // write failing, spawn itself throwing) as well as asynchronously
-    // (fetch/checksum/IO). Any of it leaving `progress` stuck on a non-idle,
-    // non-error phase would wedge every future call behind the
-    // already_running guard above until the process restarts, so every exit
-    // path here funnels through this catch to reset it before rethrowing —
-    // the route still needs the real error to map its HTTP status.
     try {
-        const checkResult = await checkForUpdate({ currentVersion, fetchImpl });
-        if (checkResult.updateAvailable !== true) {
-            throw new UpdateError('no_update', 'No update is available');
-        }
-
-        const installed = isInstalledMode(packageRoot);
-        const pair = selectUpdateAssets(checkResult, installed);
-        if (!pair) {
-            throw new UpdateError('no_assets', 'The latest release is missing required update assets for this install type');
-        }
-
-        // Untrusted release metadata: reject anything that isn't a plain
-        // filename before it ever reaches path.join.
-        const assetName = sanitizeAssetName(pair.asset.name);
-        const shaName = sanitizeAssetName(pair.sha.name);
-
-        const latest = checkResult.latest;
-        const mode = installed ? 'installed' : 'portable';
-        const dir = updatesDir(dataDir);
-        mkdirSync(dir, { recursive: true });
-        progress = { phase: 'downloading', percent: 0, error: null, target: { from: currentVersion, to: latest, mode } };
-
-        const assetPath = path.join(dir, assetName);
-        const shaPath = path.join(dir, shaName);
-
         try {
             await downloadToFile(fetchImpl, pair.asset.url, assetPath, (percent) => {
                 progress = { ...progress, percent };
@@ -392,8 +365,9 @@ export async function startUpdate({
             ).unref();
         }
 
-        // Delayed rather than immediate: the response to POST /update needs to
-        // reach the caller before this process starts tearing itself down.
+        // Delayed rather than immediate: the 202 response to POST /update
+        // needs to reach the caller before this process starts tearing
+        // itself down.
         const timer = setTimeout(() => requestShutdownImpl('update'), 500);
         timer.unref();
     } catch (err) {
@@ -403,6 +377,88 @@ export async function startUpdate({
             error: err instanceof UpdateError ? err.code : 'unexpected',
             target: progress.target,
         };
+    }
+}
+
+/**
+ * Preconditions phase of the self-update, awaited directly by the route:
+ * the already_running guard, checkForUpdate, install-mode/asset selection,
+ * and the untrusted-name sanitize/allowlist. On success this kicks off the
+ * heavy download/verify/handoff work in the background (never awaited here)
+ * and returns immediately so POST /update can respond 202 before a 128MB
+ * download even starts — the client then polls getUpdateProgress() via
+ * /update/status for percent.
+ *
+ * Every side effect in this phase can throw synchronously (bad packageRoot,
+ * a marker write failing) as well as asynchronously (the release-check
+ * fetch). Any of it leaving `progress` stuck on a non-idle, non-error phase
+ * would wedge every future call behind the already_running guard above
+ * until the process restarts, so every exit path here funnels through this
+ * catch to reset it before rethrowing — the route still needs the real
+ * error to map its HTTP status (already_running -> 409, everything else ->
+ * 400).
+ *
+ * @returns {Promise<{started: boolean}>}
+ * @throws {UpdateError}
+ */
+export async function startUpdate({
+    currentVersion,
+    dataDir,
+    packageRoot,
+    fetchImpl = fetch,
+    spawnImpl = spawn,
+    requestShutdownImpl = requestShutdown,
+    runDbBackupOnceImpl = runDbBackupOnce,
+}) {
+    if (progress.phase !== 'idle' && progress.phase !== 'error') {
+        throw new UpdateError('already_running', 'An update is already in progress');
+    }
+
+    // Claimed before the network check (not after) so a second call that
+    // arrives while checkForUpdate is still in flight also sees a busy
+    // phase instead of racing through the same guard.
+    progress = { phase: 'downloading', percent: 0, error: null, target: null };
+
+    let assetPath, shaPath, dir, latest, mode, installed, pair;
+    try {
+        const checkResult = await checkForUpdate({ currentVersion, fetchImpl });
+        if (checkResult.updateAvailable !== true) {
+            throw new UpdateError('no_update', 'No update is available');
+        }
+
+        installed = isInstalledMode(packageRoot);
+        pair = selectUpdateAssets(checkResult, installed);
+        if (!pair) {
+            throw new UpdateError('no_assets', 'The latest release is missing required update assets for this install type');
+        }
+
+        // Untrusted release metadata: reject anything that isn't a plain
+        // filename before it ever reaches path.join.
+        const assetName = sanitizeAssetName(pair.asset.name);
+        const shaName = sanitizeAssetName(pair.sha.name);
+
+        latest = checkResult.latest;
+        mode = installed ? 'installed' : 'portable';
+        dir = updatesDir(dataDir);
+        mkdirSync(dir, { recursive: true });
+        progress = { phase: 'downloading', percent: 0, error: null, target: { from: currentVersion, to: latest, mode } };
+
+        assetPath = path.join(dir, assetName);
+        shaPath = path.join(dir, shaName);
+    } catch (err) {
+        progress = {
+            phase: 'error',
+            percent: 0,
+            error: err instanceof UpdateError ? err.code : 'unexpected',
+            target: progress.target,
+        };
         throw err;
     }
+
+    inFlightRun = runUpdateDownloadAndHandoff({
+        currentVersion, dataDir, packageRoot, fetchImpl, spawnImpl, requestShutdownImpl, runDbBackupOnceImpl,
+        pair, assetPath, shaPath, dir, latest, mode, installed,
+    });
+
+    return { started: true };
 }
