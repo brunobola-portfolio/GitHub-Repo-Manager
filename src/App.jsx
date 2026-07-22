@@ -521,6 +521,19 @@ function AppContent() {
             : 'Database corruption was detected at startup and no healthy backup was found. A fresh database was started; the damaged file was preserved in the data folder for manual recovery.'
         )
       }
+      // Read-and-clear on the server side (system.js): this fires exactly once,
+      // on the first status check after a self-update restarted the process —
+      // the same boot-time reporting shape as dbRecovery above.
+      if (data.updateResult) {
+        const r = data.updateResult
+        if (r.status === 'success') {
+          toast.success(`Updated to v${r.to}`)
+        } else if (r.status === 'rolled-back') {
+          toast.warning(`Update to v${r.to} failed and was rolled back to v${r.from}. See the update log in your data folder.`)
+        } else if (r.status === 'failed') {
+          toast.warning(`Update to v${r.to} did not complete. See the update log in your data folder.`)
+        }
+      }
       setSystemInitialized(data.initialized)
       if (data.initialized) {
         checkAuth()

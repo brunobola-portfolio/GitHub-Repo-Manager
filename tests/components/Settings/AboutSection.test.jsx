@@ -1,5 +1,5 @@
 // tests/components/Settings/AboutSection.test.jsx
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { AboutSection } from '../../../src/components/Settings/AboutSection.jsx';
 import { apiCall } from '../../../src/utils/api';
@@ -136,6 +136,128 @@ describe('AboutSection', () => {
         });
         render(<AboutSection />);
         await waitFor(() => expect(screen.getByText(/v99\.1\.0 available/i)).toBeInTheDocument());
+    });
+});
+
+describe('AboutSection — one-click self-update (managed Windows only)', () => {
+    const baseUpdateCheck = {
+        current: CURRENT, latest: '99.0.0', updateAvailable: true,
+        releaseUrl: 'https://example.com/release', checkedAt: new Date().toISOString(),
+    };
+    let originalLocation;
+
+    beforeEach(() => {
+        originalLocation = window.location;
+        // Replace window.location so reload() can be spied without jsdom's
+        // "not implemented: navigation" throw — mirrors ViewErrorFallback.test.jsx.
+        delete window.location;
+        window.location = { ...originalLocation, reload: vi.fn() };
+        global.fetch = vi.fn();
+    });
+
+    afterEach(() => {
+        window.location = originalLocation;
+        delete global.fetch;
+        vi.restoreAllMocks();
+    });
+
+    it('Update now is absent when canSelfUpdate is false or missing (grounded honesty — e.g. mock/demo mode)', async () => {
+        apiCall.mockResolvedValue({ ...baseUpdateCheck, canSelfUpdate: false });
+        render(<AboutSection />);
+        await waitFor(() => expect(screen.getByText(/v99\.0\.0 available/i)).toBeInTheDocument());
+        expect(screen.queryByRole('button', { name: /update now/i })).not.toBeInTheDocument();
+    });
+
+    it('Update now renders next to Dismiss when canSelfUpdate is true and an update is available', async () => {
+        apiCall.mockResolvedValue({ ...baseUpdateCheck, canSelfUpdate: true });
+        render(<AboutSection />);
+        expect(await screen.findByRole('button', { name: /update now/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /dismiss/i })).toBeInTheDocument();
+    });
+
+    it('click posts to /api/system/update, then polls /api/system/update/status and renders phase + percent', async () => {
+        apiCall.mockImplementation((url, options) => {
+            if (url === '/api/system/update-check') return Promise.resolve({ ...baseUpdateCheck, canSelfUpdate: true });
+            if (url === '/api/system/update' && options?.method === 'POST') return Promise.resolve({ updating: true });
+            if (url === '/api/system/update/status') {
+                return Promise.resolve({ phase: 'downloading', percent: 42, error: null, target: null });
+            }
+            throw new Error(`unexpected apiCall: ${url}`);
+        });
+        render(<AboutSection />);
+        fireEvent.click(await screen.findByRole('button', { name: /update now/i }));
+
+        await waitFor(() => expect(apiCall).toHaveBeenCalledWith('/api/system/update', { method: 'POST' }));
+        await waitFor(() => expect(screen.getByText(/downloading 42%/i)).toBeInTheDocument());
+        // Mid-update: neither the CTA nor Dismiss should let the user walk away.
+        expect(screen.queryByRole('button', { name: /update now/i })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /dismiss/i })).not.toBeInTheDocument();
+    });
+
+    it('409 already_running jumps straight into the polling state instead of showing a failure', async () => {
+        const conflict = Object.assign(new Error('An update is already in progress'), {
+            status: 409, data: { error: 'An update is already in progress', code: 'already_running' },
+        });
+        apiCall.mockImplementation((url, options) => {
+            if (url === '/api/system/update-check') return Promise.resolve({ ...baseUpdateCheck, canSelfUpdate: true });
+            if (url === '/api/system/update' && options?.method === 'POST') return Promise.reject(conflict);
+            if (url === '/api/system/update/status') {
+                return Promise.resolve({ phase: 'verifying', percent: 100, error: null, target: null });
+            }
+            throw new Error(`unexpected apiCall: ${url}`);
+        });
+        render(<AboutSection />);
+        fireEvent.click(await screen.findByRole('button', { name: /update now/i }));
+
+        await waitFor(() => expect(screen.getByText(/verifying/i)).toBeInTheDocument());
+        expect(screen.queryByText(/already in progress/i)).not.toBeInTheDocument();
+    });
+
+    it('a status poll rejecting while still downloading/verifying surfaces an inline error, not a silent restart', async () => {
+        apiCall.mockImplementation((url, options) => {
+            if (url === '/api/system/update-check') return Promise.resolve({ ...baseUpdateCheck, canSelfUpdate: true });
+            if (url === '/api/system/update' && options?.method === 'POST') return Promise.resolve({ updating: true });
+            if (url === '/api/system/update/status') return Promise.reject(new Error('network down'));
+            throw new Error(`unexpected apiCall: ${url}`);
+        });
+        render(<AboutSection />);
+        fireEvent.click(await screen.findByRole('button', { name: /update now/i }));
+
+        await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/network down/i));
+        // Recoverable — the CTA reappears so the user can retry.
+        expect(screen.getByRole('button', { name: /update now/i })).toBeInTheDocument();
+    });
+
+    it('a status poll rejecting after observing "restarting" is treated as the expected handoff, then reloads once /api/health/ready is 200', async () => {
+        apiCall.mockImplementation((url, options) => {
+            if (url === '/api/system/update-check') return Promise.resolve({ ...baseUpdateCheck, canSelfUpdate: true });
+            if (url === '/api/system/update' && options?.method === 'POST') return Promise.resolve({ updating: true });
+            if (url === '/api/system/update/status') return Promise.resolve({ phase: 'restarting', percent: 100, error: null, target: null });
+            throw new Error(`unexpected apiCall: ${url}`);
+        });
+        global.fetch.mockResolvedValue({ ok: true, status: 200 });
+
+        render(<AboutSection />);
+        fireEvent.click(await screen.findByRole('button', { name: /update now/i }));
+
+        await waitFor(() => expect(screen.getByText(/restarting.*reload automatically/i)).toBeInTheDocument());
+        await waitFor(() => expect(global.fetch).toHaveBeenCalledWith('/api/health/ready'));
+        await waitFor(() => expect(window.location.reload).toHaveBeenCalledTimes(1));
+    });
+
+    it('the server reporting phase "error" during the poll surfaces the server error inline', async () => {
+        apiCall.mockImplementation((url, options) => {
+            if (url === '/api/system/update-check') return Promise.resolve({ ...baseUpdateCheck, canSelfUpdate: true });
+            if (url === '/api/system/update' && options?.method === 'POST') return Promise.resolve({ updating: true });
+            if (url === '/api/system/update/status') {
+                return Promise.resolve({ phase: 'error', percent: 0, error: 'checksum_mismatch', target: null });
+            }
+            throw new Error(`unexpected apiCall: ${url}`);
+        });
+        render(<AboutSection />);
+        fireEvent.click(await screen.findByRole('button', { name: /update now/i }));
+
+        await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/checksum_mismatch/i));
     });
 });
 
