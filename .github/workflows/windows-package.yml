@@ -543,7 +543,7 @@ jobs:
           }
           Write-Host "installer smoke test passed (install, boot, stop, uninstall — app dir gone, DB + .env preserved at the correct LocalAppData path, nothing written under the install dir)"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: windows-package-${{ steps.meta.outputs.version }}
           path: |
