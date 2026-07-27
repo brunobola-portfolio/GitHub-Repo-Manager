@@ -10,8 +10,8 @@ import { formatCompact, formatRelativeTime } from '../../utils/format'
 import { TrackedDot } from '../WorkBoard/TrackedDot'
 import { MigratedPill } from './MigratedPill'
 import { RepoHealthBadge } from '../AI/RepoHealthBadge'
-import { useRepoMetadata } from '../../hooks/useRepoMetadata'
 import { repoActions } from '../../actions/repoActions'
+import { getLanguageColor } from '../../utils/languageColors'
 import { TRANSITION, STAGGER, TAP } from '../ui/motion'
 
 const QUICK_LIMIT = 5
@@ -25,7 +25,7 @@ const QUICK_ACTION_CANDIDATES = Object.values(repoActions)
 	.filter((a) => a.surfaces.includes('quickAction'))
 	.sort((a, b) => (a.quickActionPriority ?? 999) - (b.quickActionPriority ?? 999))
 
-function RepoCardQuickActions({ repo, onAction, onContextMenu }) {
+function RepoCardQuickActions({ repo, onAction, onOpenContextMenu }) {
 	const top = QUICK_ACTION_CANDIDATES
 		.filter((a) => (a.isApplicable ? a.isApplicable(repo) : true))
 		.slice(0, QUICK_LIMIT)
@@ -50,7 +50,7 @@ function RepoCardQuickActions({ repo, onAction, onContextMenu }) {
 			})}
 			<Tooltip label="More actions">
 				<motion.button
-					onClick={(e) => { e.stopPropagation(); onContextMenu(e) }}
+					onClick={(e) => { e.stopPropagation(); onOpenContextMenu(e) }}
 					whileTap={TAP}
 					className="p-2 -m-0.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
 					aria-label="More actions"
@@ -70,12 +70,18 @@ function RepoCardQuickActions({ repo, onAction, onContextMenu }) {
  *   cannot override them; context-target wins over selected.
  * - Hover lift is suppressed while a context menu is open on this card
  *   (`isContextTarget`) to avoid the card jumping under the menu.
- * - `memo` compares only the props that affect render, plus the repo
- *   fields that actually change in-place (name, archived, private,
- *   updated_at).
+ * - `memo` compares EVERY prop this component renders from — the rendered
+ *   repo fields, the card-level UI props, `index`, the AI metadata and the
+ *   callbacks. RepoGrid keeps the callbacks referentially stable, so the
+ *   memo still bites; see the handlersRef block there.
+ *
+ * Callback contract: every handler receives the repo (or the event plus the
+ * repo) as an argument, so the parent can pass one stable function for the
+ * whole collection instead of one closure per card.
  */
 export const RepoCard = memo(function RepoCard({
 	repo,
+	aiMeta = null,
 	viewMode,
 	isSelected,
 	isContextTarget,
@@ -93,10 +99,9 @@ export const RepoCard = memo(function RepoCard({
 	// the cap the remaining cards share the final delay. Standalone usages (no
 	// index) get delay 0, so they still fade in on their own.
 	const entranceDelay = Math.min(index, 10) * STAGGER.fast
-	// Pulls from a module-singleton cache (60s TTL) so 100 cards share one
-	// network round-trip. The `get()` lookup is O(1) on the indexed Map.
-	const { get: getRepoMeta } = useRepoMetadata()
-	const aiMeta = getRepoMeta(repo.id)
+	// `aiMeta` is resolved once per collection by RepoGrid (one shared fetch,
+	// one subscription) rather than by each card subscribing on its own.
+	const handleContextMenu = (e) => onContextMenu?.(e, repo)
 
 	// Ring + border via inline style to guarantee visibility (Tailwind v4 class-order can't override inline)
 	const ringShadow = isContextTarget
@@ -105,7 +110,11 @@ export const RepoCard = memo(function RepoCard({
 			? '0 0 0 2px rgba(99, 102, 241, 0.9)'   // indigo-500 ring
 			: null
 
-	const baseShadow = '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)'
+	// Neutral, theme-aware elevation from the design system (see --ds-shadow-lg).
+	// The literal rgba pair this replaces was fine in light mode but the class
+	// list below also carried `shadow-slate-200/40`, which tinted the *class*
+	// shadow the colour of the page it falls on.
+	const baseShadow = 'var(--ds-shadow-lg)'
 	const stateStyle = ringShadow
 		? {
 			boxShadow: `${ringShadow}, ${baseShadow}`,
@@ -116,7 +125,7 @@ export const RepoCard = memo(function RepoCard({
 	return (
 		<motion.div
 			data-testid="repo-card"
-			onContextMenu={onContextMenu}
+			onContextMenu={handleContextMenu}
 			// Windowed lists mount/unmount cards as they scroll in and out of the
 			// virtualization window — replaying the entrance fade on every scroll
 			// would look like a flicker, not an animation. `skipEntranceAnimation`
@@ -130,7 +139,7 @@ export const RepoCard = memo(function RepoCard({
 			className={`
                 group relative isolate transition-all duration-[var(--ds-duration-slow)] cursor-pointer
                 border
-                shadow-lg shadow-slate-200/40 dark:shadow-black/40
+                shadow-[var(--ds-shadow-lg)]
                 ds-hover-lift
                 ${isContextTarget
 					? isSelected
@@ -138,7 +147,7 @@ export const RepoCard = memo(function RepoCard({
 						: 'bg-indigo-50/50 dark:bg-indigo-900/30'
 					: isSelected
 						? 'bg-indigo-50/50 dark:bg-indigo-900/20'
-						: 'bg-white/70 dark:bg-slate-800/80 border-slate-200/70 dark:border-slate-700/50 hover:border-indigo-400/60 dark:hover:border-indigo-500/40'
+						: 'bg-white/70 dark:bg-slate-800/80 border-[color:var(--ds-elevation-border)] hover:border-indigo-400/60 dark:hover:border-indigo-500/40'
 				}
                 ${isGrid ? 'rounded-2xl p-3 sm:p-4 xl:p-5 flex flex-col h-full' : 'rounded-xl p-4 flex items-center gap-4'}
                 ${/* Skip layout/paint for offscreen cards — with hundreds of
@@ -161,7 +170,7 @@ export const RepoCard = memo(function RepoCard({
 			    stays on the container (not an ARIA-interactive attribute). */}
 			<button
 				type="button"
-				onClick={onToggle}
+				onClick={() => onToggle(repo)}
 				aria-pressed={isSelected}
 				aria-label={`Select ${repo.name}${repo.private ? ' (private)' : ' (public)'}`}
 				data-testid="repo-card-select"
@@ -231,7 +240,14 @@ export const RepoCard = memo(function RepoCard({
 			<div className={`flex items-center flex-wrap gap-x-3 gap-y-2 text-xs text-slate-500 dark:text-slate-400 ${isGrid ? 'mt-auto pt-3 border-t border-slate-200/50 dark:border-slate-700/30' : ''}`}>
 				{repo.language && (
 					<div className="flex items-center gap-1.5 min-w-0">
-						<span className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0"></span>
+						{/* GitHub's own linguist colour, so the dot matches what the
+						    same repo shows on github.com. Shared with the Dashboard's
+						    LanguageChart via src/utils/languageColors.js. */}
+						<span
+							className="w-2 h-2 rounded-full flex-shrink-0"
+							style={{ backgroundColor: getLanguageColor(repo.language) }}
+							data-testid="repo-card-language-dot"
+						/>
 						<span className="truncate max-w-[80px]">{repo.language}</span>
 					</div>
 				)}
@@ -251,7 +267,7 @@ export const RepoCard = memo(function RepoCard({
 				)}
 
 				{/* Actions (Grid: Bottom Right, List: Right Side) */}
-				<RepoCardQuickActions repo={repo} onAction={onAction} onContextMenu={onContextMenu} />
+				<RepoCardQuickActions repo={repo} onAction={onAction} onOpenContextMenu={handleContextMenu} />
 			</div>
 			{isGrid && repo.pushed_at && (
 				<p className="hidden lg:block text-xs text-slate-400 dark:text-slate-500 mt-1.5">
@@ -261,10 +277,14 @@ export const RepoCard = memo(function RepoCard({
 		</motion.div>
 	)
 }, (prevProps, nextProps) => {
-	// Skip re-render only when every RENDERED repo field and card-level UI prop
-	// is unchanged. The previous whitelist omitted stars/forks/issues/language/
-	// description/pushed_at/full_name, so a card kept stale values when its repo
-	// data refreshed in place (same id, new object). List with the rendered set.
+	// Skip re-render only when every RENDERED repo field and card-level prop is
+	// unchanged. Two rounds of bugs came from an incomplete list here: first the
+	// omitted stars/forks/issues/language/description/pushed_at/full_name (stale
+	// values after an in-place repo refresh), then the omitted CALLBACKS — a new
+	// onAction/onToggle/onContextMenu never reached a card whose repo data
+	// hadn't changed, so the card kept invoking a stale closure. Nothing that
+	// this component reads may be left out; RepoGrid is responsible for handing
+	// down stable callback identities.
 	const a = prevProps.repo
 	const b = nextProps.repo
 	return (
@@ -281,9 +301,16 @@ export const RepoCard = memo(function RepoCard({
 		a.open_issues_count === b.open_issues_count &&
 		a.pushed_at === b.pushed_at &&
 		a.updated_at === b.updated_at &&
+		prevProps.aiMeta === nextProps.aiMeta &&
 		prevProps.viewMode === nextProps.viewMode &&
 		prevProps.isSelected === nextProps.isSelected &&
 		prevProps.isContextTarget === nextProps.isContextTarget &&
-		prevProps.skipEntranceAnimation === nextProps.skipEntranceAnimation
+		prevProps.skipEntranceAnimation === nextProps.skipEntranceAnimation &&
+		prevProps.index === nextProps.index &&
+		prevProps.onToggle === nextProps.onToggle &&
+		prevProps.onAction === nextProps.onAction &&
+		prevProps.onContextMenu === nextProps.onContextMenu &&
+		prevProps.onExplainHealth === nextProps.onExplainHealth &&
+		prevProps.onRepoClick === nextProps.onRepoClick
 	)
 })

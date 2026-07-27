@@ -33,9 +33,9 @@ export function DiffComputeOnDemand({ filename, additions = 0, deletions = 0, ch
                 {total} <span className="text-base font-medium text-slate-500 dark:text-slate-400">lines changed</span>
             </p>
             <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 tabular-nums">
-                <span className="text-emerald-600 dark:text-emerald-400">+{additions}</span>
+                <span className="ds-text-success">+{additions}</span>
                 {' '}
-                <span className="text-rose-600 dark:text-rose-400">−{deletions}</span>
+                <span className="ds-text-danger">−{deletions}</span>
             </p>
             <p className="text-xs text-amber-700 dark:text-amber-500 mt-3 max-w-md mx-auto inline-flex items-start gap-1.5 text-left">
                 <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />

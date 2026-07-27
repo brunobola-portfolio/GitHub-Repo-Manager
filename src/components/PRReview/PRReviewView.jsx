@@ -22,6 +22,11 @@ import { useAIDeepReview } from '../../hooks/useAIDeepReview'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { PublishReviewModal } from './AIDeepReview/PublishReviewModal'
 
+// Shared identity for "this file has no synced comments". `?? []` allocated a
+// fresh array on every render, which invalidated DiffPanel's commentThreads
+// memo (and its own memo) for every file without comments.
+const NO_COMMENTS = Object.freeze([])
+
 export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   const api = useRepoDetail(owner, repo)
   const { state, dispatch } = useReviewState(owner, repo, pullNumber)
@@ -197,6 +202,34 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
     () => state.files?.find((f) => f.filename === state.activeFile) ?? null,
     [state.files, state.activeFile]
   )
+
+  // DiffPanel is memoized; these three derived props are what decide whether
+  // its memo bites. Freshly-allocated arrays / arrow props would defeat it and
+  // drag the whole diff through every PRReviewView render.
+  const activeFileComments = useMemo(
+    () => state.comments[state.activeFile] ?? NO_COMMENTS,
+    [state.comments, state.activeFile]
+  )
+  const activeFilePendingComments = useMemo(
+    () => state.pendingComments.filter((c) => c.path === state.activeFile),
+    [state.pendingComments, state.activeFile]
+  )
+  const activeFileAIComments = useMemo(
+    () => stampedAIComments.filter((c) => c.path === state.activeFile),
+    [stampedAIComments, state.activeFile]
+  )
+
+  const handleAddPendingComment = useCallback(
+    (comment) => dispatch({ type: 'ADD_PENDING_COMMENT', comment }),
+    [dispatch]
+  )
+  const handleToggleResolved = useCallback(
+    (commentId) => dispatch({ type: 'TOGGLE_RESOLVED', commentId }),
+    [dispatch]
+  )
+  // deep.dismiss / deep.edit are already useCallback-stable in useAIDeepReview
+  // and take exactly (idx) / (idx, payload) — the previous inline arrows added
+  // nothing but a fresh identity on every render.
 
   // Navigation helpers (use displayFiles so j/k follow the visible order)
   const handleNextFile = useCallback(() => {
@@ -387,21 +420,15 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
           <DiffPanel
             file={activeFileObj}
             viewMode={state.viewMode}
-            comments={state.comments[state.activeFile] ?? []}
-            pendingComments={state.pendingComments.filter(
-              (c) => c.path === state.activeFile
-            )}
+            comments={activeFileComments}
+            pendingComments={activeFilePendingComments}
             resolvedComments={state.resolvedComments}
-            onAddComment={(comment) =>
-              dispatch({ type: 'ADD_PENDING_COMMENT', comment })
-            }
+            onAddComment={handleAddPendingComment}
             onReply={replyToComment}
-            onResolve={(commentId) =>
-              dispatch({ type: 'TOGGLE_RESOLVED', commentId })
-            }
-            aiComments={stampedAIComments.filter((c) => c.path === state.activeFile)}
-            onDismissAIComment={(idx) => deep.dismiss(idx)}
-            onEditAIComment={(idx, payload) => deep.edit(idx, payload)}
+            onResolve={handleToggleResolved}
+            aiComments={activeFileAIComments}
+            onDismissAIComment={deep.dismiss}
+            onEditAIComment={deep.edit}
           />
         </div>
 

@@ -142,8 +142,11 @@ export async function runEmailRetryOnce() {
  */
 export function startEmailRetryWorker({ intervalMs = DEFAULT_INTERVAL_MS } = {}) {
     if (timer) return
+    // Startup tick failure is a real signal (the worker may be dead) — log at
+    // ERROR, not WARN, so a non-functional retry worker doesn't go unnoticed.
+    // Matches webhook-retry-worker.js.
     runEmailRetryOnce().catch(err =>
-        logger.warn({ err }, '[email-retry] initial tick failed')
+        logger.error({ err }, '[email-retry] initial tick failed — retry worker may be unhealthy')
     )
     timer = setInterval(() => {
         runEmailRetryOnce().catch(err =>

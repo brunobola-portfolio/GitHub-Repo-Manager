@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Command } from 'cmdk'
 import * as Dialog from '@radix-ui/react-dialog'
 import {
@@ -257,7 +257,7 @@ export function CommandPalette({
     return () => offs.forEach(off => off())
   }, [])
   const { askMode, askQuery } = parseAskMode(input)
-  const displayRepos = repos.slice(0, 10)
+  const displayRepos = useMemo(() => repos.slice(0, 10), [repos])
   const liveEnabled = isOpen && !MOCK_MODE && !askMode
   const { data: live, loading, error } = useDebouncedGitHubSearch(input, liveEnabled)
   const ask = useDebouncedTranslateSearch(askQuery, isOpen && !MOCK_MODE && askMode)
@@ -266,25 +266,52 @@ export function CommandPalette({
   const trackedHook = useTrackedRepos()
   const { toast } = useToast()
   const repoActionCtx = useRepoActionContext()
-  const trackedRepoCommands = buildTrackedRepoCommands(trackedHook.repos)
-  const aiCommands = buildAICommands({ enabled: trackedHook.prefs?.ai_assistant_enabled === 1 })
-  const repoDetailCommands = activeView === 'repo-detail' ? buildRepoDetailCommands(selectedRepoDetail) : []
+
+  // Every group below is memoized because `input` is local state updated on
+  // each keystroke: without this, all ten registry builders (plus entitiesCtx)
+  // re-ran per character on top of cmdk's own re-scoring pass. The builders
+  // are pure, so the dependency lists are exactly the values they read.
+  const trackedRepoCommands = useMemo(
+    () => buildTrackedRepoCommands(trackedHook.repos),
+    [trackedHook.repos]
+  )
+  const aiAssistantEnabled = trackedHook.prefs?.ai_assistant_enabled === 1
+  const aiCommands = useMemo(
+    () => buildAICommands({ enabled: aiAssistantEnabled }),
+    [aiAssistantEnabled]
+  )
+  const repoDetailCommands = useMemo(
+    () => (activeView === 'repo-detail' ? buildRepoDetailCommands(selectedRepoDetail) : []),
+    [activeView, selectedRepoDetail]
+  )
   // PR-review-scoped commands: appear only while a PRReviewView is mounted
   // and has fired pr-review:focused. PRReviewView fires pr-review:blurred
   // on unmount. State subscription installed in a useEffect below.
-  const prReviewCommands = prReviewFocused ? buildPRReviewCommands() : []
-  const teamsCommands = activeView === 'teams' ? buildTeamsCommands() : []
-  const reposCommands = activeView === 'repos' ? buildReposCommands() : []
+  const prReviewCommands = useMemo(
+    () => (prReviewFocused ? buildPRReviewCommands() : []),
+    [prReviewFocused]
+  )
+  const teamsCommands = useMemo(
+    () => (activeView === 'teams' ? buildTeamsCommands() : []),
+    [activeView]
+  )
+  const reposCommands = useMemo(
+    () => (activeView === 'repos' ? buildReposCommands() : []),
+    [activeView]
+  )
   // Top-3 repo actions surfaced when the user is on the repos list. Cross-surface
   // discovery — slice 1 unified the registry, this is the palette's consumer.
-  const repoActionsCommands = activeView === 'repos'
-    ? buildRepoActionsCommands(displayRepos, repoActionCtx, { reposLimit: 3 })
-    : []
+  const repoActionsCommands = useMemo(
+    () => (activeView === 'repos'
+      ? buildRepoActionsCommands(displayRepos, repoActionCtx, { reposLimit: 3 })
+      : []),
+    [activeView, displayRepos, repoActionCtx]
+  )
 
   // Repo-detail entity registries — adopted opt-in: the App passes
   // `selectedRepoDetailEntities = { prs, branches, issues }` once it has
   // them in scope. Registries that don't have a list stay hidden.
-  const entitiesCtx = {
+  const entitiesCtx = useMemo(() => ({
     api: repoActionCtx.api,
     toast: repoActionCtx.toast,
     openModal: repoActionCtx.openModal,
@@ -296,16 +323,26 @@ export function CommandPalette({
     onGenerateDescription: (pr) => emitAppEvent(APP_EVENTS.GENERATE_PR_DESCRIPTION, pr),
     onSelectIssue: (issue, opts) => emitAppEvent(APP_EVENTS.OPEN_ISSUE_DETAIL, { issue, ...opts }),
     onPlanWithAI: (issue) => emitAppEvent(APP_EVENTS.PLAN_ISSUE_WITH_AI, issue),
-  }
-  const prCommands = activeView === 'repo-detail' && Array.isArray(selectedRepoDetailEntities?.prs)
-    ? buildPRActionCommands(selectedRepoDetailEntities.prs.slice(0, 3), entitiesCtx)
-    : []
-  const branchCommands = activeView === 'repo-detail' && Array.isArray(selectedRepoDetailEntities?.branches)
-    ? buildBranchActionCommands(selectedRepoDetailEntities.branches.slice(0, 3), entitiesCtx)
-    : []
-  const issueCommands = activeView === 'repo-detail' && Array.isArray(selectedRepoDetailEntities?.issues)
-    ? buildIssueActionCommands(selectedRepoDetailEntities.issues.slice(0, 3), entitiesCtx)
-    : []
+  }), [repoActionCtx, selectedRepoDetail?.full_name])
+
+  const prCommands = useMemo(
+    () => (activeView === 'repo-detail' && Array.isArray(selectedRepoDetailEntities?.prs)
+      ? buildPRActionCommands(selectedRepoDetailEntities.prs.slice(0, 3), entitiesCtx)
+      : []),
+    [activeView, selectedRepoDetailEntities, entitiesCtx]
+  )
+  const branchCommands = useMemo(
+    () => (activeView === 'repo-detail' && Array.isArray(selectedRepoDetailEntities?.branches)
+      ? buildBranchActionCommands(selectedRepoDetailEntities.branches.slice(0, 3), entitiesCtx)
+      : []),
+    [activeView, selectedRepoDetailEntities, entitiesCtx]
+  )
+  const issueCommands = useMemo(
+    () => (activeView === 'repo-detail' && Array.isArray(selectedRepoDetailEntities?.issues)
+      ? buildIssueActionCommands(selectedRepoDetailEntities.issues.slice(0, 3), entitiesCtx)
+      : []),
+    [activeView, selectedRepoDetailEntities, entitiesCtx]
+  )
 
   async function runContextCommand(item) {
     try {

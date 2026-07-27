@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { GitPullRequest, ExternalLink, Clock, Loader2, Sparkles, MessageSquare } from 'lucide-react'
 import { clsx } from 'clsx'
@@ -265,8 +265,13 @@ export function MyReviewsTab({ hasAI = false }) {
         },
     })
 
-    const filtered = applyFilters(data || [], params)
-    const reviews = filtered.filter(r => !optimisticallyRemoved.has(`${r.repoFullName}#${r.prNumber}`))
+    // applyFilters allocates three Sets per call and always returns a new
+    // array, so running it in the render body gave useFocusedRow a fresh
+    // `items` identity on every render (re-binding its keydown listener).
+    const reviews = useMemo(() => {
+        const filtered = applyFilters(data || [], params)
+        return filtered.filter(r => !optimisticallyRemoved.has(`${r.repoFullName}#${r.prNumber}`))
+    }, [data, params, optimisticallyRemoved])
     const { focusedIndex, setFocusedIndex } = useFocusedRow(reviews)
 
     if (loading) return <SkeletonList count={5} />

@@ -309,4 +309,33 @@ describe('email retry + dead-letter', () => {
         expect(second.picked).toBe(0)
         expect(mockFetch).toHaveBeenCalledTimes(1)
     })
+
+    // -------------------------------------------------------------------------
+    // 7. A dead retry worker must be loud
+    // -------------------------------------------------------------------------
+    it('logs a failed startup tick at ERROR, matching webhook-retry-worker', async () => {
+        // Hand the worker a store whose query result is not iterable, so the
+        // tick rejects the way any unforeseen breakage would.
+        memDb.close()
+        memDb = { prepare: () => ({ all: () => null }), close() {} }
+
+        const logger = (await import('../lib/logger.js')).default
+        logger.error.mockClear()
+        logger.warn.mockClear()
+
+        const { startEmailRetryWorker, stopEmailRetryWorker } = await import('../lib/email-retry-worker.js')
+        try {
+            startEmailRetryWorker({ intervalMs: 1_000_000 })
+            await new Promise((r) => setImmediate(r))
+
+            const startupMsg = /initial tick failed/
+            const erroredStartup = logger.error.mock.calls.some(([, m]) => startupMsg.test(m ?? ''))
+            expect(erroredStartup).toBe(true)
+            // The startup failure must not be buried at WARN.
+            const warnedStartup = logger.warn.mock.calls.some(([, m]) => startupMsg.test(m ?? ''))
+            expect(warnedStartup).toBe(false)
+        } finally {
+            stopEmailRetryWorker()
+        }
+    })
 })

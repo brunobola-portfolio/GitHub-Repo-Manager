@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { GitPullRequest, ExternalLink, Clock, AlertTriangle, Loader2, Sparkles } from 'lucide-react'
 import { clsx } from 'clsx'
@@ -169,8 +169,13 @@ export function StalePRsTab({ hasAI = false }) {
         },
     })
 
-    const filtered = applyFilters(data || [], params)
-    const prs = filtered.filter(p => !optimisticallyRemoved.has(`${p.repoFullName}#${p.prNumber}`))
+    // Memoized for the same reason as MyReviewsTab: applyFilters is O(n) with
+    // three Set allocations and a new array identity every call, which
+    // useFocusedRow consumes as a dependency.
+    const prs = useMemo(() => {
+        const filtered = applyFilters(data || [], params)
+        return filtered.filter(p => !optimisticallyRemoved.has(`${p.repoFullName}#${p.prNumber}`))
+    }, [data, params, optimisticallyRemoved])
     const { focusedIndex, setFocusedIndex } = useFocusedRow(prs)
 
     if (loading) return <SkeletonList count={6} />

@@ -1,5 +1,7 @@
+import { useCallback, useRef } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { RepoCard } from './RepoCard'
+import { useRepoMetadata } from '../../hooks/useRepoMetadata'
 import { useVirtualWindow } from '../../hooks/useVirtualWindow'
 
 // Mirrors the migration wizard's VIRTUALIZATION_THRESHOLD
@@ -75,19 +77,43 @@ export function RepoGrid({
 		enabled: isWindowed,
 	})
 
+	// One subscription for the whole collection instead of one per card:
+	// useRepoMetadata registers a module-level listener per instance, so 100
+	// cards meant 100 listeners and 100 setState calls in a single commit when
+	// the shared fetch resolved.
+	const { map: repoMetadata } = useRepoMetadata()
+
+	// RepoList rebuilds onAction / onContextMenu / onExplainHealth on each of
+	// its own renders. Forwarding those straight through would defeat
+	// RepoCard's memo for every card, so the wrappers below keep a stable
+	// identity and dispatch through a ref to whatever the LATEST prop is.
+	// That is what lets RepoCard's comparator include the callbacks instead of
+	// silently excluding them (the old exclusion pinned stale closures — a
+	// correctness bug, not just a perf shortcut).
+	const handlersRef = useRef(null)
+	// eslint-disable-next-line react-hooks/refs -- deliberate render-time refresh (same pattern as toastRef in useSessionExpiry): the wrappers below must dispatch to the LATEST callback, and reading it at call time is exactly what keeps them from going stale
+	handlersRef.current = { onToggle, onAction, onContextMenu, onExplainHealth, onRepoClick }
+
+	const handleToggle = useCallback((repo) => handlersRef.current.onToggle(repo.id), [])
+	const handleAction = useCallback((actionId, repo) => handlersRef.current.onAction(actionId, repo), [])
+	const handleContextMenu = useCallback((e, repo) => handlersRef.current.onContextMenu(e, repo), [])
+	const handleRepoClick = useCallback((repo) => handlersRef.current.onRepoClick?.(repo), [])
+	const handleExplainHealth = useCallback((repo) => handlersRef.current.onExplainHealth?.(repo), [])
+
 	const renderCard = (repo, i) => (
 		<RepoCard
 			key={repo.id}
 			index={i}
 			repo={repo}
+			aiMeta={repoMetadata.get(repo.id) ?? null}
 			viewMode={viewMode}
 			isSelected={selectedIds.has(repo.id)}
 			isContextTarget={contextTargetId === repo.id}
-			onToggle={() => onToggle(repo.id)}
-			onAction={onAction}
-			onContextMenu={(e) => onContextMenu(e, repo)}
-			onExplainHealth={onExplainHealth ? (r) => onExplainHealth(r) : undefined}
-			onRepoClick={onRepoClick}
+			onToggle={handleToggle}
+			onAction={handleAction}
+			onContextMenu={handleContextMenu}
+			onExplainHealth={onExplainHealth ? handleExplainHealth : undefined}
+			onRepoClick={handleRepoClick}
 			skipEntranceAnimation={isWindowed}
 		/>
 	)

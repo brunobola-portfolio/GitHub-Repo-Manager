@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { CircleDot, Clock } from 'lucide-react'
 import { useMyOpenIssues } from '../../../hooks/useWorkBoard'
@@ -13,6 +14,8 @@ import { RowIconBadge } from '../../ui/RowIconBadge'
 export function MyIssuesTab() {
     const { data, loading, error, refresh } = useMyOpenIssues()
     const { params } = useWorkBoardFilters()
+    // Above the early returns so it stays an unconditional hook call.
+    const issues = useMemo(() => applyFilters(data || [], params), [data, params])
 
     if (loading) return <SkeletonList count={4} />
     if (error) {
@@ -20,7 +23,6 @@ export function MyIssuesTab() {
         return <ErrorState error={error} what="issues" onRetry={refresh} />
     }
 
-    const issues = applyFilters(data || [], params)
     if (issues.length === 0) {
         return (
             <EmptyStateDiscovery

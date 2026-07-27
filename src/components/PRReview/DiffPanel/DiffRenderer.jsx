@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo } from 'react'
+import { memo, useCallback, useDeferredValue, useMemo } from 'react'
 import { DiffView, DiffModeEnum } from '@git-diff-view/react'
 // NOTE: This imports global CSS from the diff library. If upgrading @git-diff-view,
 // check for class name conflicts with Tailwind or the design system.
@@ -115,7 +115,11 @@ function parsePatchToHunks(patch, filename) {
  * @param {number}   [props.tabWidth=4]      - Number of spaces each tab character expands to
  * @param {boolean}  [props.wrap=false]      - When true, long lines wrap instead of scrolling horizontally
  */
-export function DiffRenderer({
+// memo: DiffPanel owns the inline-comment composer's `commentBody` state, so
+// it re-renders on every keystroke. Without this the third-party <DiffView>
+// (and its highlighting) re-rendered with it — the dominant cost of typing a
+// review comment on a large diff.
+export const DiffRenderer = memo(function DiffRenderer({
   filename,
   patch,
   viewMode,
@@ -154,6 +158,13 @@ export function DiffRenderer({
     }
   }, [expanded, filename, lang])
 
+  // Stable identity so DiffView isn't handed a brand-new handler on every
+  // render — the library treats that as a prop change on every gutter row.
+  const handleAddWidgetClick = useCallback(
+    (lineNumber, side) => onAddComment?.({ lineNumber, side }),
+    [onAddComment]
+  )
+
   const diffMode =
     viewMode === 'unified' ? DiffModeEnum.Unified : DiffModeEnum.Split
 
@@ -190,11 +201,7 @@ export function DiffRenderer({
           diffViewTheme={isDark ? 'dark' : 'light'}
           diffViewHighlight
           diffViewAddWidget={Boolean(onAddComment)}
-          onAddWidgetClick={
-            onAddComment
-              ? (lineNumber, side) => onAddComment({ lineNumber, side })
-              : undefined
-          }
+          onAddWidgetClick={onAddComment ? handleAddWidgetClick : undefined}
         />
       </ErrorBoundary>
     </div>
@@ -216,4 +223,4 @@ export function DiffRenderer({
     )
   }
   return diffElement
-}
+})

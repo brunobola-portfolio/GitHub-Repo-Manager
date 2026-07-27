@@ -19,6 +19,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import { makeIntegrationDb } from './helpers/integration-db.js';
 
 const { initDB: realInitDB } = await vi.importActual('../db.js');
@@ -135,5 +138,141 @@ describe('GET /metrics', () => {
             .set('Authorization', 'Bearer correct-token');
         expect(res.status).toBe(200);
         expect(res.text).toMatch(/route="unmatched"/);
+    });
+});
+
+/**
+ * Domain gauges — the "is this install quietly broken?" signals. Every
+ * assertion goes through a real scrape, because the contract under test is
+ * that they are collected lazily during `register.metrics()` and that a
+ * collector failure degrades to a missing series rather than a 500.
+ */
+describe('GET /metrics — domain gauges', () => {
+    let tmpDir;
+
+    /** Scrape and return the response body, asserting a 200. */
+    async function scrape() {
+        process.env.METRICS_TOKEN = 'correct-token';
+        const res = await request(buildApp())
+            .get('/metrics')
+            .set('Authorization', 'Bearer correct-token');
+        expect(res.status).toBe(200);
+        return res.text;
+    }
+
+    /** Pull a single sample's numeric value out of the exposition text. */
+    function sample(text, line) {
+        const m = new RegExp(`^${line.replace(/[{}"/\\^$+?.()|[\]]/g, '\\$&')} (.+)$`, 'm').exec(text);
+        return m ? Number(m[1]) : undefined;
+    }
+
+    beforeEach(() => {
+        tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'metrics-gauges-'));
+        for (const t of ['gh_outbox', 'email_dead_letter', 'webhook_events_dead_letter']) {
+            testDb.exec(`DELETE FROM ${t}`);
+        }
+    });
+
+    afterEach(() => {
+        delete process.env.DB_BACKUP_DIR;
+        delete testDb.dbPath;
+        try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { /* best effort */ }
+    });
+
+    it('reports the depth of every background queue, counting only unfinished rows', async () => {
+        testDb.prepare('INSERT OR IGNORE INTO users (id, username) VALUES (1, ?)').run('queue-user');
+        const outbox = testDb.prepare(`
+            INSERT INTO gh_outbox (user_id, method, url, idempotency_key, status)
+            VALUES (1, 'POST', '/repos/a/b/issues', ?, ?)
+        `);
+        outbox.run('k1', 'pending');
+        outbox.run('k2', 'pending');
+        outbox.run('k3', 'succeeded');   // finished — must not count
+
+        const email = testDb.prepare(`
+            INSERT INTO email_dead_letter (to_address, subject, resolved_at) VALUES (?, 'x', ?)
+        `);
+        email.run('a@example.com', null);
+        email.run('b@example.com', '2026-01-01T00:00:00Z'); // resolved — must not count
+
+        testDb.prepare(`
+            INSERT INTO webhook_events_dead_letter (delivery_id, event_type, payload, last_error, next_retry_at)
+            VALUES ('d1', 'push', '{}', 'boom', '2026-01-01T00:00:00Z')
+        `).run();
+
+        const text = await scrape();
+        expect(text).toContain('# TYPE db_queue_depth gauge');
+        expect(sample(text, 'db_queue_depth{queue="gh_outbox"}')).toBe(2);
+        expect(sample(text, 'db_queue_depth{queue="email_dead_letter"}')).toBe(1);
+        expect(sample(text, 'db_queue_depth{queue="webhook_events_dead_letter"}')).toBe(1);
+    });
+
+    it('re-collects on every scrape rather than caching the first snapshot', async () => {
+        expect(sample(await scrape(), 'db_queue_depth{queue="email_dead_letter"}')).toBe(0);
+        testDb.prepare(`INSERT INTO email_dead_letter (to_address, subject) VALUES ('c@example.com', 'x')`).run();
+        expect(sample(await scrape(), 'db_queue_depth{queue="email_dead_letter"}')).toBe(1);
+    });
+
+    it('reports backup freshness from the newest snapshot on disk', async () => {
+        process.env.DB_BACKUP_DIR = tmpDir;
+        const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+        fs.writeFileSync(path.join(tmpDir, `manager-${twoHoursAgo.toISOString().replace(/[:.]/g, '-')}.db`), 'x');
+
+        const text = await scrape();
+        const age = sample(text, 'db_backup_age_seconds');
+        expect(age).toBeGreaterThan(7000);
+        expect(age).toBeLessThan(7500);
+        const lastSuccess = sample(text, 'db_backup_last_success_timestamp_seconds');
+        expect(lastSuccess).toBeCloseTo(twoHoursAgo.getTime() / 1000, 0);
+    });
+
+    it('emits no backup series at all when no backup exists (never a fake zero)', async () => {
+        process.env.DB_BACKUP_DIR = tmpDir; // empty dir
+        const text = await scrape();
+        expect(text).toContain('# TYPE db_backup_age_seconds gauge');
+        expect(text).not.toMatch(/^db_backup_age_seconds /m);
+        expect(text).not.toMatch(/^db_backup_last_success_timestamp_seconds /m);
+    });
+
+    it('reports the live database file size when the adapter is file-backed', async () => {
+        const dbFile = path.join(tmpDir, 'manager.db');
+        fs.writeFileSync(dbFile, Buffer.alloc(4096));
+        testDb.dbPath = dbFile;
+
+        const text = await scrape();
+        expect(sample(text, 'db_file_size_bytes{file="main"}')).toBe(4096);
+        // No -wal sidecar on disk → that series is simply absent.
+        expect(text).not.toMatch(/db_file_size_bytes\{file="wal"\}/);
+    });
+
+    it('omits the file-size series for an in-memory database instead of reporting 0', async () => {
+        testDb.dbPath = ':memory:';
+        const text = await scrape();
+        expect(text).not.toMatch(/db_file_size_bytes\{file="main"\}/);
+    });
+
+    it('a failing collector drops only its own series and never 500s the scrape', async () => {
+        testDb.exec('DROP TABLE webhook_events_dead_letter');
+        try {
+            const text = await scrape();
+            expect(text).not.toMatch(/db_queue_depth\{queue="webhook_events_dead_letter"\}/);
+            // Sibling collectors are unaffected.
+            expect(sample(text, 'db_queue_depth{queue="gh_outbox"}')).toBe(0);
+            expect(text).toContain('http_request_duration_seconds');
+        } finally {
+            testDb.exec(`
+                CREATE TABLE IF NOT EXISTS webhook_events_dead_letter (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    delivery_id TEXT NOT NULL,
+                    event_type TEXT NOT NULL,
+                    payload TEXT NOT NULL,
+                    last_error TEXT NOT NULL,
+                    attempts INTEGER NOT NULL DEFAULT 1,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    next_retry_at DATETIME NOT NULL,
+                    resolved_at DATETIME
+                )
+            `);
+        }
     });
 });

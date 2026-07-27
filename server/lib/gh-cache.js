@@ -168,13 +168,21 @@ export function invalidate({ userId, resourceType, prefix }) {
  * we may not know which user owns the repo (e.g. an issue_comment on a repo
  * tracked by multiple collaborators).
  *
- * @param {string} repoFullName — owner/repo
+ * The pattern is prefix-anchored, not `%...%`. Every resource_key that any
+ * readThrough() call site writes for the invalidated resource types starts with
+ * `owner/repo` (routes/repos/{issues,pulls,commits,crud}.js, routes/ai/*), so
+ * anchoring drops exactly the same rows — while letting SQLite turn the LIKE
+ * into a range scan over idx_gh_cache_resource_type (migration 31 rebuilt that
+ * index NOCASE, which is what the prefix-LIKE optimisation requires). A leading
+ * wildcard defeats every index, and this runs 2-4x per webhook delivery.
+ *
+ * @param {string} repoFullName — owner/repo, optionally with a `#number` suffix
  * @param {string} [resourceType]
  */
 export function invalidateByRepo(repoFullName, resourceType) {
     if (!repoFullName) return 0;
     let sql = 'DELETE FROM gh_cache WHERE resource_key LIKE ?';
-    const params = [`%${repoFullName}%`];
+    const params = [`${repoFullName}%`];
     if (resourceType) {
         sql += ' AND resource_type = ?';
         params.push(resourceType);
