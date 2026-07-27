@@ -47,6 +47,11 @@ const BACKUP_SUFFIX = '.db';
 // Only files matching this shape are ever considered for pruning, so an
 // operator's manual copies or unrelated files in the dir are never deleted.
 const BACKUP_RE = /^manager-.*\.db$/;
+// In-progress backups carry this suffix so BACKUP_RE (anchored on `.db$`)
+// cannot match them: a half-written file must never be picked as the newest
+// backup, nor counted against the retention budget.
+const PARTIAL_SUFFIX = '.part';
+const PARTIAL_RE = /^manager-.*\.db\.part$/;
 // `manager-2026-07-27T14-30-05-123Z.db` — the ':' and '.' of the ISO stamp are
 // replaced with '-' at write time because they are illegal in Windows paths.
 const STAMP_RE = /^manager-(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z\.db$/;
@@ -127,6 +132,30 @@ export function listBackups(backupDir) {
  */
 export function newestBackup(backupDir) {
     return listBackups(backupDir)[0] ?? null;
+}
+
+/**
+ * Delete leftover `.part` files from a backup that died mid-write (process
+ * killed, volume full). They are invisible to BACKUP_RE, so they never
+ * corrupt selection or retention — but left alone they would accumulate one
+ * full database image per failure.
+ *
+ * @param {string} backupDir
+ * @returns {number} how many were removed
+ */
+export function sweepPartials(backupDir) {
+    let removed = 0;
+    try {
+        for (const name of fs.readdirSync(backupDir)) {
+            if (!PARTIAL_RE.test(name)) continue;
+            try {
+                fs.rmSync(path.join(backupDir, name), { force: true });
+                removed++;
+            } catch { /* best effort — a locked file is retried next run */ }
+        }
+    } catch { /* dir may not exist yet */ }
+    if (removed > 0) logger.warn({ backupDir, removed }, '[db-backup] cleared partial backups from a previous failure');
+    return removed;
 }
 
 /**
@@ -266,9 +295,24 @@ export async function runDbBackupOnce({ database, dir, keep, keepDailyDays, minI
     // Filesystem-safe ISO stamp (drop ':' and '.' which are illegal on Windows).
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
     const destPath = path.join(backupDir, `${BACKUP_PREFIX}${stamp}${BACKUP_SUFFIX}`);
+    const tmpPath = `${destPath}${PARTIAL_SUFFIX}`;
 
-    // WAL-safe: copies a transactionally-consistent image, not the raw file.
-    await raw.backup(destPath);
+    // Write to a name BACKUP_RE cannot match, then rename. Writing straight to
+    // destPath meant a backup that died mid-copy (a full data volume is the
+    // ordinary cause) left a truncated file that newestBackup() happily
+    // reported as the most recent one — so the minimum-interval guard then
+    // suppressed every retry for the next DB_BACKUP_MIN_INTERVAL_HOURS, and
+    // pruneBackups counted the corpse against the retention budget, evicting a
+    // good backup to keep a broken one. rename() within a directory is atomic.
+    sweepPartials(backupDir);
+    try {
+        // WAL-safe: copies a transactionally-consistent image, not the raw file.
+        await raw.backup(tmpPath);
+        fs.renameSync(tmpPath, destPath);
+    } catch (err) {
+        try { fs.rmSync(tmpPath, { force: true }); } catch { /* best effort */ }
+        throw err;
+    }
 
     const keepN = keep ?? parseKeep();
     const pruned = pruneBackups(backupDir, keepN, { keepDailyDays });

@@ -215,14 +215,31 @@ function normalizeRoute(req) {
 export function metricsMiddleware(req, res, next) {
     const started = process.hrtime.bigint();
     httpRequestsInFlight.inc();
-    res.on('finish', () => {
+
+    // 'finish' fires only when a response completes normally. An SSE stream the
+    // user navigates away from — Deep Review, migration progress — is destroyed
+    // instead: 'close' fires, 'finish' never does. Decrementing on 'finish'
+    // alone leaked the gauge +1 per abandoned stream, permanently, so after a
+    // day of ordinary use http_requests_in_flight reported a load the process
+    // was not carrying and any alert built on it was worthless.
+    //
+    // 'close' always fires, so it is the one that balances the counter. The
+    // flag keeps it exactly one dec per inc, since both events fire for a
+    // normal response.
+    let settled = false;
+    const settle = () => {
+        if (settled) return;
+        settled = true;
         httpRequestsInFlight.dec();
         const durationSeconds = Number(process.hrtime.bigint() - started) / 1e9;
         httpRequestDuration.observe(
             { method: req.method, route: normalizeRoute(req), status: res.statusCode },
             durationSeconds
         );
-    });
+    };
+
+    res.on('finish', settle);
+    res.on('close', settle);
     next();
 }
 

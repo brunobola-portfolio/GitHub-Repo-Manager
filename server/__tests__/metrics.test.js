@@ -28,7 +28,8 @@ const { initDB: realInitDB } = await vi.importActual('../db.js');
 const testDb = makeIntegrationDb(realInitDB);
 vi.mock('../db.js', () => ({ default: testDb }));
 
-const { metricsMiddleware } = await import('../lib/metrics.js');
+const { metricsMiddleware, default: register } = await import('../lib/metrics.js');
+const { EventEmitter } = await import('node:events');
 const { default: metricsRouter } = await import('../routes/metrics.js');
 
 /**
@@ -276,3 +277,57 @@ describe('GET /metrics — domain gauges', () => {
         }
     });
 });
+
+/**
+ * http_requests_in_flight must return to its starting value however the
+ * response ended. 'finish' fires only on a normal completion; an SSE stream
+ * the user navigates away from is destroyed and emits 'close' alone, so a
+ * finish-only decrement leaked the gauge permanently.
+ */
+describe('metricsMiddleware — in-flight gauge balance', () => {
+    async function inFlightValue() {
+        const gauge = register.getSingleMetric('http_requests_in_flight');
+        const { values } = await gauge.get();
+        return values[0]?.value ?? 0;
+    }
+
+    function fakeExchange() {
+        const req = { method: 'GET', originalUrl: '/api/v1/ai/deep-review/stream', route: null };
+        const res = new EventEmitter();
+        res.statusCode = 200;
+        return { req, res };
+    }
+
+    it('decrements when a stream is aborted (close without finish)', async () => {
+        const before = await inFlightValue();
+        const { req, res } = fakeExchange();
+
+        metricsMiddleware(req, res, () => {});
+        expect(await inFlightValue()).toBe(before + 1);
+
+        res.emit('close');
+        expect(await inFlightValue()).toBe(before);
+    });
+
+    it('decrements exactly once for a normal response (finish then close)', async () => {
+        const before = await inFlightValue();
+        const { req, res } = fakeExchange();
+
+        metricsMiddleware(req, res, () => {});
+        res.emit('finish');
+        res.emit('close');
+
+        expect(await inFlightValue()).toBe(before);
+    });
+
+    it('stays balanced across many abandoned streams', async () => {
+        const before = await inFlightValue();
+        for (let i = 0; i < 50; i++) {
+            const { req, res } = fakeExchange();
+            metricsMiddleware(req, res, () => {});
+            res.emit('close');
+        }
+        expect(await inFlightValue()).toBe(before);
+    });
+});
+

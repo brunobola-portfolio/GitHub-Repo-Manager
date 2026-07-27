@@ -12,7 +12,7 @@ import os from 'os';
 import path from 'path';
 import Database from 'better-sqlite3';
 
-import { runDbBackupOnce, pruneBackups, resolveBackupDir, listBackups, newestBackup } from '../lib/db-backup.js';
+import { runDbBackupOnce, pruneBackups, resolveBackupDir, listBackups, newestBackup, sweepPartials } from '../lib/db-backup.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -328,3 +328,63 @@ describe('resolveBackupDir', () => {
         expect(resolveBackupDir(null)).toBeNull();
     });
 });
+
+/**
+ * A backup that dies mid-write must not become "the newest backup".
+ *
+ * Writing straight to the final name meant an ENOSPC halfway through left a
+ * truncated manager-*.db that newestBackup() reported as most recent — so the
+ * min-interval guard suppressed every retry for the next
+ * DB_BACKUP_MIN_INTERVAL_HOURS, and pruneBackups counted the corpse against
+ * the retention budget, evicting a good backup to keep a broken one.
+ */
+describe('runDbBackupOnce — a failed backup leaves nothing behind', () => {
+    /** A database stand-in whose online backup always fails. */
+    function failingDb(dir) {
+        return {
+            name: path.join(dir, 'src.db'),
+            backup: async (dest) => {
+                // Mirror the real failure: bytes land, then the write dies.
+                fs.writeFileSync(dest, 'truncated-garbage');
+                throw new Error('ENOSPC: no space left on device');
+            },
+        };
+    }
+
+    it('does not leave a .db file that newestBackup would pick up', async () => {
+        const backupDir = path.join(tmpDir, 'fail-backups');
+        fs.mkdirSync(backupDir, { recursive: true });
+
+        await expect(runDbBackupOnce({ database: failingDb(tmpDir), dir: backupDir }))
+            .rejects.toThrow(/ENOSPC/);
+
+        expect(listBackups(backupDir)).toEqual([]);
+        expect(newestBackup(backupDir)).toBeNull();
+        expect(fs.readdirSync(backupDir)).toEqual([]);
+    });
+
+    it('a good backup still succeeds right after a failed one — no interval lockout', async () => {
+        const backupDir = path.join(tmpDir, 'recover-backups');
+        fs.mkdirSync(backupDir, { recursive: true });
+
+        await expect(runDbBackupOnce({ database: failingDb(tmpDir), dir: backupDir }))
+            .rejects.toThrow(/ENOSPC/);
+
+        const result = await runDbBackupOnce({ database: srcDb, dir: backupDir });
+        expect(result.skipped).toBe(false);
+        expect(listBackups(backupDir)).toHaveLength(1);
+    });
+
+    it('sweepPartials clears leftovers from a previous crash', () => {
+        const backupDir = path.join(tmpDir, 'sweep-backups');
+        fs.mkdirSync(backupDir, { recursive: true });
+        fs.writeFileSync(path.join(backupDir, 'manager-2026-01-01T00-00-00-000Z.db.part'), 'x');
+        fs.writeFileSync(path.join(backupDir, 'manager-2026-01-02T00-00-00-000Z.db'), 'keep');
+        fs.writeFileSync(path.join(backupDir, 'notes.txt'), 'untouched');
+
+        expect(sweepPartials(backupDir)).toBe(1);
+        expect(fs.readdirSync(backupDir).sort())
+            .toEqual(['manager-2026-01-02T00-00-00-000Z.db', 'notes.txt']);
+    });
+});
+
