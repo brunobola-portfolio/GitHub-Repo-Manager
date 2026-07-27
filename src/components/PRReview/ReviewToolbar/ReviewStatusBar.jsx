@@ -124,7 +124,7 @@ export function ReviewStatusBar({
             <span className="flex-1" />
 
             {showHints && !onSubmitReview && (
-                <span className="hidden sm:inline text-slate-400 dark:text-slate-500 tabular-nums">
+                <span className="hidden sm:inline text-slate-500 dark:text-slate-400 tabular-nums">
                     j/k navigate &middot; x mark reviewed &middot; c comment
                 </span>
             )}

@@ -200,7 +200,7 @@ export const DiffPanel = memo(function DiffPanel({
 
   if (!file) {
     return (
-      <div className="flex flex-1 items-center justify-center text-sm text-slate-400 dark:text-slate-500 italic select-none h-full">
+      <div className="flex flex-1 items-center justify-center text-sm text-slate-500 dark:text-slate-400 italic select-none h-full">
         Select a file to view changes
       </div>
     )

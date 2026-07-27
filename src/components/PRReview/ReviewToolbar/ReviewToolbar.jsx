@@ -237,7 +237,7 @@ export function ReviewToolbar({ pr, repoName, repoFullName, viewMode, onToggleVi
                     <Icon size={16} className={`${iconClass} mt-0.5 shrink-0`} />
                     <div className="min-w-0">
                       <div className="text-sm font-medium text-slate-800 dark:text-slate-100">{label}</div>
-                      <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{description}</div>
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{description}</div>
                     </div>
                   </button>
                 ))}

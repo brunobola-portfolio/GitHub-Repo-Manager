@@ -37,7 +37,7 @@ export function AIInlineComment({ comment, idx, onDismiss, onEdit }) {
                     {comment.severity}
                 </span>
             )}
-            <span className="ml-auto shrink-0 text-xs font-mono text-slate-400 dark:text-slate-500">
+            <span className="ml-auto shrink-0 text-xs font-mono text-slate-500 dark:text-slate-400">
                 L{comment.line}
             </span>
         </div>

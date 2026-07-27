@@ -171,7 +171,7 @@ export const DiffRenderer = memo(function DiffRenderer({
   if (!diffData) {
     return (
       <div className={`diff-renderer${wrap ? ' diff-wrap-on' : ''}`}>
-        <div className="flex items-center justify-center h-24 text-sm text-slate-400 dark:text-slate-500 italic select-none">
+        <div className="flex items-center justify-center h-24 text-sm text-slate-500 dark:text-slate-400 italic select-none">
           No diff available for this file.
         </div>
       </div>
@@ -190,7 +190,7 @@ export const DiffRenderer = memo(function DiffRenderer({
       <ErrorBoundary
         key={filename}
         fallback={() => (
-          <div className="flex items-center justify-center h-24 px-4 text-center text-sm text-slate-400 dark:text-slate-500 italic select-none">
+          <div className="flex items-center justify-center h-24 px-4 text-center text-sm text-slate-500 dark:text-slate-400 italic select-none">
             Couldn&apos;t render the diff for this file. The rest of the review is unaffected.
           </div>
         )}

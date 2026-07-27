@@ -21,7 +21,7 @@ export function DiffComputeOnDemand({ filename, additions = 0, deletions = 0, ch
 
     return (
         <div className="diff-compute-on-demand p-6 text-center bg-amber-50/60 dark:bg-amber-900/10 border border-dashed border-amber-300 dark:border-amber-800/60 rounded-lg m-3">
-            <p className="font-mono ds-text-meta text-slate-400 dark:text-slate-500 mb-1 truncate" title={filename}>
+            <p className="font-mono ds-text-meta text-slate-500 dark:text-slate-400 mb-1 truncate" title={filename}>
                 {filename}
             </p>
             <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-amber-200 dark:bg-amber-800/50 mb-3">
