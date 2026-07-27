@@ -524,25 +524,41 @@ end;
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
   Result := '';
-  if not IsAppRunning() then exit;
-  if not WizardSilent() then
+
+  if IsAppRunning() then
   begin
-    if MsgBox('GitHub Repo Manager is currently running.' + #13#10 +
-        'Close the application and continue with Setup?',
-        mbConfirmation, MB_YESNO) <> IDYES then
+    if not WizardSilent() then
     begin
-      Result := 'Setup cannot continue while GitHub Repo Manager is running. ' +
-        'Close it (Start Menu -> Stop GitHub Repo Manager) and run Setup again.';
-      exit;
+      if MsgBox('GitHub Repo Manager is currently running.' + #13#10 +
+          'Close the application and continue with Setup?',
+          mbConfirmation, MB_YESNO) <> IDYES then
+      begin
+        // Declined: leave BOTH processes alone. Stopping the tray here would
+        // half-close an app the user just asked us not to touch.
+        Result := 'Setup cannot continue while GitHub Repo Manager is running. ' +
+          'Close it (Start Menu -> Stop GitHub Repo Manager) and run Setup again.';
+        exit;
+      end;
     end;
+    // Silent installs proceed straight to the graceful stop: a scripted
+    // upgrade wants "make it so", and graceful-then-PID-kill is strictly safer
+    // than the old behavior of refusing (which forced admins to taskkill
+    // themselves, without the graceful attempt). TryStopRunningApp stops the
+    // tray as its first step.
+    if not TryStopRunningApp() then
+      Result := 'Could not stop the running GitHub Repo Manager instance. ' +
+        'Close it manually, then run Setup again.';
+    exit;
   end;
-  // Silent installs proceed straight to the graceful stop: a scripted
-  // upgrade wants "make it so", and graceful-then-PID-kill is strictly safer
-  // than the old behavior of refusing (which forced admins to taskkill
-  // themselves, without the graceful attempt).
-  if not TryStopRunningApp() then
-    Result := 'Could not stop the running GitHub Repo Manager instance. ' +
-      'Close it manually, then run Setup again.';
+
+  // Server not running, but the TRAY may well be: IsAppRunning() matches
+  // node.exe by PID and the tray is a separate process. That is the ordinary
+  // in-app self-update path — updater.js spawns setup.exe and asks the server
+  // to exit 500 ms later, so node is usually gone by the time we get here
+  // while the tray still holds its lock on {app}\{#MyAppExeName}. Without
+  // this the [Files] replace failed and the update aborted with no server
+  // left running, which is exactly the state a user cannot recover from.
+  StopTrayIfRunning();
 end;
 
 // Writes {app}\install-config.txt after files are copied (ssPostInstall),
@@ -576,9 +592,14 @@ begin
   if CurUninstallStep = usUninstall then
   begin
     // Stop a running instance before files are removed — same policy as
-    // install-time (graceful endpoint, then PID kill).
+    // install-time (graceful endpoint, then PID kill). The tray is stopped
+    // either way: it is a separate process from the node server IsAppRunning()
+    // looks for, and leaving it resident means uninstall cannot delete the exe
+    // it holds open.
     if IsAppRunning() then
-      TryStopRunningApp();
+      TryStopRunningApp()
+    else
+      StopTrayIfRunning();
 
     // usUninstall (not usPostUninstall): the main uninstaller process
     // terminates before usPostUninstall runs in its temp-copied clone, so a
