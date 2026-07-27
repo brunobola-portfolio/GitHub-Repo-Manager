@@ -31,6 +31,12 @@ jobs:
       - if: steps.nm.outputs.cache-hit != 'true'
         run: npm ci --no-audit --no-fund
       - run: npm run lint
+      # Repo-wide sweep of the three guards that were previously wired ONLY
+      # into lint-staged (debug statements, static __mocks__ imports, raw
+      # z-index). A pre-commit hook is advisory: `--no-verify`, a clone where
+      # husky never installed, and edits made through the GitHub web UI all
+      # bypass it permanently. This re-checks every tracked file.
+      - run: npm run guards
 
   test:
     runs-on: ubuntu-latest
@@ -55,7 +61,20 @@ jobs:
           key: node-modules-${{ runner.os }}-22-${{ hashFiles('package-lock.json') }}
       - if: steps.nm.outputs.cache-hit != 'true'
         run: npm ci --no-audit --no-fund
-      - run: npx vitest run
+      # --coverage is what makes vitest.config.js's `thresholds` block execute.
+      # Without it the floors were inert: the config was parsed, the numbers
+      # were never compared against anything, and coverage could fall to zero
+      # without failing a build.
+      - run: npx vitest run --coverage
+      # coverage.reportOnFailure is enabled in vitest.config.js, so this
+      # uploads a usable report even when the run above went red — which is
+      # the run you actually need it for.
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 7
       # Golden AI evals (mock-provider, deterministic, no API key). Real-model
       # evals (`--real`) are intentionally NOT run here — they need a provider
       # key + budget; run them locally/scheduled via `npm run test:evals:real`.

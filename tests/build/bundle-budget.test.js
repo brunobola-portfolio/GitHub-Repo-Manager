@@ -44,16 +44,28 @@ import { describe, it, expect, beforeAll } from 'vitest'
 //     first-painted view on a cold load (useAppRouter resolves the hash before
 //     the user sees anything settle) — splitting them needs a layout-identical
 //     Suspense fallback to avoid a flash, which is a larger, separate effort.
-//     Budget re-baselined to 82 KB (~3 KB margin over the 78.82 KB actual) to
-//     lock this gain — DO NOT raise it further to accommodate new eager
-//     growth; find another lazy seam.
-//   - Total eager: dropped from ~397 KB to ~379.9 KB gz actual (the recharts
-//     fix mainly helped here too, even though it isn't in the index file
-//     itself). Budget re-baselined to 395 KB (~15 KB margin).
-const EAGER_INDEX_GZ_BUDGET = 82 * 1024
-const EAGER_TOTAL_GZ_BUDGET = 395 * 1024
+//     DO NOT raise the budget to accommodate new eager growth; find another
+//     lazy seam.
+//
+// RE-BASELINED 2026-07-27, and the old numbers were never real. Vitest sets
+// NODE_ENV=test and the beforeAll execSync inherited it, so `--mode production`
+// still emitted a React DEVELOPMENT build — vendor-react at 2.02x its shipped
+// size. The 82 / 395 KB budgets were sized against an artifact that never
+// reaches a user. With NODE_ENV pinned (see beforeAll), the SHIPPED bundle
+// measures 69.38 KB index and 349.53 KB eager across 24 chunks, so the budgets
+// below carry ~3.8% and ~4.4% margin over reality.
+const EAGER_INDEX_GZ_BUDGET = 72 * 1024
+const EAGER_TOTAL_GZ_BUDGET = 365 * 1024
 
 const RUN = process.env.RUN_BUILD_TESTS === '1'
+
+// Each build gate builds into its OWN out dir. Both files used to build into
+// `dist/`, and vitest runs test FILES in parallel workers — so whichever
+// finished second clobbered the artifact the first was still asserting against,
+// making the pair fail together while each passed alone. Separate out dirs
+// remove the race instead of serialising the suite.
+const OUT_DIR = 'dist-budget-check'
+const ASSETS = `${OUT_DIR}/assets`
 
 function gzipSize(filePath) {
     return gzipSync(readFileSync(filePath)).length
@@ -67,25 +79,30 @@ function findFiles(dir, prefix) {
 
 describe.skipIf(!RUN)('bundle size budget', () => {
     beforeAll(() => {
-        execSync('npx vite build --mode production', {
+        // NODE_ENV must be pinned. Vitest sets NODE_ENV=test and
+        // execSync inherits it, so `--mode production` still produced a
+        // React DEVELOPMENT build: vendor-react came out 2.02x larger
+        // (366,652 B vs 181,795 B raw) and the bundle carried DEV-only
+        // symbols. This gate was measuring an artifact we never ship.
+        execSync(`npx vite build --mode production --outDir ${OUT_DIR} --emptyOutDir`, {
             stdio: 'inherit',
-            env: { ...process.env, VITE_MOCK_MODE: '' },
+            env: { ...process.env, VITE_MOCK_MODE: '', NODE_ENV: 'production' },
         })
     }, 180_000)
 
-    it('dist/assets exists', () => {
-        expect(existsSync('dist/assets')).toBe(true)
+    it('build assets exist', () => {
+        expect(existsSync(ASSETS)).toBe(true)
     })
 
     it(`index-*.js gzipped is under ${(EAGER_INDEX_GZ_BUDGET / 1024).toFixed(0)} KB`, () => {
-        const indexFiles = findFiles('dist/assets', 'index-')
+        const indexFiles = findFiles(ASSETS, 'index-')
         expect(indexFiles).toHaveLength(1)
         const size = gzipSize(indexFiles[0])
         expect(size).toBeLessThan(EAGER_INDEX_GZ_BUDGET)
     })
 
     it(`eager bundle gzipped sum is under ${(EAGER_TOTAL_GZ_BUDGET / 1024).toFixed(0)} KB`, () => {
-        const indexFiles = findFiles('dist/assets', 'index-')
+        const indexFiles = findFiles(ASSETS, 'index-')
         const indexContent = readFileSync(indexFiles[0], 'utf8')
 
         // Find every chunk filename referenced by `import "./..."` in the entry.
@@ -101,11 +118,11 @@ describe.skipIf(!RUN)('bundle size budget', () => {
         let totalGz = gzipSize(indexFiles[0])
         const breakdown = [{ chunk: indexFiles[0].replace(/\\/g, '/'), gz: totalGz }]
         for (const name of eagerChunks) {
-            const path = join('dist/assets', name)
+            const path = join(ASSETS, name)
             if (!existsSync(path)) continue
             const gz = gzipSize(path)
             totalGz += gz
-            breakdown.push({ chunk: `dist/assets/${name}`, gz })
+            breakdown.push({ chunk: `${ASSETS}/${name}`, gz })
         }
         breakdown.sort((a, b) => b.gz - a.gz)
         const summary = breakdown.map((b) => `  ${b.chunk}: ${(b.gz / 1024).toFixed(1)} KB gz`).join('\n')
@@ -119,14 +136,14 @@ describe.skipIf(!RUN)('bundle size budget', () => {
         // Regression guard: the slice-4.1 audit mistakenly claimed the big
         // esm-*.js chunk was eager. Ensuring it's NOT imported by index keeps
         // the lazy diff/markdown surfaces lazy.
-        const indexFiles = findFiles('dist/assets', 'index-')
+        const indexFiles = findFiles(ASSETS, 'index-')
         const indexContent = readFileSync(indexFiles[0], 'utf8')
         const re = /from\s*['"]\.\/(esm-[^'"]+\.js)['"]/g
         const offenders = []
         let m
         while ((m = re.exec(indexContent))) {
             const chunk = m[1]
-            const path = join('dist/assets', chunk)
+            const path = join(ASSETS, chunk)
             if (!existsSync(path)) continue
             const gz = gzipSize(path)
             if (gz > 50 * 1024) {

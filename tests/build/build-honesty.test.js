@@ -48,23 +48,34 @@ function* walk(dir) {
 // vitest run skips it. CI sets this env var explicitly.
 const RUN = process.env.RUN_BUILD_TESTS === '1'
 
+// Each build gate builds into its OWN out dir. Both files used to build into
+// `dist/`, and vitest runs test FILES in parallel workers — so whichever
+// finished second clobbered the artifact the first was still asserting against,
+// making the pair fail together while each passed alone. Separate out dirs
+// remove the race instead of serialising the suite.
+const OUT_DIR = 'dist-honesty-check'
+
 describe.skipIf(!RUN)('production build contains no mock data', () => {
   beforeAll(() => {
     // Build with no env so MOCK_MODE evaluates to false in the bundle.
-    execSync('npx vite build --mode production', {
+    // NODE_ENV is pinned for the same reason as bundle-budget.test.js: vitest
+    // sets it to 'test' and execSync inherits it, so this gate — the one that
+    // proves no mock fixtures reach production — was scanning a development
+    // build rather than the bytes we actually ship.
+    execSync(`npx vite build --mode production --outDir ${OUT_DIR} --emptyOutDir`, {
       stdio: 'inherit',
-      env: { ...process.env, VITE_MOCK_MODE: '' },
+      env: { ...process.env, VITE_MOCK_MODE: '', NODE_ENV: 'production' },
     })
   }, 180_000)
 
-  it('dist/ exists', () => {
-    expect(existsSync('dist')).toBe(true)
+  it('build output exists', () => {
+    expect(existsSync(OUT_DIR)).toBe(true)
   })
 
   for (const marker of FORBIDDEN_MARKERS) {
-    it(`dist/ must not contain "${marker}"`, () => {
+    it(`build output must not contain "${marker}"`, () => {
       const offenders = []
-      for (const file of walk('dist')) {
+      for (const file of walk(OUT_DIR)) {
         const content = readFileSync(file, 'utf8')
         if (content.includes(marker)) offenders.push(file)
       }
