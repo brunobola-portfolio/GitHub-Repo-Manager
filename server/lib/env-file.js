@@ -26,7 +26,13 @@ const REPO_ROOT = path.resolve(__dirname, '..', '..');
 // Only ever touch keys in this allowlist — updateEnvFile is reachable from an
 // HTTP endpoint, and a bug or future misuse must never be able to rewrite
 // arbitrary keys (SESSION_SECRET, CREDENTIAL_ENCRYPTION_KEY, ...).
-const WRITABLE_KEYS = new Set(['GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET']);
+//
+// PORT is here for the Windows launcher's busy-port fallback only
+// (scripts/first-run.mjs `persistPort`, invoked from packaging/windows/start.ps1):
+// a drifting port silently breaks the registered OAuth callback, so the port
+// the launcher actually bound to has to become the persisted one. No HTTP route
+// passes it — routes/auth-setup.js writes a fixed two-key object.
+const WRITABLE_KEYS = new Set(['GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET', 'PORT']);
 
 /**
  * Resolve the .env file the running process loaded (see server/config.js).

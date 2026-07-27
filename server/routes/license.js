@@ -11,7 +11,14 @@ import {
 } from '../middleware/require-tier.js'
 import { requireAuth } from '../middleware/auth.js'
 import { requireAdmin } from '../middleware/require-admin.js'
-import { validateLicenseKey } from '../lib/license.js'
+import {
+  LICENSE_REVOKED,
+  listRevokedLicenses,
+  parseLicenseKey,
+  revokeLicense,
+  unrevokeLicense,
+  verifyLicenseKey,
+} from '../lib/license.js'
 import {
   getStoredLicense,
   setStoredLicense,
@@ -55,6 +62,26 @@ const installLimiter = rateLimit({
 
 const router = Router()
 
+// A revoked key gets its own status + machine-readable code so the UI can say
+// "this key was killed, ask for a replacement" instead of the misleading
+// "invalid or expired license key" — which sends the customer hunting for a
+// typo that isn't there.
+//
+// The operator's free-text `reason` is NOT echoed here. /validate is
+// unauthenticated and /install is open to any authenticated user during
+// bootstrap, and that note routinely carries internal context ("chargeback",
+// "employee offboarded"). Holders get the actionable facts — revoked, when,
+// what to do; the note stays on the admin-only listing.
+function revokedResponse(res, revocation) {
+  return res.status(403).json({
+    valid: false,
+    error: 'license_revoked',
+    revokedAt: revocation?.revoked_at ?? null,
+    message: 'This license key has been revoked and can no longer be activated. '
+      + 'Contact your vendor for a replacement key.',
+  })
+}
+
 // GET /api/v1/license — current license info (public: server-level info, no user data)
 router.get('/', (req, res) => {
   const info = getLicenseInfo()
@@ -94,10 +121,12 @@ router.post('/validate', validateLimiter, async (req, res) => {
     return res.status(500).json({ error: 'License validation not configured (missing public key)' })
   }
 
-  const payload = await validateLicenseKey(key, singleKeyResolver(PUBLIC_KEY))
-  if (!payload) {
+  const result = await verifyLicenseKey(key, singleKeyResolver(PUBLIC_KEY))
+  if (!result.ok) {
+    if (result.reason === LICENSE_REVOKED) return revokedResponse(res, result.revocation)
     return res.status(400).json({ valid: false, error: 'Invalid or expired license key' })
   }
+  const payload = result.payload
 
   res.json({
     valid: true,
@@ -151,10 +180,18 @@ router.post('/install', requireAuth, installLimiter, async (req, res) => {
     }
   }
 
-  const payload = await validateLicenseKey(key, singleKeyResolver(PUBLIC_KEY))
-  if (!payload) {
+  const result = await verifyLicenseKey(key, singleKeyResolver(PUBLIC_KEY))
+  if (!result.ok) {
+    if (result.reason === LICENSE_REVOKED) {
+      auditLog(req, 'license.install_rejected_revoked', 'license', result.payload?.lid ?? 'unknown', {
+        org: result.payload?.org ?? null,
+        tier: result.payload?.tier ?? null,
+      })
+      return revokedResponse(res, result.revocation)
+    }
     return res.status(400).json({ valid: false, error: 'Invalid or expired license key' })
   }
+  const payload = result.payload
 
   try {
     const userId = req.session?.userId ?? null
@@ -212,6 +249,119 @@ router.delete('/install', requireAuth, requireAdmin, async (req, res) => {
   })
   logger.info({ priorTier: before?.tier ?? 'none' }, 'License uninstalled via API')
   res.json({ ok: true })
+})
+
+// ---------------------------------------------------------------------------
+// Revocation list — the license kill switch (migration 032)
+// ---------------------------------------------------------------------------
+//
+// Admin-only and audited. Uninstalling a license (DELETE /install above) only
+// clears THIS server's active license; revoking kills the key itself, so it
+// stays dead through a reinstall, a restart, and a re-emailed copy.
+//
+// Scope note: this is a per-install list, which is the honest shape for a
+// self-hostable product — every operator is the authority for their own
+// deployment, and there is no phone-home. See the SEMANTICS block in
+// lib/license.js for what that means for air-gapped installs.
+
+const MAX_LID_LENGTH = 128
+const MAX_REASON_LENGTH = 500
+
+// GET /api/v1/license/revocations — the full list (admin only; the free-text
+// reason is operator-internal and never leaves this endpoint)
+router.get('/revocations', requireAuth, requireAdmin, (req, res) => {
+  res.json({ revocations: listRevokedLicenses(db) })
+})
+
+// POST /api/v1/license/revocations — revoke a license id
+//
+// Accepts either `lid` directly or the full `key` it was minted into. The key
+// is only PARSED, never verified: an operator must be able to revoke a key
+// whose signing key has since been rotated away, or one this install could not
+// validate in the first place. Nothing is trusted from the parse beyond the
+// strings we store for display.
+router.post('/revocations', requireAuth, requireAdmin, async (req, res) => {
+  const { lid: rawLid, key, reason } = req.body || {}
+
+  if (typeof reason !== 'string' || reason.trim().length === 0) {
+    return res.status(400).json({
+      error: 'reason_required',
+      message: 'A revocation reason is required — it is the only record of why this key was killed.',
+    })
+  }
+  if (reason.length > MAX_REASON_LENGTH) {
+    return res.status(400).json({ error: 'reason_too_long', message: `Reason must be at most ${MAX_REASON_LENGTH} characters.` })
+  }
+
+  const parsed = typeof key === 'string' && key ? parseLicenseKey(key) : null
+  const lid = typeof rawLid === 'string' && rawLid.trim()
+    ? rawLid.trim()
+    : (typeof parsed?.lid === 'string' ? parsed.lid : null)
+
+  if (!lid || lid.length > MAX_LID_LENGTH) {
+    return res.status(400).json({
+      error: 'lid_required',
+      message: 'Provide the license id (`lid`) or the full license `key` to revoke.',
+    })
+  }
+
+  try {
+    revokeLicense(db, {
+      lid,
+      reason: reason.trim(),
+      revokedBy: req.session?.userId ?? null,
+      org: typeof parsed?.org === 'string' ? parsed.org : null,
+      tier: typeof parsed?.tier === 'string' ? parsed.tier : null,
+      expiresAt: typeof parsed?.exp === 'number' ? new Date(parsed.exp * 1000).toISOString() : null,
+    })
+
+    // Without this the in-process tier cache in require-tier.js would keep
+    // serving the revoked license's tier for up to LICENSE_CACHE_TTL_MS (and
+    // forever for an env-pinned LICENSE_KEY). A revocation that needs a restart
+    // is not a revocation.
+    const refreshed = await refreshLicenseCache()
+
+    auditLog(req, 'license.revoke', 'license', lid, {
+      reason: reason.trim(),
+      org: parsed?.org ?? null,
+      tier: parsed?.tier ?? null,
+      activeLicenseAffected: !refreshed,
+    })
+    logger.warn({ lid, activeLicenseAffected: !refreshed }, 'License revoked via API')
+
+    res.json({
+      ok: true,
+      lid,
+      // True when this install's own active license was the one just killed —
+      // the caller's tier has already dropped.
+      activeLicenseAffected: !refreshed,
+      activeTier: refreshed?.tier ?? null,
+    })
+  } catch (err) {
+    logger.error({ err }, 'License revoke failed')
+    res.status(500).json({ error: 'Failed to revoke license' })
+  }
+})
+
+// DELETE /api/v1/license/revocations/:lid — undo a mistaken revocation
+router.delete('/revocations/:lid', requireAuth, requireAdmin, async (req, res) => {
+  const lid = String(req.params.lid || '').trim()
+  if (!lid || lid.length > MAX_LID_LENGTH) {
+    return res.status(400).json({ error: 'lid_required' })
+  }
+  try {
+    const removed = unrevokeLicense(db, lid)
+    if (!removed) {
+      return res.status(404).json({ error: 'not_revoked', message: 'That license id is not on the revocation list.' })
+    }
+    const refreshed = await refreshLicenseCache()
+    auditLog(req, 'license.unrevoke', 'license', lid, {})
+    logger.warn({ lid }, 'License revocation removed via API')
+    res.json({ ok: true, lid, activeTier: refreshed?.tier ?? null })
+  } catch (err) {
+    logger.error({ err }, 'License unrevoke failed')
+    res.status(500).json({ error: 'Failed to remove revocation' })
+  }
 })
 
 export default router

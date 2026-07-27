@@ -71,7 +71,13 @@ function getStripeTier(userId) {
 }
 
 function maybeKickLicenseRefresh() {
-  if (cachedLicenseSource !== 'db') return
+  // Revalidate env-pinned (LICENSE_KEY) licenses too, not just DB-installed
+  // ones. A licence can now be REVOKED (revoked_licenses, migration 32), and a
+  // revocation that arrives out of band — a peer instance in a multi-instance
+  // deploy, direct SQL, a future CLI — must take effect within the cache TTL
+  // rather than only after a restart. Admin-route revocations already refresh
+  // the cache inline; this covers every other path.
+  if (!cachedLicenseSource) return
   if (Date.now() - cachedLicenseRefreshedAt < LICENSE_CACHE_TTL_MS) return
   if (licenseRefreshInFlight) return
   licenseRefreshInFlight = refreshLicenseCache()

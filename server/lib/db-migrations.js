@@ -481,6 +481,99 @@ export const MIGRATIONS = [
             addColumnIfMissing(db, 'user_subscriptions', 'billing_period', "TEXT NOT NULL DEFAULT 'monthly'");
         },
     },
+    {
+        version: 30,
+        name: 'event tables: timestamp-leading indexes for the retention purge',
+        up(db) {
+            // purgeOldEvents (maintenance-janitors.js) deletes in LIMIT-ed batches
+            // filtered ONLY by the row's own creation timestamp. Every pre-existing
+            // index on these tables leads with repo_id / action / author_login /
+            // reviewer_login, so the planner had no choice but to full-scan the
+            // table from row 1 for EVERY batch — quadratic work that stalls the
+            // boot-time maintenance pass for minutes once a year of events has
+            // been ingested. A timestamp-leading index turns each batch into a
+            // range seek that stops at the retention cutoff.
+            db.exec(`CREATE INDEX IF NOT EXISTS idx_pr_events_created
+                     ON pr_events(created_at)`);
+            db.exec(`CREATE INDEX IF NOT EXISTS idx_issue_events_created
+                     ON issue_events(created_at)`);
+            db.exec(`CREATE INDEX IF NOT EXISTS idx_deployment_events_created
+                     ON deployment_events(created_at)`);
+            db.exec(`CREATE INDEX IF NOT EXISTS idx_review_assignments_requested
+                     ON review_assignments(requested_at)`);
+            db.exec(`CREATE INDEX IF NOT EXISTS idx_workflow_runs_created
+                     ON workflow_runs(created_at)`);
+        },
+    },
+    {
+        version: 31,
+        name: 'gh_cache: NOCASE resource_key index for prefix invalidation',
+        up(db) {
+            // gh-cache.invalidateByRepo() matches `resource_key LIKE 'owner/repo%'`
+            // and runs 2-4x per webhook delivery. SQLite only rewrites a prefix
+            // LIKE into an index range scan when the indexed column's collation
+            // matches LIKE's comparison — and LIKE is case-insensitive unless
+            // PRAGMA case_sensitive_like is on, which it is not here. The BINARY
+            // index created alongside the table therefore never applied and each
+            // call full-scanned gh_cache. Rebuilding it NOCASE makes the same
+            // query index-seekable without changing which rows match.
+            db.exec(`DROP INDEX IF EXISTS idx_gh_cache_resource_type`);
+            db.exec(`CREATE INDEX IF NOT EXISTS idx_gh_cache_resource_type
+                     ON gh_cache(resource_type, resource_key COLLATE NOCASE)`);
+        },
+    },
+    {
+        version: 32,
+        name: 'revoked_licenses (license kill switch)',
+        up(db) {
+            // Every signed license JWT carries a `lid` claim that nothing ever
+            // consulted, so a leaked key — or a refunded customer's emailed key,
+            // which the Stripe downgrade does not touch — stayed valid until its
+            // `exp`. This table is the kill switch: verifyLicenseKey() (in
+            // lib/license.js) fails closed on any `lid` listed here.
+            //
+            // Keyed on `lid`, not on the raw key, so an operator can revoke from
+            // the id alone — no need to hold the secret-bearing key to kill it,
+            // and the row stays harmless if the DB is read by someone else.
+            // `expires_at` is copied from the payload when known so a janitor can
+            // one day prune rows whose key is dead on its own terms.
+            db.exec(`
+                CREATE TABLE IF NOT EXISTS revoked_licenses (
+                    lid         TEXT PRIMARY KEY,
+                    reason      TEXT NOT NULL,
+                    revoked_at  TEXT NOT NULL DEFAULT (datetime('now')),
+                    revoked_by  INTEGER,
+                    org         TEXT,
+                    tier        TEXT,
+                    expires_at  TEXT,
+                    FOREIGN KEY (revoked_by) REFERENCES users(id) ON DELETE SET NULL
+                )
+            `);
+            db.exec(`CREATE INDEX IF NOT EXISTS idx_revoked_licenses_revoked_at
+                     ON revoked_licenses(revoked_at DESC)`);
+        },
+    },
+    {
+        version: 33,
+        name: 'ai_spend: micro-cent column so sub-cent calls accumulate',
+        up(db) {
+            // recordAISpend rounded every call to whole cents and dropped
+            // anything that rounded to 0. A 2k-in/500-out call on a flash-class
+            // model costs ~$0.0004 — recorded as 0. Thousands of them summed to
+            // a recorded spend of zero, so the denial-of-wallet cap could never
+            // fire no matter how much the operator's key was actually billed.
+            //
+            // micro_cents holds 1/10,000 of a cent, which keeps every realistic
+            // per-call cost as an exact integer and cannot drift the way a REAL
+            // column would. The legacy `cents` column is preserved untouched as
+            // a baseline and simply added to the derived total, so historical
+            // spend survives and nothing is double-counted.
+            const cols = db.prepare('PRAGMA table_info(ai_spend)').all();
+            if (!cols.some((c) => c.name === 'micro_cents')) {
+                db.exec('ALTER TABLE ai_spend ADD COLUMN micro_cents INTEGER NOT NULL DEFAULT 0');
+            }
+        },
+    },
 ];
 
 // The highest version this build of the app knows how to apply. Used to

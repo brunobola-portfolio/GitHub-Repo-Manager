@@ -8,10 +8,19 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 // Mock Mode
 // Controls whether the app uses simulated data or real backend APIs.
-// Default: false. Set VITE_MOCK_MODE=true to opt into demo / mock data.
-// Mock data generators live in src/__mocks__/ and are loaded only when
-// import.meta.env.DEV is also true, so production builds never bundle them.
-export const MOCK_MODE = import.meta.env.VITE_MOCK_MODE === 'true';
+// Default: false. Set VITE_MOCK_MODE=true in a DEV/test run to opt into demo
+// data. Mock data generators live in src/__mocks__/.
+//
+// The `import.meta.env.DEV &&` half is load-bearing and must not be dropped.
+// Without it a production build made with VITE_MOCK_MODE=true still takes
+// every mock branch that is NOT itself dev-gated — App.jsx POSTs /api/auth/mock
+// and fabricates a session, api/repos.js returns `committed: true` for writes
+// that never happened. The __mocks__ fixtures are separately dev-gated so they
+// would not ship, but the control flow above them would, which is worse: a
+// deployment that lies about having written to a real repository.
+// Vite statically replaces both operands, so this whole expression folds to
+// `false` at build time and every guarded branch is eliminated.
+export const MOCK_MODE = import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true';
 
 // API Base Path (used by hooks that build URLs manually)
 export const API_BASE = API_BASE_URL + '/api';

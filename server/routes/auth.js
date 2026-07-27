@@ -165,6 +165,11 @@ router.get('/callback', authRouteLimiter, async (req, res) => {
             // Restore user data and store token in the new session
             req.session.userId = newUserId;
             req.session.userLogin = newUserLogin;
+            // Plaintext here on purpose: the session object is in-process only.
+            // Encryption happens once, at the persistence boundary, in
+            // lib/session-store.js — encrypting it here instead would mean
+            // every reader (routes, outbox, AI features) had to decrypt, and
+            // the Redis store would silently keep writing plaintext.
             req.session.accessToken = tokenData.access_token;
             // Absolute-timeout anchor — sessionAbsoluteTimeout middleware
             // destroys any session older than 7 days from this stamp.

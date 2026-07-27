@@ -5,6 +5,10 @@
  * Intended for multi-instance deployments where sessions must be shared
  * across processes or containers.
  *
+ * The GitHub OAuth access token is encrypted at rest with the SAME codec the
+ * SQLite store uses (see session-store.js) — switching backends must never
+ * change the security properties of a stored session.
+ *
  * Usage:
  *   const { createRedisStore } = await import('./lib/session-store-redis.js');
  *   const { store, client } = createRedisStore();
@@ -14,6 +18,7 @@
 import { createClient } from 'redis';
 import { RedisStore } from 'connect-redis';
 import logger from './logger.js';
+import { encodeSessionForStorage, decodeStoredSession } from './session-store.js';
 
 /**
  * Create a Redis-backed session store.
@@ -57,6 +62,15 @@ export function createRedisStore() {
         client: redisClient,
         prefix: 'sess:',
         ttl: 86400, // 24 hours in seconds (fallback when cookie has no expires)
+        // Same at-rest protection as the SQLite store. connect-redis defaults
+        // to plain JSON.stringify, so without this, moving from single-instance
+        // to a multi-instance deployment would silently downgrade every GitHub
+        // OAuth token back to plaintext — in Redis, which is typically a shared
+        // network service with weaker filesystem assumptions than manager.db.
+        serializer: {
+            stringify: (session) => encodeSessionForStorage(session),
+            parse: (data) => decodeStoredSession(data).session,
+        },
     });
 
     return { store, client: redisClient };
