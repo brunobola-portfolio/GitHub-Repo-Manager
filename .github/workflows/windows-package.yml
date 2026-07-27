@@ -391,6 +391,17 @@ jobs:
               exit 1
           }
 
+          # Dump the timeline on SUCCESS too, not only on failure. This step
+          # takes ~18 minutes and prints nothing until it is done, so there was
+          # no way to tell which phase owns the time. apply-update.ps1 already
+          # timestamps every checkpoint (waiting-for-exit, extracting, swapping,
+          # relaunching), so the answer was being written to a file and thrown
+          # away. It matters beyond CI: this is the same script a user's
+          # self-update runs, and 18 minutes of a seemingly frozen app is a
+          # product problem, not a pipeline one.
+          Write-Host "---- apply-update timeline ----"
+          Dump-ApplyUpdateLog
+
           Remove-Item -Recurse -Force -LiteralPath $extractDir -ErrorAction SilentlyContinue
           Remove-Item -Recurse -Force -LiteralPath $dataDir -ErrorAction SilentlyContinue
           Remove-Item -Force -LiteralPath $zipCopy -ErrorAction SilentlyContinue

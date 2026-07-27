@@ -78,7 +78,16 @@ export default defineConfig({
       // and they never executed anyway because CI ran plain `npx vitest run`
       // with no --coverage. Both halves are fixed together: stale numbers with
       // no runner is a gate that exists only on paper.
-      thresholds: {
+      //
+      // CI runs the suite as three shards and then merges them. A shard
+      // executes a third of the tests, so its coverage lands around 31% and it
+      // would fail every floor here — measured, not assumed: shard 1/3 reports
+      // 31.11% statements against a 62% floor. Thresholds therefore belong to
+      // the MERGED run only, where they see the whole suite exactly as the old
+      // single run did. VITEST_SHARD_RUN is set by the shard matrix in
+      // .github/workflows/ci.yml and by nothing else; a local `vitest run
+      // --coverage` is unaffected and still enforces the floors.
+      thresholds: process.env.VITEST_SHARD_RUN === '1' ? undefined : {
         lines: 64,       // actual 66.39%
         functions: 57,   // actual 59.87%
         branches: 54,    // actual 56.94%

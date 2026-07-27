@@ -43,8 +43,24 @@ jobs:
       # .dev/ workspace, which nobody could follow from a clean clone.
       - run: npm run docs:linkcheck
 
-  test:
+  # The 6769-test suite took 318 s on one runner and was the critical path for
+  # every PR that does not touch packaging/. Split across three runners it is
+  # ~110 s each, and they start simultaneously.
+  #
+  # Coverage CANNOT be evaluated per shard — each shard only executes a third
+  # of the tests, so its numbers would fall far below the floors and every
+  # shard would fail. Shards therefore emit a blob report and evaluate nothing;
+  # `test` below merges the three and applies the thresholds exactly once, over
+  # the whole suite. That keeps the gate identical in strength to the single
+  # run it replaces, which matters here: this repo has already shipped a
+  # coverage config whose floors were silently inert.
+  test-shard:
+    name: test (shard ${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     env:
       # server/config.js loadConfig() requires SESSION_SECRET ≥16 chars. Test
       # code transitively imports this via require-tier.js; without a value
@@ -66,14 +82,58 @@ jobs:
           key: node-modules-${{ runner.os }}-22-${{ hashFiles('package-lock.json') }}
       - if: steps.nm.outputs.cache-hit != 'true'
         run: npm ci --no-audit --no-fund
-      # --coverage is what makes vitest.config.js's `thresholds` block execute.
-      # Without it the floors were inert: the config was parsed, the numbers
-      # were never compared against anything, and coverage could fall to zero
-      # without failing a build.
-      - run: npx vitest run --coverage
-      # coverage.reportOnFailure is enabled in vitest.config.js, so this
-      # uploads a usable report even when the run above went red — which is
-      # the run you actually need it for.
+      - name: Run shard ${{ matrix.shard }} of 3
+        # VITEST_SHARD_RUN switches off the coverage floors for this process
+        # only — see the thresholds comment in vitest.config.js. Coverage is
+        # still COLLECTED, because the blob has to carry it to the merge job.
+        env:
+          VITEST_SHARD_RUN: '1'
+        run: npx vitest run --shard=${{ matrix.shard }}/3 --reporter=blob --coverage
+      # Blob carries this shard's results AND its raw coverage, so the merge
+      # job below can reconstruct both without re-running anything.
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: blob-report-${{ matrix.shard }}
+          path: .vitest-reports/
+          retention-days: 1
+          include-hidden-files: true
+
+  test:
+    name: test (merge + coverage floors)
+    runs-on: ubuntu-latest
+    needs: test-shard
+    # `always()` so a red shard still produces the merged report and the
+    # coverage artifact — that is precisely the run you need it for, which is
+    # why vitest.config.js sets coverage.reportOnFailure.
+    if: always()
+    env:
+      SESSION_SECRET: ci-test-session-secret-not-real-32chars
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Cache node_modules
+        id: nm
+        uses: actions/cache@v6
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-22-${{ hashFiles('package-lock.json') }}
+      - if: steps.nm.outputs.cache-hit != 'true'
+        run: npm ci --no-audit --no-fund
+      - uses: actions/download-artifact@v7
+        with:
+          path: .vitest-reports
+          pattern: blob-report-*
+          merge-multiple: true
+      # --mergeReports runs no tests; it replays the three blobs as one suite,
+      # so a failure in any shard fails here too and the thresholds see the
+      # union of all three coverage maps.
+      - name: Merge shards, report, and enforce coverage floors
+        run: npx vitest run --mergeReports --coverage
       - if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -110,9 +170,19 @@ jobs:
       - name: Build-gated honesty checks
         run: RUN_BUILD_TESTS=1 npx vitest run tests/build/build-honesty.test.js tests/build/bundle-budget.test.js
 
-  e2e:
+  # 272 s on one runner with workers:2. The worker count is deliberately low —
+  # four workers on a single runner starved the dev server and made the suite
+  # flaky (see playwright.config.js) — so the way to go faster is more runners,
+  # not more workers per runner. Each shard boots its own dev server, so they
+  # do not contend.
+  e2e-shard:
+    name: e2e (shard ${{ matrix.shard }}/3)
     needs: [build]
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     env:
       SESSION_SECRET: ci-test-session-secret-not-real-32chars
       NODE_ENV: test
@@ -143,10 +213,55 @@ jobs:
         # Browsers are cached; system deps (libnss, libgbm, …) still need
         # apt installation each run because they live on the runner image.
         run: npx playwright install-deps chromium
-      - run: npm run test:e2e
+      - name: Run shard ${{ matrix.shard }} of 3
+        run: npx playwright test --shard=${{ matrix.shard }}/3 --reporter=blob
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-blob-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 1
+
+  # One HTML report for the whole suite instead of three partial ones. This is
+  # also the job to require in branch protection: it is red whenever any shard
+  # is, and it is a single stable name rather than a matrix of three.
+  e2e:
+    name: e2e (merged report)
+    needs: e2e-shard
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Cache node_modules
+        id: nm
+        uses: actions/cache@v6
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-22-${{ hashFiles('package-lock.json') }}
+      - if: steps.nm.outputs.cache-hit != 'true'
+        run: npm ci --no-audit --no-fund
+      - uses: actions/download-artifact@v7
+        with:
+          path: all-blob-reports
+          pattern: e2e-blob-*
+          merge-multiple: true
+      - name: Merge shard reports
+        run: npx playwright merge-reports --reporter html ./all-blob-reports
       - if: always()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+      # merge-reports exits 0 even when the merged run contains failures — it
+      # is a report builder, not a gate. Fail explicitly on any red shard, or
+      # this job would go green over a broken suite.
+      - name: Fail if any shard failed
+        if: ${{ contains(needs.e2e-shard.result, 'failure') || contains(needs.e2e-shard.result, 'cancelled') }}
+        run: |
+          echo "::error::At least one e2e shard failed — see the merged report artifact"
+          exit 1
