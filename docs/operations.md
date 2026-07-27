@@ -492,8 +492,8 @@ Without `RUN_BUILD_TESTS=1` it self-skips, so it never slows down a normal
 
 | Check | Budget (gzip) |
 | ----- | ------------- |
-| `index-*.js` entry chunk | 82 KB |
-| Sum of every chunk statically imported by the entry | 395 KB |
+| `index-*.js` entry chunk | 72 KB |
+| Sum of every chunk statically imported by the entry | 365 KB |
 | Any `esm-*.js` chunk eagerly imported by the entry | must not exceed 50 KB |
 
 Budgets track current actuals and are a ratchet: lowering them is always fine,
@@ -506,11 +506,12 @@ causes: importing a new icon pack eagerly instead of behind `vendor-icons`,
 inlining a markdown/shiki module that should be lazy-loaded, or a
 non-tree-shaken util dragging a big transitive dep.
 
-> **`scripts/check-bundle-size.mjs` is not the gate.** It is a local
-> diagnostic (`npm run check:bundle-size`) with its own per-chunk budget
-> table; it runs in no workflow, its budgets have drifted from the real
-> chunk names, and it currently fails on a clean build. Do not treat its
-> output as a release blocker — fix or delete it, but gate on the test above.
+> **Lazy chunks are not budgeted.** The gate covers the eager set only.
+> The largest lazy chunks (`vendor-diff` ~88 KB gz, `cytoscape` ~138 KB gz,
+> `MigrationWizard` ~54 KB gz) are unguarded, so a regression inside one of
+> them will not fail CI. They are lazy by construction — check them by hand
+> with `npm run build:analyze` when touching the diff viewer, the diagram
+> renderer, or the migration wizard.
 
 ---
 
