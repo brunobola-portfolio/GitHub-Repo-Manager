@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, isValidElement } from 'react'
 import { ToastContext } from './contexts'
 import { trackBreadcrumb } from '../lib/observability'
 import { formatUserError } from '../utils/errors'
@@ -136,8 +136,29 @@ export function ToastProvider({ children }) {
     }, [dismissToast])
 
     // Backwards-compatible string-message adder.
+    //
+    // Coerces a plain object into a string rather than handing React something
+    // it cannot render. A toast is feedback about work that already succeeded —
+    // it must never be the thing that takes the app down, which is exactly what
+    // happened when three PR-review publish paths passed { title, message }.
+    // ReactNode content has its own entry point (`toast.custom`).
+    const coerceMessage = (message) => {
+        if (message === null || message === undefined) return ''
+        if (typeof message === 'string') return message
+        if (typeof message === 'number' || typeof message === 'boolean') return String(message)
+        // React elements are legitimate here — ToastItem renders them fine.
+        if (isValidElement(message)) return message
+        if (typeof message === 'object') {
+            const parts = [message.title, message.message ?? message.description]
+                .filter((p) => typeof p === 'string' && p.length > 0)
+            if (parts.length > 0) return parts.join(' — ')
+            return 'Done.'
+        }
+        return String(message)
+    }
+
     const addToast = useCallback((type, message, duration = 5000) => {
-        return addToastRecord({ type, message, duration })
+        return addToastRecord({ type, message: coerceMessage(message), duration })
     }, [addToastRecord])
 
     const toast = useMemo(() => ({

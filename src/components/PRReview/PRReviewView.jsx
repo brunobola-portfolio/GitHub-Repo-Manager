@@ -470,21 +470,20 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
           setPublishing(true)
           try {
             const out = await deep.publish(event)
+            // toast.success takes a STRING. These three passed an object, which
+            // React cannot render as a child — publishing a review replaced the
+            // whole app with the error overlay. In mock mode the demoOnly branch
+            // hit it every single time.
             if (out.demoOnly) {
-              toast.success?.({
-                title: 'Demo: review not published',
-                message: out.message,
-              })
+              toast.success?.(out.message || 'Demo mode — the review was not sent to GitHub.')
             } else if (out.queued) {
-              toast.success?.({
-                title: 'Review queued for publishing',
-                message: 'GitHub will receive the review momentarily.',
-              })
+              toast.success?.('Review queued — GitHub will receive it momentarily.')
             } else {
-              toast.success?.({
-                title: 'Review published to GitHub',
-                message: out.githubReviewId ? `Review #${out.githubReviewId}` : undefined,
-              })
+              toast.success?.(
+                out.githubReviewId
+                  ? `Review #${out.githubReviewId} published to GitHub.`
+                  : 'Review published to GitHub.',
+              )
             }
             setPublishOpen(false)
           } catch (err) {

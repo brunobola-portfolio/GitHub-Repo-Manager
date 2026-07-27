@@ -64,14 +64,47 @@ describe('fetchJSON — shared AI quota gate', () => {
     expect(getAIQuotaState()).not.toBeNull()
   })
 
-  it('pre-empts a subsequent call without hitting the network once armed', async () => {
-    mockFetch(async () => ({ status: 429, ok: false, json: async () => ({ code: 'QUOTA_EXCEEDED' }) }))
-    await fetchJSON('/api/ai/x').catch(() => {})
+  it('pre-empts a subsequent call for the SAME feature without hitting the network', async () => {
+    mockFetch(async () => ({
+      status: 429, ok: false,
+      json: async () => ({ code: 'QUOTA_EXCEEDED', feature: 'ai_deep_review' }),
+    }))
+    await fetchJSON('/api/ai/x', { feature: 'ai_deep_review' }).catch(() => {})
 
     const spy = vi.fn(async () => ({ status: 200, ok: true, json: async () => ({}) }))
     vi.stubGlobal('fetch', spy)
-    await expect(fetchJSON('/api/ai/y')).rejects.toMatchObject({ code: 'AI_QUOTA_EXCEEDED' })
+    await expect(fetchJSON('/api/ai/y', { feature: 'ai_deep_review' }))
+      .rejects.toMatchObject({ code: 'AI_QUOTA_EXCEEDED' })
     expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('does NOT pre-empt a different feature whose own quota is untouched', async () => {
+    // Exhausting Deep Review used to abort PR Chat in the browser for five
+    // minutes, with a message naming Deep Review — while the PR Chat counter
+    // sat at zero.
+    mockFetch(async () => ({
+      status: 429, ok: false,
+      json: async () => ({ code: 'QUOTA_EXCEEDED', feature: 'ai_deep_review' }),
+    }))
+    await fetchJSON('/api/ai/x', { feature: 'ai_deep_review' }).catch(() => {})
+
+    const spy = vi.fn(async () => ({ status: 200, ok: true, json: async () => ({ ok: true }) }))
+    vi.stubGlobal('fetch', spy)
+    await expect(fetchJSON('/api/ai/chat', { feature: 'ai_pr_chat' })).resolves.toEqual({ ok: true })
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
+  it('never pre-empts a caller that did not declare a feature', async () => {
+    mockFetch(async () => ({
+      status: 429, ok: false,
+      json: async () => ({ code: 'QUOTA_EXCEEDED', feature: 'ai_deep_review' }),
+    }))
+    await fetchJSON('/api/ai/x', { feature: 'ai_deep_review' }).catch(() => {})
+
+    const spy = vi.fn(async () => ({ status: 200, ok: true, json: async () => ({ ok: true }) }))
+    vi.stubGlobal('fetch', spy)
+    await expect(fetchJSON('/api/ai/anything')).resolves.toEqual({ ok: true })
+    expect(spy).toHaveBeenCalledTimes(1)
   })
 
   it('does NOT arm the gate on a plain 429 rate-limit (no QUOTA_EXCEEDED code)', async () => {

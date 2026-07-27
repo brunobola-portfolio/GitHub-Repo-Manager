@@ -5,6 +5,7 @@ import { openAISettings } from '../../utils/appEvents'
 import { Heading } from './Heading'
 import { TIER_LABEL } from './quotaShared'
 import { QuotaUpgradeButton } from './QuotaUpgradeButton'
+import { metricLabel } from '../../utils/metricLabels'
 
 /**
  * QuotaExceededState — uniform CTA when a user hits a tier-bound quota.
@@ -42,7 +43,7 @@ export function QuotaExceededState({
       </div>
       <Heading as="h3" className="text-xl font-bold mb-1">Quota reached</Heading>
       <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-        You&apos;ve used your monthly <strong>{feature}</strong> allowance
+        You&apos;ve used your monthly <strong>{metricLabel(feature)}</strong> allowance
         {tierLabel ? <> on the <strong>{tierLabel}</strong> tier</> : null}.
       </p>
       {(typeof used === 'number' && typeof limit === 'number') && (

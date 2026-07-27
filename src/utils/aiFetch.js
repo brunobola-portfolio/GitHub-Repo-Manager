@@ -28,10 +28,13 @@ const CSRF_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
  * A 429+QUOTA_EXCEEDED throws the typed {@link AIQuotaExceededError} and arms the
  * shared gate.
  */
-export async function fetchJSON(url, options = {}) {
-  // Pre-empt: skip the network entirely when the shared gate is already armed.
-  if (isAIQuotaActive()) {
-    throw new AIQuotaExceededError(getAIQuotaState() || {})
+export async function fetchJSON(url, { feature, ...options } = {}) {
+  // Pre-empt: skip the network only when THIS feature's gate is armed. The gate
+  // used to be a single global, so exhausting Deep Review aborted PR Chat in the
+  // browser with a message naming the wrong feature. Callers that do not declare
+  // a feature are never pre-empted and take the real 429.
+  if (isAIQuotaActive(feature)) {
+    throw new AIQuotaExceededError(getAIQuotaState(feature) || {})
   }
   // Every /api/* mutation is CSRF-gated server-side (middleware/csrf.js), and
   // this helper sent no token — so every AI mutation reached the user as a 403
@@ -77,7 +80,7 @@ export async function fetchJSON(url, options = {}) {
   }
   // A healthy response means the gate (if any) was stale — drop it so sibling
   // AI calls stop pre-empting.
-  clearAIQuotaState()
+  if (feature) clearAIQuotaState(feature)
   return body
 }
 

@@ -150,10 +150,23 @@ export function useAIPolish(repoFullNames, contextOptions = null) {
                 confidence: suggestion?.confidence ?? null,
             })
         } catch (e) {
-            if (e?.status === 429 || e?.tierError) {
+            // 429 is a quota; 403 is a tier gate. Both set `tierError`, so
+            // treating them alike labelled a Pro-only feature as "AI quota
+            // exceeded" — the user reads that as "come back next month" and
+            // waits for a reset that will never unlock anything.
+            if (e?.status === 429) {
                 quotaHitRef.current = true
                 setQuotaHit(true)
                 updateRow(row.fullName, { status: 'quota', error: 'AI quota exceeded' })
+                return
+            }
+            if (e?.status === 403 && e?.tierError) {
+                quotaHitRef.current = true
+                setQuotaHit(true)
+                updateRow(row.fullName, {
+                    status: 'quota',
+                    error: e?.message || 'This feature needs a higher plan',
+                })
                 return
             }
             updateRow(row.fullName, { status: 'error', error: e?.friendlyMessage || e?.message || 'AI suggestion failed' })
