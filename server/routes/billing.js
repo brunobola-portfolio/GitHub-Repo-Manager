@@ -13,6 +13,15 @@ const router = Router();
 // so opening a second checkout would double-bill rather than fix anything.
 const ACTIVE_SUB_STATUSES = new Set(['active', 'trialing', 'past_due', 'incomplete']);
 
+// Refunds and chargebacks suspend access WITHOUT cancelling the Stripe
+// subscription (see the charge.refunded handler in stripe-webhooks.js), so the
+// customer sees a Free UI over a subscription that is still billing them. They
+// must be blocked from checkout for the same double-charge reason as the set
+// above — but telling them they "already have an active subscription" would be
+// a lie, hence the separate message. Only customer.subscription.deleted, which
+// sets 'cancelled', frees a user to check out again.
+const HELD_SUB_STATUSES = new Set(['refunded', 'disputed']);
+
 const checkoutSchema = z.object({
     tier: z.enum(['pro', 'enterprise']),
     // Billing cadence. Defaults to monthly so older clients (and any caller
@@ -79,6 +88,13 @@ router.post('/checkout', requireAuth, requireStripe, async (req, res) => {
             return res.status(409).json({
                 error: 'subscription_exists',
                 message: 'You already have an active subscription. Use the billing portal to change your plan.',
+            });
+        }
+
+        if (sub?.stripe_subscription_id && HELD_SUB_STATUSES.has(sub.status)) {
+            return res.status(409).json({
+                error: 'subscription_on_hold',
+                message: 'Your subscription is on hold after a refund or payment dispute, and is still open in Stripe. Contact support to restore it — starting a new one here would bill you twice.',
             });
         }
 

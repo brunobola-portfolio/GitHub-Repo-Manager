@@ -159,3 +159,51 @@ describe('POST /billing/checkout — billing-period price selection', () => {
         expect(res.status).toBe(503)
     })
 })
+
+/**
+ * The double-charge guard. Refunding an invoice does NOT cancel the Stripe
+ * subscription, so a refunded or disputed customer sees a Free UI over a live
+ * subscription — clicking Upgrade would open a SECOND one and bill them twice
+ * while the webhook's ON CONFLICT(user_id) upsert orphans the first.
+ */
+describe('POST /billing/checkout — refuses to open a second subscription', () => {
+    function withSubscription(row) {
+        mockPrepare.mockImplementation(() => ({
+            get: vi.fn(() => row),
+            run: vi.fn(() => ({ changes: 1 })),
+        }))
+    }
+
+    for (const status of ['active', 'trialing', 'past_due', 'incomplete']) {
+        it(`409s subscription_exists for status='${status}'`, async () => {
+            withSubscription({ stripe_customer_id: 'cus_1', stripe_subscription_id: 'sub_1', status })
+            const res = await request(makeApp())
+                .post('/api/v1/billing/checkout')
+                .send({ tier: 'pro' })
+            expect(res.status).toBe(409)
+            expect(res.body.error).toBe('subscription_exists')
+            expect(mockSessionsCreate).not.toHaveBeenCalled()
+        })
+    }
+
+    for (const status of ['refunded', 'disputed']) {
+        it(`409s subscription_on_hold for status='${status}' instead of double-billing`, async () => {
+            withSubscription({ stripe_customer_id: 'cus_1', stripe_subscription_id: 'sub_1', status })
+            const res = await request(makeApp())
+                .post('/api/v1/billing/checkout')
+                .send({ tier: 'pro' })
+            expect(res.status).toBe(409)
+            expect(res.body.error).toBe('subscription_on_hold')
+            expect(mockSessionsCreate).not.toHaveBeenCalled()
+        })
+    }
+
+    it("allows checkout again once the subscription is genuinely cancelled", async () => {
+        withSubscription({ stripe_customer_id: 'cus_1', stripe_subscription_id: 'sub_1', status: 'cancelled' })
+        const res = await request(makeApp())
+            .post('/api/v1/billing/checkout')
+            .send({ tier: 'pro' })
+        expect(res.status).toBe(200)
+        expect(mockSessionsCreate).toHaveBeenCalledTimes(1)
+    })
+})

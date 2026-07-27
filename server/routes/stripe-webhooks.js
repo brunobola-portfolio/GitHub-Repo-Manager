@@ -6,6 +6,13 @@ import { issueLicenseForCheckout } from '../lib/license-issuer.js';
 
 const VALID_TIERS = new Set(['free', 'pro', 'enterprise']);
 
+// A refund or chargeback suspends access, but the Stripe subscription itself
+// is untouched and keeps producing `customer.subscription.updated` events with
+// status 'active'. Letting those through would silently restore the tier of a
+// customer who took their money back, so the hold survives until it is cleared
+// deliberately — `charge.dispute.closed` with status 'won', or an operator.
+const HOLD_STATUSES = new Set(['refunded', 'disputed']);
+
 /**
  * Cross-check the tier from session/subscription metadata against the actual
  * price object's metadata. If they disagree, log a warning and prefer the
@@ -207,11 +214,35 @@ export async function stripeWebhookHandler(req, res) {
                 const sub = event.data.object;
                 const rawSubTier = sub.metadata?.tier || (sub.items?.data?.[0]?.price?.metadata?.tier) || 'pro';
                 const tier = await reconcileTierFromPrice(stripe, sub, rawSubTier, null);
+                const periodStart = new Date(sub.current_period_start * 1000).toISOString();
+                const periodEnd = new Date(sub.current_period_end * 1000).toISOString();
+
+                // Never let a routine subscription update lift a refund/dispute
+                // hold. The customer opening the billing portal is enough to
+                // produce this event, and Stripe reports the subscription as
+                // 'active' throughout — the money is still gone.
+                const current = db.prepare(
+                    'SELECT status FROM user_subscriptions WHERE stripe_subscription_id = ?'
+                ).get(sub.id);
+
+                if (current && HOLD_STATUSES.has(current.status)) {
+                    db.prepare(`
+                        UPDATE user_subscriptions SET
+                            current_period_start = ?, current_period_end = ?, updated_at = datetime('now')
+                        WHERE stripe_subscription_id = ?
+                    `).run(periodStart, periodEnd, sub.id);
+                    logger.warn(
+                        { subscriptionId: sub.id, heldStatus: current.status },
+                        'stripe-webhook: subscription update ignored — billing hold in effect'
+                    );
+                    break;
+                }
+
                 db.prepare(`
                     UPDATE user_subscriptions SET
                         tier = ?, status = ?, current_period_start = ?, current_period_end = ?, updated_at = datetime('now')
                     WHERE stripe_subscription_id = ?
-                `).run(tier, sub.status, new Date(sub.current_period_start * 1000).toISOString(), new Date(sub.current_period_end * 1000).toISOString(), sub.id);
+                `).run(tier, sub.status, periodStart, periodEnd, sub.id);
                 break;
             }
 
@@ -235,6 +266,18 @@ export async function stripeWebhookHandler(req, res) {
                 const object = event.data.object;
                 const chargeId = event.type === 'charge.refunded' ? object.id : object.charge;
                 const nextStatus = event.type === 'charge.refunded' ? 'refunded' : 'disputed';
+
+                // Stripe fires `charge.refunded` for PARTIAL refunds too, with
+                // `refunded: false`. A goodwill credit on an otherwise-paid
+                // invoice must not strip a paying customer of their tier, so
+                // only a full refund suspends access.
+                if (event.type === 'charge.refunded' && object.refunded !== true) {
+                    logger.info(
+                        { chargeId, amount: object.amount, amountRefunded: object.amount_refunded },
+                        'stripe-webhook: partial refund recorded, access unchanged'
+                    );
+                    break;
+                }
 
                 let subscriptionId = null;
                 try {
@@ -267,6 +310,45 @@ export async function stripeWebhookHandler(req, res) {
                     { subscriptionId, eventType: event.type, rowsUpdated: result.changes },
                     'stripe-webhook: subscription downgraded to free after refund/dispute'
                 );
+                break;
+            }
+
+            // The only automatic way out of a hold. A dispute resolved in the
+            // operator's favour means the money stayed, so the tier is restored
+            // from Stripe rather than from our own (deliberately downgraded)
+            // row. A lost dispute leaves the hold exactly where it is.
+            case 'charge.dispute.closed': {
+                const dispute = event.data.object;
+                if (dispute.status !== 'won') {
+                    logger.info({ disputeId: dispute.id, status: dispute.status }, 'stripe-webhook: dispute closed without a win, hold stands');
+                    break;
+                }
+
+                let subscriptionId = null;
+                try {
+                    const charge = await stripe.charges.retrieve(dispute.charge);
+                    if (charge?.invoice) {
+                        const invoice = typeof charge.invoice === 'string'
+                            ? await stripe.invoices.retrieve(charge.invoice)
+                            : charge.invoice;
+                        subscriptionId = invoice?.subscription || null;
+                    }
+                } catch (err) {
+                    logger.error({ err, disputeId: dispute.id }, 'stripe-webhook: could not resolve subscription for won dispute');
+                    forgetIdempotency();
+                    return res.status(500).json({ error: 'Dispute resolution failed' });
+                }
+
+                if (!subscriptionId) break;
+
+                const sub = await stripe.subscriptions.retrieve(subscriptionId);
+                const rawTier = sub.metadata?.tier || sub.items?.data?.[0]?.price?.metadata?.tier || 'pro';
+                const tier = await reconcileTierFromPrice(stripe, sub, rawTier, null);
+                db.prepare(`
+                    UPDATE user_subscriptions SET tier = ?, status = ?, updated_at = datetime('now')
+                    WHERE stripe_subscription_id = ? AND status = 'disputed'
+                `).run(tier, sub.status, subscriptionId);
+                logger.warn({ subscriptionId, tier }, 'stripe-webhook: dispute won, access restored');
                 break;
             }
 
