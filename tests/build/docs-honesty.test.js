@@ -13,6 +13,7 @@
 
 import { readFileSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
+import { getFeatures } from '../../server/lib/feature-flags.js'
 
 const read = (p) => readFileSync(p, 'utf8')
 
@@ -130,10 +131,72 @@ describe('the commercial licence describes the licence the issuer actually mints
         expect(commercial).not.toMatch(/issued for 12-month terms/i)
     })
 
-    // Free features must not appear as paid value. semanticSearch is true and
-    // teamsMax/teamMembersMax are Infinity on Free.
-    it('does not sell semantic search or unlimited teams as paid-only', () => {
-        const proSection = commercial.slice(0, commercial.length)
-        expect(proSection).not.toMatch(/Pro[^\n]*\bsemantic search\b[^\n]*\bunlimited teams\b/i)
+    // Every line of the tier table that credits a paid tier with lifting a
+    // Free ceiling, checked against the flag it names.
+    //
+    // The assertion this replaces required "Pro", "semantic search" and
+    // "unlimited teams" to appear in that order ON THE SAME LINE, which any
+    // rewording defeated — it passed while the contract sold a 1,000-repo Free
+    // ceiling that TIER_FEATURES never had. Match on the claim, not on one
+    // phrasing of it.
+    const PAID_TIER_LINES = commercial
+        .split('\n')
+        .filter((l) => /^\|\s*\*\*(Pro|Enterprise)\*\*/.test(l))
+
+    it('has a tier table to check (guards against the file being restructured)', () => {
+        expect(PAID_TIER_LINES.length).toBeGreaterThanOrEqual(2)
+    })
+
+    // A capability already unlimited on Free cannot be paid-tier value.
+    //
+    // Each entry names the flag the CLAIM is about. "semantic search 375/month
+    // → unlimited" is a truthful description of a quota being lifted, so it is
+    // checked against semanticSearchPerMonth (375 on Free), not against the
+    // semanticSearch availability flag, which is true on every tier.
+    const FREE_ALREADY_HAS = [
+        { label: 'repositories', pattern: /\brepositor(y|ies)\b/i, flag: 'maxRepos' },
+        { label: 'semantic search', pattern: /\bsemantic search\b/i, flag: 'semanticSearchPerMonth' },
+        { label: 'teams', pattern: /\bunlimited teams\b/i, flag: 'teamsMax' },
+    ]
+
+    for (const { label, pattern, flag } of FREE_ALREADY_HAS) {
+        it(`does not sell ${label} as paid value while Free already has it`, () => {
+            const free = getFeatures('free')[flag]
+            if (!(free === true || free === Infinity)) return
+
+            const offenders = PAID_TIER_LINES.filter(
+                (l) => pattern.test(l) && /unlimited|\bincluded\b|\bunlocks?\b/i.test(l),
+            )
+            expect(
+                offenders,
+                `docs/LICENSE-COMMERCIAL.md sells ${label} as paid value, but getFeatures('free').${flag} is already ${String(free)}`,
+            ).toEqual([])
+        })
+    }
+
+    // Numeric ceilings quoted for a paid tier must be the ones the code grants.
+    it('quotes AI query and API key ceilings that match TIER_FEATURES', () => {
+        const mismatches = []
+        for (const line of PAID_TIER_LINES) {
+            const tier = /\*\*Pro\*\*/.test(line) ? 'pro' : 'enterprise'
+            const f = getFeatures(tier)
+
+            const aiQ = /AI queries:\s*([\d,]+)\/month/i.exec(line)
+            if (aiQ) {
+                const claimed = Number(aiQ[1].replace(/,/g, ''))
+                if (claimed !== f.aiQueriesPerMonth) {
+                    mismatches.push(`${tier}: doc says ${claimed} AI queries/month, code grants ${String(f.aiQueriesPerMonth)}`)
+                }
+            }
+
+            const keys = /API keys:\s*(\d+)/i.exec(line)
+            if (keys) {
+                const claimed = Number(keys[1])
+                if (claimed !== f.apiKeys) {
+                    mismatches.push(`${tier}: doc says ${claimed} API keys, code grants ${String(f.apiKeys)}`)
+                }
+            }
+        }
+        expect(mismatches).toEqual([])
     })
 })

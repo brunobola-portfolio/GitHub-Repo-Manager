@@ -327,8 +327,8 @@ The application implements three tiers managed through the `user_subscriptions` 
 
 | Tier | Description |
 | ---- | ----------- |
-| `free` | Default for all new accounts. The whole product surface, with per-feature monthly caps: 1,000 repos, 1,000 AI queries/month, 25 API keys, 5 full migrations/month. |
-| `pro` | Same features, higher ceilings: unlimited repos, 10,000 AI queries/month, every per-feature AI cap unlimited, 50 API keys. |
+| `free` | Default for all new accounts. The whole product surface, with per-feature monthly caps: 1,000 AI queries/month, 25 API keys, 5 full migrations/month. Repository count is not capped on any tier. |
+| `pro` | Same features, higher ceilings: 10,000 AI queries/month, every per-feature AI cap unlimited, 50 API keys. |
 | `enterprise` | Unlimited AI queries, 100 API keys, plus the audit log with export (`auditLog` / `auditExport`) — the only tier-exclusive product capability. |
 
 There is **no priority job queue, advanced-analytics tier, or tier-exclusive
