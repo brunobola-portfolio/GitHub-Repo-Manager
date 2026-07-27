@@ -179,7 +179,26 @@ try {
     Get-ChildItem -LiteralPath $UpdatesDir -Directory -Filter 'staging-*' -ErrorAction SilentlyContinue |
         Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
     Log ("extracting {0} ({1:N1} MB) to staging" -f $ZipPath, ((Get-Item -LiteralPath $ZipPath).Length / 1MB))
-    Expand-Archive -LiteralPath $ZipPath -DestinationPath $Staging -Force
+    # NOT Expand-Archive. This script is launched with powershell.exe — Windows
+    # PowerShell 5.1 — whose Expand-Archive is a pure-PowerShell implementation
+    # with per-entry pipeline overhead. On the shipped 128 MB package that took
+    # 16 minutes (measured in CI: 22:48:05 -> 23:04:08), during which the user
+    # sees an app that has stopped and not come back. The pwsh 7 build of the
+    # same cmdlet is .NET-backed and fast, which is why the workflow's own
+    # extraction steps looked fine and hid this for so long.
+    #
+    # ZipFile::ExtractToDirectory is that same .NET path, and it is available
+    # on 5.1. Benchmarked under 5.1 on 4000 small files: 74.0 s -> 2.3 s, 32x.
+    #
+    # ExtractToDirectory throws if the destination exists, where Expand-Archive
+    # -Force overwrote. The staging sweep above already removed every
+    # staging-* directory, so the only way it can exist here is a same-run
+    # collision — remove it explicitly rather than relying on that.
+    if (Test-Path -LiteralPath $Staging) {
+        Remove-Item -LiteralPath $Staging -Recurse -Force
+    }
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($ZipPath, $Staging)
 
     Get-ChildItem -LiteralPath $UpdatesDir -Directory -Filter 'backup-*' -ErrorAction SilentlyContinue |
         Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
