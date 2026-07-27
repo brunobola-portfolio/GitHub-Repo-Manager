@@ -128,7 +128,6 @@ function AppContent() {
   }, [])
   const [selectedTeam, setSelectedTeam] = useState(null)
   const [systemInitialized, setSystemInitialized] = useState(null)
-  const [org, setOrg] = useState('')
   const [selectedRepoDetail, setSelectedRepoDetail] = useState(null)
   const [repoDetailInitialTab, setRepoDetailInitialTab] = useState('overview')
   // Current repo-detail tab, lifted from RepoDetail so the URL hash can reflect
@@ -202,8 +201,6 @@ function AppContent() {
     orgRepos,
     stats,
     fetchOrgRepos,
-    archiveRepos,
-    deleteRepos,
     createRepo,
     setSelectedOrg,
     fetchOrgs,
@@ -614,14 +611,10 @@ function AppContent() {
     openModalWithData('showOrgManager', org)
   }, [openModalWithData])
 
-  const handleAction = useCallback(async (action, options = {}) => {
-    try {
-      await performAction(action, null, org, options)
-      toast.success(`${action} completed successfully`)
-    } catch (err) {
-      toast.errorFromException(err, { fallbackTitle: `${action} failed` })
-    }
-  }, [performAction, org, toast])
+  // handleAction (a performAction wrapper that passed `null` for the repo list
+  // and then reported success unconditionally) was deleted: the Quick Actions
+  // panel now dispatches through runAction + the repoActions registry, which
+  // owns confirmation and honest result reporting for every bulk action.
 
   const displayRepos = selectedOrg ? orgRepos : repos
 
@@ -662,7 +655,6 @@ function AppContent() {
 
     try {
       if (orgLogin) {
-        setOrg(orgLogin)
         await fetchOrgRepos(orgLogin)
       } else {
         await refresh()
@@ -676,15 +668,11 @@ function AppContent() {
   // on every parent render — only when an actual sidebarProps field changes.
   const sidebarProps = useMemo(() => ({
     isPerforming,
-    performAction: handleAction,
     message,
     results,
-    onArchive: archiveRepos,
-    onDelete: deleteRepos,
     selectedRepos,
-    onTransfer: () => openModalWithData('showTransfer', selectedRepos.length > 0 ? selectedRepos : displayRepos),
     activity,
-  }), [isPerforming, handleAction, message, results, archiveRepos, deleteRepos, selectedRepos, openModalWithData, displayRepos, activity])
+  }), [isPerforming, message, results, selectedRepos, activity])
 
   if (systemInitialized === false) {
     return (

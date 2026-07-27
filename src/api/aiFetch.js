@@ -46,6 +46,21 @@ export class AIUnreachableError extends Error {
 }
 
 /**
+ * Carries a server error envelope through unchanged so `formatUserError` can
+ * resolve the server's own `code` (TIER_REQUIRED_PRO, AI_DISABLED, …) instead
+ * of the client guessing a meaning from the HTTP status.
+ */
+export class AIServerError extends Error {
+    constructor(payload = {}, status = 400) {
+        super(payload.message || payload.error || 'AI request failed')
+        this.name = 'AIServerError'
+        this.code = payload.code
+        this.status = status
+        this.body = payload
+    }
+}
+
+/**
  * Thrown both server-side (real 429) and client-side (pre-empted by the
  * quota gate below). Carries the structured fields the server emits via
  * `quotaExceededResponse` so the UI can render an upgrade CTA without
@@ -209,6 +224,15 @@ export async function aiFetch(path, init = {}) {
         headers,
     })
 
+    // 401 and 403 are NOT interchangeable here. The AI routes deliberately
+    // return 422 for a rejected provider key (server/routes/ai/shared.js) so a
+    // bad key never reads as a logged-out session; a 403 on these routes is a
+    // tier gate carrying its own TIER_REQUIRED_* code. Collapsing both into
+    // AIInvalidKeyError told users with a tier problem to re-authenticate.
+    if (res.status === 403) {
+        const body = await res.clone().json().catch(() => ({}))
+        if (body?.code) throw new AIServerError(body, res.status)
+    }
     if (res.status === 401 || res.status === 403) {
         throw new AIInvalidKeyError()
     }

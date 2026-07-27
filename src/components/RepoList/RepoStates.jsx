@@ -43,7 +43,10 @@ export function ErrorState({ error, errorInfo, onRefresh, onLogin }) {
 		<div className="flex flex-col items-center justify-center py-20">
 			<AlertCircle className="w-10 h-10 mb-4 text-red-500 dark:text-red-400" />
 			<p className="text-center max-w-md text-red-500 dark:text-red-400">{error}</p>
-			{errorInfo?.type === 'BACKEND_UNAVAILABLE' && (
+			{/* Terminal instructions only make sense to someone running from a
+			    checkout. The packaged Windows build ships to people who have
+			    neither, so this stays behind the dev guard. */}
+			{errorInfo?.type === 'BACKEND_UNAVAILABLE' && import.meta.env.DEV && (
 				<div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg max-w-lg">
 					<p className="text-amber-800 dark:text-amber-200 text-sm font-medium mb-2">
 						How to fix this:

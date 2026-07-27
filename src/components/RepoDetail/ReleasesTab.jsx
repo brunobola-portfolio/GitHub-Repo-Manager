@@ -11,10 +11,11 @@ import { Field, Input, Textarea } from '../ui/form'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
 import { formatRelativeTime, formatDateTime } from '../../utils/format'
+import { TabLoadError } from './TabLoadError'
 
 export function ReleasesTab({ api }) {
     const { toast } = useToast()
-    const { data, loading, reload: loadReleases } = useTabData(
+    const { data, loading, error, reload: loadReleases } = useTabData(
         async () => {
             const result = await api.fetchReleases()
             return result.data || result || []
@@ -69,6 +70,10 @@ export function ReleasesTab({ api }) {
 
     if (loading) {
         return <div className="flex justify-center py-12"><Spinner size="lg" /></div>
+    }
+
+    if (error) {
+        return <TabLoadError error={error} onRetry={loadReleases} resourceLabel="releases" />
     }
 
     return (
@@ -188,9 +193,10 @@ export function ReleasesTab({ api }) {
             <ConfirmModal
                 isOpen={!!confirmAction}
                 onClose={() => setConfirmAction(null)}
-                onConfirm={() => { confirmAction?.onConfirm(); setConfirmAction(null) }}
+                onConfirm={async () => { await confirmAction?.onConfirm(); setConfirmAction(null) }}
                 title={confirmAction?.title}
                 message={confirmAction?.message}
+                requiresInput={confirmAction?.requiresInput}
                 confirmText={confirmAction?.confirmText}
                 variant="danger"
             />

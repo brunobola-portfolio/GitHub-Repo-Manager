@@ -184,7 +184,10 @@ function notifyRateLimit(info) {
 // User-friendly error messages
 const ERROR_MESSAGES = {
     [ErrorType.NETWORK]: 'Unable to connect to the server. Please check your internet connection.',
-    [ErrorType.BACKEND_UNAVAILABLE]: 'Backend server is not running. Please start the server with "npm run dev:server" or "npm run dev:all".',
+    // Neutral by design: this string reaches every end user, including people
+    // running the packaged Windows build who have no terminal and no checkout.
+    // The developer hint lives behind import.meta.env.DEV in RepoStates.
+    [ErrorType.BACKEND_UNAVAILABLE]: 'Cannot reach the GitHub Repo Manager service. It may still be starting up.',
     [ErrorType.TIMEOUT]: 'The request took too long to complete. Please try again.',
     [ErrorType.AUTHENTICATION]: 'Your session has expired. Please login again.',
     [ErrorType.AUTHORIZATION]: 'You do not have permission to perform this action.',

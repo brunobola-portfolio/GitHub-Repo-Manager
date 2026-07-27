@@ -17,11 +17,12 @@ import { useToast } from '../../hooks/useToast'
 import { useFocusedRow } from '../../hooks/useFocusedRow'
 import { emitAppEvent, onAppEvent, APP_EVENTS } from '../../utils/appEvents'
 import { formatRelativeTime, formatDateTime } from '../../utils/format'
+import { TabLoadError } from './TabLoadError'
 
 export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
     const { toast } = useToast()
     const [filter, setFilter] = useState('open')
-    const { data, loading, reload: loadPulls } = useTabData(
+    const { data, loading, error, reload: loadPulls } = useTabData(
         async () => {
             const result = await api.fetchPulls({ state: filter })
             return result.data || result || []
@@ -271,6 +272,8 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
 
             {loading ? (
                 <div className="flex justify-center py-12"><Spinner size="lg" /></div>
+            ) : error ? (
+                <TabLoadError error={error} onRetry={loadPulls} resourceLabel="pull requests" />
             ) : (
                 <div className="space-y-2">
                     {pulls.map((pr, idx) => (
@@ -349,9 +352,10 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
             <ConfirmModal
                 isOpen={!!confirmAction}
                 onClose={() => setConfirmAction(null)}
-                onConfirm={() => { confirmAction?.onConfirm(); setConfirmAction(null) }}
+                onConfirm={async () => { await confirmAction?.onConfirm(); setConfirmAction(null) }}
                 title={confirmAction?.title}
                 message={confirmAction?.message}
+                requiresInput={confirmAction?.requiresInput}
                 confirmText={confirmAction?.confirmText}
                 variant={confirmAction?.variant || 'danger'}
             />

@@ -188,6 +188,13 @@ const KNOWN_ERRORS = {
         body: 'The provider returned an error. Try again or check your provider status.',
         action: { label: 'Retry', kind: 'retry', type: 'retry' },
     },
+    // A user-initiated cancel is not a failure. It previously aliased to
+    // AI_REQUEST_FAILED, so clicking Cancel reported that the provider errored.
+    AI_CANCELED: {
+        title: 'Generation canceled',
+        body: 'You stopped this request before it finished.',
+        action: { label: 'Try again', kind: 'retry', type: 'retry' },
+    },
     AI_PARSE_ERROR: {
         title: 'AI returned an invalid response',
         body: 'The model responded but the format could not be parsed. Retry to get a fresh response.',
@@ -336,11 +343,19 @@ const CODE_ALIASES = {
     ai_model_not_found: 'MODEL_NOT_FOUND',
     provider_no_image_support: 'PROVIDER_NO_IMAGE_SUPPORT',
     image_pricing_unavailable: 'IMAGE_PRICING_UNAVAILABLE',
-    ai_canceled: 'AI_REQUEST_FAILED',
+    ai_canceled: 'AI_CANCELED',
     ai_summary_failed: 'AI_SUMMARY_FAILED',
     // Non-AI server errors that follow the `{ error: '<snake_code>' }` shape.
     invalid_host: 'INVALID_HOST',
     upgrade_required: 'UPGRADE_REQUIRED',
+    // Codes the CLIENT throws (src/api/aiFetch.js) rather than the server.
+    // These are already UPPERCASE but do not match a KNOWN_ERRORS key, so
+    // without an alias they fall through to the bare HTTP-status heuristic —
+    // which rendered "Session expired" for a rejected AI key and "rate
+    // limited, try again shortly" for an exhausted monthly quota.
+    AI_INVALID_KEY: 'AI_KEY_INVALID',
+    AI_QUOTA_EXCEEDED: 'QUOTA_EXCEEDED',
+    AI_UNREACHABLE: 'AI_PROVIDER_UNAVAILABLE',
 }
 
 function pickRetryAfterSec(err) {

@@ -15,11 +15,12 @@ import { issueActions } from '../../actions/issueActions'
 import { emitAppEvent, onAppEvent, APP_EVENTS } from '../../utils/appEvents'
 import { formatRelativeTime, formatDateTime } from '../../utils/format'
 import { issueLabelChipStyle } from '../../utils/issueLabelColors'
+import { TabLoadError } from './TabLoadError'
 
 export function IssuesTab({ api, repoFullName }) {
     const { toast } = useToast()
     const [filter, setFilter] = useState('open')
-    const { data, loading, reload: loadIssues } = useTabData(
+    const { data, loading, error, reload: loadIssues } = useTabData(
         async () => {
             const result = await api.fetchIssues({ state: filter })
             const items = result.data || result || []
@@ -192,6 +193,8 @@ export function IssuesTab({ api, repoFullName }) {
 
             {loading ? (
                 <div className="flex justify-center py-12"><Spinner size="lg" /></div>
+            ) : error ? (
+                <TabLoadError error={error} onRetry={loadIssues} resourceLabel="issues" />
             ) : (
                 <div className="space-y-2">
                     {issues.map((issue, idx) => (

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen, waitFor, cleanup, within } from '@testing-library/react'
+import { render, screen, waitFor, cleanup, within, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ReleasesTab } from '@/components/RepoDetail/ReleasesTab'
 import { renderWithProviders } from '../../helpers/render-with-providers'
@@ -104,15 +104,32 @@ describe('ReleasesTab — list rendering', () => {
     expect(screen.getByText(/0 Releases/)).toBeInTheDocument()
   })
 
-  it('handles fetch error gracefully (stops loading, shows empty)', async () => {
+  // A fetch failure must never render the empty state: saying "No releases
+  // yet" when GitHub actually 500'd states something false as fact, and the
+  // user has no reason to retry because nothing looks broken.
+  it('reports a load failure instead of claiming the repo has no releases', async () => {
     const api = makeApi({
       fetchReleases: vi.fn().mockRejectedValue(new Error('network down'))
     })
     render(<ReleasesTab owner="owner" repo="repo" api={api} />)
 
     await waitFor(() =>
-      expect(screen.getByText('No releases yet')).toBeInTheDocument()
+      expect(screen.getByText(/couldn't load/i)).toBeInTheDocument()
     )
+    expect(screen.queryByText('No releases yet')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
+  })
+
+  it('retry re-runs the fetch', async () => {
+    const fetchReleases = vi.fn().mockRejectedValueOnce(new Error('network down'))
+    const api = makeApi({ fetchReleases })
+    render(<ReleasesTab owner="owner" repo="repo" api={api} />)
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument())
+    fetchReleases.mockResolvedValueOnce(sampleReleases)
+    fireEvent.click(screen.getByRole('button', { name: /retry/i }))
+
+    await waitFor(() => expect(screen.getByText('v2.0.0 — Stable')).toBeInTheDocument())
   })
 
   it('accepts response shape { data: [...] } and bare array', async () => {
