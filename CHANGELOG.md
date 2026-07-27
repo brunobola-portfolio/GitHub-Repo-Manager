@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.11.0] - 2026-07-27
+
 Two audit panels' worth of correctness work: money paths, BYOK metering, and
 the honesty of what the product claims. Nothing here changes what the product
 does for a user who was already getting correct behaviour.
