@@ -58,6 +58,7 @@
     "retention:run": "node server/scripts/retention.js",
     "retention:dry": "node server/scripts/retention.js --dry-run",
     "admin:grant": "node server/scripts/admin-grant.mjs",
+    "audit:verify": "node server/scripts/verify-audit-chain.mjs",
     "admin:revoke": "node server/scripts/admin-grant.mjs --revoke",
     "admin:dlq": "node server/scripts/admin-dlq.mjs",
     "admin:dlq:sweep": "node server/scripts/dlq-sweep.mjs",
