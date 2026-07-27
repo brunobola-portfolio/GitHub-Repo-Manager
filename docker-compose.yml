@@ -112,6 +112,23 @@ services:
       # Escape hatch for deployments terminating TLS somewhere this app can't
       # see. Leaving it unset is the safe default.
       - "DISABLE_HTTPS_ENFORCEMENT=${DISABLE_HTTPS_ENFORCEMENT:-}"
+      # Read by server/config.js on every platform, not just the Windows
+      # package: UPDATE_CHECK=false is how an egress-restricted or air-gapped
+      # deployment stops the outbound GitHub call. Not forwarding it meant the
+      # container saw `undefined`, which is not 'false', and called out anyway.
+      - "UPDATE_CHECK=${UPDATE_CHECK:-}"
+      # Closes the first-run web setup wizard on a deployment that provisions
+      # its own .env. Documented at .env.example:317 as a hardening step.
+      - "GRM_DISABLE_WEB_SETUP=${GRM_DISABLE_WEB_SETUP:-}"
+      # Per-feature model overrides, read by ai-provider.js's env resolver.
+      - "AI_MODEL_CHAT=${AI_MODEL_CHAT:-}"
+      - "AI_MODEL_REVIEW=${AI_MODEL_REVIEW:-}"
+      # Signs the Work Board AI diff payloads (work-board-ai-hmac.js).
+      - "AI_DIFF_SIGNING_KEY=${AI_DIFF_SIGNING_KEY:-}"
+      - "ENV_TOOLING_INSTALL_ENABLED=${ENV_TOOLING_INSTALL_ENABLED:-}"
+      - "AZURE_RETRY_BASE_MS=${AZURE_RETRY_BASE_MS:-}"
+      - "EMAIL_RETRY_BASE_DELAY_MS=${EMAIL_RETRY_BASE_DELAY_MS:-}"
+      - "SQLITE_VERBOSE=${SQLITE_VERBOSE:-}"
       - "REDIS_URL=redis://redis:6379"
     volumes:
       - app-data:/app/server/data

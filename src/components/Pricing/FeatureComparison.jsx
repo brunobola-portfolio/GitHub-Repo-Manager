@@ -38,7 +38,7 @@ const CATEGORIES = [
     name: 'AI Features',
     rows: [
       {
-        feature: 'Repo Advisor (conversational)',
+        feature: 'Repo Advisor (conversational)†',
         values: [true, true, true],
       },
       {
@@ -381,6 +381,13 @@ export function FeatureComparison() {
           against each person's own account/subscription, not pooled per team. */}
       <p className="mt-4 text-center text-xs text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
         Teams are unlimited on every plan. AI usage quotas above are metered per individual account, even within a team.
+      </p>
+      {/* The README already carried this caveat; the in-app pricing surfaces
+          did not, so a self-hoster saw "included" and then got
+          404 AI_FEATURE_FLAG_OFF from every Repo Advisor endpoint. */}
+      <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
+        &dagger; Repo Advisor is operator-enabled: self-hosted deployments need{' '}
+        <code className="font-mono">WORK_BOARD_AI_ENABLED=true</code> plus a per-user opt-in.
       </p>
     </motion.div>
   )

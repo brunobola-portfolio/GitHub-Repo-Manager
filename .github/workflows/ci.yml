@@ -37,6 +37,11 @@ jobs:
       # husky never installed, and edits made through the GitHub web UI all
       # bypass it permanently. This re-checks every tracked file.
       - run: npm run guards
+      # Relative links across the 215 markdown files under docs/. The script
+      # existed but ran in no workflow and no test, so it had been red for an
+      # unknown number of commits — a shipped report linked into the gitignored
+      # .dev/ workspace, which nobody could follow from a clean clone.
+      - run: npm run docs:linkcheck
 
   test:
     runs-on: ubuntu-latest

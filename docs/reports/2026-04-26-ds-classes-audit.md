@@ -1,6 +1,6 @@
 # `ds-*` Class Audit — 2026-04-26
 
-Auditor: [.dev/audit-ds-classes.mjs](../../.dev/audit-ds-classes.mjs) — JS-native script that walks `src/` + `docs/` and tests each class with a word-boundary regex. Ignores the `design-system.css` definition file itself; cross-checks for `animation-name` / `@apply` references inside CSS.
+Auditor: `.dev/audit-ds-classes.mjs` (local-only, not tracked) — JS-native script that walks `src/` + `docs/` and tests each class with a word-boundary regex. Ignores the `design-system.css` definition file itself; cross-checks for `animation-name` / `@apply` references inside CSS.
 
 ## Headline
 

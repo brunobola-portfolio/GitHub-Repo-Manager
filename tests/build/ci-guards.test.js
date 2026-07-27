@@ -19,7 +19,7 @@
  */
 
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, writeFileSync, rmSync, readFileSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
@@ -202,3 +202,63 @@ describe('check-no-static-mock-imports detection', () => {
         expect(checkSnippet('ok.js', `${source}\n`).status).toBe(0)
     })
 })
+
+/**
+ * Every `npm run X` a doc tells an operator to type must resolve to a real
+ * script.
+ *
+ * Three were found by hand: `npm run audit:verify` was documented in two
+ * runbooks and did not exist, and `npm run check:bundle-size` outlived the
+ * script it invoked. A runbook step that exits with "Missing script" is worse
+ * than an undocumented one — it is followed under pressure, during an incident.
+ */
+describe('documented npm scripts exist', () => {
+    const docFiles = []
+    const walkDocs = (dir) => {
+        for (const entry of readdirSync(dir, { withFileTypes: true })) {
+            const full = join(dir, entry.name)
+            if (entry.isDirectory()) walkDocs(full)
+            else if (entry.name.endsWith('.md')) docFiles.push(full)
+        }
+    }
+    walkDocs('docs')
+    docFiles.push('README.md', 'AGENTS.md', 'CONTRIBUTING.md')
+
+    const scripts = new Set(Object.keys(JSON.parse(readFileSync('package.json', 'utf8')).scripts || {}))
+
+    // Reports, plans and specs are point-in-time records. They legitimately
+    // mention scripts that were later renamed or deleted — including the very
+    // ones this gate was written to catch — and rewriting history to satisfy a
+    // gate would make the record less useful, not more accurate. Only live
+    // documentation an operator would follow today is checked.
+    const HISTORICAL = ['docs/reports/', 'docs/plans/', 'docs/specs/']
+    const isHistorical = (f) => {
+        const norm = f.split('\\').join('/')
+        return HISTORICAL.some((prefix) => norm.includes(prefix))
+    }
+
+    it('parsed package.json scripts', () => {
+        expect(scripts.size).toBeGreaterThan(20)
+    })
+
+    it('every documented `npm run X` resolves to a package.json script', () => {
+        const missing = []
+        for (const file of docFiles) {
+            if (isHistorical(file)) continue
+            let text
+            try { text = readFileSync(file, 'utf8') } catch { continue }
+            // `npm run admin:{dlq,grant}` is shell brace-expansion shorthand
+            // for several real scripts, not a command anyone types verbatim.
+            for (const m of text.matchAll(/npm run ([a-z][a-z0-9:-]*)(.?)/g)) {
+                if (m[2] === '{') continue
+                if (!scripts.has(m[1])) missing.push(`${file}: npm run ${m[1]}`)
+            }
+        }
+        const unique = [...new Set(missing)]
+        expect(
+            unique,
+            `These docs tell an operator to run a script that does not exist:\n  ${unique.join('\n  ')}`,
+        ).toEqual([])
+    })
+})
+

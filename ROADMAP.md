@@ -5,7 +5,8 @@ A mirror of the in-app Roadmap page (`/roadmap`). Everything in **Next** and **L
 > **No tier labels on unshipped work.** Roadmap items used to carry a
 > "Pro"/"Enterprise" badge, which promised exactly the feature-unlock
 > monetization the product does not do: Pro and Enterprise sell **AI headroom**
-> (bigger monthly caps, a higher $ spend-cap ceiling), **more API keys**, and
+> (bigger monthly caps, and a higher $ spend-cap ceiling wherever an operator
+> has enabled the spend cap — it ships disabled), **more API keys**, and
 > compliance/service deliverables — not feature unlocks (see
 > [README → Plans & Pricing](README.md#plans--pricing)). Product features ship
 > free unless they are inherently a compliance or contracted-service

@@ -17,16 +17,21 @@ const EXEMPT = new Map([
     ['PORT', 'compose publishes the fixed container port 3001 in `ports:`'],
     ['HOST', 'container always binds 0.0.0.0; the loopback default is desktop-only'],
     ['DATA_DIR', 'container path is fixed by the app-data volume mount'],
-    ['UPDATE_CHECK', 'in-app update notifications are a Windows-package feature'],
     ['VITE_API_BASE_URL', 'build-time frontend variable, baked into the image'],
     ['VITE_MOCK_MODE', 'build-time frontend variable, baked into the image'],
+    ['DATABASE_URL', 'PostgreSQL is intentionally unsupported and rejected at boot; forwarding it would imply otherwise'],
 ])
 
+// Commented declarations count. `.env.example` documents optional knobs as
+// `# GRM_DISABLE_WEB_SETUP=false` — a real instruction to the operator, and
+// invisible to a matcher that only accepts uncommented lines. Fourteen
+// documented variables were outside this gate's view, nine of which genuinely
+// never reached the container.
 function documentedVars() {
     const text = readFileSync(join(ROOT, '.env.example'), 'utf8')
     return [...new Set(
         text.split(/\r?\n/)
-            .map(line => /^([A-Z][A-Z0-9_]*)=/.exec(line.trim()))
+            .map(line => /^#?\s*([A-Z][A-Z0-9_]*)=/.exec(line.trim()))
             .filter(Boolean)
             .map(m => m[1])
     )]
