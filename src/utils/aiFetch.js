@@ -17,6 +17,9 @@ import {
   clearAIQuotaState,
   AIQuotaExceededError,
 } from '../api/aiFetch'
+import { getCsrfToken, invalidateCsrfToken } from './api'
+
+const CSRF_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
 /**
  * Credentialed JSON request. Returns the parsed body (or null on 204). On a
@@ -30,17 +33,38 @@ export async function fetchJSON(url, options = {}) {
   if (isAIQuotaActive()) {
     throw new AIQuotaExceededError(getAIQuotaState() || {})
   }
-  const res = await fetch(url, {
+  // Every /api/* mutation is CSRF-gated server-side (middleware/csrf.js), and
+  // this helper sent no token — so every AI mutation reached the user as a 403
+  // rendered "Something went wrong" with a Retry that could never succeed.
+  // One retry after invalidating covers a token rotated by a re-login.
+  const isMutation = CSRF_METHODS.has((options.method || 'GET').toUpperCase())
+
+  const send = async (csrf) => fetch(url, {
     credentials: 'include',
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(csrf ? { 'X-CSRF-Token': csrf } : {}),
       ...(options.headers || {}),
     },
   })
+
+  // A failed token fetch still sends the request: the server answers with a
+  // typed 403 the caller can render, which beats throwing an opaque error here.
+  let res = await send(isMutation ? await getCsrfToken().catch(() => null) : null)
+
   if (res.status === 204) return null
   let body = null
   try { body = await res.json() } catch { /* empty */ }
+
+  if (isMutation && res.status === 403 && body?.code === 'csrf_invalid') {
+    invalidateCsrfToken()
+    res = await send(await getCsrfToken().catch(() => null))
+    if (res.status === 204) return null
+    body = null
+    try { body = await res.json() } catch { /* empty */ }
+  }
+
   if (!res.ok) {
     if (res.status === 429 && (body?.code === 'QUOTA_EXCEEDED' || body?.error === 'usage_limit_exceeded')) {
       recordAIQuotaExceeded(body)

@@ -42,15 +42,34 @@ const probeMod = await import('../lib/ai-health-probe.js');
 // Import the router after mocks are in place.
 const { default: coreRouter } = await import('../routes/ai/core.js');
 
-function createApp() {
+function createApp({ userProvider = null } = {}) {
     const app = express();
     app.use(express.json());
     app.use((req, _res, next) => {
         req.session = { userId: 99 };
+        // attachAIProvider() installs this in production; supplying it here is
+        // what makes a request look like it came from a BYOK user.
+        if (userProvider) req.getAIProvider = async () => userProvider;
         next();
     });
     app.use('/api', coreRouter);
     return app;
+}
+
+// Run `fn` with the server-wide aiService reporting no key at all — the
+// BYOK-only deployment shape that .env.example recommends.
+async function withNoServerKey(fn) {
+    delete process.env.GEMINI_API_KEY;
+    const realAi = await import('../ai-service.js');
+    const stash = realAi.aiService.provider;
+    Object.defineProperty(realAi.aiService, 'model', { configurable: true, get() { return null; } });
+    Object.defineProperty(realAi.aiService, 'provider', { configurable: true, get() { return null; } });
+    try {
+        return await fn();
+    } finally {
+        Object.defineProperty(realAi.aiService, 'model', { configurable: true, get() { return mockProvider.model; } });
+        Object.defineProperty(realAi.aiService, 'provider', { configurable: true, get() { return stash; } });
+    }
 }
 
 beforeEach(() => {
@@ -105,16 +124,7 @@ describe('GET /api/config/ai-status', () => {
     });
 
     it('returns configured=false when no provider key is set anywhere', async () => {
-        delete process.env.GEMINI_API_KEY;
-        // Re-import without aiService.model so the configured branch is false.
-        // The route also checks aiService.model — easiest is to hide the SDK
-        // models on the mocked aiService for this case.
-        const realAi = await import('../ai-service.js');
-        const stash = realAi.aiService.provider;
-        Object.defineProperty(realAi.aiService, 'model', { configurable: true, get() { return null; } });
-        Object.defineProperty(realAi.aiService, 'provider', { configurable: true, get() { return null; } });
-
-        try {
+        await withNoServerKey(async () => {
             const res = await request(createApp()).get('/api/config/ai-status');
             expect(res.body).toEqual({
                 configured: false,
@@ -122,9 +132,22 @@ describe('GET /api/config/ai-status', () => {
                 keyHealth: 'unknown',
                 lastCheckedAt: null,
             });
-        } finally {
-            Object.defineProperty(realAi.aiService, 'model', { configurable: true, get() { return mockProvider.model; } });
-            Object.defineProperty(realAi.aiService, 'provider', { configurable: true, get() { return stash; } });
-        }
+        });
+    });
+
+    it('reports configured=true from the user own key when the server has none', async () => {
+        // The BYOK-only deployment. Reading `configured` off the server key
+        // alone told these users "AI is not configured" while their own key
+        // worked, and the client pre-empted every AI call because of it.
+        await withNoServerKey(async () => {
+            const byok = {
+                id: 'anthropic',
+                generate: (...args) => mockGenerate(...args),
+                getModelName: () => 'claude-sonnet-4',
+            };
+            const res = await request(createApp({ userProvider: byok })).get('/api/config/ai-status');
+            expect(res.body.configured).toBe(true);
+            expect(res.body.provider).toBe('anthropic');
+        });
     });
 });

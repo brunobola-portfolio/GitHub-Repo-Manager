@@ -150,6 +150,16 @@ export async function getCsrfToken() {
     return fetchCsrfToken()
 }
 
+/**
+ * Drop the cached token so the next getCsrfToken() refetches. Used by callers
+ * outside this module (utils/aiFetch) that do their own single retry after a
+ * 403 `csrf_invalid` — a logout/re-login rotates the session token and the
+ * cached one goes stale.
+ */
+export function invalidateCsrfToken() {
+    csrfToken = null
+}
+
 function isMutation(options) {
     const method = (options?.method || 'GET').toUpperCase()
     return CSRF_METHODS.has(method)

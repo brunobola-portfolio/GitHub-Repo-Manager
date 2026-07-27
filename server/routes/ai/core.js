@@ -86,11 +86,6 @@ const router = express.Router();
 // each independently. Backwards compatible: omitting the param probes
 // the completion key, which is what the existing UI reads.
 router.get('/config/ai-status', async (req, res) => {
-    const configured = !!process.env.GEMINI_API_KEY || !!aiService.model;
-    if (!configured) {
-        return res.json({ configured: false, provider: null, keyHealth: 'unknown', lastCheckedAt: null });
-    }
-
     const userId = req.session?.userId ?? null;
     const feature = typeof req.query?.feature === 'string' ? req.query.feature : 'completion';
     const resolveProvider = async (kind = feature) => {
@@ -104,6 +99,17 @@ router.get('/config/ai-status', async (req, res) => {
         return aiService?.provider ?? null;
     };
 
+    // BYOK is the permanent model, and .env.example recommends running with no
+    // server key at all. Deciding `configured` from the server key alone told
+    // every user on a BYOK-only deployment that "AI is not configured" while
+    // their own key sat working in the database, and the client pre-empted
+    // every AI call on the back of it.
+    const serverConfigured = !!process.env.GEMINI_API_KEY || !!aiService.model;
+    const userProvider = await resolveProvider(feature).catch(() => null);
+    if (!serverConfigured && !userProvider) {
+        return res.json({ configured: false, provider: null, keyHealth: 'unknown', lastCheckedAt: null });
+    }
+
     const force = req.query?.probe === '1';
     const health = force
         ? await probeAndCache({ userId, resolveProvider, feature })
@@ -114,13 +120,8 @@ router.get('/config/ai-status', async (req, res) => {
     // of a stale "gemini" label. We probe the resolver synchronously: BYOK
     // resolvers cache the per-user record, so the cost is a single DB read.
     let providerId = aiService?.provider?.id || aiService?.provider?.name || 'gemini';
-    try {
-        const resolved = await resolveProvider(feature);
-        if (resolved?.id) providerId = resolved.id;
-        else if (resolved?.name) providerId = resolved.name;
-    } catch {
-        // Fall through to the server-wide default — never block the status call.
-    }
+    if (userProvider?.id) providerId = userProvider.id;
+    else if (userProvider?.name) providerId = userProvider.name;
 
     res.json({
         configured: true,

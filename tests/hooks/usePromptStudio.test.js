@@ -2,6 +2,17 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { usePromptStudio } from '../../src/hooks/usePromptStudio';
 
+// utils/aiFetch injects an X-CSRF-Token on every mutation. Left unmocked, the
+// token fetch would consume one of the queued global.fetch responses below and
+// desynchronise every expectation. The CSRF behaviour itself is covered in
+// tests/utils/aiFetch.test.js.
+vi.mock('../../src/utils/api', async (importOriginal) => ({
+    ...(await importOriginal()),
+    getCsrfToken: vi.fn(async () => 'test-csrf-token'),
+    invalidateCsrfToken: vi.fn(),
+}));
+
+
 beforeEach(() => {
     global.fetch = vi.fn();
     // .env.test pins VITE_MOCK_MODE=true so the dev MOCK_MODE branch fires by
