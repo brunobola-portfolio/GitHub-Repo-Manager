@@ -222,7 +222,7 @@ export const DiffPanel = memo(function DiffPanel({
         <span className="shrink-0 text-xs font-mono ds-text-danger">
           -{deletions}
         </span>
-        <span className="shrink-0 text-xs text-slate-400 dark:text-slate-500 font-mono uppercase">
+        <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400 font-mono uppercase">
           {lang}
         </span>
       </div>

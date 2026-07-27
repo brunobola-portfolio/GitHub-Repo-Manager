@@ -131,7 +131,27 @@ const VIEWS = [
       // caught the Dismiss button's sub-AA contrast on the indigo-50 banner.
     },
   },
+  {
+    // The pricing page had ZERO axe coverage while carrying the most
+    // hand-tuned colour in the product: tier badges, the "Most Popular"
+    // ribbon, CTA fills and the monthly/yearly toggle. Every one of those
+    // ratios was measured by hand and gated by nothing, so the next edit
+    // could walk them back with the whole suite green.
+    name: 'pricing page',
+    async setup(page) {
+      await page.goto('/')
+      await expect(page.getByAltText(MOCK_USER.login)).toBeVisible({ timeout: 15000 })
+      await page.getByRole('button', { name: 'Pricing' }).first().click()
+      await expect(page.getByRole('heading', { name: /pricing|plans/i }).first())
+        .toBeVisible({ timeout: 15000 })
+      await page.waitForLoadState('networkidle')
+    },
+  },
 ]
+
+// PR Review is scanned in e2e/pr-review.spec.js instead: reaching it needs the
+// /api/repos/** route stubs that spec already sets up, and duplicating them
+// here would buy a second, flakier copy of the same coverage.
 
 /**
  * Seed the persisted theme to `dark` BEFORE any page script runs. `useTheme.jsx`
