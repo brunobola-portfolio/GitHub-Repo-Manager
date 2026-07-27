@@ -5,6 +5,7 @@ import { openAISettings } from '../../utils/appEvents'
 import { Heading } from './Heading'
 import { TIER_LABEL } from './quotaShared'
 import { QuotaUpgradeButton } from './QuotaUpgradeButton'
+import { metricLabel } from '../../utils/metricLabels'
 
 /**
  * QuotaExceededState — uniform CTA when a user hits a tier-bound quota.
@@ -42,7 +43,7 @@ export function QuotaExceededState({
       </div>
       <Heading as="h3" className="text-xl font-bold mb-1">Quota reached</Heading>
       <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-        You&apos;ve used your monthly <strong>{feature}</strong> allowance
+        You&apos;ve used your monthly <strong>{metricLabel(feature)}</strong> allowance
         {tierLabel ? <> on the <strong>{tierLabel}</strong> tier</> : null}.
       </p>
       {(typeof used === 'number' && typeof limit === 'number') && (
@@ -54,14 +55,23 @@ export function QuotaExceededState({
         <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">Quota resets on {resetDate}.</p>
       )}
       <QuotaUpgradeButton upgradeTo={upgradeTo} size="lg" onAfterNavigate={onClose} />
+      {/* BYOK is honest here only because the copy says what it does and does
+          not do. These monthly allowances are limits on the SOFTWARE and are
+          enforced per tier regardless of whose provider key is used — offering
+          BYOK as "the way around this wall" pointed users at a workaround the
+          enforcement layer does not honour, and away from the upgrade. */}
       <div className="mt-5 pt-5 border-t border-slate-200 dark:border-slate-800">
         <button
           type="button"
           onClick={() => { openAISettings(); onClose?.() }}
           className="inline-flex items-center gap-2 text-sm text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline"
         >
-          <Key className="w-4 h-4" /> Configure your own AI key (BYOK)
+          <Key className="w-4 h-4" /> Manage your AI provider key
         </button>
+        <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+          Using your own key controls what your provider bills you — these
+          monthly allowances still apply.
+        </p>
       </div>
     </motion.div>
   )

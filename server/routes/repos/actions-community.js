@@ -60,7 +60,7 @@ import {
     buildDeterministicAgentRules,
     buildClaudeImportContent,
 } from '../../lib/ai-features/agent-rules.js';
-import { createProviderForUser } from '../../lib/ai-provider.js';
+import { createProviderForUser, isServerKeyProvider } from '../../lib/ai-provider.js';
 import { mapAIErrorToResponse } from '../../middleware/ai-error-mapper.js';
 import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { checkAISpendCap, recordAISpend } from '../../lib/ai-spend-cap.js';
@@ -545,12 +545,21 @@ router.post('/:owner/:repo/community-health/generate', requireAuth, validateBody
             return res.status(429).json(quotaExceededResponse({ ...quota, metric: 'ai_queries' }));
         }
 
+        // The provider is resolved BEFORE the spend cap because the cap only
+        // applies when the operator is the one paying — a BYOK user spends
+        // their own money and must not be throttled by the operator's ceiling.
+        const provider = await createProviderForUser(userId, 'completion', { featureKey: 'COMMUNITY_HEALTH_FIX' });
+        if (!provider) {
+            return res.status(403).json({ error: 'AI is not configured for this user', code: 'ai_not_configured' });
+        }
+
         // Monthly AI spend cap (OWASP LLM10) — additive to the ai_queries
         // quota above; mirrors the manual checkAISpendCap/recordAISpend pair
         // used across the AI surface wherever a route can't go through
         // guardedGenerate directly (see server/routes/ai/core.js's /ai/chat
         // for the canonical shape).
-        const spend = checkAISpendCap(userId);
+        const billsOperator = isServerKeyProvider(provider);
+        const spend = checkAISpendCap(userId, { billsOperator });
         if (!spend.allowed) {
             return res.status(429).json({
                 code: 'AI_SPEND_CAP_REACHED',
@@ -560,18 +569,13 @@ router.post('/:owner/:repo/community-health/generate', requireAuth, validateBody
             });
         }
 
-        const provider = await createProviderForUser(userId, 'completion', { featureKey: 'COMMUNITY_HEALTH_FIX' });
-        if (!provider) {
-            return res.status(403).json({ error: 'AI is not configured for this user', code: 'ai_not_configured' });
-        }
-
         const { costUSD, ...out } = await gen.generator({
             repo: repoData,
             email: overrides.email || req.session.userEmail,
             provider,
         });
         incrementUsage(userId, 'ai_queries');
-        recordAISpend(userId, costUSD);
+        if (billsOperator) recordAISpend(userId, costUSD);
         res.json(out);
     } catch (e) {
         const mapped = mapAIErrorToResponse(res, e);

@@ -18,10 +18,13 @@ cap described below.
 
 Pro and Enterprise no longer sell feature unlocks. Their value is:
 
-- **Pro** — more AI headroom (10,000 AI queries/month vs. Free's 1,000),
-  a higher AI $ spend-cap ceiling, more API keys (50 vs. 25), and email
-  support. Pro is "raise the ceiling for a power user," not "unlock the
-  product."
+- **Pro** — more AI headroom (10,000 AI queries/month vs. Free's 1,000, and
+  every per-feature AI cap lifted to unlimited), more API keys (50 vs. 25),
+  and email support. A higher AI $
+  spend-cap ceiling is *available* but not a shipped differentiator: the
+  per-tier defaults are all `0`/disabled and only differ once an operator
+  sets the env overrides (see "AI monthly $ spend cap" below). Pro is "raise
+  the ceiling for a power user," not "unlock the product."
 - **Enterprise** — compliance and service deliverables the owner has
   explicitly scoped: SSO/SAML (roadmap, not yet implemented — never
   advertised as delivered until real SAML exists), Audit Log with export,

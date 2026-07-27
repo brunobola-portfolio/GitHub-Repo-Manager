@@ -126,10 +126,24 @@ export async function checkA11y(page, { allowlist = [], tag = 'WCAG 2.1 AA', war
 
   if (blocking.length > 0) {
     const summary = blocking
-      .map(
-        (v) =>
-          `  ${v.impact.padEnd(8)} ${v.id}: ${v.description}\n    ${v.nodes.length} node(s) affected\n    -> ${v.helpUrl}`
-      )
+      .map((v) => {
+        // Name the offending element and the measured ratio. Reporting only a
+        // node COUNT meant every failure needed a second run with a patched
+        // helper before anyone could tell which element was at fault.
+        const nodes = v.nodes
+          .slice(0, 5)
+          .map((n) => {
+            const why = (n.any ?? [])
+              .concat(n.all ?? [])
+              .map((c) => c.message)
+              .filter(Boolean)
+              .join('; ')
+            return `      ${n.target.join(' ')}\n        ${n.html?.slice(0, 200) ?? ''}\n        ${why}`
+          })
+          .join('\n')
+        const more = v.nodes.length > 5 ? `\n      …and ${v.nodes.length - 5} more` : ''
+        return `  ${v.impact.padEnd(8)} ${v.id}: ${v.description}\n    ${v.nodes.length} node(s) affected\n${nodes}${more}\n    -> ${v.helpUrl}`
+      })
       .join('\n')
 
     if (warnOnly) {

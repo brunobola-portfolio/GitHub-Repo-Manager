@@ -343,7 +343,6 @@ table and a parity CI gate track the same values):
 
 | Feature | Free | Pro | Enterprise |
 | --- | --- | --- | --- |
-| Max repos | 1,000 | Unlimited | Unlimited |
 | AI queries / month (global) | 1,000 | 10,000 | Unlimited |
 | Semantic search / month | 375 | Unlimited | Unlimited |
 | Migration risk analysis / month | 25 | Unlimited | Unlimited |

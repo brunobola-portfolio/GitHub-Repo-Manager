@@ -30,6 +30,12 @@ const HARD_WARN_SECONDS = 5 * 60 // 5 minutes
 const SOFT_WARN_KEY = 'grm:session-expiry-soft-warned'
 const HARD_WARN_KEY = 'grm:session-expiry-hard-warned'
 
+// The rest of this module already guards `typeof document` for non-DOM hosts;
+// keep that contract in the poll gate too.
+function isTabHidden() {
+    return typeof document !== 'undefined' && document.hidden
+}
+
 // ============ Hook ============
 
 /**
@@ -40,8 +46,9 @@ const HARD_WARN_KEY = 'grm:session-expiry-hard-warned'
  * rendering the toast plumbing.
  *
  * Behaviour:
- *   - Polls GET /api/auth/session-info every 5 min while mounted.
- *   - Re-polls immediately when the tab becomes visible again.
+ *   - Polls GET /api/auth/session-info every 5 min while mounted AND visible.
+ *   - Pauses the poll while the tab is hidden; re-polls immediately when the
+ *     tab becomes visible again.
  *   - Fires a soft warning toast when expiresInSeconds < 1h.
  *   - Fires a hard warning toast AND attempts POST /api/auth/refresh-session
  *     when expiresInSeconds < 5 min (to bump the rolling cookie — does
@@ -144,21 +151,39 @@ export function useSessionExpiry({ enabled = true } = {}) {
         // eslint-disable-next-line react-hooks/set-state-in-effect -- poll() owns its own state writes; the lint rule can't see across the call boundary
         poll()
 
-        const id = setInterval(poll, POLL_INTERVAL_MS)
-
-        // Re-poll as soon as the user brings the tab back — a tab that
-        // sat in the background for hours has stale state.
-        const onVisibility = () => {
-            if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-                poll()
+        let intervalId = null
+        const startInterval = () => {
+            if (!intervalId) {
+                intervalId = setInterval(() => { if (!isTabHidden()) poll() }, POLL_INTERVAL_MS)
             }
         }
+        const stopInterval = () => {
+            if (intervalId) {
+                clearInterval(intervalId)
+                intervalId = null
+            }
+        }
+
+        // Re-poll as soon as the user brings the tab back — a tab that
+        // sat in the background for hours has stale state — and stop the
+        // timer while it is away: the handler used to only ADD a poll, so a
+        // backgrounded tab still hit /session-info every 5 minutes forever.
+        const onVisibility = () => {
+            if (isTabHidden()) {
+                stopInterval()
+                return
+            }
+            poll()
+            startInterval()
+        }
+
+        startInterval()
         if (typeof document !== 'undefined') {
             document.addEventListener('visibilitychange', onVisibility)
         }
 
         return () => {
-            clearInterval(id)
+            stopInterval()
             if (typeof document !== 'undefined') {
                 document.removeEventListener('visibilitychange', onVisibility)
             }

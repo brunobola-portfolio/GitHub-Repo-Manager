@@ -1,4 +1,4 @@
-import { cloneElement, createContext, createElement, useContext, useEffect, useRef, useState } from 'react'
+import { cloneElement, createContext, createElement, memo, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
@@ -27,6 +27,13 @@ const SCHEMA = {
         h6: [...(defaultSchema.attributes?.h6 || []), 'id'],
     },
 }
+
+// Module scope for the same reason as README_COMPONENTS below: react-markdown
+// re-runs the FULL remark -> rehype -> sanitize pipeline whenever the plugin
+// arrays change identity. Allocating them inline made every parent re-render
+// re-parse the whole README (tens of ms on a large one).
+const REMARK_PLUGINS = [remarkGfm]
+const REHYPE_PLUGINS = [rehypeRaw, rehypeSlugInline, [rehypeSanitize, SCHEMA]]
 
 function isAbsolute(url) {
     return /^[a-z]+:\/\//i.test(url) || url.startsWith('mailto:')
@@ -280,8 +287,19 @@ const README_COMPONENTS = {
     },
 }
 
-export function RepoMarkdown({ source, owner, repo, branch = 'main', className = '' }) {
+// memo: every prop is a primitive, and the render cost is dominated by
+// react-markdown's parse of `source`. Without it, any sibling state change in
+// the host tab (Overview, RepoInsights, …) re-parses the whole README.
+export const RepoMarkdown = memo(function RepoMarkdown({ source, owner, repo, branch = 'main', className = '' }) {
     const highlighter = useLazyHighlighter()
+
+    // Stable identity for the same repo/branch — see REMARK_PLUGINS above:
+    // a new urlTransform is as invalidating to react-markdown as a new plugin.
+    const urlTransform = useCallback((url, key) => {
+        if (key === 'src') return rewriteImageUri(url, owner, repo, branch)
+        if (key === 'href') return rewriteLinkUri(url, owner, repo, branch)
+        return url
+    }, [owner, repo, branch])
 
     if (!source) return null
 
@@ -289,13 +307,9 @@ export function RepoMarkdown({ source, owner, repo, branch = 'main', className =
         <div className={`prose prose-sm dark:prose-invert max-w-none ds-readme ${className}`}>
             <HighlighterContext.Provider value={highlighter}>
                 <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    rehypePlugins={[rehypeRaw, rehypeSlugInline, [rehypeSanitize, SCHEMA]]}
-                    urlTransform={(url, key) => {
-                        if (key === 'src') return rewriteImageUri(url, owner, repo, branch)
-                        if (key === 'href') return rewriteLinkUri(url, owner, repo, branch)
-                        return url
-                    }}
+                    remarkPlugins={REMARK_PLUGINS}
+                    rehypePlugins={REHYPE_PLUGINS}
+                    urlTransform={urlTransform}
                     components={README_COMPONENTS}
                 >
                     {source}
@@ -303,4 +317,4 @@ export function RepoMarkdown({ source, owner, repo, branch = 'main', className =
             </HighlighterContext.Provider>
         </div>
     )
-}
+})

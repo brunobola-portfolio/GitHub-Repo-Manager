@@ -13,7 +13,6 @@ const plans = [
     popular: false,
     enterprise: false,
     features: [
-      'Up to 1,000 repositories',
       'Repo Advisor — 1,000 queries / month',
       'Semantic Search (375 / month)',
       'README, Commit, Insights & Deep Review AI',
@@ -31,9 +30,8 @@ const plans = [
     popular: true,
     enterprise: false,
     features: [
-      'Unlimited repositories',
       '10,000 AI queries / month',
-      'Higher AI $ spend-cap headroom',
+      'Unlimited monthly caps on every AI feature',
       'Unlimited README, Commit, Insights, Search & Deep Review',
       'Unlimited Prompt Studio presets',
       '50 API keys + email support',
@@ -113,7 +111,7 @@ function PreviewCard({ plan, i, onSignIn }) {
 				<div className="flex flex-col gap-6 h-full">
 					{/* Plan header */}
 					<div>
-						<p className={`text-sm font-semibold mb-1 ds-font-display ${plan.popular ? 'text-indigo-200' : plan.enterprise ? 'text-amber-600 dark:text-amber-400' : 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'}`}>
+						<p className={`text-sm font-semibold mb-1 ds-font-display ${plan.popular ? 'text-indigo-200' : plan.enterprise ? 'text-amber-700 dark:text-amber-400' : 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'}`}>
 							{plan.name}
 						</p>
 						<div className="flex items-end gap-2 mb-2">
@@ -122,7 +120,7 @@ function PreviewCard({ plan, i, onSignIn }) {
 							>
 								{plan.price}
 							</span>
-							<span className={`text-sm pb-1.5 ds-font-display ${plan.popular ? 'text-indigo-200/80' : 'text-slate-400'}`}>
+							<span className={`text-sm pb-1.5 ds-font-display ${plan.popular ? 'text-indigo-200/80' : 'text-slate-500 dark:text-slate-400'}`}>
 								/{plan.period}
 							</span>
 						</div>
@@ -226,7 +224,7 @@ export function PricingPreview({ onSignIn }) {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.4 }}
-          className="text-center mt-10 text-sm text-slate-400 dark:text-slate-500 ds-font-display"
+          className="text-center mt-10 text-sm text-slate-500 dark:text-slate-400 ds-font-display"
         >
           Prefer to self-host? The full app is free and open-source on GitHub — forever.
         </motion.p>

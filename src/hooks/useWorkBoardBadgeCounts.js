@@ -64,11 +64,38 @@ export function useWorkBoardBadgeCounts() {
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         refresh()
-        intervalRef.current = setInterval(refresh, POLL_MS)
+
+        // The badge is mounted for the whole session and each refresh costs
+        // TWO requests, so a backgrounded tab must not keep the timer alive.
+        // Stop/start on visibilitychange (same shape as useSystemHealth), and
+        // deliberately WITHOUT an immediate refresh on becoming visible: the
+        // `focus` listener below already covers "user came back", and doing
+        // both would double the request count on every tab switch.
+        const startInterval = () => {
+            if (!intervalRef.current) {
+                intervalRef.current = setInterval(() => {
+                    if (!document.hidden) refresh()
+                }, POLL_MS)
+            }
+        }
+        const stopInterval = () => {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current)
+                intervalRef.current = null
+            }
+        }
+        const onVisibility = () => {
+            if (document.hidden) stopInterval()
+            else startInterval()
+        }
         const onFocus = () => refresh()
+
+        startInterval()
+        document.addEventListener('visibilitychange', onVisibility)
         window.addEventListener('focus', onFocus)
         return () => {
-            clearInterval(intervalRef.current)
+            stopInterval()
+            document.removeEventListener('visibilitychange', onVisibility)
             window.removeEventListener('focus', onFocus)
         }
     }, [refresh])

@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Clock, Wrench, Flame } from 'lucide-react'
 import { useTechDebt } from '../../../hooks/useWorkBoard'
@@ -14,6 +15,8 @@ import { RowIconBadge } from '../../ui/RowIconBadge'
 export function TechDebtTab() {
     const { data, loading, error, refresh } = useTechDebt()
     const { params } = useWorkBoardFilters()
+    // Above the early returns so it stays an unconditional hook call.
+    const items = useMemo(() => applyFilters(data?.items || [], params), [data, params])
 
     if (loading) return <SkeletonList count={5} />
     if (error) {
@@ -21,7 +24,6 @@ export function TechDebtTab() {
         return <ErrorState error={error} what="tech debt" onRetry={refresh} />
     }
 
-    const items = applyFilters(data?.items || [], params)
     const hotspots = data?.hotspots || []
 
     if (items.length === 0) {

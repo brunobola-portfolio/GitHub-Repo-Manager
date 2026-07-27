@@ -4,6 +4,7 @@ import { EASE } from '../ui/motion'
 import { Check, X } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { useStickyHeaderShadow } from '../../hooks/useStickyHeaderShadow'
+import { useBelowBreakpoint } from '../../hooks/useMediaQuery'
 
 const TIERS = ['Free', 'Pro', 'Enterprise']
 
@@ -13,7 +14,7 @@ const CATEGORIES = [
     rows: [
       {
         feature: 'Repositories managed',
-        values: ['1,000', 'Unlimited', 'Unlimited'],
+        values: ['Unlimited', 'Unlimited', 'Unlimited'],
       },
       {
         feature: 'API keys',
@@ -37,7 +38,7 @@ const CATEGORIES = [
     name: 'AI Features',
     rows: [
       {
-        feature: 'Repo Advisor (conversational)',
+        feature: 'Repo Advisor (conversational)†',
         values: [true, true, true],
       },
       {
@@ -185,22 +186,22 @@ const CATEGORIES = [
   },
 ]
 
-function CellValue({ value, colIndex }) {
+function CellValue({ value, colIndex, compact = false }) {
   if (typeof value === 'boolean') {
     return value ? (
       <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15">
-        <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" strokeWidth={2.5} />
+        <Check className="w-3.5 h-3.5 ds-text-success" strokeWidth={2.5} aria-label="Included" />
       </span>
     ) : (
       <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 dark:bg-white/[0.04]">
-        <X className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600" strokeWidth={2.5} />
+        <X className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600" strokeWidth={2.5} aria-label="Not included" />
       </span>
     )
   }
   const highlightCol = colIndex === 1 // Pro column = highlighted
   return (
     <span
-      className={`text-sm font-semibold
+      className={`font-semibold ${compact ? 'ds-text-meta break-words' : 'text-sm'}
         ${highlightCol
           ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
           : 'text-slate-700 dark:text-slate-200'
@@ -211,9 +212,71 @@ function CellValue({ value, colIndex }) {
   )
 }
 
+/**
+ * Sub-`sm` layout: one block per feature with all three tier values labelled
+ * inline.
+ *
+ * The desktop table is `min-w-[600px]` inside an `overflow-x-auto` Card. At
+ * 375px that container measures 310px, so Free starts at x=327 — every plan
+ * value sat entirely off-screen behind a hard vertical crop, with no edge fade,
+ * no scroll hint and no visible scrollbar. On the pricing page, on a phone.
+ * Horizontal scroll is the wrong primitive for a 4-column matrix at that width;
+ * stacking is, so the two layouts are mutually exclusive (rendered by
+ * `useBelowBreakpoint`, not `sm:hidden`) — a CSS-only swap would duplicate all
+ * ~30 rows in the DOM and in the accessibility tree.
+ */
+function StackedComparison() {
+  return (
+    <div className="space-y-4" data-testid="feature-comparison-stacked">
+      {CATEGORIES.map((cat) => (
+        <section
+          key={cat.name}
+          className="rounded-2xl border border-[color:var(--ds-elevation-border)] bg-white dark:bg-slate-900 shadow-[var(--ds-shadow-sm)] overflow-hidden"
+          aria-labelledby={`cmp-${cat.name.replace(/\W+/g, '-')}`}
+        >
+          <h3
+            id={`cmp-${cat.name.replace(/\W+/g, '-')}`}
+            className="px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-white/[0.02] border-b border-slate-100 dark:border-white/[0.06]"
+          >
+            {cat.name}
+          </h3>
+          <ul className="divide-y divide-slate-100 dark:divide-white/[0.06]">
+            {cat.rows.map((row) => (
+              <li key={row.feature} className="px-4 py-3">
+                <p className="text-sm text-slate-700 dark:text-slate-200 mb-2 break-words">
+                  {row.feature}
+                </p>
+                <dl className="grid grid-cols-3 gap-1.5">
+                  {row.values.map((val, colIdx) => (
+                    <div
+                      key={colIdx}
+                      className={`rounded-lg px-1.5 py-1.5 text-center min-w-0 ${colIdx === 1
+                        ? 'bg-indigo-50 dark:bg-indigo-500/[0.10]'
+                        : 'bg-slate-50 dark:bg-white/[0.03]'
+                      }`}
+                    >
+                      <dt className="ds-text-micro font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                        {TIERS[colIdx]}
+                      </dt>
+                      <dd className="mt-1 leading-tight">
+                        <CellValue value={val} colIndex={colIdx} compact />
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  )
+}
+
 export function FeatureComparison() {
   const tableScrollRef = useRef(null)
   const elevated = useStickyHeaderShadow(tableScrollRef)
+  const isPhone = useBelowBreakpoint('sm')
 
   return (
     <motion.div
@@ -232,8 +295,8 @@ export function FeatureComparison() {
         </p>
       </div>
 
-      {/* Horizontal scroll on mobile */}
-      <Card className="overflow-x-auto shadow-xl shadow-slate-200/50 dark:shadow-black/30">
+      {isPhone ? <StackedComparison /> : (
+      <Card className="overflow-x-auto">
         <div
           ref={tableScrollRef}
           className="overflow-y-auto max-h-[560px]"
@@ -256,7 +319,10 @@ export function FeatureComparison() {
                 >
                   {tier}
                   {i === 1 && (
-                    <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded ds-text-micro font-bold bg-indigo-500 text-white align-middle">
+                    /* --ds-badge-brand-*, not bg-indigo-500: white on
+                       indigo-500 measured 4.58:1 here, and indigo-500 is the
+                       exact fill the badge pair exists to keep off text. */
+                    <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded ds-text-micro font-bold bg-[color:var(--ds-badge-brand-fill)] text-[color:var(--ds-badge-brand-text)] align-middle">
                       Popular
                     </span>
                   )}
@@ -272,7 +338,7 @@ export function FeatureComparison() {
                 <tr className="border-b border-slate-100 dark:border-white/[0.04]">
                   <td
                     colSpan={4}
-                    className="px-6 py-3 text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 bg-slate-50/70 dark:bg-white/[0.02]"
+                    className="px-6 py-3 text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 bg-slate-50/70 dark:bg-white/[0.02]"
                   >
                     {cat.name}
                   </td>
@@ -308,12 +374,20 @@ export function FeatureComparison() {
         </table>
         </div>
       </Card>
+      )}
 
       {/* Per-individual AI-quota disclaimer — Teams are unlimited-seat on every
           tier, but AI usage (queries, Deep Review, PR Chat, etc.) is metered
           against each person's own account/subscription, not pooled per team. */}
-      <p className="mt-4 text-center text-xs text-slate-400 dark:text-slate-500 max-w-2xl mx-auto">
+      <p className="mt-4 text-center text-xs text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
         Teams are unlimited on every plan. AI usage quotas above are metered per individual account, even within a team.
+      </p>
+      {/* The README already carried this caveat; the in-app pricing surfaces
+          did not, so a self-hoster saw "included" and then got
+          404 AI_FEATURE_FLAG_OFF from every Repo Advisor endpoint. */}
+      <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
+        &dagger; Repo Advisor is operator-enabled: self-hosted deployments need{' '}
+        <code className="font-mono">WORK_BOARD_AI_ENABLED=true</code> plus a per-user opt-in.
       </p>
     </motion.div>
   )

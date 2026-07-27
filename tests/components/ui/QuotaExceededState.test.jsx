@@ -47,12 +47,20 @@ describe('QuotaExceededState', () => {
     expect(screen.queryByRole('button', { name: /upgrade/i })).not.toBeInTheDocument()
   })
 
-  it('shows BYOK link that dispatches the open-settings event', () => {
+  it('links to AI settings and dispatches the open-settings event', () => {
     const fn = vi.fn()
     const off = onAppEvent(APP_EVENTS.OPEN_SETTINGS, fn)
     render(<QuotaExceededState feature="x" />)
-    fireEvent.click(screen.getByRole('button', { name: /configure your own ai key/i }))
+    fireEvent.click(screen.getByRole('button', { name: /manage your ai provider key/i }))
     expect(fn).toHaveBeenCalled()
     off()
+  })
+
+  // These caps are limits on the software and apply per tier no matter whose
+  // provider key is used. Offering BYOK as the way past the wall pointed users
+  // at a workaround the enforcement layer does not honour.
+  it('does not present BYOK as a way around the quota', () => {
+    render(<QuotaExceededState feature="x" />)
+    expect(screen.getByText(/these monthly allowances still apply/i)).toBeInTheDocument()
   })
 })

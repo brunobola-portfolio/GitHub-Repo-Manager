@@ -479,22 +479,39 @@ scrape_configs:
 
 ## Bundle budget
 
-`scripts/check-bundle-size.mjs` enforces per-chunk gzip budgets after `npm
-run build`:
+The enforced gate is the test **`tests/build/bundle-budget.test.js`**. It runs
+its own `vite build --mode production` and is wired into CI
+(`.github/workflows/ci.yml`), which invokes it explicitly:
 
-| Chunk | Budget (gzip) |
+```bash
+RUN_BUILD_TESTS=1 npx vitest run tests/build/build-honesty.test.js tests/build/bundle-budget.test.js
+```
+
+Without `RUN_BUILD_TESTS=1` it self-skips, so it never slows down a normal
+`npx vitest run`. It budgets the **eager** set rather than named chunks:
+
+| Check | Budget (gzip) |
 | ----- | ------------- |
-| main | 60 KB |
-| vendor-react | 65 KB |
-| vendor-ui | 35 KB |
-| vendor-icons | 20 KB |
-| WorkBoardPage | 20 KB |
+| `index-*.js` entry chunk | 72 KB |
+| Sum of every chunk statically imported by the entry | 365 KB |
+| Any `esm-*.js` chunk eagerly imported by the entry | must not exceed 50 KB |
 
-If the script fails, run `npm run build:analyze` to open the
+Budgets track current actuals and are a ratchet: lowering them is always fine,
+raising them needs a deliberate, documented reason (the rationale for the
+current numbers is in the test's header comment).
+
+If it fails, run `npm run build:analyze` to open the
 `rollup-plugin-visualizer` treemap and identify the regression. Common
-causes: importing a new icon pack into `main` instead of `vendor-icons`,
+causes: importing a new icon pack eagerly instead of behind `vendor-icons`,
 inlining a markdown/shiki module that should be lazy-loaded, or a
 non-tree-shaken util dragging a big transitive dep.
+
+> **Lazy chunks are not budgeted.** The gate covers the eager set only.
+> The largest lazy chunks (`vendor-diff` ~88 KB gz, `cytoscape` ~138 KB gz,
+> `MigrationWizard` ~54 KB gz) are unguarded, so a regression inside one of
+> them will not fail CI. They are lazy by construction — check them by hand
+> with `npm run build:analyze` when touching the diff viewer, the diagram
+> renderer, or the migration wizard.
 
 ---
 

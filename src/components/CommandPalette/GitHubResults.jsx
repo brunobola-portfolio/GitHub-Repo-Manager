@@ -29,7 +29,7 @@ export function GitHubResults({ live, onOpen }) {
               <GitPullRequest className={`w-4 h-4 shrink-0 ${pr.state === 'open' ? 'text-emerald-500' : 'text-purple-500'}`} />
               <div className="flex-1 min-w-0">
                 <div className="truncate font-medium">{pr.title}</div>
-                <div className="ds-text-meta text-slate-400 truncate">
+                <div className="ds-text-meta text-slate-500 dark:text-slate-400 truncate">
                   {pr.repoFullName} #{pr.number} · {pr.state}{pr.draft ? ' · draft' : ''}
                 </div>
               </div>
@@ -50,7 +50,7 @@ export function GitHubResults({ live, onOpen }) {
               <CircleDot className={`w-4 h-4 shrink-0 ${issue.state === 'open' ? 'text-emerald-500' : 'text-slate-400'}`} />
               <div className="flex-1 min-w-0">
                 <div className="truncate font-medium">{issue.title}</div>
-                <div className="ds-text-meta text-slate-400 truncate">
+                <div className="ds-text-meta text-slate-500 dark:text-slate-400 truncate">
                   {issue.repoFullName} #{issue.number} · {issue.state}
                 </div>
               </div>
@@ -72,11 +72,11 @@ export function GitHubResults({ live, onOpen }) {
               <div className="flex-1 min-w-0">
                 <div className="truncate font-medium">{repo.fullName}</div>
                 {repo.description && (
-                  <div className="ds-text-meta text-slate-400 truncate">{repo.description}</div>
+                  <div className="ds-text-meta text-slate-500 dark:text-slate-400 truncate">{repo.description}</div>
                 )}
               </div>
               {repo.stars > 0 && (
-                <span className="ds-text-meta text-slate-400 shrink-0">★ {repo.stars}</span>
+                <span className="ds-text-meta text-slate-500 dark:text-slate-400 shrink-0">★ {repo.stars}</span>
               )}
             </Command.Item>
           ))}

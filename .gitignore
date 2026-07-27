@@ -14,6 +14,10 @@ node_modules
 dist
 dist-ssr
 dist/bundle-analysis.html
+# Throwaway build outputs for the two build gates (tests/build/*.test.js).
+# Separate dirs so the gates cannot clobber each other in parallel workers.
+dist-honesty-check/
+dist-budget-check/
 coverage
 *.local
 .augment/
@@ -28,11 +32,14 @@ coverage
 .superpowers/
 
 # Environment files (NEVER commit credentials!)
+# Pattern, not an enumeration: the old explicit list left .env.staging,
+# .env.ci and every other future variant tracked by default, which is the
+# wrong way round for a file class that exists to hold secrets. Only the two
+# committed templates are re-included.
 .env
-.env.local
-.env.*.local
-.env.production
-.env.development
+.env.*
+!.env.example
+!.env.test
 
 # Database files (incl. SQLite WAL/journal sidecars — `*.db` alone does not
 # match `repos.db-wal`, which appears whenever the server runs in WAL mode)
@@ -92,8 +99,18 @@ test-results/
 # Temporary files
 nul
 
-# License signing keys (NEVER commit the private key)
-keys/private.pem
+# Keys and certificates (NEVER commit private key material)
+# Same reasoning as the .env block: a single literal path only protected the
+# one filename someone thought of. keys/public.pem is the sole exception —
+# offline license verification needs it committed and it is public by
+# definition.
+*.pem
+*.key
+*.crt
+*.pfx
+*.p12
+*.jks
+!keys/public.pem
 
 # Eval harness — local baseline files (per-dev, not committed)
 server/evals/baseline.local.json

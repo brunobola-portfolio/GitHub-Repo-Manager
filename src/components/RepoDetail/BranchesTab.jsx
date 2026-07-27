@@ -8,6 +8,7 @@ import { GitBranch, Shield, Trash2, Plus, CheckCircle2, XCircle, RefreshCw } fro
 import { Spinner } from '../ui/Spinner'
 import { Field, Input } from '../ui/form'
 import { Select } from '../ui/Select'
+import { useDebounce } from '../../hooks/useDebounce'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
 import { BranchHygieneCard } from './BranchHygieneCard'
@@ -15,14 +16,19 @@ import { branchActions } from '../../actions/branchActions'
 import { BranchProtectionPanel } from './BranchProtectionPanel'
 import { formatRelativeTime } from '../../utils/format'
 import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
+import { TabLoadError } from './TabLoadError'
 
 // Computed once at module load — avoids calling Date.now() during render.
 const STALE_MS = 90 * 24 * 60 * 60 * 1000
 const STALE_CUTOFF = Date.now() - STALE_MS
 
+// Local (no network) filter — short enough to feel instant, long enough that
+// a fast typist doesn't pay for a re-sort on every character.
+const SEARCH_DEBOUNCE_MS = 150
+
 export function BranchesTab({ api, repoData }) {
     const { toast } = useToast()
-    const { data, loading, reload: loadBranches } = useTabData(
+    const { data, loading, error, reload: loadBranches } = useTabData(
         async () => {
             const result = await api.fetchBranches()
             return result.data || result || []
@@ -47,32 +53,42 @@ export function BranchesTab({ api, repoData }) {
     const [search, setSearch] = useState('')
     const [chip, setChip] = useState('all') // 'all' | 'active' | 'stale' | 'protected'
     const [sort, setSort] = useState('recent') // 'recent' | 'name'
+    // The input stays instant (controlled by `search`); only the filter+sort
+    // pass below waits for the user to pause. On a repo with hundreds of
+    // branches every keystroke otherwise re-ran the whole comparator.
+    const debouncedSearch = useDebounce(search, SEARCH_DEBOUNCE_MS)
+
+    // Derive the comparison keys ONCE per branch list, same trick as
+    // STALE_CUTOFF above: the sort comparator ran two `new Date(...)` per
+    // comparison, i.e. ~15k Date allocations per keystroke at 800 branches.
+    // `activityAt` falls back to the committer date (the stale/active chips'
+    // rule); `authoredAt` is author-date only (the recency sort's rule) —
+    // keeping them separate preserves both behaviours exactly.
+    const indexed = useMemo(() => branches.map(b => ({
+        branch: b,
+        nameLower: b.name.toLowerCase(),
+        activityAt: new Date(b.commit?.author?.date || b.commit?.committer?.date || 0).getTime(),
+        authoredAt: new Date(b.commit?.author?.date || 0).getTime(),
+    })), [branches])
 
     const filtered = useMemo(() => {
-        const term = search.trim().toLowerCase()
+        const term = debouncedSearch.trim().toLowerCase()
         const cutoff = STALE_CUTOFF
-        let out = branches.filter(b => !term || b.name.toLowerCase().includes(term))
-        if (chip === 'protected') out = out.filter(b => b.protected)
-        else if (chip === 'stale') out = out.filter(b => {
-            const date = new Date(b.commit?.author?.date || b.commit?.committer?.date || 0).getTime()
-            return date && date < cutoff
-        })
-        else if (chip === 'active') out = out.filter(b => {
-            const date = new Date(b.commit?.author?.date || b.commit?.committer?.date || 0).getTime()
-            return date && date >= cutoff
-        })
+        const defaultBranch = repoData?.default_branch
+        let out = indexed.filter(e => !term || e.nameLower.includes(term))
+        if (chip === 'protected') out = out.filter(e => e.branch.protected)
+        else if (chip === 'stale') out = out.filter(e => e.activityAt && e.activityAt < cutoff)
+        else if (chip === 'active') out = out.filter(e => e.activityAt && e.activityAt >= cutoff)
 
         out = [...out].sort((a, b) => {
             // Default branch always first
-            if (a.name === repoData?.default_branch) return -1
-            if (b.name === repoData?.default_branch) return 1
-            if (sort === 'name') return a.name.localeCompare(b.name)
-            const da = new Date(a.commit?.author?.date || 0).getTime()
-            const db = new Date(b.commit?.author?.date || 0).getTime()
-            return db - da
+            if (a.branch.name === defaultBranch) return -1
+            if (b.branch.name === defaultBranch) return 1
+            if (sort === 'name') return a.branch.name.localeCompare(b.branch.name)
+            return b.authoredAt - a.authoredAt
         })
-        return out
-    }, [branches, search, chip, sort, repoData?.default_branch])
+        return out.map(e => e.branch)
+    }, [indexed, debouncedSearch, chip, sort, repoData?.default_branch])
 
     const handleCreate = async () => {
         if (!newBranch) return
@@ -126,6 +142,10 @@ export function BranchesTab({ api, repoData }) {
 
     if (loading) {
         return <div className="flex justify-center py-12"><Spinner size="lg" /></div>
+    }
+
+    if (error) {
+        return <TabLoadError error={error} onRetry={loadBranches} resourceLabel="branches" />
     }
 
     return (
@@ -266,9 +286,10 @@ export function BranchesTab({ api, repoData }) {
             <ConfirmModal
                 isOpen={!!confirmAction}
                 onClose={() => setConfirmAction(null)}
-                onConfirm={() => { confirmAction?.onConfirm(); setConfirmAction(null) }}
+                onConfirm={async () => { await confirmAction?.onConfirm(); setConfirmAction(null) }}
                 title={confirmAction?.title}
                 message={confirmAction?.message}
+                requiresInput={confirmAction?.requiresInput}
                 confirmText={confirmAction?.confirmText}
                 variant="danger"
             />

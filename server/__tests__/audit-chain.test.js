@@ -180,7 +180,7 @@ describe('G1 — append-only triggers', () => {
 describe('G1 — verifyAuditChain', () => {
     it('returns { valid: true, totalChecked: 0 } on empty table', () => {
         const result = verifyAuditChain();
-        expect(result).toEqual({ valid: true, totalChecked: 0 });
+        expect(result).toEqual({ valid: true, totalChecked: 0, unhashedLegacy: 0 });
     });
 
     it('returns valid: true on a clean chain', () => {
@@ -230,3 +230,58 @@ describe('G1 — verifyAuditChain', () => {
         expect(result.totalChecked).toBe(2);
     });
 });
+
+/**
+ * Rows written before the hash-chain migration have no row_hash. They are
+ * unverifiable, not tampered — and calling them tampered told every
+ * pre-existing instance its audit log had been altered, which is how an
+ * operator learns to ignore the tool. The local dev database has 217 such
+ * rows from April 2026, which is how this surfaced.
+ */
+describe('G4 — rows that predate the hash chain', () => {
+    function insertUnhashed(id, action) {
+        _db.prepare(`
+            INSERT INTO audit_log_v2 (id, user_id, action, resource_type, resource_id,
+                                      details, ip_address, user_agent, prev_hash, row_hash, created_at)
+            VALUES (?, 1, ?, 'test', '1', '{}', '', '', '', '', '2026-04-10 10:00:00')
+        `).run(id, action);
+    }
+
+    it('reports a legacy PREFIX as valid-but-unverifiable rather than broken', () => {
+        insertUnhashed(1, 'auth.login');
+        insertUnhashed(2, 'auth.login');
+        auditLog(fakeReq(), 'repo.create', 'repo', 7, { name: 'x' });
+
+        const result = verifyAuditChain();
+        expect(result.valid).toBe(true);
+        expect(result.unhashedLegacy).toBe(2);
+        expect(result.totalChecked).toBe(1);
+    });
+
+    it('still reports a blanked hash AFTER the chain started as tampering', () => {
+        // The evasion the prefix rule has to survive: an attacker cannot dodge
+        // detection by emptying row_hash, because an unhashed row that is not
+        // part of the leading run is not history.
+        auditLog(fakeReq(), 'repo.create', 'repo', 1, {});
+        auditLog(fakeReq(), 'repo.delete', 'repo', 2, {});
+        const second = _db.prepare('SELECT id FROM audit_log_v2 ORDER BY id ASC LIMIT 1 OFFSET 1').get();
+
+        // The append-only triggers are the first line of defence; drop them to
+        // simulate an attacker with direct database access, which is the only
+        // person who could blank a hash in the first place.
+        _db.exec('DROP TRIGGER audit_log_v2_no_update');
+        _db.prepare("UPDATE audit_log_v2 SET row_hash = '' WHERE id = ?").run(second.id);
+
+        const result = verifyAuditChain();
+        expect(result.valid).toBe(false);
+        expect(result.brokenAt).toBe(second.id);
+    });
+
+    it('treats an all-legacy table as nothing to verify', () => {
+        insertUnhashed(1, 'auth.login');
+        insertUnhashed(2, 'auth.login');
+        const result = verifyAuditChain();
+        expect(result).toEqual({ valid: true, totalChecked: 0, unhashedLegacy: 2 });
+    });
+});
+

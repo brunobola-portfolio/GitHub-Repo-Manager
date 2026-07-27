@@ -21,7 +21,7 @@ export function DiffComputeOnDemand({ filename, additions = 0, deletions = 0, ch
 
     return (
         <div className="diff-compute-on-demand p-6 text-center bg-amber-50/60 dark:bg-amber-900/10 border border-dashed border-amber-300 dark:border-amber-800/60 rounded-lg m-3">
-            <p className="font-mono ds-text-meta text-slate-400 dark:text-slate-500 mb-1 truncate" title={filename}>
+            <p className="font-mono ds-text-meta text-slate-500 dark:text-slate-400 mb-1 truncate" title={filename}>
                 {filename}
             </p>
             <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-amber-200 dark:bg-amber-800/50 mb-3">
@@ -33,9 +33,9 @@ export function DiffComputeOnDemand({ filename, additions = 0, deletions = 0, ch
                 {total} <span className="text-base font-medium text-slate-500 dark:text-slate-400">lines changed</span>
             </p>
             <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 tabular-nums">
-                <span className="text-emerald-600 dark:text-emerald-400">+{additions}</span>
+                <span className="ds-text-success">+{additions}</span>
                 {' '}
-                <span className="text-rose-600 dark:text-rose-400">−{deletions}</span>
+                <span className="ds-text-danger">−{deletions}</span>
             </p>
             <p className="text-xs text-amber-700 dark:text-amber-500 mt-3 max-w-md mx-auto inline-flex items-start gap-1.5 text-left">
                 <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />

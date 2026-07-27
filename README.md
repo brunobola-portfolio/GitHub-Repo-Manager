@@ -20,7 +20,7 @@
 
 **Free-first** (full AI surface + every Work Board tab + unlimited teams on Free) · **Self-hosting free forever** (AGPL v3) · **Native on Windows**
 
-[**Try the Demo**](#quick-start-demo-mode) · [Features](#features) · [Installation](#installation) · [Documentation](docs/index.md) · [Pricing](#plans--pricing) · [Download for Windows](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest) · [What's new in v4.8 — guided Windows setup](CHANGELOG.md#480---2026-07-20)
+[**Try the Demo**](#quick-start-demo-mode) · [Features](#features) · [Installation](#installation) · [Documentation](docs/index.md) · [Pricing](#plans--pricing) · [Download for Windows](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest) · [What's new in v4.10 — Windows system-tray app](CHANGELOG.md#4100---2026-07-22)
 
 <sub>Production-hardened — AES-256-GCM BYOK · rolling sessions + CSRF double-submit · GitHub API circuit breaker · SSRF + DNS-rebinding guard · dual-theme a11y gate.</sub>
 
@@ -54,7 +54,7 @@ Managing a real GitHub estate means juggling several disconnected tools: dozens 
 **GitHub Repo Manager** puts it in one place:
 
 - **One dashboard** for repos, teams, Actions analytics, and community health — with a personalised "what needs you" inbox.
-- **Metered, grounded AI** you control — Bring Your Own Key (Anthropic · OpenAI · Gemini · OpenRouter · local), with a global spend cap and answer-first, cited responses. No key? High-quality algorithmic fallbacks keep everything working.
+- **Metered, grounded AI** you control — Bring Your Own Key (Anthropic · OpenAI · Gemini · OpenRouter · local), with per-feature monthly caps, an opt-in monthly $ spend cap, and answer-first, cited responses. No key? High-quality algorithmic fallbacks keep everything working.
 - **A cross-repo Work Board** that surfaces reviews waiting on you, stale PRs, and tech debt across every repository — no manual registration.
 - **AI Deep Review** that turns the in-app PR view into a tool you'd choose over github.com.
 - **An Azure DevOps migration suite** (Git, TFVC, Boards, Wikis) with risk analysis, dry-run, and conflict resolution.
@@ -120,7 +120,7 @@ A single cockpit across every repository — no context switching, no manual rep
 - **KPI tiles & trends** — count-up animations, 7-day sparklines, and delta badges; snapshots persist via a daily sweeper.
 - **Tabs** — My Reviews · My Issues · Stale PRs · Review Load · Tech Debt · **DORA Metrics** (deploy frequency, lead-time p50/p90, change failure rate, MTTR p50/p90, CSV export). Every tab is available on all tiers.
 - **Inline actions** — approve / request-changes / snooze a PR right on the row; auto-refresh every 60 s (pauses when hidden).
-- **Repo Advisor** (BYOK, opt-in, monthly cap) — an AI summary card fed 7-day trend snapshots, suggestion chips (`ping` / `snooze` / `view`), and conversational edits with a preview-then-apply diff.
+- **Repo Advisor** (BYOK, monthly cap; needs `WORK_BOARD_AI_ENABLED=true` on the deployment *and* a per-user opt-in) — an AI summary card fed 7-day trend snapshots, suggestion chips (`ping` / `snooze` / `view`), and conversational edits with a preview-then-apply diff.
 
 <details>
 <summary><strong>Keyboard navigation & Command Palette</strong></summary>
@@ -139,7 +139,19 @@ A single cockpit across every repository — no context switching, no manual rep
   <img alt="AI Insights — a 72/100 repository health-score ring with a TL;DR summary, highlights, and AI-suggested topic chips" src="docs/images/44_ai_overview_tab_hd.png" width="820">
 </picture>
 
-AI is integrated via **BYOK** and is **provider-neutral** (`AI_PROVIDER`) — configure Anthropic, OpenAI, Google Gemini, OpenRouter, or a local model in `Settings → AI Configuration`. It's production-hardened: a **global spend cap** and **per-call output-token cap** (OWASP LLM10), **PII-safe audit metadata** on every call, **SSE streaming** that preserves partial text on disconnect, **BYOK hardening** (key rotation, model-id validation, DNS re-checks), and a **golden-eval suite gated in CI**. Repo Advisor answers are answer-first, grounded, and cited.
+AI is integrated via **BYOK** and is **provider-neutral** (`AI_PROVIDER`) — configure Anthropic, OpenAI, Google Gemini, OpenRouter, or a local model in `Settings → AI Configuration`. It's production-hardened: a **monthly $ spend cap** and a **per-call output-token cap** (OWASP LLM10), **PII-safe audit metadata** on every call, **SSE streaming** that preserves partial text on disconnect, **BYOK hardening** (key rotation, model-id validation, DNS re-checks), and a **golden-eval suite gated in CI**. Repo Advisor answers are answer-first, grounded, and cited.
+
+> **Spend cap: shipped, off by default.** Every AI call is routed through
+> `guardedGenerate`, which checks and records spend — but the shipped default
+> is `aiSpendCapCents: 0` on *all three tiers*
+> ([`server/lib/feature-flags.js`](server/lib/feature-flags.js)), i.e.
+> **no dollar ceiling is enforced until you set one**. That is deliberate for
+> self-hosted AGPL installs: it's your own provider key, so the project won't
+> silently cut you off. Opt in with `AI_SPEND_CAP_CENTS` (flat) or
+> `AI_SPEND_CAP_CENTS_FREE` / `_PRO` / `_ENTERPRISE` (per tier) — see
+> [`.env.example`](.env.example). The **per-call output-token cap is active by
+> default** (2,048 tokens, `AI_MAX_OUTPUT_TOKENS`), as are the per-feature
+> monthly count caps in the pricing matrix below.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/ai-spend-cap.svg">
@@ -155,7 +167,7 @@ The full AI surface ships on **every tier including Free**, each capability with
 
 | Capability | What it does |
 |---|---|
-| **Repo Advisor** | Conversational assistant that answers questions *and* dispatches real app actions (open the Migration Wizard, Create Repo, Transfer, …) from natural-language intent |
+| **Repo Advisor** | Conversational assistant that answers questions *and* dispatches real app actions (open the Migration Wizard, Create Repo, Transfer, …) from natural-language intent. Self-hosted: requires `WORK_BOARD_AI_ENABLED=true` plus a per-user opt-in — see the † note under [Plans & Pricing](#plans--pricing) |
 | **Repository insights** | Quality scoring 0–100 across documentation, community, engineering, and polish, with pattern detection and fixes |
 | **Semantic search** | Natural-language repo search over real vector embeddings |
 | **AI Deep Review** | Walkthrough + line comments with one-click suggestions, PR slash commands, and streaming PR chat — batched into one GitHub review ([guide](docs/features/ai-deep-review.md)) |
@@ -220,7 +232,7 @@ Full details in the [Community WOW feature guide](docs/features/community-wow.md
 
 ## Plans & Pricing
 
-The hosted product is **free-first**: nearly every product feature — bulk ops, mirror sync, Deep Review, Prompt Studio, PR Chat, PR slash commands, DORA metrics, and unlimited teams — ships on the Free tier with generous, non-infinite caps. Pro and Enterprise sell AI headroom (bigger monthly caps + a higher $ spend-cap ceiling), more API keys, and compliance/service deliverables (audit logs, SSO _(roadmap)_, priority support, white-glove migration) — not feature unlocks. Each AI capability has its own monthly cap on Free so one feature can't drain your whole budget. AI usage quotas are metered per individual account, even within a team.
+The hosted product is **free-first**: nearly every product feature — bulk ops, mirror sync, Deep Review, Prompt Studio, PR Chat, PR slash commands, DORA metrics, Azure DevOps Server (on-premise) migration, and unlimited teams — ships on the Free tier with generous, non-infinite caps. Pro and Enterprise sell AI headroom (bigger monthly caps, and a higher $ spend-cap ceiling wherever an operator has enabled the spend cap — it ships disabled), more API keys, and compliance/service deliverables (audit logs, SSO _(roadmap)_, priority support, white-glove migration) — not feature unlocks. AI is bring-your-own-key on every tier; no plan includes managed inference. Each AI capability has its own monthly cap on Free so one feature can't drain your whole budget. AI usage quotas are metered per individual account, even within a team.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/tier-gating.svg">
@@ -229,8 +241,8 @@ The hosted product is **free-first**: nearly every product feature — bulk ops,
 
 | Feature                                | Free            | Pro ($19/mo)  | Enterprise |
 |----------------------------------------|-----------------|---------------|------------|
-| Repositories managed                   | 1,000           | Unlimited     | Unlimited  |
-| Repo Advisor (conversational)          | ✓               | ✓             | ✓          |
+| Repositories managed                   | Unlimited       | Unlimited     | Unlimited  |
+| Repo Advisor (conversational) †        | ✓               | ✓             | ✓          |
 | AI queries / month (total)             | 1,000           | 10,000        | Unlimited  |
 | Semantic Search                        | 375 / month     | Unlimited     | Unlimited  |
 | Migration Risk Analysis (AI)           | 25 / month      | Unlimited     | Unlimited  |
@@ -260,6 +272,8 @@ The hosted product is **free-first**: nearly every product feature — bulk ops,
 | API keys                               | 25              | 50            | 100        |
 | Priority Support + SLA                 | ✗               | ✗             | ✓          |
 | White-glove migration services         | ✗               | ✗             | ✓          |
+
+† **Repo Advisor is off by default on a self-hosted install.** Its endpoints are behind a deployment flag: `server/middleware/work-board-ai-gate.js` returns `404 AI_FEATURE_FLAG_OFF` unless `WORK_BOARD_AI_ENABLED=true` is set in the environment (`docker-compose.yml` forwards the variable). It is a tier-free feature — no plan unlocks it — but an operator must switch it on, and each user must then opt in under `Settings → Work Board`. No other row in this matrix depends on an environment flag.
 
 Self-hosting under AGPL v3 is free forever — see [LICENSE](LICENSE). The matrix above applies to self-hosted Pro/Enterprise licenses today (Stripe checkout → emailed license key — see [`docs/billing-and-licensing.md`](docs/billing-and-licensing.md)), and will apply equally to the hosted SaaS once it launches. "Advanced bulk" and "Mirror Sync apply" carry a tier-independent daily anti-abuse ceiling on top of the existing dry-run + confirmation-token safety flow, regardless of plan. Priority Support and White-glove migration are manual, service-based deliverables (support ticket + contract), not gated by a feature flag.
 
@@ -479,7 +493,7 @@ See [`docs/ai-providers.md`](docs/ai-providers.md) for per-provider setup and fr
 | **Backend** | Node.js 20+, Express 5.2 |
 | **Database** | better-sqlite3 12.9 (WAL mode, 32 MB cache) — SQLite only |
 | **Security** | Helmet.js, per-tier + per-IP rate limiting, shared Zod validation layer, SSRF + DNS-rebinding guard, CSRF double-submit, AES-256-GCM credential encryption |
-| **AI (BYOK)** | Provider-neutral `AI_PROVIDER` (Anthropic, OpenAI, Gemini, OpenRouter, local) · per-user keys encrypted at rest · global spend cap + per-call output-token cap · PII-safe audit metadata · SSE streaming |
+| **AI (BYOK)** | Provider-neutral `AI_PROVIDER` (Anthropic, OpenAI, Gemini, OpenRouter, local) · per-user keys encrypted at rest · opt-in monthly $ spend cap + always-on per-call output-token cap · PII-safe audit metadata · SSE streaming |
 | **APIs** | GitHub REST API (2022-11-28), Azure DevOps API v7.1, Stripe Billing |
 | **Logging** | Pino (structured JSON, credential redaction) + Sentry breadcrumbs |
 | **Testing** | Vitest (6,000+ unit tests) + Testing Library + Playwright, with a dual-theme axe accessibility gate |
@@ -572,7 +586,15 @@ npm rebuild better-sqlite3   # or manual rebuild
 
 **Do I have to pay for AI?** No — several providers have free tiers, and everything works with local models or algorithmic fallbacks. See [`docs/ai-providers.md`](docs/ai-providers.md).
 
-**What data is sent to the AI provider?** Depends on the feature. Repo insights, semantic search, and README generation send only repository metadata (name, description, topics, existing README) — never code. Diff-aware features — AI Deep Review, PR Chat, PR slash commands, and the Commit/PR-description generators — work from the PR or commit you're acting on (title, file manifest, and — for all but PR Chat — the full unified diff); nothing from unrelated repos or your session ever goes along, and BYOK sends everything straight to your own provider, never ours. Full breakdown: [Privacy & data handling](docs/features/ai-deep-review.md#privacy--data-handling).
+**What data is sent to the AI provider?** Depends on the feature — three groups, and nothing from unrelated repos or your session ever goes along. BYOK sends everything straight to your own provider, never ours.
+
+- **Metadata only — no code.** Semantic search, the **README Generator** and **README Enhance** send repository metadata (name, description, language, topics) and your existing README. **AI Image Generation** sends the repo name, description, language and topics, plus any style text you type.
+- **Diff-aware — this group does send your code.** AI Deep Review, PR Chat, PR slash commands, and the Commit/PR-description generators work from the PR or commit you're acting on: title, file manifest, and — for all but PR Chat — the full unified diff.
+- **Structure-aware — paths, config values and status flags, not file contents.** **Repo insights** sends metadata *plus your file structure* (the current parenthetical above omitted this). The **AI Diagram Generator** sends the full recursive file-path tree of your default branch (capped) plus a README excerpt. The **Agent Rules Generator** sends detected build signals: top-level directory and file names, your `package.json` script *command strings*, test runner, lint-config filenames, CI workflow filenames and job names. The **Security Posture summary** sends only the 10 check results (id, label, pass/fail status, severity) plus repo name and visibility — never raw alert bodies. **Repo Advisor** sends your question with the tracked-repo list and its 7-day trend snapshots.
+
+One exception worth calling out: **README Studio's "improve with AI"** also sends a small amount of source. Alongside your README, manifest (`package.json` / `pyproject.toml` / …), top-level directory names and `LICENSE`, it includes up to **3 entrypoint files truncated to 512 bytes each** (`src/index.js`, `main.py`, `main.go`, …). Every one of those sections is run through a secret redactor before it leaves the server.
+
+Full Deep Review breakdown, including what is stored and logged: [Privacy & data handling](docs/features/ai-deep-review.md#privacy--data-handling).
 
 **Can I migrate TFVC?** Yes — automatic TFVC-to-Git conversion with up to 180 days of history. Work items become Issues, wikis are cloned with markdown conversion.
 
@@ -584,9 +606,9 @@ npm rebuild better-sqlite3   # or manual rebuild
 
 ## Roadmap
 
-Version history lives in **[CHANGELOG.md](CHANGELOG.md)** and [GitHub Releases](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases) — the source of truth, kept in sync with git tags.
+Version history lives in **[CHANGELOG.md](CHANGELOG.md)** and [GitHub Releases](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases). Every tagged release has a changelog entry. The reverse is not quite true: **`[4.5.0]` was never tagged or released** — that work merged to `main` and first reached users inside v4.6.0. Its entry is kept (and labelled) for history rather than deleted.
 
-What's next is tracked in **[ROADMAP.md](ROADMAP.md)** and the in-app `/roadmap` page, honestly scoped as **Shipping Now / Next / Later**. Every feature on the Pricing table works today; SSO/SAML and GitHub Enterprise Server are roadmap items, clearly marked as such.
+What's next is tracked in **[ROADMAP.md](ROADMAP.md)** and the in-app `/roadmap` page, scoped as **Next** and **Later** — the "Shipping Now" stage was removed, so anything still listed there is genuinely unshipped. Every feature on the Pricing table works today; SSO/SAML and GitHub Enterprise Server are roadmap items, clearly marked as such.
 
 ---
 

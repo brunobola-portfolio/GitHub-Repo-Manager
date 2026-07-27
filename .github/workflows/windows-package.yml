@@ -543,7 +543,10 @@ jobs:
           }
           Write-Host "installer smoke test passed (install, boot, stop, uninstall — app dir gone, DB + .env preserved at the correct LocalAppData path, nothing written under the install dir)"
 
-      - uses: actions/upload-artifact@v4
+      # v7 to match every other workflow (ci.yml). Nothing consumes this
+      # artifact via download-artifact, so the v4->v7 immutable-artifact
+      # behaviour change has no downstream effect here.
+      - uses: actions/upload-artifact@v7
         with:
           name: windows-package-${{ steps.meta.outputs.version }}
           path: |

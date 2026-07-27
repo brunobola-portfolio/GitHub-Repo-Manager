@@ -14,6 +14,14 @@ vi.mock('@/hooks/useMigratedRepos', () => ({
     useMigratedRepos: () => ({ get: () => null, loading: false }),
 }))
 
+// Render counter for the memo test below. TrackedDot renders once per RepoCard
+// and returns null under the empty useTrackedRepos mock above, so standing in
+// for it is a non-invasive way to count real RepoCard render passes.
+const cardRenders = vi.hoisted(() => ({ count: 0 }))
+vi.mock('@/components/WorkBoard/TrackedDot', () => ({
+    TrackedDot: () => { cardRenders.count++; return null },
+}))
+
 function makeRepo(id) {
     return {
         id,
@@ -70,6 +78,40 @@ describe('RepoGrid — exit animation for filtered-out cards', () => {
         // Static branch: no exit animation holds the removed card in the DOM —
         // the count drops synchronously on the same render pass.
         expect(screen.getAllByTestId('repo-card')).toHaveLength(50)
+    })
+})
+
+describe('RepoGrid — memoized cards keep their callbacks fresh', () => {
+    beforeEach(() => { cardRenders.count = 0 })
+
+    it('routes a re-created callback to a card whose repo data did not change', () => {
+        // RepoList rebuilds onRepoClick/onAction/onContextMenu on every render.
+        // RepoCard's comparator used to EXCLUDE the callbacks, so a card whose
+        // repo object was unchanged kept invoking the first closure forever.
+        const repos = [makeRepo(1)]
+        const first = vi.fn()
+        const second = vi.fn()
+
+        const { rerender } = render(<RepoGrid {...baseProps(repos)} onRepoClick={first} />)
+        rerender(<RepoGrid {...baseProps(repos)} onRepoClick={second} />)
+
+        screen.getByTestId('repo-card-open').click()
+        expect(second).toHaveBeenCalledTimes(1)
+        expect(second).toHaveBeenCalledWith(repos[0])
+        expect(first).not.toHaveBeenCalled()
+    })
+
+    it('still skips re-rendering cards when only the callback identities changed', () => {
+        const repos = Array.from({ length: 5 }, (_, i) => makeRepo(i + 1))
+        const { rerender } = render(<RepoGrid {...baseProps(repos)} />)
+        expect(cardRenders.count).toBe(5)
+
+        // baseProps() hands over brand-new callback identities each call — the
+        // exact shape RepoList produces. The memo must still bite, otherwise
+        // including the callbacks in the comparator would have cost every card
+        // a re-render on every parent render.
+        rerender(<RepoGrid {...baseProps(repos)} />)
+        expect(cardRenders.count).toBe(5)
     })
 })
 

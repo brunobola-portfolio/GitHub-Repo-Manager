@@ -33,12 +33,53 @@ services:
       - "RESEND_API_KEY=${RESEND_API_KEY:-}"
       # --- Frontend URL — required for CORS + cookies ---
       - "FRONTEND_URL=${FRONTEND_URL:?FRONTEND_URL must be set to the public HTTPS URL of the app}"
-      # --- Optional integrations ---
+      # --- AI providers ---
+      # Server-side fallback keys. Users bringing their own key (BYOK) never
+      # touch these; they exist so an operator can offer AI without every user
+      # configuring a provider. Forward all of them or AI_PROVIDER silently
+      # resolves to a provider whose key never arrived.
+      - "AI_PROVIDER=${AI_PROVIDER:-}"
       - "GEMINI_API_KEY=${GEMINI_API_KEY:-}"
+      - "ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}"
+      - "OPENAI_API_KEY=${OPENAI_API_KEY:-}"
+      - "OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}"
+      - "LOCAL_MODEL=${LOCAL_MODEL:-}"
+      - "LOCAL_API_KEY=${LOCAL_API_KEY:-}"
+      - "LOCAL_BASE_URL=${LOCAL_BASE_URL:-}"
+      - "ALLOW_LOCAL_AI_ENDPOINTS=${ALLOW_LOCAL_AI_ENDPOINTS:-}"
+      # Per-provider model overrides; unset falls back to the curated defaults.
+      - "GEMINI_MODEL=${GEMINI_MODEL:-}"
+      - "GEMINI_EMBEDDING_MODEL=${GEMINI_EMBEDDING_MODEL:-}"
+      - "ANTHROPIC_MODEL=${ANTHROPIC_MODEL:-}"
+      - "OPENAI_MODEL=${OPENAI_MODEL:-}"
+      - "OPENROUTER_MODEL=${OPENROUTER_MODEL:-}"
+      - "AI_RETRY_BASE_DELAY_MS=${AI_RETRY_BASE_DELAY_MS:-}"
+      - "DISABLE_AI_REVIEW=${DISABLE_AI_REVIEW:-}"
+      # Multi-tenant safety switch: with this unset, the server-side key above
+      # is billed for every tenant that hasn't configured their own.
+      - "AI_REQUIRE_USER_CONFIG=${AI_REQUIRE_USER_CONFIG:-}"
+      # Denial-of-wallet ceiling on the server-side key, in cents per user per
+      # month. 0/unset disables the cap entirely (see server/lib/ai-spend-cap.js).
+      - "AI_SPEND_CAP_CENTS=${AI_SPEND_CAP_CENTS:-}"
+      - "AI_SPEND_CAP_CENTS_FREE=${AI_SPEND_CAP_CENTS_FREE:-}"
+      - "AI_SPEND_CAP_CENTS_PRO=${AI_SPEND_CAP_CENTS_PRO:-}"
+      - "AI_SPEND_CAP_CENTS_ENTERPRISE=${AI_SPEND_CAP_CENTS_ENTERPRISE:-}"
+      - "AI_MAX_OUTPUT_TOKENS=${AI_MAX_OUTPUT_TOKENS:-}"
+      # Conversational Repo Advisor. Off unless explicitly enabled.
+      - "WORK_BOARD_AI_ENABLED=${WORK_BOARD_AI_ENABLED:-}"
+      # --- Optional integrations ---
       - "SENTRY_DSN=${SENTRY_DSN:-}"
       - "STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}"
       - "STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}"
+      # Price IDs. Missing here means checkout 400s AFTER the customer has
+      # decided to buy — the failure is invisible until someone tries to pay.
+      - "STRIPE_PRICE_PRO_MONTHLY=${STRIPE_PRICE_PRO_MONTHLY:-}"
+      - "STRIPE_PRICE_PRO_YEARLY=${STRIPE_PRICE_PRO_YEARLY:-}"
+      - "STRIPE_PRICE_ENTERPRISE_MONTHLY=${STRIPE_PRICE_ENTERPRISE_MONTHLY:-}"
+      - "STRIPE_PRICE_ENTERPRISE_YEARLY=${STRIPE_PRICE_ENTERPRISE_YEARLY:-}"
       - "LICENSE_SIGNING_PRIVATE_KEY_PEM=${LICENSE_SIGNING_PRIVATE_KEY_PEM:-}"
+      # Second key during credential-encryption key rotation; decrypt-only.
+      - "CREDENTIAL_ENCRYPTION_KEY_PREVIOUS=${CREDENTIAL_ENCRYPTION_KEY_PREVIOUS:-}"
       # Self-hosted activation key (server/config.js reads LICENSE_KEY; env
       # takes precedence over the DB-installed license — require-tier.js).
       # Without this, a paying self-host customer's LICENSE_KEY never
@@ -50,9 +91,44 @@ services:
       # docs/operations.md → "Backup & restore".
       - "DB_BACKUP_DIR=${DB_BACKUP_DIR:-/app/server/data-backups}"
       - "DB_BACKUP_KEEP=${DB_BACKUP_KEEP:-}"
+      # --- Azure DevOps (migration importer) ---
+      - "AZURE_PAT=${AZURE_PAT:-}"
+      - "AZURE_CLIENT_ID=${AZURE_CLIENT_ID:-}"
+      - "AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET:-}"
+      - "AZURE_TENANT_ID=${AZURE_TENANT_ID:-}"
       # Extra Azure DevOps Server (on-prem) hostnames, comma-separated.
       # Leave unset for Azure DevOps Cloud only.
       - "ALLOWED_AZURE_HOSTS=${ALLOWED_AZURE_HOSTS:-}"
+      - "ALLOW_CONSOLE_EMAIL=${ALLOW_CONSOLE_EMAIL:-}"
+      # --- Retention, observability, operational knobs ---
+      - "DATA_RETENTION_DAYS=${DATA_RETENTION_DAYS:-}"
+      - "DATA_RETENTION_WARNING_LEAD_DAYS=${DATA_RETENTION_WARNING_LEAD_DAYS:-}"
+      - "EVENT_RETENTION_DAYS=${EVENT_RETENTION_DAYS:-}"
+      - "GH_CACHE_MAX_AGE_DAYS=${GH_CACHE_MAX_AGE_DAYS:-}"
+      - "WORK_BOARD_SNAPSHOT_RETENTION_DAYS=${WORK_BOARD_SNAPSHOT_RETENTION_DAYS:-}"
+      - "LOG_LEVEL=${LOG_LEVEL:-}"
+      - "METRICS_TOKEN=${METRICS_TOKEN:-}"
+      - "BULK_DESTRUCTIVE_DAILY_MAX=${BULK_DESTRUCTIVE_DAILY_MAX:-}"
+      # Escape hatch for deployments terminating TLS somewhere this app can't
+      # see. Leaving it unset is the safe default.
+      - "DISABLE_HTTPS_ENFORCEMENT=${DISABLE_HTTPS_ENFORCEMENT:-}"
+      # Read by server/config.js on every platform, not just the Windows
+      # package: UPDATE_CHECK=false is how an egress-restricted or air-gapped
+      # deployment stops the outbound GitHub call. Not forwarding it meant the
+      # container saw `undefined`, which is not 'false', and called out anyway.
+      - "UPDATE_CHECK=${UPDATE_CHECK:-}"
+      # Closes the first-run web setup wizard on a deployment that provisions
+      # its own .env. Documented at .env.example:317 as a hardening step.
+      - "GRM_DISABLE_WEB_SETUP=${GRM_DISABLE_WEB_SETUP:-}"
+      # Per-feature model overrides, read by ai-provider.js's env resolver.
+      - "AI_MODEL_CHAT=${AI_MODEL_CHAT:-}"
+      - "AI_MODEL_REVIEW=${AI_MODEL_REVIEW:-}"
+      # Signs the Work Board AI diff payloads (work-board-ai-hmac.js).
+      - "AI_DIFF_SIGNING_KEY=${AI_DIFF_SIGNING_KEY:-}"
+      - "ENV_TOOLING_INSTALL_ENABLED=${ENV_TOOLING_INSTALL_ENABLED:-}"
+      - "AZURE_RETRY_BASE_MS=${AZURE_RETRY_BASE_MS:-}"
+      - "EMAIL_RETRY_BASE_DELAY_MS=${EMAIL_RETRY_BASE_DELAY_MS:-}"
+      - "SQLITE_VERBOSE=${SQLITE_VERBOSE:-}"
       - "REDIS_URL=redis://redis:6379"
     volumes:
       - app-data:/app/server/data

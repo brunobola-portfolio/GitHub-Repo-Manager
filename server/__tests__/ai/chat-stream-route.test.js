@@ -110,7 +110,7 @@ describe('POST /api/ai/chat?stream=true', () => {
         await request(makeApp()).post('/api/ai/chat?stream=true').send({ message: 'hi' });
 
         expect(aiQueriesCount()).toBe(1);
-        expect(testDb.prepare('SELECT cents FROM ai_spend WHERE user_id = ?').get(USER_ID)?.cents).toBe(2); // 0.02
+        expect(testDb.prepare('SELECT cents + micro_cents / 10000 AS cents FROM ai_spend WHERE user_id = ?').get(USER_ID)?.cents).toBe(2); // 0.02
         const audit = testDb.prepare(
             "SELECT details FROM audit_log_v2 WHERE user_id = ? AND action = 'ai.chat' ORDER BY id DESC LIMIT 1"
         ).get(USER_ID);

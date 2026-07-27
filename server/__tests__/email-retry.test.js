@@ -309,4 +309,102 @@ describe('email retry + dead-letter', () => {
         expect(second.picked).toBe(0)
         expect(mockFetch).toHaveBeenCalledTimes(1)
     })
+
+    // -------------------------------------------------------------------------
+    // 7. A dead retry worker must be loud
+    // -------------------------------------------------------------------------
+    it('logs a failed startup tick at ERROR, matching webhook-retry-worker', async () => {
+        // Hand the worker a store whose query result is not iterable, so the
+        // tick rejects the way any unforeseen breakage would.
+        memDb.close()
+        memDb = { prepare: () => ({ all: () => null }), close() {} }
+
+        const logger = (await import('../lib/logger.js')).default
+        logger.error.mockClear()
+        logger.warn.mockClear()
+
+        const { startEmailRetryWorker, stopEmailRetryWorker } = await import('../lib/email-retry-worker.js')
+        try {
+            startEmailRetryWorker({ intervalMs: 1_000_000 })
+            await new Promise((r) => setImmediate(r))
+
+            const startupMsg = /initial tick failed/
+            const erroredStartup = logger.error.mock.calls.some(([, m]) => startupMsg.test(m ?? ''))
+            expect(erroredStartup).toBe(true)
+            // The startup failure must not be buried at WARN.
+            const warnedStartup = logger.warn.mock.calls.some(([, m]) => startupMsg.test(m ?? ''))
+            expect(warnedStartup).toBe(false)
+        } finally {
+            stopEmailRetryWorker()
+        }
+    })
+
+
+    /**
+     * The dead-letter queue carries licence keys. A duplicate send here is a
+     * customer receiving their key two or three times, so the two guards below
+     * are correctness, not tidiness.
+     */
+    describe('email retry worker — batch bounds and re-entrancy', () => {
+        const toSqlite = (d) => d.toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')
+
+        function seedDue(n) {
+            const pastIso = toSqlite(new Date(Date.now() - 60 * 1000))
+            const stmt = memDb.prepare(`
+                INSERT INTO email_dead_letter (to_address, subject, body_html, body_text, attempts, last_error, next_retry_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            `)
+            for (let i = 0; i < n; i++) {
+                stmt.run(`bulk${i}@example.com`, `Licence key ${i}`, '<p>key</p>', 'key', 3, 'timeout', pastIso)
+            }
+        }
+
+        it('processes at most 50 rows per tick', async () => {
+            // The backoff is derived from `attempts`, so a provider outage makes a
+            // whole batch eligible in the same window.
+            seedDue(120)
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: 'ok' }) }))
+
+            const { runEmailRetryOnce } = await import('../lib/email-retry-worker.js')
+            const summary = await runEmailRetryOnce()
+
+            expect(summary.picked).toBe(50)
+            const remaining = memDb.prepare(
+                'SELECT COUNT(*) AS n FROM email_dead_letter WHERE resolved_at IS NULL'
+            ).get().n
+            expect(remaining).toBe(70)
+        })
+
+        it('an overlapping tick sends nothing — no duplicate licence emails', async () => {
+            seedDue(3)
+
+            let inFlight = 0
+            let maxConcurrent = 0
+            let release
+            const gate = new Promise((r) => { release = r })
+            vi.stubGlobal('fetch', vi.fn(async () => {
+                inFlight++
+                maxConcurrent = Math.max(maxConcurrent, inFlight)
+                await gate
+                inFlight--
+                return { ok: true, json: async () => ({ id: 'ok' }) }
+            }))
+
+            const { runGuardedTick } = await import('../lib/email-retry-worker.js')
+
+            const first = runGuardedTick()
+            // The interval fires again while the first tick is still blocked on a
+            // hanging provider connection — exactly the scenario the flag exists for.
+            const second = await runGuardedTick()
+            expect(second.skipped).toBe(true)
+
+            release()
+            const firstSummary = await first
+            expect(firstSummary.resolved).toBe(3)
+            expect(maxConcurrent).toBe(1)
+
+            // Three rows, three sends — not six.
+            expect(global.fetch).toHaveBeenCalledTimes(3)
+        })
+    })
 })

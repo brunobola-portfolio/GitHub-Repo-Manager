@@ -30,7 +30,6 @@ const mockGetFeatures = vi.fn()
 vi.mock('../lib/feature-flags.js', () => ({
     getFeatures: (...args) => mockGetFeatures(...args),
     getTierOrder: (tier) => ({ free: 0, pro: 1, enterprise: 2 }[tier] ?? 0),
-    canAccess: vi.fn(() => true),
 }))
 
 // requireTier: real implementation uses getUserTier which reads DB/env.

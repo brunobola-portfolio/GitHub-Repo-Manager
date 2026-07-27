@@ -23,7 +23,13 @@ const BULK_DESTRUCTIVE_DAILY_MAX = Number(process.env.BULK_DESTRUCTIVE_DAILY_MAX
 // without a single feature draining their whole monthly AI budget.
 const TIER_FEATURES = {
     free: {
-        maxRepos: 1000,
+        // Unlimited on every tier because nothing enforces a repo count and
+        // nothing ever has: repos_managed is never incremented and maxRepos is
+        // never checked. It was advertised as Free's ceiling and as Pro's lead
+        // upgrade reason on eight surfaces. Retracted rather than enforced —
+        // free-first means we do not invent a new restriction on existing users
+        // to make a pricing bullet true.
+        maxRepos: Infinity,
         apiKeys: 25,
 
         // Global AI budget (applies to chat / generic AI calls)
@@ -97,6 +103,10 @@ const TIER_FEATURES = {
         teamsMax: Infinity,
         teamMembersMax: Infinity,
         auditLog: false,
+        // SSO/SAML is roadmap, not shipped. Declared on every tier (not just
+        // enterprise) so the flag-consumer gate can prove it is identical
+        // across tiers and therefore grants nothing.
+        sso: false,
 
         // Tier-independent daily anti-abuse ceiling on destructive bulk ops
         // (delete/transfer), on top of the (now free) bulkAdvanced gate.
@@ -147,6 +157,10 @@ const TIER_FEATURES = {
         teamsMax: Infinity,
         teamMembersMax: Infinity,
         auditLog: false,
+        // SSO/SAML is roadmap, not shipped. Declared on every tier (not just
+        // enterprise) so the flag-consumer gate can prove it is identical
+        // across tiers and therefore grants nothing.
+        sso: false,
 
         bulkDestructiveDailyMax: BULK_DESTRUCTIVE_DAILY_MAX,
 
@@ -208,10 +222,12 @@ export function getFeatures(tier) {
     return TIER_FEATURES[tier] || TIER_FEATURES.free;
 }
 
-export function canAccess(tier, feature) {
-    const features = getFeatures(tier);
-    return !!features[feature];
-}
+// canAccess(tier, feature) was removed 2026-07-27. It was exported, covered by
+// its own tests, and read by NOTHING in server/ — so it looked like the gating
+// primitive while every real gate went through requireTier / checkUsageLimit.
+// A truthiness check over TIER_FEATURES is also actively wrong for the numeric
+// caps that now dominate the table (a quota of 5 and a quota of 500 are both
+// "true"). tests/build/feature-flag-consumers.test.js keeps it deleted.
 
 export function getTierOrder(tier) {
     const order = { free: 0, pro: 1, enterprise: 2 };

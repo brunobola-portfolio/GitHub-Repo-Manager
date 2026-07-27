@@ -8,7 +8,7 @@
  * (feature-flags.test.js / usage-meter.test.js).
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getFeatures, canAccess } from '../lib/feature-flags.js';
+import { getFeatures } from '../lib/feature-flags.js';
 import { makeIntegrationDb } from './helpers/integration-db.js';
 
 describe('feature-flags — imageGenPerMonth', () => {
@@ -31,8 +31,8 @@ describe('feature-flags — imageGenPerMonth', () => {
         expect(getFeatures('nonexistent-tier').imageGenPerMonth).toBe(5);
     });
 
-    it('canAccess() treats imageGenPerMonth as a numeric cap, not a boolean gate', () => {
-        expect(canAccess('free', 'imageGenPerMonth')).toBe(true);
+    it('imageGenPerMonth is a numeric cap, not a boolean gate', () => {
+        expect(typeof getFeatures('free').imageGenPerMonth).toBe('number');
     });
 });
 

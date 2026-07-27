@@ -193,27 +193,48 @@ export function verifyAuditChain({ from, to } = {}) {
     const rows = db.prepare(query).all(...params);
 
     if (rows.length === 0) {
-        return { valid: true, totalChecked: 0 };
+        return { valid: true, totalChecked: 0, unhashedLegacy: 0 };
+    }
+
+    // Rows written before the hash-chain migration have no row_hash at all.
+    // They are unverifiable, not tampered — reporting them as a break told
+    // every pre-existing instance that its audit log had been altered, which
+    // is the fastest way to teach an operator to ignore this tool.
+    //
+    // They are only tolerated as a CONTIGUOUS PREFIX. An unhashed row sitting
+    // after a hashed one cannot be legacy, so blanking a hash to evade
+    // detection is still caught below.
+    let legacyCount = 0;
+    while (legacyCount < rows.length && !rows[legacyCount].row_hash) legacyCount++;
+
+    const chain = rows.slice(legacyCount);
+    if (chain.length === 0) {
+        return { valid: true, totalChecked: 0, unhashedLegacy: legacyCount };
     }
 
     let expectedPrevHash = null; // tracks previous row's row_hash
 
-    for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
+    for (let i = 0; i < chain.length; i++) {
+        const row = chain[i];
+
+        // An unhashed row inside the chain is tampering, not history.
+        if (!row.row_hash) {
+            return { valid: false, brokenAt: row.id, totalChecked: i, unhashedLegacy: legacyCount };
+        }
 
         // Check prev_hash continuity from the second row onward.
         if (i > 0 && row.prev_hash !== expectedPrevHash) {
-            return { valid: false, brokenAt: row.id, totalChecked: i };
+            return { valid: false, brokenAt: row.id, totalChecked: i, unhashedLegacy: legacyCount };
         }
 
         // Recompute and compare the row's own hash.
         const expected = computeRowHash(row);
         if (row.row_hash !== expected) {
-            return { valid: false, brokenAt: row.id, totalChecked: i };
+            return { valid: false, brokenAt: row.id, totalChecked: i, unhashedLegacy: legacyCount };
         }
 
         expectedPrevHash = row.row_hash;
     }
 
-    return { valid: true, totalChecked: rows.length };
+    return { valid: true, totalChecked: chain.length, unhashedLegacy: legacyCount };
 }

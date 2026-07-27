@@ -5,61 +5,7 @@ import { Card } from '../ui/Card'
 import { Skeleton } from '../ui/Skeleton'
 import { motion } from 'framer-motion'
 import { useMeasuredSize } from '../../hooks/useMeasuredSize'
-
-// GitHub-style language colors — covers the most common languages
-const LANGUAGE_COLORS = {
-    JavaScript: '#f1e05a',
-    TypeScript: '#3178c6',
-    Python: '#3572A5',
-    Java: '#b07219',
-    'C#': '#178600',
-    'C++': '#f34b7d',
-    C: '#555555',
-    Go: '#00ADD8',
-    Rust: '#dea584',
-    Ruby: '#701516',
-    PHP: '#4F5D95',
-    Swift: '#F05138',
-    Kotlin: '#A97BFF',
-    Dart: '#00B4AB',
-    Scala: '#c22d40',
-    R: '#198CE7',
-    Shell: '#89e051',
-    Lua: '#000080',
-    Perl: '#0298c3',
-    Haskell: '#5e5086',
-    Elixir: '#6e4a7e',
-    Clojure: '#db5855',
-    Erlang: '#B83998',
-    Julia: '#a270ba',
-    HTML: '#e34c26',
-    CSS: '#563d7c',
-    SCSS: '#c6538c',
-    Vue: '#41b883',
-    Svelte: '#ff3e00',
-    Jupyter: '#DA5B0B',
-    Dockerfile: '#384d54',
-    HCL: '#844FBA',
-    Nix: '#7e7eff',
-    Zig: '#ec915c',
-    OCaml: '#3be133',
-    'Objective-C': '#438eff',
-    Groovy: '#4298b8',
-    PowerShell: '#012456',
-    Vim: '#199f4b',
-}
-
-// Vibrant fallback palette for languages not in the map
-const FALLBACK_COLORS = [
-    '#6366f1', '#ec4899', '#8b5cf6', '#14b8a6', '#f59e0b',
-    '#ef4444', '#06b6d4', '#10b981', '#f97316', '#84cc16',
-    '#e879f9', '#22d3ee', '#fb923c', '#a78bfa', '#34d399',
-    '#fbbf24', '#f472b6', '#2dd4bf', '#c084fc', '#4ade80',
-]
-
-function getLanguageColor(name, index) {
-    return LANGUAGE_COLORS[name] || FALLBACK_COLORS[index % FALLBACK_COLORS.length]
-}
+import { getLanguageColor } from '../../utils/languageColors'
 
 /**
  * LanguageChart - Pie chart showing language distribution
@@ -68,9 +14,9 @@ export function LanguageChart({ data = [], loading }) {
     // Enrich data with colors and percentages
     const enrichedData = useMemo(() => {
         const total = data.reduce((sum, d) => sum + d.value, 0)
-        return data.map((item, i) => ({
+        return data.map((item) => ({
             ...item,
-            color: item.color || getLanguageColor(item.name, i),
+            color: item.color || getLanguageColor(item.name),
             percentage: total > 0 ? ((item.value / total) * 100).toFixed(1) : 0,
         }))
     }, [data])
@@ -94,7 +40,10 @@ export function LanguageChart({ data = [], loading }) {
             transition={{ duration: 0.5, delay: 0.1 }}
         >
             <Card
-                className="p-4 sm:p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-[var(--ds-duration)]"
+                /* Border + shadow come from Card's --ds-elevation-* defaults —
+                   the local `border-slate-200 shadow-sm` override used to win
+                   through twMerge and reinstated the flat light-mode card. */
+                className="p-4 sm:p-6 transition-all duration-[var(--ds-duration)]"
                 style={{ minHeight: `${chartHeight + 60}px` }}
             >
                 <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-6 flex items-center gap-2">

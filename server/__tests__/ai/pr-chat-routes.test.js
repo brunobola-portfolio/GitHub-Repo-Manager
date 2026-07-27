@@ -207,7 +207,7 @@ describe('POST /api/ai/pr-chat/:owner/:repo/:pr', () => {
 
         // costUSD 0.05 → 5 cents accumulated for the current month.
         const spendRow = testDb.prepare(
-            'SELECT cents FROM ai_spend WHERE user_id = ?'
+            'SELECT cents + micro_cents / 10000 AS cents FROM ai_spend WHERE user_id = ?'
         ).get(USER_ID);
         expect(spendRow?.cents).toBe(5);
 

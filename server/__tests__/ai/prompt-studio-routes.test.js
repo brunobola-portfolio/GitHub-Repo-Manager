@@ -445,7 +445,7 @@ describe('POST /api/ai/prompt-studio/presets/:id/test', () => {
     it('records monthly spend + a PII-safe cost audit after the test run', async () => {
         await request(makeApp())
             .post('/api/ai/prompt-studio/presets/general/test').send({});
-        const cents = testDb.prepare('SELECT cents FROM ai_spend WHERE user_id = ?').get(USER_ID)?.cents;
+        const cents = testDb.prepare('SELECT cents + micro_cents / 10000 AS cents FROM ai_spend WHERE user_id = ?').get(USER_ID)?.cents;
         expect(cents).toBe(4); // 0.04 USD
         const audit = testDb.prepare(
             "SELECT details FROM audit_log_v2 WHERE user_id = ? AND action = 'ai.prompt_test' ORDER BY id DESC LIMIT 1"

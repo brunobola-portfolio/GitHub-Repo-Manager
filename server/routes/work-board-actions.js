@@ -12,7 +12,8 @@ import * as snoozeLib from '../lib/work-board-snooze.js';
 import * as presets from '../lib/work-board-presets.js';
 import { invalidate as invalidateCache, getCached as getCacheRow, putCached as putCacheRow } from '../lib/work-board-cache.js';
 import { githubApi } from '../lib/github-api.js';
-import { generateSummary } from '../lib/work-board-summary.js';
+import { generateSummary, resolveSummaryProvider } from '../lib/work-board-summary.js';
+import { isServerKeyProvider as isServerKeyProviderTop } from '../lib/ai-provider.js';
 import { mapAIErrorToResponse } from '../middleware/ai-error-mapper.js';
 import { checkUsageLimit, incrementUsage, quotaExceededResponse } from '../lib/usage-meter.js';
 import { checkAISpendCap, recordAISpend } from '../lib/ai-spend-cap.js';
@@ -312,7 +313,13 @@ router.post('/ai-summary', requireAuth, async (req, res) => {
     // checkAISpendCap/recordAISpend pair used across the AI surface wherever
     // a route can't go through guardedGenerate directly (see
     // server/routes/ai/core.js's /ai/chat for the canonical shape).
-    const spend = checkAISpendCap(userId);
+    //
+    // The provider is resolved first so the cap can be skipped for BYOK: it
+    // exists to protect the operator's wallet, and a user on their own key
+    // costs the operator nothing. The resolved provider is handed to
+    // generateSummary so the endpoint-safety checks do not run twice.
+    const summaryProvider = await resolveSummaryProvider(userId).catch(() => null);
+    const spend = checkAISpendCap(userId, { billsOperator: isServerKeyProviderTop(summaryProvider) });
     if (!spend.allowed) {
         return res.status(429).json({
             code: 'AI_SPEND_CAP_REACHED',
@@ -340,13 +347,13 @@ router.post('/ai-summary', requireAuth, async (req, res) => {
         try { trend7d = getSnapshots(db, userId, 7); } catch (e) {
             logger.warn({ err: e, userId }, '[ai-summary] kpi snapshot read failed');
         }
-        const { costUSD, ...summary } = await generateSummary({ userId, dataSources: { ...dataSources, trend7d } });
+        const { costUSD, billsOperator, ...summary } = await generateSummary({ userId, dataSources: { ...dataSources, trend7d }, provider: summaryProvider });
         try { putCacheRow(userId, 'ai_summary', summary, null, AI_SUMMARY_CACHE_TTL_SEC); } catch (e) {
             logger.warn({ err: e, userId }, '[ai-summary] cache write failed');
         }
         aiSummaryLastCall.set(userId, now);
         incrementUsage(userId, 'ai_queries');
-        recordAISpend(userId, costUSD);
+        if (billsOperator) recordAISpend(userId, costUSD);
         res.json({ data: summary, meta: { cached: false, generatedAt: new Date() } });
     } catch (e) {
         // Coded provider errors → friendly mapped responses. Order matters:
@@ -403,25 +410,25 @@ router.post('/suggest-action', requireAuth, suggestActionLimiter, validateBody(s
         return res.status(429).json(quotaExceededResponse({ ...quota, metric: 'ai_queries' }));
     }
 
-    // Monthly AI spend cap (OWASP LLM10) — additive to the ai_queries quota
-    // above; mirrors the manual checkAISpendCap/recordAISpend pair used
-    // across the AI surface wherever a route can't go through guardedGenerate
-    // directly (see server/routes/ai/core.js's /ai/chat for the canonical shape).
-    const spend = checkAISpendCap(userId);
-    if (!spend.allowed) {
-        return res.status(429).json({
-            code: 'AI_SPEND_CAP_REACHED',
-            error: 'Monthly AI spend limit reached. Try again next month or raise the cap.',
-            spent_cents: spend.spentCents,
-            cap_cents: spend.capCents,
-        });
-    }
-
     try {
-        const { createProviderForUser } = await import('../lib/ai-provider.js');
+        const { createProviderForUser, isServerKeyProvider } = await import('../lib/ai-provider.js');
         const provider = await createProviderForUser(userId, 'completion', { featureKey: 'WORK_BOARD_SUGGEST' });
         if (!provider) {
             return errorResponse(res, 403, 'AI not configured — add a provider in Settings', 'ai_not_configured');
+        }
+
+        // Monthly AI spend cap (OWASP LLM10) — additive to the ai_queries
+        // quota above. Checked AFTER the provider resolves because the cap
+        // only applies when the operator is paying: a BYOK user spends their
+        // own money and must never be throttled by the operator's ceiling.
+        const spend = checkAISpendCap(userId, { billsOperator: isServerKeyProvider(provider) });
+        if (!spend.allowed) {
+            return res.status(429).json({
+                code: 'AI_SPEND_CAP_REACHED',
+                error: 'Monthly AI spend limit reached. Try again next month or raise the cap.',
+                spent_cents: spend.spentCents,
+                cap_cents: spend.capCents,
+            });
         }
 
         // Check 30-min cache
@@ -443,7 +450,7 @@ router.post('/suggest-action', requireAuth, suggestActionLimiter, validateBody(s
             // abuse of the free fallback path is bounded by
             // suggestActionLimiter (10/hr/user) above.
             incrementUsage(userId, 'ai_queries');
-            recordAISpend(userId, result?.costUSD);
+            if (isServerKeyProvider(provider)) recordAISpend(userId, result?.costUSD);
             const parsed = result?.parsed || null;
             if (typeof parsed?.pingComment === 'string' && parsed.pingComment.trim()) {
                 pingComment = parsed.pingComment.trim().slice(0, 280);
@@ -475,25 +482,25 @@ router.post('/draft-comment', requireAuth, draftCommentLimiter, validateBody(dra
         return res.status(429).json(quotaExceededResponse({ ...quota, metric: 'ai_queries' }));
     }
 
-    // Monthly AI spend cap (OWASP LLM10) — additive to the ai_queries quota
-    // above; mirrors the manual checkAISpendCap/recordAISpend pair used
-    // across the AI surface wherever a route can't go through guardedGenerate
-    // directly (see server/routes/ai/core.js's /ai/chat for the canonical shape).
-    const spend = checkAISpendCap(userId);
-    if (!spend.allowed) {
-        return res.status(429).json({
-            code: 'AI_SPEND_CAP_REACHED',
-            error: 'Monthly AI spend limit reached. Try again next month or raise the cap.',
-            spent_cents: spend.spentCents,
-            cap_cents: spend.capCents,
-        });
-    }
-
     try {
-        const { createProviderForUser } = await import('../lib/ai-provider.js');
+        const { createProviderForUser, isServerKeyProvider } = await import('../lib/ai-provider.js');
         const provider = await createProviderForUser(userId, 'completion', { featureKey: 'WORK_BOARD_DRAFT' });
         if (!provider) {
             return errorResponse(res, 403, 'AI not configured — add a provider in Settings', 'ai_not_configured');
+        }
+
+        // Monthly AI spend cap (OWASP LLM10) — additive to the ai_queries
+        // quota above. Checked AFTER the provider resolves because the cap
+        // only applies when the operator is paying: a BYOK user spends their
+        // own money and must never be throttled by the operator's ceiling.
+        const spend = checkAISpendCap(userId, { billsOperator: isServerKeyProvider(provider) });
+        if (!spend.allowed) {
+            return res.status(429).json({
+                code: 'AI_SPEND_CAP_REACHED',
+                error: 'Monthly AI spend limit reached. Try again next month or raise the cap.',
+                spent_cents: spend.spentCents,
+                cap_cents: spend.capCents,
+            });
         }
 
         // Fetch PR diff from GitHub (first 4 KB)
@@ -518,7 +525,7 @@ router.post('/draft-comment', requireAuth, draftCommentLimiter, validateBody(dra
         const result = await provider.generate({ prompt });
         const draft = (result?.text || result?.parsed?.text || '').trim().slice(0, 300);
         incrementUsage(userId, 'ai_queries');
-        recordAISpend(userId, result?.costUSD);
+        if (isServerKeyProvider(provider)) recordAISpend(userId, result?.costUSD);
         res.json({ draft });
     } catch (e) {
         errorResponse(res, 500, safeError(e, 'Failed to draft comment'));

@@ -12,7 +12,23 @@ import os from 'os';
 import path from 'path';
 import Database from 'better-sqlite3';
 
-import { runDbBackupOnce, pruneBackups, resolveBackupDir } from '../lib/db-backup.js';
+import { runDbBackupOnce, pruneBackups, resolveBackupDir, listBackups, newestBackup, sweepPartials } from '../lib/db-backup.js';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Filename db-backup.js would write for a given instant. */
+function stampName(date) {
+    return `manager-${date.toISOString().replace(/[:.]/g, '-')}.db`;
+}
+
+/** Seed a backup file whose embedded stamp says it was taken `daysAgo` days ago. */
+function seedBackup(dir, daysAgo, { hour = 3 } = {}) {
+    const d = new Date(Date.now() - daysAgo * DAY_MS);
+    d.setUTCHours(hour, 0, 0, 0);
+    const name = stampName(d);
+    fs.writeFileSync(path.join(dir, name), 'x');
+    return name;
+}
 
 let tmpDir;
 let srcDb;
@@ -36,6 +52,8 @@ afterEach(() => {
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch { /* best effort */ }
     delete process.env.DB_BACKUP_DIR;
     delete process.env.DB_BACKUP_KEEP;
+    delete process.env.DB_BACKUP_KEEP_DAYS;
+    delete process.env.DB_BACKUP_MIN_INTERVAL_HOURS;
 });
 
 describe('runDbBackupOnce', () => {
@@ -146,6 +164,149 @@ describe('pruneBackups', () => {
     });
 });
 
+describe('retention is restart-proof', () => {
+    let backupDir;
+
+    beforeEach(() => {
+        backupDir = path.join(tmpDir, 'backups');
+        fs.mkdirSync(backupDir, { recursive: true });
+    });
+
+    it('keeps the newest backup of each of the last N days on top of the count tier', () => {
+        // 20 days of daily history, one file each.
+        for (let d = 1; d <= 20; d++) seedBackup(backupDir, d);
+
+        // keep=3 alone would leave 3 files; the daily tier protects all 20.
+        const removed = pruneBackups(backupDir, 3, { keepDailyDays: 30 });
+        expect(removed).toBe(0);
+        expect(listBackups(backupDir)).toHaveLength(20);
+    });
+
+    it('drops all but the newest backup of a day once that day has several', () => {
+        const morning = seedBackup(backupDir, 1, { hour: 1 });
+        const noon = seedBackup(backupDir, 1, { hour: 12 });
+        const evening = seedBackup(backupDir, 1, { hour: 22 });
+
+        pruneBackups(backupDir, 1, { keepDailyDays: 30 });
+        const left = fs.readdirSync(backupDir);
+        // keep=1 protects `evening`, which is also that day's newest.
+        expect(left).toEqual([evening]);
+        expect(left).not.toContain(morning);
+        expect(left).not.toContain(noon);
+    });
+
+    it('prunes days older than the daily window', () => {
+        seedBackup(backupDir, 60);
+        seedBackup(backupDir, 45);
+        const recent = seedBackup(backupDir, 2);
+        const newest = seedBackup(backupDir, 1);
+
+        const removed = pruneBackups(backupDir, 1, { keepDailyDays: 30 });
+        expect(removed).toBe(2);
+        expect(fs.readdirSync(backupDir).sort()).toEqual([recent, newest].sort());
+    });
+
+    it('ten process restarts in quick succession do NOT destroy older daily backups', async () => {
+        const historical = [];
+        for (let d = 1; d <= 25; d++) historical.push(seedBackup(backupDir, d));
+
+        // Ten boots in a row, each firing the daily maintenance pass. Only the
+        // first gets past the min-interval floor; the rest are no-ops.
+        for (let boot = 0; boot < 10; boot++) {
+            await runDbBackupOnce({ database: srcDb, dir: backupDir });
+        }
+
+        const remaining = new Set(fs.readdirSync(backupDir));
+        for (const name of historical) {
+            expect(remaining.has(name), `${name} was rotated away by restart churn`).toBe(true);
+        }
+        expect(remaining.size).toBe(26); // 25 historical + 1 fresh
+    });
+
+    it('history survives even when the min-interval floor is disabled', async () => {
+        // Isolates the daily tier: force ten real backups minutes apart, which
+        // under the old count-only policy (keep 7) wiped everything older.
+        const historical = [];
+        for (let d = 1; d <= 25; d++) historical.push(seedBackup(backupDir, d));
+
+        for (let boot = 0; boot < 10; boot++) {
+            await runDbBackupOnce({ database: srcDb, dir: backupDir, minIntervalHours: 0 });
+        }
+
+        const remaining = new Set(fs.readdirSync(backupDir));
+        for (const name of historical) {
+            expect(remaining.has(name), `${name} was rotated away by restart churn`).toBe(true);
+        }
+    });
+
+    it('skips the backup entirely when the newest one is younger than the floor', async () => {
+        const first = await runDbBackupOnce({ database: srcDb, dir: backupDir });
+        expect(first.skipped).toBe(false);
+
+        const second = await runDbBackupOnce({ database: srcDb, dir: backupDir });
+        expect(second).toMatchObject({ skipped: true, reason: 'too-soon' });
+        expect(fs.readdirSync(backupDir)).toHaveLength(1);
+    });
+
+    it('takes a new backup once the floor has elapsed', async () => {
+        seedBackup(backupDir, 1); // yesterday — older than the 6h floor
+        const result = await runDbBackupOnce({ database: srcDb, dir: backupDir });
+        expect(result.skipped).toBe(false);
+        expect(fs.readdirSync(backupDir)).toHaveLength(2);
+    });
+
+    it('honors DB_BACKUP_MIN_INTERVAL_HOURS', async () => {
+        seedBackup(backupDir, 2);
+        process.env.DB_BACKUP_MIN_INTERVAL_HOURS = '72';
+        const result = await runDbBackupOnce({ database: srcDb, dir: backupDir });
+        expect(result).toMatchObject({ skipped: true, reason: 'too-soon' });
+    });
+
+    it('minIntervalHours = 0 forces a backup regardless of freshness', async () => {
+        await runDbBackupOnce({ database: srcDb, dir: backupDir, minIntervalHours: 0 });
+        await runDbBackupOnce({ database: srcDb, dir: backupDir, minIntervalHours: 0 });
+        expect(fs.readdirSync(backupDir).length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('DB_BACKUP_KEEP still drives the count tier', async () => {
+        // Nine backups all taken on the same (simulated) day, so the daily tier
+        // protects exactly one of them and DB_BACKUP_KEEP decides the rest.
+        const base = new Date(Date.now() - DAY_MS);
+        base.setUTCHours(0, 0, 0, 0);
+        for (let h = 0; h < 9; h++) {
+            const d = new Date(base.getTime() + h * 60 * 60 * 1000);
+            fs.writeFileSync(path.join(backupDir, stampName(d)), 'x');
+        }
+        process.env.DB_BACKUP_KEEP = '4';
+        await runDbBackupOnce({ database: srcDb, dir: backupDir });
+        // 4 most recent (the new one + the 3 newest from yesterday) — the
+        // yesterday-newest is already inside that set.
+        expect(fs.readdirSync(backupDir)).toHaveLength(4);
+    });
+});
+
+describe('listBackups / newestBackup', () => {
+    it('orders by the timestamp embedded in the filename, newest first', () => {
+        const dir = path.join(tmpDir, 'l');
+        fs.mkdirSync(dir, { recursive: true });
+        const old = seedBackup(dir, 5);
+        const mid = seedBackup(dir, 3);
+        const fresh = seedBackup(dir, 1);
+
+        expect(listBackups(dir).map((e) => e.name)).toEqual([fresh, mid, old]);
+        expect(newestBackup(dir).name).toBe(fresh);
+    });
+
+    it('ignores non-backup files and returns [] for a missing dir', () => {
+        const dir = path.join(tmpDir, 'l2');
+        fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(path.join(dir, 'notes.txt'), 'x');
+        expect(listBackups(dir)).toEqual([]);
+        expect(newestBackup(dir)).toBeNull();
+        expect(listBackups(path.join(tmpDir, 'nope'))).toEqual([]);
+    });
+});
+
 describe('resolveBackupDir', () => {
     it('returns null when explicitly disabled', () => {
         process.env.DB_BACKUP_DIR = '';
@@ -167,3 +328,63 @@ describe('resolveBackupDir', () => {
         expect(resolveBackupDir(null)).toBeNull();
     });
 });
+
+/**
+ * A backup that dies mid-write must not become "the newest backup".
+ *
+ * Writing straight to the final name meant an ENOSPC halfway through left a
+ * truncated manager-*.db that newestBackup() reported as most recent — so the
+ * min-interval guard suppressed every retry for the next
+ * DB_BACKUP_MIN_INTERVAL_HOURS, and pruneBackups counted the corpse against
+ * the retention budget, evicting a good backup to keep a broken one.
+ */
+describe('runDbBackupOnce — a failed backup leaves nothing behind', () => {
+    /** A database stand-in whose online backup always fails. */
+    function failingDb(dir) {
+        return {
+            name: path.join(dir, 'src.db'),
+            backup: async (dest) => {
+                // Mirror the real failure: bytes land, then the write dies.
+                fs.writeFileSync(dest, 'truncated-garbage');
+                throw new Error('ENOSPC: no space left on device');
+            },
+        };
+    }
+
+    it('does not leave a .db file that newestBackup would pick up', async () => {
+        const backupDir = path.join(tmpDir, 'fail-backups');
+        fs.mkdirSync(backupDir, { recursive: true });
+
+        await expect(runDbBackupOnce({ database: failingDb(tmpDir), dir: backupDir }))
+            .rejects.toThrow(/ENOSPC/);
+
+        expect(listBackups(backupDir)).toEqual([]);
+        expect(newestBackup(backupDir)).toBeNull();
+        expect(fs.readdirSync(backupDir)).toEqual([]);
+    });
+
+    it('a good backup still succeeds right after a failed one — no interval lockout', async () => {
+        const backupDir = path.join(tmpDir, 'recover-backups');
+        fs.mkdirSync(backupDir, { recursive: true });
+
+        await expect(runDbBackupOnce({ database: failingDb(tmpDir), dir: backupDir }))
+            .rejects.toThrow(/ENOSPC/);
+
+        const result = await runDbBackupOnce({ database: srcDb, dir: backupDir });
+        expect(result.skipped).toBe(false);
+        expect(listBackups(backupDir)).toHaveLength(1);
+    });
+
+    it('sweepPartials clears leftovers from a previous crash', () => {
+        const backupDir = path.join(tmpDir, 'sweep-backups');
+        fs.mkdirSync(backupDir, { recursive: true });
+        fs.writeFileSync(path.join(backupDir, 'manager-2026-01-01T00-00-00-000Z.db.part'), 'x');
+        fs.writeFileSync(path.join(backupDir, 'manager-2026-01-02T00-00-00-000Z.db'), 'keep');
+        fs.writeFileSync(path.join(backupDir, 'notes.txt'), 'untouched');
+
+        expect(sweepPartials(backupDir)).toBe(1);
+        expect(fs.readdirSync(backupDir).sort())
+            .toEqual(['manager-2026-01-02T00-00-00-000Z.db', 'notes.txt']);
+    });
+});
+

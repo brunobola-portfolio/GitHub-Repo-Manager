@@ -1,7 +1,7 @@
 {
   "name": "github-repo-manager",
   "private": false,
-  "version": "4.10.0",
+  "version": "4.11.0",
   "type": "module",
   "engines": {
     "node": ">=20 <23"
@@ -34,8 +34,8 @@
     "dev:kill": "node scripts/kill-dev-ports.js",
     "build": "vite build",
     "build:analyze": "cross-env ANALYZE=true vite build",
-    "check:bundle-size": "node scripts/check-bundle-size.mjs",
     "lint": "eslint . --max-warnings 0",
+    "guards": "node scripts/check-debug-statements.mjs --all && node scripts/check-no-static-mock-imports.mjs --all && node scripts/check-no-raw-z-index.mjs --all",
     "lint:fix": "eslint . --fix",
     "format": "eslint . --fix",
     "db:init": "node -e \"import('./server/db.js').then(m => { m.initDB(); console.log('DB initialised'); process.exit(0); })\"",
@@ -58,6 +58,7 @@
     "retention:run": "node server/scripts/retention.js",
     "retention:dry": "node server/scripts/retention.js --dry-run",
     "admin:grant": "node server/scripts/admin-grant.mjs",
+    "audit:verify": "node server/scripts/verify-audit-chain.mjs",
     "admin:revoke": "node server/scripts/admin-grant.mjs --revoke",
     "admin:dlq": "node server/scripts/admin-dlq.mjs",
     "admin:dlq:sweep": "node server/scripts/dlq-sweep.mjs",

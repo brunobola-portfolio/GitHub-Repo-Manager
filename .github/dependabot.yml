@@ -12,3 +12,33 @@ updates:
     # Workflow files that use SHA-pinned actions are auto-updated.
     # Tag-pinned workflows (ci.yml, cla.yml, deploy.yml, docker.yml) get
     # PRs too but those only bump tags — SHA pinning lives in mint-license.yml.
+
+  # npm was missing entirely, so nothing watched the dependency tree: the repo
+  # accumulated 41 outdated packages and 4 high-severity advisories (postcss,
+  # shell-quote via concurrently, brace-expansion via eslint) — all dev-only
+  # and all fixable inside existing semver ranges. Production runtime was
+  # clean (`npm audit --omit=dev` -> 0), which is exactly why it went unnoticed.
+  #
+  # Dependabot resolves package-lock.json on Linux. That matters here: a
+  # lockfile regenerated on Windows makes CI's `npm ci` fail, so letting
+  # Dependabot own routine bumps is safer than doing them locally.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      # Minor/patch bumps land as two batched PRs a week. Majors are
+      # deliberately NOT grouped — each one gets its own PR and its own full
+      # CI run, because a breaking bump buried in a 20-package diff is
+      # unreviewable (react/vite/vitest/better-sqlite3 all live here).
+      npm-production-minor:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+      npm-development-minor:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"

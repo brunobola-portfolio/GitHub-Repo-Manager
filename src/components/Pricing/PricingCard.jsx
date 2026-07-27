@@ -20,7 +20,7 @@ function FeatureRow({ label, included, highlighted, enterprise }) {
             ? highlighted
               ? 'bg-indigo-500/20 text-indigo-400'
               : enterprise
-                ? 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                ? 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400'
                 : 'bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
             : 'bg-slate-100 dark:bg-white/[0.05] text-slate-300 dark:text-slate-600'
           }`}
@@ -36,7 +36,7 @@ function FeatureRow({ label, included, highlighted, enterprise }) {
             ? highlighted
               ? 'text-slate-200'
               : 'text-slate-700 dark:text-slate-200'
-            : 'text-slate-400 dark:text-slate-500'
+            : 'text-slate-500 dark:text-slate-400'
           }`}
       >
         {typeof included === 'string' || typeof included === 'number'
@@ -88,7 +88,7 @@ export function PricingCard({
       {/* Badge — absolute on the outer wrapper (no overflow-hidden here) */}
       {highlighted && (
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-20">
-          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] shadow-md">
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-[color:var(--ds-badge-brand-text)] bg-[color:var(--ds-badge-brand-fill)] shadow-md">
             <Zap className="w-3 h-3" />
             Most Popular
           </span>
@@ -97,7 +97,7 @@ export function PricingCard({
 
       {enterprise && (
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-20">
-          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-white bg-amber-500 shadow-lg">
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-[color:var(--ds-badge-enterprise-text)] bg-[color:var(--ds-badge-enterprise-fill)] dark:bg-[color:var(--ds-badge-enterprise-fill-dark)] shadow-lg">
             <Crown className="w-3 h-3" />
             Enterprise
           </span>
@@ -124,7 +124,7 @@ export function PricingCard({
                 ${highlighted
                   ? 'text-indigo-400'
                   : enterprise
-                    ? 'text-amber-600 dark:text-amber-400'
+                    ? 'text-amber-700 dark:text-amber-400'
                     : 'text-slate-500 dark:text-slate-400'
                 }`}
             >
@@ -135,7 +135,7 @@ export function PricingCard({
           {/* Price */}
           <div className="flex items-end gap-2 mb-1">
             {showStrike && (
-              <span className="text-2xl font-bold line-through text-slate-400 dark:text-slate-500 ds-font-display leading-none mb-0.5">
+              <span className="text-2xl font-bold line-through text-slate-500 dark:text-slate-400 ds-font-display leading-none mb-0.5">
                 ${originalPrice}
               </span>
             )}
@@ -151,8 +151,12 @@ export function PricingCard({
               {customPrice != null ? customPrice : price === 0 ? 'Free' : `$${price}`}
             </span>
             {price > 0 && (
-              <span className={`text-sm font-medium mb-1 ${highlighted ? 'text-slate-400' : 'text-slate-400 dark:text-slate-500'}`}>
-                /{period}
+              /* The yearly price is the discounted MONTHLY rate, so the unit
+                 here is always "month". Rendering "/year" next to it stated
+                 $15/year for a $180/year plan — a 12x understatement, on the
+                 largest element of the page, contradicting its own caption. */
+              <span className={`text-sm font-medium mb-1 ${highlighted ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>
+                /month
               </span>
             )}
           </div>
@@ -170,7 +174,7 @@ export function PricingCard({
           {customPrice == null && price > 0 && (
             <p className={`text-sm mb-6 ${highlighted ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
               {period === 'year'
-                ? `$${price * 12}/year · Save 20%`
+                ? `Billed $${price * 12}/year · Save 20%`
                 : 'Billed monthly'
               }
             </p>
@@ -211,7 +215,7 @@ export function PricingCard({
                 ${highlighted
                   ? 'text-indigo-300 hover:text-indigo-200'
                   : enterprise
-                    ? 'text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300'
+                    ? 'text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300'
                     : 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline'
                 }`}
             >

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from 'react'
+import { memo, useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from 'react'
 import { InlineComment } from './InlineComment'
 import { AIInlineComment } from '../AIDeepReview/AIInlineComment'
 import { HunkRiskRail } from './HunkRiskRail'
@@ -113,7 +113,7 @@ function getLang(filename) {
  * @param {Function}  [props.onReply]            - Called with { commentId, body }
  * @param {Function}  [props.onResolve]          - Called with comment id to toggle resolved state
  */
-export function DiffPanel({
+export const DiffPanel = memo(function DiffPanel({
   file,
   viewMode,
   comments,
@@ -200,7 +200,7 @@ export function DiffPanel({
 
   if (!file) {
     return (
-      <div className="flex flex-1 items-center justify-center text-sm text-slate-400 dark:text-slate-500 italic select-none h-full">
+      <div className="flex flex-1 items-center justify-center text-sm text-slate-500 dark:text-slate-400 italic select-none h-full">
         Select a file to view changes
       </div>
     )
@@ -216,13 +216,13 @@ export function DiffPanel({
         <span className="flex-1 truncate text-sm font-mono text-slate-700 dark:text-slate-200" title={filename}>
           {filename}
         </span>
-        <span className="shrink-0 text-xs font-mono text-green-600 dark:text-green-400">
+        <span className="shrink-0 text-xs font-mono ds-text-success">
           +{additions}
         </span>
-        <span className="shrink-0 text-xs font-mono text-red-600 dark:text-red-400">
+        <span className="shrink-0 text-xs font-mono ds-text-danger">
           -{deletions}
         </span>
-        <span className="shrink-0 text-xs text-slate-400 dark:text-slate-500 font-mono uppercase">
+        <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400 font-mono uppercase">
           {lang}
         </span>
       </div>
@@ -330,4 +330,4 @@ export function DiffPanel({
       )}
     </div>
   )
-}
+})

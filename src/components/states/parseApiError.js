@@ -38,12 +38,12 @@ async function parseFromResponse(res, context) {
     }
 
     if (status === 401) {
-        if (body?.error === 'upgrade_required') return upgradeFromBody(body)
+        if (isUpgradeBody(body)) return upgradeFromBody(body)
         return { kind: 'unauthenticated', message: body?.error || 'Sign in to continue' }
     }
 
     if (status === 403) {
-        if (body?.error === 'upgrade_required') return upgradeFromBody(body)
+        if (isUpgradeBody(body)) return upgradeFromBody(body)
         return { kind: 'forbidden', message: body?.error || body?.message || 'Access denied' }
     }
 
@@ -71,11 +71,31 @@ async function parseFromResponse(res, context) {
     }
 }
 
+/**
+ * Two server helpers describe the same situation with different envelopes:
+ * some routes emit `{ error: 'upgrade_required' }`, while
+ * `tierRequiredPayload()` emits `{ error: 'Tier required', code:
+ * 'TIER_REQUIRED_PRO' }`. Matching only the first rendered a red
+ * "Access denied" — with no mention that the feature exists on a paid plan
+ * and no upgrade CTA — for every route using the second.
+ */
+function isUpgradeBody(body) {
+    if (!body) return false
+    return body.error === 'upgrade_required'
+        || (typeof body.code === 'string' && body.code.startsWith('TIER_REQUIRED'))
+}
+
 function upgradeFromBody(body) {
     return {
         kind: 'upgrade-required',
-        tier: body.requiredTier ?? 'pro',
+        tier: body.requiredTier ?? tierFromCode(body.code) ?? 'pro',
         currentTier: body.currentTier ?? 'free',
         message: body.message ?? null,
     }
+}
+
+function tierFromCode(code) {
+    if (typeof code !== 'string') return null
+    const suffix = code.replace(/^TIER_REQUIRED_/, '').toLowerCase()
+    return suffix && suffix !== code.toLowerCase() ? suffix : null
 }

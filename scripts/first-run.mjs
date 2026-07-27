@@ -97,27 +97,68 @@ export function ensureFirstRunEnv({ envPath, dataDir } = {}) {
     }
 }
 
+/**
+ * Persist the port a launcher actually bound to into the .env it loads.
+ *
+ * The Windows launcher scans for a free port when the configured one is taken.
+ * Recording the winner only in the per-run `.grm.port` marker left `.env`
+ * holding the old PORT, so the scan re-ran on every launch and could land
+ * somewhere new each day — while the OAuth callback registered at GitHub still
+ * pointed at the original port. The login then dead-ends on GitHub's
+ * redirect_uri mismatch page, and re-registering the callback fixes it only
+ * until the next launch. Writing the winner back makes the port stable, so
+ * registering the callback once is enough.
+ *
+ * Reuses server/lib/env-file.js's `updateEnvFile` (allowlisted key, atomic
+ * temp-file+rename, mode 0600) rather than a second .env writer: this file
+ * holds CREDENTIAL_ENCRYPTION_KEY, and a truncating write would strand every
+ * encrypted credential in the database. The import is dynamic so the
+ * dependency-free bootstrap path above still runs in a tree where server/ is
+ * absent.
+ *
+ * @param {object} opts
+ * @param {string} [opts.envPath] - target .env (default: GRM_ENV_FILE / repo root)
+ * @param {string|number} opts.port
+ * @returns {Promise<{ envPath: string, created: boolean }>}
+ */
+export async function persistPort({ envPath, port }) {
+    const parsed = Number(port);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 65535) {
+        throw new Error(`[first-run] refusing to persist an invalid PORT: ${port}`);
+    }
+    const { updateEnvFile } = await import('../server/lib/env-file.js');
+    return updateEnvFile({ PORT: String(parsed) }, { envPath });
+}
+
 function parseCliArgs(argv) {
     let envPath;
     let dataDir;
+    let setPort;
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i];
         if (arg === '--data-dir') {
             dataDir = argv[++i];
+        } else if (arg === '--set-port') {
+            setPort = argv[++i];
         } else if (!arg.startsWith('--') && envPath === undefined) {
             envPath = arg;
         }
     }
-    return { envPath, dataDir };
+    return { envPath, dataDir, setPort };
 }
 
 const isMainModule = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMainModule) {
-    const { envPath, dataDir } = parseCliArgs(process.argv.slice(2));
-    const result = ensureFirstRunEnv({ envPath, dataDir });
-    // Idempotent re-runs must stay quiet — this fires on every launch of a
-    // packaged app, and an existing .env means there is nothing to report.
-    if (result.created) {
-        process.stdout.write(`[first-run] generated ${result.envPath}\n`);
+    const { envPath, dataDir, setPort } = parseCliArgs(process.argv.slice(2));
+    if (setPort !== undefined) {
+        const written = await persistPort({ envPath, port: setPort });
+        process.stdout.write(`[first-run] PORT=${setPort} persisted to ${written.envPath}\n`);
+    } else {
+        const result = ensureFirstRunEnv({ envPath, dataDir });
+        // Idempotent re-runs must stay quiet — this fires on every launch of a
+        // packaged app, and an existing .env means there is nothing to report.
+        if (result.created) {
+            process.stdout.write(`[first-run] generated ${result.envPath}\n`);
+        }
     }
 }

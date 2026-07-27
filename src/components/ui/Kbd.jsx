@@ -18,8 +18,11 @@
  *     that "isn't themed"; onSolid blends into the button instead.
  */
 const TONE_CLASSES = {
+  // --ds-kbd-text, not --ds-fg-muted: the generic muted slate measured 4.34:1
+  // light / 4.04:1 dark on --ds-surface-muted, and this pill is on every page.
+  // The token is theme-aware at the :root.dark level, so no `dark:` variant.
   default:
-    'text-[color:var(--ds-fg-muted)] dark:text-[color:var(--ds-fg-muted-dark)] ' +
+    'text-[color:var(--ds-kbd-text)] ' +
     'bg-[color:var(--ds-surface-muted)] dark:bg-[color:var(--ds-surface-muted-dark)] ' +
     'border-[color:var(--ds-border)] dark:border-[color:var(--ds-border-dark)]',
   onSolid: 'text-white/90 bg-white/20 border-white/30',

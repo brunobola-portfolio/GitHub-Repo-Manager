@@ -8,6 +8,20 @@ import logger from '../lib/logger.js';
 
 const router = Router();
 
+// Statuses that mean "this user is already on a paying subscription".
+// 'past_due' counts: the subscription still exists in Stripe and will retry,
+// so opening a second checkout would double-bill rather than fix anything.
+const ACTIVE_SUB_STATUSES = new Set(['active', 'trialing', 'past_due', 'incomplete']);
+
+// Refunds and chargebacks suspend access WITHOUT cancelling the Stripe
+// subscription (see the charge.refunded handler in stripe-webhooks.js), so the
+// customer sees a Free UI over a subscription that is still billing them. They
+// must be blocked from checkout for the same double-charge reason as the set
+// above — but telling them they "already have an active subscription" would be
+// a lie, hence the separate message. Only customer.subscription.deleted, which
+// sets 'cancelled', frees a user to check out again.
+const HELD_SUB_STATUSES = new Set(['refunded', 'disputed']);
+
 const checkoutSchema = z.object({
     tier: z.enum(['pro', 'enterprise']),
     // Billing cadence. Defaults to monthly so older clients (and any caller
@@ -61,8 +75,29 @@ router.post('/checkout', requireAuth, requireStripe, async (req, res) => {
         const stripe = getStripe();
         const userId = req.session.userId;
 
-        // Get or create Stripe customer
-        let sub = db.prepare('SELECT stripe_customer_id FROM user_subscriptions WHERE user_id = ?').get(userId);
+        let sub = db.prepare(
+            'SELECT stripe_customer_id, stripe_subscription_id, status FROM user_subscriptions WHERE user_id = ?'
+        ).get(userId);
+
+        // A second checkout for a user who already pays creates a SECOND
+        // Stripe subscription, while the webhook's ON CONFLICT(user_id) upsert
+        // overwrites stripe_subscription_id — orphaning the first one, which
+        // keeps billing forever with nothing in our DB pointing at it. Plan
+        // changes belong in the billing portal, which prorates properly.
+        if (sub?.stripe_subscription_id && ACTIVE_SUB_STATUSES.has(sub.status)) {
+            return res.status(409).json({
+                error: 'subscription_exists',
+                message: 'You already have an active subscription. Use the billing portal to change your plan.',
+            });
+        }
+
+        if (sub?.stripe_subscription_id && HELD_SUB_STATUSES.has(sub.status)) {
+            return res.status(409).json({
+                error: 'subscription_on_hold',
+                message: 'Your subscription is on hold after a refund or payment dispute, and is still open in Stripe. Contact support to restore it — starting a new one here would bill you twice.',
+            });
+        }
+
         let customerId = sub?.stripe_customer_id;
 
         if (!customerId) {

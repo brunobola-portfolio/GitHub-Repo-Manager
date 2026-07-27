@@ -219,7 +219,11 @@ describe('POST /repos/:owner/:repo/community-health/generate', () => {
         expect(res.body.code).toBe('ai_not_configured')
     })
 
-    it('returns the canonical 429 AI_SPEND_CAP_REACHED envelope and never resolves a provider when over the monthly cap', async () => {
+    // The provider IS resolved before this check, deliberately: the cap only
+    // applies when the operator is paying, and that is a property of the
+    // resolved provider. The old assertion here ('never resolves a provider')
+    // pinned the pre-BYOK ordering and would forbid the exemption below.
+    it('returns the canonical 429 AI_SPEND_CAP_REACHED envelope when a server-key user is over the monthly cap', async () => {
         mockCheckAISpendCap.mockReturnValue({ allowed: false, capCents: 100, spentCents: 150 })
         const res = await request(makeApp())
             .post('/api/v1/repos/octocat/hello/community-health/generate')
@@ -227,7 +231,25 @@ describe('POST /repos/:owner/:repo/community-health/generate', () => {
 
         expect(res.status).toBe(429)
         expect(res.body.code).toBe('AI_SPEND_CAP_REACHED')
-        expect(createProviderMock).not.toHaveBeenCalled()
+        expect(res.body.spent_cents).toBe(150)
+    })
+
+    it('exempts a BYOK user from the cap — their key, their bill', async () => {
+        const byokProvider = { generate: vi.fn(async () => ({ text: '# Contributing', costUSD: 0.01 })) }
+        Object.defineProperty(byokProvider, 'keySource', { value: 'user', configurable: true })
+        createProviderMock.mockResolvedValueOnce(byokProvider)
+        mockRecordAISpend.mockClear()
+        mockCheckAISpendCap.mockImplementation((_id, opts) =>
+            opts?.billsOperator === false
+                ? { allowed: true }
+                : { allowed: false, capCents: 100, spentCents: 150 })
+
+        const res = await request(makeApp())
+            .post('/api/v1/repos/octocat/hello/community-health/generate')
+            .send({ fileType: 'contributing' })
+
+        expect(res.status).toBe(200)
+        expect(mockRecordAISpend).not.toHaveBeenCalled()
     })
 
     it('never checks the spend cap for the deterministic (no-AI) branch', async () => {

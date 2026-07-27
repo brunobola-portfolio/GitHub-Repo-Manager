@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { checkA11y } from './a11y-helpers.js'
 
 /**
  * PR Review experience — smoke / regression tripwire.
@@ -216,6 +217,34 @@ test.describe('PR Review view', () => {
         // the lazy-view assertions above use — 10s flapped under load.
         await expect(page.getByRole('tab', { name: /pull requests/i }))
             .toBeVisible({ timeout: 15000 })
+    })
+
+    // The axe smoke gate scans ten views and never reached this one, so the PR
+    // Review workspace — the diff surface, the review toolbar, and the risk
+    // pills that were painting white text on the graphic-only fill tokens at
+    // 1.53:1 — had no contrast coverage at all. Scanned here rather than in
+    // a11y-smoke.spec.js because getting to this screen needs the /api/repos/**
+    // stubs this file already sets up.
+    test('has no critical or serious a11y violations (light theme)', async ({ page }) => {
+        await mockApi(page)
+        await openPRReview(page)
+        await expect(page.getByRole('navigation', { name: /breadcrumb/i })).toBeVisible({ timeout: 15000 })
+        await page.waitForLoadState('networkidle')
+        await checkA11y(page)
+    })
+
+    test('has no critical or serious a11y violations (dark theme)', async ({ page }) => {
+        await mockApi(page)
+        // useTheme.jsx reads this exact key on mount; seeding it before any
+        // page script runs means dark renders from first paint.
+        await page.addInitScript(() => {
+            localStorage.setItem('github-repo-manager-theme', 'dark')
+        })
+        await openPRReview(page)
+        await expect(page.getByRole('navigation', { name: /breadcrumb/i })).toBeVisible({ timeout: 15000 })
+        await expect(page.locator('html')).toHaveClass(/dark/)
+        await page.waitForLoadState('networkidle')
+        await checkA11y(page)
     })
 
     test('breadcrumb back link returns to the repo detail view', async ({ page }) => {

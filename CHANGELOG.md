@@ -7,6 +7,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.11.0] - 2026-07-27
+
+Two audit panels' worth of correctness work: money paths, BYOK metering, and
+the honesty of what the product claims. Nothing here changes what the product
+does for a user who was already getting correct behaviour.
+
+### Changed
+- **Two benefits previously advertised on paid tiers were withdrawn.** Neither
+  was ever enforced in code, so no customer loses a capability they had:
+  - The **1,000-repository Free ceiling** never existed — `maxRepos` is
+    unlimited on every tier and repository count is never counted. It has been
+    removed from the commercial licence agreement, the billing guide and the
+    architecture docs, following the eight surfaces corrected in 4.10.
+  - **"Higher AI $ spend-cap headroom"** was identical across tiers, so it
+    differentiated nothing. Where the spend cap is mentioned, the docs now say
+    plainly that it ships disabled and only applies once an operator enables it.
+- **Repo Advisor** is marked operator-enabled on the in-app pricing surfaces.
+  It needs `WORK_BOARD_AI_ENABLED=true` plus a per-user opt-in; the README
+  already said so, the pricing page did not.
+
+### Added
+- **Enterprise audit-log export** — `GET /api/audit/export`, CSV or JSON, with
+  keyset paging and the hash-chain columns so a download can be verified
+  offline. Now documented in the API reference.
+- **`npm run audit:verify`** — the audit-chain integrity CLI that two runbooks
+  already told operators to run, and which did not exist.
+- **Licence revocation** — revoked keys fail closed with an actionable error.
+
+### Fixed
+- **Billing.** A refunded or disputed subscription could be checked out again,
+  billing the customer twice. A *partial* refund downgraded a fully-paying
+  customer to Free. A refund suspension was silently undone the next time the
+  customer opened the billing portal. A deferred licence key (SEPA/Boleto) was
+  lost permanently if the first delivery attempt failed.
+- **BYOK users were metered against the operator's spend cap** at ten call
+  sites, so enabling the cap would have throttled exactly the people costing
+  the operator nothing.
+- **Every AI mutation from PR Review, PR Chat, PR Commands and Prompt Studio
+  returned 403** — the CSRF token was never sent — and surfaced as
+  "Something went wrong" behind a Retry that could not succeed.
+- **BYOK-only deployments were told "AI is not configured"** while their key
+  worked, because the status endpoint only looked at the server key.
+- Exhausting one AI feature's quota blocked every other AI feature for five
+  minutes, naming the wrong feature.
+- An expired session on an AI route was reported as a rejected provider key.
+- Publishing an AI review replaced the app with the error overlay.
+- **Windows self-update aborted** with the server stopped: the resident tray
+  kept a lock on the executable and was never asked to exit.
+- Six text surfaces were below WCAG AA in light theme; the org menu gave a
+  keyboard user no visible focus at all.
+- `http_requests_in_flight` leaked permanently on every abandoned SSE stream.
+- A backup that died mid-write became "the newest backup" and suppressed
+  retries; the email retry worker could send the same licence key twice.
+- Semantic search returned NaN for every result once the corpus held vectors
+  from two different embedding models.
+- `data/updates` grew without limit — one installer and one full database
+  snapshot per update, kept forever.
+
+### Security
+- **GitHub OAuth tokens are encrypted at rest**, in both the SQLite and Redis
+  session backends.
+- **Licence installation no longer self-promotes to admin** on a shared
+  instance. It is scoped to a genuinely fresh single-user install.
+- The Enterprise audit-log CSV export neutralises spreadsheet formulas planted
+  in client-supplied fields.
+- `.gitignore`/`.dockerignore` were filename lists, not patterns —
+  `.env.staging`, `keys/private.key` and `*.pfx` were not ignored.
+
 ## [4.10.0] - 2026-07-22
 
 A system-tray app for the Windows build, plus two installer fixes found in
@@ -432,7 +500,13 @@ zero-AI-cost fallbacks throughout.
 
 - `adm-zip` bumped to 0.6.0 (GHSA memory-allocation DoS).
 
-## [4.5.0] - 2026-07-06
+## [4.5.0] - 2026-07-06 — never tagged
+
+> **Not a released version.** There is no `v4.5.0` git tag and no `v4.5.0`
+> GitHub Release: the work below merged to `main` and first reached users in
+> **[4.6.0](#460---2026-07-19)**. The entry is kept as history — every *tagged*
+> release has an entry here, but this entry has no tag. The compare link at the
+> bottom of this file therefore spans v4.4.0…v4.6.0.
 
 The production-readiness release: a 10-specialist audit (88 findings) followed
 by eight remediation waves executed directly on `main`, plus the Repo Advisor
@@ -2364,8 +2438,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 [4.8.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.7.0...v4.8.0
 [4.7.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.6.1...v4.7.0
 [4.6.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.6.0...v4.6.1
-[4.6.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.5.0...v4.6.0
-[4.5.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.4.0...v4.5.0
+[4.6.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.4.0...v4.6.0
+[4.5.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.4.0...v4.6.0
 [4.4.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.3.0...v4.4.0
 [4.0.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.8.0...v4.0.0
 [3.8.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.7.2...v3.8.0

@@ -268,9 +268,10 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
             <ConfirmModal
                 isOpen={!!confirmAction}
                 onClose={() => setConfirmAction(null)}
-                onConfirm={() => { confirmAction?.onConfirm(); setConfirmAction(null); }}
+                onConfirm={async () => { await confirmAction?.onConfirm(); setConfirmAction(null); }}
                 title={confirmAction?.title}
                 message={confirmAction?.message}
+                requiresInput={confirmAction?.requiresInput}
                 confirmText={confirmAction?.confirmText}
                 variant="danger"
             />

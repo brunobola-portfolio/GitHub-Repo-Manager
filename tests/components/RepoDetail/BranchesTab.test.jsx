@@ -81,7 +81,9 @@ describe('BranchesTab — search / sort / filter', () => {
         renderWithProviders(<BranchesTab api={api} repoData={repoData} />)
         await waitFor(() => screen.getByText('feat/active'))
         fireEvent.change(screen.getByPlaceholderText(/search branches/i), { target: { value: 'feat' } })
-        expect(screen.queryByText('old/stale-branch')).toBeNull()
+        // The search input is debounced (SEARCH_DEBOUNCE_MS) so a large branch
+        // list isn't re-sorted per keystroke — the filter lands on the pause.
+        await waitFor(() => expect(screen.queryByText('old/stale-branch')).toBeNull())
         expect(screen.getByText('feat/active')).toBeInTheDocument()
     })
 

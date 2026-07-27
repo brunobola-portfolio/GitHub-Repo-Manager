@@ -195,7 +195,7 @@ export function WorkBoardSettingsSection() {
                             title="Webhooks"
                             description="Stream GitHub events in real time so your board is always fresh."
                         />
-                        <WebhookConnectPanel tier={tier} />
+                        <WebhookConnectPanel />
                     </section>
 
                     {/* 05 — AI commands */}

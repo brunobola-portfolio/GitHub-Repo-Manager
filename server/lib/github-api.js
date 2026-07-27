@@ -14,9 +14,21 @@
 
 import crypto from 'crypto';
 import logger from './logger.js';
+import { createCache } from './memory-cache.js';
 
 const MAX_STATS_CACHE = 200;
-const MAX_ETAG_CACHE = 2000;
+
+// ETag cache sizing. The old 2000-entry cap counted entries only, and every
+// entry holds a fully parsed GitHub response — a few hundred repo/PR listings
+// are enough to reach hundreds of megabytes that nothing ever reclaims, because
+// insertion-order eviction throws away hot keys long before cold ones. The
+// bound below is deliberately expressed in bytes as well as entries: at most
+// ~300 responses, none larger than 128 KB, all expiring after 10 minutes of
+// disuse. Anything bigger skips the cache — a single 5 MB diff costs more
+// resident memory than the conditional request it would save.
+const MAX_ETAG_CACHE = 300;
+const MAX_ETAG_ENTRY_BYTES = 128 * 1024;
+const ETAG_TTL_MS = 10 * 60 * 1000;
 
 // Retry / backoff tunables
 const MAX_RETRIES = 3;                    // total attempts = MAX_RETRIES + 1 (1 initial + 3 retries)
@@ -49,11 +61,32 @@ export const statsCache = new Map();
 
 /**
  * In-memory ETag cache for GitHub API conditional requests.
- * Stores URL -> { etag, data } mappings. Conditional requests returning
- * 304 Not Modified do not count against the GitHub rate limit.
- * Capped at MAX_ETAG_CACHE entries with oldest-first eviction.
+ * Stores `${userHash}:${url}` -> { etag, data }. Conditional requests that
+ * answer 304 Not Modified do not count against the GitHub rate limit.
+ *
+ * Backed by the shared LRU+TTL cache so a hit refreshes the entry's position:
+ * the keys a user actually polls stay resident and the ones they visited once
+ * age out, which insertion-order eviction got exactly backwards.
  */
-const etagCache = new Map();
+export const etagCache = createCache({
+    ttlMs: ETAG_TTL_MS,
+    maxSize: MAX_ETAG_CACHE,
+});
+
+/**
+ * Byte size of a response body, from Content-Length when GitHub sends it.
+ * Returns null when the size is unknown (chunked responses, test doubles), in
+ * which case the entry-count cap alone bounds the cache.
+ *
+ * @param {Headers} headers
+ * @returns {number|null}
+ */
+function responseBytes(headers) {
+    const raw = headers?.get?.('Content-Length');
+    if (raw === null || raw === undefined) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+}
 
 /**
  * GitHub API rate limit tracking.
@@ -345,6 +378,10 @@ export async function githubApi(path, token, options = {}) {
 
         // Handle 304 Not Modified - return cached data (does not count against rate limit)
         if (res.status === 304 && cached?.data) {
+            // GitHub just confirmed the entry is current, so slide its TTL —
+            // otherwise a key that keeps answering 304 still expires on schedule
+            // and forces a full, rate-limited refetch it never needed.
+            etagCache.set(cacheKey, cached);
             recordSuccess();
             return { data: cached.data, headers: res.headers };
         }
@@ -356,8 +393,14 @@ export async function githubApi(path, token, options = {}) {
             // Cache the ETag and response data for future conditional requests
             const responseEtag = res.headers.get('ETag');
             if (method === 'GET' && responseEtag) {
-                etagCache.set(cacheKey, { etag: responseEtag, data });
-                evictOldest(etagCache, MAX_ETAG_CACHE);
+                const bytes = responseBytes(res.headers);
+                if (bytes !== null && bytes > MAX_ETAG_ENTRY_BYTES) {
+                    // Too big to be worth keeping resident — drop any older
+                    // entry for this key so we don't serve its stale ETag.
+                    etagCache.delete(cacheKey);
+                } else {
+                    etagCache.set(cacheKey, { etag: responseEtag, data });
+                }
             }
             recordSuccess();
             return { data, headers: res.headers };

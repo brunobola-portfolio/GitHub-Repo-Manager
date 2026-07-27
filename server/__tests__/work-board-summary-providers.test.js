@@ -24,7 +24,8 @@ for (const p of PROVIDERS) {
         it('produces a response that satisfies the schema contract', async () => {
             vi.resetModules();
             const provider = makeProvider(p);
-            vi.doMock('../lib/ai-provider.js', () => ({
+            vi.doMock('../lib/ai-provider.js', async (importOriginal) => ({
+                ...(await importOriginal()),
                 createProviderForUser: vi.fn(async () => provider),
                 AI_ERROR_CODE: { INVALID_RESPONSE: 'INVALID_RESPONSE' },
             }));
@@ -77,7 +78,8 @@ describe('AI summary — tolerant fallback', () => {
                 text: `Here is the summary you asked for:\n\`\`\`json\n${JSON.stringify(validPayload)}\n\`\`\`\nLet me know if you want more detail.`,
             });
         const provider = { type: 'openrouter', modelName: 'flaky/free', generate };
-        vi.doMock('../lib/ai-provider.js', () => ({
+        vi.doMock('../lib/ai-provider.js', async (importOriginal) => ({
+                ...(await importOriginal()),
             createProviderForUser: vi.fn(async () => provider),
             AI_ERROR_CODE: { INVALID_RESPONSE: 'INVALID_RESPONSE' },
         }));
@@ -103,7 +105,8 @@ describe('AI summary — tolerant fallback', () => {
             code: 'AUTH',
         }));
         const provider = { type: 'openrouter', modelName: 'm', generate };
-        vi.doMock('../lib/ai-provider.js', () => ({
+        vi.doMock('../lib/ai-provider.js', async (importOriginal) => ({
+                ...(await importOriginal()),
             createProviderForUser: vi.fn(async () => provider),
             AI_ERROR_CODE: { INVALID_RESPONSE: 'INVALID_RESPONSE' },
         }));
@@ -137,7 +140,8 @@ describe('AI summary — tolerant fallback', () => {
             },
         });
         const provider = { type: 'openrouter', modelName: 'minimax/minimax-m2.5:free', generate };
-        vi.doMock('../lib/ai-provider.js', () => ({
+        vi.doMock('../lib/ai-provider.js', async (importOriginal) => ({
+                ...(await importOriginal()),
             createProviderForUser: vi.fn(async () => provider),
             AI_ERROR_CODE: { INVALID_RESPONSE: 'INVALID_RESPONSE' },
         }));
@@ -174,7 +178,8 @@ describe('AI summary — tolerant fallback', () => {
                 }),
             });
         const provider = { type: 'openrouter', modelName: 'm', generate };
-        vi.doMock('../lib/ai-provider.js', () => ({
+        vi.doMock('../lib/ai-provider.js', async (importOriginal) => ({
+                ...(await importOriginal()),
             createProviderForUser: vi.fn(async () => provider),
             AI_ERROR_CODE: { INVALID_RESPONSE: 'INVALID_RESPONSE' },
         }));
@@ -195,7 +200,8 @@ describe('AI summary — tolerant fallback', () => {
             .mockResolvedValueOnce({ text: 'not json at all', parsed: null })
             .mockResolvedValueOnce({ text: 'still not json' });
         const provider = { type: 'openrouter', modelName: 'm', generate };
-        vi.doMock('../lib/ai-provider.js', () => ({
+        vi.doMock('../lib/ai-provider.js', async (importOriginal) => ({
+                ...(await importOriginal()),
             createProviderForUser: vi.fn(async () => provider),
             AI_ERROR_CODE: { INVALID_RESPONSE: 'INVALID_RESPONSE' },
         }));

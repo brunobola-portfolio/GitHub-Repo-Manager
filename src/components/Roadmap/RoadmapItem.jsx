@@ -9,6 +9,12 @@ const TIER_STYLES = {
   All: 'bg-slate-100 dark:bg-white/[0.07] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/[0.10]',
 }
 
+// `tier` is optional by design. Unshipped work carries no tier badge: the
+// free-first rebalance means paid tiers sell headroom, API keys and support —
+// not feature unlocks — so promising a future feature to a specific tier
+// contradicts the pricing model the README states. The only badges that remain
+// are on compliance deliverables that genuinely will be Enterprise-only, and on
+// shipped items where the badge states what is true today.
 export function RoadmapItem({ title, description, tier, index = 0 }) {
   const badgeStyle = TIER_STYLES[tier] || TIER_STYLES.All
 
@@ -29,9 +35,11 @@ export function RoadmapItem({ title, description, tier, index = 0 }) {
         <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-100 leading-snug">
           {title}
         </h4>
-        <span className={`flex-shrink-0 ds-text-micro font-bold px-2 py-0.5 rounded-full ${badgeStyle}`}>
-          {tier}
-        </span>
+        {tier && (
+          <span className={`flex-shrink-0 ds-text-micro font-bold px-2 py-0.5 rounded-full ${badgeStyle}`}>
+            {tier}
+          </span>
+        )}
       </div>
       {description && (
         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mt-1">

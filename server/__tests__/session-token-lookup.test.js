@@ -70,3 +70,78 @@ describe('createSessionTokenLookup', () => {
     expect(await lookup(42)).toBe('gho_new')
   })
 })
+
+/**
+ * The outbox worker calls tokenLookup once per row (up to 50 a tick) and each
+ * uncached call parsed up to 200 session blobs — 10,000 JSON.parse calls per
+ * tick to answer at most 50 distinct questions. The index is built once and
+ * reused for a short, explicit TTL.
+ */
+describe('createSessionTokenLookup — memoization', () => {
+  /** Wrap a db so every prepare().all() is counted. */
+  function countingDb(base) {
+    const calls = { all: 0 }
+    return {
+      calls,
+      prepare(sql) {
+        const stmt = base.prepare(sql)
+        return {
+          get: (...a) => stmt.get(...a),
+          all: (...a) => { calls.all++; return stmt.all(...a) },
+        }
+      },
+    }
+  }
+
+  it('scans the sessions table once for a whole burst of lookups', async () => {
+    const base = makeDb()
+    for (let i = 0; i < 20; i++) seedSession(base, `sid${i}`, i, `gho_${i}`)
+    const counting = countingDb(base)
+    const lookup = createSessionTokenLookup(counting)
+
+    for (let i = 0; i < 20; i++) {
+      expect(await lookup(i)).toBe(`gho_${i}`)
+    }
+    // 1 session scan (the sqlite_master probe uses .get(), not .all()).
+    expect(counting.calls.all).toBe(1)
+  })
+
+  it('a cache miss inside the TTL does not trigger a rescan', async () => {
+    const base = makeDb()
+    seedSession(base, 'sid1', 42, 'gho_abc')
+    const counting = countingDb(base)
+    const lookup = createSessionTokenLookup(counting)
+
+    expect(await lookup(42)).toBe('gho_abc')
+    expect(await lookup(999)).toBe(null)
+    expect(await lookup(999)).toBe(null)
+    expect(counting.calls.all).toBe(1)
+  })
+
+  it('picks up a token change once the TTL has elapsed', async () => {
+    const base = makeDb()
+    seedSession(base, 'sid1', 42, 'gho_old')
+    const lookup = createSessionTokenLookup(base, { cacheTtlMs: 20 })
+
+    expect(await lookup(42)).toBe('gho_old')
+
+    base.prepare('DELETE FROM sessions').run()
+    seedSession(base, 'sid2', 42, 'gho_rotated')
+    // Still inside the TTL — the index is intentionally a moment behind.
+    expect(await lookup(42)).toBe('gho_old')
+
+    await new Promise((r) => setTimeout(r, 30))
+    expect(await lookup(42)).toBe('gho_rotated')
+  })
+
+  it('sees a logout (session deleted) after the TTL', async () => {
+    const base = makeDb()
+    seedSession(base, 'sid1', 42, 'gho_abc')
+    const lookup = createSessionTokenLookup(base, { cacheTtlMs: 20 })
+    expect(await lookup(42)).toBe('gho_abc')
+
+    base.prepare('DELETE FROM sessions').run()
+    await new Promise((r) => setTimeout(r, 30))
+    expect(await lookup(42)).toBe(null)
+  })
+})

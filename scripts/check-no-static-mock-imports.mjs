@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * Pre-commit guard: reject staged JS/JSX files that contain a top-level
- * `import ... from '.../__mocks__/...'` statement.
+ * Guard: reject JS/JSX files that contain a top-level
+ * `import ... from '.../__mocks__/...'` statement. Invoked by lint-staged with
+ * explicit paths, and by `npm run guards` (CI) with `--all`.
  *
  * Why this matters: Vite's tree-shaker can drop unused exports of an
  * imported module, but it CANNOT drop a still-imported module from the
@@ -22,7 +23,8 @@
  * works in dev, tests pass, prod build succeeds — only the bundle
  * silently grows). This guard makes them impossible to commit.
  *
- * Bypass in emergencies with `git commit --no-verify`.
+ * Bypass a single commit in emergencies with `git commit --no-verify` — but
+ * the `--all` sweep in CI still catches it, which is the point.
  *
  * See: feedback_vite_inline_dce_guards in project memory,
  *      docs/reports/2026-05-09-huge-diff-rendering-validation.md
@@ -30,6 +32,7 @@
  *      mock-hygiene specialist review summarised in commit ab1f1fd).
  */
 
+import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { relative } from 'node:path'
 
@@ -37,7 +40,27 @@ import { relative } from 'node:path'
 // at the start of a non-comment line. Requoted to handle both single + double.
 const STATIC_MOCK_IMPORT_RE = /^\s*import\b[^;]*['"][^'"]*__mocks__[^'"]*['"]/
 
-const files = process.argv.slice(2)
+// Only src/ ships to users; the whole point of this guard is the production
+// bundle, so tests/ and server/ are out of scope (and tests/ is whitelisted
+// below anyway).
+const ALL_ROOTS = ['src']
+const ALL_EXT_RE = /\.(?:js|jsx)$/
+
+// A pre-commit hook only sees staged files and is trivially bypassed
+// (`--no-verify`, a clone where husky never ran, an edit made in the GitHub
+// web UI). `--all` re-checks every tracked file so CI enforces the same rule
+// on code that never passed through a local hook.
+function trackedFiles() {
+  return execFileSync('git', ['ls-files', '-z', '--', ...ALL_ROOTS], {
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+  })
+    .split('\0')
+    .filter((f) => f && ALL_EXT_RE.test(f))
+}
+
+const argv = process.argv.slice(2)
+const files = argv.includes('--all') ? trackedFiles() : argv
 if (files.length === 0) {
   process.exit(0)
 }
@@ -87,4 +110,10 @@ if (violations > 0) {
   console.error('Why: a static import pins the mock module in the production bundle even')
   console.error('     when the runtime branch is dead-code-eliminated.')
   process.exit(1)
+}
+
+// See check-debug-statements.mjs: the count makes an empty sweep (a guard that
+// silently checked nothing) visible instead of passing as green.
+if (argv.includes('--all')) {
+  console.log(`check-no-static-mock-imports: ${files.length} tracked file(s) checked, 0 violations`)
 }

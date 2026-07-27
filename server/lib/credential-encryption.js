@@ -129,3 +129,95 @@ export function decryptCredentials(encoded) {
 export function isSchedulingEnabled() {
   return !!process.env.SESSION_SECRET
 }
+
+// ---------------------------------------------------------------------------
+// Session-field helpers (used by lib/session-store.js + lib/session-token-lookup.js)
+// ---------------------------------------------------------------------------
+//
+// Persisted sessions carry the GitHub OAuth token, so they go through the SAME
+// blob format as every other stored credential — there is exactly one crypto
+// path here. What they cannot afford is the KDF: deriveKey() only caches per
+// (version, salt, secret) and encryptCredentials() mints a fresh random salt per
+// blob, so an un-memoized session store would pay a full PBKDF2-SHA512 @210k
+// derivation (~200ms on the reference machine) on every session write AND on the
+// first read of every rewritten blob. Session reads run on every authenticated
+// request, and the gh-outbox token scan sees up to 200 blobs at once.
+//
+// These wrappers memoize both directions, so a token costs one derivation per
+// process and every later hit is a Map lookup:
+//   - encrypt: a given plaintext always yields the byte-identical blob it was
+//     first encrypted into, so re-saving an unchanged session does NOT rotate
+//     the salt — which would otherwise force a fresh derivation on the next read.
+//   - decrypt: an already-seen blob resolves without touching crypto, which also
+//     keeps the store immune to deriveKey's 256-entry key cache being flushed by
+//     unrelated credential traffic (Azure PATs, BYOK keys).
+//
+// The memo holds plaintext tokens in process memory. That is not a new exposure:
+// express-session already keeps req.session.accessToken in memory for the life of
+// every request. The threat this encryption closes is an at-rest read of
+// manager.db, which ships in the same directory as the plaintext .env. Reusing
+// one ciphertext per token also means two live sessions of the same user store
+// identical blobs — no leak either, since `userId` deliberately stays in
+// cleartext in the same row so the gh-outbox scan can index on it.
+//
+// Rotation caveat: a process that has already memoized a token keeps writing the
+// blob encrypted under the key that was primary at memo time. Rotation is an env
+// change and therefore a restart, after which the memo starts empty and every
+// write lands on the new primary.
+const SESSION_FIELD_MEMO_MAX = 1000
+const sessionEncryptMemo = new Map()
+const sessionDecryptMemo = new Map()
+
+function rememberSessionField(plaintext, blob) {
+  // Clear-on-full (same bounded-cache idiom as keyCache above): an LRU would
+  // buy nothing here because every entry is equally likely to be re-read.
+  if (sessionEncryptMemo.size >= SESSION_FIELD_MEMO_MAX) sessionEncryptMemo.clear()
+  if (sessionDecryptMemo.size >= SESSION_FIELD_MEMO_MAX) sessionDecryptMemo.clear()
+  sessionEncryptMemo.set(plaintext, blob)
+  sessionDecryptMemo.set(blob, plaintext)
+}
+
+/**
+ * Encrypt a single session field (the GitHub OAuth token).
+ * @param {string} value
+ * @returns {string} versioned ciphertext blob
+ */
+export function encryptSessionField(value) {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new Error('encryptSessionField requires a non-empty string')
+  }
+  const hit = sessionEncryptMemo.get(value)
+  if (hit !== undefined) return hit
+  const blob = encryptCredentials(value)
+  rememberSessionField(value, blob)
+  return blob
+}
+
+/**
+ * Decrypt a session field produced by encryptSessionField.
+ * @param {string} blob
+ * @returns {string} the plaintext value
+ */
+export function decryptSessionField(blob) {
+  const hit = sessionDecryptMemo.get(blob)
+  if (hit !== undefined) return hit
+  const value = decryptCredentials(blob)
+  // decryptCredentials JSON.parses whatever was stored; anything but a string
+  // means the blob was not written by encryptSessionField and must not be
+  // handed back as a token.
+  if (typeof value !== 'string') {
+    throw new Error('session field did not decrypt to a string')
+  }
+  rememberSessionField(value, blob)
+  return value
+}
+
+/**
+ * Drop the session-field memo. Needed when the encryption key changes inside a
+ * live process — which in practice only happens in tests, since rotating
+ * CREDENTIAL_ENCRYPTION_KEY is an env change and therefore a restart.
+ */
+export function resetSessionFieldCache() {
+  sessionEncryptMemo.clear()
+  sessionDecryptMemo.clear()
+}

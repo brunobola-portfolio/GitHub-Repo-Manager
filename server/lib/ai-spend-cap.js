@@ -34,6 +34,18 @@ export function usdToCents(costUSD) {
     return cents > 0 ? cents : 0;
 }
 
+// 1 cent = 10,000 micro-cents. Fine enough that every realistic per-call cost
+// is an exact integer (a $0.0004 call is 4,000 micro-cents, not a rounding
+// artifact), and integer arithmetic throughout so accumulated spend can never
+// drift the way a floating-point column would.
+const MICRO_CENTS_PER_CENT = 10_000;
+
+/** Convert a USD cost to micro-cents, clamped to >= 0. */
+export function usdToMicroCents(costUSD) {
+    const micro = Math.round((Number(costUSD) || 0) * 100 * MICRO_CENTS_PER_CENT);
+    return micro > 0 ? micro : 0;
+}
+
 /** Parse an env var into a non-negative integer cents value, or null if unset/invalid. */
 function parseCapEnv(raw) {
     if (raw === undefined || raw === '') return null;
@@ -67,23 +79,43 @@ export function resolveSpendCapCents(tier) {
 }
 
 /** Accumulate a call's cost into the user's running monthly spend. No-op for
- *  zero / unknown cost (e.g. a provider/model without pricing data). */
+ *  zero / unknown cost (e.g. a provider/model without pricing data).
+ *
+ *  Accumulates in micro-cents. Rounding each call to whole cents first meant
+ *  every sub-half-cent call recorded 0, so thousands of flash-model calls
+ *  summed to a recorded spend of zero and the cap never fired. */
 export function recordAISpend(userId, costUSD) {
-    const cents = usdToCents(costUSD);
-    if (cents <= 0) return;
+    const micro = usdToMicroCents(costUSD);
+    if (micro <= 0) return;
     db.prepare(`
-        INSERT INTO ai_spend (user_id, month, cents)
-        VALUES (?, ?, ?)
-        ON CONFLICT(user_id, month) DO UPDATE SET cents = cents + excluded.cents
-    `).run(userId, getCurrentMonthKey(), cents);
+        INSERT INTO ai_spend (user_id, month, cents, micro_cents)
+        VALUES (?, ?, 0, ?)
+        ON CONFLICT(user_id, month) DO UPDATE SET micro_cents = micro_cents + excluded.micro_cents
+    `).run(userId, getCurrentMonthKey(), micro);
 }
 
-/** Current month's spend for a user, in cents. */
+/** Current month's spend for a user, in whole cents.
+ *
+ *  `cents` is the pre-migration-33 baseline and is never written again; new
+ *  spend lands in `micro_cents`. Summing both preserves historical spend
+ *  without double-counting it. Floor, not round, so a user is never denied
+ *  over a fraction of a cent they have not actually spent. */
 export function getAIMonthlySpend(userId) {
     const row = db.prepare(
-        'SELECT cents FROM ai_spend WHERE user_id = ? AND month = ?',
+        'SELECT cents, micro_cents FROM ai_spend WHERE user_id = ? AND month = ?',
     ).get(userId, getCurrentMonthKey());
-    return row?.cents ?? 0;
+    if (!row) return 0;
+    return (row.cents ?? 0) + Math.floor((row.micro_cents ?? 0) / MICRO_CENTS_PER_CENT);
+}
+
+/** Exact current-month spend in micro-cents — for metrics and diagnostics,
+ *  where sub-cent precision is the whole point of the column. */
+export function getAIMonthlySpendMicroCents(userId) {
+    const row = db.prepare(
+        'SELECT cents, micro_cents FROM ai_spend WHERE user_id = ? AND month = ?',
+    ).get(userId, getCurrentMonthKey());
+    if (!row) return 0;
+    return (row.cents ?? 0) * MICRO_CENTS_PER_CENT + (row.micro_cents ?? 0);
 }
 
 /**
@@ -91,7 +123,14 @@ export function getAIMonthlySpend(userId) {
  * Short-circuits (no DB read) when the cap is disabled.
  * @returns {{ allowed: boolean, capCents: number, spentCents: number }}
  */
-export function checkAISpendCap(userId) {
+export function checkAISpendCap(userId, { billsOperator = true } = {}) {
+    // BYOK calls cost the operator nothing, so the operator's ceiling must not
+    // apply to them. Callers pass billsOperator=false when the request used the
+    // user's own provider key (see isServerKeyProvider in lib/ai-provider.js).
+    // Defaults to true so an un-updated caller stays metered.
+    if (!billsOperator) {
+        return { allowed: true, capCents: SPEND_CAP_DISABLED, spentCents: 0 };
+    }
     const tier = getUserTier(userId);
     const capCents = resolveSpendCapCents(tier);
     if (capCents === SPEND_CAP_DISABLED) {

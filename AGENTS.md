@@ -55,7 +55,13 @@ changes; the README is for humans, this file is for you.
   (500-level) are for graphics only; text uses the `--ds-risk-*-text` variants
   (they are WCAG AA on both themes — the fills are not, as text).
 - Dark mode: `.dark` class on `<html>`; both themes are hard-gated for
-  color-contrast in the axe e2e suite.
+  color-contrast in the axe e2e suite — but only on the twelve views it
+  scans. Anything else is unverified.
+- Muted TEXT is `text-slate-500 dark:text-slate-400`. The inverse
+  (`text-slate-400 dark:text-slate-500`) fails AA in **both** themes — 2.56:1
+  on white, 3.74:1 on slate-900 — and there are ~110 of them still in `src/`,
+  each a latent failure the moment its view enters the axe scan. The inverse
+  pair IS correct for icons, which pass at 3:1.
 - Events: use `emitAppEvent`/`onAppEvent` with names registered in
   `APP_EVENTS` (`src/utils/appEvents.js`) — never `window.dispatchEvent`.
 - Lint must be clean at zero warnings: `npm run lint`

@@ -789,6 +789,35 @@ async function assertEndpointHostIsPublic(endpointUrl, provider) {
     }
 }
 
+/**
+ * Stamp which key paid for this provider.
+ *
+ * The monthly spend cap exists to protect the OPERATOR's shared key from
+ * denial-of-wallet. BYOK is the permanent model here, so a user calling their
+ * own provider spends their own money and must never be metered against the
+ * operator's ceiling — without this tag, enabling the cap would throttle the
+ * people who are not costing the operator anything.
+ *
+ * Non-enumerable so it never leaks into a spread, a JSON body or a log line.
+ */
+function tagKeySource(provider, keySource) {
+    if (!provider) return provider;
+    Object.defineProperty(provider, 'keySource', {
+        value: keySource,
+        enumerable: false,
+        configurable: true,
+        writable: false,
+    });
+    return provider;
+}
+
+/** True when this provider bills the operator rather than the user. */
+export function isServerKeyProvider(provider) {
+    // Default to true for an untagged provider: an unknown origin must be
+    // metered, never silently exempted.
+    return provider?.keySource !== 'user';
+}
+
 export async function createProviderForUser(userId, kind = 'completion', opts = {}) {
     await _loadProviders();
 
@@ -832,10 +861,10 @@ export async function createProviderForUser(userId, kind = 'completion', opts = 
             if (entry && creds) {
                 // Apply per-feature model override if present
                 const model = (featureKey && userConfig.featureOverrides?.[featureKey]) || baseModel;
-                return entry.create({
+                return tagKeySource(entry.create({
                     ...creds,
                     ...(model ? { model } : {}),
-                });
+                }), 'user');
             }
         }
 
@@ -849,10 +878,10 @@ export async function createProviderForUser(userId, kind = 'completion', opts = 
                 // Apply EMBED feature override if present
                 const baseModel = userConfig.completionModel;
                 const model = (featureKey && userConfig.featureOverrides?.[featureKey]) || baseModel;
-                return completionEntry.create({
+                return tagKeySource(completionEntry.create({
                     ...userConfig.completionCredentials,
                     ...(model ? { model } : {}),
-                });
+                }), 'user');
             }
 
             // Otherwise fall back to the dedicated embedding provider
@@ -863,10 +892,10 @@ export async function createProviderForUser(userId, kind = 'completion', opts = 
 
             if (embEntry && embCreds) {
                 const model = (featureKey && userConfig.featureOverrides?.[featureKey]) || embModel;
-                return embEntry.create({
+                return tagKeySource(embEntry.create({
                     ...embCreds,
                     ...(model ? { model, embeddingModel: model } : {}),
-                });
+                }), 'user');
             }
 
             return null;
@@ -899,7 +928,7 @@ export async function createProviderForUser(userId, kind = 'completion', opts = 
         logger.warn({ userId }, '[AI] No provider configured for user and no server fallback (set <PROVIDER>_API_KEY).');
     }
 
-    return provider;
+    return tagKeySource(provider, 'server');
 }
 
 // ---------------------------------------------------------------------------
@@ -943,12 +972,12 @@ export async function resolveImageProviderConfig(userId) {
             assertSafeAIEndpoint(endpointUrl, { provider: userConfig.completionProvider });
             await assertEndpointHostIsPublic(endpointUrl, userConfig.completionProvider);
         }
-        return {
+        return tagKeySource({
             provider: userConfig.completionProvider,
             model: userConfig.completionModel || null,
             apiKey: userConfig.completionCredentials.apiKey,
             ...(endpointUrl ? { baseURL: endpointUrl } : {}),
-        };
+        }, 'user');
     }
 
     // AI_REQUIRE_USER_CONFIG=true means every user must bring their own key —
@@ -964,9 +993,9 @@ export async function resolveImageProviderConfig(userId) {
         return { provider: null, model: null, apiKey: null };
     }
 
-    return {
+    return tagKeySource({
         provider: providerName,
         model: process.env[`${ENV}_MODEL`] || null,
         apiKey,
-    };
+    }, 'server');
 }

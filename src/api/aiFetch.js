@@ -36,12 +36,43 @@ export class AIInvalidKeyError extends Error {
     }
 }
 
+/**
+ * The SESSION is gone, not the provider key. A 401 on an AI route means the
+ * cookie expired (the 7-day absolute ceiling, or a logout in another tab) —
+ * the AI routes deliberately return 422 for a rejected provider key, so the
+ * two never overlap. Reporting this as AIInvalidKeyError sent users to
+ * Settings to fix a key that was never the problem.
+ */
+export class AISessionExpiredError extends Error {
+    constructor() {
+        super('Your session expired. Sign in again to continue.')
+        this.name = 'AISessionExpiredError'
+        this.code = 'UNAUTHORIZED'
+        this.status = 401
+    }
+}
+
 export class AIUnreachableError extends Error {
     constructor() {
         super('AI provider could not be reached. Try again shortly.')
         this.name = 'AIUnreachableError'
         this.code = 'AI_UNREACHABLE'
         this.status = 503
+    }
+}
+
+/**
+ * Carries a server error envelope through unchanged so `formatUserError` can
+ * resolve the server's own `code` (TIER_REQUIRED_PRO, AI_DISABLED, …) instead
+ * of the client guessing a meaning from the HTTP status.
+ */
+export class AIServerError extends Error {
+    constructor(payload = {}, status = 400) {
+        super(payload.message || payload.error || 'AI request failed')
+        this.name = 'AIServerError'
+        this.code = payload.code
+        this.status = status
+        this.body = payload
     }
 }
 
@@ -88,13 +119,31 @@ export class AIQuotaExceededError extends Error {
 // for the rest of the calendar month.
 const QUOTA_TTL_MS = 5 * 60_000
 
-let quotaState = null
+// Keyed BY FEATURE. A single global gate meant exhausting one feature muted
+// every other AI surface for QUOTA_TTL_MS — a user who spent their Deep Review
+// allowance had PR Chat and semantic search aborted in the browser, with a
+// message naming the wrong feature, while those counters sat untouched.
+//
+// Callers that declare their feature get pre-empted only on their own gate;
+// callers that do not are never pre-empted and simply take the real 429. That
+// is strictly better than blocking the wrong call, and it keeps the
+// declaration opt-in rather than threading a metric through ~100 call sites.
+const quotaStates = new Map()
 const quotaListeners = new Set()
 
 function notifyQuota() {
+    const snapshot = getAIQuotaState()
     quotaListeners.forEach((fn) => {
-        try { fn(quotaState) } catch { /* ignore listener errors */ }
+        try { fn(snapshot) } catch { /* ignore listener errors */ }
     })
+}
+
+/** Drop entries whose window has passed so the map cannot grow unbounded. */
+function pruneQuotaStates() {
+    const now = Date.now()
+    for (const [feature, state] of quotaStates) {
+        if (now >= state.until) quotaStates.delete(feature)
+    }
 }
 
 /**
@@ -110,8 +159,12 @@ function computeQuotaUntil(payload) {
     return ttl
 }
 
-function isQuotaActive() {
-    return !!(quotaState && Date.now() < quotaState.until)
+function isQuotaActive(feature) {
+    pruneQuotaStates()
+    // No declared feature → no pre-emption. Guessing would re-introduce the
+    // cross-feature block this map exists to remove.
+    if (!feature) return false
+    return quotaStates.has(feature)
 }
 
 /**
@@ -119,15 +172,26 @@ function isQuotaActive() {
  * Surfaced to UI via `useAIQuotaState` so banners / inline notices can
  * stay in sync without prop-drilling.
  */
-export function getAIQuotaState() {
-    return isQuotaActive() ? quotaState : null
+export function getAIQuotaState(feature) {
+    pruneQuotaStates()
+    if (feature) return quotaStates.get(feature) ?? null
+    // Undirected read (banners, toasts): the most recently recorded gate, so
+    // the UI still has something concrete to describe.
+    let newest = null
+    for (const state of quotaStates.values()) {
+        if (!newest || state.recordedAt > newest.recordedAt) newest = state
+    }
+    return newest
 }
 
-export function clearAIQuotaState() {
-    if (quotaState) {
-        quotaState = null
-        notifyQuota()
+export function clearAIQuotaState(feature) {
+    if (quotaStates.size === 0) return
+    if (feature) {
+        if (quotaStates.delete(feature)) notifyQuota()
+        return
     }
+    quotaStates.clear()
+    notifyQuota()
 }
 
 export function subscribeAIQuotaState(listener) {
@@ -136,15 +200,16 @@ export function subscribeAIQuotaState(listener) {
 }
 
 function recordQuotaExceeded(payload) {
-    quotaState = {
-        feature: payload?.feature || 'ai_queries',
+    const feature = payload?.feature || 'ai_queries'
+    quotaStates.set(feature, {
+        feature,
         limit: payload?.limit ?? null,
         used: payload?.used ?? payload?.current ?? null,
         resetAt: payload?.resetAt || null,
         upgradeTo: payload?.upgradeTo ?? null,
         until: computeQuotaUntil(payload),
         recordedAt: Date.now(),
-    }
+    })
     notifyQuota()
 }
 
@@ -173,12 +238,13 @@ export function recordAIQuotaExceeded(payload) {
  * @param {RequestInit} [init]
  * @returns {Promise<Response>}
  */
-export async function aiFetch(path, init = {}) {
-    // Pre-empt: if a recent call already established that the user has
-    // exhausted their AI quota, do not even hit the network. Throwing the
-    // typed error keeps the caller's catch path identical to a real 429.
-    if (isQuotaActive()) {
-        throw new AIQuotaExceededError(quotaState)
+export async function aiFetch(path, { feature, ...init } = {}) {
+    // Pre-empt: if a recent call already established that THIS feature's quota
+    // is exhausted, do not even hit the network. Throwing the typed error keeps
+    // the caller's catch path identical to a real 429. Callers that do not
+    // declare a feature always go to the network — see quotaStates.
+    if (isQuotaActive(feature)) {
+        throw new AIQuotaExceededError(getAIQuotaState(feature))
     }
 
     const status = await getAIStatus()
@@ -209,7 +275,19 @@ export async function aiFetch(path, init = {}) {
         headers,
     })
 
-    if (res.status === 401 || res.status === 403) {
+    // 401 and 403 are NOT interchangeable here. The AI routes deliberately
+    // return 422 for a rejected provider key (server/routes/ai/shared.js) so a
+    // bad key never reads as a logged-out session; a 403 on these routes is a
+    // tier gate carrying its own TIER_REQUIRED_* code. Collapsing both into
+    // AIInvalidKeyError told users with a tier problem to re-authenticate.
+    if (res.status === 403) {
+        const body = await res.clone().json().catch(() => ({}))
+        if (body?.code) throw new AIServerError(body, res.status)
+    }
+    if (res.status === 401) {
+        throw new AISessionExpiredError()
+    }
+    if (res.status === 403) {
         throw new AIInvalidKeyError()
     }
     if (res.status === 503) {
@@ -225,10 +303,12 @@ export async function aiFetch(path, init = {}) {
             throw new AIQuotaExceededError(body)
         }
     }
-    if (res.ok && quotaState) {
-        // The server happily served us — the gate was stale. Drop it so
-        // future calls don't get pre-empted unnecessarily.
-        clearAIQuotaState()
+    if (res.ok && feature) {
+        // The server happily served us — this feature's gate was stale. Drop
+        // only that one: another feature may still legitimately be exhausted.
+        // An undeclared call clears nothing, since we cannot tell which gate it
+        // disproves; those expire on QUOTA_TTL_MS anyway.
+        clearAIQuotaState(feature)
     }
     return res
 }

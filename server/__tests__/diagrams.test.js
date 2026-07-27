@@ -205,7 +205,7 @@ describe('POST /ai/generate-diagram', () => {
     it('records monthly spend + a PII-safe cost + usage audit tagged generate_diagram', async () => {
         await request(makeApp()).post('/ai/generate-diagram').send({ repo: REPO });
 
-        const cents = testDb.prepare('SELECT cents FROM ai_spend WHERE user_id = ?').get(USER_ID)?.cents;
+        const cents = testDb.prepare('SELECT cents + micro_cents / 10000 AS cents FROM ai_spend WHERE user_id = ?').get(USER_ID)?.cents;
         expect(cents).toBe(4); // 0.04 USD
 
         const costAudit = testDb.prepare(

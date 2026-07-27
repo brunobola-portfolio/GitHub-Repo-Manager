@@ -6,6 +6,13 @@ import { issueLicenseForCheckout } from '../lib/license-issuer.js';
 
 const VALID_TIERS = new Set(['free', 'pro', 'enterprise']);
 
+// A refund or chargeback suspends access, but the Stripe subscription itself
+// is untouched and keeps producing `customer.subscription.updated` events with
+// status 'active'. Letting those through would silently restore the tier of a
+// customer who took their money back, so the hold survives until it is cleared
+// deliberately — `charge.dispute.closed` with status 'won', or an operator.
+const HOLD_STATUSES = new Set(['refunded', 'disputed']);
+
 /**
  * Cross-check the tier from session/subscription metadata against the actual
  * price object's metadata. If they disagree, log a warning and prefer the
@@ -117,6 +124,33 @@ export async function stripeWebhookHandler(req, res) {
                 const billingPeriod = session.metadata?.billingPeriod === 'yearly' ? 'yearly' : 'monthly';
                 const licenseMonths = billingPeriod === 'yearly' ? 12 : 1;
 
+                // A completed session is not a settled payment. Delayed
+                // payment methods complete the session with payment_status
+                // 'unpaid' and settle (or fail) later. Granting here emailed a
+                // 1-12 month offline-verifiable license BEFORE the money
+                // arrived: if the invoice then failed, `past_due` removed SaaS
+                // access while the emailed key kept working. Park the row as
+                // 'incomplete' instead and let invoice.paid promote it.
+                // Stripe's enum is paid | unpaid | no_payment_required. Match
+                // the one bad value explicitly rather than allowlisting the
+                // good ones, so a session that omits the field entirely keeps
+                // its previous behaviour instead of silently never granting.
+                const paymentPending = session.payment_status === 'unpaid';
+
+                if (userId && paymentPending) {
+                    db.prepare(`
+                        INSERT INTO user_subscriptions (user_id, tier, stripe_customer_id, stripe_subscription_id, status, billing_period)
+                        VALUES (?, 'free', ?, ?, 'incomplete', ?)
+                        ON CONFLICT(user_id) DO UPDATE SET
+                            stripe_customer_id = ?, stripe_subscription_id = ?, status = 'incomplete', billing_period = ?, updated_at = datetime('now')
+                    `).run(userId, session.customer, session.subscription, billingPeriod, session.customer, session.subscription, billingPeriod);
+                    logger.info(
+                        { userId, sessionId: session.id, paymentStatus: session.payment_status },
+                        'stripe-webhook: checkout completed but payment not settled — deferring tier grant and license to invoice.paid'
+                    );
+                    break;
+                }
+
                 if (userId) {
                     // Synchronous subscription write wrapped in a transaction so
                     // a failure here rolls back cleanly before we attempt license
@@ -180,11 +214,35 @@ export async function stripeWebhookHandler(req, res) {
                 const sub = event.data.object;
                 const rawSubTier = sub.metadata?.tier || (sub.items?.data?.[0]?.price?.metadata?.tier) || 'pro';
                 const tier = await reconcileTierFromPrice(stripe, sub, rawSubTier, null);
+                const periodStart = new Date(sub.current_period_start * 1000).toISOString();
+                const periodEnd = new Date(sub.current_period_end * 1000).toISOString();
+
+                // Never let a routine subscription update lift a refund/dispute
+                // hold. The customer opening the billing portal is enough to
+                // produce this event, and Stripe reports the subscription as
+                // 'active' throughout — the money is still gone.
+                const current = db.prepare(
+                    'SELECT status FROM user_subscriptions WHERE stripe_subscription_id = ?'
+                ).get(sub.id);
+
+                if (current && HOLD_STATUSES.has(current.status)) {
+                    db.prepare(`
+                        UPDATE user_subscriptions SET
+                            current_period_start = ?, current_period_end = ?, updated_at = datetime('now')
+                        WHERE stripe_subscription_id = ?
+                    `).run(periodStart, periodEnd, sub.id);
+                    logger.warn(
+                        { subscriptionId: sub.id, heldStatus: current.status },
+                        'stripe-webhook: subscription update ignored — billing hold in effect'
+                    );
+                    break;
+                }
+
                 db.prepare(`
                     UPDATE user_subscriptions SET
                         tier = ?, status = ?, current_period_start = ?, current_period_end = ?, updated_at = datetime('now')
                     WHERE stripe_subscription_id = ?
-                `).run(tier, sub.status, new Date(sub.current_period_start * 1000).toISOString(), new Date(sub.current_period_end * 1000).toISOString(), sub.id);
+                `).run(tier, sub.status, periodStart, periodEnd, sub.id);
                 break;
             }
 
@@ -194,6 +252,103 @@ export async function stripeWebhookHandler(req, res) {
                     UPDATE user_subscriptions SET tier = 'free', status = 'cancelled', updated_at = datetime('now')
                     WHERE stripe_subscription_id = ?
                 `).run(sub.id);
+                break;
+            }
+
+            // Refunding an invoice does NOT cancel the subscription in Stripe,
+            // so without these two handlers a refunded or charged-back customer
+            // kept status='active' and full paid capability indefinitely.
+            // Both suspend SaaS access immediately; the already-emailed offline
+            // license key remains valid until its own expiry, which is why
+            // license.js mints a `lid` for a future revocation list.
+            case 'charge.refunded':
+            case 'charge.dispute.created': {
+                const object = event.data.object;
+                const chargeId = event.type === 'charge.refunded' ? object.id : object.charge;
+                const nextStatus = event.type === 'charge.refunded' ? 'refunded' : 'disputed';
+
+                // Stripe fires `charge.refunded` for PARTIAL refunds too, with
+                // `refunded: false`. A goodwill credit on an otherwise-paid
+                // invoice must not strip a paying customer of their tier, so
+                // only a full refund suspends access.
+                if (event.type === 'charge.refunded' && object.refunded !== true) {
+                    logger.info(
+                        { chargeId, amount: object.amount, amountRefunded: object.amount_refunded },
+                        'stripe-webhook: partial refund recorded, access unchanged'
+                    );
+                    break;
+                }
+
+                let subscriptionId = null;
+                try {
+                    const charge = event.type === 'charge.refunded'
+                        ? object
+                        : await stripe.charges.retrieve(chargeId);
+                    if (charge?.invoice) {
+                        const invoice = typeof charge.invoice === 'string'
+                            ? await stripe.invoices.retrieve(charge.invoice)
+                            : charge.invoice;
+                        subscriptionId = invoice?.subscription || null;
+                    }
+                } catch (err) {
+                    logger.error({ err, chargeId, eventType: event.type }, 'stripe-webhook: could not resolve subscription for refund/dispute');
+                    forgetIdempotency();
+                    return res.status(500).json({ error: 'Refund resolution failed' });
+                }
+
+                if (!subscriptionId) {
+                    // A one-off charge with no subscription — nothing to suspend.
+                    logger.info({ chargeId, eventType: event.type }, 'stripe-webhook: refund/dispute has no subscription');
+                    break;
+                }
+
+                const result = db.prepare(`
+                    UPDATE user_subscriptions SET tier = 'free', status = ?, updated_at = datetime('now')
+                    WHERE stripe_subscription_id = ?
+                `).run(nextStatus, subscriptionId);
+                logger.warn(
+                    { subscriptionId, eventType: event.type, rowsUpdated: result.changes },
+                    'stripe-webhook: subscription downgraded to free after refund/dispute'
+                );
+                break;
+            }
+
+            // The only automatic way out of a hold. A dispute resolved in the
+            // operator's favour means the money stayed, so the tier is restored
+            // from Stripe rather than from our own (deliberately downgraded)
+            // row. A lost dispute leaves the hold exactly where it is.
+            case 'charge.dispute.closed': {
+                const dispute = event.data.object;
+                if (dispute.status !== 'won') {
+                    logger.info({ disputeId: dispute.id, status: dispute.status }, 'stripe-webhook: dispute closed without a win, hold stands');
+                    break;
+                }
+
+                let subscriptionId = null;
+                try {
+                    const charge = await stripe.charges.retrieve(dispute.charge);
+                    if (charge?.invoice) {
+                        const invoice = typeof charge.invoice === 'string'
+                            ? await stripe.invoices.retrieve(charge.invoice)
+                            : charge.invoice;
+                        subscriptionId = invoice?.subscription || null;
+                    }
+                } catch (err) {
+                    logger.error({ err, disputeId: dispute.id }, 'stripe-webhook: could not resolve subscription for won dispute');
+                    forgetIdempotency();
+                    return res.status(500).json({ error: 'Dispute resolution failed' });
+                }
+
+                if (!subscriptionId) break;
+
+                const sub = await stripe.subscriptions.retrieve(subscriptionId);
+                const rawTier = sub.metadata?.tier || sub.items?.data?.[0]?.price?.metadata?.tier || 'pro';
+                const tier = await reconcileTierFromPrice(stripe, sub, rawTier, null);
+                db.prepare(`
+                    UPDATE user_subscriptions SET tier = ?, status = ?, updated_at = datetime('now')
+                    WHERE stripe_subscription_id = ? AND status = 'disputed'
+                `).run(tier, sub.status, subscriptionId);
+                logger.warn({ subscriptionId, tier }, 'stripe-webhook: dispute won, access restored');
                 break;
             }
 
@@ -211,10 +366,50 @@ export async function stripeWebhookHandler(req, res) {
             case 'invoice.paid': {
                 const invoice = event.data.object;
                 if (invoice.subscription) {
-                    db.prepare(`
-                        UPDATE user_subscriptions SET status = 'active', updated_at = datetime('now')
-                        WHERE stripe_subscription_id = ?
-                    `).run(invoice.subscription);
+                    // Read BEFORE the UPDATE: 'incomplete' means the checkout
+                    // handler deferred the grant because the payment had not
+                    // settled, so this invoice is the moment it becomes real.
+                    const deferred = db.prepare(
+                        "SELECT user_id, billing_period FROM user_subscriptions WHERE stripe_subscription_id = ? AND status = 'incomplete'"
+                    ).get(invoice.subscription);
+
+                    // The 'incomplete' marker is this event's ONLY record that a
+                    // licence is still owed. Clearing it before the key is issued
+                    // meant a failed issuance (which 500s so Stripe retries) came
+                    // back to a row that no longer looked deferred — the customer
+                    // had paid by SEPA or Boleto and silently never got a key.
+                    // Status is flipped after issuance for exactly that reason.
+                    if (deferred?.user_id) {
+                        const sub = await stripe.subscriptions.retrieve(invoice.subscription);
+                        const rawTier = sub.metadata?.tier || sub.items?.data?.[0]?.price?.metadata?.tier || 'pro';
+                        const tier = await reconcileTierFromPrice(stripe, sub, rawTier, null);
+
+                        const user = db.prepare('SELECT email FROM users WHERE id = ?').get(deferred.user_id);
+                        const recipientEmail = invoice.customer_email || user?.email;
+                        if (recipientEmail) {
+                            await issueLicenseForCheckout({
+                                userId: deferred.user_id,
+                                email: recipientEmail,
+                                tier,
+                                seats: 1,
+                                months: deferred.billing_period === 'yearly' ? 12 : 1,
+                                stripeSubscriptionId: invoice.subscription,
+                                stripeSessionId: invoice.id,
+                            });
+                        } else {
+                            logger.warn({ subscriptionId: invoice.subscription, invoiceId: invoice.id }, 'stripe-webhook: no email for deferred license delivery');
+                        }
+
+                        db.prepare(`
+                            UPDATE user_subscriptions SET tier = ?, status = 'active', updated_at = datetime('now')
+                            WHERE stripe_subscription_id = ?
+                        `).run(tier, invoice.subscription);
+                    } else {
+                        db.prepare(`
+                            UPDATE user_subscriptions SET status = 'active', updated_at = datetime('now')
+                            WHERE stripe_subscription_id = ?
+                        `).run(invoice.subscription);
+                    }
 
                     // Renewal license reissue: an emailed key's validity
                     // matches exactly what was paid for (1 month, or 12 for

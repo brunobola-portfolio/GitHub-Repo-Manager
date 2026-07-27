@@ -170,6 +170,40 @@ describe('POST /api/v1/license/install', () => {
         expect(actions).toContain('license.install')
     })
 
+    it('bootstrap is refused on a MULTI-user instance — no self-promotion to admin', async () => {
+        // The shipped docker-compose is a shared deployment: public
+        // FRONTEND_URL, Stripe billing, LICENSE_KEY optional. With no licence
+        // stored, the bootstrap branch let any authenticated user holding a
+        // valid key make themselves permanent admin AND set the tier for
+        // everyone. A fresh single-user install is the only case it is for.
+        const app = makeApp({ userId: 7, isAdmin: false })
+        testDb.prepare('INSERT INTO users (id, username, avatar_url, is_admin) VALUES (?, ?, ?, 0)')
+            .run(8, 'colleague', null)
+
+        const res = await request(app)
+            .post('/api/v1/license/install')
+            .send({ key: validKey })
+
+        expect(res.status).toBe(403)
+        expect(res.body.error).toBe('admin_required_multi_user')
+        expect(testDb.prepare('SELECT is_admin FROM users WHERE id = 7').get().is_admin).toBe(0)
+        expect(auditLogSpy.mock.calls.map((c) => c[1])).not.toContain('admin.bootstrap_grant')
+    })
+
+    it('bootstrap is refused when an admin already exists, even with one other user', async () => {
+        // An admin can do it themselves; nobody else needs promoting.
+        const app = makeApp({ userId: 7, isAdmin: false })
+        testDb.prepare('INSERT INTO users (id, username, avatar_url, is_admin) VALUES (?, ?, ?, 1)')
+            .run(9, 'owner', null)
+
+        const res = await request(app)
+            .post('/api/v1/license/install')
+            .send({ key: validKey })
+
+        expect(res.status).toBe(403)
+        expect(testDb.prepare('SELECT is_admin FROM users WHERE id = 7').get().is_admin).toBe(0)
+    })
+
     it('steady-state: non-admin is 403 once a license is already installed', async () => {
         // First install (bootstrap by an existing admin so the promotion
         // path doesn't muddy the assertion).

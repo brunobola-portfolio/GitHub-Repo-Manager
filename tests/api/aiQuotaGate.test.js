@@ -65,7 +65,7 @@ describe('aiFetch quota gate', () => {
         expect(state.used).toBe(50)
     })
 
-    it('pre-empts subsequent calls within the gate window without hitting the network', async () => {
+    it('pre-empts subsequent calls for the SAME feature without hitting the network', async () => {
         // First call: real 429 from the server.
         const fetchMock = vi.fn(async () => jsonResponse({
             error: 'usage_limit_exceeded',
@@ -77,12 +77,38 @@ describe('aiFetch quota gate', () => {
         }, 429))
         global.fetch = fetchMock
 
-        await expect(aiFetch('/api/ai/a', { method: 'POST' })).rejects.toBeInstanceOf(AIQuotaExceededError)
+        await expect(aiFetch('/api/ai/a', { method: 'POST', feature: 'ai_queries' }))
+            .rejects.toBeInstanceOf(AIQuotaExceededError)
         expect(fetchMock).toHaveBeenCalledTimes(1)
 
-        // Second call: gate is closed → throws WITHOUT firing fetch.
-        await expect(aiFetch('/api/ai/b', { method: 'POST' })).rejects.toBeInstanceOf(AIQuotaExceededError)
+        // Second call on the same feature: gate closed → throws WITHOUT fetch.
+        await expect(aiFetch('/api/ai/b', { method: 'POST', feature: 'ai_queries' }))
+            .rejects.toBeInstanceOf(AIQuotaExceededError)
         expect(fetchMock).toHaveBeenCalledTimes(1) // unchanged
+    })
+
+    it('leaves a different feature alone — the gate is per-feature, not global', async () => {
+        const fetchMock = vi.fn(async (url) => (
+            String(url).includes('/deep-review')
+                ? jsonResponse({
+                    error: 'usage_limit_exceeded', code: 'QUOTA_EXCEEDED',
+                    feature: 'ai_deep_review', limit: 5, used: 5,
+                }, 429)
+                : jsonResponse({ ok: true }, 200)
+        ))
+        global.fetch = fetchMock
+
+        await expect(aiFetch('/api/ai/deep-review', { method: 'POST', feature: 'ai_deep_review' }))
+            .rejects.toBeInstanceOf(AIQuotaExceededError)
+
+        // PR Chat's own counter is untouched, so its call must reach the network.
+        await expect(aiFetch('/api/ai/pr-chat', { method: 'POST', feature: 'ai_pr_chat' }))
+            .resolves.toBeTruthy()
+        expect(fetchMock).toHaveBeenCalledTimes(2)
+
+        // ...and the exhausted feature is still gated.
+        expect(getAIQuotaState('ai_deep_review')).toBeTruthy()
+        expect(getAIQuotaState('ai_pr_chat')).toBeNull()
     })
 
     it('clears the gate after a successful call (server flipped state)', async () => {

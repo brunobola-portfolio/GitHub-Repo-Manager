@@ -19,6 +19,10 @@ import { attemptSendOnce, toSqliteDatetime } from './email.js'
 
 const DEFAULT_INTERVAL_MS = 5 * 60 * 1000
 const MAX_ATTEMPTS = 10
+// Rows per tick. gh-outbox uses the same bound for the same reason: a batch
+// that all becomes eligible at once must not turn one tick into a hundred
+// sequential network round-trips.
+const MAX_ROWS_PER_TICK = 50
 const MAX_BACKOFF_MINUTES = 1440 // 24 h
 
 let timer = null
@@ -44,13 +48,20 @@ function computeNextRetryIso(attempts) {
 export async function runEmailRetryOnce() {
     let rows
     try {
+        // Bounded per tick, oldest first — mirrors gh-outbox. The backoff is
+        // derived from `attempts`, so a provider outage makes a whole batch
+        // eligible in the same window; an unbounded SELECT then drove hundreds
+        // of sends in one tick, each behind a fetch with no timeout, and the
+        // pass ran far past the interval.
         rows = db.prepare(`
             SELECT id, to_address, subject, body_html, body_text, context_json, attempts
             FROM email_dead_letter
             WHERE resolved_at IS NULL
               AND attempts < ?
               AND (next_retry_at IS NULL OR next_retry_at <= datetime('now'))
-        `).all(MAX_ATTEMPTS)
+            ORDER BY id ASC
+            LIMIT ?
+        `).all(MAX_ATTEMPTS, MAX_ROWS_PER_TICK)
     } catch (err) {
         logger.warn({ err }, '[email-retry] failed to read dead-letter queue')
         return { picked: 0, resolved: 0, stillPending: 0, givenUp: 0 }
@@ -137,16 +148,40 @@ export async function runEmailRetryOnce() {
 }
 
 /**
+ * Run a tick guarded against re-entrancy: setInterval fires on schedule
+ * regardless of whether the previous async tick finished, and a tick held up
+ * by a hanging provider connection easily outlives the interval. Without the
+ * flag the next tick re-selected the same unresolved rows and sent them
+ * again — which for this queue means a customer receiving their licence key
+ * two or three times. NOTE: single-process only; a horizontally-scaled
+ * deployment needs a DB-level row claim.
+ */
+let tickInFlight = false
+
+export async function runGuardedTick() {
+    if (tickInFlight) return { picked: 0, resolved: 0, stillPending: 0, givenUp: 0, skipped: true }
+    tickInFlight = true
+    try {
+        return await runEmailRetryOnce()
+    } finally {
+        tickInFlight = false
+    }
+}
+
+/**
  * Start the periodic retry worker. Fires an initial tick immediately, then
  * every `intervalMs`. Idempotent — calling twice without `stop` is a no-op.
  */
 export function startEmailRetryWorker({ intervalMs = DEFAULT_INTERVAL_MS } = {}) {
     if (timer) return
-    runEmailRetryOnce().catch(err =>
-        logger.warn({ err }, '[email-retry] initial tick failed')
+    // Startup tick failure is a real signal (the worker may be dead) — log at
+    // ERROR, not WARN, so a non-functional retry worker doesn't go unnoticed.
+    // Matches webhook-retry-worker.js.
+    runGuardedTick().catch(err =>
+        logger.error({ err }, '[email-retry] initial tick failed — retry worker may be unhealthy')
     )
     timer = setInterval(() => {
-        runEmailRetryOnce().catch(err =>
+        runGuardedTick().catch(err =>
             logger.warn({ err }, '[email-retry] tick failed')
         )
     }, intervalMs)

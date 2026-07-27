@@ -8,7 +8,7 @@
  * in this file.
  */
 import { describe, it, expect } from 'vitest'
-import { getFeatures, canAccess } from '../lib/feature-flags.js'
+import { getFeatures } from '../lib/feature-flags.js'
 
 describe('feature-flags — Wave 6 metering keys', () => {
     it('Free tier: diagramGenPerMonth=15, agentRulesPerMonth=20, securityPostureAIPerMonth=75', () => {
@@ -48,12 +48,15 @@ describe('feature-flags — Wave 6 metering keys', () => {
         expect(fallback.securityPostureAIPerMonth).toBe(75)
     })
 
-    it('canAccess() treats the new keys as no truthier than any other numeric cap (sanity)', () => {
-        // These are numeric quota values, not booleans — canAccess() would
-        // coerce any non-zero finite number to truthy, same as the existing
-        // *PerMonth keys. Documents the expected (non-gating) shape.
-        expect(canAccess('free', 'diagramGenPerMonth')).toBe(true)
-        expect(canAccess('free', 'agentRulesPerMonth')).toBe(true)
-        expect(canAccess('free', 'securityPostureAIPerMonth')).toBe(true)
+    // These are numeric quota values, not boolean gates. The old canAccess()
+    // helper coerced them with `!!`, so a cap of 5 and a cap of 500 were both
+    // "true" — which is why it was deleted rather than kept as a convenience.
+    // Enforcement goes through checkUsageLimit, which compares the number.
+    it('the per-feature keys are numeric caps, never booleans', () => {
+        const free = getFeatures('free')
+        for (const key of ['diagramGenPerMonth', 'agentRulesPerMonth', 'securityPostureAIPerMonth']) {
+            expect(typeof free[key], `${key} must stay a number`).toBe('number')
+            expect(free[key]).toBeGreaterThan(0)
+        }
     })
 })

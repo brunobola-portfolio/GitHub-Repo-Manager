@@ -186,6 +186,47 @@ const
   // path did not exist. The GUID is the fixed AppId (must never change), so
   // hard-coding the single-brace form here is the correct single source.
   UninstallRegKey = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{A6F13D8E-2B4C-4A9F-8E3D-7C5B9A1F0D26}_is1';
+  // Must stay byte-identical to packaging/windows/launcher/Launcher.cs's
+  // RunKeyPath / RunValueName: the tray's "Start with Windows" toggle writes
+  // that value itself, so Setup never creates it and Inno's uninstall log
+  // never learns about it. Without the explicit delete in
+  // CurUninstallStepChanged below, uninstalling leaves a Run value pointing at
+  // a deleted exe and every subsequent login fails silently.
+  AutostartRunKey = 'Software\Microsoft\Windows\CurrentVersion\Run';
+  AutostartValueName = 'GitHubRepoManager';
+  // Digit-count ceilings for the two marker files whose contents get spliced
+  // into command lines below. Ports never exceed 5 digits; Windows PIDs are
+  // 32-bit and DO exceed 65535 on long-uptime machines, so a port-sized cap
+  // would reject a live PID and let Setup run straight over a running server.
+  MaxPortDigits = 5;
+  MaxPidDigits = 10;
+
+function ReadFirstLine(const FileName: string): string;
+var
+  Lines: TArrayOfString;
+begin
+  Result := '';
+  if LoadStringsFromFile(FileName, Lines) and (GetArrayLength(Lines) > 0) then
+    Result := Trim(Lines[0]);
+end;
+
+// Marker files (.grm.pid, .grm.tray.pid, .grm.port) live in a user-writable
+// data dir, and their contents are concatenated into `cmd /C ...` command
+// lines and taskkill arguments. Anything but a plain decimal number must be
+// rejected outright rather than executed in Setup's context.
+function IsAllDigits(const S: string; MaxLen: Integer): Boolean;
+var
+  I: Integer;
+begin
+  Result := (Length(S) > 0) and (Length(S) <= MaxLen);
+  if Result then
+    for I := 1 to Length(S) do
+      if (S[I] < '0') or (S[I] > '9') then
+      begin
+        Result := False;
+        exit;
+      end;
+end;
 
 // Detects a currently-running instance via the pidfile Start writes into the
 // data dir (packaging/windows/start.ps1; pre-4.8.0 launchers wrote it to
@@ -214,10 +255,8 @@ begin
     PidFile := ExpandConstant('{app}\app\.grm.pid');
   if not FileExists(PidFile) then
     exit;
-  if not LoadStringsFromFile(PidFile, Lines) or (GetArrayLength(Lines) = 0) then
-    exit;
-  PidStr := Trim(Lines[0]);
-  if (PidStr = '') then
+  PidStr := ReadFirstLine(PidFile);
+  if not IsAllDigits(PidStr, MaxPidDigits) then
     exit;
 
   TasklistOut := ExpandConstant('{tmp}\grm-tasklist.txt');
@@ -374,29 +413,6 @@ begin
   end;
 end;
 
-function ReadFirstLine(const FileName: string): string;
-var
-  Lines: TArrayOfString;
-begin
-  Result := '';
-  if LoadStringsFromFile(FileName, Lines) and (GetArrayLength(Lines) > 0) then
-    Result := Trim(Lines[0]);
-end;
-
-function IsAllDigits(const S: string): Boolean;
-var
-  I: Integer;
-begin
-  Result := (Length(S) > 0) and (Length(S) <= 5);
-  if Result then
-    for I := 1 to Length(S) do
-      if (S[I] < '0') or (S[I] > '9') then
-      begin
-        Result := False;
-        exit;
-      end;
-end;
-
 function GetShutdownPort(): string;
 var
   PortText: string;
@@ -404,7 +420,7 @@ begin
   PortText := ReadFirstLine(ExpandConstant('{#MyDataDir}\.grm.port'));
   // Corrupt or malformed marker must degrade to default port, not produce
   // a malformed curl URL that fails unpredictably.
-  if not IsAllDigits(PortText) then PortText := '3001';
+  if not IsAllDigits(PortText, MaxPortDigits) then PortText := '3001';
   Result := PortText;
 end;
 
@@ -423,7 +439,7 @@ var
 begin
   killedByPid := False;
   PidStr := ReadFirstLine(ExpandConstant('{#MyDataDir}\.grm.tray.pid'));
-  if PidStr <> '' then
+  if IsAllDigits(PidStr, MaxPidDigits) then
   begin
     TasklistOut := ExpandConstant('{tmp}\grm-tray-tasklist.txt');
     if Exec(ExpandConstant('{cmd}'),
@@ -479,7 +495,7 @@ begin
     end;
   end;
   PidStr := ReadFirstLine(ExpandConstant('{#MyDataDir}\.grm.pid'));
-  if PidStr <> '' then
+  if IsAllDigits(PidStr, MaxPidDigits) then
   begin
     Exec(ExpandConstant('{sys}\taskkill.exe'), '/PID ' + PidStr + ' /T /F',
       '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
@@ -508,25 +524,41 @@ end;
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
   Result := '';
-  if not IsAppRunning() then exit;
-  if not WizardSilent() then
+
+  if IsAppRunning() then
   begin
-    if MsgBox('GitHub Repo Manager is currently running.' + #13#10 +
-        'Close the application and continue with Setup?',
-        mbConfirmation, MB_YESNO) <> IDYES then
+    if not WizardSilent() then
     begin
-      Result := 'Setup cannot continue while GitHub Repo Manager is running. ' +
-        'Close it (Start Menu -> Stop GitHub Repo Manager) and run Setup again.';
-      exit;
+      if MsgBox('GitHub Repo Manager is currently running.' + #13#10 +
+          'Close the application and continue with Setup?',
+          mbConfirmation, MB_YESNO) <> IDYES then
+      begin
+        // Declined: leave BOTH processes alone. Stopping the tray here would
+        // half-close an app the user just asked us not to touch.
+        Result := 'Setup cannot continue while GitHub Repo Manager is running. ' +
+          'Close it (Start Menu -> Stop GitHub Repo Manager) and run Setup again.';
+        exit;
+      end;
     end;
+    // Silent installs proceed straight to the graceful stop: a scripted
+    // upgrade wants "make it so", and graceful-then-PID-kill is strictly safer
+    // than the old behavior of refusing (which forced admins to taskkill
+    // themselves, without the graceful attempt). TryStopRunningApp stops the
+    // tray as its first step.
+    if not TryStopRunningApp() then
+      Result := 'Could not stop the running GitHub Repo Manager instance. ' +
+        'Close it manually, then run Setup again.';
+    exit;
   end;
-  // Silent installs proceed straight to the graceful stop: a scripted
-  // upgrade wants "make it so", and graceful-then-PID-kill is strictly safer
-  // than the old behavior of refusing (which forced admins to taskkill
-  // themselves, without the graceful attempt).
-  if not TryStopRunningApp() then
-    Result := 'Could not stop the running GitHub Repo Manager instance. ' +
-      'Close it manually, then run Setup again.';
+
+  // Server not running, but the TRAY may well be: IsAppRunning() matches
+  // node.exe by PID and the tray is a separate process. That is the ordinary
+  // in-app self-update path — updater.js spawns setup.exe and asks the server
+  // to exit 500 ms later, so node is usually gone by the time we get here
+  // while the tray still holds its lock on {app}\{#MyAppExeName}. Without
+  // this the [Files] replace failed and the update aborted with no server
+  // left running, which is exactly the state a user cannot recover from.
+  StopTrayIfRunning();
 end;
 
 // Writes {app}\install-config.txt after files are copied (ssPostInstall),
@@ -560,9 +592,14 @@ begin
   if CurUninstallStep = usUninstall then
   begin
     // Stop a running instance before files are removed — same policy as
-    // install-time (graceful endpoint, then PID kill).
+    // install-time (graceful endpoint, then PID kill). The tray is stopped
+    // either way: it is a separate process from the node server IsAppRunning()
+    // looks for, and leaving it resident means uninstall cannot delete the exe
+    // it holds open.
     if IsAppRunning() then
-      TryStopRunningApp();
+      TryStopRunningApp()
+    else
+      StopTrayIfRunning();
 
     // usUninstall (not usPostUninstall): the main uninstaller process
     // terminates before usPostUninstall runs in its temp-copied clone, so a
@@ -587,6 +624,13 @@ begin
         mbInformation, MB_OK, IDOK);
 
     // App-created artifacts outside the uninstall log must go explicitly.
+    // The tray's own HKCU\...\Run value is the one that actually breaks a
+    // machine if it survives: it launches {app}\GitHub Repo Manager.exe at
+    // every login, and after uninstall that exe is gone. RegDeleteValue rather
+    // than a [Registry] uninsdeletevalue entry because Setup never writes this
+    // value in the first place - deleting it here is unconditional and does
+    // not depend on an uninstall-log record existing.
     DeleteFile(ExpandConstant('{#MyStartupShortcut}'));
+    RegDeleteValue(HKCU, AutostartRunKey, AutostartValueName);
   end;
 end;

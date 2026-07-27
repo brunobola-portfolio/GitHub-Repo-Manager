@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, isValidElement } from 'react'
 import { ToastContext } from './contexts'
 import { trackBreadcrumb } from '../lib/observability'
 import { formatUserError } from '../utils/errors'
@@ -25,6 +25,27 @@ function dispatchAction(action, ctx = {}) {
         default:
             ctx.onRetry?.()
     }
+}
+
+/**
+ * Pull the structured quota fields off whatever error shape arrived.
+ * AIQuotaExceededError carries them as own properties; a plain fetch failure
+ * carries the server envelope under `body`/`data`. `quotaExceededResponse`
+ * emits `current`, while the modal prop is named `used` — accept both.
+ */
+function quotaDetailFromError(err) {
+    const body = err?.body || err?.data || {}
+    const pick = (key, altKey) => err?.[key] ?? body[key] ?? (altKey ? body[altKey] : undefined)
+    const detail = {
+        feature: pick('feature'),
+        limit: pick('limit'),
+        used: pick('used', 'current'),
+        resetAt: pick('resetAt'),
+        upgradeTo: pick('upgradeTo'),
+    }
+    // Drop undefined so QuotaExceededState's own defaults still apply to
+    // anything the server didn't send.
+    return Object.fromEntries(Object.entries(detail).filter(([, v]) => v !== undefined && v !== null))
 }
 
 function ErrorToastContent({ formatted, ctx }) {
@@ -115,8 +136,29 @@ export function ToastProvider({ children }) {
     }, [dismissToast])
 
     // Backwards-compatible string-message adder.
+    //
+    // Coerces a plain object into a string rather than handing React something
+    // it cannot render. A toast is feedback about work that already succeeded —
+    // it must never be the thing that takes the app down, which is exactly what
+    // happened when three PR-review publish paths passed { title, message }.
+    // ReactNode content has its own entry point (`toast.custom`).
+    const coerceMessage = (message) => {
+        if (message === null || message === undefined) return ''
+        if (typeof message === 'string') return message
+        if (typeof message === 'number' || typeof message === 'boolean') return String(message)
+        // React elements are legitimate here — ToastItem renders them fine.
+        if (isValidElement(message)) return message
+        if (typeof message === 'object') {
+            const parts = [message.title, message.message ?? message.description]
+                .filter((p) => typeof p === 'string' && p.length > 0)
+            if (parts.length > 0) return parts.join(' — ')
+            return 'Done.'
+        }
+        return String(message)
+    }
+
     const addToast = useCallback((type, message, duration = 5000) => {
-        return addToastRecord({ type, message, duration })
+        return addToastRecord({ type, message: coerceMessage(message), duration })
     }, [addToastRecord])
 
     const toast = useMemo(() => ({
@@ -141,9 +183,16 @@ export function ToastProvider({ children }) {
         // when the action kind is 'retry'.
         errorFromException: (err, ctx = {}) => {
             const formatted = formatUserError(err, ctx)
+            // Derive the quota detail from the error itself. Requiring every
+            // callsite to thread `detail` through meant none of the ~98 of them
+            // did, so the "See options" modal always opened with no numbers,
+            // no reset date and — because QuotaUpgradeButton returns null
+            // without `upgradeTo` — no upgrade button at the one moment the
+            // product has to sell.
+            const resolvedCtx = ctx.detail ? ctx : { ...ctx, detail: quotaDetailFromError(err) }
             return addToastRecord({
                 type: 'error',
-                content: <ErrorToastContent formatted={formatted} ctx={ctx} />,
+                content: <ErrorToastContent formatted={formatted} ctx={resolvedCtx} />,
                 duration: ctx.duration ?? 7000,
                 dedupeKey: `error:${formatted.title}|${formatted.body}`,
             })

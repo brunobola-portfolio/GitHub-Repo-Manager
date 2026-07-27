@@ -2,7 +2,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockProvider = { type: 'anthropic', modelName: 'claude-sonnet-4-5', generate: vi.fn() };
-vi.mock('../lib/ai-provider.js', () => ({
+vi.mock('../lib/ai-provider.js', async (importOriginal) => ({
+    ...(await importOriginal()),
     createProviderForUser: vi.fn(async () => mockProvider),
 }));
 

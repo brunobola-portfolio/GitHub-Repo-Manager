@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { TierContext } from '../../src/contexts/contexts'
 
 beforeEach(() => {
@@ -66,6 +66,30 @@ describe('useWorkBoardBadgeCounts', () => {
         expect(result.current.count).toBe(7)
 
         resolveFetch({ ok: true, json: async () => ({ data: [] }) })
+    })
+
+    it('stops polling while the tab is hidden', async () => {
+        vi.useFakeTimers()
+        global.fetch.mockResolvedValue({ ok: true, json: async () => ({ data: [] }) })
+
+        let hidden = false
+        const originalHidden = Object.getOwnPropertyDescriptor(Document.prototype, 'hidden')
+        Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden })
+        try {
+            renderHook(() => useWorkBoardBadgeCounts(), { wrapper: withTier('pro') })
+            await act(async () => {})
+            const afterMount = global.fetch.mock.calls.length
+            expect(afterMount).toBeGreaterThan(0)
+
+            hidden = true
+            await act(async () => { document.dispatchEvent(new Event('visibilitychange')) })
+            // Two full 5-minute poll windows with the tab in the background.
+            await act(async () => { await vi.advanceTimersByTimeAsync(11 * 60 * 1000) })
+            expect(global.fetch.mock.calls.length).toBe(afterMount)
+        } finally {
+            delete document.hidden
+            if (originalHidden) Object.defineProperty(Document.prototype, 'hidden', originalHidden)
+        }
     })
 
     it('persists count to localStorage after successful fetch', async () => {

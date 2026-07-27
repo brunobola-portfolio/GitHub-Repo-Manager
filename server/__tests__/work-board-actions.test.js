@@ -327,9 +327,13 @@ describe('Presets CRUD', () => {
 });
 
 vi.mock('../lib/work-board-summary.js', () => ({
+    // The route resolves the provider itself so it can tell whether the
+    // operator's spend cap applies (it does not for BYOK), then hands it to
+    // generateSummary rather than paying for a second resolution.
+    resolveSummaryProvider: vi.fn(async () => ({ type: 'anthropic', modelName: 'claude' })),
     generateSummary: vi.fn(async () => ({
         headline: 'All quiet', bullets: [{ text: 'Nothing urgent', severity: 'info' }],
-        urgencyScore: 0.1, model: 'claude', provider: 'anthropic',
+        urgencyScore: 0.1, model: 'claude', provider: 'anthropic', billsOperator: true,
     })),
 }));
 vi.mock('../lib/event-aggregations.js', () => ({
@@ -509,11 +513,28 @@ describe('POST /api/v1/work-board/ai-summary', () => {
         summaryLib.generateSummary.mockResolvedValueOnce({
             headline: 'All quiet', bullets: [{ text: 'Nothing urgent', severity: 'info' }],
             urgencyScore: 0.1, model: 'claude', provider: 'anthropic', costUSD: 0.03,
+            billsOperator: true,
         });
         const res = await request(makeApp()).post('/api/v1/work-board/ai-summary').send({});
         expect(res.status).toBe(200);
         expect(mockRecordAISpend).toHaveBeenCalledWith(1, 0.03);
         expect(res.body.data.costUSD).toBeUndefined();
         expect(cacheLib.putCached).toHaveBeenCalledWith(1, 'ai_summary', expect.not.objectContaining({ costUSD: expect.anything() }), null, 300);
+    });
+
+    it('does NOT record spend when the summary ran on the user own key', async () => {
+        // BYOK: the cost is real but it landed on the customer's bill, so
+        // accumulating it against the operator's cap would throttle someone
+        // costing the operator nothing.
+        summaryLib.generateSummary.mockResolvedValueOnce({
+            headline: 'All quiet', bullets: [{ text: 'Nothing urgent', severity: 'info' }],
+            urgencyScore: 0.1, model: 'claude', provider: 'anthropic', costUSD: 0.03,
+            billsOperator: false,
+        });
+        mockRecordAISpend.mockClear();
+        const res = await request(makeApp()).post('/api/v1/work-board/ai-summary').send({});
+        expect(res.status).toBe(200);
+        expect(mockRecordAISpend).not.toHaveBeenCalled();
+        expect(res.body.data.billsOperator).toBeUndefined();
     });
 });

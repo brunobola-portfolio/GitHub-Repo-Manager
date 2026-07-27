@@ -12,6 +12,9 @@ import {
 } from 'lucide-react'
 import { useSelection } from '../hooks/useSelection'
 import { useModal } from '../hooks/useModal'
+import { useRepoActionContext } from '../actions/repoActionContext'
+import { runAction } from '../actions/runAction'
+import { repoActions } from '../actions/repoActions'
 
 const ACTION_LABELS = {
     visibility: 'Change Visibility',
@@ -25,13 +28,9 @@ const ACTION_LABELS = {
 
 function SidebarBase({
     isPerforming,
-    performAction,
     message,
     results,
-    onArchive,
-    onDelete,
     selectedRepos = [],
-    onTransfer,
     activity = []
 }) {
     const { selectedIds } = useSelection()
@@ -47,10 +46,6 @@ function SidebarBase({
                 hasSelection={hasSelection}
                 selectedCount={selectedCount}
                 isPerforming={isPerforming}
-                performAction={performAction}
-                onTransfer={onTransfer}
-                onArchive={onArchive}
-                onDelete={onDelete}
                 selectedRepos={selectedRepos}
                 onImport={() => openModal('showMigrationWizard')}
             />
@@ -71,8 +66,7 @@ function SidebarBase({
 }
 
 function QuickActions({
-    hasSelection, selectedCount, isPerforming, performAction,
-    onTransfer, onArchive, onDelete, selectedRepos, onImport
+    hasSelection, selectedCount, isPerforming, selectedRepos, onImport
 }) {
     return (
         <Card hover={true} className="flex-shrink-0 overflow-hidden border border-slate-200 dark:border-slate-700/60 shadow-sm rounded-2xl">
@@ -125,10 +119,6 @@ function QuickActions({
                 ) : (
                     <QuickActionButtons
                         isPerforming={isPerforming}
-                        performAction={performAction}
-                        onTransfer={onTransfer}
-                        onArchive={onArchive}
-                        onDelete={onDelete}
                         selectedRepos={selectedRepos}
                     />
                 )}
@@ -141,25 +131,40 @@ function QuickActions({
 // collapsed SlimSidebar "Quick Actions" popover so both render the SAME real
 // actions (no invented / duplicated buttons). Exported for SlimSidebar.jsx
 // (kept as a separate, lazy-loaded module — see App.jsx).
-export function QuickActionButtons({
-    isPerforming, performAction, onTransfer, onArchive, onDelete, selectedRepos
-}) {
+// Every button dispatches through runAction + the shared registry, so these
+// get the same confirmation gates, type-to-confirm and honest result toasts as
+// the selection bar and the command palette. They previously called
+// performAction/onDelete directly with no repo list: the request was skipped,
+// nothing threw, and the caller still reported "completed successfully" —
+// while Delete reached the bulk endpoint with no confirmation at all.
+export function QuickActionButtons({ isPerforming, selectedRepos = [] }) {
+    const ctx = useRepoActionContext()
+    const count = selectedRepos.length
+    const disabled = isPerforming || count === 0
+    const dispatch = (actionId) => runAction(actionId, selectedRepos, ctx, repoActions)
+
     return (
         <div className="grid grid-cols-2 gap-2">
+            {count === 0 && (
+                <p className="col-span-2 text-xs text-slate-500 dark:text-slate-400">
+                    Select one or more repositories to use these actions.
+                </p>
+            )}
+
             {/* Visibility */}
             <ActionButton
                 icon={Lock}
                 label="Private"
-                onClick={() => performAction?.('visibility', { makePublic: false })}
-                disabled={isPerforming}
+                onClick={() => dispatch('make_private_selected')}
+                disabled={disabled}
                 variant="warning"
                 className="col-span-1"
             />
             <ActionButton
                 icon={Unlock}
                 label="Public"
-                onClick={() => performAction?.('visibility', { makePublic: true })}
-                disabled={isPerforming}
+                onClick={() => dispatch('make_public_selected')}
+                disabled={disabled}
                 variant="success"
                 className="col-span-1"
             />
@@ -169,8 +174,8 @@ export function QuickActionButtons({
                 icon={ArrowRightLeft}
                 label="Transfer"
                 subLabel="or Mirror"
-                onClick={onTransfer}
-                disabled={isPerforming}
+                onClick={() => dispatch('transfer_selected')}
+                disabled={disabled}
                 variant="info"
                 className="col-span-2"
             />
@@ -180,15 +185,15 @@ export function QuickActionButtons({
                 <ActionButton
                     icon={Archive}
                     label="Archive"
-                    onClick={() => onArchive?.(selectedRepos, true)}
-                    disabled={isPerforming}
+                    onClick={() => dispatch('archive_selected')}
+                    disabled={disabled}
                     variant="secondary"
                 />
                 <ActionButton
                     icon={Trash2}
                     label="Delete"
-                    onClick={() => onDelete?.(selectedRepos)}
-                    disabled={isPerforming}
+                    onClick={() => dispatch('delete_selected')}
+                    disabled={disabled}
                     variant="danger"
                 />
             </div>

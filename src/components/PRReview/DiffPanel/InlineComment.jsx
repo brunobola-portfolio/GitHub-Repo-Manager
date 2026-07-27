@@ -37,7 +37,7 @@ function ReplyItem({ reply }) {
       <div className="flex items-center gap-2 mb-1">
         <Avatar login={login} size={5} />
         <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{login}</span>
-        <span className="text-xs text-slate-400 dark:text-slate-500">{formatRelativeTime(reply.created_at)}</span>
+        <span className="text-xs text-slate-500 dark:text-slate-400">{formatRelativeTime(reply.created_at)}</span>
       </div>
       <div className="prose prose-sm dark:prose-invert max-w-none text-xs">
         <ReactMarkdown {...safeMarkdownProps}>{reply.body ?? ''}</ReactMarkdown>
@@ -145,7 +145,7 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
         <Avatar login={login} />
 
         <span className="font-semibold text-slate-700 dark:text-slate-200 text-xs">{login}</span>
-        <span className="text-xs text-slate-400 dark:text-slate-500">{formatRelativeTime(comment.created_at)}</span>
+        <span className="text-xs text-slate-500 dark:text-slate-400">{formatRelativeTime(comment.created_at)}</span>
 
         {/* Pending badge */}
         {isPending && (
@@ -156,7 +156,7 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
 
         {/* Line number */}
         {lineNumber != null && (
-          <span className={`${isPending ? '' : 'ml-auto'} shrink-0 text-xs font-mono text-slate-400 dark:text-slate-500`}>
+          <span className={`${isPending ? '' : 'ml-auto'} shrink-0 text-xs font-mono text-slate-500 dark:text-slate-400`}>
             L{lineNumber}
           </span>
         )}

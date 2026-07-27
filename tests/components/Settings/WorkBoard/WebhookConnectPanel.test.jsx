@@ -4,17 +4,20 @@ import { WebhookConnectPanel } from '../../../../src/components/Settings/WorkBoa
 
 describe('WebhookConnectPanel', () => {
     it('renders the webhook endpoint', () => {
-        render(<WebhookConnectPanel tier="pro" />)
+        render(<WebhookConnectPanel />)
         expect(screen.getByText(/\/api\/v1\/webhooks\/github/)).toBeInTheDocument()
     })
 
-    it('shows "Upgrade to Pro" when tier is free', () => {
-        render(<WebhookConnectPanel tier="free" />)
-        expect(screen.getByText(/upgrade to pro/i)).toBeInTheDocument()
+    // The route has no tier gate, so the panel must never advertise one.
+    it('never shows a Pro badge or an upgrade CTA', () => {
+        render(<WebhookConnectPanel />)
+        expect(screen.queryByText(/upgrade to pro/i)).not.toBeInTheDocument()
+        expect(screen.queryByText(/^Pro$/)).not.toBeInTheDocument()
+        expect(screen.queryByText(/on Pro\b/)).not.toBeInTheDocument()
     })
 
-    it('shows instructions link when tier is pro+', () => {
-        render(<WebhookConnectPanel tier="pro" />)
+    it('shows the setup instructions link to every tier', () => {
+        render(<WebhookConnectPanel />)
         expect(screen.getByRole('link', { name: /setup instructions/i })).toBeInTheDocument()
     })
 
@@ -25,7 +28,7 @@ describe('WebhookConnectPanel', () => {
             writable: true,
             configurable: true,
         })
-        render(<WebhookConnectPanel tier="pro" />)
+        render(<WebhookConnectPanel />)
         fireEvent.click(screen.getByRole('button', { name: /copy/i }))
         expect(writeText).toHaveBeenCalledWith(expect.stringContaining('/api/v1/webhooks/github'))
     })

@@ -40,6 +40,18 @@ static class Program
     internal const string RunValueName = "GitHubRepoManager";
     const int DefaultPort = 3001;
 
+    // Absolute System32 paths, never bare image names: CreateProcess (and
+    // ShellExecute) search the application directory and the working directory
+    // BEFORE System32, and both spawn sites below run with WorkingDirectory set
+    // to the install root. A powershell.exe or explorer.exe dropped into a
+    // writable install dir would otherwise run as the logged-in user at every
+    // autostart. installer.iss already uses {sys}\taskkill.exe for the same
+    // reason; this matches it.
+    internal static readonly string PowerShellExe = Path.Combine(
+        Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
+    internal static readonly string ExplorerExe = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
+
     [DllImport("shell32.dll", SetLastError = true)]
     static extern int SetCurrentProcessExplicitAppUserModelID(
         [MarshalAs(UnmanagedType.LPWStr)] string appId);
@@ -101,7 +113,7 @@ static class Program
         if (!string.IsNullOrEmpty(dataDir)) psArgs += " -DataDir " + QuoteArg(dataDir);
 
         ProcessStartInfo psi = new ProcessStartInfo();
-        psi.FileName = "powershell.exe";
+        psi.FileName = PowerShellExe;
         psi.Arguments = psArgs;
         psi.WorkingDirectory = root;
         psi.UseShellExecute = false;
@@ -391,6 +403,16 @@ class TrayContext : ApplicationContext
     // first status onto the UI thread.
     void StartServerWork()
     {
+        // A server already answering before this tray spawned anything is one
+        // this tray does not own: the previous tray was killed from Task
+        // Manager (Dispose never runs on TerminateProcess, so nothing stopped
+        // the detached node process), or apply-update.ps1 relaunched the server
+        // with --start-only. Either way the user is left with a hidden process
+        // and no obvious way to stop it, so say so and name the action that
+        // does. start.ps1 is still spawned below — its own health probe makes
+        // that a no-op reuse — so there is only one startup path to maintain.
+        bool adopted = Program.IsHealthy(Program.ReadPort(_dataDir));
+
         try
         {
             using (Process p = SpawnHidden("start.ps1")) { p.WaitForExit(); }
@@ -401,7 +423,9 @@ class TrayContext : ApplicationContext
         {
             if (!_noBrowser) Program.OpenBrowser(Program.ReadPort(_dataDir));
             _icon.ShowBalloonTip(3000, "GitHub Repo Manager",
-                "Running in the background — click the tray icon for options.",
+                adopted
+                    ? "A server was already running — this tray is now managing it. Use \"Quit GitHub Repo Manager\" to stop it."
+                    : "Running in the background — click the tray icon for options.",
                 ToolTipIcon.Info);
         }, null);
 
@@ -417,7 +441,7 @@ class TrayContext : ApplicationContext
             + Program.QuoteArg(script) + " -NoBrowser -DataDir " + Program.QuoteArg(_dataDir);
 
         ProcessStartInfo psi = new ProcessStartInfo();
-        psi.FileName = "powershell.exe";
+        psi.FileName = Program.PowerShellExe;
         psi.Arguments = psArgs;
         psi.WorkingDirectory = _root;
         psi.UseShellExecute = false;
@@ -460,7 +484,7 @@ class TrayContext : ApplicationContext
         {
             string logs = Path.Combine(_dataDir, "logs");
             if (!Directory.Exists(logs)) logs = _dataDir;
-            ProcessStartInfo psi = new ProcessStartInfo("explorer.exe", Program.QuoteArg(logs));
+            ProcessStartInfo psi = new ProcessStartInfo(Program.ExplorerExe, Program.QuoteArg(logs));
             psi.UseShellExecute = true;
             Process.Start(psi);
         }

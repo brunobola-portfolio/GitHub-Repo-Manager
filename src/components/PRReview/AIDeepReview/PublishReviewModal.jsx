@@ -5,7 +5,8 @@ import { SafeMarkdown } from '../../AIPrompts/SafeMarkdown';
 
 const EVENTS = [
     { key: 'COMMENT', label: 'Comment', tone: 'bg-blue-600 hover:bg-blue-700 ring-blue-200 dark:ring-blue-900' },
-    { key: 'APPROVE', label: 'Approve', tone: 'bg-emerald-600 hover:bg-emerald-700 ring-emerald-200 dark:ring-emerald-900' },
+    // --ds-cta, not emerald-600: white on emerald-600 is 3.67:1 (see --ds-cta-text).
+    { key: 'APPROVE', label: 'Approve', tone: 'bg-[color:var(--ds-cta)] dark:bg-[color:var(--ds-cta-dark)] hover:bg-[color:var(--ds-cta-hover)] dark:hover:bg-[color:var(--ds-cta-hover-dark)] ring-emerald-200 dark:ring-emerald-900' },
     { key: 'REQUEST_CHANGES', label: 'Request changes', tone: 'bg-amber-600 hover:bg-amber-700 ring-amber-200 dark:ring-amber-900' },
 ];
 

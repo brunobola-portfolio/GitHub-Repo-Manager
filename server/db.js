@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url';
 import { createDatabaseAdapter } from './lib/db-adapter.js';
 import logger from './lib/logger.js';
 import { runMigrations } from './lib/db-migrations.js';
+import { bindLicenseRevocationStore } from './lib/license.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -19,6 +20,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // Top-level await is supported because the project uses ESM ("type": "module").
 // ---------------------------------------------------------------------------
 const db = await createDatabaseAdapter();
+
+// Point license verification at the revocation list (migration 032). This has to
+// happen here rather than inside lib/license.js: that module is also imported by
+// the offline signing tools (scripts/generate-license.js, scripts/lib/minter.js),
+// which must never open — let alone create — an install's manager.db. This file
+// is the one entry point every server process goes through to reach SQLite, so
+// binding here is what makes verifyLicenseKey() consult the list everywhere
+// (require-tier's cache refresh, routes/license.js) with no per-caller wiring.
+// The table may not exist yet — initDB() runs later — which getLicenseRevocation
+// handles by re-probing until it does.
+bindLicenseRevocationStore(db);
 
 export function initDB(targetDb = db) {
     // Allow tests to apply the full schema against a throw-away in-memory

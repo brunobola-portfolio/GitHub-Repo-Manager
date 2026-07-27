@@ -235,6 +235,71 @@ describe('SimpleProgressStep — cancel + honest status rendering', () => {
     })
   })
 
+  describe('background-tab polling gate', () => {
+    let hidden = false
+    let originalHidden
+
+    beforeEach(() => {
+      hidden = false
+      originalHidden = Object.getOwnPropertyDescriptor(Document.prototype, 'hidden')
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden })
+    })
+    afterEach(() => {
+      delete document.hidden
+      if (originalHidden) Object.defineProperty(Document.prototype, 'hidden', originalHidden)
+      vi.useRealTimers()
+    })
+
+    async function setHidden(next) {
+      hidden = next
+      await act(async () => { document.dispatchEvent(new Event('visibilitychange')) })
+    }
+
+    it('stops polling a single import while the tab is hidden and re-syncs the moment it returns', async () => {
+      vi.useFakeTimers()
+      global.fetch = vi.fn(async () => ({ ok: true, json: async () => ({ status: 'running', progressPct: 50 }) }))
+
+      const importJobs = { jobId: 42, importing: true, jobStatus: { status: 'running', progressPct: 10 } }
+      render(<SimpleProgressStep importJobs={importJobs} onUpdate={() => {}} source={{}} />)
+
+      await advancePoll(1)
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+
+      await setHidden(true)
+      await advancePoll(3)
+      // Three interval periods elapsed with the tab in the background — a
+      // 20-repo batch at this cadence was 10 req/s of pure waste.
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+
+      // Returning must reconcile at once: pausing the poll must never leave a
+      // running migration showing a frozen progress bar.
+      await setHidden(false)
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+    })
+
+    it('stops every batch job timer while hidden and ticks each one on return', async () => {
+      vi.useFakeTimers()
+      global.fetch = vi.fn(async () => ({ ok: true, json: async () => ({ status: 'running', progressPct: 20 }) }))
+
+      const importJobs = {
+        batchJobs: [{ jobId: 1, repoName: 'repo-a' }, { jobId: 2, repoName: 'repo-b' }],
+        importing: true,
+        batchStatuses: { 1: { status: 'running' }, 2: { status: 'running' } },
+      }
+      render(<SimpleProgressStep importJobs={importJobs} onUpdate={() => {}} source={{}} />)
+
+      await advancePoll(1)
+      expect(global.fetch).toHaveBeenCalledTimes(2) // one per job
+
+      await setHidden(true)
+      await advancePoll(3)
+      expect(global.fetch).toHaveBeenCalledTimes(2)
+
+      await setHidden(false)
+      expect(global.fetch).toHaveBeenCalledTimes(4) // both jobs re-checked at once
+    })
+  })
+
   describe('connection-lost indicator (stale/reconnect polling)', () => {
     afterEach(() => {
       vi.useRealTimers()

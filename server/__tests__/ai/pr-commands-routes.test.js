@@ -219,7 +219,7 @@ describe('POST /api/ai/pr-commands/:owner/:repo/:pr/:command', () => {
         const app = makeApp();
         await request(app).post('/api/ai/pr-commands/acme/api/42/describe').send({});
 
-        const cents = testDb.prepare('SELECT cents FROM ai_spend WHERE user_id = ?').get(USER_ID)?.cents;
+        const cents = testDb.prepare('SELECT cents + micro_cents / 10000 AS cents FROM ai_spend WHERE user_id = ?').get(USER_ID)?.cents;
         expect(cents).toBe(4); // 0.04 USD
 
         const audit = testDb.prepare(

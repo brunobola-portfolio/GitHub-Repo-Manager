@@ -346,3 +346,52 @@ describe('launcher stub compilation', () => {
     expect(LAUNCHER_EXE_NAME).toBe('GitHub Repo Manager.exe')
   })
 })
+
+/**
+ * Source-level guards on installer.iss. There is no Inno Setup compiler in
+ * CI, so these read the Pascal rather than execute it — which still catches
+ * the regression that matters, because the defect they cover was a missing
+ * call, not a subtle runtime condition.
+ */
+describe('installer.iss — the tray must not survive an update', () => {
+  const iss = readFileSync(path.join(process.cwd(), 'packaging/windows/installer.iss'), 'utf8')
+
+  // IsAppRunning() matches node.exe by PID: the SERVER. The tray is a separate
+  // process holding a lock on {app}\GitHub Repo Manager.exe, and the in-app
+  // self-update asks the server to exit ~500 ms after spawning setup.exe — so
+  // node is typically already gone when PrepareToInstall runs. Gating the tray
+  // stop behind IsAppRunning() meant [Files] could not replace the locked exe,
+  // the update aborted, and no server came back.
+  function bodyOf(name) {
+    const start = iss.indexOf(name)
+    expect(start, `${name} not found in installer.iss`).toBeGreaterThan(-1)
+    const end = iss.indexOf('\nend;', start)
+    return iss.slice(start, end)
+  }
+
+  it('PrepareToInstall stops the tray even when the server is NOT running', () => {
+    const body = bodyOf('function PrepareToInstall(')
+    const notRunningBranch = body.slice(body.lastIndexOf('exit;'))
+    expect(notRunningBranch).toMatch(/StopTrayIfRunning\(\)/)
+  })
+
+  it('PrepareToInstall still leaves both processes alone when the user declines', () => {
+    const body = bodyOf('function PrepareToInstall(')
+    const declineBranch = body.slice(body.indexOf('MB_YESNO'), body.indexOf('Setup cannot continue'))
+    expect(declineBranch).not.toMatch(/StopTrayIfRunning|TryStopRunningApp/)
+  })
+
+  it('uninstall stops the tray on both branches', () => {
+    const body = bodyOf('procedure CurUninstallStepChanged(')
+    expect(body).toMatch(/TryStopRunningApp\(\)/)
+    expect(body).toMatch(/StopTrayIfRunning\(\)/)
+  })
+
+  it('StopTrayIfRunning is declared before the procedures that call it', () => {
+    // Pascal requires it, and Inno only fails at install time, not build time.
+    expect(iss.indexOf('procedure StopTrayIfRunning'))
+      .toBeLessThan(iss.indexOf('function PrepareToInstall('))
+    expect(iss.indexOf('procedure StopTrayIfRunning'))
+      .toBeLessThan(iss.indexOf('procedure CurUninstallStepChanged('))
+  })
+})

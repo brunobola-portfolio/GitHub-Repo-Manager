@@ -2,13 +2,18 @@ import { ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react'
 import { Spinner } from '../../ui/Spinner'
 import { AIErrorState } from '../../ui/AIErrorState'
 import { motion, AnimatePresence } from 'framer-motion'
-import { normalizeRiskLevel, riskFillClass, riskTextClass, riskTintClass } from '../../../utils/riskTokens'
+import { normalizeRiskLevel, riskTextClass, riskTintClass, riskRingClass } from '../../../utils/riskTokens'
 
+// White on ds-risk-*-fill measured 1.53:1 (medium, dark) to 3.76:1 — the exact
+// misuse AGENTS.md calls out: the 500-level fills are for graphics, and text
+// belongs on the --ds-risk-*-text variants, which are AA in both themes.
+// Same tint/text/ring triple PRRiskBadges and SecurityScanModal already use.
 function RiskPill({ level }) {
   if (!level) return null
+  const normalized = normalizeRiskLevel(level)
   return (
     <span
-      className={`inline-flex items-center px-1.5 py-0.5 rounded text-white text-xs font-semibold uppercase tracking-wide ${riskFillClass(normalizeRiskLevel(level))}`}
+      className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold uppercase tracking-wide ${riskTintClass(normalized)} ${riskTextClass(normalized)} ${riskRingClass(normalized)}`}
     >
       {level}
     </span>

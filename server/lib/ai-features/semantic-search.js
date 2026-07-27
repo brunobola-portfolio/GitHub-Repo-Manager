@@ -24,19 +24,58 @@ function parseEmbedding(json, repoId) {
 }
 
 /**
+ * Euclidean norm of a vector.
+ * @param {Array<number>} vec
+ * @returns {number}
+ */
+function vectorNorm(vec) {
+    let sum = 0;
+    for (let i = 0; i < vec.length; i++) sum += vec[i] * vec[i];
+    return Math.sqrt(sum);
+}
+
+/**
+ * Cosine similarity against a fixed query vector whose norm is computed once.
+ *
+ * The ranking loops below compare ONE query vector against every indexed repo,
+ * so recomputing the query's norm per candidate burns a third of the arithmetic
+ * on an answer that never changes — at 3072 dimensions x hundreds of repos that
+ * is tens of milliseconds of blocked event loop per request.
+ *
+ * @param {Array<number>} queryVec
+ * @returns {(candidate: Array<number>) => number} score in [-1, 1]
+ */
+function makeCosineScorer(queryVec) {
+    const queryNorm = vectorNorm(queryVec);
+    return function score(candidate) {
+        // Vectors from different embedding models are not comparable, and the
+        // loop below would read past the shorter one: `undefined * n` is NaN,
+        // which then poisons the whole ranking rather than demoting one row.
+        // This is reachable by ordinary operator action — switching
+        // GEMINI_EMBEDDING_MODEL from a 1536-dim model to gemini-embedding-001
+        // (3072) leaves every already-indexed repo at the old width until it is
+        // re-indexed. Score 0 ranks those last, which is what "we cannot
+        // compare this yet" should look like.
+        if (!Array.isArray(candidate) || candidate.length !== queryVec.length) return 0;
+
+        let dotProduct = 0;
+        let normB = 0;
+        for (let i = 0; i < queryVec.length; i++) {
+            dotProduct += queryVec[i] * candidate[i];
+            normB += candidate[i] * candidate[i];
+        }
+        // A zero vector has no direction; 0/0 would be NaN.
+        const denom = queryNorm * Math.sqrt(normB);
+        return denom === 0 ? 0 : dotProduct / denom;
+    };
+}
+
+/**
  * Cosine similarity between two equal-length vectors.
  * Returns a score in [-1, 1].
  */
 export function cosineSimilarity(vecA, vecB) {
-    let dotProduct = 0;
-    let normA = 0;
-    let normB = 0;
-    for (let i = 0; i < vecA.length; i++) {
-        dotProduct += vecA[i] * vecB[i];
-        normA += vecA[i] * vecA[i];
-        normB += vecB[i] * vecB[i];
-    }
-    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+    return makeCosineScorer(vecA)(vecB);
 }
 
 /**
@@ -91,28 +130,59 @@ export async function findSimilarById(ctx, repoId, { topK = 5, excludeSelf = tru
     const targetVec = parseEmbedding(row.embedding, repoId);
     if (!targetVec) return null;
 
+    // The ranking scan pulls one row per indexed repo and only ever needs the
+    // embedding. Joining repo_metadata here dragged a summary blob through for
+    // every candidate when at most `topK` of them are ever read; those are
+    // fetched below, once the winners are known.
     let others;
     if (userId !== undefined && userId !== null) {
         others = excludeSelf
-            ? db.prepare('SELECT re.repo_id, re.embedding, rm.topics, rm.summary FROM repo_embeddings re LEFT JOIN repo_metadata rm ON re.repo_id = rm.repo_id AND re.user_id = rm.user_id WHERE re.user_id = ? AND re.repo_id != ?').all(userId, repoId)
-            : db.prepare('SELECT re.repo_id, re.embedding, rm.topics, rm.summary FROM repo_embeddings re LEFT JOIN repo_metadata rm ON re.repo_id = rm.repo_id AND re.user_id = rm.user_id WHERE re.user_id = ?').all(userId);
+            ? db.prepare('SELECT repo_id, embedding FROM repo_embeddings WHERE user_id = ? AND repo_id != ?').all(userId, repoId)
+            : db.prepare('SELECT repo_id, embedding FROM repo_embeddings WHERE user_id = ?').all(userId);
     } else {
         others = excludeSelf
-            ? db.prepare('SELECT re.repo_id, re.embedding, rm.topics, rm.summary FROM repo_embeddings re LEFT JOIN repo_metadata rm ON re.repo_id = rm.repo_id WHERE re.repo_id != ?').all(repoId)
-            : db.prepare('SELECT re.repo_id, re.embedding, rm.topics, rm.summary FROM repo_embeddings re LEFT JOIN repo_metadata rm ON re.repo_id = rm.repo_id').all();
+            ? db.prepare('SELECT repo_id, embedding FROM repo_embeddings WHERE repo_id != ?').all(repoId)
+            : db.prepare('SELECT repo_id, embedding FROM repo_embeddings').all();
     }
 
+    const score = makeCosineScorer(targetVec);
     const scored = others.flatMap(o => {
         const vec = parseEmbedding(o.embedding, o.repo_id);
         if (!vec) return [];
-        return [{
-            repoId: o.repo_id,
-            score: cosineSimilarity(targetVec, vec),
-            description: o.summary || ''
-        }];
+        return [{ repoId: o.repo_id, score: score(vec) }];
     });
 
-    return scored.sort((a, b) => b.score - a.score).slice(0, topK);
+    const winners = scored.sort((a, b) => b.score - a.score).slice(0, topK);
+    const summaries = fetchSummaries(db, winners.map(w => w.repoId), userId);
+    return winners.map(w => ({ ...w, description: summaries.get(w.repoId) || '' }));
+}
+
+/**
+ * Look up repo_metadata summaries for a handful of repo ids.
+ * Placeholders are generated from the id COUNT (never from the values), so the
+ * ids themselves stay bound parameters.
+ *
+ * @param {object} db
+ * @param {Array<number|string>} repoIds
+ * @param {number} [userId]
+ * @returns {Map<number|string, string>}
+ */
+function fetchSummaries(db, repoIds, userId) {
+    const summaries = new Map();
+    if (repoIds.length === 0) return summaries;
+    const placeholders = repoIds.map(() => '?').join(',');
+    const scoped = userId !== undefined && userId !== null;
+    const sql = scoped
+        ? `SELECT repo_id, summary FROM repo_metadata WHERE user_id = ? AND repo_id IN (${placeholders})`
+        : `SELECT repo_id, summary FROM repo_metadata WHERE repo_id IN (${placeholders})`;
+    try {
+        const rows = db.prepare(sql).all(...(scoped ? [userId, ...repoIds] : repoIds));
+        for (const row of rows) summaries.set(row.repo_id, row.summary);
+    } catch (err) {
+        // A missing summary degrades the result card, never the ranking.
+        logger.warn({ err }, 'semantic-search: summary lookup failed');
+    }
+    return summaries;
 }
 
 /**
@@ -144,11 +214,11 @@ export async function semanticSearch(ctx, query, limit = 5, userId) {
     }
 
     // 3. Rank by similarity (skip rows whose embedding column is corrupted)
+    const score = makeCosineScorer(queryEmbedding);
     const results = rows.flatMap(row => {
         const embedding = parseEmbedding(row.embedding, row.repo_id);
         if (!embedding) return [];
-        const score = cosineSimilarity(queryEmbedding, embedding);
-        return [{ repo_id: row.repo_id, score }];
+        return [{ repo_id: row.repo_id, score: score(embedding) }];
     });
 
     return results

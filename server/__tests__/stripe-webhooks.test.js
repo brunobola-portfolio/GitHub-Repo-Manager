@@ -38,6 +38,9 @@ const mockStripeInstance = {
     customers: {
         retrieve: vi.fn(async () => ({ email: 'billing@example.com' })),
     },
+    charges: { retrieve: vi.fn() },
+    invoices: { retrieve: vi.fn() },
+    subscriptions: { retrieve: vi.fn() },
 }
 
 vi.mock('../lib/stripe.js', () => ({
@@ -87,6 +90,9 @@ describe('stripeWebhookHandler', () => {
         mockStripeInstance.checkout.sessions.listLineItems.mockReset()
         mockStripeInstance.customers.retrieve.mockReset()
         mockStripeInstance.customers.retrieve.mockResolvedValue({ email: 'billing@example.com' })
+        mockStripeInstance.charges.retrieve.mockReset()
+        mockStripeInstance.invoices.retrieve.mockReset()
+        mockStripeInstance.subscriptions.retrieve.mockReset()
     })
 
     afterEach(() => { vi.clearAllMocks() })
@@ -751,6 +757,174 @@ describe('stripeWebhookHandler', () => {
 
             expect(res.statusCode).toBe(200)
             expect(issueLicenseForCheckout).not.toHaveBeenCalled()
+        })
+    })
+
+    it('keeps the deferral marker when a deferred licence issuance fails, so the Stripe retry can reissue', async () => {
+        // SEPA/Boleto path: checkout parked the row as 'incomplete' because the
+        // payment had not settled. If issuance fails we 500 so Stripe retries —
+        // but that retry only works while the row still reads 'incomplete'.
+        mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+            id: 'evt_deferred_fail',
+            type: 'invoice.paid',
+            data: { object: { id: 'in_def', subscription: 'sub_def', billing_reason: 'subscription_create', customer_email: 'buyer@example.com' } },
+        })
+        mockStripeInstance.subscriptions.retrieve.mockResolvedValue({
+            id: 'sub_def', status: 'active', metadata: { tier: 'pro' },
+        })
+        const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
+        issueLicenseForCheckout.mockReset()
+        issueLicenseForCheckout.mockRejectedValueOnce(new Error('smtp down'))
+
+        const markActive = vi.fn(() => ({ changes: 1 }))
+        mockPrepare.mockImplementation((sql) => {
+            if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+            if (/DELETE FROM webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+            if (/SELECT user_id, billing_period FROM user_subscriptions/.test(sql)) {
+                return { get: vi.fn(() => ({ user_id: 7, billing_period: 'monthly' })) }
+            }
+            if (/status = 'active'/.test(sql)) return { run: markActive }
+            return { get: vi.fn(() => ({ email: 'buyer@example.com' })), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+        })
+
+        const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+        await stripeWebhookHandler(req, res)
+
+        expect(res.statusCode).toBe(500)
+        expect(markActive).not.toHaveBeenCalled()
+    })
+
+    describe('refunds, disputes and the billing hold', () => {
+        // Wire a charge -> invoice -> subscription chain so the handler can
+        // resolve which subscription a refund or dispute belongs to.
+        function wireChargeChain({ subscriptionId = 'sub_ref' } = {}) {
+            mockStripeInstance.charges.retrieve.mockResolvedValue({ id: 'ch_1', invoice: 'in_1' })
+            mockStripeInstance.invoices.retrieve.mockResolvedValue({ id: 'in_1', subscription: subscriptionId })
+        }
+
+        it('leaves a paying customer alone on a PARTIAL refund', async () => {
+            // Stripe sends charge.refunded for partial refunds too, with
+            // refunded:false. A $5 goodwill credit on a $19 invoice must not
+            // strip the tier off a customer who is still fully paid up.
+            //
+            // The charge chain is wired deliberately: without it the handler
+            // would bail out at "no subscription" and this test would pass
+            // even with the partial-refund guard removed.
+            wireChargeChain()
+            mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+                id: 'evt_partial',
+                type: 'charge.refunded',
+                data: { object: { id: 'ch_partial', invoice: 'in_1', amount: 1900, amount_refunded: 500, refunded: false } },
+            })
+            const downgrade = vi.fn(() => ({ changes: 1 }))
+            mockPrepare.mockImplementation((sql) => {
+                if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+                if (/SET tier = 'free', status = \?/.test(sql)) return { run: downgrade }
+                return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+            })
+
+            const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+            await stripeWebhookHandler(req, res)
+
+            expect(res.statusCode).toBe(200)
+            expect(downgrade).not.toHaveBeenCalled()
+        })
+
+        it('downgrades on a FULL refund', async () => {
+            mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+                id: 'evt_full',
+                type: 'charge.refunded',
+                data: { object: { id: 'ch_full', invoice: 'in_1', amount: 1900, amount_refunded: 1900, refunded: true } },
+            })
+            wireChargeChain()
+            const downgrade = vi.fn(() => ({ changes: 1 }))
+            mockPrepare.mockImplementation((sql) => {
+                if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+                if (/SET tier = 'free', status = \?/.test(sql)) return { run: downgrade }
+                return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+            })
+
+            const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+            await stripeWebhookHandler(req, res)
+
+            expect(res.statusCode).toBe(200)
+            expect(downgrade).toHaveBeenCalledWith('refunded', 'sub_ref')
+        })
+
+        it('does not let customer.subscription.updated lift a refund hold', async () => {
+            // Opening the billing portal is enough to emit this event, and
+            // Stripe still reports the subscription as active — the refund
+            // must not be undone by it.
+            mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+                id: 'evt_upd',
+                type: 'customer.subscription.updated',
+                data: {
+                    object: {
+                        id: 'sub_ref',
+                        status: 'active',
+                        metadata: { tier: 'pro' },
+                        current_period_start: 1750000000,
+                        current_period_end: 1752000000,
+                    },
+                },
+            })
+            const restoreTier = vi.fn(() => ({ changes: 1 }))
+            mockPrepare.mockImplementation((sql) => {
+                if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+                if (/SELECT status FROM user_subscriptions/.test(sql)) return { get: vi.fn(() => ({ status: 'refunded' })) }
+                if (/SET\s+tier = \?, status = \?/.test(sql)) return { run: restoreTier }
+                return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+            })
+
+            const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+            await stripeWebhookHandler(req, res)
+
+            expect(res.statusCode).toBe(200)
+            expect(restoreTier).not.toHaveBeenCalled()
+        })
+
+        it('restores access when a dispute closes as won', async () => {
+            mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+                id: 'evt_won',
+                type: 'charge.dispute.closed',
+                data: { object: { id: 'dp_1', charge: 'ch_1', status: 'won' } },
+            })
+            wireChargeChain({ subscriptionId: 'sub_won' })
+            mockStripeInstance.subscriptions.retrieve.mockResolvedValue({
+                id: 'sub_won', status: 'active', metadata: { tier: 'pro' },
+            })
+            const restore = vi.fn(() => ({ changes: 1 }))
+            mockPrepare.mockImplementation((sql) => {
+                if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+                if (/status = 'disputed'/.test(sql)) return { run: restore }
+                return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+            })
+
+            const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+            await stripeWebhookHandler(req, res)
+
+            expect(res.statusCode).toBe(200)
+            expect(restore).toHaveBeenCalledWith('pro', 'active', 'sub_won')
+        })
+
+        it('leaves the hold in place when a dispute closes as lost', async () => {
+            mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+                id: 'evt_lost',
+                type: 'charge.dispute.closed',
+                data: { object: { id: 'dp_2', charge: 'ch_2', status: 'lost' } },
+            })
+            const restore = vi.fn(() => ({ changes: 1 }))
+            mockPrepare.mockImplementation((sql) => {
+                if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+                if (/status = 'disputed'/.test(sql)) return { run: restore }
+                return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+            })
+
+            const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+            await stripeWebhookHandler(req, res)
+
+            expect(res.statusCode).toBe(200)
+            expect(restore).not.toHaveBeenCalled()
         })
     })
 })

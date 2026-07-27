@@ -14,16 +14,29 @@ node_modules
 .roo
 .augment
 
-# Secrets — NEVER copy local env files into image
-.env
-.env.local
-.env.*.local
-.env.production
-.env.development
+# Secrets — NEVER copy local env files into image.
+# A pattern, not an enumeration: Dockerfile stage 1 does `COPY . .`, so every
+# name NOT listed here gets baked into an image layer where it survives even
+# if a later stage never copies it forward.
+.env*
 
-# License signing private key — verification only needs keys/public.pem;
-# keep the private key out of every build layer, including the builder stage
-keys/private.pem
+# Key/certificate material — verification only needs keys/public.pem, which is
+# public by definition and re-included below. `**/` because .dockerignore
+# patterns do not cross directory separators: a bare `*.pem` would leave
+# keys/private.pem and certs/*.pem in the context.
+**/*.pem
+**/*.key
+**/*.crt
+**/*.pfx
+**/*.p12
+**/*.jks
+!keys/public.pem
+
+# Local scratch that is gitignored (so it never shows up in review) but sits
+# in the build context all the same. dados.txt holds a live license JWT.
+dados.txt
+plans
+Implementation
 
 # Local DB files
 server/data/*.db

@@ -46,6 +46,10 @@ if (-not $DataDir -and $env:GRM_DATA_DIR) {
 if (-not $Port -and $env:GRM_PORT) {
     $Port = [int]$env:GRM_PORT
 }
+# A -Port/GRM_PORT override is a per-run instruction from the caller (CI, the
+# updater, a power user), not a configuration change -the busy-port fallback
+# further down must never write it back into .env.
+$PortWasRequested = [bool]$Port
 
 $Root = $PSScriptRoot
 $AppDir = Join-Path $Root 'app'
@@ -101,10 +105,42 @@ New-Item -ItemType Directory -Force -Path $DataDir | Out-Null
 # way to lose diagnostics. 7-day retention, pruned on every launch.
 $LogsDir = Join-Path $DataDir 'logs'
 New-Item -ItemType Directory -Force -Path $LogsDir | Out-Null
-Get-ChildItem -LiteralPath $LogsDir -Filter 'server-*.log' -ErrorAction SilentlyContinue |
+$LogFile = Join-Path $LogsDir ("server-{0}.log" -f (Get-Date -Format 'yyyy-MM-dd'))
+
+# Age alone is not a size ceiling: the log NAME is fixed at launch, so an
+# autostart install that stays up for weeks appends to one file forever and
+# the age prune never reaches it. Both bounds below run here, while nothing
+# holds the file handle: a single-file roll to `.log.1` and a directory-total
+# cap. -Filter is avoided (its 8.3 short-name matching can pick up unrelated
+# names); a -like on the real name is exact.
+$LogMaxBytes = 10MB
+$LogsTotalMaxBytes = 50MB
+function Get-ServerLogFiles {
+    Get-ChildItem -LiteralPath $LogsDir -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -like 'server-*.log*' }
+}
+
+Get-ServerLogFiles |
     Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-7) } |
     Remove-Item -Force -ErrorAction SilentlyContinue
-$LogFile = Join-Path $LogsDir ("server-{0}.log" -f (Get-Date -Format 'yyyy-MM-dd'))
+
+$existingLog = Get-Item -LiteralPath $LogFile -ErrorAction SilentlyContinue
+if ($existingLog -and $existingLog.Length -ge $LogMaxBytes) {
+    $rolledLog = "$LogFile.1"
+    Remove-Item -LiteralPath $rolledLog -Force -ErrorAction SilentlyContinue
+    Move-Item -LiteralPath $LogFile -Destination $rolledLog -Force -ErrorAction SilentlyContinue
+}
+
+# Oldest-first deletion until the directory total is back under the cap:
+# the roll above bounds ONE file, this bounds an install that rolls many.
+$logFiles = @(Get-ServerLogFiles | Sort-Object LastWriteTime)
+$logTotalBytes = ($logFiles | Measure-Object -Property Length -Sum).Sum
+$logIndex = 0
+while ($logTotalBytes -gt $LogsTotalMaxBytes -and $logIndex -lt $logFiles.Count) {
+    $logTotalBytes -= $logFiles[$logIndex].Length
+    Remove-Item -LiteralPath $logFiles[$logIndex].FullName -Force -ErrorAction SilentlyContinue
+    $logIndex++
+}
 
 $EnvFile = Join-Path $DataDir '.env'
 $PidFile = Join-Path $DataDir '.grm.pid'
@@ -153,6 +189,17 @@ function Get-ConfiguredPort {
     return 3001
 }
 
+function Test-EnvFileSetsHost {
+    if (Test-Path -LiteralPath $EnvFile) {
+        foreach ($line in Get-Content -LiteralPath $EnvFile) {
+            if ($line -match '^\s*HOST\s*=') {
+                return $true
+            }
+        }
+    }
+    return $false
+}
+
 $configuredPort = if ($Port) { $Port } else { Get-ConfiguredPort }
 
 function Test-HealthLive([int]$TargetPort) {
@@ -196,11 +243,57 @@ if (Test-PortBusy $configuredPort) {
         Write-Error "Could not find a free port after $configuredPort -closing whatever is using it and retrying is recommended."
         exit 1
     }
-    Write-Host "Using port $actualPort for this run (configured port stays $configuredPort in app\.env)."
+    Write-Host "Using port $actualPort for this run (configured port was $configuredPort)."
+
+    # Persisting the drifted port is what keeps GitHub login working.
+    # server/routes/auth.js builds redirect_uri from the request host, so it
+    # follows the REAL port while the callback registered on the GitHub OAuth
+    # App still points at the old one -the user lands on GitHub's raw
+    # redirect_uri-mismatch page. Leaving .env untouched made that permanent:
+    # the scan re-ran every launch and could pick a different port each day,
+    # so even re-registering the callback broke again tomorrow. Written via
+    # scripts/first-run.mjs --set-port, which goes through
+    # server/lib/env-file.js's allowlisted, atomic (temp file + rename, mode
+    # 0600) writer -this file also holds CREDENTIAL_ENCRYPTION_KEY, and a
+    # truncated write would strand every encrypted credential in the database.
+    if ($PortWasRequested) {
+        Write-Host "Port $configuredPort was requested explicitly for this run, so $EnvFile is left unchanged."
+    } else {
+        $persistFailure = $null
+        try {
+            & $NodeExe $FirstRun $EnvFile '--set-port' "$actualPort" 2>&1 | Out-Null
+            if ($LASTEXITCODE -ne 0) { $persistFailure = "exit $LASTEXITCODE" }
+        } catch {
+            $persistFailure = $_.Exception.Message
+        }
+        # Re-read the file rather than trusting the exit code alone: under
+        # ErrorActionPreference=Stop any stray line node writes to stderr
+        # becomes a catchable NativeCommandError even when the write succeeded,
+        # and reporting a failed save that actually landed would send the user
+        # chasing the wrong problem.
+        if ((Get-ConfiguredPort) -eq $actualPort) {
+            Write-Host "Saved PORT=$actualPort to $EnvFile so this port stays stable across launches."
+            Write-Host "If GitHub sign-in is already configured, update the OAuth App callback URL to http://127.0.0.1:$actualPort/api/auth/callback."
+        } elseif ($persistFailure) {
+            Write-Host "Could not save PORT=$actualPort to $EnvFile ($persistFailure) - the port may change again on the next launch."
+        } else {
+            Write-Host "Could not save PORT=$actualPort to $EnvFile - the port may change again on the next launch."
+        }
+    }
 }
 
 $env:PORT = "$actualPort"
 $env:DATA_DIR = $DataDir
+# server/index.js binds ALL interfaces when HOST is unset, so the loopback-only
+# default must not depend on one line surviving in a user-editable text file:
+# deleting HOST=127.0.0.1 from .env would silently LAN-expose the app (and
+# raise a Windows Firewall prompt). Setting it as a real process env var makes
+# the safe bind the managed runtime's floor. dotenv does not override real env
+# vars, so a HOST the user deliberately put in .env still wins - this only
+# fills the gap where there is none.
+if (-not $env:HOST -and -not (Test-EnvFileSetsHost)) {
+    $env:HOST = '127.0.0.1'
+}
 # Tell the server exactly which .env to load (server/config.js) — it no
 # longer sits at the app dir default location.
 $env:GRM_ENV_FILE = $EnvFile
@@ -226,9 +319,10 @@ $env:GRM_MANAGED = '1'
 # (portable ZIP extraction or an Inno-installed {app}) is exactly the
 # package root apply-update.ps1 needs to operate on.
 $env:GRM_PACKAGE_ROOT = $Root
-# The ACTUAL port for this run (may differ from .env's PORT after the
-# busy-port scan) — stop.ps1 and installer.iss read this to target the
-# shutdown endpoint correctly.
+# The ACTUAL port for this run — stop.ps1 and installer.iss read this to
+# target the shutdown endpoint correctly. It normally matches .env's PORT now
+# that a drifted port is persisted above, but an explicit -Port/GRM_PORT run
+# deliberately leaves .env alone, so this marker stays the authority.
 Set-Content -LiteralPath (Join-Path $DataDir '.grm.port') -Value "$actualPort" -Encoding ascii
 
 # Spawn node through a hidden cmd wrapper that appends ALL output to the log

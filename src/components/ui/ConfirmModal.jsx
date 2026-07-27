@@ -114,7 +114,11 @@ export function ConfirmModal({
             mobileVariant="center"
             footer={footer}
         >
-            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{message}</p>
+            {/* whitespace-pre-line is load-bearing: the destructive registry
+                actions build bulleted, newline-separated messages, and without
+                it the confirmation for deleting N repositories collapsed into
+                one unreadable run-on line. */}
+            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line">{message}</p>
 
             {requiresInput && (
                 <div className="mt-4">

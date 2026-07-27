@@ -1,32 +1,60 @@
 # Roadmap
 
-A thin mirror of the in-app Roadmap page (`/roadmap`). Everything here is either in progress or planned — the in-app page no longer carries a separate "Shipping Now" stage, so this mirror doesn't either; everything not yet shipped lives in **Next** or **Later**.
+A mirror of the in-app Roadmap page (`/roadmap`). Everything in **Next** and **Later** is unshipped — the in-app page no longer carries a separate "Shipping Now" stage, so this mirror doesn't either.
+
+> **No tier labels on unshipped work.** Roadmap items used to carry a
+> "Pro"/"Enterprise" badge, which promised exactly the feature-unlock
+> monetization the product does not do: Pro and Enterprise sell **AI headroom**
+> (bigger monthly caps, and a higher $ spend-cap ceiling wherever an operator
+> has enabled the spend cap — it ships disabled), **more API keys**, and
+> compliance/service deliverables — not feature unlocks (see
+> [README → Plans & Pricing](README.md#plans--pricing)). Product features ship
+> free unless they are inherently a compliance or contracted-service
+> deliverable, and the two on this list that are — **SSO / SAML** and **SBOM
+> Export** — say so in the item itself. Nothing here is a commitment: a
+> roadmap item's tier is decided when it ships, against
+> `server/lib/feature-flags.js`, not here.
+>
+> **BYOK is permanent.** Paid tiers raise your caps and give you more API
+> keys; they never include managed inference. You always bring your own
+> provider key (Anthropic · OpenAI · Gemini · OpenRouter · local), and BYOK
+> sends your data straight to your own provider.
+>
+> The in-app `/roadmap` page still renders a per-item tier badge; those badges
+> are being retired. Where the two disagree, this file and the README pricing
+> matrix are correct.
 
 ## Next (Q3 2026)
 
-- **Pierre diff + tree primitives** — All tiers. Adopt `@pierre/diffs` (Apache-2.0, AGPL-compatible) as the canonical PR / commit diff renderer, `@pierre/trees` as the repo file-tree primitive.
-- **Vercel AI Elements migration** — Pro. Port Repo Advisor, AI Issue Planner, and the Dashboard AI narrative onto Vercel's shadcn-shaped AI Elements (streaming, reasoning, tool calls).
-- **Premium Dashboard Phase 2 (DORA)** — Enterprise. KPI cards + area charts with sparklines, delta badges, and CSV export.
-- **Cross-repo Command Palette (Ctrl+K / ⌘K v2)** — All tiers. Cross-repo jump, recent-PR / issue search, AI-driven action quick-fire.
-- **Azure DevOps Server (on-premise)** — Enterprise. PAT + URL adaptation for self-hosted Azure DevOps.
-- **GitLab Migration Importer** — Pro + Enterprise. Clone GitLab repos with history. Scope: sources, branches, default protections, issues (best-effort).
-- **Bitbucket Migration Importer** — Pro + Enterprise.
-- **Advanced Analytics Dashboard** — Enterprise. Commit heatmaps, contributor insights, dependency graph.
-- **Dependency Graph Visualizer** — Pro. Interactive graph of repo dependencies (SBOM-derived).
-- **SSO / SAML** — Enterprise. Okta, Entra ID, SAML 2.0.
-- **Backup & Restore System** — Enterprise. Scheduled snapshots with point-in-time restore.
-- **Security Alerts Dashboard** — Pro. Cross-repo CVE aggregation.
-- **SBOM Export** — Enterprise. CycloneDX + SPDX.
-- **Release Notes Generator** — Pro. AI from commits + PRs.
+- **Pierre diff + tree primitives** — Adopt `@pierre/diffs` (Apache-2.0, AGPL-compatible) as the canonical PR / commit diff renderer, `@pierre/trees` as the repo file-tree primitive.
+- **Vercel AI Elements migration** — Port Repo Advisor, AI Issue Planner, and the Dashboard AI narrative onto Vercel's shadcn-shaped AI Elements (streaming, reasoning, tool calls).
+- **Cross-repo Command Palette (Ctrl+K / ⌘K v2)** — Cross-repo jump, recent-PR / issue search, AI-driven action quick-fire.
+- **GitLab Migration Importer** — Clone GitLab repos with history. Scope: sources, branches, default protections, issues (best-effort).
+- **Bitbucket Migration Importer**.
+- **Advanced Analytics Dashboard** — Commit heatmaps, contributor insights, dependency graph.
+- **Dependency Graph Visualizer** — Interactive graph of repo dependencies (SBOM-derived).
+- **SSO / SAML** — Okta, Entra ID, SAML 2.0. A compliance deliverable, scoped Enterprise-only when it lands; `feature-flags.js` deliberately keeps `sso: false` on every tier until real SAML exists.
+- **Backup & Restore System** — Scheduled snapshots with point-in-time restore. (Scheduled SQLite backups already ship for operators — see `DB_BACKUP_DIR` in `.env.example`; this item is the in-app, point-in-time restore experience.)
+- **Security Alerts Dashboard** — Cross-repo CVE aggregation.
+- **SBOM Export** — CycloneDX + SPDX. A compliance deliverable, scoped Enterprise-only when it lands.
+- **Release Notes Generator** — AI from commits + PRs.
 
 ## Later (Q4 2026+)
 
-- **GitHub Enterprise Server** — Enterprise.
-- **Plugin / Extension System** — Free + Pro.
-- **Mobile App (React Native)** — all tiers.
-- **Org Permissions Sync** — Enterprise.
-- **Dependabot Aggregation** — Pro.
-- **Custom Workflow Templates** — Pro.
+- **GitHub Enterprise Server**.
+- **Plugin / Extension System**.
+- **Mobile App (React Native)**.
+- **Org Permissions Sync**.
+- **Dependabot Aggregation**.
+- **Custom Workflow Templates**.
+
+## Recently Shipped — corrected off "Next" (2026-07-27)
+
+Two items were still being sold as future Enterprise work while already
+shipping free on every tier. Moved here to stop the double-listing:
+
+- **Premium Dashboard Phase 2 (DORA)** — delivered. The Work Board **DORA Metrics** tab ships deploy frequency, lead-time p50/p90, change failure rate, MTTR p50/p90, KPI tiles with 7-day sparklines and delta badges, and CSV export (`GET /api/v1/work-board/dora` + `/dora.csv`, both `requireAuth` only). **Free on every tier** — the parity gate asserts the Free cell is `true`, and it was already listed as shipped further down this file.
+- **Azure DevOps Server (on-premise)** (v4.4.0) — delivered. The migration wizard accepts any Azure DevOps host, not just `dev.azure.com` / `*.visualstudio.com`: hosts are authorized through `server/lib/azure-host-validator.js`, which unions the `ALLOWED_AZURE_HOSTS` env baseline with a live, admin-editable `azure_host_allowlist` table (add a host from the UI, no restart, audited). TFVC cascade and encrypted PAT vault included. **All tiers** — there is no tier gate on the host allowlist.
 
 ## Recently Shipped (v4.6.0–v4.7.0 — July 2026)
 

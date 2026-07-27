@@ -16,6 +16,7 @@ import { requireAuth } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { checkUsageLimit, incrementUsage } from '../../lib/usage-meter.js';
 import { checkAISpendCap, recordAISpend } from '../../lib/ai-spend-cap.js';
+import { isServerKeyProvider } from '../../lib/ai-provider.js';
 import { auditLog } from '../../lib/audit.js';
 import { githubApi } from '../../lib/github-api.js';
 import { safeJsonParse } from '../../lib/utils.js';
@@ -186,7 +187,11 @@ router.post(
         // deterministic-fallback flow means a denial should silently drop to
         // the deterministic generator, not error out). Skip the AI attempt
         // entirely when over cap; `source` stays 'deterministic'.
-        if (provider && !checkAISpendCap(userId).allowed) {
+        // BYOK is exempt from the operator's cap — `provider` here is the
+        // user's own when they configured a key, so denying them would throttle
+        // spend the operator never incurs.
+        const billsOperator = isServerKeyProvider(provider);
+        if (provider && !checkAISpendCap(userId, { billsOperator }).allowed) {
             req.log.info({ repoId }, 'suggest-name-description: AI spend cap reached, using deterministic');
             provider = null;
         }
@@ -203,7 +208,7 @@ router.post(
                     signalsBlock,
                 });
                 const { text, costUSD } = await provider.generate({ prompt, maxTokens: 200 });
-                recordAISpend(userId, costUSD);
+                if (billsOperator) recordAISpend(userId, costUSD);
                 const parsed = safeJsonParse(text);
                 if (
                     parsed &&

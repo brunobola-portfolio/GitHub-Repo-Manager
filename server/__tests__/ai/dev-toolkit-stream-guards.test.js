@@ -77,7 +77,7 @@ function makeApp() {
 }
 
 function spendCents() {
-    return testDb.prepare('SELECT cents FROM ai_spend WHERE user_id = ?').get(USER_ID)?.cents ?? 0;
+    return testDb.prepare('SELECT cents + micro_cents / 10000 AS cents FROM ai_spend WHERE user_id = ?').get(USER_ID)?.cents ?? 0;
 }
 function auditRow(action) {
     return testDb.prepare(

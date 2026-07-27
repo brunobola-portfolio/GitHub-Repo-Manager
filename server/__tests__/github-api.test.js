@@ -13,7 +13,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { githubApi, resetCircuitBreaker } from '../lib/github-api.js';
+import { githubApi, resetCircuitBreaker, etagCache } from '../lib/github-api.js';
 
 const TOKEN = 'test-token-123';
 
@@ -200,5 +200,130 @@ describe('githubApi — network errors are retryable', () => {
 
         expect(data).toEqual({ ok: true });
         expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
+});
+
+/**
+ * ETag cache — bounded in bytes AND entries, evicting the least-recently-USED
+ * rather than the oldest-inserted. The previous Map + insertion-order eviction
+ * threw away the keys a user polls constantly while keeping ones they opened
+ * once, and capped only the entry count while each entry holds a fully parsed
+ * GitHub response.
+ */
+describe('githubApi — ETag cache', () => {
+    const MAX_ENTRIES = 300;
+
+    /** The If-None-Match header sent on the Nth fetch call, or undefined. */
+    const sentIfNoneMatch = (call) => fetchMock.mock.calls[call][1].headers['If-None-Match'];
+
+    beforeEach(() => {
+        etagCache.clear();
+    });
+
+    it('stores the ETag on a 200 and replays it as If-None-Match', async () => {
+        fetchMock.mockResolvedValueOnce(mockResponse({ status: 200, body: { n: 1 }, headers: { ETag: 'W/"v1"' } }));
+        await githubApi('/repos/a/b', TOKEN);
+
+        fetchMock.mockResolvedValueOnce(mockResponse({ status: 304 }));
+        const { data } = await githubApi('/repos/a/b', TOKEN);
+
+        expect(sentIfNoneMatch(1)).toBe('W/"v1"');
+        expect(data).toEqual({ n: 1 });
+    });
+
+    it('evicts the least-recently-used entry, not the oldest-inserted one', async () => {
+        for (let i = 0; i < MAX_ENTRIES; i++) {
+            fetchMock.mockResolvedValueOnce(mockResponse({ status: 200, body: { i }, headers: { ETag: `W/"${i}"` } }));
+            await githubApi(`/repos/a/r${i}`, TOKEN);
+        }
+        expect(etagCache.size).toBe(MAX_ENTRIES);
+
+        // Touch the OLDEST entry — under insertion-order eviction it would be
+        // first out; under LRU it is now the most recently used.
+        fetchMock.mockResolvedValueOnce(mockResponse({ status: 304 }));
+        await githubApi('/repos/a/r0', TOKEN);
+
+        // One more insert pushes the cache over its cap.
+        fetchMock.mockResolvedValueOnce(mockResponse({ status: 200, body: {}, headers: { ETag: 'W/"new"' } }));
+        await githubApi('/repos/a/overflow', TOKEN);
+        expect(etagCache.size).toBe(MAX_ENTRIES);
+
+        fetchMock.mockResolvedValueOnce(mockResponse({ status: 304 }));
+        await githubApi('/repos/a/r0', TOKEN);
+        expect(sentIfNoneMatch(fetchMock.mock.calls.length - 1)).toBe('W/"0"');
+
+        // r1 — never re-read — is the one that got evicted.
+        fetchMock.mockResolvedValueOnce(mockResponse({ status: 200, body: {}, headers: { ETag: 'W/"1b"' } }));
+        await githubApi('/repos/a/r1', TOKEN);
+        expect(sentIfNoneMatch(fetchMock.mock.calls.length - 1)).toBeUndefined();
+    });
+
+    it('refuses to cache a response larger than the per-entry byte cap', async () => {
+        fetchMock.mockResolvedValueOnce(mockResponse({
+            status: 200,
+            body: { big: true },
+            headers: { ETag: 'W/"huge"', 'Content-Length': String(5 * 1024 * 1024) },
+        }));
+        await githubApi('/repos/a/huge', TOKEN);
+        expect(etagCache.size).toBe(0);
+
+        fetchMock.mockResolvedValueOnce(mockResponse({ status: 200, body: { big: true }, headers: { ETag: 'W/"huge2"' } }));
+        await githubApi('/repos/a/huge', TOKEN);
+        expect(sentIfNoneMatch(1)).toBeUndefined();
+    });
+
+    it('still caches a response comfortably under the cap', async () => {
+        fetchMock.mockResolvedValueOnce(mockResponse({
+            status: 200,
+            body: { ok: true },
+            headers: { ETag: 'W/"small"', 'Content-Length': '4096' },
+        }));
+        await githubApi('/repos/a/small', TOKEN);
+        expect(etagCache.size).toBe(1);
+    });
+
+    it('drops a previously cached entry when the resource grows past the cap', async () => {
+        fetchMock.mockResolvedValueOnce(mockResponse({
+            status: 200, body: { v: 1 }, headers: { ETag: 'W/"s1"', 'Content-Length': '1024' },
+        }));
+        await githubApi('/repos/a/grows', TOKEN);
+        expect(etagCache.size).toBe(1);
+
+        fetchMock.mockResolvedValueOnce(mockResponse({
+            status: 200, body: { v: 2 }, headers: { ETag: 'W/"s2"', 'Content-Length': String(2 * 1024 * 1024) },
+        }));
+        await githubApi('/repos/a/grows', TOKEN);
+        // The stale small entry must go too, or the next request would replay
+        // an ETag for a body we no longer hold and a 304 would serve v1.
+        expect(etagCache.size).toBe(0);
+    });
+
+    it('a 304 slides the entry TTL so a polled resource never expires out', async () => {
+        vi.useFakeTimers();
+        try {
+            fetchMock.mockResolvedValueOnce(mockResponse({ status: 200, body: { n: 1 }, headers: { ETag: 'W/"p"' } }));
+            await githubApi('/repos/a/polled', TOKEN);
+
+            // 9 minutes in — still inside the 10 minute TTL.
+            vi.setSystemTime(Date.now() + 9 * 60_000);
+            fetchMock.mockResolvedValueOnce(mockResponse({ status: 304 }));
+            await githubApi('/repos/a/polled', TOKEN);
+            expect(sentIfNoneMatch(1)).toBe('W/"p"');
+
+            // 18 minutes from the original write: only a slid TTL survives.
+            vi.setSystemTime(Date.now() + 9 * 60_000);
+            fetchMock.mockResolvedValueOnce(mockResponse({ status: 304 }));
+            const { data } = await githubApi('/repos/a/polled', TOKEN);
+            expect(sentIfNoneMatch(2)).toBe('W/"p"');
+            expect(data).toEqual({ n: 1 });
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('does not cache non-GET responses', async () => {
+        fetchMock.mockResolvedValueOnce(mockResponse({ status: 200, body: {}, headers: { ETag: 'W/"post"' } }));
+        await githubApi('/repos/a/b/issues', TOKEN, { method: 'POST', body: '{}' });
+        expect(etagCache.size).toBe(0);
     });
 });

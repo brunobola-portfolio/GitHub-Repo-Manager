@@ -266,7 +266,9 @@ export function AIReviewPanel({
                     type="button"
                     onClick={onPublish}
                     disabled={publishing || isPublished || isPublishing || (lineComments.length === 0 && !draft?.walkthrough?.summary)}
-                    className="w-full px-3 py-1.5 text-sm font-medium rounded bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
+                    /* --ds-cta, not emerald-600: white on emerald-600 is 3.67:1
+                       in both themes (see --ds-cta-text in design-system.css). */
+                    className="w-full px-3 py-1.5 text-sm font-medium rounded bg-[color:var(--ds-cta)] dark:bg-[color:var(--ds-cta-dark)] text-[color:var(--ds-cta-text)] hover:bg-[color:var(--ds-cta-hover)] dark:hover:bg-[color:var(--ds-cta-hover-dark)] disabled:opacity-60"
                 >
                     {isPublished
                         ? 'Published ✓'

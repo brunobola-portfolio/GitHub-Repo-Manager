@@ -153,7 +153,7 @@ describe('App shell (authenticated, MOCK_MODE=true)', () => {
 
         // Wait for the Header to settle so lazy render errors (if any)
         // surface as console.error before we assert on them.
-        await screen.findByRole('heading', { name: /repo manager/i }, { timeout: 5000 })
+        await screen.findByRole('heading', { name: /repo manager/i }, { timeout: 12000 })
 
         const calls = errorSpy.mock.calls.flat().map(String).join('\n')
         expect(calls).not.toMatch(/Cannot access .* before initialization/)
@@ -166,7 +166,7 @@ describe('App shell (authenticated, MOCK_MODE=true)', () => {
         // The app kicks off appLoading=true then flips to false after checkAuth
         // resolves (/api/auth/mock). Wait for the logo heading to appear as a
         // stable anchor.
-        await screen.findByRole('heading', { name: /repo manager/i }, { timeout: 5000 })
+        await screen.findByRole('heading', { name: /repo manager/i }, { timeout: 12000 })
 
         // Scope assertions to the DESKTOP <nav> — the mobile nav uses shorter
         // labels ("Repos" not "Repositories") and doesn't include Work Board.
@@ -182,12 +182,19 @@ describe('App shell (authenticated, MOCK_MODE=true)', () => {
     })
 
     it('clicking Work Board switches the active view', { timeout: 30000 }, async () => {
+        // 12s, not 5s: this test mounts the whole App shell and then waits on
+        // a LAZY chunk (WorkBoardPage) to import and settle. On an idle machine
+        // that is well under a second, but the full suite runs 690+ files across
+        // a saturated fork pool and the import alone crossed 5s there — the view
+        // switch itself was never the problem (it passes every time in
+        // isolation). Kept below vitest's 15s testTimeout so a genuine failure
+        // still surfaces as a useful assertion error rather than a timeout.
         renderApp()
-        await screen.findByRole('heading', { name: /repo manager/i }, { timeout: 5000 })
+        await screen.findByRole('heading', { name: /repo manager/i }, { timeout: 12000 })
 
         // Default view is dashboard — the Dashboard hero h1 (greeting) is lazy-loaded
         // but should appear after a tick.
-        const dashboardHeading = await screen.findByRole('heading', { level: 1 }, { timeout: 5000 })
+        const dashboardHeading = await screen.findByRole('heading', { level: 1 }, { timeout: 12000 })
         expect(dashboardHeading).toBeInTheDocument()
 
         // Click Work Board in the desktop nav. Use the nav scope to avoid the
@@ -204,7 +211,7 @@ describe('App shell (authenticated, MOCK_MODE=true)', () => {
                 const matches = screen.getAllByText(/work board/i)
                 expect(matches.length).toBeGreaterThan(1)
             },
-            { timeout: 5000 }
+            { timeout: 12000 }
         )
 
         // After switching to Work Board the dashboard hero h1 should be gone.
@@ -218,7 +225,7 @@ describe('App shell (authenticated, MOCK_MODE=true)', () => {
 
     it('pressing ? opens the global keyboard shortcuts help modal', async () => {
         renderApp()
-        await screen.findByRole('heading', { name: /repo manager/i }, { timeout: 5000 })
+        await screen.findByRole('heading', { name: /repo manager/i }, { timeout: 12000 })
 
         act(() => {
             // The shortcut listener is bound on document, not window.
@@ -226,13 +233,13 @@ describe('App shell (authenticated, MOCK_MODE=true)', () => {
         })
 
         expect(
-            await screen.findByText(/keyboard shortcuts/i, {}, { timeout: 5000 })
+            await screen.findByText(/keyboard shortcuts/i, {}, { timeout: 12000 })
         ).toBeInTheDocument()
     })
 
     it('dark-mode toggle flips the .dark class on <html>', async () => {
         renderApp()
-        await screen.findByRole('heading', { name: /repo manager/i }, { timeout: 5000 })
+        await screen.findByRole('heading', { name: /repo manager/i }, { timeout: 12000 })
 
         // Start light: the test setup clears localStorage + class, and
         // matchMedia is mocked to "not dark".
@@ -257,7 +264,7 @@ describe('App shell (authenticated, MOCK_MODE=true)', () => {
 // ---------------------------------------------------------------------------
 describe('App hash routing (useAppRouter guard)', () => {
     const settle = () =>
-        screen.findByRole('heading', { name: /repo manager/i }, { timeout: 5000 })
+        screen.findByRole('heading', { name: /repo manager/i }, { timeout: 12000 })
 
     // The active view is marked locale-independently on the desktop nav via
     // aria-current="page" — a faster, more reliable signal than waiting on a
@@ -311,16 +318,16 @@ describe('App hash routing (useAppRouter guard)', () => {
         renderApp()
         await settle()
         fireEvent.click(within(desktopNav()).getByRole('button', { name: /pricing/i }))
-        await waitFor(() => expect(window.location.hash).toBe('#/pricing'), { timeout: 5000 })
+        await waitFor(() => expect(window.location.hash).toBe('#/pricing'), { timeout: 12000 })
     })
 
     it('strips the hash to home when navigating back to Dashboard', { timeout: 30000 }, async () => {
         renderApp()
         await settle()
         fireEvent.click(within(desktopNav()).getByRole('button', { name: /pricing/i }))
-        await waitFor(() => expect(window.location.hash).toBe('#/pricing'), { timeout: 5000 })
+        await waitFor(() => expect(window.location.hash).toBe('#/pricing'), { timeout: 12000 })
         fireEvent.click(within(desktopNav()).getByRole('button', { name: /dashboard/i }))
-        await waitFor(() => expect(window.location.hash).toBe(''), { timeout: 5000 })
+        await waitFor(() => expect(window.location.hash).toBe(''), { timeout: 12000 })
     })
 
     it('keeps a deep-link hash intact on first mount (no double-sync)', { timeout: 30000 }, async () => {
@@ -329,7 +336,7 @@ describe('App hash routing (useAppRouter guard)', () => {
         await settle()
         // The state->hash effect skips its first run (didInitHashSyncRef), so the
         // deep-link survives mount instead of being stripped to ''.
-        await waitFor(() => expect(window.location.hash).toBe('#/pricing'), { timeout: 5000 })
+        await waitFor(() => expect(window.location.hash).toBe('#/pricing'), { timeout: 12000 })
         // ...and it actually routed to pricing (Pricing tab active, not dashboard).
         await expectActiveTab(/pricing/i)
     })

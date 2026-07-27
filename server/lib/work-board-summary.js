@@ -6,7 +6,7 @@
  * provider for a headline + bullets + urgency score, and returns the parsed
  * response. Tolerates provider text-drift via a best-effort JSON extractor.
  */
-import { createProviderForUser, AI_ERROR_CODE } from './ai-provider.js';
+import { createProviderForUser, AI_ERROR_CODE, isServerKeyProvider } from './ai-provider.js';
 
 export const SYSTEM_PROMPT = `You are a senior engineering lead reviewing a developer's cross-repo work board.
 Produce a concise, actionable headline + 3-5 bullets that surface the single
@@ -198,10 +198,23 @@ function isValidSummaryShape(parsed) {
 }
 
 /**
- * @param {{ userId: number, dataSources: { reviews, stalePRs, issues, techDebt } }} args
+ * Resolve the provider this summary would run on, without generating anything.
+ *
+ * The route needs it before it can decide whether the operator's spend cap
+ * applies (it does not for BYOK), and resolving twice would double the
+ * endpoint-safety DNS checks in createProviderForUser.
  */
-export async function generateSummary({ userId, dataSources }) {
-    const provider = await createProviderForUser(userId, 'completion', { featureKey: 'WORK_BOARD_SUMMARY' });
+export async function resolveSummaryProvider(userId) {
+    return createProviderForUser(userId, 'completion', { featureKey: 'WORK_BOARD_SUMMARY' });
+}
+
+/**
+ * @param {{ userId: number, dataSources: { reviews, stalePRs, issues, techDebt },
+ *           provider?: object }} args — `provider` reuses one the caller already
+ *           resolved via resolveSummaryProvider; omitted, it is resolved here.
+ */
+export async function generateSummary({ userId, dataSources, provider: preResolved }) {
+    const provider = preResolved || await resolveSummaryProvider(userId);
     if (!provider) throw makeAIError('ai_not_configured', 'AI is not configured for this user');
 
     const prompt = buildFactSheet(dataSources);
@@ -263,5 +276,10 @@ export async function generateSummary({ userId, dataSources }) {
         // exists so the caller can record the monthly AI spend cap without
         // this module reaching the spend-cap ledger itself.
         costUSD,
+        // Whether that cost landed on the operator's bill. The provider is
+        // resolved in here, so the route cannot work this out for itself, and
+        // recording a BYOK user's spend against the operator's cap would
+        // throttle someone costing the operator nothing.
+        billsOperator: isServerKeyProvider(provider),
     };
 }

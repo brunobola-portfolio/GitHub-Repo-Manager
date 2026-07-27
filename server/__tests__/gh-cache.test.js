@@ -205,6 +205,87 @@ describe('gh-cache.invalidateByRepo', () => {
         expect(remaining.length).toBe(1)
         expect(remaining[0].resource_key).toBe('other/repo#1')
     })
+
+    it('matches every key shape the routes write for a repo', () => {
+        const seed = testDb.prepare(`
+            INSERT INTO gh_cache (user_id, resource_type, resource_key, payload, fetched_at, stale_at)
+            VALUES (?, ?, ?, ?, datetime('now'), datetime('now', '+1 hour'))
+        `)
+        seed.run(USER_ID, 'issues', 'acme/site?state=open&sort=created', '{}')  // list page
+        seed.run(USER_ID, 'issues', 'acme/site#7', '{}')                        // single item
+        seed.run(USER_ID, 'readme', 'acme/site', '{}')                          // bare repo key
+
+        expect(invalidateByRepo('acme/site', 'issues')).toBe(2)
+        expect(invalidateByRepo('acme/site', 'readme')).toBe(1)
+    })
+
+    it('narrows to a single PR when the caller passes an owner/repo#n key', () => {
+        testDb.prepare(`
+            INSERT INTO gh_cache (user_id, resource_type, resource_key, payload, fetched_at, stale_at)
+            VALUES (?, 'pulls', 'acme/site#2', '{}', datetime('now'), datetime('now', '+1 hour'))
+        `).run(USER_ID)
+
+        expect(invalidateByRepo('acme/site#1', 'pulls')).toBe(1)
+        const left = testDb.prepare(`SELECT resource_key FROM gh_cache WHERE resource_type = 'pulls'`).all()
+        expect(left.map(r => r.resource_key).sort()).toEqual(['acme/site#2', 'other/repo#1'])
+    })
+
+    it('stays case-insensitive — the NOCASE index must not change which rows match', () => {
+        // Webhook payloads carry GitHub's canonical casing; a route param may
+        // not. Anchoring the pattern must not turn that into a silent miss.
+        expect(invalidateByRepo('ACME/Site', 'pulls')).toBe(1)
+    })
+
+    it('never drops another repo whose key merely mentions this one', () => {
+        testDb.prepare(`
+            INSERT INTO gh_cache (user_id, resource_type, resource_key, payload, fetched_at, stale_at)
+            VALUES (?, 'commits', 'other/repo?path=acme/site', '{}', datetime('now'), datetime('now', '+1 hour'))
+        `).run(USER_ID)
+
+        expect(invalidateByRepo('acme/site', 'commits')).toBe(0)
+        expect(testDb.prepare(`SELECT COUNT(*) c FROM gh_cache WHERE resource_type='commits'`).get().c).toBe(1)
+    })
+})
+
+/**
+ * invalidateByRepo's prefix anchoring is only correct while every cached repo
+ * resource is keyed `owner/repo...`. That invariant lives in the route files,
+ * not here, so it gets its own gate: a route that keys a repo resource any
+ * other way would silently stop being invalidated by webhooks.
+ */
+describe('gh-cache resource_key prefix invariant', () => {
+    const REPO_KEY_RE = /^`\$\{owner\}\/\$\{repo\}/
+
+    it('every repo/AI route keys its cache entries with ${owner}/${repo}', async () => {
+        const fs = await import('node:fs')
+        const path = await import('node:path')
+        const { fileURLToPath } = await import('node:url')
+        const here = path.dirname(fileURLToPath(import.meta.url))
+        const roots = [
+            path.join(here, '..', 'routes', 'repos'),
+            path.join(here, '..', 'routes', 'ai'),
+        ]
+
+        const offenders = []
+        for (const root of roots) {
+            for (const file of fs.readdirSync(root).filter(f => f.endsWith('.js'))) {
+                const full = path.join(root, file)
+                const src = fs.readFileSync(full, 'utf8')
+                for (const m of src.matchAll(/resourceKey:\s*(`[^`]*`|[A-Za-z_$][\w$]*)/g)) {
+                    let expr = m[1]
+                    if (!expr.startsWith('`')) {
+                        // Indirection: resolve `const <ident> = \`...\`` in the same file.
+                        const assign = new RegExp(`const\\s+${expr}\\s*=\\s*(\`[^\`]*\`)`).exec(src)
+                        if (!assign) { offenders.push(`${file}: unresolvable resourceKey ${expr}`); continue }
+                        expr = assign[1]
+                    }
+                    if (!REPO_KEY_RE.test(expr)) offenders.push(`${file}: ${expr}`)
+                }
+            }
+        }
+
+        expect(offenders).toEqual([])
+    })
 })
 
 describe('gh-cache.purgeOlderThan', () => {

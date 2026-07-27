@@ -1,6 +1,16 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
+
+// The CSRF token cache lives in utils/api and would otherwise fire its own
+// /api/auth/csrf-token request through the stubbed global fetch.
+vi.mock('../../src/utils/api', async (importOriginal) => ({
+  ...(await importOriginal()),
+  getCsrfToken: vi.fn(async () => 'csrf-abc'),
+  invalidateCsrfToken: vi.fn(),
+}))
+
 import { fetchJSON, fetchJSONWithTimeout } from '../../src/utils/aiFetch'
 import { getAIQuotaState, clearAIQuotaState } from '../../src/api/aiFetch'
+import { getCsrfToken, invalidateCsrfToken } from '../../src/utils/api'
 
 function mockFetch(impl) {
   vi.stubGlobal('fetch', vi.fn(impl))
@@ -54,14 +64,47 @@ describe('fetchJSON — shared AI quota gate', () => {
     expect(getAIQuotaState()).not.toBeNull()
   })
 
-  it('pre-empts a subsequent call without hitting the network once armed', async () => {
-    mockFetch(async () => ({ status: 429, ok: false, json: async () => ({ code: 'QUOTA_EXCEEDED' }) }))
-    await fetchJSON('/api/ai/x').catch(() => {})
+  it('pre-empts a subsequent call for the SAME feature without hitting the network', async () => {
+    mockFetch(async () => ({
+      status: 429, ok: false,
+      json: async () => ({ code: 'QUOTA_EXCEEDED', feature: 'ai_deep_review' }),
+    }))
+    await fetchJSON('/api/ai/x', { feature: 'ai_deep_review' }).catch(() => {})
 
     const spy = vi.fn(async () => ({ status: 200, ok: true, json: async () => ({}) }))
     vi.stubGlobal('fetch', spy)
-    await expect(fetchJSON('/api/ai/y')).rejects.toMatchObject({ code: 'AI_QUOTA_EXCEEDED' })
+    await expect(fetchJSON('/api/ai/y', { feature: 'ai_deep_review' }))
+      .rejects.toMatchObject({ code: 'AI_QUOTA_EXCEEDED' })
     expect(spy).not.toHaveBeenCalled()
+  })
+
+  it('does NOT pre-empt a different feature whose own quota is untouched', async () => {
+    // Exhausting Deep Review used to abort PR Chat in the browser for five
+    // minutes, with a message naming Deep Review — while the PR Chat counter
+    // sat at zero.
+    mockFetch(async () => ({
+      status: 429, ok: false,
+      json: async () => ({ code: 'QUOTA_EXCEEDED', feature: 'ai_deep_review' }),
+    }))
+    await fetchJSON('/api/ai/x', { feature: 'ai_deep_review' }).catch(() => {})
+
+    const spy = vi.fn(async () => ({ status: 200, ok: true, json: async () => ({ ok: true }) }))
+    vi.stubGlobal('fetch', spy)
+    await expect(fetchJSON('/api/ai/chat', { feature: 'ai_pr_chat' })).resolves.toEqual({ ok: true })
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
+  it('never pre-empts a caller that did not declare a feature', async () => {
+    mockFetch(async () => ({
+      status: 429, ok: false,
+      json: async () => ({ code: 'QUOTA_EXCEEDED', feature: 'ai_deep_review' }),
+    }))
+    await fetchJSON('/api/ai/x', { feature: 'ai_deep_review' }).catch(() => {})
+
+    const spy = vi.fn(async () => ({ status: 200, ok: true, json: async () => ({ ok: true }) }))
+    vi.stubGlobal('fetch', spy)
+    await expect(fetchJSON('/api/ai/anything')).resolves.toEqual({ ok: true })
+    expect(spy).toHaveBeenCalledTimes(1)
   })
 
   it('does NOT arm the gate on a plain 429 rate-limit (no QUOTA_EXCEEDED code)', async () => {
@@ -87,5 +130,59 @@ describe('fetchJSONWithTimeout', () => {
   it('re-throws non-abort errors untouched', async () => {
     mockFetch(async () => ({ status: 500, ok: false, json: async () => ({ error: 'boom' }) }))
     await expect(fetchJSONWithTimeout('/api/x', {}, { label: 'X' })).rejects.toMatchObject({ message: 'boom', status: 500 })
+  })
+})
+
+/**
+ * Every /api/* mutation is CSRF-gated server-side (server/middleware/csrf.js,
+ * which does NOT bypass /api/v1/ai/*). This helper sent no token at all, so
+ * every AI mutation from PR review, PR chat, PR commands and Prompt Studio
+ * came back 403 and rendered as "Something went wrong" with a Retry button
+ * that could never succeed.
+ */
+describe('fetchJSON — CSRF', () => {
+  it('sends X-CSRF-Token on a POST', async () => {
+    const spy = vi.fn(async () => ({ status: 200, ok: true, json: async () => ({}) }))
+    vi.stubGlobal('fetch', spy)
+    await fetchJSON('/api/v1/ai/deep-review', { method: 'POST', body: '{}' })
+    expect(spy.mock.calls[0][1].headers['X-CSRF-Token']).toBe('csrf-abc')
+  })
+
+  it('does NOT send one on a GET', async () => {
+    const spy = vi.fn(async () => ({ status: 200, ok: true, json: async () => ({}) }))
+    vi.stubGlobal('fetch', spy)
+    await fetchJSON('/api/v1/ai/presets')
+    expect(spy.mock.calls[0][1].headers['X-CSRF-Token']).toBeUndefined()
+  })
+
+  it('retries once with a fresh token after 403 csrf_invalid', async () => {
+    // A re-login rotates the session token; the cached one goes stale.
+    const spy = vi.fn()
+      .mockResolvedValueOnce({ status: 403, ok: false, json: async () => ({ code: 'csrf_invalid' }) })
+      .mockResolvedValueOnce({ status: 200, ok: true, json: async () => ({ ok: true }) })
+    vi.stubGlobal('fetch', spy)
+
+    await expect(fetchJSON('/api/v1/ai/chat', { method: 'POST' })).resolves.toEqual({ ok: true })
+    expect(spy).toHaveBeenCalledTimes(2)
+    expect(invalidateCsrfToken).toHaveBeenCalled()
+  })
+
+  it('does not retry a 403 that is not a CSRF failure', async () => {
+    const spy = vi.fn(async () => ({
+      status: 403, ok: false, json: async () => ({ code: 'TIER_REQUIRED_PRO', message: 'Pro only' }),
+    }))
+    vi.stubGlobal('fetch', spy)
+
+    await expect(fetchJSON('/api/v1/ai/chat', { method: 'POST' }))
+      .rejects.toMatchObject({ status: 403, code: 'TIER_REQUIRED_PRO' })
+    expect(spy).toHaveBeenCalledTimes(1)
+  })
+
+  it('still sends the request when the token fetch fails', async () => {
+    getCsrfToken.mockRejectedValueOnce(new Error('offline'))
+    const spy = vi.fn(async () => ({ status: 200, ok: true, json: async () => ({}) }))
+    vi.stubGlobal('fetch', spy)
+    await fetchJSON('/api/v1/ai/chat', { method: 'POST' })
+    expect(spy).toHaveBeenCalledTimes(1)
   })
 })

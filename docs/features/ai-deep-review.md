@@ -98,7 +98,7 @@ For every comment you can:
 - Re-apply it after editing — nothing is sent to GitHub until you click
   **Publish**
 
-### 3. Commands (Pro)
+### 3. Commands (Free — 30 / month)
 
 Three PR-context slash commands invokable from inside the panel.
 
@@ -111,7 +111,7 @@ Three PR-context slash commands invokable from inside the panel.
 Per-user rate limit: **20 generations per hour**. Each command result is
 cached and returns instantly until you regenerate.
 
-### 4. Chat (Pro)
+### 4. Chat (Free — 100 messages / month)
 
 A streaming Q&A surface anchored to the same PR. Ask "why did the timeout
 move from 30s to 60s?" or "what's the blast radius if `auth.js` regresses?"
@@ -135,10 +135,11 @@ and get a streamed answer over Server-Sent Events.
 
 ---
 
-## Prompt Studio (Pro)
+## Prompt Studio (Free — 10 saved presets, 30 test runs / month)
 
-`/ai/prompts` is the top-level page where Pro users curate the presets
-that drive AI Deep Review.
+`/ai/prompts` is the top-level page where **every user** curates the presets
+that drive AI Deep Review. Pro/Enterprise lift the preset count and test-run
+caps to unlimited; there is no tier gate on the page or its routes.
 
 ### Built-in presets
 
@@ -155,7 +156,8 @@ every tier:
 
 ### Custom presets
 
-Pro users can create custom presets at three scopes:
+Any user can create custom presets at three scopes (Free is capped at 10 saved
+presets in total; Pro/Enterprise are unlimited):
 
 - **`user`** — visible only to you, across all repos.
 - **`repo`** — pinned to a single `owner/repo`; visible to anyone who can
