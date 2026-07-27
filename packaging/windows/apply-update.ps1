@@ -124,6 +124,12 @@ function Restore-FromBackup {
 }
 
 try {
+    # Every checkpoint below is timestamped by Log(). Together they bracket the
+    # four phases that can take real time — waiting for the old server to exit,
+    # extracting the package, swapping app/runtime, and waiting for the new
+    # server to report ready — so the log alone answers "where did the update
+    # spend its time", for a user's support ticket as much as for CI.
+    Log ("apply-update starting: {0} -> {1}, packageRoot={2}" -f $FromVersion, $ToVersion, $PackageRoot)
     Log "waiting for server PID $ServerPid to exit"
     $deadline = (Get-Date).AddSeconds(30)
     while ((Get-Process -Id $ServerPid -ErrorAction SilentlyContinue) -and ((Get-Date) -lt $deadline)) {
@@ -172,14 +178,14 @@ try {
     # keep disk bounded; one backup is enough for manual recovery.
     Get-ChildItem -LiteralPath $UpdatesDir -Directory -Filter 'staging-*' -ErrorAction SilentlyContinue |
         Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
-    Log "extracting $ZipPath"
+    Log ("extracting {0} ({1:N1} MB) to staging" -f $ZipPath, ((Get-Item -LiteralPath $ZipPath).Length / 1MB))
     Expand-Archive -LiteralPath $ZipPath -DestinationPath $Staging -Force
 
     Get-ChildItem -LiteralPath $UpdatesDir -Directory -Filter 'backup-*' -ErrorAction SilentlyContinue |
         Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
     New-Item -ItemType Directory -Force -Path $Backup | Out-Null
 
-    Log "swapping app/runtime"
+    Log "extraction done; swapping app/runtime"
     Move-Item -LiteralPath (Join-Path $PackageRoot 'app') -Destination (Join-Path $Backup 'app')
     Move-Item -LiteralPath (Join-Path $PackageRoot 'runtime') -Destination (Join-Path $Backup 'runtime')
     Move-Item -LiteralPath (Join-Path $Staging 'app') -Destination (Join-Path $PackageRoot 'app')
