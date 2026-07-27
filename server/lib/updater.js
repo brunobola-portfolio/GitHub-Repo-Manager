@@ -10,7 +10,7 @@
 // pure Node and everything it does to the outside world (fetch, spawn,
 // shutdown) is injectable so it can be driven by tests without a network,
 // an installer, or a real process exit.
-import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, createReadStream, createWriteStream, copyFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, createReadStream, createWriteStream, copyFileSync, readdirSync, rmSync } from 'fs';
 import path from 'path';
 import { createHash } from 'crypto';
 import { spawn } from 'child_process';
@@ -24,8 +24,61 @@ export function updatesDir(dataDir) {
     return path.join(dataDir, 'updates');
 }
 
+/**
+ * Absolute path to Windows PowerShell, never the bare image name.
+ *
+ * spawn() resolves a bare name against PATH, which on Windows includes the
+ * current working directory ahead of System32. The portable handoff runs with
+ * cwd inside the extracted package, so a `powershell.exe` dropped into a
+ * package extracted to a shared or world-writable directory would be executed
+ * instead of the real one, during an update, at the user's privilege level.
+ *
+ * Launcher.cs and installer.iss already take absolute System32 paths for
+ * exactly this reason ({sys}	askkill.exe); this matches them. Falls back to
+ * the bare name only where SystemRoot is unset (non-Windows test runs).
+ */
+export function powerShellExe() {
+    const root = process.env.SystemRoot || process.env.SYSTEMROOT;
+    if (!root) return 'powershell.exe';
+    return path.join(root, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+}
+
 export function updateIntentPath(dataDir) {
     return path.join(updatesDir(dataDir), 'update-intent.json');
+}
+
+// Files the updates dir must keep between runs: the intent marker the next
+// boot reads, and anything the CURRENT update is mid-way through using.
+const UPDATE_KEEP = new Set(['update-intent.json']);
+
+/**
+ * Delete downloaded installers, ZIPs, sha256 sidecars and pre-update database
+ * snapshots left by PREVIOUS updates.
+ *
+ * Nothing ever removed them, so a user who accepted ten updates over a year
+ * accumulated ten setup.exe files (~100 MB each), ten sidecars, and ten full
+ * database snapshots under %LOCALAPPDATA% — silently, on the same volume the
+ * app stores its data. Called just before a new download starts, so the
+ * artefacts of the update currently running are never touched.
+ *
+ * @param {string} dataDir
+ * @param {string[]} [keepNames] — basenames the caller is about to write
+ * @returns {number} files removed
+ */
+export function pruneOldUpdateArtifacts(dataDir, keepNames = []) {
+    const dir = updatesDir(dataDir);
+    const keep = new Set([...UPDATE_KEEP, ...keepNames]);
+    let removed = 0;
+    try {
+        for (const name of readdirSync(dir)) {
+            if (keep.has(name)) continue;
+            try {
+                rmSync(path.join(dir, name), { force: true, recursive: true });
+                removed++;
+            } catch { /* a locked file is retried on the next update */ }
+        }
+    } catch { /* dir does not exist yet */ }
+    return removed;
 }
 
 export function updateResultPath(dataDir) {
@@ -354,7 +407,7 @@ async function runUpdateDownloadAndHandoff({
             const scriptDest = path.join(dir, 'apply-update.ps1');
             copyFileSync(path.join(packageRoot, 'apply-update.ps1'), scriptDest);
             spawnImpl(
-                'powershell.exe',
+                powerShellExe(),
                 [
                     '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', scriptDest,
                     '-PackageRoot', packageRoot, '-DataDir', dataDir, '-ZipPath', assetPath,
@@ -449,6 +502,12 @@ export async function startUpdate({
 
         assetPath = path.join(dir, assetName);
         shaPath = path.join(dir, shaName);
+
+        // Clear what previous updates left behind BEFORE downloading, keeping
+        // the two files this run is about to write. Nothing else ever deleted
+        // them, so the directory grew by one installer plus one database
+        // snapshot per update, forever.
+        pruneOldUpdateArtifacts(dataDir, [assetName, shaName]);
     } catch (err) {
         progress = {
             phase: 'error',

@@ -13,7 +13,8 @@ import { createHash } from 'crypto';
 import path from 'path';
 import {
     startUpdate, getUpdateProgress, resetUpdaterForTests, UpdateError,
-    updatesDir, updateIntentPath, awaitUpdateRunForTests,
+    updatesDir, updateIntentPath, awaitUpdateRunForTests, powerShellExe,
+    pruneOldUpdateArtifacts,
 } from '../lib/updater.js';
 import { resetUpdateCheckCacheForTests } from '../lib/update-check.js';
 
@@ -182,7 +183,13 @@ describe('startUpdate — portable mode (apply-update.ps1 handoff)', () => {
 
         expect(calls).toHaveLength(1);
         const [call] = calls;
-        expect(call.cmd).toBe('powershell.exe');
+        // Absolute System32 path, never the bare image name: spawn() resolves a
+        // bare name against PATH, which on Windows includes the CWD ahead of
+        // System32 — and this handoff runs with the CWD inside the extracted
+        // package. Launcher.cs and installer.iss take absolute paths for the
+        // same reason.
+        expect(call.cmd).toBe(powerShellExe());
+        expect(call.cmd.endsWith('powershell.exe')).toBe(true);
         expect(call.args).toEqual([
             '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', copiedScript,
             '-PackageRoot', packageRoot, '-DataDir', dataDir,
@@ -415,3 +422,52 @@ describe('startUpdate — malicious release metadata', () => {
         expect(spawnImpl).not.toHaveBeenCalled();
     });
 });
+
+/**
+ * data/updates never had a retention policy. Ten accepted updates over a year
+ * left ten setup.exe files (~100 MB each), ten sha256 sidecars and ten full
+ * pre-update database snapshots under %LOCALAPPDATA%, on the same volume the
+ * app keeps its data.
+ */
+describe('pruneOldUpdateArtifacts', () => {
+    it('clears previous downloads and snapshots but keeps the intent marker', () => {
+        const dataDir = mkdtempSync(path.join(tmpdir(), 'grm-prune-'));
+        const dir = updatesDir(dataDir);
+        mkdirSync(dir, { recursive: true });
+        for (const name of [
+            'github-repo-manager-4.9.0-setup.exe',
+            'github-repo-manager-4.9.0-setup.exe.sha256',
+            'pre-update-4.9.0.db',
+            'update-4.9.0.log',
+        ]) writeFileSync(path.join(dir, name), 'x');
+        writeFileSync(path.join(dir, 'update-intent.json'), '{}');
+
+        const removed = pruneOldUpdateArtifacts(dataDir);
+
+        expect(removed).toBe(4);
+        expect(existsSync(path.join(dir, 'update-intent.json'))).toBe(true);
+        expect(existsSync(path.join(dir, 'pre-update-4.9.0.db'))).toBe(false);
+
+        rmSync(dataDir, { recursive: true, force: true });
+    });
+
+    it('never deletes the artefacts the CURRENT update is about to write', () => {
+        const dataDir = mkdtempSync(path.join(tmpdir(), 'grm-prune-keep-'));
+        const dir = updatesDir(dataDir);
+        mkdirSync(dir, { recursive: true });
+        writeFileSync(path.join(dir, 'new-setup.exe'), 'downloading');
+        writeFileSync(path.join(dir, 'old-setup.exe'), 'stale');
+
+        expect(pruneOldUpdateArtifacts(dataDir, ['new-setup.exe'])).toBe(1);
+        expect(existsSync(path.join(dir, 'new-setup.exe'))).toBe(true);
+
+        rmSync(dataDir, { recursive: true, force: true });
+    });
+
+    it('is a no-op when the directory does not exist yet', () => {
+        const dataDir = mkdtempSync(path.join(tmpdir(), 'grm-prune-none-'));
+        expect(pruneOldUpdateArtifacts(dataDir)).toBe(0);
+        rmSync(dataDir, { recursive: true, force: true });
+    });
+});
+

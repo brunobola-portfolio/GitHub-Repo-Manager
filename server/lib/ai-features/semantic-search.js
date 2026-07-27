@@ -48,13 +48,25 @@ function vectorNorm(vec) {
 function makeCosineScorer(queryVec) {
     const queryNorm = vectorNorm(queryVec);
     return function score(candidate) {
+        // Vectors from different embedding models are not comparable, and the
+        // loop below would read past the shorter one: `undefined * n` is NaN,
+        // which then poisons the whole ranking rather than demoting one row.
+        // This is reachable by ordinary operator action — switching
+        // GEMINI_EMBEDDING_MODEL from a 1536-dim model to gemini-embedding-001
+        // (3072) leaves every already-indexed repo at the old width until it is
+        // re-indexed. Score 0 ranks those last, which is what "we cannot
+        // compare this yet" should look like.
+        if (!Array.isArray(candidate) || candidate.length !== queryVec.length) return 0;
+
         let dotProduct = 0;
         let normB = 0;
         for (let i = 0; i < queryVec.length; i++) {
             dotProduct += queryVec[i] * candidate[i];
             normB += candidate[i] * candidate[i];
         }
-        return dotProduct / (queryNorm * Math.sqrt(normB));
+        // A zero vector has no direction; 0/0 would be NaN.
+        const denom = queryNorm * Math.sqrt(normB);
+        return denom === 0 ? 0 : dotProduct / denom;
     };
 }
 

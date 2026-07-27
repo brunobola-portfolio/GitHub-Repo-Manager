@@ -261,3 +261,33 @@ describe('ai-features/semantic-search.semanticSearch — malformed rows', () => 
         expect(ids).not.toContain(2);
     });
 });
+
+/**
+ * Reachable by ordinary operator action: switching GEMINI_EMBEDDING_MODEL from
+ * a 1536-dim model to gemini-embedding-001 (3072) leaves every already-indexed
+ * repo at the old width. The scorer read past the shorter vector, so
+ * `undefined * n` produced NaN and poisoned the entire ranking instead of
+ * demoting the one stale row.
+ */
+describe('cosineSimilarity — mismatched vector widths', () => {
+    it('scores 0 instead of NaN when the candidate is narrower', () => {
+        const query = new Array(3072).fill(0.1);
+        const stale = new Array(1536).fill(0.1);
+        const score = cosineSimilarity(query, stale);
+        expect(Number.isNaN(score)).toBe(false);
+        expect(score).toBe(0);
+    });
+
+    it('scores 0 when the candidate is wider', () => {
+        expect(cosineSimilarity(new Array(1536).fill(0.1), new Array(3072).fill(0.1))).toBe(0);
+    });
+
+    it('scores 0 for a zero vector rather than NaN', () => {
+        expect(cosineSimilarity([1, 0, 0], [0, 0, 0])).toBe(0);
+    });
+
+    it('still scores identical vectors as 1', () => {
+        expect(cosineSimilarity([1, 2, 3], [1, 2, 3])).toBeCloseTo(1, 10);
+    });
+});
+
