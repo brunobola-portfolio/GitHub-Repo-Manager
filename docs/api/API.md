@@ -107,10 +107,10 @@ Emitted by metered AI endpoints (`quotaExceededResponse` in
   "feature": "ai_semantic_search",
   "resetAt": "2026-08-01T00:00:00.000Z",
   "upgradeTo": "pro",
-  "message": "Semantic Search limit reached (50/50 this month). Upgrade to Pro for unlimited.",
+  "message": "Semantic Search limit reached (375/375 this month). Upgrade to Pro for unlimited.",
   "metric": "ai_semantic_search",
-  "limit": 50,
-  "current": 50,
+  "limit": 375,
+  "current": 375,
   "remaining": 0,
   "upgradeUrl": "/pricing"
 }
@@ -2274,7 +2274,7 @@ Semantic search across indexed repositories.
 |---|---|
 | Auth required | Yes |
 | AI required | Yes |
-| Quota | Per-feature (`ai_semantic_search`, Free: 50/month) + global `ai_queries` |
+| Quota | Per-feature (`ai_semantic_search`, Free: 375/month) + global `ai_queries` |
 
 Available on Free tier since 2026-04-15 — previously Pro-only.
 
@@ -2301,7 +2301,7 @@ Analyze a repository's migration risk to a target platform before executing the 
 |---|---|
 | Auth required | Yes |
 | AI required | Yes |
-| Quota | Per-feature (`ai_migration_risk`, Free: 5/month) + global `ai_queries` |
+| Quota | Per-feature (`ai_migration_risk`, Free: 25/month) + global `ai_queries` |
 
 Pulls signals from the source repo (size, LFS, branches, workflows, languages, visibility, wiki/pages) and prompts Gemini for a structured risk report.
 
@@ -3647,7 +3647,7 @@ Migration plans provide a structured way to plan, validate, execute, and monitor
 **Tier gating** (none of these routes carry `requireTier` at the route level — the model is metered, not tier-locked):
 
 - Creating, listing, reading, updating, validating, cancelling and pausing plans is available to **all tiers** (each plan is owned by the caller — `WHERE user_id = ?` — so cross-tenant access 404s).
-- **Full (non-dry-run) execution is metered** by `requireMigrationQuota`: Free tier gets **1 full migration per month**; dry-runs are unlimited. Applies to `execute`, `resume`, and the three task-level retry routes.
+- **Full (non-dry-run) execution is metered** by `requireMigrationQuota`: Free tier gets **5 full migrations per month**; dry-runs are unlimited. Applies to `execute`, `resume`, and the three task-level retry routes.
 - **Scheduling** a full migration to auto-run later requires **Pro** — a scheduled run bypasses the interactive execute meter, so `POST /plans` returns `403 upgrade_required` when a Free user submits `schedule.mode: 'scheduled'` with `schedule.isDryRun: false`.
 
 Plan bodies are validated by `createPlanSchema` / `updatePlanSchema` (`server/lib/validators.js`). Zod **strips undeclared task `config` keys**, so only the declared fields survive — per task type: `makePrivate`, `description`, `rollbackPolicy`, `timeout`, `sizeStrategy` (`exclude` | `lfs-migrate`), `onConflict` (`fail` | `replace`); `repo-tfvc` additionally allows `inPlace`, `targetProject`, `existingRepoId`; `work-items` and `wiki` have their own config shapes.
@@ -3936,7 +3936,7 @@ Destructive recovery for a repository task that failed on an "already exists" co
 | Detail | Value |
 |---|---|
 | Auth required | Yes |
-| Quota | Metered (`requireMigrationQuota`) — Free: 1 full migration/month |
+| Quota | Metered (`requireMigrationQuota`) — Free: 5 full migrations/month |
 | Authorization | Plan owner only |
 
 **Request Body:**
@@ -3961,7 +3961,7 @@ Recovery for a repository task that failed because files exceed GitHub's 100 MB 
 | Detail | Value |
 |---|---|
 | Auth required | Yes |
-| Quota | Metered (`requireMigrationQuota`) — Free: 1 full migration/month |
+| Quota | Metered (`requireMigrationQuota`) — Free: 5 full migrations/month |
 | Authorization | Plan owner only |
 
 **Request Body:**

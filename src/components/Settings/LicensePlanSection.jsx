@@ -13,7 +13,7 @@ import { useModal } from '../../hooks/useModal'
 import { UsageDashboard } from './UsageDashboard'
 import { formatDate as formatDateBase } from '../../utils/format'
 import { getCsrfToken } from '../../utils/api'
-import { onAppEvent, APP_EVENTS } from '../../utils/appEvents'
+import { onAppEvent, APP_EVENTS, navigateToPricing } from '../../utils/appEvents'
 
 const TIER_CONFIG = {
     free: {
@@ -123,15 +123,16 @@ function UpgradePrompt({ onUpgradePro, onUpgradeEnterprise }) {
                         </div>
                     </div>
                     <ul className="space-y-1.5 mb-4">
-                        {/* Grounded in feature-flags.js (pro) + the Pro pricing card:
-                            maxRepos=Infinity, aiQueriesPerMonth=10000, apiKeys=50.
+                        {/* Grounded in feature-flags.js (pro): aiQueriesPerMonth=10000,
+                            every per-feature monthly cap Infinity, apiKeys=50.
                             Bulk/sync/Deep Review/Prompt Studio/PR Chat are Free on
                             every tier as of the 2026-07-18 rebalance, so Pro's real
-                            differentiators are AI headroom, $ spend-cap headroom, API
-                            keys, and email support — NOT feature unlocks. Priority
-                            support and advanced analytics are NOT Pro deliverables
-                            (Enterprise). */}
-                        {['10,000 AI queries/month', 'Higher AI $ spend-cap headroom', '50 API keys', 'Email support'].map((feat) => (
+                            differentiators are AI headroom, API keys and support —
+                            NOT feature unlocks. The $ spend-cap is NOT one of them:
+                            aiSpendCapCents is 0 (disabled) on all three tiers and is
+                            an operator env knob, so "higher headroom" was 0 vs 0.
+                            Priority support and advanced analytics are Enterprise. */}
+                        {['10,000 AI queries/month', 'Unlimited monthly caps on every AI feature', '50 API keys', 'Email support'].map((feat) => (
                             <li key={feat} className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
                                 <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
                                 {feat}
@@ -368,16 +369,20 @@ export function LicensePlanSection() {
         }
     }, [])
 
+    // The app is hash-routed (useAppRouter maps #/pricing). Opening the PATH
+    // '/pricing' full-reloaded the SPA, which served index.html with an empty
+    // hash and landed the user back on the Dashboard — so the primary in-app
+    // upgrade CTA silently went nowhere and dropped its ?plan= intent.
     const handleChangePlan = useCallback(() => {
-        window.open('/pricing', '_self')
+        navigateToPricing()
     }, [])
 
     const handleUpgradePro = useCallback(() => {
-        window.open('/pricing?plan=pro', '_self')
+        navigateToPricing('pro')
     }, [])
 
     const handleUpgradeEnterprise = useCallback(() => {
-        window.open('/pricing?plan=enterprise', '_self')
+        navigateToPricing('enterprise')
     }, [])
 
     return (

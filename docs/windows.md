@@ -332,6 +332,41 @@ explore it first.
 
 ## Troubleshooting
 
+**Sign-in fails inside the app.** Work through these in order — the first two
+cover almost every real report:
+
+1. **"Sign in" does nothing, or GitHub shows a 404.** OAuth isn't configured
+   yet. The app should open the guided setup by itself; if it doesn't, see
+   [GitHub — guided setup](#github--guided-setup-recommended). Nothing is
+   broken — the app just has no Client ID to send GitHub.
+2. **GitHub says "redirect_uri is not associated with this application",** or
+   you land back on the app with a callback/redirect error. Your OAuth App's
+   **Authorization callback URL** doesn't match the address the browser is
+   actually on, character for character. Copy the URL from your browser's
+   address bar and make GitHub's callback exactly
+   `http://<that host and port>/api/auth/callback`. Two things commonly break
+   the match: `localhost` vs `127.0.0.1` (GitHub treats them as different
+   hosts), and the launcher having picked a different port because the
+   configured one was busy. You do **not** need to change `FRONTEND_URL`.
+3. **You come back from GitHub and are still signed out** — the browser
+   dropped the session cookie. On builds **before 4.8.0** this was guaranteed:
+   the cookie was `Secure`-only, which a plain `http://127.0.0.1` install can
+   never store, so sign-in was impossible and the error was usually
+   `invalid_state`. **Update to 4.8.0 or newer** — this is fixed, and CI now
+   asserts session persistence over plain-HTTP loopback on every release. If
+   you are already on 4.8.0+, check that your browser isn't blocking cookies
+   for `127.0.0.1` and that you aren't reaching the app through a proxy that
+   strips them.
+4. **Sign-in worked before and stopped after you moved the data folder or
+   reinstalled.** The credential-vault key lives in `.env` inside the data
+   directory; if that file was replaced but the database wasn't (or vice
+   versa), stored credentials can't be decrypted. See
+   [Where your data lives](#where-your-data-lives) — keep `.env` and
+   `manager.db` together.
+
+Whatever the symptom, the server log names the real cause: Start Menu →
+**View server logs**, or `data\logs\server-<date>.log`.
+
 **Port already in use.** The launcher checks the configured port (default
 `3001`) and automatically picks the next free one if something else is
 already using it — the browser tab that opens always follows the port

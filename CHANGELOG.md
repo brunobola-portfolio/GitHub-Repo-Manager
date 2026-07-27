@@ -432,7 +432,13 @@ zero-AI-cost fallbacks throughout.
 
 - `adm-zip` bumped to 0.6.0 (GHSA memory-allocation DoS).
 
-## [4.5.0] - 2026-07-06
+## [4.5.0] - 2026-07-06 — never tagged
+
+> **Not a released version.** There is no `v4.5.0` git tag and no `v4.5.0`
+> GitHub Release: the work below merged to `main` and first reached users in
+> **[4.6.0](#460---2026-07-19)**. The entry is kept as history — every *tagged*
+> release has an entry here, but this entry has no tag. The compare link at the
+> bottom of this file therefore spans v4.4.0…v4.6.0.
 
 The production-readiness release: a 10-specialist audit (88 findings) followed
 by eight remediation waves executed directly on `main`, plus the Repo Advisor
@@ -2364,8 +2370,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 [4.8.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.7.0...v4.8.0
 [4.7.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.6.1...v4.7.0
 [4.6.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.6.0...v4.6.1
-[4.6.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.5.0...v4.6.0
-[4.5.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.4.0...v4.5.0
+[4.6.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.4.0...v4.6.0
+[4.5.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.4.0...v4.6.0
 [4.4.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.3.0...v4.4.0
 [4.0.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.8.0...v4.0.0
 [3.8.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.7.2...v3.8.0

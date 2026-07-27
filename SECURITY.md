@@ -5,8 +5,13 @@
 | Version | Supported          |
 |---------|--------------------|
 | 4.x     | :white_check_mark: |
-| 3.x     | :white_check_mark: |
-| < 3.0   | :x:                |
+| < 4.0   | :x:                |
+
+Only the latest 4.x release line receives security fixes. There is no backport
+process: the last 3.x release was **3.8.0** (April 2026) and nothing has been
+published on that line since, so a fix for a 3.x install means upgrading to
+4.x. Upgrades within 4.x are in-place — the database migrates forward
+automatically on first boot.
 
 ## Reporting a Vulnerability
 
@@ -50,8 +55,30 @@ We will acknowledge your report within **48 hours** and aim to provide a fix wit
 ### Data Storage
 
 - **SQLite** with WAL mode for concurrent read performance
-- **No PII** stored beyond GitHub usernames and session tokens
-- All user data is local to the server instance (no cloud telemetry)
+- All user data is local to the server instance (**no cloud telemetry**) — it
+  is never sent to Bola Labs, and a self-hosted instance is the sole
+  controller of everything below
+
+**Personal data actually stored** (GDPR-relevant inventory — the schema is in
+[`server/db.js`](server/db.js) and
+[`server/lib/db-migrations.js`](server/lib/db-migrations.js)):
+
+| Data | Where | When it exists |
+| ---- | ----- | -------------- |
+| GitHub numeric id, username, avatar URL | `users` | Every signed-in account |
+| Email address from the GitHub profile | `users.email` | Every sign-in — written from the OAuth profile response (`null` when the GitHub account has no public email) |
+| Session records (including the GitHub access token) | server-side session store | While a session is live; rolling, 7-day absolute ceiling |
+| Licensee email, organization, seat count | `installed_license` | Only after a Pro/Enterprise license key is activated on the instance |
+| Stripe customer id, subscription id, checkout session id | `user_subscriptions`, `issued_licenses` | Only on instances running Stripe billing |
+| Issued license keys + delivery status | `issued_licenses` | Only on instances issuing licenses |
+| Full outbound email — recipient address, subject and body | `email_dead_letter` | Only when a delivery fails; rows persist until retried or resolved by an operator |
+
+Retention and erasure: the daily maintenance pass honours
+`DATA_RETENTION_DAYS` (with a warning email `DATA_RETENTION_WARNING_LEAD_DAYS`
+ahead), and GDPR Article 17 (erasure) / Article 20 (portability) are
+self-service from Settings. Deleting a user cascades or nulls their rows per
+the foreign keys above; `email_dead_letter` is operator-managed and is **not**
+keyed to a user, so review it separately when handling an erasure request.
 
 ## Security Best Practices for Deployment
 

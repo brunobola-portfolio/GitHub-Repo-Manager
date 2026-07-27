@@ -99,11 +99,14 @@ describe('Pricing page ↔ feature-flags parity', () => {
         }
     })
 
-    it('Free maxRepos=1000 matches "1,000" on the Free pricing card', () => {
+    // Retracted 2026-07-27: repos_managed was never incremented and maxRepos
+    // never checked, so the advertised 1,000 ceiling did not exist. Every tier
+    // now says Unlimited, which is what the code has always done.
+    it('Free maxRepos is unlimited and the Free pricing card says so', () => {
         const free = getFeatures('free')
-        expect(free.maxRepos).toBe(1000)
+        expect(free.maxRepos).toBe(Infinity)
         const section = tierSection('Free')
-        expect(section).toMatch(/Repositories managed[^}]*included:\s*'1,000'/)
+        expect(section).toMatch(/Repositories managed[^}]*included:\s*'Unlimited'/)
     })
 
     it('Free aiQueriesPerMonth=1000 matches "1,000" on the Free pricing card', () => {
@@ -200,9 +203,9 @@ describe('Pricing page ↔ feature-flags parity', () => {
 describe('FeatureComparison.jsx ↔ feature-flags parity', () => {
     const free = getFeatures('free')
 
-    it('Free repositories-managed cell matches maxRepos (1,000)', () => {
-        expect(free.maxRepos).toBe(1000)
-        expect(comparisonFreeValue('Repositories managed')).toBe(`'${free.maxRepos.toLocaleString('en-US')}'`)
+    it('Free repositories-managed cell says Unlimited, matching maxRepos', () => {
+        expect(free.maxRepos).toBe(Infinity)
+        expect(comparisonFreeValue('Repositories managed')).toBe("'Unlimited'")
     })
 
     it('Free API-keys cell matches apiKeys (25)', () => {
@@ -381,10 +384,12 @@ describe('Wave 6 features ↔ feature-flags parity', () => {
 describe('PricingPreview.jsx (Landing) ↔ feature-flags parity', () => {
     const free = getFeatures('free')
 
-    it('Free repositories line matches maxRepos (1,000, not the stale 200)', () => {
-        expect(free.maxRepos).toBe(1000)
-        expect(previewSource).toMatch(/Up to 1,000 repositories/)
-        expect(previewSource).not.toMatch(/Up to 200 repositories/)
+    it('the landing preview claims no repository ceiling on any tier', () => {
+        expect(free.maxRepos).toBe(Infinity)
+        expect(previewSource).not.toMatch(/Up to [\d,]+ repositories/)
+        // "Unlimited repositories" was the Pro card's lead bullet; with no
+        // ceiling anywhere it is not a differentiator and must not be sold.
+        expect(previewSource).not.toMatch(/Unlimited repositories/)
     })
 
     it('Free Semantic Search line matches semanticSearchPerMonth (375, not the stale 75)', () => {
@@ -484,8 +489,9 @@ describe('Free-trial copy ↔ Stripe checkout reality', () => {
 describe('README pricing matrix ↔ feature-flags parity', () => {
     const free = getFeatures('free')
 
-    it('Free repositories-managed cap matches flags (1,000)', () => {
-        expect(readmeFreeCell('Repositories managed')).toBe(free.maxRepos.toLocaleString('en-US'))
+    it('Free repositories-managed cap matches flags (unlimited)', () => {
+        expect(free.maxRepos).toBe(Infinity)
+        expect(readmeFreeCell('Repositories managed')).toBe('Unlimited')
     })
 
     it('Free API-keys cap matches flags (25)', () => {
@@ -598,5 +604,20 @@ describe('Sync apply metered-free ↔ feature-flags parity', () => {
 
     it('FeatureComparison Mirror Sync row shows the metered Free apply cap', () => {
         expect(comparisonFreeValue('Sync Repository (mirror sync)')).toBe("'10 / month'")
+    })
+})
+
+describe('spend cap is never sold as a paid differentiator while it ships disabled', () => {
+    const tiers = ['free', 'pro', 'enterprise']
+
+    it('aiSpendCapCents is identical across tiers (so there is no headroom to sell)', () => {
+        const values = tiers.map((t) => getFeatures(t).aiSpendCapCents)
+        expect(new Set(values).size).toBe(1)
+    })
+
+    it('no pricing surface claims spend-cap headroom', () => {
+        for (const src of [pricingSource, comparisonSource, previewSource]) {
+            expect(src).not.toMatch(/spend[- ]cap headroom/i)
+        }
     })
 })

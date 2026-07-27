@@ -24,18 +24,19 @@ below links to the canonical page for that topic.
 
 The 3 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
-- **v4.8.2 (2026-07-21) — Installer finish-page launch + scripted rollouts.**
-  A "Launch GitHub Repo Manager" checkbox on the installer's finish page
-  (checked by default, skipped in silent installs), a per-user `DATA_DIR`
-  marker written unexpanded (`%LOCALAPPDATA%\...`) so an admin-run rollout
-  resolves each user's own data directory, and a scripted/unattended install
-  guide (silent flags, `/LOG=` and `/DIR=`, exit-code semantics, `.env`
-  pre-provisioning for zero-touch fleet rollouts). See
-  [Windows guide](windows.md).
-- **v4.8.1 (2026-07-21) — BolaLabs installer branding.** The Inno Setup
-  installer wears the BolaLabs identity — branded icon, wizard banner and
-  imagery (assets generated from the master art at 2x so Inno's DPI scaling
-  only ever scales down).
+- **v4.10.0 (2026-07-22) — Windows system-tray app.** The launcher now shows a
+  tray icon with a running indicator (**● Running on port N**) and controls
+  for open / view logs / restart / start-with-Windows / quit, with a
+  single-instance guard. Plus two installer fixes from real-world v4.9.0
+  testing: the optional desktop shortcut is created per-user (an all-users
+  desktop write fails on a no-UAC install), and re-running Setup finally
+  offers the **Repair / Uninstall** dialog. See [Windows guide](windows.md).
+- **v4.9.0 (2026-07-22) — Premium Windows experience.** A native
+  GUI-subsystem launcher that runs the server hidden (no console window, no
+  flash, proper taskbar identity), file-based server logs with 7-day
+  retention, a loopback-only authenticated `POST /api/system/shutdown` for
+  graceful stops, and one-click in-app updates (download → SHA-256 verify →
+  DB snapshot → restart) with automatic rollback on the portable build.
 - **v4.8.0 (2026-07-20) — Windows first-run overhaul.** Signing in works out
   of the box: a plain `http://127.0.0.1` install could never store the
   `Secure`-only session cookie, so sign-in was impossible — now `secure:

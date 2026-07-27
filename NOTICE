@@ -7,8 +7,14 @@ See the LICENSE file for the full license text.
 Commercial License
 ------------------
 A commercial license is available for organizations that wish to use this software
-without the obligations of the AGPL. Commercial licenses include Pro and Enterprise
-tiers with additional features and support.
+without the obligations of the AGPL.
+
+The commercial Pro and Enterprise tiers do not unlock product features: nearly
+the whole product ships in this AGPL build with generous monthly caps. Paid
+tiers raise those caps (AI headroom), grant more API keys, and add
+compliance/service deliverables - Enterprise adds an exportable audit log,
+priority support with an SLA, and white-glove migration services. AI is always
+bring-your-own-key on every tier; no tier includes managed inference.
 
 See docs/LICENSE-COMMERCIAL.md for details.
 For commercial licensing inquiries, contact: bruno@bolalabs.pt

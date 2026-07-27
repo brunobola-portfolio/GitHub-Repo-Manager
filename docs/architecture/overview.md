@@ -13,7 +13,8 @@ providers. SQLite is the only store; PostgreSQL is intentionally unsupported
 
 - **Frontend**: React 19 + Vite 8 + Tailwind CSS 4 single-page app, heavy
   route-level lazy splits (WorkBoard, PRReview, Admin) kept under explicit
-  gzip budgets (see [`scripts/check-bundle-size.mjs`](../../scripts/check-bundle-size.mjs)).
+  gzip budgets by the CI gate
+  [`tests/build/bundle-budget.test.js`](../../tests/build/bundle-budget.test.js).
 - **Backend**: Express 5 with 325 route handlers across 74 route modules under
   `server/routes/`. CSRF double-submit, SSRF guard on import-from-URL,
   per-IP auth rate-limit, rolling session + 7-day absolute timeout.
@@ -326,9 +327,17 @@ The application implements three tiers managed through the `user_subscriptions` 
 
 | Tier | Description |
 | ---- | ----------- |
-| `free` | Default for all new accounts. Limited API calls and migration jobs. |
-| `pro` | Increased limits, priority job queue, advanced analytics. |
-| `enterprise` | Unlimited usage, dedicated support, custom integrations. |
+| `free` | Default for all new accounts. The whole product surface, with per-feature monthly caps: 1,000 repos, 1,000 AI queries/month, 25 API keys, 5 full migrations/month. |
+| `pro` | Same features, higher ceilings: unlimited repos, 10,000 AI queries/month, every per-feature AI cap unlimited, 50 API keys. |
+| `enterprise` | Unlimited AI queries, 100 API keys, plus the audit log with export (`auditLog` / `auditExport`) — the only tier-exclusive product capability. |
+
+There is **no priority job queue, advanced-analytics tier, or tier-exclusive
+integration surface** — all three were documented here and none exist in code.
+Priority support with an SLA and white-glove migration are contracted
+deliverables with no feature flag behind them. The numbers above are a
+rendering of `TIER_FEATURES` in
+[`server/lib/feature-flags.js`](../../server/lib/feature-flags.js) (the source
+of truth, CI-checked against every pricing surface).
 
 Tier enforcement is applied in middleware by reading `user_subscriptions.tier` for the authenticated user. Usage is metered per `metric_type` and billing period in the `usage_metrics` table.
 
@@ -367,7 +376,8 @@ The v3.6/v3.7 sprint closed the P0–P4 audit findings. The short list:
   cleanup loops supervised (crash in one task no longer stalls the plan).
 - **Performance**. Route-level lazy splits (shiki kept out of initial
   bundle); vendor-icons chunked out; stale-while-revalidate on Work Board
-  hooks; composite DB indexes; bundle-budget gate (`scripts/check-bundle-size.mjs`)
+  hooks; composite DB indexes; bundle-budget gate
+  (`tests/build/bundle-budget.test.js`, run in CI with `RUN_BUILD_TESTS=1`)
   rejects regressions.
 - **Observability**. Request-timing middleware (`Server-Timing` header,
   structured log line per request); Sentry breadcrumbs; `performance.mark()`

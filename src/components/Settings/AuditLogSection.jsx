@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Shield, ChevronLeft, ChevronRight, Filter, RefreshCw } from 'lucide-react'
+import { Shield, ChevronLeft, ChevronRight, Filter, RefreshCw, Download } from 'lucide-react'
 import { API_BASE_URL } from '../../config'
 import { formatDateTime as formatDateTimeBase } from '../../utils/format'
 import { Card } from '../ui/Card'
@@ -92,6 +92,30 @@ export function AuditLogSection() {
         }
     }, [page, limit, action, dateFrom, dateTo])
 
+    // Export honours the SAME filters as the table, so what a compliance
+    // reviewer downloads matches what they are looking at. The server streams
+    // an attachment; anchor-click is the only way to keep the browser's own
+    // download UI (and the Content-Disposition filename) rather than buffering
+    // a potentially large CSV into memory here.
+    const [exporting, setExporting] = useState(false)
+    const handleExport = useCallback(() => {
+        setExporting(true)
+        try {
+            const params = new URLSearchParams({ format: 'csv' })
+            if (action) params.set('action', action)
+            if (dateFrom) params.set('from', dateFrom)
+            if (dateTo) params.set('to', dateTo)
+            const link = document.createElement('a')
+            link.href = `${API_BASE_URL}/api/v1/audit/export?${params}`
+            link.rel = 'noopener'
+            document.body.appendChild(link)
+            link.click()
+            link.remove()
+        } finally {
+            setExporting(false)
+        }
+    }, [action, dateFrom, dateTo])
+
     /* eslint-disable react-hooks/set-state-in-effect -- filter changes drive page reset + refetch */
     useEffect(() => { fetchLogs() }, [fetchLogs])
 
@@ -149,6 +173,17 @@ export function AuditLogSection() {
                 <Button variant="secondary" size="sm" onClick={fetchLogs} title="Refresh">
                     <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                     Refresh
+                </Button>
+
+                <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleExport}
+                    disabled={exporting || !!error}
+                    title="Download the filtered audit log as CSV"
+                >
+                    <Download className="w-4 h-4" />
+                    Export CSV
                 </Button>
             </div>
 
