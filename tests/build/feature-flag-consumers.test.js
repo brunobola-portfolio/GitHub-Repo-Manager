@@ -42,6 +42,48 @@ const corpus = sourceFiles
     .map((f) => readFileSync(f, 'utf8'))
     .join('\n')
 
+// Comments are prose ABOUT flags, not consumers of them. Stripping them stops
+// "// TODO: gate this behind auditExport" from satisfying the gate.
+//
+// Stripped PER FILE, before joining. Run over the concatenated corpus, a `/*`
+// in one file pairs with a `*/` in an unrelated later one and silently deletes
+// every file in between — which is not a theoretical risk: it swallowed
+// server/routes/audit.js whole, and the gate then reported a flag as orphaned
+// while its consumer sat two lines above.
+const stripComments = (src) => src
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/(^|[^:])\/\/[^\n]*/g, '$1 ')
+
+const codeCorpus = sourceFiles
+    .filter((f) => f.replace(/\\/g, '/') !== FLAGS_FILE)
+    .map((f) => stripComments(readFileSync(f, 'utf8')))
+    .join('\n')
+
+/**
+ * True when the corpus actually READS this flag, rather than merely containing
+ * its name somewhere.
+ *
+ * A bare `corpus.includes(key)` passed on any substring hit — a flag named
+ * `sso` is satisfied by the letters inside "successor", and a mention in a
+ * comment or an unrelated longer identifier counted as a consumer. A pricing
+ * claim backed by a flag nothing reads is a false claim, which is precisely
+ * what this gate exists to catch, so the match has to look like a read.
+ */
+function isFlagRead(key) {
+    const k = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const patterns = [
+        new RegExp(`\\.\\s*${k}\\b`),                    // features.auditExport
+        new RegExp(`\\[\\s*['"\`]${k}['"\`]\\s*\\]`),    // features['auditExport']
+        new RegExp(`\\{[^{}]*\\b${k}\\b[^{}]*\\}\\s*=`), // const { auditExport } = ...
+        new RegExp(`\\(\\s*['"\`]${k}['"\`]`),           // requireFeature('auditExport')
+        // METRIC_TO_FEATURE maps a metric onto a flag NAME, and checkUsageLimit
+        // then does features[featureKey] — so appearing as the value of that map
+        // is a real consumption path, not a mention.
+        new RegExp(`:\\s*['"\`]${k}['"\`]`),
+    ]
+    return patterns.some((re) => re.test(codeCorpus))
+}
+
 const flagsSource = readFileSync(FLAGS_FILE, 'utf8')
 
 function tierFeatureKeys() {
@@ -70,6 +112,18 @@ const DOCUMENTATION_ONLY_FLAGS = new Set([
     'basicBulk',
     'syncRepository',
     'syncPreview',
+    // Surfaced by the substring->read tightening below: each of these is `true`
+    // on every tier, so it gates nothing and the conditional exemption applies.
+    // The previous gate matched them by accident — `aiAssistant` on the
+    // unrelated `aiAssistantEnabled` user preference, `prReview` on
+    // `prReviewCommentSchema`.
+    'bulkAdvanced',
+    'aiAssistant',
+    'prReview',
+    // SSO/SAML is roadmap, not shipped: false on every tier, and every surface
+    // marks it as such. If it is ever flipped true anywhere, the
+    // identical-across-tiers test below fails and demands a real consumer.
+    'sso',
 ])
 
 describe('every tier feature flag has a consumer', () => {
@@ -83,7 +137,7 @@ describe('every tier feature flag has a consumer', () => {
 
     it('no flag is defined-but-unused', () => {
         const orphans = keys
-            .filter((key) => !corpus.includes(key))
+            .filter((key) => !isFlagRead(key))
             .filter((key) => !DOCUMENTATION_ONLY_FLAGS.has(key))
         expect(
             orphans,
@@ -105,7 +159,7 @@ describe('every tier feature flag has a consumer', () => {
 
     it('the exemption list has no stale entries', () => {
         const stale = [...DOCUMENTATION_ONLY_FLAGS].filter(
-            (key) => !keys.includes(key) || corpus.includes(key),
+            (key) => !keys.includes(key) || isFlagRead(key),
         )
         expect(
             stale,

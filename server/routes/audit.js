@@ -48,7 +48,24 @@ function csvCell(value) {
 // List audit log entries (paginated). Audit log is an Enterprise feature.
 // The tier check is ALSO applied at the mount point; enforcing it here too is
 // defense-in-depth so a future remount can't silently expose it to lower tiers.
+//
+// Gated on the `auditLog` flag as well, for the same reason /export is gated on
+// `auditExport`: the flag is enterprise-only in TIER_FEATURES, and until this
+// read existed nothing in the codebase consulted it — the capability happened
+// to be enforced by requireTier, so the flag was a pricing claim backed by a
+// boolean nobody read. One source of truth for the contract and the code.
 router.get('/', requireAuth, requireTier('enterprise'), (req, res) => {
+    const listTier = getUserTier(req.session.userId);
+    if (!getFeatures(listTier)?.auditLog) {
+        return res.status(403).json({
+            error: 'Tier required',
+            code: 'TIER_REQUIRED_ENTERPRISE',
+            feature: 'auditLog',
+            currentTier: listTier,
+            requiredTier: 'enterprise',
+        });
+    }
+
     try {
         const page = Math.max(1, parseInt(req.query.page) || 1);
         const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 50));

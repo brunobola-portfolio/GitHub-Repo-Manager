@@ -103,6 +103,10 @@ const TIER_FEATURES = {
         teamsMax: Infinity,
         teamMembersMax: Infinity,
         auditLog: false,
+        // SSO/SAML is roadmap, not shipped. Declared on every tier (not just
+        // enterprise) so the flag-consumer gate can prove it is identical
+        // across tiers and therefore grants nothing.
+        sso: false,
 
         // Tier-independent daily anti-abuse ceiling on destructive bulk ops
         // (delete/transfer), on top of the (now free) bulkAdvanced gate.
@@ -153,6 +157,10 @@ const TIER_FEATURES = {
         teamsMax: Infinity,
         teamMembersMax: Infinity,
         auditLog: false,
+        // SSO/SAML is roadmap, not shipped. Declared on every tier (not just
+        // enterprise) so the flag-consumer gate can prove it is identical
+        // across tiers and therefore grants nothing.
+        sso: false,
 
         bulkDestructiveDailyMax: BULK_DESTRUCTIVE_DAILY_MAX,
 
