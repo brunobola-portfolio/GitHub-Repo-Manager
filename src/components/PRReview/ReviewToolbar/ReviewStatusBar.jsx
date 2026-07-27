@@ -102,7 +102,7 @@ export function ReviewStatusBar({
                 />
             </svg>
 
-            <span className={`tabular-nums text-sm font-medium ${allReviewed ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-200'}`}>
+            <span className={`tabular-nums text-sm font-medium ${allReviewed ? 'ds-text-success' : 'text-slate-700 dark:text-slate-200'}`}>
                 {reviewedCount}/{safeTotal} reviewed
             </span>
 
@@ -134,7 +134,9 @@ export function ReviewStatusBar({
                     <button
                         type="button"
                         onClick={() => onSubmitReview({ event: 'APPROVE' })}
-                        className="inline-flex items-center justify-center gap-1 px-3 py-1.5 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-semibold bg-emerald-600 text-white shadow-sm shadow-emerald-600/30 hover:bg-emerald-700 transition-colors"
+                        /* --ds-cta, not emerald-600: white on emerald-600 is
+                           3.67:1 in both themes (see --ds-cta-text). */
+                        className="inline-flex items-center justify-center gap-1 px-3 py-1.5 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-semibold bg-[color:var(--ds-cta)] dark:bg-[color:var(--ds-cta-dark)] text-[color:var(--ds-cta-text)] shadow-[var(--ds-shadow-sm)] hover:bg-[color:var(--ds-cta-hover)] dark:hover:bg-[color:var(--ds-cta-hover-dark)] transition-colors"
                         aria-label="Approve"
                     >
                         <ShieldCheck className="w-3.5 h-3.5" /> Approve

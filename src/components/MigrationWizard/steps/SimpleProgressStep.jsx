@@ -13,6 +13,10 @@ import { useToast } from '../../../hooks/useToast'
 // the user — three in a row (6s at the 2s poll interval) is a real stall.
 const POLL_FAILURE_THRESHOLD = 3
 
+// Status poll cadence. A 20-repo batch runs one timer per job, so this is
+// 10 req/s in aggregate — gated on tab visibility below for that reason.
+const POLL_INTERVAL_MS = 2000
+
 const STATUS_BADGES = {
   pending: { icon: Clock, color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800', label: 'Pending' },
   running: { icon: SpinnerIcon, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', label: 'Running', spin: false },
@@ -150,16 +154,25 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
   }, [cancellingIds, toast])
 
   // --- Single import polling ---
-  const pollSingleJob = useCallback(() => {
-    if (!importJobs.jobId || isBatchMode) return
+  useEffect(() => {
+    if (!importJobs.jobId || isBatchMode || !importJobs.importing) return undefined
 
-    abortRef.current = new AbortController()
+    const controller = new AbortController()
+    abortRef.current = controller
+    let reachedTerminal = false
 
-    intervalRef.current = setInterval(async () => {
+    const stopInterval = () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+    }
+
+    const tick = async () => {
       try {
         const res = await fetch(`/api/import/status/${importJobs.jobId}`, {
           credentials: 'include',
-          signal: abortRef.current?.signal,
+          signal: controller.signal,
         })
         if (!res.ok) {
           setPollFailureCount((c) => c + 1)
@@ -170,8 +183,8 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
         onUpdate({ jobStatus: data })
 
         if (TERMINAL_STATUSES.has(data.status)) {
-          clearInterval(intervalRef.current)
-          intervalRef.current = null
+          reachedTerminal = true
+          stopInterval()
           onUpdate({ importing: false })
         }
       } catch (err) {
@@ -179,31 +192,48 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
         // don't count it toward the "connection lost" indicator.
         if (err?.name !== 'AbortError') setPollFailureCount((c) => c + 1)
       }
-    }, 2000)
-  }, [importJobs.jobId, isBatchMode, onUpdate])
+    }
 
-  useEffect(() => {
-    if (importJobs.jobId && !isBatchMode && importJobs.importing) {
-      pollSingleJob()
+    const startInterval = () => {
+      if (reachedTerminal || intervalRef.current) return
+      intervalRef.current = setInterval(() => {
+        if (!document.hidden) tick()
+      }, POLL_INTERVAL_MS)
     }
+
+    // A hidden tab stops polling entirely; coming back ticks immediately so a
+    // job that finished while the user was away reconciles at once instead of
+    // waiting out another interval.
+    const onVisibility = () => {
+      if (document.hidden) stopInterval()
+      else if (!reachedTerminal) { tick(); startInterval() }
+    }
+
+    startInterval()
+    document.addEventListener('visibilitychange', onVisibility)
     return () => {
-      if (abortRef.current) abortRef.current.abort()
-      if (intervalRef.current) clearInterval(intervalRef.current)
+      controller.abort()
+      stopInterval()
+      document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, [importJobs.jobId, isBatchMode, importJobs.importing, pollSingleJob])
+  }, [importJobs.jobId, isBatchMode, importJobs.importing, onUpdate])
 
   // --- Batch import polling ---
   useEffect(() => {
-    if (!isBatchMode || !importJobs.importing) return
+    if (!isBatchMode || !importJobs.importing) return undefined
 
     const abortControllers = {}
+    // Keeps the ORIGINAL jobId value alongside each poller: completedJobsRef
+    // is a Set of raw jobIds, so looking one up by an object key (always a
+    // string) would silently never match.
+    const pollers = []
 
     for (const job of importJobs.batchJobs) {
       if (completedJobsRef.current.has(job.jobId)) continue
 
       abortControllers[job.jobId] = new AbortController()
 
-      batchIntervalsRef.current[job.jobId] = setInterval(async () => {
+      const tick = async () => {
         try {
           const res = await fetch(`/api/import/status/${job.jobId}`, {
             credentials: 'include',
@@ -241,13 +271,46 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
           // don't count it toward the "connection lost" indicator.
           if (err?.name !== 'AbortError') setPollFailureCount((c) => c + 1)
         }
-      }, 2000)
+      }
+
+      pollers.push({ jobId: job.jobId, tick })
     }
+
+    // One timer PER JOB: a 20-repo batch was 10 requests/second, and none of
+    // it was gated on the tab being in front of the user. Stop every timer
+    // while hidden, then tick each still-running job once on return so the
+    // progress UI reconciles immediately instead of showing a frozen bar.
+    const startIntervals = () => {
+      for (const { jobId, tick } of pollers) {
+        if (completedJobsRef.current.has(jobId)) continue
+        if (batchIntervalsRef.current[jobId]) continue
+        batchIntervalsRef.current[jobId] = setInterval(() => {
+          if (!document.hidden) tick()
+        }, POLL_INTERVAL_MS)
+      }
+    }
+    const stopIntervals = () => {
+      Object.values(batchIntervalsRef.current).forEach((id) => clearInterval(id))
+      batchIntervalsRef.current = {}
+    }
+    const onVisibility = () => {
+      if (document.hidden) {
+        stopIntervals()
+        return
+      }
+      for (const { jobId, tick } of pollers) {
+        if (!completedJobsRef.current.has(jobId)) tick()
+      }
+      startIntervals()
+    }
+
+    startIntervals()
+    document.addEventListener('visibilitychange', onVisibility)
 
     return () => {
       Object.values(abortControllers).forEach((ac) => ac.abort())
-      Object.values(batchIntervalsRef.current).forEach((id) => clearInterval(id))
-      batchIntervalsRef.current = {}
+      stopIntervals()
+      document.removeEventListener('visibilitychange', onVisibility)
     }
     // NB: importJobs.batchStatuses is intentionally NOT a dep — the effect writes
     // it (via onUpdate) but never reads it (the updater uses its own `prev`).

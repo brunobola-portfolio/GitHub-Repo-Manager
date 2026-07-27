@@ -1,8 +1,13 @@
 import { twMerge } from 'tailwind-merge'
 
+// Elevation reads from the design-system pair, which is theme-aware at the
+// token level — so no `dark:` variant here (see --ds-shadow-* in
+// design-system.css). The `shadow-slate-200/40` this replaces tinted the shadow
+// slate-200 at 40%, i.e. the colour of the slate-50 page it falls on: measured
+// 1.07:1 against the page, which is why light mode had no elevation at all.
 const SHADOW_CLASS = {
-    lg: 'shadow-lg shadow-slate-200/40 dark:shadow-black/40',
-    sm: 'shadow-sm dark:shadow-black/30',
+    lg: 'shadow-[var(--ds-shadow-lg)]',
+    sm: 'shadow-[var(--ds-shadow-sm)]',
     none: '',
 }
 
@@ -21,8 +26,11 @@ export function Card({
             glass
                 ? 'bg-white/80 dark:bg-slate-800/80 backdrop-blur-md'
                 : 'bg-white dark:bg-slate-900',
-            // Borders
-            'rounded-[var(--ds-radius-lg)] border border-slate-200 dark:border-slate-700',
+            // Borders — --ds-elevation-border is the boundary token (1.73:1 on
+            // white vs slate-200's 1.23:1, matching dark mode's 1.72:1). Kept as
+            // a Tailwind arbitrary value, not a `.ds-*` class, so a caller's
+            // `hover:border-*` still wins the cascade.
+            'rounded-[var(--ds-radius-lg)] border border-[color:var(--ds-elevation-border)]',
             // Layered shadows for depth (opt-out via shadow="sm" | "none")
             SHADOW_CLASS[shadow] ?? SHADOW_CLASS.lg,
             // Smooth transitions

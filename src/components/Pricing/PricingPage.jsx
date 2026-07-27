@@ -17,7 +17,7 @@ const TIERS_MONTHLY = [
     enterprise: false,
     ctaText: 'Get Started',
     features: [
-      { label: 'Repositories managed', included: '1,000' },
+      { label: 'Repositories managed', included: 'Unlimited' },
       { label: 'Repo Advisor (conversational)', included: true },
       { label: 'Semantic Search (AI)', included: '375 / month' },
       { label: 'Migration Risk Analysis (AI)', included: '25 / month' },
@@ -57,7 +57,7 @@ const TIERS_MONTHLY = [
     features: [
       { label: 'Everything in Free, unlimited', included: true },
       { label: 'AI queries / month', included: '10,000' },
-      { label: 'Higher AI $ spend-cap headroom', included: true },
+      { label: 'Unlimited monthly caps on every AI feature', included: true },
       { label: 'Unlimited README / Commit / Insights / Deep Review / PR Chat', included: true },
       { label: 'Unlimited Prompt Studio presets', included: true },
       { label: 'Azure DevOps Cloud migration', included: true },
@@ -415,7 +415,7 @@ export function PricingPage({ onGetStarted } = {}) {
             // exists, so we advertise the hardening measures, not a certification.
             { icon: Shield, text: 'Hardened stack — CSP, rate limiting, tamper-evident audit log' },
           ].map(({ icon: Icon, text }) => (
-            <div key={text} className="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500">
+            <div key={text} className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
               <Icon className="w-4 h-4 text-indigo-500/60 dark:text-indigo-400/50" />
               <span>{text}</span>
             </div>
@@ -459,7 +459,7 @@ export function PricingPage({ onGetStarted } = {}) {
             </h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base max-w-lg mx-auto">
               Can't find the answer? Reach us at{' '}
-              <a href="mailto:bruno@bolalabs.pt" className="text-indigo-500 hover:underline">
+              <a href="mailto:bruno@bolalabs.pt" className="text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline">
                 bruno@bolalabs.pt
               </a>
             </p>

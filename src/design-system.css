@@ -100,12 +100,69 @@
   --ds-accent-enterprise: #f59e0b;       /* amber-500 */
   --ds-accent-enterprise-dark: #fbbf24;  /* amber-400 */
 
+  /* Badge pairs — fill + the ONE text colour that is WCAG AA on it.
+   * The accent tokens above are graphic fills, exactly like ds-risk-*-fill:
+   * putting white on --ds-accent-enterprise measures 2.13:1, which is how the
+   * Enterprise pricing badge shipped as the worst contrast on the whole site.
+   * Any badge/pill that renders text on an accent MUST use a pair from here.
+   *   enterprise: #451a03 on #f59e0b = 6.97:1 · on #fbbf24 = 8.97:1
+   *   brand:      #ffffff on #4f46e5 = 6.29:1 (indigo-500 is only 4.47:1) */
+  --ds-badge-enterprise-fill: #f59e0b;
+  --ds-badge-enterprise-fill-dark: #fbbf24;
+  --ds-badge-enterprise-text: #451a03;      /* amber-950 */
+  --ds-badge-brand-fill: #4f46e5;           /* indigo-600 */
+  --ds-badge-brand-text: #ffffff;
+
   /* ===== STATUS ===== */
   --ds-success: #1a7f37;     --ds-success-dark: #3fb950;
   --ds-attention: #9a6700;   --ds-attention-dark: #d29922;
   --ds-danger: #cf222e;      --ds-danger-dark: #f85149;
   --ds-cta: #1f883d;         --ds-cta-dark: #238636;
   --ds-cta-hover: #1a7f37;   --ds-cta-hover-dark: #29903b;
+  /* The ONE green that carries white button text at AA, in both themes — the
+   * same fill/text-pair contract as --ds-badge-* above. Any SOLID green button
+   * (Approve, Publish to GitHub, Submit review) must fill from --ds-cta:
+   *   #ffffff on --ds-cta      #1f883d = 4.52:1
+   *   #ffffff on --ds-cta-dark #238636 = 4.63:1
+   * Tailwind's emerald-600 (oklch → #009966) is 3.67:1 with white and is NOT a
+   * text-bearing fill; it shipped on the PR-review primary actions. */
+  --ds-cta-text: #ffffff;
+
+  /* Success / danger TEXT on a light surface. Separate from the status fills
+   * above for the same reason ds-risk-*-text is separate from ds-risk-*-fill:
+   * a fill that reads well as a graphic is not automatically AA as text.
+   *
+   * The values are set by the hardest case in the product — the +N / -N diff
+   * deltas, which are the most-read numbers here and land on SIX different
+   * backgrounds (file header, file-tree row, the blue SELECTED file row, and
+   * the diff's own add/remove row + word-level tints). White is not the
+   * limiting background; the selected row and the word tints are. Measured
+   * alpha-composited in-browser:
+   *
+   *   background             add #146b36   del #b91c1c   (was green-600/red-600)
+   *   white                  6.59          6.47          (3.22 / 4.77)
+   *   slate-50   #f8fafc     6.30          6.18          (3.08 / 4.56)
+   *   blue-100   #dbeafe     5.40          5.30          (2.64 / 3.91)  <- selected row
+   *   added row  #dafbe1     5.92          5.81          (2.89 / 4.29)
+   *   added word #aceebb     4.93          4.84          (2.41 / 3.57)
+   *   removed row #ffebe9    5.75          5.64          (2.81 / 4.16)
+   *   removed word #ffcecb   4.69          4.60          (2.29 / 3.39)
+   *
+   * Dark mode already clears AA on every one of those (worst 8.40 / 5.29), so
+   * the dark values are the green-400 / red-400 the risk tokens already use —
+   * dark diffs are a visual no-op. */
+  --ds-fg-success: #146b36;
+  --ds-fg-success-dark: #4ade80;  /* green-400 */
+  --ds-fg-danger: #b91c1c;        /* red-700 */
+  --ds-fg-danger-dark: #f87171;   /* red-400 */
+
+  /* Keyboard-hint pill (src/components/ui/Kbd.jsx) — appears on every page, so
+   * its one text/background pair is worth naming. The muted slate the pill
+   * inherited (--ds-fg-muted on --ds-surface-muted) measured 4.34:1 light /
+   * 4.04:1 dark, i.e. AA-failing on every screen at once:
+   *   #475569 on #f1f5f9 = 6.92:1  ·  #cbd5e1 on #334155 = 6.98:1 */
+  --ds-kbd-text: #475569;         /* slate-600 */
+  --ds-kbd-text-dark: #cbd5e1;    /* slate-300 */
 
   /* ===== RADIUS ===== */
   --ds-radius-sm: 4px;
@@ -113,11 +170,42 @@
   --ds-radius-lg: 16px;  /* matches dominant `rounded-2xl` usage in cards */
   --ds-radius-xl: 24px;  /* rounded-3xl — larger than lg so scale is monotonic */
 
-  /* ===== ELEVATION ===== */
-  --ds-shadow-sm: 0 1px 0 rgba(31,35,40,.04);
-  --ds-shadow:    0 3px 6px rgba(140,149,159,.15);
-  --ds-shadow-lg: 0 8px 24px rgba(140,149,159,.2);
-  --ds-shadow-overlay: 0 0 0 1px rgba(31,35,40,.06), 0 8px 24px rgba(31,35,40,.12);
+  /* ===== ELEVATION =====
+   * One border + shadow pair for every raised surface, and it is theme-aware:
+   * the :root.dark block below re-points the SAME token names, so a call site
+   * writes `shadow-[var(--ds-shadow-lg)]` with no `dark:` variant (the pattern
+   * --ds-risk-* uses).
+   *
+   * Why these values exist. Light mode measured, on the Dashboard:
+   *   card surface vs page  1.05:1   (white on slate-50 — unavoidable, and fine)
+   *   card border vs surface 1.23:1  (slate-200 hairline)
+   *   card shadow vs page   1.07:1   (`shadow-lg shadow-slate-200/40` tinted the
+   *                                   shadow slate-200 @40%, which composites to
+   *                                   #eff3f7 on a #f8fafc page — a shadow the
+   *                                   exact colour of the thing it falls on)
+   * Dark mode over the same card: border 1.72:1, shadow 3.32:1. That gap is why
+   * dark reads structured and light reads as a flat wash. The light values below
+   * are chosen to MATCH dark's boundary strength rather than to chase WCAG
+   * 1.4.11's 3:1 — a 3:1 hairline on white is #949494, which reads as a
+   * wireframe outline, not a premium card. Shadows are neutral slate-900, never
+   * a tint of the surface they sit on.
+   *   --ds-elevation-border  #bcc6d4 on #ffffff = 1.73:1 (dark pair: 1.72:1)
+   *   --ds-shadow-lg darkest layer on #f8fafc  = 1.44:1 (was 1.07:1) */
+  --ds-elevation-border: #bcc6d4;
+  --ds-elevation-border-dark: #334155;  /* slate-700 */
+  /* Every step opens with a 1px contact ring. That ring is what carries the
+   * boundary on the ~15 legacy call sites that still pass their own
+   * `border-slate-200` through twMerge and so never see --ds-elevation-border:
+   * it lands immediately outside their hairline and reads as a second, darker
+   * edge, so those cards gain definition without their own file being touched. */
+  --ds-shadow-sm: 0 0 0 1px rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.08),
+                  0 2px 4px -1px rgba(15,23,42,.10);
+  --ds-shadow:    0 0 0 1px rgba(15,23,42,.05), 0 1px 2px rgba(15,23,42,.08),
+                  0 4px 10px -2px rgba(15,23,42,.14);
+  --ds-shadow-lg: 0 0 0 1px rgba(15,23,42,.05), 0 1px 3px rgba(15,23,42,.10),
+                  0 8px 20px -4px rgba(15,23,42,.16), 0 24px 44px -14px rgba(15,23,42,.20);
+  --ds-shadow-overlay: 0 0 0 1px rgba(15,23,42,.08), 0 10px 24px -6px rgba(15,23,42,.18),
+                       0 28px 56px -18px rgba(15,23,42,.24);
 
   /* ===== MOTION ===== */
   --ds-ease:        cubic-bezier(0.2, 0, 0, 1);
@@ -220,6 +308,22 @@
   color-scheme: dark;
   --ds-chart-axis: var(--ds-fg-muted-dark);
   --ds-chart-grid: var(--ds-border-dark);
+  /* Elevation — same token NAMES so call sites need no `dark:` variant. The
+   * light shadows are slate-900 at low alpha; on a slate-900 canvas that is
+   * invisible, so dark elevates with black at high alpha plus a 6%-white top
+   * ring for the raised edge (the previous single grey shadow was shared by
+   * both themes and read as nothing here). */
+  --ds-elevation-border: var(--ds-elevation-border-dark);
+  --ds-shadow-sm: 0 1px 2px rgba(0,0,0,.45);
+  --ds-shadow:    0 1px 2px rgba(0,0,0,.5), 0 4px 10px -2px rgba(0,0,0,.55);
+  --ds-shadow-lg: 0 2px 4px rgba(0,0,0,.5), 0 10px 24px -6px rgba(0,0,0,.6),
+                  0 24px 48px -12px rgba(0,0,0,.65);
+  --ds-shadow-overlay: 0 0 0 1px rgba(255,255,255,.06), 0 10px 24px -6px rgba(0,0,0,.6),
+                       0 24px 48px -16px rgba(0,0,0,.7);
+  /* Success / danger text — see the light block for the diff-background table. */
+  --ds-fg-success: var(--ds-fg-success-dark);
+  --ds-fg-danger: var(--ds-fg-danger-dark);
+  --ds-kbd-text: var(--ds-kbd-text-dark);
   /* Status tokens — auto-swap to dark variants */
   --ds-status-success: var(--ds-success-dark);
   --ds-status-warning: var(--ds-attention-dark);
@@ -309,6 +413,12 @@
 
 .ds-border-subtle { border-color: var(--ds-border); }
 .dark .ds-border-subtle { border-color: var(--ds-border-dark); }
+
+/* Success / danger text. Both tokens auto-swap via :root.dark, so these need no
+ * `.dark` companion — and unlike text-green-600 / text-red-600 they are AA on
+ * every diff background (see the --ds-fg-success comment for the matrix). */
+.ds-text-success { color: var(--ds-fg-success); }
+.ds-text-danger  { color: var(--ds-fg-danger); }
 
 .ds-surface-card { background-color: var(--ds-surface); }
 .dark .ds-surface-card { background-color: var(--ds-surface-subtle-dark); }
@@ -481,6 +591,58 @@
     contain-intrinsic-size: auto 600px;
   }
 }
+
+/* GitHub-Light syntax tokens re-tuned against the DIFF backgrounds.
+ * @git-diff-view ships the stock GitHub-Light highlight theme, which was
+ * designed for #ffffff only — it was never checked against the row tints the
+ * diff itself paints underneath it. Measured worst case per token across
+ * {white, #fafafa context, #dafbe1 added row, #aceebb added word, #ffebe9
+ * removed row, #ffcecb removed word}:
+ *
+ *   keyword     #d73a49 → 3.25   replaced by #a40e26 → 5.60
+ *   built_in    #e36209 → 2.48   replaced by #953800 → 5.25
+ *   entity-tag  #22863a → 3.29   replaced by #116329 → 5.26
+ *   comment     #6a737d → 3.43   replaced by #57606a → 4.55
+ *   constant    #005cc5 → 4.48   replaced by #0550ae → 5.40
+ *   string / text / entity / bullet already clear AA — left untouched.
+ *
+ * The first three values are the ones the `.ds-readme` block above already
+ * picked for the same reason, so a keyword reads identically in a README and in
+ * a diff. Dark mode clears AA on every token (worst 6.17) and is not touched.
+ *
+ * Selector shape is load-bearing: the library rule is
+ * `.diff-tailwindcss-wrapper[data-theme=light] .diff-line-syntax-raw .hljs-x`
+ * and its stylesheet is injected LATER than this file (DiffRenderer lazy-imports
+ * it), so an equal-specificity override would lose on source order. Prefixing
+ * `.diff-renderer` — DiffRenderer's own wrapper class — adds the extra class
+ * that wins, and keeps the whole block opt-in rather than global. */
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-doctag,
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-keyword,
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-meta .hljs-keyword,
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-template-tag,
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-template-variable,
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-type,
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-variable.language_ { color: #a40e26; }
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-built_in,
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-symbol { color: #953800; }
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-name,
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-quote,
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-selector-tag,
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-selector-pseudo { color: #116329; }
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-comment,
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-code,
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-formula { color: #57606a; }
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-attr,
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-attribute,
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-literal,
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-meta,
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-number,
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-operator,
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-variable,
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-selector-attr,
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-selector-class,
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-selector-id { color: #0550ae; }
+.diff-renderer .diff-tailwindcss-wrapper[data-theme="light"] .diff-line-syntax-raw .hljs-section { color: #0550ae; }
 
 /* ===== README READER (RepoMarkdown) =====
  * Scoped to `.ds-readme` (the RepoMarkdown wrapper) only — opt-in, never a

@@ -7,7 +7,7 @@ import { API_BASE_URL } from '../../config'
 /**
  * PendingSyncBanner — sticky bottom banner that surfaces gh_outbox rows
  * the worker hasn't been able to deliver yet. Polls every 30s while the
- * user is on the page; auto-hides when the queue empties.
+ * tab is visible; auto-hides when the queue empties.
  *
  * Mounted in App.jsx alongside the toast container so it overlays every
  * view. Dismissable per session (the X button hides it until reload —
@@ -33,9 +33,35 @@ export function PendingSyncBanner({ isAuthenticated }) {
             }
         }
 
+        // This banner is mounted for the whole session (Header), so an
+        // ungated 30s poll kept hitting the server for every backgrounded tab.
+        // Same stop/start shape as useSystemHealth / useWorkBoard: pause while
+        // hidden, re-poll immediately on return so the count is never stale.
+        let intervalId = null
+        const startInterval = () => {
+            if (!intervalId) {
+                intervalId = setInterval(() => { if (!document.hidden) poll() }, 30_000)
+            }
+        }
+        const stopInterval = () => {
+            if (intervalId) {
+                clearInterval(intervalId)
+                intervalId = null
+            }
+        }
+        const onVisibility = () => {
+            if (document.hidden) stopInterval()
+            else { poll(); startInterval() }
+        }
+
         poll()
-        const id = setInterval(poll, 30_000)
-        return () => { cancelled = true; clearInterval(id) }
+        startInterval()
+        document.addEventListener('visibilitychange', onVisibility)
+        return () => {
+            cancelled = true
+            stopInterval()
+            document.removeEventListener('visibilitychange', onVisibility)
+        }
     }, [isAuthenticated])
 
     const visible = isAuthenticated && count > 0 && !dismissed

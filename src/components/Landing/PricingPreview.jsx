@@ -13,7 +13,6 @@ const plans = [
     popular: false,
     enterprise: false,
     features: [
-      'Up to 1,000 repositories',
       'Repo Advisor — 1,000 queries / month',
       'Semantic Search (375 / month)',
       'README, Commit, Insights & Deep Review AI',
@@ -31,9 +30,8 @@ const plans = [
     popular: true,
     enterprise: false,
     features: [
-      'Unlimited repositories',
       '10,000 AI queries / month',
-      'Higher AI $ spend-cap headroom',
+      'Unlimited monthly caps on every AI feature',
       'Unlimited README, Commit, Insights, Search & Deep Review',
       'Unlimited Prompt Studio presets',
       '50 API keys + email support',

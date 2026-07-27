@@ -122,10 +122,6 @@ function SlimSidebarBase({
   results = [],
   activity = [],
   isPerforming = false,
-  performAction,
-  onTransfer,
-  onArchive,
-  onDelete,
   onOpenImport,
   onNavigateWorkBoard,
 }) {
@@ -184,10 +180,6 @@ function SlimSidebarBase({
           {hasSelection ? (
             <QuickActionButtons
               isPerforming={isPerforming}
-              performAction={performAction}
-              onTransfer={onTransfer}
-              onArchive={onArchive}
-              onDelete={onDelete}
               selectedRepos={selectedRepos}
             />
           ) : (

@@ -26,6 +26,25 @@ vi.mock('framer-motion', async (importOriginal) => {
     }
 })
 
+const confirmGate = vi.fn(async () => true)
+const deleteRepos = vi.fn(async () => ({ success: true }))
+const toastStub = { success: vi.fn(), error: vi.fn(), errorFromException: vi.fn() }
+
+vi.mock('@/actions/repoActionContext', () => ({
+    useRepoActionContext: () => ({
+        api: {},
+        toast: toastStub,
+        openModal: vi.fn(),
+        openModalWithData: vi.fn(),
+        closeModal: vi.fn(),
+        refresh: vi.fn(),
+        performAction: vi.fn(async () => ({ success: true })),
+        archiveRepos: vi.fn(async () => ({ success: true })),
+        deleteRepos,
+        confirmGate,
+    }),
+}))
+
 const { SlimSidebar } = await import('@/components/SlimSidebar')
 const { SelectionProvider } = await import('@/contexts/SelectionContext')
 const { ModalProvider } = await import('@/contexts/ModalContext')
@@ -59,9 +78,9 @@ const sampleActivity = [
 ]
 
 const sampleRepos = [
-    { id: 1, name: 'repo-a' },
-    { id: 2, name: 'repo-b' },
-    { id: 3, name: 'repo-c' },
+    { id: 1, name: 'repo-a', full_name: 'acme/repo-a', owner: { login: 'acme' } },
+    { id: 2, name: 'repo-b', full_name: 'acme/repo-b', owner: { login: 'acme' } },
+    { id: 3, name: 'repo-c', full_name: 'acme/repo-c', owner: { login: 'acme' } },
 ]
 
 function renderSlim(props = {}) {
@@ -143,13 +162,16 @@ describe('SlimSidebar — real data in popovers', () => {
         expect(within(dialog).getByRole('button', { name: /transfer/i })).toBeInTheDocument()
     })
 
-    it('clicking a slim quick action fires the real handler', () => {
-        const onDelete = vi.fn()
-        renderSlim({ selectedRepos: sampleRepos, onDelete })
+    it('a slim quick action goes through the registry, confirmation included', async () => {
+        renderSlim({ selectedRepos: sampleRepos })
         fireEvent.click(screen.getByRole('button', { name: /quick actions/i }))
         const dialog = screen.getByRole('dialog', { name: /quick actions/i })
         fireEvent.click(within(dialog).getByRole('button', { name: /delete/i }))
-        expect(onDelete).toHaveBeenCalledWith(sampleRepos)
+        await vi.waitFor(() => expect(confirmGate).toHaveBeenCalledTimes(1))
+        expect(confirmGate.mock.calls[0][0]).toMatchObject({ variant: 'danger' })
+        await vi.waitFor(() =>
+            expect(deleteRepos).toHaveBeenCalledWith(sampleRepos.map((r) => r.full_name))
+        )
     })
 
     it('Quick Actions popover shows honest empty when nothing is selected', () => {
