@@ -1,6 +1,7 @@
 import db from '../db.js';
 import { getUserTier } from '../middleware/require-tier.js';
 import { getFeatures } from './feature-flags.js';
+import logger from './logger.js';
 
 /**
  * Returns the `{ start, end }` ISO bounds of the calendar month that contains
@@ -91,11 +92,23 @@ export function checkUsageLimit(userId, metricType) {
     const features = getFeatures(tier);
     const featureKey = METRIC_TO_FEATURE[metricType] || metricType;
     const limit = features[featureKey] ?? Infinity;
+    // Fail-open is the right runtime behaviour (never 500 a user over a
+    // bookkeeping gap) but it must not be silent: a metric with no
+    // METRIC_TO_FEATURE entry and no matching flag is unmetered, which looks
+    // identical to "deliberately unlimited". tests/usage-metric-parity
+    // catches this at build time; this covers anything added at runtime.
+    if (!(featureKey in features)) {
+        logger.error(
+            { metricType, featureKey, tier },
+            'usage-meter: metric maps to no tier feature — treating as unlimited',
+        );
+    }
     const current = getCurrentUsage(userId, metricType);
     return {
         allowed: current < limit,
         current,
         limit,
+        tier,
         remaining: Math.max(0, limit - current),
     };
 }
@@ -290,9 +303,18 @@ const FEATURE_LABELS = {
 export function quotaExceededResponse(check, fallbackLabel = 'AI') {
     const isFeature = check.metric && check.metric !== 'ai_queries';
     const label = FEATURE_LABELS[check.metric] || fallbackLabel;
+    // Telling a Pro user to "Upgrade to Pro" reads as a bug and wastes the one
+    // Pro -> Enterprise upsell moment the product gets. Enterprise has nowhere
+    // left to upgrade to, so it gets a plain statement of fact instead.
+    const upgradeTo = check.tier === 'pro' ? 'enterprise' : check.tier === 'enterprise' ? null : 'pro';
+    const nextStep = upgradeTo === 'enterprise'
+        ? ' Contact sales to raise this limit.'
+        : upgradeTo === 'pro'
+            ? ` Upgrade to Pro for ${isFeature ? 'unlimited' : 'more'}.`
+            : ' Contact support to raise this limit.';
     const message = isFeature
-        ? `${label} limit reached (${check.current}/${check.limit} this month). Upgrade to Pro for unlimited.`
-        : `AI query limit reached (${check.current}/${check.limit} this month). Upgrade to Pro for more.`;
+        ? `${label} limit reached (${check.current}/${check.limit} this month).${nextStep}`
+        : `AI query limit reached (${check.current}/${check.limit} this month).${nextStep}`;
     const now = new Date();
     const resetAt = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString();
     return {
@@ -303,7 +325,7 @@ export function quotaExceededResponse(check, fallbackLabel = 'AI') {
         code: 'QUOTA_EXCEEDED',
         feature: check.metric || 'ai_queries',
         resetAt,
-        upgradeTo: 'pro',
+        upgradeTo,
         message,
         metric: check.metric,
         limit: check.limit,

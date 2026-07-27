@@ -129,6 +129,122 @@ describe('ai-features/semantic-search.findSimilarById', () => {
     });
 });
 
+/**
+ * The ranking scan runs on the request thread over every indexed repo, so it
+ * must pull nothing it does not need: no repo_metadata join for rows that will
+ * never make the top-K, and no per-candidate recomputation of the query
+ * vector's own norm.
+ */
+describe('ai-features/semantic-search — hot-path shape', () => {
+    /** Record every SQL string prepared, and route .all()/.get() by table. */
+    function recordingDb({ embeddings = [], metadata = [], target = null }) {
+        const sql = [];
+        return {
+            sql,
+            prepare(text) {
+                sql.push(text);
+                const isMetadata = /FROM repo_metadata/.test(text);
+                return {
+                    get: () => target,
+                    all: () => (isMetadata ? metadata : embeddings),
+                };
+            },
+        };
+    }
+
+    it('does not touch repo_metadata while scanning candidates', async () => {
+        const db = recordingDb({
+            target: { embedding: JSON.stringify([1, 0, 0]) },
+            embeddings: [
+                { repo_id: 2, embedding: JSON.stringify([0, 1, 0]) },
+                { repo_id: 3, embedding: JSON.stringify([1, 0, 0]) },
+            ],
+            metadata: [{ repo_id: 3, summary: 'C' }, { repo_id: 2, summary: 'B' }],
+        });
+
+        await findSimilarById({ db }, 1, { topK: 2 });
+
+        const scanSql = db.sql.find((s) => /FROM repo_embeddings/.test(s) && /repo_id != /.test(s));
+        expect(scanSql).toBeDefined();
+        expect(scanSql).not.toMatch(/repo_metadata/);
+        expect(scanSql).not.toMatch(/JOIN/i);
+        expect(scanSql).not.toMatch(/summary/);
+        expect(scanSql).not.toMatch(/topics/);
+    });
+
+    it('still returns the winners descriptions, fetched only for the winners', async () => {
+        const db = recordingDb({
+            target: { embedding: JSON.stringify([1, 0, 0]) },
+            embeddings: [
+                { repo_id: 2, embedding: JSON.stringify([0, 1, 0]) },
+                { repo_id: 3, embedding: JSON.stringify([1, 0, 0]) },
+                { repo_id: 4, embedding: JSON.stringify([0.9, 0.1, 0]) },
+            ],
+            metadata: [{ repo_id: 3, summary: 'C' }, { repo_id: 4, summary: 'D' }],
+        });
+
+        const out = await findSimilarById({ db }, 1, { topK: 2 });
+        expect(out.map((r) => r.repoId)).toEqual([3, 4]);
+        expect(out.map((r) => r.description)).toEqual(['C', 'D']);
+
+        const lookup = db.sql.find((s) => /FROM repo_metadata/.test(s));
+        // One bound placeholder per winner — never the whole candidate set.
+        expect(lookup.match(/\?/g)).toHaveLength(2);
+        expect(lookup).not.toMatch(/'/); // ids stay bound, never interpolated
+    });
+
+    it('scopes the summary lookup by user when a tenant is given', async () => {
+        const db = recordingDb({
+            target: { embedding: JSON.stringify([1, 0, 0]) },
+            embeddings: [{ repo_id: 3, embedding: JSON.stringify([1, 0, 0]) }],
+            metadata: [{ repo_id: 3, summary: 'C' }],
+        });
+
+        await findSimilarById({ db }, 1, { topK: 5, userId: 42 });
+        const lookup = db.sql.find((s) => /FROM repo_metadata/.test(s));
+        expect(lookup).toMatch(/user_id = \?/);
+    });
+
+    it('skips the summary query entirely when nothing scored', async () => {
+        const db = recordingDb({ target: { embedding: JSON.stringify([1, 0, 0]) }, embeddings: [] });
+        const out = await findSimilarById({ db }, 1, { topK: 5 });
+        expect(out).toEqual([]);
+        expect(db.sql.some((s) => /repo_metadata/.test(s))).toBe(false);
+    });
+
+    it('degrades to empty descriptions when the summary lookup fails', async () => {
+        const db = {
+            prepare(text) {
+                if (/repo_metadata/.test(text)) throw new Error('no such table: repo_metadata');
+                return {
+                    get: () => ({ embedding: JSON.stringify([1, 0, 0]) }),
+                    all: () => [{ repo_id: 3, embedding: JSON.stringify([1, 0, 0]) }],
+                };
+            },
+        };
+        const out = await findSimilarById({ db }, 1, { topK: 5 });
+        expect(out).toEqual([{ repoId: 3, score: expect.closeTo(1, 5), description: '' }]);
+    });
+
+    it('hoisting the query norm does not change any score', () => {
+        // Reference implementation: norms recomputed inside the loop.
+        const naive = (a, b) => {
+            let dot = 0, na = 0, nb = 0;
+            for (let i = 0; i < a.length; i++) { dot += a[i] * b[i]; na += a[i] * a[i]; nb += b[i] * b[i]; }
+            return dot / (Math.sqrt(na) * Math.sqrt(nb));
+        };
+        const vectors = [
+            [[1, 2, 3], [4, 5, 6]],
+            [[0.1, -0.2, 0.3, 0.4], [-0.5, 0.6, 0.7, -0.8]],
+            [[3, 0, 0], [3, 0, 0]],
+            [[1, 0], [0, 1]],
+        ];
+        for (const [a, b] of vectors) {
+            expect(cosineSimilarity(a, b)).toBeCloseTo(naive(a, b), 12);
+        }
+    });
+});
+
 describe('ai-features/semantic-search.semanticSearch — malformed rows', () => {
     it('skips rows with malformed embedding JSON instead of throwing', async () => {
         const rows = [

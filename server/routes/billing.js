@@ -8,6 +8,11 @@ import logger from '../lib/logger.js';
 
 const router = Router();
 
+// Statuses that mean "this user is already on a paying subscription".
+// 'past_due' counts: the subscription still exists in Stripe and will retry,
+// so opening a second checkout would double-bill rather than fix anything.
+const ACTIVE_SUB_STATUSES = new Set(['active', 'trialing', 'past_due', 'incomplete']);
+
 const checkoutSchema = z.object({
     tier: z.enum(['pro', 'enterprise']),
     // Billing cadence. Defaults to monthly so older clients (and any caller
@@ -61,8 +66,22 @@ router.post('/checkout', requireAuth, requireStripe, async (req, res) => {
         const stripe = getStripe();
         const userId = req.session.userId;
 
-        // Get or create Stripe customer
-        let sub = db.prepare('SELECT stripe_customer_id FROM user_subscriptions WHERE user_id = ?').get(userId);
+        let sub = db.prepare(
+            'SELECT stripe_customer_id, stripe_subscription_id, status FROM user_subscriptions WHERE user_id = ?'
+        ).get(userId);
+
+        // A second checkout for a user who already pays creates a SECOND
+        // Stripe subscription, while the webhook's ON CONFLICT(user_id) upsert
+        // overwrites stripe_subscription_id — orphaning the first one, which
+        // keeps billing forever with nothing in our DB pointing at it. Plan
+        // changes belong in the billing portal, which prorates properly.
+        if (sub?.stripe_subscription_id && ACTIVE_SUB_STATUSES.has(sub.status)) {
+            return res.status(409).json({
+                error: 'subscription_exists',
+                message: 'You already have an active subscription. Use the billing portal to change your plan.',
+            });
+        }
+
         let customerId = sub?.stripe_customer_id;
 
         if (!customerId) {

@@ -81,7 +81,7 @@ function makeApp({ apiKeyScopes } = {}) {
 const VALID_BODY = { repos: [{ name: 'repo-a', size: 1000, hasLfs: false }], target: { existingRepos: [] } };
 
 function spendCents() {
-    return testDb.prepare('SELECT cents FROM ai_spend WHERE user_id = ?').get(USER_ID)?.cents ?? 0;
+    return testDb.prepare('SELECT cents + micro_cents / 10000 AS cents FROM ai_spend WHERE user_id = ?').get(USER_ID)?.cents ?? 0;
 }
 function migrationRiskUsageCount() {
     return testDb.prepare(

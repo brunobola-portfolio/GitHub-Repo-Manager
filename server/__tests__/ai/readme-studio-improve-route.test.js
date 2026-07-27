@@ -117,7 +117,7 @@ describe('POST /ai/readme-studio/improve', () => {
     it('records monthly spend + a PII-safe cost audit tagged readme_studio', async () => {
         await request(makeApp()).post('/ai/readme-studio/improve').send({ repo: REPO });
 
-        const cents = testDb.prepare('SELECT cents FROM ai_spend WHERE user_id = ?').get(USER_ID)?.cents;
+        const cents = testDb.prepare('SELECT cents + micro_cents / 10000 AS cents FROM ai_spend WHERE user_id = ?').get(USER_ID)?.cents;
         expect(cents).toBe(5); // 0.05 USD
 
         const costAudit = testDb.prepare(

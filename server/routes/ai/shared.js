@@ -10,7 +10,7 @@
 
 import { createRequireAI } from '../../middleware/auth.js';
 import { aiService } from '../../ai-service.js';
-import { AIError, AI_ERROR_CODE, toAIError } from '../../lib/ai-provider.js';
+import { AIError, AI_ERROR_CODE, toAIError, isServerKeyProvider } from '../../lib/ai-provider.js';
 import logger from '../../lib/logger.js';
 import { resolveMaxOutputTokens } from '../../lib/ai-output-budget.js';
 import { checkAISpendCap, recordAISpend } from '../../lib/ai-spend-cap.js';
@@ -203,7 +203,12 @@ export async function providerGenerateWithRetry(
 export async function guardedGenerate(req, opts, { feature } = {}) {
     const userId = req.session?.userId;
 
-    const spend = checkAISpendCap(userId);
+    // BYOK is the permanent model: when the user brought their own key they
+    // are spending their own money, so the operator's cap must not apply and
+    // their usage must not accumulate against it.
+    const billsOperator = isServerKeyProvider(req.aiProvider);
+
+    const spend = checkAISpendCap(userId, { billsOperator });
     if (!spend.allowed) {
         const err = new Error('Monthly AI spend limit reached. Try again next month or raise the cap.');
         err.code = 'AI_SPEND_CAP_REACHED';
@@ -215,7 +220,7 @@ export async function guardedGenerate(req, opts, { feature } = {}) {
     const generationConfig = { ...(opts?.generationConfig || {}), maxOutputTokens: resolveMaxOutputTokens() };
     const result = await providerGenerateWithRetry(req.aiProvider, { ...opts, generationConfig });
 
-    recordAISpend(userId, result?.costUSD);
+    if (billsOperator) recordAISpend(userId, result?.costUSD);
     auditLog(req, `ai.${feature || 'generate'}`, 'ai', null, buildAIAuditMeta({
         feature: feature || 'generate',
         model: req.aiProvider?.model,
@@ -240,7 +245,9 @@ export async function guardedGenerate(req, opts, { feature } = {}) {
  *                    caller must `return` without streaming.
  */
 export function denyIfSpendCapReached(req, res) {
-    const spend = checkAISpendCap(req.session?.userId);
+    const spend = checkAISpendCap(req.session?.userId, {
+        billsOperator: isServerKeyProvider(req.aiProvider),
+    });
     if (spend.allowed) return false;
     res.status(429).json({
         error: 'Monthly AI spend limit reached. Try again next month or raise the cap.',
@@ -273,7 +280,9 @@ export function denyIfSpendCapReached(req, res) {
  * @param {object} [opts.extraMeta] — route-specific audit fields to merge
  */
 export function recordStreamCompletion(req, { feature, model, usage, costUSD, action, extraMeta } = {}) {
-    recordAISpend(req.session?.userId, costUSD);
+    // Only the operator's own key accumulates against the operator's cap —
+    // see isServerKeyProvider. The audit entry is written either way.
+    if (isServerKeyProvider(req.aiProvider)) recordAISpend(req.session?.userId, costUSD);
     auditLog(req, action || `ai.${feature || 'stream'}`, 'ai', null, {
         ...(extraMeta || {}),
         ...buildAIAuditMeta({ feature, model, usage, costUSD }),
