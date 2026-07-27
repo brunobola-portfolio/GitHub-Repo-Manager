@@ -42,6 +42,7 @@ import { detectPatterns } from '../../lib/ai-features/quality-metrics.js';
 import { buildContext } from '../../lib/repo-context-builder.js';
 import { resolveMaxOutputTokens } from '../../lib/ai-output-budget.js';
 import { checkAISpendCap, recordAISpend } from '../../lib/ai-spend-cap.js';
+import { isServerKeyProvider } from '../../lib/ai-provider.js';
 import { buildAIAuditMeta } from '../../lib/ai-audit.js';
 import { getKeyHealth, probeAndCache } from '../../lib/ai-health-probe.js';
 import {
@@ -146,7 +147,12 @@ router.post('/ai/chat', requireAuth, requireScope('ai'), validateBody(aiChatSche
         // Monthly spend cap — a cost-based denial-of-wallet guard (OWASP LLM10)
         // alongside the count-based quota above. Off unless AI_SPEND_CAP_CENTS
         // is set; enforced across the AI surface when it is.
-        const spend = checkAISpendCap(req.session.userId);
+        //
+        // BYOK is exempt: this call runs on req.aiProvider, so when the user
+        // brought their own key the operator pays nothing and must not throttle
+        // them against a ceiling that exists to protect the operator's wallet.
+        const billsOperator = isServerKeyProvider(req.aiProvider);
+        const spend = checkAISpendCap(req.session.userId, { billsOperator });
         if (!spend.allowed) {
             return res.status(429).json({
                 code: 'AI_SPEND_CAP_REACHED',
@@ -257,7 +263,7 @@ router.post('/ai/chat', requireAuth, requireScope('ai'), validateBody(aiChatSche
         }
 
         incrementUsage(req.session.userId, 'ai_queries');
-        recordAISpend(req.session.userId, costUSD);
+        if (billsOperator) recordAISpend(req.session.userId, costUSD);
         // PII-safe audit trail: counts/model/cost only, never prompt/reply content.
         auditLog(req, 'ai.chat', 'ai', null, buildAIAuditMeta({
             feature: 'chat',

@@ -760,6 +760,40 @@ describe('stripeWebhookHandler', () => {
         })
     })
 
+    it('keeps the deferral marker when a deferred licence issuance fails, so the Stripe retry can reissue', async () => {
+        // SEPA/Boleto path: checkout parked the row as 'incomplete' because the
+        // payment had not settled. If issuance fails we 500 so Stripe retries —
+        // but that retry only works while the row still reads 'incomplete'.
+        mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+            id: 'evt_deferred_fail',
+            type: 'invoice.paid',
+            data: { object: { id: 'in_def', subscription: 'sub_def', billing_reason: 'subscription_create', customer_email: 'buyer@example.com' } },
+        })
+        mockStripeInstance.subscriptions.retrieve.mockResolvedValue({
+            id: 'sub_def', status: 'active', metadata: { tier: 'pro' },
+        })
+        const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
+        issueLicenseForCheckout.mockReset()
+        issueLicenseForCheckout.mockRejectedValueOnce(new Error('smtp down'))
+
+        const markActive = vi.fn(() => ({ changes: 1 }))
+        mockPrepare.mockImplementation((sql) => {
+            if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+            if (/DELETE FROM webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+            if (/SELECT user_id, billing_period FROM user_subscriptions/.test(sql)) {
+                return { get: vi.fn(() => ({ user_id: 7, billing_period: 'monthly' })) }
+            }
+            if (/status = 'active'/.test(sql)) return { run: markActive }
+            return { get: vi.fn(() => ({ email: 'buyer@example.com' })), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+        })
+
+        const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+        await stripeWebhookHandler(req, res)
+
+        expect(res.statusCode).toBe(500)
+        expect(markActive).not.toHaveBeenCalled()
+    })
+
     describe('refunds, disputes and the billing hold', () => {
         // Wire a charge -> invoice -> subscription chain so the handler can
         // resolve which subscription a refund or dispute belongs to.

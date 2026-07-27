@@ -5,7 +5,8 @@ import express from 'express'
 
 const mockProvider = { generate: vi.fn().mockResolvedValue({ text: 'This looks good overall but needs a test for the edge case.' }) }
 
-vi.mock('../lib/ai-provider.js', () => ({
+vi.mock('../lib/ai-provider.js', async (importOriginal) => ({
+    ...(await importOriginal()),
     createProviderForUser: vi.fn().mockResolvedValue(mockProvider),
 }))
 
@@ -153,16 +154,40 @@ describe('POST /api/v1/work-board/draft-comment', () => {
         expect(createProviderForUser).not.toHaveBeenCalled()
     })
 
-    it('returns the canonical 429 AI_SPEND_CAP_REACHED envelope and never resolves a provider when over the monthly cap', async () => {
+    // The provider IS resolved before this check, deliberately: the cap only
+    // applies when the operator is paying, and that is a property of the
+    // resolved provider. The old assertion here ('never resolves a provider')
+    // pinned the pre-BYOK ordering and would forbid the exemption below.
+    it('returns the canonical 429 AI_SPEND_CAP_REACHED envelope when a server-key user is over the monthly cap', async () => {
         mockCheckAISpendCap.mockReturnValue({ allowed: false, capCents: 100, spentCents: 150 })
-        const { createProviderForUser } = await import('../lib/ai-provider.js')
-        vi.mocked(createProviderForUser).mockClear()
+        mockProvider.generate.mockClear()
         const res = await request(app)
             .post('/api/v1/work-board/draft-comment')
             .send({ repoFullName: 'acme/api', prNumber: 42, intent: 'comment' })
         expect(res.status).toBe(429)
         expect(res.body.code).toBe('AI_SPEND_CAP_REACHED')
-        expect(createProviderForUser).not.toHaveBeenCalled()
+        expect(res.body.spent_cents).toBe(150)
+        expect(mockProvider.generate).not.toHaveBeenCalled()
+    })
+
+    it('exempts a BYOK user from the cap — their key, their bill', async () => {
+        // A provider tagged keySource:'user' bills the customer, not the
+        // operator, so the operator's ceiling must not deny or meter it.
+        Object.defineProperty(mockProvider, 'keySource', { value: 'user', configurable: true })
+        mockRecordAISpend.mockClear()
+        mockCheckAISpendCap.mockImplementation((_id, opts) =>
+            opts?.billsOperator === false
+                ? { allowed: true }
+                : { allowed: false, capCents: 100, spentCents: 150 })
+        mockProvider.generate.mockResolvedValueOnce({ text: 'Nit: rename this.', costUSD: 0.02 })
+
+        const res = await request(app)
+            .post('/api/v1/work-board/draft-comment')
+            .send({ repoFullName: 'acme/api', prNumber: 42, intent: 'comment' })
+
+        expect(res.status).toBe(200)
+        expect(mockRecordAISpend).not.toHaveBeenCalled()
+        delete mockProvider.keySource
     })
 
     it('records spend on a successful draft generation', async () => {

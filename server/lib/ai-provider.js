@@ -972,12 +972,12 @@ export async function resolveImageProviderConfig(userId) {
             assertSafeAIEndpoint(endpointUrl, { provider: userConfig.completionProvider });
             await assertEndpointHostIsPublic(endpointUrl, userConfig.completionProvider);
         }
-        return {
+        return tagKeySource({
             provider: userConfig.completionProvider,
             model: userConfig.completionModel || null,
             apiKey: userConfig.completionCredentials.apiKey,
             ...(endpointUrl ? { baseURL: endpointUrl } : {}),
-        };
+        }, 'user');
     }
 
     // AI_REQUIRE_USER_CONFIG=true means every user must bring their own key —
@@ -993,9 +993,9 @@ export async function resolveImageProviderConfig(userId) {
         return { provider: null, model: null, apiKey: null };
     }
 
-    return {
+    return tagKeySource({
         provider: providerName,
         model: process.env[`${ENV}_MODEL`] || null,
         apiKey,
-    };
+    }, 'server');
 }

@@ -32,7 +32,7 @@
  * baseURL? }`) using that same resolution order and pass it in here.
  */
 
-import { AIError, AI_ERROR_CODE, toAIError, throwIfCanceled } from '../ai-provider.js';
+import { AIError, AI_ERROR_CODE, toAIError, throwIfCanceled, isServerKeyProvider } from '../ai-provider.js';
 import { getImageCostCents } from './image-pricing.js';
 import { checkAISpendCap, recordAISpend } from '../ai-spend-cap.js';
 
@@ -416,7 +416,11 @@ export async function generateImage({ userId, providerConfig, prompt, size = '10
         });
     }
 
-    const spend = checkAISpendCap(userId);
+    // BYOK is exempt from the operator's cap: resolveImageProviderConfig tags
+    // the config with where its key came from, and a user paying their own
+    // image bill must not be throttled by the operator's ceiling.
+    const billsOperator = isServerKeyProvider(providerConfig);
+    const spend = checkAISpendCap(userId, { billsOperator });
     if (!spend.allowed) {
         const err = new Error('Monthly AI spend limit reached. Try again next month or raise the cap.');
         err.code = 'AI_SPEND_CAP_REACHED';
@@ -450,7 +454,7 @@ export async function generateImage({ userId, providerConfig, prompt, size = '10
     // TRAP 4: only a SUCCESSFUL image reaches this line — spend is recorded
     // exactly once, using the cost resolved (and validated) up front.
     // recordAISpend takes USD; cost.cents is authoritative flat/tiered cents.
-    recordAISpend(userId, cost.cents / 100);
+    if (billsOperator) recordAISpend(userId, cost.cents / 100);
 
     return {
         base64: result.base64,

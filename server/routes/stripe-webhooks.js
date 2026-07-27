@@ -373,18 +373,16 @@ export async function stripeWebhookHandler(req, res) {
                         "SELECT user_id, billing_period FROM user_subscriptions WHERE stripe_subscription_id = ? AND status = 'incomplete'"
                     ).get(invoice.subscription);
 
-                    db.prepare(`
-                        UPDATE user_subscriptions SET status = 'active', updated_at = datetime('now')
-                        WHERE stripe_subscription_id = ?
-                    `).run(invoice.subscription);
-
+                    // The 'incomplete' marker is this event's ONLY record that a
+                    // licence is still owed. Clearing it before the key is issued
+                    // meant a failed issuance (which 500s so Stripe retries) came
+                    // back to a row that no longer looked deferred — the customer
+                    // had paid by SEPA or Boleto and silently never got a key.
+                    // Status is flipped after issuance for exactly that reason.
                     if (deferred?.user_id) {
                         const sub = await stripe.subscriptions.retrieve(invoice.subscription);
                         const rawTier = sub.metadata?.tier || sub.items?.data?.[0]?.price?.metadata?.tier || 'pro';
                         const tier = await reconcileTierFromPrice(stripe, sub, rawTier, null);
-                        db.prepare(
-                            "UPDATE user_subscriptions SET tier = ?, updated_at = datetime('now') WHERE stripe_subscription_id = ?"
-                        ).run(tier, invoice.subscription);
 
                         const user = db.prepare('SELECT email FROM users WHERE id = ?').get(deferred.user_id);
                         const recipientEmail = invoice.customer_email || user?.email;
@@ -401,6 +399,16 @@ export async function stripeWebhookHandler(req, res) {
                         } else {
                             logger.warn({ subscriptionId: invoice.subscription, invoiceId: invoice.id }, 'stripe-webhook: no email for deferred license delivery');
                         }
+
+                        db.prepare(`
+                            UPDATE user_subscriptions SET tier = ?, status = 'active', updated_at = datetime('now')
+                            WHERE stripe_subscription_id = ?
+                        `).run(tier, invoice.subscription);
+                    } else {
+                        db.prepare(`
+                            UPDATE user_subscriptions SET status = 'active', updated_at = datetime('now')
+                            WHERE stripe_subscription_id = ?
+                        `).run(invoice.subscription);
                     }
 
                     // Renewal license reissue: an emailed key's validity
