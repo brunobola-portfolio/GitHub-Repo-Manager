@@ -357,7 +357,7 @@ export function PricingPage({ onGetStarted } = {}) {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="inline-flex items-center gap-3"
           >
-            <span className={`text-sm font-medium transition-colors duration-200 ${!isYearly ? 'text-slate-800 dark:text-white' : 'text-slate-400 dark:text-slate-500'}`}>
+            <span className={`text-sm font-medium transition-colors duration-200 ${!isYearly ? 'text-slate-800 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
               Monthly
             </span>
 

@@ -44,7 +44,7 @@ export function TabLoadError({ error, onRetry, resourceLabel, notFound = null })
     }
 
     return (
-        <div className="px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400 flex items-center justify-between gap-3 flex-wrap">
+        <div className="px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-700 dark:text-red-300 flex items-center justify-between gap-3 flex-wrap">
             <span>Couldn&apos;t load {resourceLabel}.</span>
             {onRetry && (
                 <Button variant="secondary" size="xs" onClick={onRetry}>
