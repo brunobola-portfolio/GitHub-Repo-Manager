@@ -7,6 +7,7 @@ import {
     Flame,
     ChevronRight,
     RefreshCw,
+    AlertCircle,
 } from 'lucide-react'
 import { fetchAttentionFeed } from '../../api/attentionFeed'
 import { fetchAttentionNarrative } from '../../api/attentionNarrative'
@@ -74,6 +75,7 @@ const NARRATIVE_TOP_N = 3
 export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
     const [feed, setFeed] = useState({ items: [], counts: {}, total: 0 })
     const [loading, setLoading] = useState(true)
+    const [loadError, setLoadError] = useState(null)
     const [refreshTick, setRefreshTick] = useState(0)
     const [narratives, setNarratives] = useState({})
     const { configured, keyOk } = useAIStatus()
@@ -88,6 +90,7 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
         const ctrl = new AbortController()
         let cancelled = false
         setLoading(true)
+        setLoadError(null)
         fetchAttentionFeed({ limit, signal: ctrl.signal }).then((data) => {
             if (cancelled) return
             // Defensive: the API normalises but never let a surprise from the
@@ -97,6 +100,14 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
                 counts: data?.counts ?? {},
                 total: data?.total ?? 0,
             })
+            setLoading(false)
+        }).catch((err) => {
+            if (cancelled) return
+            // Without this catch, setLoading(false) never ran on a rejection:
+            // the card span forever, and the Refresh button — disabled while
+            // loading — was disabled with it. Only a page reload recovered.
+            if (err?.name === 'AbortError') return
+            setLoadError(err)
             setLoading(false)
         })
         return () => {
@@ -182,7 +193,9 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
         }
     }, [topKeysJoined, configured, keyOk, quota]) // eslint-disable-line react-hooks/exhaustive-deps -- topKeysJoined captures meaningful identity
 
-    if (!loading && items.length === 0) return null
+    // A failure must NOT take the "nothing to show" exit — vanishing on error
+    // is what made this indistinguishable from a genuinely quiet dashboard.
+    if (!loading && !loadError && items.length === 0) return null
 
     return (
         <section
@@ -224,6 +237,23 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
                 {loading && items.length === 0 ? (
                     <div className="px-5 py-8 flex justify-center">
                         <Spinner size="lg" tone="primary" label="Loading attention feed" />
+                    </div>
+                ) : loadError && items.length === 0 ? (
+                    <div className="px-5 py-8 flex flex-col items-center text-center gap-2">
+                        <AlertCircle className="w-6 h-6 text-slate-500 dark:text-slate-400" aria-hidden="true" />
+                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                            Couldn&rsquo;t load what needs attention
+                        </p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
+                            We couldn&rsquo;t reach the server. Your repositories are unaffected — this is only the feed.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => setRefreshTick((t) => t + 1)}
+                            className="mt-1 text-sm font-semibold text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline"
+                        >
+                            Try again
+                        </button>
                     </div>
                 ) : (
                     <>

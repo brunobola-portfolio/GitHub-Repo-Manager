@@ -5,7 +5,7 @@ import { EmptyState } from './ui/EmptyState'
 import {
     History, CheckCircle2, XCircle, ExternalLink,
     Clock, ArrowRight, RefreshCw, Cloud, Globe, GitBranch,
-    ChevronDown, RotateCcw, FileText, ListChecks
+    ChevronDown, RotateCcw, FileText, ListChecks, AlertCircle
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { TRANSITION } from './ui/motion'
@@ -69,6 +69,7 @@ export function MigrationHistory({ isOpen, onClose }) {
     const [jobs, setJobs] = useState([])
     const [plans, setPlans] = useState([])
     const [loading, setLoading] = useState(true)
+    const [plansError, setPlansError] = useState(null)
     const [filter, setFilter] = useState('all')
     const [activeTab, setActiveTab] = useState('plans') // 'plans' | 'legacy'
     const [expandedPlan, setExpandedPlan] = useState(null)
@@ -100,11 +101,17 @@ export function MigrationHistory({ isOpen, onClose }) {
 
     const loadPlans = async () => {
         setLoading(true)
+        setPlansError(null)
         try {
             const data = await migrationApi.listPlans()
             setPlans(data.plans || [])
-        } catch {
+        } catch (err) {
+            // An empty list used to be the answer to both "you have no plans"
+            // and "we could not find out", so a failed load told the user their
+            // migration history did not exist. MigrationActivity next door
+            // already keeps these apart.
             setPlans([])
+            setPlansError(err)
         } finally {
             setLoading(false)
         }
@@ -240,7 +247,14 @@ export function MigrationHistory({ isOpen, onClose }) {
                         <SectionSpinner padding="py-12" />
                     ) : activeTab === 'plans' ? (
                         /* Plans view */
-                        plans.length === 0 ? (
+                        plansError ? (
+                            <EmptyState
+                                icon={AlertCircle}
+                                title="Couldn't load your migration plans"
+                                description="We couldn't reach the server. Your plans are safe — this is only the list."
+                                action={{ label: 'Try again', onClick: loadPlans }}
+                            />
+                        ) : plans.length === 0 ? (
                             <EmptyState
                                 icon={ListChecks}
                                 title="No migration plans yet"

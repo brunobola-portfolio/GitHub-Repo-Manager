@@ -68,3 +68,42 @@ describe('WhatNeedsYouGrid', () => {
         await waitFor(() => expect(container.firstChild).toBeNull())
     })
 })
+
+describe('WhatNeedsYouGrid — when the sources could not be read', () => {
+    const boom = { ok: false, status: 500, json: async () => ({}) }
+
+    it('does not claim the user is all caught up when every source failed', async () => {
+        // The old behaviour: each failure became a silent 0, the three summed
+        // to 0, and the grid announced the all-clear — a conclusion a user
+        // acts on by closing the tab.
+        global.fetch.mockResolvedValue(boom)
+        renderPro(<WhatNeedsYouGrid onOpenWorkBoard={() => {}} />)
+        await waitFor(() => expect(screen.getByText(/couldn.t check your work/i)).toBeInTheDocument())
+        expect(screen.queryByText(/all caught up/i)).not.toBeInTheDocument()
+    })
+
+    it('does not claim it when only one source failed', async () => {
+        global.fetch
+            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: [] }) })
+            .mockResolvedValueOnce(boom)
+            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: [] }) })
+        renderPro(<WhatNeedsYouGrid onOpenWorkBoard={() => {}} />)
+        await waitFor(() => expect(screen.getByText(/couldn.t check your work/i)).toBeInTheDocument())
+        expect(screen.queryByText(/all caught up/i)).not.toBeInTheDocument()
+    })
+
+    it('offers a retry that refetches', async () => {
+        global.fetch.mockResolvedValue(boom)
+        renderPro(<WhatNeedsYouGrid onOpenWorkBoard={() => {}} />)
+        await waitFor(() => screen.getByRole('button', { name: /try again/i }))
+        const before = global.fetch.mock.calls.length
+        fireEvent.click(screen.getByRole('button', { name: /try again/i }))
+        await waitFor(() => expect(global.fetch.mock.calls.length).toBeGreaterThan(before))
+    })
+
+    it('still shows the all-clear when the sources genuinely returned nothing', async () => {
+        mockAllZero()
+        renderPro(<WhatNeedsYouGrid onOpenWorkBoard={() => {}} />)
+        await waitFor(() => expect(screen.getByText(/all caught up/i)).toBeInTheDocument())
+    })
+})
