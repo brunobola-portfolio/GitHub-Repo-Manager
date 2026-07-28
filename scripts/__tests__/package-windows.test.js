@@ -241,6 +241,13 @@ describe('assertBetterSqlite3Binary', () => {
   // blocks the release on a package that is actually fine.
   let appDir
 
+  // The guard resolves the prebuild name from the RUNNING platform, so these
+  // must too: the unit shards run on Linux while packaging runs on Windows, and
+  // hardcoding win32-x64 makes "correct binary" and "foreign binary" swap
+  // meanings between the two.
+  const NATIVE = `${process.platform}-${process.arch}.node`
+  const FOREIGN = `${process.platform}-${process.arch === 'x64' ? 'arm64' : 'x64'}.node`
+
   function stage(relPath) {
     const full = path.join(appDir, 'node_modules', 'better-sqlite3', ...relPath)
     mkdirSync(path.dirname(full), { recursive: true })
@@ -262,7 +269,7 @@ describe('assertBetterSqlite3Binary', () => {
   })
 
   it('accepts the N-API prebuilds layout (better-sqlite3 13)', () => {
-    stage(['prebuilds', 'win32-x64.node'])
+    stage(['prebuilds', NATIVE])
     expect(() => assertBetterSqlite3Binary(appDir)).not.toThrow()
   })
 
@@ -272,9 +279,9 @@ describe('assertBetterSqlite3Binary', () => {
   })
 
   it('does not accept a prebuild for the wrong architecture', () => {
-    // Shipping a linux-x64 binary in a win32-x64 package is exactly the crash
-    // on boot this guard exists to prevent.
-    stage(['prebuilds', 'linux-x64.node'])
+    // Shipping an arm64 binary in an x64 package is exactly the crash on boot
+    // this guard exists to prevent.
+    stage(['prebuilds', FOREIGN])
     expect(() => assertBetterSqlite3Binary(appDir)).toThrow(/native binary missing/)
   })
 })
