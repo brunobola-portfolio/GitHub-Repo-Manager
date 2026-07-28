@@ -395,3 +395,44 @@ describe('installer.iss — the tray must not survive an update', () => {
       .toBeLessThan(iss.indexOf('procedure CurUninstallStepChanged('))
   })
 })
+
+/**
+ * apply-update.ps1 runs under Windows PowerShell 5.1, not pwsh 7.
+ *
+ * updater.js spawns it with powershell.exe, and 5.1's Expand-Archive is a
+ * pure-PowerShell implementation with per-entry overhead. On the shipped
+ * 128 MB package that took 16 minutes — measured in CI, 22:48:05 to 23:04:08 —
+ * with the app stopped and the user staring at nothing. Benchmarked under 5.1
+ * on 4000 small files: Expand-Archive 74.0 s, ZipFile::ExtractToDirectory
+ * 2.3 s.
+ *
+ * The trap is that the SAME cmdlet is fast under pwsh 7, which every workflow
+ * step uses — so the packaging job's own extraction steps looked healthy and
+ * hid this for as long as the feature has existed.
+ */
+describe('apply-update.ps1 — extraction must not use the slow 5.1 cmdlet', () => {
+  const script = readFileSync(path.join(process.cwd(), 'packaging/windows/apply-update.ps1'), 'utf8')
+
+  // Comments explaining WHY it is banned would otherwise trip a naive search.
+  const code = script
+    .split(/\r?\n/)
+    .filter((line) => !line.trim().startsWith('#'))
+    .join('\n')
+
+  it('does not call Expand-Archive', () => {
+    expect(code).not.toMatch(/Expand-Archive/)
+  })
+
+  it('extracts via ZipFile::ExtractToDirectory', () => {
+    expect(code).toMatch(/\[System\.IO\.Compression\.ZipFile\]::ExtractToDirectory/)
+    expect(code).toMatch(/Add-Type -AssemblyName System\.IO\.Compression\.FileSystem/)
+  })
+
+  it('clears the staging directory first, since ExtractToDirectory throws on an existing target', () => {
+    // Expand-Archive -Force overwrote; the replacement does not.
+    const extractIndex = code.indexOf('ExtractToDirectory')
+    const before = code.slice(0, extractIndex)
+    expect(before).toMatch(/Remove-Item -LiteralPath \$Staging -Recurse -Force/)
+  })
+})
+
