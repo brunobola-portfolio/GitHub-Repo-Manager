@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 620" role="img" aria-label="System architecture: React 19 SPA served by Vite 8 on port 5173 proxies /api to an Express 5 API on port 3001, backed by better-sqlite3 in WAL mode, the GitHub REST API, the Azure DevOps API v7.1 and Stripe billing, with a bring-your-own-key AI layer (Anthropic, OpenAI, Gemini, OpenRouter, LMStudio) routed through guardedGenerate. SQLite only, no Redis and no PostgreSQL.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 620" role="img" aria-label="System architecture: React 19 SPA served by Vite 8 on port 5173 proxies /api to an Express 5 API on port 3001, backed by better-sqlite3 in WAL mode, the GitHub REST API, the Azure DevOps API v7.1 and Stripe billing, with a bring-your-own-key AI layer (Anthropic, OpenAI, Gemini, OpenRouter, LMStudio) routed through guardedGenerate. The database is SQLite only and PostgreSQL is unsupported; Redis is optional, enabled by REDIS_URL, and backs distributed sessions, rate limiting and the job queue.">
   <style>
     svg{--bg:#ffffff;--bg2:#f6f8fa;--card:#ffffff;--stroke:#d0d7de;--text:#1f2328;--muted:#57606a;--blue:#2563eb;--violet:#7c3aed;--emerald:#059669;--amber:#b45309;--red:#cf222e}
     @media (prefers-color-scheme: dark){svg{--bg:#0d1117;--bg2:#161b22;--card:#1c2128;--stroke:#30363d;--text:#e6edf3;--muted:#8b949e;--blue:#4f8cff;--violet:#a78bfa;--emerald:#10b981;--amber:#e3b341;--red:#f85149}}
@@ -37,7 +37,7 @@
   <!-- Express API -->
   <rect class="card" x="270" y="254" width="380" height="84" rx="10" filter="url(#sh)"/>
   <text class="t" x="460" y="282" text-anchor="middle" font-size="15.5" font-weight="700">Express 5 API · :3001</text>
-  <text class="b" x="460" y="304" text-anchor="middle" font-size="12" font-weight="600">~324 handlers · 74 route modules</text>
+  <text class="b" x="460" y="304" text-anchor="middle" font-size="12" font-weight="600">334 handlers · 75 route modules</text>
   <text class="m" x="460" y="323" text-anchor="middle" font-size="11">Helmet · Zod validation · rate-limit · session cookies (httpOnly)</text>
 
   <!-- AI BYOK side box -->
@@ -60,7 +60,7 @@
   <text class="e" x="148" y="452" text-anchor="middle" font-size="14" font-weight="700">better-sqlite3</text>
   <text class="m" x="148" y="474" text-anchor="middle" font-size="10.8">SQLite · WAL mode</text>
   <text class="m" x="148" y="491" text-anchor="middle" font-size="10.8">sessions · jobs · cache</text>
-  <text class="m" x="148" y="508" text-anchor="middle" font-size="9.5">no Redis · no Postgres</text>
+  <text class="m" x="148" y="508" text-anchor="middle" font-size="9.5">optional Redis · no Postgres</text>
 
   <rect class="card" x="260" y="420" width="192" height="96" rx="10" filter="url(#sh)"/>
   <text class="b" x="356" y="452" text-anchor="middle" font-size="14" font-weight="700">GitHub REST API</text>
@@ -81,5 +81,5 @@
   <text class="m" x="772" y="508" text-anchor="middle" font-size="9.5">usage-metered caps</text>
 
   <rect class="badge-e" x="330" y="550" width="260" height="30" rx="15"/>
-  <text class="e" x="460" y="570" text-anchor="middle" font-size="12" font-weight="700">SQLite-only · no Redis · no PostgreSQL</text>
+  <text class="e" x="460" y="570" text-anchor="middle" font-size="12" font-weight="700">SQLite-only · optional Redis · no PostgreSQL</text>
 </svg>
