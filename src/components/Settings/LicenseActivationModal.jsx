@@ -131,7 +131,10 @@ export function LicenseActivationModal({ isOpen, onClose }) {
                   <div className="flex gap-2"><dt className="text-slate-500">Tier:</dt><dd className="font-medium capitalize">{result.tier}</dd></div>
                   {result.org && <div className="flex gap-2"><dt className="text-slate-500">Organization:</dt><dd className="font-medium">{result.org}</dd></div>}
                   {result.email && <div className="flex gap-2"><dt className="text-slate-500">Email:</dt><dd className="font-medium">{result.email}</dd></div>}
-                  {result.seats && <div className="flex gap-2"><dt className="text-slate-500">Seats:</dt><dd className="font-medium">{result.seats}</dd></div>}
+                  {/* No Seats row: every Stripe licence is minted with seats: 1
+                      (stripe-webhooks.js `parseInt(metadata?.seats) || 1`, and
+                      billing.js never sets the key), nothing enforces it, and
+                      every pricing surface promises unlimited team members. */}
                   {formattedExpires && <div className="flex gap-2"><dt className="text-slate-500">Expires:</dt><dd className="font-medium">{formattedExpires}</dd></div>}
                 </dl>
                 {result.bootstrap && (

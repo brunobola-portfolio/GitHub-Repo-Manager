@@ -54,6 +54,13 @@ const CATEGORIES = [
         values: ['25 / month', 'Unlimited', 'Unlimited'],
       },
       {
+        // Enforced at ai/migration.js:360,410 since it shipped, and advertised
+        // nowhere until now — a Free user met "AI limit reached (25/25)" for a
+        // feature no pricing surface had ever named.
+        feature: 'Migration Assistant (AI)',
+        values: ['25 / month', 'Unlimited', 'Unlimited'],
+      },
+      {
         feature: 'Repo Insights / Quality Report',
         values: ['75 / month', 'Unlimited', 'Unlimited'],
       },

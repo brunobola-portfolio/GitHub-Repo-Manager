@@ -27,9 +27,19 @@ router.get('/', requireAuth, async (req, res) => {
     try {
         const userId = req.session.userId;
 
-        // Get cache TTL from header (in minutes), default to 5 minutes, clamped 1-60
-        const cacheTTLMinutes = Math.min(Math.max(parseInt(req.headers['x-cache-ttl']) || 5, 1), 60);
-        const cacheTTL = cacheTTLMinutes * 60 * 1000; // Convert to milliseconds
+        // Cache TTL in minutes from the header; default 5, clamped to [1, 60].
+        //
+        // 0 means OFF, and must be distinguished from absent. `parseInt(...) || 5`
+        // could not: 0 is falsy, so the "Enable stats caching" switch — which
+        // sends exactly '0' (useOrgs.js) — resolved to the 5-minute default and
+        // did nothing. The slider next to it worked, which is what made the
+        // dead switch so hard to notice.
+        const rawTTL = Number.parseInt(req.headers['x-cache-ttl'], 10);
+        const requestedTTL = Number.isFinite(rawTTL) ? rawTTL : 5;
+        const cachingEnabled = requestedTTL > 0;
+        const cacheTTL = cachingEnabled
+            ? Math.min(Math.max(requestedTTL, 1), 60) * 60 * 1000
+            : 0;
 
         // Create cache key unique to user and org
         const cacheKey = `stats:${userId}:${org || 'personal'}`;
@@ -90,12 +100,15 @@ router.get('/', requireAuth, async (req, res) => {
             }
         });
 
-        // Cache the results
-        statsCache.set(cacheKey, {
-            data: stats,
-            timestamp: Date.now()
-        });
-        evictOldest(statsCache, 200);
+        // Skip the write too when caching is off, so "off" means off rather
+        // than "off for me, warm for the next request".
+        if (cachingEnabled) {
+            statsCache.set(cacheKey, {
+                data: stats,
+                timestamp: Date.now()
+            });
+            evictOldest(statsCache, 200);
+        }
 
         res.json(stats);
     } catch (error) {

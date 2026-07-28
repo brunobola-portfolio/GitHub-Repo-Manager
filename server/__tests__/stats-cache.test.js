@@ -154,3 +154,48 @@ describe('GET /api/v1/stats — caching', () => {
         expect(mockGithubApi).not.toHaveBeenCalled()
     })
 })
+
+/*
+ * "Enable stats caching" did nothing when switched off.
+ *
+ * useOrgs.js sends `x-cache-ttl: '0'` for the OFF position, and the route did
+ * `parseInt(...) || 5` — 0 is falsy, so OFF resolved to the 5-minute default.
+ * The slider (which sends a non-zero TTL) worked; the switch beside it was a
+ * no-op, and a user turning caching off kept being served cached numbers.
+ */
+describe('GET /stats — caching can actually be turned off', () => {
+    it('x-cache-ttl: 0 forces a fresh fetch on every call', async () => {
+        mockGithubApi.mockResolvedValue(mockReposPage([]))
+        const app = makeApp()
+
+        const first = await request(app).get('/api/v1/stats/').set('X-Cache-TTL', '0')
+        expect(first.status).toBe(200)
+        const callsAfterFirst = mockGithubApi.mock.calls.length
+
+        const second = await request(app).get('/api/v1/stats/').set('X-Cache-TTL', '0')
+        expect(second.status).toBe(200)
+        expect(second.headers['x-cache-hit']).toBe('false')
+        expect(mockGithubApi.mock.calls.length).toBeGreaterThan(callsAfterFirst)
+    })
+
+    it('still caches by default when the header is absent', async () => {
+        mockGithubApi.mockResolvedValue(mockReposPage([]))
+        const app = makeApp()
+
+        await request(app).get('/api/v1/stats/')
+        const callsAfterFirst = mockGithubApi.mock.calls.length
+        const second = await request(app).get('/api/v1/stats/')
+
+        expect(second.headers['x-cache-hit']).toBe('true')
+        expect(mockGithubApi.mock.calls.length).toBe(callsAfterFirst)
+    })
+
+    it('a garbage TTL falls back to the default rather than disabling the cache', async () => {
+        mockGithubApi.mockResolvedValue(mockReposPage([]))
+        const app = makeApp()
+
+        await request(app).get('/api/v1/stats/').set('X-Cache-TTL', 'banana')
+        const second = await request(app).get('/api/v1/stats/').set('X-Cache-TTL', 'banana')
+        expect(second.headers['x-cache-hit']).toBe('true')
+    })
+})

@@ -63,6 +63,10 @@ router.get('/', requireAuth, (req, res) => {
             commit: usageRow(byType, features, 'ai_commit'),
             insights: usageRow(byType, features, 'ai_insights'),
             migrationRisk: usageRow(byType, features, 'ai_migration_risk'),
+            // Enforced at ai/migration.js:360,410 since it shipped, but never
+            // reported here — so a Free user met "AI limit reached (25/25)"
+            // for a feature no surface had ever named.
+            migrationAssist: usageRow(byType, features, 'migration_assist'),
             semanticSearch: usageRow(byType, features, 'ai_semantic_search'),
             deepReview: usageRow(byType, features, 'ai_deep_review'),
             prChat: usageRow(byType, features, 'ai_pr_chat'),

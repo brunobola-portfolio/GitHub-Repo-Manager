@@ -621,3 +621,74 @@ describe('spend cap is never sold as a paid differentiator while it ships disabl
         }
     })
 })
+
+// ---------------------------------------------------------------------------
+// Cross-surface Pro claims.
+//
+// The Pro-upsell checks above scope themselves to LicensePlanSection's bullet
+// array, which is exactly why "priority support for power users" survived on
+// the landing page for so long: it sat in PricingPreview's Pro *description*,
+// outside every scoped assertion. A promise is either true on all five pricing
+// surfaces or it is not true — so check them together.
+// ---------------------------------------------------------------------------
+describe('Enterprise-only deliverables never appear in a Pro context', () => {
+    // Deliberately narrow: the phrase, plus enough context that it can only
+    // match a claim about Pro. Enterprise entries mentioning the same phrase
+    // are correct and must keep passing.
+    const SURFACES = [
+        ['PricingPreview.jsx', previewSource, "name: 'Pro'", "name: 'Enterprise'"],
+        ['PricingPage.jsx', pricingSource, "tier: 'Pro'", "tier: 'Enterprise'"],
+    ]
+
+    const ENTERPRISE_ONLY = [/priority support/i, /advanced analytics/i, /\bSLA\b/]
+
+    // Strip comments before matching: the gate is about what the page CLAIMS,
+    // which lives in the strings. A comment explaining why a phrase is absent
+    // must not be read as the phrase being present.
+    const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')
+
+    for (const [name, src, startMarker, endMarker] of SURFACES) {
+        it(`${name} does not sell Pro with an Enterprise-only deliverable`, () => {
+            const start = src.indexOf(startMarker)
+            const end = src.indexOf(endMarker)
+            expect(start, `could not locate the Pro block in ${name}`).toBeGreaterThan(-1)
+            expect(end, `could not locate the Enterprise block in ${name}`).toBeGreaterThan(start)
+
+            const proBlock = stripComments(src.slice(start, end))
+            const offenders = ENTERPRISE_ONLY.filter((re) => re.test(proBlock)).map(String)
+            expect(offenders, `${name} promises Pro something only Enterprise ships`).toEqual([])
+        })
+    }
+})
+
+// ---------------------------------------------------------------------------
+// "Repo Advisor" names two surfaces with two different meters, and the FAQ
+// described only one of them.
+//
+// The floating conversational assistant is POST /api/ai/chat and does
+// increment ai_queries. The Repo Advisor card inside the Work Board is
+// POST /work-board/ai/interpret, metered by requireWorkBoardAI against the
+// per-user ai_monthly_cap_cents in work_board_prefs — its own ledger, which
+// never touches the monthly query total the FAQ promises to charge it to.
+// ---------------------------------------------------------------------------
+describe('PricingPage FAQ — the AI-query answer covers both Repo Advisor meters', () => {
+    function aiQueryAnswer() {
+        const idx = pricingSource.indexOf('What counts as an AI query?')
+        expect(idx, 'the FAQ entry moved — re-point this gate').toBeGreaterThan(-1)
+        return pricingSource.slice(idx, idx + 1400)
+    }
+
+    it('does not claim every Repo Advisor call counts against the monthly total', () => {
+        const answer = aiQueryAnswer()
+        // Naming Repo Advisor is fine; naming it without qualifying the Work
+        // Board surface is the false part.
+        if (/Repo Advisor/.test(answer)) {
+            expect(answer, 'the Work Board card is metered separately and the answer must say so')
+                .toMatch(/Work Board/)
+        }
+    })
+
+    it('points the reader at the separate Work Board cap', () => {
+        expect(aiQueryAnswer()).toMatch(/separately|own (spend )?cap/i)
+    })
+})

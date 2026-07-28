@@ -73,11 +73,12 @@ describe('LicenseActivationModal', () => {
         expect(init.method).toBe('POST')
         expect(JSON.parse(init.body)).toEqual({ key: 'grm_lic_test_payload' })
 
-        // License details rendered.
+        // License details rendered. Seats are deliberately absent — see the
+        // "no fictional seat count" block below.
         expect(screen.getByText(/license activated/i)).toBeInTheDocument()
         expect(screen.getByText('pro')).toBeInTheDocument()
         expect(screen.getByText('Acme Inc')).toBeInTheDocument()
-        expect(screen.getByText('10')).toBeInTheDocument()
+        expect(screen.queryByText('10')).not.toBeInTheDocument()
     })
 
     it('dispatches app:license-changed on successful activation', async () => {
@@ -165,5 +166,29 @@ describe('LicenseActivationModal', () => {
 
         await waitFor(() => expect(screen.getByTestId('license-activated-card')).toBeInTheDocument())
         expect(screen.queryByTestId('bootstrap-admin-note')).not.toBeInTheDocument()
+    })
+})
+
+/*
+ * The activation receipt showed a seat count that is fiction. Every Stripe
+ * licence is minted with `seats: 1` (stripe-webhooks.js does
+ * `parseInt(metadata?.seats) || 1` and billing.js never sets the key), nothing
+ * enforces it, and every pricing surface promises unlimited team members — so
+ * "Seats: 1" was the first thing a new Pro customer saw, and it was wrong.
+ */
+describe('LicenseActivationModal — no fictional seat count', () => {
+    it('does not show a Seats row on the activation receipt', async () => {
+        fetchWithRetry.mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({ ok: true, active: true, tier: 'pro', org: 'Acme', seats: 1 }),
+        })
+
+        render(<LicenseActivationModal isOpen onClose={() => {}} />)
+        fillKey()
+        fireEvent.click(screen.getByTestId('license-activate-button'))
+
+        await waitFor(() => expect(screen.getByText(/license activated/i)).toBeInTheDocument())
+        expect(screen.queryByText(/^Seats:$/i)).not.toBeInTheDocument()
+        expect(screen.getByText(/Acme/)).toBeInTheDocument()
     })
 })

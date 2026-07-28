@@ -16,6 +16,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { sanitizeForPrompt } from './sanitize.js'
+import { NEVER_INVENT_RULE } from './grounded-prompts.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const TEMPLATES_DIR = path.join(__dirname, 'license-templates')
@@ -112,12 +113,21 @@ function clean(s) {
  * fairly generic, so the override surface adds DB schema + UI for low ROI
  * until users actually ask for it.
  */
-const PROMPT_TEMPLATES = Object.freeze({
-	contributing: 'Write a CONTRIBUTING.md for {fullName}, a {description}. Cover: setup, build, test, PR guidelines, commit message format. Tone: friendly, professional. Use Markdown with H2/H3 only. Keep total length under 800 words.',
-	security: 'Write a SECURITY.md for {fullName}. Cover: supported versions, how to report a vulnerability, expected response time. Use the contact email {email}. Use Markdown. Keep total length under 400 words.',
-	issueTemplate: 'Write a GitHub bug report issue template for {fullName}. Tech stack: {language}. Output Markdown with YAML front matter (name, about, title, labels). Sections: description, reproduction steps, expected behavior, actual behavior, environment. Keep total length under 1.5 KB.',
-	prTemplate: 'Write a concise PR template for {fullName}. Sections: summary, related issues, testing notes, screenshots (if UI). Output Markdown. Keep total length under 300 words.',
-	readmeStub: 'Write a README.md stub for {fullName}, a {description}. Tech stack: {language}. Include: title, badges placeholder, install, quick start, license. Use Markdown with H2 sections. Keep total length under 500 words.',
+// Every template is published into the user's repository under their name, in
+// `direct` mode by default — so an invented claim here becomes THEIR public
+// statement. NEVER_INVENT_RULE is the same rule grounded-prompts.js applies to
+// the README/suggest surfaces; these five had none.
+//
+// The SECURITY.md prompt was the sharpest case: it asked for "supported
+// versions" and an "expected response time" from nothing but a repository name
+// and an email, which guarantees a fabricated support policy and a fabricated
+// SLA. Both are now explicit TODO placeholders for a human to fill in.
+export const PROMPT_TEMPLATES = Object.freeze({
+	contributing: `Write a CONTRIBUTING.md for {fullName}, a {description}. Cover: setup, build, test, PR guidelines, commit message format. Tone: friendly, professional. Use Markdown with H2/H3 only. Keep total length under 800 words. ${NEVER_INVENT_RULE}Any concrete command you were not given must be a TODO placeholder rather than a guess.`,
+	security: `Write a SECURITY.md for {fullName}. Cover: how to report a vulnerability (use the contact email {email}), and a supported-versions section. Use Markdown. Keep total length under 400 words. ${NEVER_INVENT_RULE}You have not been told which versions are supported or how fast the maintainers respond, so write those as explicit TODO placeholders for a maintainer to fill in — never state a version range, a support window, or a response-time commitment of your own.`,
+	issueTemplate: `Write a GitHub bug report issue template for {fullName}. Tech stack: {language}. Output Markdown with YAML front matter (name, about, title, labels). Sections: description, reproduction steps, expected behavior, actual behavior, environment. Keep total length under 1.5 KB. ${NEVER_INVENT_RULE}`,
+	prTemplate: `Write a concise PR template for {fullName}. Sections: summary, related issues, testing notes, screenshots (if UI). Output Markdown. Keep total length under 300 words. ${NEVER_INVENT_RULE}`,
+	readmeStub: `Write a README.md stub for {fullName}, a {description}. Tech stack: {language}. Include: title, badges placeholder, install, quick start, license. Use Markdown with H2 sections. Keep total length under 500 words. ${NEVER_INVENT_RULE}Install and quick-start commands you were not given must be TODO placeholders, never invented commands.`,
 })
 
 function renderPromptVars(template, vars) {

@@ -105,3 +105,52 @@ describe('PricingPage — yearly billing toggle feature-detection', () => {
         })
     })
 })
+
+/*
+ * The displayed price was hardcoded (TIERS_MONTHLY.price = 19, rendered with a
+ * hardcoded `$`), while /billing/config returned booleans only. An operator
+ * whose Stripe price is not $19/mo shipped a page advertising one number and a
+ * checkout charging another, with nothing to catch it. The amount lives in
+ * Stripe, so it has to come from there.
+ */
+describe('PricingPage — advertises the operator real Stripe price', () => {
+    beforeEach(() => { global.fetch = vi.fn() })
+    afterEach(() => { vi.restoreAllMocks() })
+
+    function withPrices(prices) {
+        global.fetch.mockResolvedValue(mockConfigResponse({
+            stripeEnabled: true, yearlyBillingAvailable: true, prices,
+        }))
+    }
+
+    it('renders the Stripe amount and currency instead of the built-in default', async () => {
+        withPrices({ pro: { monthly: { amount: 2900, currency: 'eur', interval: 'month' } } })
+        render(<PricingPage />)
+        await waitFor(() => expect(screen.getByText('€29')).toBeInTheDocument())
+        expect(screen.queryByText('$19')).not.toBeInTheDocument()
+    })
+
+    it('derives the yearly headline from the real yearly price, not a fixed 20% off', async () => {
+        // 24000/yr against 2900/mo is a 31% saving — the hardcoded "Save 20%"
+        // would have understated it and contradicted the checkout.
+        withPrices({
+            pro: {
+                monthly: { amount: 2900, currency: 'eur', interval: 'month' },
+                yearly: { amount: 24000, currency: 'eur', interval: 'year' },
+            },
+        })
+        render(<PricingPage />)
+        await waitFor(() => expect(screen.getByText('€29')).toBeInTheDocument())
+        fireEvent.click(screen.getByLabelText(TOGGLE_LABEL))
+        await waitFor(() => expect(screen.getByText('€20')).toBeInTheDocument())
+        expect(screen.getByText(/Billed €240\/year/)).toBeInTheDocument()
+    })
+
+    it('keeps its built-in default when the server resolves no price', async () => {
+        // Self-hosted with billing off: the number is decorative there, but it
+        // must not vanish or render as NaN.
+        withPrices({})
+        render(<PricingPage />)
+        await waitFor(() => expect(screen.getByText('$19')).toBeInTheDocument())
+    })
+})
