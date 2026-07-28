@@ -14,6 +14,13 @@ on:
       - 'scripts/first-run.mjs'
       - '.github/workflows/windows-package.yml'
       - '.github/workflows/release.yml'
+      # A dependency bump is a packaging input even when it touches no file
+      # under packaging/. better-sqlite3 is a native module rebuilt by
+      # postinstall and shipped inside the installer, so its major bumps are
+      # exactly the change this job exists to catch — and they were sailing
+      # past it because the filter only looked at packaging paths.
+      - 'package.json'
+      - 'package-lock.json'
 
 concurrency:
   group: windows-package-${{ github.ref }}

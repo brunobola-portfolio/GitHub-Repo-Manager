@@ -300,12 +300,68 @@ const KNOWN_ERRORS = {
         body: 'A command-line tool this migration needs (such as the TFVC client or Git LFS) isn’t installed on the migration server. Install it — or run the environment doctor — then retry. The inline error names the exact tool.',
         action: { label: 'Check environment', kind: 'open-settings', type: 'configure', settingsTab: 'env-tooling' },
     },
+    // --- Status-ladder entries -------------------------------------------
+    // Reached when a response carries a status we understand but a code we
+    // don't. Before these existed, every 400/403/404/409 rendered FALLBACK —
+    // "Something went wrong… contact bruno@bolalabs.pt" with a Retry button —
+    // which for a deterministic 4xx is both wrong about the cause and offers
+    // an action that cannot possibly work.
+    BAD_REQUEST: {
+        title: 'We couldn’t send that request',
+        body: 'The app built a request the server rejected. Retrying won’t help — reload the page, and if it keeps happening this is a bug worth reporting.',
+        action: { label: 'Dismiss', kind: 'dismiss', type: 'dismiss' },
+    },
+    FORBIDDEN: {
+        title: 'You don’t have access to this',
+        body: 'Your account or token lacks the permission this action needs. Check that your GitHub token still has the required scopes.',
+        action: { label: 'Dismiss', kind: 'dismiss', type: 'dismiss' },
+    },
+    NOT_FOUND: {
+        title: 'Not found',
+        body: 'This no longer exists, or you don’t have access to it. It may have been renamed, moved, or deleted.',
+        action: { label: 'Dismiss', kind: 'dismiss', type: 'dismiss' },
+    },
+    CONFLICT: {
+        title: 'Already done',
+        body: 'This changed since you opened it — it may already be published, or someone else got there first. Reload to see the current state.',
+        action: { label: 'Dismiss', kind: 'dismiss', type: 'dismiss' },
+    },
+    SERVER_ERROR: {
+        title: 'The server had a problem',
+        body: 'Something failed on our side, not yours. This one is worth retrying.',
+        action: { label: 'Retry', kind: 'retry', type: 'retry' },
+    },
+    // Specific 4xx cases whose generic ladder copy would lose real information.
+    SESSION_REFRESHED: {
+        title: 'Your session was refreshed',
+        body: 'A security token expired while the page was open. Reload and your action will go through.',
+        action: { label: 'Reload', kind: 'retry', type: 'retry' },
+    },
+    AI_COST_CAP_REACHED: {
+        title: 'Monthly AI budget reached',
+        body: 'You’ve hit the AI spend cap for this month. This resets at the start of next month — it is not a temporary rate limit.',
+        action: { label: 'See options', kind: 'open-quota', type: 'upgrade' },
+    },
 }
 
 const FALLBACK = {
     title: 'Something went wrong',
     body: 'Please try again. If the problem persists, contact bruno@bolalabs.pt.',
     action: { label: 'Retry', kind: 'retry', type: 'retry' },
+}
+
+// A status we understand but a code we don't. Ordered least-to-most specific by
+// the caller: a mapped code always wins over this table.
+const STATUS_FALLBACKS = {
+    400: 'BAD_REQUEST',
+    403: 'FORBIDDEN',
+    404: 'NOT_FOUND',
+    409: 'CONFLICT',
+    422: 'BAD_REQUEST',
+    500: 'SERVER_ERROR',
+    502: 'SERVER_ERROR',
+    503: 'SERVER_ERROR',
+    504: 'SERVER_ERROR',
 }
 
 function pickCode(err, ctx) {
@@ -348,6 +404,31 @@ const CODE_ALIASES = {
     // Non-AI server errors that follow the `{ error: '<snake_code>' }` shape.
     invalid_host: 'INVALID_HOST',
     upgrade_required: 'UPGRADE_REQUIRED',
+    // Request-shape rejections. validate-request.js emits `validation_failed`
+    // on every Zod failure and several routes emit `INVALID_PARAM` by hand —
+    // between them the most common 4xx in the app, and both were unmapped, so
+    // a permanent request bug rendered as "try again".
+    validation_failed: 'BAD_REQUEST',
+    VALIDATION_ERROR: 'BAD_REQUEST',
+    INVALID_PARAM: 'BAD_REQUEST',
+    INVALID_INDEX: 'BAD_REQUEST',
+    // The CSRF middleware already retried once with a fresh token before
+    // surfacing this, so "retry" is not the advice — reloading is.
+    csrf_invalid: 'SESSION_REFRESHED',
+    // Paid-plan boundaries. These land at conversion moments, where the
+    // generic card was costing an upgrade prompt.
+    tier_limit_exceeded: 'UPGRADE_REQUIRED',
+    MIGRATION_QUOTA_EXCEEDED: 'QUOTA_EXCEEDED',
+    AI_COST_CAP_REACHED: 'AI_COST_CAP_REACHED',
+    INSUFFICIENT_PERMISSIONS: 'FORBIDDEN',
+    admin_only: 'FORBIDDEN',
+    FORBIDDEN: 'FORBIDDEN',
+    // Terminal states: the thing already happened. Retrying re-fails forever.
+    ALREADY_PUBLISHED: 'CONFLICT',
+    NOT_EDITABLE: 'CONFLICT',
+    DUPLICATE_IMPORT: 'CONFLICT',
+    already_running: 'CONFLICT',
+    NOT_FOUND: 'NOT_FOUND',
     // Codes the CLIENT throws (src/api/aiFetch.js) rather than the server.
     // These are already UPPERCASE but do not match a KNOWN_ERRORS key, so
     // without an alias they fall through to the bare HTTP-status heuristic —
@@ -457,6 +538,25 @@ export function formatUserError(err, ctx = {}) {
     }
     if (status === 413 || /entity too large|payload too large/i.test(raw)) {
         return { ...KNOWN_ERRORS.PAYLOAD_TOO_LARGE, code: 'PAYLOAD_TOO_LARGE', raw: null }
+    }
+
+    // Understood status, unrecognised code. Better a correct family than the
+    // generic card: the difference that matters to the user is whether Retry
+    // is worth pressing, and for 4xx it never is.
+    //
+    // The caller's fallbackTitle still wins for the title — it names the
+    // operation ("Failed to load branch protection"), which is knowledge the
+    // status alone can't supply. The ladder contributes the part the caller
+    // can't know: why it failed and whether retrying is worth offering.
+    const ladderKey = STATUS_FALLBACKS[status] || (status >= 500 ? 'SERVER_ERROR' : null)
+    if (ladderKey) {
+        const entry = KNOWN_ERRORS[ladderKey]
+        return {
+            ...entry,
+            title: ctx.fallbackTitle || entry.title,
+            code: ladderKey,
+            raw: null,
+        }
     }
 
     warnUnmappedOnce(err)
