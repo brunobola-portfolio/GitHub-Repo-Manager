@@ -78,7 +78,7 @@
     "@sentry/react": "^10.68.0",
     "@tanstack/react-virtual": "^3.14.8",
     "adm-zip": "^0.6.0",
-    "better-sqlite3": "^12.9.0",
+    "better-sqlite3": "^13.0.1",
     "bullmq": "^5.81.2",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

@@ -252,18 +252,34 @@ function pruneProductionDeps(appDir) {
     });
 }
 
-export function betterSqlite3BinaryPath(appDir) {
-    return path.join(appDir, 'node_modules', 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node');
+/**
+ * Where a usable win32-x64 binary can legitimately live, newest layout first.
+ *
+ * better-sqlite3 13 moved to N-API and now publishes prebuilt binaries inside
+ * the package as `prebuilds/<platform>-<arch>.node`; node-gyp's
+ * `build/Release/better_sqlite3.node` only appears when the module is compiled
+ * from source (and is still the whole story on 12.x). Both are shippable, so
+ * the guard accepts either — but only for THIS platform+arch: a package
+ * carrying someone else's prebuild is precisely the boot crash it exists to
+ * prevent.
+ */
+export function betterSqlite3BinaryCandidates(appDir) {
+    const moduleDir = path.join(appDir, 'node_modules', 'better-sqlite3');
+    return [
+        path.join(moduleDir, 'prebuilds', `${process.platform}-${process.arch}.node`),
+        path.join(moduleDir, 'build', 'Release', 'better_sqlite3.node'),
+    ];
 }
 
-function assertBetterSqlite3Binary(appDir) {
-    const binPath = betterSqlite3BinaryPath(appDir);
-    if (!existsSync(binPath)) {
-        throw new Error(
-            `better-sqlite3 native binary missing after npm ci: ${binPath}\n` +
-            'The staged node_modules did not produce a win32-x64 prebuilt binary — packaging aborted rather than shipping a package that will crash on boot.',
-        );
-    }
+export function assertBetterSqlite3Binary(appDir) {
+    const candidates = betterSqlite3BinaryCandidates(appDir);
+    if (candidates.some((p) => existsSync(p))) return;
+    throw new Error(
+        `better-sqlite3 native binary missing after npm ci. Looked for:\n` +
+        candidates.map((p) => `  - ${p}`).join('\n') + '\n' +
+        `The staged node_modules did not produce a ${process.platform}-${process.arch} prebuilt binary — ` +
+        'packaging aborted rather than shipping a package that will crash on boot.',
+    );
 }
 
 async function downloadToBuffer(url) {

@@ -16,7 +16,8 @@ import {
   getPublisher,
   assertDistBuilt,
   shouldSkipServerPath,
-  betterSqlite3BinaryPath,
+  betterSqlite3BinaryCandidates,
+  assertBetterSqlite3Binary,
   readCachedZipIfValid,
   verifyAndCacheDownload,
   frameworkCscPath,
@@ -222,12 +223,66 @@ describe('shouldSkipServerPath', () => {
   })
 })
 
-describe('betterSqlite3BinaryPath', () => {
-  it('points at the standard prebuilt-binary location under the staged app dir', () => {
+describe('betterSqlite3BinaryCandidates', () => {
+  it('offers both the N-API prebuild and the node-gyp build under the staged app dir', () => {
     const appDir = path.join('C:', 'staging', 'app')
-    expect(betterSqlite3BinaryPath(appDir)).toBe(
-      path.join(appDir, 'node_modules', 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node'),
-    )
+    const moduleDir = path.join(appDir, 'node_modules', 'better-sqlite3')
+    expect(betterSqlite3BinaryCandidates(appDir)).toEqual([
+      path.join(moduleDir, 'prebuilds', `${process.platform}-${process.arch}.node`),
+      path.join(moduleDir, 'build', 'Release', 'better_sqlite3.node'),
+    ])
+  })
+})
+
+describe('assertBetterSqlite3Binary', () => {
+  // better-sqlite3 13 moved to N-API: prebuilt binaries now ship inside the
+  // package at prebuilds/<platform>-<arch>.node and node-gyp no longer produces
+  // build/Release/better_sqlite3.node. A guard that knows only the old layout
+  // blocks the release on a package that is actually fine.
+  let appDir
+
+  // The guard resolves the prebuild name from the RUNNING platform, so these
+  // must too: the unit shards run on Linux while packaging runs on Windows, and
+  // hardcoding win32-x64 makes "correct binary" and "foreign binary" swap
+  // meanings between the two.
+  const NATIVE = `${process.platform}-${process.arch}.node`
+  const FOREIGN = `${process.platform}-${process.arch === 'x64' ? 'arm64' : 'x64'}.node`
+
+  function stage(relPath) {
+    const full = path.join(appDir, 'node_modules', 'better-sqlite3', ...relPath)
+    mkdirSync(path.dirname(full), { recursive: true })
+    writeFileSync(full, 'binary')
+    return full
+  }
+
+  beforeEach(() => {
+    appDir = mkdtempSync(path.join(tmpdir(), 'grm-pkg-bs3-'))
+  })
+
+  afterEach(() => {
+    rmSync(appDir, { recursive: true, force: true })
+  })
+
+  it('accepts the node-gyp layout (better-sqlite3 12 and source builds)', () => {
+    stage(['build', 'Release', 'better_sqlite3.node'])
+    expect(() => assertBetterSqlite3Binary(appDir)).not.toThrow()
+  })
+
+  it('accepts the N-API prebuilds layout (better-sqlite3 13)', () => {
+    stage(['prebuilds', NATIVE])
+    expect(() => assertBetterSqlite3Binary(appDir)).not.toThrow()
+  })
+
+  it('still aborts packaging when neither layout produced a binary', () => {
+    mkdirSync(path.join(appDir, 'node_modules', 'better-sqlite3'), { recursive: true })
+    expect(() => assertBetterSqlite3Binary(appDir)).toThrow(/native binary missing/)
+  })
+
+  it('does not accept a prebuild for the wrong architecture', () => {
+    // Shipping an arm64 binary in an x64 package is exactly the crash on boot
+    // this guard exists to prevent.
+    stage(['prebuilds', FOREIGN])
+    expect(() => assertBetterSqlite3Binary(appDir)).toThrow(/native binary missing/)
   })
 })
 
