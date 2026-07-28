@@ -24,6 +24,13 @@ below links to the canonical page for that topic.
 
 The 3 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.11.0 (2026-07-27) — correctness and honesty.** Two audit panels' worth
+  of money-path work: a refunded or disputed subscription could be checked out
+  again and bill twice; BYOK metering gaps were closed; and two paid-tier
+  benefits that were never enforced in code (a 1,000-repository Free ceiling
+  and "higher AI spend-cap headroom") were withdrawn from every surface. Adds
+  Enterprise audit-log export (`GET /api/audit/export`), the
+  `npm run audit:verify` chain-integrity CLI, and licence revocation.
 - **v4.10.0 (2026-07-22) — Windows system-tray app.** The launcher now shows a
   tray icon with a running indicator (**● Running on port N**) and controls
   for open / view logs / restart / start-with-Windows / quit, with a
@@ -37,17 +44,6 @@ The 3 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHAN
   retention, a loopback-only authenticated `POST /api/system/shutdown` for
   graceful stops, and one-click in-app updates (download → SHA-256 verify →
   DB snapshot → restart) with automatic rollback on the portable build.
-- **v4.8.0 (2026-07-20) — Windows first-run overhaul.** Signing in works out
-  of the box: a plain `http://127.0.0.1` install could never store the
-  `Secure`-only session cookie, so sign-in was impossible — now `secure:
-  'auto'` (still `Secure` behind a TLS proxy). GitHub connection is a guided
-  in-app wizard that pre-fills the OAuth "New App" form with the exact
-  Homepage/Callback URLs for that install (`GET /api/auth/setup-status`,
-  `POST /api/auth/setup-oauth`, loopback-only + CSRF + rate-limited), instead
-  of hand-editing `.env`. Every boot runs a SQLite `quick_check` and
-  self-heals a corrupted database from the newest healthy backup (quarantine,
-  never delete). All writable state (`.env`, pidfile) moved into `DATA_DIR`
-  with automatic migration. See [Windows guide](windows.md).
 
 ## Architecture
 

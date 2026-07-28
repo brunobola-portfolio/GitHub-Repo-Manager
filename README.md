@@ -330,7 +330,7 @@ A two-part app: a **React 19 + Vite 8** SPA and an **Express 5 + better-sqlite3*
 
 ### Prerequisites
 
-- **Node.js 20+** — not needed for the Windows package (bundled runtime); see below.
+- **Node.js 22+** — not needed for the Windows package (bundled runtime); see below.
 - **npm** (or yarn)
 - **GitHub account** — for real mode (OAuth)
 - **AI provider key** — optional; add your own in `Settings → AI Configuration` after first login ([per-provider setup](docs/ai-providers.md))
@@ -488,10 +488,10 @@ See [`docs/ai-providers.md`](docs/ai-providers.md) for per-provider setup and fr
 
 | Category | Technologies |
 |----------|-------------|
-| **Frontend** | React 19.2, Vite 8.0, TailwindCSS 4.1 |
+| **Frontend** | React 19.2, Vite 8.1, TailwindCSS 4.1 |
 | **UI/UX** | Framer Motion 12, Lucide Icons, Recharts 3, Radix UI, cmdk |
-| **Backend** | Node.js 20+, Express 5.2 |
-| **Database** | better-sqlite3 12.9 (WAL mode, 32 MB cache) — SQLite only |
+| **Backend** | Node.js 22+, Express 5.2 |
+| **Database** | better-sqlite3 13.0 (WAL mode, 32 MB cache) — SQLite only |
 | **Security** | Helmet.js, per-tier + per-IP rate limiting, shared Zod validation layer, SSRF + DNS-rebinding guard, CSRF double-submit, AES-256-GCM credential encryption |
 | **AI (BYOK)** | Provider-neutral `AI_PROVIDER` (Anthropic, OpenAI, Gemini, OpenRouter, local) · per-user keys encrypted at rest · opt-in monthly $ spend cap + always-on per-call output-token cap · PII-safe audit metadata · SSE streaming |
 | **APIs** | GitHub REST API (2022-11-28), Azure DevOps API v7.1, Stripe Billing |
