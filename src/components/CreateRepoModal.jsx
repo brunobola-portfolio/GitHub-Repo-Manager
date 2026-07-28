@@ -108,7 +108,11 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
             const result = await onCreate(name, {
                 description,
                 org: targetOrg || undefined,
-                private: isPrivate
+                // `isPrivate`, not `private` — createRepoSchema declares the
+                // former, and Zod used to strip the latter without complaint,
+                // so the toggle was discarded and every repo created here came
+                // out public while this modal said Private.
+                isPrivate
             })
             if (result?.success) {
                 toast.success(`Created ${result.repo?.full_name || (targetOrg ? targetOrg + '/' : '') + name}`)
