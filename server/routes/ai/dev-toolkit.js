@@ -251,6 +251,10 @@ Rules:
             try {
                 const iter = req.aiProvider.generateStream({
                     prompt: systemPrompt + '\n\n' + userMessage,
+                    // Without the signal a client disconnect stops the SSE writes but
+                    // not the generation: the provider runs to completion and the
+                    // operator pays for every output token nobody received.
+                    signal: sse.signal,
                     generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
                 });
                 const { text: raw, usage, costUSD } = await streamToSSEWithUsage(iter, sse);
@@ -370,6 +374,10 @@ Rules:
             try {
                 const iter = req.aiProvider.generateStream({
                     prompt: systemPrompt + '\n\n' + userMessage,
+                    // Without the signal a client disconnect stops the SSE writes but
+                    // not the generation: the provider runs to completion and the
+                    // operator pays for every output token nobody received.
+                    signal: sse.signal,
                     generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
                 });
                 const { text: raw, usage, costUSD } = await streamToSSEWithUsage(iter, sse);
@@ -494,6 +502,10 @@ Return ONLY the refined content, no explanation, no markdown fences.`;
             try {
                 const iter = req.aiProvider.generateStream({
                     prompt: systemPrompt + '\n\n' + userMessage,
+                    // Without the signal a client disconnect stops the SSE writes but
+                    // not the generation: the provider runs to completion and the
+                    // operator pays for every output token nobody received.
+                    signal: sse.signal,
                     generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
                 });
                 const { text: raw, usage, costUSD } = await streamToSSEWithUsage(iter, sse);
@@ -659,6 +671,10 @@ router.post('/ai/chat-refine', requireAuth, requireScope('ai'), validateBody(aiC
         try {
             const iter = req.aiProvider.generateStream({
                 prompt: systemPrompt + '\n\n' + fullPrompt,
+                // Without the signal a client disconnect stops the SSE writes but
+                // not the generation: the provider runs to completion and the
+                // operator pays for every output token nobody received.
+                signal: sse.signal,
                 generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
             });
             const { text: raw, usage, costUSD } = await streamToSSEWithUsage(iter, sse);
