@@ -3,6 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
 import { Activity } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Skeleton } from '../ui/Skeleton'
+import { EmptyState } from '../ui/EmptyState'
 import { motion } from 'framer-motion'
 import { useMeasuredSize } from '../../hooks/useMeasuredSize'
 
@@ -10,18 +11,14 @@ import { useMeasuredSize } from '../../hooks/useMeasuredSize'
  * ActivityChart - Timeline chart showing commits, PRs, and issues
  */
 export function ActivityChart({ activity = [], timeRange, loading }) {
+    const hasActivity = Array.isArray(activity) && activity.length > 0
+
     const chartData = useMemo(() => {
-        if (!activity || activity.length === 0) {
-            return [
-                { name: 'Mon', commits: 4, pulls: 2, issues: 1 },
-                { name: 'Tue', commits: 7, pulls: 3, issues: 2 },
-                { name: 'Wed', commits: 5, pulls: 1, issues: 0 },
-                { name: 'Thu', commits: 12, pulls: 5, issues: 3 },
-                { name: 'Fri', commits: 8, pulls: 2, issues: 1 },
-                { name: 'Sat', commits: 3, pulls: 0, issues: 0 },
-                { name: 'Sun', commits: 2, pulls: 0, issues: 0 },
-            ]
-        }
+        // No placeholder series. This used to return a hand-written week —
+        // 41 commits, 13 PRs, 7 issues — indistinguishable on screen from real
+        // data, which every new or quiet account saw as its first impression
+        // of the dashboard. An empty state is the honest answer.
+        if (!activity || activity.length === 0) return []
 
         const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90
         const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -86,6 +83,17 @@ export function ActivityChart({ activity = [], timeRange, loading }) {
                 </div>
                 {loading ? (
                     <Skeleton className="w-full rounded-xl" style={{ height: `${chartHeight}px` }} />
+                ) : !hasActivity ? (
+                    <div
+                        className="flex items-center justify-center"
+                        style={{ height: `${chartHeight}px` }}
+                    >
+                        <EmptyState
+                            icon={Activity}
+                            title="No activity yet"
+                            description="Once you push commits or open pull requests, your trends show up here."
+                        />
+                    </div>
                 ) : (
                     <div
                         ref={chartRef}

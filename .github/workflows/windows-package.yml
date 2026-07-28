@@ -28,7 +28,11 @@ concurrency:
 
 jobs:
   package-and-smoke:
-    runs-on: windows-latest
+    # Must match release.yml's runner exactly — the point of this job is to
+    # smoke the artefact the release will actually produce, so a different
+    # image would be validating something we never ship. See the note there
+    # for why this is pinned rather than windows-latest.
+    runs-on: windows-2022
     defaults:
       run:
         shell: pwsh

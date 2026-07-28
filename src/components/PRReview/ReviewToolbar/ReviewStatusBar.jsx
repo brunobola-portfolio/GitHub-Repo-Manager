@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { ShieldCheck, ShieldAlert, MessageCircle } from 'lucide-react'
 import { SPRING } from '../../ui/motion'
@@ -23,8 +23,28 @@ export function ReviewStatusBar({
     reviewedCount,
     pendingCommentCount = 0,
     onSubmitReview,
+    // Each of these buttons posts a real review to GitHub. Without a pending
+    // state the second tap posted a second review — and on mobile they are
+    // max-md:flex-1, so they are the primary affordance on the tappiest
+    // surface. ReviewToolbar already threads this for the same handler.
+    submitting = false,
 }) {
     const reducedMotion = useReducedMotion()
+
+    // `submitting` alone is not enough: it is the parent's async state, so two
+    // clicks in the same tick both read the stale `false` and both post. The
+    // latch closes synchronously on the first click and reopens only once the
+    // parent reports the submission has settled.
+    const inFlightRef = useRef(false)
+    useEffect(() => {
+        if (!submitting) inFlightRef.current = false
+    }, [submitting])
+
+    const submitOnce = useCallback((event) => {
+        if (submitting || inFlightRef.current) return
+        inFlightRef.current = true
+        onSubmitReview({ event })
+    }, [submitting, onSubmitReview])
 
     // Session-scoped hint counter — sessionStorage flag avoids the previous
     // bug where remounts (file navigation, view-mode toggles) inflated
@@ -133,26 +153,32 @@ export function ReviewStatusBar({
                 <div className="flex items-center gap-1.5 ml-auto max-md:w-full">
                     <button
                         type="button"
-                        onClick={() => onSubmitReview({ event: 'APPROVE' })}
+                        onClick={() => submitOnce('APPROVE')}
+                        disabled={submitting}
+                        aria-busy={submitting}
                         /* --ds-cta, not emerald-600: white on emerald-600 is
                            3.67:1 in both themes (see --ds-cta-text). */
-                        className="inline-flex items-center justify-center gap-1 px-3 py-1.5 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-semibold bg-[color:var(--ds-cta)] dark:bg-[color:var(--ds-cta-dark)] text-[color:var(--ds-cta-text)] shadow-[var(--ds-shadow-sm)] hover:bg-[color:var(--ds-cta-hover)] dark:hover:bg-[color:var(--ds-cta-hover-dark)] transition-colors"
+                        className="inline-flex items-center justify-center gap-1 px-3 py-1.5 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-semibold bg-[color:var(--ds-cta)] dark:bg-[color:var(--ds-cta-dark)] text-[color:var(--ds-cta-text)] shadow-[var(--ds-shadow-sm)] hover:bg-[color:var(--ds-cta-hover)] dark:hover:bg-[color:var(--ds-cta-hover-dark)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                         aria-label="Approve"
                     >
                         <ShieldCheck className="w-3.5 h-3.5" /> Approve
                     </button>
                     <button
                         type="button"
-                        onClick={() => onSubmitReview({ event: 'COMMENT' })}
-                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-medium bg-transparent border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        onClick={() => submitOnce('COMMENT')}
+                        disabled={submitting}
+                        aria-busy={submitting}
+                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-medium bg-transparent border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                         aria-label="Comment"
                     >
                         <MessageCircle className="w-3.5 h-3.5" /> Comment
                     </button>
                     <button
                         type="button"
-                        onClick={() => onSubmitReview({ event: 'REQUEST_CHANGES' })}
-                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-medium bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/50 transition-colors"
+                        onClick={() => submitOnce('REQUEST_CHANGES')}
+                        disabled={submitting}
+                        aria-busy={submitting}
+                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-medium bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                         aria-label="Request changes"
                     >
                         <ShieldAlert className="w-3.5 h-3.5" /> Request changes

@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { EASE } from '../ui/motion'
-import { GitPullRequest, Clock, CircleDot, Sparkles, ArrowRight, ArrowUp, ArrowDown } from 'lucide-react'
+import { GitPullRequest, Clock, CircleDot, Sparkles, ArrowRight, ArrowUp, ArrowDown, AlertCircle } from 'lucide-react'
 import { useYourWork } from '../../hooks/useYourWork'
 import { Skeleton } from '../ui/Skeleton'
 
@@ -142,8 +142,39 @@ function EmptyState({ onOpenWorkBoard }) {
     )
 }
 
+// Reached when at least one source could not be read. The grid's whole output
+// is a sum, so a partial answer cannot be presented as a complete one — and
+// the specific complete answer it used to give ("nothing needs you") is the
+// one a user acts on by closing the tab.
+function CouldNotCheck({ onRetry }) {
+    return (
+        <motion.div
+            role="status"
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, ease: EASE.emphasized }}
+            className="col-span-2 sm:col-span-3 flex flex-col items-center text-center gap-2 py-5 px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl"
+        >
+            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+            </div>
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 ds-font-display">Couldn&rsquo;t check your work</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+                We couldn&rsquo;t reach GitHub just now, so this may be out of date. Nothing has changed on your side.
+            </p>
+            <button
+                type="button"
+                onClick={onRetry}
+                className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline"
+            >
+                Try again <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+        </motion.div>
+    )
+}
+
 export function WhatNeedsYouGrid({ onOpenWorkBoard }) {
-    const { status, hidden, reviews, stale, issues } = useYourWork()
+    const { status, hidden, reviews, stale, issues, refresh } = useYourWork()
 
     if (hidden) return null
 
@@ -153,6 +184,14 @@ export function WhatNeedsYouGrid({ onOpenWorkBoard }) {
                 <SkeletonCard />
                 <SkeletonCard />
                 <SkeletonCard />
+            </div>
+        )
+    }
+
+    if (status === 'error') {
+        return (
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
+                <CouldNotCheck onRetry={refresh} />
             </div>
         )
     }

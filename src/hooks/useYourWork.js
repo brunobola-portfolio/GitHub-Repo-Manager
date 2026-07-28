@@ -24,13 +24,17 @@ async function fetchCount(url) {
         const res = await fetch(url, { credentials: 'include' })
         // 401/403/404 → endpoint is gated or not available for this user; suppress the widget.
         if (res.status === 401 || res.status === 403 || res.status === 404) {
-            return { count: 0, hidden: true }
+            return { count: 0, hidden: true, failed: false }
         }
-        if (!res.ok) return { count: 0, hidden: false }
+        // `failed`, not a zero count. Collapsing a 500 into 0 is what let the
+        // grid tell the user "You're all caught up" when nothing had actually
+        // been checked — a false all-clear, which is worse than an error
+        // because it invites them to stop looking.
+        if (!res.ok) return { count: 0, hidden: false, failed: true }
         const body = await res.json()
-        return { count: Array.isArray(body?.data) ? body.data.length : 0, hidden: false }
+        return { count: Array.isArray(body?.data) ? body.data.length : 0, hidden: false, failed: false }
     } catch {
-        return { count: 0, hidden: false }
+        return { count: 0, hidden: false, failed: true }
     }
 }
 
@@ -89,18 +93,30 @@ export function useYourWork() {
         ])
         if (id !== fetchIdRef.current) return // a newer call has taken over
 
+        // ANY failed source poisons the total, because the number the grid
+        // shows is a sum: one silent zero among three is indistinguishable
+        // from a genuine zero, and the conclusion drawn from it ("nothing
+        // needs you") is the one thing we must not get wrong.
+        const failed = r.failed || s.failed || i.failed
         const hidden = r.hidden && s.hidden && i.hidden
         const reviews = buildCategoryState('reviews', r.count)
         const stale   = buildCategoryState('stale', s.count)
         const issues  = buildCategoryState('issues', i.count)
 
-        writeSnapshot('reviews', r.count)
-        writeSnapshot('stale', s.count)
-        writeSnapshot('issues', i.count)
+        // Snapshots drive the delta arrows, so a zero written from a failure
+        // would invent a drop the user never had.
+        if (!failed) {
+            writeSnapshot('reviews', r.count)
+            writeSnapshot('stale', s.count)
+            writeSnapshot('issues', i.count)
+        }
 
         const fetchedAt = Date.now()
         lastFetchRef.current = fetchedAt
-        setState({ status: 'ready', hidden, reviews, stale, issues, lastFetchedAt: fetchedAt })
+        setState({
+            status: failed ? 'error' : 'ready',
+            hidden, reviews, stale, issues, lastFetchedAt: fetchedAt,
+        })
     }, [tier])
 
     useEffect(() => {

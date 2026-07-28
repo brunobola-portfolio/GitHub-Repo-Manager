@@ -5,6 +5,7 @@ import { useDangerAction } from '../../hooks/useDangerAction';
 import { useToast } from '../../hooks/useToast';
 import { PageHeader } from '../ui/PageHeader';
 import { Button } from '../ui/Button';
+import { AIErrorState } from '../ui/AIErrorState';
 import { PromptLibrary } from './PromptLibrary';
 import { PromptEditor } from './PromptEditor';
 
@@ -87,8 +88,18 @@ export function PromptStudioPage() {
                 ) : null}
             />
             {studio.error ? (
-                <div className="mb-4 rounded-md border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/40 p-3 text-xs text-red-900 dark:text-red-200">
-                    {studio.error}
+                // usePromptStudio keeps the whole Error so err.code survives —
+                // its own comment says so. Rendering it as a child threw
+                // "Objects are not valid as a React child" and took the entire
+                // page to the error boundary on any preset-load failure.
+                // AIErrorState is the primitive that reads that code.
+                <div className="mb-4">
+                    <AIErrorState
+                        error={studio.error}
+                        context="Prompt Studio"
+                        variant="inline"
+                        onRetry={studio.refresh}
+                    />
                 </div>
             ) : null}
             {view.mode === 'library' ? (
