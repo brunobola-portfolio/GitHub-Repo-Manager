@@ -14,6 +14,12 @@ const orgNameSchema = z.string().min(1).max(39).regex(
 
 // --- Route-specific schemas ---
 
+// .strict() because this schema decides repository VISIBILITY. Zod's default
+// is to strip unknown keys, which is quietly catastrophic here: the client sent
+// `private: true`, Zod dropped it, `isPrivate` fell back to its default of
+// false, and the request validated cleanly — so a repo the user asked to be
+// private was created public with no error anywhere. A key we do not recognise
+// on this route must fail loudly, not fall back to the most permissive value.
 export const createRepoSchema = z.object({
     name: repoNameSchema,
     description: z.string().max(500).optional().default(''),
@@ -21,7 +27,7 @@ export const createRepoSchema = z.object({
     org: orgNameSchema.optional(),
     autoInit: z.boolean().optional().default(true),
     license: z.string().max(50).optional()
-});
+}).strict();
 
 export const bulkVisibilitySchema = z.object({
     repos: z.array(z.string().min(1).max(200)).min(1).max(100),

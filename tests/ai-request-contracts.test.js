@@ -14,7 +14,7 @@
  * extracting into a pure function first.
  */
 import { describe, it, expect } from 'vitest'
-import { aiReviewSummarySchema } from '../server/lib/validators.js'
+import { aiReviewSummarySchema, createRepoSchema } from '../server/lib/validators.js'
 import {
     buildReviewSummaryPayload,
     MAX_MANIFEST_FILES,
@@ -97,5 +97,38 @@ describe('POST /api/ai/review-summary — client payload vs server schema', () =
             args({ files: [file({ additions: undefined, deletions: undefined })] })
         )
         expect(aiReviewSummarySchema.safeParse(payload).success).toBe(true)
+    })
+})
+
+describe('POST /api/repos — visibility must survive validation', () => {
+    // The client key drifted from the schema key. Zod strips unknown keys by
+    // default, so `private: true` was discarded and `isPrivate` fell back to
+    // its `.default(false)`: the request VALIDATED, no 400 was raised, and the
+    // repo was created public while the modal said Private. A stripped key is
+    // far more dangerous than a rejected one, because nothing surfaces.
+    const build = (isPrivate) => ({
+        name: 'my-secret-repo',
+        description: 'internal notes',
+        isPrivate,
+    })
+
+    it('carries a private repo through as private', () => {
+        const parsed = createRepoSchema.parse(build(true))
+        expect(parsed.isPrivate).toBe(true)
+    })
+
+    it('carries a public repo through as public', () => {
+        expect(createRepoSchema.parse(build(false)).isPrivate).toBe(false)
+    })
+
+    it('rejects the legacy `private` key instead of silently creating a public repo', () => {
+        // Strict, so the next rename fails loudly at the boundary rather than
+        // defaulting a security-relevant flag to its most permissive value.
+        const result = createRepoSchema.safeParse({ name: 'r', private: true })
+        expect(result.success).toBe(false)
+    })
+
+    it('still defaults to public only when visibility is genuinely absent', () => {
+        expect(createRepoSchema.parse({ name: 'r' }).isPrivate).toBe(false)
     })
 })
