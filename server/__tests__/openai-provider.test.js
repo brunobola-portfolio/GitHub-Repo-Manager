@@ -278,7 +278,44 @@ describe('OpenAIProvider.generateStream() — abort handling (I6)', () => {
         await iter.next()
         const final = await iter.next()
         expect(final.done).toBe(true)
-        expect(final.value).toEqual({ usage: null, costUSD: null })
+        expect(final.value).toEqual({ usage: null, costUSD: null, partial: false })
+    })
+
+    it('reports a usage chunk that arrived before the client disconnected', async () => {
+        // OpenAI itself sends usage only just before [DONE], so an aborted
+        // stream usually has nothing — but the parser reads `usage` off ANY
+        // data line, and OpenAI-compatible backends (OpenRouter, local servers)
+        // do emit it earlier. Whatever was measured must survive the abort:
+        // discarding it is what made hanging up a free generation.
+        const provider = new OpenAIProvider({ apiKey: 'sk-test12345678', model: 'gpt-4o' })
+        let readCount = 0
+        const reader = {
+            read: vi.fn(async () => {
+                readCount++
+                if (readCount === 1) {
+                    return {
+                        done: false,
+                        value: encodeSSE([
+                            'data: ' + JSON.stringify({ choices: [{ delta: { content: 'hi' } }], usage: { prompt_tokens: 40, completion_tokens: 12 } }),
+                        ]),
+                    }
+                }
+                return { done: true, value: undefined }
+            }),
+            releaseLock: vi.fn(),
+        }
+        provider._postStream = vi.fn().mockResolvedValue({ ok: true, status: 200, body: { getReader: () => reader } })
+        const controller = new AbortController()
+
+        const iter = provider.generateStream({ prompt: 'x', signal: controller.signal })
+        expect((await iter.next()).value).toBe('hi')
+        controller.abort()
+        const final = await iter.next()
+
+        expect(final.done).toBe(true)
+        expect(final.value.usage).toEqual({ inputTokens: 40, outputTokens: 12 })
+        expect(final.value.costUSD).toBeGreaterThan(0)
+        expect(final.value.partial).toBe(true)
     })
 
     it('throws AIError(CANCELED) when mid-stream AbortError is caught', async () => {

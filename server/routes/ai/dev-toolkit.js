@@ -135,7 +135,7 @@ File manifest: ${sanitizeForPrompt(JSON.stringify((fileManifest || []).map(f => 
                     signal: sse.signal,
                     generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
                 });
-                const { text: raw, usage, costUSD } = await streamToSSEWithUsage(textStream, sse);
+                const { text: raw, usage, costUSD, partial } = await streamToSSEWithUsage(textStream, sse);
 
                 let parsed;
                 try {
@@ -165,6 +165,7 @@ File manifest: ${sanitizeForPrompt(JSON.stringify((fileManifest || []).map(f => 
                     model: req.aiProvider?.model,
                     usage,
                     costUSD,
+                    partial,
                     extraMeta: { repo: prMetadata?.repo, fileCount: fileManifest?.length, streamed: true },
                 });
 
@@ -257,7 +258,7 @@ Rules:
                     signal: sse.signal,
                     generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
                 });
-                const { text: raw, usage, costUSD } = await streamToSSEWithUsage(iter, sse);
+                const { text: raw, usage, costUSD, partial } = await streamToSSEWithUsage(iter, sse);
 
                 let parsed;
                 try {
@@ -275,6 +276,7 @@ Rules:
                     model: req.aiProvider?.model,
                     usage,
                     costUSD,
+                    partial,
                     extraMeta: { format, diff_length: diff.length, streamed: true },
                 });
 
@@ -380,7 +382,7 @@ Rules:
                     signal: sse.signal,
                     generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
                 });
-                const { text: raw, usage, costUSD } = await streamToSSEWithUsage(iter, sse);
+                const { text: raw, usage, costUSD, partial } = await streamToSSEWithUsage(iter, sse);
 
                 let parsed;
                 try {
@@ -397,6 +399,7 @@ Rules:
                     model: req.aiProvider?.model,
                     usage,
                     costUSD,
+                    partial,
                     extraMeta: { commit_count: commits.length, streamed: true },
                 });
 
@@ -508,7 +511,7 @@ Return ONLY the refined content, no explanation, no markdown fences.`;
                     signal: sse.signal,
                     generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
                 });
-                const { text: raw, usage, costUSD } = await streamToSSEWithUsage(iter, sse);
+                const { text: raw, usage, costUSD, partial } = await streamToSSEWithUsage(iter, sse);
 
                 incrementUsage(userId, 'ai_queries');
                 recordStreamCompletion(req, {
@@ -517,6 +520,7 @@ Return ONLY the refined content, no explanation, no markdown fences.`;
                     model: req.aiProvider?.model,
                     usage,
                     costUSD,
+                    partial,
                     extraMeta: { instruction, content_type, streamed: true },
                 });
 
@@ -677,7 +681,7 @@ router.post('/ai/chat-refine', requireAuth, requireScope('ai'), validateBody(aiC
                 signal: sse.signal,
                 generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
             });
-            const { text: raw, usage, costUSD } = await streamToSSEWithUsage(iter, sse);
+            const { text: raw, usage, costUSD, partial } = await streamToSSEWithUsage(iter, sse);
 
             incrementUsage(userId, 'ai_queries');
             recordStreamCompletion(req, {
@@ -686,6 +690,7 @@ router.post('/ai/chat-refine', requireAuth, requireScope('ai'), validateBody(aiC
                 model: req.aiProvider?.model,
                 usage,
                 costUSD,
+                partial,
                 extraMeta: { content_type, message_length: message.length },
             });
 

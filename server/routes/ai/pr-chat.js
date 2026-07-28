@@ -255,6 +255,7 @@ router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res
     let assistantText = '';
     let streamUsage = null;
     let streamCostUSD = null;
+    let streamPartial = false;
     try {
         if (typeof provider.generateStream !== 'function') {
             throw new Error('Configured AI provider does not support streaming.');
@@ -269,6 +270,7 @@ router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res
         assistantText = completed.text;
         streamUsage = completed.usage;
         streamCostUSD = completed.costUSD;
+        streamPartial = completed.partial;
     } catch (err) {
         logger.warn({ err: err?.message, code: err?.code, owner, repo, pr }, 'PR chat stream failed');
         if (!sse.isAborted) {
@@ -278,14 +280,16 @@ router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res
     }
 
     // Meter the AI query + record monthly spend + a PII-safe audit entry
-    // (OWASP LLM10). Usage/cost come from the stream; both may be null (provider
-    // reported none, or the client disconnected) — recordAISpend no-ops on null.
+    // (OWASP LLM10). Usage/cost come from the stream and may be null when the
+    // provider reported none — recordAISpend no-ops on null. A client that
+    // disconnected mid-stream still bills for what it consumed, flagged partial.
     incrementAIUsage(userId, 'ai_pr_chat');
     recordStreamCompletion(req, {
         feature: 'pr_chat',
         model: provider?._modelName ?? null,
         usage: streamUsage,
         costUSD: streamCostUSD,
+        partial: streamPartial,
     });
 
     // Persist assistant reply (best-effort; partial reply still useful).

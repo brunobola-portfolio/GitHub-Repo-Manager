@@ -477,10 +477,15 @@ export class OpenAIProvider {
             reader.releaseLock();
         }
 
-        // Surface usage as the generator return value (spend + audit). Null when
-        // the stream reported no usage or was aborted.
-        if (signal?.aborted || (inputTokens == null && outputTokens == null)) {
-            return { usage: null, costUSD: null };
+        // Surface usage as the generator return value (spend + audit). Report
+        // whatever was measured even on abort — a client that hangs up must not
+        // get a free generation. Note the asymmetry with Anthropic: OpenAI only
+        // emits a usage chunk immediately before `[DONE]`, so an aborted stream
+        // usually has nothing to report and honestly records null rather than
+        // an invented estimate.
+        const partial = !!signal?.aborted;
+        if (inputTokens == null && outputTokens == null) {
+            return { usage: null, costUSD: null, partial };
         }
         const usage = {
             inputTokens,
@@ -490,6 +495,7 @@ export class OpenAIProvider {
         return {
             usage,
             costUSD: computeCostUSD({ modelName: model, inputTokens, outputTokens }),
+            partial,
         };
     }
 }

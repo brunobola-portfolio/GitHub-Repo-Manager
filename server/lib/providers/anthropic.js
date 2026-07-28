@@ -419,9 +419,15 @@ export class AnthropicProvider {
         }
 
         // Surface usage as the generator return value (OWASP LLM10 — spend +
-        // audit). Null when the stream reported no usage or was aborted.
-        if (signal?.aborted || (inputTokens == null && outputTokens == null)) {
-            return { usage: null, costUSD: null };
+        // audit). An abort does not make the call free: input_tokens were
+        // billed when the request landed (message_start reports them before a
+        // single output token exists) and message_delta carries the running
+        // output count, so a disconnect still leaves real measured numbers
+        // here. Discarding them let a client evade the spend cap by hanging
+        // up. Only a stream that measured nothing has no honest number to give.
+        const partial = !!signal?.aborted;
+        if (inputTokens == null && outputTokens == null) {
+            return { usage: null, costUSD: null, partial };
         }
         const usage = {
             inputTokens,
@@ -431,6 +437,7 @@ export class AnthropicProvider {
         return {
             usage,
             costUSD: computeCostUSD({ modelName: model, inputTokens, outputTokens }),
+            partial,
         };
     }
 }

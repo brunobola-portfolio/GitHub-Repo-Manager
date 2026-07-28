@@ -41,6 +41,22 @@ describe('buildAIAuditMeta', () => {
         expect(Object.keys(meta)).not.toContain('text');
     });
 
+    it('flags a truncated stream so its cost reads as a floor', () => {
+        const meta = buildAIAuditMeta({ feature: 'chat', costUSD: 0.02, partial: true });
+        expect(meta.partial).toBe(true);
+    });
+
+    it('leaves complete calls unannotated rather than writing partial: false', () => {
+        // Absence is the signal for the overwhelmingly common case; writing the
+        // flag on every entry would bloat the audit rows for no information.
+        expect(buildAIAuditMeta({ feature: 'chat', partial: false })).toEqual({ feature: 'chat' });
+        expect(buildAIAuditMeta({ feature: 'chat' })).toEqual({ feature: 'chat' });
+    });
+
+    it('only treats a real boolean true as partial', () => {
+        expect(buildAIAuditMeta({ feature: 'chat', partial: 'yes' })).toEqual({ feature: 'chat' });
+    });
+
     it('rounds and clamps cost to non-negative cents', () => {
         expect(buildAIAuditMeta({ costUSD: 0.005 }).costCents).toBe(1);
         expect(buildAIAuditMeta({ costUSD: -1 }).costCents).toBe(0);

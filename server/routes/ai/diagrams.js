@@ -242,7 +242,7 @@ router.post('/ai/generate-diagram', requireAuth, requireScope('ai'), validateBod
                     signal: sse.signal,
                     generationConfig: { maxOutputTokens: resolveMaxOutputTokens() },
                 });
-                const { text: raw, usage, costUSD } = await streamToSSEWithUsage(iter, sse);
+                const { text: raw, usage, costUSD, partial } = await streamToSSEWithUsage(iter, sse);
                 const mermaid = cleanMermaidText(raw);
 
                 if (!retry) incrementAIUsage(userId, 'ai_diagram');
@@ -252,6 +252,7 @@ router.post('/ai/generate-diagram', requireAuth, requireScope('ai'), validateBod
                     model: req.aiProvider?.model,
                     usage,
                     costUSD,
+                    partial,
                     extraMeta: { repo: repo.full_name, diagramType, retry: !!retry },
                 });
 

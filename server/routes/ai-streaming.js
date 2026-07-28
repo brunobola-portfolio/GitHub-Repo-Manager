@@ -105,17 +105,22 @@ export async function streamToSSE(textChunks, sse) {
  * stream drains (token counts only become available after the final SSE event).
  * A plain `for await` discards a generator's return value, so we drive the
  * iterator manually to capture it. Streams that don't report usage (e.g. a
- * local model, or an aborted stream) yield `{ usage: null, costUSD: null }` —
- * `recordAISpend` no-ops on null cost, so this degrades safely.
+ * local model) yield `{ usage: null, costUSD: null }` — `recordAISpend` no-ops
+ * on null cost, so this degrades safely.
+ *
+ * `partial` is true when the client disconnected before the stream drained: the
+ * usage is then what was measured up to that point, so the cost is a floor
+ * rather than a total.
  *
  * @param {AsyncIterable<string>} textChunks
  * @param {ReturnType<initSSE>} sse
- * @returns {Promise<{ text: string, usage: object|null, costUSD: number|null }>}
+ * @returns {Promise<{ text: string, usage: object|null, costUSD: number|null, partial: boolean }>}
  */
 export async function streamToSSEWithUsage(textChunks, sse) {
     let accumulated = '';
     let usage = null;
     let costUSD = null;
+    let partial = false;
 
     const iterator = typeof textChunks[Symbol.asyncIterator] === 'function'
         ? textChunks[Symbol.asyncIterator]()
@@ -129,25 +134,34 @@ export async function streamToSSEWithUsage(textChunks, sse) {
                 if (value && typeof value === 'object') {
                     usage = value.usage ?? null;
                     costUSD = value.costUSD ?? null;
+                    partial = !!value.partial;
                 }
                 break;
             }
-            if (sse.isAborted) break;
+            // `continue`, never `break`. The generator's return value is the
+            // only carrier for the usage the provider measured, and breaking
+            // abandons the generator mid-flight — which is how an aborted
+            // stream came to record ZERO spend while the operator was billed
+            // for every token. The provider watches the same signal, so it
+            // winds itself down within a chunk or two; all we owe it is to stop
+            // writing to a socket that is already gone.
+            if (sse.isAborted) continue;
             if (value) {
                 accumulated += value;
                 sse.sendChunk(value);
             }
         }
     } finally {
-        // An early break (abort / disconnect) leaves the generator suspended;
-        // closing it runs its `finally` (e.g. reader.releaseLock). On a stream
-        // that already finished this is a harmless no-op.
+        // A throw out of the loop leaves the generator suspended; closing it
+        // runs its `finally` (e.g. reader.releaseLock). On a stream that
+        // already finished this is a harmless no-op. Note this no longer fires
+        // on a plain disconnect — that path now drains to `done` instead.
         if (typeof iterator.return === 'function') {
             try { await iterator.return(); } catch { /* generator already settled */ }
         }
     }
 
-    return { text: accumulated, usage, costUSD };
+    return { text: accumulated, usage, costUSD, partial };
 }
 
 /**
@@ -159,18 +173,19 @@ export async function streamToSSEWithUsage(textChunks, sse) {
  * the newly-revealed reply suffix to the client (which appends it like any text
  * stream). `actions` are parsed by the caller from the returned `raw` once the
  * stream finishes. Like {@link streamToSSEWithUsage}, it captures the
- * generator's post-stream `{ usage, costUSD }` return value.
+ * generator's post-stream `{ usage, costUSD, partial }` return value.
  *
  * @param {AsyncIterable<string>} rawChunks — provider.generateStream() output
  * @param {ReturnType<initSSE>} sse
  * @param {(rawSoFar: string) => string} extractReply — partial-JSON reply extractor
- * @returns {Promise<{ raw: string, reply: string, usage: object|null, costUSD: number|null }>}
+ * @returns {Promise<{ raw: string, reply: string, usage: object|null, costUSD: number|null, partial: boolean }>}
  */
 export async function streamReplyDeltasToSSE(rawChunks, sse, extractReply) {
     let raw = '';
     let sentLen = 0;
     let usage = null;
     let costUSD = null;
+    let partial = false;
 
     const iterator = typeof rawChunks[Symbol.asyncIterator] === 'function'
         ? rawChunks[Symbol.asyncIterator]()
@@ -183,10 +198,13 @@ export async function streamReplyDeltasToSSE(rawChunks, sse, extractReply) {
                 if (value && typeof value === 'object') {
                     usage = value.usage ?? null;
                     costUSD = value.costUSD ?? null;
+                    partial = !!value.partial;
                 }
                 break;
             }
-            if (sse.isAborted) break;
+            // See streamToSSEWithUsage: draining rather than breaking is what
+            // keeps the provider's usage reachable on a client disconnect.
+            if (sse.isAborted) continue;
             if (!value) continue;
             raw += value;
             const reply = extractReply(raw);
@@ -201,6 +219,6 @@ export async function streamReplyDeltasToSSE(rawChunks, sse, extractReply) {
         }
     }
 
-    return { raw, reply: extractReply(raw), usage, costUSD };
+    return { raw, reply: extractReply(raw), usage, costUSD, partial };
 }
 

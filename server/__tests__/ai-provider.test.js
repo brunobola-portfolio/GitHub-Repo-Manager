@@ -372,13 +372,70 @@ describe('GeminiProvider', () => {
             expect(final.value.costUSD).toBeGreaterThan(0)
         })
 
+        it('still reads post-stream usage after the client disconnects', async () => {
+            // The prompt was billed the moment the request landed, and the SDK
+            // aggregates the chunks it did receive — so an abort must not
+            // short-circuit past the usage lookup and record the call as free.
+            async function* gen() { yield { text: () => 'hi' }; yield { text: () => 'there' } }
+            mockGenerateContentStream.mockResolvedValue({
+                stream: gen(),
+                response: Promise.resolve({ usageMetadata: { promptTokenCount: 900, candidatesTokenCount: 4 } }),
+            })
+            const controller = new AbortController()
+            const iter = provider.generateStream({ prompt: 'x', signal: controller.signal })
+            expect((await iter.next()).value).toBe('hi')
+            controller.abort()
+            const final = await iter.next()
+
+            expect(final.done).toBe(true)
+            expect(final.value.usage).toEqual({ inputTokens: 900, outputTokens: 4 })
+            expect(final.value.costUSD).toBeGreaterThan(0)
+            expect(final.value.partial).toBe(true)
+        })
+
+        it('does not pull another chunk from a stream whose fetch was torn down', async () => {
+            // Aborting the request destroys the underlying body, so the next
+            // pull throws. Without a post-yield abort check that exception
+            // escapes generateStream and takes the usage lookup with it.
+            async function* gen() {
+                yield { text: () => 'hi' }
+                throw new Error('The user aborted a request.')
+            }
+            mockGenerateContentStream.mockResolvedValue({
+                stream: gen(),
+                response: Promise.resolve({ usageMetadata: { promptTokenCount: 900, candidatesTokenCount: 4 } }),
+            })
+            const controller = new AbortController()
+            const iter = provider.generateStream({ prompt: 'x', signal: controller.signal })
+            await iter.next()
+            controller.abort()
+            const final = await iter.next()
+
+            expect(final.value.usage).toEqual({ inputTokens: 900, outputTokens: 4 })
+        })
+
+        it('records an unknown cost, not a free one, when an aborted stream cannot report usage', async () => {
+            async function* gen() { yield { text: () => 'hi' } }
+            mockGenerateContentStream.mockResolvedValue({
+                stream: gen(),
+                response: Promise.reject(new Error('stream torn down')),
+            })
+            const controller = new AbortController()
+            const iter = provider.generateStream({ prompt: 'x', signal: controller.signal })
+            await iter.next()
+            controller.abort()
+            const final = await iter.next()
+
+            expect(final.value).toEqual({ usage: null, costUSD: null, partial: true })
+        })
+
         it('returns null usage/costUSD when the stream has no response metadata', async () => {
             mockGenerateContentStream.mockResolvedValue(makeStream(['a']))
             const iter = provider.generateStream({ prompt: 'x' })
             await iter.next()
             const final = await iter.next()
             expect(final.done).toBe(true)
-            expect(final.value).toEqual({ usage: null, costUSD: null })
+            expect(final.value).toEqual({ usage: null, costUSD: null, partial: false })
         })
     })
 })
