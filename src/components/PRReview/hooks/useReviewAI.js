@@ -34,6 +34,59 @@ export function sortFilesByRisk(files, aiFileRisks = {}) {
     })
 }
 
+// Mirror the bounds in aiReviewSummarySchema (server/lib/validators.js). Zod
+// rejects the whole request when any is exceeded, so a 900-file PR or one
+// enormous patch would 400 the entire summary rather than degrade. Clamping
+// here keeps big PRs working with slightly less context.
+export const MAX_MANIFEST_FILES = 500
+export const MAX_PATCH_FILES = 30
+export const MAX_PATCH_CHARS = 120000
+
+/**
+ * Build the POST /api/ai/review-summary body.
+ *
+ * Pure and exported so tests/ai-request-contracts.test.js can run the real
+ * output through the real server schema — mocking apiCall is what let this
+ * payload drift out of contract and 400 on every call.
+ *
+ * @returns {{fileManifest: Array, topFilePatches: Array, prMetadata: Object}}
+ */
+export function buildReviewSummaryPayload({ files, owner, repo, pullNumber, title }) {
+    const fileManifest = files.slice(0, MAX_MANIFEST_FILES).map(
+        ({ filename, additions, deletions, status }) => ({ filename, additions, deletions, status })
+    )
+
+    // The schema takes objects, not a joined blob: the handler reads
+    // `f.filename` / `f.patch` off each entry to build the prompt.
+    const topFilePatches = sortFilesByRisk(files, {})
+        .filter((f) => f.patch)
+        .slice(0, MAX_PATCH_FILES)
+        .map(({ filename, patch }) => ({ filename, patch: patch.slice(0, MAX_PATCH_CHARS) }))
+
+    const totals = files.reduce(
+        (acc, f) => {
+            acc.additions += f.additions || 0
+            acc.deletions += f.deletions || 0
+            return acc
+        },
+        { additions: 0, deletions: 0 }
+    )
+
+    return {
+        fileManifest,
+        topFilePatches,
+        // `repo` and `number` feed the server's audit record; omitting them
+        // logged every review summary against an undefined repo.
+        prMetadata: {
+            title: title || `PR #${pullNumber}`,
+            number: Number(pullNumber),
+            repo: `${owner}/${repo}`,
+            additions: totals.additions,
+            deletions: totals.deletions,
+        },
+    }
+}
+
 function getCacheKey(owner, repo, pullNumber, headSha) {
     return `pr-review-ai-${owner}-${repo}-${pullNumber}-${headSha}`
 }
@@ -71,7 +124,7 @@ function saveCachedSummary(cacheKey, summary) {
  * @param {Array} files - array of PR file objects
  */
 export function useReviewAI(owner, repo, pullNumber, headSha, files, options = {}) {
-    const { enabled = true } = options
+    const { enabled = true, title = '' } = options
     const [summary, setSummary] = useState(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
@@ -93,45 +146,14 @@ export function useReviewAI(owner, repo, pullNumber, headSha, files, options = {
         setError(null)
 
         try {
-            // Sort all files by heuristic risk to select top 30 for patch inclusion
-            const sorted = sortFilesByRisk(files, {})
-
-            // fileManifest: metadata for all files (no patch)
-            const fileManifest = files.map(({ filename, additions, deletions, changes, status }) => ({
-                filename,
-                additions,
-                deletions,
-                changes,
-                status,
-                riskScore: heuristicRisk({ filename, additions, deletions }),
-            }))
-
-            // topFilePatches: concatenated patch text for top 30 by heuristic
-            const topFilePatches = sorted
-                .slice(0, 30)
-                .filter((f) => f.patch)
-                .map(({ filename, patch }) => `--- ${filename} ---\n${patch}`)
-                .join('\n\n')
-
-            const totalAdditions = files.reduce((sum, f) => sum + (f.additions || 0), 0)
-            const totalDeletions = files.reduce((sum, f) => sum + (f.deletions || 0), 0)
-
             // apiCall injects+rotates the CSRF token and, on failure, throws an
             // ApiError carrying .status and .code (mapped by AIErrorState to a CTA).
             const result = await apiCall('/api/ai/review-summary', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    fileManifest,
-                    topFilePatches,
-                    prMetadata: {
-                        title: `PR #${pullNumber}`,
-                        description: '',
-                        filesChanged: files.length,
-                        additions: totalAdditions,
-                        deletions: totalDeletions,
-                    },
-                }),
+                body: JSON.stringify(
+                    buildReviewSummaryPayload({ files, owner, repo, pullNumber, title })
+                ),
             })
             const summaryData = result.summary ?? result
 
@@ -143,7 +165,7 @@ export function useReviewAI(owner, repo, pullNumber, headSha, files, options = {
         } finally {
             setLoading(false)
         }
-    }, [enabled, owner, repo, pullNumber, headSha, files])
+    }, [enabled, owner, repo, pullNumber, headSha, files, title])
 
     // Fetch on mount / when headSha/files change.
     // fetchSummary is stable (useCallback) and only sets state after awaited fetch resolves.

@@ -58,7 +58,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
     pullNumber,
     state.headSha,
     state.files,
-    { enabled: !deep.draft && !deep.loading }
+    { enabled: !deep.draft && !deep.loading, title: state.pr?.title }
   )
 
   const { toast } = useToast()
