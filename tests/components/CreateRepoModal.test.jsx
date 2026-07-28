@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import React from 'react'
 import { CreateRepoModal } from '../../src/components/CreateRepoModal'
 import { renderWithProviders } from '../helpers/render-with-providers'
+import { importCheckDuplicatesSchema } from '../../server/lib/validators.js'
 
 // These tests cover WCAG 2.1 AA label wiring — the modal contains the main
 // "create repo" form in the app, so label ↔ input association is load-bearing
@@ -63,5 +64,55 @@ describe('CreateRepoModal — toast feedback', () => {
         await waitFor(() => {
             expect(screen.getByText(/name already taken/i)).toBeInTheDocument()
         })
+    })
+})
+
+/*
+ * The name-availability check was broken in BOTH directions.
+ *
+ * The modal sent `{ names, org }` against a schema declaring `{ repos,
+ * targetOwner }`, so every call 400'd. And the handler returns `duplicates` as
+ * an OBJECT keyed by repo name while the modal read `.length` — so even with
+ * the request fixed, the indicator would have said "available" forever.
+ * Fixing one without the other looks like a fix and is not.
+ */
+describe('CreateRepoModal — duplicate-name check speaks the server contract', () => {
+    function captureFetch(responseBody) {
+        const sent = {}
+        global.fetch = vi.fn(async (url, init) => {
+            sent.url = url
+            sent.body = init?.body ? JSON.parse(init.body) : undefined
+            return { ok: true, status: 200, json: async () => responseBody }
+        })
+        return sent
+    }
+
+    it('sends a body the route schema accepts', async () => {
+        const sent = captureFetch({ duplicates: {} })
+        renderModal()
+        fireEvent.change(screen.getByLabelText(/repository name/i), { target: { value: 'my-repo' } })
+
+        await waitFor(() => expect(sent.body).toBeTruthy(), { timeout: 3000 })
+        const parsed = importCheckDuplicatesSchema.safeParse(sent.body)
+        expect(
+            parsed.success,
+            `schema rejected ${JSON.stringify(sent.body)}: ${parsed.error?.issues?.map((i) => i.message).join('; ')}`,
+        ).toBe(true)
+    })
+
+    it('reads the object-keyed response and reports a taken name', async () => {
+        captureFetch({ duplicates: { 'my-repo': true } })
+        renderModal()
+        fireEvent.change(screen.getByLabelText(/repository name/i), { target: { value: 'my-repo' } })
+
+        expect(await screen.findByText(/taken|unavailable|already exists/i, {}, { timeout: 3000 })).toBeInTheDocument()
+    })
+
+    it('reports an available name when the server returns no match', async () => {
+        captureFetch({ duplicates: {} })
+        renderModal()
+        fireEvent.change(screen.getByLabelText(/repository name/i), { target: { value: 'brand-new' } })
+
+        expect(await screen.findByText(/available/i, {}, { timeout: 3000 })).toBeInTheDocument()
     })
 })

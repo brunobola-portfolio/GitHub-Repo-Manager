@@ -47,8 +47,12 @@ describe('BranchesTab — toast feedback', () => {
         await user.type(screen.getByPlaceholderText('feature/my-branch'), 'feature/new')
         await user.click(screen.getByRole('button', { name: /^Create$/i }))
 
+        // Second argument is a BRANCH NAME, not a SHA — the route resolves the
+        // commit itself from it. `undefined` means "the repository default
+        // branch", which is what the picker offers first. This previously
+        // asserted a SHA, which is exactly the payload the route rejected.
         await waitFor(() =>
-            expect(api.createBranch).toHaveBeenCalledWith('feature/new', 'abc1234deadbeef')
+            expect(api.createBranch).toHaveBeenCalledWith('feature/new', undefined)
         )
         // Toast visible in the <ToastContainer>
         expect(await screen.findByText('Branch created')).toBeInTheDocument()

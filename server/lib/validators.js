@@ -496,7 +496,11 @@ export const REFINE_INSTRUCTIONS = [
 
 export const aiRefineSchema = z.object({
     original_content: z.string().min(1).max(20000),
-    original_diff: z.string().max(20000).optional(),
+    // Same ceiling as aiGenerateCommitSchema.diff (60 000). The clients send
+    // the SAME text to both: generate from `diff`, then refine with
+    // `original_diff`. A lower ceiling here 400'd the refine step on a diff
+    // its own generate step had just accepted.
+    original_diff: z.string().max(60000).optional(),
     instruction: z.enum(REFINE_INSTRUCTIONS),
     content_type: z.enum(['commit', 'pr_summary', 'pr_test_plan']).optional(),
 });
@@ -504,7 +508,11 @@ export const aiRefineSchema = z.object({
 export const aiChatRefineSchema = z.object({
     message: z.string().min(1).max(4000),
     current_output: z.string().max(20000).optional(),
-    original_diff: z.string().max(20000).optional(),
+    // Same ceiling as aiGenerateCommitSchema.diff (60 000). The clients send
+    // the SAME text to both: generate from `diff`, then refine with
+    // `original_diff`. A lower ceiling here 400'd the refine step on a diff
+    // its own generate step had just accepted.
+    original_diff: z.string().max(60000).optional(),
     content_type: z.enum(['commit', 'pr_summary', 'pr_test_plan', 'review_qa']).optional(),
     history: z.array(z.object({
         role: z.enum(['user', 'assistant']),
@@ -534,7 +542,11 @@ export const aiGenerateCommitSchema = z.object({
     }).optional(),
     repo_context: z.object({
         name: z.string().max(200).optional(),
-        description: z.string().max(500).optional(),
+        // Nullable, not merely optional: CommitTab forwards
+        // `selectedRepo.description` verbatim and the GitHub API returns null
+        // — not undefined — for a repository with no description. Without this
+        // the route 400'd for every such repo, on a metered path.
+        description: z.string().max(500).nullable().optional(),
     }).optional(),
 });
 
@@ -553,6 +565,10 @@ export const aiGeneratePrSchema = z.object({
     template: z.string().max(8000).optional(),
     repo_context: z.object({
         name: z.string().max(200).optional(),
+        // PRTab sends a description too. Undeclared, it was silently stripped
+        // (the object is not .strict()), so the model never received context
+        // the client believed it was sending.
+        description: z.string().max(500).nullable().optional(),
     }).optional(),
 });
 
@@ -1145,9 +1161,11 @@ export const workflowDispatchSchema = z.object({
 
 // --- Empty-body POST endpoints (ping webhook, sync actions) ---
 //
-// These callers send no body; express.json() still yields `{}` (body-parser
-// initialises `req.body` before the content-type check). A strict empty object
-// accepts the real `{}` while rejecting any stray/injected fields.
+// These callers send no body. On express 5.2.1 `req.body` is `undefined` for a
+// bodyless POST — NOT `{}`, which is what an older comment here claimed and
+// what body-parser did before express 5. A strict empty object accepts a real
+// `{}` while rejecting any stray/injected fields; the undefined case is
+// handled by validateBody, not here.
 export const emptyBodySchema = z.object({}).strict();
 
 // --- Community-health AI auto-fix (generate / commit-fix) ---

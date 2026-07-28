@@ -46,7 +46,7 @@ export function BranchesTab({ api, repoData }) {
 
     const [showCreate, setShowCreate] = useState(false)
     const [newBranch, setNewBranch] = useState('')
-    const [baseSha, setBaseSha] = useState('')
+    const [baseBranch, setBaseBranch] = useState('')
     const [creating, setCreating] = useState(false)
     const [message, setMessage] = useState(null)
     const [confirmAction, setConfirmAction] = useState(null)
@@ -95,19 +95,16 @@ export function BranchesTab({ api, repoData }) {
         setCreating(true)
         setMessage(null)
         try {
-            // If no sha provided, use first branch's sha
-            const sha = baseSha || branches[0]?.commit?.sha
-            if (!sha) {
-                setMessage({ type: 'error', text: 'No base SHA available. Enter a commit SHA.' })
-                toast.error('No base SHA available — enter a commit SHA')
-                setCreating(false)
-                return
-            }
-            await api.createBranch(newBranch, sha)
+            // The route resolves the base commit itself from a BRANCH NAME
+            // (GET /git/refs/heads/{from}); it has no SHA input, which is why
+            // the old free-text "Base SHA" field could never have worked.
+            // Empty means "the repository default branch", which the route
+            // already falls back to.
+            await api.createBranch(newBranch, baseBranch || undefined)
             setMessage({ type: 'success', text: `Branch "${newBranch}" created` })
             toast.success('Branch created')
             setNewBranch('')
-            setBaseSha('')
+            setBaseBranch('')
             setShowCreate(false)
             loadBranches()
         } catch (e) {
@@ -189,10 +186,18 @@ export function BranchesTab({ api, repoData }) {
                         <Input id="new-branch-name" type="text" value={newBranch} onChange={e => setNewBranch(e.target.value)}
                             placeholder="feature/my-branch" />
                     </Field>
-                    <Field label="Base SHA (optional, defaults to default branch)" htmlFor="new-branch-base-sha">
-                        <Input id="new-branch-base-sha" type="text" value={baseSha} onChange={e => setBaseSha(e.target.value)}
-                            placeholder="abc123..."
-                            className="font-mono" />
+                    <Field label="Branch from" htmlFor="new-branch-base">
+                        <Select
+                            id="new-branch-base"
+                            value={baseBranch}
+                            onChange={setBaseBranch}
+                            options={[
+                                { value: '', label: repoData?.default_branch ? `${repoData.default_branch} (default)` : 'Default branch' },
+                                ...branches
+                                    .filter(b => b.name !== repoData?.default_branch)
+                                    .map(b => ({ value: b.name, label: b.name })),
+                            ]}
+                        />
                     </Field>
                     <div className="flex gap-2">
                         <Button size="sm" variant="secondary" onClick={() => setShowCreate(false)}>Cancel</Button>

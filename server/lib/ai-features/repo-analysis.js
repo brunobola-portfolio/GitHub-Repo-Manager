@@ -22,6 +22,32 @@ const NEVER_INVENT_RULE = 'Never invent facts, features, metrics, or best-practi
  * @param {string} readmeContent - Raw README text
  * @param {object} fileStructure - Truncated file tree
  */
+/**
+ * Coerce model-proposed topics into ones GitHub (and topicsSchema) will accept:
+ * `^[a-z0-9-]+$`, max 50 chars. The modal renders these as applyable chips, so
+ * emitting "Machine Learning" or "CI/CD" showed the user a suggestion that
+ * could only ever be rejected. Anything with nothing usable left is dropped
+ * rather than emitted broken.
+ */
+function normaliseTopics(topics) {
+    if (!Array.isArray(topics)) return [];
+    const seen = new Set();
+    const out = [];
+    for (const raw of topics) {
+        if (typeof raw !== 'string') continue;
+        const slug = raw
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .slice(0, 50)
+            .replace(/-+$/, '');
+        if (!slug || seen.has(slug)) continue;
+        seen.add(slug);
+        out.push(slug);
+    }
+    return out;
+}
+
 export async function analyzeRepo(ctx, repoData, readmeContent, fileStructure) {
     const provider = ctx?.provider;
     if (!provider?.model) {
@@ -78,6 +104,7 @@ export async function analyzeRepo(ctx, repoData, readmeContent, fileStructure) {
 
         const result = {
             ...aiAnalysis,
+            suggested_topics: normaliseTopics(aiAnalysis.suggested_topics),
             health_score: quality.overall,
             quality_breakdown: quality.breakdown,
             patterns: quality.patterns

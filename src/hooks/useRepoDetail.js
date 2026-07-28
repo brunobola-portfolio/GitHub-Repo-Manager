@@ -61,8 +61,12 @@ export function useRepoDetail(owner, repo) {
             // Branches
             fetchBranches: () => apiFetch(`${base}/branches`),
             fetchBranch: (branch) => apiFetch(`${base}/branches/${encodeURIComponent(branch)}`),
-            createBranch: (branchName, sha) => apiFetch(`${base}/branches`, {
-                method: 'POST', body: JSON.stringify({ branch: branchName, sha })
+            // `from` is a BRANCH NAME, not a SHA: the route resolves the SHA
+            // itself via GET /git/refs/heads/{from}. It has no SHA input at
+            // all, so the old { branch, sha } body was rejected by the strict
+            // schema on every single call.
+            createBranch: (name, from) => apiFetch(`${base}/branches`, {
+                method: 'POST', body: JSON.stringify(from ? { name, from } : { name })
             }),
             deleteBranch: (branch) => apiFetch(`${base}/branches/${encodeURIComponent(branch)}`, { method: 'DELETE' }),
             fetchBranchProtection: (branch) => apiFetch(`${base}/branches/${encodeURIComponent(branch)}/protection`),
