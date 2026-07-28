@@ -4179,7 +4179,7 @@ Get repository statistics with server-side caching.
 
 | Header | Default | Description |
 |---|---|---|
-| `X-Cache-TTL` | `5` | Cache TTL in minutes |
+| `X-Cache-TTL` | `5` | Cache TTL in minutes, clamped to `[1, 60]`. **`0` disables caching entirely** — every request refetches and nothing is written to the cache. A non-numeric value falls back to the default rather than disabling it. |
 
 **Response Headers:**
 
@@ -4494,7 +4494,7 @@ Billing endpoints manage Stripe-based subscriptions. All billing mutation endpoi
 
 ### `GET /api/billing/config`
 
-Public capability probe so the (possibly logged-out) pricing page can feature-detect before rendering the monthly/yearly toggle. Booleans only — leaks no secrets or price IDs.
+Public capability probe so the (possibly logged-out) pricing page can feature-detect before rendering the monthly/yearly toggle, and read the prices it is about to advertise. Amounts and currency only — never a price ID, never a secret.
 
 | Detail | Value |
 |---|---|
@@ -4505,12 +4505,26 @@ Public capability probe so the (possibly logged-out) pricing page can feature-de
 ```json
 {
   "stripeEnabled": true,
-  "yearlyBillingAvailable": true
+  "yearlyBillingAvailable": true,
+  "prices": {
+    "pro": {
+      "monthly": { "amount": 1900, "currency": "usd", "interval": "month" },
+      "yearly":  { "amount": 18000, "currency": "usd", "interval": "year" }
+    },
+    "enterprise": {
+      "monthly": { "amount": 9900, "currency": "usd", "interval": "month" }
+    }
+  }
 }
 ```
 
 - `stripeEnabled` — `true` when a Stripe secret key is configured.
 - `yearlyBillingAvailable` — `true` only when Stripe is enabled **and** a Pro yearly price ID (`STRIPE_PRICE_PRO_YEARLY`) is configured. The pricing toggle is Pro-driven (Enterprise is Contact-Sales).
+- `prices` — resolved from Stripe with `prices.retrieve()` on each configured `STRIPE_PRICE_*` ID, cached for 10 minutes. `amount` is in **minor units** (Stripe's `unit_amount`), so `1900` is $19.00.
+
+Operators configure Stripe **price IDs**, not amounts — the amount lives in Stripe — so this is the only honest source for what the pricing page should display. Before it existed the page hardcoded `$19` while the checkout charged whatever the operator's price actually was.
+
+A price that cannot be resolved is **omitted**, never guessed: that slot simply does not appear, and the client falls back to its built-in default rather than advertising a number the checkout would not honour. When Stripe is not configured at all, `prices` is `{}`.
 
 ---
 
