@@ -55,7 +55,14 @@ export function mapAIErrorToResponse(res, e) {
 	}
 
 	if (e.code === AI_ERROR_CODE.AUTH) {
-		return res.status(401).json({
+		// 422, NOT 401. The client maps 401 to notifySessionExpired(), which
+		// hard-redirects to /?error=session_expired and latches a flag that
+		// short-circuits every later request — so answering 401 here tells the
+		// user their session died when in fact their provider key is wrong, and
+		// signs them out of the app to say it. routes/ai/shared.js has always
+		// used 422 for this exact reason; this mapper was the copy that didn't,
+		// which is what dev-toolkit's routes (review-summary included) hit.
+		return res.status(422).json({
 			error: 'AI provider rejected the configured key. Update it in Settings.',
 			code: 'ai_auth',
 		})
@@ -104,6 +111,6 @@ export function mapAIErrorToResponse(res, e) {
 
 	// Truly unknown shape (no AI_ERROR_CODE match) — let the caller's
 	// generic 500 path handle it with its own `code: 'ai_summary_failed'`
-	// or equivalent so the cliente continua a saber categorizar o erro.
+	// or equivalent, so the client can still categorise the error.
 	return null
 }
