@@ -48,15 +48,20 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
                     method: 'POST',
                     credentials: 'include',
                     headers,
-                    body: JSON.stringify({ names: [debouncedName], org: targetOrg || undefined }),
+                    // The route's schema is `{ repos, targetOwner }` and is
+                    // .strict() — `{ names, org }` 400'd on every keystroke.
+                    body: JSON.stringify({ repos: [debouncedName], targetOwner: targetOrg || undefined }),
                     signal: controller.signal,
                 })
                 if (controller.signal.aborted) return
                 if (res.ok) {
                     const data = await res.json()
                     if (controller.signal.aborted) return
-                    const duplicates = data.duplicates || []
-                    setNameStatus(duplicates.length > 0 ? 'taken' : 'available')
+                    // `duplicates` is an OBJECT keyed by repo name, not an
+                    // array — reading `.length` yielded undefined, so the
+                    // indicator said "available" no matter what came back.
+                    const duplicates = data.duplicates || {}
+                    setNameStatus(duplicates[debouncedName] ? 'taken' : 'available')
                 } else {
                     setNameStatus(null)
                 }
