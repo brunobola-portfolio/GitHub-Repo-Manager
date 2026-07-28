@@ -99,7 +99,15 @@ jobs:
     # (title/notes/generate-notes stay the linux job's job) — it only
     # uploads two more assets to whatever release already exists.
     needs: release
-    runs-on: windows-latest
+    # Pinned, NOT windows-latest. The latest image moved to Visual Studio 18,
+    # which node-gyp 11.5.0 cannot identify — it reports `unknown version
+    # "undefined" found at C:\Program Files\Microsoft Visual Studio\18\
+    # Enterprise` and then finds no usable toolchain at all. better-sqlite3 has
+    # no prebuild for this combination, so `npm ci` falls back to building from
+    # source and the whole job dies before packaging starts. Nothing in this
+    # repo changed: the runner rolled underneath us, which is exactly the
+    # failure mode an unpinned image invites on a release pipeline.
+    runs-on: windows-2022
     defaults:
       run:
         shell: pwsh
