@@ -47,7 +47,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT_DEFAULT = path.resolve(__dirname, '..');
 
 // Bumped periodically — confirmed current at https://nodejs.org/dist/latest-v22.x/
-// on 2026-07-19. Must stay inside package.json's engines range (">=20 <23").
+// on 2026-07-19. Must stay inside package.json's engines range (">=22 <23").
 // Node's ABI (ELECTRON/NODE_MODULE_VERSION) does not change within a major
 // line, so any Node 22.x used to `npm ci` better-sqlite3's prebuilt binary
 // stays loadable under whatever 22.x patch is pinned here.
