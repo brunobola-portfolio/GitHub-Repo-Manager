@@ -10,7 +10,12 @@ const mockAuditLog = vi.hoisted(() => vi.fn());
 const mockDbGet = vi.hoisted(() => vi.fn());
 
 vi.mock('../lib/github-api.js', () => ({ githubApi: mockGithubApi }));
-vi.mock('../lib/usage-meter.js', () => ({ checkUsageLimit: mockCheckUsageLimit, incrementUsage: mockIncrementUsage }));
+vi.mock('../lib/usage-meter.js', () => ({
+    // Added with reserveAIQuota: a FULL module mock silently drops new
+    // exports, and route handlers then call undefined and 500.
+    guardedIncrementAIUsage: vi.fn(() => ({ allowed: true, metric: 'ai', current: 0, limit: 100, remaining: 100 })),
+    releaseGuardedAIUsage: vi.fn(),
+ checkUsageLimit: mockCheckUsageLimit, incrementUsage: mockIncrementUsage }));
 vi.mock('../lib/audit.js', () => ({ auditLog: mockAuditLog }));
 vi.mock('../db.js', () => ({ default: { prepare: () => ({ get: mockDbGet }) } }));
 

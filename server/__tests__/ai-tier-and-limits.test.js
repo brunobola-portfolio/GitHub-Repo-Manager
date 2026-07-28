@@ -13,6 +13,11 @@ const mockIncrementUsage = vi.fn()
 const mockCheckAIFeatureLimit = vi.fn()
 const mockIncrementAIUsage = vi.fn()
 vi.mock('../lib/usage-meter.js', () => ({
+    // Added with reserveAIQuota: a FULL module mock silently drops new
+    // exports, and route handlers then call undefined and 500.
+    guardedIncrementAIUsage: (...args) => mockCheckAIFeatureLimit(...args),
+    releaseGuardedAIUsage: vi.fn(),
+
     checkUsageLimit: (...args) => mockCheckUsageLimit(...args),
     incrementUsage: (...args) => mockIncrementUsage(...args),
     checkAIFeatureLimit: (...args) => mockCheckAIFeatureLimit(...args),

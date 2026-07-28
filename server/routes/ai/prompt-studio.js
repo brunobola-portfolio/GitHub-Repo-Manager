@@ -25,6 +25,7 @@
  */
 
 import express from 'express';
+import { reserveAIQuota } from '../ai-quota.js';
 import db from '../../db.js';
 import { requireAuth, errorResponse } from '../../middleware/auth.js';
 import { createCooldownLimiter } from '../../lib/in-memory-rate-limiter.js';
@@ -43,7 +44,7 @@ import {
 import { BUILTIN_PRESETS, BUILTIN_KEYS, isBuiltinKey } from '../../lib/ai-features/builtin-prompts.js';
 import { resolvePromptForGenerate } from '../../lib/ai-features/prompt-registry.js';
 import { createProviderForUser } from '../../lib/ai-provider.js';
-import { checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { quotaExceededResponse } from '../../lib/usage-meter.js';
 import { getFeatures } from '../../lib/feature-flags.js';
 import { denyIfSpendCapReached, recordStreamCompletion } from './shared.js';
 import { runDeepReview } from '../../lib/ai-features/pr-deep-review.js';
@@ -328,7 +329,7 @@ router.post('/presets/:id/test', requireAuth, testRateLimit, async (req, res) =>
     // /test moved off the Pro paywall to Free (2026-07-18 rebalance). Meter
     // against promptStudioTestPerMonth AND the global ai_queries pool, and
     // enforce the spend cap before any provider call (OWASP LLM10).
-    const quota = checkAIFeatureLimit(userId, 'ai_prompt_test');
+    const quota = reserveAIQuota(req, res, 'ai_prompt_test');
     if (!quota.allowed) {
         return res.status(429).json(quotaExceededResponse(quota));
     }
@@ -385,7 +386,6 @@ router.post('/presets/:id/test', requireAuth, testRateLimit, async (req, res) =>
     if (!result) return errorResponse(res, 503, 'AI Deep Review disabled', 'AI_DISABLED');
 
     // Meter the query + record spend + write a PII-safe cost audit.
-    incrementAIUsage(userId, 'ai_prompt_test');
     recordStreamCompletion(req, {
         feature: 'prompt_test',
         action: 'ai.prompt_test',

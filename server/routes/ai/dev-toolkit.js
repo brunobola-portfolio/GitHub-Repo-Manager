@@ -12,11 +12,12 @@
  */
 
 import express from 'express';
+import { reserveAIQuota } from '../ai-quota.js';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError, isValidGitHubFullName } from '../../middleware/auth.js';
 import { requireScope } from '../../middleware/api-key-auth.js';
 import { aiService, sanitizeForPrompt } from '../../ai-service.js';
-import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { checkUsageLimit, incrementUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
 import { initSSE, streamToSSEWithUsage } from '../ai-streaming.js';
 import { requireAI, denyIfSpendCapReached, recordStreamCompletion, guardedGenerate, handleAIError, stripJsonFences } from './shared.js';
@@ -40,8 +41,7 @@ const router = express.Router();
 
 // Quality Report - Comprehensive repo health analysis
 router.post('/ai/quality-report', requireAuth, requireScope('ai'), validateBody(aiQualityReportSchema), requireAI, async (req, res) => {
-    const userId = req.session.userId;
-    const check = checkAIFeatureLimit(userId, 'ai_insights');
+    const check = reserveAIQuota(req, res, 'ai_insights');
     if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
     try {
         const { repo } = req.validatedBody;
@@ -73,7 +73,6 @@ router.post('/ai/quality-report', requireAuth, requireScope('ai'), validateBody(
         }
 
         const report = await aiService.generateQualityReport(repo, readmeContent, fileStructure);
-        incrementAIUsage(userId, 'ai_insights');
         auditLog(req, 'ai.quality_report', 'ai', null, { repoName: repo.full_name });
         res.json({ success: true, report, repo: repo.full_name });
 
@@ -210,8 +209,7 @@ router.post('/ai/generate-commit', requireAuth, requireScope('ai'), validateBody
     try {
         const { diff, format = 'conventional', repo_style, repo_context } = req.validatedBody;
 
-        const userId = req.session.userId;
-        const limit = checkAIFeatureLimit(userId, 'ai_commit');
+        const limit = reserveAIQuota(req, res, 'ai_commit');
         if (!limit.allowed) return res.status(429).json(quotaExceededResponse(limit));
 
         const formatInstructions = {
@@ -269,7 +267,6 @@ Rules:
                 }
                 const message = parsed.body ? `${parsed.subject}\n\n${parsed.body}` : parsed.subject;
 
-                incrementAIUsage(userId, 'ai_commit');
                 recordStreamCompletion(req, {
                     feature: 'generate_commit',
                     action: 'ai_generate_commit',
@@ -301,7 +298,6 @@ Rules:
             ? `${parsed.subject}\n\n${parsed.body}`
             : parsed.subject;
 
-        incrementAIUsage(userId, 'ai_commit');
         auditLog(req, 'ai_generate_commit', 'ai', null, { format, diff_length: diff.length });
 
         res.json({

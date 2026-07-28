@@ -12,6 +12,7 @@
  */
 
 import express from 'express';
+import { reserveAIQuota } from '../ai-quota.js';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { requireScope } from '../../middleware/api-key-auth.js';
@@ -29,7 +30,7 @@ import { isValidGitHubFullName } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { aiService, sanitizeForPrompt } from '../../ai-service.js';
 import { safeJsonParse } from '../../lib/utils.js';
-import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { checkUsageLimit, incrementUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
 import { requireAI, handleAIError, providerGenerateWithRetry, guardedGenerate, recordStreamCompletion, stripJsonFences } from './shared.js';
 import { initSSE, streamReplyDeltasToSSE } from '../ai-streaming.js';
@@ -460,8 +461,7 @@ router.post('/ai/suggest', requireAuth, requireScope('ai'), validateBody(aiSugge
 // ------------------------------------------------------------------
 
 router.post('/ai/readme', requireAuth, requireScope('ai'), validateBody(aiReadmeSchema), requireAI, async (req, res) => {
-    const userId = req.session.userId;
-    const check = checkAIFeatureLimit(userId, 'ai_readme');
+    const check = reserveAIQuota(req, res, 'ai_readme');
     if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
     try {
         const body = req.validatedBody;
@@ -485,7 +485,6 @@ router.post('/ai/readme', requireAuth, requireScope('ai'), validateBody(aiReadme
         const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
         const { text } = await guardedGenerate(req, { prompt }, { feature: 'readme' });
 
-        incrementAIUsage(userId, 'ai_readme');
         auditLog(req, 'ai.readme', 'ai', null, { repoName: cleanName, model: modelName });
         res.json({ success: true, readme: text, model: modelName });
     } catch (err) {
@@ -496,8 +495,7 @@ router.post('/ai/readme', requireAuth, requireScope('ai'), validateBody(aiReadme
 
 // Enhanced README endpoint - Improve existing README
 router.post('/ai/readme/enhance', requireAuth, requireScope('ai'), validateBody(aiReadmeEnhanceSchema), requireAI, async (req, res) => {
-    const userId = req.session.userId;
-    const check = checkAIFeatureLimit(userId, 'ai_readme');
+    const check = reserveAIQuota(req, res, 'ai_readme');
     if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
     try {
         const { repo } = req.validatedBody;
@@ -544,7 +542,6 @@ router.post('/ai/readme/enhance', requireAuth, requireScope('ai'), validateBody(
         const { text } = await guardedGenerate(req, { prompt }, { feature: 'readme_enhance' });
         const result = { enhancement: text, missingSections, patterns };
 
-        incrementAIUsage(userId, 'ai_readme');
         auditLog(req, 'ai.readme.enhance', 'ai', null, { repoName: repo.full_name });
         res.json({ success: true, ...result, currentReadme: readmeContent });
 
@@ -566,8 +563,7 @@ router.post('/ai/readme/enhance', requireAuth, requireScope('ai'), validateBody(
 // ------------------------------------------------------------------
 
 router.post('/ai/readme-studio/improve', requireAuth, requireScope('ai'), validateBody(aiReadmeStudioImproveSchema), requireAI, async (req, res) => {
-    const userId = req.session.userId;
-    const check = checkAIFeatureLimit(userId, 'ai_readme');
+    const check = reserveAIQuota(req, res, 'ai_readme');
     if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
     try {
         const { repo, tone, sections, license, stackOverride, badges } = req.validatedBody;
@@ -634,7 +630,6 @@ router.post('/ai/readme-studio/improve', requireAuth, requireScope('ai'), valida
 
         const { text } = await guardedGenerate(req, { prompt }, { feature: 'readme_studio' });
 
-        incrementAIUsage(userId, 'ai_readme');
         auditLog(req, 'ai.readme_studio.improve', 'ai', null, { repoName: repo.full_name, mode });
 
         res.json({

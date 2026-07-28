@@ -1,10 +1,11 @@
 import express from 'express';
+import { reserveAIQuota } from './ai-quota.js';
 import logger from '../lib/logger.js';
 import { requireAuth, safeError } from '../middleware/auth.js';
 import { requireScope } from '../middleware/api-key-auth.js';
 import { getUserTier } from '../middleware/require-tier.js';
 import { getTierOrder, getFeatures } from '../lib/feature-flags.js';
-import { getCurrentUsage, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../lib/usage-meter.js';
+import { getCurrentUsage, incrementUsage, releaseGuardedAIUsage, quotaExceededResponse } from '../lib/usage-meter.js';
 import { migrationQuotaDecision } from '../lib/migration-quota.js';
 import { handlePlanComplete } from '../lib/migration-plan-complete.js';
 import { MigrationEngine } from '../migration-engine.js';
@@ -771,14 +772,19 @@ router.post('/analyze', requireAuth, requireScope('ai'), async (req, res) => {
 
     const userId = req.session.userId;
     let generate;
+    let reservedAI = false;
     if (req.aiProvider) {
-      const check = checkAIFeatureLimit(userId, 'ai_migration_risk');
+      const check = reserveAIQuota(req, res, 'ai_migration_risk');
       if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
+      reservedAI = true;
       generate = (opts) => guardedGenerate(req, opts, { feature: 'migration_analyze' });
     }
 
     const { aiUsed, ...result } = await analyzeMigration(context, generate);
-    if (aiUsed) incrementAIUsage(userId, 'ai_migration_risk');
+    // This route answers 200 even when it falls back to the deterministic
+    // analysis, so the automatic refund (4xx/5xx only) does not apply — hand
+    // the unit back explicitly when no AI call actually happened.
+    if (reservedAI && !aiUsed) releaseGuardedAIUsage(userId, 'ai_migration_risk');
     res.json(result);
   } catch (err) {
     if (err?.code === 'AI_SPEND_CAP_REACHED') return handleAIError(res, err);

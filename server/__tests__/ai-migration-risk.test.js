@@ -44,6 +44,11 @@ const mockQuotaExceededResponse = vi.fn((check) => ({
     upgradeUrl: '/pricing',
 }))
 vi.mock('../lib/usage-meter.js', () => ({
+    // Added with reserveAIQuota: a FULL module mock silently drops new
+    // exports, and route handlers then call undefined and 500.
+    guardedIncrementAIUsage: (...args) => mockCheckAIFeatureLimit(...args),
+    releaseGuardedAIUsage: vi.fn(),
+
     checkUsageLimit: vi.fn(() => ({ allowed: true, current: 0, limit: 100, remaining: 100 })),
     incrementUsage: vi.fn(),
     checkAIFeatureLimit: (...args) => mockCheckAIFeatureLimit(...args),
@@ -137,7 +142,8 @@ describe('POST /api/ai/migration-risk', () => {
         expect(res.body.report.score).toBe(45)
         expect(res.body.report.warnings).toEqual(['3 workflows need secret re-wiring'])
         expect(res.body.report.parseError).toBe(false)
-        expect(mockIncrementAIUsage).toHaveBeenCalledWith(1, 'ai_migration_risk')
+        // Metering happens at the reservation now, not after the fact.
+        expect(mockCheckAIFeatureLimit).toHaveBeenCalledWith(1, 'ai_migration_risk')
     })
 
     it('falls back to overallRisk=unknown with parseError=true when AI returns garbage', async () => {

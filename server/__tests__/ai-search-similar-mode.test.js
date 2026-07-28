@@ -27,6 +27,11 @@ vi.mock('../middleware/require-tier.js', () => ({
 }))
 
 vi.mock('../lib/usage-meter.js', () => ({
+    // Added with reserveAIQuota: a FULL module mock silently drops new
+    // exports, and route handlers then call undefined and 500.
+    guardedIncrementAIUsage: vi.fn(() => ({ allowed: true, metric: 'ai', current: 0, limit: 100, remaining: 100 })),
+    releaseGuardedAIUsage: vi.fn(),
+
   checkUsageLimit: () => ({ allowed: true, current: 0, limit: 100, remaining: 100 }),
   incrementUsage: vi.fn(),
   checkAIFeatureLimit: () => ({ allowed: true, current: 0, limit: 50, remaining: 50, metric: 'ai_semantic_search' }),

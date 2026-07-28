@@ -16,6 +16,7 @@
  * Posture Panel). Research: .dev/prod-premium/2026-07-18/r4-security-posture.md.
  */
 import { Router } from 'express'
+import { reserveAIQuota } from '../ai-quota.js';
 import { githubApi } from '../../lib/github-api.js'
 import { auditLog } from '../../lib/audit.js'
 import { requireAuth } from '../../middleware/auth.js'
@@ -32,7 +33,7 @@ import {
   writeCachedSummary,
   SECURITY_POSTURE_SUMMARY_LIMITS,
 } from '../../lib/security-posture-summary.js'
-import { checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js'
+import { quotaExceededResponse } from '../../lib/usage-meter.js'
 import { requireAI, guardedGenerate, handleAIError } from '../ai/shared.js'
 import { safeJsonParse } from '../../lib/utils.js'
 
@@ -246,7 +247,7 @@ router.post('/repos/:owner/:repo/security/summary', requireAuth, requireScope('a
     return res.json({ ...cached, cached: true })
   }
 
-  const check = checkAIFeatureLimit(userId, 'ai_security_posture')
+  const check = reserveAIQuota(req, res, 'ai_security_posture')
   if (!check.allowed) return res.status(429).json(quotaExceededResponse(check))
 
   try {
@@ -260,7 +261,6 @@ router.post('/repos/:owner/:repo/security/summary', requireAuth, requireScope('a
     const shaped = shapeSummary(payload)
 
     writeCachedSummary({ userId, repoFullName: repo.full_name, checks }, shaped)
-    incrementAIUsage(userId, 'ai_security_posture')
     auditLog(req, 'ai.security_posture_summary', 'ai', null, { repo: repo.full_name, topActionCount: shaped.topActions.length })
 
     res.json({ ...shaped, cached: false })

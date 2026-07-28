@@ -17,6 +17,7 @@
  */
 
 import express from 'express';
+import { reserveAIQuota } from '../ai-quota.js';
 
 import { requireAuth, errorResponse } from '../../middleware/auth.js';
 import { createInMemoryRateLimiter } from '../../lib/in-memory-rate-limiter.js';
@@ -24,7 +25,7 @@ import { githubApi } from '../../lib/github-api.js';
 import { readThrough } from '../../lib/gh-cache.js';
 import { executeViaOutbox } from '../../lib/outbox-helper.js';
 import { createProviderForUser } from '../../lib/ai-provider.js';
-import { checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { quotaExceededResponse } from '../../lib/usage-meter.js';
 import { denyIfSpendCapReached, recordStreamCompletion } from './shared.js';
 import { runDeepReview } from '../../lib/ai-features/pr-deep-review.js';
 import { resolvePromptForGenerate } from '../../lib/ai-features/prompt-registry.js';
@@ -109,7 +110,7 @@ router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res
     // meter it against its own per-feature monthly cap AND the global
     // ai_queries pool, and enforce the monthly spend cap — all BEFORE any
     // provider call (OWASP LLM10, fail fast).
-    const quota = checkAIFeatureLimit(userId, 'ai_deep_review');
+    const quota = reserveAIQuota(req, res, 'ai_deep_review');
     if (!quota.allowed) {
         return res.status(429).json(quotaExceededResponse(quota));
     }
@@ -252,7 +253,6 @@ router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res
     // Meter the query + record spend + write a PII-safe cost audit. `costUsd`/
     // tokens are null when the provider can't surface usage — recordAISpend
     // no-ops on null cost and the audit still records feature + model.
-    incrementAIUsage(userId, 'ai_deep_review');
     recordStreamCompletion(req, {
         feature: 'deep_review',
         action: 'ai.deep_review',

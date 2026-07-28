@@ -19,12 +19,13 @@
  */
 
 import express from 'express';
+import { reserveAIQuota } from '../ai-quota.js';
 
 import { requireAuth, errorResponse } from '../../middleware/auth.js';
 import { githubApi } from '../../lib/github-api.js';
 import { readThrough } from '../../lib/gh-cache.js';
 import { createProviderForUser } from '../../lib/ai-provider.js';
-import { checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { quotaExceededResponse } from '../../lib/usage-meter.js';
 import { initSSE, streamToSSEWithUsage } from '../ai-streaming.js';
 import { denyIfSpendCapReached, recordStreamCompletion } from './shared.js';
 import {
@@ -160,7 +161,7 @@ router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res
     // enforce the monthly spend cap — both BEFORE any provider call or GitHub
     // fetch (OWASP LLM10). We have not opened the SSE stream yet, so a 429
     // JSON envelope is correct.
-    const quota = checkAIFeatureLimit(userId, 'ai_pr_chat');
+    const quota = reserveAIQuota(req, res, 'ai_pr_chat');
     if (!quota.allowed) {
         return res.status(429).json(quotaExceededResponse(quota));
     }
@@ -283,7 +284,6 @@ router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res
     // (OWASP LLM10). Usage/cost come from the stream and may be null when the
     // provider reported none — recordAISpend no-ops on null. A client that
     // disconnected mid-stream still bills for what it consumed, flagged partial.
-    incrementAIUsage(userId, 'ai_pr_chat');
     recordStreamCompletion(req, {
         feature: 'pr_chat',
         model: provider?._modelName ?? null,

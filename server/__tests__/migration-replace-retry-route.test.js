@@ -46,6 +46,11 @@ vi.mock('../lib/feature-flags.js', () => ({
   getFeatures: () => ({ migrationFullPerMonth: 1 }),
 }))
 vi.mock('../lib/usage-meter.js', () => ({
+    // Added with reserveAIQuota: a FULL module mock silently drops new
+    // exports, and route handlers then call undefined and 500.
+    guardedIncrementAIUsage: vi.fn(() => ({ allowed: true, metric: 'ai', current: 0, limit: 100, remaining: 100 })),
+    releaseGuardedAIUsage: vi.fn(),
+
   getCurrentUsage: () => 0,
   incrementUsage: vi.fn(),
 }))

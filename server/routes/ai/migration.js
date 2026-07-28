@@ -9,6 +9,7 @@
  */
 
 import express from 'express';
+import { reserveAIQuota } from '../ai-quota.js';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, isValidGitHubFullName } from '../../middleware/auth.js';
 import { requireScope } from '../../middleware/api-key-auth.js';
@@ -18,7 +19,7 @@ import { REPO_DESCRIPTION_MAX } from '../../lib/repo-description.js';
 import { sanitizeForPrompt } from '../../ai-service.js';
 import { safeJsonParse } from '../../lib/utils.js';
 import { parseSizeStrategyResponse, parseDescriptionResponse } from '../../lib/migration-ai-parsers.js';
-import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { checkUsageLimit, incrementUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
 import { requireAI, handleAIError, guardedGenerate } from './shared.js';
 
@@ -213,8 +214,7 @@ Keep "files" to at most 12 entries. If the issue is too vague to plan, return:
 // Available to Free tier (capped at migrationRiskPerMonth, default 5/month).
 
 router.post('/ai/migration-risk', requireAuth, requireScope('ai'), requireAI, async (req, res) => {
-    const userId = req.session.userId;
-    const check = checkAIFeatureLimit(userId, 'ai_migration_risk');
+    const check = reserveAIQuota(req, res, 'ai_migration_risk');
     if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
 
     try {
@@ -337,7 +337,6 @@ Rules:
             parseError,
         };
 
-        incrementAIUsage(userId, 'ai_migration_risk');
         auditLog(req, 'ai.migration_risk', 'ai', repo.full_name, {
             source: safeSource,
             target: safeTarget,
@@ -356,8 +355,7 @@ Rules:
 // ------------------------------------------------------------------
 
 router.post('/ai/migration-size-strategy', requireAuth, requireScope('ai'), requireAI, async (req, res) => {
-    const userId = req.session.userId;
-    const check = checkAIFeatureLimit(userId, 'migration_assist');
+    const check = reserveAIQuota(req, res, 'migration_assist');
     if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
 
     const parsed = migrationSizeStrategySchema.safeParse(req.body);
@@ -392,7 +390,6 @@ Respond with strict JSON only, no prose outside the JSON:
             return res.status(502).json({ error: 'Unexpected AI response shape' });
         }
 
-        incrementAIUsage(userId, 'migration_assist');
         auditLog(req, 'ai.migration-size-strategy', 'ai', null, { repoId, size, model: modelName });
         res.json(sizeStrategyResult);
     } catch (err) {
@@ -406,8 +403,7 @@ Respond with strict JSON only, no prose outside the JSON:
 // ------------------------------------------------------------------
 
 router.post('/ai/migration-description', requireAuth, requireScope('ai'), requireAI, async (req, res) => {
-    const userId = req.session.userId;
-    const check = checkAIFeatureLimit(userId, 'migration_assist');
+    const check = reserveAIQuota(req, res, 'migration_assist');
     if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
 
     const parsed = migrationDescriptionSchema.safeParse(req.body);
@@ -452,7 +448,6 @@ Respond with strict JSON only, no prose outside the JSON:
         // endpoint's contract simple: always return a usable { description }.
         const descriptionResult = parseDescriptionResponse(text, { repoName, source });
 
-        incrementAIUsage(userId, 'migration_assist');
         auditLog(req, 'ai.migration-description', 'ai', null, { repoId, model: modelName });
         res.json(descriptionResult);
     } catch (err) {
