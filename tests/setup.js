@@ -1,4 +1,29 @@
 import { afterEach, vi } from 'vitest'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+// Give every worker process its own SQLite file.
+//
+// The `forks` pool runs N processes concurrently and, with DATA_DIR unset,
+// every one of them resolved the SAME `getDataDir()/manager.db`. Opening a
+// shared file under that contention makes the `journal_mode = WAL` pragma
+// throw `SqliteError: disk I/O error` — which surfaces as an entire suite
+// failing to import with ZERO failed tests, on a different random file each
+// run, always passing in isolation. That is the intermittent
+// "module-collection failure" that has been training reflexive re-runs; it is
+// contention, not a bug in whichever file drew the short straw.
+//
+// Set before any test file imports server/db.js, and cleaned up when the
+// worker exits. An explicit DATA_DIR is honoured so a test that needs a
+// specific location still gets it.
+if (!process.env.DATA_DIR) {
+  const dir = mkdtempSync(join(tmpdir(), 'grm-vitest-'))
+  process.env.DATA_DIR = dir
+  process.on('exit', () => {
+    try { rmSync(dir, { recursive: true, force: true }) } catch { /* worker teardown */ }
+  })
+}
 
 // Skip browser-specific setup when running in Node environment (server tests)
 if (typeof window !== 'undefined') {

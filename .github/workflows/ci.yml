@@ -88,7 +88,13 @@ jobs:
         # still COLLECTED, because the blob has to carry it to the merge job.
         env:
           VITEST_SHARD_RUN: '1'
-        run: npx vitest run --shard=${{ matrix.shard }}/3 --reporter=blob --coverage
+        # Two reporters, deliberately. `blob` is what the merge job needs, but
+        # on its own a failing shard's log shows NOTHING useful — the failure is
+        # only readable by opening the merge job or downloading an artifact,
+        # which is a debuggability regression from the sharding change. Adding
+        # `default` prints the failing test and its assertion in the shard that
+        # actually went red, where anyone looking at the checks list starts.
+        run: npx vitest run --shard=${{ matrix.shard }}/3 --reporter=blob --reporter=default --coverage
       # Blob carries this shard's results AND its raw coverage, so the merge
       # job below can reconstruct both without re-running anything.
       - if: always()
