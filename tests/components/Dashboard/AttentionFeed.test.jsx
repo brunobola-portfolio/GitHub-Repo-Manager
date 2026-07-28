@@ -257,3 +257,54 @@ describe('AttentionFeed', () => {
         expect(await screen.findByTestId('ai-quota-exhausted')).toBeInTheDocument()
     })
 })
+
+describe('AttentionFeed — when the feed cannot be loaded', () => {
+    // The fetch had a .then() and no .catch(), so a rejection meant
+    // setLoading(false) never ran: the card span forever and its Refresh
+    // button, being disabled={loading}, was disabled forever with it. The only
+    // way out was a page reload.
+    it('stops spinning instead of hanging on the loader', async () => {
+        mockFetch.mockRejectedValue(new Error('network down'))
+        render(<AttentionFeed />)
+        await waitFor(() =>
+            expect(screen.queryByLabelText('Loading attention feed')).not.toBeInTheDocument()
+        )
+    })
+
+    it('says it could not load rather than showing nothing', async () => {
+        mockFetch.mockRejectedValue(new Error('network down'))
+        render(<AttentionFeed />)
+        expect(await screen.findByText(/couldn.t load/i)).toBeInTheDocument()
+    })
+
+    it('leaves the Refresh control usable', async () => {
+        mockFetch.mockRejectedValue(new Error('network down'))
+        render(<AttentionFeed />)
+        await waitFor(() =>
+            expect(screen.getByLabelText('Refresh attention feed')).not.toBeDisabled()
+        )
+    })
+
+    it('recovers when a retry succeeds', async () => {
+        mockFetch.mockRejectedValueOnce(new Error('network down')).mockResolvedValue(SAMPLE)
+        render(<AttentionFeed />)
+        await screen.findByText(/couldn.t load/i)
+
+        fireEvent.click(screen.getByLabelText('Refresh attention feed'))
+        await waitFor(() => expect(screen.queryByText(/couldn.t load/i)).not.toBeInTheDocument())
+        expect(screen.getByText('acme/blocker')).toBeInTheDocument()
+    })
+
+    it('does not treat an aborted request as a failure', async () => {
+        // Unmount and refetch both abort the in-flight request. Surfacing that
+        // as an error would flash a failure card on every navigation away, so
+        // the abort is swallowed and the loading state is deliberately left
+        // alone — whoever aborted is either gone or has already started a new
+        // fetch that owns the state.
+        const abort = Object.assign(new Error('aborted'), { name: 'AbortError' })
+        mockFetch.mockRejectedValue(abort)
+        render(<AttentionFeed />)
+        await waitFor(() => expect(mockFetch).toHaveBeenCalled())
+        expect(screen.queryByText(/couldn.t load/i)).not.toBeInTheDocument()
+    })
+})
