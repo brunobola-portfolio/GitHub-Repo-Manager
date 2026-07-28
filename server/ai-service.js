@@ -128,29 +128,45 @@ class AIService {
         return cosineSimilarity(vecA, vecB);
     }
 
-    async embedText(text) {
-        return embedText({ provider: this.provider }, text);
+    /**
+     * Resolve which key pays for a call.
+     *
+     * Every method below used to hard-bind `this.provider` — the server-wide
+     * key from the environment — while `requireAI` gated the same routes on
+     * the caller's BYOK provider. With a server key set, a BYOK user's
+     * indexing and search spent the OPERATOR's key; in the BYOK-only
+     * deployment `.env.example` recommends, there is no server key and the
+     * same calls threw. Callers with a request in scope must pass
+     * `req.aiProvider`; the server provider stays as the fallback for
+     * background work that has no user.
+     */
+    _resolveProvider(provider) {
+        return provider || this.provider;
+    }
+
+    async embedText(text, provider) {
+        return embedText({ provider: this._resolveProvider(provider) }, text);
     }
 
     async findSimilarById(repoId, opts = {}) {
         return findSimilarById({ db }, repoId, opts);
     }
 
-    async semanticSearch(query, limit = 5, userId) {
-        return semanticSearch({ provider: this.provider, db }, query, limit, userId);
+    async semanticSearch(query, limit = 5, userId, provider) {
+        return semanticSearch({ provider: this._resolveProvider(provider), db }, query, limit, userId);
     }
 
     // ── feature methods (provider-backed) ─────────────────────────────────
-    async analyzeRepo(repoData, readmeContent, fileStructure) {
-        return analyzeRepo({ provider: this.provider }, repoData, readmeContent, fileStructure);
+    async analyzeRepo(repoData, readmeContent, fileStructure, provider) {
+        return analyzeRepo({ provider: this._resolveProvider(provider) }, repoData, readmeContent, fileStructure);
     }
 
-    async enhanceReadme(currentReadme, repoData, fileStructure) {
-        return enhanceReadme({ provider: this.provider }, currentReadme, repoData, fileStructure);
+    async enhanceReadme(currentReadme, repoData, fileStructure, provider) {
+        return enhanceReadme({ provider: this._resolveProvider(provider) }, currentReadme, repoData, fileStructure);
     }
 
-    async reviewPullRequest(fileManifest, topFilePatches, prMetadata) {
-        return reviewPullRequest({ provider: this.provider }, fileManifest, topFilePatches, prMetadata);
+    async reviewPullRequest(fileManifest, topFilePatches, prMetadata, provider) {
+        return reviewPullRequest({ provider: this._resolveProvider(provider) }, fileManifest, topFilePatches, prMetadata);
     }
 }
 

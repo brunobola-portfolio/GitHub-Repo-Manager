@@ -2,6 +2,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import express from 'express'
 import request from 'supertest'
+import { readFileSync, readdirSync } from 'node:fs'
+import { join, sep } from 'node:path'
 
 // ---------------------------------------------------------------------------
 // This suite exercises the REAL auth chain end-to-end
@@ -258,5 +260,53 @@ describe('carve-out allowlist / requireScope("ai") parity', () => {
         // allowlist (fail-closed — an ai-only key silently 403s on a route
         // that was meant to accept it).
         expect(gated).toEqual(expected)
+    })
+})
+
+// ---------------------------------------------------------------------------
+// The runtime parity gate above walks the ai barrel router ONLY. Three routes
+// carry requireScope('ai') outside it, so the barrel walk never sees them and
+// its set-equality assertion passes without saying anything about them. They
+// are fail-closed today — being absent from AI_GENERATION_ROUTE_PATHS means an
+// ai-only key cannot reach them at all — but "the gate is silent here" is
+// exactly the property that lets a FOURTH one land unnoticed, and the next one
+// might be the fail-open direction.
+//
+// A source scan rather than a router walk: importing the v1 tree boots the
+// database and the whole middleware stack, and the failure mode being guarded
+// is a new callsite appearing, which is visible in the source.
+// ---------------------------------------------------------------------------
+describe('requireScope("ai") outside the ai barrel', () => {
+    // Every entry is a deliberate decision, and each carries a comment at the
+    // callsite explaining why it is not allowlisted. Adding a route here must
+    // be a choice, not an oversight.
+    const KNOWN_OUTSIDE_BARREL = [
+        'server/routes/migration.js',
+        'server/routes/repos/actions-community.js',
+        'server/routes/v1/repos-security.js',
+    ]
+
+    function filesUsingAiScope() {
+        const dir = 'server/routes'
+        return readdirSync(dir, { recursive: true })
+            .filter((f) => typeof f === 'string' && f.endsWith('.js'))
+            .map((f) => join(dir, f).split(sep).join('/'))
+            .filter((f) => !f.startsWith('server/routes/ai/') && f !== 'server/routes/ai.js')
+            .filter((f) => /requireScope\(\s*'ai'\s*\)/.test(readFileSync(f, 'utf8')))
+            .sort()
+    }
+
+    it('is confined to the three known, deliberately non-allowlisted routes', () => {
+        expect(
+            filesUsingAiScope(),
+            'a new ai-scoped route outside the barrel — decide whether it belongs in AI_GENERATION_ROUTE_PATHS',
+        ).toEqual(KNOWN_OUTSIDE_BARREL)
+    })
+
+    it('each one documents why it is not in the allowlist', () => {
+        const undocumented = KNOWN_OUTSIDE_BARREL.filter(
+            (f) => !/AI_GENERATION_ROUTE_PATHS/.test(readFileSync(f, 'utf8')),
+        )
+        expect(undocumented, 'the callsite must say why it sits outside the carve-out').toEqual([])
     })
 })

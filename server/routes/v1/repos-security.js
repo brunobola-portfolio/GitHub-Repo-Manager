@@ -230,6 +230,13 @@ router.get('/repos/:owner/:repo/security', requireAuth, async (req, res) => {
 // a posture change doesn't re-bill the AI provider. The client submits back
 // the SAME 10 checks GET /security just returned (validated + whitelisted by
 // securityPostureSummarySchema) — never raw alert bodies.
+//
+// requireScope('ai') is NOT paired with an AI_GENERATION_ROUTE_PATHS entry:
+// this route lives outside the server/routes/ai/* barrel that the parity test
+// in ai-key-scope-enforcement.test.js walks, so it falls outside that
+// allowlist's carve-out mechanism entirely (mirrors migration.js's /analyze
+// and actions-community.js's /agent-rules/generate). The practical effect is
+// fail-closed: only session users and admin-scoped API keys reach this route.
 router.post('/repos/:owner/:repo/security/summary', requireAuth, requireScope('ai'), validateBody(securityPostureSummarySchema), requireAI, async (req, res) => {
   const userId = req.session.userId
   const { repo, checks } = req.validatedBody
@@ -246,7 +253,7 @@ router.post('/repos/:owner/:repo/security/summary', requireAuth, requireScope('a
     const prompt = buildSecuritySummaryPrompt({ repo, checks })
     const { text, parsed } = await guardedGenerate(req, {
       prompt,
-      maxOutputTokens: SECURITY_POSTURE_SUMMARY_LIMITS.maxOutputTokens,
+      generationConfig: { maxOutputTokens: SECURITY_POSTURE_SUMMARY_LIMITS.maxOutputTokens },
     }, { feature: 'security_posture' })
 
     const payload = parsed || safeJsonParse(text)

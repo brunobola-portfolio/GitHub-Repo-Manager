@@ -238,6 +238,51 @@ describe('POST /ai/generate-image', () => {
         expect(generate.calls).toHaveLength(0);
     });
 
+    it('does not let concurrent requests overshoot the free cap (check-then-increment TOCTOU)', async () => {
+        // The Free cap is 5 images at ~$0.25 each. A read-only
+        // checkAIFeatureLimit followed by an increment AFTER the awaited
+        // provider call leaves the whole generation window open: every request
+        // that arrives before the first one finishes reads the same stale
+        // count and is admitted. Burst to the rate limit and the operator pays
+        // multiples of the intended $1.25.
+        const month = new Date().toISOString().slice(0, 7) + '-01T00:00:00.000Z';
+        testDb.prepare(`
+            INSERT INTO usage_metrics (user_id, metric_type, count, period_start, period_end)
+            VALUES (?, 'ai_image', 4, ?, ?)
+        `).run(USER_ID, month, month);
+
+        // A real generation takes seconds. Hold each one open long enough that
+        // all three are genuinely in flight together — without a delay here the
+        // requests serialise on the microtask queue and the race cannot occur,
+        // which would make this test pass against the broken code.
+        generate.impl = async () => {
+            await new Promise((r) => setTimeout(r, 60));
+            return {
+                base64: 'iVBORfakepngbytes==', mimeType: 'image/png',
+                provider: 'gemini', model: 'gemini-2.5-flash-image',
+                costCents: 25, estimatedCost: false,
+            };
+        };
+
+        const app = makeApp();
+        const results = await Promise.all(
+            [1, 2, 3].map(() => request(app).post('/ai/generate-image').send({ repo: REPO, preset: 'social' })),
+        );
+
+        const generated = results.filter((r) => r.status === 200).length;
+        // One slot left under the cap of 5 — exactly one may generate, and the
+        // provider must not be called for the two that lost.
+        expect(generated).toBe(1);
+        expect(generate.calls).toHaveLength(1);
+        expect(getCurrentUsage(USER_ID, 'ai_image')).toBeLessThanOrEqual(5);
+    });
+
+    it('releases the reserved slot when generation fails, so a failure is not billed', async () => {
+        generate.impl = async () => { throw new Error('provider exploded'); };
+        await request(makeApp()).post('/ai/generate-image').send({ repo: REPO, preset: 'social' });
+        expect(getCurrentUsage(USER_ID, 'ai_image')).toBe(0);
+    });
+
     it('maps a refusal to a typed 422 IMAGE_REFUSAL and does NOT consume the quota (TRAP 5)', async () => {
         generate.impl = async () => {
             const err = new Error('The AI provider declined to generate this image.');

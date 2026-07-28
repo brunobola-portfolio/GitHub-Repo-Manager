@@ -151,3 +151,49 @@ describe('GET /api/config/ai-status', () => {
         });
     });
 });
+
+// ---------------------------------------------------------------------------
+// Denial-of-wallet: ?probe=1 drives a real provider.generate() and deliberately
+// bypasses the 5-minute cache. The route carries no requireAuth, so an
+// anonymous caller could spend the operator's key once per request, as fast as
+// the rate limiter allowed.
+// ---------------------------------------------------------------------------
+function createAnonApp() {
+    const app = express();
+    app.use(express.json());
+    app.use((req, _res, next) => { req.session = {}; next(); });
+    app.use('/api', coreRouter);
+    return app;
+}
+
+describe('GET /api/config/ai-status?probe=1 — anonymous callers', () => {
+    it('refuses to force a probe without a session, and never calls the provider', async () => {
+        const res = await request(createAnonApp()).get('/api/config/ai-status?probe=1');
+        expect(res.status).toBe(401);
+        expect(mockGenerate).not.toHaveBeenCalled();
+    });
+
+    it('still serves the status read to an anonymous caller', async () => {
+        // The unauthenticated status read is what the client uses to decide
+        // whether to offer AI at all — only the forced probe is privileged.
+        const res = await request(createAnonApp()).get('/api/config/ai-status');
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveProperty('configured');
+    });
+
+    it('cannot be used to drive unbounded provider calls', async () => {
+        // The unforced read warms a 5-minute cache, so a burst collapses to a
+        // single provider call. That bound is the whole defence — and bypassing
+        // it is precisely what ?probe=1 does.
+        const app = createAnonApp();
+        for (let i = 0; i < 5; i++) await request(app).get('/api/config/ai-status');
+        await new Promise((r) => setTimeout(r, 20));
+        expect(mockGenerate.mock.calls.length).toBeLessThanOrEqual(1);
+    });
+
+    it('a signed-in caller can still force a probe', async () => {
+        const res = await request(createApp()).get('/api/config/ai-status?probe=1');
+        expect(res.status).toBe(200);
+        expect(mockGenerate).toHaveBeenCalled();
+    });
+});

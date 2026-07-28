@@ -216,8 +216,18 @@ export async function guardedGenerate(req, opts, { feature } = {}) {
         throw err;
     }
 
-    // Output cap is a hard ceiling: it overrides any route-supplied value.
-    const generationConfig = { ...(opts?.generationConfig || {}), maxOutputTokens: resolveMaxOutputTokens() };
+    // The global cap is a CEILING, not a replacement. Overwriting the
+    // route-supplied value made every per-route budget a dead parameter: a
+    // route asking for 80 tokens still generated up to the 2048 default, so
+    // the cost and latency decision it had made never took effect. Clamp
+    // instead — a route may ask for less, never for more. A non-positive or
+    // non-finite request is ignored rather than treated as "unlimited".
+    const ceiling = resolveMaxOutputTokens();
+    const requested = opts?.generationConfig?.maxOutputTokens;
+    const maxOutputTokens = Number.isFinite(requested) && requested > 0
+        ? Math.min(requested, ceiling)
+        : ceiling;
+    const generationConfig = { ...(opts?.generationConfig || {}), maxOutputTokens };
     const result = await providerGenerateWithRetry(req.aiProvider, { ...opts, generationConfig });
 
     if (billsOperator) recordAISpend(userId, result?.costUSD);
