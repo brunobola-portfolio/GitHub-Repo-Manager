@@ -93,6 +93,8 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
 
     const mermaidRef = useRef(null)
     const retriedRef = useRef(false)
+    // The server-issued credit that buys the one free self-repair.
+    const retryTokenRef = useRef(null)
     const [theme, setTheme] = useState(() =>
         typeof document !== 'undefined' && document.documentElement.classList.contains('dark') ? 'dark' : 'default'
     )
@@ -143,16 +145,21 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
     }, [])
 
     const handleRenderFailure = useCallback(async (message, failedSource) => {
-        if (retriedRef.current) {
+        // No credit means nothing to spend — a deterministic diagram, or a
+        // retry that already consumed it. Surfacing the render error beats
+        // posting a retry the server will refuse.
+        if (retriedRef.current || !retryTokenRef.current) {
             setRenderError(message)
             return
         }
         retriedRef.current = true
+        const retryToken = retryTokenRef.current
+        retryTokenRef.current = null
         setSelfRepairing(true)
         try {
             const res = await aiApi.diagrams.generate(repo, {
                 diagramType, focus: focus.trim() || undefined,
-                retry: true, failedSource, parseError: message,
+                retry: true, failedSource, parseError: message, retryToken,
             })
             if (res?.mock || !res?.mermaid) {
                 setRenderError(message)
@@ -225,6 +232,9 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
                 return
             }
             setTruncated(!!res.truncated)
+            // The server grants one free self-repair per charged generation and
+            // hands back the credit here; handleRenderFailure spends it.
+            retryTokenRef.current = res.retryToken ?? null
             setMermaidSource(res.mermaid)
             setStep('result')
         } catch (e) {

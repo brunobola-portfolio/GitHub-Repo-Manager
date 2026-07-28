@@ -48,12 +48,98 @@ import { requireAI, guardedGenerate, handleAIError, denyIfSpendCapReached, recor
 import { initSSE, streamToSSEWithUsage } from '../ai-streaming.js';
 import { resolveMaxOutputTokens } from '../../lib/ai-output-budget.js';
 import { commitOrOpenPR } from '../../lib/ai-features/community-health-fix.js';
+import { issueToken, verifyToken } from '../../lib/bulk-confirmation.js';
+import { randomUUID } from 'node:crypto';
 import {
     buildDeterministicDiagram, buildMermaidEmbedBlock, buildSvgRefEmbedBlock,
     insertOrReplaceBlock, sanitizeSvg,
 } from '../../lib/ai-features/diagram-embed.js';
 
 const router = express.Router();
+
+// ---------------------------------------------------------------------------
+// Retry credits
+//
+// The free self-repair attempt must be something the server GRANTED, not
+// something the client claims. issueToken/verifyToken give us binding to the
+// user, repo and diagram type plus a 60s expiry; the nonce set on top makes it
+// genuinely single-use, because an HMAC alone is replayable for its whole TTL
+// and "one free retry" would otherwise mean "unlimited free retries for a
+// minute".
+//
+// In-memory is the honest scope here: it matches the existing in-memory rate
+// limiter fallback, and the worst case under multi-instance is that a replayed
+// token lands on another replica within 60 seconds. Moving both to Redis is the
+// same piece of work and should happen together.
+// ---------------------------------------------------------------------------
+const RETRY_ACTION = 'ai.diagram_retry';
+// Comfortably longer than the token's own 60s expiry, so a spent token is
+// still remembered as spent for as long as it could possibly be replayed.
+const SPENT_TOKEN_TTL_MS = 5 * 60 * 1000;
+const spentRetryTokens = new Map();
+
+function forgetExpiredTokens(now) {
+    for (const [nonce, expiresAt] of spentRetryTokens) {
+        if (expiresAt <= now) spentRetryTokens.delete(nonce);
+    }
+}
+
+// The credit is `<nonce>.<token>`, opaque to the client. The nonce is an input
+// to the HMAC (so it cannot be swapped without the secret) and is carried in
+// clear because verifyToken needs it to recompute the extraData hash — the
+// payload stores only that hash, not the values. Its job is uniqueness per
+// issuance: without it, two credits minted for the same user, repo and diagram
+// type within the same second are byte-identical, and the second one is born
+// already spent.
+function issueDiagramRetryCredit({ userId, repo, diagramType }) {
+    const nonce = randomUUID();
+    const token = issueToken({
+        userId,
+        action: RETRY_ACTION,
+        repos: [repo.full_name],
+        extraData: { diagramType, nonce },
+    });
+    return `${nonce}.${token}`;
+}
+
+/**
+ * Spend the credit.
+ *
+ * @returns {null} when the credit was valid and is now spent, else an error
+ *   envelope for the caller to send.
+ */
+function consumeDiagramRetryCredit({ credit, userId, repo, diagramType }) {
+    const [nonce, ...rest] = String(credit ?? '').split('.');
+    const token = rest.join('.');
+    // The nonce arrives unverified, so it is only ever fed back into the hash
+    // the signature covers. A forged nonce simply fails verification below —
+    // it can neither be trusted nor used to evict a real entry before that.
+    const check = verifyToken(token, {
+        userId,
+        action: RETRY_ACTION,
+        repos: [repo.full_name],
+        extraData: { diagramType, nonce },
+    });
+    if (!check.valid) {
+        return {
+            status: check.reason === 'expired' ? 400 : 403,
+            body: {
+                error: check.reason === 'expired'
+                    ? 'The retry window for this diagram has passed. Generate it again.'
+                    : 'This retry token is not valid for this request.',
+                code: 'INVALID_RETRY_TOKEN',
+            },
+        };
+    }
+
+    const now = Date.now();
+    forgetExpiredTokens(now);
+    if (spentRetryTokens.has(nonce)) {
+        return { status: 409, body: { error: 'This retry has already been used.', code: 'RETRY_ALREADY_USED' } };
+    }
+    spentRetryTokens.set(nonce, now + SPENT_TOKEN_TTL_MS);
+    return null;
+}
 
 // Lighter caps than the file-picker tree endpoint (server/routes/repos/tree.js's
 // 500) — a diagram prompt needs enough paths to infer module structure, not
@@ -203,7 +289,7 @@ export async function fetchDiagramContext({ owner, repo, accessToken, log }) {
 
 router.post('/ai/generate-diagram', requireAuth, requireScope('ai'), validateBody(aiGenerateDiagramSchema), requireAI, async (req, res) => {
     const userId = req.session.userId;
-    const { repo, diagramType, focus, retry, failedSource, parseError } = req.validatedBody;
+    const { repo, diagramType, focus, retry, failedSource, parseError, retryToken } = req.validatedBody;
 
     if (!isValidGitHubFullName(repo.full_name)) {
         return res.status(400).json({ error: 'Invalid repo.full_name', code: 'validation_failed' });
@@ -211,7 +297,18 @@ router.post('/ai/generate-diagram', requireAuth, requireScope('ai'), validateBod
 
     // Check-once / increment-once: only the initial (non-retry) attempt
     // consumes the diagramGenPerMonth quota. See file header + research §4a.
-    if (!retry) {
+    //
+    // The free retry has to be a credit the SERVER issued, not a boolean the
+    // client asserts. `retry` skips both the quota check and the increment, so
+    // while it was self-declared, `{"retry":true,"failedSource":"x"}` ran a
+    // full generation metered against nothing — repeatable up to the rate
+    // limiter, ~2,880/day against an intended 15/month. The documented
+    // compensating control (the AI spend cap) is `aiSpendCapCents: 0` on all
+    // three tiers, i.e. off by default, so nothing else stood in the way.
+    if (retry) {
+        const bad = consumeDiagramRetryCredit({ credit: retryToken, userId, repo, diagramType });
+        if (bad) return res.status(bad.status).json(bad.body);
+    } else {
         const check = checkAIFeatureLimit(userId, 'ai_diagram');
         if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
     }
@@ -269,7 +366,15 @@ router.post('/ai/generate-diagram', requireAuth, requireScope('ai'), validateBod
         if (!retry) incrementAIUsage(userId, 'ai_diagram');
         auditLog(req, 'ai.generate_diagram', 'ai', null, { repo: repo.full_name, diagramType, retry: !!retry });
 
-        res.json({ success: true, mermaid, diagramType, truncated });
+        // One credit per charged attempt. Issued only on the metered path, so a
+        // retry can never mint the token that would fund the next retry.
+        res.json({
+            success: true,
+            mermaid,
+            diagramType,
+            truncated,
+            ...(retry ? {} : { retryToken: issueDiagramRetryCredit({ userId, repo, diagramType }) }),
+        });
     } catch (error) {
         req.log.error({ err: error, repo: repo.full_name }, 'Diagram generation failed');
         handleAIError(res, error, 'Failed to generate diagram. Please try again later.');

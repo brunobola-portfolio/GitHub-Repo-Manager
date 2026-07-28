@@ -230,10 +230,13 @@ describe('POST /ai/generate-diagram', () => {
     });
 
     it('does NOT double-decrement the ai_diagram quota on a retry-once self-repair call', async () => {
-        await request(makeApp()).post('/ai/generate-diagram').send({ repo: REPO });
+        const first = await request(makeApp()).post('/ai/generate-diagram').send({ repo: REPO });
         const res = await request(makeApp())
             .post('/ai/generate-diagram')
-            .send({ repo: REPO, retry: true, failedSource: 'graph TD\n  A -->', parseError: 'bad syntax' });
+            .send({
+                repo: REPO, retry: true, failedSource: 'graph TD\n  A -->',
+                parseError: 'bad syntax', retryToken: first.body.retryToken,
+            });
 
         expect(res.status).toBe(200);
         expect(fakeProvider.generate).toHaveBeenCalledTimes(2);
@@ -255,18 +258,87 @@ describe('POST /ai/generate-diagram', () => {
         expect(fakeProvider.generate).not.toHaveBeenCalled();
     });
 
-    it('a retry-once call still succeeds past the feature cap (only the spend cap gates it)', async () => {
+    // The free retry deliberately runs past the feature cap — a diagram the
+    // model produced broken shouldn't cost the user a credit. That only holds
+    // because the credit is now server-issued; see the exploit tests below for
+    // what the same allowance was worth while `retry` was self-declared.
+    it('a server-issued retry still succeeds past the feature cap', async () => {
+        const first = await request(makeApp()).post('/ai/generate-diagram').send({ repo: REPO });
         const month = new Date().toISOString().slice(0, 7) + '-01T00:00:00.000Z';
         testDb.prepare(`
-            INSERT INTO usage_metrics (user_id, metric_type, count, period_start, period_end)
-            VALUES (?, 'ai_diagram', 15, ?, ?)
-        `).run(USER_ID, month, month);
+            UPDATE usage_metrics SET count = 15
+            WHERE user_id = ? AND metric_type = 'ai_diagram'
+        `).run(USER_ID);
+        expect(month).toBeTruthy();
 
         const res = await request(makeApp())
             .post('/ai/generate-diagram')
-            .send({ repo: REPO, retry: true, failedSource: 'graph TD\n  A -->', parseError: 'bad syntax' });
+            .send({
+                repo: REPO, retry: true, failedSource: 'graph TD\n  A -->',
+                parseError: 'bad syntax', retryToken: first.body.retryToken,
+            });
         expect(res.status).toBe(200);
-        expect(fakeProvider.generate).toHaveBeenCalledTimes(1);
+    });
+
+    describe('retry credits — the quota bypass', () => {
+        const failed = { retry: true, failedSource: 'graph TD\n  A -->', parseError: 'bad syntax' };
+
+        it('refuses a self-declared retry, which used to buy unmetered generations', async () => {
+            // `{"retry":true,"failedSource":"x"}` once skipped BOTH the quota
+            // check and the increment, so it ran a full provider generation
+            // billed to nothing — repeatable up to the rate limiter.
+            const res = await request(makeApp())
+                .post('/ai/generate-diagram')
+                .send({ repo: REPO, ...failed });
+
+            expect(res.status).toBe(400);
+            expect(fakeProvider.generate).not.toHaveBeenCalled();
+        });
+
+        it('refuses a forged token', async () => {
+            const res = await request(makeApp())
+                .post('/ai/generate-diagram')
+                .send({ repo: REPO, ...failed, retryToken: 'aaa.bbb.ccc' });
+
+            expect(res.status).toBe(403);
+            expect(res.body.code).toBe('INVALID_RETRY_TOKEN');
+            expect(fakeProvider.generate).not.toHaveBeenCalled();
+        });
+
+        it('refuses a credit replayed a second time', async () => {
+            const first = await request(makeApp()).post('/ai/generate-diagram').send({ repo: REPO });
+            const body = { repo: REPO, ...failed, retryToken: first.body.retryToken };
+
+            expect((await request(makeApp()).post('/ai/generate-diagram').send(body)).status).toBe(200);
+            const replay = await request(makeApp()).post('/ai/generate-diagram').send(body);
+
+            expect(replay.status).toBe(409);
+            expect(replay.body.code).toBe('RETRY_ALREADY_USED');
+        });
+
+        it('refuses a credit issued for a different repo', async () => {
+            const first = await request(makeApp()).post('/ai/generate-diagram').send({ repo: REPO });
+            const res = await request(makeApp())
+                .post('/ai/generate-diagram')
+                .send({
+                    repo: { ...REPO, full_name: 'someone/else' },
+                    ...failed,
+                    retryToken: first.body.retryToken,
+                });
+
+            expect(res.status).toBe(403);
+        });
+
+        it('does not let a retry mint the credit that would fund the next one', async () => {
+            const first = await request(makeApp()).post('/ai/generate-diagram').send({ repo: REPO });
+            const retried = await request(makeApp())
+                .post('/ai/generate-diagram')
+                .send({ repo: REPO, ...failed, retryToken: first.body.retryToken });
+
+            expect(retried.status).toBe(200);
+            // Otherwise the chain never ends and the cap means nothing.
+            expect(retried.body.retryToken).toBeUndefined();
+        });
     });
 
     it('returns 429 AI_SPEND_CAP_REACHED when over the monthly spend cap (provider not called)', async () => {

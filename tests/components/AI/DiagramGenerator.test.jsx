@@ -63,6 +63,10 @@ const GENERATE_RESULT = {
     mermaid: 'graph TD\n  A[src] --> B[server]',
     diagramType: 'architecture',
     truncated: false,
+    // The server grants the one free self-repair as a signed credit; the
+    // client cannot retry without it. Server-side coverage of the credit
+    // itself lives in server/__tests__/diagrams.test.js.
+    retryToken: 'test-nonce.test-retry-credit',
 }
 
 import { aiApi } from '../../../src/api/ai'
@@ -205,6 +209,9 @@ describe('DiagramGenerator — retry-once self-repair', () => {
         expect(retryConfig.retry).toBe(true)
         expect(retryConfig.failedSource).toContain('graph TD')
         expect(retryConfig.parseError).toContain('Parse error')
+        // Without the credit the server refuses the retry, so sending it back
+        // is not incidental — it is the whole protocol.
+        expect(retryConfig.retryToken).toBe('test-nonce.test-retry-credit')
 
         await waitFor(() => expect(mermaidRenderMock).toHaveBeenCalledTimes(2))
         expect(screen.queryByText(/diagram failed to render/i)).not.toBeInTheDocument()

@@ -308,7 +308,11 @@ export const deterministicReadmeStudioSchema = z.object({
 // self-repair flow: the client re-posts the same request with the Mermaid
 // text that failed to render client-side plus the parser error, and the
 // server re-prompts for a corrected diagram. `retry` requests must carry a
-// non-empty `failedSource` — there's nothing to repair otherwise.
+// non-empty `failedSource` — there's nothing to repair otherwise — AND the
+// `retryToken` the server issued alongside the attempt being repaired. Without
+// that token `retry` was simply a client-supplied boolean that skipped both the
+// quota check and the increment, so posting `{retry:true}` bought unlimited
+// free generations.
 export const aiGenerateDiagramSchema = z.object({
     repo: aiRepoMetadataSchema.refine((v) => !!v.full_name, { message: 'repo.full_name is required' }),
     diagramType: z.enum(['architecture']).optional().default('architecture'),
@@ -316,9 +320,13 @@ export const aiGenerateDiagramSchema = z.object({
     retry: z.boolean().optional().default(false),
     failedSource: z.string().max(8000).optional(),
     parseError: z.string().max(2000).optional(),
+    retryToken: z.string().max(2000).optional(),
 }).strict().refine((v) => !v.retry || !!v.failedSource, {
     message: 'retry requires failedSource',
     path: ['failedSource'],
+}).refine((v) => !v.retry || !!v.retryToken, {
+    message: 'retry requires the retryToken issued with the original attempt',
+    path: ['retryToken'],
 });
 
 // Deterministic (zero-AI-cost) diagram fallback — POST /ai/generate-diagram/deterministic.
