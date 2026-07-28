@@ -609,6 +609,10 @@ export class GeminiProvider {
             if (signal?.aborted) break;
             const text = chunk.text();
             if (text) yield text;
+            // Recheck after the consumer resumes us: pulling another chunk from
+            // a stream whose fetch has been aborted throws, and that exception
+            // would take the usage below down with it.
+            if (signal?.aborted) break;
         }
 
         // Usage only becomes available once the stream drains: the SDK exposes
@@ -616,12 +620,17 @@ export class GeminiProvider {
         // value so callers can record spend + audit (OWASP LLM10). Never throw
         // from here — a usage-extraction failure must not fail the response the
         // client already received.
-        if (signal?.aborted) return { usage: null, costUSD: null };
+        //
+        // Aborted streams go through the same path rather than short-circuiting
+        // to null: the prompt was billed regardless, and the SDK aggregates the
+        // chunks it did receive. If it cannot (the fetch was torn down), the
+        // catch degrades to null — an unknown cost, not a free one.
+        const partial = !!signal?.aborted;
         try {
             const response = await streamResult?.response;
-            return geminiUsageFromMeta(response?.usageMetadata, modelName);
+            return { ...geminiUsageFromMeta(response?.usageMetadata, modelName), partial };
         } catch {
-            return { usage: null, costUSD: null };
+            return { usage: null, costUSD: null, partial };
         }
     }
 }

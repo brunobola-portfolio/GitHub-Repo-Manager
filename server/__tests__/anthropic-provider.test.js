@@ -238,7 +238,7 @@ describe('AnthropicProvider.generateStream() — abort handling (I6)', () => {
         await iter.next()
         const final = await iter.next()
         expect(final.done).toBe(true)
-        expect(final.value).toEqual({ usage: null, costUSD: null })
+        expect(final.value).toEqual({ usage: null, costUSD: null, partial: false })
     })
 
     it('throws AIError(CANCELED) when mid-stream AbortError is caught', async () => {

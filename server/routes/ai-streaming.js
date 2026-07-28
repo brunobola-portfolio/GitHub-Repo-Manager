@@ -132,7 +132,14 @@ export async function streamToSSEWithUsage(textChunks, sse) {
                 }
                 break;
             }
-            if (sse.isAborted) break;
+            // `continue`, never `break`. The generator's return value is the
+            // only carrier for the usage the provider measured, and breaking
+            // abandons the generator mid-flight — which is how an aborted
+            // stream came to record ZERO spend while the operator was billed
+            // for every token. The provider watches the same signal, so it
+            // winds itself down within a chunk or two; all we owe it is to stop
+            // writing to a socket that is already gone.
+            if (sse.isAborted) continue;
             if (value) {
                 accumulated += value;
                 sse.sendChunk(value);
@@ -186,7 +193,9 @@ export async function streamReplyDeltasToSSE(rawChunks, sse, extractReply) {
                 }
                 break;
             }
-            if (sse.isAborted) break;
+            // See streamToSSEWithUsage: draining rather than breaking is what
+            // keeps the provider's usage reachable on a client disconnect.
+            if (sse.isAborted) continue;
             if (!value) continue;
             raw += value;
             const reply = extractReply(raw);
