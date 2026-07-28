@@ -18,7 +18,9 @@ const TIERS_MONTHLY = [
     ctaText: 'Get Started',
     features: [
       { label: 'Repositories managed', included: 'Unlimited' },
-      { label: 'Repo Advisor (conversational)†', included: true },
+      // No dagger: this page renders no footnote, and the conversational
+      // Repo Advisor carries no caveat anyway — it needs no deployment flag.
+      { label: 'Repo Advisor (conversational)', included: true },
       { label: 'Semantic Search (AI)', included: '375 / month' },
       { label: 'Migration Risk Analysis (AI)', included: '25 / month' },
       { label: 'Repo Insights / Quality Report', included: '75 / month' },

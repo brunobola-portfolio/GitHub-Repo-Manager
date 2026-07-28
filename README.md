@@ -167,7 +167,7 @@ The full AI surface ships on **every tier including Free**, each capability with
 
 | Capability | What it does |
 |---|---|
-| **Repo Advisor** | Conversational assistant that answers questions *and* dispatches real app actions (open the Migration Wizard, Create Repo, Transfer, …) from natural-language intent. Self-hosted: requires `WORK_BOARD_AI_ENABLED=true` plus a per-user opt-in — see the † note under [Plans & Pricing](#plans--pricing) |
+| **Repo Advisor** | Conversational assistant that answers questions *and* dispatches real app actions (open the Migration Wizard, Create Repo, Transfer, …) from natural-language intent. Works out of the box on a self-hosted install — a BYOK key is all it needs. Not to be confused with the Repo Advisor *card inside the Work Board*, which is the surface behind a deployment flag — see the † note under [Plans & Pricing](#plans--pricing) |
 | **Repository insights** | Quality scoring 0–100 across documentation, community, engineering, and polish, with pattern detection and fixes |
 | **Semantic search** | Natural-language repo search over real vector embeddings |
 | **AI Deep Review** | Walkthrough + line comments with one-click suggestions, PR slash commands, and streaming PR chat — batched into one GitHub review ([guide](docs/features/ai-deep-review.md)) |
@@ -273,7 +273,7 @@ The hosted product is **free-first**: nearly every product feature — bulk ops,
 | Priority Support + SLA                 | ✗               | ✗             | ✓          |
 | White-glove migration services         | ✗               | ✗             | ✓          |
 
-† **Repo Advisor is off by default on a self-hosted install.** Its endpoints are behind a deployment flag: `server/middleware/work-board-ai-gate.js` returns `404 AI_FEATURE_FLAG_OFF` unless `WORK_BOARD_AI_ENABLED=true` is set in the environment (`docker-compose.yml` forwards the variable). It is a tier-free feature — no plan unlocks it — but an operator must switch it on, and each user must then opt in under `Settings → Work Board`. No other row in this matrix depends on an environment flag.
+† **"Repo Advisor" names two surfaces, and only one of them is behind a flag.** The floating conversational assistant in this row is `POST /api/ai/chat` (`server/routes/ai/core.js`) — no deployment flag gates it, and it works out of the box on a self-hosted install with nothing but a BYOK key. The *Repo Advisor card inside the Work Board* — the 7-day trend summary, the suggestion chips, the preview-then-apply edits — is the gated one: `server/middleware/work-board-ai-gate.js` returns `404 AI_FEATURE_FLAG_OFF` unless `WORK_BOARD_AI_ENABLED=true` is set in the environment (`docker-compose.yml` forwards the variable), and each user must then opt in under `Settings → Work Board`. Both are tier-free — no plan unlocks either. No row in this matrix is gated by an environment flag.
 
 Self-hosting under AGPL v3 is free forever — see [LICENSE](LICENSE). The matrix above applies to self-hosted Pro/Enterprise licenses today (Stripe checkout → emailed license key — see [`docs/billing-and-licensing.md`](docs/billing-and-licensing.md)), and will apply equally to the hosted SaaS once it launches. "Advanced bulk" and "Mirror Sync apply" carry a tier-independent daily anti-abuse ceiling on top of the existing dry-run + confirmation-token safety flow, regardless of plan. Priority Support and White-glove migration are manual, service-based deliverables (support ticket + contract), not gated by a feature flag.
 
@@ -330,7 +330,7 @@ A two-part app: a **React 19 + Vite 8** SPA and an **Express 5 + better-sqlite3*
 
 ### Prerequisites
 
-- **Node.js 20+** — not needed for the Windows package (bundled runtime); see below.
+- **Node.js 22+** — not needed for the Windows package (bundled runtime); see below.
 - **npm** (or yarn)
 - **GitHub account** — for real mode (OAuth)
 - **AI provider key** — optional; add your own in `Settings → AI Configuration` after first login ([per-provider setup](docs/ai-providers.md))
@@ -488,10 +488,10 @@ See [`docs/ai-providers.md`](docs/ai-providers.md) for per-provider setup and fr
 
 | Category | Technologies |
 |----------|-------------|
-| **Frontend** | React 19.2, Vite 8.0, TailwindCSS 4.1 |
+| **Frontend** | React 19.2, Vite 8.1, TailwindCSS 4.1 |
 | **UI/UX** | Framer Motion 12, Lucide Icons, Recharts 3, Radix UI, cmdk |
-| **Backend** | Node.js 20+, Express 5.2 |
-| **Database** | better-sqlite3 12.9 (WAL mode, 32 MB cache) — SQLite only |
+| **Backend** | Node.js 22+, Express 5.2 |
+| **Database** | better-sqlite3 13.0 (WAL mode, 32 MB cache) — SQLite only |
 | **Security** | Helmet.js, per-tier + per-IP rate limiting, shared Zod validation layer, SSRF + DNS-rebinding guard, CSRF double-submit, AES-256-GCM credential encryption |
 | **AI (BYOK)** | Provider-neutral `AI_PROVIDER` (Anthropic, OpenAI, Gemini, OpenRouter, local) · per-user keys encrypted at rest · opt-in monthly $ spend cap + always-on per-call output-token cap · PII-safe audit metadata · SSE streaming |
 | **APIs** | GitHub REST API (2022-11-28), Azure DevOps API v7.1, Stripe Billing |
