@@ -100,7 +100,13 @@ jobs:
           include-hidden-files: true
 
   test:
-    name: test (merge + coverage floors)
+    # Named exactly `test` because that is the context branch protection
+    # requires. Sharding briefly renamed this to "test (merge + coverage
+    # floors)", which silently retired the gate: GitHub matches protection on
+    # the check-run display name, so the required `test` context stopped
+    # reporting and every PR became permanently BLOCKED with no failing check
+    # to point at. The shards carry the descriptive names instead.
+    name: test
     runs-on: ubuntu-latest
     needs: test-shard
     # `always()` so a red shard still produces the merged report and the
@@ -134,6 +140,15 @@ jobs:
       # union of all three coverage maps.
       - name: Merge shards, report, and enforce coverage floors
         run: npx vitest run --mergeReports --coverage
+      # Replaying blobs only catches shards that RAN and failed. A shard that
+      # died before uploading — lost runner, npm ci failure — leaves its blob
+      # missing, and with `if: always()` the merge would happily green-light
+      # two thirds of the suite. Mirrors the e2e guard below.
+      - name: Fail if any shard failed
+        if: ${{ contains(needs.test-shard.result, 'failure') || contains(needs.test-shard.result, 'cancelled') }}
+        run: |
+          echo "::error::At least one test shard failed — see the merged coverage artifact"
+          exit 1
       - if: always()
         uses: actions/upload-artifact@v7
         with:
@@ -223,10 +238,11 @@ jobs:
           retention-days: 1
 
   # One HTML report for the whole suite instead of three partial ones. This is
-  # also the job to require in branch protection: it is red whenever any shard
-  # is, and it is a single stable name rather than a matrix of three.
+  # also the job branch protection requires: it is red whenever any shard is,
+  # and it is a single stable name rather than a matrix of three. Keep the
+  # display name exactly `e2e` — see the note on the `test` job above.
   e2e:
-    name: e2e (merged report)
+    name: e2e
     needs: e2e-shard
     if: always()
     runs-on: ubuntu-latest

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { InboxPanel } from '../../../../src/components/Dashboard/Premium/InboxPanel';
 import * as api from '../../../../src/api/dashboardInbox';
 import * as narrativeApi from '../../../../src/api/attentionNarrative';
@@ -87,10 +87,11 @@ describe('InboxPanel', () => {
 
     it('filters list when a section is clicked', async () => {
         render(<InboxPanel />);
-        await waitFor(() => screen.getByText('Needs my review'));
-        fireEvent.click(screen.getByRole('button', { name: /my open prs/i }));
-        // After switching to empty section, per-section empty state renders
-        expect(screen.getByText(/no open prs of yours/i)).toBeInTheDocument();
+        fireEvent.click(await screen.findByRole('button', { name: /my open prs/i }));
+        // After switching to empty section, per-section empty state renders.
+        // findBy, not getBy: the switch re-renders asynchronously, so a
+        // synchronous read here races the commit under load.
+        expect(await screen.findByText(/no open prs of yours/i)).toBeInTheDocument();
     });
 
     it('renders the AIQuotaMeter in the panel header', async () => {
@@ -256,49 +257,63 @@ describe('InboxPanel — keyboard shortcuts modifier guard', () => {
         api.restoreInboxItem.mockResolvedValue({});
     });
 
-    it('bare "e" archives the top item (sanity check the shortcut still works unmodified)', async () => {
+    /**
+     * The keydown listener mounts immediately but bails while the section is
+     * still empty (InboxPanel.jsx: `if (!active?.items?.length) return`). A key
+     * pressed in that window is swallowed with nothing to retry it, which is
+     * what made these tests fail under CI load. Waiting for the item text only
+     * proves the commit landed — this also flushes the effect that re-registers
+     * the listener against the now-populated section.
+     */
+    async function renderWithArmedShortcuts() {
         render(<InboxPanel />);
         await screen.findByText('Fix the thing');
+        await act(async () => {});
+    }
+
+    it('bare "e" archives the top item (sanity check the shortcut still works unmodified)', async () => {
+        await renderWithArmedShortcuts();
         fireEvent.keyDown(window, { key: 'e' });
         await waitFor(() => expect(api.archiveInboxItem).toHaveBeenCalledWith('pr:foo/bar#1'));
     });
 
     it('bare "s" opens the snooze modal for the top item (sanity check)', async () => {
-        render(<InboxPanel />);
-        await screen.findByText('Fix the thing');
+        await renderWithArmedShortcuts();
         fireEvent.keyDown(window, { key: 's' });
         expect(await screen.findByRole('dialog', { name: /snooze/i })).toBeInTheDocument();
     });
 
-    it('Ctrl+S does not archive/snooze — browser save must not be hijacked', async () => {
-        render(<InboxPanel />);
-        await screen.findByText('Fix the thing');
+    // These assert a NEGATIVE, so they need a barrier proving the listener ran
+    // and declined — otherwise they pass just as happily against a listener
+    // that never fired at all, which is what `await setTimeout(0)` used to give
+    // us. The barrier is the OTHER shortcut: once its effect is observable, the
+    // modified key ahead of it in the same queue has definitively been handled.
+    //
+    // The two shortcuts must cross-check each other rather than repeat
+    // themselves. 'e' archives optimistically, so a second 'e' finds an empty
+    // section and no-ops — meaning "archive called once" holds whether or not
+    // the guard exists, and the assertion proves nothing. Verified by mutation:
+    // deleting the guard in InboxPanel.jsx must turn each of these red.
+    it('Ctrl+S does not open the snooze modal — browser save must not be hijacked', async () => {
+        await renderWithArmedShortcuts();
         fireEvent.keyDown(window, { key: 's', ctrlKey: true });
+        fireEvent.keyDown(window, { key: 'e' });
+        await waitFor(() => expect(api.archiveInboxItem).toHaveBeenCalledWith('pr:foo/bar#1'));
         expect(screen.queryByRole('dialog', { name: /snooze/i })).not.toBeInTheDocument();
         expect(api.snoozeInboxItem).not.toHaveBeenCalled();
     });
 
-    it('Ctrl+E does not archive the top item', async () => {
-        render(<InboxPanel />);
-        await screen.findByText('Fix the thing');
-        fireEvent.keyDown(window, { key: 'e', ctrlKey: true });
-        await new Promise(r => setTimeout(r, 0));
-        expect(api.archiveInboxItem).not.toHaveBeenCalled();
-    });
-
-    it('Cmd+E (metaKey) does not archive the top item', async () => {
-        render(<InboxPanel />);
-        await screen.findByText('Fix the thing');
-        fireEvent.keyDown(window, { key: 'e', metaKey: true });
-        await new Promise(r => setTimeout(r, 0));
-        expect(api.archiveInboxItem).not.toHaveBeenCalled();
-    });
-
-    it('Alt+E does not archive the top item', async () => {
-        render(<InboxPanel />);
-        await screen.findByText('Fix the thing');
-        fireEvent.keyDown(window, { key: 'e', altKey: true });
-        await new Promise(r => setTimeout(r, 0));
+    it.each([
+        ['Ctrl+E', { ctrlKey: true }],
+        ['Cmd+E (metaKey)', { metaKey: true }],
+        ['Alt+E', { altKey: true }],
+    ])('%s does not archive the top item', async (_label, modifier) => {
+        await renderWithArmedShortcuts();
+        fireEvent.keyDown(window, { key: 'e', ...modifier });
+        fireEvent.keyDown(window, { key: 's' });
+        // Snooze only opens the modal, so the top item stays put: if the
+        // modified key had archived it, this dialog would never appear.
+        await screen.findByRole('dialog', { name: /snooze/i });
         expect(api.archiveInboxItem).not.toHaveBeenCalled();
     });
 });
