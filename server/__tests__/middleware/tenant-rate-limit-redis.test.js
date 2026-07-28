@@ -24,7 +24,18 @@ let ioredisCtorArgs;
 vi.mock('ioredis', () => ({
     Redis: class {
         constructor(url) { ioredisCtorArgs = url; }
-        call(...args) { calls.sendCommand.push(args); return Promise.resolve([1, 900]); }
+        call(...args) {
+            calls.sendCommand.push(args);
+            // rate-limit-redis 6 eagerly loads a Lua script in its constructor
+            // and rejects with "unexpected reply from redis client" unless
+            // SCRIPT LOAD answers with a SHA string. Returning the generic
+            // [hits, ttl] shape for it surfaced as an unhandled rejection that
+            // passed every assertion and still failed the shard.
+            if (String(args[0]).toUpperCase() === 'SCRIPT') {
+                return Promise.resolve('0'.repeat(40));
+            }
+            return Promise.resolve([1, 900]);
+        }
     },
 }));
 
