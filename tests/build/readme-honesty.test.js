@@ -8,7 +8,8 @@
  * everything CI-related is in one place.
  */
 
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, it, expect } from 'vitest'
 
 // Phrases that imply a feature is shipping today. If any of these surface
@@ -59,6 +60,25 @@ describe('README honesty', () => {
 
     const wrong = [...new Set(claimed.filter((v) => v !== required))]
     expect(wrong, `README claims Node ${wrong.join('/')}+ but engines.node is "${engines}"`).toEqual([])
+  })
+})
+
+describe('WORK_BOARD_AI_ENABLED blast radius', () => {
+  // The README's † note and the in-app pricing footnote both promise that the
+  // floating conversational Repo Advisor (POST /api/ai/chat) needs no
+  // deployment flag, and that only the Work Board's card is gated. That
+  // promise is only true while requireWorkBoardAI stays confined to the
+  // Work Board router — v4.11.0 shipped the opposite claim to the pricing
+  // page precisely because nothing checked it.
+  it('gates only the Work Board router, which is what the pricing copy claims', () => {
+    const routeFiles = readdirSync('server/routes', { recursive: true })
+      .filter((f) => typeof f === 'string' && f.endsWith('.js'))
+    const gated = routeFiles.filter((f) =>
+      /requireWorkBoardAI/.test(readFileSync(join('server/routes', f), 'utf8')),
+    )
+    expect(gated.sort(), 'update the README † note and FeatureComparison footnote to match').toEqual(
+      ['work-board-ai.js'],
+    )
   })
 })
 

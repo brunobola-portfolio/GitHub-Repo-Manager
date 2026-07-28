@@ -382,11 +382,16 @@ export function FeatureComparison() {
       <p className="mt-4 text-center text-xs text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
         Teams are unlimited on every plan. AI usage quotas above are metered per individual account, even within a team.
       </p>
-      {/* The README already carried this caveat; the in-app pricing surfaces
-          did not, so a self-hoster saw "included" and then got
-          404 AI_FEATURE_FLAG_OFF from every Repo Advisor endpoint. */}
+      {/* "Repo Advisor" names two surfaces. This row is the floating
+          conversational assistant (POST /api/ai/chat), which no deployment
+          flag gates; only the Work Board's Repo Advisor card sits behind
+          WORK_BOARD_AI_ENABLED. The earlier wording here was copied from the
+          README, which had the same conflation, and sent self-hosters looking
+          for a switch they never needed. */}
       <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
-        &dagger; Repo Advisor is operator-enabled: self-hosted deployments need{' '}
+        &dagger; The conversational Repo Advisor works out of the box — a BYOK key is all it
+        needs. The separate Repo Advisor card inside the Work Board is operator-enabled:
+        self-hosted deployments need{' '}
         <code className="font-mono">WORK_BOARD_AI_ENABLED=true</code> plus a per-user opt-in.
       </p>
     </motion.div>
