@@ -26,10 +26,17 @@ vi.mock('../config.js', () => ({ config: mockConfig }))
 
 let stripeEnabled = true
 const mockSessionsCreate = vi.fn(async () => ({ id: 'cs_1', url: 'https://checkout.stripe.test/cs_1' }))
+const mockPricesRetrieve = vi.fn(async (id) => ({
+    id,
+    unit_amount: id === 'price_pro_yearly' ? 19000 : 2900,
+    currency: 'eur',
+    recurring: { interval: id.endsWith('yearly') ? 'year' : 'month' },
+}))
 const mockStripe = {
     customers: { create: vi.fn(async () => ({ id: 'cus_new' })) },
     checkout: { sessions: { create: mockSessionsCreate } },
     billingPortal: { sessions: { create: vi.fn(async () => ({ url: 'https://portal.test' })) } },
+    prices: { retrieve: (...a) => mockPricesRetrieve(...a) },
 }
 vi.mock('../lib/stripe.js', () => ({
     getStripe: () => mockStripe,
@@ -46,7 +53,7 @@ vi.mock('../lib/logger.js', () => ({
     default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }))
 
-const { default: billingRouter } = await import('../routes/billing.js')
+const { default: billingRouter, invalidatePriceCache } = await import('../routes/billing.js')
 
 function makeApp() {
     const app = express()
@@ -66,6 +73,8 @@ beforeEach(() => {
     mockConfig.stripePriceEnterpriseMonthly = 'price_ent_monthly'
     mockConfig.stripePriceEnterpriseYearly = 'price_ent_yearly'
     mockSessionsCreate.mockClear()
+    mockPricesRetrieve.mockClear()
+    invalidatePriceCache()
     mockPrepare.mockReset()
     // Existing customer so the route skips customer creation + insert.
     mockPrepare.mockImplementation(() => ({
@@ -78,7 +87,7 @@ describe('GET /billing/config — yearly feature-detect', () => {
     it('advertises yearly when Stripe is enabled AND a Pro yearly price is configured', async () => {
         const res = await request(makeApp()).get('/api/v1/billing/config')
         expect(res.status).toBe(200)
-        expect(res.body).toEqual({ stripeEnabled: true, yearlyBillingAvailable: true })
+        expect(res.body).toEqual({ stripeEnabled: true, yearlyBillingAvailable: true, prices: expect.any(Object) })
     })
 
     it('hides yearly when the Pro yearly price is NOT configured', async () => {
@@ -93,7 +102,7 @@ describe('GET /billing/config — yearly feature-detect', () => {
         stripeEnabled = false
         const res = await request(makeApp()).get('/api/v1/billing/config')
         expect(res.status).toBe(200)
-        expect(res.body).toEqual({ stripeEnabled: false, yearlyBillingAvailable: false })
+        expect(res.body).toEqual({ stripeEnabled: false, yearlyBillingAvailable: false, prices: {} })
     })
 })
 
@@ -205,5 +214,51 @@ describe('POST /billing/checkout — refuses to open a second subscription', () 
             .send({ tier: 'pro' })
         expect(res.status).toBe(200)
         expect(mockSessionsCreate).toHaveBeenCalledTimes(1)
+    })
+})
+
+/*
+ * The displayed price was hardcoded in PricingPage.jsx and /billing/config
+ * returned booleans only, so an operator whose Stripe price is not $19/mo
+ * shipped a page advertising one number and a checkout charging another, with
+ * nothing to catch it. The amount lives in Stripe (operators configure price
+ * IDs, not amounts), so the only honest source is Stripe itself.
+ */
+describe('GET /config — real prices from Stripe', () => {
+    it('returns the configured price amount and currency, not a hardcoded guess', async () => {
+        const res = await request(makeApp()).get('/api/v1/billing/config')
+        expect(res.status).toBe(200)
+        expect(res.body.prices.pro.monthly).toMatchObject({ amount: 2900, currency: 'eur' })
+        expect(res.body.prices.pro.yearly).toMatchObject({ amount: 19000, currency: 'eur' })
+    })
+
+    it('resolves each configured tier', async () => {
+        const res = await request(makeApp()).get('/api/v1/billing/config')
+        expect(res.body.prices.enterprise.monthly).toMatchObject({ amount: 2900 })
+    })
+
+    it('omits a price it cannot resolve rather than inventing one', async () => {
+        mockPricesRetrieve.mockImplementation(async (id) => {
+            if (id === 'price_pro_yearly') throw new Error('No such price')
+            return { id, unit_amount: 2900, currency: 'usd', recurring: { interval: 'month' } }
+        })
+        const res = await request(makeApp()).get('/api/v1/billing/config')
+        expect(res.status).toBe(200)
+        expect(res.body.prices.pro.monthly).toMatchObject({ amount: 2900 })
+        expect(res.body.prices.pro.yearly).toBeUndefined()
+    })
+
+    it('reports no prices at all when Stripe is not configured', async () => {
+        stripeEnabled = false
+        const res = await request(makeApp()).get('/api/v1/billing/config')
+        expect(res.status).toBe(200)
+        expect(res.body.stripeEnabled).toBe(false)
+        expect(res.body.prices).toEqual({})
+        expect(mockPricesRetrieve).not.toHaveBeenCalled()
+    })
+
+    it('still reports the existing booleans', async () => {
+        const res = await request(makeApp()).get('/api/v1/billing/config')
+        expect(res.body).toMatchObject({ stripeEnabled: true, yearlyBillingAvailable: true })
     })
 })

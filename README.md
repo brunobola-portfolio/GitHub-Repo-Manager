@@ -246,6 +246,7 @@ The hosted product is **free-first**: nearly every product feature — bulk ops,
 | AI queries / month (total)             | 1,000           | 10,000        | Unlimited  |
 | Semantic Search                        | 375 / month     | Unlimited     | Unlimited  |
 | Migration Risk Analysis (AI)           | 25 / month      | Unlimited     | Unlimited  |
+| Migration Assistant (AI)               | 25 / month      | Unlimited     | Unlimited  |
 | Repo Insights / Quality Report         | 75 / month      | Unlimited     | Unlimited  |
 | README Generator (AI)                  | 25 / month      | Unlimited     | Unlimited  |
 | README Studio (AI improve)             | 25 / month      | Unlimited     | Unlimited  |

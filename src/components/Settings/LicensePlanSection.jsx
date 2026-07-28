@@ -177,7 +177,7 @@ function LicenseCard({ license, onChangeLicenseKey }) {
     const [expanded, setExpanded] = useState(false)
     const tierConfig = TIER_CONFIG[license.tier] || TIER_CONFIG.free
     const IconComp = tierConfig.icon
-    const seatPct = license.seats > 0 ? Math.min(100, Math.round((license.seatsUsed / license.seats) * 100)) : 0
+
 
     return (
         <Card glass={true} className="p-6 bg-white/80 dark:bg-slate-800/80">
@@ -206,19 +206,25 @@ function LicenseCard({ license, onChangeLicenseKey }) {
             </div>
 
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/*
+                  * No seat ratio and no usage bar. `seats` comes from the
+                  * licence JWT, which stripe-webhooks.js mints as
+                  * `parseInt(metadata?.seats) || 1` against a billing.js that
+                  * never sets a `seats` key — so every Stripe licence is
+                  * issued with seats: 1. Nothing enforces it anywhere, and
+                  * every pricing surface promises unlimited team members, so
+                  * the old "{used} of {seats} used" showed every paying team
+                  * in red against a limit that does not exist. The active
+                  * count is a real number and stays.
+                  */}
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50">
-                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Seats</p>
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Team members</p>
                     <p className="text-sm font-semibold text-slate-800 dark:text-white">
-                        {license.seatsUsed} of {license.seats} used
+                        Unlimited
                     </p>
-                    <div className="mt-2 h-1.5 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden">
-                        <div
-                            className={`h-full rounded-full transition-all duration-500 ${
-                                seatPct > 90 ? 'bg-red-500' : seatPct > 70 ? 'bg-amber-500' : 'bg-emerald-500'
-                            }`}
-                            style={{ width: `${seatPct}%` }}
-                        />
-                    </div>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {license.seatsUsed} active in the last 30 days
+                    </p>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/50">
                     <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Expires</p>

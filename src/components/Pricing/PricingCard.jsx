@@ -48,12 +48,29 @@ function FeatureRow({ label, included, highlighted, enterprise }) {
   )
 }
 
+// Only the currencies Stripe accounts here realistically bill in; anything
+// else falls back to the ISO code, which is unambiguous even if less pretty.
+const CURRENCY_SYMBOLS = { usd: '$', eur: '€', gbp: '£' }
+
+function money(amount, currency) {
+  const code = (currency || 'usd').toLowerCase()
+  const symbol = CURRENCY_SYMBOLS[code]
+  return symbol ? `${symbol}${amount}` : `${amount} ${code.toUpperCase()}`
+}
+
 export function PricingCard({
   tier,
   price,
   customPrice,
   originalPrice,
   period,
+  // Resolved from the operator's Stripe price. Defaults to USD so a
+  // self-hosted install with billing off renders exactly as it always did.
+  currency = 'usd',
+  // The real yearly total from Stripe, when there is one. Without it the card
+  // falls back to price * 12, which is only correct for the fixed-discount
+  // path.
+  yearlyBilledTotal,
   features = [],
   highlighted = false,
   enterprise = false,
@@ -65,6 +82,15 @@ export function PricingCard({
   const visibleFeatures = shouldCollapse ? features.slice(0, COLLAPSE_THRESHOLD) : features
   const extraFeatures = shouldCollapse ? features.slice(COLLAPSE_THRESHOLD) : []
   const showStrike = originalPrice != null && originalPrice !== price && price > 0
+  // State the real saving rather than a hardcoded 20%: with a Stripe yearly
+  // price the discount is whatever the operator configured, and claiming a
+  // number the checkout does not honour is the defect this card had.
+  const savingsPct = originalPrice > 0 && yearlyBilledTotal != null
+    ? Math.round((1 - yearlyBilledTotal / (originalPrice * 12)) * 100)
+    : null
+  const savingsLabel = savingsPct != null
+    ? (savingsPct > 0 ? ` · Save ${savingsPct}%` : '')
+    : ' · Save 20%'
 
   return (
     <div className="relative flex flex-col h-full">
@@ -148,7 +174,7 @@ export function PricingCard({
                     : 'text-slate-800 dark:text-white'
                 }`}
             >
-              {customPrice != null ? customPrice : price === 0 ? 'Free' : `$${price}`}
+              {customPrice != null ? customPrice : price === 0 ? 'Free' : money(price, currency)}
             </span>
             {price > 0 && (
               /* The yearly price is the discounted MONTHLY rate, so the unit
@@ -174,7 +200,7 @@ export function PricingCard({
           {customPrice == null && price > 0 && (
             <p className={`text-sm mb-6 ${highlighted ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'}`}>
               {period === 'year'
-                ? `Billed $${price * 12}/year · Save 20%`
+                ? `Billed ${money(yearlyBilledTotal ?? price * 12, currency)}/year${savingsLabel}`
                 : 'Billed monthly'
               }
             </p>

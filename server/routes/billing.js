@@ -55,13 +55,85 @@ function requireStripe(req, res, next) {
     next();
 }
 
+// Resolved Stripe prices, cached. Operators configure price IDs, not amounts —
+// the amount lives in Stripe — so this is the only honest source for what the
+// pricing page should display. Without it the page showed a hardcoded $19
+// while the checkout charged whatever the operator's price actually is.
+//
+// Cached because the pricing page hits this on every mount and prices change
+// about never; a stale window of minutes cannot mis-charge anyone, since the
+// checkout always uses the price ID rather than the number shown.
+const PRICE_CACHE_TTL_MS = 10 * 60 * 1000;
+let priceCache = { at: 0, value: null };
+
+/**
+ * Drop the cached prices. Mirrors `invalidate()` in lib/ai-health-probe.js —
+ * the same affordance for the same reason: a cached lookup that survives
+ * across tests makes each one depend on the order it ran in.
+ */
+export function invalidatePriceCache() {
+    priceCache = { at: 0, value: null };
+}
+
+async function resolvePrices() {
+    if (!isStripeEnabled()) return {};
+    if (priceCache.value && Date.now() - priceCache.at < PRICE_CACHE_TTL_MS) return priceCache.value;
+
+    const stripe = getStripe();
+    if (!stripe) return {};
+
+    const wanted = [
+        ['pro', 'monthly', config.stripePriceProMonthly],
+        ['pro', 'yearly', config.stripePriceProYearly],
+        ['enterprise', 'monthly', config.stripePriceEnterpriseMonthly],
+        ['enterprise', 'yearly', config.stripePriceEnterpriseYearly],
+    ].filter(([, , id]) => !!id);
+
+    const settled = await Promise.allSettled(
+        wanted.map(([, , id]) => stripe.prices.retrieve(id)),
+    );
+
+    const prices = {};
+    settled.forEach((outcome, i) => {
+        const [tier, period] = wanted[i];
+        // A price we cannot read is omitted, never guessed. The client keeps
+        // its own default for that slot rather than advertising a number the
+        // checkout would not honour.
+        if (outcome.status !== 'fulfilled') {
+            logger.warn({ tier, period }, 'Stripe price could not be resolved for /billing/config');
+            return;
+        }
+        const price = outcome.value;
+        if (!Number.isFinite(price?.unit_amount)) return;
+        prices[tier] ??= {};
+        prices[tier][period] = {
+            amount: price.unit_amount,
+            currency: price.currency,
+            interval: price.recurring?.interval ?? null,
+        };
+    });
+
+    priceCache = { at: Date.now(), value: prices };
+    return prices;
+}
+
 // Public capability probe — no auth so the (possibly logged-out) pricing page
-// can feature-detect before rendering the yearly toggle. Booleans only; leaks
-// no secrets or price IDs.
-router.get('/config', (req, res) => {
+// can feature-detect before rendering the yearly toggle, and read the prices it
+// is about to advertise. Amounts and currency only: never a price ID, never a
+// secret.
+router.get('/config', async (req, res) => {
+    let prices = {};
+    try {
+        prices = await resolvePrices();
+    } catch (err) {
+        // Never fail the pricing page over a price lookup — the booleans below
+        // still drive the toggle, and the client falls back to its defaults.
+        logger.warn({ err }, 'Failed to resolve Stripe prices for /billing/config');
+    }
     res.json({
         stripeEnabled: isStripeEnabled(),
         yearlyBillingAvailable: isYearlyBillingAvailable(),
+        prices,
     });
 });
 

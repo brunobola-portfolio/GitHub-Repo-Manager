@@ -57,7 +57,11 @@ const features = [
     icon: LayoutDashboard,
     title: 'Premium Dashboard',
     description:
-      'Beautiful analytics, language breakdowns, commit activity, dark mode, and 20+ bulk operations at your fingertips.',
+      // Counted, not estimated: seven multi-select actions in the repository
+      // batch menu plus three on the Work Board bulk bar. A gate keeps this
+      // figure from drifting above what ships — see
+      // tests/components/Landing/FeaturesSectionClaims.test.jsx.
+      'Beautiful analytics, language breakdowns, commit activity, dark mode, and 10 bulk operations at your fingertips.',
     iconColor: 'text-violet-500 dark:text-violet-400',
     glow: '',
     iconBg: 'bg-violet-500/15 dark:bg-violet-500/25',

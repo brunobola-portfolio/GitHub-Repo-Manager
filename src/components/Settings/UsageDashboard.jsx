@@ -44,6 +44,7 @@ const AI_FEATURE_ROWS = [
   { key: 'commit', label: 'Commit Generator' },
   { key: 'insights', label: 'Repo Insights' },
   { key: 'migrationRisk', label: 'Migration Risk Analysis' },
+  { key: 'migrationAssist', label: 'Migration Assistant' },
   { key: 'semanticSearch', label: 'Semantic Search' },
   { key: 'deepReview', label: 'AI Deep Review' },
   { key: 'prChat', label: 'PR Chat' },

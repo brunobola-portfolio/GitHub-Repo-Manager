@@ -23,6 +23,7 @@ const TIERS_MONTHLY = [
       { label: 'Repo Advisor (conversational)', included: true },
       { label: 'Semantic Search (AI)', included: '375 / month' },
       { label: 'Migration Risk Analysis (AI)', included: '25 / month' },
+      { label: 'Migration Assistant (AI)', included: '25 / month' },
       { label: 'Repo Insights / Quality Report', included: '75 / month' },
       { label: 'README Generator (AI)', included: '25 / month' },
       { label: 'README Studio (AI improve)', included: '25 / month' },
@@ -88,10 +89,49 @@ const TIERS_MONTHLY = [
   },
 ]
 
-const YEARLY_DISCOUNT = 0.8 // 20% off
+const YEARLY_DISCOUNT = 0.8 // 20% off — the fallback when Stripe prices are unavailable
+
+const CURRENCY_SYMBOLS = { usd: '$', eur: '€', gbp: '£' }
+
+/** Minor units (Stripe's unit_amount) to a whole-currency display number. */
+function toMajor(amount) {
+  return Math.round(amount / 100)
+}
+
+/**
+ * Overlay the operator's real Stripe prices onto the built-in tier defaults.
+ *
+ * The defaults are what a self-hosted install with billing switched off shows,
+ * where the number is decorative. The moment Stripe IS configured, the page
+ * must advertise what the checkout will actually charge — anything else means
+ * shipping one number and billing another.
+ */
+function applyStripePrices(tier, prices) {
+  const key = tier.tier.toLowerCase()
+  const monthly = prices?.[key]?.monthly
+  if (!monthly || tier.customPrice != null) return tier
+  const yearly = prices[key].yearly
+  return {
+    ...tier,
+    price: toMajor(monthly.amount),
+    currency: monthly.currency,
+    yearlyTotal: yearly ? toMajor(yearly.amount) : null,
+  }
+}
 
 function applyYearly(tier, isYearly) {
   if (!isYearly || tier.price === 0 || tier.customPrice != null) return tier
+  // A real yearly price gives a real monthly equivalent and a real saving.
+  // Deriving both from a fixed 20% understated or overstated whatever the
+  // operator actually configured.
+  if (tier.yearlyTotal != null) {
+    return {
+      ...tier,
+      originalPrice: tier.price,
+      price: Math.round(tier.yearlyTotal / 12),
+      yearlyBilledTotal: tier.yearlyTotal,
+    }
+  }
   return {
     ...tier,
     originalPrice: tier.price,
@@ -107,7 +147,7 @@ const FAQS = [
   },
   {
     q: 'What counts as an AI query?',
-    a: 'Each call to Repo Advisor, Semantic Search, Migration Risk Analysis, README Generator, Commit Generator, Repo Insights, Deep Review, Prompt Studio, or PR Chat counts as one query against your monthly total. Free-tier users also get per-feature caps (e.g. 25 READMEs/month) so no single feature drains your whole budget. Cached responses and read-only dashboard views are free.',
+    a: 'Each call to the Repo Advisor assistant, Semantic Search, Migration Risk Analysis, Migration Assistant, README Generator, Commit Generator, Repo Insights, Deep Review, Prompt Studio, or PR Chat counts as one query against your monthly total. The Repo Advisor card inside the Work Board is metered separately, against its own spend cap under Settings → Work Board, and does not draw on this total. Free-tier users also get per-feature caps (e.g. 25 READMEs/month) so no single feature drains your whole budget. Cached responses and read-only dashboard views are free.',
   },
   {
     q: 'Is my data secure?',
@@ -180,6 +220,7 @@ export function PricingPage({ onGetStarted } = {}) {
   // "Save 20%" and then charge the monthly price at checkout. Defaults to
   // false (hidden) so an unavailable/failed probe errs on the honest side.
   const [yearlyAvailable, setYearlyAvailable] = useState(false)
+  const [stripePrices, setStripePrices] = useState(null)
   const [checkoutLoading, setCheckoutLoading] = useState(null)
   // Stays on Pricing when checkout is unavailable so the user actually sees
   // the explanation (previously we navigated home and the banner never showed).
@@ -196,7 +237,9 @@ export function PricingPage({ onGetStarted } = {}) {
         const res = await fetch(`${API_BASE_URL}/api/v1/billing/config`, { credentials: 'include' })
         if (!res.ok) return
         const data = await res.json()
-        if (!cancelled) setYearlyAvailable(!!data?.yearlyBillingAvailable)
+        if (cancelled) return
+        setYearlyAvailable(!!data?.yearlyBillingAvailable)
+        setStripePrices(data?.prices ?? null)
       } catch { /* keep yearly hidden when we can't confirm it's configured */ }
     })()
     return () => { cancelled = true }
@@ -250,7 +293,9 @@ export function PricingPage({ onGetStarted } = {}) {
     if (onGetStarted) onGetStarted('free')
   }, [handleCheckout, onGetStarted, isYearly])
 
-  const tiers = TIERS_MONTHLY.map(t => applyYearly(t, isYearly))
+  const tiers = TIERS_MONTHLY
+    .map(t => applyStripePrices(t, stripePrices))
+    .map(t => applyYearly(t, isYearly))
 
   return (
     <div data-testid="pricing-page" className="relative min-h-screen overflow-x-hidden">
