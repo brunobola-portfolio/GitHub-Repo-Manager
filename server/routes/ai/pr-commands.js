@@ -15,6 +15,7 @@
  */
 
 import express from 'express';
+import { reserveAIQuota } from '../ai-quota.js';
 import { createHash } from 'crypto';
 
 import { requireAuth, errorResponse } from '../../middleware/auth.js';
@@ -22,7 +23,7 @@ import { githubApi } from '../../lib/github-api.js';
 import { readThrough } from '../../lib/gh-cache.js';
 import { executeViaOutbox } from '../../lib/outbox-helper.js';
 import { createProviderForUser } from '../../lib/ai-provider.js';
-import { checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { quotaExceededResponse } from '../../lib/usage-meter.js';
 import { denyIfSpendCapReached, recordStreamCompletion } from './shared.js';
 import { runPRCommand, isSupportedCommand } from '../../lib/ai-features/pr-commands.js';
 import {
@@ -173,7 +174,7 @@ router.post('/:owner/:repo/:pr/:command', requireAuth, generateRateLimit, async 
     // PR commands moved off the Pro paywall to Free (2026-07-18 rebalance) —
     // meter against prCommandPerMonth AND the global ai_queries pool, and
     // enforce the monthly spend cap, all BEFORE any provider call (OWASP LLM10).
-    const quota = checkAIFeatureLimit(userId, 'ai_pr_command');
+    const quota = reserveAIQuota(req, res, 'ai_pr_command');
     if (!quota.allowed) {
         return res.status(429).json(quotaExceededResponse(quota));
     }
@@ -256,7 +257,6 @@ router.post('/:owner/:repo/:pr/:command', requireAuth, generateRateLimit, async 
     );
 
     // Meter the query + record spend + write a PII-safe cost audit.
-    incrementAIUsage(userId, 'ai_pr_command');
     recordStreamCompletion(req, {
         feature: 'pr_command',
         action: 'ai.pr_command',

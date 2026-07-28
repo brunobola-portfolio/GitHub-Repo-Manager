@@ -9,6 +9,7 @@
  */
 
 import express from 'express';
+import { reserveAIQuota } from '../ai-quota.js';
 import db from '../../db.js';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError } from '../../middleware/auth.js';
@@ -18,7 +19,7 @@ import { validateBody } from '../../middleware/validate-request.js';
 import { aiService } from '../../ai-service.js';
 import {
     checkUsageLimit,
-    checkAIFeatureLimit,
+    
     incrementAIUsage,
     quotaExceededResponse,
     guardedIncrementAIUsage,
@@ -168,11 +169,10 @@ router.get('/ai/search', requireAuth, requireScope('ai'), requireAI, async (req,
         if (!repoId) return res.status(400).json({ error: 'repoId required' })
         try {
             const userId = req.session.userId
-            const check = checkAIFeatureLimit(userId, 'ai_semantic_search');
+            const check = reserveAIQuota(req, res, 'ai_semantic_search');
             if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
             const similar = await aiService.findSimilarById(repoId, { topK: 5, excludeSelf: true, userId })
             if (!similar) return res.status(404).json({ error: 'Repository not indexed' })
-            incrementAIUsage(userId, 'ai_semantic_search');
             auditLog(req, 'ai.compare', 'ai', repoId, { resultCount: similar.length })
             return res.json({ mode: 'similar-by-id', similar })
         } catch (err) {
@@ -188,7 +188,7 @@ router.get('/ai/search', requireAuth, requireScope('ai'), requireAI, async (req,
 
     try {
         const userId = req.session.userId;
-        const check = checkAIFeatureLimit(userId, 'ai_semantic_search');
+        const check = reserveAIQuota(req, res, 'ai_semantic_search');
         if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
 
         // Monthly spend cap — semanticSearch() calls embedText() under the
@@ -215,7 +215,6 @@ router.get('/ai/search', requireAuth, requireScope('ai'), requireAI, async (req,
             return { ...r, ...meta };
         });
 
-        incrementAIUsage(userId, 'ai_semantic_search');
         auditLog(req, 'ai.search', 'ai', null, { query: q, resultCount: enriched.length });
         res.json(enriched);
 

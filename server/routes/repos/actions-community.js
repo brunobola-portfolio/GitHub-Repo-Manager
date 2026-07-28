@@ -34,6 +34,8 @@
  */
 
 import express from 'express';
+import { reserveAIQuota } from '../ai-quota.js';
+import { releaseGuardedAIUsage } from '../../lib/usage-meter.js';
 import db from '../../db.js';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js';
@@ -62,7 +64,7 @@ import {
 } from '../../lib/ai-features/agent-rules.js';
 import { createProviderForUser, isServerKeyProvider } from '../../lib/ai-provider.js';
 import { mapAIErrorToResponse } from '../../middleware/ai-error-mapper.js';
-import { checkUsageLimit, incrementUsage, checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { checkUsageLimit, incrementUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { checkAISpendCap, recordAISpend } from '../../lib/ai-spend-cap.js';
 import { applyOwnerRepoParamValidators } from './_shared.js';
 
@@ -671,7 +673,6 @@ function summarizeAgentRulesSignals(signals) {
 router.post('/:owner/:repo/agent-rules/generate', requireAuth, requireScope('ai'), validateBody(agentRulesGenerateSchema), async (req, res) => {
     const { owner, repo } = req.params;
     const { targetFiles, mode, sections, strictness } = req.validatedBody;
-    const userId = req.session.userId;
 
     try {
         const signals = await detectRepoSignals({ owner, repo, token: req.session.accessToken, githubApi, log: req.log });
@@ -705,7 +706,7 @@ router.post('/:owner/:repo/agent-rules/generate', requireAuth, requireScope('ai'
         }
         req.aiProvider = provider;
 
-        const quota = checkAIFeatureLimit(userId, 'ai_agent_rules');
+        const quota = reserveAIQuota(req, res, 'ai_agent_rules');
         if (!quota.allowed) {
             // Quota-exceeded still ships the deterministic path (Addendum 6b.2)
             // so the user isn't fully blocked just because their AI quota ran out.
@@ -717,7 +718,6 @@ router.post('/:owner/:repo/agent-rules/generate', requireAuth, requireScope('ai'
 
         try {
             const { text, sections: usedSections } = await generateAgentRules(req, signals, { targetFiles, mode, sections, strictness });
-            incrementAIUsage(userId, 'ai_agent_rules');
             auditLog(req, 'ai.generate_agent_rules', 'ai', null, { repo: `${owner}/${repo}`, targetFiles, mode });
             res.json({
                 deterministic: false,
@@ -731,6 +731,10 @@ router.post('/:owner/:repo/agent-rules/generate', requireAuth, requireScope('ai'
             // the spend cap was hit) — degrade to the deterministic template
             // rather than surfacing a hard error (Addendum 6b.2).
             req.log.warn({ err: aiErr }, 'agent rules AI generation failed — falling back to deterministic template');
+            // This path answers 200 with the deterministic template, so the
+            // automatic 4xx/5xx refund does not fire — hand the reserved unit
+            // back explicitly. No AI generation happened, so nothing is owed.
+            releaseGuardedAIUsage(req.session.userId, 'ai_agent_rules');
             res.json({
                 deterministic: true,
                 reason: aiErr?.code === 'AI_SPEND_CAP_REACHED' ? 'spend_cap_reached' : 'ai_error',

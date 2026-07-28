@@ -33,7 +33,15 @@ vi.mock('../middleware/auth.js', async () => {
 
 const checkAIFeatureLimit = vi.fn(() => ({ allowed: true, current: 0, limit: 75, remaining: 75, metric: 'ai_security_posture' }))
 const incrementAIUsage = vi.fn()
+// The route reserves atomically now (reserveAIQuota → guardedIncrementAIUsage)
+// instead of check-then-increment, so metering assertions follow the reserve.
+const guardedIncrementAIUsage = vi.fn(() => ({ allowed: true, current: 0, limit: 75, remaining: 75, metric: 'ai_security_posture' }))
 vi.mock('../lib/usage-meter.js', () => ({
+    // Added with reserveAIQuota: a FULL module mock silently drops new
+    // exports, and route handlers then call undefined and 500.
+    guardedIncrementAIUsage: (...a) => guardedIncrementAIUsage(...a),
+    releaseGuardedAIUsage: vi.fn(),
+
   checkAIFeatureLimit: (...a) => checkAIFeatureLimit(...a),
   incrementAIUsage: (...a) => incrementAIUsage(...a),
   quotaExceededResponse: (check) => ({ error: 'usage_limit_exceeded', code: 'QUOTA_EXCEEDED', limit: check.limit, current: check.current }),
@@ -194,6 +202,7 @@ describe('POST /api/v1/repos/:owner/:repo/security/summary', () => {
     vi.clearAllMocks()
     clearSecurityPostureSummaryCache()
     checkAIFeatureLimit.mockImplementation(() => ({ allowed: true, current: 0, limit: 75, remaining: 75, metric: 'ai_security_posture' }))
+    guardedIncrementAIUsage.mockImplementation(() => ({ allowed: true, current: 0, limit: 75, remaining: 75, metric: 'ai_security_posture' }))
     checkAISpendCap.mockImplementation(() => ({ allowed: true, capCents: 0, spentCents: 0 }))
   })
 
@@ -210,7 +219,7 @@ describe('POST /api/v1/repos/:owner/:repo/security/summary', () => {
     expect(res.status).toBe(200)
     expect(res.body.cached).toBe(false)
     expect(res.body.topActions).toHaveLength(1)
-    expect(incrementAIUsage).toHaveBeenCalledWith(1, 'ai_security_posture')
+    expect(guardedIncrementAIUsage).toHaveBeenCalledWith(1, 'ai_security_posture')
   })
 
   it('serves the cached summary on a second identical call without re-billing', async () => {
@@ -220,11 +229,11 @@ describe('POST /api/v1/repos/:owner/:repo/security/summary', () => {
     const r2 = await request(app).post('/api/v1/repos/alice/hello/security/summary').send(validBody)
     expect(r2.body.cached).toBe(true)
     expect(mockGenerate).toHaveBeenCalledTimes(1)
-    expect(incrementAIUsage).toHaveBeenCalledTimes(1)
+    expect(guardedIncrementAIUsage).toHaveBeenCalledTimes(1)
   })
 
   it('returns 429 when over the securityPostureAIPerMonth quota', async () => {
-    checkAIFeatureLimit.mockImplementation(() => ({ allowed: false, current: 75, limit: 75, remaining: 0, metric: 'ai_security_posture' }))
+    guardedIncrementAIUsage.mockImplementation(() => ({ allowed: false, current: 75, limit: 75, remaining: 0, metric: 'ai_security_posture' }))
     const res = await request(await buildApp())
       .post('/api/v1/repos/alice/hello/security/summary')
       .send(validBody)

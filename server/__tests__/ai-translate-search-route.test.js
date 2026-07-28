@@ -32,6 +32,11 @@ vi.mock('../middleware/auth.js', async () => {
 const checkUsageLimit = vi.fn(() => ({ allowed: true, current: 0, limit: 100, remaining: 100 }))
 const incrementUsage = vi.fn()
 vi.mock('../lib/usage-meter.js', () => ({
+    // Added with reserveAIQuota: a FULL module mock silently drops new
+    // exports, and route handlers then call undefined and 500.
+    guardedIncrementAIUsage: vi.fn(() => ({ allowed: true, metric: 'ai', current: 0, limit: 100, remaining: 100 })),
+    releaseGuardedAIUsage: vi.fn(),
+
     checkUsageLimit: (...a) => checkUsageLimit(...a),
     incrementUsage: (...a) => incrementUsage(...a),
     checkAIFeatureLimit: vi.fn(() => ({ allowed: true })),

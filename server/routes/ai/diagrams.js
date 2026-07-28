@@ -36,13 +36,14 @@
  */
 
 import express from 'express';
+import { reserveAIQuota } from '../ai-quota.js';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, isValidGitHubFullName } from '../../middleware/auth.js';
 import { requireScope } from '../../middleware/api-key-auth.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { aiGenerateDiagramSchema, deterministicDiagramSchema, embedDiagramPreviewSchema, embedDiagramCommitSchema } from '../../lib/validators.js';
 import { sanitizeForPrompt } from '../../ai-service.js';
-import { checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
 import { requireAI, guardedGenerate, handleAIError, denyIfSpendCapReached, recordStreamCompletion } from './shared.js';
 import { initSSE, streamToSSEWithUsage } from '../ai-streaming.js';
@@ -202,17 +203,18 @@ export async function fetchDiagramContext({ owner, repo, accessToken, log }) {
 }
 
 router.post('/ai/generate-diagram', requireAuth, requireScope('ai'), validateBody(aiGenerateDiagramSchema), requireAI, async (req, res) => {
-    const userId = req.session.userId;
     const { repo, diagramType, focus, retry, failedSource, parseError } = req.validatedBody;
 
     if (!isValidGitHubFullName(repo.full_name)) {
         return res.status(400).json({ error: 'Invalid repo.full_name', code: 'validation_failed' });
     }
 
-    // Check-once / increment-once: only the initial (non-retry) attempt
-    // consumes the diagramGenPerMonth quota. See file header + research §4a.
+    // Reserve-once: only the initial (non-retry) attempt consumes the
+    // diagramGenPerMonth quota. See file header + research §4a. The unit is
+    // taken atomically before the provider call and handed back automatically
+    // on any 4xx/5xx — see reserveAIQuota.
     if (!retry) {
-        const check = checkAIFeatureLimit(userId, 'ai_diagram');
+        const check = reserveAIQuota(req, res, 'ai_diagram');
         if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
     }
 
@@ -245,7 +247,6 @@ router.post('/ai/generate-diagram', requireAuth, requireScope('ai'), validateBod
                 const { text: raw, usage, costUSD, partial } = await streamToSSEWithUsage(iter, sse);
                 const mermaid = cleanMermaidText(raw);
 
-                if (!retry) incrementAIUsage(userId, 'ai_diagram');
                 recordStreamCompletion(req, {
                     feature: 'diagram',
                     action: 'ai.generate_diagram',
@@ -267,7 +268,6 @@ router.post('/ai/generate-diagram', requireAuth, requireScope('ai'), validateBod
         const { text } = await guardedGenerate(req, { prompt }, { feature: 'diagram' });
         const mermaid = cleanMermaidText(text);
 
-        if (!retry) incrementAIUsage(userId, 'ai_diagram');
         auditLog(req, 'ai.generate_diagram', 'ai', null, { repo: repo.full_name, diagramType, retry: !!retry });
 
         res.json({ success: true, mermaid, diagramType, truncated });
