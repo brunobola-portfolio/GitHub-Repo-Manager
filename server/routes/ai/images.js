@@ -14,10 +14,11 @@
  * (capability detection, pricing, spend-cap, the three provider-specific raw
  * fetch calls, refusal detection) lives in
  * server/lib/ai-features/image-provider.js; this route owns request
- * validation, the `ai_image` count quota (checked once, incremented only on
- * a genuine success — refusals and capability/pricing failures never burn a
- * quota unit, matching diagrams.js's documented rationale), the grounded
- * prompt template, and the binary-safe commit write.
+ * validation, the `ai_image` count quota (reserved atomically BEFORE the
+ * provider call and released on every failure path — refusals and
+ * capability/pricing failures never burn a quota unit, and concurrent
+ * requests cannot all read the same stale count and overshoot the cap), the
+ * grounded prompt template, and the binary-safe commit write.
  *
  * Preview-before-commit (r5 §4.5, mirrors agent-rules/diagram-embed): the
  * generate call NEVER writes to the repo. The client renders the returned
@@ -38,7 +39,7 @@ import { requireScope } from '../../middleware/api-key-auth.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { aiGenerateImageSchema, commitImageSchema } from '../../lib/validators.js';
 import { sanitizeForPrompt } from '../../lib/ai-features/sanitize.js';
-import { checkAIFeatureLimit, incrementAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { guardedIncrementAIUsage, releaseGuardedAIUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
 import { handleAIError } from './shared.js';
 import { AI_ERROR_CODE, resolveImageProviderConfig } from '../../lib/ai-provider.js';
@@ -215,12 +216,19 @@ router.post('/ai/generate-image', requireAuth, requireScope('ai'), validateBody(
         return res.status(400).json({ error: 'Invalid repo.full_name', code: 'validation_failed' });
     }
 
-    // Check-once / increment-once-on-success (TRAP 4/5): a capability
-    // failure, pricing failure, or refusal below never reaches
-    // incrementAIUsage — only a genuine successful generation consumes the
-    // monthly ai_image quota, mirroring diagrams.js / agent-rules.
-    const check = checkAIFeatureLimit(userId, 'ai_image');
-    if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
+    // Atomic guarded reserve, not a read-only check. A plain
+    // checkAIFeatureLimit() paired with a later incrementAIUsage() leaves the
+    // entire awaited generation open as a race window: every request arriving
+    // before the first finishes reads the same stale count and is admitted. At
+    // ~$0.25/image against a Free cap of 5/month, a burst to the rate limit
+    // bills multiples of the intended $1.25.
+    //
+    // Reserved BEFORE any provider work and released on every failure path
+    // below, so a capability failure, pricing failure or refusal still costs
+    // the user nothing (TRAP 4/5) — the guarantee the old comment described
+    // but the ordering did not deliver.
+    const reserved = guardedIncrementAIUsage(userId, 'ai_image');
+    if (!reserved.allowed) return res.status(429).json(quotaExceededResponse(reserved));
 
     try {
         const providerConfig = await resolveImageProviderConfig(userId);
@@ -234,7 +242,6 @@ router.post('/ai/generate-image', requireAuth, requireScope('ai'), validateBody(
             size: cfg.openaiSize,
         });
 
-        incrementAIUsage(userId, 'ai_image');
         auditLog(req, 'ai.generate_image', 'ai', null, {
             repo: repo.full_name, preset, provider: result.provider, model: result.model, costCents: result.costCents,
         });
@@ -252,6 +259,9 @@ router.post('/ai/generate-image', requireAuth, requireScope('ai'), validateBody(
             estimatedCost: result.estimatedCost,
         });
     } catch (error) {
+        // The reservation above is a real unit of quota — hand it back so a
+        // refusal, a capability gap or a provider outage is not billed.
+        releaseGuardedAIUsage(userId, 'ai_image');
         handleImageError(req, res, error);
     }
 });

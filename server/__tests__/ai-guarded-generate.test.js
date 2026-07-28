@@ -44,3 +44,39 @@ describe('guardedGenerate', () => {
         expect(req.aiProvider.generate).not.toHaveBeenCalled();
     });
 });
+
+// ---------------------------------------------------------------------------
+// A route that asks for a small budget means it: "summarise in 80 tokens" is a
+// cost and latency decision, not a hint. The global AI_MAX_OUTPUT_TOKENS is a
+// CEILING — it must clamp a route that asks for too much, never inflate one
+// that asks for little. Overwriting instead of clamping made four routes'
+// declared budgets dead parameters, each silently generating up to the 2048
+// default.
+// ---------------------------------------------------------------------------
+describe('guardedGenerate — per-route output budget', () => {
+    it('honours a route budget below the global ceiling', async () => {
+        const req = fakeReq(async () => ({ text: 'ok' }));
+        await guardedGenerate(req, { prompt: 'hi', generationConfig: { maxOutputTokens: 80 } }, { feature: 'chat' });
+        expect(req.aiProvider.generate.mock.calls[0][0].generationConfig.maxOutputTokens).toBe(80);
+    });
+
+    it('clamps a route budget above the global ceiling', async () => {
+        const req = fakeReq(async () => ({ text: 'ok' }));
+        await guardedGenerate(req, { prompt: 'hi', generationConfig: { maxOutputTokens: 999999 } }, { feature: 'chat' });
+        const used = req.aiProvider.generate.mock.calls[0][0].generationConfig.maxOutputTokens;
+        expect(used).toBeLessThanOrEqual(8192);
+        expect(used).toBeLessThan(999999);
+    });
+
+    it('falls back to the global ceiling when a route declares no budget', async () => {
+        const req = fakeReq(async () => ({ text: 'ok' }));
+        await guardedGenerate(req, { prompt: 'hi' }, { feature: 'chat' });
+        expect(req.aiProvider.generate.mock.calls[0][0].generationConfig.maxOutputTokens).toBe(2048);
+    });
+
+    it('ignores a non-positive route budget rather than disabling the cap', async () => {
+        const req = fakeReq(async () => ({ text: 'ok' }));
+        await guardedGenerate(req, { prompt: 'hi', generationConfig: { maxOutputTokens: 0 } }, { feature: 'chat' });
+        expect(req.aiProvider.generate.mock.calls[0][0].generationConfig.maxOutputTokens).toBe(2048);
+    });
+});

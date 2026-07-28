@@ -110,7 +110,20 @@ router.get('/config/ai-status', async (req, res) => {
         return res.json({ configured: false, provider: null, keyHealth: 'unknown', lastCheckedAt: null });
     }
 
+    // `?probe=1` deliberately bypasses the 5-minute cache and drives a real
+    // provider.generate(). The unforced read is bounded by that cache — a
+    // burst collapses to one call — but the forced one is not, so without a
+    // session check an anonymous caller could spend the operator's key once
+    // per request, as fast as the rate limiter allowed (OWASP LLM10). The
+    // unauthenticated read stays open: the client needs it to decide whether
+    // to offer AI at all, and only the Settings UI ever forces a probe.
     const force = req.query?.probe === '1';
+    if (force && !userId) {
+        return res.status(401).json({
+            error: 'Sign in to run a live AI key probe.',
+            code: 'AUTH_REQUIRED',
+        });
+    }
     const health = force
         ? await probeAndCache({ userId, resolveProvider, feature })
         : getKeyHealth({ userId, resolveProvider, feature });
@@ -311,7 +324,9 @@ router.post('/ai/attention-narrative', requireAuth, requireScope('ai'), validate
         const prompt = buildNarrativePrompt({ repo, kind, signal });
         const { text } = await guardedGenerate(req, {
             prompt,
-            maxOutputTokens: ATTENTION_NARRATIVE_LIMITS.maxOutputTokens,
+            // Must sit inside generationConfig — that is the shape providers
+            // read. As a top-level key it was silently dropped.
+            generationConfig: { maxOutputTokens: ATTENTION_NARRATIVE_LIMITS.maxOutputTokens },
         }, { feature: 'attention_narrative' });
 
         const narrative = shapeNarrative(text);
@@ -377,7 +392,7 @@ router.post('/ai/translate-search', requireAuth, requireScope('ai'), validateBod
         const { text, parsed } = await guardedGenerate(req, {
             prompt,
             schema: TRANSLATE_SEARCH_SCHEMA,
-            maxOutputTokens: TRANSLATE_SEARCH_LIMITS.maxOutputTokens,
+            generationConfig: { maxOutputTokens: TRANSLATE_SEARCH_LIMITS.maxOutputTokens },
         }, { feature: 'translate_search' });
 
         const payload = parsed || safeJsonParse(text);

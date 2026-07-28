@@ -112,11 +112,11 @@ router.post('/ai/index', requireAuth, requireScope('ai'), validateBody(aiIndexSc
         }
 
         // 3. Generate Analysis (Summary, Health Score, Topics)
-        const analysis = await aiService.analyzeRepo(repo, readmeContent, fileStructure);
+        const analysis = await aiService.analyzeRepo(repo, readmeContent, fileStructure, req.aiProvider);
 
         // 4. Generate Embedding (Description + Summary + Readme excerpt)
         const textToEmbed = `${repo.name} ${repo.description || ''} ${analysis.summary} ${analysis.suggested_topics.join(' ')}`;
-        const embedding = await aiService.embedText(textToEmbed);
+        const embedding = await aiService.embedText(textToEmbed, req.aiProvider);
 
         // 5. Save to DB (scoped by user_id for multi-tenancy)
         const stmtMeta = db.prepare(`
@@ -198,7 +198,7 @@ router.get('/ai/search', requireAuth, requireScope('ai'), requireAI, async (req,
         if (!spend.allowed) return res.status(429).json(spendCapDeniedResponse(spend));
 
         // Get generic results (repo_ids and scores) scoped by user
-        const results = await aiService.semanticSearch(q, 10, userId);
+        const results = await aiService.semanticSearch(q, 10, userId, req.aiProvider);
 
         if (results.length === 0) return res.json([]);
 
@@ -347,11 +347,11 @@ router.post('/ai/batch-index', requireAuth, requireScope('ai'), validateBody(aiB
             } catch (e) { /* No contents */ }
 
             // Generate analysis
-            const analysis = await aiService.analyzeRepo(repo, readmeContent, fileStructure);
+            const analysis = await aiService.analyzeRepo(repo, readmeContent, fileStructure, req.aiProvider);
 
             // Generate embedding
             const textToEmbed = `${repo.name} ${repo.description || ''} ${analysis.summary} ${analysis.suggested_topics?.join(' ') || ''}`;
-            const embedding = await aiService.embedText(textToEmbed);
+            const embedding = await aiService.embedText(textToEmbed, req.aiProvider);
 
             // Record this item's spend (embedText has no cost data to add —
             // see the /ai/index comment above).

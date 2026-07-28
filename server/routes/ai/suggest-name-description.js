@@ -207,7 +207,7 @@ router.post(
                     readmeExcerpt: (ctx.sections.find((s) => s.kind === 'readme')?.content) || '',
                     signalsBlock,
                 });
-                const { text, costUSD } = await provider.generate({ prompt, maxTokens: 200 });
+                const { text, costUSD } = await provider.generate({ prompt, generationConfig: { maxOutputTokens: 200 } });
                 if (billsOperator) recordAISpend(userId, costUSD);
                 const parsed = safeJsonParse(text);
                 if (

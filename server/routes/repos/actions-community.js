@@ -661,6 +661,13 @@ function summarizeAgentRulesSignals(signals) {
     };
 }
 
+// requireScope('ai') is NOT paired with an AI_GENERATION_ROUTE_PATHS entry:
+// this route lives outside the server/routes/ai/* barrel that the parity test
+// in ai-key-scope-enforcement.test.js walks, so it falls outside that
+// allowlist's carve-out mechanism entirely (mirrors migration.js's /analyze
+// and repos-security.js's /security/summary, which are in the same position).
+// The practical effect is fail-closed: only session users and admin-scoped API
+// keys reach this route; an ai-only or write-only key cannot.
 router.post('/:owner/:repo/agent-rules/generate', requireAuth, requireScope('ai'), validateBody(agentRulesGenerateSchema), async (req, res) => {
     const { owner, repo } = req.params;
     const { targetFiles, mode, sections, strictness } = req.validatedBody;
