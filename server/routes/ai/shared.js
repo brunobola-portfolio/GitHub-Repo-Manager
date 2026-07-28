@@ -262,9 +262,11 @@ export function denyIfSpendCapReached(req, res) {
  * Post-stream bookkeeping for an SSE AI call: record spend + emit a PII-safe
  * audit entry. The streaming analogue of guardedGenerate's tail.
  *
- * `usage`/`costUSD` come from `streamToSSEWithUsage` and may be null (provider
- * reported no usage, or the client disconnected) — `recordAISpend` no-ops on
- * null cost and the audit still records feature + model. Pass `extraMeta` to
+ * `usage`/`costUSD` come from `streamToSSEWithUsage` and may be null (the
+ * provider reported no usage) — `recordAISpend` no-ops on null cost and the
+ * audit still records feature + model. `partial` marks a stream the client
+ * abandoned: the tokens are real and get billed, but they are what was measured
+ * up to the disconnect, so the cost is a floor. Pass `extraMeta` to
  * merge route-specific fields (repo, commit_count, streamed:true) into the
  * audit meta; `action` overrides the default `ai.<feature>` audit action so
  * existing audit-log action names are preserved.
@@ -276,16 +278,17 @@ export function denyIfSpendCapReached(req, res) {
  *                                     may differ from req.aiProvider, e.g. pr-chat)
  * @param {object|null} [opts.usage]
  * @param {number|null} [opts.costUSD]
+ * @param {boolean} [opts.partial]  — client disconnected mid-stream
  * @param {string} [opts.action]    — explicit audit action name
  * @param {object} [opts.extraMeta] — route-specific audit fields to merge
  */
-export function recordStreamCompletion(req, { feature, model, usage, costUSD, action, extraMeta } = {}) {
+export function recordStreamCompletion(req, { feature, model, usage, costUSD, partial, action, extraMeta } = {}) {
     // Only the operator's own key accumulates against the operator's cap —
     // see isServerKeyProvider. The audit entry is written either way.
     if (isServerKeyProvider(req.aiProvider)) recordAISpend(req.session?.userId, costUSD);
     auditLog(req, action || `ai.${feature || 'stream'}`, 'ai', null, {
         ...(extraMeta || {}),
-        ...buildAIAuditMeta({ feature, model, usage, costUSD }),
+        ...buildAIAuditMeta({ feature, model, usage, costUSD, partial }),
     });
 }
 

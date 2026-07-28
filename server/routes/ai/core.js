@@ -219,6 +219,7 @@ router.post('/ai/chat', requireAuth, requireScope('ai'), validateBody(aiChatSche
                 model: req.aiProvider?.model,
                 usage: result.usage,
                 costUSD: result.costUSD,
+                partial: result.partial,
                 extraMeta: { messageLength: message.length, streamed: true },
             });
 

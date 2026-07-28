@@ -280,6 +280,40 @@ describe('an abandoned stream is billed', () => {
         expect(recorded).toBeGreaterThan(0);
     });
 
+    it('marks the audit entry partial so the recorded cost reads as a floor, not a total', async () => {
+        // A truncated stream and a complete one both land in the audit log with
+        // a costCents. Without a marker they are indistinguishable, and an
+        // operator reconciling spend has no way to tell which numbers are whole.
+        const req = makeReq();
+        const res = makeRes((n) => { if (n === 1) req.emit('close'); });
+        const sse = initSSE(res, req);
+
+        const { usage, costUSD, partial } = await streamToSSEWithUsage(meteredStream(sse.signal), sse);
+        expect(partial).toBe(true);
+
+        recordStreamCompletion(
+            { session: { userId: 7 }, aiProvider: { source: 'server' } },
+            { feature: 'review_summary', model: 'claude-3-sonnet', usage, costUSD, partial },
+        );
+
+        expect(auditLog.mock.calls[0][4].partial).toBe(true);
+    });
+
+    it('leaves a stream that ran to completion unmarked', async () => {
+        const res = makeRes();
+        const sse = initSSE(res, makeReq());
+
+        const { usage, costUSD, partial } = await streamToSSEWithUsage(meteredStream(sse.signal), sse);
+        expect(partial).toBe(false);
+
+        recordStreamCompletion(
+            { session: { userId: 7 }, aiProvider: { source: 'server' } },
+            { feature: 'review_summary', model: 'claude-3-sonnet', usage, costUSD, partial },
+        );
+
+        expect(auditLog.mock.calls[0][4]).not.toHaveProperty('partial');
+    });
+
     it('writes the measured tokens into the audit entry, not zeros', async () => {
         const req = makeReq();
         const res = makeRes((n) => { if (n === 1) req.emit('close'); });

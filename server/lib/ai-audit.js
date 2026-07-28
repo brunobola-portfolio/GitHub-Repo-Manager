@@ -13,9 +13,13 @@
  * @param {{inputTokens?:number|null, outputTokens?:number|null}|null} [input.usage]
  * @param {number|null} [input.costUSD]
  * @param {number} [input.messageLength]
+ * @param {boolean} [input.partial]      — stream cut short by a client
+ *                                         disconnect; the cost is a floor,
+ *                                         not a total. Recorded only when true
+ *                                         so complete calls stay unannotated.
  * @returns {object} PII-safe metadata
  */
-export function buildAIAuditMeta({ feature, model, usage, costUSD, messageLength } = {}) {
+export function buildAIAuditMeta({ feature, model, usage, costUSD, messageLength, partial } = {}) {
     const meta = {};
     if (feature) meta.feature = feature;
     if (typeof model === 'string' && model) meta.model = model;
@@ -25,5 +29,6 @@ export function buildAIAuditMeta({ feature, model, usage, costUSD, messageLength
     }
     if (Number.isFinite(costUSD)) meta.costCents = Math.max(0, Math.round(costUSD * 100));
     if (Number.isFinite(messageLength)) meta.messageLength = messageLength;
+    if (partial === true) meta.partial = true;
     return meta;
 }
