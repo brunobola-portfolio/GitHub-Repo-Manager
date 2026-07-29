@@ -24,6 +24,14 @@ below links to the canonical page for that topic.
 
 The 3 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.12.0 (2026-07-29) — money paths and honest claims.** An aborted AI
+  stream recorded zero spend, so disconnecting evaded the only cost control on
+  Pro/Enterprise streaming; a burst of concurrent requests could spend past any
+  AI cap; and Repo Insights and Semantic Search billed the operator's key
+  instead of the caller's. Three routes returned 400 on every call. Eight
+  claims the product made about itself — a seat limit that does not exist,
+  a hardcoded price, a cap sold nowhere, an invented SECURITY.md SLA — were
+  corrected, most of them now test-enforced. better-sqlite3 upgraded to 13.
 - **v4.11.0 (2026-07-27) — correctness and honesty.** Two audit panels' worth
   of money-path work: a refunded or disputed subscription could be checked out
   again and bill twice; BYOK metering gaps were closed; and two paid-tier
@@ -38,12 +46,6 @@ The 3 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHAN
   testing: the optional desktop shortcut is created per-user (an all-users
   desktop write fails on a no-UAC install), and re-running Setup finally
   offers the **Repair / Uninstall** dialog. See [Windows guide](windows.md).
-- **v4.9.0 (2026-07-22) — Premium Windows experience.** A native
-  GUI-subsystem launcher that runs the server hidden (no console window, no
-  flash, proper taskbar identity), file-based server logs with 7-day
-  retention, a loopback-only authenticated `POST /api/system/shutdown` for
-  graceful stops, and one-click in-app updates (download → SHA-256 verify →
-  DB snapshot → restart) with automatic rollback on the portable build.
 
 ## Architecture
 
