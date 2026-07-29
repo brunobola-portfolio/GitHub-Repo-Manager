@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.12.0] - 2026-07-29
+
 Correctness work on the paths that cost money, and a pass over every claim the
 product makes about itself. Nothing here adds a feature; several things stop
 charging for work that did not happen, and several stop advertising things that
@@ -2526,7 +2528,9 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.10.0...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.12.0...HEAD
+[4.12.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.11.0...v4.12.0
+[4.11.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.10.0...v4.11.0
 [4.10.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.9.0...v4.10.0
 [4.9.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.8.2...v4.9.0
 [4.8.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.8.1...v4.8.2
