@@ -5,7 +5,7 @@
 **Authentication:** GitHub OAuth via session cookies, or an API key sent as `Authorization: Bearer grm_live_...`. Most endpoints require an authenticated session (`requireAuth` middleware). The server never exposes raw access tokens to the client.
 **CSRF:** All mutating `/api/*` requests (non-GET/HEAD/OPTIONS) require a valid `X-CSRF-Token` header. The OAuth flow and signature-verified webhooks are exempt.
 **Request validation:** Write endpoints validate their JSON body with Zod (`validateBody` middleware). An invalid body returns `400 { error, code: 'validation_failed' }` — see [Shared Response Envelopes](#shared-response-envelopes).
-**Total Endpoints:** 341 route handlers (334 across `server/routes/**` — 75 route files, recounted via `grep -rEc "^\s*router\.(get|post|put|patch|delete)\(" server/routes` — plus 7 app-level webhook and health routes mounted directly in `server/index.js`). This document gives full entries for the public-facing and recently-changed surface; lower-level internal routes are summarised under [Additional Endpoints](#additional-endpoints-grouped).
+**Total Endpoints:** 341 route handlers (334 across `server/routes/**` — 76 route files, recounted via `grep -rEc "^\s*router\.(get|post|put|patch|delete)\(" server/routes` — plus 7 app-level webhook and health routes mounted directly in `server/index.js`). This document gives full entries for the public-facing and recently-changed surface; lower-level internal routes are summarised under [Additional Endpoints](#additional-endpoints-grouped).
 
 ---
 

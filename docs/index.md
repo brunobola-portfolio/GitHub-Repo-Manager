@@ -104,7 +104,7 @@ The 3 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHAN
 
 ## API reference
 
-- [API Reference](api/API.md) — 341 route handlers across 75 route
+- [API Reference](api/API.md) — 341 route handlers across 76 route
   modules (recounted via `grep`; see the API.md header for the exact
   command). Every endpoint documented with auth requirements,
   request/response shape, and error codes.
