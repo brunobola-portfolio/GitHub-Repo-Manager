@@ -7,6 +7,102 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Correctness work on the paths that cost money, and a pass over every claim the
+product makes about itself. Nothing here adds a feature; several things stop
+charging for work that did not happen, and several stop advertising things that
+were not true.
+
+### Fixed
+
+- **An aborted AI stream recorded zero spend.** Disconnecting mid-stream billed
+  the operator for the input tokens while `ai_spend` recorded nothing, so the
+  monthly spend cap never fired. On Pro and Enterprise the count quotas are
+  unlimited, which made the spend cap the only cost control on streaming — and
+  hanging up evaded it. Providers now report the tokens they measured, flagged
+  partial, and the SSE helpers carry that out of an aborted stream.
+- **Four streaming routes kept generating after the client left.** Without an
+  abort signal the provider ran to completion and the operator paid for output
+  nobody received.
+- **Repo Insights and Semantic Search spent the operator's key.** Both were
+  bound to the server-wide key while the routes gated on the caller's BYOK
+  provider. With a server key configured, every BYOK user's indexing and search
+  billed the operator; in a BYOK-only deployment they threw instead.
+- **A burst of concurrent requests could spend past an AI cap.** Reading a quota,
+  awaiting the provider, then incrementing leaves the whole call open as a race
+  window — every request arriving in it reads the same stale count. Reproduced
+  on image generation: three requests generated against one remaining slot. All
+  nineteen affected routes now reserve atomically and refund on failure.
+- **Per-route output budgets never applied.** A route asking for 80 tokens
+  generated up to the 2048 default, because the global cap replaced the
+  route-supplied value instead of bounding it.
+- **`GET /config/ai-status?probe=1` needed no authentication** and bypassed the
+  five-minute cache, so an anonymous caller could drive a fresh provider call
+  per request against the operator's key.
+- **Three routes returned 400 on every call.** Creating a branch, the
+  create-repo name-availability check, and commit generation for any repository
+  with no description. The name check was broken in both directions — fixing
+  the request alone would have left the indicator reporting "available" forever.
+- **Refining a large diff failed after generating from it.** Commit generation
+  accepted 60 000 characters and the refine step capped the same text at 20 000.
+- **Selecting more than 100 repositories for a bulk action failed opaquely** —
+  and on the destructive actions, only after the user had confirmed. It now
+  says how many are selected and what the limit is, before contacting the
+  server.
+- **Two taps on Approve posted two reviews to GitHub.**
+- **The dashboard invented data and reported failures as successes.**
+- **AI-suggested repository topics could never be applied.** "Machine Learning"
+  and "CI/CD" are rejected by GitHub and by this app's own validation; they are
+  normalised at the source now, and anything unusable is dropped rather than
+  shown.
+- **"Enable stats caching" did nothing when switched off.** The off position
+  sends a zero TTL, which was read as "unset" and fell back to the five-minute
+  default. The slider worked, which is what hid it.
+
+### Changed
+
+- **The seat counter is gone.** It showed a limit that does not exist and that
+  every paying customer appeared to violate: seat counts are minted as 1 on
+  every Stripe licence, nothing anywhere enforces them, and every pricing
+  surface promises unlimited team members. The panel now reports the real
+  active-account count against Unlimited.
+- **Displayed prices come from Stripe.** They were hardcoded while
+  `/billing/config` returned booleans only, so an operator whose price is not
+  $19/mo advertised one number and charged another. A price that cannot be
+  resolved is omitted rather than guessed, and the yearly saving is derived from
+  the real yearly price instead of a fixed 20%.
+- **The Migration Assistant cap is now visible.** It has been enforced at
+  25/month since it shipped and appeared on no pricing surface and in no usage
+  panel, so users met "AI limit reached (25/25)" for a feature nothing had ever
+  named.
+- **Pro no longer advertises priority support**, which is an Enterprise
+  deliverable on every other surface.
+- **Generated SECURITY.md no longer invents a support policy or a response-time
+  commitment.** The prompt asked for both from nothing but a repository name and
+  an email, and the result was published under the user's name.
+- **"20+ bulk operations" is now the counted 10.**
+- **Corrections to claims made in 4.11.0 and earlier.** "Repo Advisor is
+  operator-enabled" was false for the conversational assistant, which needs no
+  deployment flag and works out of the box — only the Repo Advisor card inside
+  the Work Board is gated. The AI-query FAQ said every Repo Advisor call counts
+  against the monthly total; the Work Board card is metered separately. The
+  README stated a Node.js 20 floor two majors after it moved to 22, and the
+  architecture diagram said "no Redis" in three places including its
+  screen-reader label, when `REDIS_URL` enables distributed sessions, rate
+  limiting and the job queue.
+- **better-sqlite3 upgraded to 13.0.1** (N-API). The Windows packaging guard
+  was taught the new prebuilt-binary layout.
+
+### Internal
+
+- The intermittent CI failure where a whole suite failed to import with zero
+  failed tests was worker contention on a shared SQLite file; every worker now
+  gets its own.
+- New guards keep the above from drifting back: the advertised Node floor
+  against `package.json`, documented route counts against the source, the
+  diagram's action allow-list against the code, pricing claims across every
+  surface rather than one, and a scanner for the read-then-increment race that
+  proves itself against a fixture.
+
 ## [4.11.0] - 2026-07-27
 
 Two audit panels' worth of correctness work: money paths, BYOK metering, and
