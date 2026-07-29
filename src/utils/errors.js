@@ -69,6 +69,18 @@ export function getErrorInfo(error) {
         }
     }
 
+    // Client-side selection guard (repoMutations). Retrying without changing
+    // the selection fails identically, so this must not be offered as retryable
+    // — the user has to deselect, and the message already says by how much.
+    if (error?.code === 'BULK_SELECTION_TOO_LARGE') {
+        return {
+            type: ErrorType.VALIDATION,
+            message: error.message,
+            isRetryable: false,
+            status: null,
+        }
+    }
+
     return {
         type: ErrorType.UNKNOWN,
         message: error?.message || 'An unexpected error occurred.',
