@@ -187,3 +187,58 @@ describe('repoMutations', () => {
     })
   })
 })
+
+/*
+ * The server caps `repos` at 100 per bulk request (bulkArchiveSchema and
+ * friends are .max(100)), while Select-all is uncapped. Selecting 137
+ * repositories and hitting Archive produced an opaque 400 from Zod that the
+ * user could do nothing with — and, on the destructive actions, only after
+ * they had already confirmed.
+ *
+ * Chunking is the wrong answer here: these go through a two-step dry-run +
+ * confirmation-token flow, so splitting one confirmed intent into N requests
+ * would mean N separate confirmations of a thing the user confirmed once.
+ * Failing early with a number they can act on is the honest fix.
+ */
+describe('bulk selection cap', () => {
+  const tooMany = Array.from({ length: 137 }, (_, i) => `acme/repo-${i}`)
+  const justEnough = Array.from({ length: 100 }, (_, i) => `acme/repo-${i}`)
+
+  beforeEach(() => { bulkExecuteWithConfirmation.mockClear() })
+
+  it('refuses an over-cap archive before contacting the server', async () => {
+    await expect(archiveRepos(tooMany)).rejects.toThrow(/100/)
+    expect(bulkExecuteWithConfirmation).not.toHaveBeenCalled()
+  })
+
+  it('says how many were selected, so the message is actionable', async () => {
+    await expect(archiveRepos(tooMany)).rejects.toThrow(/137/)
+  })
+
+  it('refuses an over-cap delete before contacting the server', async () => {
+    await expect(deleteRepos(tooMany)).rejects.toThrow(/100/)
+    expect(bulkExecuteWithConfirmation).not.toHaveBeenCalled()
+  })
+
+  it('refuses an over-cap generic action before contacting the server', async () => {
+    await expect(performAction('visibility', tooMany)).rejects.toThrow(/100/)
+    expect(bulkExecuteWithConfirmation).not.toHaveBeenCalled()
+  })
+
+  it('still allows exactly the cap', async () => {
+    bulkExecuteWithConfirmation.mockResolvedValueOnce(jsonResponse({ message: 'ok' }))
+    await archiveRepos(justEnough)
+    expect(bulkExecuteWithConfirmation).toHaveBeenCalled()
+  })
+})
+
+describe('the selection-cap error reaches the UI as a validation error', () => {
+  it('is not offered as retryable — retrying the same selection fails identically', async () => {
+    const { getErrorInfo } = await import('@/utils/errors')
+    const err = await archiveRepos(Array.from({ length: 137 }, (_, i) => `a/r${i}`)).catch((e) => e)
+    const info = getErrorInfo(err)
+    expect(info.isRetryable).toBe(false)
+    expect(info.message).toMatch(/100/)
+    expect(info.message).toMatch(/137/)
+  })
+})

@@ -28,7 +28,39 @@ import { bulkExecuteWithConfirmation } from '../api/bulkConfirm'
  * @throws {Error}                    On dry-run rejection or execute rejection
  *                                    (error has `.status`, `.reason`, `.body`).
  */
+/**
+ * Server-side ceiling on one bulk request. Mirrors `.max(100)` on
+ * bulkArchiveSchema / bulkDeleteSchema / bulkVisibilitySchema /
+ * bulkTransferSchema in server/lib/validators.js — keep the two in step.
+ */
+export const BULK_REPO_LIMIT = 100
+
+/**
+ * Fail an over-cap selection here rather than letting the server answer with a
+ * Zod 400 the user cannot act on.
+ *
+ * Select-all is uncapped while the schemas are not, so 137 selected
+ * repositories produced an opaque validation error — and on the destructive
+ * actions, only AFTER the user had confirmed. Chunking would be worse: these
+ * run a two-step dry-run + confirmation-token flow, so splitting one confirmed
+ * intent into several requests would ask the user to confirm the same thing
+ * again per batch.
+ */
+function assertWithinBulkLimit(repoNames) {
+    const count = Array.isArray(repoNames) ? repoNames.length : 0
+    if (count > BULK_REPO_LIMIT) {
+        const err = new Error(
+            `Select at most ${BULK_REPO_LIMIT} repositories for a bulk action — ${count} are selected.`,
+        )
+        err.code = 'BULK_SELECTION_TOO_LARGE'
+        err.selected = count
+        err.limit = BULK_REPO_LIMIT
+        throw err
+    }
+}
+
 export async function archiveRepos(repoNames, archive = true) {
+    assertWithinBulkLimit(repoNames)
     const resp = await bulkExecuteWithConfirmation({
         url: API_ENDPOINTS.archive,
         body: { repos: repoNames, archive },
@@ -45,6 +77,7 @@ export async function archiveRepos(repoNames, archive = true) {
  * @throws {Error}                            On any rejection from the two-step flow.
  */
 export async function deleteRepos(repoNames, confirmToken = 'DELETE') {
+    assertWithinBulkLimit(repoNames)
     const resp = await bulkExecuteWithConfirmation({
         url: API_ENDPOINTS.delete,
         body: { repos: repoNames, confirm: confirmToken },
@@ -69,6 +102,7 @@ export async function deleteRepos(repoNames, confirmToken = 'DELETE') {
  * @throws {Error}                On any rejection from the two-step flow.
  */
 export async function performAction(action, repoNames, org = '', options = {}) {
+    assertWithinBulkLimit(repoNames)
     // `dryRunOnly` is a client-side flag (stop after the non-mutating dry-run),
     // not part of the request body — pull it out before building the body.
     const { dryRunOnly = false, ...bodyOptions } = options
