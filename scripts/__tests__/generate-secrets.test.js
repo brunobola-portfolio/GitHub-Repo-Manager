@@ -159,8 +159,7 @@ describe('appendSecretsToFile', () => {
     const target = path.join(dir, 'new.env')
     const calls = []
     const io = {
-      existsSync: () => false,
-      readFileSync: () => '',
+      readFileSync: () => { const e = new Error('nope'); e.code = 'ENOENT'; throw e },
       openSync: (...args) => { calls.push(['open', ...args]); return 7 },
       writeSync: (...args) => calls.push(['write', ...args]),
       closeSync: (...args) => calls.push(['close', ...args]),

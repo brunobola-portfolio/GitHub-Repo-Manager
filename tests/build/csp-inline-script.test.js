@@ -23,7 +23,11 @@ describe('app shell is CSP-safe under script-src \'self\'', () => {
     // Matches <script …>BODY</script> and captures BODY. src-only tags have an
     // empty body and are fine; JSON-LD and importmap blocks would also be
     // caught here, which is correct — both need a CSP allowance too.
-    const inline = [...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
+    // Quoted spans are skipped so a `>` inside an attribute cannot end the tag
+    // early, and the closing tag allows whitespace — HTML treats `</script >`
+    // as a valid close, so a pattern requiring `</script>` exactly would read
+    // the whole rest of the file as one body and miss what follows it.
+    const inline = [...html.matchAll(/<script(?=[\s/>])(?:"[^"]*"|'[^']*'|[^"'>])*>([\s\S]*?)<\/script\s*>/gi)]
       .map((m) => m[1].trim())
       .filter(Boolean)
 
