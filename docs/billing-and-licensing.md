@@ -72,17 +72,37 @@ The emailed key's validity always matches what was actually paid for — it is
   `user_subscriptions.billing_period` so the renewal path can look it up
   without needing the original checkout session.
 
-**Keys are not remotely revocable.** Cancelling a subscription
+> Issuing keys outside Stripe (enterprise deals, comps, replacements) and
+> wiring the marketing portal to any of it:
+> [Licence keys & the portal](guides/license-keys-and-portal.md).
+
+**Cancelling does not switch a key off.** Cancelling a subscription
 (`customer.subscription.deleted`) only downgrades the Stripe-tracked tier —
 it does not invalidate any already-issued JWT. A monthly subscriber who
 cancels keeps a working key for up to the remainder of that key's 1-month
 window (at most); a yearly subscriber's key keeps working for up to the
-remainder of its 12-month window. This is a deliberate simplicity trade-off
-(no revocation list to maintain) — self-hosted activation is offline by
-design, so there is no server call to check against at runtime. If stronger
-revocation guarantees are ever needed, the fix is a checked-online
-allowlist/denylist, not a shorter key — that is out of scope today and not
-advertised as a security control.
+remainder of its 12-month window. That is deliberate: you keep what you paid
+for.
+
+**Revocation exists, and it is per-instance (v4.11.0).** An admin can revoke a
+key by its `lid`, and `verifyLicenseKey()` consults the revocation list on
+every check — after the signature verifies, so an unsigned `lid` can never
+probe it (`server/lib/license.js`). The surfaces are three admin-authenticated
+HTTP routes and nothing else: `POST /api/license/revocations`,
+`DELETE /api/license/revocations/:lid`, `GET /api/license/revocations`.
+
+> There is **no licence-revocation CLI**. `npm run admin:revoke` is unrelated —
+> it runs `admin-grant.mjs --revoke`, which clears a *user's admin flag*
+> (`UPDATE users SET is_admin = 0`). Reaching for it during a chargeback would
+> leave the key working and demote an administrator instead.
+
+The list lives in **that instance's own database**. There is no phone-home, so
+revoking on the hosted deployment does not reach a customer's self-hosted
+install, and Bola Labs cannot remotely disable a key already in someone else's
+hands. Revocation is therefore an operator control (fraud, chargeback, leaked
+key on an instance you run) rather than a DRM mechanism, and it is not
+advertised as one. A checked-online denylist would be the design that changes
+that; it is still out of scope.
 
 ### Flow overview
 

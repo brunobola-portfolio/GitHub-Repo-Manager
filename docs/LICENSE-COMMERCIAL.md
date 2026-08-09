@@ -75,10 +75,13 @@ is required for validation.
   emails a fresh 1-month key, so an active monthly subscriber's key is
   replaced every cycle rather than expiring. Annual keys are not reissued
   mid-year.
-- **Keys are not remotely revocable.** Cancelling stops the renewal — it does
-  not invalidate the key already in your hands, which keeps working until the
-  end of its own 1-month or 12-month window. Self-hosted activation is offline
-  by design, so there is no runtime revocation check. See
+- **Cancelling does not switch your key off.** It stops the renewal; the key
+  already in your hands keeps working until the end of its own 1-month or
+  12-month window. Self-hosted activation is offline by design — there is no
+  phone-home, and Bola Labs cannot reach into your installation to disable a
+  key you already hold. Since v4.11.0 an operator can revoke a key on an
+  instance **they run**, which is a fraud/abuse control on hosted and
+  self-managed deployments, not a remote kill switch over yours. See
   [`billing-and-licensing.md`](billing-and-licensing.md) for the full policy.
 - Upon expiration, the software reverts to AGPL v3 community features (free tier)
 - No data is lost upon expiration
