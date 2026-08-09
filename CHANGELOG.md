@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.14.0] - 2026-08-09
+
+A brand system, generated from one file.
+
+### Added
+
+- **`docs/BRAND.md`** — the mark, the two optical cuts, the inherited palette
+  and typography, the per-OS tile specs, and what breaks it.
+- **`npm run gen:brand`** — `scripts/gen-brand.mjs` holds the geometry as
+  constants and emits all twelve SVGs; `scripts/gen-brand-raster.mjs` renders
+  the PNGs and assembles the Windows `.ico` container itself, so each slot gets
+  the optically correct cut. `npm run gen:brand:check` runs in CI and fails if a
+  checked-in asset was edited by hand.
+- **`tests/build/brand-assets.test.js`** — 43 assertions covering generator
+  drift, missing rasters, filters creeping back into the marks, the mono file
+  staying single-colour, and the `.ico` keeping all six slots.
+
+### Changed
+
+- **The logo is replaced.** The previous mark carried four gradients on its
+  connector lines alone, three Gaussian blurs, an orbital ring, a halo per node
+  and six sparkles at 1–2 px — 8 KB of SVG whose central glyph was 24 units in a
+  512 viewBox, so it vanished below about 128 px. Every filter was dropped when
+  it was converted to `.ico`, and in a browser tab it read as a violet square.
+
+  The new mark is a commit rail with one node lifted off it: git's own
+  vocabulary, saying the one thing the product does. It ships in two optical
+  cuts — below about 24 px the ring closes into a smudge, so the small cut drops
+  it, grows the node and thickens the strokes.
+- **Colour and typography are inherited, not re-picked.** The official BolaLabs
+  lime `#7fc528`, Archivo / IBM Plex Sans / JetBrains Mono, and the house rule
+  that the lime is fill-only and never text.
+- **The installer ships the product icon.** It used to ship `bolalabs.ico` — the
+  *company* flask — as the application icon. The flask is BolaLabs; the rail is
+  RepoManager. `packaging/windows/assets/repomanager.ico` replaces it.
+- The social card and `apple-touch-icon` are now real brand assets rather than a
+  cropped dashboard screenshot.
+
+### Fixed
+
+- **`.gitignore` would have dropped every brand raster.** The blanket `*.png`
+  rule had exceptions only for `docs/images/`, so the favicon, apple-touch icon
+  and social card would have been silently untracked — the site would have
+  shipped the browser's default icon.
+
+
 ## [4.13.1] - 2026-08-09
 
 Dependency maintenance only — no product change. Seven Dependabot updates,
@@ -2689,7 +2735,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.13.1...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.14.0...HEAD
+[4.14.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.13.1...v4.14.0
 [4.13.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.13.0...v4.13.1
 [4.12.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.11.0...v4.12.0
 [4.11.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.10.0...v4.11.0

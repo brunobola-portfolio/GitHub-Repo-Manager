@@ -17,6 +17,7 @@ below links to the canonical page for that topic.
 | Register a GitHub App for bot identity (roadmap) | [GitHub App setup](setup/github-app.md) |
 | Wire a GitHub webhook | [Webhook setup guide](guides/github-webhook-setup.md) |
 | Set up Stripe billing | [Stripe setup guide](guides/stripe-setup.md) |
+| Use the logo, colours or media kit | [Brand](BRAND.md) |
 | Harden a deployment | [Security hardening (G1–G9)](security-hardening.md) |
 | Replay a failed email / webhook | [Admin DLQ guide](guides/admin-dlq.md) |
 | Read release notes | [`CHANGELOG.md`](../CHANGELOG.md) |
@@ -25,6 +26,13 @@ below links to the canonical page for that topic.
 
 The 4 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.14.0 (2026-08-09) — a brand system.** The logo is replaced and, more to
+  the point, generated: one file holds the geometry and emits all twelve SVGs,
+  the PNGs and a Windows `.ico` whose 16 and 24 px slots carry different artwork
+  from the rest. The old mark was 8 KB of gradients and blurs that read as a
+  violet square in a browser tab and lost every filter converting to `.ico`.
+  Colour and type are inherited from the BolaLabs platform. See
+  [Brand](BRAND.md).
 - **v4.13.1 (2026-08-09) — dependency maintenance.** Seven Dependabot updates
   merged and validated as a batch, including `better-sqlite3` 13.0.3, which
   still builds against Node-API 10 with ABI-independent prebuilds — so the

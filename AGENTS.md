@@ -66,6 +66,15 @@ changes; the README is for humans, this file is for you.
   **not**. It is therefore acceptable only for decorative icons (`aria-hidden`,
   or paired with a visible text label). An icon that is the sole content of an
   interactive control needs a darker token in light mode.
+- Brand assets are GENERATED — never hand-edit anything in `brand/` or
+  `public/logo.svg`. Change the geometry in `scripts/gen-brand.mjs`, run
+  `npm run gen:brand`, and commit the outputs together. The mark has two
+  optical cuts: display (25 px and up) and small (24 px and below, ring
+  dropped); using the display cut in a favicon or a 16 px slot is the one
+  mistake this system exists to prevent. Full rules: `docs/BRAND.md`.
+- The brand lime `#7fc528` is FILL ONLY, never text, and never means "healthy"
+  — semantic green (`ds-risk-*`) carries that. The BolaLabs flask is the
+  company mark; it is never the product icon.
 - Events: use `emitAppEvent`/`onAppEvent` with names registered in
   `APP_EVENTS` (`src/utils/appEvents.js`) — never `window.dispatchEvent`.
 - Lint must be clean at zero warnings: `npm run lint`

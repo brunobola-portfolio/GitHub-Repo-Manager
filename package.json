@@ -1,7 +1,7 @@
 {
   "name": "github-repo-manager",
   "private": false,
-  "version": "4.13.1",
+  "version": "4.14.0",
   "type": "module",
   "engines": {
     "node": ">=22.14 <25"
@@ -65,6 +65,8 @@
     "lint:css": "node scripts/check-killed-classes.mjs",
     "prebuild": "npm run lint:css",
     "gen:secrets": "node scripts/generate-secrets.mjs",
+    "gen:brand": "node scripts/gen-brand.mjs && node scripts/gen-brand-raster.mjs",
+    "gen:brand:check": "node scripts/gen-brand.mjs --check",
     "gen:keys": "node scripts/generate-keys.js",
     "doctor": "node scripts/doctor.mjs",
     "doctor:fix": "node scripts/doctor.mjs --fix",

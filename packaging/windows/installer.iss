@@ -67,7 +67,7 @@ WizardStyle=modern
 ; BolaLabs brand assets (packaging/windows/assets, generated from the master
 ; art at 2x so Inno's DPI scaling only ever scales DOWN). BMP is required by
 ; Inno for wizard images; the .ico carries PNG-compressed 16..256 entries.
-SetupIconFile=assets\bolalabs.ico
+SetupIconFile=assets\repomanager.ico
 WizardImageFile=assets\wizard-banner.bmp
 WizardSmallImageFile=assets\wizard-small.bmp
 OutputDir={#OutputDir}
@@ -76,7 +76,7 @@ OutputBaseFilename=github-repo-manager-{#MyAppVersion}-setup
 ; signed-ish binaries; nothing here needs special uncompressed handling.
 UninstallDisplayName={#MyAppName}
 ; Branded icon in Add/Remove Programs (the file is installed by [Files] below).
-UninstallDisplayIcon={app}\bolalabs.ico
+UninstallDisplayIcon={app}\repomanager.ico
 ; ChangesEnvironment not needed -the app binds to loopback only and never
 ; touches PATH/registry beyond its own uninstall key.
 
@@ -129,7 +129,7 @@ Source: "{#StagingRoot}\GitHub Repo Manager.exe"; DestDir: "{app}"; Flags: ignor
 Source: "{#StagingRoot}\README-WINDOWS.txt"; DestDir: "{app}"; Flags: ignoreversion isreadme
 ; Brand icon for shortcuts + Add/Remove Programs. Sourced from the repo (next
 ; to this script), not the staging tree — it's installer-only branding.
-Source: "assets\bolalabs.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "assets\repomanager.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; No --data-dir Parameters here (deliberately, as of the marker-file fix

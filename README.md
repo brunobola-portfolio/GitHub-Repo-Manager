@@ -1,5 +1,10 @@
 <div align="center">
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="brand/mark-display-inverse.svg">
+  <img alt="" src="brand/mark-display.svg" width="72" height="72">
+</picture>
+
 # GitHub Repo Manager
 
 **The GitHub dashboard that thinks — manage, migrate, and review repositories with metered, grounded AI.**
