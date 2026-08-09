@@ -20,7 +20,7 @@
 
 **Free-first** (full AI surface + every Work Board tab + unlimited teams on Free) · **Self-hosting free forever** (AGPL v3) · **Native on Windows**
 
-[**Try the Demo**](#quick-start-demo-mode) · [Features](#features) · [Installation](#installation) · [Documentation](docs/index.md) · [Pricing](#plans--pricing) · [Download for Windows](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest) · [What's new in v4.10 — Windows system-tray app](CHANGELOG.md#4100---2026-07-22)
+[**Try the Demo**](#quick-start-demo-mode) · [Features](#features) · [Installation](#installation) · [Documentation](docs/index.md) · [Pricing](#plans--pricing) · [Download for Windows](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest) · [What's new in v4.13 — production hardening](CHANGELOG.md#4130---2026-08-09)
 
 <sub>Production-hardened — AES-256-GCM BYOK · rolling sessions + CSRF double-submit · GitHub API circuit breaker · SSRF + DNS-rebinding guard · dual-theme a11y gate.</sub>
 
@@ -323,7 +323,7 @@ A complete platform for moving from Azure DevOps to GitHub, driven by a guided w
 
 A two-part app: a **React 19 + Vite 8** SPA and an **Express 5 + better-sqlite3** API. SQLite (WAL) is the only supported datastore — PostgreSQL is intentionally rejected at boot. AI runs provider-neutral through `guardedGenerate` (spend cap + cost recording + audit). For depth, see [`docs/architecture/overview.md`](docs/architecture/overview.md) and the full [documentation map](docs/index.md).
 
-**Deployment** — the frontend (`dist/` after `npm run build`) is static-hostable on any CDN; the backend is a long-running Node process needing a persistent volume for `server/data/`. There is no serverless target for the backend. See [`docs/operations.md`](docs/operations.md) for the day-two runbook and the ready-to-copy [`deploy/Caddyfile.example`](deploy/Caddyfile.example) for a TLS-terminating reverse proxy.
+**Deployment** — the frontend (`dist/` after `npm run build`) is static-hostable on any CDN; the backend is a long-running Node process needing a persistent volume for `server/data/`. There is no serverless target for the backend. See [`docs/operations.md`](docs/operations.md) for the day-two runbook and the ready-to-copy [`deploy/Caddyfile.example`](deploy/Caddyfile.example) for a TLS-terminating reverse proxy. On Windows Server behind IIS, follow [`docs/guides/deploy-iis-windows.md`](docs/guides/deploy-iis-windows.md) — it ships a [`web.config`](deploy/iis/web.config), a production `.env` template, and a service installer.
 
 ---
 
@@ -331,7 +331,7 @@ A two-part app: a **React 19 + Vite 8** SPA and an **Express 5 + better-sqlite3*
 
 ### Prerequisites
 
-- **Node.js 22+** — not needed for the Windows package (bundled runtime); see below.
+- **Node.js 22.14+** — Node 24 LTS is the tested deployment target (CI runs both LTS lines). Not needed for the Windows package, which bundles its own runtime; see below.
 - **npm** (or yarn)
 - **GitHub account** — for real mode (OAuth)
 - **AI provider key** — optional; add your own in `Settings → AI Configuration` after first login ([per-provider setup](docs/ai-providers.md))
@@ -491,7 +491,7 @@ See [`docs/ai-providers.md`](docs/ai-providers.md) for per-provider setup and fr
 |----------|-------------|
 | **Frontend** | React 19.2, Vite 8.1, TailwindCSS 4.1 |
 | **UI/UX** | Framer Motion 12, Lucide Icons, Recharts 3, Radix UI, cmdk |
-| **Backend** | Node.js 22+, Express 5.2 |
+| **Backend** | Node.js 22.14+, Express 5.2 |
 | **Database** | better-sqlite3 13.0 (WAL mode, 32 MB cache) — SQLite only |
 | **Security** | Helmet.js, per-tier + per-IP rate limiting, shared Zod validation layer, SSRF + DNS-rebinding guard, CSRF double-submit, AES-256-GCM credential encryption |
 | **AI (BYOK)** | Provider-neutral `AI_PROVIDER` (Anthropic, OpenAI, Gemini, OpenRouter, local) · per-user keys encrypted at rest · opt-in monthly $ spend cap + always-on per-call output-token cap · PII-safe audit metadata · SSE streaming |

@@ -26,20 +26,43 @@ import {
 } from '../package-windows.mjs'
 
 describe('NODE_VERSION', () => {
-  it('is pinned to a concrete 22.x semver (matches package.json engines range)', () => {
-    expect(NODE_VERSION).toMatch(/^22\.\d+\.\d+$/)
+  it('is a concrete semver, not a range or a dist-tag', () => {
+    // nodeDistUrls builds a literal https://nodejs.org/dist/v<version>/ path
+    // and the download is checked against that directory's SHASUMS256.txt, so
+    // anything but an exact published version 404s at package time.
+    expect(NODE_VERSION).toMatch(/^\d+\.\d+\.\d+$/)
+  })
+
+  it('falls inside package.json engines — derived, not restated', () => {
+    // Asserting a hardcoded major here just duplicated the literal: bumping
+    // engines without bumping the bundled runtime (or the reverse) still left
+    // this green. Reading the range makes the two impossible to drift apart.
+    const engines = JSON.parse(readFileSync('package.json', 'utf8')).engines.node
+    const bounds = [...engines.matchAll(/(>=|<=|<|>)\s*(\d+)/g)].map(([, op, major]) => ({
+      op,
+      major: Number(major),
+    }))
+    expect(bounds.length, `could not parse engines range "${engines}"`).toBeGreaterThan(0)
+
+    const major = Number(NODE_VERSION.split('.')[0])
+    for (const { op, major: bound } of bounds) {
+      if (op === '>=') expect(major).toBeGreaterThanOrEqual(bound)
+      if (op === '>') expect(major).toBeGreaterThan(bound)
+      if (op === '<') expect(major).toBeLessThan(bound)
+      if (op === '<=') expect(major).toBeLessThanOrEqual(bound)
+    }
   })
 })
 
 describe('nodeZipFileName / nodeDistUrls', () => {
   it('builds the official nodejs.org win-x64 zip filename', () => {
-    expect(nodeZipFileName('22.23.1')).toBe('node-v22.23.1-win-x64.zip')
+    expect(nodeZipFileName('24.19.0')).toBe('node-v24.19.0-win-x64.zip')
   })
 
   it('builds matching zip + SHASUMS256 URLs under the same version path', () => {
-    const { zipUrl, shasumsUrl } = nodeDistUrls('22.23.1')
-    expect(zipUrl).toBe('https://nodejs.org/dist/v22.23.1/node-v22.23.1-win-x64.zip')
-    expect(shasumsUrl).toBe('https://nodejs.org/dist/v22.23.1/SHASUMS256.txt')
+    const { zipUrl, shasumsUrl } = nodeDistUrls('24.19.0')
+    expect(zipUrl).toBe('https://nodejs.org/dist/v24.19.0/node-v24.19.0-win-x64.zip')
+    expect(shasumsUrl).toBe('https://nodejs.org/dist/v24.19.0/SHASUMS256.txt')
   })
 })
 
@@ -73,31 +96,31 @@ describe('sha256Hex / sha256File', () => {
 describe('parseShasums256', () => {
   it('parses standard two-space "<hash>  <filename>" lines', () => {
     const hash = 'a'.repeat(64)
-    const text = `${hash}  node-v22.23.1-win-x64.zip\n`
+    const text = `${hash}  node-v24.19.0-win-x64.zip\n`
     const map = parseShasums256(text)
-    expect(map.get('node-v22.23.1-win-x64.zip')).toBe(hash)
+    expect(map.get('node-v24.19.0-win-x64.zip')).toBe(hash)
   })
 
   it('is case-insensitive on the hash and lowercases it', () => {
     const hash = 'A'.repeat(64)
-    const text = `${hash}  node-v22.23.1-win-x64.zip\n`
+    const text = `${hash}  node-v24.19.0-win-x64.zip\n`
     const map = parseShasums256(text)
-    expect(map.get('node-v22.23.1-win-x64.zip')).toBe('a'.repeat(64))
+    expect(map.get('node-v24.19.0-win-x64.zip')).toBe('a'.repeat(64))
   })
 
   it('tolerates a single space and an optional "*" binary-mode marker', () => {
     const hash = 'b'.repeat(64)
-    const text = `${hash} *node-v22.23.1-win-x64.zip\n`
+    const text = `${hash} *node-v24.19.0-win-x64.zip\n`
     const map = parseShasums256(text)
-    expect(map.get('node-v22.23.1-win-x64.zip')).toBe(hash)
+    expect(map.get('node-v24.19.0-win-x64.zip')).toBe(hash)
   })
 
   it('skips blank lines and comment lines', () => {
     const hash = 'c'.repeat(64)
-    const text = `# comment\n\n${hash}  node-v22.23.1-win-x64.zip\n\n`
+    const text = `# comment\n\n${hash}  node-v24.19.0-win-x64.zip\n\n`
     const map = parseShasums256(text)
     expect(map.size).toBe(1)
-    expect(map.get('node-v22.23.1-win-x64.zip')).toBe(hash)
+    expect(map.get('node-v24.19.0-win-x64.zip')).toBe(hash)
   })
 
   it('returns an empty map for garbage input rather than throwing', () => {
@@ -108,12 +131,12 @@ describe('parseShasums256', () => {
     const h1 = '1'.repeat(64)
     const h2 = '2'.repeat(64)
     const text = [
-      `${h1}  node-v22.23.1-darwin-x64.tar.gz`,
-      `${h2}  node-v22.23.1-win-x64.zip`,
+      `${h1}  node-v24.19.0-darwin-x64.tar.gz`,
+      `${h2}  node-v24.19.0-win-x64.zip`,
     ].join('\n')
     const map = parseShasums256(text)
     expect(map.size).toBe(2)
-    expect(map.get('node-v22.23.1-win-x64.zip')).toBe(h2)
+    expect(map.get('node-v24.19.0-win-x64.zip')).toBe(h2)
   })
 })
 

@@ -1,10 +1,10 @@
 # Stage 1: Build frontend
-FROM node:22-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
-# `npm ci` runs better-sqlite3's install script (prebuild-install || node-gyp
-# rebuild); Alpine/musl has no prebuilt binary, so it compiles from source and
-# needs python3 + a C++ toolchain. Without these the build stage fails before
-# `npm run build` ever runs. (The production stage already installs them.)
+# better-sqlite3 13 ships musl prebuilds (prebuilds/linuxmusl-x64.node), so the
+# common path no longer compiles. The toolchain stays as a fallback: a future
+# dependency, or an architecture without a prebuild, would otherwise fail the
+# build stage with a node-gyp error instead of downloading a binary.
 RUN apk add --no-cache python3 make g++
 COPY package*.json ./
 RUN npm ci
@@ -12,7 +12,7 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Production
-FROM node:22-alpine AS production
+FROM node:24-alpine AS production
 WORKDIR /app
 
 # Install only production deps + build tools for better-sqlite3

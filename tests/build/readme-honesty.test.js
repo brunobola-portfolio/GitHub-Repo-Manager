@@ -51,11 +51,15 @@ describe('README honesty', () => {
   // range it never mentioned. The floor moved to 22 with connect-redis 10 and
   // the README kept saying 20 — mechanical drift, so gate it mechanically.
   it('states the same minimum Node version as package.json engines', () => {
+    // Compares the FULL declared floor, not just the major. engines moved to
+    // ">=22.14" (better-sqlite3 needs Node-API 10, absent before 22.14) and a
+    // major-only comparison would have called a README saying "22+" correct
+    // while it under-states the real minimum by fourteen minors.
     const engines = JSON.parse(readFileSync('package.json', 'utf8')).engines?.node || ''
-    const required = Number(engines.match(/>=\s*(\d+)/)?.[1])
-    expect(required, `could not parse a minimum major from engines.node "${engines}"`).toBeGreaterThan(0)
+    const required = engines.match(/>=\s*(\d+(?:\.\d+)*)/)?.[1]
+    expect(required, `could not parse a minimum from engines.node "${engines}"`).toBeTruthy()
 
-    const claimed = [...readme.matchAll(/Node(?:\.js)?\s+(\d+)\+/g)].map((m) => Number(m[1]))
+    const claimed = [...readme.matchAll(/Node(?:\.js)?\s+(\d+(?:\.\d+)*)\+/g)].map((m) => m[1])
     expect(claimed.length, 'README no longer states a Node version at all').toBeGreaterThan(0)
 
     const wrong = [...new Set(claimed.filter((v) => v !== required))]
