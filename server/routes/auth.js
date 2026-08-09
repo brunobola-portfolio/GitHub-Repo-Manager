@@ -32,6 +32,58 @@ export function resolveFrontendUrl(req) {
     return `${req.protocol}://${req.get('host')}`;
 }
 
+// The origin GitHub must redirect back to after the authorize step. It has to
+// match the OAuth App's registered callback URL byte-for-byte on the scheme
+// and host, or GitHub answers redirect_uri_mismatch and login is dead.
+//
+// Deriving it from `req` alone is only correct when the request's scheme
+// survived the trip: behind a TLS-terminating proxy, `req.protocol` reports
+// https only if that proxy forwards `X-Forwarded-Proto` AND `trust proxy` is
+// set. Caddy and nginx send it; IIS/ARR does NOT unless the operator adds the
+// header by hand — so a hosted install one config line short of complete
+// would build an http:// redirect_uri against an https:// registration.
+//
+// FRONTEND_URL is the operator's declaration of the public origin, so when it
+// names the SAME host the request arrived on, trust its scheme. A DIFFERENT
+// host means the two are genuinely separate origins — dev, where FRONTEND_URL
+// is the Vite server on :5173 while the callback must land on the API on
+// :3001 — and there the request-derived origin is the only correct answer.
+export function resolveCallbackOrigin(req) {
+    const host = req.get('host');
+    const configured = process.env.FRONTEND_URL;
+    if (configured && host) {
+        try {
+            const url = new URL(configured);
+            // Only http(s). `new URL('foo://h').origin` is the literal string
+            // "null", which would ship `null/api/auth/callback` to GitHub.
+            if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('scheme');
+            // Never downgrade: a stale http:// FRONTEND_URL must not turn a
+            // genuinely-TLS request into an http:// redirect_uri.
+            if (url.protocol === 'https:' || req.protocol !== 'https') {
+                if (sameHost(url, host)) return url.origin;
+            }
+        } catch {
+            // Malformed FRONTEND_URL — fall through to the request origin
+            // rather than crashing the login route.
+        }
+    }
+    return `${req.protocol}://${host}`;
+}
+
+// Host comparison, normalised. `URL` lowercases the host and strips the
+// scheme's default port; a Host header does neither. A bare string compare
+// therefore treats `RepoManager.Example.PT` and `example.pt:443` as a
+// different origin and silently falls back to the request scheme — re-breaking
+// the exact login this function exists to keep working behind a proxy.
+function sameHost(url, hostHeader) {
+    const defaultPort = url.protocol === 'https:' ? ':443' : ':80';
+    const normalise = (h) => {
+        const lower = String(h).toLowerCase();
+        return lower.endsWith(defaultPort) ? lower.slice(0, -defaultPort.length) : lower;
+    };
+    return normalise(url.host) === normalise(hostHeader);
+}
+
 // Initiates the GitHub OAuth flow
 router.get('/login', authRouteLimiter, (req, res) => {
     const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } = process.env;
@@ -47,7 +99,7 @@ router.get('/login', authRouteLimiter, (req, res) => {
     // - delete_repo: Ability to delete repositories
     // - read:org, admin:org: Manage organization memberships and repos
     const scope = 'repo delete_repo read:org admin:org';
-    const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/callback`;
+    const redirectUri = `${resolveCallbackOrigin(req)}/api/auth/callback`;
     const state = randomUUID();
     req.session.oauthState = state;
     req.session.save(() => {
