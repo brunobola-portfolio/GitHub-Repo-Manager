@@ -26,8 +26,11 @@ const OUT = path.join(ROOT, 'brand')
 // slot size → which SVG source. The cut switches at 32: below that the ring is
 // sub-pixel and has to go. See docs/BRAND.md "Optical sizes".
 const ICO_SLOTS = [
-  { size: 16, src: 'brand/tile-windows-small.svg' },
-  { size: 24, src: 'brand/tile-windows-small.svg' },
+  // public/logo.svg IS the small-cut tile — the same file the browser tab uses.
+  // Reading it directly keeps one source for the 16/24 artwork instead of a
+  // second copy that could drift.
+  { size: 16, src: 'public/logo.svg' },
+  { size: 24, src: 'public/logo.svg' },
   { size: 32, src: 'brand/tile-windows.svg' },
   { size: 48, src: 'brand/tile-windows.svg' },
   { size: 64, src: 'brand/tile-windows.svg' },
@@ -91,13 +94,6 @@ function buildIco(images) {
 }
 
 async function main() {
-  // The 16/24 .ico slots need a tile built from the small cut. It is derived
-  // here rather than shipped in gen-brand.mjs's kit because nothing else
-  // consumes it — it exists only to feed those two slots.
-  const smallTile = fs.readFileSync(path.join(ROOT, 'public/logo.svg'), 'utf8')
-    .replace('viewBox="0 0 64 64"', 'viewBox="0 0 64 64"')
-  fs.writeFileSync(path.join(OUT, 'tile-windows-small.svg'), smallTile)
-
   const browser = await chromium.launch()
   const page = await browser.newPage({ deviceScaleFactor: 1 })
 
