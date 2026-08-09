@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en" data-generated-by="scripts/gen-brand-page.mjs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RepoManager — brand &amp; media kit</title>
+<meta name="description" content="The RepoManager mark, its two optical cuts, the inherited BolaLabs palette and type, and every file in the media kit.">
+<link rel="icon" type="image/svg+xml" href="../public/logo.svg">
+<style>
+  @font-face{font-family:"Archivo";src:url(fonts/archivo-latin-wght-normal.woff2) format("woff2");font-weight:100 900;font-display:swap}
+  @font-face{font-family:"Plex";src:url(fonts/ibm-plex-sans-latin-wght-normal.woff2) format("woff2");font-weight:100 900;font-display:swap}
+  @font-face{font-family:"JBMono";src:url(fonts/jetbrains-mono-latin-wght-normal.woff2) format("woff2");font-weight:100 900;font-display:swap}
+
+  :root{
+    --lime:#7fc528; --ink:#0f172a; --paper:#f8fafc; --ground:#020617;
+    --bg:#FCFCFD; --surface:#F4F5F7; --sunk:#EAECEF; --line:#DFE2E7;
+    --text:#0F172A; --muted:#586074; --accent-text:#3f7d12;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#0B0F19; --surface:#131926; --sunk:#1B2231; --line:#252D3E;
+      --text:#E6EAF2; --muted:#96A0B5; --accent-text:#8fd23f;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0B0F19; --surface:#131926; --sunk:#1B2231; --line:#252D3E;
+    --text:#E6EAF2; --muted:#96A0B5; --accent-text:#8fd23f;
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:"Plex",ui-sans-serif,system-ui,sans-serif;font-size:16px;line-height:1.6;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:820px;margin:0 auto;padding:0 20px 80px}
+  .mono{font-family:"JBMono",ui-monospace,monospace;font-size:.92em}
+  h1,h2,h3{font-family:"Archivo",ui-sans-serif,sans-serif;letter-spacing:-.025em;
+    text-wrap:balance;margin:0}
+  h1{font-size:clamp(34px,8vw,54px);font-weight:700;line-height:1.03}
+  h2{font-size:clamp(22px,4.4vw,29px);font-weight:650;margin-bottom:10px}
+  h3{font-size:16.5px;font-weight:650;margin-bottom:5px}
+  p{margin:0 0 15px;max-width:64ch}
+  a{color:var(--accent-text)}
+  .eyebrow{font-family:"JBMono",monospace;font-size:11px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--muted);margin:0 0 12px}
+  section{padding:44px 0;border-top:1px solid var(--line)}
+  .hero{padding:56px 0 40px}
+  .hero .badge{width:124px;height:124px;margin-bottom:26px}
+  .hero .badge svg{width:100%;height:100%;display:block}
+  .lede{font-size:17.5px;color:var(--muted)}
+
+  /* Both grounds are FIXED, never themed. These two strips exist to show the
+     light-ground and dark-ground variants of the mark, so their backgrounds
+     have to stay put — a themed --sunk flips dark in dark mode and renders the
+     ink-coloured marks almost invisibly against it. */
+  .ladder{display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap;
+    border-radius:14px;padding:20px 18px;margin:16px 0;
+    background:#FFFFFF;border:1px solid var(--line)}
+  .ladder.dark{background:#020617;border-color:#252D3E}
+  .stripcap{font-family:"JBMono",monospace;font-size:10.5px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--muted);margin:18px 0 -6px}
+  .rung{display:flex;flex-direction:column;align-items:center;gap:9px}
+  .rung .box svg{width:100%;height:100%;display:block}
+  .cap{font-family:"JBMono",monospace;font-size:10px;letter-spacing:.07em;color:#6B7280}
+  .ladder.dark .cap{color:#8A94A8}
+
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:620px){.grid3{grid-template-columns:1fr}}
+  .sw{border:1px solid var(--line);border-radius:13px;overflow:hidden}
+  .sw .chip{height:72px}
+  .sw .meta{padding:10px 12px;background:var(--surface)}
+  .sw .n{font-weight:600;font-size:14px}
+  .sw .h{font-family:"JBMono",monospace;font-size:12px;color:var(--muted)}
+  .sw .u{font-size:12.5px;color:var(--muted);margin-top:3px}
+
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:15px;
+    padding:18px 16px;text-align:center}
+  .panel .t{width:88px;height:88px;margin:0 auto 12px}
+  .panel .t svg{width:100%;height:100%;display:block}
+  .panel p{font-size:13.5px;color:var(--muted);margin:0;max-width:none}
+
+  .rule{border-left:3px solid var(--lime);padding:2px 0 2px 14px;margin:0 0 14px}
+  .rule.no{border-left-color:#DC2626}
+  .rule p{margin:0}
+  .rule .tag{font-family:"JBMono",monospace;font-size:10.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px}
+
+  .spec{border:1px solid var(--line);border-radius:15px;padding:19px 17px;
+    margin-bottom:11px;background:var(--surface)}
+  .spec .role{font-family:"JBMono",monospace;font-size:10.5px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+  .spec .s{margin:0 0 7px;line-height:1.12;max-width:none}
+  .spec .note{font-size:13.5px;color:var(--muted);margin:0;max-width:none}
+
+  table{width:100%;border-collapse:collapse;font-size:14.5px}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-family:"JBMono",monospace;font-size:10.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--muted);font-weight:400}
+  .scroller{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  footer{padding:34px 0 0;border-top:1px solid var(--line);color:var(--muted);font-size:13.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="badge"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="RepoManager">
+  <rect x="0" y="0" width="256" height="256" rx="30" fill="#020617"/>
+  <g transform="translate(35.84 35.84) scale(5.76)">
+  <g fill="none" stroke="#f8fafc" stroke-width="2.9" stroke-linecap="round">
+  <path d="M5.8 5.6 V26.4"/><path d="M5.8 16 H14.4"/>
+  </g>
+  <circle cx="5.8" cy="5.6" r="2.1" fill="#f8fafc"/>
+  <circle cx="5.8" cy="26.4" r="2.1" fill="#f8fafc"/>
+  <circle cx="20.3" cy="16" r="4.7" fill="#7fc528"/>
+  <circle cx="20.3" cy="16" r="7.6" fill="none" stroke="#7fc528" stroke-width="1.9" opacity="0.45"/>
+  </g>
+</svg></div>
+    <p class="eyebrow">BolaLabs · RepoManager</p>
+    <h1>The commit that<br>wants you.</h1>
+    <p class="lede">A rail of commits, and one node lifted off it. The product exists to tell you which repository needs you today — the mark is that sentence, drawn once.</p>
+    <p style="font-size:14px;color:var(--muted)">This page is generated from <span class="mono">scripts/gen-brand.mjs</span>, the same file the assets come from. The written spec — rules, reasoning, the full "never" list — is <a href="../docs/BRAND.md">docs/BRAND.md</a>.</p>
+  </div>
+
+  <section>
+    <p class="eyebrow">01 · Two optical cuts</p>
+    <h2>Never one file scaled down</h2>
+    <p>Below about 24&nbsp;px the ring closes into a smudge and a 2.9 stroke lands between pixels. The small cut drops the ring, grows the node and thickens every stroke — same idea, redrawn. This is the difference between an icon and a logo shrunk.</p>
+
+    <p class="stripcap">On a light ground</p>
+    <div class="ladder">
+      <div class="rung"><div class="box" style="width:64px;height:64px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"
+     role="img" aria-label="RepoManager">
+  <g fill="none" stroke="#0f172a" stroke-width="2.9" stroke-linecap="round">
+  <path d="M5.8 5.6 V26.4"/><path d="M5.8 16 H14.4"/>
+  </g>
+  <circle cx="5.8" cy="5.6" r="2.1" fill="#0f172a"/>
+  <circle cx="5.8" cy="26.4" r="2.1" fill="#0f172a"/>
+  <circle cx="20.3" cy="16" r="4.7" fill="#7fc528"/>
+  <circle cx="20.3" cy="16" r="7.6" fill="none" stroke="#7fc528" stroke-width="1.9" opacity="0.45"/>
+</svg></div><span class="cap">64 · display</span></div>
+      <div class="rung"><div class="box" style="width:32px;height:32px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"
+     role="img" aria-label="RepoManager">
+  <g fill="none" stroke="#0f172a" stroke-width="2.9" stroke-linecap="round">
+  <path d="M5.8 5.6 V26.4"/><path d="M5.8 16 H14.4"/>
+  </g>
+  <circle cx="5.8" cy="5.6" r="2.1" fill="#0f172a"/>
+  <circle cx="5.8" cy="26.4" r="2.1" fill="#0f172a"/>
+  <circle cx="20.3" cy="16" r="4.7" fill="#7fc528"/>
+  <circle cx="20.3" cy="16" r="7.6" fill="none" stroke="#7fc528" stroke-width="1.9" opacity="0.45"/>
+</svg></div><span class="cap">32 · display</span></div>
+      <div class="rung"><div class="box" style="width:24px;height:24px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"
+     role="img" aria-label="RepoManager">
+  <g fill="none" stroke="#0f172a" stroke-width="3.8" stroke-linecap="round">
+  <path d="M6.5 6.5 V25.5"/><path d="M6.5 16 H13.5"/>
+  </g>
+  <circle cx="21" cy="16" r="6.2" fill="#7fc528"/>
+</svg></div><span class="cap">24 · small</span></div>
+      <div class="rung"><div class="box" style="width:16px;height:16px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"
+     role="img" aria-label="RepoManager">
+  <g fill="none" stroke="#0f172a" stroke-width="3.8" stroke-linecap="round">
+  <path d="M6.5 6.5 V25.5"/><path d="M6.5 16 H13.5"/>
+  </g>
+  <circle cx="21" cy="16" r="6.2" fill="#7fc528"/>
+</svg></div><span class="cap">16 · small</span></div>
+    </div>
+    <p class="stripcap">On a dark ground</p>
+    <div class="ladder dark">
+      <div class="rung"><div class="box" style="width:64px;height:64px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"
+     role="img" aria-label="RepoManager">
+  <g fill="none" stroke="#f8fafc" stroke-width="2.9" stroke-linecap="round">
+  <path d="M5.8 5.6 V26.4"/><path d="M5.8 16 H14.4"/>
+  </g>
+  <circle cx="5.8" cy="5.6" r="2.1" fill="#f8fafc"/>
+  <circle cx="5.8" cy="26.4" r="2.1" fill="#f8fafc"/>
+  <circle cx="20.3" cy="16" r="4.7" fill="#7fc528"/>
+  <circle cx="20.3" cy="16" r="7.6" fill="none" stroke="#7fc528" stroke-width="1.9" opacity="0.45"/>
+</svg></div><span class="cap">64 · display</span></div>
+      <div class="rung"><div class="box" style="width:32px;height:32px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"
+     role="img" aria-label="RepoManager">
+  <g fill="none" stroke="#f8fafc" stroke-width="2.9" stroke-linecap="round">
+  <path d="M5.8 5.6 V26.4"/><path d="M5.8 16 H14.4"/>
+  </g>
+  <circle cx="5.8" cy="5.6" r="2.1" fill="#f8fafc"/>
+  <circle cx="5.8" cy="26.4" r="2.1" fill="#f8fafc"/>
+  <circle cx="20.3" cy="16" r="4.7" fill="#7fc528"/>
+  <circle cx="20.3" cy="16" r="7.6" fill="none" stroke="#7fc528" stroke-width="1.9" opacity="0.45"/>
+</svg></div><span class="cap">32 · display</span></div>
+      <div class="rung"><div class="box" style="width:24px;height:24px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"
+     role="img" aria-label="RepoManager">
+  <g fill="none" stroke="#f8fafc" stroke-width="3.8" stroke-linecap="round">
+  <path d="M6.5 6.5 V25.5"/><path d="M6.5 16 H13.5"/>
+  </g>
+  <circle cx="21" cy="16" r="6.2" fill="#7fc528"/>
+</svg></div><span class="cap">24 · small</span></div>
+      <div class="rung"><div class="box" style="width:16px;height:16px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"
+     role="img" aria-label="RepoManager">
+  <g fill="none" stroke="#f8fafc" stroke-width="3.8" stroke-linecap="round">
+  <path d="M6.5 6.5 V25.5"/><path d="M6.5 16 H13.5"/>
+  </g>
+  <circle cx="21" cy="16" r="6.2" fill="#7fc528"/>
+</svg></div><span class="cap">16 · small</span></div>
+    </div>
+    <p style="font-size:14px;color:var(--muted)">The Windows <span class="mono">.ico</span> carries different artwork per slot: small at 16 and 24, display at 32 and above. No generic converter does that.</p>
+  </section>
+
+  <section>
+    <p class="eyebrow">02 · Colour</p>
+    <h2>The house lime, spent in one place</h2>
+    <p>RepoManager has no palette of its own. It inherits the official BolaLabs primary and spends it on exactly one element: the attending node. Everything else is ink.</p>
+    <div class="grid3" style="margin:18px 0 14px">
+      <div class="sw"><div class="chip" style="background:#7fc528"></div><div class="meta"><div class="n">Lime</div><div class="h">#7fc528</div><div class="u">The node. Fill only.</div></div></div>
+      <div class="sw"><div class="chip" style="background:#0f172a"></div><div class="meta"><div class="n">Ink</div><div class="h">#0f172a</div><div class="u">Structure on light</div></div></div>
+      <div class="sw"><div class="chip" style="background:#020617"></div><div class="meta"><div class="n">Ground</div><div class="h">#020617</div><div class="u">Tile background</div></div></div>
+    </div>
+    <div class="rule"><span class="tag">Inherited rule</span>
+      <p>The lime is <b>fill only — never text</b>. For a coloured word use <span class="mono">#8fd23f</span> on dark (11:1) or <span class="mono">#3f7d12</span> on light (~5:1).</p></div>
+    <div class="rule no"><span class="tag">Collision to avoid</span>
+      <p>The product's UI uses green for <em>passing</em>. The brand lime sits at H≈87° and must never mean "healthy", or the brand and the status language start contradicting each other.</p></div>
+  </section>
+
+  <section>
+    <p class="eyebrow">03 · Typography</p>
+    <h2>Three faces, already chosen</h2>
+    <p>Inherited from the platform, shipped with this kit under the SIL Open Font Licence — see <span class="mono">brand/fonts/OFL.txt</span>.</p>
+    <div class="spec"><div class="role">Display · Archivo</div>
+      <p class="s" style="font-family:'Archivo';font-weight:700;font-size:clamp(26px,5.6vw,40px);letter-spacing:-.03em">Manage every repository</p>
+      <p class="note">Headlines and the wordmark. 600–700, never below 20&nbsp;px.</p></div>
+    <div class="spec"><div class="role">Text · IBM Plex Sans</div>
+      <p class="s" style="font-size:18px;line-height:1.5">A rail of commits, and one node lifted off it — the repository that needs you today.</p>
+      <p class="note">All running text and UI labels.</p></div>
+    <div class="spec"><div class="role">Data · JetBrains Mono</div>
+      <p class="s mono" style="font-size:15.5px">git log --oneline · #7fc528 · 7,099 tests</p>
+      <p class="note">Code, versions, hex values, metrics.</p></div>
+  </section>
+
+  <section>
+    <p class="eyebrow">04 · Installed on a machine</p>
+    <h2>Every OS wants a different file</h2>
+    <div class="grid3" style="margin-top:18px">
+      <div class="panel"><div class="t"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="RepoManager">
+  <rect x="100" y="100" width="824" height="824" rx="185.4" fill="#020617"/>
+  <g transform="translate(231.84 231.84) scale(17.51)">
+  <g fill="none" stroke="#f8fafc" stroke-width="2.9" stroke-linecap="round">
+  <path d="M5.8 5.6 V26.4"/><path d="M5.8 16 H14.4"/>
+  </g>
+  <circle cx="5.8" cy="5.6" r="2.1" fill="#f8fafc"/>
+  <circle cx="5.8" cy="26.4" r="2.1" fill="#f8fafc"/>
+  <circle cx="20.3" cy="16" r="4.7" fill="#7fc528"/>
+  <circle cx="20.3" cy="16" r="7.6" fill="none" stroke="#7fc528" stroke-width="1.9" opacity="0.45"/>
+  </g>
+</svg></div>
+        <h3>macOS</h3><p>1024 canvas, art at 824, radius 185.4. macOS does not round for you.</p></div>
+      <div class="panel"><div class="t"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="RepoManager">
+  <rect x="0" y="0" width="256" height="256" rx="30" fill="#020617"/>
+  <g transform="translate(35.84 35.84) scale(5.76)">
+  <g fill="none" stroke="#f8fafc" stroke-width="2.9" stroke-linecap="round">
+  <path d="M5.8 5.6 V26.4"/><path d="M5.8 16 H14.4"/>
+  </g>
+  <circle cx="5.8" cy="5.6" r="2.1" fill="#f8fafc"/>
+  <circle cx="5.8" cy="26.4" r="2.1" fill="#f8fafc"/>
+  <circle cx="20.3" cy="16" r="4.7" fill="#7fc528"/>
+  <circle cx="20.3" cy="16" r="7.6" fill="none" stroke="#7fc528" stroke-width="1.9" opacity="0.45"/>
+  </g>
+</svg></div>
+        <h3>Windows</h3><p>One <span class="mono">.ico</span> carrying 16/24/32/48/64/256.</p></div>
+      <div class="panel"><div class="t" style="border-radius:50%;overflow:hidden"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="RepoManager">
+  <rect x="0" y="0" width="512" height="512" rx="256" fill="#020617"/>
+  <g transform="translate(107.52 107.52) scale(9.28)">
+  <g fill="none" stroke="#f8fafc" stroke-width="2.9" stroke-linecap="round">
+  <path d="M5.8 5.6 V26.4"/><path d="M5.8 16 H14.4"/>
+  </g>
+  <circle cx="5.8" cy="5.6" r="2.1" fill="#f8fafc"/>
+  <circle cx="5.8" cy="26.4" r="2.1" fill="#f8fafc"/>
+  <circle cx="20.3" cy="16" r="4.7" fill="#7fc528"/>
+  <circle cx="20.3" cy="16" r="7.6" fill="none" stroke="#7fc528" stroke-width="1.9" opacity="0.45"/>
+  </g>
+</svg></div>
+        <h3>Adaptive</h3><p>Mark at 58% so a circular mask never clips the rail.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <p class="eyebrow">05 · The kit</p>
+    <h2>Every file, and what it is for</h2>
+    <div class="scroller"><table>
+      <tr><th>File</th><th>For</th></tr>
+      <tr><td class="mono">brand/mark-display.svg</td><td>Bare mark, 25 px and up, light grounds</td></tr>
+      <tr><td class="mono">brand/mark-display-inverse.svg</td><td>Bare mark, 25 px and up, dark grounds</td></tr>
+      <tr><td class="mono">brand/mark-small.svg</td><td>Bare mark, 24 px and below</td></tr>
+      <tr><td class="mono">brand/mark-small-inverse.svg</td><td>Bare mark, 24 px and below, dark grounds</td></tr>
+      <tr><td class="mono">brand/mark-mono.svg</td><td>Single colour — structure and node both currentColor</td></tr>
+      <tr><td class="mono">brand/lockup-horizontal.svg</td><td>Mark + wordmark, side by side</td></tr>
+      <tr><td class="mono">brand/lockup-horizontal-inverse.svg</td><td>Horizontal lockup for dark grounds</td></tr>
+      <tr><td class="mono">brand/lockup-stacked.svg</td><td>Mark above wordmark</td></tr>
+      <tr><td class="mono">brand/tile-macos.svg</td><td>824 art in a 1024 canvas, radius 185.4, pre-rounded</td></tr>
+      <tr><td class="mono">brand/tile-windows.svg</td><td>256 square, radius 30</td></tr>
+      <tr><td class="mono">brand/tile-adaptive.svg</td><td>Mark at 58% so a circular mask never clips it</td></tr>
+      <tr><td class="mono">public/logo.svg</td><td>Favicon and app mark — the small cut, because a tab is 16 px</td></tr>
+    </table></div>
+    <p style="font-size:14px;color:var(--muted);margin-top:14px">Rasters — the <span class="mono">.ico</span>, PNG favicons, apple-touch icon and social card — sit alongside these, built by <span class="mono">scripts/gen-brand-raster.mjs</span>.</p>
+  </section>
+
+  <section>
+    <p class="eyebrow">06 · Never</p>
+    <h2>What breaks it</h2>
+    <div class="rule no"><span class="tag">Never</span><p>Recolour the node. It is the only carrier of brand recognition.</p></div>
+    <div class="rule no"><span class="tag">Never</span><p>Add a gradient, glow or shadow. The previous logo had four gradients and three blurs, and that is why it died at 16&nbsp;px and lost detail converting to <span class="mono">.ico</span>.</p></div>
+    <div class="rule no"><span class="tag">Never</span><p>Scale the display cut below 25&nbsp;px, or use the mark below 16&nbsp;px.</p></div>
+    <div class="rule no"><span class="tag">Never</span><p>Use the BolaLabs flask as the product icon. The flask is the company; the rail is the product.</p></div>
+    <div class="rule no"><span class="tag">Never</span><p>Borrow anything from GitHub — Octocat, wordmark or palette. RepoManager <em>manages</em> GitHub and is not affiliated with it.</p></div>
+  </section>
+
+  <footer>
+    <p style="margin:0">Generated by <span class="mono">scripts/gen-brand-page.mjs</span>. Do not edit this file — change the geometry in <span class="mono">scripts/gen-brand.mjs</span> and run <span class="mono">npm run gen:brand</span>. Fonts are SIL OFL-1.1; see <span class="mono">brand/fonts/OFL.txt</span>.</p>
+  </footer>
+
+</div>
+</body>
+</html>

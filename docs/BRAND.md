@@ -9,10 +9,15 @@ changing anything here, change it in
 are outputs, not sources.
 
 ```bash
-node scripts/gen-brand.mjs           # SVGs
-node scripts/gen-brand-raster.mjs    # PNGs, the .ico, the social card (needs Playwright)
-node scripts/gen-brand.mjs --check   # what CI runs
+npm run gen:brand          # SVGs, rasters, and the visual guide
+npm run gen:brand:check    # what CI runs
 ```
+
+> **Looking for the visual version?** [`brand/index.html`](../brand/index.html)
+> shows the marks at real pixel sizes on both grounds, the palette, the type
+> and every file in the kit. Open it straight from a clone — it is
+> self-contained and carries its own fonts. It is generated from the same
+> constants as the assets, so it cannot drift from what it documents.
 
 ---
 
@@ -132,6 +137,8 @@ Everything in `brand/` is generated. Nothing in it should be edited by hand.
 | `apple-touch-icon.png` | 180 px |
 | `icon-512.png`, `icon-1024-macos.png` | Store and bundle art |
 | `og-1200x630.png` | Social card |
+| `index.html` | The visual guide — open it in a browser |
+| `fonts/*.woff2` + `fonts/OFL.txt` | Archivo, IBM Plex Sans, JetBrains Mono, under SIL OFL-1.1 |
 
 Served copies live in `public/` (`logo.svg`, `favicon-32.png`,
 `apple-touch-icon.png`, `og-1200x630.png`) so Vite ships them in `dist/`. The

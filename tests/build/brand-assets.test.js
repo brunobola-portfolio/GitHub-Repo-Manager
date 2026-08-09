@@ -14,6 +14,7 @@
 import { readFileSync, existsSync, statSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 import { ASSETS, COLOR } from '../../scripts/gen-brand.mjs'
+import { page, DESCRIPTIONS } from '../../scripts/gen-brand-page.mjs'
 
 const RASTERS = [
   'brand/favicon-16.png',
@@ -126,6 +127,53 @@ describe('the Windows icon carries every slot, with the right cut in each', () =
         `slot ${i} is not a PNG`
       ).toBe('89504e470d0a1a0a')
     }
+  })
+})
+
+describe('the visual guide is generated, not maintained', () => {
+  it('brand/index.html matches scripts/gen-brand-page.mjs', () => {
+    // A hand-kept HTML brand guide is a second source of truth, and it drifts
+    // from the assets it documents. This one embeds the very SVG strings the
+    // generator emits, so drift is only possible if someone edits the output.
+    expect(existsSync('brand/index.html')).toBe(true)
+    expect(
+      sameContent(readFileSync('brand/index.html', 'utf8'), page()),
+      'brand/index.html was edited by hand. Change scripts/gen-brand-page.mjs and run npm run gen:brand.'
+    ).toBe(true)
+  })
+
+  it('every asset in the kit is described on the page', () => {
+    // Object.keys(ASSETS) drives the file table, so a new asset added without a
+    // description would render the literal string "undefined" to a reader.
+    for (const key of Object.keys(ASSETS)) {
+      expect(DESCRIPTIONS[key], `${key} has no description in gen-brand-page.mjs`).toBeTruthy()
+    }
+  })
+
+  it('ships the typefaces it specifies, with their licence', () => {
+    // The page names Archivo, IBM Plex Sans and JetBrains Mono. Without the
+    // files it renders in a fallback and demonstrates the opposite of its own
+    // typography section — and OFL-1.1 requires the licence to travel with them.
+    for (const f of [
+      'brand/fonts/archivo-latin-wght-normal.woff2',
+      'brand/fonts/ibm-plex-sans-latin-wght-normal.woff2',
+      'brand/fonts/jetbrains-mono-latin-wght-normal.woff2',
+    ]) {
+      expect(existsSync(f), `${f} is missing`).toBe(true)
+      expect(statSync(f).size).toBeGreaterThan(10_000)
+    }
+    const ofl = readFileSync('brand/fonts/OFL.txt', 'utf8')
+    expect(ofl).toMatch(/SIL Open Font License/i)
+    for (const name of ['archivo', 'ibm-plex-sans', 'jetbrains-mono']) {
+      expect(ofl, `${name} licence text is missing`).toContain(name)
+    }
+  })
+
+  it('is self-contained — no external font, script or style', () => {
+    // It has to open straight from a clone, offline, with no CDN.
+    const html = readFileSync('brand/index.html', 'utf8')
+    expect(html).not.toMatch(/https?:\/\/[^"')\s]+\.(woff2?|css|js)/)
+    expect(html).not.toContain('<script')
   })
 })
 
