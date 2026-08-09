@@ -25,14 +25,21 @@ import { ASSETS, COLOR } from './gen-brand.mjs'
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const OUT = path.join(ROOT, 'brand/index.html')
 
-// The XML comment and the fixed width/height are stripped: inline in HTML the
-// comment is noise, and the attributes would fight the CSS that sets each
-// instance's real size.
-const inline = (key) =>
-  ASSETS[key]
-    .replace(/<!--[\s\S]*?-->\s*/g, '')
-    .replace(/\s+width="[\d.]+"\s+height="[\d.]+"/, '')
-    .trim()
+// Inline an asset into the page: drop the leading provenance comment (noise in
+// HTML) and the fixed width/height (they would fight the CSS that sets each
+// instance's real pixel size).
+//
+// Sliced from the first `<svg`, not comment-stripped with a regex. Every asset
+// is emitted as NOTE + <svg> by gen-brand.mjs, so the slice is exact — and a
+// single-pass `replace(/<!--...-->/)` is the incomplete-sanitization shape that
+// leaves a bare `<!--` behind on nested input. Nothing here takes user input,
+// but a fragile helper is a bad thing to leave in a generator someone will copy.
+const inline = (key) => {
+  const svg = ASSETS[key]
+  const start = svg.indexOf('<svg')
+  if (start === -1) throw new Error(`${key} does not contain an <svg> root`)
+  return svg.slice(start).replace(/\s+width="[\d.]+"\s+height="[\d.]+"/, '').trim()
+}
 
 const FONTS = [
   ['Archivo', 'archivo-latin-wght-normal.woff2'],
