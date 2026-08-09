@@ -19,6 +19,12 @@
  *
  * Exit codes: 0 chain intact · 1 chain broken · 2 usage error.
  */
+// MUST precede any import that reaches db.js: the SQLite path is resolved from
+// process.env.DATA_DIR during module evaluation, so an operator CLI that skips
+// this opens <repo>/server/data instead of the configured data directory —
+// silently creating and reporting on an empty database.
+import '../lib/env/load-dotenv.js'
+
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from './_cli-utils.mjs';
 

@@ -1,13 +1,9 @@
+// Side-effect import: populates process.env from the .env file (honouring
+// GRM_ENV_FILE). Kept in its own module so entry points can import it BEFORE
+// anything that reads process.env at module-evaluation time — see the comment
+// in lib/env/load-dotenv.js for the DATA_DIR bug that motivated the split.
+import './lib/env/load-dotenv.js';
 import { z } from 'zod';
-import dotenv from 'dotenv';
-// GRM_ENV_FILE: explicit .env location, set by the Windows package launcher
-// (packaging/windows/start.ps1) so the file can live in the DATA directory —
-// surviving uninstall/reinstall (it holds CREDENTIAL_ENCRYPTION_KEY; losing
-// it would strand every encrypted credential in the database) and keeping the
-// install dir read-only-safe. Unset → dotenv's default `<cwd>/.env`.
-dotenv.config(process.env.GRM_ENV_FILE
-    ? { path: process.env.GRM_ENV_FILE, quiet: true }
-    : { quiet: true });
 
 const configSchema = z.object({
     // Server
