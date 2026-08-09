@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.13.1] - 2026-08-09
+
+Dependency maintenance only — no product change. Seven Dependabot updates,
+merged after the 4.13.0 release and validated as a batch.
+
+### Changed
+
+- **Dependencies** — `better-sqlite3` 13.0.1 → 13.0.3, `stripe` 22.3.2 →
+  22.4.0, `jose` 6.2.4 → 6.2.8, `pino` 10.3.1 → 10.4.0, `lucide-react` 1.27.0
+  → 1.28.0, `mermaid` 11.16.0 → 11.16.1, `dompurify` 3.4.12 → 3.4.13,
+  `ip-address` 10.2.0 → 10.4.0, both Sentry SDKs 10.68.0 → 10.69.0, plus the
+  dev-tooling group and `actions/download-artifact` 7 → 8.
+
+  `better-sqlite3` still builds against `NAPI_VERSION=10` and still ships
+  ABI-independent prebuilds, so nothing about the Node 22.14/24 story changes;
+  the `compat (node 22 floor)` job exercises `check:native` on the floor to
+  keep that honest.
+
+
 ## [4.13.0] - 2026-08-09
 
 Production hardening for the first public deployment, and the review panel that
@@ -2670,7 +2689,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.13.0...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.13.1...HEAD
+[4.13.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.13.0...v4.13.1
 [4.12.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.11.0...v4.12.0
 [4.11.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.10.0...v4.11.0
 [4.10.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.9.0...v4.10.0
