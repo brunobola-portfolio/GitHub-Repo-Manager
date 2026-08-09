@@ -42,9 +42,8 @@ jobs:
       # unknown number of commits — a shipped report linked into the gitignored
       # .dev/ workspace, which nobody could follow from a clean clone.
       - run: npm run docs:linkcheck
-      # Brand assets are generated (scripts/gen-brand.mjs). This fails if a
-      # checked-in SVG was edited by hand, which would otherwise be silently
-      # reverted by the next regeneration.
+      # Brand assets AND the visual guide are generated. This fails if either
+      # was edited by hand, which the next regeneration would silently revert.
       - run: npm run gen:brand:check
 
   # The suite (7,100+ tests) took 318 s on one runner and was the critical path for

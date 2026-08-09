@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.15.0] - 2026-08-09
+
+### Added
+
+- **A visual brand guide in the repository** — [`brand/index.html`](brand/index.html).
+  It shows the marks at true pixel sizes on a fixed light ground and a fixed
+  dark one, the palette, the type in the real faces, the three OS tiles and
+  every file in the kit. Open it straight from a clone: it is self-contained,
+  needs no server, and carries Archivo, IBM Plex Sans and JetBrains Mono under
+  SIL OFL-1.1 (`brand/fonts/`, licence included).
+
+  It is **generated** by `scripts/gen-brand-page.mjs` from the same constants
+  as the assets — it embeds the very SVG strings `gen-brand.mjs` emits and
+  reads its colours from the same `COLOR` object. A hand-kept HTML guide would
+  be a second source of truth and would drift from the assets it documents,
+  which is the failure mode this repository has spent considerable effort
+  removing elsewhere. `npm run gen:brand:check` now covers it, and the test
+  gate fails if the page, the fonts or the licence go missing.
+
+  `docs/BRAND.md` stays the written spec — the rules and the reasoning. The
+  page is the visual counterpart, doing the one thing prose cannot: showing
+  the marks at 16 px.
+
+
 ## [4.14.1] - 2026-08-09
 
 Consistency pass. No product change.
@@ -2755,7 +2779,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.14.1...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.15.0...HEAD
+[4.15.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.14.1...v4.15.0
 [4.14.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.14.0...v4.14.1
 [4.14.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.13.1...v4.14.0
 [4.13.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.13.0...v4.13.1

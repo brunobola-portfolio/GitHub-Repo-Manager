@@ -17,7 +17,7 @@ below links to the canonical page for that topic.
 | Register a GitHub App for bot identity (roadmap) | [GitHub App setup](setup/github-app.md) |
 | Wire a GitHub webhook | [Webhook setup guide](guides/github-webhook-setup.md) |
 | Set up Stripe billing | [Stripe setup guide](guides/stripe-setup.md) |
-| Use the logo, colours or media kit | [Brand](BRAND.md) |
+| Use the logo, colours or media kit | [Brand spec](BRAND.md) · [visual guide](../brand/index.html) |
 | Harden a deployment | [Security hardening (G1–G9)](security-hardening.md) |
 | Replay a failed email / webhook | [Admin DLQ guide](guides/admin-dlq.md) |
 | Read release notes | [`CHANGELOG.md`](../CHANGELOG.md) |
@@ -26,6 +26,11 @@ below links to the canonical page for that topic.
 
 The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.15.0 (2026-08-09) — the brand guide, in the repo.**
+  [`brand/index.html`](../brand/index.html) shows the marks at true pixel sizes
+  on both grounds, the palette, the type in the real faces and every file in
+  the kit — self-contained, fonts included under OFL-1.1. Generated from the
+  same constants as the assets, so it cannot drift from what it documents.
 - **v4.14.1 (2026-08-09) — consistency pass.** `.gitattributes` said nothing
   about `.svg`, so a Windows checkout turned the generated marks into CRLF and
   failed the brand gate on a developer machine while staying green on CI. Plus
@@ -55,14 +60,6 @@ The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHAN
   caller-supplied email into a shell step holding the signing key. 99 muted-text
   tokens failed WCAG AA in both themes. Node 24 LTS is now the target, with CI
   testing the 22.14 floor.
-- **v4.12.0 (2026-07-29) — money paths and honest claims.** An aborted AI
-  stream recorded zero spend, so disconnecting evaded the only cost control on
-  Pro/Enterprise streaming; a burst of concurrent requests could spend past any
-  AI cap; and Repo Insights and Semantic Search billed the operator's key
-  instead of the caller's. Three routes returned 400 on every call. Eight
-  claims the product made about itself — a seat limit that does not exist,
-  a hardcoded price, a cap sold nowhere, an invented SECURITY.md SLA — were
-  corrected, most of them now test-enforced. better-sqlite3 upgraded to 13.
 
 
 ## Architecture
