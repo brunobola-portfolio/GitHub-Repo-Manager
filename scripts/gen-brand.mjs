@@ -207,10 +207,14 @@ function write() {
 
 function check() {
   const drifted = []
+  // Normalise line endings: .gitattributes pins these to LF, but a clone that
+  // predates that rule (or a tool that rewrote them) would otherwise report
+  // twelve differences for something no renderer can see.
+  const norm = (s) => s.replace(/\r\n/g, '\n')
   for (const [rel, content] of Object.entries(ASSETS)) {
     const abs = path.join(ROOT, rel)
     if (!fs.existsSync(abs)) { drifted.push(`${rel} (missing)`); continue }
-    if (fs.readFileSync(abs, 'utf8') !== content) drifted.push(`${rel} (differs)`)
+    if (norm(fs.readFileSync(abs, 'utf8')) !== norm(content)) drifted.push(`${rel} (differs)`)
   }
   if (drifted.length) {
     console.error('Brand assets are out of sync with scripts/gen-brand.mjs:')
