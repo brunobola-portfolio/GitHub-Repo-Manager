@@ -38,8 +38,14 @@ coverage
 # committed templates are re-included.
 .env
 .env.*
+# Also the `<name>.env` shape, which the `.env*` patterns above do NOT match.
+# deploy/iis/production.env.example invites exactly that filename once the
+# `.example` suffix is dropped, and the deployment runbook has the operator
+# running git in the same tree.
+*.env
 !.env.example
 !.env.test
+!*.env.example
 
 # Database files (incl. SQLite WAL/journal sidecars — `*.db` alone does not
 # match `repos.db-wal`, which appears whenever the server runs in WAL mode)
