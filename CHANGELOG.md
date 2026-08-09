@@ -7,6 +7,148 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.13.0] - 2026-08-09
+
+Production hardening for the first public deployment, and the review panel that
+found what the first pass missed. Nothing here adds a feature; several things
+stop being silently wrong in production, and a security review of the new
+surface caught two issues in the licence-minting path.
+
+### Changed
+
+- **Node 24 LTS is now the target runtime.** `engines` moves from `>=22 <23` to
+  `>=22.14 <25` — 22.14 because better-sqlite3 builds against `NAPI_VERSION=10`,
+  which does not exist before it — so both current LTS lines are supported and a host already
+  running Node 24 for something else does not need a second runtime. CI, the
+  Dockerfile and the bundled Windows runtime (24.19.0) all move to 24; a new
+  `compat (node 22 floor)` job installs clean and runs the runtime-sensitive
+  suites on 22, so the lower bound is tested rather than asserted. No
+  recompilation is involved: better-sqlite3 13 builds against
+  `NAPI_VERSION=10` and ships ABI-independent prebuilds, which is also why one
+  lockfile serves both majors and why no C++ toolchain is needed on a
+  deployment host. Three comments claiming the opposite ("compiled per ABI")
+  were corrected.
+
+### Accessibility
+
+- **99 muted-text tokens failed WCAG AA in both themes.** `text-slate-400
+  dark:text-slate-500` measures 2.56:1 on white and 3.74:1 on slate-900; the
+  correct pairing is the inverse. Five of them sit in views the axe e2e suite
+  already scans, so they were live failures rather than latent ones. The same
+  inverted pair is *correct* for icons (3:1 applies), and 41 of those were left
+  untouched — including two byte-identical adjacent lines in `CredCard.jsx`
+  where a global replace would have broken the icon while fixing the text.
+- Four hardcoded easing strings replaced with the `EASE` vocabulary from
+  `src/components/ui/motion.js`.
+
+### Added
+
+- **IIS deployment guide and artefacts** for publishing on a public domain from
+  Windows Server: [`docs/guides/deploy-iis-windows.md`](docs/guides/deploy-iis-windows.md)
+  plus a ready-to-copy `deploy/iis/web.config` (ARR reverse proxy, SSE
+  buffering off, request limits), an annotated `production.env.example`, and
+  `install-service.ps1`, which registers the Windows service and refuses to
+  report success until `/api/health` answers.
+- **`npm run gen:secrets`** (`scripts/generate-secrets.mjs`) emits all four
+  production secrets at once, each independently random, and can append them
+  to an env file — refusing to do so if any is already set, since rotating
+  `CREDENTIAL_ENCRYPTION_KEY` in place strands every credential encrypted
+  under the old one. `npm run gen:keys` now names the existing licence-keypair
+  generator, which previously had no script entry.
+- **[Licence keys & the portal](docs/guides/license-keys-and-portal.md)** — how
+  keys are signed and delivered, the three issuance paths (Stripe self-service,
+  GitHub `repository_dispatch` for manual/enterprise keys, and why the signing
+  key must not live on the marketing site), and the claims an external site
+  must not make, since the pricing-parity gates cannot reach it.
+
+### Fixed
+
+- **`DATA_DIR` set in `.env` was ignored for the database.** `server/db.js`
+  resolves the SQLite path during module evaluation, and the ESM import graph
+  reached it before `config.js` had run `dotenv.config()` — so the file's
+  `DATA_DIR` arrived too late. It still applied to the later-evaluated
+  tmp/scratch directories, which made the split invisible: the data directory
+  looked right while `manager.db` was created under `server/data`, inside the
+  install tree where the next upgrade overwrites it. Only a real OS
+  environment variable worked. The `.env` load now happens in a dedicated
+  module imported first by the server entry point **and by every operator CLI**
+  (`retention`, `admin:grant`, `admin:dlq`, `admin:dlq:sweep`, `audit:verify`)
+  — those reach the same database and had the same bug, so `npm run
+  audit:verify` could return a clean SOC 2 tamper check against a file that was
+  not the production database.
+
+  > **Upgrading with `DATA_DIR` set in `.env`?** Your live database is at
+  > `<install>/server/data/manager.db` today, because that setting was being
+  > ignored. After this release the app reads `<DATA_DIR>/manager.db` — which
+  > does not exist yet, so it would boot as a brand-new install with no users,
+  > licence or credentials. **Move `manager.db` (and its `-wal`/`-shm`
+  > siblings, plus `backups/`) into `DATA_DIR` before starting.** Installs that
+  > set `DATA_DIR` as a real environment variable are unaffected. The same
+  > applies to `DATABASE_URL`: a stale value in `.env` was previously inert and
+  > will now be honoured.
+- **OAuth login broke behind a proxy that does not forward
+  `X-Forwarded-Proto`.** The `redirect_uri` was built from `req.protocol`, so
+  such a proxy (IIS/ARR, out of the box) produced an `http://` URI against an
+  `https://` OAuth App registration and GitHub answered
+  `redirect_uri_mismatch`. When `FRONTEND_URL` names the same host the request
+  arrived on, its scheme is now authoritative; a different host (dev, where
+  Vite fronts the API on another port) still uses the request origin.
+- **The theme bootstrap was blocked by the production CSP.** `index.html`
+  carried an inline `<script>` while production sends `script-src 'self'` with
+  no nonce or hash, so every dark-mode page load on a hosted install flashed
+  white and logged a CSP violation. Moved to `public/theme-init.js`; a build
+  gate now fails on any inline script in the app shell.
+- **AI streaming and migration progress omitted the anti-buffering header.**
+  Both now send `X-Accel-Buffering: no`, so an nginx or Cloudflare hop cannot
+  batch an SSE stream into one delayed blob. (IIS/ARR ignores the header —
+  see the deployment guide for the `responseBufferThreshold` setting.)
+- **The licence email told every paying customer something untrue.** It said
+  keys are "not remotely revocable", and both policy documents — including the
+  commercial licence terms — explained the design as having "no revocation
+  list to maintain" and "no runtime revocation check". Revocation shipped in
+  v4.11.0 and `verifyLicenseKey()` consults the list on every check. The copy
+  now states what is actually true, including the limit that survives: the
+  list is per-instance, so it never reaches a customer's own self-hosted
+  install. Gated by `tests/build/license-claims.test.js`.
+- **The unit suite was non-deterministic under load, and raising timeouts was
+  never going to fix it.** Roughly one App test per full run failed, a
+  different one each time, every one green in isolation — the symptom that
+  earlier pushed `testTimeout` from 5 s to 15 s and then added 8–12 s
+  per-assertion budgets. Root cause: the views these tests wait on are
+  `React.lazy()`, so each assertion window also covered vitest's on-demand
+  transform of a very large subtree. The wait was timing a compiler, not the
+  app. Reproduced deterministically under 2x CPU oversubscription — one test
+  went 1237 ms → 8047 ms against its 8 s ceiling — and fixed by stubbing the
+  leaf views in the App routing tests, which are about which view mounts with
+  which props, not about rendering it. Same load now runs those tests in
+  0.6–1.9 s.
+- **Licence minting by `repository_dispatch` never ran.** The workflow gated on
+  `github.actor == github.repository_owner`, which cannot match when the owner
+  is an Organization — so every dispatched mint was skipped. Skipped is not
+  failed, so the failure-notify step stayed quiet and the caller saw GitHub's
+  `204` with no key ever delivered. Gates on a login now, overridable via the
+  `MINT_ACTOR` repository variable.
+- **Expression injection in the licence-minting workflow.** The recipient email
+  was interpolated with `${{ }}` directly into a `run:` script — in the one
+  step whose environment carries `LICENSE_PRIVATE_PEM`. It is bound to an
+  environment variable now, which matters more since the new portal guide
+  documents feeding customer-supplied addresses into that path.
+- **The IIS `web.config` asserted HTTPS unconditionally.** It set
+  `X-Forwarded-Proto: https` on every request including plain HTTP, so the
+  session cookie was stamped `Secure` on an `http://` origin — which browsers
+  discard, killing every login with `invalid_state`. Now conditioned on
+  `{HTTPS}`, with an HTTP→HTTPS redirect rule ordered ahead of the proxy rule
+  (which is `stopProcessing`, so a redirect after it never ran).
+- **`gen:secrets --append` could silently rotate the encryption key.** Its
+  guard missed `export KEY=value` and a BOM-prefixed first line — both of which
+  dotenv honours — so an already-configured file looked empty, a second
+  assignment was appended, and dotenv takes the last one. It also created a
+  missing target world-readable on POSIX.
+- **A dated fixture failed on its own.** `BranchesTab`'s stale-branch test
+  pinned calendar dates against a rolling 90-day cutoff; one branch crossed it
+  on 2026-08-05 and the test went red with no code change. Dates are now
+  relative.
+
 ## [4.12.0] - 2026-07-29
 
 Correctness work on the paths that cost money, and a pass over every claim the
@@ -2528,7 +2670,7 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.12.0...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.13.0...HEAD
 [4.12.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.11.0...v4.12.0
 [4.11.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.10.0...v4.11.0
 [4.10.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.9.0...v4.10.0
@@ -2542,6 +2684,7 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 [4.5.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.4.0...v4.6.0
 [4.4.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.3.0...v4.4.0
 [4.0.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.8.0...v4.0.0
+[4.13.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.12.0...v4.13.0
 [3.8.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.7.2...v3.8.0
 [3.7.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.7.1...v3.7.2
 [3.7.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v3.7.0...v3.7.1
