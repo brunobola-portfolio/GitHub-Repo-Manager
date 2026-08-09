@@ -56,6 +56,29 @@ vi.mock('../src/api/teams', () => ({
   deleteTeam: vi.fn(),
 }))
 
+// RepoDetail is a React.lazy() in App.jsx, so rendering the real one puts its
+// dynamic import — and vitest's on-demand transform of a very large subtree —
+// inside the waitFor below, which then times a compiler instead of the event
+// bridge under test. This file is about the LISTENER firing and mounting the
+// view with the right repo, so the leaf is stubbed to just that. Same root
+// cause and fix as tests/components/App.test.jsx; measurements are in the note
+// there.
+vi.mock('../src/components/RepoDetail', () => ({
+  RepoDetail: ({ repo }) => <div data-testid="repo-detail-stub">{repo?.full_name}</div>,
+}))
+
+// framer-motion's real animation machinery is a large dependency to transform
+// and drives timers this file never asserts on. Same proxy shape as
+// tests/components/App.test.jsx.
+vi.mock('framer-motion', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    AnimatePresence: ({ children }) => children,
+    MotionConfig: ({ children }) => children,
+  }
+})
+
 beforeEach(() => {
   global.fetch = vi.fn(() => Promise.resolve({
     ok: false,
@@ -65,10 +88,17 @@ beforeEach(() => {
   }))
 })
 
-async function renderApp() {
-  const { default: App } = await import('../src/App.jsx')
-  const { ToastProvider } = await import('../src/contexts/ToastProvider.jsx')
-  const { ThemeProvider } = await import('../src/hooks/useTheme.jsx')
+// Imported at module scope, NOT inside renderApp(). An `await import()` in the
+// helper runs inside the test body, so vitest's transform of App.jsx and its
+// whole eager import graph counted against the per-test timeout — this test
+// was hitting 30 s under a saturated pool while asserting nothing but that an
+// event listener fired. Module-scope await is paid once, outside any test's
+// clock. (Mocks above are hoisted, so App still sees the stubs.)
+const { default: App } = await import('../src/App.jsx')
+const { ToastProvider } = await import('../src/contexts/ToastProvider.jsx')
+const { ThemeProvider } = await import('../src/hooks/useTheme.jsx')
+
+function renderApp() {
   return render(
     <ThemeProvider>
       <ToastProvider>

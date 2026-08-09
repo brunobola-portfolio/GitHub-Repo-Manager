@@ -110,6 +110,41 @@ vi.mock('@/hooks/useGitHub', () => ({
 }))
 
 // ---------------------------------------------------------------------------
+// Leaf views — stubbed, and this is load-bearing for determinism, not just speed.
+//
+// All three are React.lazy() in App.jsx, so every assertion below waits on a
+// dynamic import; under vitest that import also pays the on-demand transform of
+// a very large subtree. Measured on a 20-core box at 2x CPU oversubscription:
+// "deep-links straight to repo-detail" went 1237 ms -> 8047 ms and died exactly
+// at its 8 s ceiling; "clicking Work Board" 4655 ms -> 12313 ms. Nothing about
+// routing changed — the wait window was timing a compiler, which is why raising
+// ceilings never stuck (vitest.config.js testTimeout 5 s -> 15 s, then
+// per-assertion 8-12 s budgets, and the full suite still went red on a
+// different App test almost every run).
+//
+// These tests are about App's ROUTING — which view mounts, carrying which repo
+// — so each stub renders exactly what the assertions below read, and nothing
+// else. The real components keep their own coverage in
+// tests/components/RepoDetail/*, tests/components/WorkBoard/* and
+// tests/components/Dashboard/*.
+// ---------------------------------------------------------------------------
+vi.mock('@/components/RepoDetail', () => ({
+    // App passes repo={selectedRepoDetail}; the hash router seeds
+    // { name, full_name, owner } from #/repo/:owner/:name, so full_name is the
+    // value that proves App resolved the deep link to the right repository.
+    RepoDetail: ({ repo }) => <div data-testid="repo-detail-stub">{repo?.full_name}</div>,
+}))
+vi.mock('@/components/WorkBoard/WorkBoardPage', () => ({
+    // The assertion counts occurrences of /work board/i and requires >1 (the
+    // nav button is the other one), so the stub must render the literal title.
+    WorkBoardPage: () => <div data-testid="work-board-stub">Work Board</div>,
+}))
+vi.mock('@/components/Dashboard/DashboardPremium', () => ({
+    // The default view's hero is asserted only as "some level-1 heading exists".
+    DashboardPremium: () => <h1>Dashboard</h1>,
+}))
+
+// ---------------------------------------------------------------------------
 // Imports happen AFTER mocks so ESM picks up the stubs.
 // ---------------------------------------------------------------------------
 const App = (await import('@/App')).default
@@ -182,13 +217,13 @@ describe('App shell (authenticated, MOCK_MODE=true)', () => {
     })
 
     it('clicking Work Board switches the active view', { timeout: 30000 }, async () => {
-        // 12s, not 5s: this test mounts the whole App shell and then waits on
-        // a LAZY chunk (WorkBoardPage) to import and settle. On an idle machine
-        // that is well under a second, but the full suite runs 690+ files across
-        // a saturated fork pool and the import alone crossed 5s there — the view
-        // switch itself was never the problem (it passes every time in
-        // isolation). Kept below vitest's 15s testTimeout so a genuine failure
-        // still surfaces as a useful assertion error rather than a timeout.
+        // The generous budgets below are now headroom, not a workaround: with
+        // WorkBoardPage stubbed (see the leaf-view mocks at the top of this
+        // file) this test runs in ~170 ms idle and ~1.2 s under 2x CPU
+        // oversubscription, against 12 s. They stay wide so a slow CI runner
+        // never turns a passing assertion into a timeout, and stay below
+        // vitest's 15 s testTimeout so a genuine failure still surfaces as a
+        // readable assertion error.
         renderApp()
         await screen.findByRole('heading', { name: /repo manager/i }, { timeout: 12000 })
 
