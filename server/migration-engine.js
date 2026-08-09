@@ -957,7 +957,11 @@ export class MigrationEngine extends EventEmitter {
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive'
+      'Connection': 'keep-alive',
+      // Same anti-buffering opt-out the AI streams send (routes/ai-streaming.js):
+      // without it an nginx/Cloudflare hop batches migration progress and the
+      // wizard's progress bar jumps from 0% to done.
+      'X-Accel-Buffering': 'no'
     })
 
     // 3. If plan was interrupted, emit plan-interrupted event

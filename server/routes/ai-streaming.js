@@ -17,6 +17,13 @@ export function initSSE(res, req) {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         Connection: 'keep-alive',
+        // nginx and any proxy that honours it (Cloudflare, some ingress
+        // controllers) buffer proxied responses by default, which turns a
+        // token-by-token stream into one delayed blob and defeats the
+        // abort-on-disconnect handling below. IIS/ARR ignores this header —
+        // there, buffering is switched off with responseBufferThreshold=0
+        // (see docs/guides/deploy-iis-windows.md).
+        'X-Accel-Buffering': 'no',
     });
 
     const controller = new AbortController();
