@@ -1,10 +1,10 @@
 {
   "name": "github-repo-manager",
   "private": false,
-  "version": "4.12.0",
+  "version": "4.13.0",
   "type": "module",
   "engines": {
-    "node": ">=22 <23"
+    "node": ">=22.14 <25"
   },
   "description": "Modern GitHub repository management dashboard with AI-powered insights, team collaboration, and Azure DevOps migration",
   "author": "Bruno Marques - Bola Labs, Inc.",
@@ -64,6 +64,8 @@
     "admin:dlq:sweep": "node server/scripts/dlq-sweep.mjs",
     "lint:css": "node scripts/check-killed-classes.mjs",
     "prebuild": "npm run lint:css",
+    "gen:secrets": "node scripts/generate-secrets.mjs",
+    "gen:keys": "node scripts/generate-keys.js",
     "doctor": "node scripts/doctor.mjs",
     "doctor:fix": "node scripts/doctor.mjs --fix",
     "docs:linkcheck": "node scripts/check-doc-links.mjs"
