@@ -372,7 +372,7 @@ class TrayContext : ApplicationContext
     {
         try
         {
-            // The exe embeds bolalabs.ico via /win32icon at compile time, so its
+            // The exe embeds repomanager.ico via /win32icon at compile time, so its
             // own associated icon is the brand icon — no separate asset to ship.
             return Icon.ExtractAssociatedIcon(Application.ExecutablePath);
         }

@@ -409,7 +409,7 @@ function compileLauncher(packagingWindowsDir, stagingDir) {
     execFileSync(csc, launcherCscArgs({
         source: path.join(packagingWindowsDir, 'launcher', 'Launcher.cs'),
         out: path.join(stagingDir, LAUNCHER_EXE_NAME),
-        icon: path.join(packagingWindowsDir, 'assets', 'bolalabs.ico'),
+        icon: path.join(packagingWindowsDir, 'assets', 'repomanager.ico'),
     }), { stdio: 'inherit' });
 }
 
