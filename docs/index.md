@@ -25,6 +25,11 @@ below links to the canonical page for that topic.
 
 The 4 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.13.1 (2026-08-09) — dependency maintenance.** Seven Dependabot updates
+  merged and validated as a batch, including `better-sqlite3` 13.0.3, which
+  still builds against Node-API 10 with ABI-independent prebuilds — so the
+  Node 22.14/24 story is unchanged, and the `compat (node 22 floor)` job keeps
+  proving it. No product change.
 - **v4.13.0 (2026-08-09) — production hardening.** Everything needed to put the
   app on a public domain behind IIS, plus the review panel that found what the
   first pass missed. `DATA_DIR` set in `.env` was ignored for the database, so
@@ -52,13 +57,7 @@ The 4 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHAN
   and "higher AI spend-cap headroom") were withdrawn from every surface. Adds
   Enterprise audit-log export (`GET /api/audit/export`), the
   `npm run audit:verify` chain-integrity CLI, and licence revocation.
-- **v4.10.0 (2026-07-22) — Windows system-tray app.** The launcher now shows a
-  tray icon with a running indicator (**● Running on port N**) and controls
-  for open / view logs / restart / start-with-Windows / quit, with a
-  single-instance guard. Plus two installer fixes from real-world v4.9.0
-  testing: the optional desktop shortcut is created per-user (an all-users
-  desktop write fails on a no-UAC install), and re-running Setup finally
-  offers the **Repair / Uninstall** dialog. See [Windows guide](windows.md).
+
 
 ## Architecture
 
