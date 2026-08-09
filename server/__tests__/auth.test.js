@@ -521,7 +521,10 @@ describe('OAuth redirect_uri origin resolution', () => {
             secret: 'test-secret',
             resave: false,
             saveUninitialized: true,
-            cookie: { secure: false, httpOnly: true, sameSite: 'lax' },
+            // `secure` is omitted, not set to false: supertest speaks plain HTTP,
+            // so a Secure cookie would never come back — and the explicit literal
+            // is what trips CodeQL's clear-text-cookie rule. Default is false.
+            cookie: { httpOnly: true, sameSite: 'lax' },
         }))
         app.use('/api/auth', authRouter)
         return app
@@ -636,7 +639,10 @@ describe('OAuth redirect_uri origin resolution', () => {
             secret: 'test-secret',
             resave: false,
             saveUninitialized: true,
-            cookie: { secure: false, httpOnly: true, sameSite: 'lax' },
+            // `secure` is omitted, not set to false: supertest speaks plain HTTP,
+            // so a Secure cookie would never come back — and the explicit literal
+            // is what trips CodeQL's clear-text-cookie rule. Default is false.
+            cookie: { httpOnly: true, sameSite: 'lax' },
         }))
         app.use('/api/auth', authRouter)
 

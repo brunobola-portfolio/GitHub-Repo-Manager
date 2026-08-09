@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync, readFileSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import {
@@ -155,20 +155,34 @@ describe('appendSecretsToFile', () => {
     expect(appendSecretsToFile(target, SECRETS).ok).toBe(false)
   })
 
-  it('creates a missing target owner-only rather than world-readable', () => {
+  it('creates a missing target atomically and owner-only', () => {
     const target = path.join(dir, 'new.env')
     const calls = []
     const io = {
       existsSync: () => false,
       readFileSync: () => '',
-      writeFileSync: (...args) => calls.push(['write', ...args]),
+      openSync: (...args) => { calls.push(['open', ...args]); return 7 },
+      writeSync: (...args) => calls.push(['write', ...args]),
+      closeSync: (...args) => calls.push(['close', ...args]),
       appendFileSync: (...args) => calls.push(['append', ...args]),
     }
     expect(appendSecretsToFile(target, SECRETS, io).ok).toBe(true)
-    // appendFileSync on a new file would land at 0666 & ~umask — 0644 on most
-    // POSIX hosts, i.e. every local user can read the secrets.
-    expect(calls[0][0]).toBe('write')
-    expect(calls[0][3]).toEqual({ mode: 0o600 })
+    // 'wx' is exclusive-create: nothing can be slipped in between the
+    // existsSync check and the write. appendFileSync on a new file would also
+    // land at 0666 & ~umask — 0644 on most POSIX hosts, i.e. every local user
+    // can read the secrets.
+    expect(calls[0]).toEqual(['open', target, 'wx', 0o600])
+    expect(calls.at(-1)[0]).toBe('close')
+    expect(calls.some((c) => c[0] === 'append')).toBe(false)
+  })
+
+  it('really does write owner-only on a real filesystem', () => {
+    const target = path.join(dir, 'real.env')
+    expect(appendSecretsToFile(target, SECRETS).ok).toBe(true)
+    expect(readFileSync(target, 'utf8')).toContain('SESSION_SECRET=aaa')
+    if (process.platform !== 'win32') {
+      expect(statSync(target).mode & 0o777).toBe(0o600)
+    }
   })
 
   it('separates the appended block from an existing file with no trailing newline', () => {
