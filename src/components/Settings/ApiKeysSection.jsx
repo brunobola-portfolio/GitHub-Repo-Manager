@@ -303,7 +303,7 @@ function KeyRow({ apiKey, onRevoke }) {
                         </Badge>
                     ))}
                 </div>
-                <div className="flex gap-4 text-xs text-slate-400 dark:text-slate-500">
+                <div className="flex gap-4 text-xs text-slate-500 dark:text-slate-400">
                     <span>Created {formatDate(apiKey.created_at || apiKey.createdAt)}</span>
                     <span>Last used {formatDate(apiKey.last_used_at || apiKey.lastUsedAt)}</span>
                     {apiKey.last_used_ip && <span>IP: {apiKey.last_used_ip}</span>}

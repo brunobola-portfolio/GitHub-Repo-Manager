@@ -195,7 +195,7 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 			initial={{ opacity: 0, scale: 0.95 }}
 			animate={{ opacity: 1, scale: 1 }}
 			whileHover={{
-				transition: { duration: 0.2, ease: "easeOut" }
+				transition: { duration: 0.2, ease: EASE.emphasized }
 			}}
 			whileTap={TAP}
 			onClick={onClick}

@@ -123,7 +123,7 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
                     "Unlimited" next to an empty inbox reads as if it describes
                     the inbox, not the AI-query allowance. */}
                 <span className="flex items-baseline gap-1">
-                    <span aria-hidden="true" className="ds-text-micro font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+                    <span aria-hidden="true" className="ds-text-micro font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
                         AI
                     </span>
                     <span className={`ds-text-meta font-semibold tabular-nums ${tone.label}`}>
@@ -150,7 +150,7 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
                     >
                         <div className="flex items-center justify-between gap-2 mb-2">
                             <span className="ds-text-micro uppercase tracking-[0.2em] font-semibold text-slate-500 dark:text-slate-400">AI quota</span>
-                            <span className="ds-text-micro uppercase font-semibold text-slate-400 dark:text-slate-500">{tier}</span>
+                            <span className="ds-text-micro uppercase font-semibold text-slate-500 dark:text-slate-400">{tier}</span>
                         </div>
                         {unlimited ? (
                             <p className="text-sm text-slate-700 dark:text-slate-200">

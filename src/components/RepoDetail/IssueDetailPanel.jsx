@@ -1,3 +1,4 @@
+import { EASE } from '../ui/motion'
 import { useState, useEffect, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { motion } from 'framer-motion'
@@ -95,7 +96,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 40 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
+            transition={{ duration: 0.25, ease: EASE.emphasized }}
             className="space-y-4"
         >
             {/* Back button */}
@@ -230,7 +231,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                         </h4>
 
                         {comments.length === 0 && (
-                            <p className="text-sm text-slate-400 dark:text-slate-500 py-4 text-center">No comments yet</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">No comments yet</p>
                         )}
 
                         {comments.map(comment => (

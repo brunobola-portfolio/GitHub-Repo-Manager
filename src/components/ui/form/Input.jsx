@@ -69,7 +69,7 @@ export const Input = forwardRef(function Input(
                     'block w-full rounded-xl font-medium',
                     'bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm',
                     'text-slate-900 dark:text-slate-100',
-                    'placeholder:text-slate-400 dark:placeholder:text-slate-500',
+                    'placeholder:text-slate-500 dark:placeholder:text-slate-400',
                     'border outline-none transition-all duration-150',
                     'focus:ring-4 focus:shadow-sm',
                     'disabled:opacity-60 disabled:cursor-not-allowed',

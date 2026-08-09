@@ -216,7 +216,7 @@ export function AgentRulesModal({ isOpen, onClose, repo, hasExistingAgents = fal
             </div>
 
             <div>
-                <h4 className="ds-text-meta uppercase tracking-wider text-slate-400 dark:text-slate-500 font-semibold mb-2">
+                <h4 className="ds-text-meta uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mb-2">
                     Sections
                 </h4>
                 <div className="flex flex-wrap gap-2">

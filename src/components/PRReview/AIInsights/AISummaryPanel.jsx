@@ -1,3 +1,4 @@
+import { EASE } from '../../ui/motion'
 import { ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react'
 import { Spinner } from '../../ui/Spinner'
 import { AIErrorState } from '../../ui/AIErrorState'
@@ -73,7 +74,7 @@ export function AISummaryPanel({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
+            transition={{ duration: 0.2, ease: EASE.standard }}
             style={{ overflow: 'hidden' }}
           >
             <div className="px-3 py-3 space-y-3 bg-white dark:bg-slate-900">

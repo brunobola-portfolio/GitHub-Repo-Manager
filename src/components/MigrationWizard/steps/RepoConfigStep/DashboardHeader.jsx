@@ -67,7 +67,7 @@ export function DashboardHeader({
                 <div className="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 ring-1 ring-slate-200 dark:ring-slate-700 text-sm font-mono font-semibold text-slate-700 dark:text-slate-200 shadow-sm">
                   {source.org}
                 </div>
-                <span className="text-slate-400 dark:text-slate-500 font-mono select-none">/</span>
+                <span className="text-slate-500 dark:text-slate-400 font-mono select-none">/</span>
                 {azureProjects.length > 0 ? (
                   <Select
                     options={azureProjects.map((p) => ({ value: p.name, label: p.name }))}
@@ -84,7 +84,7 @@ export function DashboardHeader({
                   </div>
                 )}
                 {azureProjects.length > 0 && (
-                  <span className="hidden md:inline ds-text-meta text-slate-400 dark:text-slate-500 font-medium tabular-nums">
+                  <span className="hidden md:inline ds-text-meta text-slate-500 dark:text-slate-400 font-medium tabular-nums">
                     {azureProjects.length} {azureProjects.length === 1 ? 'project' : 'projects'}
                   </span>
                 )}
@@ -100,7 +100,7 @@ export function DashboardHeader({
                   label="Destination organization"
                   className="min-w-[220px]"
                 />
-                <span className="hidden md:inline ds-text-meta text-slate-400 dark:text-slate-500 font-medium tabular-nums">
+                <span className="hidden md:inline ds-text-meta text-slate-500 dark:text-slate-400 font-medium tabular-nums">
                   {orgOptions.length} {orgOptions.length === 1 ? 'account' : 'accounts'}
                 </span>
               </div>

@@ -270,7 +270,7 @@ export const RepoCard = memo(function RepoCard({
 				<RepoCardQuickActions repo={repo} onAction={onAction} onOpenContextMenu={handleContextMenu} />
 			</div>
 			{isGrid && repo.pushed_at && (
-				<p className="hidden lg:block text-xs text-slate-400 dark:text-slate-500 mt-1.5">
+				<p className="hidden lg:block text-xs text-slate-500 dark:text-slate-400 mt-1.5">
 					Updated {formatRelativeTime(repo.pushed_at)}
 				</p>
 			)}

@@ -126,7 +126,7 @@ export function HeroSection({ onSignIn }) {
       {/* Trust line */}
       <motion.p
         {...fadeUp(0.45)}
-        className="mt-6 text-xs text-slate-400 dark:text-slate-500 ds-font-display"
+        className="mt-6 text-xs text-slate-500 dark:text-slate-400 ds-font-display"
       >
         Free & open-source · No credit card required · Self-host with Docker
       </motion.p>

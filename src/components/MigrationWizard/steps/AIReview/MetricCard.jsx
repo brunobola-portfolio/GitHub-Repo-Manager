@@ -20,12 +20,12 @@ export function MetricCard({ icon: Icon, label, value, unit, iconColor, iconBg, 
           <Icon className={`w-4.5 h-4.5 ${iconColor}`} />
         </div>
         <div className="min-w-0">
-          <p className="ds-text-micro font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 leading-none mb-1">
+          <p className="ds-text-micro font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 leading-none mb-1">
             {label}
           </p>
           <p className="text-xl font-bold text-slate-900 dark:text-slate-100 leading-none">
             <AnimatedCounter value={typeof value === 'number' ? value : 0} />
-            {unit && <span className="text-xs font-medium text-slate-400 dark:text-slate-500 ml-0.5">{unit}</span>}
+            {unit && <span className="text-xs font-medium text-slate-500 dark:text-slate-400 ml-0.5">{unit}</span>}
           </p>
         </div>
       </div>

@@ -85,7 +85,7 @@ export function ModelRow({ option, optionId, selected, highlighted, onPick, data
                 )}
 
                 {/* Line 3: id + capability icons */}
-                <div className="mt-1 flex items-center gap-2 ds-text-meta font-mono text-slate-400 dark:text-slate-500">
+                <div className="mt-1 flex items-center gap-2 ds-text-meta font-mono text-slate-500 dark:text-slate-400">
                     <span className="truncate">{option.id}</span>
                     {Array.isArray(option.capabilities) && option.capabilities.length > 0 && (
                         <span className="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>

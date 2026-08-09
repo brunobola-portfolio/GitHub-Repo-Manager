@@ -33,7 +33,7 @@ export function KeyboardShortcutsHelp({ isOpen, onClose, shortcuts }) {
                 <ShortcutGroup title="Repo Actions" items={grouped.repoAction} />
             </div>
 
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-4 text-center">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-4 text-center">
                 Press <kbd className="px-1 bg-slate-100 dark:bg-slate-800 rounded text-xs font-mono">Esc</kbd> to close
             </p>
         </Modal>

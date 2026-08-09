@@ -216,7 +216,7 @@ function TaskResultRow({ task, index, maxIndex = 10, onFixLfsUpload }) {
           <Badge tone={statusConfig.tone} size="xs" className="uppercase tracking-wider">
             {statusConfig.label}
           </Badge>
-          <Badge tone="neutral" size="xs" className="uppercase tracking-wider bg-transparent dark:bg-transparent text-slate-400 dark:text-slate-500">
+          <Badge tone="neutral" size="xs" className="uppercase tracking-wider bg-transparent dark:bg-transparent text-slate-500 dark:text-slate-400">
             {typeConfig.label}
           </Badge>
           {task.metadata?.reusedExistingRepo && (
@@ -270,7 +270,7 @@ function TaskResultRow({ task, index, maxIndex = 10, onFixLfsUpload }) {
       {/* Duration */}
       <div className="shrink-0 flex items-center gap-1.5">
         {task.durationSeconds > 0 && (
-          <span className="text-xs text-slate-400 dark:text-slate-500 tabular-nums flex items-center gap-1">
+          <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums flex items-center gap-1">
             <Timer className="w-3 h-3" />
             {formatDuration(task.durationSeconds)}
           </span>
@@ -719,7 +719,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
           <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
             Task Results
           </h4>
-          <span className="text-xs text-slate-400 dark:text-slate-500 tabular-nums">
+          <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
             {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'} total
           </span>
         </div>

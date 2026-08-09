@@ -135,7 +135,7 @@ function StepDisc({ status, index, icon: Icon }) {
   }
   // pending
   return (
-    <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-center ds-text-meta font-semibold tabular-nums text-slate-400 dark:text-slate-500">
+    <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70 flex items-center justify-center ds-text-meta font-semibold tabular-nums text-slate-500 dark:text-slate-400">
       {index + 1}
     </div>
   )
@@ -224,7 +224,7 @@ export function SidebarStepper({
       {/* Progress header — premium pill + slim bar */}
       <div className="px-4 pt-4 pb-3">
         <div className="flex items-center justify-between mb-2.5">
-          <span className="ds-text-micro font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+          <span className="ds-text-micro font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
             Progress
           </span>
           <div className="inline-flex items-baseline gap-0.5 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-500/10 text-[color:var(--ds-accent-brand)] dark:text-indigo-300 font-bold tabular-nums">
@@ -355,14 +355,14 @@ export function HorizontalStepper({ steps, currentStepIndex, onGoToStep }) {
                       ? 'w-7 h-7 bg-indigo-500 text-white ring-4 ring-indigo-500/20 scale-110'
                       : isCompleted
                         ? 'w-5 h-5 bg-emerald-500 text-white cursor-pointer hover:bg-emerald-600'
-                        : 'w-5 h-5 bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500'
+                        : 'w-5 h-5 bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
                     }
                   `}
                 >
                   {isCompleted ? <Check className="w-3 h-3" /> : index + 1}
                 </button>
                 <span className={`mt-1 ds-text-micro font-medium truncate max-w-[52px] text-center
-                  ${isActive ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
+                  ${isActive ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>
                   {label}
                 </span>
               </div>

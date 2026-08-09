@@ -97,7 +97,7 @@ export function ViewErrorFallback({
 
       {error?.message && (
         <details className="mt-5 text-left group">
-          <summary className="text-xs text-slate-400 dark:text-slate-500 cursor-pointer hover:text-slate-600 dark:hover:text-slate-300 transition-colors select-none list-none flex items-center gap-1.5 justify-center">
+          <summary className="text-xs text-slate-500 dark:text-slate-400 cursor-pointer hover:text-slate-600 dark:hover:text-slate-300 transition-colors select-none list-none flex items-center gap-1.5 justify-center">
             <span className="inline-block w-1 h-1 rounded-full bg-current" />
             Technical details
           </summary>

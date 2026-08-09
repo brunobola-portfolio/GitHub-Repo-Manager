@@ -1,3 +1,4 @@
+import { EASE } from '../ui/motion'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, ArrowUpRight } from 'lucide-react'
@@ -141,7 +142,7 @@ export function CategorySection({
                         initial={{ opacity: 0, height: 0, overflow: 'hidden' }}
                         animate={{ opacity: 1, height: 'auto', overflow: 'visible', transitionEnd: { overflow: 'visible' } }}
                         exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
-                        transition={{ duration: 0.25, ease: 'easeInOut' }}
+                        transition={{ duration: 0.25, ease: EASE.standard }}
                         className="pt-1 pb-1"
                     >
                         {children}

@@ -98,7 +98,7 @@ function CategoryCard({ category, data, onClick }) {
                 )}
             </div>
             {showDelta && (
-                <div className="ds-text-micro text-slate-400 dark:text-slate-500">{deltaContext(data.baselineAt)}</div>
+                <div className="ds-text-micro text-slate-500 dark:text-slate-400">{deltaContext(data.baselineAt)}</div>
             )}
             <div className="text-xs font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                 Open <ArrowRight className="w-3 h-3" />

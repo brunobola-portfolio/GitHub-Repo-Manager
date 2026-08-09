@@ -225,7 +225,7 @@ export function AuditLogSection() {
                             <AnimatePresence>
                                 {logs.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="px-4 py-10 text-center text-sm text-slate-400 dark:text-slate-500">
+                                        <td colSpan={5} className="px-4 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
                                             No audit log entries found
                                         </td>
                                     </tr>

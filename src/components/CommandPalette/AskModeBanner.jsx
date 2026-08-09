@@ -19,7 +19,7 @@ export function AskModeBanner({ summary, hasQueries }) {
         </p>
       </div>
       {!hasQueries && (
-        <div className="px-3 pb-3 ds-text-meta text-slate-400 dark:text-slate-500">
+        <div className="px-3 pb-3 ds-text-meta text-slate-500 dark:text-slate-400">
           No GitHub query inferred. Try rephrasing or remove the leading "?".
         </div>
       )}

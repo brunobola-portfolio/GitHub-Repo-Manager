@@ -34,7 +34,7 @@ export function SuggestionRow({ suggestion, index }) {
           {suggestion.repo && (
             <div className="flex items-center gap-1.5 mt-1">
               <FolderGit2 className="w-3 h-3 text-slate-400" />
-              <p className="ds-text-meta text-slate-400 dark:text-slate-500 ds-font-mono">
+              <p className="ds-text-meta text-slate-500 dark:text-slate-400 ds-font-mono">
                 {suggestion.repo}
               </p>
             </div>

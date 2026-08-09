@@ -474,7 +474,7 @@ function QualityGrid({ data }) {
                         {featureEntries.map(([key, value]) => (
                             <div
                                 key={key}
-                                className={`flex items-center gap-2 text-sm ${value ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}
+                                className={`flex items-center gap-2 text-sm ${value ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}
                             >
                                 {value ? (
                                     <CheckCircle2 className="w-4 h-4 shrink-0" />

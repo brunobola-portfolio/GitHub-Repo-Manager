@@ -519,7 +519,7 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
                       {job.repoName || job.sourceUrl}
                     </span>
                     {job.targetName && job.targetName !== job.repoName && (
-                      <span className="text-xs text-slate-400 dark:text-slate-500">
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
                         &rarr; {job.targetName}
                       </span>
                     )}

@@ -422,7 +422,7 @@ export function PricingPage({ onGetStarted } = {}) {
               />
             </button>
 
-            <span className={`text-sm font-medium transition-colors duration-200 ${isYearly ? 'text-slate-800 dark:text-white' : 'text-slate-400 dark:text-slate-500'}`}>
+            <span className={`text-sm font-medium transition-colors duration-200 ${isYearly ? 'text-slate-800 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
               Yearly
             </span>
 

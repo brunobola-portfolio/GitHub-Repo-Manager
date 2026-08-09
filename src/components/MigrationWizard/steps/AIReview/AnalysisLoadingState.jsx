@@ -110,7 +110,7 @@ export function AnalysisLoadingState() {
             transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
           />
         ))}
-        <span className="ds-text-meta text-slate-400 dark:text-slate-500 ml-1 ds-font-mono">
+        <span className="ds-text-meta text-slate-500 dark:text-slate-400 ml-1 ds-font-mono">
           processing...
         </span>
       </motion.div>

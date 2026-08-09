@@ -75,7 +75,7 @@ export default function OrgField({
 
   const orgStatusBadge = useMemo(() => {
     if (validating) {
-      return { text: 'Validating...', color: 'text-slate-400 dark:text-slate-500', dot: 'bg-slate-400', spin: true }
+      return { text: 'Validating...', color: 'text-slate-500 dark:text-slate-400', dot: 'bg-slate-400', spin: true }
     }
     if (source.validated) {
       const count = projects.length

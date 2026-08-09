@@ -49,7 +49,7 @@ export function CapabilityMatrix({ activeProvider }) {
                         key={fk}
                         className="inline-flex items-center gap-1.5 ds-text-micro font-medium text-slate-500 dark:text-slate-400"
                     >
-                        <span className="font-mono text-[9px] text-slate-400 dark:text-slate-500 w-3 text-right">{i + 1}</span>
+                        <span className="font-mono text-[9px] text-slate-500 dark:text-slate-400 w-3 text-right">{i + 1}</span>
                         {FEATURE_LABELS[fk]}
                     </li>
                 ))}

@@ -126,7 +126,7 @@ export function ProbeStatsSection({ isAdmin = false }) {
                                 <span className={`text-2xl font-bold tabular-nums ds-font-display ${meta.accent}`}>
                                     {count}
                                 </span>
-                                <span className="ds-text-meta text-slate-400 dark:text-slate-500 pb-1">
+                                <span className="ds-text-meta text-slate-500 dark:text-slate-400 pb-1">
                                     {pct}%
                                 </span>
                             </div>
@@ -135,7 +135,7 @@ export function ProbeStatsSection({ isAdmin = false }) {
                 })}
             </div>
 
-            <p className="ds-text-meta text-slate-400 dark:text-slate-500">
+            <p className="ds-text-meta text-slate-500 dark:text-slate-400">
                 Counters live in process memory and reset on server restart by design — this is a short-window operational signal, not long-term metrics.
             </p>
         </div>
