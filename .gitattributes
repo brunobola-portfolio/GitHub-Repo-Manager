@@ -21,5 +21,20 @@
 # Cryptographic keys (public) must not be mangled.
 *.pem  text eol=lf
 
+# Brand SVGs are GENERATED (scripts/gen-brand.mjs) and compared byte-for-byte
+# by tests/build/brand-assets.test.js. Without this, a Windows checkout with
+# core.autocrlf=true materializes them as CRLF while the generator writes LF,
+# and the gate fails on every asset — green on a Linux runner, red on the
+# developer's machine, for a difference no renderer can see.
+*.svg  text eol=lf
+
+# Binary assets: never touched, never diffed as text. Git usually infers this,
+# but an explicit rule means a stray `text=auto` can't corrupt an icon.
+*.ico   binary
+*.png   binary
+*.jpg   binary
+*.bmp   binary
+*.woff2 binary
+
 # Shell scripts are always LF.
 *.sh   text eol=lf

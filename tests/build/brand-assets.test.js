@@ -29,14 +29,22 @@ const RASTERS = [
   'public/og-1200x630.png',
 ]
 
+// Line endings are normalised before comparing. The generator writes LF, but a
+// Windows checkout with core.autocrlf=true hands back CRLF — which made this
+// gate pass on the Linux CI runner and fail on a developer machine, for a
+// difference no renderer can see. .gitattributes pins these files to LF so it
+// should not happen; normalising here means a misconfigured clone reports the
+// real problem (edited artwork) rather than twelve false alarms.
+const sameContent = (a, b) => a.replace(/\r\n/g, '\n') === b.replace(/\r\n/g, '\n')
+
 describe('brand assets match their generator', () => {
   for (const [rel, expected] of Object.entries(ASSETS)) {
     it(`${rel} is what gen-brand.mjs emits`, () => {
       expect(existsSync(rel), `${rel} is missing — run: node scripts/gen-brand.mjs`).toBe(true)
       expect(
-        readFileSync(rel, 'utf8'),
+        sameContent(readFileSync(rel, 'utf8'), expected),
         `${rel} was edited by hand. Change scripts/gen-brand.mjs instead, then regenerate.`
-      ).toBe(expected)
+      ).toBe(true)
     })
   }
 })

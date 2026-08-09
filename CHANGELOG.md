@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.14.1] - 2026-08-09
+
+Consistency pass. No product change.
+
+### Fixed
+
+- **The brand gate failed on a Windows checkout.** `.gitattributes` normalised
+  `.js`/`.json`/`.yml` to LF but said nothing about `.svg`, so a clone with
+  `core.autocrlf=true` materialised the twelve generated marks as CRLF while the
+  generator writes LF — twelve failures on a developer machine, green on the
+  Linux runner, for a difference no renderer can see. SVGs are now pinned to LF,
+  binary assets are marked explicitly so a stray `text=auto` cannot corrupt an
+  icon, and both the gate and `gen:brand:check` normalise line endings so a
+  pre-existing clone reports real drift rather than false alarms.
+- Stale claims corrected: the README's "what's new" link still pointed at
+  v4.13, its test badge and tech table said 6,000+ (the suite is 7,099),
+  AGENTS.md said ~5,900, `docs/index.md` said "the 4 latest" above five
+  entries, and a CI comment quoted a long-dead 6,769-test count.
+
+
 ## [4.14.0] - 2026-08-09
 
 A brand system, generated from one file.
@@ -2735,7 +2755,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.14.0...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.14.1...HEAD
+[4.14.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.14.0...v4.14.1
 [4.14.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.13.1...v4.14.0
 [4.13.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.13.0...v4.13.1
 [4.12.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.11.0...v4.12.0

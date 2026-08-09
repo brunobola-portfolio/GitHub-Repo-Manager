@@ -17,7 +17,7 @@ changes; the README is for humans, this file is for you.
 ## Testing instructions
 
 - Unit tests: `npx vitest run <paths>` — run ONLY the files you touched while
-  iterating; the full suite (`npx vitest run`, ~5900 tests) is for final
+  iterating; the full suite (`npx vitest run`, ~7100 tests) is for final
   verification, and CI always runs it.
 - E2E: `npx playwright test` (Playwright, mock mode via `vite --mode test`).
   Do not run the full e2e suite casually; single spec files are fine.

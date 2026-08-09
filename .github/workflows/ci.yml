@@ -37,7 +37,7 @@ jobs:
       # husky never installed, and edits made through the GitHub web UI all
       # bypass it permanently. This re-checks every tracked file.
       - run: npm run guards
-      # Relative links across the 215 markdown files under docs/. The script
+      # Relative links across every markdown file in the repo. The script
       # existed but ran in no workflow and no test, so it had been red for an
       # unknown number of commits — a shipped report linked into the gitignored
       # .dev/ workspace, which nobody could follow from a clean clone.
@@ -47,7 +47,7 @@ jobs:
       # reverted by the next regeneration.
       - run: npm run gen:brand:check
 
-  # The 6769-test suite took 318 s on one runner and was the critical path for
+  # The suite (7,100+ tests) took 318 s on one runner and was the critical path for
   # every PR that does not touch packaging/. Split across three runners it is
   # ~110 s each, and they start simultaneously.
   #

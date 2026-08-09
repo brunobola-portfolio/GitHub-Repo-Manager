@@ -24,8 +24,13 @@ below links to the canonical page for that topic.
 
 ## Recent releases
 
-The 4 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
+The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.14.1 (2026-08-09) — consistency pass.** `.gitattributes` said nothing
+  about `.svg`, so a Windows checkout turned the generated marks into CRLF and
+  failed the brand gate on a developer machine while staying green on CI. Plus
+  a sweep of stale counts and version links across the README, AGENTS.md and
+  this page.
 - **v4.14.0 (2026-08-09) — a brand system.** The logo is replaced and, more to
   the point, generated: one file holds the geometry and emits all twelve SVGs,
   the PNGs and a Windows `.ico` whose 16 and 24 px slots carry different artwork
@@ -58,13 +63,6 @@ The 4 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHAN
   claims the product made about itself — a seat limit that does not exist,
   a hardcoded price, a cap sold nowhere, an invented SECURITY.md SLA — were
   corrected, most of them now test-enforced. better-sqlite3 upgraded to 13.
-- **v4.11.0 (2026-07-27) — correctness and honesty.** Two audit panels' worth
-  of money-path work: a refunded or disputed subscription could be checked out
-  again and bill twice; BYOK metering gaps were closed; and two paid-tier
-  benefits that were never enforced in code (a 1,000-repository Free ceiling
-  and "higher AI spend-cap headroom") were withdrawn from every surface. Adds
-  Enterprise audit-log export (`GET /api/audit/export`), the
-  `npm run audit:verify` chain-integrity CLI, and licence revocation.
 
 
 ## Architecture
