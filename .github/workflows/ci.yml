@@ -136,7 +136,7 @@ jobs:
           key: node-modules-${{ runner.os }}-24-${{ hashFiles('package-lock.json') }}
       - if: steps.nm.outputs.cache-hit != 'true'
         run: npm ci --no-audit --no-fund
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           path: .vitest-reports
           pattern: blob-report-*
@@ -305,7 +305,7 @@ jobs:
           key: node-modules-${{ runner.os }}-24-${{ hashFiles('package-lock.json') }}
       - if: steps.nm.outputs.cache-hit != 'true'
         run: npm ci --no-audit --no-fund
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           path: all-blob-reports
           pattern: e2e-blob-*
