@@ -43,7 +43,7 @@ export const Textarea = forwardRef(function Textarea(
                     'block w-full rounded-xl font-medium text-sm',
                     'bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm',
                     'text-slate-900 dark:text-slate-100',
-                    'placeholder:text-slate-400 dark:placeholder:text-slate-500',
+                    'placeholder:text-slate-500 dark:placeholder:text-slate-400',
                     'border outline-none transition-all duration-150 resize-none',
                     'focus:ring-4 focus:shadow-sm',
                     'disabled:opacity-60 disabled:cursor-not-allowed',

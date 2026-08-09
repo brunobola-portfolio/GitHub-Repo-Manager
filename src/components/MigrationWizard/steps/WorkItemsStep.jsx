@@ -137,7 +137,7 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
       </div>
 
       {!workItems.enabled && (
-        <div className="text-center py-8 text-sm text-slate-400 dark:text-slate-500">
+        <div className="text-center py-8 text-sm text-slate-500 dark:text-slate-400">
           <ListChecks className="w-8 h-8 mx-auto mb-2 opacity-50" />
           Enable to configure work item migration
         </div>

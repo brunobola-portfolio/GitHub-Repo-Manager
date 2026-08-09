@@ -12,6 +12,7 @@ below links to the canonical page for that topic.
 | Call the API | [API reference](api/API.md) (341 route handlers — recounted via `grep`, see API.md header) |
 | Configure an AI provider | [AI Providers (BYOK)](ai-providers.md) |
 | Run on Windows without Docker or Node.js | [Windows guide](windows.md) |
+| Publish on a public domain behind IIS | [IIS deployment guide](guides/deploy-iis-windows.md) |
 | Use the AI Deep Review experience | [AI Deep Review feature guide](features/ai-deep-review.md) |
 | Register a GitHub App for bot identity (roadmap) | [GitHub App setup](setup/github-app.md) |
 | Wire a GitHub webhook | [Webhook setup guide](guides/github-webhook-setup.md) |
@@ -22,8 +23,20 @@ below links to the canonical page for that topic.
 
 ## Recent releases
 
-The 3 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
+The 4 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.13.0 (2026-08-09) — production hardening.** Everything needed to put the
+  app on a public domain behind IIS, plus the review panel that found what the
+  first pass missed. `DATA_DIR` set in `.env` was ignored for the database, so
+  it landed inside the install tree where an upgrade overwrites it — and every
+  operator CLI had the same bug, which made `audit:verify` return a clean
+  tamper check against the wrong file (**read the upgrade note in the
+  CHANGELOG**). OAuth login broke behind any proxy that does not forward
+  `X-Forwarded-Proto`. The theme script was blocked by the production CSP.
+  Licence minting by `repository_dispatch` never ran, and interpolated a
+  caller-supplied email into a shell step holding the signing key. 99 muted-text
+  tokens failed WCAG AA in both themes. Node 24 LTS is now the target, with CI
+  testing the 22.14 floor.
 - **v4.12.0 (2026-07-29) — money paths and honest claims.** An aborted AI
   stream recorded zero spend, so disconnecting evaded the only cost control on
   Pro/Enterprise streaming; a burst of concurrent requests could spend past any
@@ -85,6 +98,10 @@ The 3 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHAN
   license keys, self-hosted Pro/Enterprise.
 - [Stripe Setup](guides/stripe-setup.md) — Stripe product + webhook
   configuration.
+- [Licence keys & the portal](guides/license-keys-and-portal.md) — how keys are
+  signed and delivered, the three issuance paths (Stripe self-service, GitHub
+  `repository_dispatch`, and why not to sign in the portal), and the claims a
+  marketing site must not make.
 
 ## Setup guides
 
@@ -99,6 +116,10 @@ The 3 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHAN
 
 - [**Operations runbook**](operations.md) — release flow, DLQ, status page,
   bundle budget, audit trail, admin access, common incidents.
+- [IIS deployment (Windows Server)](guides/deploy-iis-windows.md) — public
+  domain behind an ARR reverse proxy: build, secrets, OAuth App, Windows
+  service, the two things ARR gets wrong by default, and a seven-point
+  post-deploy verification.
 - [Admin DLQ guide](guides/admin-dlq.md) — CLI + UI walkthrough.
 - [Security hardening](security-hardening.md) — G1–G9 (audit chain, data
   erasure, retention, CSRF, SSRF, rolling session, auth rate-limit,

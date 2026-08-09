@@ -327,7 +327,7 @@ function AttentionRow({ item, onClick, narrative = null }) {
                         </p>
                     )}
                 </div>
-                <div className="shrink-0 flex flex-col items-end gap-1 ds-text-micro text-slate-400 dark:text-slate-500">
+                <div className="shrink-0 flex flex-col items-end gap-1 ds-text-micro text-slate-500 dark:text-slate-400">
                     {ago && <span>{ago}</span>}
                     <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-indigo-500 transition-colors" aria-hidden="true" />
                 </div>

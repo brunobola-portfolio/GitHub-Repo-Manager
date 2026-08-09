@@ -18,7 +18,7 @@ and commercially licensed versions. You retain full copyright over your work.
 
 ## Prerequisites
 
-- **Node.js** 20 or later
+- **Node.js** 22.14 or later (24 LTS is the tested target)
 - **npm** 10 or later
 - A GitHub account with OAuth app credentials (see `.env.example`)
 

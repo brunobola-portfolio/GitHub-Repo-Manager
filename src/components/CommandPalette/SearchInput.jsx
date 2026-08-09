@@ -33,7 +33,7 @@ export function SearchInput({ askMode, value, onValueChange, loading }) {
           ? 'Ask anything — e.g. PRs touching payment I haven\'t reviewed'
           : 'Type a command or search PRs, issues, repos… (start with ? to ask)'}
         autoFocus
-        className={`w-full py-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 bg-transparent border-b outline-none ${
+        className={`w-full py-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 bg-transparent border-b outline-none ${
           askMode
             ? 'pl-10 pr-4 border-indigo-200 dark:border-indigo-800 placeholder:italic placeholder:text-indigo-400/80'
             : 'px-4 border-slate-200 dark:border-slate-700'

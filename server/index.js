@@ -7,6 +7,16 @@
  * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
  */
 
+// MUST stay the first import. ESM evaluates the graph depth-first in source
+// order, and several imports below reach server/db.js, whose top-level
+// `await createDatabaseAdapter()` resolves the SQLite path from
+// process.env.DATA_DIR during module evaluation. Loading the .env any later
+// (it used to happen inside config.js, imported further down) meant a
+// DATA_DIR set in the file was silently ignored for the database while still
+// applying to the scratch dirs — putting manager.db in the install tree,
+// where the next upgrade overwrites it.
+import './lib/env/load-dotenv.js';
+
 import express from 'express';
 import session from 'express-session';
 import cors from 'cors';

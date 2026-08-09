@@ -114,7 +114,7 @@ export function CurrentConfigSummary({ form }) {
                                     <Sparkles className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" aria-hidden="true" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <div className="ds-text-micro font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+                                    <div className="ds-text-micro font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
                                         Per-feature health
                                     </div>
                                     <div className="mt-1 flex flex-wrap gap-1">
@@ -172,7 +172,7 @@ function SummaryRow({ label, icon: Icon, value, hint, mono = false, accent }) {
                 <Icon className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" aria-hidden="true" />
             </div>
             <div className="flex-1 min-w-0">
-                <div className="ds-text-micro font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">{label}</div>
+                <div className="ds-text-micro font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">{label}</div>
                 <div className={`text-sm font-semibold ${accentColor} ${mono ? 'font-mono text-xs' : ''} truncate`} title={typeof value === 'string' ? value : undefined}>
                     {value}
                 </div>

@@ -511,7 +511,7 @@ export function AIConfigSection() {
                 <aside className="space-y-4 lg:sticky lg:top-2">
                     <CurrentConfigSummary form={form} />
                     <CapabilityMatrix activeProvider={form.completionProvider} />
-                    <p className="ds-text-micro text-slate-400 dark:text-slate-500 leading-relaxed">
+                    <p className="ds-text-micro text-slate-500 dark:text-slate-400 leading-relaxed">
                         Prices as of {PRICING_LAST_UPDATED}, informational only. We never meter LLM tokens — you pay your provider directly.
                     </p>
                 </aside>

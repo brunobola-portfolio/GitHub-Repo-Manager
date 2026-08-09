@@ -131,7 +131,7 @@ function TaskRow({ task, onRetry, onReplaceRetry, onLfsRetry }) {
       {/* Right side: status badge + elapsed + retry */}
       <div className="flex items-center gap-2 sm:shrink-0 flex-wrap justify-end">
         {elapsed && (
-          <span className="text-xs text-slate-400 dark:text-slate-500 tabular-nums" title={isRunning ? 'Elapsed (live)' : 'Total duration'}>{elapsed}</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums" title={isRunning ? 'Elapsed (live)' : 'Total duration'}>{elapsed}</span>
         )}
 
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusColor}`}>

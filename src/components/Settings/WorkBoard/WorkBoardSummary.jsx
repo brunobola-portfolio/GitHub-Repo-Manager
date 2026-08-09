@@ -61,7 +61,7 @@ export function WorkBoardSummary({ prefs, totalCount, mutedCount, pinnedCount, t
                     <span className={`ml-auto inline-flex items-center gap-1 font-semibold ds-text-micro uppercase tracking-wide ${
                         ai.enabled
                             ? 'text-emerald-600 dark:text-emerald-400'
-                            : 'text-slate-400 dark:text-slate-500'
+                            : 'text-slate-500 dark:text-slate-400'
                     }`}>
                         <span className={`inline-block w-1.5 h-1.5 rounded-full ${ai.enabled ? 'bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.12)]' : 'bg-slate-300 dark:bg-slate-600'}`} />
                         {ai.enabled ? 'On' : 'Off'}

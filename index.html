@@ -24,14 +24,10 @@
     <link rel="preload" href="/fonts/mona-sans.woff2" as="font" type="font/woff2" crossorigin />
   </head>
   <body>
-    <script>
-      // Apply dark mode BEFORE React renders to prevent flash of light mode
-      (function() {
-        var saved = localStorage.getItem('github-repo-manager-theme');
-        var isDark = saved === 'dark' || (saved !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        if (isDark) document.documentElement.classList.add('dark');
-      })();
-    </script>
+    <!-- Applies dark mode BEFORE React renders. External, not inline: the
+         production CSP is `script-src 'self'` (server/index.js), which blocks
+         inline scripts outright. See public/theme-init.js. -->
+    <script src="/theme-init.js"></script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

@@ -36,7 +36,7 @@ export function ExecutionPipeline({ order, repos, source }) {
         <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
           Execution Order
         </h4>
-        <span className="ds-text-meta text-slate-400 dark:text-slate-500">
+        <span className="ds-text-meta text-slate-500 dark:text-slate-400">
           ({order.length} {order.length === 1 ? 'step' : 'steps'})
         </span>
       </div>
@@ -112,7 +112,7 @@ export function ExecutionPipeline({ order, repos, source }) {
                   </span>
                 )}
                 {sizeMb && parseFloat(sizeMb) > 0 && (
-                  <span className="ds-text-micro text-slate-400 dark:text-slate-500 tabular-nums whitespace-nowrap">
+                  <span className="ds-text-micro text-slate-500 dark:text-slate-400 tabular-nums whitespace-nowrap">
                     {sizeMb} MB
                   </span>
                 )}

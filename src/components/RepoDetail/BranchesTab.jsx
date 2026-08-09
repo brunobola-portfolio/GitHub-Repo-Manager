@@ -261,7 +261,7 @@ export function BranchesTab({ api, repoData }) {
                                     <span className="text-xs text-slate-500 dark:text-slate-400 ml-2 font-mono">{b.commit.sha.substring(0, 7)}</span>
                                 )}
                                 {b.commit?.author?.date && (
-                                    <span className="text-xs text-slate-400 dark:text-slate-500 ml-2">{formatRelativeTime(b.commit.author.date)}</span>
+                                    <span className="text-xs text-slate-500 dark:text-slate-400 ml-2">{formatRelativeTime(b.commit.author.date)}</span>
                                 )}
                             </div>
                             {b.name === repoData?.default_branch ? (

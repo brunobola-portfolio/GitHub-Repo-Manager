@@ -538,7 +538,7 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus, currentRe
                                                 ))}
                                                 {messages.length === 1 && messages[0]?.id === 'welcome' && !pasteDialog && !isLoading && (
                                                     <div className="pt-1">
-                                                        <p className="ds-text-meta text-slate-400 dark:text-slate-500 mb-2 px-0.5">Try asking</p>
+                                                        <p className="ds-text-meta text-slate-500 dark:text-slate-400 mb-2 px-0.5">Try asking</p>
                                                         <div className="flex flex-wrap gap-2">
                                                             {SUGGESTED_PROMPTS.map((prompt) => (
                                                                 <button

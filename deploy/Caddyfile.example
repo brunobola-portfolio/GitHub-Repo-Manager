@@ -19,7 +19,10 @@
 #      domain below (DNS A/AAAA record must already point at this host).
 #
 # See docs/operations.md → "Reverse proxy & TLS" for the `trust proxy`
-# setting this depends on, and for the equivalent nginx config.
+# setting this depends on, and for the equivalent nginx config. On Windows
+# Server behind IIS, use deploy/iis/ + docs/guides/deploy-iis-windows.md
+# instead — IIS/ARR needs explicit configuration for two things Caddy does
+# automatically (forwarding X-Forwarded-Proto, and not buffering SSE).
 
 your-domain.example.com {
 	# Single upstream: Express serves the SPA + /api/* from one port.

@@ -559,7 +559,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                     {(repoData.topics || []).length === 0 && (
-                        <span className="text-sm text-slate-400 dark:text-slate-500 italic">No topics yet — add the first one below.</span>
+                        <span className="text-sm text-slate-500 dark:text-slate-400 italic">No topics yet — add the first one below.</span>
                     )}
                     {(repoData.topics || []).map((topic) => (
                         <span key={topic} className="group inline-flex items-center gap-1 pl-2.5 pr-1 py-0.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-700/40">

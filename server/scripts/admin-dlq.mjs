@@ -13,6 +13,12 @@
  * Defaults: queue=email, action=summary. If both positionals are omitted, help
  * is printed to stderr and the process exits 2 (usage error).
  */
+// MUST precede any import that reaches db.js: the SQLite path is resolved from
+// process.env.DATA_DIR during module evaluation, so an operator CLI that skips
+// this opens <repo>/server/data instead of the configured data directory —
+// silently creating and reporting on an empty database.
+import '../lib/env/load-dotenv.js'
+
 import { pathToFileURL } from 'node:url';
 import { parseArgs, printTable } from './_cli-utils.mjs';
 

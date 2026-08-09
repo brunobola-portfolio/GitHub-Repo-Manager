@@ -171,7 +171,7 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
             )
         }
         if (!savedRules) {
-            return <span className="inline-flex items-center gap-1 ds-text-micro text-slate-400 dark:text-slate-500">unprotected</span>
+            return <span className="inline-flex items-center gap-1 ds-text-micro text-slate-500 dark:text-slate-400">unprotected</span>
         }
         return <span className="inline-flex items-center gap-1 ds-text-micro text-emerald-600 dark:text-emerald-400">protected</span>
     }

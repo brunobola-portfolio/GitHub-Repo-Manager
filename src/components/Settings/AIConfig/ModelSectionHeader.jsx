@@ -11,7 +11,7 @@ export function ModelSectionHeader({ tier, isFirst }) {
             role="presentation"
             data-testid="model-section-header"
             data-tier={tier}
-            className={`px-3 py-1.5 ds-text-micro font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 ${
+            className={`px-3 py-1.5 ds-text-micro font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 ${
                 isFirst ? '' : 'border-t border-slate-100 dark:border-slate-800'
             }`}
         >

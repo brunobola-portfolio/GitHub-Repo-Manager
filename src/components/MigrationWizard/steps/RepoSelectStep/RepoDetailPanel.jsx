@@ -164,7 +164,7 @@ export function RepoDetailPanel({ repo, source, onClose, onPrev, onNext, onRiskA
         {!empty && readme?.content?.trim() && (
           <Section
             title={readme.name || 'README'}
-            badge={<span className="ds-text-micro font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">Preview</span>}
+            badge={<span className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Preview</span>}
           >
             <ReadmePreview content={readme.content} />
           </Section>

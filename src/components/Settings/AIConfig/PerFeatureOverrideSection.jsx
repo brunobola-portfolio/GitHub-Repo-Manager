@@ -99,7 +99,7 @@ export function PerFeatureOverrideSection({
                                                             override
                                                         </span>
                                                     ) : (
-                                                        <span className="ds-text-micro font-medium text-slate-400 dark:text-slate-500">
+                                                        <span className="ds-text-micro font-medium text-slate-500 dark:text-slate-400">
                                                             · default
                                                         </span>
                                                     )}

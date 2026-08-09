@@ -524,7 +524,7 @@ function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, o
 
             {/* Organizations */}
             <div className="p-2 border-b border-slate-100 dark:border-slate-700">
-                <div className="px-2 py-1 text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                <div className="px-2 py-1 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Organizations ({orgs.length})
                 </div>
                 <div className="max-h-64 overflow-y-auto ds-scrollbar">
@@ -541,7 +541,7 @@ function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, o
                             >
                                 <img src={org.avatar_url} alt={org.login} className="w-6 h-6 rounded-md" />
                                 <span className="text-sm text-slate-700 dark:text-slate-300 flex-1 truncate">{org.login}</span>
-                                <span className="text-xs text-slate-400 dark:text-slate-500">{getOrgRepoCount(org)}</span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400">{getOrgRepoCount(org)}</span>
                             </button>
                         ))
                     )}
@@ -567,7 +567,7 @@ function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, o
                 </MenuButton>
                 {isAdmin && onOpenAdminDLQ && (
                     <div className="border-t border-slate-100 dark:border-slate-700 mt-2 pt-2">
-                        <div className="px-3 pb-1 ds-text-micro font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        <div className="px-3 pb-1 ds-text-micro font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                             Admin
                         </div>
                         <MenuButton icon={ShieldAlert} onClick={() => { onOpenAdminDLQ?.(); onClose() }}>
@@ -650,7 +650,7 @@ function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen,
                     <div className="px-4 py-10 text-center">
                         <Sparkles className="w-6 h-6 text-indigo-400/70 mx-auto mb-2" aria-hidden="true" />
                         <p className="text-sm text-slate-600 dark:text-slate-400">Nothing pending right now.</p>
-                        <p className="ds-text-meta text-slate-400 dark:text-slate-500 mt-1">We'll let you know when something needs you.</p>
+                        <p className="ds-text-meta text-slate-500 dark:text-slate-400 mt-1">We'll let you know when something needs you.</p>
                     </div>
                 ) : (
                     <ul className="py-1">
@@ -697,7 +697,7 @@ function DigestCategory({ kind, count, items, onItemClick }) {
                     <DigestItemRow key={`${kind}-${item.repo}-${item.prNumber ?? item.issueNumber ?? item.jobId ?? item.since}`} kind={kind} item={item} onClick={onItemClick} />
                 ))}
                 {count > items.length && (
-                    <li className="px-3 py-1 ds-text-meta text-slate-400 dark:text-slate-500">
+                    <li className="px-3 py-1 ds-text-meta text-slate-500 dark:text-slate-400">
                         +{count - items.length} more…
                     </li>
                 )}
@@ -729,7 +729,7 @@ function DigestItemRow({ kind, item, onClick }) {
                     </p>
                 </div>
                 <div className="shrink-0 flex flex-col items-end gap-0.5">
-                    {ago && <span className="ds-text-micro text-slate-400 dark:text-slate-500">{ago}</span>}
+                    {ago && <span className="ds-text-micro text-slate-500 dark:text-slate-400">{ago}</span>}
                     {url && (
                         <ExternalLink className="w-3 h-3 text-slate-300 dark:text-slate-600 group-hover:text-indigo-500 transition-colors" aria-hidden="true" />
                     )}
@@ -833,7 +833,7 @@ function SystemHealthIndicator() {
                             </div>
                         )}
                         {lastCheckedAt && (
-                            <div className="pt-2 mt-2 border-t border-slate-100 dark:border-slate-700 ds-text-meta text-slate-400 dark:text-slate-500">
+                            <div className="pt-2 mt-2 border-t border-slate-100 dark:border-slate-700 ds-text-meta text-slate-500 dark:text-slate-400">
                                 Last checked: {relative || 'just now'}
                             </div>
                         )}

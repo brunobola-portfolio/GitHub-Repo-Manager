@@ -107,7 +107,7 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                                     <span className="truncate">{row.fullName}</span>
                                 </div>
                                 {row.currentDescription && (
-                                    <p className="text-xs text-slate-400 dark:text-slate-500 truncate mt-0.5" title={row.currentDescription}>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5" title={row.currentDescription}>
                                         Previous: {row.currentDescription}
                                     </p>
                                 )}
@@ -176,7 +176,7 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                                         <CheckCircle2 className="w-3.5 h-3.5" /> Applied
                                     </span>
                                 ) : row.status === 'ready' ? (
-                                    <span className="text-xs text-slate-400 dark:text-slate-500">Ready</span>
+                                    <span className="text-xs text-slate-500 dark:text-slate-400">Ready</span>
                                 ) : null}
                             </div>
                         </motion.div>

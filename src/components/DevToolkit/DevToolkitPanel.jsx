@@ -239,7 +239,7 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
                                     >
                                         <Icon className="w-4 h-4" />
                                         {tab.label}
-                                        <kbd className="hidden sm:inline ml-1 text-[9px] text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded font-mono">{tab.shortcut}</kbd>
+                                        <kbd className="hidden sm:inline ml-1 text-[9px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded font-mono">{tab.shortcut}</kbd>
                                         {isActive && (
                                             <motion.div
                                                 layoutId="dev-toolkit-panel-tabs"

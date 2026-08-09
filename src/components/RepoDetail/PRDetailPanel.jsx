@@ -371,7 +371,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                 </h4>
 
                                 {comments.length === 0 && (
-                                    <p className="text-sm text-slate-400 dark:text-slate-500 py-4 text-center">No comments yet</p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">No comments yet</p>
                                 )}
 
                                 {comments.map(comment => (
@@ -453,7 +453,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                     {activeTab === 'reviews' && (
                         <div className="space-y-2">
                             {reviews.length === 0 && (
-                                <p className="text-sm text-slate-400 dark:text-slate-500 py-8 text-center">No reviews yet</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 py-8 text-center">No reviews yet</p>
                             )}
 
                             {reviews.map((review, i) => {

@@ -256,7 +256,7 @@ function CredentialRow({ cred, onDeleted, onTested }) {
           <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-mono truncate">
             {cred.host}{cred.org ? ` · ${cred.org}` : ''} · {cred.prefix}
           </div>
-          <div className="ds-text-meta text-slate-400 dark:text-slate-500 mt-0.5">
+          <div className="ds-text-meta text-slate-500 dark:text-slate-400 mt-0.5">
             Created on {formatDate(cred.createdAt, { day: '2-digit', month: 'short', year: 'numeric' })} · {lastUsed}
             {cred.scopes && cred.scopes.length > 0 && (
               <> · {cred.scopes.join(', ')}</>
@@ -583,7 +583,7 @@ function AddCredentialForm({ onClose, onCreated }) {
 function HostAllowlistChip({ status }) {
   if (status === 'checking') {
     return (
-      <span role="status" className="ds-text-meta inline-flex items-center gap-1 text-slate-400 dark:text-slate-500">
+      <span role="status" className="ds-text-meta inline-flex items-center gap-1 text-slate-500 dark:text-slate-400">
         <SpinnerIcon className="w-3 h-3" /> checking allowlist…
       </span>
     )

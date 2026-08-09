@@ -61,10 +61,18 @@ describe('BranchesTab — toast feedback', () => {
 
 // ── New tests for search / sort / filter ──────────────────────────────────────
 
+// Relative to now, not fixed calendar dates. The Stale chip splits on a
+// rolling 90-day cutoff (STALE_MS in BranchesTab.jsx), so hardcoded dates rot:
+// the previous fixture pinned 'feat/active' to a date that silently crossed
+// the cutoff and started failing the Stale test on its own, with no code
+// change. Offsets preserve the original newest→oldest ordering the sort test
+// depends on.
+const daysAgo = (n) => new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString()
+
 const BRANCHES = [
-    { name: 'main', commit: { sha: 'aaaaaaa1234567', author: { date: '2026-05-08T10:00:00Z' } }, protected: true },
-    { name: 'feat/active', commit: { sha: 'bbbbbbb1234567', author: { date: '2026-05-07T10:00:00Z' } }, protected: false },
-    { name: 'old/stale-branch', commit: { sha: 'cccccccc234567', author: { date: '2025-01-01T10:00:00Z' } }, protected: false },
+    { name: 'main', commit: { sha: 'aaaaaaa1234567', author: { date: daysAgo(5) } }, protected: true },
+    { name: 'feat/active', commit: { sha: 'bbbbbbb1234567', author: { date: daysAgo(6) } }, protected: false },
+    { name: 'old/stale-branch', commit: { sha: 'cccccccc234567', author: { date: daysAgo(400) } }, protected: false },
 ]
 
 const repoData = { default_branch: 'main', archived: false }

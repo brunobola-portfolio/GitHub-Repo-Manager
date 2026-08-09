@@ -11,6 +11,12 @@
  * Audit-logs the action so there's a tamper-evident chain record of who was
  * promoted when. Exits 0 on success, 1 on miss, 2 on usage error.
  */
+// MUST precede any import that reaches db.js: the SQLite path is resolved from
+// process.env.DATA_DIR during module evaluation, so an operator CLI that skips
+// this opens <repo>/server/data instead of the configured data directory —
+// silently creating and reporting on an empty database.
+import '../lib/env/load-dotenv.js'
+
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from './_cli-utils.mjs';
 

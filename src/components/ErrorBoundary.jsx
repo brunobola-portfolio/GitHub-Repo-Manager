@@ -109,7 +109,7 @@ class ErrorBoundary extends Component {
             </p>
             {this.state.error?.message && (
               <details className="text-left mb-6 -mt-2">
-                <summary className="cursor-pointer text-xs font-medium text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 rounded ds-focus-ring">
+                <summary className="cursor-pointer text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded ds-focus-ring">
                   Technical details
                 </summary>
                 <pre className="mt-2 max-h-40 overflow-auto rounded-lg bg-slate-100 dark:bg-slate-900/60 p-3 text-xs text-slate-600 dark:text-slate-400 whitespace-pre-wrap break-words">

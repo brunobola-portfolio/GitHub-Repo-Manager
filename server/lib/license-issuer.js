@@ -56,7 +56,7 @@ function buildLicenseEmailHtml({ tier, licenseKey, months }) {
     <li>Your ${tierLabel} features will unlock immediately.</li>
   </ol>
   <p>${describeLicenseValidity(months)}</p>
-  <p>Keep this key safe — it is not remotely revocable, so treat it like a password.</p>
+  <p>Keep this key safe and treat it like a password. Cancelling your subscription does not switch it off — it keeps working to the end of the period you paid for.</p>
   <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
   <p style="font-size: 13px; color: #666;">
     Need help? Contact us at
@@ -94,7 +94,8 @@ Activation
 
 ${describeLicenseValidity(months)}
 
-Keep this key safe — it is not remotely revocable, so treat it like a password.
+Keep this key safe and treat it like a password. Cancelling your subscription
+does not switch it off — it keeps working to the end of the period you paid for.
 
 Need help? Contact us at bruno@bolalabs.pt`
 }

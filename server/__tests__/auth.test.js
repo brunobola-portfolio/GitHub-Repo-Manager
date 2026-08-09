@@ -505,3 +505,168 @@ describe('GitHub OAuth /login guard + same-origin fallback', () => {
         expect(res.headers.location).toBe('http://localhost:5173?error=no_code')
     })
 })
+
+// ── redirect_uri origin behind a TLS-terminating reverse proxy ──────────
+// routes/auth.js resolveCallbackOrigin: GitHub matches redirect_uri against
+// the OAuth App registration exactly, so a proxy that drops X-Forwarded-Proto
+// (IIS/ARR does, out of the box) would otherwise produce an http:// URI
+// against an https:// registration and break every login on the hosted
+// deployment. FRONTEND_URL wins ONLY when it names the same host.
+describe('OAuth redirect_uri origin resolution', () => {
+    const savedEnv = {}
+
+    function buildApp() {
+        const app = express()
+        app.use(session({
+            secret: 'test-secret',
+            resave: false,
+            saveUninitialized: true,
+            // `secure` is omitted, not set to false: supertest speaks plain HTTP,
+            // so a Secure cookie would never come back — and the explicit literal
+            // is what trips CodeQL's clear-text-cookie rule. Default is false.
+            cookie: { httpOnly: true, sameSite: 'lax' },
+        }))
+        app.use('/api/auth', authRouter)
+        return app
+    }
+
+    function redirectUriOf(location) {
+        return decodeURIComponent(
+            new URL(location).searchParams.get('redirect_uri') ?? ''
+        )
+    }
+
+    beforeEach(() => {
+        for (const k of ['GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET', 'FRONTEND_URL']) {
+            savedEnv[k] = process.env[k]
+            delete process.env[k]
+        }
+        process.env.GITHUB_CLIENT_ID = 'test-client-id'
+        process.env.GITHUB_CLIENT_SECRET = 'test-client-secret'
+    })
+
+    afterEach(() => {
+        for (const k of ['GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET', 'FRONTEND_URL']) {
+            if (savedEnv[k] === undefined) delete process.env[k]
+            else process.env[k] = savedEnv[k]
+        }
+    })
+
+    it('same host + https FRONTEND_URL → https redirect_uri even over plain HTTP', async () => {
+        process.env.FRONTEND_URL = 'https://repomanager.example.pt'
+        const res = await request(buildApp())
+            .get('/api/auth/login')
+            .set('Host', 'repomanager.example.pt')
+        expect(res.status).toBe(302)
+        expect(redirectUriOf(res.headers.location))
+            .toBe('https://repomanager.example.pt/api/auth/callback')
+    })
+
+    it('different host (dev: Vite :5173 vs API :3001) → keeps the request origin', async () => {
+        process.env.FRONTEND_URL = 'http://localhost:5173'
+        const res = await request(buildApp())
+            .get('/api/auth/login')
+            .set('Host', 'localhost:3001')
+        expect(redirectUriOf(res.headers.location))
+            .toBe('http://localhost:3001/api/auth/callback')
+    })
+
+    it('FRONTEND_URL unset (packaged install) → request origin', async () => {
+        const res = await request(buildApp())
+            .get('/api/auth/login')
+            .set('Host', '127.0.0.1:3001')
+        expect(redirectUriOf(res.headers.location))
+            .toBe('http://127.0.0.1:3001/api/auth/callback')
+    })
+
+    it('malformed FRONTEND_URL falls back to the request origin instead of throwing', async () => {
+        process.env.FRONTEND_URL = 'not a url'
+        const res = await request(buildApp())
+            .get('/api/auth/login')
+            .set('Host', '127.0.0.1:3001')
+        expect(res.status).toBe(302)
+        expect(redirectUriOf(res.headers.location))
+            .toBe('http://127.0.0.1:3001/api/auth/callback')
+    })
+
+    it('a spoofed Host header can only ever yield the request origin, never a third one', async () => {
+        // The honest invariant: the redirect_uri host is either FRONTEND_URL's
+        // host or the request's own Host — never anything else. A spoofed Host
+        // therefore produces a redirect_uri GitHub rejects against the OAuth
+        // App registration, which is where this actually stops. Asserting only
+        // "does not contain the real host" would pass while codifying the
+        // attacker-supplied value as expected output.
+        process.env.FRONTEND_URL = 'https://repomanager.example.pt'
+        const res = await request(buildApp())
+            .get('/api/auth/login')
+            .set('Host', 'evil.example')
+        const uri = new URL(redirectUriOf(res.headers.location))
+        expect(['repomanager.example.pt', 'evil.example']).toContain(uri.host)
+        expect(uri.pathname).toBe('/api/auth/callback')
+        // And the browser is still sent to GitHub, not to the spoofed host.
+        expect(new URL(res.headers.location).host).toBe('github.com')
+    })
+
+    it('matches the host case-insensitively', async () => {
+        process.env.FRONTEND_URL = 'https://repomanager.example.pt'
+        const res = await request(buildApp())
+            .get('/api/auth/login')
+            .set('Host', 'RepoManager.Example.PT')
+        expect(redirectUriOf(res.headers.location))
+            .toBe('https://repomanager.example.pt/api/auth/callback')
+    })
+
+    it('matches when a proxy appends the scheme default port', async () => {
+        // A hop that rewrites Host to `example.pt:443` must not fall through to
+        // the request scheme — that is the failure this whole function exists
+        // to prevent.
+        process.env.FRONTEND_URL = 'https://repomanager.example.pt'
+        const res = await request(buildApp())
+            .get('/api/auth/login')
+            .set('Host', 'repomanager.example.pt:443')
+        expect(redirectUriOf(res.headers.location))
+            .toBe('https://repomanager.example.pt/api/auth/callback')
+    })
+
+    it('never downgrades a TLS request to an http FRONTEND_URL', async () => {
+        // MUST enable trust proxy: without it Express ignores
+        // X-Forwarded-Proto, req.protocol stays 'http', and the guard branch is
+        // never entered — the test then passes with the guard deleted, which is
+        // exactly what an earlier version of it did.
+        const app = express()
+        app.set('trust proxy', 1)
+        app.use(session({
+            secret: 'test-secret',
+            resave: false,
+            saveUninitialized: true,
+            // `secure` is omitted, not set to false: supertest speaks plain HTTP,
+            // so a Secure cookie would never come back — and the explicit literal
+            // is what trips CodeQL's clear-text-cookie rule. Default is false.
+            cookie: { httpOnly: true, sameSite: 'lax' },
+        }))
+        app.use('/api/auth', authRouter)
+
+        process.env.FRONTEND_URL = 'http://repomanager.example.pt'
+        const res = await request(app)
+            .get('/api/auth/login')
+            .set('Host', 'repomanager.example.pt')
+            .set('X-Forwarded-Proto', 'https')
+        // A stale http:// FRONTEND_URL must not turn a genuinely-HTTPS request
+        // into an http:// redirect_uri — GitHub would reject the mismatch, and
+        // the authorization code would have travelled to a plaintext origin.
+        expect(redirectUriOf(res.headers.location))
+            .toBe('https://repomanager.example.pt/api/auth/callback')
+    })
+
+    it('ignores a FRONTEND_URL with a non-http scheme instead of emitting "null"', async () => {
+        // new URL('foo://host').origin is the literal string "null", which
+        // would ship `null/api/auth/callback` to GitHub.
+        process.env.FRONTEND_URL = 'foo://repomanager.example.pt'
+        const res = await request(buildApp())
+            .get('/api/auth/login')
+            .set('Host', 'repomanager.example.pt')
+        const uri = redirectUriOf(res.headers.location)
+        expect(uri).not.toContain('null')
+        expect(uri).toBe('http://repomanager.example.pt/api/auth/callback')
+    })
+})

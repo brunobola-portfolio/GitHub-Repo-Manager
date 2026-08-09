@@ -24,7 +24,7 @@ export function DescriptionField({ repo, index, aiAvailable, isGenerating, mode,
     ? 'text-red-600 dark:text-red-400'
     : near
       ? 'text-amber-600 dark:text-amber-400'
-      : 'text-slate-400 dark:text-slate-500'
+      : 'text-slate-500 dark:text-slate-400'
 
   const buttonLabel = isGenerating
     ? 'Generating…'

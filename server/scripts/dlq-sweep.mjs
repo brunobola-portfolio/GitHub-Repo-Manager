@@ -14,6 +14,12 @@
  * absence via explicit `--days N` + `--yes` without the flag) to actually
  * delete.
  */
+// MUST precede any import that reaches db.js: the SQLite path is resolved from
+// process.env.DATA_DIR during module evaluation, so an operator CLI that skips
+// this opens <repo>/server/data instead of the configured data directory —
+// silently creating and reporting on an empty database.
+import '../lib/env/load-dotenv.js'
+
 import { pathToFileURL } from 'node:url';
 import { parseArgs, askConfirm } from './_cli-utils.mjs';
 

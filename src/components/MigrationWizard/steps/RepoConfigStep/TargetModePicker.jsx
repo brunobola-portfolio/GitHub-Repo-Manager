@@ -96,7 +96,7 @@ function ModeCard({ active, onClick, icon: Icon, title, subtitle, tag, accentCla
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{subtitle}</p>
           {tag && (
-            <p className="ds-text-micro text-slate-400 dark:text-slate-500 mt-1 font-mono uppercase tracking-wider">
+            <p className="ds-text-micro text-slate-500 dark:text-slate-400 mt-1 font-mono uppercase tracking-wider">
               {tag}
             </p>
           )}

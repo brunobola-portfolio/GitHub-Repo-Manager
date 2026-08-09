@@ -291,7 +291,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
                   <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                     Optimization Suggestions
                   </h4>
-                  <span className="ds-text-meta text-slate-400 dark:text-slate-500">
+                  <span className="ds-text-meta text-slate-500 dark:text-slate-400">
                     ({aiPlan.suggestions.length})
                   </span>
                 </div>

@@ -57,11 +57,15 @@ changes; the README is for humans, this file is for you.
 - Dark mode: `.dark` class on `<html>`; both themes are hard-gated for
   color-contrast in the axe e2e suite — but only on the twelve views it
   scans. Anything else is unverified.
-- Muted TEXT is `text-slate-500 dark:text-slate-400`. The inverse
-  (`text-slate-400 dark:text-slate-500`) fails AA in **both** themes — 2.56:1
-  on white, 3.74:1 on slate-900 — and there are ~110 of them still in `src/`,
-  each a latent failure the moment its view enters the axe scan. The inverse
-  pair IS correct for icons, which pass at 3:1.
+- Muted TEXT is `text-slate-500 dark:text-slate-400` (4.76:1 on white, 6.96:1
+  on slate-900 — AA on both). The inverse (`text-slate-400 dark:text-slate-500`)
+  fails AA in **both** themes: 2.56:1 on white, 3.75:1 on slate-900. The 99
+  text instances were fixed in v4.13.0; the 41 that remain are all icons.
+- For ICONS the inverse pair is tolerated, but only on the DARK half — 3.75:1
+  clears the 3:1 non-text threshold on slate-900, while 2.56:1 on white does
+  **not**. It is therefore acceptable only for decorative icons (`aria-hidden`,
+  or paired with a visible text label). An icon that is the sole content of an
+  interactive control needs a darker token in light mode.
 - Events: use `emitAppEvent`/`onAppEvent` with names registered in
   `APP_EVENTS` (`src/utils/appEvents.js`) — never `window.dispatchEvent`.
 - Lint must be clean at zero warnings: `npm run lint`

@@ -79,7 +79,7 @@ export default function CredentialsForm({
     <div>
       <div className="flex items-baseline justify-between mb-2">
         <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Authentication</p>
-        <span className="ds-text-meta text-slate-400 dark:text-slate-500">
+        <span className="ds-text-meta text-slate-500 dark:text-slate-400">
           Choose a method — only one is used at a time
         </span>
       </div>

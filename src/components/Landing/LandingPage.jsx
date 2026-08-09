@@ -33,7 +33,7 @@ function LandingFooter() {
       className="border-t border-slate-200/50 dark:border-white/[0.06] py-8 px-4"
     >
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-        <p className="text-sm text-slate-400 dark:text-slate-500 ds-font-display">
+        <p className="text-sm text-slate-500 dark:text-slate-400 ds-font-display">
           Built by{' '}
           <a
             href="https://www.linkedin.com/in/bolalabs/"
@@ -51,7 +51,7 @@ function LandingFooter() {
             href="https://github.com/brunobola-portfolio/GitHub-Repo-Manager"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-sm text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors duration-200"
+            className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors duration-200"
           >
             <Github className="w-4 h-4" />
             GitHub
@@ -61,7 +61,7 @@ function LandingFooter() {
             href="https://github.com/brunobola-portfolio/GitHub-Repo-Manager/blob/main/README.md"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors duration-200 ds-font-display"
+            className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors duration-200 ds-font-display"
           >
             Docs
           </a>
@@ -70,7 +70,7 @@ function LandingFooter() {
             href="https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors duration-200 ds-font-display"
+            className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors duration-200 ds-font-display"
           >
             Changelog
           </a>
@@ -79,7 +79,7 @@ function LandingFooter() {
             href="https://github.com/brunobola-portfolio/GitHub-Repo-Manager/blob/main/LICENSE"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors duration-200 ds-font-display"
+            className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors duration-200 ds-font-display"
           >
             AGPL v3
           </a>

@@ -20,14 +20,14 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - name: Cache node_modules
         id: nm
         uses: actions/cache@v6
         with:
           path: node_modules
-          key: node-modules-${{ runner.os }}-22-${{ hashFiles('package-lock.json') }}
+          key: node-modules-${{ runner.os }}-24-${{ hashFiles('package-lock.json') }}
       - if: steps.nm.outputs.cache-hit != 'true'
         run: npm ci --no-audit --no-fund
       - run: npm run lint
@@ -72,14 +72,14 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - name: Cache node_modules
         id: nm
         uses: actions/cache@v6
         with:
           path: node_modules
-          key: node-modules-${{ runner.os }}-22-${{ hashFiles('package-lock.json') }}
+          key: node-modules-${{ runner.os }}-24-${{ hashFiles('package-lock.json') }}
       - if: steps.nm.outputs.cache-hit != 'true'
         run: npm ci --no-audit --no-fund
       - name: Run shard ${{ matrix.shard }} of 3
@@ -126,14 +126,14 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - name: Cache node_modules
         id: nm
         uses: actions/cache@v6
         with:
           path: node_modules
-          key: node-modules-${{ runner.os }}-22-${{ hashFiles('package-lock.json') }}
+          key: node-modules-${{ runner.os }}-24-${{ hashFiles('package-lock.json') }}
       - if: steps.nm.outputs.cache-hit != 'true'
         run: npm ci --no-audit --no-fund
       - uses: actions/download-artifact@v7
@@ -172,14 +172,14 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - name: Cache node_modules
         id: nm
         uses: actions/cache@v6
         with:
           path: node_modules
-          key: node-modules-${{ runner.os }}-22-${{ hashFiles('package-lock.json') }}
+          key: node-modules-${{ runner.os }}-24-${{ hashFiles('package-lock.json') }}
       - if: steps.nm.outputs.cache-hit != 'true'
         run: npm ci --no-audit --no-fund
       - run: npm run build
@@ -190,6 +190,45 @@ jobs:
       # they silently skipped on every CI run until now.
       - name: Build-gated honesty checks
         run: RUN_BUILD_TESTS=1 npx vitest run tests/build/build-honesty.test.js tests/build/bundle-budget.test.js
+
+  # package.json declares `engines: >=22.14 <25` — two LTS lines. Every other
+  # job runs the upper one (24, the deployment target), which would leave the
+  # lower bound as an untested claim. This job runs the floor.
+  #
+  # Pinned to 22.14.0 exactly, not `22`: setup-node with a bare major installs
+  # the LATEST 22.x, which proves "some Node 22 works" rather than "the declared
+  # minimum works". 22.14.0 is the floor because better-sqlite3 builds against
+  # NAPI_VERSION=10, which does not exist before it.
+  #
+  # Scoped to the suites where the Node major can actually make a difference:
+  # the native module (better-sqlite3), fs/crypto/child_process, and the
+  # repo-structure gates. The React component tests run against happy-dom and
+  # are runtime-agnostic, so re-running 5k of them on a second Node buys
+  # nothing but minutes.
+  #
+  # better-sqlite3 13 builds against NAPI_VERSION=10 and ships per-platform,
+  # ABI-independent prebuilds (prebuilds/linux-x64.node — no NODE_MODULE_VERSION
+  # in the name), which is WHY one lockfile can serve both majors. If a future
+  # dependency reintroduces an ABI-versioned addon, this job is what goes red.
+  compat-node-floor:
+    name: compat (node 22 floor)
+    runs-on: ubuntu-latest
+    env:
+      SESSION_SECRET: ci-test-session-secret-not-real-32chars
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22.14.0'
+          cache: npm
+      # Deliberately NOT sharing the node_modules cache with the Node 24 jobs:
+      # the whole point is to prove a clean install resolves and loads on 22.
+      - run: npm ci --no-audit --no-fund
+      - name: Native module loads on the floor version
+        run: npm run check:native
+      - name: Runtime-sensitive suites
+        run: npx vitest run server/__tests__ scripts/__tests__ tests/build
 
   # 272 s on one runner with workers:2. The worker count is deliberately low —
   # four workers on a single runner starved the dev server and made the suite
@@ -212,14 +251,14 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - name: Cache node_modules
         id: nm
         uses: actions/cache@v6
         with:
           path: node_modules
-          key: node-modules-${{ runner.os }}-22-${{ hashFiles('package-lock.json') }}
+          key: node-modules-${{ runner.os }}-24-${{ hashFiles('package-lock.json') }}
       - if: steps.nm.outputs.cache-hit != 'true'
         run: npm ci --no-audit --no-fund
       - name: Cache Playwright browsers
@@ -256,14 +295,14 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - name: Cache node_modules
         id: nm
         uses: actions/cache@v6
         with:
           path: node_modules
-          key: node-modules-${{ runner.os }}-22-${{ hashFiles('package-lock.json') }}
+          key: node-modules-${{ runner.os }}-24-${{ hashFiles('package-lock.json') }}
       - if: steps.nm.outputs.cache-hit != 'true'
         run: npm ci --no-audit --no-fund
       - uses: actions/download-artifact@v7

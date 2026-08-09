@@ -3,7 +3,7 @@ export function SessionHistory({ items = [], onRestore }) {
 
     return (
         <div className="flex gap-1.5 overflow-x-auto py-1 scrollbar-thin">
-            <span className="ds-text-micro text-slate-400 dark:text-slate-500 uppercase tracking-wide shrink-0 self-center">History:</span>
+            <span className="ds-text-micro text-slate-500 dark:text-slate-400 uppercase tracking-wide shrink-0 self-center">History:</span>
             {items.map((msg, i) => (
                 <button
                     key={i}

@@ -46,12 +46,17 @@ import AdmZip from 'adm-zip';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT_DEFAULT = path.resolve(__dirname, '..');
 
-// Bumped periodically — confirmed current at https://nodejs.org/dist/latest-v22.x/
-// on 2026-07-19. Must stay inside package.json's engines range (">=22 <23").
-// Node's ABI (ELECTRON/NODE_MODULE_VERSION) does not change within a major
-// line, so any Node 22.x used to `npm ci` better-sqlite3's prebuilt binary
-// stays loadable under whatever 22.x patch is pinned here.
-export const NODE_VERSION = '22.23.1';
+// Node 24 LTS ("Krypton"). Bumped periodically — confirmed current at
+// https://nodejs.org/dist/latest-v24.x/ on 2026-08-08. Must stay inside
+// package.json's engines range (">=22.14 <25"; the 26 line is Current, not LTS).
+//
+// The runtime that RUNS the package does not have to match the one that built
+// it: better-sqlite3 13 compiles against NAPI_VERSION=10 and ships
+// ABI-independent prebuilds (prebuilds/win32-x64.node — no NODE_MODULE_VERSION
+// in the filename), so the binary produced by `npm ci` on any supported Node
+// loads on any other. That is also what lets the same lockfile serve both LTS
+// lines; the compat-node-floor job in CI is what keeps it true.
+export const NODE_VERSION = '24.19.0';
 export const NODE_DIST_PLATFORM = 'win-x64';
 
 export function nodeZipFileName(version = NODE_VERSION) {

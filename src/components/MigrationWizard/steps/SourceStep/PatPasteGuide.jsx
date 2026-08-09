@@ -356,7 +356,7 @@ function CliAlternative({ cmd }) {
           <AnimatedCopyIcon copied={copied} size="w-3.5 h-3.5" checkClassName="text-emerald-500" />
         </button>
       </div>
-      <p className="ds-text-micro text-slate-400 dark:text-slate-500 mt-1">
+      <p className="ds-text-micro text-slate-500 dark:text-slate-400 mt-1">
         Requires <code>az</code> + the <code>azure-devops</code> extension. Then paste the returned token in the field above.
       </p>
     </details>

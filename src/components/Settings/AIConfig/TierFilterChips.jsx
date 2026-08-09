@@ -41,7 +41,7 @@ export function TierFilterChips({ availableTiers, activeTier, onChange, totalCou
                     </button>
                 )
             })}
-            <div className="ml-auto ds-text-meta text-slate-400 dark:text-slate-500 tabular-nums">
+            <div className="ml-auto ds-text-meta text-slate-500 dark:text-slate-400 tabular-nums">
                 {totalCount} model{totalCount === 1 ? '' : 's'}
             </div>
         </div>

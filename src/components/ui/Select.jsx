@@ -309,7 +309,7 @@ export function Select({
                     ${isOpen ? 'border-indigo-400 dark:border-indigo-500 shadow-md ring-4 ring-indigo-500/10' : ''}
                 `}
             >
-                <span className={`flex items-center gap-2 min-w-0 ${selectedOption ? '' : 'text-slate-400 dark:text-slate-500'}`}>
+                <span className={`flex items-center gap-2 min-w-0 ${selectedOption ? '' : 'text-slate-500 dark:text-slate-400'}`}>
                     {selectedOption?.icon && <selectedOption.icon className="w-4 h-4 text-slate-400 shrink-0" />}
                     <span className="truncate">{selectedOption?.label || placeholder}</span>
                 </span>
@@ -395,7 +395,7 @@ export function Select({
                                 return (
                                     <div key={section.title || sIdx} role="group" aria-label={section.title || undefined}>
                                         {section.title && (
-                                            <div className="px-3 pt-3 pb-1 ds-text-meta font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                            <div className="px-3 pt-3 pb-1 ds-text-meta font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                                 {section.title}
                                             </div>
                                         )}

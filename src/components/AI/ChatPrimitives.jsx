@@ -109,7 +109,7 @@ export function ToolCallChip({ toolName, input, output }) {
             <summary className="cursor-pointer inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600">
                 <ChevronRight size={11} />
                 <span className="font-mono">{toolName || 'tool'}</span>
-                {inputSummary ? <span className="text-slate-400 dark:text-slate-500 truncate max-w-[200px]">: {inputSummary}</span> : null}
+                {inputSummary ? <span className="text-slate-500 dark:text-slate-400 truncate max-w-[200px]">: {inputSummary}</span> : null}
             </summary>
             {output ? (
                 <pre className="mt-1 max-w-full overflow-x-auto text-xs p-2 rounded bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 whitespace-pre-wrap">

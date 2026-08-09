@@ -18,7 +18,7 @@ async function openFirstRepoDetail(page) {
 }
 
 /**
- * The ten views the smoke gate scans, each with a `setup` that drives the app
+ * The twelve views the smoke gate scans, each with a `setup` that drives the app
  * to that screen and returns once it's ready to scan. Both the light and the
  * dark describe blocks below iterate this same list so a view is only defined
  * once — a new scanned view is added here and both themes pick it up.
@@ -169,7 +169,7 @@ async function seedDarkTheme(page) {
 /**
  * Both themes are HARD-gated on `critical`/`serious` (see {@link checkA11y}).
  * The dark scan was added once its contrast debt was driven to zero across all
- * ten views by a design-conserving pass (LegalFooter muted text
+ * twelve views by a design-conserving pass (LegalFooter muted text
  * `dark:text-slate-500`→`-400`; SettingsModal theme-tile + visibility-toggle
  * dark tokens). Colours settle before each scan via settleAnimations so the
  * check reads final composited colours, not a mid-fade blend.

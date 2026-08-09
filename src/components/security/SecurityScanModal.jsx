@@ -108,7 +108,7 @@ function ScoreHeader({ score }) {
                 <div className="text-3xl font-bold text-slate-900 dark:text-slate-100 ds-font-display">
                     {pct === null ? '—' : `${pct}%`}
                 </div>
-                <div className="ds-text-micro uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                <div className="ds-text-micro uppercase tracking-wide text-slate-500 dark:text-slate-400">
                     {passing}/{total} checks passing
                 </div>
             </div>
@@ -154,14 +154,14 @@ function AISummaryFooter({ repo, checks }) {
 
     if (state === 'loading') {
         return (
-            <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500 py-1" aria-live="polite">
+            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 py-1" aria-live="polite">
                 <Spinner size="sm" /> Summarizing top actions…
             </div>
         )
     }
     if (state === 'unavailable' || !summary) {
         return (
-            <p className="text-xs text-slate-400 dark:text-slate-500 py-1 italic" data-testid="security-ai-summary-unavailable">
+            <p className="text-xs text-slate-500 dark:text-slate-400 py-1 italic" data-testid="security-ai-summary-unavailable">
                 AI summary unavailable right now — the checks above are unaffected.
             </p>
         )

@@ -119,7 +119,7 @@ function toneFor(state) {
         container: 'border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30',
         iconBg: 'bg-slate-100 dark:bg-slate-800',
         iconText: 'text-slate-400 dark:text-slate-500',
-        hintText: 'text-slate-400 dark:text-slate-500',
+        hintText: 'text-slate-500 dark:text-slate-400',
       }
   }
 }

@@ -60,7 +60,7 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
                 }`} />
               </div>
               <div className="min-w-0">
-                <p className="ds-text-meta font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                <p className="ds-text-meta font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   Source
                 </p>
                 <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
@@ -94,7 +94,7 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
             <div className="flex items-center gap-2.5 justify-end">
               <div className="min-w-0 text-right">
                 <div className="flex items-center justify-end gap-1.5">
-                  <p className="ds-text-meta font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  <p className="ds-text-meta font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     Destination
                   </p>
                   {isAzureDevopsTarget && (
@@ -110,7 +110,7 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
                   {destSubLabel}
                 </p>
                 {isAzureDevopsTarget && sourceHost && (
-                  <p className="ds-text-micro text-slate-400 dark:text-slate-500 ds-font-mono truncate">
+                  <p className="ds-text-micro text-slate-500 dark:text-slate-400 ds-font-mono truncate">
                     {sourceHost}
                   </p>
                 )}

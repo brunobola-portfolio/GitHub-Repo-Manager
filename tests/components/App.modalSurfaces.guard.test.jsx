@@ -166,6 +166,19 @@ const App = (await import('@/App')).default
 const { ToastProvider } = await import('@/contexts/ToastProvider')
 const { ThemeProvider } = await import('@/hooks/useTheme')
 
+// Pre-resolve the App shell's React.lazy() views at MODULE scope. Otherwise
+// their dynamic import — and, under vitest, the on-demand transform of each
+// subtree — resolves inside the assertion window, so the test times a compiler
+// rather than the behaviour it names. That is what made one App guard test go
+// red per full run, a different one each time, all green in isolation.
+// Module-scope await is paid once and is not subject to testTimeout.
+await Promise.all([
+    import('@/components/NotificationLayer'),
+    import('@/components/SlimSidebar'),
+    import('@/components/HeaderBanners'),
+])
+
+
 function renderApp() {
     return render(
         <ThemeProvider>

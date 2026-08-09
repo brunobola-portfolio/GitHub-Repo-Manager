@@ -104,6 +104,15 @@ a ready-to-copy Caddy config lives at
 Caddy's built-in ACME client, no certbot/manual renewal). An equivalent
 nginx config is below for nginx-based hosts.
 
+**On Windows Server / IIS, follow the
+[IIS deployment guide](guides/deploy-iis-windows.md) instead.** IIS with
+Application Request Routing needs two things Caddy and nginx do for free: it
+does not forward `X-Forwarded-Proto` (so the `trust proxy` setting below has
+nothing to read, breaking secure cookies *and* the OAuth `redirect_uri`), and
+it buffers responses by default (so SSE arrives as one delayed blob — it
+ignores the `X-Accel-Buffering: no` header the app sends). That guide ships a
+`web.config` with both handled.
+
 ### `trust proxy` and why the hop count matters
 
 ```js
@@ -538,8 +547,8 @@ distinct from subscription tier (`pro`, `enterprise`) — paying customers
 are not operators.
 
 ```bash
-npm run admin:grant -- --login <github-login>
-npm run admin:revoke -- --login <github-login>
+npm run admin:grant  -- --user <github-username-or-userId>
+npm run admin:revoke -- --user <github-username-or-userId>
 ```
 
 Granting admin is audit-logged. The flag is read on every request
