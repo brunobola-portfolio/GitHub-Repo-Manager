@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.17.0] - 2026-08-10
+
 ### Security
 
 - **Every GitHub request is pinned to `api.github.com`.** `githubApi()`
@@ -40,8 +42,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   published to PRs had the same bug; the outbox idempotency nonce used
   `Math.random()`; the credential-scrubbing regex was quadratic on long input;
   `buildPatSettingsUrl` fed an operator-typed host straight into an `href`;
-  and `generate-keys` checked for an existing private key before writing it
-  rather than letting an exclusive create be the guard.
+  `generate-keys` checked for an existing private key before writing it rather
+  than letting an exclusive create be the guard; and the credential scrub in
+  `sanitizeOutput` was quadratic — 200 KB of adversarial input took 36 seconds
+  and now takes 24 ms.
 
   Dependabot #14 (`brace-expansion`, dev-only, via eslint's `minimatch@3`) is
   pinned by an override. The 48 remaining CodeQL alerts were reviewed one by
@@ -2855,6 +2859,7 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 ---
 
 [Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.15.0...HEAD
+[4.17.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.16.0...v4.17.0
 [4.16.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.15.0...v4.16.0
 [4.15.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.14.1...v4.15.0
 [4.14.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.14.0...v4.14.1
