@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Every GitHub request is pinned to `api.github.com`.** `githubApi()`
+  accepted any string starting with `http` verbatim and sent the user's OAuth
+  token to it. It now resolves through `resolveGitHubUrl()`, which roots
+  relative paths and accepts an absolute URL only when its origin is exactly
+  `https://api.github.com` — suffix confusion (`api.github.com.evil`), a
+  plaintext downgrade and a protocol-relative `//host` are all rejected.
+
+- **`full_name` is validated, not just split.** `parseRepoFullName()` kept
+  whatever followed the first slash, so `octocat/a/../../users/victim` produced
+  a repo segment carrying its own path separators — and every caller
+  interpolates that into `/repos/${owner}/${repo}/…`. Both halves are now
+  checked against one definition of a legal GitHub name
+  (`server/lib/github-names.js`), shared with the route-level `router.param`
+  guards that used to hold a second copy of the same rules.
+
+- **Inbound webhooks have a ceiling.** The Stripe, Actions and GitHub-events
+  endpoints mount before session and before the global limiter — necessarily,
+  since they need the raw body for HMAC — which left them the one
+  unauthenticated write path with no limit at all. They now share a per-IP
+  limiter placed ahead of the body parser, so a flood is rejected before it is
+  parsed. 1000 per 5 minutes is far above any real sender, and senders retry
+  on a 429.
+
+- **Smaller ones, each real:** the SVG sanitizer, the README normaliser and
+  the Azure work-item converter now strip to a fixed point instead of in one
+  pass; `htmlToText` decoded `&amp;` first and turned `&amp;lt;` into `<`; the
+  DevToolkit's copy-paste `git commit -m "…"` escaped the quote but not the
+  backslash (and now also defuses `$` and backtick); the markdown tables
+  published to PRs had the same bug; the outbox idempotency nonce used
+  `Math.random()`; the credential-scrubbing regex was quadratic on long input;
+  `buildPatSettingsUrl` fed an operator-typed host straight into an `href`;
+  and `generate-keys` checked for an existing private key before writing it
+  rather than letting an exclusive create be the guard.
+
+  Dependabot #14 (`brace-expansion`, dev-only, via eslint's `minimatch@3`) is
+  pinned by an override. The 48 remaining CodeQL alerts were reviewed one by
+  one and dismissed with a written reason — 31 in test fixtures, 17 false
+  positives where the query cannot see an Express `router.param` guard, an
+  environment-dependent cookie flag, or a checksum verified after download.
+
 ## [4.16.0] - 2026-08-10
 
 ### Added

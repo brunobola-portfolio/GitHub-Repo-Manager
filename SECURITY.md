@@ -40,9 +40,18 @@ We will acknowledge your report within **48 hours** and aim to provide a fix wit
 ### API Security
 
 - **Helmet.js** for HTTP security headers (CSP, X-Frame-Options, HSTS, Referrer-Policy)
-- **Rate limiting**: 200 req/15min for API, 20 req/15min for auth endpoints
-- **Input validation**: Zod schemas on all mutation endpoints
-- **SSRF protection**: Internal/private URL blocking with DNS rebinding checks on import URLs
+- **Rate limiting**: 200 req/15min for API, 20 req/15min for auth endpoints, and
+  1000 per 5 minutes per IP on the inbound webhook endpoints — those mount
+  before the session middleware (they need the raw body for HMAC), so the
+  global limiter never sees them
+- **Input validation**: Zod schemas on all mutation endpoints; `:owner`,
+  `:repo`, `:sha` and numeric IDs are checked by Express `router.param` guards
+  before any handler runs, against one definition of a legal GitHub name
+  (`server/lib/github-names.js`)
+- **SSRF protection**: Internal/private URL blocking with DNS rebinding checks on
+  import URLs. Every call that carries the user's GitHub token resolves through
+  `resolveGitHubUrl()`, which will only produce a URL whose origin is exactly
+  `https://api.github.com`
 - **Parameterized SQL**: All database queries use prepared statements (never string interpolation)
 
 ### Credential Handling
@@ -88,6 +97,19 @@ keyed to a user, so review it separately when handling an erasure request.
 4. **Keep dependencies updated**: Run `npm audit` regularly
 5. **Do not expose port 3001** directly; use a reverse proxy (nginx, Caddy)
 6. **Review `.env.example`** for all configurable security settings
+
+## Static analysis
+
+CodeQL runs on every pull request and on `main`. The policy is that the alert
+list is kept at zero open items: a finding is either fixed or dismissed with a
+written reason naming what the query cannot see — an Express `router.param`
+guard, a cookie flag that depends on `NODE_ENV`, a checksum verified after a
+download. Dismissals are visible in the repository's Security tab; "we will
+look at it later" is not one of the available reasons.
+
+Dependabot alerts are treated the same way. Transitive dev-only advisories that
+upstream has not yet released a fix for are pinned with an `overrides` entry
+rather than left open.
 
 ## Dependencies
 
