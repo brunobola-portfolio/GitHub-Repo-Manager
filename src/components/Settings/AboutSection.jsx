@@ -278,14 +278,26 @@ export function AboutSection() {
                         </Badge>
                     )}
                 </div>
-                <a
-                    href={CHANGELOG_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline"
-                >
-                    Changelog <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-                </a>
+                <div className="flex flex-wrap items-center gap-4">
+                    <a
+                        href={CHANGELOG_URL}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-sm font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline"
+                    >
+                        Changelog <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                    </a>
+                    {/* Same-origin, so no target/rel: the guide is served by this
+                        app at /brand (server/index.js), which is what makes the
+                        media kit reachable on any deployment without extra
+                        hosting. */}
+                    <a
+                        href="/brand/"
+                        className="inline-flex items-center gap-1 text-sm font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline"
+                    >
+                        Brand &amp; media kit
+                    </a>
+                </div>
             </Card>
 
             {showBanner && (

@@ -3,12 +3,66 @@ import react from '@vitejs/plugin-react'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { createRequire } from 'module'
 import path from 'path'
+import fs from 'fs'
 import { isProxyDownError, BACKEND_DOWN_HINT, makeThrottle } from './scripts/dev/format.mjs'
 
 // Single source of truth for the displayed app version: package.json. Injected
 // as import.meta.env.VITE_APP_VERSION so UI (e.g. the Landing hero badge) never
 // drifts from the real release the way a hardcoded literal did.
 const pkg = createRequire(import.meta.url)('./package.json')
+
+/**
+ * Copy brand/ into the build so the media kit ships with the app.
+ *
+ * Not placed in public/ on purpose: that would mean a second copy of every
+ * mark inside the repository, and the whole brand system exists to have
+ * exactly one. Copying at build time keeps one source and still puts the kit
+ * in dist/, which is what Docker, the Windows package and the IIS deployment
+ * all ship — so `/brand` works everywhere the app runs, with no extra hosting.
+ */
+const BRAND_MIME = {
+  '.html': 'text/html; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.ico': 'image/x-icon',
+  '.woff2': 'font/woff2',
+  '.zip': 'application/zip',
+  '.txt': 'text/plain; charset=utf-8',
+  '.md': 'text/markdown; charset=utf-8',
+}
+
+function copyBrandKit() {
+  const from = path.resolve(__dirname, 'brand')
+
+  return {
+    name: 'copy-brand-kit',
+
+    closeBundle() {
+      if (!fs.existsSync(from)) return
+      fs.cpSync(from, path.resolve(__dirname, 'dist/brand'), { recursive: true })
+    },
+
+    // The Settings → About link points at /brand, which the Express server
+    // mounts from dist/. Without this, that link is a 404 for anyone running
+    // the dev server — a broken link in the app, visible only to the people
+    // who work on it.
+    configureServer(server) {
+      server.middlewares.use('/brand', (req, res, next) => {
+        const rel = decodeURIComponent((req.url || '/').split(/[?#]/)[0])
+        const file = path.resolve(from, '.' + (rel === '/' ? '/index.html' : rel))
+        // Resolve first, compare after: '/brand/../.env' normalises to a path
+        // outside brand/, and serving arbitrary repository files from the dev
+        // server is not something to leave to the shape of the request.
+        if (!file.startsWith(from + path.sep)) return next()
+        if (!fs.existsSync(file) || fs.statSync(file).isDirectory()) return next()
+
+        res.setHeader('Content-Type', BRAND_MIME[path.extname(file)] || 'application/octet-stream')
+        res.setHeader('Cache-Control', 'no-cache')
+        fs.createReadStream(file).pipe(res)
+      })
+    },
+  }
+}
 
 // Opt-in bundle analyzer — enabled via `npm run build:analyze`
 // (sets ANALYZE=true). Pure observer: does not alter chunk contents.
@@ -42,7 +96,7 @@ devLogger.error = (msg, options) => {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), ...analyzePlugins],
+  plugins: [react(), ...analyzePlugins, copyBrandKit()],
   customLogger: devLogger,
   define: {
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(pkg.version),

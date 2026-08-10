@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **The brand guide is now a real destination, not a file in a clone.** Every
+  deployment serves it at **`/brand`** — the marks at true pixel sizes on both
+  grounds, the palette, the type, and the whole kit as one download. Vite
+  copies `brand/` into `dist/` at build time and the route is registered ahead
+  of the SPA fallback, so there is no separate hosting to maintain. Settings →
+  About links to it in-app, and the page carries OG/Twitter cards so a shared
+  link previews correctly.
+
+- **A media kit you can hand to someone.**
+  [`brand/repomanager-media-kit.zip`](brand/repomanager-media-kit.zip) — every
+  mark, both optical cuts, the three OS tiles, the `.ico`, the rasters, the
+  fonts with their OFL licence, `BRAND.md`, and a plain `README.txt` carrying
+  the two rules that matter most (below 25 px use the small cut; the lime is
+  fill only and never means "healthy"), the palette, the type and the
+  trademark notice. Built by `scripts/gen-brand-kit.mjs` from whatever the
+  generators produced, so it can never contain a mark they did not make.
+  `npm run gen:brand` now emits it alongside the assets, and it is
+  byte-reproducible: entry timestamps are pinned, so regenerating it does not
+  churn 220 KB of binary in the diff.
+
+### Fixed
+
+- **The download button vanished in dark mode.** The only action on the brand
+  page filled itself with the tile ground `#020617` and sat on a `#0B0F19`
+  page. It now inverts ink-on-paper against whichever ground is active, rather
+  than taking the lime — a page arguing that the lime is spent on one element
+  should not break that rule in its first screenful. The near-black `Ground`
+  swatch gained an inset hairline for the same reason.
+
 ## [4.15.0] - 2026-08-09
 
 ### Added

@@ -15,6 +15,8 @@ import { readFileSync, existsSync, statSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 import { ASSETS, COLOR } from '../../scripts/gen-brand.mjs'
 import { page, DESCRIPTIONS } from '../../scripts/gen-brand-page.mjs'
+import { buildKit } from '../../scripts/gen-brand-kit.mjs'
+import AdmZip from 'adm-zip'
 
 const RASTERS = [
   'brand/favicon-16.png',
@@ -174,6 +176,70 @@ describe('the visual guide is generated, not maintained', () => {
     const html = readFileSync('brand/index.html', 'utf8')
     expect(html).not.toMatch(/https?:\/\/[^"')\s]+\.(woff2?|css|js)/)
     expect(html).not.toContain('<script')
+  })
+})
+
+describe('the media kit is downloadable and complete', () => {
+  const { entries } = buildKit()
+
+  it('the archive exists and is not a stale husk', () => {
+    expect(existsSync('brand/repomanager-media-kit.zip')).toBe(true)
+    expect(statSync('brand/repomanager-media-kit.zip').size).toBeGreaterThan(100_000)
+  })
+
+  it('carries every mark, the fonts, the licence and the spec', () => {
+    // Someone receiving this file gets no follow-up email. If the spec or the
+    // licence is missing, the rules and the OFL obligation travel nowhere.
+    for (const required of [
+      'mark-display.svg', 'mark-small.svg', 'mark-mono.svg',
+      'tile-macos.svg', 'tile-windows.svg', 'tile-adaptive.svg',
+      'repomanager.ico', 'og-1200x630.png',
+      'fonts/OFL.txt', 'BRAND.md', 'README.txt',
+    ]) {
+      expect(entries, `${required} is missing from the media kit`).toContain(required)
+    }
+  })
+
+  it('is reproducible — regenerating it does not churn the diff', () => {
+    // adm-zip stamps entries with the wall clock by default, which would make
+    // every `npm run gen:brand` rewrite 220 KB of binary for no change.
+    const stamps = new Set(
+      new AdmZip(readFileSync('brand/repomanager-media-kit.zip'))
+        .getEntries().map((e) => e.header.time.getTime()),
+    )
+    expect(stamps.size, 'entries carry differing timestamps').toBe(1)
+    expect(new Date([...stamps][0]).getFullYear()).toBe(1980)
+  })
+
+  it('does not contain the page or a copy of itself', () => {
+    expect(entries).not.toContain('index.html')
+    expect(entries).not.toContain('repomanager-media-kit.zip')
+  })
+
+  it('the page offers it for download', () => {
+    expect(readFileSync('brand/index.html', 'utf8')).toContain('href="repomanager-media-kit.zip"')
+  })
+})
+
+describe('the guide is reachable from the app it belongs to', () => {
+  it('the server serves /brand explicitly, ahead of the SPA fallback', () => {
+    // express.static runs with index:false so '/' reaches the SPA fallback,
+    // which means '/brand/' would be swallowed by it without this route.
+    const server = readFileSync('server/index.js', 'utf8')
+    const brandRoute = server.indexOf("app.get(['/brand', '/brand/']")
+    const spaFallback = server.indexOf("app.get('/{*splat}'")
+    expect(brandRoute, 'no /brand route').toBeGreaterThan(-1)
+    expect(brandRoute, '/brand must be registered before the SPA fallback')
+      .toBeLessThan(spaFallback)
+  })
+
+  it('the build copies the kit into dist', () => {
+    expect(readFileSync('vite.config.js', 'utf8')).toContain('copy-brand-kit')
+  })
+
+  it('Settings links to it', () => {
+    expect(readFileSync('src/components/Settings/AboutSection.jsx', 'utf8'))
+      .toContain('href="/brand/"')
   })
 })
 

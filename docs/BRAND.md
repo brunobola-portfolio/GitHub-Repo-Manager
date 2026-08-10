@@ -13,11 +13,17 @@ npm run gen:brand          # SVGs, rasters, and the visual guide
 npm run gen:brand:check    # what CI runs
 ```
 
-> **Looking for the visual version?** [`brand/index.html`](../brand/index.html)
-> shows the marks at real pixel sizes on both grounds, the palette, the type
-> and every file in the kit. Open it straight from a clone — it is
-> self-contained and carries its own fonts. It is generated from the same
-> constants as the assets, so it cannot drift from what it documents.
+> **The visual guide is [`brand/index.html`](../brand/index.html)** — the marks
+> at real pixel sizes on both grounds, the palette, the type, and a download
+> for the whole kit. Self-contained: it opens straight from a clone with no
+> server, and it is generated from the same constants as the assets, so it
+> cannot drift from what it documents.
+>
+> **Where to send someone.** The app serves it at **`/brand`** on any
+> deployment — `https://repomanager.bolalabs.pt/brand` once that host is live —
+> because `vite.config.js` copies `brand/` into `dist/` at build time and
+> `server/index.js` routes it ahead of the SPA fallback. No separate hosting,
+> no GitHub Pages. Settings → About links to it in-app.
 
 ---
 
@@ -137,7 +143,8 @@ Everything in `brand/` is generated. Nothing in it should be edited by hand.
 | `apple-touch-icon.png` | 180 px |
 | `icon-512.png`, `icon-1024-macos.png` | Store and bundle art |
 | `og-1200x630.png` | Social card |
-| `index.html` | The visual guide — open it in a browser |
+| `index.html` | The visual guide — open it in a browser, or visit `/brand` |
+| `repomanager-media-kit.zip` | The whole kit in one file, with `BRAND.md` and a `README.txt` inside |
 | `fonts/*.woff2` + `fonts/OFL.txt` | Archivo, IBM Plex Sans, JetBrains Mono, under SIL OFL-1.1 |
 
 Served copies live in `public/` (`logo.svg`, `favicon-32.png`,

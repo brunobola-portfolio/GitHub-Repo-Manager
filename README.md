@@ -618,6 +618,19 @@ What's next is tracked in **[ROADMAP.md](ROADMAP.md)** and the in-app `/roadmap`
 
 ---
 
+## Brand & media kit
+
+The mark, the palette, the type and every asset live in [`brand/`](brand/), with
+the rules in [`docs/BRAND.md`](docs/BRAND.md). Open
+[`brand/index.html`](brand/index.html) for the visual guide — it is
+self-contained, carries its own fonts, and offers the whole kit as a single
+download. Any running deployment also serves it at **`/brand`**.
+
+Everything there is generated from `scripts/gen-brand.mjs`. Never edit an asset
+by hand: change the geometry and run `npm run gen:brand`.
+
+---
+
 ## Contributing
 
 Contributions are welcome — bug fixes, features, and documentation improvements alike.

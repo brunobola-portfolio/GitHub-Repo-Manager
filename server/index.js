@@ -420,6 +420,21 @@ if (config.nodeEnv === 'production') {
                 }
             },
         }));
+        // Brand guide and media kit — a real page, not part of the SPA.
+        //
+        // express.static above runs with index:false so that '/' reaches the SPA
+        // fallback, which means '/brand' and '/brand/' would fall through to it
+        // too and serve the application shell instead of the guide. This serves
+        // the file explicitly. Registered BEFORE the fallback, or the splat
+        // route below swallows it.
+        const brandIndex = path.join(distPath, 'brand', 'index.html');
+        if (fs.existsSync(brandIndex)) {
+            app.get(['/brand', '/brand/'], (_req, res) => {
+                res.setHeader('Cache-Control', 'no-cache');
+                res.sendFile(brandIndex);
+            });
+        }
+
         // SPA fallback. Express 5 / path-to-regexp v8 reject a bare '*' at
         // registration ("Missing parameter name") — the named splat form is
         // required, or the whole production process crashes before listen().

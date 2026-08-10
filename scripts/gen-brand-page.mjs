@@ -25,6 +25,11 @@ import { ASSETS, COLOR } from './gen-brand.mjs'
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const OUT = path.join(ROOT, 'brand/index.html')
 
+// Absolute, because this page is served from two places with different
+// relative roots: opened from a clone at brand/index.html, and served by the
+// app at /brand/. Only the zip (a sibling in both) can stay relative.
+const REPO = 'https://github.com/brunobola-portfolio/GitHub-Repo-Manager'
+
 // Inline an asset into the page: drop the leading provenance comment (noise in
 // HTML) and the fixed width/height (they would fight the CSS that sets each
 // instance's real pixel size).
@@ -46,6 +51,17 @@ const FONTS = [
   ['Plex', 'ibm-plex-sans-latin-wght-normal.woff2'],
   ['JBMono', 'jetbrains-mono-latin-wght-normal.woff2'],
 ]
+
+/**
+ * The favicon as a data URI.
+ *
+ * A relative href cannot work in both places this page lives: from a clone the
+ * favicon sits at ../public/logo.svg, but served from dist/brand/ it is at
+ * /logo.svg. Inlining the tile — it is under 700 bytes — makes the page truly
+ * self-contained, which is what the gate checks for.
+ */
+const faviconDataUri = () =>
+  'data:image/svg+xml;base64,' + Buffer.from(inline('public/logo.svg'), 'utf8').toString('base64')
 
 /** One rung of the size ladder: the mark at a true pixel size. */
 const rung = (key, px, label) =>
@@ -69,7 +85,16 @@ function page() {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>RepoManager — brand &amp; media kit</title>
 <meta name="description" content="The RepoManager mark, its two optical cuts, the inherited BolaLabs palette and type, and every file in the media kit.">
-<link rel="icon" type="image/svg+xml" href="../public/logo.svg">
+<meta property="og:type" content="website">
+<meta property="og:title" content="RepoManager — brand &amp; media kit">
+<meta property="og:description" content="The mark at real pixel sizes, the palette, the type, and a downloadable kit.">
+<meta property="og:image" content="https://raw.githubusercontent.com/brunobola-portfolio/GitHub-Repo-Manager/main/brand/og-1200x630.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="RepoManager — brand &amp; media kit">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/brunobola-portfolio/GitHub-Repo-Manager/main/brand/og-1200x630.png">
+<link rel="icon" type="image/svg+xml" href="${faviconDataUri()}">
 <style>
 ${FONTS.map(([fam, file]) => `  @font-face{font-family:"${fam}";src:url(fonts/${file}) format("woff2");font-weight:100 900;font-display:swap}`).join('\n')}
 
@@ -77,16 +102,19 @@ ${FONTS.map(([fam, file]) => `  @font-face{font-family:"${fam}";src:url(fonts/${
     --lime:${COLOR.lime}; --ink:${COLOR.ink}; --paper:${COLOR.paper}; --ground:${COLOR.ground};
     --bg:#FCFCFD; --surface:#F4F5F7; --sunk:#EAECEF; --line:#DFE2E7;
     --text:#0F172A; --muted:#586074; --accent-text:#3f7d12;
+    --btn-bg:${COLOR.ground}; --btn-fg:#F8FAFC; --btn-sub:#94A3B8;
   }
   @media (prefers-color-scheme:dark){
     :root:not([data-theme="light"]){
       --bg:#0B0F19; --surface:#131926; --sunk:#1B2231; --line:#252D3E;
       --text:#E6EAF2; --muted:#96A0B5; --accent-text:#8fd23f;
+      --btn-bg:#F1F5F9; --btn-fg:${COLOR.ink}; --btn-sub:#4A5468;
     }
   }
   :root[data-theme="dark"]{
     --bg:#0B0F19; --surface:#131926; --sunk:#1B2231; --line:#252D3E;
     --text:#E6EAF2; --muted:#96A0B5; --accent-text:#8fd23f;
+    --btn-bg:#F1F5F9; --btn-fg:${COLOR.ink}; --btn-sub:#4A5468;
   }
 
   *{box-sizing:border-box}
@@ -125,10 +153,23 @@ ${FONTS.map(([fam, file]) => `  @font-face{font-family:"${fam}";src:url(fonts/${
   .cap{font-family:"JBMono",monospace;font-size:10px;letter-spacing:.07em;color:#6B7280}
   .ladder.dark .cap{color:#8A94A8}
 
+  /* The download is the only action on the page, so it inverts against the
+     ground rather than sitting on a fixed one: ink-on-paper reversed. Filling
+     it with the lime would be the obvious move and the wrong one — this page
+     argues the lime is spent on the node alone, and a page that breaks its own
+     rule in its first screenful is not a spec. */
+  .dl{display:inline-flex;flex-direction:column;gap:3px;text-decoration:none;
+    background:var(--btn-bg);color:var(--btn-fg);border-radius:13px;padding:15px 22px;
+    border:1px solid transparent;transition:border-color .18s cubic-bezier(.2,0,0,1)}
+  .dl span{font-size:12.5px;color:var(--btn-sub);font-family:"JBMono",monospace;letter-spacing:.02em}
+  .dl:hover{border-color:${COLOR.lime}}
+  .dl:focus-visible{outline:3px solid ${COLOR.lime};outline-offset:3px}
+  @media (prefers-reduced-motion:reduce){.dl{transition:none}}
+
   .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
   @media(max-width:620px){.grid3{grid-template-columns:1fr}}
   .sw{border:1px solid var(--line);border-radius:13px;overflow:hidden}
-  .sw .chip{height:72px}
+  .sw .chip{height:72px;box-shadow:inset 0 0 0 1px rgb(148 163 184 / .22)}
   .sw .meta{padding:10px 12px;background:var(--surface)}
   .sw .n{font-weight:600;font-size:14px}
   .sw .h{font-family:"JBMono",monospace;font-size:12px;color:var(--muted)}
@@ -169,7 +210,8 @@ ${FONTS.map(([fam, file]) => `  @font-face{font-family:"${fam}";src:url(fonts/${
     <p class="eyebrow">BolaLabs · RepoManager</p>
     <h1>The commit that<br>wants you.</h1>
     <p class="lede">A rail of commits, and one node lifted off it. The product exists to tell you which repository needs you today — the mark is that sentence, drawn once.</p>
-    <p style="font-size:14px;color:var(--muted)">This page is generated from <span class="mono">scripts/gen-brand.mjs</span>, the same file the assets come from. The written spec — rules, reasoning, the full "never" list — is <a href="../docs/BRAND.md">docs/BRAND.md</a>.</p>
+    <p><a class="dl" href="repomanager-media-kit.zip" download>Download the media kit<span>ZIP · every mark, both cuts, the tiles, the fonts and the spec</span></a></p>
+    <p style="font-size:14px;color:var(--muted)">Generated from <span class="mono">scripts/gen-brand.mjs</span>, the same file the assets come from — so this page cannot disagree with them. The written spec is <a href="${REPO}/blob/main/docs/BRAND.md">BRAND.md</a>, and it travels inside the kit.</p>
   </div>
 
   <section>
@@ -244,7 +286,7 @@ ${FONTS.map(([fam, file]) => `  @font-face{font-family:"${fam}";src:url(fonts/${
       <tr><th>File</th><th>For</th></tr>
       ${fileRows}
     </table></div>
-    <p style="font-size:14px;color:var(--muted);margin-top:14px">Rasters — the <span class="mono">.ico</span>, PNG favicons, apple-touch icon and social card — sit alongside these, built by <span class="mono">scripts/gen-brand-raster.mjs</span>.</p>
+    <p style="font-size:14px;color:var(--muted);margin-top:14px">Rasters — the <span class="mono">.ico</span>, PNG favicons, apple-touch icon and social card — sit alongside these, built by <span class="mono">scripts/gen-brand-raster.mjs</span>. The three typefaces live in <span class="mono">fonts/</span> with their OFL licence, and <span class="mono">repomanager-media-kit.zip</span> is all of it in one file.</p>
   </section>
 
   <section>
@@ -258,7 +300,8 @@ ${FONTS.map(([fam, file]) => `  @font-face{font-family:"${fam}";src:url(fonts/${
   </section>
 
   <footer>
-    <p style="margin:0">Generated by <span class="mono">scripts/gen-brand-page.mjs</span>. Do not edit this file — change the geometry in <span class="mono">scripts/gen-brand.mjs</span> and run <span class="mono">npm run gen:brand</span>. Fonts are SIL OFL-1.1; see <span class="mono">brand/fonts/OFL.txt</span>.</p>
+    <p style="margin:0 0 12px">RepoManager and the RepoManager mark are assets of Bola&nbsp;Labs,&nbsp;Inc. Use them to refer to the product; do not modify or recolour the mark, and do not use it to imply a partnership that does not exist. RepoManager manages GitHub repositories and is <strong>not</strong> affiliated with, endorsed by or sponsored by GitHub,&nbsp;Inc.</p>
+    <p style="margin:0">Generated by <span class="mono">scripts/gen-brand-page.mjs</span>. Do not edit this file — change the geometry in <span class="mono">scripts/gen-brand.mjs</span> and run <span class="mono">npm run gen:brand</span>. Fonts are SIL OFL-1.1; see <span class="mono">fonts/OFL.txt</span>.</p>
   </footer>
 
 </div>
