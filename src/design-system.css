@@ -96,6 +96,24 @@
    * white on #7fc528 is 2.12:1, which is why the lime is a graphic fill and
    * this is not. */
   --ds-accent-brand-fill-dark: #42840f;
+
+  /* SOLID brand surface — fill and its paired foreground, as one thing.
+   *
+   * Two halves of one decision, so a call site cannot get half of it. The
+   * fill/text pairs below prove why that matters; this is the same contract
+   * for the surface every primary button and selected chip uses.
+   *
+   * Light: deep green under white (5.06:1). Dark: the LIME under ink
+   * (8.43:1) — not the deep green, which on a near-black canvas reads as a
+   * dull olive slab and was the first thing anyone noticed about the selected
+   * chip. Ink-on-lime is also the only way the spec lets the lime carry text
+   * at all, and it is what the brand guide's own download button does.
+   *
+   * The dark values live in the :root.dark block below, so a call site needs
+   * no `dark:` variant and cannot pair a light fill with a dark foreground. */
+  --ds-accent-brand-solid: #3f7d12;
+  --ds-accent-brand-solid-fg: #ffffff;
+  --ds-accent-brand-solid-hover: #34670f;
   /* Subtle brand-tinted background (selected rows, soft chips). */
   --ds-accent-brand-subtle: color-mix(in srgb, var(--ds-accent-brand) 12%, transparent);
   --ds-accent-brand-subtle-dark: color-mix(in srgb, var(--ds-accent-brand-dark) 20%, transparent);
@@ -262,6 +280,17 @@
   --ds-z-surface: 10;
   --ds-z-floating: 30;
   --ds-z-composer: 40;
+
+  /* Room reserved at the very end of the document for the floating assistant.
+   *
+   * A fixed button lives in viewport space; the footer lives in document space,
+   * so at the bottom of a page they occupy the same pixels and the button wins.
+   * Reserving its footprint is what makes "floating" and "never covers
+   * anything" both true, without a scroll listener deciding it frame by frame.
+   *
+   * 44px control + 24px gap + 20px breathing room, plus the phone's home
+   * indicator. Mobile also carries a 56px bottom nav above that. */
+  --ds-fab-safe-bottom: calc(88px + var(--safe-area-inset-bottom, 0px));
   --ds-z-popover: 50;
   --ds-z-overlay: 50;
   --ds-z-modal: 60;
@@ -338,6 +367,9 @@
    * invisible, so dark elevates with black at high alpha plus a 6%-white top
    * ring for the raised edge (the previous single grey shadow was shared by
    * both themes and read as nothing here). */
+  --ds-accent-brand-solid: var(--ds-brand-lime);
+  --ds-accent-brand-solid-fg: var(--ds-brand-ink);
+  --ds-accent-brand-solid-hover: #8fd23f;
   --ds-elevation-border: var(--ds-elevation-border-dark);
   --ds-shadow-sm: 0 1px 2px rgba(0,0,0,.45);
   --ds-shadow:    0 1px 2px rgba(0,0,0,.5), 0 4px 10px -2px rgba(0,0,0,.55);
@@ -484,6 +516,31 @@
 .ds-risk-ring-neutral  { box-shadow: inset 0 0 0 1px var(--ds-risk-neutral-tint-hover); }
 
 /* ===== FOCUS RING (premium) ===== */
+/* The canonical solid brand surface. Owns BOTH halves of the pair, so no call
+ * site can set a fill without its foreground — the failure this replaces was
+ * `bg-brand text-white`, which in dark mode would put white on the lime at
+ * 2.12:1. Use it for primary buttons and selected chips.
+ *
+ * Declared in @layer components, not unlayered and not :where(). The layer is
+ * doing two jobs at once: it beats Preflight's `button { background-color:
+ * transparent }` (an element selector, which a :where() rule loses to — the
+ * first attempt at this rendered every brand button with no background at all),
+ * and it loses to @layer utilities, so a caller passing `bg-*` or `text-*`
+ * still wins. That is the contract every primitive here has, and the one
+ * tailwind-merge cannot enforce for a class it does not know about. */
+@layer components {
+  .ds-brand-solid {
+    border-style: solid;
+    background-color: var(--ds-accent-brand-solid);
+    color: var(--ds-accent-brand-solid-fg);
+    border-color: var(--ds-accent-brand-solid);
+  }
+  .ds-brand-solid:hover {
+    background-color: var(--ds-accent-brand-solid-hover);
+    border-color: var(--ds-accent-brand-solid-hover);
+  }
+}
+
 .ds-focus-ring { outline: none; transition: box-shadow var(--ds-duration-fast) var(--ds-ease); }
 .ds-focus-ring:focus-visible {
   outline: 2px solid var(--ds-focus-ring-color);

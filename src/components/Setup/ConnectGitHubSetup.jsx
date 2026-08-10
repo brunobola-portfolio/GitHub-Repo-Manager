@@ -208,7 +208,7 @@ export function ConnectGitHubSetup({ isOpen, onClose, status: statusProp }) {
                                             href={newAppUrl}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="mt-2 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold text-white bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] hover:bg-[color:var(--ds-accent-brand-hover)] transition-colors shadow-md ds-focus-ring"
+                                            className="mt-2 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold ds-brand-solid transition-colors shadow-md ds-focus-ring"
                                         >
                                             <Github className="w-4 h-4" aria-hidden="true" />
                                             Open GitHub — create OAuth App

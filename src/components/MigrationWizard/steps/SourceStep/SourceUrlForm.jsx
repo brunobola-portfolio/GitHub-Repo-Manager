@@ -90,7 +90,7 @@ export default function SourceUrlForm({
                 <button
                   type="button"
                   onClick={onApply}
-                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] dark:hover:bg-brand-400 shadow-sm transition-colors"
+                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg ds-brand-solid dark:hover:bg-brand-400 shadow-sm transition-colors"
                 >
                   <Check className="w-3.5 h-3.5" />
                   Apply

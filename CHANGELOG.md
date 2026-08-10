@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The solid brand surface is one decision, not two.** Primary buttons and
+  selected chips set a fill in one class and its text colour in another, so a
+  theme override of the fill left the wrong foreground behind — and on the dark
+  canvas the deep green read as a dull olive slab, which is the first thing
+  anyone noticed about the selected chip. `.ds-brand-solid` now owns both
+  halves: deep green under white in light (5.06:1), the **lime under ink** in
+  dark (8.43:1), which is also the only way the spec lets the lime carry text.
+  Declared in `@layer components` so it beats Preflight's `button {
+  background-color: transparent }` and still loses to a caller's `bg-*`.
+
+- **Screenshots in the docs show the product as it is now.** Thirteen of them —
+  dashboard, repositories, work board, teams, the Live Inbox and the command
+  palette, both themes plus mobile — were captured before the brand was
+  applied and still showed the violet UI.
+
+### Fixed
+
+- **The floating assistant no longer covers the footer.** It is fixed, the
+  footer is not, so at the end of a page they wanted the same pixels and the
+  button won — it sat on top of "Status" and "Commercial license".
+  `--ds-fab-safe-bottom` reserves its footprint at the end of the document, so
+  it comes to rest in empty space. Measured at six widths from 390 to 1920:
+  seven overlaps before, zero after.
+
+- **Idle is quieter, not dimmer.** The assistant faded to 60% opacity when
+  idle, which on a dark canvas reads as unfinished and took its label under AA
+  on the way down. It keeps full contrast and gives back width instead: a
+  circular mark that grows into the labelled pill on hover or focus.
+
 ## [4.18.0] - 2026-08-10
 
 ### Changed

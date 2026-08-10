@@ -93,7 +93,7 @@ export function AIPromoStrip({ repos, licenseTier = 'free', onOpenInsights }) {
                         <button
                             type="button"
                             onClick={handleInsights}
-                            className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold text-white bg-[color:var(--ds-accent-brand)] hover:bg-[color:var(--ds-accent-brand-hover)] transition-colors whitespace-nowrap"
+                            className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold ds-brand-solid transition-colors whitespace-nowrap"
                         >
                             <span className="sm:hidden">Insights</span>
                             <span className="hidden sm:inline">Get Insights</span>

@@ -174,7 +174,7 @@ export default function TargetConfigStep({ source, onChange, orgs, importJobs: _
         disabled={!source.targetName?.trim()}
         className={`w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium rounded-xl transition-all
           ${source.targetName?.trim()
-            ? 'text-white bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-[color:var(--ds-accent-brand)] shadow-md'
+            ? 'ds-brand-solid dark:hover:bg-[color:var(--ds-accent-brand)] shadow-md'
             : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'}`}
       >
         Import Repository

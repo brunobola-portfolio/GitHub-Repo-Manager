@@ -68,7 +68,7 @@ function SlimIconButton({ icon: Icon, label, isActive, onClick, accent, buttonRe
       onClick={onClick}
       className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 group ds-focus-ring ${
         accent
-          ? 'bg-[color:var(--ds-accent-brand)] text-white hover:opacity-90 shadow-md'
+          ? 'ds-brand-solid hover:opacity-90 shadow-md'
           : isActive
             ? 'bg-brand-100 dark:bg-brand-900/40 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
             : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300'

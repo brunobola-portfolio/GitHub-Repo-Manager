@@ -418,24 +418,40 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus, currentRe
                         onMouseEnter={() => setIsIdle(false)}
                         /* Hidden on mobile (< md): the AI Assistant entry point
                            on phones is consolidated into MobileQuickActionsFab
-                           so the right edge isn't a stack of four FABs. */
-                        className="hidden md:flex fixed bottom-20 xl:bottom-6 right-3 sm:right-6 z-[var(--ds-z-composer)] group"
+                           so the right edge isn't a stack of four FABs.
+
+                           Bottom offset is the reserved strip, not a literal —
+                           LegalFooter pads itself by the same token, so the
+                           resting position is empty space rather than the
+                           "Status / Commercial license" links it used to sit
+                           on top of. */
+                        className="hidden md:flex fixed right-3 sm:right-6 z-[var(--ds-z-composer)] group"
+                        style={{ bottom: 'calc(var(--ds-fab-safe-bottom) - 44px)' }}
                         aria-label="Open Repo Advisor"
                     >
-                        <div className="relative">
-                            <div className={`relative flex items-center bg-[color:var(--ds-accent-brand)] text-white shadow-md transition-all duration-500 ease-in-out hover:opacity-90 ${
+                        {/* Idle is a QUIETER control, not a dimmer one. The old
+                            state dropped the whole button to 60% opacity, which
+                            on a dark canvas reads as unfinished rather than
+                            unobtrusive — and put the label under AA on the way
+                            down. It now keeps full contrast and gives back
+                            width: a circular mark that grows into the labelled
+                            pill on hover, focus or a new message. */}
+                        <span
+                            className={`relative flex items-center ds-brand-solid shadow-[var(--ds-shadow)] ring-1 ring-black/5 dark:ring-white/10 ${
                                 isIdle
-                                    ? 'gap-0 px-3 py-3 rounded-full opacity-60 hover:opacity-100'
-                                    : 'gap-2.5 px-4 py-3 rounded-2xl opacity-100'
-                            }`}>
-                                <Sparkles size={isIdle ? 16 : 18} className="shrink-0 transition-all duration-500" />
-                                <span className={`text-sm font-semibold whitespace-nowrap transition-all duration-500 overflow-hidden ${
-                                    isIdle ? 'w-0 opacity-0' : 'w-auto opacity-100 hidden sm:inline'
-                                }`}>
-                                    Repo Advisor
-                                </span>
-                            </div>
-                        </div>
+                                    ? 'gap-0 p-3 rounded-full'
+                                    : 'gap-2.5 pl-4 pr-4 py-3 rounded-2xl'
+                            } motion-safe:transition-all motion-safe:duration-[var(--ds-duration-slow)] motion-safe:ease-[cubic-bezier(.2,0,0,1)] group-hover:gap-2.5 group-hover:pl-4 group-hover:pr-4 group-hover:py-3 group-hover:rounded-2xl group-focus-visible:gap-2.5 group-focus-visible:pl-4 group-focus-visible:pr-4 group-focus-visible:py-3 group-focus-visible:rounded-2xl`}
+                        >
+                            <Sparkles size={18} className="shrink-0" aria-hidden="true" />
+                            <span
+                                className={`text-sm font-semibold whitespace-nowrap overflow-hidden motion-safe:transition-all motion-safe:duration-[var(--ds-duration-slow)] group-hover:max-w-[10rem] group-hover:opacity-100 group-hover:visible group-focus-visible:max-w-[10rem] group-focus-visible:opacity-100 group-focus-visible:visible ${
+                                    isIdle ? 'max-w-0 opacity-0 invisible' : 'max-w-[10rem] opacity-100 visible'
+                                }`}
+                            >
+                                Repo Advisor
+                            </span>
+                        </span>
                     </motion.button>
                 )}
             </AnimatePresence>
@@ -459,7 +475,8 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus, currentRe
                         // clear other composer-level FABs, never coexist/compete with them —
                         // z-[var(--ds-z-popover)] is the contract's next rung up and is
                         // already reused for other fixed floating widgets in the app.
-                        className="fixed bottom-20 xl:bottom-6 right-3 sm:right-6 z-[var(--ds-z-popover)]"
+                        className="fixed right-3 sm:right-6 z-[var(--ds-z-popover)]"
+                        style={{ bottom: 'calc(var(--ds-fab-safe-bottom) - 44px)' }}
                     >
                         <Card className={`w-[calc(100vw-2rem)] sm:w-[22rem] md:w-[26rem] flex flex-col shadow-[var(--ds-shadow-overlay)] border border-slate-200 dark:border-[color:var(--ds-border-dark)] bg-white dark:bg-[color:var(--ds-surface-dark)] overflow-hidden rounded-2xl transition-all duration-[var(--ds-duration-slow)] ${
                             isMinimized ? '' : 'h-[65vh] xl:h-[540px]'
@@ -632,7 +649,7 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus, currentRe
                                                         <button
                                                             type="submit"
                                                             disabled={isLoading || !input.trim()}
-                                                            className="shrink-0 inline-flex items-center justify-center h-11 w-11 bg-[color:var(--ds-accent-brand)] text-white rounded-xl hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm ds-focus-ring"
+                                                            className="shrink-0 inline-flex items-center justify-center h-11 w-11 ds-brand-solid rounded-xl hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm ds-focus-ring"
                                                             aria-label="Send message"
                                                         >
                                                             {isLoading
@@ -661,7 +678,7 @@ function MessageBubble({ message, onAction, onRetry, onOpenSettings }) {
     return (
         <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
             {!isUser && (
-                <div className={`w-7 h-7 rounded-lg ${isError ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'bg-[color:var(--ds-accent-brand)] text-white'} flex items-center justify-center shrink-0 mt-0.5 mr-2 shadow-sm`}>
+                <div className={`w-7 h-7 rounded-lg ${isError ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'ds-brand-solid'} flex items-center justify-center shrink-0 mt-0.5 mr-2 shadow-sm`}>
                     {isError
                         ? <AlertTriangle size={13} className="text-rose-600 dark:text-rose-400" />
                         : <Sparkles size={13} className="text-white" />}
@@ -671,7 +688,7 @@ function MessageBubble({ message, onAction, onRetry, onOpenSettings }) {
                 <div
                     className={`px-3.5 py-2.5 text-sm leading-relaxed rounded-2xl shadow-sm ${
                         isUser
-                            ? 'bg-[color:var(--ds-accent-brand)] text-white rounded-br-sm shadow-sm'
+                            ? 'ds-brand-solid rounded-br-sm shadow-sm'
                             : isError
                                 ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-900/50 rounded-bl-sm'
                                 : 'bg-white dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 rounded-bl-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-pre:my-2 prose-code:text-xs'
@@ -722,7 +739,7 @@ function MessageBubble({ message, onAction, onRetry, onOpenSettings }) {
                         <button
                             type="button"
                             onClick={onOpenSettings}
-                            className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-[color:var(--ds-accent-brand)] text-white hover:bg-brand-500 transition-colors"
+                            className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full ds-brand-solid hover:bg-brand-500 transition-colors"
                         >
                             <Key size={12} /> Configure API key
                         </button>

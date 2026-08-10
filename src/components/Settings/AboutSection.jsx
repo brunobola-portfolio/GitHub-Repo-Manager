@@ -46,7 +46,7 @@ const HEALTH_POLL_TIMEOUT_MS = 3 * 60 * 1000
 // Matches the primary-CTA button convention used across Settings sections
 // (e.g. AzureCredentialsSection, AzureHostsAllowlistSection) — no new class
 // combination invented for this one button.
-const UPDATE_BUTTON_CLASS = 'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors ds-focus-ring'
+const UPDATE_BUTTON_CLASS = 'inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-lg ds-brand-solid disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors ds-focus-ring'
 
 // Renders the server's phase/percent verbatim ("downloading 42%",
 // "verifying") — no cosmetic reformatting, so the label a user sees stays

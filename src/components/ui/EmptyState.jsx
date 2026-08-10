@@ -68,7 +68,7 @@ export function EmptyState({
             <a
               href={resolvedHref}
               aria-disabled={resolvedDisabled || undefined}
-              className={`inline-flex items-center justify-center min-h-[44px] min-w-[44px] px-4 py-2 text-sm gap-2 rounded-lg font-medium transition-colors duration-150 bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] shadow-sm ds-focus-ring ${resolvedDisabled ? 'opacity-50 pointer-events-none' : ''}`}
+              className={`inline-flex items-center justify-center min-h-[44px] min-w-[44px] px-4 py-2 text-sm gap-2 rounded-lg font-medium transition-colors duration-150 ds-brand-solid shadow-sm ds-focus-ring ${resolvedDisabled ?'opacity-50 pointer-events-none' : ''}`}
             >
               {resolvedLabel}
             </a>
