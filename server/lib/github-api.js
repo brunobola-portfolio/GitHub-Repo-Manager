@@ -259,19 +259,56 @@ function isSecondaryRateLimit(status, body) {
     return msg.includes('secondary rate limit') || msg.includes('abuse detection');
 }
 
+export const GITHUB_API_ORIGIN = 'https://api.github.com';
+
+/**
+ * Resolve a caller-supplied endpoint to an absolute api.github.com URL.
+ *
+ * Every request this module makes carries the user's OAuth token in an
+ * Authorization header, so the one thing that must never be in doubt is where
+ * it is going. Callers pass a rooted path; an already-absolute URL is accepted
+ * only when its origin is exactly api.github.com, which keeps the outbox able
+ * to replay a stored URL without leaving the door open to sending a bearer
+ * token to an attacker-chosen host.
+ *
+ * @throws {Error} with `.status = 400` for anything that is not an
+ *   api.github.com endpoint — a caller bug, surfaced rather than followed.
+ */
+export function resolveGitHubUrl(path) {
+    if (typeof path !== 'string' || path === '') {
+        throw Object.assign(new Error('GitHub API path must be a non-empty string'), { status: 400 });
+    }
+
+    // A protocol-relative '//evil.example' resolves to a different host under
+    // the URL parser, so a leading slash alone is not enough.
+    if (path.startsWith('/') && !path.startsWith('//')) return `${GITHUB_API_ORIGIN}${path}`;
+
+    let parsed;
+    try {
+        parsed = new URL(path);
+    } catch {
+        throw Object.assign(new Error('GitHub API path must start with "/"'), { status: 400 });
+    }
+    if (parsed.origin !== GITHUB_API_ORIGIN) {
+        throw Object.assign(new Error(`Refusing to send a GitHub token to ${parsed.origin}`), { status: 400 });
+    }
+    return parsed.toString();
+}
+
 /**
  * Wrapper for GitHub API calls.
  * Handles authentication headers, API versioning, ETag-based conditional
  * requests, rate limit tracking, retries with exponential backoff, and
  * a circuit breaker that fails fast during upstream incidents.
  *
- * @param {string} path - The API endpoint path (e.g., '/user/repos') or full URL
+ * @param {string} path - The API endpoint path (e.g., '/user/repos'). An
+ *   absolute URL is accepted only on api.github.com.
  * @param {string} token - The user's OAuth access token
  * @param {object} options - Fetch options (method, body, headers, etc.)
  * @returns {{ data: any, headers: Headers }}
  */
 export async function githubApi(path, token, options = {}) {
-    const url = path.startsWith('http') ? path : `https://api.github.com${path}`;
+    const url = resolveGitHubUrl(path);
     const userHash = crypto.createHash('sha256').update(token).digest('hex').slice(0, 8);
     const cacheKey = `${userHash}:${url}`;
 
