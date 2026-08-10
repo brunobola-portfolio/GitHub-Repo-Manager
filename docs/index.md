@@ -26,6 +26,14 @@ below links to the canonical page for that topic.
 
 The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.18.0 (2026-08-10) — the brand, applied.** The repository documented a
+  lime mark and shipped a violet product: a hand-drawn logo with four gradients,
+  GitHub's Octocat as the product icon, and three accent hues used
+  interchangeably. The mark the app renders is now generated from the same
+  geometry as the kit, and one ramp (`brand-*`) replaces indigo/violet/purple
+  across ~1,650 call sites — every step luminance-matched so no pairing needed
+  re-checking. Cards in a grid row are equal height at every width; they were
+  312 px apart at 1024. See [Brand](BRAND.md).
 - **v4.17.0 (2026-08-10) — the bot backlog, closed.** Every GitHub request is
   pinned to `api.github.com`; `full_name` is validated rather than split; the
   inbound webhooks — which mount before session and so were never seen by the
@@ -49,13 +57,6 @@ The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHAN
   failed the brand gate on a developer machine while staying green on CI. Plus
   a sweep of stale counts and version links across the README, AGENTS.md and
   this page.
-- **v4.14.0 (2026-08-09) — a brand system.** The logo is replaced and, more to
-  the point, generated: one file holds the geometry and emits all twelve SVGs,
-  the PNGs and a Windows `.ico` whose 16 and 24 px slots carry different artwork
-  from the rest. The old mark was 8 KB of gradients and blurs that read as a
-  violet square in a browser tab and lost every filter converting to `.ico`.
-  Colour and type are inherited from the BolaLabs platform. See
-  [Brand](BRAND.md).
 
 
 ## Architecture
