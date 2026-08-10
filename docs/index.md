@@ -26,6 +26,13 @@ below links to the canonical page for that topic.
 
 The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.17.0 (2026-08-10) — the bot backlog, closed.** Every GitHub request is
+  pinned to `api.github.com`; `full_name` is validated rather than split; the
+  inbound webhooks — which mount before session and so were never seen by the
+  global limiter — have a per-IP ceiling. Plus eight smaller real ones, and a
+  credential scrub that went from 36 seconds to 24 ms on 200 KB of adversarial
+  input. The remaining 48 CodeQL alerts were dismissed one by one with written
+  reasons; the policy is now in [Security](../SECURITY.md).
 - **v4.16.0 (2026-08-10) — the brand guide became a media kit.** Every
   deployment serves it at `/brand`, and
   [`brand/repomanager-media-kit.zip`](../brand/repomanager-media-kit.zip) puts
@@ -49,11 +56,6 @@ The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHAN
   violet square in a browser tab and lost every filter converting to `.ico`.
   Colour and type are inherited from the BolaLabs platform. See
   [Brand](BRAND.md).
-- **v4.13.1 (2026-08-09) — dependency maintenance.** Seven Dependabot updates
-  merged and validated as a batch, including `better-sqlite3` 13.0.3, which
-  still builds against Node-API 10 with ABI-independent prebuilds — so the
-  Node 22.14/24 story is unchanged, and the `compat (node 22 floor)` job keeps
-  proving it. No product change.
 
 
 ## Architecture
