@@ -200,8 +200,6 @@ export function DashboardPremium({
                             title="Total Repositories"
                             value={stats?.totalRepos || repoStats.total}
                             icon={Folder}
-                            color="text-blue-500"
-                            bg="bg-blue-500/10"
                             loading={loading}
                             onClick={() => onViewChange?.('repos')}
                             hint="View all repositories"
@@ -210,8 +208,6 @@ export function DashboardPremium({
                             title="Public / Private"
                             value={`${stats?.publicRepos || repoStats.public} / ${stats?.privateRepos || repoStats.private}`}
                             icon={Archive}
-                            color="text-purple-500"
-                            bg="bg-purple-500/10"
                             loading={loading}
                             onClick={() => onViewChange?.('repos', { initialFilters: { visibility: 'public' } })}
                             hint="Filter to public repositories"
@@ -220,8 +216,6 @@ export function DashboardPremium({
                             title="Total Stars"
                             value={repoStats.totalStars}
                             icon={Star}
-                            color="text-yellow-500"
-                            bg="bg-yellow-500/10"
                             loading={loading}
                             onClick={() => onViewChange?.('repos', { initialSort: 'stars' })}
                             hint="Sort repos by star count"
@@ -230,8 +224,6 @@ export function DashboardPremium({
                             title="Organizations"
                             value={stats?.organizations || orgs.length}
                             icon={Building2}
-                            color="text-emerald-500"
-                            bg="bg-emerald-500/10"
                             loading={loading}
                             onClick={() => {
                                 const el = document.getElementById('organizations')
@@ -243,8 +235,6 @@ export function DashboardPremium({
                             title="Total Forks"
                             value={stats?.forks || repoStats.totalForks}
                             icon={GitFork}
-                            color="text-indigo-500"
-                            bg="bg-indigo-500/10"
                             loading={loading}
                             onClick={() => onViewChange?.('repos', { initialSort: 'forks' })}
                             hint="Sort repos by fork count"
@@ -253,8 +243,6 @@ export function DashboardPremium({
                             title="Commits (7d)"
                             value={activityMetrics.commits}
                             icon={Activity}
-                            color="text-pink-500"
-                            bg="bg-pink-500/10"
                             loading={loading}
                             onClick={() => onViewChange?.('work-board', { initialTimeRange: '7d' })}
                             hint="Open Work Board (7d window)"
@@ -263,8 +251,6 @@ export function DashboardPremium({
                             title="Archived Repos"
                             value={repoStats.archived}
                             icon={Archive}
-                            color="text-slate-500"
-                            bg="bg-slate-500/10"
                             loading={loading}
                             onClick={() => onViewChange?.('repos', { initialFilters: { archived: true } })}
                             hint="Show archived repositories"
@@ -273,8 +259,6 @@ export function DashboardPremium({
                             title="Source Repos"
                             value={repoStats.sources}
                             icon={Code2}
-                            color="text-cyan-500"
-                            bg="bg-cyan-500/10"
                             loading={loading}
                             onClick={() => onViewChange?.('repos', { initialFilters: { type: 'source' } })}
                             hint="Filter to source (non-fork) repos"
@@ -353,7 +337,7 @@ export function DashboardPremium({
                                 const interactive = typeof onTeamClick === 'function'
                                 const className = `text-left w-full p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl transition-all ${
                                     interactive
-                                        ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:border-indigo-300 dark:hover:border-indigo-500/40 ds-focus-ring'
+                                        ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:border-brand-300 dark:hover:border-brand-500/40 ds-focus-ring'
                                         : ''
                                 }`
                                 const inner = (
@@ -552,9 +536,9 @@ function DiscoverCard({ icon: Icon, title, description, href, actionText, onClic
 
     return (
         <motion.div
-            className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:border-indigo-300 dark:hover:border-indigo-500/40 transition-colors"
+            className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:border-brand-300 dark:hover:border-brand-500/40 transition-colors"
         >
-            <Icon className="w-8 h-8 text-indigo-500 mb-3" />
+            <Icon className="w-8 h-8 text-brand-500 mb-3" />
             <h3 className="font-bold text-slate-900 dark:text-slate-100 mb-2">
                 {title}
             </h3>

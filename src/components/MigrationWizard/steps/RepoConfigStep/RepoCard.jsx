@@ -65,13 +65,13 @@ export function RepoCard({
         }`}
     >
       {/* Gradient left border accent */}
-      <div className="absolute top-0 left-0 bottom-0 w-[3px] rounded-l-xl bg-violet-500" />
+      <div className="absolute top-0 left-0 bottom-0 w-[3px] rounded-l-xl bg-brand-500" />
 
       {/* ── Main row ──────────────────────────────────── */}
       <div className="flex items-center gap-3 pl-4 pr-3 py-3">
         {/* Repo icon */}
-        <div className="w-8 h-8 rounded-lg bg-violet-500/15 flex items-center justify-center shrink-0">
-          <Package className="w-4 h-4 text-violet-400" />
+        <div className="w-8 h-8 rounded-lg bg-brand-500/15 flex items-center justify-center shrink-0">
+          <Package className="w-4 h-4 text-brand-400" />
         </div>
 
         {/* Source → Target */}
@@ -93,8 +93,8 @@ export function RepoCard({
                   title="Create a new Git repo in this project"
                   className={`inline-flex items-center gap-1 px-2.5 py-1 ds-text-micro font-semibold uppercase tracking-wider transition-all
                     ${(repo.targetType || 'new') === 'new'
-                      ? 'bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-inner'
-                      : 'bg-white dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-300'}`}
+                      ? 'bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-inner'
+                      : 'bg-white dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-600 dark:hover:text-brand-300'}`}
                 >
                   <Plus className="w-3 h-3" />
                   New
@@ -108,13 +108,13 @@ export function RepoCard({
                     : `Reuse an existing empty repo (${azureEmptyRepos.length} available)`}
                   className={`inline-flex items-center gap-1 px-2.5 py-1 ds-text-micro font-semibold uppercase tracking-wider transition-all border-l border-slate-200 dark:border-slate-700
                     ${repo.targetType === 'existing-empty'
-                      ? 'bg-gradient-to-br from-violet-500 to-violet-600 text-white shadow-inner'
-                      : 'bg-white dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:text-violet-600 dark:hover:text-violet-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-900/60 disabled:hover:text-slate-500 dark:disabled:hover:text-slate-400'}`}
+                      ? 'bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-inner'
+                      : 'bg-white dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-600 dark:hover:text-brand-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white dark:disabled:hover:bg-slate-900/60 disabled:hover:text-slate-500 dark:disabled:hover:text-slate-400'}`}
                 >
                   <Recycle className="w-3 h-3" />
                   Existing
                   {azureEmptyRepos.length > 0 && repo.targetType !== 'existing-empty' && (
-                    <span className="ml-0.5 px-1 rounded-sm bg-violet-500/15 text-violet-600 dark:text-violet-300 text-[9px] tabular-nums">
+                    <span className="ml-0.5 px-1 rounded-sm bg-brand-500/15 text-brand-600 dark:text-brand-300 text-[9px] tabular-nums">
                       {azureEmptyRepos.length}
                     </span>
                   )}
@@ -182,8 +182,8 @@ export function RepoCard({
               aria-pressed={isPrivate}
               className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg transition-colors
                 ${isPrivate
-                  ? 'bg-violet-100 dark:bg-violet-500/15 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-500/20'
-                  : 'bg-cyan-100 dark:bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-500/20'
+                  ? 'bg-brand-100 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-500/20'
+                  : 'bg-brand-100 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-500/20'
                 }`}
             >
               {isPrivate ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
@@ -289,7 +289,7 @@ export function RepoCard({
                     type="button"
                     onClick={() => handlers.onToggleBranchExpand(repo, index)}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/40 px-3 py-2 text-xs font-medium text-slate-600 dark:text-slate-400
-                      hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                      hover:border-brand-300 dark:hover:border-brand-500/40 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
                   >
                     <GitBranch className="w-3.5 h-3.5" aria-hidden="true" />
                     {repo.branchFilter === 'selected'
@@ -313,7 +313,7 @@ export function RepoCard({
                           ...(e.target.checked ? { selectedBranches: [] } : {}),
                         })
                       }}
-                      className="rounded border-slate-300 dark:border-slate-600 text-indigo-500 focus:ring-indigo-500"
+                      className="rounded border-slate-300 dark:border-slate-600 text-brand-500 focus:ring-brand-500"
                     />
                     <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Mirror all branches</span>
                   </label>
@@ -338,7 +338,7 @@ export function RepoCard({
                                   : current.filter((b) => b !== branch.name)
                                 handlers.onUpdateRepo(index, { selectedBranches: next })
                               }}
-                              className="rounded border-slate-300 dark:border-slate-600 text-indigo-500 focus:ring-indigo-500"
+                              className="rounded border-slate-300 dark:border-slate-600 text-brand-500 focus:ring-brand-500"
                             />
                             <span className="text-xs text-slate-600 dark:text-slate-400">{branch.name}</span>
                           </label>

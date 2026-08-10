@@ -68,20 +68,34 @@
   --ds-fg-muted-dark: #94a3b8;       /* slate-400 (dominant dark muted text) */
   --ds-fg-subtle-dark: #64748b;      /* slate-500 */
 
+  /* ===== BRAND (docs/BRAND.md — inherited from the BolaLabs platform) =====
+   * The four literals of the mark. Fixed, never themed: the tile IS the icon,
+   * and an icon that changes colour with the page is not an icon. Everything
+   * else in this block is derived from them. */
+  --ds-brand-lime: #7fc528;    /* primary-500 — the node. FILL ONLY, never text */
+  --ds-brand-ink: #0f172a;     /* mark structure on light grounds */
+  --ds-brand-paper: #f8fafc;   /* mark structure on dark grounds */
+  --ds-brand-ground: #020617;  /* tile ground */
+
   /* ===== ACCENTS (V3 hybrid) ===== */
   --ds-accent-link: #0969da;
   --ds-accent-link-dark: #4493f8;
-  --ds-accent-brand: #4f46e5;            /* indigo-600 */
-  --ds-accent-brand-dark: #818cf8;       /* indigo-400 */
-  /* Hover/active shade for SOLID brand surfaces (primary buttons). Values equal
-   * the indigo-700/indigo-500 the primitives used before — a visual no-op that
-   * makes "change the brand, change every button" actually true. */
-  --ds-accent-brand-hover: #4338ca;      /* indigo-700 */
-  --ds-accent-brand-hover-dark: #6366f1; /* indigo-500 */
-  /* Solid brand FILL in dark mode (buttons sit a shade lighter than the light
-   * fill so they read on a dark canvas). = indigo-500, a no-op for the existing
-   * `dark:bg-indigo-500` brand buttons. */
-  --ds-accent-brand-fill-dark: #6366f1;  /* indigo-500 */
+  /* The brand green, at the two values docs/BRAND.md names for TEXT — the lime
+   * itself is 2.12:1 on white and must never carry a word. These double as
+   * solid fills because the contrast is symmetric: #3f7d12 reads 5.06:1 against
+   * white either way round, so `bg-brand text-white` and `text-brand` are both
+   * AA with one token. That is what lets the whole app move off indigo without
+   * touching a single button's foreground. */
+  --ds-accent-brand: #3f7d12;            /* 5.06:1 on white, both directions */
+  --ds-accent-brand-dark: #8fd23f;       /* 9.74:1 on slate-900 — text only */
+  /* Hover/active shade for SOLID brand surfaces (primary buttons). */
+  --ds-accent-brand-hover: #34670f;      /* 6.79:1 on white */
+  --ds-accent-brand-hover-dark: #4a8f18;
+  /* Solid brand FILL in dark mode — a shade lighter than the light fill so it
+   * reads on a dark canvas, and still 4.63:1 under white text. NOT the lime:
+   * white on #7fc528 is 2.12:1, which is why the lime is a graphic fill and
+   * this is not. */
+  --ds-accent-brand-fill-dark: #42840f;
   /* Subtle brand-tinted background (selected rows, soft chips). */
   --ds-accent-brand-subtle: color-mix(in srgb, var(--ds-accent-brand) 12%, transparent);
   --ds-accent-brand-subtle-dark: color-mix(in srgb, var(--ds-accent-brand-dark) 20%, transparent);
@@ -106,26 +120,44 @@
    * Enterprise pricing badge shipped as the worst contrast on the whole site.
    * Any badge/pill that renders text on an accent MUST use a pair from here.
    *   enterprise: #451a03 on #f59e0b = 6.97:1 · on #fbbf24 = 8.97:1
-   *   brand:      #ffffff on #4f46e5 = 6.29:1 (indigo-500 is only 4.47:1) */
+   *   brand:      #0f172a on #7fc528 = 8.43:1
+   *
+   * The brand badge is the one place the lime itself appears in the UI, and it
+   * appears the only way the spec allows: as a fill, under ink. A badge is a
+   * label, not a status — the lime marks the product, semantic green marks a
+   * passing check, and the two must never trade places. */
+
+  /* And white on a brand fill is never dimmed. `text-white/90` on
+   * --ds-accent-brand measures 4.43:1 — it read as a harmless softening under
+   * indigo, where the base was 6.29 and had the headroom to absorb it. The
+   * brand green's base is 5.06, so the same 10% knocks it under AA. Full white
+   * or a token from the pairs above; there is no third option. Gated by
+   * tests/build/no-off-brand-palette.test.js. */
   --ds-badge-enterprise-fill: #f59e0b;
   --ds-badge-enterprise-fill-dark: #fbbf24;
   --ds-badge-enterprise-text: #451a03;      /* amber-950 */
-  --ds-badge-brand-fill: #4f46e5;           /* indigo-600 */
-  --ds-badge-brand-text: #ffffff;
+  --ds-badge-brand-fill: var(--ds-brand-lime);
+  --ds-badge-brand-text: var(--ds-brand-ink);
 
   /* ===== STATUS ===== */
   --ds-success: #1a7f37;     --ds-success-dark: #3fb950;
   --ds-attention: #9a6700;   --ds-attention-dark: #d29922;
   --ds-danger: #cf222e;      --ds-danger-dark: #f85149;
-  --ds-cta: #1f883d;         --ds-cta-dark: #238636;
-  --ds-cta-hover: #1a7f37;   --ds-cta-hover-dark: #29903b;
-  /* The ONE green that carries white button text at AA, in both themes — the
-   * same fill/text-pair contract as --ds-badge-* above. Any SOLID green button
-   * (Approve, Publish to GitHub, Submit review) must fill from --ds-cta:
-   *   #ffffff on --ds-cta      #1f883d = 4.52:1
-   *   #ffffff on --ds-cta-dark #238636 = 4.63:1
-   * Tailwind's emerald-600 (oklch → #009966) is 3.67:1 with white and is NOT a
-   * text-bearing fill; it shipped on the PR-review primary actions. */
+  /* The affirmative-action fill (Approve, Publish to GitHub, Submit review).
+   *
+   * It IS the brand green — deliberately, and this used to be GitHub's #1f883d.
+   * Two reasons it moved. Borrowing GitHub's palette is on the "never" list in
+   * docs/BRAND.md: this product manages GitHub and is not affiliated with it.
+   * And a second green two hues away from the brand's, on the same screen, is
+   * the mixed-tone problem in miniature — the eye reads two brands, not two
+   * meanings. Affirmative actions are already distinguished by label, position
+   * and a confirm step; colour was never the only signal.
+   *
+   * Kept as its own token rather than aliased away so a future divergence has
+   * somewhere to land, and so `bg-[var(--ds-cta)]` keeps saying what it means.
+   *   #ffffff on --ds-cta #3f7d12 = 5.06:1 (GitHub's green measured 4.52) */
+  --ds-cta: #3f7d12;         --ds-cta-dark: #42840f;
+  --ds-cta-hover: #34670f;   --ds-cta-hover-dark: #4a8f18;
   --ds-cta-text: #ffffff;
 
   /* Success / danger TEXT on a light surface. Separate from the status fills
@@ -236,17 +268,10 @@
   --ds-z-toast: 70;
   --ds-z-ceiling: 80;
 
-  /* Brand identity (logo only — NOT theme-aware) */
-  --ds-logo-bg-start: #312e81;
-  --ds-logo-bg-mid: #4c1d95;
-  --ds-logo-bg-end: #1e1b4b;
-  --ds-logo-accent-light: #a5b4fc;
-  --ds-logo-accent: #818cf8;
-  --ds-logo-accent-bold: #6366f1;
-  --ds-logo-secondary: #22d3ee;
-  --ds-logo-secondary-deep: #06b6d4;
-  --ds-logo-tertiary: #a78bfa;
-  --ds-logo-tertiary-soft: #c084fc;
+  /* The --ds-logo-* gradient stops that used to live here are gone with the
+   * logo they described: three violet ground stops, four accent stops and two
+   * cyan/purple secondaries, for a mark that now has exactly two colours. The
+   * mark is generated (scripts/gen-brand.mjs) and reads --ds-brand-* above. */
 
   /* Chart chrome — repointed to surface tokens */
   --ds-chart-axis: var(--ds-fg-muted);
@@ -554,7 +579,7 @@
 /* ===== SELECTION ===== */
 ::selection { background: color-mix(in srgb, var(--ds-accent-brand) 25%, transparent); }
 /* Dark mode uses the lighter brand token so selected text stays legible on the
-   dark canvas (the light indigo-600 tint is too dim against slate-900). */
+   dark canvas (the deeper light-mode green is too dim against slate-900). */
 .dark ::selection { background: color-mix(in srgb, var(--ds-accent-brand-dark) 25%, transparent); }
 
 /* ===== REDUCED MOTION ===== */

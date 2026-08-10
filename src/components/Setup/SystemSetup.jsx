@@ -57,7 +57,7 @@ export function SystemSetup({ onComplete }) {
     return (
         <div className="fixed inset-0 bg-slate-950 flex items-center justify-center z-[var(--ds-z-popover)] text-white overflow-hidden">
             {/* Background Effects */}
-            <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px]" />
+            <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-brand-600/20 rounded-full blur-[120px]" />
             <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px]" />
 
             <div className="relative w-full max-w-lg p-8">

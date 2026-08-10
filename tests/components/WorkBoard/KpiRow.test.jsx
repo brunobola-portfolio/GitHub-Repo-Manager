@@ -49,7 +49,7 @@ describe('KpiRow — honest error vs empty states', () => {
 })
 
 describe('KpiRow — sparkline stroke uses theme-aware design tokens', () => {
-    it('amber/emerald/indigo tiles route stroke through var(--ds-chart-series-*); purple has no matching token yet', () => {
+    it('every sparkline routes its stroke through a theme-aware chart token', () => {
         // 3+ finite points per history are required for a tile's Sparkline to render at all.
         const snapshots = [
             { reviews: 1, stalePRs: 5, issues: 2, techDebt: 8 },
@@ -59,13 +59,13 @@ describe('KpiRow — sparkline stroke uses theme-aware design tokens', () => {
         const { container } = renderRow({ snapshots })
         const strokes = Array.from(container.querySelectorAll('polyline')).map((p) => p.getAttribute('stroke'))
         expect(strokes).toHaveLength(4)
-        expect(strokes).toEqual(
-            expect.arrayContaining([
-                '#a78bfa', // purple (reviews) — no theme-aware chart-series token exists for it
-                'var(--ds-chart-series-3)', // amber (stale PRs)
-                'var(--ds-chart-series-2)', // emerald (issues)
-                'var(--ds-chart-series-1)', // indigo (tech debt)
-            ])
-        )
+        // The fourth tile used to carry a literal '#a78bfa' because no token
+        // matched its purple. There is no fourth hue now: three tiles are brand,
+        // one is attention, and a literal hex here would be a colour that cannot
+        // follow the theme.
+        for (const stroke of strokes) {
+            expect(stroke, `${stroke} is not a design token`).toMatch(/^var\(--ds-chart-series-\d\)$/)
+        }
+        expect(new Set(strokes)).toEqual(new Set(['var(--ds-chart-series-1)', 'var(--ds-chart-series-3)']))
     })
 })

@@ -188,7 +188,7 @@ function PromptEditor({ entry, onSaved, onReset }) {
                     <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="font-semibold text-slate-900 dark:text-slate-100 text-sm">{entry.title}</h4>
                         {entry.hasOverride ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wider bg-indigo-50 dark:bg-indigo-900/30 text-[color:var(--ds-accent-brand)] dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-700/40">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wider bg-brand-50 dark:bg-brand-900/30 text-[color:var(--ds-accent-brand)] dark:text-brand-300 border border-brand-200/60 dark:border-brand-700/40">
                                 <CheckCircle2 className="w-3 h-3" /> Customized
                             </span>
                         ) : (
@@ -269,7 +269,7 @@ function PromptEditor({ entry, onSaved, onReset }) {
                                 <button
                                     type="button"
                                     onClick={fillFromDefault}
-                                    className="inline-flex items-center gap-1 ds-text-meta text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300"
+                                    className="inline-flex items-center gap-1 ds-text-meta text-brand-500 hover:text-brand-700 dark:hover:text-brand-300"
                                 >
                                     <Wand2 className="w-3 h-3" /> Copy default into editor
                                 </button>
@@ -447,8 +447,8 @@ export function AIInstructionsSection() {
                 <Card className="p-3.5">
                     <div className="flex items-center gap-3 flex-wrap">
                         <div className="flex items-center gap-2 flex-1 min-w-[180px]">
-                            <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-900/30">
-                                <Sparkles className="w-4 h-4 text-indigo-500 dark:text-indigo-300" />
+                            <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-brand-50 dark:bg-brand-900/30">
+                                <Sparkles className="w-4 h-4 text-brand-500 dark:text-brand-300" />
                             </span>
                             <div className="min-w-0">
                                 <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 leading-tight">

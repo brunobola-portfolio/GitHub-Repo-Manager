@@ -30,14 +30,14 @@ const SEVERITY_CONFIG = {
     accentBar: 'from-amber-500 to-orange-500',
   },
   low: {
-    border: 'border-sky-200/80 dark:border-sky-500/25',
-    bg: 'bg-sky-50/40 dark:bg-sky-500/[0.04]',
-    glow: 'hover:shadow-lg hover:shadow-sky-500/8',
-    iconBg: 'bg-sky-100 dark:bg-sky-500/15',
+    border: 'border-brand-200/80 dark:border-brand-500/25',
+    bg: 'bg-brand-50/40 dark:bg-brand-500/[0.04]',
+    glow: 'hover:shadow-lg hover:shadow-brand-500/8',
+    iconBg: 'bg-brand-100 dark:bg-brand-500/15',
     icon: Info,
-    iconColor: 'text-sky-500',
-    badge: 'bg-sky-500 text-white',
-    accentBar: 'from-sky-500 to-blue-500',
+    iconColor: 'text-brand-500',
+    badge: 'bg-brand-500 text-white',
+    accentBar: 'from-brand-500 to-blue-500',
   },
 }
 

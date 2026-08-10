@@ -34,11 +34,11 @@ export function PanelHeader({
         <header className={`relative flex items-start gap-4 pb-1 ${className}`.trim()}>
             <span
                 aria-hidden="true"
-                className="absolute -left-1 top-1 bottom-1 w-0.5 rounded-full bg-indigo-500 opacity-80"
+                className="absolute -left-1 top-1 bottom-1 w-0.5 rounded-full bg-brand-500 opacity-80"
             />
             <div className="pl-3 flex-1 min-w-0">
                 {eyebrow && (
-                    <div className="flex items-center gap-2 ds-text-micro font-semibold uppercase tracking-[0.22em] text-[color:var(--ds-accent-brand)] dark:text-indigo-300">
+                    <div className="flex items-center gap-2 ds-text-micro font-semibold uppercase tracking-[0.22em] text-[color:var(--ds-accent-brand)] dark:text-brand-300">
                         {EyebrowIcon && <EyebrowIcon className="w-3 h-3" aria-hidden="true" />}
                         <span>{eyebrow}</span>
                     </div>

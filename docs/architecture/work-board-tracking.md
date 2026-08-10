@@ -355,7 +355,7 @@ the Phase 2 `useTrackedRepos` context.
 
 - **TrackedChip** (`src/components/WorkBoard/TrackedChip.jsx`) — pill for
   modal/page headers. Placed in `RepoDetail` header and in `ReviewToolbar`
-  of `PRReviewView`. Tracked → indigo `Tracked` chip opening a popover
+  of `PRReviewView`. Tracked → a brand-toned `Tracked` chip opening a popover
   with pin/mute/untrack. Not tracked → ghost `Track` button calling
   `hook.track()` directly.
 

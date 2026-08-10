@@ -43,7 +43,7 @@ export const Input = forwardRef(function Input(
 
     const accentBorder = tone === 'emerald'
         ? 'focus:border-emerald-500 focus:ring-emerald-500/30 hover:border-emerald-200 dark:hover:border-emerald-500/40'
-        : 'focus:border-[color:var(--ds-accent-brand)] focus:ring-[var(--ds-accent-ring)] hover:border-indigo-200 dark:hover:border-indigo-500/40'
+        : 'focus:border-[color:var(--ds-accent-brand)] focus:ring-[var(--ds-accent-ring)] hover:border-brand-200 dark:hover:border-brand-500/40'
 
     const statusClass =
         status === 'error'

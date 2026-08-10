@@ -50,11 +50,11 @@ export function CurrentConfigSummary({ form }) {
     const featuresHealth = useAIFeaturesHealth(showPerFeature ? activeFeatures : [])
 
     return (
-        <div className="rounded-2xl ring-1 ring-indigo-500/25 dark:ring-indigo-500/35">
+        <div className="rounded-2xl ring-1 ring-brand-500/25 dark:ring-brand-500/35">
             <div className="rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-4 space-y-4">
                 <div className="flex items-center gap-2">
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />
-                    <span className="ds-text-micro font-semibold uppercase tracking-[0.14em] text-[color:var(--ds-accent-brand)] dark:text-indigo-300">
+                    <Sparkles className="w-3.5 h-3.5 text-brand-500" aria-hidden="true" />
+                    <span className="ds-text-micro font-semibold uppercase tracking-[0.14em] text-[color:var(--ds-accent-brand)] dark:text-brand-300">
                         Current configuration
                     </span>
                 </div>

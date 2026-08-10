@@ -60,7 +60,7 @@ function ProgressBar({ pct = 0, label = 'Import progress' }) {
       aria-valuemax={100}
     >
       <motion.div
-        className="h-full bg-indigo-500 rounded-full"
+        className="h-full bg-brand-500 rounded-full"
         initial={{ width: 0 }}
         animate={{ width: `${clamped}%` }}
         transition={{ duration: 0.4, ease: 'easeOut' }}

@@ -75,7 +75,7 @@ export function BatchIndexProgressModal({ isOpen, onClose, repos = [] }) {
             aria-valuemin={0}
             aria-valuemax={repos.length || 1}
             aria-label="Batch index progress"
-            className="bg-indigo-500 h-2 rounded-full transition-all"
+            className="bg-brand-500 h-2 rounded-full transition-all"
             style={{ width: `${repos.length ? (processed / repos.length) * 100 : 0}%` }}
           />
         </div>

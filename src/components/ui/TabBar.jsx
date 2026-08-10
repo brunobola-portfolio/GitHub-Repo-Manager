@@ -17,14 +17,14 @@ const VARIANT_BUTTON = {
         inactive: 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300',
     },
     segmented: {
-        active: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-md',
+        active: 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 rounded-md',
         inactive: 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800',
     },
 };
 
 const VARIANT_INDICATOR = {
     pill: 'absolute inset-0 rounded-xl bg-white dark:bg-slate-700 shadow-sm',
-    underline: 'absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full',
+    underline: 'absolute bottom-0 left-0 right-0 h-0.5 bg-brand-500 rounded-full',
     segmented: null,
 };
 

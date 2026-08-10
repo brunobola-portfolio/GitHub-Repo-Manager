@@ -13,7 +13,7 @@ function Toggle({ id, checked, onChange, label, hint, icon: Icon, warning }) {
         type="checkbox"
         checked={!!checked}
         onChange={e => onChange(e.target.checked)}
-        className="mt-1 accent-violet-500"
+        className="mt-1 accent-brand-500"
       />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 text-sm text-slate-900 dark:text-slate-100">
@@ -46,8 +46,8 @@ export function TaggingPolicyPanel({ policy = DEFAULT_TAGGING_POLICY, onChange, 
       className="space-y-4"
     >
       <header className="flex items-start gap-3">
-        <div className="p-2 rounded-lg bg-violet-500/10 ring-1 ring-inset ring-violet-500/20">
-          <Tags className="w-4 h-4 text-violet-500 dark:text-violet-300" aria-hidden />
+        <div className="p-2 rounded-lg bg-brand-500/10 ring-1 ring-inset ring-brand-500/20">
+          <Tags className="w-4 h-4 text-brand-500 dark:text-brand-300" aria-hidden />
         </div>
         <div className="flex-1">
           <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Migration tagging</h3>
@@ -57,12 +57,12 @@ export function TaggingPolicyPanel({ policy = DEFAULT_TAGGING_POLICY, onChange, 
         </div>
       </header>
 
-      <label className="flex items-center gap-3 rounded-xl border border-violet-200/60 dark:border-violet-500/20 bg-violet-500/5 p-3 cursor-pointer">
+      <label className="flex items-center gap-3 rounded-xl border border-brand-200/60 dark:border-brand-500/20 bg-brand-500/5 p-3 cursor-pointer">
         <input
           type="checkbox"
           checked={!!policy.enabled}
           onChange={e => setField('enabled', e.target.checked)}
-          className="accent-violet-500"
+          className="accent-brand-500"
           aria-label="Enable tagging"
         />
         <div className="flex-1 min-w-0">

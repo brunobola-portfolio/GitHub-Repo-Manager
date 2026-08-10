@@ -138,7 +138,7 @@ export function CompareSimilarDrawer({ isOpen, onClose, repo }) {
                       </p>
                     )}
                   </div>
-                  <span className="text-xs font-mono px-2 py-1 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 flex-shrink-0">
+                  <span className="text-xs font-mono px-2 py-1 rounded bg-brand-100 dark:bg-brand-950 text-brand-700 dark:text-brand-300 flex-shrink-0">
                     {Math.round(r.score * 100)}%
                   </span>
                 </div>

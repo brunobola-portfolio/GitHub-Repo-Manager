@@ -24,6 +24,41 @@
 	--breakpoint-nav: 1340px;
 	--breakpoint-wide: 1700px;
 	--breakpoint-ultra: 1920px;
+
+	/* The brand green ramp — the ONE accent family in the product.
+	 *
+	 * It replaces indigo, violet and purple, which had been used
+	 * interchangeably for the same job while the mark was lime: three accent
+	 * hues and a logo that shared none of them. `brand-*` is the only accent
+	 * ramp now; a guard (tests/build/no-off-brand-palette.test.js) keeps the
+	 * old three from coming back.
+	 *
+	 * Every step is LUMINANCE-MATCHED to the Tailwind indigo step it replaces,
+	 * to within 0.003. That is what let ~680 call sites move without
+	 * re-checking a single pairing: `bg-brand-500 text-white` measures 4.52:1
+	 * where indigo-500 measured 4.47, and `dark:text-brand-300` measures 9.74:1
+	 * on slate-900 where indigo-300 measured 8.97.
+	 *
+	 * Two steps are anchored to literals rather than to the curve, because
+	 * docs/BRAND.md names them: 300 is #8fd23f (the sanctioned coloured word on
+	 * dark) and 600 is #3f7d12 (the same on light). Both still clear AA in the
+	 * direction they are actually used.
+	 *
+	 * The brand LIME #7fc528 is deliberately absent. It is 2.12:1 under white
+	 * and 4.52:1 is what a filled button needs, so the lime stays what the spec
+	 * says it is — a graphic fill for the mark and for badges that pair it with
+	 * ink (--ds-brand-lime, --ds-badge-brand-*). It is not a UI surface. */
+	--color-brand-50: #eff5e8;
+	--color-brand-100: #e1ebd5;
+	--color-brand-200: #c7dab0;
+	--color-brand-300: #8fd23f;
+	--color-brand-400: #6ba522;
+	--color-brand-500: #55831b;
+	--color-brand-600: #3f7d12;
+	--color-brand-700: #3a5b12;
+	--color-brand-800: #304a0f;
+	--color-brand-900: #2a400d;
+	--color-brand-950: #182608;
 }
 
 /* Safelist modal size classes used inside lookup tables (src/components/ui/Modal.jsx).

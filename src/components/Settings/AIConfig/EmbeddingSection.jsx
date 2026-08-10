@@ -32,7 +32,7 @@ export function EmbeddingSection({ form, onChange }) {
                     id="emb-override"
                     checked={false}
                     onChange={(e) => setShowOverride(e.target.checked)}
-                    className="accent-indigo-600"
+                    className="accent-brand-600"
                 />
                 <label
                     htmlFor="emb-override"
@@ -60,7 +60,7 @@ export function EmbeddingSection({ form, onChange }) {
                                 onChange('embeddingModel', null)
                             }
                         }}
-                        className="accent-indigo-600"
+                        className="accent-brand-600"
                     />
                     <label
                         htmlFor="emb-override"

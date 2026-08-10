@@ -74,19 +74,19 @@ describe('RepoDetail — status pills use the canonical Badge', () => {
     it('renders Fork with Badge violet tone', async () => {
         render(<RepoDetail repo={baseRepo({ fork: true })} onBack={vi.fn()} />)
         const pill = await screen.findByText('Fork')
-        expect(pill.className).toContain('bg-violet-100')
-        expect(pill.className).toContain('dark:bg-violet-900/50')
+        expect(pill.className).toContain('bg-brand-100')
+        expect(pill.className).toContain('dark:bg-brand-900/50')
     })
 
     it('renders topic pills via Badge brand tone with a ring (old bordered-tag look)', async () => {
         render(<RepoDetail repo={baseRepo({ topics: ['react', 'vite'] })} onBack={vi.fn()} />)
         const topic = await screen.findByText('react')
         // Badge brand palette + tone-matched ring — not the old hand-rolled
-        // bg-indigo-50 + border-indigo-200/50 span.
-        expect(topic.className).toContain('bg-indigo-100')
-        expect(topic.className).toContain('dark:bg-indigo-900/40')
-        expect(topic.className).toContain('ring-indigo-200')
-        expect(topic.className).not.toContain('bg-indigo-50')
+        // bg-brand-50 + border-brand-200/50 span.
+        expect(topic.className).toContain('bg-brand-100')
+        expect(topic.className).toContain('dark:bg-brand-900/40')
+        expect(topic.className).toContain('ring-brand-200')
+        expect(topic.className).not.toContain('bg-brand-50')
         expect(screen.getByText('vite')).toBeInTheDocument()
     })
 })

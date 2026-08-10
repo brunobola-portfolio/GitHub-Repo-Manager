@@ -47,7 +47,7 @@ export function ChatInput({ placeholder = 'Refine...', onSubmit, disabled }) {
                 type="button"
                 onClick={handleSubmit}
                 disabled={disabled || !value.trim()}
-                className="p-2 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
+                className="p-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
                 aria-label="Send"
             >
                 <SendHorizontal className="w-4 h-4" />

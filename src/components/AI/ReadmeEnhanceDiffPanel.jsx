@@ -96,7 +96,7 @@ export function ReadmeEnhanceDiffPanel({ repo }) {
     <div data-testid="readme-enhance-diff" className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-indigo-500" />
+          <Sparkles className="w-4 h-4 text-brand-500" />
           AI README Enhancement
         </h3>
         <Button variant="primary" size="xs" onClick={handleCopy}>

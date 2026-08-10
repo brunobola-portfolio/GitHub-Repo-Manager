@@ -300,13 +300,13 @@ function OverviewTab({ org, isPersonal, editing, editForm, setEditForm, onEdit, 
 function AccountTypeBadge({ isPersonal }) {
     if (isPersonal) {
         return (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 ds-text-meta font-medium rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-200 ring-1 ring-inset ring-indigo-200/60 dark:ring-indigo-800/60">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 ds-text-meta font-medium rounded-full bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-200 ring-1 ring-inset ring-brand-200/60 dark:ring-brand-800/60">
                 <User className="w-3 h-3" /> Personal
             </span>
         )
     }
     return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 ds-text-meta font-medium rounded-full bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200 ring-1 ring-inset ring-purple-200/60 dark:ring-purple-800/60">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 ds-text-meta font-medium rounded-full bg-brand-50 text-brand-700 dark:bg-brand-900/40 dark:text-brand-200 ring-1 ring-inset ring-brand-200/60 dark:ring-brand-800/60">
             <Building2 className="w-3 h-3" /> Organization
         </span>
     )
@@ -322,7 +322,7 @@ function CapabilitiesCard({ isPersonal }) {
     return (
         <InsightCard tone={isPersonal ? 'info' : 'default'} hover={false}>
             <div className="flex items-start gap-3">
-                <Info className="w-5 h-5 text-[color:var(--ds-accent-brand)] dark:text-indigo-300 mt-0.5 flex-shrink-0" />
+                <Info className="w-5 h-5 text-[color:var(--ds-accent-brand)] dark:text-brand-300 mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                     <h4 className="font-medium text-slate-900 dark:text-slate-100">
                         {isPersonal ? 'This is your personal account' : 'Organization workspace'}
@@ -450,7 +450,7 @@ function SettingsTab({ org }) {
 function StatCard({ icon: IconComp, label, value, color }) {
     const colors = {
         blue: 'bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-200',
-        purple: 'bg-purple-50 text-purple-600 dark:bg-purple-900/40 dark:text-purple-200',
+        purple: 'bg-brand-50 text-brand-600 dark:bg-brand-900/40 dark:text-brand-200',
         green: 'bg-green-50 text-green-600 dark:bg-green-900/40 dark:text-green-200',
         orange: 'bg-orange-50 text-orange-600 dark:bg-orange-900/40 dark:text-orange-200'
     }
@@ -470,7 +470,7 @@ function DetailRow({ label, value, icon: IconComp, isLink }) {
             {IconComp && <IconComp className="w-4 h-4 text-slate-400 dark:text-slate-500" />}
             <span className="text-slate-500 dark:text-slate-400 w-24">{label}:</span>
             {isLink ? (
-                <a href={value} target="_blank" rel="noopener noreferrer" className="text-[color:var(--ds-accent-brand)] dark:text-indigo-300 hover:underline truncate">{value}</a>
+                <a href={value} target="_blank" rel="noopener noreferrer" className="text-[color:var(--ds-accent-brand)] dark:text-brand-300 hover:underline truncate">{value}</a>
             ) : (
                 <span className="text-slate-900 dark:text-slate-100 truncate">{value}</span>
             )}

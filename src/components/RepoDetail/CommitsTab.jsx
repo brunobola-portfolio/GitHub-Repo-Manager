@@ -184,7 +184,7 @@ export function CommitsTab({ repo }) {
                             transition={{ duration: 0.2, delay: Math.min(idx * 0.02, 0.3) }}
                             className={`relative flex items-start gap-3 p-4 transition-colors group ${
                                 isFocused
-                                    ? 'bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-inset ring-indigo-300 dark:ring-indigo-700/60'
+                                    ? 'bg-brand-50 dark:bg-brand-900/20 ring-1 ring-inset ring-brand-300 dark:ring-brand-700/60'
                                     : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'
                             }`}
                         >
@@ -210,7 +210,7 @@ export function CommitsTab({ repo }) {
                                     type="button"
                                     onClick={() => openCommit(commit.sha)}
                                     aria-label={`Open commit ${sha}: ${message}`}
-                                    className="block w-full text-left text-sm font-medium text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors rounded-sm ds-focus-ring after:absolute after:inset-0 after:content-['']"
+                                    className="block w-full text-left text-sm font-medium text-slate-800 dark:text-slate-100 truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors rounded-sm ds-focus-ring after:absolute after:inset-0 after:content-['']"
                                 >
                                     {message}
                                 </button>
@@ -229,7 +229,7 @@ export function CommitsTab({ repo }) {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     onClick={(e) => e.stopPropagation()}
-                                    className="relative z-10 text-slate-400 hover:text-indigo-500 p-1 rounded transition-colors flex-shrink-0"
+                                    className="relative z-10 text-slate-400 hover:text-brand-500 p-1 rounded transition-colors flex-shrink-0"
                                     aria-label="Open on GitHub"
                                     title="Open on GitHub"
                                 >

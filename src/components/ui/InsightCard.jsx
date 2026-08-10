@@ -7,7 +7,7 @@ const TONE_CLASSES = {
   success: 'ring-emerald-500/20 bg-emerald-50/60 dark:bg-emerald-950/20',
   warning: 'ring-amber-500/20 bg-amber-50/60 dark:bg-amber-950/20',
   danger:  'ring-red-500/20 bg-red-50/60 dark:bg-red-950/20',
-  ai:      'ring-purple-500/25 bg-slate-50 dark:bg-slate-900/60',
+  ai:      'ring-brand-500/25 bg-slate-50 dark:bg-slate-900/60',
 }
 
 const VARIANTS = {

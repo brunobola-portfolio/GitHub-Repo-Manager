@@ -106,7 +106,7 @@ function PreviewCard({ plan, i, onSignIn }) {
 			<div
 				className={`relative rounded-2xl p-7 flex flex-col gap-6 h-full transition-colors duration-200 overflow-hidden
 					${plan.popular
-						? 'bg-indigo-700 dark:bg-indigo-600 border-2 border-indigo-400/30 shadow-2xl'
+						? 'bg-brand-700 dark:bg-brand-600 border-2 border-brand-400/30 shadow-2xl'
 						: plan.enterprise
 							? 'bg-white/60 dark:bg-white/[0.04] border border-amber-400/30 dark:border-amber-500/20 backdrop-blur-sm shadow-lg shadow-amber-500/5 hover:shadow-amber-500/30'
 							: 'bg-white/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.08] backdrop-blur-sm hover:border-slate-300 dark:hover:border-slate-600'
@@ -115,7 +115,7 @@ function PreviewCard({ plan, i, onSignIn }) {
 				<div className="flex flex-col gap-6 h-full">
 					{/* Plan header */}
 					<div>
-						<p className={`text-sm font-semibold mb-1 ds-font-display ${plan.popular ? 'text-indigo-200' : plan.enterprise ? 'text-amber-700 dark:text-amber-400' : 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'}`}>
+						<p className={`text-sm font-semibold mb-1 ds-font-display ${plan.popular ? 'text-brand-200' : plan.enterprise ? 'text-amber-700 dark:text-amber-400' : 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'}`}>
 							{plan.name}
 						</p>
 						<div className="flex items-end gap-2 mb-2">
@@ -124,11 +124,11 @@ function PreviewCard({ plan, i, onSignIn }) {
 							>
 								{plan.price}
 							</span>
-							<span className={`text-sm pb-1.5 ds-font-display ${plan.popular ? 'text-indigo-200/80' : 'text-slate-500 dark:text-slate-400'}`}>
+							<span className={`text-sm pb-1.5 ds-font-display ${plan.popular ? 'text-brand-200/80' : 'text-slate-500 dark:text-slate-400'}`}>
 								/{plan.period}
 							</span>
 						</div>
-						<p className={`text-sm leading-relaxed ds-font-display ${plan.popular ? 'text-indigo-100/90' : 'text-slate-500 dark:text-slate-400'}`}>
+						<p className={`text-sm leading-relaxed ds-font-display ${plan.popular ? 'text-brand-100/90' : 'text-slate-500 dark:text-slate-400'}`}>
 							{plan.description}
 						</p>
 					</div>
@@ -143,12 +143,12 @@ function PreviewCard({ plan, i, onSignIn }) {
 											? 'bg-white/20'
 											: plan.enterprise
 												? 'bg-amber-500/10 dark:bg-amber-500/20'
-												: 'bg-indigo-500/10 dark:bg-indigo-500/20'
+												: 'bg-brand-500/10 dark:bg-brand-500/20'
 										}`}
 								>
 									<Check className={`w-3 h-3 ${plan.popular ? 'text-white' : plan.enterprise ? 'text-amber-600 dark:text-amber-400' : 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'}`} strokeWidth={2.5} />
 								</div>
-								<span className={`text-sm ds-font-display ${plan.popular ? 'text-indigo-50' : 'text-slate-600 dark:text-slate-300'}`}>
+								<span className={`text-sm ds-font-display ${plan.popular ? 'text-brand-50' : 'text-slate-600 dark:text-slate-300'}`}>
 									{feat}
 								</span>
 							</li>
@@ -166,10 +166,10 @@ function PreviewCard({ plan, i, onSignIn }) {
 						}}
 						className={`w-full py-3 rounded-xl font-semibold text-sm transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
 							${plan.popular
-								? 'bg-white text-indigo-700 hover:bg-indigo-50 shadow-lg shadow-white/20 focus-visible:ring-white focus-visible:ring-offset-indigo-600'
+								? 'bg-white text-brand-700 hover:bg-brand-50 shadow-lg shadow-white/20 focus-visible:ring-white focus-visible:ring-offset-brand-600'
 								: plan.enterprise
 									? 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 dark:hover:bg-amber-500/25 border border-amber-400/40 dark:border-amber-500/30 focus-visible:ring-amber-500 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950'
-									: 'bg-indigo-500/10 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-500/20 dark:hover:bg-indigo-500/25 border border-indigo-300/40 dark:border-indigo-500/30 focus-visible:ring-indigo-500 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950'
+									: 'bg-brand-500/10 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 hover:bg-brand-500/20 dark:hover:bg-brand-500/25 border border-brand-300/40 dark:border-brand-500/30 focus-visible:ring-brand-500 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950'
 							}`}
 					>
 						{plan.cta}
@@ -203,7 +203,7 @@ export function PricingPreview({ onSignIn }) {
           transition={{ duration: 0.7, ease: EASE.emphasized }}
           className="text-center mb-14 sm:mb-16"
         >
-          <p className="text-xs font-semibold tracking-widest uppercase text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)] mb-3 ds-font-display">
+          <p className="text-xs font-semibold tracking-widest uppercase text-brand-500 dark:text-[color:var(--ds-accent-brand-dark)] mb-3 ds-font-display">
             Pricing
           </p>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-slate-100 tracking-tight ds-font-display mb-4">

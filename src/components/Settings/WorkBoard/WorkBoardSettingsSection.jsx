@@ -143,7 +143,7 @@ export function WorkBoardSettingsSection() {
                 {/* ─────────── Left column: configuration ─────────── */}
                 <div className="space-y-4 min-w-0">
                     {/* 01 — Discovery */}
-                    <section className="rounded-2xl bg-indigo-500/[0.03] dark:bg-indigo-500/[0.05] ring-1 ring-inset ring-indigo-500/15 dark:ring-indigo-500/20 p-4">
+                    <section className="rounded-2xl bg-brand-500/[0.03] dark:bg-brand-500/[0.05] ring-1 ring-inset ring-brand-500/15 dark:ring-brand-500/20 p-4">
                         <WorkBoardSectionHeader
                             step={1}
                             title="Discovery"

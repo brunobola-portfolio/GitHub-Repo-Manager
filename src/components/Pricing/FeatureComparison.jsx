@@ -258,7 +258,7 @@ function StackedComparison() {
                     <div
                       key={colIdx}
                       className={`rounded-lg px-1.5 py-1.5 text-center min-w-0 ${colIdx === 1
-                        ? 'bg-indigo-50 dark:bg-indigo-500/[0.10]'
+                        ? 'bg-brand-50 dark:bg-brand-500/[0.10]'
                         : 'bg-slate-50 dark:bg-white/[0.03]'
                       }`}
                     >
@@ -320,14 +320,14 @@ export function FeatureComparison() {
                   key={tier}
                   className={`sticky top-0 z-10 w-1/6 px-4 py-5 text-center text-sm font-bold backdrop-blur-md
                     ${i === 1
-                      ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] bg-indigo-50/80 dark:bg-indigo-500/[0.08]'
+                      ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] bg-brand-50/80 dark:bg-brand-500/[0.08]'
                       : 'text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-slate-900/80'
                     }`}
                 >
                   {tier}
                   {i === 1 && (
-                    /* --ds-badge-brand-*, not bg-indigo-500: white on
-                       indigo-500 measured 4.58:1 here, and indigo-500 is the
+                    /* --ds-badge-brand-*, not bg-brand-500: white on
+                       brand-500 measured 4.58:1 here, and brand-500 is the
                        exact fill the badge pair exists to keep off text. */
                     <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded ds-text-micro font-bold bg-[color:var(--ds-badge-brand-fill)] text-[color:var(--ds-badge-brand-text)] align-middle">
                       Popular
@@ -367,7 +367,7 @@ export function FeatureComparison() {
                         <td
                           key={colIdx}
                           className={`px-4 py-3.5 text-center
-                            ${colIdx === 1 ? 'bg-indigo-50/40 dark:bg-indigo-500/[0.05]' : ''}`}
+                            ${colIdx === 1 ? 'bg-brand-50/40 dark:bg-brand-500/[0.05]' : ''}`}
                         >
                           <CellValue value={val} colIndex={colIdx} />
                         </td>

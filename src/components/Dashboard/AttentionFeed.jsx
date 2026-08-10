@@ -227,7 +227,7 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
                             onClick={() => setRefreshTick((t) => t + 1)}
                             disabled={loading}
                             aria-label="Refresh attention feed"
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors disabled:opacity-50"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/30 transition-colors disabled:opacity-50"
                         >
                             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
                         </button>
@@ -287,7 +287,7 @@ export function AttentionFeed({ onSelectRepo, limit = 5, className = '' }) {
 function AttentionRow({ item, onClick, narrative = null }) {
     const Icon = KIND_ICON[item.kind] ?? Sparkles
     const ringClass = SEVERITY_RING[item.severity] ?? SEVERITY_RING.low
-    const accentClass = KIND_ACCENT[item.kind] ?? 'text-indigo-500'
+    const accentClass = KIND_ACCENT[item.kind] ?? 'text-brand-500'
     const ago = formatRelativeTime(item.since)
 
     return (
@@ -321,7 +321,7 @@ function AttentionRow({ item, onClick, narrative = null }) {
                         <Skeleton className="mt-1.5 h-3 w-2/3" aria-hidden="true" />
                     )}
                     {!narrative?.loading && narrative?.text && (
-                        <p className="mt-1.5 flex items-start gap-1.5 ds-text-meta italic text-indigo-700 dark:text-indigo-300">
+                        <p className="mt-1.5 flex items-start gap-1.5 ds-text-meta italic text-brand-700 dark:text-brand-300">
                             <Sparkles className="w-3 h-3 shrink-0 mt-[2px]" aria-hidden="true" />
                             <span>{narrative.text}</span>
                         </p>
@@ -329,7 +329,7 @@ function AttentionRow({ item, onClick, narrative = null }) {
                 </div>
                 <div className="shrink-0 flex flex-col items-end gap-1 ds-text-micro text-slate-500 dark:text-slate-400">
                     {ago && <span>{ago}</span>}
-                    <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-indigo-500 transition-colors" aria-hidden="true" />
+                    <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-brand-500 transition-colors" aria-hidden="true" />
                 </div>
             </button>
         </li>

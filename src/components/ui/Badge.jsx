@@ -45,14 +45,14 @@ const TONES = {
     secondary: 'bg-slate-200 dark:bg-slate-600 text-slate-900 dark:text-slate-100',
     // canonical tones
     neutral: 'bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200',
-    brand: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300',
+    brand: 'bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300',
     success: 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300',
     warning: 'bg-amber-100 dark:bg-amber-900/50 text-amber-900 dark:text-amber-300',
     danger: 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300',
     rose: 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-200',
-    info: 'bg-sky-100 dark:bg-sky-900/50 text-sky-900 dark:text-sky-300',
+    info: 'bg-brand-100 dark:bg-brand-900/50 text-brand-900 dark:text-brand-300',
     blue: 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300',
-    violet: 'bg-violet-100 dark:bg-violet-900/50 text-violet-800 dark:text-violet-300',
+    violet: 'bg-brand-100 dark:bg-brand-900/50 text-brand-800 dark:text-brand-300',
 }
 
 // Human aliases → canonical tone key.
@@ -71,14 +71,14 @@ const RINGS = {
     default: 'ring-slate-300/60 dark:ring-slate-600/60',
     secondary: 'ring-slate-300/60 dark:ring-slate-500/60',
     neutral: 'ring-slate-300/60 dark:ring-slate-600/60',
-    brand: 'ring-indigo-200 dark:ring-indigo-800',
+    brand: 'ring-brand-200 dark:ring-brand-800',
     success: 'ring-emerald-200 dark:ring-emerald-800',
     warning: 'ring-amber-200 dark:ring-amber-800',
     danger: 'ring-red-200 dark:ring-red-800',
     rose: 'ring-rose-200 dark:ring-rose-800',
-    info: 'ring-sky-200 dark:ring-sky-800',
+    info: 'ring-brand-200 dark:ring-brand-800',
     blue: 'ring-blue-200 dark:ring-blue-800',
-    violet: 'ring-violet-200 dark:ring-violet-800',
+    violet: 'ring-brand-200 dark:ring-brand-800',
 }
 
 const SIZES = {

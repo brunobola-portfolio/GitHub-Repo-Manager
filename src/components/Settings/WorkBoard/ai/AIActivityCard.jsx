@@ -32,7 +32,7 @@ export function AIActivityCard({ activity }) {
                     <div className="h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                         <div
                             data-testid="ai-progress-bar"
-                            className="h-full bg-indigo-500 transition-all"
+                            className="h-full bg-brand-500 transition-all"
                             style={{ width: `${pct}%` }}
                         />
                     </div>

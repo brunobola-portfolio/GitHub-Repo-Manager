@@ -22,8 +22,8 @@ export function SuggestionRow({ suggestion, index }) {
     >
       <div className="flex items-center gap-3 p-3.5">
         {/* Icon */}
-        <div className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center bg-violet-50 dark:bg-violet-500/10">
-          <Sparkles className="w-4 h-4 text-violet-500 dark:text-violet-400" />
+        <div className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center bg-brand-50 dark:bg-brand-500/10">
+          <Sparkles className="w-4 h-4 text-brand-500 dark:text-brand-400" />
         </div>
 
         {/* Content */}

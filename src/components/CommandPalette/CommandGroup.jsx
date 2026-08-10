@@ -28,7 +28,7 @@ export function CommandGroup({ heading, commands, iconMap, onRun, onClose }) {
             onSelect={() => { onRun(item); onClose() }}
             className={ITEM_CLASSES}
           >
-            {Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />}
+            {Icon && <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-brand-500" />}
             {item.label}
           </Command.Item>
         )

@@ -98,27 +98,27 @@ export function providerToneClasses(tone) {
   switch (tone) {
     case 'indigo':
       return {
-        bg: 'bg-indigo-50 dark:bg-indigo-900/20',
-        border: 'border-indigo-200 dark:border-indigo-800',
-        text: 'text-indigo-700 dark:text-indigo-300',
-        iconText: 'text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)]',
-        dot: 'bg-indigo-500',
+        bg: 'bg-brand-50 dark:bg-brand-900/20',
+        border: 'border-brand-200 dark:border-brand-800',
+        text: 'text-brand-700 dark:text-brand-300',
+        iconText: 'text-brand-500 dark:text-[color:var(--ds-accent-brand-dark)]',
+        dot: 'bg-brand-500',
       }
     case 'sky':
       return {
-        bg: 'bg-sky-50 dark:bg-sky-900/20',
-        border: 'border-sky-200 dark:border-sky-800',
-        text: 'text-sky-700 dark:text-sky-300',
-        iconText: 'text-sky-500 dark:text-sky-400',
-        dot: 'bg-sky-500',
+        bg: 'bg-brand-50 dark:bg-brand-900/20',
+        border: 'border-brand-200 dark:border-brand-800',
+        text: 'text-brand-700 dark:text-brand-300',
+        iconText: 'text-brand-500 dark:text-brand-400',
+        dot: 'bg-brand-500',
       }
     case 'violet':
       return {
-        bg: 'bg-violet-50 dark:bg-violet-900/20',
-        border: 'border-violet-200 dark:border-violet-800',
-        text: 'text-violet-700 dark:text-violet-300',
-        iconText: 'text-violet-500 dark:text-violet-400',
-        dot: 'bg-violet-500',
+        bg: 'bg-brand-50 dark:bg-brand-900/20',
+        border: 'border-brand-200 dark:border-brand-800',
+        text: 'text-brand-700 dark:text-brand-300',
+        iconText: 'text-brand-500 dark:text-brand-400',
+        dot: 'bg-brand-500',
       }
     default:
       return {

@@ -76,12 +76,12 @@ function ModeCard({ active, onClick, icon: Icon, title, desc }) {
       onClick={onClick}
       className={`text-left p-3 rounded-xl border transition-colors
         ${active
-          ? 'border-indigo-400 dark:border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+          ? 'border-brand-400 dark:border-brand-500 bg-brand-50 dark:bg-brand-900/20'
           : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
     >
       <div className="flex items-center gap-2 mb-1">
         <Icon className={`w-4 h-4 ${active ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : 'text-slate-500'}`} />
-        <span className={`text-sm font-medium ${active ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'}`}>
+        <span className={`text-sm font-medium ${active ? 'text-brand-700 dark:text-brand-300' : 'text-slate-700 dark:text-slate-300'}`}>
           {title}
         </span>
       </div>

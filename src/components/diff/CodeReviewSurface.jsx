@@ -154,7 +154,7 @@ export function CodeReviewSurface({
                                         type="checkbox"
                                         checked={reviewed.has(activeFile.filename)}
                                         onChange={() => toggleReviewed(activeFile.filename)}
-                                        className="rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-indigo-500"
+                                        className="rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-brand-500"
                                     />
                                     Mark as reviewed
                                 </label>

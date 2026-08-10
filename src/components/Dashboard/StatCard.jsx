@@ -31,7 +31,7 @@ export const StatCard = memo(function StatCard({
     hint,
 }) {
     if (loading) {
-        return <Skeleton className="h-32 rounded-2xl" />
+        return <Skeleton className="h-full min-h-32 rounded-2xl" />
     }
 
     const isNumeric = typeof value === 'number'
@@ -50,7 +50,11 @@ export const StatCard = memo(function StatCard({
     return (
         <motion.div
             transition={{ duration: 0.2, ease: EASE.standard }}
-            className="rounded-2xl ds-focus-ring"
+            /* h-full both here and on the Card: the grid stretches this
+               wrapper, but a Card that sizes to its own content leaves the
+               shorter tiles floating with a gap under them. One card whose
+               hint wraps to a second line used to make the whole row ragged. */
+            className="h-full rounded-2xl ds-focus-ring"
             role={interactive ? 'button' : undefined}
             tabIndex={interactive ? 0 : undefined}
             aria-label={interactive ? `${title}${hint ? ` — ${hint}` : ''}` : undefined}
@@ -59,8 +63,8 @@ export const StatCard = memo(function StatCard({
             title={interactive && hint ? hint : undefined}
             style={interactive ? { cursor: 'pointer' } : undefined}
         >
-            <Card className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all duration-[var(--ds-duration)] border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 group">
-                <div className="flex items-start justify-between">
+            <Card className="h-full flex flex-col p-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all duration-[var(--ds-duration)] border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 group">
+                <div className="flex flex-1 items-start justify-between">
                     <div className="flex-1">
                         <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide ds-font-display">
                             {title}

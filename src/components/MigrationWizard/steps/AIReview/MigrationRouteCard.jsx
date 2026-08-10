@@ -42,7 +42,7 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
       className="relative overflow-hidden rounded-xl border border-slate-200/80 dark:border-white/10 bg-gradient-to-br from-white via-white to-slate-50 dark:from-white/[0.04] dark:via-white/[0.02] dark:to-white/[0.01]"
     >
       {/* Top gradient accent */}
-      <div className="absolute top-0 left-0 right-0 h-0.5 bg-indigo-500 opacity-70" />
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-brand-500 opacity-70" />
 
       <div className="p-4">
         {/* Source → Destination row */}
@@ -84,7 +84,7 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
             >
               <ArrowRight className="w-4 h-4 text-white" />
             </motion.div>
-            <span className="ds-text-micro font-bold text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)] tabular-nums">
+            <span className="ds-text-micro font-bold text-brand-500 dark:text-[color:var(--ds-accent-brand-dark)] tabular-nums">
               {repoCount} {repoCount === 1 ? 'repo' : 'repos'}
             </span>
           </div>
@@ -98,7 +98,7 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
                     Destination
                   </p>
                   {isAzureDevopsTarget && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-violet-500/15 border border-violet-500/30 text-[9px] font-bold uppercase tracking-wider text-violet-600 dark:text-violet-300">
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-brand-500/15 border border-brand-500/30 text-[9px] font-bold uppercase tracking-wider text-brand-600 dark:text-brand-300">
                       in-place
                     </span>
                   )}

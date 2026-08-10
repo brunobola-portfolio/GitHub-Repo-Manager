@@ -14,7 +14,7 @@
 import { readFileSync, existsSync, statSync } from 'node:fs'
 import { describe, it, expect } from 'vitest'
 import { ASSETS, COLOR } from '../../scripts/gen-brand.mjs'
-import { page, DESCRIPTIONS } from '../../scripts/gen-brand-page.mjs'
+import { page, DESCRIPTIONS, KIT_FILES } from '../../scripts/gen-brand-page.mjs'
 import { buildKit } from '../../scripts/gen-brand-kit.mjs'
 import AdmZip from 'adm-zip'
 
@@ -147,7 +147,7 @@ describe('the visual guide is generated, not maintained', () => {
   it('every asset in the kit is described on the page', () => {
     // Object.keys(ASSETS) drives the file table, so a new asset added without a
     // description would render the literal string "undefined" to a reader.
-    for (const key of Object.keys(ASSETS)) {
+    for (const key of KIT_FILES) {
       expect(DESCRIPTIONS[key], `${key} has no description in gen-brand-page.mjs`).toBeTruthy()
     }
   })

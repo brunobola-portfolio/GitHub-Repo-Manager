@@ -62,16 +62,16 @@ export function BYOKUpgradeBanner({ isAuthenticated, onOpenAISettings }) {
                     transition={{ duration: 0.3, ease: EASE.emphasized }}
                     className="relative z-[var(--ds-z-floating)]"
                 >
-                    <div className="bg-[color:var(--ds-accent-brand)] dark:bg-indigo-700">
+                    <div className="bg-[color:var(--ds-accent-brand)] dark:bg-brand-700">
                         <div className="max-w-[var(--layout-max-w)] mx-auto px-[var(--layout-px)] py-2.5 flex items-center justify-between gap-3 sm:gap-4">
                             {/* Left: icon + message */}
                             <div className="flex items-center gap-3 min-w-0">
                                 <div className="shrink-0 w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center">
                                     <Sparkles className="w-4 h-4 text-white" strokeWidth={2} />
                                 </div>
-                                <p className="text-sm font-medium text-white/95 truncate">
+                                <p className="text-sm font-medium text-white truncate">
                                     AI features now use your own provider key (BYOK).{' '}
-                                    <span className="text-white/75 hidden sm:inline">
+                                    <span className="text-white hidden sm:inline">
                                         Configure it in Settings → AI Configuration. If a shared server key is
                                         configured, your AI features keep working without any setup.
                                     </span>
@@ -83,11 +83,11 @@ export function BYOKUpgradeBanner({ isAuthenticated, onOpenAISettings }) {
                                 <button
                                     onClick={handleConfigure}
                                     className="group flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold
-                                        bg-white text-indigo-700
-                                        hover:bg-indigo-50
+                                        bg-white text-brand-700
+                                        hover:bg-brand-50
                                         shadow-sm shadow-black/10
                                         transition-colors duration-200
-                                        focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1 focus-visible:ring-offset-indigo-600 focus:outline-none"
+                                        focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1 focus-visible:ring-offset-brand-600 focus:outline-none"
                                 >
                                     Configure now
                                     <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
@@ -96,7 +96,7 @@ export function BYOKUpgradeBanner({ isAuthenticated, onOpenAISettings }) {
                                     <button
                                         type="button"
                                         onClick={handleDismiss}
-                                        className="p-1.5 rounded-md text-white/60
+                                        className="p-1.5 rounded-md text-white
                                             hover:text-white
                                             hover:bg-white/15
                                             transition-colors duration-200

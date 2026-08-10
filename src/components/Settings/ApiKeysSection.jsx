@@ -55,7 +55,7 @@ function UsageMeter({ current, max, tier }) {
                     <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                         <div
                             className={`h-full rounded-full transition-all ${
-                                isNearLimit ? 'bg-amber-500' : 'bg-indigo-500'
+                                isNearLimit ? 'bg-amber-500' : 'bg-brand-500'
                             }`}
                             style={{ width: `${pct}%` }}
                         />
@@ -108,9 +108,9 @@ function NewKeyForm({ onCreated, onCancel }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
         >
-            <Card className="p-5 border-indigo-200/70 dark:border-indigo-700/50 bg-indigo-50/30 dark:bg-indigo-900/10">
+            <Card className="p-5 border-brand-200/70 dark:border-brand-700/50 bg-brand-50/30 dark:bg-brand-900/10">
                 <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
-                    <Key className="w-4 h-4 text-indigo-500" />
+                    <Key className="w-4 h-4 text-brand-500" />
                     Create New API Key
                 </h3>
                 <form onSubmit={handleSubmit} className="space-y-5">
@@ -143,8 +143,8 @@ function NewKeyForm({ onCreated, onCancel }) {
                                         aria-label={scope.label}
                                         className={`group flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-colors ${
                                             checked
-                                                ? 'bg-indigo-50 dark:bg-indigo-500/10 border-indigo-300 dark:border-indigo-500/40 shadow-sm'
-                                                : 'bg-white dark:bg-slate-900/40 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/40'
+                                                ? 'bg-brand-50 dark:bg-brand-500/10 border-brand-300 dark:border-brand-500/40 shadow-sm'
+                                                : 'bg-white dark:bg-slate-900/40 border-slate-200 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-500/40'
                                         }`}
                                     >
                                         <input
@@ -152,7 +152,7 @@ function NewKeyForm({ onCreated, onCancel }) {
                                             type="checkbox"
                                             checked={checked}
                                             onChange={() => toggleScope(scope.id)}
-                                            className="mt-0.5 w-4 h-4 accent-indigo-600 cursor-pointer ds-focus-ring rounded"
+                                            className="mt-0.5 w-4 h-4 accent-brand-600 cursor-pointer ds-focus-ring rounded"
                                         />
                                         <div className="min-w-0">
                                             <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{scope.label}</p>
@@ -241,7 +241,7 @@ function NewKeyReveal({ keyData, onDismiss }) {
                     className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
                         copied
                             ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-brand-50 dark:hover:bg-brand-900/30 hover:text-brand-600 dark:hover:text-brand-400'
                     }`}
                 >
                     <AnimatedCopyIcon copied={copied} />
@@ -286,7 +286,7 @@ function KeyRow({ apiKey, onRevoke }) {
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 8 }}
-            className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 bg-white dark:bg-slate-800/60 rounded-xl border border-slate-200/70 dark:border-slate-700/50 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all"
+            className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 bg-white dark:bg-slate-800/60 rounded-xl border border-slate-200/70 dark:border-slate-700/50 hover:border-brand-200 dark:hover:border-brand-800 transition-all"
         >
             <div className="flex-1 min-w-0 space-y-1.5">
                 <div className="flex items-center gap-2 flex-wrap">

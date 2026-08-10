@@ -66,13 +66,13 @@ describe('StatBar', () => {
   it('applies solid colour class for primary (default)', () => {
     render(<StatBar label="G" value={5} max={10} animated={false} />)
     const fill = screen.getByTestId('statbar-fill')
-    expect(fill.className).toMatch(/bg-indigo-500/)
+    expect(fill.className).toMatch(/bg-brand-500/)
   })
 
   it('applies solid colour class for secondary', () => {
     render(<StatBar label="G" value={5} max={10} gradient="secondary" animated={false} />)
     const fill = screen.getByTestId('statbar-fill')
-    expect(fill.className).toMatch(/bg-sky-500/)
+    expect(fill.className).toMatch(/bg-brand-500/)
   })
 
   it('handles undefined value as 0', () => {

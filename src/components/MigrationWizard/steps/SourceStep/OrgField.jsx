@@ -131,7 +131,7 @@ export default function OrgField({
                     <button
                       type="button"
                       onClick={fetchOrganizations}
-                      className="text-xs text-indigo-500 hover:text-indigo-400 underline"
+                      className="text-xs text-brand-500 hover:text-brand-400 underline"
                     >
                       Try again
                     </button>
@@ -209,7 +209,7 @@ export default function OrgField({
               <button
                 type="button"
                 onClick={() => setManualOrgMode(false)}
-                className="mt-1 text-xs text-indigo-500 hover:text-indigo-400 underline"
+                className="mt-1 text-xs text-brand-500 hover:text-brand-400 underline"
               >
                 ← Back to organization list
               </button>
@@ -229,15 +229,15 @@ export default function OrgField({
             className="overflow-hidden"
             role="status"
           >
-            <div className="mt-2 flex items-start gap-2 px-3 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
-              <Info className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
-              <p className="text-xs text-indigo-300 dark:text-indigo-300 flex-1">
+            <div className="mt-2 flex items-start gap-2 px-3 py-2 rounded-xl bg-brand-500/10 border border-brand-500/20">
+              <Info className="w-4 h-4 text-brand-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-brand-300 dark:text-brand-300 flex-1">
                 OAuth lets you list all your organizations automatically
               </p>
               <button
                 type="button"
                 onClick={() => handleModeSwitch('oauth')}
-                className="text-xs font-medium text-indigo-400 hover:text-indigo-300 shrink-0"
+                className="text-xs font-medium text-brand-400 hover:text-brand-300 shrink-0"
               >
                 Switch →
               </button>
@@ -287,7 +287,7 @@ export default function OrgField({
                       <button
                         type="button"
                         onClick={() => handleModeSwitch('oauth')}
-                        className="inline-flex items-center gap-1 text-xs font-medium text-indigo-500 hover:text-indigo-400 underline"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-brand-500 hover:text-brand-400 underline"
                       >
                         <Globe className="w-3 h-3" />
                         Switch to OAuth

@@ -28,7 +28,7 @@ describe('Badge — backward compatibility (legacy variant prop)', () => {
     ['success', 'bg-emerald-100'],
     ['warning', 'bg-amber-100'],
     ['danger', 'bg-red-100'],
-    ['info', 'bg-sky-100'],
+    ['info', 'bg-brand-100'],
   ])('legacy variant "%s" keeps its palette', (variant, expectedBg) => {
     render(<Badge data-testid="b" variant={variant}>x</Badge>)
     expect(screen.getByTestId('b').className).toContain(expectedBg)
@@ -38,14 +38,14 @@ describe('Badge — backward compatibility (legacy variant prop)', () => {
 describe('Badge — tone prop', () => {
   it.each([
     ['neutral', 'bg-slate-100'],
-    ['brand', 'bg-indigo-100'],
+    ['brand', 'bg-brand-100'],
     ['success', 'bg-emerald-100'],
     ['warning', 'bg-amber-100'],
     ['danger', 'bg-red-100'],
     ['rose', 'bg-rose-100'],
-    ['info', 'bg-sky-100'],
+    ['info', 'bg-brand-100'],
     ['blue', 'bg-blue-100'],
-    ['violet', 'bg-violet-100'],
+    ['violet', 'bg-brand-100'],
   ])('tone "%s" maps to its palette', (tone, expectedBg) => {
     render(<Badge data-testid="b" tone={tone}>x</Badge>)
     expect(screen.getByTestId('b').className).toContain(expectedBg)
@@ -53,12 +53,12 @@ describe('Badge — tone prop', () => {
 
   it.each([
     ['slate', 'bg-slate-100'],
-    ['indigo', 'bg-indigo-100'],
+    ['indigo', 'bg-brand-100'],
     ['emerald', 'bg-emerald-100'],
     ['amber', 'bg-amber-100'],
     ['red', 'bg-red-100'],
-    ['sky', 'bg-sky-100'],
-    ['purple', 'bg-violet-100'],
+    ['sky', 'bg-brand-100'],
+    ['purple', 'bg-brand-100'],
   ])('alias "%s" resolves to the canonical tone', (alias, expectedBg) => {
     render(<Badge data-testid="b" tone={alias}>x</Badge>)
     expect(screen.getByTestId('b').className).toContain(expectedBg)
@@ -107,7 +107,7 @@ describe('Badge — ring / icon / dot', () => {
     const cls = screen.getByTestId('ringed').className
     expect(cls).toContain('ring-1')
     expect(cls).toContain('ring-inset')
-    expect(cls).toContain('ring-indigo-200')
+    expect(cls).toContain('ring-brand-200')
   })
 
   it('renders a leading icon node and adds a gap', () => {

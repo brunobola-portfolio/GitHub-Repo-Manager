@@ -103,7 +103,7 @@ function Header({ onAdd }) {
     <div className="flex items-start justify-between gap-3">
       <div>
         <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-          <KeyRound className="w-4 h-4 text-indigo-500" />
+          <KeyRound className="w-4 h-4 text-brand-500" />
           Azure DevOps · Saved credentials
         </h3>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xl">
@@ -115,7 +115,7 @@ function Header({ onAdd }) {
       <button
         type="button"
         onClick={onAdd}
-        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] dark:hover:bg-indigo-400 transition-colors shadow-sm"
+        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] dark:hover:bg-brand-400 transition-colors shadow-sm"
       >
         <Plus className="w-4 h-4" />
         Add PAT
@@ -407,11 +407,11 @@ function AddCredentialForm({ onClose, onCreated }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-2xl border border-indigo-300 dark:border-indigo-700 bg-indigo-50/30 dark:bg-indigo-900/10 p-4 space-y-3"
+      className="rounded-2xl border border-brand-300 dark:border-brand-700 bg-brand-50/30 dark:bg-brand-900/10 p-4 space-y-3"
     >
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-          <Plus className="w-4 h-4 text-indigo-500" />
+          <Plus className="w-4 h-4 text-brand-500" />
           New PAT
         </h4>
         <button
@@ -481,10 +481,10 @@ function AddCredentialForm({ onClose, onCreated }) {
               <label
                 key={s.key}
                 className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-md border cursor-pointer transition-colors
-                  focus-within:ring-2 focus-within:ring-indigo-500/70 focus-within:ring-offset-1
+                  focus-within:ring-2 focus-within:ring-brand-500/70 focus-within:ring-offset-1
                   ${scopes[s.key]
                     ? (s.required ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700'
-                                  : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-700')
+                                  : 'bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 border-brand-300 dark:border-brand-700')
                     : 'border-slate-300 dark:border-slate-600 text-slate-500 hover:bg-white dark:hover:bg-slate-800'}`}
               >
                 {/* sr-only (NOT hidden/display:none) keeps the checkbox in the
@@ -496,7 +496,7 @@ function AddCredentialForm({ onClose, onCreated }) {
                   onChange={(e) => setScopes((prev) => ({ ...prev, [s.key]: e.target.checked }))}
                 />
                 {scopes[s.key]
-                  ? <Check className={`w-3 h-3 ${s.required ? 'text-emerald-500' : 'text-indigo-500'}`} aria-hidden="true" />
+                  ? <Check className={`w-3 h-3 ${s.required ? 'text-emerald-500' : 'text-brand-500'}`} aria-hidden="true" />
                   : <span className="w-1.5 h-1.5 rounded-full bg-slate-300" aria-hidden="true" />}
                 {s.label}
               </label>
@@ -531,7 +531,7 @@ function AddCredentialForm({ onClose, onCreated }) {
             href={patUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-1 inline-flex items-center gap-1 ds-text-meta text-indigo-500 hover:text-indigo-400"
+            className="mt-1 inline-flex items-center gap-1 ds-text-meta text-brand-500 hover:text-brand-400"
           >
             Create a PAT on {host} <ExternalLink className="w-3 h-3" />
           </a>

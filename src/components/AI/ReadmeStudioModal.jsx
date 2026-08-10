@@ -382,8 +382,8 @@ export function ReadmeStudioModal({ isOpen, onClose, repo, onApplied }) {
                                     onClick={() => toggleSection(name)}
                                     aria-pressed={checked}
                                     className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ds-focus-ring ${checked
-                                        ? 'bg-indigo-100 dark:bg-indigo-900/40 border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300'
-                                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-indigo-300'}`}
+                                        ? 'bg-brand-100 dark:bg-brand-900/40 border-brand-300 dark:border-brand-700 text-brand-700 dark:text-brand-300'
+                                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-brand-300'}`}
                                 >
                                     {name}
                                 </button>

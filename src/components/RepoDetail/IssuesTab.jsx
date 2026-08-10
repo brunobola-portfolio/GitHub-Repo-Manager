@@ -138,7 +138,7 @@ export function IssuesTab({ api, repoFullName }) {
                             <button key={f} onClick={() => setFilter(f)}
                                 className={`px-3 py-1.5 text-xs font-medium transition-colors capitalize
                                     ${filter === f
-                                        ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                                        ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300'
                                         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                                     }`}>
                                 {f}
@@ -203,12 +203,12 @@ export function IssuesTab({ api, repoFullName }) {
                             ref={(node) => { rowRefs.current[idx] = node }}
                             className={`relative p-3 cursor-pointer transition-colors ${
                                 idx === focusedIndex
-                                    ? 'border-indigo-400 dark:border-indigo-600 bg-indigo-50/40 dark:bg-indigo-900/15 ring-1 ring-indigo-300 dark:ring-indigo-700/60'
-                                    : 'hover:border-indigo-300 dark:hover:border-indigo-600'
+                                    ? 'border-brand-400 dark:border-brand-600 bg-brand-50/40 dark:bg-brand-900/15 ring-1 ring-brand-300 dark:ring-brand-700/60'
+                                    : 'hover:border-brand-300 dark:hover:border-brand-600'
                             }`}
                         >
                             <div className="flex items-start gap-3">
-                                <div className={`mt-0.5 ${issue.state === 'open' ? 'text-green-500' : 'text-purple-500'}`}>
+                                <div className={`mt-0.5 ${issue.state === 'open' ? 'text-green-500' : 'text-brand-500'}`}>
                                     <CircleDot className="w-4 h-4" />
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -254,7 +254,7 @@ export function IssuesTab({ api, repoFullName }) {
                                 </div>
                                 <div role="presentation" className="relative z-10" onClick={e => e.stopPropagation()}>
                                     {issue.state === 'open' ? (
-                                        <Button variant="ghost" size="sm" onClick={() => handleClose(issue)} className="text-purple-600 dark:text-purple-400 text-xs shrink-0">
+                                        <Button variant="ghost" size="sm" onClick={() => handleClose(issue)} className="text-brand-600 dark:text-brand-400 text-xs shrink-0">
                                             Close
                                         </Button>
                                     ) : (

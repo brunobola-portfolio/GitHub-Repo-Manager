@@ -35,11 +35,13 @@ export function LanguageChart({ data = [], loading }) {
 
     return (
         <motion.div
+            className="h-full"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
         >
             <Card
+                className="h-full"
                 /* Border + shadow come from Card's --ds-elevation-* defaults —
                    the local `border-slate-200 shadow-sm` override used to win
                    through twMerge and reinstated the flat light-mode card. */
@@ -47,7 +49,7 @@ export function LanguageChart({ data = [], loading }) {
                 style={{ minHeight: `${chartHeight + 60}px` }}
             >
                 <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-6 flex items-center gap-2">
-                    <Code2 className="w-5 h-5 text-pink-500" />
+                    <Code2 className="w-5 h-5 text-brand-500" />
                     Language Distribution
                 </h3>
                 {loading ? (

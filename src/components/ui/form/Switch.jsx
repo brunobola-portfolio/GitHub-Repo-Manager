@@ -12,7 +12,7 @@ import { SPRING } from '../motion'
  *   <Switch checked={isPrivate} onChange={setIsPrivate} label="Private" />
  */
 const TONE_BG = {
-    indigo: 'bg-indigo-500',
+    indigo: 'bg-brand-500',
     emerald: 'bg-emerald-500',
     amber: 'bg-amber-500',
     rose: 'bg-rose-500',

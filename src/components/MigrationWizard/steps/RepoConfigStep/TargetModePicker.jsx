@@ -68,19 +68,19 @@ export default function TargetModePicker({ source, selectedRepos, onChange }) {
   )
 }
 
-function ModeCard({ active, onClick, icon: Icon, title, subtitle, tag, accentClass = 'text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)]' }) {
+function ModeCard({ active, onClick, icon: Icon, title, subtitle, tag, accentClass = 'text-brand-500 dark:text-[color:var(--ds-accent-brand-dark)]' }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={`text-left p-4 transition-all
         ${active
-          ? 'bg-white dark:bg-slate-900/60 ring-2 ring-inset ring-indigo-400 dark:ring-indigo-500'
+          ? 'bg-white dark:bg-slate-900/60 ring-2 ring-inset ring-brand-400 dark:ring-brand-500'
           : 'bg-white/40 dark:bg-slate-900/30 hover:bg-white/70 dark:hover:bg-slate-900/50'}`}
     >
       <div className="flex items-start gap-3">
         <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center
-          ${active ? 'bg-indigo-500/15' : 'bg-slate-100 dark:bg-slate-800'}`}>
+          ${active ? 'bg-brand-500/15' : 'bg-slate-100 dark:bg-slate-800'}`}>
           <Icon className={`w-4 h-4 ${active ? accentClass : 'text-slate-500'}`} />
         </div>
         <div className="min-w-0 flex-1">
@@ -89,7 +89,7 @@ function ModeCard({ active, onClick, icon: Icon, title, subtitle, tag, accentCla
               {title}
             </span>
             {active && (
-              <span className="inline-flex items-center gap-0.5 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-md bg-indigo-500 text-white">
+              <span className="inline-flex items-center gap-0.5 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-md bg-brand-500 text-white">
                 <Check className="w-2.5 h-2.5" /> escolhido
               </span>
             )}

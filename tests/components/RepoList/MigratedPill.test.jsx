@@ -41,11 +41,11 @@ describe('MigratedPill — batched via useMigratedRepos', () => {
     expect(pill).toBeInTheDocument()
 
     // Renders through the canonical <Badge tone="violet"> — not the old
-    // hand-rolled bg-violet-500/10 + ring-violet-500/30 combination.
-    expect(pill.className).toContain('bg-violet-100')
-    expect(pill.className).toContain('dark:bg-violet-900/50')
-    expect(pill.className).toContain('ring-violet-200')
-    expect(pill.className).not.toContain('bg-violet-500/10')
+    // hand-rolled bg-brand-500/10 + ring-brand-500/30 combination.
+    expect(pill.className).toContain('bg-brand-100')
+    expect(pill.className).toContain('dark:bg-brand-900/50')
+    expect(pill.className).toContain('ring-brand-200')
+    expect(pill.className).not.toContain('bg-brand-500/10')
   })
 
   it('renders nothing when the user has no migrated repos', async () => {

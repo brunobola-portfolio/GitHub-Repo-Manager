@@ -106,7 +106,7 @@ export function ToolCallChip({ toolName, input, output }) {
     const inputSummary = formatInputSummary(input);
     return (
         <details className="self-start inline-flex flex-col gap-1 my-1">
-            <summary className="cursor-pointer inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-600">
+            <summary className="cursor-pointer inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-600">
                 <ChevronRight size={11} />
                 <span className="font-mono">{toolName || 'tool'}</span>
                 {inputSummary ? <span className="text-slate-500 dark:text-slate-400 truncate max-w-[200px]">: {inputSummary}</span> : null}

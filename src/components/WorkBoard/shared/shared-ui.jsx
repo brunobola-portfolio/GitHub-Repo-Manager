@@ -78,12 +78,12 @@ export function ErrorState({ error, what = 'data', onRetry }) {
 
 export function WebhookHint() {
     return (
-        <div className="mt-3 p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/50 text-sm text-indigo-700 dark:text-indigo-300">
+        <div className="mt-3 p-4 rounded-xl bg-brand-50 dark:bg-brand-950/30 border border-brand-200/60 dark:border-brand-800/50 text-sm text-brand-700 dark:text-brand-300">
             <strong>No data yet.</strong> Connect a GitHub webhook at{' '}
-            <code className="text-xs bg-indigo-100 dark:bg-indigo-900/50 px-1 py-0.5 rounded">
+            <code className="text-xs bg-brand-100 dark:bg-brand-900/50 px-1 py-0.5 rounded">
                 /api/v1/webhooks/github
             </code>{' '}
-            with a <code className="text-xs bg-indigo-100 dark:bg-indigo-900/50 px-1 py-0.5 rounded">WEBHOOK_SECRET</code>{' '}
+            with a <code className="text-xs bg-brand-100 dark:bg-brand-900/50 px-1 py-0.5 rounded">WEBHOOK_SECRET</code>{' '}
             environment variable to start populating the Work Board.
         </div>
     )

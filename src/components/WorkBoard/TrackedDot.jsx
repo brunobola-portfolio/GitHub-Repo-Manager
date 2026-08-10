@@ -28,7 +28,7 @@ export function TrackedDot({ repoFullName, size = 'sm' }) {
             data-state="active"
             aria-label={tracked.is_pinned ? 'Pinned in Work Board' : 'Tracked in Work Board'}
             title={tracked.is_pinned ? 'Pinned in Work Board' : 'Tracked in Work Board'}
-            className={`inline-block rounded-full bg-indigo-500 shrink-0 ${SIZE_CLASS[size]}`}
+            className={`inline-block rounded-full bg-brand-500 shrink-0 ${SIZE_CLASS[size]}`}
         />
     )
 }

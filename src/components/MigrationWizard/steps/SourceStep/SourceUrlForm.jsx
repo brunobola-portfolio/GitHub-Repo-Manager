@@ -52,9 +52,9 @@ export default function SourceUrlForm({
             transition={{ duration: 0.18 }}
             className="overflow-hidden"
           >
-            <div className="mt-2.5 rounded-2xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/60 dark:bg-indigo-900/15 overflow-hidden">
+            <div className="mt-2.5 rounded-2xl border border-brand-200 dark:border-brand-800 bg-brand-50/60 dark:bg-brand-900/15 overflow-hidden">
               {/* Header — provider identity */}
-              <div className="px-3.5 py-2 flex items-center gap-2 border-b border-indigo-200/60 dark:border-indigo-800/50 bg-white/40 dark:bg-slate-900/30">
+              <div className="px-3.5 py-2 flex items-center gap-2 border-b border-brand-200/60 dark:border-brand-800/50 bg-white/40 dark:bg-slate-900/30">
                 <ProviderBadge host={urlPreview.host} variant="inline" />
                 <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
                   {urlPreview.host}
@@ -90,7 +90,7 @@ export default function SourceUrlForm({
                 <button
                   type="button"
                   onClick={onApply}
-                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] dark:hover:bg-indigo-400 shadow-sm transition-colors"
+                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] dark:hover:bg-brand-400 shadow-sm transition-colors"
                 >
                   <Check className="w-3.5 h-3.5" />
                   Apply
@@ -106,7 +106,7 @@ export default function SourceUrlForm({
 
 function PreviewChip({ icon: Icon, label, value, tone = 'indigo' }) {
   const toneText = tone === 'indigo'
-    ? 'text-indigo-700 dark:text-indigo-300'
+    ? 'text-brand-700 dark:text-brand-300'
     : 'text-slate-700 dark:text-slate-300'
   return (
     <span

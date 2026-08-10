@@ -52,7 +52,7 @@ export function QuickSummary({ summary, loading, error, onRetry }) {
                     <ul className="space-y-1">
                         {summary.keyChanges.map((change, i) => (
                             <li key={i} className="text-xs text-slate-600 dark:text-slate-300 flex items-start gap-1.5">
-                                <span className="text-indigo-400 mt-0.5">•</span>
+                                <span className="text-brand-400 mt-0.5">•</span>
                                 {change}
                             </li>
                         ))}

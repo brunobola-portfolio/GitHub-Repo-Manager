@@ -22,12 +22,12 @@ export function SelectionSummaryBar({ selected, warnings, blockers, autoFixCount
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 60, opacity: 0 }}
           transition={SPRING.panel}
-          className="sticky bottom-0 mt-4 backdrop-blur-md bg-slate-900/70 dark:bg-slate-950/70 border border-indigo-500/20 rounded-2xl p-3 shadow-lg z-10"
+          className="sticky bottom-0 mt-4 backdrop-blur-md bg-slate-900/70 dark:bg-slate-950/70 border border-brand-500/20 rounded-2xl p-3 shadow-lg z-10"
           role="status"
           aria-live="polite"
         >
           <div className="flex items-center gap-4 flex-wrap text-sm">
-            <span className="font-semibold text-indigo-400">{selected.length} selected</span>
+            <span className="font-semibold text-brand-400">{selected.length} selected</span>
             <span className="flex items-center gap-1 text-slate-400">
               <HardDrive className="w-3.5 h-3.5" aria-hidden="true" /> {formatFileSize(totalSize, 1)}
             </span>
@@ -53,7 +53,7 @@ export function SelectionSummaryBar({ selected, warnings, blockers, autoFixCount
                     ? `${autoFixCount} can be auto-fixed, ${manualFixCount} need your input`
                     : undefined
                 }
-                className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-indigo-400 hover:text-indigo-300"
+                className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-brand-400 hover:text-brand-300"
               >
                 {manualFixCount === 0 ? `Auto-fix (${blockers})` : `Fix issues (${blockers})`}
                 <ArrowRight className="w-3.5 h-3.5" />

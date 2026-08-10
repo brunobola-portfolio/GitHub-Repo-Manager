@@ -123,7 +123,7 @@ export function ActionsTab({ repo }) {
               onClick={() => setSelected(selected?.id === wf.id ? null : wf)}
               className={`w-full text-left p-3 rounded-lg border transition ${
                 selected?.id === wf.id
-                  ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-950/30'
+                  ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/30'
                   : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900'
               }`}
             >

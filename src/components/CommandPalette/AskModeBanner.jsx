@@ -13,8 +13,8 @@ export function AskModeBanner({ summary, hasQueries }) {
   return (
     <>
       <div className="px-3 pt-3 pb-2 flex items-start gap-2">
-        <Sparkles className="w-3.5 h-3.5 text-indigo-500 shrink-0 mt-[2px]" aria-hidden="true" />
-        <p className="text-xs italic text-indigo-700 dark:text-indigo-300">
+        <Sparkles className="w-3.5 h-3.5 text-brand-500 shrink-0 mt-[2px]" aria-hidden="true" />
+        <p className="text-xs italic text-brand-700 dark:text-brand-300">
           {summary}
         </p>
       </div>

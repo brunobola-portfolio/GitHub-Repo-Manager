@@ -7,7 +7,7 @@ const variants = {
     danger: 'bg-red-600 text-white hover:bg-red-700 shadow-sm ds-focus-ring',
     warning: 'bg-amber-500 text-white hover:bg-amber-600 shadow-sm ds-focus-ring',
     success: 'bg-[color:var(--ds-cta)] dark:bg-[color:var(--ds-cta-dark)] text-white hover:bg-[color:var(--ds-cta-hover)] dark:hover:bg-[color:var(--ds-cta-hover-dark)] shadow-sm ds-focus-ring',
-    info: 'bg-sky-500 text-white hover:bg-sky-600 shadow-sm ds-focus-ring',
+    info: 'bg-brand-500 text-white hover:bg-brand-600 shadow-sm ds-focus-ring',
     ghost: 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100 disabled:text-slate-400 dark:disabled:text-slate-500 ds-focus-ring',
     // Outline variants — transparent bg with coloured border + matching text.
     // For tight CTAs that read as 'soft' actions (Replace / Rename / Skip in
@@ -15,13 +15,13 @@ const variants = {
     // match the existing call-sites' look.
     outline: 'bg-transparent text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 ds-focus-ring',
     'outline-danger': 'bg-transparent text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 ds-focus-ring',
-    'outline-primary': 'bg-transparent text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] border border-indigo-300 dark:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 ds-focus-ring',
+    'outline-primary': 'bg-transparent text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] border border-brand-300 dark:border-brand-700 hover:bg-brand-50 dark:hover:bg-brand-900/30 ds-focus-ring',
     // Soft variants — tinted background with matching text, no border.
     // For inline destructive / accent CTAs that should read as 'a step
     // softer than danger' (AIConfigSection Remove key, soft-indigo Test
     // Connection, etc).
     'soft-danger': 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 ds-focus-ring',
-    'soft-primary': 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-700/50 ds-focus-ring',
+    'soft-primary': 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 hover:bg-brand-100 dark:hover:bg-brand-900/50 border border-brand-200 dark:border-brand-700/50 ds-focus-ring',
     'soft-warning': 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30 ds-focus-ring',
 }
 

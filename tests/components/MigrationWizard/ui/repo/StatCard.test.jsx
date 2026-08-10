@@ -17,6 +17,6 @@ describe('StatCard', () => {
 
   it('falls back to indigo tone by default', () => {
     render(<StatCard icon={Package} label="Default" value="1" />)
-    expect(screen.getByText('1')).toHaveClass('text-indigo-400')
+    expect(screen.getByText('1')).toHaveClass('text-brand-400')
   })
 })

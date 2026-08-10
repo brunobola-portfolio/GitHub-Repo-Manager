@@ -62,7 +62,7 @@ export function AIPromoStrip({ repos, licenseTier = 'free', onOpenInsights }) {
                 transition={{ duration: 0.3, ease: EASE.emphasized }}
                 className="overflow-hidden"
             >
-                <div className="relative flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-3 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200/60 dark:border-indigo-800/40 rounded-2xl">
+                <div className="relative flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-3 bg-brand-50 dark:bg-brand-950/20 border border-brand-200/60 dark:border-brand-800/40 rounded-2xl">
                     {/* pr-9 on mobile reserves room for the absolute dismiss button
                         (top-right) so the title can't slide underneath it. */}
                     <div className="flex items-center gap-3 flex-1 min-w-0 pr-9 sm:pr-0">
@@ -84,7 +84,7 @@ export function AIPromoStrip({ repos, licenseTier = 'free', onOpenInsights }) {
                         <button
                             type="button"
                             onClick={handleAssistant}
-                            className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:border-indigo-300 dark:hover:border-indigo-500/40 transition-colors whitespace-nowrap"
+                            className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:border-brand-300 dark:hover:border-brand-500/40 transition-colors whitespace-nowrap"
                         >
                             <MessageCircle className="w-3.5 h-3.5" />
                             <span className="sm:hidden">Assistant</span>

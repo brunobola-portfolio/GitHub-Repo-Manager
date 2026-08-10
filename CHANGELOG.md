@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The brand is applied, not just documented.** The product carried a violet
+  identity while `brand/` held a lime mark: the app drew its own logo by hand
+  (four gradients, three blurs, a different silhouette from every file in the
+  kit), the nav used GitHub's Octocat as the product icon, and indigo, violet
+  and purple were used interchangeably for the same job.
+
+  - The mark the app renders is now GENERATED from the same geometry as the
+    kit — `scripts/gen-brand.mjs` emits `src/components/ui/BrandMark.jsx`,
+    which picks its own optical cut from the requested size. The header and the
+    landing nav show the real tile: the mark on its own ground, the same
+    artwork a user sees pinned to a taskbar.
+  - **One accent ramp**, `brand-*`, replaces indigo / violet / purple /
+    fuchsia / sky / cyan / pink / teal across ~1,650 call sites. Every step is
+    luminance-matched to the Tailwind indigo step it replaced, to within 0.003,
+    which is what let them all move without re-checking a pairing. Two steps
+    are anchored to the literals `docs/BRAND.md` names: 300 is `#8fd23f`, 600
+    is `#3f7d12`.
+  - **The affirmative-action green is the brand's.** `--ds-cta` was GitHub's
+    `#1f883d` — a palette borrow the brand spec forbids, and a second green two
+    hues from the first on the same screen. White on it reads 5.06:1 now, up
+    from 4.52.
+  - **Decoration by hue is gone.** The dashboard tiles were purple / amber /
+    emerald / indigo for variety, and the count inherited the tone — "Issues
+    for you: 3" rendered in the product's own colour for a passing check.
+    Counts are foreground; only genuinely-overdue work keeps a warning tone.
+    `emerald` / `amber` / `rose` / `slate` stay where they mean something, and
+    the per-language chart colours are categorical data, exempt.
+
+### Fixed
+
+- **Cards in a grid row are the same height at every width.** The grid
+  stretched each motion wrapper, but the `Card` inside sized to its own
+  content, so one card whose hint wrapped to a second line left its neighbours
+  floating. At 1024px the two dashboard charts differed by 312px. Audited at
+  six widths from 390 to 1920; the row-height spread is now zero at all of
+  them.
+- **White on a brand fill is no longer dimmed.** `text-white/90` measures
+  4.43:1 on the brand green — it read as harmless softening under indigo, where
+  the base was 6.29 and had the headroom to absorb it. The axe gate caught it
+  on the repositories view in both themes.
+
 ## [4.17.0] - 2026-08-10
 
 ### Security

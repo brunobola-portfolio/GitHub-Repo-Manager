@@ -203,13 +203,13 @@ export function RepoFilterBar({
 						onChange={(e) => setSearchQuery(e.target.value)}
 						aria-label={isAISearch ? "AI semantic repository search" : "Search repositories"}
 						className={isAISearch
-							? 'bg-purple-50/80 dark:bg-purple-900/20 border-purple-200/80 dark:border-purple-700/60 focus:ring-purple-500/30 focus:border-purple-500 text-purple-900 dark:text-purple-100 placeholder:text-purple-600 dark:placeholder:text-purple-300'
+							? 'bg-brand-50/80 dark:bg-brand-900/20 border-brand-200/80 dark:border-brand-700/60 focus:ring-brand-500/30 focus:border-brand-500 text-brand-900 dark:text-brand-100 placeholder:text-brand-600 dark:placeholder:text-brand-300'
 							: undefined}
 						trailing={
 							<button
 								type="button"
 								onClick={() => { setIsAISearch(!isAISearch); setSearchQuery('') }}
-								className={`p-2 -m-0.5 rounded-lg transition-all ${isAISearch ? 'text-purple-500 bg-purple-100 dark:bg-purple-900/30 shadow-sm' : 'text-slate-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20'}`}
+								className={`p-2 -m-0.5 rounded-lg transition-all ${isAISearch ? 'text-brand-500 bg-brand-100 dark:bg-brand-900/30 shadow-sm' : 'text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20'}`}
 								title="Toggle AI Semantic Search"
 								aria-label="Toggle AI Semantic Search"
 							>
@@ -257,7 +257,7 @@ export function RepoFilterBar({
 						<SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
 						<span>Filter</span>
 						{activeFilterCount > 0 && (
-							<span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 ds-text-micro font-semibold rounded-full bg-indigo-500 text-white">
+							<span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 ds-text-micro font-semibold rounded-full bg-brand-500 text-white">
 								{activeFilterCount}
 							</span>
 						)}
@@ -268,7 +268,7 @@ export function RepoFilterBar({
 						onClick={onRefresh}
 						disabled={loading}
 						aria-label="Refresh repositories"
-						className="text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 flex-shrink-0"
+						className="text-slate-500 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400 flex-shrink-0"
 					>
 						<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
 					</Button>
@@ -334,7 +334,7 @@ export function RepoFilterBar({
 						onClick={onRefresh}
 						disabled={loading}
 						aria-label="Refresh repositories"
-						className="flex-shrink-0 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
+						className="flex-shrink-0 text-slate-500 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-400"
 					>
 						<RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
 					</Button>
@@ -442,7 +442,7 @@ export function RepoFilterBar({
 						key={chip.key}
 						type="button"
 						onClick={chip.clear}
-						className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-700/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+						className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 border border-brand-200/70 dark:border-brand-700/50 hover:bg-brand-100 dark:hover:bg-brand-900/50 transition-colors"
 						aria-label={`Remove filter: ${chip.label}`}
 					>
 						<span>{chip.label}</span>
@@ -453,7 +453,7 @@ export function RepoFilterBar({
 					<button
 						type="button"
 						onClick={clearAllFilters}
-						className="ml-auto text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors"
+						className="ml-auto text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 hover:underline transition-colors"
 					>
 						Clear all
 					</button>

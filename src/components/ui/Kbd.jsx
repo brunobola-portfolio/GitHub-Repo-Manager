@@ -25,7 +25,7 @@ const TONE_CLASSES = {
     'text-[color:var(--ds-kbd-text)] ' +
     'bg-[color:var(--ds-surface-muted)] dark:bg-[color:var(--ds-surface-muted-dark)] ' +
     'border-[color:var(--ds-border)] dark:border-[color:var(--ds-border-dark)]',
-  onSolid: 'text-white/90 bg-white/20 border-white/30',
+  onSolid: 'text-white bg-white/20 border-white/30',
 }
 
 function isMac() {

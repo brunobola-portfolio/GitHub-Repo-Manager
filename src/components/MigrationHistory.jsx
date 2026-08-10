@@ -232,7 +232,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                             <button key={f} onClick={() => setFilter(f)}
                                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors capitalize
                                     ${filter === f
-                                        ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                                        ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300'
                                         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                                     }`}>
                                 {f}
@@ -313,7 +313,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                 {plan.status === 'failed' && (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleRerunPlan(plan) }}
-                                                        className="p-1.5 rounded-lg text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                                                        className="p-1.5 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors"
                                                         title="Re-run migration"
                                                         aria-label="Re-run migration"
                                                     >
@@ -333,7 +333,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                 {(plan.status === 'complete' || plan.status === 'completed') && (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleExportReport(plan) }}
-                                                        className="p-1.5 rounded-lg text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                                                        className="p-1.5 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors"
                                                         title="Export report"
                                                         aria-label="Export report"
                                                     >
@@ -436,7 +436,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                 <a href={meta.repoUrl} target="_blank" rel="noopener noreferrer"
                                                     aria-label="Open migrated repository in new tab"
                                                     title="Open migrated repository in new tab"
-                                                    className="text-indigo-500 hover:text-indigo-700 dark:hover:text-indigo-300 shrink-0">
+                                                    className="text-brand-500 hover:text-brand-700 dark:hover:text-brand-300 shrink-0">
                                                     <ExternalLink className="w-4 h-4" />
                                                 </a>
                                             )}

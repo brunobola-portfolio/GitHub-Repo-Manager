@@ -19,7 +19,7 @@ export default function BreadcrumbNav({ source, currentStep, selectedCount, tota
       <button
         type="button"
         onClick={() => onNavigate('org')}
-        className="flex items-center gap-1.5 text-sm font-medium text-indigo-500 hover:text-indigo-400 cursor-pointer shrink-0"
+        className="flex items-center gap-1.5 text-sm font-medium text-brand-500 hover:text-brand-400 cursor-pointer shrink-0"
       >
         <Cloud className="w-3.5 h-3.5" />
         <span>{source.org}</span>
@@ -31,7 +31,7 @@ export default function BreadcrumbNav({ source, currentStep, selectedCount, tota
       <button
         type="button"
         onClick={() => onNavigate('project')}
-        className="text-sm font-medium text-indigo-500 hover:text-indigo-400 cursor-pointer shrink-0"
+        className="text-sm font-medium text-brand-500 hover:text-brand-400 cursor-pointer shrink-0"
       >
         {source.project}
       </button>

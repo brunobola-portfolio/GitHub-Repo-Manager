@@ -74,7 +74,7 @@ const swatch = (name, hex, note) =>
   `<div class="u">${note}</div></div></div>`
 
 function page() {
-  const fileRows = Object.keys(ASSETS)
+  const fileRows = KIT_FILES
     .map((k) => `<tr><td class="mono">${k}</td><td>${DESCRIPTIONS[k]}</td></tr>`)
     .join('\n      ')
 
@@ -313,6 +313,14 @@ ${FONTS.map(([fam, file]) => `  @font-face{font-family:"${fam}";src:url(fonts/${
 // One line per asset, kept beside the generator so a new asset cannot ship
 // undocumented — Object.keys(ASSETS) drives the table, and a missing entry
 // renders as "undefined", which the gate catches.
+/**
+ * The kit is what someone downloads: files under brand/ and the favicon.
+ * gen-brand.mjs also emits src/components/ui/BrandMark.jsx — generated for the
+ * same anti-drift reason, but a React component is not a media-kit asset and
+ * has no business in the file table.
+ */
+export const KIT_FILES = Object.keys(ASSETS).filter((k) => !k.startsWith('src/'))
+
 const DESCRIPTIONS = {
   'brand/mark-display.svg': 'Bare mark, 25 px and up, light grounds',
   'brand/mark-display-inverse.svg': 'Bare mark, 25 px and up, dark grounds',

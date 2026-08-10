@@ -182,7 +182,7 @@ export function ConnectGitHubSetup({ isOpen, onClose, status: statusProp }) {
                                 href={DOCS_URL}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                                className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 dark:text-brand-400 hover:underline"
                             >
                                 <BookOpen className="w-4 h-4" aria-hidden="true" />
                                 Read the setup guide
@@ -198,7 +198,7 @@ export function ConnectGitHubSetup({ isOpen, onClose, status: statusProp }) {
 
                             <ol className="space-y-3">
                                 <li className="flex items-start gap-3">
-                                    <span className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                                    <span className="w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
                                     <div className="min-w-0 flex-1">
                                         <p className="text-sm text-slate-700 dark:text-slate-200">
                                             Open GitHub&apos;s <span className="font-semibold">New OAuth App</span> form —
@@ -217,7 +217,7 @@ export function ConnectGitHubSetup({ isOpen, onClose, status: statusProp }) {
                                     </div>
                                 </li>
                                 <li className="flex items-start gap-3">
-                                    <span className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                                    <span className="w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
                                     <p className="text-sm text-slate-700 dark:text-slate-200 flex-1">
                                         Click <span className="font-semibold">Register application</span>, then{' '}
                                         <span className="font-semibold">Generate a new client secret</span> on the page that opens.

@@ -33,8 +33,8 @@ export function CapabilityMatrix({ activeProvider }) {
     return (
         <div className="rounded-2xl bg-white/70 dark:bg-slate-900/60 backdrop-blur-md ring-1 ring-inset ring-slate-200/70 dark:ring-slate-800 p-4 space-y-3">
             <div className="flex items-center gap-2">
-                <Cpu className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />
-                <span className="ds-text-micro font-semibold uppercase tracking-[0.14em] text-[color:var(--ds-accent-brand)] dark:text-indigo-300">
+                <Cpu className="w-3.5 h-3.5 text-brand-500" aria-hidden="true" />
+                <span className="ds-text-micro font-semibold uppercase tracking-[0.14em] text-[color:var(--ds-accent-brand)] dark:text-brand-300">
                     Provider Capabilities
                 </span>
             </div>
@@ -64,22 +64,22 @@ export function CapabilityMatrix({ activeProvider }) {
                             key={pid}
                             className={`relative grid grid-cols-[minmax(0,1fr)_repeat(4,1.25rem)] gap-x-1.5 items-center rounded-lg px-2 py-1.5 transition-colors ${
                                 isActive
-                                    ? 'bg-indigo-50/80 dark:bg-indigo-900/20 ring-1 ring-inset ring-indigo-500/30'
+                                    ? 'bg-brand-50/80 dark:bg-brand-900/20 ring-1 ring-inset ring-brand-500/30'
                                     : 'hover:bg-slate-50 dark:hover:bg-slate-800/60'
                             }`}
                         >
                             {isActive && (
                                 <span
                                     aria-hidden="true"
-                                    className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-indigo-500"
+                                    className="absolute left-0 top-1.5 bottom-1.5 w-0.5 rounded-full bg-brand-500"
                                 />
                             )}
                             <div className="flex items-center gap-1.5 min-w-0">
-                                <span className={`text-xs font-semibold truncate ${isActive ? 'text-indigo-700 dark:text-indigo-200' : 'text-slate-700 dark:text-slate-200'}`}>
+                                <span className={`text-xs font-semibold truncate ${isActive ? 'text-brand-700 dark:text-brand-200' : 'text-slate-700 dark:text-slate-200'}`}>
                                     {PROVIDER_LABELS[pid]}
                                 </span>
                                 {isActive && (
-                                    <span className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-indigo-500 text-white shrink-0">
+                                    <span className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-brand-500 text-white shrink-0">
                                         active
                                     </span>
                                 )}

@@ -27,10 +27,14 @@ describe('Kbd', () => {
     expect(cls).not.toContain('bg-white/20')
   })
 
-  it('onSolid tone uses translucent-white styling so it reads on coloured buttons', () => {
+  it('onSolid tone keeps its glyph at full white on a coloured button', () => {
+    // The tint stays translucent — it is a surface, and 3:1 is the bar for a
+    // non-text boundary. The GLYPH does not: text-white/90 measures 4.43:1 on
+    // the brand fill, which is the axe failure this tone used to ship.
     const { container } = render(<Kbd tone="onSolid">↵</Kbd>)
     const cls = container.querySelector('kbd').className
-    expect(cls).toContain('text-white/90')
+    expect(cls).toContain('text-white')
+    expect(cls).not.toMatch(/text-white\/\d/)
     expect(cls).toContain('bg-white/20')
     expect(cls).toContain('border-white/30')
     expect(cls).not.toContain('--ds-surface-muted')

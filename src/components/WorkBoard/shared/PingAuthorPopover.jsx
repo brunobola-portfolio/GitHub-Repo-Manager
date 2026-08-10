@@ -85,7 +85,7 @@ export function PingAuthorPopover({ cacheKey, requestPayload, onPing, disabled =
                         'flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
                         pingState === 'error'
                             ? 'border-rose-500/50 text-rose-600 dark:text-rose-400'
-                            : 'border-indigo-500/50 text-indigo-600 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-500/10',
+                            : 'border-brand-500/50 text-brand-600 hover:bg-brand-50 dark:text-brand-300 dark:hover:bg-brand-500/10',
                     )}
                 >
                     {pingState === 'loading'
@@ -127,7 +127,7 @@ export function PingAuthorPopover({ cacheKey, requestPayload, onPing, disabled =
                     <button
                         type="button"
                         onClick={() => { setPopoverOpen(false); onPing?.(pingBody) }}
-                        className="px-3 py-1 text-xs bg-[color:var(--ds-accent-brand)] hover:bg-indigo-500 text-white rounded-lg"
+                        className="px-3 py-1 text-xs bg-[color:var(--ds-accent-brand)] hover:bg-brand-500 text-white rounded-lg"
                     >
                         Send
                     </button>

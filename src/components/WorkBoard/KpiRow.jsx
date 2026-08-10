@@ -66,20 +66,39 @@ function DeltaBadge({ pct }) {
     )
 }
 
-// Sparkline strokes route through the theme-aware --ds-chart-series-* tokens
-// (design-system.css) instead of hardcoded hexes, matching ActivityChart's
-// pattern. Only 3 series tokens exist today; `purple` has no matching token
-// (--ds-logo-tertiary is brand-identity, not theme-swapped) so it keeps its
-// literal hex — see task-10 report for the note on inventing a 4th token.
-const KPI_ACCENTS = {
-    purple:  { dot: 'bg-purple-500',  text: 'text-purple-600 dark:text-purple-300',  sparkColor: '#a78bfa' },
-    amber:   { dot: 'bg-amber-500',   text: 'text-amber-600 dark:text-amber-300',    sparkColor: 'var(--ds-chart-series-3)' },
-    emerald: { dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-300', sparkColor: 'var(--ds-chart-series-2)' },
-    indigo:  { dot: 'bg-indigo-500',  text: 'text-[color:var(--ds-accent-brand)] dark:text-indigo-300',  sparkColor: 'var(--ds-chart-series-1)' },
+// Two accents, not five.
+//
+// These tiles used to be purple / amber / emerald / indigo — four hues chosen
+// for variety, next to a lime mark that matched none of them. Decoration by
+// hue is what made the dashboard read as a swatch board, and it also spent the
+// status vocabulary on tiles that carry no status: an emerald dot on "My
+// Issues" says passing, which is not what an open issue is.
+//
+// `attention` survives because it means something (stale work, the same amber
+// as ds-risk-medium). Everything else is brand. Legacy names still resolve so
+// callers can be migrated without a flag day.
+const BRAND_ACCENT = {
+    dot: 'bg-brand-500',
+    text: 'text-brand-600 dark:text-brand-300',
+    sparkColor: 'var(--ds-chart-series-1)',
 }
 
-function KpiTile({ icon: Icon, label, value, hint, loading, errored, accent = 'indigo', onClick, active, history }) {
-    const a = KPI_ACCENTS[accent] || KPI_ACCENTS.indigo
+const KPI_ACCENTS = {
+    brand: BRAND_ACCENT,
+    attention: {
+        dot: 'bg-amber-500',
+        text: 'text-amber-600 dark:text-amber-300',
+        sparkColor: 'var(--ds-chart-series-3)',
+    },
+    purple: BRAND_ACCENT,
+    emerald: BRAND_ACCENT,
+    indigo: BRAND_ACCENT,
+    sky: BRAND_ACCENT,
+    get amber() { return KPI_ACCENTS.attention },
+}
+
+function KpiTile({ icon: Icon, label, value, hint, loading, errored, accent = 'brand', onClick, active, history }) {
+    const a = KPI_ACCENTS[accent] || KPI_ACCENTS.brand
     const delta = computeDelta(history)
     // When the underlying fetch failed and we never received data, stay honest:
     // a bare "0 / all caught up" would claim the user is clear when we simply
@@ -177,7 +196,7 @@ export function KpiRow({ activeTab, setActiveTab, reviews, stale, issues, debt, 
                 hint={reviewsCount > 0 ? `oldest ${ageLabel(oldestReviewHours)}` : 'all caught up'}
                 loading={reviews.loading}
                 errored={reviewsErrored}
-                accent="purple"
+                accent="brand"
                 active={activeTab === 'reviews'}
                 onClick={() => setActiveTab('reviews')}
                 history={reviewsHistory}
@@ -189,7 +208,7 @@ export function KpiRow({ activeTab, setActiveTab, reviews, stale, issues, debt, 
                 hint={staleCount > 0 ? `oldest ${dayLabel(oldestStaleDays)}` : 'nothing stale'}
                 loading={stale.loading}
                 errored={staleErrored}
-                accent="amber"
+                accent="attention"
                 active={activeTab === 'stale'}
                 onClick={() => setActiveTab('stale')}
                 history={stalePRsHistory}
@@ -201,7 +220,7 @@ export function KpiRow({ activeTab, setActiveTab, reviews, stale, issues, debt, 
                 hint={issuesCount > 0 ? 'assigned to you' : 'nothing on your plate'}
                 loading={issues.loading}
                 errored={issuesErrored}
-                accent="emerald"
+                accent="brand"
                 active={activeTab === 'issues'}
                 onClick={() => setActiveTab('issues')}
                 history={issuesHistory}
@@ -213,7 +232,7 @@ export function KpiRow({ activeTab, setActiveTab, reviews, stale, issues, debt, 
                 hint={hotspotRepo ? `hotspot: ${hotspotRepo.split('/').pop()}` : 'no debt tracked'}
                 loading={debt.loading}
                 errored={debtErrored}
-                accent="indigo"
+                accent="brand"
                 active={activeTab === 'techdebt'}
                 onClick={() => setActiveTab('techdebt')}
                 history={techDebtHistory}

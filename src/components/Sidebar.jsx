@@ -85,9 +85,9 @@ function QuickActions({
             <div className="p-4 space-y-4">
                 {!hasSelection ? (
                     <div className="flex flex-col gap-3">
-                        <div className="p-6 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 text-center group transition-colors hover:border-indigo-300 dark:hover:border-indigo-700">
+                        <div className="p-6 bg-slate-50 dark:bg-slate-800/30 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 text-center group transition-colors hover:border-brand-300 dark:hover:border-brand-700">
                             <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
-                                <MoreHorizontal className="w-5 h-5 text-slate-400 group-hover:text-indigo-500" />
+                                <MoreHorizontal className="w-5 h-5 text-slate-400 group-hover:text-brand-500" />
                             </div>
                             <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
                                 No repositories selected
@@ -110,7 +110,7 @@ function QuickActions({
                                 </div>
                                 <div className="text-left">
                                     <div className="text-xs font-semibold">Import Repository</div>
-                                    <div className="ds-text-micro text-white/90">Git URL, Azure, GitHub</div>
+                                    <div className="ds-text-micro text-white">Git URL, Azure, GitHub</div>
                                 </div>
                                 <ChevronRight className="w-4 h-4 ml-auto" />
                             </button>
@@ -204,7 +204,7 @@ export function QuickActionButtons({ isPerforming, selectedRepos = [] }) {
 function ActionButton({ icon: IconComp, label, subLabel, onClick, disabled, variant = 'secondary', className = '' }) {
     const variants = {
         secondary: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700',
-        primary: 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50',
+        primary: 'bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 hover:bg-brand-100 dark:hover:bg-brand-900/50',
         success: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40',
         warning: 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40',
         danger: 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/40',
@@ -281,7 +281,7 @@ function ActionHistory({ results, isPerforming, message }) {
                     Action History
                 </h3>
                 {isPerforming && (
-                    <div className="flex items-center gap-2 text-xs text-indigo-500 font-medium animate-pulse">
+                    <div className="flex items-center gap-2 text-xs text-brand-500 font-medium animate-pulse">
                         <Spinner size="sm" tone="primary" />
                         Processing...
                     </div>
@@ -369,7 +369,7 @@ export function ActivityRow({ event }) {
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                        <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate hover:text-indigo-500 cursor-pointer">
+                        <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate hover:text-brand-500 cursor-pointer">
                             {event.repo?.name || 'Unknown Repo'}
                         </div>
                         <span className="ds-text-micro text-slate-500 dark:text-slate-400 whitespace-nowrap">{timeAgo}</span>

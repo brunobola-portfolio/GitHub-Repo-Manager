@@ -28,7 +28,7 @@ function SparkLine({ perDay }) {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="text-indigo-500"
+                className="text-brand-500"
             />
         </svg>
     )

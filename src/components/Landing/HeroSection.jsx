@@ -16,19 +16,19 @@ export function HeroSection({ onSignIn }) {
       {/* Background orbs */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
         <motion.div
-          className="absolute rounded-full blur-3xl bg-indigo-500 opacity-15 dark:opacity-25"
+          className="absolute rounded-full blur-3xl bg-brand-500 opacity-15 dark:opacity-25"
           style={{ width: 480, height: 480, left: '-5%', top: '-10%' }}
           animate={{ y: [0, -30, 0], x: [0, 20, 0] }}
           transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
-          className="absolute rounded-full blur-3xl bg-purple-600 opacity-15 dark:opacity-25"
+          className="absolute rounded-full blur-3xl bg-brand-600 opacity-15 dark:opacity-25"
           style={{ width: 380, height: 380, right: '0%', top: '0%' }}
           animate={{ y: [0, 30, 0], x: [0, -20, 0] }}
           transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
-          className="absolute rounded-full blur-3xl bg-cyan-500 opacity-10 dark:opacity-20"
+          className="absolute rounded-full blur-3xl bg-brand-500 opacity-10 dark:opacity-20"
           style={{ width: 280, height: 280, left: '40%', bottom: '0%' }}
           animate={{ y: [0, -20, 0] }}
           transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
@@ -45,15 +45,15 @@ export function HeroSection({ onSignIn }) {
         />
 
         {/* Top spotlight */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[450px] bg-indigo-500/8 dark:bg-indigo-500/12 blur-3xl" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[450px] bg-brand-500/8 dark:bg-brand-500/12 blur-3xl" />
       </div>
 
       {/* Badge */}
       <motion.div
         {...fadeUp(0)}
         className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full
-          bg-indigo-500/10 dark:bg-indigo-500/15
-          border border-indigo-500/20 dark:border-indigo-500/30
+          bg-brand-500/10 dark:bg-brand-500/15
+          border border-brand-500/20 dark:border-brand-500/30
           mb-8"
       >
         <span className="relative flex h-2 w-2">
@@ -111,7 +111,7 @@ export function HeroSection({ onSignIn }) {
             text-slate-700 dark:text-slate-300
             bg-white/70 dark:bg-white/[0.06]
             border border-slate-200/80 dark:border-white/10
-            hover:border-indigo-300/70 dark:hover:border-indigo-500/40
+            hover:border-brand-300/70 dark:hover:border-brand-500/40
             hover:bg-white/90 dark:hover:bg-white/[0.1]
             backdrop-blur-sm
             transition-all duration-[var(--ds-duration)]

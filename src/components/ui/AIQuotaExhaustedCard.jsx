@@ -69,7 +69,7 @@ export function AIQuotaExhaustedCard({
                             <button
                                 type="button"
                                 onClick={() => openAppSettings('usage')}
-                                className="inline-flex items-center gap-1 text-[12px] text-[color:var(--ds-accent-brand)] dark:text-indigo-300 hover:underline"
+                                className="inline-flex items-center gap-1 text-[12px] text-[color:var(--ds-accent-brand)] dark:text-brand-300 hover:underline"
                             >
                                 <Sparkles className="w-3 h-3" aria-hidden="true" />
                                 Manage usage

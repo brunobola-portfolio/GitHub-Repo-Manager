@@ -39,7 +39,7 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
             {/* Header */}
             <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-2.5">
-                    <div className="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300 flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-lg bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300 flex items-center justify-center shrink-0">
                         <Sparkles className="w-4 h-4" />
                     </div>
                     <div>
@@ -96,7 +96,7 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                                     onChange={() => toggleInclude(row.fullName)}
                                     disabled={row.status === 'applying' || row.status === 'done'}
                                     aria-label={`Include ${row.fullName}`}
-                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-indigo-500/40 cursor-pointer"
+                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-brand-500/40 cursor-pointer"
                                 />
                             </div>
 

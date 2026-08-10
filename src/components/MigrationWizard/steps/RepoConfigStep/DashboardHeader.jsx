@@ -41,15 +41,15 @@ export function DashboardHeader({
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="bg-violet-500/10 border border-violet-500/20 rounded-2xl p-5"
+      className="bg-brand-500/10 border border-brand-500/20 rounded-2xl p-5"
     >
       {/* Row 1: Destination + Bulk Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4">
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-violet-500/10 ring-1 ring-violet-500/30 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-500/10 ring-1 ring-brand-500/30 flex items-center justify-center shrink-0">
             {isAzureDevops
-              ? <Server className="w-5 h-5 text-violet-400" />
-              : <Building2 className="w-5 h-5 text-violet-400" />}
+              ? <Server className="w-5 h-5 text-brand-400" />
+              : <Building2 className="w-5 h-5 text-brand-400" />}
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
@@ -57,7 +57,7 @@ export function DashboardHeader({
                 {isAzureDevops ? 'Target project' : 'Importing to'}
               </span>
               {isAzureDevops && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-violet-50 border border-violet-200 text-[9px] font-bold uppercase tracking-wider text-violet-700 dark:bg-violet-500/15 dark:border-violet-500/30 dark:text-violet-300">
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-brand-50 border border-brand-200 text-[9px] font-bold uppercase tracking-wider text-brand-700 dark:bg-brand-500/15 dark:border-brand-500/30 dark:text-brand-300">
                   in-place
                 </span>
               )}
@@ -118,8 +118,8 @@ export function DashboardHeader({
               type="button"
               onClick={onAllPrivate}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
-                bg-violet-500/15 text-violet-400 dark:text-violet-300 border border-violet-500/20
-                hover:bg-violet-500/25 transition-colors"
+                bg-brand-500/15 text-brand-400 dark:text-brand-300 border border-brand-500/20
+                hover:bg-brand-500/25 transition-colors"
             >
               <Lock className="w-3.5 h-3.5" />
               All Private
@@ -128,8 +128,8 @@ export function DashboardHeader({
               type="button"
               onClick={onAllPublic}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
-                bg-cyan-500/15 text-cyan-400 dark:text-cyan-300 border border-cyan-500/20
-                hover:bg-cyan-500/25 transition-colors"
+                bg-brand-500/15 text-brand-400 dark:text-brand-300 border border-brand-500/20
+                hover:bg-brand-500/25 transition-colors"
             >
               <Globe className="w-3.5 h-3.5" />
               All Public
@@ -141,11 +141,11 @@ export function DashboardHeader({
       {/* Row 2: Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
-          <div className="text-xl font-bold text-violet-400">{stats.count}</div>
+          <div className="text-xl font-bold text-brand-400">{stats.count}</div>
           <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">Repositories</div>
         </div>
         <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
-          <div className="text-xl font-bold text-cyan-400">{formatSize(stats.totalSize)}</div>
+          <div className="text-xl font-bold text-brand-400">{formatSize(stats.totalSize)}</div>
           <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">Total Size</div>
         </div>
         {isAzureDevops ? (

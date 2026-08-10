@@ -75,7 +75,7 @@ export function OrgSidebar({ user, orgs, selectedOrg, stats, leftMode, onSelectO
         onClick={() => onSelectOrg(null)}
         className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all group ${
           !selectedOrg
-            ? 'bg-indigo-100 dark:bg-indigo-900/40 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ring-2 ring-indigo-500/30'
+            ? 'bg-brand-100 dark:bg-brand-900/40 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ring-2 ring-brand-500/30'
             : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
         }`}
         aria-label="All Organizations"
@@ -92,7 +92,7 @@ export function OrgSidebar({ user, orgs, selectedOrg, stats, leftMode, onSelectO
           onClick={() => onSelectOrg(org.login)}
           className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all group ${
             selectedOrg === org.login
-              ? 'ring-2 ring-indigo-500/30'
+              ? 'ring-2 ring-brand-500/30'
               : 'hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
           aria-label={org.login}
@@ -108,7 +108,7 @@ export function OrgSidebar({ user, orgs, selectedOrg, stats, leftMode, onSelectO
             {org.login}
           </span>
           {selectedOrg === org.login && (
-            <span className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-1 h-5 rounded-full bg-indigo-500" />
+            <span className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-1 h-5 rounded-full bg-brand-500" />
           )}
         </button>
       ))}

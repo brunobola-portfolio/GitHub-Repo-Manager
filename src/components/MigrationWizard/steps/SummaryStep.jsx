@@ -26,9 +26,9 @@ import { computeMigrationHealth, buildHealthNarrative } from './migrationHealth'
    ═══════════════════════════════════════════ */
 
 const TYPE_CONFIG = {
-  repo: { icon: Package, label: 'Git Repository', color: 'text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)]' },
-  'repo-tfvc': { icon: Package, label: 'TFVC Repository', color: 'text-violet-500 dark:text-violet-400' },
-  'work-items': { icon: ClipboardList, label: 'Work Items', color: 'text-cyan-500 dark:text-cyan-400' },
+  repo: { icon: Package, label: 'Git Repository', color: 'text-brand-500 dark:text-[color:var(--ds-accent-brand-dark)]' },
+  'repo-tfvc': { icon: Package, label: 'TFVC Repository', color: 'text-brand-500 dark:text-brand-400' },
+  'work-items': { icon: ClipboardList, label: 'Work Items', color: 'text-brand-500 dark:text-brand-400' },
   wiki: { icon: BookOpen, label: 'Wiki', color: 'text-amber-500 dark:text-amber-400' },
 }
 
@@ -280,7 +280,7 @@ function TaskResultRow({ task, index, maxIndex = 10, onFixLfsUpload }) {
             href={task.metadata.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-500 hover:bg-indigo-500/10 transition-all"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-brand-500 hover:bg-brand-500/10 transition-all"
             title="Open in browser"
           >
             <ExternalLink className="w-3.5 h-3.5" />
@@ -657,7 +657,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
         className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-800/60 dark:to-slate-800/30 border border-slate-200/60 dark:border-white/10"
       >
         {/* Subtle gradient accent at top */}
-        <div className="absolute top-0 inset-x-0 h-1 bg-indigo-500 opacity-80" />
+        <div className="absolute top-0 inset-x-0 h-1 bg-brand-500 opacity-80" />
 
         <div className="flex items-center gap-6 p-6">
           <CircularProgress score={score} />
@@ -702,7 +702,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
                   icon={Clock}
                   label="Duration"
                   value={formatDuration(plan.durationSeconds)}
-                  color="text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)]"
+                  color="text-brand-500 dark:text-[color:var(--ds-accent-brand-dark)]"
                 />
               )}
             </div>
@@ -802,7 +802,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
             className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-xl
               text-white
               bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)]
-              hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-indigo-600
+              hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-brand-600
               shadow-md
               transition-all duration-200 ml-auto"
           >

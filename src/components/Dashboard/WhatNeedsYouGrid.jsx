@@ -10,45 +10,46 @@ const CATEGORIES = [
         label: 'Reviews waiting',
         tab: 'reviews',
         icon: GitPullRequest,
-        tone: 'indigo',
+        tone: 'brand',
     },
     {
         id: 'stale',
         label: 'Stale PRs',
         tab: 'stale',
         icon: Clock,
-        tone: 'amber',
+        tone: 'attention',
     },
     {
         id: 'issues',
         label: 'Issues for you',
         tab: 'issues',
         icon: CircleDot,
-        tone: 'emerald',
+        tone: 'brand',
     },
 ]
 
+// Two tones, and the count is never one of them.
+//
+// These tiles were indigo / amber / emerald: three hues for three categories
+// that differ by icon and label already. Worse, the count inherited the tone,
+// so "Reviews waiting: 5" rendered in green and "Issues for you: 3" in
+// emerald — the product's own colour for a passing check, on the two numbers
+// that mean the opposite. A count is a quantity; it reads in the foreground
+// colour. Only the genuinely-overdue category keeps a warning tone.
 const TONE_CLASSES = {
-    indigo: {
-        iconBg: 'bg-indigo-500/10',
-        iconColor: 'text-indigo-500',
-        countActive: 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]',
-        hoverBorder: 'hover:border-indigo-300 dark:hover:border-indigo-500/50',
-        ring: 'focus-visible:ring-indigo-500',
+    brand: {
+        iconBg: 'bg-brand-500/10',
+        iconColor: 'text-brand-600 dark:text-brand-300',
+        countActive: 'text-slate-900 dark:text-slate-50',
+        hoverBorder: 'hover:border-brand-300 dark:hover:border-brand-500/50',
+        ring: 'focus-visible:ring-brand-500',
     },
-    amber: {
+    attention: {
         iconBg: 'bg-amber-500/10',
-        iconColor: 'text-amber-500',
-        countActive: 'text-amber-600 dark:text-amber-400',
+        iconColor: 'text-amber-600 dark:text-amber-400',
+        countActive: 'text-amber-700 dark:text-amber-400',
         hoverBorder: 'hover:border-amber-300 dark:hover:border-amber-500/50',
         ring: 'focus-visible:ring-amber-500',
-    },
-    emerald: {
-        iconBg: 'bg-emerald-500/10',
-        iconColor: 'text-emerald-500',
-        countActive: 'text-emerald-600 dark:text-emerald-400',
-        hoverBorder: 'hover:border-emerald-300 dark:hover:border-emerald-500/50',
-        ring: 'focus-visible:ring-emerald-500',
     },
 }
 
