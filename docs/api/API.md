@@ -5,7 +5,7 @@
 **Authentication:** GitHub OAuth via session cookies, or an API key sent as `Authorization: Bearer grm_live_...`. Most endpoints require an authenticated session (`requireAuth` middleware). The server never exposes raw access tokens to the client.
 **CSRF:** All mutating `/api/*` requests (non-GET/HEAD/OPTIONS) require a valid `X-CSRF-Token` header. The OAuth flow and signature-verified webhooks are exempt.
 **Request validation:** Write endpoints validate their JSON body with Zod (`validateBody` middleware). An invalid body returns `400 { error, code: 'validation_failed' }` — see [Shared Response Envelopes](#shared-response-envelopes).
-**Total Endpoints:** 341 route handlers (334 across `server/routes/**` — 76 route files, recounted via `grep -rEc "^\s*router\.(get|post|put|patch|delete)\(" server/routes` — plus 7 app-level webhook and health routes mounted directly in `server/index.js`). This document gives full entries for the public-facing and recently-changed surface; lower-level internal routes are summarised under [Additional Endpoints](#additional-endpoints-grouped).
+**Total Endpoints:** 342 route handlers (334 across `server/routes/**` — 76 route files, recounted via `grep -rEc "^\s*router\.(get|post|put|patch|delete)\(" server/routes` — plus 8 app-level routes mounted directly in `server/index.js`: webhooks, health, and the brand guide at `/brand`). This document gives full entries for the public-facing and recently-changed surface; lower-level internal routes are summarised under [Additional Endpoints](#additional-endpoints-grouped).
 
 ---
 
@@ -4485,6 +4485,35 @@ Readiness probe. Runs dependency checks, each with a 100 ms RTT budget: the data
 ```json
 { "status": "degraded", "checks": { "db": "ok", "session": "error: timeout after 100ms" } }
 ```
+
+---
+
+## Brand Guide (`/brand`)
+
+The one app-level route that serves a document rather than JSON. Every
+deployment publishes the brand and media kit at `/brand` — the marks at real
+pixel sizes on both grounds, the palette, the type, and the whole kit as a
+single download. Registered in `server/index.js` **before** the SPA fallback,
+because `express.static` runs with `index: false` and would otherwise hand
+`/brand/` to the React app.
+
+The page is copied from `brand/` into `dist/` at build time by the
+`copy-brand-kit` Vite plugin, so it ships with the frontend and needs no
+separate hosting. It is entirely self-contained — its own fonts, its own SVGs,
+no external requests — which is also what lets it satisfy the app's CSP
+unchanged.
+
+### `GET /brand`
+
+| Detail | Value |
+|---|---|
+| Auth required | No |
+| Response | `text/html` — the guide (`Cache-Control: no-cache`, so a redeploy is picked up immediately) |
+| Absent in dev | The route only mounts when `dist/brand/index.html` exists; running from source, open `brand/index.html` directly |
+
+`GET /brand/repomanager-media-kit.zip` is served by the static handler and
+carries every mark, the fonts with their OFL licence, `BRAND.md` and a plain
+`README.txt`.
 
 ---
 

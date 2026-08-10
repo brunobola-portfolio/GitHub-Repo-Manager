@@ -102,16 +102,19 @@ ${FONTS.map(([fam, file]) => `  @font-face{font-family:"${fam}";src:url(fonts/${
     --lime:${COLOR.lime}; --ink:${COLOR.ink}; --paper:${COLOR.paper}; --ground:${COLOR.ground};
     --bg:#FCFCFD; --surface:#F4F5F7; --sunk:#EAECEF; --line:#DFE2E7;
     --text:#0F172A; --muted:#586074; --accent-text:#3f7d12;
+    --btn-bg:${COLOR.ground}; --btn-fg:#F8FAFC; --btn-sub:#94A3B8;
   }
   @media (prefers-color-scheme:dark){
     :root:not([data-theme="light"]){
       --bg:#0B0F19; --surface:#131926; --sunk:#1B2231; --line:#252D3E;
       --text:#E6EAF2; --muted:#96A0B5; --accent-text:#8fd23f;
+      --btn-bg:#F1F5F9; --btn-fg:${COLOR.ink}; --btn-sub:#4A5468;
     }
   }
   :root[data-theme="dark"]{
     --bg:#0B0F19; --surface:#131926; --sunk:#1B2231; --line:#252D3E;
     --text:#E6EAF2; --muted:#96A0B5; --accent-text:#8fd23f;
+    --btn-bg:#F1F5F9; --btn-fg:${COLOR.ink}; --btn-sub:#4A5468;
   }
 
   *{box-sizing:border-box}
@@ -150,10 +153,15 @@ ${FONTS.map(([fam, file]) => `  @font-face{font-family:"${fam}";src:url(fonts/${
   .cap{font-family:"JBMono",monospace;font-size:10px;letter-spacing:.07em;color:#6B7280}
   .ladder.dark .cap{color:#8A94A8}
 
+  /* The download is the only action on the page, so it inverts against the
+     ground rather than sitting on a fixed one: ink-on-paper reversed. Filling
+     it with the lime would be the obvious move and the wrong one — this page
+     argues the lime is spent on the node alone, and a page that breaks its own
+     rule in its first screenful is not a spec. */
   .dl{display:inline-flex;flex-direction:column;gap:3px;text-decoration:none;
-    background:var(--ground);color:#F8FAFC;border-radius:13px;padding:15px 22px;
+    background:var(--btn-bg);color:var(--btn-fg);border-radius:13px;padding:15px 22px;
     border:1px solid transparent;transition:border-color .18s cubic-bezier(.2,0,0,1)}
-  .dl span{font-size:12.5px;color:#94A3B8;font-family:"JBMono",monospace;letter-spacing:.02em}
+  .dl span{font-size:12.5px;color:var(--btn-sub);font-family:"JBMono",monospace;letter-spacing:.02em}
   .dl:hover{border-color:${COLOR.lime}}
   .dl:focus-visible{outline:3px solid ${COLOR.lime};outline-offset:3px}
   @media (prefers-reduced-motion:reduce){.dl{transition:none}}
@@ -161,7 +169,7 @@ ${FONTS.map(([fam, file]) => `  @font-face{font-family:"${fam}";src:url(fonts/${
   .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
   @media(max-width:620px){.grid3{grid-template-columns:1fr}}
   .sw{border:1px solid var(--line);border-radius:13px;overflow:hidden}
-  .sw .chip{height:72px}
+  .sw .chip{height:72px;box-shadow:inset 0 0 0 1px rgb(148 163 184 / .22)}
   .sw .meta{padding:10px 12px;background:var(--surface)}
   .sw .n{font-weight:600;font-size:14px}
   .sw .h{font-family:"JBMono",monospace;font-size:12px;color:var(--muted)}

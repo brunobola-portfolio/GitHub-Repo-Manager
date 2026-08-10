@@ -16,6 +16,7 @@ import { describe, it, expect } from 'vitest'
 import { ASSETS, COLOR } from '../../scripts/gen-brand.mjs'
 import { page, DESCRIPTIONS } from '../../scripts/gen-brand-page.mjs'
 import { buildKit } from '../../scripts/gen-brand-kit.mjs'
+import AdmZip from 'adm-zip'
 
 const RASTERS = [
   'brand/favicon-16.png',
@@ -197,6 +198,17 @@ describe('the media kit is downloadable and complete', () => {
     ]) {
       expect(entries, `${required} is missing from the media kit`).toContain(required)
     }
+  })
+
+  it('is reproducible — regenerating it does not churn the diff', () => {
+    // adm-zip stamps entries with the wall clock by default, which would make
+    // every `npm run gen:brand` rewrite 220 KB of binary for no change.
+    const stamps = new Set(
+      new AdmZip(readFileSync('brand/repomanager-media-kit.zip'))
+        .getEntries().map((e) => e.header.time.getTime()),
+    )
+    expect(stamps.size, 'entries carry differing timestamps').toBe(1)
+    expect(new Date([...stamps][0]).getFullYear()).toBe(1980)
   })
 
   it('does not contain the page or a copy of itself', () => {

@@ -89,6 +89,14 @@ function collect(dir, base = '') {
   return out.sort()
 }
 
+// adm-zip stamps every entry with the current clock, which would make this a
+// 220 KB binary that rewrites itself on every `npm run gen:brand` — churn in
+// the diff of anyone who merely regenerates. Pinned to the DOS epoch (the
+// earliest a zip can express) so identical inputs give an identical file.
+// Built from local components, not a UTC string: the format stores local time,
+// so a UTC constant would encode differently in every timezone.
+const EPOCH = new Date(1980, 0, 1, 0, 0, 0, 0)
+
 export function buildKit() {
   const zip = new AdmZip()
   const files = collect(BRAND)
@@ -100,6 +108,8 @@ export function buildKit() {
   // repository is a kit whose rules get ignored.
   zip.addFile('BRAND.md', fs.readFileSync(path.join(ROOT, 'docs/BRAND.md')))
   zip.addFile('README.txt', Buffer.from(README, 'utf8'))
+
+  for (const entry of zip.getEntries()) entry.header.time = EPOCH
 
   return { zip, entries: [...files, 'BRAND.md', 'README.txt'].sort() }
 }
