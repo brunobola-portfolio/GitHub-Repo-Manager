@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.16.0] - 2026-08-10
+
 ### Added
 
 - **The brand guide is now a real destination, not a file in a clone.** Every
@@ -2811,6 +2813,7 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 ---
 
 [Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.15.0...HEAD
+[4.16.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.15.0...v4.16.0
 [4.15.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.14.1...v4.15.0
 [4.14.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.14.0...v4.14.1
 [4.14.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.13.1...v4.14.0
