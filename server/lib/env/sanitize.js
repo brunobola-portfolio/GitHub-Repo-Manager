@@ -5,10 +5,12 @@
 export function sanitizeOutput(raw) {
   if (!raw) return '';
   let out = String(raw);
-  // Bounded repetitions: the unbounded pair scans quadratically over a long
-  // run that never reaches the '@', and this runs on captured child-process
-  // output an attacker can lengthen. No real userinfo segment is this long.
-  out = out.replace(/([a-zA-Z][a-zA-Z0-9+.-]*:\/\/)[^\s/@]{1,256}:[^\s/@]{1,256}@/g, '$1***@');
+  // The user half excludes ':' and both halves are bounded, so there is exactly
+  // one way to split 'user:pass@' and the engine never backtracks across it.
+  // The original pair of unbounded [^\s/@]+ runs either side of a ':' scanned
+  // quadratically over long input that never reaches the '@' — and this runs on
+  // captured child-process output, which an attacker can lengthen.
+  out = out.replace(/([a-zA-Z][a-zA-Z0-9+.-]*:\/\/)[^\s/@:]{1,256}:[^\s/@]{1,256}@/g, '$1***@');
   out = out.replace(/(authorization\s*:\s*)(bearer|basic)\s+\S+/gi, '$1$2 ***');
   // Known credential token families (GitHub PAT/OAuth/app tokens) — mask
   // regardless of character mix, since payloads can be all-lowercase.

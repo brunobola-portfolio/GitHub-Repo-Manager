@@ -15,28 +15,25 @@ if (!existsSync(keysDir)) mkdirSync(keysDir, { recursive: true })
 const privatePath = join(keysDir, 'private.pem')
 const publicPath = join(keysDir, 'public.pem')
 
-if (existsSync(privatePath)) {
-  console.error('ERROR: keys/private.pem already exists.')
-  console.error('Delete it manually if you want to regenerate (this will invalidate ALL existing licenses).')
-  process.exit(1)
-}
-
 const { privateKey, publicKey } = await generateKeyPair()
 
-// 'wx' fails if the path exists, so the existence check above is a helpful
-// early message rather than the actual guard. Between that check and this
-// write, a concurrent run could otherwise clobber a private key and invalidate
-// every licence ever issued. 0o600 because this file is the signing key.
+// The exclusive create IS the guard — there is no existence check before it on
+// purpose. Overwriting this file invalidates every licence ever issued, and a
+// check-then-write leaves a window in which a second run does exactly that.
+// 0o600 because this file is the signing key.
+let handle
 try {
-  closeSync(openSync(privatePath, 'wx', 0o600))
+  handle = openSync(privatePath, 'wx', 0o600)
 } catch (err) {
   if (err.code === 'EEXIST') {
-    console.error('ERROR: keys/private.pem appeared while this run was working. Nothing was overwritten.')
+    console.error('ERROR: keys/private.pem already exists. Nothing was overwritten.')
+    console.error('Delete it manually if you want to regenerate (this will invalidate ALL existing licenses).')
     process.exit(1)
   }
   throw err
 }
-writeFileSync(privatePath, privateKey, 'utf-8')
+writeFileSync(handle, privateKey, 'utf-8')
+closeSync(handle)
 writeFileSync(publicPath, publicKey, 'utf-8')
 
 console.log('Ed25519 keypair generated successfully!')
