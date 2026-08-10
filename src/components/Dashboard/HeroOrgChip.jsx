@@ -13,15 +13,15 @@ function OrgList({ orgs, selectedOrg, onSelect }) {
                 onClick={() => onSelect('')}
                 className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-colors text-left ${
                     !selectedOrg
-                        ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                        ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300'
                         : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
                 }`}
             >
-                <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">
+                <div className="w-8 h-8 rounded-lg bg-brand-100 dark:bg-brand-900/40 flex items-center justify-center text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">
                     <Building2 size={16} strokeWidth={2.5} />
                 </div>
                 <span className="font-semibold flex-1">All Organizations</span>
-                {!selectedOrg && <Check size={16} className="text-indigo-500" strokeWidth={3} />}
+                {!selectedOrg && <Check size={16} className="text-brand-500" strokeWidth={3} />}
             </button>
 
             {orgs.map(org => (
@@ -31,13 +31,13 @@ function OrgList({ orgs, selectedOrg, onSelect }) {
                     onClick={() => onSelect(org.login)}
                     className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-colors text-left ${
                         selectedOrg === org.login
-                            ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                            ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300'
                             : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
                     }`}
                 >
                     <img src={org.avatar_url} alt={org.login} loading="lazy" decoding="async" className="w-8 h-8 rounded-lg" />
                     <span className="font-semibold flex-1 truncate">{org.login}</span>
-                    {selectedOrg === org.login && <Check size={16} className="text-indigo-500" strokeWidth={3} />}
+                    {selectedOrg === org.login && <Check size={16} className="text-brand-500" strokeWidth={3} />}
                 </button>
             ))}
         </div>

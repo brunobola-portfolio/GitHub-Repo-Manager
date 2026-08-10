@@ -8,20 +8,20 @@ const features = [
     title: 'AI-Powered Insights',
     description:
       'Quality reports, code health scoring, migration risk analysis, and actionable suggestions — all powered by your configured AI provider.',
-    iconColor: 'text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)]',
+    iconColor: 'text-brand-500 dark:text-[color:var(--ds-accent-brand-dark)]',
     glow: '',
-    iconBg: 'bg-indigo-500/15 dark:bg-indigo-500/25',
-    accent: 'bg-indigo-500',
+    iconBg: 'bg-brand-500/15 dark:bg-brand-500/25',
+    accent: 'bg-brand-500',
   },
   {
     icon: Search,
     title: 'Semantic Search',
     description:
       'Find repositories by meaning, not just keywords. Describe what you need and let AI surface the right repos instantly.',
-    iconColor: 'text-cyan-500 dark:text-cyan-400',
+    iconColor: 'text-brand-500 dark:text-brand-400',
     glow: '',
-    iconBg: 'bg-cyan-500/15 dark:bg-cyan-500/25',
-    accent: 'bg-cyan-500',
+    iconBg: 'bg-brand-500/15 dark:bg-brand-500/25',
+    accent: 'bg-brand-500',
   },
   {
     icon: GitBranch,
@@ -48,10 +48,10 @@ const features = [
     title: 'README Generation',
     description:
       'AI-crafted documentation in seconds. Auto-detect project structure, tech stack, and generate polished READMEs.',
-    iconColor: 'text-pink-500 dark:text-pink-400',
+    iconColor: 'text-brand-500 dark:text-brand-400',
     glow: '',
-    iconBg: 'bg-pink-500/15 dark:bg-pink-500/25',
-    accent: 'bg-pink-500',
+    iconBg: 'bg-brand-500/15 dark:bg-brand-500/25',
+    accent: 'bg-brand-500',
   },
   {
     icon: LayoutDashboard,
@@ -62,10 +62,10 @@ const features = [
       // figure from drifting above what ships — see
       // tests/components/Landing/FeaturesSectionClaims.test.jsx.
       'Beautiful analytics, language breakdowns, commit activity, dark mode, and 10 bulk operations at your fingertips.',
-    iconColor: 'text-violet-500 dark:text-violet-400',
+    iconColor: 'text-brand-500 dark:text-brand-400',
     glow: '',
-    iconBg: 'bg-violet-500/15 dark:bg-violet-500/25',
-    accent: 'bg-violet-500',
+    iconBg: 'bg-brand-500/15 dark:bg-brand-500/25',
+    accent: 'bg-brand-500',
   },
 ]
 
@@ -110,7 +110,7 @@ export function FeaturesSection() {
           transition={{ duration: 0.7, ease: EASE.emphasized }}
           className="text-center mb-14 sm:mb-16"
         >
-          <p className="text-xs font-semibold tracking-widest uppercase text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)] mb-3 ds-font-display">
+          <p className="text-xs font-semibold tracking-widest uppercase text-brand-500 dark:text-[color:var(--ds-accent-brand-dark)] mb-3 ds-font-display">
             Features
           </p>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-slate-100 tracking-tight ds-font-display mb-4">

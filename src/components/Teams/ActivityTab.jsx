@@ -128,11 +128,11 @@ function ActivityItem({ event }) {
     const getEventIcon = (type) => {
         switch (type) {
             case 'PushEvent': return <GitCommit className="w-4 h-4 text-emerald-500" />;
-            case 'PullRequestEvent': return <GitPullRequest className="w-4 h-4 text-purple-500" />;
+            case 'PullRequestEvent': return <GitPullRequest className="w-4 h-4 text-brand-500" />;
             case 'IssuesEvent': return <CircleDot className="w-4 h-4 text-amber-500" />;
             case 'CreateEvent': return <FileCode className="w-4 h-4 text-blue-500" />;
             case 'WatchEvent': return <Star className="w-4 h-4 text-yellow-500" />;
-            case 'ForkEvent': return <GitFork className="w-4 h-4 text-indigo-500" />;
+            case 'ForkEvent': return <GitFork className="w-4 h-4 text-brand-500" />;
             case 'ReleaseEvent': return <Tag className="w-4 h-4 text-green-500" />;
             case 'DeleteEvent': return <Trash2 className="w-4 h-4 text-red-400" />;
             default: return <Activity className="w-4 h-4 text-slate-400" />;
@@ -142,7 +142,7 @@ function ActivityItem({ event }) {
     const getEventDescription = (event) => {
         const repo = event.repo_name ? event.repo_name.split('/')[1] : 'unknown-repo';
         const actor = <span className="font-medium text-slate-900 dark:text-slate-100">{event.actor.login}</span>;
-        const repoLink = <span className="font-medium text-indigo-500">{repo}</span>;
+        const repoLink = <span className="font-medium text-brand-500">{repo}</span>;
         const payload = event.payload || {};
 
         switch (event.type) {
@@ -169,8 +169,8 @@ function ActivityItem({ event }) {
 
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <Card glass={false} shadow="sm" className="flex items-start gap-4 p-4 hover:border-indigo-500/30 group">
-            <div className="mt-1 p-2 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-700 group-hover:border-indigo-300/60 dark:group-hover:border-indigo-500/40 transition-colors">
+        <Card glass={false} shadow="sm" className="flex items-start gap-4 p-4 hover:border-brand-500/30 group">
+            <div className="mt-1 p-2 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-700 group-hover:border-brand-300/60 dark:group-hover:border-brand-500/40 transition-colors">
                 {getEventIcon(event.type)}
             </div>
 

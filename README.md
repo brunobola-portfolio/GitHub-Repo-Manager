@@ -626,8 +626,14 @@ the rules in [`docs/BRAND.md`](docs/BRAND.md). Open
 self-contained, carries its own fonts, and offers the whole kit as a single
 download. Any running deployment also serves it at **`/brand`**.
 
-Everything there is generated from `scripts/gen-brand.mjs`. Never edit an asset
-by hand: change the geometry and run `npm run gen:brand`.
+Everything there is generated from `scripts/gen-brand.mjs` — including the mark
+the app itself renders (`src/components/ui/BrandMark.jsx`), so the product and
+its media kit cannot disagree about what it looks like. Never edit an asset by
+hand: change the geometry and run `npm run gen:brand`.
+
+The UI carries one accent ramp, `brand-*`, derived from the same lime. Status
+colour (passing, attention, failing) is separate and stays — colour there is a
+signal. Both rules are test-enforced.
 
 ---
 

@@ -70,7 +70,7 @@ function SlimIconButton({ icon: Icon, label, isActive, onClick, accent, buttonRe
         accent
           ? 'bg-[color:var(--ds-accent-brand)] text-white hover:opacity-90 shadow-md'
           : isActive
-            ? 'bg-indigo-100 dark:bg-indigo-900/40 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
+            ? 'bg-brand-100 dark:bg-brand-900/40 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
             : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300'
       }`}
       aria-label={hasCount ? `${label} (${count})` : label}
@@ -81,7 +81,7 @@ function SlimIconButton({ icon: Icon, label, isActive, onClick, accent, buttonRe
       {hasCount && (
         <span
           aria-hidden="true"
-          className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-indigo-500 text-white ds-text-micro font-bold leading-[16px] text-center ring-2 ring-white dark:ring-slate-900"
+          className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-brand-500 text-white ds-text-micro font-bold leading-[16px] text-center ring-2 ring-white dark:ring-slate-900"
         >
           {count > 99 ? '99+' : count}
         </span>

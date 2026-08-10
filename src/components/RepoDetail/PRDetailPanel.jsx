@@ -155,7 +155,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
     const isMerged = current.merged || current.merged_at
 
     function getPrState() {
-        if (isMerged) return { label: 'Merged', colorClass: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400', iconColor: 'text-purple-500', Icon: GitMerge }
+        if (isMerged) return { label: 'Merged', colorClass: 'bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400', iconColor: 'text-brand-500', Icon: GitMerge }
         if (!isOpen) return { label: 'Closed', colorClass: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400', iconColor: 'text-red-500', Icon: GitPullRequest }
         return { label: 'Open', colorClass: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400', iconColor: 'text-green-500', Icon: GitPullRequest }
     }
@@ -181,14 +181,14 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
             {/* Back button */}
             <button
                 onClick={onClose}
-                className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
             >
                 <ArrowLeft className="w-4 h-4" />
                 Back to pull requests
             </button>
 
             {/* Header */}
-            <Card className={`p-5 border-l-4 ${isMerged ? 'border-l-purple-500' : isOpen ? 'border-l-green-500' : 'border-l-red-500'}`}>
+            <Card className={`p-5 border-l-4 ${isMerged ? 'border-l-brand-500' : isOpen ? 'border-l-green-500' : 'border-l-red-500'}`}>
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
@@ -272,7 +272,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                 href={current.html_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-2 text-slate-400 hover:text-indigo-500 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                                className="p-2 text-slate-400 hover:text-brand-500 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
                                 title="View on GitHub"
                             >
                                 <ExternalLink className="w-4 h-4" />
@@ -310,7 +310,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                             {/* Body */}
                             {current.body && (
                                 <Card className="p-5">
-                                    <div className="prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 [&_a]:text-indigo-600 dark:[&_a]:text-indigo-400 [&_code]:bg-slate-100 dark:[&_code]:bg-slate-800 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_pre]:bg-slate-100 dark:[&_pre]:bg-slate-800 [&_pre]:rounded-lg [&_pre]:p-4">
+                                    <div className="prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 [&_a]:text-brand-600 dark:[&_a]:text-brand-400 [&_code]:bg-slate-100 dark:[&_code]:bg-slate-800 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_pre]:bg-slate-100 dark:[&_pre]:bg-slate-800 [&_pre]:rounded-lg [&_pre]:p-4">
                                         <ReactMarkdown>{current.body}</ReactMarkdown>
                                     </div>
                                 </Card>
@@ -366,7 +366,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                             {/* Comments */}
                             <div className="space-y-3">
                                 <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                                    <MessageSquare className="w-4 h-4 text-indigo-500" />
+                                    <MessageSquare className="w-4 h-4 text-brand-500" />
                                     Comments ({comments.length})
                                 </h4>
 
@@ -391,7 +391,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                                 {formatRelativeTime(comment.created_at)}
                                             </span>
                                         </div>
-                                        <div className="prose prose-sm dark:prose-invert max-w-none text-slate-600 dark:text-slate-400 [&_a]:text-indigo-600 dark:[&_a]:text-indigo-400 [&_code]:bg-slate-100 dark:[&_code]:bg-slate-800 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm">
+                                        <div className="prose prose-sm dark:prose-invert max-w-none text-slate-600 dark:text-slate-400 [&_a]:text-brand-600 dark:[&_a]:text-brand-400 [&_code]:bg-slate-100 dark:[&_code]:bg-slate-800 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm">
                                             <ReactMarkdown>{comment.body}</ReactMarkdown>
                                         </div>
                                     </Card>

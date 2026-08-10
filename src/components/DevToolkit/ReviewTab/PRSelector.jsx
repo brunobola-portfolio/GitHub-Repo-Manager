@@ -17,7 +17,7 @@ export function PRSelector({ pulls = [], loading, onSelect }) {
                     key={pr.number}
                     type="button"
                     onClick={() => onSelect(pr)}
-                    className="w-full text-left p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                    className="w-full text-left p-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-brand-400 dark:hover:border-brand-500 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
                 >
                     <div className="flex items-start gap-2">
                         <GitPullRequest className={`w-4 h-4 mt-0.5 shrink-0 ${pr.draft ? 'text-slate-400' : 'text-emerald-500'}`} />

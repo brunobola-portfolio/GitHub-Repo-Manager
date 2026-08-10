@@ -19,8 +19,8 @@ export function AIAssistantToggle() {
         <InsightCard tone="ai" hover={false}>
             <div className="space-y-3">
                 <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center flex-shrink-0">
-                        <Sparkles className="w-5 h-5 text-indigo-500" />
+                    <div className="w-10 h-10 rounded-xl bg-brand-500/15 flex items-center justify-center flex-shrink-0">
+                        <Sparkles className="w-5 h-5 text-brand-500" />
                     </div>
                     <div className="flex-1">
                         <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Repo Advisor</h3>
@@ -35,7 +35,7 @@ export function AIAssistantToggle() {
                         aria-label="Enable Repo Advisor"
                         onClick={() => updatePrefs({ ai_assistant_enabled: enabled ? 0 : 1 })}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            enabled ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-600'
+                            enabled ? 'bg-brand-500' : 'bg-slate-300 dark:bg-slate-600'
                         }`}
                     >
                         <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${

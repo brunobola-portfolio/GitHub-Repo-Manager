@@ -1,146 +1,60 @@
-/**
- * AppLogo — "The Nexus" branded logo for GitHub Repo Manager.
- * A central hub (the manager) with orbital repo nodes connected by glowing paths.
- * Communicates: centralized management, connectivity, premium quality.
+/*
+ * The product mark, as the app renders it.
  *
- * Brand colors are sourced from CSS custom properties (--ds-logo-*) defined in
- * `src/design-system.css`. The logo's palette is intentionally static
- * (not theme-aware) to preserve brand identity in both light and dark mode.
+ * This file used to draw its own logo — four gradients, three blurs, a
+ * different silhouette from every file in brand/. It is now a thin composition
+ * over the GENERATED mark (src/components/ui/BrandMark.jsx, emitted by
+ * scripts/gen-brand.mjs) so the app and the media kit cannot disagree about
+ * what the product looks like.
+ *
+ * Never draw the mark here. Change the geometry in scripts/gen-brand.mjs and
+ * run `npm run gen:brand`. Full rules: docs/BRAND.md.
  */
-export function AppLogo({ className = 'w-6 h-6', style }) {
-  return (
-    <svg
-      viewBox="0 0 512 512"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-      style={style}
-      aria-label="Repo Manager logo"
-    >
-      <defs>
-        <linearGradient id="al-bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="var(--ds-logo-bg-start)" />
-          <stop offset="45%" stopColor="var(--ds-logo-bg-mid)" />
-          <stop offset="100%" stopColor="var(--ds-logo-bg-end)" />
-        </linearGradient>
-        <linearGradient id="al-shine" x1="0" y1="0" x2="512" y2="300" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.12" />
-          <stop offset="60%" stopColor="#ffffff" stopOpacity="0.02" />
-          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
-        </linearGradient>
-        <radialGradient id="al-glow" cx="256" cy="240" r="140" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="var(--ds-logo-accent)" stopOpacity="0.4" />
-          <stop offset="50%" stopColor="var(--ds-logo-accent-bold)" stopOpacity="0.15" />
-          <stop offset="100%" stopColor="var(--ds-logo-accent-bold)" stopOpacity="0" />
-        </radialGradient>
-        <linearGradient id="al-node" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="var(--ds-logo-accent-light)" />
-          <stop offset="100%" stopColor="var(--ds-logo-accent)" />
-        </linearGradient>
-        <linearGradient id="al-ring" x1="100" y1="100" x2="400" y2="400" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="var(--ds-logo-accent-bold)" stopOpacity="0.3" />
-          <stop offset="50%" stopColor="var(--ds-logo-secondary)" stopOpacity="0.15" />
-          <stop offset="100%" stopColor="var(--ds-logo-tertiary)" stopOpacity="0.3" />
-        </linearGradient>
-      </defs>
+import { BrandMark } from './ui/BrandMark'
 
-      {/* Background */}
-      <rect width="512" height="512" rx="108" fill="url(#al-bg)" />
-      <rect width="512" height="512" rx="108" fill="url(#al-shine)" />
-
-      {/* Central ambient glow */}
-      <circle cx="256" cy="240" r="140" fill="url(#al-glow)" />
-
-      {/* Orbital ring */}
-      <ellipse cx="256" cy="248" rx="145" ry="130" stroke="url(#al-ring)" strokeWidth="1.5" fill="none" opacity="0.6" />
-
-      {/* Connection lines */}
-      <line x1="256" y1="240" x2="370" y2="142" stroke="var(--ds-logo-accent)" strokeWidth="3" strokeLinecap="round" opacity="0.7" />
-      <line x1="256" y1="240" x2="148" y2="152" stroke="var(--ds-logo-tertiary)" strokeWidth="3" strokeLinecap="round" opacity="0.6" />
-      <line x1="256" y1="240" x2="155" y2="358" stroke="var(--ds-logo-tertiary-soft)" strokeWidth="2.5" strokeLinecap="round" opacity="0.5" />
-      <line x1="256" y1="240" x2="368" y2="348" stroke="var(--ds-logo-secondary)" strokeWidth="2.5" strokeLinecap="round" opacity="0.6" />
-
-      {/* Node-to-node arcs */}
-      <path d="M370 142 Q 410 245, 368 348" stroke="var(--ds-logo-secondary)" strokeWidth="1.5" fill="none" opacity="0.25" strokeLinecap="round" />
-      <path d="M148 152 Q 100 250, 155 358" stroke="var(--ds-logo-tertiary)" strokeWidth="1.5" fill="none" opacity="0.2" strokeLinecap="round" />
-
-      {/* Outer nodes */}
-      {/* Top-right: cyan (primary) */}
-      <circle cx="370" cy="142" r="24" fill="none" stroke="var(--ds-logo-secondary)" strokeWidth="2" opacity="0.3" />
-      <circle cx="370" cy="142" r="16" fill="var(--ds-logo-secondary)" />
-      <circle cx="370" cy="142" r="8" fill="white" opacity="0.7" />
-
-      {/* Top-left: indigo */}
-      <circle cx="148" cy="152" r="20" fill="none" stroke="var(--ds-logo-tertiary)" strokeWidth="1.5" opacity="0.25" />
-      <circle cx="148" cy="152" r="13" fill="var(--ds-logo-accent-light)" />
-      <circle cx="148" cy="152" r="6" fill="white" opacity="0.6" />
-
-      {/* Bottom-left: purple */}
-      <circle cx="155" cy="358" r="18" fill="none" stroke="var(--ds-logo-tertiary-soft)" strokeWidth="1.5" opacity="0.2" />
-      <circle cx="155" cy="358" r="11" fill="var(--ds-logo-tertiary-soft)" />
-      <circle cx="155" cy="358" r="5" fill="white" opacity="0.5" />
-
-      {/* Bottom-right: teal */}
-      <circle cx="368" cy="348" r="19" fill="none" stroke="var(--ds-logo-secondary-deep)" strokeWidth="1.5" opacity="0.25" />
-      <circle cx="368" cy="348" r="12" fill="var(--ds-logo-secondary)" />
-      <circle cx="368" cy="348" r="5.5" fill="white" opacity="0.6" />
-
-      {/* CENTRAL HUB */}
-      <circle cx="256" cy="240" r="34" fill="none" stroke="white" strokeWidth="2.5" opacity="0.25" />
-      <circle cx="256" cy="240" r="28" fill="url(#al-node)" />
-      <circle cx="256" cy="240" r="20" fill="white" opacity="0.15" />
-      {/* Folder icon inside */}
-      <g transform="translate(256,240)" opacity="0.95">
-        <path d="M-12,-10 L-5,-10 L-2,-14 L8,-14 L8,-10 L12,-10 L12,10 L-12,10 Z" fill="white" opacity="0.9" />
-        <line x1="-12" y1="-6" x2="12" y2="-6" stroke="var(--ds-logo-accent-bold)" strokeWidth="1.5" opacity="0.4" />
-      </g>
-
-      {/* Sparkle atmosphere */}
-      <circle cx="310" cy="190" r="2" fill="white" opacity="0.4" />
-      <circle cx="200" cy="300" r="1.5" fill="white" opacity="0.3" />
-      <circle cx="330" cy="290" r="1.5" fill="var(--ds-logo-secondary)" opacity="0.4" />
-      <circle cx="190" cy="200" r="1.5" fill="var(--ds-logo-tertiary)" opacity="0.35" />
-    </svg>
-  )
+/**
+ * The mark on the brand ground — the app-icon shape, for headers and anywhere
+ * the surrounding surface is not guaranteed.
+ *
+ * The ground is fixed, never themed: the tile IS the icon, and an icon that
+ * changes colour with the page is not an icon. Structure is paper, node is the
+ * lime — the same pairing as brand/tile-windows.svg, which is what a user sees
+ * pinned to a taskbar.
+ *
+ * `size` is the tile edge in pixels. The mark occupies ~72% of it, matching
+ * `markScale` in the generator, so a 34 px tile carries a 24 px mark — and the
+ * mark component picks its own optical cut from that number.
+ */
+export function AppLogo({ size = 34, className = '', title = 'RepoManager' }) {
+    const mark = Math.round(size * 0.72)
+    return (
+        <span
+            className={`inline-flex items-center justify-center shrink-0 bg-[color:var(--ds-brand-ground)] ${className}`}
+            style={{
+                width: size,
+                height: size,
+                // 21.9% — the favicon tile's 14-on-64, not the Windows tile's
+                // 11.7%. Both are in the kit; the favicon is the one drawn at
+                // this size, and a corner tuned for a 256 px icon reads as a
+                // hard square in a 34 px header.
+                borderRadius: Math.round(size * 0.219),
+                // Paper structure on the fixed dark ground, in both themes.
+                '--brand-structure': 'var(--ds-brand-paper)',
+                '--brand-node': 'var(--ds-brand-lime)',
+            }}
+        >
+            <BrandMark size={mark} title={title} />
+        </span>
+    )
 }
 
 /**
- * AppLogoIcon — Monochrome icon marks (uses currentColor) for use on gradient backgrounds.
- * Shows the nexus pattern: central hub with 4 connected repo nodes.
+ * The bare mark, inheriting its structure colour from the text around it.
+ *
+ * For places that already own their ground — a coloured button, a list row, a
+ * monochrome print. The node keeps the lime unless the caller overrides
+ * --brand-node, because the node is the only carrier of brand recognition.
  */
-export function AppLogoIcon({ className = 'w-6 h-6', style }) {
-  return (
-    <svg
-      viewBox="80 80 360 340"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-      style={style}
-      aria-label="Repo Manager icon"
-    >
-      {/* Connection lines */}
-      <line x1="256" y1="240" x2="370" y2="142" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" opacity="0.5" />
-      <line x1="256" y1="240" x2="148" y2="152" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" opacity="0.45" />
-      <line x1="256" y1="240" x2="155" y2="358" stroke="currentColor" strokeWidth="3" strokeLinecap="round" opacity="0.4" />
-      <line x1="256" y1="240" x2="368" y2="348" stroke="currentColor" strokeWidth="3" strokeLinecap="round" opacity="0.45" />
-
-      {/* Outer repo nodes */}
-      <circle cx="370" cy="142" r="16" fill="currentColor" opacity="0.75" />
-      <circle cx="370" cy="142" r="7" fill="currentColor" opacity="0.4" />
-      <circle cx="148" cy="152" r="13" fill="currentColor" opacity="0.65" />
-      <circle cx="148" cy="152" r="5.5" fill="currentColor" opacity="0.35" />
-      <circle cx="155" cy="358" r="11" fill="currentColor" opacity="0.55" />
-      <circle cx="155" cy="358" r="4.5" fill="currentColor" opacity="0.3" />
-      <circle cx="368" cy="348" r="12" fill="currentColor" opacity="0.65" />
-      <circle cx="368" cy="348" r="5" fill="currentColor" opacity="0.35" />
-
-      {/* Central hub */}
-      <circle cx="256" cy="240" r="30" fill="currentColor" opacity="0.2" />
-      <circle cx="256" cy="240" r="24" fill="currentColor" opacity="0.85" />
-      {/* Folder shape inside */}
-      <g transform="translate(256,240)">
-        <path d="M-10,-8 L-4,-8 L-1.5,-12 L7,-12 L7,-8 L10,-8 L10,9 L-10,9 Z" fill="currentColor" opacity="0.3" />
-      </g>
-    </svg>
-  )
+export function AppLogoIcon({ size = 24, className = '', title = 'RepoManager' }) {
+    return <BrandMark size={size} className={className} title={title} />
 }

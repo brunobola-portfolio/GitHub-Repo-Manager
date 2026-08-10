@@ -20,10 +20,10 @@ function formatRelativeTime(iso) {
 function Badge({ icon: Icon, children, tone = 'slate' }) {
   const toneCls = {
     slate:  'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-400',
-    purple: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
-    sky:    'bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400',
+    purple: 'bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400',
+    sky:    'bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400',
     amber:  'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
-    violet: 'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400',
+    violet: 'bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400',
   }[tone]
   return (
     <span className={`inline-flex items-center gap-1 ds-text-micro px-1.5 py-0.5 rounded font-medium ${toneCls}`}>

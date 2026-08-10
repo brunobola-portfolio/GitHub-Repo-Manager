@@ -246,7 +246,7 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
                     )}
 
                     {teams.length === 0 && upgradeRequired && (
-                        <div className="col-span-full py-14 px-6 text-center bg-indigo-500/8 dark:bg-indigo-500/12 rounded-3xl ring-1 ring-indigo-500/20">
+                        <div className="col-span-full py-14 px-6 text-center bg-brand-500/8 dark:bg-brand-500/12 rounded-3xl ring-1 ring-brand-500/20">
                             <div className="inline-flex items-center justify-center w-14 h-14 mb-4 rounded-2xl bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] shadow-md">
                                 <Sparkles className="w-7 h-7 text-white" strokeWidth={2.5} />
                             </div>
@@ -284,9 +284,9 @@ function TeamCard({ team, onClick, onEdit, onDelete }) {
 
     return (
         <motion.div layoutId={`team-${team.id}`} onClick={onClick} className="group">
-        <Card hover className="relative p-6 hover:shadow-2xl hover:border-indigo-500/50">
+        <Card hover className="relative p-6 hover:shadow-2xl hover:border-brand-500/50">
             <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">
+                <div className="w-12 h-12 rounded-2xl bg-brand-100 dark:bg-brand-900/50 flex items-center justify-center text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">
                     <Users className="w-6 h-6" />
                 </div>
 
@@ -295,7 +295,7 @@ function TeamCard({ team, onClick, onEdit, onDelete }) {
                     <div className="relative">
                         <button
                             onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-                            className="p-2 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"
+                            className="p-2 text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-lg transition-colors"
                             aria-label="Team actions menu"
                             aria-expanded={showMenu}
                             aria-haspopup="menu"
@@ -333,7 +333,7 @@ function TeamCard({ team, onClick, onEdit, onDelete }) {
                 )}
             </div>
 
-            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1 group-hover:text-indigo-500 transition-colors truncate">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-1 group-hover:text-brand-500 transition-colors truncate">
                 {team.name}
             </h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 line-clamp-2 min-h-[2.5rem]">

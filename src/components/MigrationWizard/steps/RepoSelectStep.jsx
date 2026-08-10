@@ -235,7 +235,7 @@ export default function RepoSelectStep({ repos, onSetRepos, onUpdateRepo, source
           <AlertCircle className="w-6 h-6 text-red-500" />
         </div>
         <p className="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>
-        <button onClick={retry} className="text-sm text-indigo-500 hover:text-indigo-400 underline">Try again</button>
+        <button onClick={retry} className="text-sm text-brand-500 hover:text-brand-400 underline">Try again</button>
       </div>
     )
   }

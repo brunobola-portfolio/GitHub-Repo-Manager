@@ -93,11 +93,11 @@ function StepDisc({ status, index, icon: Icon }) {
   }
   if (status === 'current') {
     return (
-      <div className="relative w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-[0_0_0_4px_rgba(99,102,241,0.15),0_4px_14px_-2px_rgba(99,102,241,0.5)]">
+      <div className="relative w-9 h-9 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white shadow-[0_0_0_4px_rgba(99,102,241,0.15),0_4px_14px_-2px_rgba(99,102,241,0.5)]">
         <Icon className="w-4 h-4" strokeWidth={2.25} />
         <motion.span
           aria-hidden="true"
-          className="absolute inset-0 rounded-full bg-indigo-500"
+          className="absolute inset-0 rounded-full bg-brand-500"
           initial={{ opacity: 0.35, scale: 1 }}
           animate={{ opacity: 0, scale: 1.6 }}
           transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }}
@@ -107,7 +107,7 @@ function StepDisc({ status, index, icon: Icon }) {
   }
   if (status === 'loading') {
     return (
-      <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ring-2 ring-indigo-300 dark:ring-indigo-700">
+      <div className="w-9 h-9 rounded-full bg-brand-100 dark:bg-brand-900/40 flex items-center justify-center text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ring-2 ring-brand-300 dark:ring-brand-700">
         <Spinner size="md" tone="primary" />
       </div>
     )
@@ -143,9 +143,9 @@ function StepDisc({ status, index, icon: Icon }) {
 
 const ROW_TONE = {
   done:    { row: 'hover:bg-emerald-50/60 dark:hover:bg-emerald-900/10 cursor-pointer', label: 'text-slate-800 dark:text-slate-100', hint: 'text-emerald-600/80 dark:text-emerald-400/70', pill: null },
-  current: { row: 'bg-gradient-to-r from-indigo-50/80 to-transparent dark:from-indigo-500/[0.12] dark:to-transparent', label: 'text-indigo-700 dark:text-indigo-200', hint: 'text-indigo-500/80 dark:text-indigo-300/80', pill: { label: 'NOW', cls: 'bg-indigo-500 text-white' } },
+  current: { row: 'bg-gradient-to-r from-brand-50/80 to-transparent dark:from-brand-500/[0.12] dark:to-transparent', label: 'text-brand-700 dark:text-brand-200', hint: 'text-brand-500/80 dark:text-brand-300/80', pill: { label: 'NOW', cls: 'bg-brand-500 text-white' } },
   pending: { row: '', label: 'text-slate-500 dark:text-slate-500', hint: 'text-slate-400 dark:text-slate-600', pill: null },
-  loading: { row: 'bg-gradient-to-r from-indigo-50/80 to-transparent dark:from-indigo-500/[0.10] dark:to-transparent', label: 'text-indigo-700 dark:text-indigo-200', hint: 'text-indigo-500/80 dark:text-indigo-300/80', pill: { label: 'PROCESSING', cls: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300' } },
+  loading: { row: 'bg-gradient-to-r from-brand-50/80 to-transparent dark:from-brand-500/[0.10] dark:to-transparent', label: 'text-brand-700 dark:text-brand-200', hint: 'text-brand-500/80 dark:text-brand-300/80', pill: { label: 'PROCESSING', cls: 'bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300' } },
   error:   { row: 'bg-gradient-to-r from-red-50/80 to-transparent dark:from-red-500/[0.10] dark:to-transparent', label: 'text-red-700 dark:text-red-300', hint: 'text-red-600/80 dark:text-red-400/80', pill: { label: 'ACTION', cls: 'bg-red-500 text-white' } },
   warning: { row: 'bg-gradient-to-r from-amber-50/70 to-transparent dark:from-amber-500/[0.10] dark:to-transparent', label: 'text-amber-700 dark:text-amber-300', hint: 'text-amber-600/80 dark:text-amber-400/80', pill: { label: 'WARNING', cls: 'bg-amber-400 text-white' } },
   skipped: { row: '', label: 'text-slate-400 dark:text-slate-600', hint: 'text-slate-300 dark:text-slate-700 italic', pill: { label: 'SKIPPED', cls: 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400' } },
@@ -191,12 +191,12 @@ export function SidebarStepper({
       {/* Breadcrumb — preserved verbatim (already premium for Azure flows) */}
       {showBreadcrumb && (
         <div className="px-3 pt-4 pb-1">
-          <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-500/[0.08] dark:bg-indigo-500/[0.12] border border-indigo-500/10 dark:border-indigo-500/15">
-            <Cloud className="w-3 h-3 text-indigo-400 shrink-0" />
+          <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-brand-500/[0.08] dark:bg-brand-500/[0.12] border border-brand-500/10 dark:border-brand-500/15">
+            <Cloud className="w-3 h-3 text-brand-400 shrink-0" />
             <button
               type="button"
               onClick={() => onBreadcrumbNavigate('org')}
-              className="ds-text-meta font-semibold text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)] hover:text-indigo-400 dark:hover:text-indigo-300 transition-colors truncate max-w-[60px]"
+              className="ds-text-meta font-semibold text-brand-500 dark:text-[color:var(--ds-accent-brand-dark)] hover:text-brand-400 dark:hover:text-brand-300 transition-colors truncate max-w-[60px]"
             >
               {source.org}
             </button>
@@ -204,7 +204,7 @@ export function SidebarStepper({
             <button
               type="button"
               onClick={() => onBreadcrumbNavigate('project')}
-              className="ds-text-meta font-semibold text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)] hover:text-indigo-400 dark:hover:text-indigo-300 transition-colors truncate max-w-[70px]"
+              className="ds-text-meta font-semibold text-brand-500 dark:text-[color:var(--ds-accent-brand-dark)] hover:text-brand-400 dark:hover:text-brand-300 transition-colors truncate max-w-[70px]"
             >
               {source.project}
             </button>
@@ -227,7 +227,7 @@ export function SidebarStepper({
           <span className="ds-text-micro font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
             Progress
           </span>
-          <div className="inline-flex items-baseline gap-0.5 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-500/10 text-[color:var(--ds-accent-brand)] dark:text-indigo-300 font-bold tabular-nums">
+          <div className="inline-flex items-baseline gap-0.5 px-2 py-0.5 rounded-md bg-brand-50 dark:bg-brand-500/10 text-[color:var(--ds-accent-brand)] dark:text-brand-300 font-bold tabular-nums">
             <span className="text-[13px] leading-none">{effectiveCurrent}</span>
             <span className="ds-text-micro leading-none opacity-60">/</span>
             <span className="ds-text-meta leading-none opacity-70">{effectiveTotal}</span>
@@ -235,7 +235,7 @@ export function SidebarStepper({
         </div>
         <div className="relative h-1.5 rounded-full bg-slate-100 dark:bg-slate-800/70 overflow-hidden">
           <motion.div
-            className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-indigo-500"
+            className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-brand-500"
             initial={false}
             animate={{ width: `${fillPct}%` }}
             transition={{ duration: 0.55, ease: EASE.emphasized }}
@@ -253,7 +253,7 @@ export function SidebarStepper({
           />
           {/* Animated progress fill — emerald → indigo gradient stops at fillUpToIndex */}
           <motion.div
-            className="absolute left-[30px] top-5 w-px bg-gradient-to-b from-emerald-400 via-emerald-500 to-indigo-500"
+            className="absolute left-[30px] top-5 w-px bg-gradient-to-b from-emerald-400 via-emerald-500 to-brand-500"
             aria-hidden="true"
             initial={false}
             animate={{
@@ -352,7 +352,7 @@ export function HorizontalStepper({ steps, currentStepIndex, onGoToStep }) {
                   className={`
                     flex items-center justify-center rounded-full text-xs font-bold transition-all
                     ${isActive
-                      ? 'w-7 h-7 bg-indigo-500 text-white ring-4 ring-indigo-500/20 scale-110'
+                      ? 'w-7 h-7 bg-brand-500 text-white ring-4 ring-brand-500/20 scale-110'
                       : isCompleted
                         ? 'w-5 h-5 bg-emerald-500 text-white cursor-pointer hover:bg-emerald-600'
                         : 'w-5 h-5 bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'

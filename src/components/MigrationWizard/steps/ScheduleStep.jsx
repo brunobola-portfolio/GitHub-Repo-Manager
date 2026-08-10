@@ -192,7 +192,7 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
         <label className={`
           flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all
           ${schedule.mode === 'now'
-            ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-500/20'
+            ? 'border-brand-300 dark:border-brand-600 bg-brand-50 dark:bg-brand-900/20 ring-1 ring-brand-500/20'
             : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
           }
         `}>
@@ -202,11 +202,11 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
             value="now"
             checked={schedule.mode === 'now'}
             onChange={() => onUpdate({ mode: 'now', scheduledAt: null })}
-            className="text-indigo-500 focus:ring-indigo-500"
+            className="text-brand-500 focus:ring-brand-500"
           />
           <div>
             <span className="text-sm font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <Rocket className="w-4 h-4 text-indigo-500" />
+              <Rocket className="w-4 h-4 text-brand-500" />
               Execute Now
             </span>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -219,7 +219,7 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
         <label className={`
           flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all
           ${schedule.mode === 'scheduled'
-            ? 'border-indigo-300 dark:border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-500/20'
+            ? 'border-brand-300 dark:border-brand-600 bg-brand-50 dark:bg-brand-900/20 ring-1 ring-brand-500/20'
             : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
           }
         `}>
@@ -229,7 +229,7 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
             value="scheduled"
             checked={schedule.mode === 'scheduled'}
             onChange={() => onUpdate({ mode: 'scheduled' })}
-            className="text-indigo-500 focus:ring-indigo-500"
+            className="text-brand-500 focus:ring-brand-500"
           />
           <div>
             <span className="text-sm font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2">
@@ -273,7 +273,7 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
           type="checkbox"
           checked={schedule.isDryRun}
           onChange={(e) => onUpdate({ isDryRun: e.target.checked })}
-          className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-indigo-500 focus:ring-indigo-500"
+          className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-brand-500 focus:ring-brand-500"
         />
         <div>
           <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Dry Run</span>

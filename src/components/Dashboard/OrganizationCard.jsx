@@ -95,7 +95,7 @@ export const OrganizationCard = memo(function OrganizationCard({ org, repos = []
                         icon={GitPullRequest}
                         value={formatCompact(openIssues)}
                         label="Open Issues"
-                        color="text-teal-500"
+                        color="text-brand-500"
                     />
                     <StatItem
                         icon={AlertCircle}

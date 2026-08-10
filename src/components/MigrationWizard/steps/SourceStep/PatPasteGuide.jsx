@@ -143,7 +143,7 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
             // Explicit name = the visible label, so the Tooltip's aria mirror
             // can't overwrite it with the raw URL (keeps WCAG 2.5.3 label-in-name).
             aria-label={openedAt ? 'Reopen PAT page' : hasContext ? `Open PAT on ${provider.shortName}` : 'Paste URL first'}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] dark:hover:bg-indigo-400 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed disabled:hover:bg-slate-300 transition-colors shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] dark:hover:bg-brand-400 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed disabled:hover:bg-slate-300 transition-colors shadow-sm"
           >
             <ExternalLink className="w-3.5 h-3.5" />
             {openedAt ? 'Reopen PAT page' : hasContext ? `Open PAT on ${provider.shortName}` : 'Paste URL first'}
@@ -272,12 +272,12 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
 function Step({ n, title, subtitle, children, highlight = false }) {
   return (
     <div
-      className={`flex gap-3 ${highlight ? 'p-3 rounded-xl bg-indigo-50/40 dark:bg-indigo-900/10 border border-indigo-200 dark:border-indigo-800' : ''}`}
+      className={`flex gap-3 ${highlight ? 'p-3 rounded-xl bg-brand-50/40 dark:bg-brand-900/10 border border-brand-200 dark:border-brand-800' : ''}`}
     >
       <div
         className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center ds-text-meta font-bold mt-0.5
           ${highlight
-            ? 'bg-indigo-500 text-white'
+            ? 'bg-brand-500 text-white'
             : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200'}`}
       >
         {n}
@@ -317,10 +317,10 @@ function ScopeChips({ required = [], recommended = [], tfvc = [] }) {
       {tfvc.map((s) => (
         <span
           key={s}
-          className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-md bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800"
+          className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-md bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-800"
           title="Useful on on-prem TFS"
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
+          <span className="w-1.5 h-1.5 rounded-full bg-brand-500" />
           {s}
         </span>
       ))}

@@ -92,10 +92,10 @@ describe('OverviewTab — Topics', () => {
         const pill = await screen.findByText('react')
         // Badge's brand tone (see src/components/ui/Badge.jsx TONES.brand) +
         // the `ring` prop's tone-matched inset ring (RINGS.brand).
-        expect(pill.className).toMatch(/bg-indigo-100/)
-        expect(pill.className).toMatch(/dark:bg-indigo-900\/40/)
+        expect(pill.className).toMatch(/bg-brand-100/)
+        expect(pill.className).toMatch(/dark:bg-brand-900\/40/)
         expect(pill.className).toMatch(/ring-1 ring-inset/)
-        expect(pill.className).toMatch(/ring-indigo-200/)
+        expect(pill.className).toMatch(/ring-brand-200/)
         expect(screen.getByText('vite')).toBeInTheDocument()
     })
 })

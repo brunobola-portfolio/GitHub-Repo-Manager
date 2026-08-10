@@ -77,7 +77,7 @@ export function TodayPanel({
                 reads as the first stop on the dashboard thread. */}
             <span
                 aria-hidden="true"
-                className="hidden lg:block absolute -left-[21px] top-[42px] w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 ring-4 ring-white/60 dark:ring-slate-950/60"
+                className="hidden lg:block absolute -left-[21px] top-[42px] w-1.5 h-1.5 rounded-full bg-brand-400 dark:bg-brand-500 ring-4 ring-white/60 dark:ring-slate-950/60"
             />
             {/* Internal soft highlight — premium glaze without rainbow gradients. */}
             <div

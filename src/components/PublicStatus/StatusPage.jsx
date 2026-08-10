@@ -170,7 +170,7 @@ export function StatusPage() {
                         <li><span className="inline-block w-2 h-2 rounded-full bg-slate-400 mr-2" />Checking / Unknown — the status page could not reach the server.</li>
                     </ul>
                     <p className="pt-4">
-                        <a href="/" className="underline hover:text-indigo-600 dark:hover:text-indigo-400">Return to app</a>
+                        <a href="/" className="underline hover:text-brand-600 dark:hover:text-brand-400">Return to app</a>
                     </p>
                 </footer>
             </div>

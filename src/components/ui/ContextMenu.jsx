@@ -333,7 +333,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 										? 'bg-black/[0.06] dark:bg-white/[0.08] text-slate-900 dark:text-slate-100'
 										: 'text-slate-700 dark:text-slate-300'
 								}
-							${isKeyboardFocused ? 'ring-2 ring-inset ring-indigo-500/70 dark:ring-indigo-400/70' : ''}
+							${isKeyboardFocused ? 'ring-2 ring-inset ring-brand-500/70 dark:ring-brand-400/70' : ''}
 								`}
 							onMouseEnter={() => {
 								if (!item.disabled) handleItemHover(index)

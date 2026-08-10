@@ -129,16 +129,16 @@ describe('Modal — staggerChildren and iconGradient', () => {
     expect(container.querySelector('[data-stagger-root="true"]')).toBeNull()
   })
 
-  it('renders icon tile with indigo tint when iconGradient=primary', () => {
+  it('renders icon tile with the brand tint when iconGradient=primary', () => {
     const Icon = () => <svg data-testid="icon" />
     const { container } = render(
       <Modal isOpen={true} onClose={() => {}} title="Hi" icon={Icon} iconGradient="primary">x</Modal>
     )
     const iconTile = container.querySelector('[data-icon-tile="true"]')
     expect(iconTile).not.toBeNull()
-    // Neutral-header redesign: tile is soft-tinted (bg-indigo-100 in light,
-    // bg-indigo-500/15 in dark) rather than the prior bg-indigo-600 solid.
-    expect(iconTile.className).toMatch(/bg-indigo-(100|500\/15)/)
+    // Neutral-header redesign: tile is soft-tinted (bg-brand-100 in light,
+    // bg-brand-500/15 in dark) rather than the prior bg-brand-600 solid.
+    expect(iconTile.className).toMatch(/bg-brand-(100|500\/15)/)
   })
 })
 
@@ -152,7 +152,7 @@ describe('Modal — semantic variants', () => {
   it.each([
     ['danger',  /bg-red-(100|500\/15)/],
     ['warning', /bg-amber-(100|500\/15)/],
-    ['info',    /bg-sky-(100|500\/15)/],
+    ['info',    /bg-brand-(100|500\/15)/],
     ['success', /bg-emerald-(100|500\/15)/],
   ])('renders %s variant with the matching soft-tinted icon tile', (variant, pattern) => {
     const { container } = render(
@@ -178,7 +178,7 @@ describe('Modal — semantic variants', () => {
       <Modal isOpen={true} onClose={() => {}} title="X" icon={Icon} variant="danger" iconGradient="primary">x</Modal>
     )
     const iconTile = container.querySelector('[data-icon-tile="true"]')
-    expect(iconTile.className).toMatch(/bg-indigo-(100|500\/15)/)
+    expect(iconTile.className).toMatch(/bg-brand-(100|500\/15)/)
     expect(iconTile.className).not.toMatch(/bg-red-/)
   })
 

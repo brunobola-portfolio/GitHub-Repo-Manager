@@ -28,7 +28,7 @@ export function CTASection({ onSignIn }) {
           transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
-          className="absolute rounded-full blur-3xl bg-purple-600 opacity-10 dark:opacity-20"
+          className="absolute rounded-full blur-3xl bg-brand-600 opacity-10 dark:opacity-20"
           style={{ width: 300, height: 300, right: '-6%', bottom: '10%' }}
           animate={{ y: [0, 20, 0], scale: [1, 1.08, 1] }}
           transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut' }}

@@ -105,7 +105,7 @@ describe('AboutSection', () => {
         render(<AboutSection />);
         const dismissButton = await screen.findByRole('button', { name: /dismiss/i });
         // Measured via axe against the real rendered banner: text-slate-400 on
-        // bg-indigo-50/60 is ~2.8:1 (well below AA), and text-slate-500 — the
+        // bg-brand-50/60 is ~2.8:1 (well below AA), and text-slate-500 — the
         // house pattern that clears AA on a plain white surface — still only
         // measures 4.41:1 against this banner's indigo-tinted background,
         // just under the 4.5:1 threshold. text-slate-600 clears it (~7:1).

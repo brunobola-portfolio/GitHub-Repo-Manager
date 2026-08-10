@@ -280,7 +280,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
             <Card className="p-5 space-y-4">
                 <div className="flex items-center justify-between">
                     <h3 className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                        <Settings className="w-5 h-5 text-indigo-500" /> General
+                        <Settings className="w-5 h-5 text-brand-500" /> General
                     </h3>
                     <button
                         type="button"
@@ -327,7 +327,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
                                 <input type="checkbox" checked={form[feat.key]}
                                     onChange={e => setForm(f => ({ ...f, [feat.key]: e.target.checked }))}
                                     disabled={saving}
-                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-indigo-500/40" />
+                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-brand-500/40" />
                                 <span className="text-sm text-slate-700 dark:text-slate-300">{feat.label}</span>
                             </label>
                         ))}
@@ -338,7 +338,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
                 <div className="space-y-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/50">
                     {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-0.5 flex items-center gap-1.5">
-                        <GitMerge className="w-3.5 h-3.5 text-indigo-500" /> Pull request merging
+                        <GitMerge className="w-3.5 h-3.5 text-brand-500" /> Pull request merging
                     </label>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                         {[
@@ -351,7 +351,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
                                 <input type="checkbox" checked={form[feat.key]}
                                     onChange={e => setForm(f => ({ ...f, [feat.key]: e.target.checked }))}
                                     disabled={saving}
-                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-indigo-500/40" />
+                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-brand-500/40" />
                                 <span className="text-sm text-slate-700 dark:text-slate-300">{feat.label}</span>
                             </label>
                         ))}
@@ -408,7 +408,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
             <Card className="p-5 space-y-4">
                 <div className="flex items-center justify-between">
                     <h3 className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                        <Webhook className="w-5 h-5 text-indigo-500" /> Webhooks
+                        <Webhook className="w-5 h-5 text-brand-500" /> Webhooks
                     </h3>
                     <div className="flex gap-2">
                         {!hooksLoaded ? (
@@ -531,7 +531,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
                 <div className="flex items-start justify-between gap-4">
                     <div>
                         <h3 className="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                            <Users className="w-4 h-4 text-indigo-500" />
+                            <Users className="w-4 h-4 text-brand-500" />
                             CODEOWNERS
                         </h3>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-xl">
@@ -552,7 +552,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
             {/* Topics — manual editor (chips + add input). AI suggestions live in the section below. */}
             <Card className="p-5 space-y-3">
                 <h3 className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                    <Tag className="w-5 h-5 text-indigo-500" /> Topics
+                    <Tag className="w-5 h-5 text-brand-500" /> Topics
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
                     Lowercase letters, digits, or hyphens. Up to 20 per repository. Saved instantly.
@@ -562,13 +562,13 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
                         <span className="text-sm text-slate-500 dark:text-slate-400 italic">No topics yet — add the first one below.</span>
                     )}
                     {(repoData.topics || []).map((topic) => (
-                        <span key={topic} className="group inline-flex items-center gap-1 pl-2.5 pr-1 py-0.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-700/40">
+                        <span key={topic} className="group inline-flex items-center gap-1 pl-2.5 pr-1 py-0.5 rounded-full text-xs font-medium bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 border border-brand-200/60 dark:border-brand-700/40">
                             {topic}
                             <button
                                 type="button"
                                 onClick={() => handleRemoveTopic(topic)}
                                 disabled={topicsSaving || repoData.archived}
-                                className="rounded-full p-0.5 text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="rounded-full p-0.5 text-brand-400 hover:text-brand-700 dark:hover:text-brand-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                 title={`Remove "${topic}"`}
                                 aria-label={`Remove topic ${topic}`}
                             >
@@ -608,7 +608,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
 
             <section data-testid="ai-suggested-topics" className="mt-6 p-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
                 <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="w-4 h-4 text-indigo-500" />
+                    <Sparkles className="w-4 h-4 text-brand-500" />
                     <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">AI-suggested topics</h3>
                 </div>
 

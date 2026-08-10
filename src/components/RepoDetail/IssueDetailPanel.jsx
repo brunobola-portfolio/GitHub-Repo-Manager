@@ -102,22 +102,22 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
             {/* Back button */}
             <button
                 onClick={onClose}
-                className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
             >
                 <ArrowLeft className="w-4 h-4" />
                 Back to issues
             </button>
 
             {/* Header */}
-            <Card className={`p-5 border-l-4 ${isOpen ? 'border-l-green-500' : 'border-l-purple-500'}`}>
+            <Card className={`p-5 border-l-4 ${isOpen ? 'border-l-green-500' : 'border-l-brand-500'}`}>
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
-                            <CircleDot className={`w-5 h-5 flex-shrink-0 ${isOpen ? 'text-green-500' : 'text-purple-500'}`} />
+                            <CircleDot className={`w-5 h-5 flex-shrink-0 ${isOpen ? 'text-green-500' : 'text-brand-500'}`} />
                             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                                 isOpen
                                     ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                                    : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
+                                    : 'bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400'
                             }`}>
                                 {isOpen ? 'Open' : 'Closed'}
                             </span>
@@ -155,7 +155,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                                     showPlanner
                                         ? 'bg-[color:var(--ds-accent-brand)] text-white shadow-sm'
-                                        : 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/50'
+                                        : 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] bg-brand-50 dark:bg-brand-950/40 hover:bg-brand-100 dark:hover:bg-brand-900/50'
                                 }`}
                                 title="Generate an AI implementation plan for this issue"
                             >
@@ -168,7 +168,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                                 href={current.html_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-2 text-slate-400 hover:text-indigo-500 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/60"
+                                className="p-2 text-slate-400 hover:text-brand-500 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/60"
                                 title="View on GitHub"
                             >
                                 <ExternalLink className="w-4 h-4" />
@@ -217,7 +217,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                 <>
                     {current.body && (
                         <Card className="p-5">
-                            <div className="prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 [&_a]:text-indigo-600 dark:[&_a]:text-indigo-400 [&_code]:bg-slate-100 dark:[&_code]:bg-slate-800 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_pre]:bg-slate-100 dark:[&_pre]:bg-slate-800 [&_pre]:rounded-lg [&_pre]:p-4">
+                            <div className="prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 [&_a]:text-brand-600 dark:[&_a]:text-brand-400 [&_code]:bg-slate-100 dark:[&_code]:bg-slate-800 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_pre]:bg-slate-100 dark:[&_pre]:bg-slate-800 [&_pre]:rounded-lg [&_pre]:p-4">
                                 <ReactMarkdown>{current.body}</ReactMarkdown>
                             </div>
                         </Card>
@@ -226,7 +226,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                     {/* Comments thread */}
                     <div className="space-y-3">
                         <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                            <MessageSquare className="w-4 h-4 text-indigo-500" />
+                            <MessageSquare className="w-4 h-4 text-brand-500" />
                             Comments ({comments.length})
                         </h4>
 
@@ -251,7 +251,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                                         {formatRelativeTime(comment.created_at)}
                                     </span>
                                 </div>
-                                <div className="prose prose-sm dark:prose-invert max-w-none text-slate-600 dark:text-slate-400 [&_a]:text-indigo-600 dark:[&_a]:text-indigo-400 [&_code]:bg-slate-100 dark:[&_code]:bg-slate-800 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm">
+                                <div className="prose prose-sm dark:prose-invert max-w-none text-slate-600 dark:text-slate-400 [&_a]:text-brand-600 dark:[&_a]:text-brand-400 [&_code]:bg-slate-100 dark:[&_code]:bg-slate-800 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm">
                                     <ReactMarkdown>{comment.body}</ReactMarkdown>
                                 </div>
                             </Card>
@@ -281,7 +281,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                                 variant="ghost"
                                 size="sm"
                                 onClick={handleStateToggle}
-                                className={isOpen ? 'text-purple-600 dark:text-purple-400' : 'text-green-600 dark:text-green-400'}
+                                className={isOpen ? 'text-brand-600 dark:text-brand-400' : 'text-green-600 dark:text-green-400'}
                             >
                                 {isOpen ? (
                                     <><XCircle className="w-4 h-4 mr-1" /> Close issue</>

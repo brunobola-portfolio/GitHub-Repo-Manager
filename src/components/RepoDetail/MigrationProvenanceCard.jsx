@@ -22,11 +22,11 @@ export function MigrationProvenanceCard({ fullName }) {
     <motion.section
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl p-5 border border-violet-200/60 dark:border-violet-500/20 bg-gradient-to-br from-violet-50/80 to-fuchsia-50/40 dark:from-violet-950/30 dark:to-fuchsia-950/20"
+      className="rounded-2xl p-5 border border-brand-200/60 dark:border-brand-500/20 bg-gradient-to-br from-brand-50/80 to-brand-50/40 dark:from-brand-950/30 dark:to-brand-950/20"
       aria-label="Migration provenance"
     >
       <div className="flex items-center gap-2 mb-3">
-        <span className="inline-flex p-1.5 rounded-lg bg-violet-500/15 text-violet-600 dark:text-violet-300">
+        <span className="inline-flex p-1.5 rounded-lg bg-brand-500/15 text-brand-600 dark:text-brand-300">
           <Sparkles className="w-3.5 h-3.5" aria-hidden />
         </span>
         <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">

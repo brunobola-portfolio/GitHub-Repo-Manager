@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { Sun, Moon } from 'lucide-react'
 import { EASE } from '../ui/motion'
 import { Github } from '../icons/GithubIcon'
+import { AppLogo } from '../AppLogo'
 import { HeroSection } from './HeroSection'
 import { FeaturesSection } from './FeaturesSection'
 import { PricingPreview } from './PricingPreview'
@@ -39,7 +40,7 @@ function LandingFooter() {
             href="https://www.linkedin.com/in/bolalabs/"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-slate-600 dark:text-slate-300 font-medium hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200"
+            className="text-slate-600 dark:text-slate-300 font-medium hover:text-brand-600 dark:hover:text-brand-400 transition-colors duration-200"
           >
             Bruno Marques
           </a>
@@ -102,9 +103,10 @@ export function LandingPage({ onSignIn }) {
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] flex items-center justify-center shadow-md">
-              <Github className="w-4 h-4 text-white" />
-            </div>
+            {/* The product mark, not GitHub's. RepoManager manages GitHub
+                and is not affiliated with it — borrowing the Octocat as our own
+                app icon is the one thing docs/BRAND.md forbids outright. */}
+            <AppLogo size={28} className="shadow-md" title="" />
             <span className="font-bold text-slate-800 dark:text-white text-sm ds-font-display">
               Repo Manager
             </span>

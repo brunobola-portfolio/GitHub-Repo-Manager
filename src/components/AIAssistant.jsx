@@ -25,7 +25,7 @@ function SourceLink({ href, children }) {
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-baseline gap-0.5 font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] underline decoration-indigo-300/50 hover:decoration-indigo-500 underline-offset-2 transition-colors ds-focus-ring"
+            className="inline-flex items-baseline gap-0.5 font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] underline decoration-brand-300/50 hover:decoration-brand-500 underline-offset-2 transition-colors ds-focus-ring"
         >
             {children}
             <ExternalLink size={11} className="self-center shrink-0" aria-hidden="true" />
@@ -480,7 +480,7 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus, currentRe
                                     </div>
                                     <div className="leading-tight">
                                         <h3 className="font-semibold text-sm tracking-tight ds-font-display">Repo Advisor</h3>
-                                        <span className="ds-text-meta text-white/80 flex items-center gap-1">
+                                        <span className="ds-text-meta text-white flex items-center gap-1">
                                             <span className={`inline-block w-1.5 h-1.5 rounded-full ${isLoading ? 'bg-amber-300 animate-pulse' : 'bg-emerald-300'}`} aria-hidden="true" />
                                             {isLoading ? 'Thinking…' : 'Online'}
                                         </span>
@@ -545,7 +545,7 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus, currentRe
                                                                     key={prompt}
                                                                     type="button"
                                                                     onClick={() => sendMessage(prompt)}
-                                                                    className="text-left text-xs font-medium px-3 py-2 rounded-xl bg-white dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/60 hover:border-indigo-300 dark:hover:border-indigo-500/40 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors ds-focus-ring"
+                                                                    className="text-left text-xs font-medium px-3 py-2 rounded-xl bg-white dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/60 hover:border-brand-300 dark:hover:border-brand-500/40 hover:text-brand-600 dark:hover:text-brand-300 transition-colors ds-focus-ring"
                                                                 >
                                                                     {prompt}
                                                                 </button>
@@ -711,7 +711,7 @@ function MessageBubble({ message, onAction, onRetry, onOpenSettings }) {
                         <button
                             type="button"
                             onClick={() => onRetry(message.retryText)}
-                            className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors"
+                            className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-brand-400 hover:text-brand-600 dark:hover:text-brand-300 transition-colors"
                         >
                             <RotateCw size={12} /> Retry
                         </button>
@@ -722,7 +722,7 @@ function MessageBubble({ message, onAction, onRetry, onOpenSettings }) {
                         <button
                             type="button"
                             onClick={onOpenSettings}
-                            className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-[color:var(--ds-accent-brand)] text-white hover:bg-indigo-500 transition-colors"
+                            className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-[color:var(--ds-accent-brand)] text-white hover:bg-brand-500 transition-colors"
                         >
                             <Key size={12} /> Configure API key
                         </button>
@@ -739,9 +739,9 @@ function ActionChip({ action, onClick }) {
             type="button"
             onClick={onClick}
             data-action={action.type}
-            className="group inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ring-1 ring-slate-200 dark:ring-slate-700 transition-colors duration-150 hover:ring-indigo-300 dark:hover:ring-indigo-500/40 hover:bg-slate-50 dark:hover:bg-slate-700/60"
+            className="group inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ring-1 ring-slate-200 dark:ring-slate-700 transition-colors duration-150 hover:ring-brand-300 dark:hover:ring-brand-500/40 hover:bg-slate-50 dark:hover:bg-slate-700/60"
         >
-            <Sparkles size={11} className="relative text-indigo-500 dark:text-indigo-300 transition-transform group-hover:rotate-12" />
+            <Sparkles size={11} className="relative text-brand-500 dark:text-brand-300 transition-transform group-hover:rotate-12" />
             <span className="relative truncate max-w-[180px]">{action.label}</span>
             <ArrowRight size={11} className="relative transition-transform group-hover:translate-x-0.5" />
         </button>

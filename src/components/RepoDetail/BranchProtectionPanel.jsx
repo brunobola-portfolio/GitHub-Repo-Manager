@@ -181,7 +181,7 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
             <div className="flex items-start justify-between gap-3">
                 <div>
                     <h3 className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                        <Shield className="w-5 h-5 text-indigo-500" /> Protection — <span className="font-mono text-sm">{branch}</span>
+                        <Shield className="w-5 h-5 text-brand-500" /> Protection — <span className="font-mono text-sm">{branch}</span>
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                         Classic branch protection on the default branch. Requires admin access on the repo.
@@ -251,7 +251,7 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
                             checked={rules.requirePR}
                             onChange={(e) => setRules(r => ({ ...r, requirePR: e.target.checked }))}
                             disabled={archived || saving}
-                            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-indigo-500/40" />
+                            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-brand-500/40" />
                         <span className="text-sm text-slate-700 dark:text-slate-300">Require pull request reviews before merging</span>
                     </label>
 
@@ -278,7 +278,7 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
                                     checked={rules.dismissStaleReviews}
                                     onChange={(e) => setRules(r => ({ ...r, dismissStaleReviews: e.target.checked }))}
                                     disabled={archived || saving}
-                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-indigo-500/40" />
+                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-brand-500/40" />
                                 <span className="text-sm text-slate-600 dark:text-slate-400">Dismiss stale reviews when new commits are pushed</span>
                             </label>
                             <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -287,7 +287,7 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
                                     checked={rules.requireCodeOwnerReviews}
                                     onChange={(e) => setRules(r => ({ ...r, requireCodeOwnerReviews: e.target.checked }))}
                                     disabled={archived || saving}
-                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-indigo-500/40" />
+                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-brand-500/40" />
                                 <span className="text-sm text-slate-600 dark:text-slate-400">Require review from CODEOWNERS</span>
                             </label>
                         </div>
@@ -299,7 +299,7 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
                             checked={rules.requireConversationResolution}
                             onChange={(e) => setRules(r => ({ ...r, requireConversationResolution: e.target.checked }))}
                             disabled={archived || saving}
-                            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-indigo-500/40" />
+                            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-brand-500/40" />
                         <span className="text-sm text-slate-700 dark:text-slate-300">Require conversation resolution before merging</span>
                     </label>
 

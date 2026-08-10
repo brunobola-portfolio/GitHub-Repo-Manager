@@ -18,9 +18,9 @@ const STAGE_STYLES = {
     period: 'Q4 2026+',
   },
   shipped: {
-    header: 'bg-indigo-500/10 dark:bg-indigo-500/15 border-indigo-500/20',
-    dot: 'bg-indigo-500',
-    badge: 'text-indigo-700 dark:text-[color:var(--ds-accent-brand-dark)]',
+    header: 'bg-brand-500/10 dark:bg-brand-500/15 border-brand-500/20',
+    dot: 'bg-brand-500',
+    badge: 'text-brand-700 dark:text-[color:var(--ds-accent-brand-dark)]',
     label: 'Recently Shipped',
     period: 'May–July 2026',
   },

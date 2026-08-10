@@ -112,7 +112,7 @@ function ManageRepoRow({ repo, onPin, onUnpin, onMute, onUnmute }) {
             className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60"
         >
             {repo.is_pinned
-                ? <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
+                ? <span className="w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0" />
                 : repo.is_muted
                     ? <span className="w-1.5 h-1.5 rounded-full border border-slate-400 shrink-0" />
                     : <span className="w-1.5 h-1.5 shrink-0" />}
@@ -142,7 +142,7 @@ function IconButton({ active, label, onClick, Icon }) {
             className={clsx(
                 'p-1 rounded-md transition-colors',
                 active
-                    ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] bg-indigo-50 dark:bg-indigo-900/30'
+                    ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] bg-brand-50 dark:bg-brand-900/30'
                     : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50'
             )}
         >

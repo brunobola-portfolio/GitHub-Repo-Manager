@@ -65,7 +65,7 @@ describe('EmptyState', () => {
 
   it('gradient prop is deprecated — icon area uses neutral bg regardless', () => {
     const { container } = render(
-      <EmptyState icon={Inbox} title="Test" gradient="from-red-500 to-pink-600" />
+      <EmptyState icon={Inbox} title="Test" gradient="from-red-500 to-brand-600" />
     )
     // gradient prop is now ignored; icon container uses slate bg
     expect(container.querySelector('.from-red-500')).toBeNull()

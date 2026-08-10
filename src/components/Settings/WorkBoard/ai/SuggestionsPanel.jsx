@@ -10,7 +10,7 @@ export function SuggestionsPanel({ suggestions, onApply, onDismiss }) {
         <InsightCard tone="ai" hover={false}>
             <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-indigo-500" />
+                    <Sparkles className="w-4 h-4 text-brand-500" />
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Suggestions</p>
                 </div>
                 <div className="space-y-2">

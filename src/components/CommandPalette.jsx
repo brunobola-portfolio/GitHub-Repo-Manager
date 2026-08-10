@@ -466,7 +466,7 @@ export function CommandPalette({
       </Dialog.Description>
       <div className={`overflow-hidden rounded-xl border bg-white dark:bg-[color:var(--ds-surface-dark)] shadow-[var(--ds-shadow-lg)] transition-colors ${
         askMode
-          ? 'border-indigo-400 dark:border-indigo-500 ring-1 ring-indigo-400/30'
+          ? 'border-brand-400 dark:border-brand-500 ring-1 ring-brand-400/30'
           : 'border-slate-200 dark:border-[color:var(--ds-border-dark)]'
       }`}>
         <SearchInput
@@ -514,7 +514,7 @@ export function CommandPalette({
                       onSelect={() => openExternal(pr.url)}
                       className={ITEM_CLASSES}
                     >
-                      <GitPullRequest className={`w-4 h-4 shrink-0 ${pr.state === 'open' ? 'text-emerald-500' : 'text-purple-500'}`} />
+                      <GitPullRequest className={`w-4 h-4 shrink-0 ${pr.state === 'open' ? 'text-emerald-500' : 'text-brand-500'}`} />
                       <div className="flex-1 min-w-0">
                         <div className="truncate font-medium">{pr.title}</div>
                         <div className="ds-text-meta text-slate-500 dark:text-slate-400 truncate">
@@ -587,7 +587,7 @@ export function CommandPalette({
                   }}
                   className={ITEM_CLASSES}
                 >
-                  <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />
+                  <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-brand-500" />
                   {item.label}
                 </Command.Item>
               )
@@ -662,7 +662,7 @@ export function CommandPalette({
                     onSelect={() => { onViewChange(item.view); onClose() }}
                     className={ITEM_CLASSES}
                   >
-                    <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />
+                    <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-brand-500" />
                     {item.label}
                   </Command.Item>
                 )
@@ -745,7 +745,7 @@ export function CommandPalette({
                     }}
                     className={ITEM_CLASSES}
                   >
-                    <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-indigo-500" />
+                    <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-brand-500" />
                     {item.label}
                   </Command.Item>
                 )
@@ -778,7 +778,7 @@ export function CommandPalette({
         </Command.List>
         <div className={`border-t px-3 py-2 ds-text-meta flex items-center justify-between ${
           askMode
-            ? 'border-indigo-200 dark:border-indigo-800 text-[color:var(--ds-accent-brand)] dark:text-indigo-300 bg-indigo-50/40 dark:bg-indigo-950/20'
+            ? 'border-brand-200 dark:border-brand-800 text-[color:var(--ds-accent-brand)] dark:text-brand-300 bg-brand-50/40 dark:bg-brand-950/20'
             : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'
         }`}>
           <span>

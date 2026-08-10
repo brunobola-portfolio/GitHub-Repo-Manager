@@ -191,24 +191,24 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
                 label="Est. Duration"
                 value={aiPlan.estimatedMinutes || 0}
                 unit="min"
-                iconColor="text-indigo-500"
-                iconBg="bg-indigo-100 dark:bg-indigo-500/15"
+                iconColor="text-brand-500"
+                iconBg="bg-brand-100 dark:bg-brand-500/15"
                 delay={0.14}
               />
               <MetricCard
                 icon={Zap}
                 label="Suggestions"
                 value={(aiPlan.suggestions || []).length}
-                iconColor="text-violet-500"
-                iconBg="bg-violet-100 dark:bg-violet-500/15"
+                iconColor="text-brand-500"
+                iconBg="bg-brand-100 dark:bg-brand-500/15"
                 delay={0.2}
               />
               <MetricCard
                 icon={FolderGit2}
                 label="Repositories"
                 value={repoCount}
-                iconColor="text-sky-500"
-                iconBg="bg-sky-100 dark:bg-sky-500/15"
+                iconColor="text-brand-500"
+                iconBg="bg-brand-100 dark:bg-brand-500/15"
                 delay={0.26}
               />
             </div>
@@ -287,7 +287,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
                 transition={{ delay: 0.3 }}
               >
                 <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-4 h-4 text-violet-500 dark:text-violet-400" />
+                  <Sparkles className="w-4 h-4 text-brand-500 dark:text-brand-400" />
                   <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                     Optimization Suggestions
                   </h4>

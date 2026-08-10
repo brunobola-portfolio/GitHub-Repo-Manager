@@ -97,6 +97,43 @@ platform's `index.css`), inherited rather than re-picked.
 - **Colour is never the only signal.** Anything the lime marks also carries a
   shape or a label.
 
+### In the product
+
+The app carries ONE accent ramp, `brand-*`, defined in `src/index.css`. It
+replaced indigo, violet and purple, which had been used interchangeably for the
+same job while the mark was lime — three accent hues and a logo that shared
+none of them.
+
+Every step is luminance-matched to the Tailwind indigo step it replaced, to
+within 0.003. That is what let ~1,650 call sites move without re-checking a
+single pairing. Two steps are anchored to the literals this document names
+rather than to the curve: **300 is `#8fd23f`** and **600 is `#3f7d12`**, the two
+sanctioned coloured-word values above.
+
+The lime is deliberately *not* in that ramp. It is 2.12:1 under white, and a
+filled button needs 4.5. The lime lives in `--ds-brand-lime` for the mark, and
+in `--ds-badge-brand-*` where it appears the one way the spec allows: as a fill,
+under ink (8.43:1).
+
+Three rules come with the ramp, all test-enforced
+(`tests/build/no-off-brand-palette.test.js`):
+
+- **No retired accent utility.** `indigo-*`, `violet-*`, `purple-*`,
+  `fuchsia-*`, `sky-*`, `cyan-*`, `pink-*`, `teal-*` are gone. Use `brand-*`.
+- **White on a brand fill is never dimmed.** `text-white/90` measures 4.43:1 on
+  `--ds-accent-brand`. It read as harmless softening under indigo, where the
+  base was 6.29 and had headroom; the brand green's base is 5.06 and does not.
+- **Status colour is not decoration.** `emerald` / `amber` / `rose` / `slate`
+  stay, because they mean passing / attention / failing / neutral. Colour used
+  to tell two cards apart is what the one ramp replaced. The per-language chart
+  colours in `src/utils/languageColors.js` are categorical data and are exempt.
+
+The mark itself is generated into the app the same way the SVGs are:
+`scripts/gen-brand.mjs` emits `src/components/ui/BrandMark.jsx`, which picks its
+own optical cut from the requested size. Never draw the mark in a component.
+
+---
+
 ### The collision to keep in mind
 
 RepoManager's own UI uses green for *passing* and amber for *needs attention*

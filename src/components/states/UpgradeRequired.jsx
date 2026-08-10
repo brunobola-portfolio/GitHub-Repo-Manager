@@ -8,7 +8,7 @@ const TIER_COPY = {
         eyebrow: 'Pro feature',
         bg: 'bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)]',
         glow: '',
-        ring: 'ring-indigo-500/20 dark:ring-indigo-400/20',
+        ring: 'ring-brand-500/20 dark:ring-brand-400/20',
     },
     enterprise: {
         eyebrow: 'Enterprise feature',
@@ -105,7 +105,7 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
                     )}
                 >
                     <Lock className="w-7 h-7 text-white" strokeWidth={2.4} />
-                    <Sparkles className="absolute -top-1 -right-1 w-4 h-4 text-white/90" />
+                    <Sparkles className="absolute -top-1 -right-1 w-4 h-4 text-white" />
                 </motion.div>
 
                 {/* Eyebrow */}
@@ -200,7 +200,7 @@ function InlineUpgrade({ tier, feature, copy, pricingHref, onPricingClick, class
             <a
                 href={pricingHref}
                 onClick={onPricingClick}
-                className="text-xs font-semibold text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:text-indigo-500 inline-flex items-center gap-1 ds-focus-ring"
+                className="text-xs font-semibold text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:text-brand-500 inline-flex items-center gap-1 ds-focus-ring"
             >
                 Upgrade
                 <ArrowRight className="w-3 h-3" />
@@ -223,9 +223,9 @@ function BannerUpgrade({ tier, feature, copy, pricingHref, onPricingClick, onDis
             role="status"
             className={twMerge(
                 'relative overflow-hidden',
-                'rounded-2xl border border-indigo-200/60 dark:border-indigo-500/30',
-                'bg-indigo-50/80',
-                'dark:bg-indigo-500/10',
+                'rounded-2xl border border-brand-200/60 dark:border-brand-500/30',
+                'bg-brand-50/80',
+                'dark:bg-brand-500/10',
                 'backdrop-blur-md',
                 'px-5 py-4',
                 'flex flex-col sm:flex-row sm:items-center gap-3',

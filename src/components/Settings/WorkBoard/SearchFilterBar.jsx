@@ -80,7 +80,7 @@ function Chip({ active, label, onClick }) {
             className={clsx(
                 'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors',
                 active
-                    ? 'bg-indigo-500 text-white border-indigo-500'
+                    ? 'bg-brand-500 text-white border-brand-500'
                     : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
             )}
         >

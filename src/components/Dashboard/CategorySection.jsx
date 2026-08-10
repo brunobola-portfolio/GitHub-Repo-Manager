@@ -36,7 +36,7 @@ export function CategorySection({
 
     const iconTone = tone === 'neutral'
         ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
-        : 'bg-indigo-500/10 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
+        : 'bg-brand-500/10 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
 
     const handleAction = (e) => {
         if (!action?.onClick) return
@@ -60,7 +60,7 @@ export function CategorySection({
                 the eye reads it as part of the header glyph. */}
             <span
                 aria-hidden="true"
-                className="hidden lg:block absolute -left-[21px] top-[42px] w-1.5 h-1.5 rounded-full bg-indigo-400 dark:bg-indigo-500 ring-4 ring-white/60 dark:ring-slate-950/60"
+                className="hidden lg:block absolute -left-[21px] top-[42px] w-1.5 h-1.5 rounded-full bg-brand-400 dark:bg-brand-500 ring-4 ring-white/60 dark:ring-slate-950/60"
             />
             {/* Section header — one collapse button spans label+chevron; the
                 action button is a sibling so clicking it never folds the
@@ -104,7 +104,7 @@ export function CategorySection({
                     <motion.span
                         animate={{ rotate: isExpanded ? 180 : 0 }}
                         transition={{ duration: 0.3 }}
-                        className="ml-auto inline-flex w-7 h-7 items-center justify-center rounded-lg text-slate-400 group-hover:text-indigo-500 transition-colors"
+                        className="ml-auto inline-flex w-7 h-7 items-center justify-center rounded-lg text-slate-400 group-hover:text-brand-500 transition-colors"
                         aria-hidden="true"
                     >
                         <ChevronDown className="w-4 h-4" />
@@ -115,7 +115,7 @@ export function CategorySection({
                     <button
                         type="button"
                         onClick={handleAction}
-                        className="hidden sm:inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold text-[color:var(--ds-accent-brand)] dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 border border-transparent hover:border-indigo-200 dark:hover:border-indigo-500/30 ds-focus-ring transition-colors shrink-0"
+                        className="hidden sm:inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold text-[color:var(--ds-accent-brand)] dark:text-brand-300 hover:bg-brand-50 dark:hover:bg-brand-500/10 border border-transparent hover:border-brand-200 dark:hover:border-brand-500/30 ds-focus-ring transition-colors shrink-0"
                     >
                         {action.label}
                         <ActionIcon className="w-3.5 h-3.5" aria-hidden="true" />
@@ -129,7 +129,7 @@ export function CategorySection({
                 <button
                     type="button"
                     onClick={handleAction}
-                    className="sm:hidden mb-4 inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold text-[color:var(--ds-accent-brand)] dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 border border-indigo-200/50 dark:border-indigo-500/20 ds-focus-ring transition-colors"
+                    className="sm:hidden mb-4 inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-semibold text-[color:var(--ds-accent-brand)] dark:text-brand-300 hover:bg-brand-50 dark:hover:bg-brand-500/10 border border-brand-200/50 dark:border-brand-500/20 ds-focus-ring transition-colors"
                 >
                     {action.label}
                     <ActionIcon className="w-3.5 h-3.5" aria-hidden="true" />

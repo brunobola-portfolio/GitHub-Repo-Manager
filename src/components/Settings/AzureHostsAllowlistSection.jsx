@@ -324,10 +324,10 @@ function AddHostForm({ onAdded }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-2xl border border-indigo-300 dark:border-indigo-700 bg-indigo-50/30 dark:bg-indigo-900/10 p-4 space-y-2.5"
+      className="rounded-2xl border border-brand-300 dark:border-brand-700 bg-brand-50/30 dark:bg-brand-900/10 p-4 space-y-2.5"
     >
       <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
-        <Plus className="w-4 h-4 text-indigo-500" />
+        <Plus className="w-4 h-4 text-brand-500" />
         Add host to allowlist
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-[2fr_3fr_auto] gap-2">

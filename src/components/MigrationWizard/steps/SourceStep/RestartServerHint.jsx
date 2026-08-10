@@ -18,16 +18,16 @@ export default function RestartServerHint({ host }) {
   const copy = () => { copyToClipboard(cmd) }
 
   return (
-    <div className="rounded-2xl border border-indigo-300 dark:border-indigo-700 bg-indigo-50/60 dark:bg-indigo-900/15 overflow-hidden">
-      <div className="px-4 py-2.5 flex items-center gap-2 bg-indigo-100/60 dark:bg-indigo-900/30 border-b border-indigo-200 dark:border-indigo-800">
+    <div className="rounded-2xl border border-brand-300 dark:border-brand-700 bg-brand-50/60 dark:bg-brand-900/15 overflow-hidden">
+      <div className="px-4 py-2.5 flex items-center gap-2 bg-brand-100/60 dark:bg-brand-900/30 border-b border-brand-200 dark:border-brand-800">
         <RefreshCw className="w-4 h-4 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]" />
-        <span className="text-sm font-semibold text-indigo-800 dark:text-indigo-200">
+        <span className="text-sm font-semibold text-brand-800 dark:text-brand-200">
           Backend needs a restart
         </span>
       </div>
       <div className="p-4 space-y-2.5">
         <p className="text-sm text-slate-700 dark:text-slate-200">
-          The server is rejecting <code className="px-1 rounded bg-indigo-100 dark:bg-indigo-900/40 ds-text-meta">{host}</code>{' '}
+          The server is rejecting <code className="px-1 rounded bg-brand-100 dark:bg-brand-900/40 ds-text-meta">{host}</code>{' '}
           because it resolves to a private IP — behavior fixed in newer code.
           This is the <strong>normal</strong> way an internal TFS works (corporate LAN), and your host
           is already on the allowlist.

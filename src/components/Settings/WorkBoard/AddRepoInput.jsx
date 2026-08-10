@@ -72,9 +72,9 @@ export function AddRepoInput({ onAdd }) {
                         <Command.Item
                             value={query.trim()}
                             onSelect={() => { onAdd(query.trim()); setQuery('') }}
-                            className="px-2 py-1.5 text-sm flex items-center gap-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/30 cursor-pointer"
+                            className="px-2 py-1.5 text-sm flex items-center gap-1.5 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/30 cursor-pointer"
                         >
-                            <Plus className="w-3.5 h-3.5 text-indigo-500" />
+                            <Plus className="w-3.5 h-3.5 text-brand-500" />
                             Add {query.trim()}
                         </Command.Item>
                     )}

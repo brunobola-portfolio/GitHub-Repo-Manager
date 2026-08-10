@@ -182,7 +182,7 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription,
                     <div className="flex items-center gap-4 mt-2 text-xs text-slate-500 dark:text-slate-400">
                         {r.language && (
                             <span className="flex items-center gap-1">
-                                <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+                                <span className="w-2.5 h-2.5 rounded-full bg-brand-500" />
                                 {r.language}
                             </span>
                         )}

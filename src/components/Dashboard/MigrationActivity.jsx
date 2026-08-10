@@ -131,7 +131,7 @@ export function MigrationActivity({ loading: parentLoading }) {
     <div className="space-y-5">
       {/* Summary stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <MiniStat label="Total Imports" value={stats.total} icon={Download} color="text-indigo-500" onClick={openHistory} />
+        <MiniStat label="Total Imports" value={stats.total} icon={Download} color="text-brand-500" onClick={openHistory} />
         <MiniStat label="Successful" value={stats.completed} icon={CheckCircle2} color="text-emerald-500" onClick={openHistory} />
         <MiniStat label="In Progress" value={stats.running} icon={stats.running > 0 ? SpinnerIcon : Clock} color="text-blue-500" animate={false} onClick={openHistory} />
         {stats.tfvc > 0 && (
@@ -160,7 +160,7 @@ export function MigrationActivity({ loading: parentLoading }) {
                 animate={{ opacity: 1, y: 0 }}
                 onClick={openHistory}
                 aria-label={`Open migration history for ${job.sourceName}`}
-                className="w-full text-left flex items-center gap-3 p-3 rounded-xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/30 dark:border-slate-800/30 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-md ds-focus-ring transition-all cursor-pointer"
+                className="w-full text-left flex items-center gap-3 p-3 rounded-xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/30 dark:border-slate-800/30 hover:border-brand-300 dark:hover:border-brand-500/50 hover:shadow-md ds-focus-ring transition-all cursor-pointer"
               >
                 <div className={`w-8 h-8 rounded-lg ${config.bg} flex items-center justify-center shrink-0`}>
                   <StatusIcon className={`w-4 h-4 ${config.color} ${config.animate ? 'animate-spin' : ''}`} />
@@ -208,7 +208,7 @@ export function MigrationActivity({ loading: parentLoading }) {
 function MiniStat({ label, value, icon: Icon, color, animate, onClick }) {
   const className = `flex items-center gap-2.5 p-3 rounded-xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/20 dark:border-slate-800/20 transition-all ${
     onClick
-      ? 'cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-md ds-focus-ring text-left w-full'
+      ? 'cursor-pointer hover:border-brand-300 dark:hover:border-brand-500/50 hover:shadow-md ds-focus-ring text-left w-full'
       : ''
   }`
   const inner = (

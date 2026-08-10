@@ -18,7 +18,7 @@ function FeatureRow({ label, included, highlighted, enterprise }) {
         className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center
           ${isIncluded
             ? highlighted
-              ? 'bg-indigo-500/20 text-indigo-400'
+              ? 'bg-brand-500/20 text-brand-400'
               : enterprise
                 ? 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400'
                 : 'bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
@@ -148,7 +148,7 @@ export function PricingCard({
             <span
               className={`text-xs font-bold uppercase tracking-widest
                 ${highlighted
-                  ? 'text-indigo-400'
+                  ? 'text-brand-400'
                   : enterprise
                     ? 'text-amber-700 dark:text-amber-400'
                     : 'text-slate-500 dark:text-slate-400'
@@ -239,7 +239,7 @@ export function PricingCard({
               aria-expanded={expanded}
               className={`w-full flex items-center justify-center gap-1.5 mb-4 py-1 text-xs font-semibold rounded-lg transition-colors duration-200 ds-focus-ring
                 ${highlighted
-                  ? 'text-indigo-300 hover:text-indigo-200'
+                  ? 'text-brand-300 hover:text-brand-200'
                   : enterprise
                     ? 'text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300'
                     : 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline'
@@ -292,9 +292,9 @@ export function PricingCard({
               className="w-full py-3.5 rounded-xl font-semibold text-sm
                 border border-slate-200 dark:border-white/[0.12]
                 text-slate-700 dark:text-slate-200
-                hover:border-indigo-400 dark:hover:border-indigo-500/60
-                hover:text-indigo-600 dark:hover:text-indigo-400
-                hover:bg-indigo-50/50 dark:hover:bg-indigo-500/[0.08]
+                hover:border-brand-400 dark:hover:border-brand-500/60
+                hover:text-brand-600 dark:hover:text-brand-400
+                hover:bg-brand-50/50 dark:hover:bg-brand-500/[0.08]
                 transition-colors duration-200 ds-focus-ring"
             >
               {ctaText}

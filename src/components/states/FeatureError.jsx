@@ -24,12 +24,12 @@ const TONES = {
     },
     info: {
         icon: Info,
-        ring: 'border-sky-200 dark:border-sky-500/25',
-        surface: 'bg-sky-50/70 dark:bg-sky-500/10',
-        title: 'text-sky-900 dark:text-sky-200',
-        body: 'text-sky-800/80 dark:text-sky-200/80',
-        accent: 'text-sky-600 dark:text-sky-400',
-        chip: 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/20',
+        ring: 'border-brand-200 dark:border-brand-500/25',
+        surface: 'bg-brand-50/70 dark:bg-brand-500/10',
+        title: 'text-brand-900 dark:text-brand-200',
+        body: 'text-brand-800/80 dark:text-brand-200/80',
+        accent: 'text-brand-600 dark:text-brand-400',
+        chip: 'bg-brand-500/15 text-brand-700 dark:text-brand-300 border-brand-500/20',
     },
     offline: {
         icon: WifiOff,

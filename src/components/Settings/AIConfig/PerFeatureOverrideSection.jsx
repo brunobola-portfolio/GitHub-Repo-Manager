@@ -84,7 +84,7 @@ export function PerFeatureOverrideSection({
                                             key={key}
                                             className={`rounded-xl p-3 transition-colors ${
                                                 isOverridden
-                                                    ? 'bg-indigo-50/60 dark:bg-indigo-900/15 ring-1 ring-inset ring-indigo-500/20'
+                                                    ? 'bg-brand-50/60 dark:bg-brand-900/15 ring-1 ring-inset ring-brand-500/20'
                                                     : 'bg-slate-50/60 dark:bg-slate-800/40 ring-1 ring-inset ring-slate-200/60 dark:ring-slate-700/60'
                                             }`}
                                         >
@@ -95,7 +95,7 @@ export function PerFeatureOverrideSection({
                                                 >
                                                     <span>{FEATURE_KEY_LABELS[key]}</span>
                                                     {isOverridden ? (
-                                                        <span className="ds-text-micro font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-indigo-500 text-white">
+                                                        <span className="ds-text-micro font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-brand-500 text-white">
                                                             override
                                                         </span>
                                                     ) : (

@@ -8,7 +8,10 @@ const css = readFileSync(resolve(__dirname, '../../src/design-system.css'), 'utf
 
 const EXPECTED_TOKENS = {
   // Neutral palette is slate-aligned (matches the dominant in-app Tailwind
-  // slate callsites). Accent/status/radius below are unchanged.
+  // slate callsites). The accent is the brand green from docs/BRAND.md — these
+  // three are pinned because they are the values the spec names, and a silent
+  // drift back to a picked-by-eye hue is exactly what the brand system exists
+  // to stop.
   '--ds-surface': '#ffffff',
   '--ds-surface-subtle': '#f8fafc',
   '--ds-surface-muted': '#f1f5f9',
@@ -19,11 +22,11 @@ const EXPECTED_TOKENS = {
   '--ds-fg-dark': '#f1f5f9',
   '--ds-accent-link': '#0969da',
   '--ds-accent-link-dark': '#4493f8',
-  '--ds-accent-brand': '#4f46e5',
-  '--ds-accent-brand-dark': '#818cf8',
+  '--ds-accent-brand': '#3f7d12',
+  '--ds-accent-brand-dark': '#8fd23f',
   '--ds-success': '#1a7f37',
   '--ds-danger': '#cf222e',
-  '--ds-cta': '#1f883d',
+  '--ds-cta': '#3f7d12',
   '--ds-radius-sm': '4px',
   '--ds-radius': '6px',
   '--ds-radius-lg': '16px',

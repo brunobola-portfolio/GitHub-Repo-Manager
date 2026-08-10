@@ -7,7 +7,7 @@ import { Field, Textarea } from '../../ui/form'
 // ai) share the same visual chrome — distinction lives in the header
 // badge, not the card border. See unified-comment refactor 2026-05-09.
 const SEVERITY_BADGE = {
-    info: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300',
+    info: 'bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300',
     suggestion: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
     warning: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300',
     critical: 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300',

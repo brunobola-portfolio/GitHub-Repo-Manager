@@ -103,7 +103,7 @@ export default function ConnectionStatusPanel({
           {overall.label}
         </span>
         {provider.type === PROVIDERS.ON_PREM && (
-          <span className="ml-auto ds-text-micro uppercase tracking-wider text-violet-500 dark:text-violet-400">
+          <span className="ml-auto ds-text-micro uppercase tracking-wider text-brand-500 dark:text-brand-400">
             on-premises
           </span>
         )}
@@ -179,9 +179,9 @@ function stepToneClasses(status) {
       }
     case 'loading':
       return {
-        bg: 'bg-indigo-100 dark:bg-indigo-900/30',
+        bg: 'bg-brand-100 dark:bg-brand-900/30',
         text: 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]',
-        detailText: 'text-indigo-700 dark:text-indigo-300',
+        detailText: 'text-brand-700 dark:text-brand-300',
       }
     default:
       return {
@@ -204,9 +204,9 @@ function deriveOverall(steps) {
   if (steps.some((s) => s.status === 'loading')) {
     return {
       label: 'Validating connection…',
-      bg: 'bg-indigo-50/50 dark:bg-indigo-950/20',
-      border: 'border-indigo-200 dark:border-indigo-800',
-      text: 'text-indigo-700 dark:text-indigo-300',
+      bg: 'bg-brand-50/50 dark:bg-brand-950/20',
+      border: 'border-brand-200 dark:border-brand-800',
+      text: 'text-brand-700 dark:text-brand-300',
     }
   }
   if (steps.every((s) => s.status === 'ok')) {

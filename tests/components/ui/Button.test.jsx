@@ -48,10 +48,10 @@ describe('Button', () => {
     })
 
     it('merges className overrides via tailwind-merge', () => {
-        render(<Button className="bg-purple-500">x</Button>)
+        render(<Button className="bg-brand-500">x</Button>)
         const cls = screen.getByRole('button').className
         // tailwind-merge should drop the variant's token bg when overridden.
-        expect(cls).toContain('bg-purple-500')
+        expect(cls).toContain('bg-brand-500')
         expect(cls).not.toContain('var(--ds-accent-brand)')
     })
 
@@ -72,7 +72,7 @@ describe('Button', () => {
     it('renders outline-primary with indigo border + brand-token text', () => {
         render(<Button variant="outline-primary">x</Button>)
         const cls = screen.getByRole('button').className
-        expect(cls).toContain('border-indigo-300')
+        expect(cls).toContain('border-brand-300')
         expect(cls).toContain('text-[color:var(--ds-accent-brand)]')
     })
 
@@ -83,11 +83,11 @@ describe('Button', () => {
         expect(cls).toContain('text-red-700')
     })
 
-    it('renders soft-primary with indigo-50 bg + indigo text + indigo border', () => {
+    it('renders soft-primary with brand-50 bg + indigo text + indigo border', () => {
         render(<Button variant="soft-primary">x</Button>)
         const cls = screen.getByRole('button').className
-        expect(cls).toContain('bg-indigo-50')
-        expect(cls).toContain('text-indigo-700')
-        expect(cls).toContain('border-indigo-200')
+        expect(cls).toContain('bg-brand-50')
+        expect(cls).toContain('text-brand-700')
+        expect(cls).toContain('border-brand-200')
     })
 })

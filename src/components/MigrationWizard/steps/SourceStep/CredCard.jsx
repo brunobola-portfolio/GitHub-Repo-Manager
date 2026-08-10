@@ -78,7 +78,7 @@ export default function CredCard({
 function StatePill({ state }) {
   const map = {
     active:      { label: 'IN USE',           cls: 'bg-emerald-500 text-white' },
-    selected:    { label: 'selected',         cls: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300' },
+    selected:    { label: 'selected',         cls: 'bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300' },
     available:   { label: 'available',        cls: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400' },
     unavailable: { label: 'not configured',   cls: 'bg-slate-100 dark:bg-slate-800 text-slate-500' },
   }
@@ -102,10 +102,10 @@ function toneFor(state) {
       }
     case 'selected':
       return {
-        container: 'border-indigo-300 dark:border-indigo-700 bg-indigo-50/60 dark:bg-indigo-900/15',
-        iconBg: 'bg-indigo-100 dark:bg-indigo-900/40',
+        container: 'border-brand-300 dark:border-brand-700 bg-brand-50/60 dark:bg-brand-900/15',
+        iconBg: 'bg-brand-100 dark:bg-brand-900/40',
         iconText: 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]',
-        hintText: 'text-indigo-700 dark:text-indigo-300',
+        hintText: 'text-brand-700 dark:text-brand-300',
       }
     case 'available':
       return {

@@ -26,8 +26,8 @@ const TIER_CONFIG = {
     pro: {
         label: 'Pro',
         icon: Zap,
-        iconColor: 'text-indigo-500',
-        iconBg: 'bg-indigo-500/10',
+        iconColor: 'text-brand-500',
+        iconBg: 'bg-brand-500/10',
         badgeVariant: 'info',
     },
     enterprise: {
@@ -112,10 +112,10 @@ function UpgradePrompt({ onUpgradePro, onUpgradeEnterprise }) {
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-                <Card className="p-5 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all cursor-pointer h-full" onClick={onUpgradePro}>
+                <Card className="p-5 hover:border-brand-300 dark:hover:border-brand-700 transition-all cursor-pointer h-full" onClick={onUpgradePro}>
                     <div className="flex items-center gap-3 mb-3">
-                        <div className="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center">
-                            <Zap className="w-5 h-5 text-indigo-500" />
+                        <div className="w-9 h-9 rounded-xl bg-brand-500/10 flex items-center justify-center">
+                            <Zap className="w-5 h-5 text-brand-500" />
                         </div>
                         <div>
                             <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Pro</h4>
@@ -134,7 +134,7 @@ function UpgradePrompt({ onUpgradePro, onUpgradeEnterprise }) {
                             Priority support and advanced analytics are Enterprise. */}
                         {['10,000 AI queries/month', 'Unlimited monthly caps on every AI feature', '50 API keys', 'Email support'].map((feat) => (
                             <li key={feat} className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0" />
+                                <span className="w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0" />
                                 {feat}
                             </li>
                         ))}
@@ -257,7 +257,7 @@ function LicenseCard({ license, onChangeLicenseKey }) {
 
                     <button
                         onClick={onChangeLicenseKey}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-xl transition-colors"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] border border-brand-200 dark:border-brand-800 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-xl transition-colors"
                     >
                         <Key className="w-4 h-4" />
                         Change License Key
@@ -470,7 +470,7 @@ export function LicensePlanSection() {
             {/* Activate License Key */}
             <button
                 onClick={() => openModal('showLicenseActivation')}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-xl transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] border border-brand-200 dark:border-brand-800 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-xl transition-colors"
             >
                 <Key className="w-4 h-4" />
                 Activate License Key

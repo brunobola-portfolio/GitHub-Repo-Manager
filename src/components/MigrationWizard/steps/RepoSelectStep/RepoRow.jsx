@@ -7,7 +7,7 @@ const ACCENT = {
   blocker: 'from-red-500 to-red-600',
   warning: 'from-amber-500 to-orange-500',
   info:    'from-slate-400 to-slate-500',
-  ok:      'bg-indigo-500',
+  ok:      'bg-brand-500',
 }
 
 /**
@@ -34,9 +34,9 @@ export function RepoRow({ repo, isSelected, isActive, density = 'full', onToggle
         repo.isDisabled ? 'opacity-60' : ''
       } ${
         isSelected
-          ? 'border-indigo-500/60 bg-indigo-950/30 shadow-sm'
-          : 'border-slate-200 dark:border-slate-700 hover:border-indigo-400/50 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-      } ${isActive ? 'ring-2 ring-indigo-500/40' : ''}`}
+          ? 'border-brand-500/60 bg-brand-950/30 shadow-sm'
+          : 'border-slate-200 dark:border-slate-700 hover:border-brand-400/50 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+      } ${isActive ? 'ring-2 ring-brand-500/40' : ''}`}
     >
       <div className={`absolute top-0 left-0 bottom-0 w-[3px] rounded-l-xl ${accent}`} />
 
@@ -55,7 +55,7 @@ export function RepoRow({ repo, isSelected, isActive, density = 'full', onToggle
         >
           <span
             className={`w-[18px] h-[18px] rounded flex items-center justify-center shrink-0 border-2 transition-colors ${
-              isSelected ? 'bg-indigo-500 border-indigo-500' : 'border-slate-400 dark:border-slate-600'
+              isSelected ? 'bg-brand-500 border-brand-500' : 'border-slate-400 dark:border-slate-600'
             }`}
             aria-hidden="true"
           >
@@ -99,7 +99,7 @@ export function RepoRow({ repo, isSelected, isActive, density = 'full', onToggle
             type="button"
             onClick={() => onOpenDetail(repo.id)}
             aria-label={`View details for ${repo.name}`}
-            className="p-1 rounded text-slate-400 dark:text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 ds-focus-ring"
+            className="p-1 rounded text-slate-400 dark:text-slate-500 hover:text-brand-500 dark:hover:text-brand-400 hover:bg-slate-100 dark:hover:bg-slate-800 ds-focus-ring"
           >
             <ChevronRight className="w-4 h-4" aria-hidden="true" />
           </button>

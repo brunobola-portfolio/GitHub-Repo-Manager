@@ -29,7 +29,7 @@ export function RepoRow({ repo, onAction, selected = false, onSelectionChange })
                 'group flex items-center gap-3 px-3 py-2 border-b border-slate-200/40 dark:border-slate-700/40 transition-colors',
                 'hover:bg-slate-50 dark:hover:bg-slate-800/40',
                 repo.is_muted ? 'opacity-60' : '',
-                selected ? 'bg-indigo-50 dark:bg-indigo-900/20' : '',
+                selected ? 'bg-brand-50 dark:bg-brand-900/20' : '',
             )}
         >
             {onSelectionChange && (
@@ -37,7 +37,7 @@ export function RepoRow({ repo, onAction, selected = false, onSelectionChange })
                     type="checkbox"
                     checked={selected}
                     onChange={(e) => onSelectionChange(repo.repo_full_name, e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 accent-indigo-500"
+                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 accent-brand-500"
                     aria-label={`Select ${repo.repo_full_name}`}
                 />
             )}
@@ -45,7 +45,7 @@ export function RepoRow({ repo, onAction, selected = false, onSelectionChange })
             {repo.is_pinned ? (
                 <span
                     aria-label="pinned"
-                    className="w-2 h-2 rounded-full bg-indigo-500 shrink-0"
+                    className="w-2 h-2 rounded-full bg-brand-500 shrink-0"
                     title="Pinned"
                 />
             ) : repo.is_muted ? (

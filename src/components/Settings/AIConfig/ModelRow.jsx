@@ -44,15 +44,15 @@ export function ModelRow({ option, optionId, selected, highlighted, onPick, data
             onClick={onPick.select}
             className={`w-full text-left px-3 py-2.5 flex items-start gap-3 transition-colors ${
                 highlighted
-                    ? 'bg-indigo-50 dark:bg-indigo-900/30'
+                    ? 'bg-brand-50 dark:bg-brand-900/30'
                     : 'hover:bg-slate-50 dark:hover:bg-slate-800/70'
-            } ${selected ? 'ring-1 ring-inset ring-indigo-300 dark:ring-indigo-700' : ''}`}
+            } ${selected ? 'ring-1 ring-inset ring-brand-300 dark:ring-brand-700' : ''}`}
         >
             <div className="flex-1 min-w-0">
                 {/* Line 1: name + badges */}
                 <div className="flex items-center gap-2 flex-wrap">
                     {option.recommended && (
-                        <span aria-hidden="true" className="text-indigo-500" title="Recommended">★</span>
+                        <span aria-hidden="true" className="text-brand-500" title="Recommended">★</span>
                     )}
                     <span className="font-medium text-sm text-slate-900 dark:text-slate-100">{option.label}</span>
                     {!hideTierBadge && (
@@ -116,7 +116,7 @@ export function ModelRow({ option, optionId, selected, highlighted, onPick, data
                 </div>
             )}
 
-            {selected && <Check className="w-4 h-4 text-indigo-500 mt-1 shrink-0" aria-hidden="true" />}
+            {selected && <Check className="w-4 h-4 text-brand-500 mt-1 shrink-0" aria-hidden="true" />}
         </button>
     )
 }

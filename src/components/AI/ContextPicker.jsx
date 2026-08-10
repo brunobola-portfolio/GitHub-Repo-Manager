@@ -50,7 +50,7 @@ export function ContextPicker({
                 aria-expanded={open}
             >
                 <span className="inline-flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-indigo-500" />
+                    <Sparkles className="w-4 h-4 text-brand-500" />
                     Context ({onCount} signals on, {formatFileSize(totalBytes, 1)})
                 </span>
                 <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
@@ -77,7 +77,7 @@ export function ContextPicker({
                                     checked={checked}
                                     onChange={(e) => onSignalChange(kind, e.target.checked)}
                                     aria-label={SIGNAL_LABELS[kind]}
-                                    className="accent-indigo-500"
+                                    className="accent-brand-500"
                                 />
                                 <span className="flex-1 text-slate-700 dark:text-slate-200">{SIGNAL_LABELS[kind]}</span>
                                 {checked && <span className="text-xs text-slate-500">{formatFileSize(expected, 1)}</span>}
@@ -98,13 +98,13 @@ export function ContextPicker({
                             {customFiles.length > 0 && (
                                 <ul className="mt-1 flex flex-wrap gap-1">
                                     {customFiles.map((f) => (
-                                        <li key={f.path} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-xs text-indigo-700 dark:text-indigo-300">
+                                        <li key={f.path} className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-brand-50 dark:bg-brand-950/40 text-xs text-brand-700 dark:text-brand-300">
                                             {f.path}
                                             <button
                                                 type="button"
                                                 onClick={() => onRemoveCustomFile?.(f.path)}
                                                 aria-label={`Remove ${f.path}`}
-                                                className="text-indigo-500 hover:text-indigo-700"
+                                                className="text-brand-500 hover:text-brand-700"
                                             >
                                                 ×
                                             </button>

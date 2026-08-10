@@ -133,8 +133,8 @@ export function DashboardShell({ anchors, onViewChange, children }) {
                                             aria-current={isActive ? 'true' : undefined}
                                             className={`shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-full ds-text-meta font-semibold whitespace-nowrap ds-focus-ring transition-colors border ${
                                                 isActive
-                                                    ? 'bg-[color:var(--ds-accent-brand)] text-white border-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] dark:border-indigo-500 shadow-sm'
-                                                    : 'bg-white/70 dark:bg-slate-900/60 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/40'
+                                                    ? 'bg-[color:var(--ds-accent-brand)] text-white border-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] dark:border-brand-500 shadow-sm'
+                                                    : 'bg-white/70 dark:bg-slate-900/60 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-500/40'
                                             }`}
                                         >
                                             {a.label}
@@ -187,7 +187,7 @@ export function DashboardShell({ anchors, onViewChange, children }) {
                                                 {isActive && (
                                                     <motion.span
                                                         layoutId="dashboard-anchor-indicator"
-                                                        className="absolute -left-px top-1 bottom-1 w-[2px] rounded-full bg-indigo-500 dark:bg-[color:var(--ds-accent-brand-dark)]"
+                                                        className="absolute -left-px top-1 bottom-1 w-[2px] rounded-full bg-brand-500 dark:bg-[color:var(--ds-accent-brand-dark)]"
                                                         transition={SPRING.panel}
                                                     />
                                                 )}
@@ -197,7 +197,7 @@ export function DashboardShell({ anchors, onViewChange, children }) {
                                                     aria-current={isActive ? 'true' : undefined}
                                                     className={`group w-full text-left flex items-center justify-between gap-2 pl-3 pr-2 py-1.5 rounded-r-md text-xs ds-focus-ring transition-colors ${
                                                         isActive
-                                                            ? 'text-indigo-700 dark:text-indigo-300 font-semibold'
+                                                            ? 'text-brand-700 dark:text-brand-300 font-semibold'
                                                             : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
                                                     }`}
                                                 >
@@ -206,7 +206,7 @@ export function DashboardShell({ anchors, onViewChange, children }) {
                                                         <span
                                                             className={`ds-text-micro font-bold tabular-nums px-1.5 py-0.5 rounded-md ${
                                                                 isActive
-                                                                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300'
+                                                                    ? 'bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300'
                                                                     : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
                                                             }`}
                                                         >
@@ -234,9 +234,9 @@ export function DashboardShell({ anchors, onViewChange, children }) {
                                                 onClick={() => onViewChange(view)}
                                                 className="group w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 ds-focus-ring transition-colors"
                                             >
-                                                <Icon className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-500 transition-colors" aria-hidden="true" />
+                                                <Icon className="w-3.5 h-3.5 text-slate-400 group-hover:text-brand-500 transition-colors" aria-hidden="true" />
                                                 <span className="flex-1 text-left">{label}</span>
-                                                <ArrowUpRight className="w-3 h-3 text-slate-300 dark:text-slate-600 group-hover:text-indigo-500 transition-colors" aria-hidden="true" />
+                                                <ArrowUpRight className="w-3 h-3 text-slate-300 dark:text-slate-600 group-hover:text-brand-500 transition-colors" aria-hidden="true" />
                                             </button>
                                         </li>
                                     ))}

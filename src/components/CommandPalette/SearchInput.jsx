@@ -22,7 +22,7 @@ export function SearchInput({ askMode, value, onValueChange, loading }) {
     <div className="relative">
       {askMode && (
         <Sparkles
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-500"
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-500"
           aria-hidden="true"
         />
       )}
@@ -35,7 +35,7 @@ export function SearchInput({ askMode, value, onValueChange, loading }) {
         autoFocus
         className={`w-full py-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 bg-transparent border-b outline-none ${
           askMode
-            ? 'pl-10 pr-4 border-indigo-200 dark:border-indigo-800 placeholder:italic placeholder:text-indigo-400/80'
+            ? 'pl-10 pr-4 border-brand-200 dark:border-brand-800 placeholder:italic placeholder:text-brand-400/80'
             : 'px-4 border-slate-200 dark:border-slate-700'
         }`}
       />

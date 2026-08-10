@@ -26,7 +26,7 @@ export function GitHubResults({ live, onOpen }) {
               onSelect={() => onOpen(pr.url)}
               className={ITEM_CLASSES}
             >
-              <GitPullRequest className={`w-4 h-4 shrink-0 ${pr.state === 'open' ? 'text-emerald-500' : 'text-purple-500'}`} />
+              <GitPullRequest className={`w-4 h-4 shrink-0 ${pr.state === 'open' ? 'text-emerald-500' : 'text-brand-500'}`} />
               <div className="flex-1 min-w-0">
                 <div className="truncate font-medium">{pr.title}</div>
                 <div className="ds-text-meta text-slate-500 dark:text-slate-400 truncate">

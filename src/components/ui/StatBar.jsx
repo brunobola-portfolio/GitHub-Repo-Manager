@@ -2,8 +2,8 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { EASE } from './motion'
 
 const GRADIENT_CLASSES = {
-  primary:   'bg-indigo-500',
-  secondary: 'bg-sky-500',
+  primary:   'bg-brand-500',
+  secondary: 'bg-brand-500',
   success:   'bg-emerald-500',
   accent:    'bg-amber-500',
 }

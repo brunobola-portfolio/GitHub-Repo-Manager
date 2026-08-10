@@ -195,7 +195,7 @@ export const mockGenerateImage = (repo, { preset = 'social' } = {}) => {
     canvas.height = cfg.h;
     const ctx = canvas.getContext('2d');
     const grad = ctx.createLinearGradient(0, 0, cfg.w, cfg.h);
-    grad.addColorStop(0, '#4f46e5');
+    grad.addColorStop(0, '#3f7d12');
     grad.addColorStop(1, '#0ea5e9');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, cfg.w, cfg.h);
@@ -337,7 +337,7 @@ export const mockDiagramEmbedPreview = (payload = {}) => {
     if (target === 'svg-file') {
         return {
             target,
-            svg: { path: 'docs/diagrams/' + type + '.svg', content: '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40"><rect width="100" height="40" fill="#4f46e5"/></svg>', commitMessage: 'docs: add ' + type + ' diagram SVG' },
+            svg: { path: 'docs/diagrams/' + type + '.svg', content: '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40"><rect width="100" height="40" fill="#3f7d12"/></svg>', commitMessage: 'docs: add ' + type + ' diagram SVG' },
             readme: { path: 'README.md', before: '# Demo Repository\n', after: '# Demo Repository\n\n![' + type + ' diagram](docs/diagrams/' + type + '.svg)\n', action: 'append', commitMessage: 'docs: reference ' + type + ' diagram in README' },
             readmeTruncated: false,
         };

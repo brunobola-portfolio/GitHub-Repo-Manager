@@ -66,6 +66,21 @@ changes; the README is for humans, this file is for you.
   **not**. It is therefore acceptable only for decorative icons (`aria-hidden`,
   or paired with a visible text label). An icon that is the sole content of an
   interactive control needs a darker token in light mode.
+- ONE accent ramp: `brand-*` (`src/index.css`). `indigo`, `violet`, `purple`,
+  `fuchsia`, `sky`, `cyan`, `pink` and `teal` are retired and gated
+  (`tests/build/no-off-brand-palette.test.js`). `emerald`/`amber`/`rose`/`slate`
+  stay — those are status, not decoration. Colour used only to tell two cards
+  apart is what the one ramp replaced.
+- Never dim white on a brand fill: `text-white/90` is 4.43:1 on
+  `--ds-accent-brand` and fails the axe gate. Full white, or a `--ds-badge-*`
+  fill/text pair.
+- The mark is a GENERATED component — `src/components/ui/BrandMark.jsx`, emitted
+  by `scripts/gen-brand.mjs`. Render it via `AppLogo` (tile) or `AppLogoIcon`
+  (bare); never draw paths in a component. It picks its own optical cut from
+  `size`, so pass the real pixel size.
+- Cards in a grid need `h-full` on BOTH the motion wrapper and the `Card`. The
+  grid stretches the wrapper; a Card that sizes to its content leaves the row
+  ragged the moment one sibling's text wraps.
 - Brand assets are GENERATED — never hand-edit anything in `brand/` or
   `public/logo.svg`. Change the geometry in `scripts/gen-brand.mjs`, run
   `npm run gen:brand`, and commit the outputs together. The mark has two

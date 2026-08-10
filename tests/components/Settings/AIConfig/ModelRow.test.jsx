@@ -37,7 +37,7 @@ describe('ModelRow', () => {
         render(<ModelRow option={BASE_OPTION} selected={false} highlighted={false} onPick={noopHandlers} />)
         // context → neutral, Recommended → brand(indigo), NEW → warning(amber); all ringed pills
         expect(screen.getByText('1M').className).toContain('bg-slate-100')
-        expect(screen.getByText(/recommended/i).className).toContain('bg-indigo-100')
+        expect(screen.getByText(/recommended/i).className).toContain('bg-brand-100')
         expect(screen.getByText('NEW').className).toContain('bg-amber-100')
         expect(screen.getByText('NEW').className).toContain('rounded-full')
         vi.useRealTimers()

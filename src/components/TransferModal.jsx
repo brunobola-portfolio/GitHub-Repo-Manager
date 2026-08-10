@@ -193,7 +193,7 @@ export function TransferModal({
 							onClick={() => setAction('mirror')}
 							className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
 								action === 'mirror'
-									? 'bg-white dark:bg-slate-800 text-purple-600 dark:text-purple-400 shadow-sm'
+									? 'bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm'
 									: 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
 							}`}
 						>
@@ -239,7 +239,7 @@ export function TransferModal({
 									}}
 									className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
 										targetOrg === org.login
-											? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
+											? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30'
 											: 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
 									}`}
 								>

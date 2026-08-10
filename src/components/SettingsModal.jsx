@@ -218,7 +218,7 @@ function GeneralTabContent({
     return (
         <div className="space-y-3">
             <InsightCard tone="default" hover={false}>
-                <SectionHeader icon={Palette} iconClassName="text-indigo-500" label="Appearance" />
+                <SectionHeader icon={Palette} iconClassName="text-brand-500" label="Appearance" />
                 <div className="grid grid-cols-3 gap-2.5 mt-3">
                     <ThemeOption value="light" icon={Sun} label="Light" currentTheme={theme} setTheme={setTheme} />
                     <ThemeOption value="dark" icon={Moon} label="Dark" currentTheme={theme} setTheme={setTheme} />
@@ -253,7 +253,7 @@ function GeneralTabContent({
                                     value={cacheSettings.ttl}
                                     onChange={(e) => setCacheSettings({ ...cacheSettings, ttl: parseInt(e.target.value) })}
                                     aria-label="Cache duration in minutes"
-                                    className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                    className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand-600"
                                 />
                                 <div className="flex justify-between ds-text-meta text-slate-500 dark:text-slate-400">
                                     <span>1 min</span>
@@ -282,7 +282,7 @@ function GeneralTabContent({
 
                 {/* Migration */}
                 <InsightCard tone="default" hover={false} className="flex flex-col">
-                    <SectionHeader icon={GitBranch} iconClassName="text-indigo-500" label="Migration" />
+                    <SectionHeader icon={GitBranch} iconClassName="text-brand-500" label="Migration" />
                     <div className="mt-3 space-y-2.5">
                         <div className="flex items-center justify-between gap-3 p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                             <span className="text-sm text-slate-600 dark:text-slate-400 min-w-0">Default visibility for imports</span>
@@ -363,8 +363,8 @@ const ThemeOption = ({ value, icon: IconComp, label, currentTheme, setTheme }) =
             onClick={() => setTheme(value)}
             aria-pressed={active}
             className={`flex flex-col items-center gap-1.5 py-2.5 rounded-lg border transition-all ${active
-                ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-500 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ring-2 ring-indigo-500/20'
-                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-indigo-300 dark:hover:border-indigo-700 hover:text-slate-700 dark:hover:text-slate-300'
+                ? 'bg-brand-50 dark:bg-brand-900/20 border-brand-500 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ring-2 ring-brand-500/20'
+                : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-brand-300 dark:hover:border-brand-700 hover:text-slate-700 dark:hover:text-slate-300'
                 }`}
         >
             <IconComp size={18} />

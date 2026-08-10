@@ -65,7 +65,7 @@ export function ExecutionPipeline({ order, repos, source }) {
               className="flex items-center gap-2 px-3 py-2.5 rounded-xl
                 bg-white dark:bg-white/[0.03]
                 border border-slate-200/70 dark:border-white/8
-                hover:border-indigo-300/60 dark:hover:border-indigo-500/30
+                hover:border-brand-300/60 dark:hover:border-brand-500/30
                 hover:shadow-sm
                 transition-all duration-200 group"
             >
@@ -83,7 +83,7 @@ export function ExecutionPipeline({ order, repos, source }) {
               </div>
 
               {/* Arrow */}
-              <ArrowRight className="w-3.5 h-3.5 text-indigo-400 dark:text-indigo-500 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight className="w-3.5 h-3.5 text-brand-400 dark:text-brand-500 shrink-0 group-hover:translate-x-0.5 transition-transform" />
 
               {/* Target name */}
               <div className="flex items-center gap-1.5 min-w-0 flex-1">
@@ -102,12 +102,12 @@ export function ExecutionPipeline({ order, repos, source }) {
                   </span>
                 )}
                 {isTfvc && (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-violet-100 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400">
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-brand-100 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400">
                     TFVC
                   </span>
                 )}
                 {hasLfs && (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-cyan-100 dark:bg-cyan-500/15 text-cyan-600 dark:text-cyan-400">
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-brand-100 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400">
                     LFS
                   </span>
                 )}

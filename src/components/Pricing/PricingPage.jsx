@@ -178,13 +178,13 @@ function FaqItem({ q, a, index }) {
         aria-expanded={open}
         className="w-full flex items-center justify-between px-6 py-5 text-left group ds-focus-ring rounded-xl"
       >
-        <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-200">
+        <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors duration-200">
           {q}
         </span>
         <motion.span
           animate={{ rotate: open ? 180 : 0 }}
           transition={{ duration: 0.25 }}
-          className="flex-shrink-0 ml-4 text-slate-400 dark:text-slate-500 group-hover:text-indigo-500 transition-colors duration-200"
+          className="flex-shrink-0 ml-4 text-slate-400 dark:text-slate-500 group-hover:text-brand-500 transition-colors duration-200"
         >
           <ChevronDown className="w-5 h-5" />
         </motion.span>
@@ -303,19 +303,19 @@ export function PricingPage({ onGetStarted } = {}) {
       {/* Background orbs */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <motion.div
-          className="absolute rounded-full blur-3xl bg-indigo-500 opacity-10 dark:opacity-15"
+          className="absolute rounded-full blur-3xl bg-brand-500 opacity-10 dark:opacity-15"
           style={{ width: 500, height: 500, left: '-8%', top: '-5%' }}
           animate={{ y: [0, -30, 0], x: [0, 20, 0] }}
           transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
-          className="absolute rounded-full blur-3xl bg-purple-600 opacity-10 dark:opacity-15"
+          className="absolute rounded-full blur-3xl bg-brand-600 opacity-10 dark:opacity-15"
           style={{ width: 400, height: 400, right: '-6%', top: '10%' }}
           animate={{ y: [0, 30, 0], x: [0, -20, 0] }}
           transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
         />
         <motion.div
-          className="absolute rounded-full blur-3xl bg-cyan-500 opacity-[0.08] dark:opacity-[0.12]"
+          className="absolute rounded-full blur-3xl bg-brand-500 opacity-[0.08] dark:opacity-[0.12]"
           style={{ width: 300, height: 300, left: '40%', top: '55%' }}
           animate={{ y: [0, -20, 0] }}
           transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
@@ -366,9 +366,9 @@ export function PricingPage({ onGetStarted } = {}) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-7
-              bg-indigo-500/10 dark:bg-indigo-500/15 border border-indigo-500/20 dark:border-indigo-500/25"
+              bg-brand-500/10 dark:bg-brand-500/15 border border-brand-500/20 dark:border-brand-500/25"
           >
-            <Sparkles className="w-3.5 h-3.5 text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)]" />
+            <Sparkles className="w-3.5 h-3.5 text-brand-500 dark:text-[color:var(--ds-accent-brand-dark)]" />
             <span className="text-xs font-semibold text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] tracking-wide">
               Simple, transparent pricing
             </span>
@@ -411,7 +411,7 @@ export function PricingPage({ onGetStarted } = {}) {
             <button
               onClick={() => setIsYearly(v => !v)}
               className={`relative w-12 h-6 rounded-full transition-colors duration-[var(--ds-duration)] ds-focus-ring
-                ${isYearly ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-white/10'}`}
+                ${isYearly ? 'bg-brand-500' : 'bg-slate-200 dark:bg-white/10'}`}
               aria-label="Toggle yearly billing"
             >
               <motion.span
@@ -463,7 +463,7 @@ export function PricingPage({ onGetStarted } = {}) {
             { icon: Shield, text: 'Hardened stack — CSP, rate limiting, tamper-evident audit log' },
           ].map(({ icon: Icon, text }) => (
             <div key={text} className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-              <Icon className="w-4 h-4 text-indigo-500/60 dark:text-indigo-400/50" />
+              <Icon className="w-4 h-4 text-brand-500/60 dark:text-brand-400/50" />
               <span>{text}</span>
             </div>
           ))}
@@ -576,7 +576,7 @@ export function PricingPage({ onGetStarted } = {}) {
           <button
             type="button"
             onClick={() => typeof onGetStarted === 'function' && onGetStarted('roadmap')}
-            className="inline-flex items-center gap-2 px-2 py-1 rounded text-sm font-medium text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)] hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors duration-200 ds-focus-ring"
+            className="inline-flex items-center gap-2 px-2 py-1 rounded text-sm font-medium text-brand-500 dark:text-[color:var(--ds-accent-brand-dark)] hover:text-brand-600 dark:hover:text-brand-300 transition-colors duration-200 ds-focus-ring"
           >
             See what&apos;s next on our Roadmap
             <ArrowRight className="w-4 h-4" />

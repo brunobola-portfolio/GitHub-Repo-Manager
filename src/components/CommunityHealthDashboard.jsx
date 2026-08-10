@@ -247,7 +247,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                 className="space-y-6"
                             >
                                 {/* Health Score — always visible */}
-                                <div className="rounded-3xl p-8 bg-indigo-500/10 dark:bg-indigo-500/20 border border-indigo-200/30 dark:border-indigo-500/20">
+                                <div className="rounded-3xl p-8 bg-brand-500/10 dark:bg-brand-500/20 border border-brand-200/30 dark:border-brand-500/20">
                                     <div className="flex flex-col sm:flex-row items-center gap-6">
                                         <HealthScoreRing score={health.score} />
                                         <div className="text-center sm:text-left space-y-1">
@@ -284,7 +284,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                                 {activeTab === 'files' && (
                                                     <div className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60">
                                                         <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                                                            <FileText className="w-5 h-5 text-indigo-500" />
+                                                            <FileText className="w-5 h-5 text-brand-500" />
                                                             Community Files
                                                         </h3>
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -308,7 +308,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                                 {activeTab === 'recommendations' && (
                                                     <div className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60">
                                                         <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                                                            <TrendingUp className="w-5 h-5 text-indigo-500" />
+                                                            <TrendingUp className="w-5 h-5 text-brand-500" />
                                                             Recommendations
                                                         </h3>
                                                         <div className="space-y-3">
@@ -336,7 +336,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                             className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60"
                                         >
                                             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                                                <FileText className="w-5 h-5 text-indigo-500" />
+                                                <FileText className="w-5 h-5 text-brand-500" />
                                                 Community Files
                                             </h3>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -361,7 +361,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                             className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60"
                                         >
                                             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                                                <TrendingUp className="w-5 h-5 text-indigo-500" />
+                                                <TrendingUp className="w-5 h-5 text-brand-500" />
                                                 Recommendations
                                             </h3>
                                             <div className="space-y-3">
@@ -440,7 +440,7 @@ function AgentRulesCard({ exists, onGenerate }) {
                     <button
                         type="button"
                         onClick={onGenerate}
-                        className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] transition-colors"
+                        className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg bg-brand-500/10 hover:bg-brand-500/20 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] transition-colors"
                         aria-label={exists ? 'Refresh agent rules with AI' : 'Generate agent rules with AI'}
                     >
                         <Bot className="w-3.5 h-3.5" aria-hidden="true" />
@@ -472,7 +472,7 @@ function FileCheckItem({ file, exists, size, onFix }) {
                         <button
                             type="button"
                             onClick={() => onFix(file)}
-                            className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] transition-colors"
+                            className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg bg-brand-500/10 hover:bg-brand-500/20 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] transition-colors"
                             aria-label={`Fix ${file} with AI`}
                         >
                             <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
@@ -605,7 +605,7 @@ function SkeletonState() {
             </div>
 
             {/* Health Score skeleton */}
-            <div className="rounded-3xl p-8 bg-indigo-500/10 dark:bg-indigo-500/20 border border-indigo-200/30 dark:border-indigo-500/20">
+            <div className="rounded-3xl p-8 bg-brand-500/10 dark:bg-brand-500/20 border border-brand-200/30 dark:border-brand-500/20">
                 <div className="flex flex-col sm:flex-row items-center gap-6">
                     <div className="w-28 h-28 md:w-36 md:h-36 rounded-full ds-skeleton" />
                     <div className="space-y-3 flex-1">

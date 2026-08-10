@@ -47,11 +47,11 @@ export function AIAssistantPasteCard({ dialog, onAnswer, onConfirm, onCancel }) 
   const isReady = dialog.status === 'ready'
 
   return (
-    <div className="rounded-xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50/70 dark:bg-indigo-900/20 p-3 space-y-3">
+    <div className="rounded-xl border border-brand-200 dark:border-brand-800 bg-brand-50/70 dark:bg-brand-900/20 p-3 space-y-3">
       <div className="flex items-start gap-2">
-        <Wand2 className="w-4 h-4 text-indigo-500 mt-0.5 shrink-0" />
+        <Wand2 className="w-4 h-4 text-brand-500 mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="ds-text-meta font-semibold uppercase tracking-wide text-[color:var(--ds-accent-brand)] dark:text-indigo-300">
+          <p className="ds-text-meta font-semibold uppercase tracking-wide text-[color:var(--ds-accent-brand)] dark:text-brand-300">
             URL detected
           </p>
           <Preview dialog={dialog} />
@@ -106,7 +106,7 @@ function Preview({ dialog }) {
     const { org, project, repo } = dialog.parsed || {}
     return (
       <p className="text-sm text-slate-700 dark:text-slate-200 flex items-center gap-1 flex-wrap">
-        <Cloud className="w-3 h-3 text-indigo-500" /> Azure DevOps
+        <Cloud className="w-3 h-3 text-brand-500" /> Azure DevOps
         {org && <> &middot; <span className="font-mono">{org}</span></>}
         {project && <> / <span className="font-mono">{project}</span></>}
         {repo && <> / <span className="font-mono">{repo}</span></>}

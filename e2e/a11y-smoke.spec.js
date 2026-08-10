@@ -128,7 +128,7 @@ const VIEWS = [
       await page.waitForLoadState('networkidle')
       // Exercises AboutSection's version badge, Changelog link, and (when an
       // update is available) the dismissable banner — this scan is what
-      // caught the Dismiss button's sub-AA contrast on the indigo-50 banner.
+      // caught the Dismiss button's sub-AA contrast on the tinted banner.
     },
   },
   {

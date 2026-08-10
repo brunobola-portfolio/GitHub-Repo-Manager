@@ -38,7 +38,7 @@ const ACTION_COLORS = {
 }
 
 function getActionColor(action) {
-    return ACTION_COLORS[action] || 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] bg-indigo-50 dark:bg-indigo-900/30'
+    return ACTION_COLORS[action] || 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] bg-brand-50 dark:bg-brand-900/30'
 }
 
 function formatDateTime(dateStr) {

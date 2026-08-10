@@ -112,7 +112,7 @@ export default function WikiStep({ wiki, onUpdate, source }) {
               setFetched(false)
               setError('')
             }}
-            className="text-sm text-indigo-500 hover:text-indigo-400 underline transition-colors"
+            className="text-sm text-brand-500 hover:text-brand-400 underline transition-colors"
           >
             Try again
           </button>
@@ -140,7 +140,7 @@ export default function WikiStep({ wiki, onUpdate, source }) {
                   >
                     {/* Wiki info */}
                     <div className="flex items-center gap-2">
-                      <BookOpen className="w-4 h-4 text-indigo-500 shrink-0" />
+                      <BookOpen className="w-4 h-4 text-brand-500 shrink-0" />
                       <span className="font-medium text-slate-900 dark:text-slate-100">
                         {w.name}
                       </span>
@@ -166,8 +166,8 @@ export default function WikiStep({ wiki, onUpdate, source }) {
                         <label
                           className={`flex-1 flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer text-sm transition-all ${
                             destination === 'wiki'
-                              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                              : 'border-slate-200 dark:border-slate-700 hover:border-indigo-400/50'
+                              ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
+                              : 'border-slate-200 dark:border-slate-700 hover:border-brand-400/50'
                           }`}
                         >
                           <input
@@ -181,12 +181,12 @@ export default function WikiStep({ wiki, onUpdate, source }) {
                           <div
                             className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
                               destination === 'wiki'
-                                ? 'border-indigo-500'
+                                ? 'border-brand-500'
                                 : 'border-slate-400 dark:border-slate-600'
                             }`}
                           >
                             {destination === 'wiki' && (
-                              <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                              <div className="w-2 h-2 rounded-full bg-brand-500" />
                             )}
                           </div>
                           <div>
@@ -202,8 +202,8 @@ export default function WikiStep({ wiki, onUpdate, source }) {
                         <label
                           className={`flex-1 flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer text-sm transition-all ${
                             destination === 'docs'
-                              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                              : 'border-slate-200 dark:border-slate-700 hover:border-indigo-400/50'
+                              ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
+                              : 'border-slate-200 dark:border-slate-700 hover:border-brand-400/50'
                           }`}
                         >
                           <input
@@ -217,12 +217,12 @@ export default function WikiStep({ wiki, onUpdate, source }) {
                           <div
                             className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
                               destination === 'docs'
-                                ? 'border-indigo-500'
+                                ? 'border-brand-500'
                                 : 'border-slate-400 dark:border-slate-600'
                             }`}
                           >
                             {destination === 'docs' && (
-                              <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                              <div className="w-2 h-2 rounded-full bg-brand-500" />
                             )}
                           </div>
                           <div>

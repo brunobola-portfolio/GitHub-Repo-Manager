@@ -96,7 +96,7 @@ export function ReadmeToc({ containerRef, source }) {
                                         <motion.span
                                             layoutId="readme-toc-active"
                                             transition={TRANSITION.fast}
-                                            className="absolute inset-0 rounded-md bg-indigo-50 dark:bg-indigo-900/20"
+                                            className="absolute inset-0 rounded-md bg-brand-50 dark:bg-brand-900/20"
                                         />
                                     )}
                                     <span

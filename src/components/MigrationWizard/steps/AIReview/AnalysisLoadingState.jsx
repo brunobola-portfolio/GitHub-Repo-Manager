@@ -31,8 +31,8 @@ function AnalysisAspect({ aspect, index }) {
       transition={{ delay: index * 0.1, duration: 0.45, ease: EASE.emphasized }}
       className="flex items-center gap-3"
     >
-      <div className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-violet-500/10 dark:bg-violet-500/[0.12] border border-violet-500/20">
-        <Icon className="w-4.5 h-4.5 text-violet-500 dark:text-violet-400" />
+      <div className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-brand-500/10 dark:bg-brand-500/[0.12] border border-brand-500/20">
+        <Icon className="w-4.5 h-4.5 text-brand-500 dark:text-brand-400" />
       </div>
       <motion.p
         className="text-sm text-slate-600 dark:text-slate-300"
@@ -68,7 +68,7 @@ export function AnalysisLoadingState() {
             <Brain className="w-6 h-6 text-white" />
           </motion.div>
           <motion.div
-            className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-violet-400"
+            className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-brand-400"
             animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }}
             transition={{ duration: 1.5, repeat: Infinity }}
           />
@@ -105,7 +105,7 @@ export function AnalysisLoadingState() {
         {[0, 1, 2].map(i => (
           <motion.div
             key={i}
-            className="w-1.5 h-1.5 rounded-full bg-violet-500/50"
+            className="w-1.5 h-1.5 rounded-full bg-brand-500/50"
             animate={{ opacity: [0.3, 1, 0.3], scale: [0.8, 1.2, 0.8] }}
             transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
           />

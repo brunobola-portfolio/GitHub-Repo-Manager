@@ -31,8 +31,8 @@ export function BranchHygieneCard({ branches, defaultBranch = 'main', className 
         >
             <div className="rounded-2xl bg-white dark:bg-slate-900 p-4 space-y-4">
                 <div className="flex items-center gap-2">
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />
-                    <h3 id="branch-hygiene-title" className="ds-text-micro font-semibold uppercase tracking-[0.18em] text-[color:var(--ds-accent-brand)] dark:text-indigo-300">
+                    <Sparkles className="w-3.5 h-3.5 text-brand-500" aria-hidden="true" />
+                    <h3 id="branch-hygiene-title" className="ds-text-micro font-semibold uppercase tracking-[0.18em] text-[color:var(--ds-accent-brand)] dark:text-brand-300">
                         Branch hygiene
                     </h3>
                 </div>
@@ -54,7 +54,7 @@ export function BranchHygieneCard({ branches, defaultBranch = 'main', className 
                                 <span
                                     key={p.prefix}
                                     title={p.names.join('\n')}
-                                    className="inline-flex items-center gap-1 px-2 py-0.5 ds-text-meta font-mono rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-200 ring-1 ring-inset ring-indigo-200/60 dark:ring-indigo-800"
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 ds-text-meta font-mono rounded-full bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-200 ring-1 ring-inset ring-brand-200/60 dark:ring-brand-800"
                                 >
                                     {p.prefix}/*
                                     <span className="font-sans font-semibold">{p.count}</span>
@@ -92,9 +92,9 @@ export function BranchHygieneCard({ branches, defaultBranch = 'main', className 
 }
 
 const TONE = {
-    indigo: 'bg-indigo-50 text-indigo-700 ring-indigo-200/60 dark:bg-indigo-900/30 dark:text-indigo-200 dark:ring-indigo-800/60',
+    indigo: 'bg-brand-50 text-brand-700 ring-brand-200/60 dark:bg-brand-900/30 dark:text-brand-200 dark:ring-brand-800/60',
     emerald: 'bg-emerald-50 text-emerald-700 ring-emerald-200/60 dark:bg-emerald-900/30 dark:text-emerald-200 dark:ring-emerald-800/60',
-    sky: 'bg-sky-50 text-sky-700 ring-sky-200/60 dark:bg-sky-900/30 dark:text-sky-200 dark:ring-sky-800/60',
+    sky: 'bg-brand-50 text-brand-700 ring-brand-200/60 dark:bg-brand-900/30 dark:text-brand-200 dark:ring-brand-800/60',
     amber: 'bg-amber-50 text-amber-700 ring-amber-200/60 dark:bg-amber-900/30 dark:text-amber-200 dark:ring-amber-800/60',
     slate: 'bg-slate-50 text-slate-600 ring-slate-200/60 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700',
 }

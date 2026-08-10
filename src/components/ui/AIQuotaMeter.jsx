@@ -7,8 +7,8 @@ import { QuotaUpgradeButton } from './QuotaUpgradeButton'
 
 const TONE = {
     indigo: {
-        ring: 'text-indigo-500',
-        track: 'text-indigo-500/15 dark:text-indigo-500/20',
+        ring: 'text-brand-500',
+        track: 'text-brand-500/15 dark:text-brand-500/20',
         label: 'text-slate-700 dark:text-slate-200',
         pulse: false,
     },
@@ -95,8 +95,8 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
     // Unlimited reads as the "premium plan" state — give the shell a faint
     // brand tint so it feels earned, not just a neutral status chip.
     const shellTone = unlimited
-        ? 'ring-indigo-300/70 dark:ring-indigo-500/30 bg-indigo-50/70 dark:bg-indigo-500/10 hover:ring-indigo-400/70'
-        : 'ring-slate-200/70 dark:ring-slate-800 bg-white/60 dark:bg-slate-900/60 hover:ring-indigo-400/60'
+        ? 'ring-brand-300/70 dark:ring-brand-500/30 bg-brand-50/70 dark:bg-brand-500/10 hover:ring-brand-400/70'
+        : 'ring-slate-200/70 dark:ring-slate-800 bg-white/60 dark:bg-slate-900/60 hover:ring-brand-400/60'
     const reset = formatTimeUntil(resetAt)
     const ariaLabel = unlimited
         ? `AI quota: unlimited on ${tier}. Click for details.`
@@ -115,7 +115,7 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ring-1 ring-inset ${shellTone} backdrop-blur-sm ds-focus-ring transition`}
             >
                 {unlimited ? (
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
+                    <Sparkles className="w-3.5 h-3.5 text-brand-500 dark:text-brand-400" aria-hidden="true" />
                 ) : (
                     <ProgressRing percent={percent} tone={tone} />
                 )}
@@ -154,7 +154,7 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
                         </div>
                         {unlimited ? (
                             <p className="text-sm text-slate-700 dark:text-slate-200">
-                                <Sparkles className="inline w-4 h-4 mr-1 text-indigo-500 dark:text-indigo-400" aria-hidden="true" />
+                                <Sparkles className="inline w-4 h-4 mr-1 text-brand-500 dark:text-brand-400" aria-hidden="true" />
                                 Unlimited AI requests on this plan.
                             </p>
                         ) : (
@@ -164,7 +164,7 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
                                 </p>
                                 <div className="mt-2 h-1.5 w-full rounded-full bg-slate-200/70 dark:bg-slate-800 overflow-hidden">
                                     <div
-                                        className={`h-full rounded-full ${toneKey === 'rose' ? 'bg-rose-500' : toneKey === 'amber' ? 'bg-amber-500' : 'bg-indigo-500'}`}
+                                        className={`h-full rounded-full ${toneKey === 'rose' ? 'bg-rose-500' : toneKey === 'amber' ? 'bg-amber-500' : 'bg-brand-500'}`}
                                         style={{ width: `${Math.min(100, percent * 100)}%` }}
                                     />
                                 </div>
@@ -178,7 +178,7 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
                             <button
                                 type="button"
                                 onClick={() => { openAppSettings('usage'); setOpen(false) }}
-                                className="inline-flex items-center gap-1 text-[12px] text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300"
+                                className="inline-flex items-center gap-1 text-[12px] text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-300"
                             >
                                 <Sparkles className="w-3 h-3" aria-hidden="true" />
                                 Manage usage

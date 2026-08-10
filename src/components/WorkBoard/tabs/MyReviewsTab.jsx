@@ -86,7 +86,7 @@ function ReviewRow({ review, isFocused, onFocus, hasAI, onApprove, onSnooze, onR
         <div
             data-testid="review-row"
             role="presentation"
-            className={clsx('relative', isFocused && 'ring-2 ring-indigo-500/40 rounded-xl')}
+            className={clsx('relative', isFocused && 'ring-2 ring-brand-500/40 rounded-xl')}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
         >
@@ -103,7 +103,7 @@ function ReviewRow({ review, isFocused, onFocus, hasAI, onApprove, onSnooze, onR
                 <div className="flex items-start gap-4 p-5 group-hover:bg-slate-50 dark:group-hover:bg-slate-800/50 transition-colors">
                     <RowIconBadge icon={GitPullRequest} tone="purple" size="md" className="mt-0.5" />
                     <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                        <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
                             {review.title || `PR #${review.prNumber}`}
                         </div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">

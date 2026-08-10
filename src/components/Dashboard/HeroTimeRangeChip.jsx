@@ -39,7 +39,7 @@ export function HeroTimeRangeChip({ value, onChange }) {
                             onClick={() => { onChange(r.value); setOpen(false) }}
                             className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
                                 value === r.value
-                                    ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-semibold'
+                                    ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 font-semibold'
                                     : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
                             }`}
                         >

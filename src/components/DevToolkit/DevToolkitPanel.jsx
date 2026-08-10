@@ -173,8 +173,8 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
                         {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- mouse-only resize affordance; the panel content is independently keyboard-navigable so a kbd resize isn't required */}
                         <div
                             onMouseDown={onDragStart}
-                            className={`absolute left-0 top-0 bottom-0 w-1 cursor-col-resize z-10 transition-colors bg-transparent hover:bg-indigo-500/50 ${
-                                dragging ? 'bg-indigo-500/50' : ''
+                            className={`absolute left-0 top-0 bottom-0 w-1 cursor-col-resize z-10 transition-colors bg-transparent hover:bg-brand-500/50 ${
+                                dragging ? 'bg-brand-500/50' : ''
                             }`}
                             role="separator"
                             aria-orientation="vertical"
@@ -182,7 +182,7 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
                         />
 
                         {/* Header */}
-                        <header className="relative bg-indigo-700 dark:bg-indigo-600 px-5 py-4">
+                        <header className="relative bg-brand-700 dark:bg-brand-600 px-5 py-4">
                             <div className="flex items-start justify-between">
                                 <div className="flex items-center gap-2">
                                     <div className="w-6 h-6 rounded-md bg-white/20 flex items-center justify-center">
@@ -192,7 +192,7 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
                                 </div>
                                 <div className="flex items-center gap-2">
                                     {toolkit.autoDraftEnabled && (
-                                        <span className="px-2 py-0.5 ds-text-micro font-medium uppercase tracking-wider rounded-full bg-white/20 text-white/80">
+                                        <span className="px-2 py-0.5 ds-text-micro font-medium uppercase tracking-wider rounded-full bg-white/20 text-white">
                                             auto-draft
                                         </span>
                                     )}
@@ -205,7 +205,7 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
                                     </button>
                                 </div>
                             </div>
-                            <p className="text-xs text-white/70 mt-1 ml-8">
+                            <p className="text-xs text-white mt-1 ml-8">
                                 AI-powered developer tools
                             </p>
                             <div className="mt-3">

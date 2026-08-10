@@ -235,7 +235,7 @@ export function Select({
                         ? 'opacity-60'
                         : ''}
                     ${isSelected
-                        ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                        ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300'
                         : isFocused
                         ? 'bg-slate-50 dark:bg-slate-800/50 text-slate-900 dark:text-slate-100'
                         : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
@@ -258,7 +258,7 @@ export function Select({
                                     {option.badge === -1 ? '—' : option.badge}
                                 </span>
                             )}
-                            {isSelected && <Check className="w-4 h-4 text-indigo-500" />}
+                            {isSelected && <Check className="w-4 h-4 text-brand-500" />}
                         </span>
                     </>
                 )}
@@ -304,9 +304,9 @@ export function Select({
                     ds-focus-ring
                     ${disabled
                         ? 'opacity-50 cursor-not-allowed'
-                        : 'hover:bg-white dark:hover:bg-slate-800 hover:border-indigo-300 dark:hover:border-indigo-500/50 hover:shadow-md cursor-pointer'
+                        : 'hover:bg-white dark:hover:bg-slate-800 hover:border-brand-300 dark:hover:border-brand-500/50 hover:shadow-md cursor-pointer'
                     }
-                    ${isOpen ? 'border-indigo-400 dark:border-indigo-500 shadow-md ring-4 ring-indigo-500/10' : ''}
+                    ${isOpen ? 'border-brand-400 dark:border-brand-500 shadow-md ring-4 ring-brand-500/10' : ''}
                 `}
             >
                 <span className={`flex items-center gap-2 min-w-0 ${selectedOption ? '' : 'text-slate-500 dark:text-slate-400'}`}>
@@ -321,7 +321,7 @@ export function Select({
                     )}
                     <ChevronDown
                         className={`w-4 h-4 transition-transform duration-200 ${
-                            isOpen ? 'rotate-180 text-indigo-500' : 'text-slate-400'
+                            isOpen ? 'rotate-180 text-brand-500' : 'text-slate-400'
                         }`}
                     />
                 </span>
@@ -359,7 +359,7 @@ export function Select({
                                         }}
                                         placeholder="Filter..."
                                         aria-label={`Filter ${label || 'options'}`}
-                                        className="w-full pl-8 pr-3 py-1.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors"
+                                        className="w-full pl-8 pr-3 py-1.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-brand-500 transition-colors"
                                     />
                                 </div>
                             </div>

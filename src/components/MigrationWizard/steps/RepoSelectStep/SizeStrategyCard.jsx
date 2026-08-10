@@ -46,8 +46,8 @@ export function SizeStrategyCard({ repo, aiSuggestion, selectedStrategy, onSelec
               onClick={() => onSelect(repo, key)}
               className={`flex flex-col items-start gap-1 rounded-md border px-3 py-2 text-left text-xs transition-colors
                 ${active
-                  ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-100'
-                  : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-indigo-400/60 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300'
+                  ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-100'
+                  : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-brand-400/60 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300'
                 }`}
             >
               <span className="flex items-center gap-1 font-medium">
@@ -67,18 +67,18 @@ function AISuggestionBanner({ suggestion, onAccept }) {
   const label = STRATEGIES.find((s) => s.key === suggestion.strategy)?.label ?? suggestion.strategy
   const confidence = Math.round((suggestion.confidence ?? 0) * 100)
   return (
-    <div className="mb-3 flex items-start gap-2 rounded-md border border-indigo-200 bg-indigo-50 p-2 text-xs dark:border-indigo-500/40 dark:bg-indigo-950/30">
-      <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-500 dark:text-indigo-300" />
+    <div className="mb-3 flex items-start gap-2 rounded-md border border-brand-200 bg-brand-50 p-2 text-xs dark:border-brand-500/40 dark:bg-brand-950/30">
+      <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-500 dark:text-brand-300" />
       <div className="flex-1">
-        <div className="font-medium text-indigo-700 dark:text-indigo-100">
+        <div className="font-medium text-brand-700 dark:text-brand-100">
           AI recommends: {label} ({confidence}% confidence)
         </div>
-        <div className="text-indigo-600 dark:text-indigo-200/80">{suggestion.rationale}</div>
+        <div className="text-brand-600 dark:text-brand-200/80">{suggestion.rationale}</div>
       </div>
       <button
         type="button"
         onClick={onAccept}
-        className="shrink-0 rounded bg-indigo-500 px-2 py-1 ds-text-meta font-medium text-white hover:bg-indigo-400"
+        className="shrink-0 rounded bg-brand-500 px-2 py-1 ds-text-meta font-medium text-white hover:bg-brand-400"
       >
         Accept
       </button>

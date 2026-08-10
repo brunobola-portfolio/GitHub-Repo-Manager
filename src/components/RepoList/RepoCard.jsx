@@ -40,7 +40,7 @@ function RepoCardQuickActions({ repo, onAction, onOpenContextMenu }) {
 						<motion.button
 							onClick={(e) => { e.stopPropagation(); onAction(a.id, repo) }}
 							whileTap={TAP}
-							className="p-2 -m-0.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
+							className="p-2 -m-0.5 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/20 hover:text-brand-500 transition-colors"
 							aria-label={label}
 						>
 							<Icon className="w-4 h-4" />
@@ -52,7 +52,7 @@ function RepoCardQuickActions({ repo, onAction, onOpenContextMenu }) {
 				<motion.button
 					onClick={(e) => { e.stopPropagation(); onOpenContextMenu(e) }}
 					whileTap={TAP}
-					className="p-2 -m-0.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-500 transition-colors"
+					className="p-2 -m-0.5 rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/20 hover:text-brand-500 transition-colors"
 					aria-label="More actions"
 				>
 					<MoreHorizontal className="w-4 h-4" />
@@ -105,9 +105,9 @@ export const RepoCard = memo(function RepoCard({
 
 	// Ring + border via inline style to guarantee visibility (Tailwind v4 class-order can't override inline)
 	const ringShadow = isContextTarget
-		? '0 0 0 2px rgba(129, 140, 248, 0.85)'  // indigo-400 ring
+		? '0 0 0 2px rgba(129, 140, 248, 0.85)'  // brand-400 ring
 		: isSelected
-			? '0 0 0 2px rgba(99, 102, 241, 0.9)'   // indigo-500 ring
+			? '0 0 0 2px rgba(99, 102, 241, 0.9)'   // brand-500 ring
 			: null
 
 	// Neutral, theme-aware elevation from the design system (see --ds-shadow-lg).
@@ -143,11 +143,11 @@ export const RepoCard = memo(function RepoCard({
                 ds-hover-lift
                 ${isContextTarget
 					? isSelected
-						? 'bg-indigo-100/60 dark:bg-indigo-900/40'
-						: 'bg-indigo-50/50 dark:bg-indigo-900/30'
+						? 'bg-brand-100/60 dark:bg-brand-900/40'
+						: 'bg-brand-50/50 dark:bg-brand-900/30'
 					: isSelected
-						? 'bg-indigo-50/50 dark:bg-indigo-900/20'
-						: 'bg-white/70 dark:bg-slate-800/80 border-[color:var(--ds-elevation-border)] hover:border-indigo-400/60 dark:hover:border-indigo-500/40'
+						? 'bg-brand-50/50 dark:bg-brand-900/20'
+						: 'bg-white/70 dark:bg-slate-800/80 border-[color:var(--ds-elevation-border)] hover:border-brand-400/60 dark:hover:border-brand-500/40'
 				}
                 ${isGrid ? 'rounded-2xl p-3 sm:p-4 xl:p-5 flex flex-col h-full' : 'rounded-xl p-4 flex items-center gap-4'}
                 ${/* Skip layout/paint for offscreen cards — with hundreds of
@@ -182,13 +182,13 @@ export const RepoCard = memo(function RepoCard({
 			{/* In Grid: Top Right. In List: Left side, static. */}
 			{isGrid ? (
 				<div className={`pointer-events-none absolute top-4 right-4 z-10 transition-opacity duration-200 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'}`}>
-					<div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'}`}>
+					<div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${isSelected ? 'bg-brand-500 border-brand-500' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'}`}>
 						{isSelected && <CheckSquare className="w-3.5 h-3.5 text-white" />}
 					</div>
 				</div>
 			) : (
 				<div className="pointer-events-none relative z-10 flex-shrink-0">
-					<div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'}`}>
+					<div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${isSelected ? 'bg-brand-500 border-brand-500' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'}`}>
 						{isSelected && <CheckSquare className="w-3.5 h-3.5 text-white" />}
 					</div>
 				</div>
@@ -202,7 +202,7 @@ export const RepoCard = memo(function RepoCard({
 					</div>
 					<div className="flex-1 min-w-0">
 						<div className="flex items-center gap-2">
-							<h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate group-hover:text-indigo-500 transition-colors ds-font-display">
+							<h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate group-hover:text-brand-500 transition-colors ds-font-display">
 								<button type="button" onClick={(e) => { e.stopPropagation(); onRepoClick?.(repo) }}
 									data-testid="repo-card-open"
 									className="relative z-10 hover:underline focus:outline-none focus-visible:underline text-left truncate">

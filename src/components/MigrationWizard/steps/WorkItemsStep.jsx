@@ -159,7 +159,7 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
               setTypeCounts(null)
               setError('')
             }}
-            className="text-sm text-indigo-500 hover:text-indigo-400 underline transition-colors"
+            className="text-sm text-brand-500 hover:text-brand-400 underline transition-colors"
           >
             Try again
           </button>
@@ -183,14 +183,14 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
                     onClick={() => handleToggleType(type)}
                     className={`w-full flex items-center gap-3 p-2.5 rounded-xl border text-sm transition-all ${
                       isChecked
-                        ? 'border-indigo-500/60 bg-indigo-950/20'
-                        : 'border-slate-200 dark:border-slate-700 hover:border-indigo-400/50'
+                        ? 'border-brand-500/60 bg-brand-950/20'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-brand-400/50'
                     }`}
                   >
                     <div
                       className={`w-4 h-4 rounded flex items-center justify-center shrink-0 border-2 transition-colors ${
                         isChecked
-                          ? 'bg-indigo-500 border-indigo-500'
+                          ? 'bg-brand-500 border-brand-500'
                           : 'border-slate-400 dark:border-slate-600'
                       }`}
                     >
@@ -225,7 +225,7 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
                   key={key}
                   type="button"
                   onClick={() => handleToggleOption(key)}
-                  className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-indigo-400/50 transition-all text-sm"
+                  className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-brand-400/50 transition-all text-sm"
                 >
                   <Icon className="w-4 h-4 text-slate-400 shrink-0" />
                   <span className="text-slate-700 dark:text-slate-300">{label}</span>
@@ -236,7 +236,7 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
                       aria-label={label}
                       className={`relative w-9 h-5 rounded-full transition-colors ${
                         workItems[key]
-                          ? 'bg-indigo-500'
+                          ? 'bg-brand-500'
                           : 'bg-slate-300 dark:bg-slate-600'
                       }`}
                     >
@@ -297,7 +297,7 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
           <button
             type="button"
             onClick={handleToggleProjectBoard}
-            className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-indigo-400/50 transition-all text-sm"
+            className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-brand-400/50 transition-all text-sm"
           >
             <LayoutGrid className="w-4 h-4 text-slate-400 shrink-0" />
             <span className="text-slate-700 dark:text-slate-300">Create GitHub Project Board</span>
@@ -308,7 +308,7 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
                 aria-label="Create GitHub Project Board"
                 className={`relative w-9 h-5 rounded-full transition-colors ${
                   workItems.createProjectBoard
-                    ? 'bg-indigo-500'
+                    ? 'bg-brand-500'
                     : 'bg-slate-300 dark:bg-slate-600'
                 }`}
               >
@@ -323,8 +323,8 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
 
           {/* Preview */}
           {totalSelected > 0 && (
-            <div className="p-3 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 text-sm">
-              <p className="text-indigo-700 dark:text-indigo-300">
+            <div className="p-3 rounded-xl bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800 text-sm">
+              <p className="text-brand-700 dark:text-brand-300">
                 <span className="font-semibold">{totalSelected}</span> work item{totalSelected !== 1 ? 's' : ''} will
                 be migrated as{' '}
                 <span className="font-semibold">{totalSelected}</span> GitHub Issue{totalSelected !== 1 ? 's' : ''}

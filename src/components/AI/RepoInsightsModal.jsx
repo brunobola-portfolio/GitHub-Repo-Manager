@@ -569,7 +569,7 @@ function ReadmeGrid({ data, repo }) {
                             key={i}
                             className="flex items-center gap-3 p-3 bg-slate-100/60 dark:bg-white/5 border border-slate-200/50 dark:border-slate-800/40 rounded-lg"
                         >
-                            <FileText className="w-5 h-5 text-indigo-500 dark:text-[color:var(--ds-accent-brand-dark)] shrink-0" />
+                            <FileText className="w-5 h-5 text-brand-500 dark:text-[color:var(--ds-accent-brand-dark)] shrink-0" />
                             <span className="text-slate-700 dark:text-slate-200 text-sm break-words">{section}</span>
                         </div>
                     ))}
@@ -646,8 +646,8 @@ function SuggestionsGrid({ data, loading, error, onRetry }) {
             {analysis && (
                 <InsightCard tone="ai">
                     <div className="flex items-start gap-3">
-                        <div className="p-2 rounded-lg bg-indigo-500/20 shrink-0">
-                            <Wand2 className="w-5 h-5 text-indigo-500 dark:text-indigo-300" />
+                        <div className="p-2 rounded-lg bg-brand-500/20 shrink-0">
+                            <Wand2 className="w-5 h-5 text-brand-500 dark:text-brand-300" />
                         </div>
                         <div className="min-w-0">
                             <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">

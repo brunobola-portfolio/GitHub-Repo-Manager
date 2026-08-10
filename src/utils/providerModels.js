@@ -442,8 +442,8 @@ export const TIER_LABELS = {
 
 export const TIER_STYLES = {
     fast: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-200 dark:ring-emerald-800',
-    balanced: 'bg-sky-50 text-sky-700 ring-sky-200 dark:bg-sky-900/40 dark:text-sky-200 dark:ring-sky-800',
-    smart: 'bg-purple-50 text-purple-700 ring-purple-200 dark:bg-purple-900/40 dark:text-purple-200 dark:ring-purple-800',
+    balanced: 'bg-brand-50 text-brand-700 ring-brand-200 dark:bg-brand-900/40 dark:text-brand-200 dark:ring-brand-800',
+    smart: 'bg-brand-50 text-brand-700 ring-brand-200 dark:bg-brand-900/40 dark:text-brand-200 dark:ring-brand-800',
     reasoning: 'bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-900/40 dark:text-amber-200 dark:ring-amber-800',
     open: 'bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700',
     legacy: 'bg-slate-50 text-slate-500 ring-slate-200 dark:bg-slate-900 dark:text-slate-500 dark:ring-slate-800',

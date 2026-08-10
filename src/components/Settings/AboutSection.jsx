@@ -304,11 +304,11 @@ export function AboutSection() {
                 <Card
                     glass={false}
                     shadow="sm"
-                    className="p-4 border border-indigo-200 dark:border-indigo-800 bg-indigo-50/60 dark:bg-indigo-900/20"
+                    className="p-4 border border-brand-200 dark:border-brand-800 bg-brand-50/60 dark:bg-brand-900/20"
                 >
                     <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-2.5">
-                            <Sparkles className="w-4 h-4 mt-0.5 text-indigo-500 shrink-0" aria-hidden="true" />
+                            <Sparkles className="w-4 h-4 mt-0.5 text-brand-500 shrink-0" aria-hidden="true" />
                             <div>
                                 <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
                                     v{data.latest} available

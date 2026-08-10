@@ -4,7 +4,7 @@ function chipCls(active) {
     return [
         'px-2.5 py-1 rounded-full ds-text-meta font-medium ring-1 ring-inset transition-colors',
         active
-            ? 'bg-indigo-500 text-white ring-indigo-500 hover:bg-indigo-600'
+            ? 'bg-brand-500 text-white ring-brand-500 hover:bg-brand-600'
             : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700 dark:hover:bg-slate-700',
     ].join(' ')
 }

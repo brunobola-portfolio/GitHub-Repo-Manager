@@ -4,7 +4,7 @@
  * Shared by every surface that renders a language: the Dashboard's
  * LanguageChart (pie slices, stacked bar, legend swatches) and RepoList's
  * RepoCard language dot. It lived inline in LanguageChart and was never
- * imported anywhere else, so RepoCard hardcoded `bg-indigo-500` and painted
+ * imported anywhere else, so RepoCard hardcoded `bg-brand-500` and painted
  * every language the same colour — 15 languages, 1 dot colour, in a GitHub
  * tool.
  *

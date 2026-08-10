@@ -67,17 +67,18 @@ export function ActivityChart({ activity = [], timeRange, loading }) {
 
     return (
         <motion.div
+            className="h-full"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
         >
             <Card
-                className="p-4 sm:p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-[var(--ds-duration)]"
+                className="h-full p-4 sm:p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-[var(--ds-duration)]"
                 style={{ minHeight: `${chartHeight + 60}px` }}
             >
                 <div className="flex items-center mb-6">
                     <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                        <Activity className="w-5 h-5 text-indigo-500" />
+                        <Activity className="w-5 h-5 text-brand-500" />
                         Activity Trends
                     </h3>
                 </div>

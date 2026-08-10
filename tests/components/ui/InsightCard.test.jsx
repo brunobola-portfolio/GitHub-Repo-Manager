@@ -37,7 +37,7 @@ describe('InsightCard', () => {
 
   it('applies ai tone classes', () => {
     render(<InsightCard tone="ai" data-testid="card">x</InsightCard>)
-    expect(screen.getByTestId('card').className).toMatch(/ring-purple-500\/25/)
+    expect(screen.getByTestId('card').className).toMatch(/ring-brand-500\/25/)
   })
 
   it('adds hover classes by default', () => {

@@ -18,11 +18,11 @@ export function WorkBoardSummary({ prefs, totalCount, mutedCount, pinnedCount, t
     const tierLabel = TIER_LABEL[tier] || 'Free'
 
     return (
-        <div className="rounded-2xl ring-1 ring-indigo-500/25 dark:ring-indigo-500/35">
+        <div className="rounded-2xl ring-1 ring-brand-500/25 dark:ring-brand-500/35">
             <div className="rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-4 space-y-4">
                 <div className="flex items-center gap-2">
-                    <Activity className="w-3.5 h-3.5 text-indigo-500" aria-hidden="true" />
-                    <span className="ds-text-micro font-semibold uppercase tracking-[0.14em] text-[color:var(--ds-accent-brand)] dark:text-indigo-300">
+                    <Activity className="w-3.5 h-3.5 text-brand-500" aria-hidden="true" />
+                    <span className="ds-text-micro font-semibold uppercase tracking-[0.14em] text-[color:var(--ds-accent-brand)] dark:text-brand-300">
                         Board status
                     </span>
                 </div>
@@ -48,7 +48,7 @@ export function WorkBoardSummary({ prefs, totalCount, mutedCount, pinnedCount, t
                         tier === 'enterprise'
                             ? 'bg-amber-500 text-white'
                             : tier === 'pro'
-                            ? 'bg-indigo-500 text-white'
+                            ? 'bg-brand-500 text-white'
                             : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'
                     }`}>
                         {tierLabel}
@@ -74,7 +74,7 @@ export function WorkBoardSummary({ prefs, totalCount, mutedCount, pinnedCount, t
 
 function StatTile({ label, value, icon: Icon, color }) {
     const colorClass = {
-        indigo: 'bg-indigo-50 text-[color:var(--ds-accent-brand)] ring-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-200 dark:ring-indigo-800/60',
+        indigo: 'bg-brand-50 text-[color:var(--ds-accent-brand)] ring-brand-200 dark:bg-brand-900/30 dark:text-brand-200 dark:ring-brand-800/60',
         emerald: 'bg-emerald-50 text-emerald-600 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:ring-emerald-800/60',
         slate: 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-800/80 dark:text-slate-300 dark:ring-slate-700',
     }[color] || ''

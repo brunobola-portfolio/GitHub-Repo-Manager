@@ -89,10 +89,10 @@ export function MobileQuickActionsFab(props) {
                                         role="menuitem"
                                         onClick={handle(item.handlerKey)}
                                         aria-label={item.label}
-                                        className="flex items-center gap-2 pr-2 pl-3 h-12 rounded-full bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/50 shadow-lg text-sm font-semibold text-slate-700 dark:text-slate-200 hover:border-indigo-300 dark:hover:border-indigo-500/50 transition-colors"
+                                        className="flex items-center gap-2 pr-2 pl-3 h-12 rounded-full bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/50 shadow-lg text-sm font-semibold text-slate-700 dark:text-slate-200 hover:border-brand-300 dark:hover:border-brand-500/50 transition-colors"
                                     >
                                         <span>{item.label}</span>
-                                        <span className="w-9 h-9 rounded-full bg-indigo-500/10 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] flex items-center justify-center">
+                                        <span className="w-9 h-9 rounded-full bg-brand-500/10 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] flex items-center justify-center">
                                             <Icon className="w-4 h-4" />
                                         </span>
                                     </button>
@@ -109,7 +109,7 @@ export function MobileQuickActionsFab(props) {
                     {!open && (
                         <motion.span
                             aria-hidden="true"
-                            className="absolute inset-0 rounded-full bg-indigo-500/40 dark:bg-indigo-400/30 blur-2xl pointer-events-none transition-opacity duration-[var(--ds-duration)] group-hover:opacity-0 group-focus-within:opacity-0"
+                            className="absolute inset-0 rounded-full bg-brand-500/40 dark:bg-brand-400/30 blur-2xl pointer-events-none transition-opacity duration-[var(--ds-duration)] group-hover:opacity-0 group-focus-within:opacity-0"
                             animate={{ scale: [1, 1.18, 1], opacity: [0.55, 0.85, 0.55] }}
                             transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
                         />
@@ -124,7 +124,7 @@ export function MobileQuickActionsFab(props) {
                         animate={{ rotate: open ? 45 : 0 }}
                         whileTap={TAP}
                         transition={{ ...SPRING.panel, mass: 0.7 }}
-                        className={`relative w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 dark:from-indigo-400 dark:to-violet-500 shadow-xl shadow-indigo-500/40 dark:shadow-indigo-500/30 ring-1 ring-white/15 flex items-center justify-center text-white ds-focus-ring transition-[transform,opacity,box-shadow] duration-500 ease-[var(--ds-ease-emphasized)] hover:shadow-2xl hover:shadow-indigo-500/50 ${
+                        className={`relative w-14 h-14 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 dark:from-brand-400 dark:to-brand-500 shadow-xl shadow-brand-500/40 dark:shadow-brand-500/30 ring-1 ring-white/15 flex items-center justify-center text-white ds-focus-ring transition-[transform,opacity,box-shadow] duration-500 ease-[var(--ds-ease-emphasized)] hover:shadow-2xl hover:shadow-brand-500/50 ${
                             open
                                 ? 'translate-x-0'
                                 : 'translate-x-[55%] opacity-95 group-hover:translate-x-0 group-hover:opacity-100 group-focus-within:translate-x-0 group-focus-within:opacity-100 group-active:translate-x-0'

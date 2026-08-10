@@ -103,7 +103,7 @@ export function RepoDetailPanel({ repo, source, onClose, onPrev, onNext, onRiskA
         {repo.webUrl && (
           <a
             href={repo.webUrl} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 transition-colors ds-focus-ring rounded px-1 -mx-1"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-600 dark:text-brand-400 hover:text-brand-500 dark:hover:text-brand-300 transition-colors ds-focus-ring rounded px-1 -mx-1"
           >
             Open in Azure DevOps <ExternalLink className="w-3 h-3" />
           </a>
@@ -261,7 +261,7 @@ function ActivitySparkline({ data }) {
         <div
           key={d.month}
           title={`${d.month}: ${d.count} commit${d.count === 1 ? '' : 's'}`}
-          className="flex-1 rounded-sm min-w-[4px] bg-gradient-to-t from-indigo-500/70 to-violet-500 hover:from-indigo-400 hover:to-violet-400 transition-colors"
+          className="flex-1 rounded-sm min-w-[4px] bg-gradient-to-t from-brand-500/70 to-brand-500 hover:from-brand-400 hover:to-brand-400 transition-colors"
           style={{ height: `${Math.max((d.count / max) * 100, 6)}%` }}
         />
       ))}

@@ -17,7 +17,7 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
                     aria-label={expanded ? `Collapse: ${item.title}` : `Expand: ${item.title}`}
                     aria-expanded={expanded}
                     onClick={() => setExpanded(v => !v)}
-                    className="shrink-0 text-slate-400 hover:text-indigo-500 p-2 -m-2 rounded"
+                    className="shrink-0 text-slate-400 hover:text-brand-500 p-2 -m-2 rounded"
                     style={{
                         transition: `transform var(--ds-duration-row-expand) var(--ds-ease-row-expand)`,
                         transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
@@ -51,7 +51,7 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
                         type="button"
                         aria-label="Snooze item"
                         onClick={() => onSnooze?.(item)}
-                        className="p-2.5 -m-1 rounded-md text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 focus-visible:opacity-100"
+                        className="p-2.5 -m-1 rounded-md text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/30 focus-visible:opacity-100"
                     >
                         <Clock className="w-3.5 h-3.5" />
                     </button>
@@ -69,7 +69,7 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
             {expanded && (
                 <div className="px-12 pb-3 text-xs text-slate-600 dark:text-slate-300">
                     {narrative?.text && (
-                        <p className="italic text-indigo-700 dark:text-indigo-300">{narrative.text}</p>
+                        <p className="italic text-brand-700 dark:text-brand-300">{narrative.text}</p>
                     )}
                     {!narrative?.text && (
                         <p className="text-slate-500">No AI summary available for this item.</p>

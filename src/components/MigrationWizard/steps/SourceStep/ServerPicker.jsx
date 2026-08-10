@@ -48,7 +48,7 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
 
   if (editing) {
     return (
-      <div className="rounded-2xl border border-indigo-300 dark:border-indigo-700 bg-indigo-50/50 dark:bg-indigo-900/15 p-3 space-y-2.5">
+      <div className="rounded-2xl border border-brand-300 dark:border-brand-700 bg-brand-50/50 dark:bg-brand-900/15 p-3 space-y-2.5">
         <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
           <Server className="w-3.5 h-3.5" />
           Enter your on-premises server hostname (without <code className="px-1 rounded bg-slate-200 dark:bg-slate-700">https://</code>):
@@ -63,7 +63,7 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
               if (e.key === 'Escape') { e.preventDefault(); setEditing(false) }
             }}
             placeholder="e.g. tfs.company.com  or  tfs.company.com:8080"
-            className="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+            className="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition"
             autoFocus
           />
           <button
@@ -196,7 +196,7 @@ function PresetButton({ active, onClick, title, children }) {
       aria-pressed={active}
       className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border transition-colors
         ${active
-          ? 'border-indigo-400 dark:border-indigo-500 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300'
+          ? 'border-brand-400 dark:border-brand-500 bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300'
           : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800'}`}
     >
       {active && <Check className="w-3 h-3" />}

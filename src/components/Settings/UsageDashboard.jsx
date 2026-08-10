@@ -21,7 +21,7 @@ function UsageBar({ label, current, limit }) {
             aria-valuemin={0}
             aria-valuemax={limit}
             aria-label={`${label} usage`}
-            className={`h-full rounded-full transition-all ${pct > 80 ? 'bg-red-500' : pct > 60 ? 'bg-amber-500' : 'bg-indigo-500'}`}
+            className={`h-full rounded-full transition-all ${pct > 80 ? 'bg-red-500' : pct > 60 ? 'bg-amber-500' : 'bg-brand-500'}`}
             style={{ width: `${pct}%` }}
           />
         </div>

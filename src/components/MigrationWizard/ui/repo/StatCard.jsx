@@ -1,9 +1,9 @@
 import { Card } from '../../../ui/Card'
 
 const TONE_MAP = {
-  indigo:  'text-indigo-400',
-  violet:  'text-violet-400',
-  cyan:    'text-cyan-400',
+  indigo:  'text-brand-400',
+  violet:  'text-brand-400',
+  cyan:    'text-brand-400',
   emerald: 'text-emerald-400',
   amber:   'text-amber-400',
   orange:  'text-orange-400',

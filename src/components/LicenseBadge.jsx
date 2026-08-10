@@ -149,7 +149,7 @@ function getTierSpec(info, error) {
       label: 'Enterprise',
       icon: Gem,
       classes:
-        'bg-purple-500/10 text-purple-700 dark:text-purple-300 ring-1 ring-purple-500/30',
+        'bg-brand-500/10 text-brand-700 dark:text-brand-300 ring-1 ring-brand-500/30',
       tooltip,
       ariaLabel: `Enterprise license (${info.org || 'unknown org'})`,
     }
@@ -160,7 +160,7 @@ function getTierSpec(info, error) {
       label: 'Pro',
       icon: Crown,
       classes:
-        'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-500/30',
+        'bg-brand-500/10 text-brand-700 dark:text-brand-300 ring-1 ring-brand-500/30',
       tooltip,
       ariaLabel: `Pro license (${info.org || 'unknown org'})`,
     }

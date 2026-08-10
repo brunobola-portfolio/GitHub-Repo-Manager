@@ -62,12 +62,12 @@ import { SPRING } from '../ui/motion'
 // ---------------------------------------------------------------------------
 
 const TABS = [
-    { id: 'reviews',     label: 'My Reviews',  icon: GitPullRequest, component: MyReviewsTab, accent: 'purple' },
-    { id: 'stale',       label: 'Stale PRs',   icon: AlertTriangle,  component: StalePRsTab,  accent: 'amber' },
-    { id: 'issues',      label: 'My Issues',   icon: CircleDot,      component: MyIssuesTab,  accent: 'emerald' },
-    { id: 'reviewload',  label: 'Review Load', icon: Users,          component: ReviewLoadTab, accent: 'sky' },
-    { id: 'techdebt',    label: 'Tech Debt',   icon: Wrench,         component: TechDebtTab, accent: 'amber' },
-    { id: 'dora',        label: 'DORA',        icon: BarChart3,      component: DORATab, accent: 'indigo' },
+    { id: 'reviews',     label: 'My Reviews',  icon: GitPullRequest, component: MyReviewsTab, accent: 'brand' },
+    { id: 'stale',       label: 'Stale PRs',   icon: AlertTriangle,  component: StalePRsTab,  accent: 'attention' },
+    { id: 'issues',      label: 'My Issues',   icon: CircleDot,      component: MyIssuesTab,  accent: 'brand' },
+    { id: 'reviewload',  label: 'Review Load', icon: Users,          component: ReviewLoadTab, accent: 'brand' },
+    { id: 'techdebt',    label: 'Tech Debt',   icon: Wrench,         component: TechDebtTab, accent: 'attention' },
+    { id: 'dora',        label: 'DORA',        icon: BarChart3,      component: DORATab, accent: 'brand' },
 ]
 
 // ---------------------------------------------------------------------------
@@ -105,7 +105,7 @@ function WorkBoardEmptyState({ webhookConnected, onRefresh }) {
                                 href={WEBHOOK_DOCS_URL}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="ml-2 underline text-indigo-500 hover:text-indigo-400"
+                                className="ml-2 underline text-brand-500 hover:text-brand-400"
                             >
                                 Setup guide →
                             </a>
@@ -333,7 +333,7 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
                                 className={`
                                     relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-colors duration-200
                                     ${isActive
-                                        ? 'text-[color:var(--ds-accent-brand)] dark:text-indigo-300'
+                                        ? 'text-[color:var(--ds-accent-brand)] dark:text-brand-300'
                                         : 'text-slate-500 dark:text-slate-400 hover:bg-white/70 dark:hover:bg-slate-700/50 hover:text-slate-700 dark:hover:text-slate-200'
                                     }
                                 `}
@@ -348,7 +348,7 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
                                 {isActive && (
                                     <motion.div
                                         layoutId="work-board-tab-indicator"
-                                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 rounded-full"
+                                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-500 rounded-full"
                                         transition={SPRING.knob}
                                     />
                                 )}

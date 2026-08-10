@@ -40,7 +40,7 @@ export function TrackedChip({ repoFullName }) {
                     runAction(hook.track, `Added ${repoFullName}`)
                 }}
                 aria-label={`Track ${repoFullName}`}
-                className="inline-flex items-center gap-1 px-2 py-1.5 ds-text-meta font-medium rounded-full border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                className="inline-flex items-center gap-1 px-2 py-1.5 ds-text-meta font-medium rounded-full border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-brand-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
             >
                 + Track
             </button>
@@ -62,10 +62,10 @@ export function TrackedChip({ repoFullName }) {
                         'inline-flex items-center gap-1 px-2 py-1.5 ds-text-meta font-medium rounded-full border transition-colors',
                         isMuted
                             ? 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400'
-                            : 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700/50 text-indigo-700 dark:text-indigo-300'
+                            : 'bg-brand-50 dark:bg-brand-900/30 border-brand-200 dark:border-brand-700/50 text-brand-700 dark:text-brand-300'
                     )}
                 >
-                    <span className={clsx('w-1.5 h-1.5 rounded-full', isMuted ? 'border border-slate-400' : 'bg-indigo-500')} />
+                    <span className={clsx('w-1.5 h-1.5 rounded-full', isMuted ? 'border border-slate-400' : 'bg-brand-500')} />
                     {chipLabel}
                 </button>
             </Popover.Trigger>

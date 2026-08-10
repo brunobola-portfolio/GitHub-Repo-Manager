@@ -191,7 +191,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
             </button>
 
             <header className="mb-8 p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-32 -mt-32" />
+                <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl -mr-32 -mt-32" />
 
                 <div className="relative z-10">
                     <PageHeader
@@ -286,14 +286,14 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                                                         // Trigger invite immediately on selection
                                                         handleInviteGivenUsername(u.login);
                                                     }}
-                                                    className="w-full flex items-center gap-3 p-3 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 text-left transition-colors border-b border-slate-100 dark:border-slate-700 last:border-0"
+                                                    className="w-full flex items-center gap-3 p-3 hover:bg-brand-50 dark:hover:bg-brand-900/20 text-left transition-colors border-b border-slate-100 dark:border-slate-700 last:border-0"
                                                 >
                                                     <img src={u.avatar_url} alt={u.login} className="w-8 h-8 rounded-full" />
                                                     <div>
                                                         <div className="font-semibold text-slate-900 dark:text-slate-100">{u.login}</div>
                                                         <div className="text-xs text-slate-500">GitHub User</div>
                                                     </div>
-                                                    <Plus className="w-4 h-4 ml-auto text-indigo-500" />
+                                                    <Plus className="w-4 h-4 ml-auto text-brand-500" />
                                                 </button>
                                             ))}
                                         </div>
@@ -341,7 +341,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                         <div className="flex justify-end mb-4">
                             <button
                                 onClick={() => setShowAssign(!showAssign)}
-                                className="flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition-colors shadow-md"
+                                className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-colors shadow-md"
                             >
                                 <BookCopy className="w-4 h-4" />
                                 <span>Assign Repository</span>
@@ -370,9 +370,9 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                                                 JavaScript: 'bg-yellow-400',
                                                 TypeScript: 'bg-blue-500',
                                                 Python: 'bg-green-500',
-                                                Go: 'bg-cyan-500',
+                                                Go: 'bg-brand-500',
                                                 HTML: 'bg-orange-500',
-                                                CSS: 'bg-purple-500',
+                                                CSS: 'bg-brand-500',
                                                 default: 'bg-slate-400'
                                             };
                                             const langColor = langColors[repo.language] || langColors.default;
@@ -381,10 +381,10 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                                                 <button
                                                     key={repo.id}
                                                     onClick={() => handleAssignRepoDirectly(repo)}
-                                                    className="flex items-center gap-3 p-3 text-left rounded-xl border border-slate-200 dark:border-slate-700 hover:border-pink-500 hover:ring-1 hover:ring-pink-500 transition-all group bg-slate-50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800"
+                                                    className="flex items-center gap-3 p-3 text-left rounded-xl border border-slate-200 dark:border-slate-700 hover:border-brand-500 hover:ring-1 hover:ring-brand-500 transition-all group bg-slate-50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800"
                                                 >
-                                                    <div className="p-2 bg-white dark:bg-slate-700 rounded-lg group-hover:bg-pink-50 dark:group-hover:bg-pink-900/20 transition-colors shadow-sm">
-                                                        <Github className="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:text-pink-600 dark:group-hover:text-pink-400" />
+                                                    <div className="p-2 bg-white dark:bg-slate-700 rounded-lg group-hover:bg-brand-50 dark:group-hover:bg-brand-900/20 transition-colors shadow-sm">
+                                                        <Github className="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:text-brand-600 dark:group-hover:text-brand-400" />
                                                     </div>
                                                     <div className="min-w-0 flex-1">
                                                         <div className="flex items-center justify-between">
@@ -476,7 +476,7 @@ function MemberCard({ member, currentUserRole, onUpdateRole, onRemove, isMe }) {
                 <h4 className="font-bold text-slate-900 dark:text-slate-100 truncate">{member.username}</h4>
                 <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs text-slate-400">Joined {formatDate(member.joined_at)}</span>
-                    {isMe && <span className="ds-text-micro bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-[color:var(--ds-accent-brand-dark)] px-1.5 py-0.5 rounded-full">You</span>}
+                    {isMe && <span className="ds-text-micro bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-[color:var(--ds-accent-brand-dark)] px-1.5 py-0.5 rounded-full">You</span>}
                 </div>
             </div>
 
@@ -605,7 +605,7 @@ function RepoCard({ repo, teamMembers }) {
                     <button
                         onClick={() => setShowCollaborators(!showCollaborators)}
                         className={`text-xs px-2 py-1 rounded-lg border transition-colors flex items-center gap-1 ${showCollaborators
-                            ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/30 dark:border-indigo-800 dark:text-[color:var(--ds-accent-brand-dark)]'
+                            ? 'bg-brand-50 border-brand-200 text-brand-700 dark:bg-brand-900/30 dark:border-brand-800 dark:text-[color:var(--ds-accent-brand-dark)]'
                             : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700'
                             }`}
                     >
@@ -616,7 +616,7 @@ function RepoCard({ repo, teamMembers }) {
                         href={`https://github.com/${repo.repo_full_name}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="opacity-0 group-hover:opacity-100 text-indigo-500 hover:text-indigo-600 text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-md transition-all"
+                        className="opacity-0 group-hover:opacity-100 text-brand-500 hover:text-brand-600 text-xs font-medium bg-brand-50 dark:bg-brand-900/30 px-2 py-1 rounded-md transition-all"
                     >
                         GitHub &rarr;
                     </a>
@@ -654,7 +654,7 @@ function RepoCard({ repo, teamMembers }) {
                                         <button
                                             type="button"
                                             onClick={() => { hasFetchedCollabsRef.current = false; fetchCollaborators(); }}
-                                            className="font-medium text-indigo-500 hover:text-indigo-600 hover:underline ds-focus-ring rounded"
+                                            className="font-medium text-brand-500 hover:text-brand-600 hover:underline ds-focus-ring rounded"
                                         >
                                             Retry
                                         </button>
@@ -689,7 +689,7 @@ function RepoCard({ repo, teamMembers }) {
                                                 <button
                                                     onClick={() => handleInvite(m.username)}
                                                     disabled={inviting === m.username}
-                                                    className="px-2 py-0.5 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-[color:var(--ds-accent-brand-dark)] rounded hover:bg-indigo-200 dark:hover:bg-indigo-900 transition-colors disabled:opacity-50"
+                                                    className="px-2 py-0.5 bg-brand-100 text-brand-700 dark:bg-brand-900/50 dark:text-[color:var(--ds-accent-brand-dark)] rounded hover:bg-brand-200 dark:hover:bg-brand-900 transition-colors disabled:opacity-50"
                                                 >
                                                     {inviting === m.username ? <Spinner size="xs" /> : 'Add'}
                                                 </button>
@@ -826,7 +826,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                         {/* Workflows List */}
                         <Card className="p-6">
                             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                                <Play className="w-5 h-5 text-indigo-500" />
+                                <Play className="w-5 h-5 text-brand-500" />
                                 Available Workflows
                             </h3>
                             <div className="grid gap-4">
@@ -872,7 +872,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                                                 </div>
                                             </div>
                                         </div>
-                                        <a href={run.html_url} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-500 hover:underline">
+                                        <a href={run.html_url} target="_blank" rel="noopener noreferrer" className="text-sm text-brand-500 hover:underline">
                                             View Logs
                                         </a>
                                     </div>

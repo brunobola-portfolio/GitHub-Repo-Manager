@@ -132,7 +132,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
     const handleClose = (pr) => runPRAction(prActions.close_pr, pr)
 
     function getPrIcon(pr) {
-        if (pr.merged_at || pr.merged) return <GitMerge className="w-4 h-4 text-purple-500" />
+        if (pr.merged_at || pr.merged) return <GitMerge className="w-4 h-4 text-brand-500" />
         if (pr.state === 'closed') return <GitPullRequest className="w-4 h-4 text-red-500" />
         return <GitPullRequest className="w-4 h-4 text-green-500" />
     }
@@ -166,7 +166,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                             <button key={f} onClick={() => setFilter(f)}
                                 className={`px-3 h-8 text-xs font-medium transition-colors capitalize
                                     ${filter === f
-                                        ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                                        ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300'
                                         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                                     }`}>
                                 {f}
@@ -255,7 +255,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                                 type="checkbox"
                                 checked={form.draft}
                                 onChange={e => setForm(f => ({ ...f, draft: e.target.checked }))}
-                                className="rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-indigo-500"
+                                className="rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-brand-500"
                             />
                             Create as draft
                         </label>
@@ -282,8 +282,8 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                             ref={(node) => { rowRefs.current[idx] = node }}
                             className={`relative p-3 cursor-pointer transition-colors ${
                                 idx === focusedIndex
-                                    ? 'border-indigo-400 dark:border-indigo-600 bg-indigo-50/40 dark:bg-indigo-900/15 ring-1 ring-indigo-300 dark:ring-indigo-700/60'
-                                    : 'hover:border-indigo-300 dark:hover:border-indigo-600'
+                                    ? 'border-brand-400 dark:border-brand-600 bg-brand-50/40 dark:bg-brand-900/15 ring-1 ring-brand-300 dark:ring-brand-700/60'
+                                    : 'hover:border-brand-300 dark:hover:border-brand-600'
                             }`}
                         >
                             <div className="flex items-start gap-3">
@@ -327,7 +327,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                                 {pr.state === 'open' && (
                                     <div role="presentation" className="relative z-10 flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
                                         <Button variant="ghost" size="sm" onClick={() => handleMerge(pr)}
-                                            className="text-purple-600 dark:text-purple-400 text-xs">
+                                            className="text-brand-600 dark:text-brand-400 text-xs">
                                             <GitMerge className="w-3.5 h-3.5 mr-1" /> Merge
                                         </Button>
                                         <Button variant="ghost" size="sm" onClick={() => handleClose(pr)}

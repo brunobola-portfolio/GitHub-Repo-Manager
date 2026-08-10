@@ -9,7 +9,7 @@ import {
 import { motion } from 'framer-motion'
 import { SPRING } from './ui/motion'
 import { Github } from './icons/GithubIcon'
-import { AppLogoIcon } from './AppLogo'
+import { AppLogo } from './AppLogo'
 import LicenseBadge from './LicenseBadge'
 import { useTheme } from '../hooks/useTheme.jsx'
 import { useSystemHealth } from '../hooks/useSystemHealth.js'
@@ -105,9 +105,11 @@ export function Header({
                       </button>
                     )}
                     <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-950 p-[4px] sm:pr-3 rounded-[13px] border border-slate-200/50 dark:border-slate-700/50 flex-shrink-0">
-                        <div className="bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] w-[34px] h-[34px] rounded-[9px] flex items-center justify-center shadow-md flex-shrink-0 text-white">
-                            <AppLogoIcon className="w-4.5 h-4.5" />
-                        </div>
+                        {/* The generated mark on its own ground — not the app
+                            accent with a glyph dropped on top. The tile IS the
+                            icon; it is the same artwork a user sees pinned to a
+                            taskbar. */}
+                        <AppLogo size={34} className="shadow-md" title="" />
                         <div className="min-w-0 hidden sm:block">
                             {/* Brand label demoted from <h1> to <h2>: the page-level h1 lives in
                                 each route's PageHeader (e.g. the dashboard greeting). Two
@@ -225,7 +227,7 @@ export function Header({
                                         {notif.totalCount > 0 && (
                                             <span
                                                 aria-hidden="true"
-                                                className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-indigo-500 text-white ds-text-micro font-bold leading-[16px] text-center ring-2 ring-slate-100 dark:ring-slate-950"
+                                                className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-brand-500 text-white ds-text-micro font-bold leading-[16px] text-center ring-2 ring-slate-100 dark:ring-slate-950"
                                             >
                                                 {notif.totalCount > 99 ? '99+' : notif.totalCount}
                                             </span>
@@ -348,7 +350,7 @@ export function Header({
                       layoutId="mobile-nav-active-pill"
                       aria-hidden="true"
                       transition={SPRING.panel}
-                      className="absolute inset-x-2 top-1 h-7 rounded-lg bg-indigo-500/10 dark:bg-indigo-400/15"
+                      className="absolute inset-x-2 top-1 h-7 rounded-lg bg-brand-500/10 dark:bg-brand-400/15"
                     />
                   )}
                   <span className="relative">
@@ -433,7 +435,7 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
                 className={`relative flex items-center justify-center rounded-[9px] transition-all duration-[var(--ds-duration-slow)] ds-focus-ring w-[34px] h-[34px] ${
                     isDark
                         ? 'bg-slate-600/80 text-amber-300 hover:bg-slate-500/80 hover:text-amber-200'
-                        : 'bg-white text-[color:var(--ds-accent-brand)] shadow-sm hover:bg-indigo-50 hover:text-indigo-700'
+                        : 'bg-white text-[color:var(--ds-accent-brand)] shadow-sm hover:bg-brand-50 hover:text-brand-700'
                 }`}
                 aria-label={label}
             >
@@ -490,7 +492,7 @@ function NavButton({ active, onClick, icon, label, badge }) {
                 {badge > 0 && (
                     <span
                         aria-label={`${badge} items need attention`}
-                        className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 ds-text-micro font-bold rounded-full bg-indigo-500 text-white"
+                        className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 ds-text-micro font-bold rounded-full bg-brand-500 text-white"
                     >
                         {badge > 9 ? '9+' : badge}
                     </span>
@@ -623,7 +625,7 @@ function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen,
         <div ref={trapRef} className="absolute right-0 top-full mt-2 w-96 max-w-[calc(100vw-1rem)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-[var(--ds-shadow-overlay)] border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in">
             <div className="px-4 pt-3.5 pb-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <div className="min-w-0">
-                    <p className="ds-text-micro font-semibold uppercase tracking-[0.22em] text-[color:var(--ds-accent-brand)] dark:text-indigo-300">
+                    <p className="ds-text-micro font-semibold uppercase tracking-[0.22em] text-[color:var(--ds-accent-brand)] dark:text-brand-300">
                         {sinceLabel ? `Since ${sinceLabel}` : 'Activity digest'}
                     </p>
                     <h3 className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100 ds-font-display">
@@ -634,7 +636,7 @@ function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen,
                     <button
                         type="button"
                         onClick={() => onMarkSeen?.()}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded ds-text-meta font-medium text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-300 transition-colors ds-focus-ring"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded ds-text-meta font-medium text-slate-500 hover:text-brand-600 dark:text-slate-400 dark:hover:text-brand-300 transition-colors ds-focus-ring"
                     >
                         <Check className="w-3 h-3" aria-hidden="true" /> Mark as read
                     </button>
@@ -648,7 +650,7 @@ function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen,
                     </div>
                 ) : totalCount === 0 ? (
                     <div className="px-4 py-10 text-center">
-                        <Sparkles className="w-6 h-6 text-indigo-400/70 mx-auto mb-2" aria-hidden="true" />
+                        <Sparkles className="w-6 h-6 text-brand-400/70 mx-auto mb-2" aria-hidden="true" />
                         <p className="text-sm text-slate-600 dark:text-slate-400">Nothing pending right now.</p>
                         <p className="ds-text-meta text-slate-500 dark:text-slate-400 mt-1">We'll let you know when something needs you.</p>
                     </div>
@@ -731,7 +733,7 @@ function DigestItemRow({ kind, item, onClick }) {
                 <div className="shrink-0 flex flex-col items-end gap-0.5">
                     {ago && <span className="ds-text-micro text-slate-500 dark:text-slate-400">{ago}</span>}
                     {url && (
-                        <ExternalLink className="w-3 h-3 text-slate-300 dark:text-slate-600 group-hover:text-indigo-500 transition-colors" aria-hidden="true" />
+                        <ExternalLink className="w-3 h-3 text-slate-300 dark:text-slate-600 group-hover:text-brand-500 transition-colors" aria-hidden="true" />
                     )}
                 </div>
             </a>

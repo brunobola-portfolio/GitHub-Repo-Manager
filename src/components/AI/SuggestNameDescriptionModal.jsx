@@ -20,7 +20,7 @@ function SourceBadge({ source }) {
     return (
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wider ${
             isAI
-                ? 'bg-indigo-500/20 text-[color:var(--ds-accent-brand)] dark:text-indigo-300 border border-indigo-500/30'
+                ? 'bg-brand-500/20 text-[color:var(--ds-accent-brand)] dark:text-brand-300 border border-brand-500/30'
                 : 'bg-slate-500/15 text-slate-600 dark:text-slate-300 border border-slate-500/20'
         }`}>
             {isAI ? <Sparkles className="w-3 h-3" /> : <Wand2 className="w-3 h-3" />}
@@ -81,7 +81,7 @@ function FieldCard({
                             type="checkbox"
                             checked={useField}
                             onChange={(e) => onToggleUse(e.target.checked)}
-                            className="accent-indigo-500"
+                            className="accent-brand-500"
                             aria-label={`Use this ${label.toLowerCase()}`}
                         />
                         Use this {label.toLowerCase()}
@@ -108,7 +108,7 @@ function FieldCard({
                         type="checkbox"
                         checked={useField}
                         onChange={(e) => onToggleUse(e.target.checked)}
-                        className="accent-indigo-500"
+                        className="accent-brand-500"
                         aria-label={`Use this ${label.toLowerCase()}`}
                     />
                     Use this {label.toLowerCase()}
@@ -123,11 +123,11 @@ function FieldCard({
                 </div>
                 <div>
                     <div className="flex items-center justify-between mb-1">
-                        <p className="ds-text-meta uppercase tracking-wider text-indigo-500">Proposed</p>
+                        <p className="ds-text-meta uppercase tracking-wider text-brand-500">Proposed</p>
                         <button
                             type="button"
                             onClick={onRestore}
-                            className="ds-text-meta text-slate-500 hover:text-indigo-500"
+                            className="ds-text-meta text-slate-500 hover:text-brand-500"
                             title="Restore original suggestion"
                         >
                             Restore

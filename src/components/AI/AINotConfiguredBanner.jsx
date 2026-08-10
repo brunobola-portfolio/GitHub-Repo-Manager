@@ -43,7 +43,7 @@ export function AINotConfiguredBanner({
                 animate="visible"
                 exit="exit"
                 variants={variants}
-                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-200 ring-1 ring-inset ring-indigo-200/60 dark:ring-indigo-800/60 ${className}`}
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-200 ring-1 ring-inset ring-brand-200/60 dark:ring-brand-800/60 ${className}`}
                 role="status"
             >
                 <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
@@ -51,7 +51,7 @@ export function AINotConfiguredBanner({
                 <button
                     type="button"
                     onClick={openAISettings}
-                    className="inline-flex items-center gap-0.5 text-[color:var(--ds-accent-brand)] dark:text-indigo-300 hover:underline"
+                    className="inline-flex items-center gap-0.5 text-[color:var(--ds-accent-brand)] dark:text-brand-300 hover:underline"
                 >
                     Configure <ArrowRight className="w-3 h-3" aria-hidden="true" />
                 </button>
@@ -67,16 +67,16 @@ export function AINotConfiguredBanner({
             variants={variants}
             role="status"
             aria-live="polite"
-            className={`relative overflow-hidden rounded-xl p-4 ring-1 ring-inset ring-indigo-500/20 bg-indigo-500/[0.06] dark:bg-indigo-500/[0.10] ${className}`}
+            className={`relative overflow-hidden rounded-xl p-4 ring-1 ring-inset ring-brand-500/20 bg-brand-500/[0.06] dark:bg-brand-500/[0.10] ${className}`}
         >
             <div className="flex items-start gap-3">
-                <div className="shrink-0 w-10 h-10 rounded-xl bg-indigo-500/20 dark:bg-indigo-500/30 ring-1 ring-inset ring-indigo-500/30 flex items-center justify-center">
-                    <Key className="w-5 h-5 text-[color:var(--ds-accent-brand)] dark:text-indigo-300" aria-hidden="true" />
+                <div className="shrink-0 w-10 h-10 rounded-xl bg-brand-500/20 dark:bg-brand-500/30 ring-1 ring-inset ring-brand-500/30 flex items-center justify-center">
+                    <Key className="w-5 h-5 text-[color:var(--ds-accent-brand)] dark:text-brand-300" aria-hidden="true" />
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                         <h4 className="font-semibold text-slate-900 dark:text-slate-100">AI not configured</h4>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wide bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-200 ring-1 ring-inset ring-indigo-200 dark:ring-indigo-800">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wide bg-brand-100 dark:bg-brand-900/50 text-brand-700 dark:text-brand-200 ring-1 ring-inset ring-brand-200 dark:ring-brand-800">
                             <Sparkles className="w-2.5 h-2.5" aria-hidden="true" /> Preview
                         </span>
                     </div>
@@ -98,7 +98,7 @@ export function AINotConfiguredBanner({
                             href="https://aistudio.google.com/app/apikey"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-xs text-[color:var(--ds-accent-brand)] dark:text-indigo-300 hover:underline"
+                            className="text-xs text-[color:var(--ds-accent-brand)] dark:text-brand-300 hover:underline"
                         >
                             Get a free Gemini key
                         </a>
