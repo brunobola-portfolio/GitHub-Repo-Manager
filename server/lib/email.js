@@ -3,6 +3,7 @@
 // Commercial license: https://bolalabs.pt/license
 
 import logger from './logger.js'
+import { stripUntilStable } from './strip-until-stable.js'
 import db from '../db.js'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -22,11 +23,16 @@ const BASE_DELAY_MS = Number.parseInt(process.env.EMAIL_RETRY_BASE_DELAY_MS ?? '
  * @returns {string}
  */
 function htmlToText(html) {
-    return html
+    // Tags come off to a fixed point, like every other stripper here: what a
+    // single `replace` leaves behind can match the same rule again, and this
+    // one runs over notification bodies that carry repository content.
+    const stripped = stripUntilStable(String(html ?? ''), (v) => v
         .replace(/<br\s*\/?>/gi, '\n')
         .replace(/<\/p>/gi, '\n\n')
         .replace(/<\/h[1-6]>/gi, '\n\n')
-        .replace(/<[^>]+>/g, '')
+        .replace(/<[^>]+>/g, '')).value
+
+    return stripped
         // '&amp;' decodes LAST. Decoding it first turns '&amp;lt;' into '&lt;'
         // and then into '<' — the source text said "&lt;", and the reader of
         // the plain-text part would see a tag that was never there.
