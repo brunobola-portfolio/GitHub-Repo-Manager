@@ -65,7 +65,7 @@
     "lint:css": "node scripts/check-killed-classes.mjs",
     "prebuild": "npm run lint:css",
     "gen:secrets": "node scripts/generate-secrets.mjs",
-    "gen:brand": "node scripts/gen-brand.mjs && node scripts/gen-brand-raster.mjs && node scripts/gen-brand-page.mjs",
+    "gen:brand": "node scripts/gen-brand.mjs && node scripts/gen-brand-raster.mjs && node scripts/gen-brand-page.mjs && node scripts/gen-brand-kit.mjs",
     "gen:brand:check": "node scripts/gen-brand.mjs --check && node scripts/gen-brand-page.mjs --check",
     "gen:keys": "node scripts/generate-keys.js",
     "doctor": "node scripts/doctor.mjs",

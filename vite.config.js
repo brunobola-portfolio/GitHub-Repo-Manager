@@ -3,12 +3,35 @@ import react from '@vitejs/plugin-react'
 import { visualizer } from 'rollup-plugin-visualizer'
 import { createRequire } from 'module'
 import path from 'path'
+import fs from 'fs'
 import { isProxyDownError, BACKEND_DOWN_HINT, makeThrottle } from './scripts/dev/format.mjs'
 
 // Single source of truth for the displayed app version: package.json. Injected
 // as import.meta.env.VITE_APP_VERSION so UI (e.g. the Landing hero badge) never
 // drifts from the real release the way a hardcoded literal did.
 const pkg = createRequire(import.meta.url)('./package.json')
+
+/**
+ * Copy brand/ into the build so the media kit ships with the app.
+ *
+ * Not placed in public/ on purpose: that would mean a second copy of every
+ * mark inside the repository, and the whole brand system exists to have
+ * exactly one. Copying at build time keeps one source and still puts the kit
+ * in dist/, which is what Docker, the Windows package and the IIS deployment
+ * all ship — so `/brand` works everywhere the app runs, with no extra hosting.
+ */
+function copyBrandKit() {
+  return {
+    name: 'copy-brand-kit',
+    apply: 'build',
+    closeBundle() {
+      const from = path.resolve(__dirname, 'brand')
+      const to = path.resolve(__dirname, 'dist/brand')
+      if (!fs.existsSync(from)) return
+      fs.cpSync(from, to, { recursive: true })
+    },
+  }
+}
 
 // Opt-in bundle analyzer — enabled via `npm run build:analyze`
 // (sets ANALYZE=true). Pure observer: does not alter chunk contents.
@@ -42,7 +65,7 @@ devLogger.error = (msg, options) => {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), ...analyzePlugins],
+  plugins: [react(), ...analyzePlugins, copyBrandKit()],
   customLogger: devLogger,
   define: {
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(pkg.version),
