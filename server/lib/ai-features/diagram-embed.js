@@ -265,6 +265,29 @@ export function buildDeterministicDiagram({ topLevel = [], treeEntries = [], tru
 
 const DANGEROUS_TAGS = ['script', 'foreignObject', 'iframe', 'embed', 'object', 'animate', 'animateMotion', 'animateTransform', 'set'];
 
+/*
+ * Apply a single-pass strip until the input stops changing.
+ *
+ * A one-shot `replace` on nested markup leaves a reconstructed payload behind:
+ * '<!--<!-- -->-->' loses the inner comment and yields a live '-->', and
+ * '<scr<script>ipt>' becomes '<script>' after exactly one pass. Repeating until
+ * a fixed point is what closes that, and the iteration cap is what keeps the
+ * repetition itself from becoming the denial of service — input still changing
+ * after MAX_STRIP_PASSES is adversarial by construction, so it is rejected
+ * rather than served half-cleaned.
+ */
+const MAX_STRIP_PASSES = 8;
+
+function stripUntilStable(input, apply) {
+    let current = input;
+    for (let pass = 0; pass < MAX_STRIP_PASSES; pass += 1) {
+        const next = apply(current);
+        if (next === current) return { ok: true, value: current };
+        current = next;
+    }
+    return { ok: apply(current) === current, value: current };
+}
+
 function stripTag(svg, tag) {
     const paired = new RegExp(`<${tag}\\b[^>]*>[\\s\\S]*?<\\/${tag}\\s*>`, 'gi');
     const selfClosing = new RegExp(`<${tag}\\b[^>]*\\/>`, 'gi');
@@ -292,21 +315,29 @@ export function sanitizeSvg(rawSvg, opts = {}) {
     // XXE / entity-expansion defence + processing instructions + comments
     // (stripped before content inspection, so a payload can't hide behind
     // a comment that a naive single-pass regex would otherwise skip over).
-    svg = svg.replace(/<!DOCTYPE[\s\S]*?>/gi, '');
-    svg = svg.replace(/<!ENTITY[\s\S]*?>/gi, '');
-    svg = svg.replace(/<\?[\s\S]*?\?>/g, '');
-    svg = svg.replace(/<!--[\s\S]*?-->/g, '');
+    const prologue = stripUntilStable(svg, (v) => v
+        .replace(/<!DOCTYPE[\s\S]*?>/gi, '')
+        .replace(/<!ENTITY[\s\S]*?>/gi, '')
+        .replace(/<\?[\s\S]*?\?>/g, '')
+        .replace(/<!--[\s\S]*?-->/g, ''));
+    if (!prologue.ok) return { ok: false, reason: 'unsanitizable' };
+    svg = prologue.value;
 
     if (!/<svg[\s>]/i.test(svg)) {
         return { ok: false, reason: 'not_svg' };
     }
 
-    for (const tag of DANGEROUS_TAGS) svg = stripTag(svg, tag);
+    const tags = stripUntilStable(svg, (v) => DANGEROUS_TAGS.reduce(stripTag, v));
+    if (!tags.ok) return { ok: false, reason: 'unsanitizable' };
+    svg = tags.value;
 
     // Event-handler attributes: quoted (both styles) and bare/unquoted.
-    svg = svg.replace(/\son\w+\s*=\s*"[^"]*"/gi, '');
-    svg = svg.replace(/\son\w+\s*=\s*'[^']*'/gi, '');
-    svg = svg.replace(/\son\w+\s*=\s*[^\s>]+/gi, '');
+    const handlers = stripUntilStable(svg, (v) => v
+        .replace(/\son\w+\s*=\s*"[^"]*"/gi, '')
+        .replace(/\son\w+\s*=\s*'[^']*'/gi, '')
+        .replace(/\son\w+\s*=\s*[^\s>]+/gi, ''));
+    if (!handlers.ok) return { ok: false, reason: 'unsanitizable' };
+    svg = handlers.value;
 
     // href/xlink:href — keep only in-document fragment refs (#id), used
     // internally by mermaid/SVG for gradients, markers, <use>; strip every

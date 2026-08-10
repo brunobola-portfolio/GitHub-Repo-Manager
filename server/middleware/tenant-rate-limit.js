@@ -163,6 +163,32 @@ export const globalLimiter = rateLimit({
  * In dev/test the limit is raised to 200 to avoid tripping React Strict Mode
  * double-invokes and Playwright fixture churn.
  */
+/**
+ * Per-IP limiter for the inbound webhook endpoints (Stripe, GitHub Actions,
+ * GitHub events).
+ *
+ * These are mounted before session and before the global limiter — they have
+ * to be, since they need the raw body for HMAC verification and must work
+ * without a session. That left them as the only unauthenticated, unmetered
+ * write path into the process: every POST costs a signature verification and,
+ * once verified, database work.
+ *
+ * The ceiling is deliberately far above real traffic. A busy org's GitHub
+ * deliveries are tens per minute, not thousands; anything that reaches this
+ * limit is not a webhook sender. Senders retry on a 429, so a burst that does
+ * trip it is delayed rather than lost.
+ */
+export function createWebhookLimiter() {
+    return rateLimit({
+        windowMs: 5 * 60 * 1000,
+        max: isDev() ? 10000 : 1000,
+        keyGenerator: (req) => `rl:webhook:${ipKeyGenerator(req.ip)}`,
+        standardHeaders: true,
+        legacyHeaders: false,
+        message: { error: 'Too many webhook deliveries, please retry.' },
+    });
+}
+
 export function createAuthRouteLimiter() {
     return rateLimit({
         windowMs: 15 * 60 * 1000, // 15 minutes

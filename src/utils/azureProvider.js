@@ -139,6 +139,23 @@ export function providerToneClasses(tone) {
  * @param {string} org may contain "/" for on-prem collection prefix (e.g. "tfs/DefaultCollection")
  * @returns {string|null}
  */
+/**
+ * The scheme is hardcoded, but `host` is whatever the operator typed into the
+ * credentials form and the result is rendered as an `href`. Building the URL
+ * and re-reading its protocol is what makes that safe by construction rather
+ * than by inspection: a host of 'javascript:alert(1)#' or one carrying its own
+ * authority yields something that is not an https URL, and this returns null
+ * instead of a link.
+ */
+function httpsUrlOrNull(candidate) {
+  try {
+    const url = new URL(candidate)
+    return url.protocol === 'https:' ? url.toString() : null
+  } catch {
+    return null
+  }
+}
+
 export function buildPatSettingsUrl(host, org) {
   if (!host) return null
   const cleanHost = host.replace(/\/+$/, '')
@@ -146,11 +163,11 @@ export function buildPatSettingsUrl(host, org) {
   // (https://acct.visualstudio.com/_usersSettings/tokens) — repeating the org
   // would 404, mirroring the API/clone URLs.
   if (!classifyProvider(host).orgInPath) {
-    return `https://${cleanHost}/_usersSettings/tokens`
+    return httpsUrlOrNull(`https://${cleanHost}/_usersSettings/tokens`)
   }
   if (!org) return null
   const orgPath = org.split('/').map(encodeURIComponent).join('/')
-  return `https://${cleanHost}/${orgPath}/_usersSettings/tokens`
+  return httpsUrlOrNull(`https://${cleanHost}/${orgPath}/_usersSettings/tokens`)
 }
 
 /**

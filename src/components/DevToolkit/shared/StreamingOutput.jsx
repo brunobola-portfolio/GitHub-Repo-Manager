@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Copy, Check, Terminal, Square } from 'lucide-react'
+import { shellQuote } from '../../../utils/shellQuote'
 import { Tooltip } from '../../ui/Tooltip'
 
 export function StreamingOutput({ content, streamingText, isStreaming, onCancel, label = 'Generated Output', retryCount = 0 }) {
@@ -17,7 +18,7 @@ export function StreamingOutput({ content, streamingText, isStreaming, onCancel,
 
     const gitCommand = displayText.includes('\n')
         ? `git commit -m "$(cat <<'EOF'\n${displayText}\nEOF\n)"`
-        : `git commit -m "${(displayText || '').replace(/"/g, '\\"')}"`
+        : `git commit -m "${shellQuote(displayText || '')}"`
 
     return (
         <AnimatePresence>

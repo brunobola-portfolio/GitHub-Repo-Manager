@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Copy, Check, Terminal } from 'lucide-react'
+import { shellQuote } from '../../../utils/shellQuote'
 
 export function OutputSection({ content, loading, label = 'Generated Output' }) {
     const [copiedId, setCopiedId] = useState(null)
@@ -24,7 +25,7 @@ export function OutputSection({ content, loading, label = 'Generated Output' }) 
 
     const gitCommand = content.includes('\n')
         ? `git commit -m "$(cat <<'EOF'\n${content}\nEOF\n)"`
-        : `git commit -m "${content.replace(/"/g, '\\"')}"`
+        : `git commit -m "${shellQuote(content)}"`
 
     return (
         <AnimatePresence>

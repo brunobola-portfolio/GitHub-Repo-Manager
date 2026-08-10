@@ -5,7 +5,10 @@
 export function sanitizeOutput(raw) {
   if (!raw) return '';
   let out = String(raw);
-  out = out.replace(/([a-zA-Z][a-zA-Z0-9+.-]*:\/\/)[^\s/@]+:[^\s/@]+@/g, '$1***@');
+  // Bounded repetitions: the unbounded pair scans quadratically over a long
+  // run that never reaches the '@', and this runs on captured child-process
+  // output an attacker can lengthen. No real userinfo segment is this long.
+  out = out.replace(/([a-zA-Z][a-zA-Z0-9+.-]*:\/\/)[^\s/@]{1,256}:[^\s/@]{1,256}@/g, '$1***@');
   out = out.replace(/(authorization\s*:\s*)(bearer|basic)\s+\S+/gi, '$1$2 ***');
   // Known credential token families (GitHub PAT/OAuth/app tokens) — mask
   // regardless of character mix, since payloads can be all-lowercase.
