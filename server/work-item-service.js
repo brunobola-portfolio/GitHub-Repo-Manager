@@ -8,6 +8,7 @@
 
 import { fetchWorkItems, orgBaseFor } from './azure-service.js'
 import { basicAuthHeader } from './lib/basic-auth-header.js'
+import { stripUntilStable } from './lib/strip-until-stable.js'
 
 /**
  * Escapes single quotes in a WIQL value to prevent injection.
@@ -70,8 +71,9 @@ function htmlToMarkdown(html) {
     return `[${text}](${safeHref})`
   })
 
-  // Strip any remaining HTML tags
-  md = md.replace(/<[^>]+>/g, '')
+  // Strip any remaining HTML tags, to a fixed point: a single pass over
+  // '<p<p>>' hands back '<p>', and this output is rendered as markdown.
+  md = stripUntilStable(md, (v) => v.replace(/<[^>]+>/g, '')).value
 
   // Trim trailing whitespace
   md = md.trim()

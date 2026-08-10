@@ -7,6 +7,8 @@
  *   { proposed: { name, description }, rationale, noChange: {name, description} }
  */
 
+import { stripUntilStable } from './strip-until-stable.js';
+
 const KEBAB_RE = /^[a-z0-9][a-z0-9-]*$/;
 const IMPORTED_PREFIX = /^imported from\b/i;
 
@@ -46,12 +48,14 @@ function stripReadmeNoise(text) {
 
     // YAML front-matter at file start: --- ... ---
     s = s.replace(/^---\n[\s\S]*?\n---\s*/m, '');
-    // HTML comments
-    s = s.replace(/<!--[\s\S]*?-->/g, '');
-    // Fenced code blocks (```lang … ```)
-    s = s.replace(/```[\s\S]*?```/g, '');
-    // HTML tags including self-closing <img …>, <a href …>, <p>, <br/>, …
-    s = s.replace(/<[^>]+>/g, '');
+    // HTML comments, fences and tags, to a fixed point: one pass over
+    // '<!--<!-- -->-->' leaves a live '-->', and over '<p<p>>' leaves '<p>'.
+    // This text becomes an AI prompt, so leftover markup is noise the model
+    // reads as instruction.
+    s = stripUntilStable(s, (v) => v
+        .replace(/<!--[\s\S]*?-->/g, '')
+        .replace(/```[\s\S]*?```/g, '')
+        .replace(/<[^>]+>/g, '')).value;
     // Markdown images ![alt](url) — drop entirely
     s = s.replace(/!\[[^\]]*\]\([^)]*\)/g, '');
     // Markdown links [label](url) — keep label only

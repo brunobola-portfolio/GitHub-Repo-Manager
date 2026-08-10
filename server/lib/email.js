@@ -27,12 +27,15 @@ function htmlToText(html) {
         .replace(/<\/p>/gi, '\n\n')
         .replace(/<\/h[1-6]>/gi, '\n\n')
         .replace(/<[^>]+>/g, '')
-        .replace(/&amp;/g, '&')
+        // '&amp;' decodes LAST. Decoding it first turns '&amp;lt;' into '&lt;'
+        // and then into '<' — the source text said "&lt;", and the reader of
+        // the plain-text part would see a tag that was never there.
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'")
         .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
         .replace(/[ \t]+/g, ' ')
         .replace(/\n{3,}/g, '\n\n')
         .trim()

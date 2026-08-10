@@ -24,6 +24,7 @@
 import db from '../db.js';
 import logger from './logger.js';
 import { githubApi } from './github-api.js';
+import { randomBytes } from 'node:crypto';
 
 const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
 const MAX_ATTEMPTS = 8;
@@ -58,7 +59,7 @@ export function makeIdempotencyKey(method, url, bodyHash) {
     // Use `!= null` (not truthiness): an empty-string bodyHash is a real,
     // deterministic hash and must dedup — only a genuinely absent (null/undefined)
     // bodyHash should fall back to a random, non-deduping key.
-    return `${method}:${url}${bodyHash != null ? `:${bodyHash}` : `:${Date.now()}-${Math.random().toString(36).slice(2, 10)}`}`;
+    return `${method}:${url}${bodyHash != null ? `:${bodyHash}` : `:${Date.now()}-${randomBytes(6).toString('hex')}`}`;
 }
 
 /**

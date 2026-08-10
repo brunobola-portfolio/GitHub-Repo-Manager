@@ -23,7 +23,7 @@ import cors from 'cors';
 import compression from 'compression';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { createTenantLimiters, globalLimiter } from './middleware/tenant-rate-limit.js';
+import { createTenantLimiters, globalLimiter, createWebhookLimiter } from './middleware/tenant-rate-limit.js';
 import { randomUUID } from 'crypto';
 import path from 'path';
 import fs from 'fs';
@@ -209,17 +209,21 @@ app.use(requestTiming);
 // so every request (including ones that never reach an /api/ route) is
 // counted. See server/lib/metrics.js for the route-label normalization.
 app.use(metricsMiddleware);
+// Webhooks mount before session and before the global limiter (they need the
+// raw body for HMAC and must work without a session), which left them the one
+// unauthenticated write path with no ceiling at all. See createWebhookLimiter.
+const webhookLimiter = createWebhookLimiter();
 // Stripe webhooks need raw body (must be before express.json())
 import { stripeWebhookHandler } from './routes/stripe-webhooks.js';
-app.post('/api/v1/webhooks/stripe', express.raw({ type: 'application/json' }), stripeWebhookHandler);
+app.post('/api/v1/webhooks/stripe', webhookLimiter, express.raw({ type: 'application/json' }), stripeWebhookHandler);
 // GitHub Actions webhooks need raw body for HMAC signature verification
 import { actionsWebhookHandler } from './routes/webhooks.js';
-app.post('/api/v1/webhooks/actions', express.raw({ type: 'application/json' }), actionsWebhookHandler);
-app.post('/api/webhooks/actions', express.raw({ type: 'application/json' }), actionsWebhookHandler);
+app.post('/api/v1/webhooks/actions', webhookLimiter, express.raw({ type: 'application/json' }), actionsWebhookHandler);
+app.post('/api/webhooks/actions', webhookLimiter, express.raw({ type: 'application/json' }), actionsWebhookHandler);
 // GitHub event ingestion pipeline (Phase E1) — PR, issues, deployments
 import { githubEventsWebhookHandler } from './routes/github-events-webhook.js';
-app.post('/api/v1/webhooks/github', express.raw({ type: 'application/json' }), githubEventsWebhookHandler);
-app.post('/api/webhooks/github', express.raw({ type: 'application/json' }), githubEventsWebhookHandler);
+app.post('/api/v1/webhooks/github', webhookLimiter, express.raw({ type: 'application/json' }), githubEventsWebhookHandler);
+app.post('/api/webhooks/github', webhookLimiter, express.raw({ type: 'application/json' }), githubEventsWebhookHandler);
 
 // The global JSON cap stays tight (10kb) to keep the attack surface small.
 // AI review endpoints (PR review-summary, deep-review, pr-commands, pr-chat)

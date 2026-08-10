@@ -19,6 +19,8 @@
  * this is a fresh, minimal, strict, regex-based pass written for this slice.
  */
 
+import { stripUntilStable } from '../strip-until-stable.js';
+
 export const MAX_SVG_BYTES = 500 * 1024; // 500 KB guard, per the addendum
 
 export function markerStart(type) {
@@ -292,21 +294,29 @@ export function sanitizeSvg(rawSvg, opts = {}) {
     // XXE / entity-expansion defence + processing instructions + comments
     // (stripped before content inspection, so a payload can't hide behind
     // a comment that a naive single-pass regex would otherwise skip over).
-    svg = svg.replace(/<!DOCTYPE[\s\S]*?>/gi, '');
-    svg = svg.replace(/<!ENTITY[\s\S]*?>/gi, '');
-    svg = svg.replace(/<\?[\s\S]*?\?>/g, '');
-    svg = svg.replace(/<!--[\s\S]*?-->/g, '');
+    const prologue = stripUntilStable(svg, (v) => v
+        .replace(/<!DOCTYPE[\s\S]*?>/gi, '')
+        .replace(/<!ENTITY[\s\S]*?>/gi, '')
+        .replace(/<\?[\s\S]*?\?>/g, '')
+        .replace(/<!--[\s\S]*?-->/g, ''));
+    if (!prologue.ok) return { ok: false, reason: 'unsanitizable' };
+    svg = prologue.value;
 
     if (!/<svg[\s>]/i.test(svg)) {
         return { ok: false, reason: 'not_svg' };
     }
 
-    for (const tag of DANGEROUS_TAGS) svg = stripTag(svg, tag);
+    const tags = stripUntilStable(svg, (v) => DANGEROUS_TAGS.reduce(stripTag, v));
+    if (!tags.ok) return { ok: false, reason: 'unsanitizable' };
+    svg = tags.value;
 
     // Event-handler attributes: quoted (both styles) and bare/unquoted.
-    svg = svg.replace(/\son\w+\s*=\s*"[^"]*"/gi, '');
-    svg = svg.replace(/\son\w+\s*=\s*'[^']*'/gi, '');
-    svg = svg.replace(/\son\w+\s*=\s*[^\s>]+/gi, '');
+    const handlers = stripUntilStable(svg, (v) => v
+        .replace(/\son\w+\s*=\s*"[^"]*"/gi, '')
+        .replace(/\son\w+\s*=\s*'[^']*'/gi, '')
+        .replace(/\son\w+\s*=\s*[^\s>]+/gi, ''));
+    if (!handlers.ok) return { ok: false, reason: 'unsanitizable' };
+    svg = handlers.value;
 
     // href/xlink:href — keep only in-document fragment refs (#id), used
     // internally by mermaid/SVG for gradients, markers, <use>; strip every

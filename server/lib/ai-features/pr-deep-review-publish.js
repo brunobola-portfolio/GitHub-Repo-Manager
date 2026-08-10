@@ -85,7 +85,13 @@ function toGithubComment(c) {
 }
 
 function escapeCell(s) {
-    return String(s || '').replace(/\|/g, '\\|').replace(/\r\n|\r|\n/g, ' ');
+    // Backslash first. Escaping the pipe without escaping the escape means a
+    // cell ending in a backslash turns our '\|' into a literal backslash plus
+    // an unescaped '|', breaking the very row it was meant to protect.
+    return String(s || '')
+        .replace(/\\/g, '\\\\')
+        .replace(/\|/g, '\\|')
+        .replace(/\r\n|\r|\n/g, ' ');
 }
 
 /**
