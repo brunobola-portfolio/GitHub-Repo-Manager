@@ -19,6 +19,8 @@
  * this is a fresh, minimal, strict, regex-based pass written for this slice.
  */
 
+import { stripUntilStable } from '../strip-until-stable.js';
+
 export const MAX_SVG_BYTES = 500 * 1024; // 500 KB guard, per the addendum
 
 export function markerStart(type) {
@@ -264,29 +266,6 @@ export function buildDeterministicDiagram({ topLevel = [], treeEntries = [], tru
 // ---------------------------------------------------------------------------
 
 const DANGEROUS_TAGS = ['script', 'foreignObject', 'iframe', 'embed', 'object', 'animate', 'animateMotion', 'animateTransform', 'set'];
-
-/*
- * Apply a single-pass strip until the input stops changing.
- *
- * A one-shot `replace` on nested markup leaves a reconstructed payload behind:
- * '<!--<!-- -->-->' loses the inner comment and yields a live '-->', and
- * '<scr<script>ipt>' becomes '<script>' after exactly one pass. Repeating until
- * a fixed point is what closes that, and the iteration cap is what keeps the
- * repetition itself from becoming the denial of service — input still changing
- * after MAX_STRIP_PASSES is adversarial by construction, so it is rejected
- * rather than served half-cleaned.
- */
-const MAX_STRIP_PASSES = 8;
-
-function stripUntilStable(input, apply) {
-    let current = input;
-    for (let pass = 0; pass < MAX_STRIP_PASSES; pass += 1) {
-        const next = apply(current);
-        if (next === current) return { ok: true, value: current };
-        current = next;
-    }
-    return { ok: apply(current) === current, value: current };
-}
 
 function stripTag(svg, tag) {
     const paired = new RegExp(`<${tag}\\b[^>]*>[\\s\\S]*?<\\/${tag}\\s*>`, 'gi');
