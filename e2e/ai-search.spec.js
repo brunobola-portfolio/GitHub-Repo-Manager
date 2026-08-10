@@ -44,7 +44,7 @@ test.describe('AI Search & Features', () => {
     await expect(page.getByPlaceholder(/search repositories/i)).toBeVisible()
   })
 
-  test('should show search input with purple styling in AI mode', async ({ page }) => {
+  test('should show search input in the brand tone in AI mode', async ({ page }) => {
     const aiToggle = page.getByTitle('Toggle AI Semantic Search')
     // Dispatch click directly on the button to bypass the z-40 select-all
     // wrapper that intercepts pointer events on narrow/wrapped toolbars.
@@ -53,9 +53,10 @@ test.describe('AI Search & Features', () => {
     const searchInput = page.getByPlaceholder(/ask ai/i)
     await expect(searchInput).toBeVisible()
 
-    // Check that the input has purple-themed classes
+    // AI mode is signalled by the accent, and the product has exactly one:
+    // brand-*. This asserted 'purple' back when three accent hues were in play.
     const classes = await searchInput.getAttribute('class')
-    expect(classes).toContain('purple')
+    expect(classes).toContain('brand-')
   })
 
   test('should show AI Insights button on repo card hover', async ({ page }) => {
