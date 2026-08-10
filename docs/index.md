@@ -26,6 +26,12 @@ below links to the canonical page for that topic.
 
 The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.16.0 (2026-08-10) — the brand guide became a media kit.** Every
+  deployment serves it at `/brand`, and
+  [`brand/repomanager-media-kit.zip`](../brand/repomanager-media-kit.zip) puts
+  every mark, both cuts, the tiles, the fonts with their OFL licence and the
+  written spec into one file you can hand to press or a contractor. Settings →
+  About links to it; the archive is byte-reproducible.
 - **v4.15.0 (2026-08-09) — the brand guide, in the repo.**
   [`brand/index.html`](../brand/index.html) shows the marks at true pixel sizes
   on both grounds, the palette, the type in the real faces and every file in
@@ -48,18 +54,6 @@ The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHAN
   still builds against Node-API 10 with ABI-independent prebuilds — so the
   Node 22.14/24 story is unchanged, and the `compat (node 22 floor)` job keeps
   proving it. No product change.
-- **v4.13.0 (2026-08-09) — production hardening.** Everything needed to put the
-  app on a public domain behind IIS, plus the review panel that found what the
-  first pass missed. `DATA_DIR` set in `.env` was ignored for the database, so
-  it landed inside the install tree where an upgrade overwrites it — and every
-  operator CLI had the same bug, which made `audit:verify` return a clean
-  tamper check against the wrong file (**read the upgrade note in the
-  CHANGELOG**). OAuth login broke behind any proxy that does not forward
-  `X-Forwarded-Proto`. The theme script was blocked by the production CSP.
-  Licence minting by `repository_dispatch` never ran, and interpolated a
-  caller-supplied email into a shell step holding the signing key. 99 muted-text
-  tokens failed WCAG AA in both themes. Node 24 LTS is now the target, with CI
-  testing the 22.14 floor.
 
 
 ## Architecture
