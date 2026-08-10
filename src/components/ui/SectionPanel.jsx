@@ -51,7 +51,7 @@ export function SectionPanel({
     const headerCommon = (
         <>
             {Icon ? (
-                <span className="shrink-0 w-9 h-9 rounded-xl bg-[color:var(--ds-accent-brand)] text-white flex items-center justify-center shadow-sm">
+                <span className="shrink-0 w-9 h-9 rounded-xl ds-brand-solid flex items-center justify-center shadow-sm">
                     <Icon className="w-4 h-4" aria-hidden="true" />
                 </span>
             ) : null}

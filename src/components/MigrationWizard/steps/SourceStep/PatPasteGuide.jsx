@@ -143,7 +143,7 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
             // Explicit name = the visible label, so the Tooltip's aria mirror
             // can't overwrite it with the raw URL (keeps WCAG 2.5.3 label-in-name).
             aria-label={openedAt ? 'Reopen PAT page' : hasContext ? `Open PAT on ${provider.shortName}` : 'Paste URL first'}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] dark:hover:bg-brand-400 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed disabled:hover:bg-slate-300 transition-colors shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg ds-brand-solid dark:hover:bg-brand-400 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed disabled:hover:bg-slate-300 transition-colors shadow-sm"
           >
             <ExternalLink className="w-3.5 h-3.5" />
             {openedAt ? 'Reopen PAT page' : hasContext ? `Open PAT on ${provider.shortName}` : 'Paste URL first'}

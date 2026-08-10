@@ -127,7 +127,7 @@ export function PingAuthorPopover({ cacheKey, requestPayload, onPing, disabled =
                     <button
                         type="button"
                         onClick={() => { setPopoverOpen(false); onPing?.(pingBody) }}
-                        className="px-3 py-1 text-xs bg-[color:var(--ds-accent-brand)] hover:bg-brand-500 text-white rounded-lg"
+                        className="px-3 py-1 text-xs ds-brand-solid hover:bg-brand-500 rounded-lg"
                     >
                         Send
                     </button>

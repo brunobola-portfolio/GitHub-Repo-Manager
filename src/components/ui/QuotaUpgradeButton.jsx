@@ -27,7 +27,7 @@ export function QuotaUpgradeButton({ upgradeTo, size = 'lg', onAfterNavigate }) 
     <button
       type="button"
       onClick={() => { navigateToPricing(upgradeTo); onAfterNavigate?.() }}
-      className={`inline-flex items-center ${s.btn} text-white bg-[color:var(--ds-accent-brand)] hover:bg-[color:var(--ds-accent-brand-hover)] transition-colors`}
+      className={`inline-flex items-center ${s.btn} ds-brand-solid transition-colors`}
     >
       Upgrade to {label} <ArrowRight className={s.arrow} aria-hidden="true" />
     </button>

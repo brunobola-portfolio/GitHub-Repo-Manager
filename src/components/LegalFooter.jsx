@@ -15,9 +15,14 @@ export function LegalFooter() {
   return (
     <footer
       aria-label="Legal and source-code attribution"
-      // On mobile a stacked pair of FABs (search + quick-actions) sits at the
-      // bottom-right; pr-20 keeps the right-aligned links out of their way.
-      className="px-4 pr-20 md:pr-4 py-2 ds-text-meta text-slate-500 dark:text-slate-400 border-t border-slate-200/60 dark:border-slate-800/60 bg-slate-50/60 dark:bg-slate-950/60"
+      // The floating assistant rests over this footer at the end of the
+      // document — it is fixed, the footer is not, so at the bottom of a page
+      // they want the same pixels. pr-20 keeps the right-aligned links clear of
+      // the mobile FAB stack sideways; --ds-fab-safe-bottom reserves the strip
+      // the desktop one comes to rest in, so it covers empty space rather than
+      // "Status" and "Commercial license".
+      style={{ paddingBottom: 'var(--ds-fab-safe-bottom)' }}
+      className="px-4 pr-20 md:pr-4 pt-2 ds-text-meta text-slate-500 dark:text-slate-400 border-t border-slate-200/60 dark:border-slate-800/60 bg-slate-50/60 dark:bg-slate-950/60"
     >
       <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <span>

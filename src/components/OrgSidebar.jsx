@@ -100,7 +100,7 @@ export function OrgSidebar({ user, orgs, selectedOrg, stats, leftMode, onSelectO
           {org.avatar_url ? (
             <img src={org.avatar_url} alt={org.login} className="w-8 h-8 rounded-lg" />
           ) : (
-            <span className="w-8 h-8 rounded-lg bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] flex items-center justify-center text-white text-xs font-bold">
+            <span className="w-8 h-8 rounded-lg ds-brand-solid flex items-center justify-center text-xs font-bold">
               {org.login.charAt(0).toUpperCase()}
             </span>
           )}

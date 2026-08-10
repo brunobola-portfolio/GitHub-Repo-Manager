@@ -144,7 +144,7 @@ function SetupStep({ label, icon: Icon, status }) {
                 : 'border-transparent'
             }`}>
             <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-[var(--ds-duration)] ${status === 'done' ? 'bg-emerald-500 text-white' :
-                    status === 'active' ? 'bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] text-white' :
+                    status === 'active' ? 'ds-brand-solid' :
                         'bg-white/5 text-slate-500'
                 }`}>
                 {status === 'done' ? (

@@ -2,7 +2,7 @@ import { forwardRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const variants = {
-    primary: 'bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] shadow-sm ds-focus-ring',
+    primary: 'ds-brand-solid shadow-sm ds-focus-ring',
     secondary: 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 disabled:text-slate-400 dark:disabled:text-slate-500 shadow-sm dark:shadow-slate-900/50 ds-focus-ring',
     danger: 'bg-red-600 text-white hover:bg-red-700 shadow-sm ds-focus-ring',
     warning: 'bg-amber-500 text-white hover:bg-amber-600 shadow-sm ds-focus-ring',

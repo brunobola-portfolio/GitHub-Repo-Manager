@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { Button } from '../../../src/components/ui/Button'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 
 describe('Button', () => {
     it('renders children', () => {
@@ -21,7 +23,7 @@ describe('Button', () => {
 
     it('falls back to primary for an unknown variant', () => {
         render(<Button variant="bogus">x</Button>)
-        expect(screen.getByRole('button').className).toContain('bg-[color:var(--ds-accent-brand)]')
+        expect(screen.getByRole('button').className).toContain('ds-brand-solid')
     })
 
     it('enforces the WCAG 44px tap target by default (sm/md/lg)', () => {
@@ -47,12 +49,29 @@ describe('Button', () => {
         expect(btn).toBeDisabled()
     })
 
-    it('merges className overrides via tailwind-merge', () => {
+    it('lets a className override win over the variant surface', () => {
         render(<Button className="bg-brand-500">x</Button>)
         const cls = screen.getByRole('button').className
-        // tailwind-merge should drop the variant's token bg when overridden.
         expect(cls).toContain('bg-brand-500')
-        expect(cls).not.toContain('var(--ds-accent-brand)')
+        // ds-brand-solid stays in the list — tailwind-merge cannot know a
+        // custom class is a background. It does not fight the override because
+        // it is declared at zero specificity; the CSS gate below pins that.
+        expect(cls).toContain('ds-brand-solid')
+    })
+
+    it('declares the brand surface in @layer components so overrides win', () => {
+        // The layer does two jobs: it beats Preflight's `button {
+        // background-color: transparent }` (an element selector, which a
+        // :where() rule loses to — that attempt rendered every brand button
+        // with no background), and it loses to @layer utilities so a caller's
+        // bg-* still wins.
+        const css = readFileSync(resolve(import.meta.dirname, '../../../src/design-system.css'), 'utf8')
+        // Search for the BLOCK, not the first mention — the comment above it
+        // names the layer too.
+        const block = css.indexOf('@layer components {')
+        expect(block, 'no @layer components block').toBeGreaterThan(-1)
+        expect(css.slice(block, block + 400)).toContain('.ds-brand-solid')
+        expect(css).not.toMatch(/:where\(\.ds-brand-solid\)/)
     })
 
     it('renders outline variant with transparent bg + slate border', () => {

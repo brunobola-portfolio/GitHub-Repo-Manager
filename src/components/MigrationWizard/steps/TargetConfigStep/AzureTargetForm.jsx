@@ -237,7 +237,7 @@ function NewProjectForm({ source, onChange }) {
         type="button"
         onClick={createProject}
         disabled={creating || !source.azureNewProjectName?.trim()}
-        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl bg-[color:var(--ds-accent-brand)] text-white hover:bg-[color:var(--ds-accent-brand-hover)] disabled:bg-slate-300 disabled:cursor-not-allowed"
+        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl ds-brand-solid disabled:bg-slate-300 disabled:cursor-not-allowed"
       >
         {creating ? <Spinner size="md" tone="onPrimary" /> : <Plus className="w-4 h-4" />}
         {creating ? 'Creating project…' : 'Create project now'}

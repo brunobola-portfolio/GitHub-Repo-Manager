@@ -103,14 +103,23 @@ function QuickActions({
                                 type="button"
                                 onClick={onImport}
                                 disabled={isPerforming}
-                                className="flex items-center gap-3 p-3 rounded-xl bg-[color:var(--ds-accent-brand)] text-white shadow-sm hover:opacity-90 transition-colors duration-150 group cursor-pointer"
+                                className="flex items-center gap-3 p-3 rounded-xl ds-brand-solid shadow-sm hover:opacity-90 transition-colors duration-150 group cursor-pointer"
                             >
-                                <div className="p-1.5 bg-white/20 rounded-lg">
-                                    <Download className="w-4 h-4 text-white" />
+                                {/* Inherit from ds-brand-solid rather than
+                                    restating a colour: the surface is the lime
+                                    in dark mode, where white measures 2.11:1,
+                                    and the deep green in light, where white at
+                                    80% measures 3.87:1. Neither the colour nor
+                                    the opacity of text on a brand fill is a
+                                    free choice — the hierarchy here is carried
+                                    by size and weight. The icon tint stays
+                                    translucent because it is a surface. */}
+                                <div className="p-1.5 bg-white/20 dark:bg-black/10 rounded-lg">
+                                    <Download className="w-4 h-4" />
                                 </div>
                                 <div className="text-left">
                                     <div className="text-xs font-semibold">Import Repository</div>
-                                    <div className="ds-text-micro text-white">Git URL, Azure, GitHub</div>
+                                    <div className="ds-text-micro">Git URL, Azure, GitHub</div>
                                 </div>
                                 <ChevronRight className="w-4 h-4 ml-auto" />
                             </button>

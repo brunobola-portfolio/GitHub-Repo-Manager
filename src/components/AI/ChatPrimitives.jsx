@@ -45,7 +45,7 @@ export function MessageBubble({ message }) {
                 <div
                     className={`px-3.5 py-2.5 text-sm leading-relaxed rounded-2xl shadow-sm ${
                         isUser
-                            ? 'bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] text-white rounded-br-sm shadow-sm'
+                            ? 'ds-brand-solid rounded-br-sm shadow-sm'
                             : isError
                                 ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-900/50 rounded-bl-sm'
                                 : 'bg-white dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 rounded-bl-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-pre:my-2 prose-code:text-xs'

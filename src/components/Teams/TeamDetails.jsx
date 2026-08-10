@@ -796,7 +796,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                         key={repo.id}
                         onClick={() => setSelectedRepo(repo.repo_full_name)}
                         className={`w-full text-left p-3 rounded-xl transition-all ${selectedRepo === repo.repo_full_name
-                            ? 'bg-[color:var(--ds-accent-brand)] text-white shadow-md'
+                            ? 'ds-brand-solid shadow-md'
                             : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
                             }`}
                     >

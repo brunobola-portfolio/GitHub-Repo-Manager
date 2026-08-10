@@ -154,7 +154,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                                 onClick={() => setShowPlanner(v => !v)}
                                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                                     showPlanner
-                                        ? 'bg-[color:var(--ds-accent-brand)] text-white shadow-sm'
+                                        ? 'ds-brand-solid shadow-sm'
                                         : 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] bg-brand-50 dark:bg-brand-950/40 hover:bg-brand-100 dark:hover:bg-brand-900/50'
                                 }`}
                                 title="Generate an AI implementation plan for this issue"
