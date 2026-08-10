@@ -26,6 +26,11 @@ below links to the canonical page for that topic.
 
 The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.18.1 (2026-08-10) — the polish pass.** The solid brand surface became
+  one decision instead of two (`.ds-brand-solid`: deep green under white in
+  light, the lime under ink in dark), the floating assistant stopped covering
+  the footer — measured at six widths, seven overlaps before and zero after —
+  and thirteen doc screenshots that still showed the violet UI were recaptured.
 - **v4.18.0 (2026-08-10) — the brand, applied.** The repository documented a
   lime mark and shipped a violet product: a hand-drawn logo with four gradients,
   GitHub's Octocat as the product icon, and three accent hues used
@@ -47,11 +52,6 @@ The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHAN
   every mark, both cuts, the tiles, the fonts with their OFL licence and the
   written spec into one file you can hand to press or a contractor. Settings →
   About links to it; the archive is byte-reproducible.
-- **v4.15.0 (2026-08-09) — the brand guide, in the repo.**
-  [`brand/index.html`](../brand/index.html) shows the marks at true pixel sizes
-  on both grounds, the palette, the type in the real faces and every file in
-  the kit — self-contained, fonts included under OFL-1.1. Generated from the
-  same constants as the assets, so it cannot drift from what it documents.
 - **v4.14.1 (2026-08-09) — consistency pass.** `.gitattributes` said nothing
   about `.svg`, so a Windows checkout turned the generated marks into CRLF and
   failed the brand gate on a developer machine while staying green on CI. Plus
