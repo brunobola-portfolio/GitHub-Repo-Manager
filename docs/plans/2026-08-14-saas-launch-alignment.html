@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alinhamento de Lançamento SaaS</title>
+<meta name="description" content="Estado validado dos três sistemas, as contradições entre eles, a decisão de licença e a ordem de execução.">
+<style>
+  :root {
+    --lime: #7fc528;
+    --ink: #0f172a;
+    --ground: #020617;
+
+    --bg: #fbfcfa;
+    --surface: #ffffff;
+    --sunk: #f1f4ee;
+    --line: #dfe4da;
+    --text: #14181f;
+    --muted: #59614f;
+    --accent-text: #3f7d12;
+
+    --ok: #2a6b1e;
+    --warn: #8a5a00;
+    --bad: #a3252c;
+    --ok-bg: #eaf3e4;
+    --warn-bg: #fbf1dd;
+    --bad-bg: #fbe9e9;
+
+    --shell: 60rem;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b0f0a;
+      --surface: #131a11;
+      --sunk: #182015;
+      --line: #26301f;
+      --text: #e8ede4;
+      --muted: #9aa892;
+      --accent-text: #8fd23f;
+
+      --ok: #8fd23f;
+      --warn: #e0b64a;
+      --bad: #ff7b72;
+      --ok-bg: #1a2612;
+      --warn-bg: #2a2211;
+      --bad-bg: #2c1614;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b0f0a;
+    --surface: #131a11;
+    --sunk: #182015;
+    --line: #26301f;
+    --text: #e8ede4;
+    --muted: #9aa892;
+    --accent-text: #8fd23f;
+    --ok: #8fd23f;
+    --warn: #e0b64a;
+    --bad: #ff7b72;
+    --ok-bg: #1a2612;
+    --warn-bg: #2a2211;
+    --bad-bg: #2c1614;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: var(--shell); margin: 0 auto; padding: 0 20px 96px; }
+
+  .mono {
+    font-family: ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    font-size: .88em;
+  }
+  code {
+    font-family: ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    font-size: .86em;
+    background: var(--sunk);
+    padding: .1em .38em;
+    border-radius: 4px;
+    word-break: break-word;
+  }
+
+  h1, h2, h3 { margin: 0; letter-spacing: -.022em; text-wrap: balance; font-weight: 700; }
+  h1 { font-size: clamp(30px, 6.4vw, 46px); line-height: 1.06; }
+  h2 { font-size: clamp(21px, 3.6vw, 27px); margin-bottom: 6px; }
+  h3 { font-size: 17px; margin-bottom: 4px; }
+  p { margin: 0 0 14px; max-width: 68ch; }
+  a { color: var(--accent-text); }
+
+  .eyebrow {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 11px; letter-spacing: .17em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 10px;
+  }
+
+  header.hero { padding: 56px 0 34px; }
+  .lede { font-size: 17.5px; color: var(--muted); max-width: 60ch; }
+  .stamp {
+    margin-top: 22px; display: inline-flex; align-items: center; gap: 10px;
+    font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--muted);
+    border: 1px solid var(--line); border-radius: 999px; padding: 6px 13px; background: var(--surface);
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); flex: none; }
+
+  section { padding: 38px 0; border-top: 1px solid var(--line); }
+
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 18px; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 18px; }
+  @media (max-width: 760px) { .grid3, .grid2 { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 17px 16px; display: flex; flex-direction: column; gap: 8px; height: 100%;
+  }
+  .card h3 { font-size: 15.5px; }
+  .card .meta { font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; color: var(--muted); }
+  .card p { margin: 0; font-size: 14.2px; color: var(--muted); }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
+    font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 999px; border: 1px solid transparent;
+  }
+  .chip.ok   { background: var(--ok-bg);   color: var(--ok); }
+  .chip.warn { background: var(--warn-bg); color: var(--warn); }
+  .chip.bad  { background: var(--bad-bg);  color: var(--bad); }
+
+  .finding {
+    border: 1px solid var(--line); border-left: 3px solid var(--line);
+    border-radius: 0 12px 12px 0; background: var(--surface);
+    padding: 15px 16px; margin: 12px 0;
+  }
+  .finding.bad  { border-left-color: var(--bad); }
+  .finding.warn { border-left-color: var(--warn); }
+  .finding .head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+  .finding .n {
+    font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--muted);
+    font-weight: 700;
+  }
+  .finding h3 { font-size: 16px; }
+  .finding p { margin: 0 0 8px; font-size: 14.6px; }
+  .finding p:last-child { margin-bottom: 0; }
+  .evidence {
+    font-family: ui-monospace, Consolas, monospace; font-size: 12.4px;
+    background: var(--sunk); border-radius: 8px; padding: 9px 11px; color: var(--muted);
+    overflow-x: auto; white-space: pre-wrap; word-break: break-word;
+  }
+
+  .tablewrap { overflow-x: auto; margin: 14px 0; border: 1px solid var(--line); border-radius: 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14.3px; min-width: 30rem; }
+  th, td { text-align: left; padding: 10px 13px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th {
+    font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+    font-weight: 700; background: var(--sunk); white-space: nowrap;
+  }
+  tr:last-child td { border-bottom: 0; }
+  td.num { font-family: ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .wrong { color: var(--bad); text-decoration: line-through; text-decoration-thickness: 1px; }
+  .right { color: var(--ok); font-weight: 700; }
+
+  ol.steps { list-style: none; counter-reset: s; padding: 0; margin: 18px 0 0; }
+  ol.steps > li {
+    counter-increment: s; position: relative; padding: 0 0 0 46px; margin: 0 0 22px;
+  }
+  ol.steps > li::before {
+    content: counter(s); position: absolute; left: 0; top: 1px;
+    width: 30px; height: 30px; border-radius: 9px;
+    background: var(--lime); color: var(--ink);
+    font-family: ui-monospace, Consolas, monospace; font-weight: 700; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  ol.steps h3 { margin-bottom: 3px; }
+  ol.steps p { margin-bottom: 6px; font-size: 14.6px; }
+  .owner {
+    font-family: ui-monospace, Consolas, monospace; font-size: 11px;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+    border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px;
+    display: inline-block; margin-bottom: 7px;
+  }
+
+  ul.plain { margin: 0 0 14px; padding-left: 1.15em; }
+  ul.plain li { margin-bottom: 5px; font-size: 14.8px; }
+
+  .callout {
+    background: var(--sunk); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 17px; margin: 16px 0;
+  }
+  .callout h3 { margin-bottom: 6px; }
+  .callout p:last-child { margin-bottom: 0; }
+
+  footer {
+    padding: 30px 0 0; border-top: 1px solid var(--line);
+    color: var(--muted); font-size: 13.4px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <p class="eyebrow">BolaLabs · Plano de lançamento</p>
+  <h1>Três sistemas,<br>uma data de lançamento.</h1>
+  <p class="lede">
+    O site, a aplicação e o registo de licenças estão cada um pronto à sua maneira — e
+    contradizem-se em dez pontos concretos. Isto é o que está validado, o que colide,
+    e por que ordem se resolve.
+  </p>
+  <div class="stamp"><span class="dot"></span> Validado a 14 de agosto de 2026 contra código e produção</div>
+</header>
+
+<section>
+  <p class="eyebrow">Estado</p>
+  <h2>Onde está cada sistema</h2>
+  <p>Verificado agora: git, testes, e sondas HTTP à produção real.</p>
+
+  <div class="grid3">
+    <article class="card">
+      <span class="chip ok">No ar</span>
+      <h3>bolalabs-platform</h3>
+      <p class="meta">v1.0.2 · bolalabs.pt</p>
+      <p>Árvore limpa, <code>doctor</code> 10/10, typecheck 0 erros. CSP apertada, HSTS,
+      301 do apex para <code>/pt/</code>. Scripts de deploy IIS com escolha de site,
+      reutilização de certificado e reversão automática.</p>
+    </article>
+
+    <article class="card">
+      <span class="chip warn">Por publicar</span>
+      <h3>GitHub-Repo-Manager</h3>
+      <p class="meta">v4.18.1 · repomanager.bolalabs.pt</p>
+      <p>Main limpo, 0 PRs, 0 alertas CodeQL, 0 Dependabot. 7.171 testes verdes, axe verde
+      nos dois temas. O subdomínio devolve um <strong>placeholder em todos os caminhos</strong>.</p>
+    </article>
+
+    <article class="card">
+      <span class="chip ok">Funcional</span>
+      <h3>license-log</h3>
+      <p class="meta">privado · auditoria</p>
+      <p>Emissão real exercida ponta a ponta em abril: uma falha por verificação de domínio
+      Resend, devidamente substituída com entrada de auditoria, e uma entrega com sucesso.
+      Nunca guarda chaves — só metadados.</p>
+    </article>
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">Contradições</p>
+  <h2>Dez pontos onde os sistemas se desmentem</h2>
+  <p>
+    Por severidade. Os quatro primeiros mostram informação errada a quem visita o site
+    <em>neste momento</em>.
+  </p>
+
+  <div class="finding bad">
+    <div class="head"><span class="n">01</span><h3>O site encolhe o produto nos três escalões</h3></div>
+    <p>
+      Está errado na fonte — <code>src/LanguageContext.tsx</code>, nas quatro línguas, em dois
+      sítios (resumo do plano e FAQ). Não é um deploy velho.
+    </p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Escalão</th><th>O site diz</th><th>O produto faz</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Free</strong></td>
+              <td class="num"><span class="wrong">200 repos · 200 IA/mês · 3 equipas · 5 chaves</span></td>
+              <td class="num"><span class="right">∞ repos · 1.000 IA · ∞ equipas · 25 chaves</span></td></tr>
+          <tr><td><strong>Pro</strong></td>
+              <td class="num"><span class="wrong">5.000 IA · equipas até 15</span></td>
+              <td class="num"><span class="right">10.000 IA · membros ∞ · 50 chaves</span></td></tr>
+          <tr><td><strong>Enterprise</strong></td>
+              <td class="num"><span class="wrong">50 chaves</span></td>
+              <td class="num"><span class="right">100 chaves</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Os preços ($0 / $19 / sob consulta) batem certo. São só os limites, e todos para menos.
+      O <code>feature-flags.js</code> chega a explicar porquê no comentário: o teto de repositórios
+      <em>«was advertised as Free's ceiling… Retracted rather than enforced»</em> — foi retirado
+      por ser falso, e o site continua a anunciá-lo.
+    </p>
+  </div>
+
+  <div class="finding bad">
+    <div class="head"><span class="n">02</span><h3>Os docs da plataforma dizem que a app já está no ar</h3></div>
+    <p><code>docs/LAUNCH.md</code> dá o subdomínio como publicado. A sonda diz outra coisa:</p>
+    <div class="evidence">LAUNCH.md §5.2 → «repomanager.bolalabs.pt live · ✅ Live since 2026-08-08»
+
+GET https://repomanager.bolalabs.pt/api/health          → 200 · text/html (placeholder)
+GET https://repomanager.bolalabs.pt/isto-nao-existe     → 200 · text/html (o mesmo)</div>
+    <p>Devolve a mesma página estática em <em>qualquer</em> caminho. A aplicação não está lá.</p>
+  </div>
+
+  <div class="finding bad">
+    <div class="head"><span class="n">03</span><h3>A versão anunciada tem quatro meses de atraso</h3></div>
+    <p>
+      O badge da página do produto diz <code>V4.4 · OPEN-CORE (AGPL-3.0)</code>. A versão
+      publicada é a <strong>4.18.1</strong>. Catorze versões menores de diferença.
+    </p>
+  </div>
+
+  <div class="finding bad">
+    <div class="head"><span class="n">04</span><h3><code>bolalabs.pt/license</code> devolve 404</h3></div>
+    <p>
+      A raiz responde 200; <code>/license</code> não existe — as rotas do site têm prefixo de
+      idioma e não há redirecionamento sem prefixo. Esse URL está no README, no
+      <code>docs/api/API.md</code>, no cabeçalho SPDX de <strong>todos</strong> os ficheiros do
+      servidor, e no <strong>rodapé da aplicação</strong>, onde qualquer utilizador lhe pode clicar.
+    </p>
+  </div>
+
+  <div class="finding warn">
+    <div class="head"><span class="n">05</span><h3>A FAQ passa a mentir no dia do deploy</h3></div>
+    <p>
+      Pergunta: <em>«A aplicação está disponível já, hospedada?»</em> Resposta atual:
+      <em>«Ainda não — a versão hospedada está em preparação.»</em> É honesto hoje e falso
+      no minuto seguinte à publicação. Nada liga as duas coisas.
+    </p>
+  </div>
+
+  <div class="finding warn">
+    <div class="head"><span class="n">06</span><h3>Duas rampas de verde para a mesma empresa</h3></div>
+    <p>
+      A plataforma define a rampa oficial centrada no lima
+      (<code>--color-primary-500: #7fc528</code>). A aplicação usa uma rampa igualada em
+      luminância ao indigo que substituiu, onde o passo 500 é <code>#55831b</code> — um
+      azeitona escuro. Os <em>tokens de texto</em> coincidem nos dois
+      (<code>#8fd23f</code> / <code>#3f7d12</code>); a rampa não. Lado a lado, o mesmo papel tem
+      duas cores.
+    </p>
+  </div>
+
+  <div class="finding warn">
+    <div class="head"><span class="n">07</span><h3>Uma conta Resend, três consumidores, zero coordenação</h3></div>
+    <p>
+      O Convex da plataforma precisa dela para abrir o registo de clientes; o servidor da
+      aplicação <strong>recusa arrancar sem ela</strong>; e o workflow de emissão já a tem
+      configurada como segredo. A primeira emissão real falhou exatamente por aqui —
+      <em>«bolalabs.pt Resend domain verification was still pending»</em>. Nenhum dos três
+      documenta que a partilha existe.
+    </p>
+  </div>
+
+  <div class="finding warn">
+    <div class="head"><span class="n">08</span><h3>O deploy da aplicação é o elo fraco — e não precisava de ser</h3></div>
+    <p>
+      A plataforma tem <code>deploy.ps1</code> com oito garantias por ordem: pacote validado →
+      espaço em disco → backup conferido → app pool parado → troca → arranque → verificação
+      no disco → <strong>reversão automática</strong>. Regra: uma versão, um artefacto imutável.
+    </p>
+    <p>
+      A aplicação documenta o upgrade como <code>git checkout; npm ci; npm run build</code>
+      <em>na máquina de produção</em>. E já produz o artefacto certo —
+      <code>github-repo-manager-&lt;versão&gt;-win-x64.zip</code>, com runtime embutido e smoke
+      test em CI — que está a ser usado só para o instalador de desktop.
+    </p>
+  </div>
+
+  <div class="finding warn">
+    <div class="head"><span class="n">09</span><h3>O proxy que a app precisa não é instalado por ninguém</h3></div>
+    <p>
+      O <code>setup-server.ps1</code> da plataforma instala IIS, URL Rewrite e cria bindings —
+      mas não menciona <strong>ARR</strong> (Application Request Routing) uma única vez. É o
+      módulo sem o qual não há proxy reverso para o Node. Fica a cargo do guia manual da app.
+    </p>
+  </div>
+
+  <div class="finding warn">
+    <div class="head"><span class="n">10</span><h3>Dois restos que contradizem o padrão</h3></div>
+    <p>
+      <code>.github/workflows/deploy.yml</code> chama-se «Build Verify» mas contém jobs de deploy
+      para <strong>Railway e Vercel</strong> — inertes atrás de uma variável não definida, ao lado
+      de um servidor IIS real.
+    </p>
+    <p>
+      E a app vai enviar <code>Strict-Transport-Security: … preload</code> a partir de um
+      <strong>subdomínio</strong>: a lista de preload só aceita domínios de topo, o apex envia
+      <code>max-age=31536000</code> sem <code>includeSubDomains</code>, e <code>bolalabs.pt</code>
+      não está na lista. É uma diretiva que ninguém pode honrar.
+    </p>
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">Decisão</p>
+  <h2>A licença: o que MIT significa mesmo</h2>
+
+  <p>
+    Hoje o que se vende é a <strong>fuga ao copyleft</strong>. O próprio site o diz na descrição
+    do Enterprise: <em>«licença comercial sem copyleft»</em>. Sob MIT não há copyleft nenhum —
+    logo não há nada de que fugir, e essa mercadoria deixa de existir. Não é uma troca de
+    cabeçalho; é uma mudança de modelo de negócio.
+  </p>
+
+  <div class="callout">
+    <h3>A empresa já corre este modelo, ao lado</h3>
+    <p>
+      O AITOOL está no site como <strong>MIT (Community)</strong> com «licenciamento comercial,
+      white-label/OEM e deployment acompanhado — preço caso a caso». O precedente existe,
+      funciona, e é exatamente a forma de manter receita sobre uma base permissiva.
+    </p>
+  </div>
+
+  <h3>O caminho está livre</h3>
+  <ul class="plain">
+    <li><strong>O copyright é todo teu.</strong> As cinco identidades no git são a mesma pessoa;
+      os commits do dependabot são bumps de dependências, não autoria. Podes relicenciar
+      sozinho, hoje, sem recolher CLAs.</li>
+    <li><strong>Nenhuma dependência bloqueia.</strong> Das 1.027 do lockfile: zero GPL, AGPL,
+      LGPL ou SSPL. O único copyleft é MPL-2.0 (26 pacotes — <code>axe-core</code> e
+      <code>lightningcss</code>, todos de teste e build), que é copyleft por ficheiro e não
+      contamina. O <code>dompurify</code> é duplo e pode ser tomado como Apache-2.0.</li>
+  </ul>
+
+  <h3>A recomendação: Apache-2.0, não MIT</h3>
+  <p>
+    Para quem adota, as duas são igualmente permissivas — ninguém recusa uma por causa da
+    outra. O Apache dá três coisas que o MIT não dá:
+  </p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>&nbsp;</th><th>MIT</th><th>Apache-2.0</th></tr></thead>
+      <tbody>
+        <tr><td>Concessão expressa de patente</td><td>—</td><td class="right">sim</td></tr>
+        <tr><td>Reserva explícita de marca (§6)</td><td>—</td><td class="right">sim</td></tr>
+        <tr><td>Mecanismo NOTICE para atribuição</td><td>—</td><td class="right">sim</td></tr>
+        <tr><td>Aceitação no mercado</td><td>total</td><td>total</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    A reserva de marca importa aqui em concreto: acabou de nascer um sistema de marca completo,
+    com aviso de trademark no media kit. O MIT não dá texto nenhum onde ancorar isso.
+  </p>
+
+  <div class="callout">
+    <h3>Uma porta que só abre num sentido</h3>
+    <p>
+      Uma versão publicada como permissiva <strong>nunca mais volta atrás</strong>. AGPL →
+      permissiva dá; permissiva → AGPL não dá, para o que já saiu. Decide-se uma vez, e
+      <strong>antes</strong> do lançamento público — relicenciar depois de haver adotantes é
+      muito mais feio socialmente.
+    </p>
+  </div>
+
+  <h3>O que custa desmontar</h3>
+  <p>
+    213 ficheiros com cabeçalho SPDX AGPL, 35 documentos que mencionam AGPL, o endpoint
+    <code>/api/system/source</code> (existe só para cumprir o §13 da AGPL), o <code>LICENSE</code>,
+    o <code>LICENSE-COMMERCIAL.md</code>, o README, o rodapé, e três superfícies do site. É
+    mecânico, e os gates que já existem apanham um trabalho feito a meio.
+  </p>
+  <p>
+    <strong>O sistema de chaves não morre</strong> — muda de natureza. Deixa de ser permissão
+    legal e passa a ser direito ao plano hospedado e ao suporte. O código quase não muda: o
+    <code>getUserTier()</code> já resolve Stripe primeiro e licença depois.
+  </p>
+</section>
+
+<section>
+  <p class="eyebrow">Execução</p>
+  <h2>A ordem, e quem faz o quê</h2>
+  <p>
+    A ordem não é arbitrária: cada passo remove uma falsidade ou destrava o seguinte.
+    Nada disto exige as duas sessões ao mesmo tempo.
+  </p>
+
+  <ol class="steps">
+    <li>
+      <span class="owner">Sessão da plataforma</span>
+      <h3>Corrigir os limites dos planos</h3>
+      <p>
+        Três escalões × quatro línguas, em <code>src/LanguageContext.tsx</code>. Os números certos
+        estão na tabela do ponto 01. É o único destes problemas que está a mostrar informação
+        errada neste momento — e a corrigir para melhor, o que é raro.
+      </p>
+    </li>
+    <li>
+      <span class="owner">Decisão tua</span>
+      <h3>Fechar a licença</h3>
+      <p>
+        Apache-2.0 (recomendado) ou MIT. A partir daqui as duas sessões trabalham com a mesma
+        resposta: a app troca <code>LICENSE</code>, 213 cabeçalhos, docs e o endpoint §13;
+        o site troca o badge, a linha do open-core e a descrição do Enterprise.
+      </p>
+    </li>
+    <li>
+      <span class="owner">Sessão da aplicação</span>
+      <h3><code>deploy.ps1</code> para a app, com reversão</h3>
+      <p>
+        As mesmas oito garantias da plataforma, alimentado pelo zip que o CI já constrói. A forma
+        difere — parar o serviço NSSM em vez do app pool, preservar <code>DATA_DIR</code> e
+        <code>.env</code>, deixar as migrações correrem no arranque — o contrato é igual.
+      </p>
+    </li>
+    <li>
+      <span class="owner">Servidor · 109.205.178.52</span>
+      <h3>Instalar ARR e publicar</h3>
+      <p>
+        ARR é o que falta na máquina. Depois o guia de 9 secções da app: certificado
+        <strong>antes</strong> do redirecionamento HTTP→HTTPS (a regra apanha
+        <code>/.well-known/acme-challenge/</code> e bloqueia a primeira emissão), e
+        <code>EMAIL_PROVIDER</code> + <code>RESEND_API_KEY</code> + <code>EMAIL_FROM</code>
+        obrigatórios — sem eles o processo nem arranca.
+      </p>
+    </li>
+    <li>
+      <span class="owner">Ambas</span>
+      <h3>Fechar o círculo entre site e app</h3>
+      <p>
+        No mesmo dia: a FAQ passa a «sim, aqui», a página do produto ganha o link para o
+        subdomínio, <code>/license</code> deixa de dar 404, e o badge da versão passa a ler-se
+        do <code>package.json</code> em vez de estar escrito à mão.
+      </p>
+    </li>
+    <li>
+      <span class="owner">Sessão da aplicação</span>
+      <h3>Stripe, e o passo que falta na cadeia</h3>
+      <p>
+        A emissão está pronta e provada; o consumo também. Falta o meio: o webhook de pagamento
+        a disparar <code>repository_dispatch</code> para o <code>mint-license.yml</code> e a
+        gravar a chave na tabela <code>licenses</code> do Convex, para o cliente a ver no portal.
+      </p>
+    </li>
+  </ol>
+</section>
+
+<section>
+  <p class="eyebrow">Higiene</p>
+  <h2>Pequenos, mas por fazer</h2>
+  <ul class="plain">
+    <li>Tirar <code>preload</code> do HSTS da app, ou pôr o apex a candidatar-se a sério.</li>
+    <li>Apagar (ou reapontar) os jobs Railway/Vercel do <code>deploy.yml</code>.</li>
+    <li>Documentar a conta Resend como recurso partilhado pelos três sistemas.</li>
+    <li>Corrigir <code>LAUNCH.md</code>: a app passa a «no ar» quando estiver, não antes.</li>
+    <li>Um gate cruzado que compare os números do site com o <code>feature-flags.js</code> —
+        a versão inter-repos do teste de paridade que a app já tem por dentro.</li>
+  </ul>
+</section>
+
+<footer>
+  <p>
+    Validado contra: <code>git</code> e <code>gh</code> nos três repositórios, o código local do
+    site, sondas HTTP a <code>bolalabs.pt</code> e <code>repomanager.bolalabs.pt</code>, um
+    arranque de ensaio da aplicação em modo produção, e a última sessão de trabalho da
+    plataforma.
+  </p>
+  <p>RepoManager e a marca RepoManager são da Bola Labs. 14 de agosto de 2026.</p>
+</footer>
+
+</div>
+</body>
+</html>

@@ -18,6 +18,7 @@ below links to the canonical page for that topic.
 | Wire a GitHub webhook | [Webhook setup guide](guides/github-webhook-setup.md) |
 | Set up Stripe billing | [Stripe setup guide](guides/stripe-setup.md) |
 | Use the logo, colours or media kit | [Brand spec](BRAND.md) · [visual guide](../brand/index.html) — also served at `/brand` |
+| Ship this to production as SaaS | [Launch alignment plan](plans/2026-08-14-saas-launch-alignment.html) — the cross-repo state, the licence decision, and the order |
 | Harden a deployment | [Security hardening (G1–G9)](security-hardening.md) |
 | Replay a failed email / webhook | [Admin DLQ guide](guides/admin-dlq.md) |
 | Read release notes | [`CHANGELOG.md`](../CHANGELOG.md) |
