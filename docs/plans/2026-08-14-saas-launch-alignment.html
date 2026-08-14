@@ -289,30 +289,54 @@
   </div>
 
   <div class="finding bad">
-    <div class="head"><span class="n">02</span><h3>Os docs da plataforma dizem que a app já está no ar</h3></div>
-    <p><code>docs/LAUNCH.md</code> dá o subdomínio como publicado. A sonda diz outra coisa:</p>
-    <div class="evidence">LAUNCH.md §5.2 → «repomanager.bolalabs.pt live · ✅ Live since 2026-08-08»
-
-GET https://repomanager.bolalabs.pt/api/health          → 200 · text/html (placeholder)
-GET https://repomanager.bolalabs.pt/isto-nao-existe     → 200 · text/html (o mesmo)</div>
-    <p>Devolve a mesma página estática em <em>qualquer</em> caminho. A aplicação não está lá.</p>
-  </div>
-
-  <div class="finding bad">
-    <div class="head"><span class="n">03</span><h3>A versão anunciada tem quatro meses de atraso</h3></div>
+    <div class="head"><span class="n">02</span><h3>O site já está construído à volta de uma app que não existe</h3></div>
     <p>
-      O badge da página do produto diz <code>V4.4 · OPEN-CORE (AGPL-3.0)</code>. A versão
-      publicada é a <strong>4.18.1</strong>. Catorze versões menores de diferença.
+      Isto é maior do que uma linha de documentação desatualizada. No código local, ainda
+      por publicar:
+    </p>
+    <div class="evidence">components/Navbar.tsx:82   { segment: 'repomanager', meta: REPOMANAGER_HOST, live: true }
+                           → ponto verde a pulsar no menu de produtos, ao lado do arcva.pt
+
+src/site.ts                «em produção desde 2026-08-08, no mesmo servidor do site
+                            (o IIS faz reverse-proxy para 127.0.0.1:3001). É a segunda
+                            implantação pública da BolaLabs»
+
+pages/RepoManager.tsx      REPOMANAGER_APP_URL usado em dois CTAs
+
+docs/LAUNCH.md §5.2        «✅ Live since 2026-08-08»</div>
+    <p>
+      E a sonda: <code>GET /api/health</code>, <code>/brand</code> e
+      <code>/isto-nao-existe</code> devolvem os três a mesma página estática, 200.
+      Não há Node, não há proxy.
+    </p>
+    <p>
+      Consequência prática: <strong>o próximo deploy do site torna a mentira visível</strong> —
+      um ponto «live» a pulsar e dois botões que levam a um placeholder. Ou a app aterra
+      primeiro, ou esses três sítios voltam atrás.
     </p>
   </div>
 
   <div class="finding bad">
-    <div class="head"><span class="n">04</span><h3><code>bolalabs.pt/license</code> devolve 404</h3></div>
+    <div class="head"><span class="n">03</span><h3>A versão anunciada está errada nas duas pontas</h3></div>
     <p>
-      A raiz responde 200; <code>/license</code> não existe — as rotas do site têm prefixo de
-      idioma e não há redirecionamento sem prefixo. Esse URL está no README, no
-      <code>docs/api/API.md</code>, no cabeçalho SPDX de <strong>todos</strong> os ficheiros do
-      servidor, e no <strong>rodapé da aplicação</strong>, onde qualquer utilizador lhe pode clicar.
+      O site tem uma fonte única para isto — <code>PRODUCT_VERSIONS</code> em
+      <code>src/site.ts</code> — e até um comando para a confrontar com a última release
+      pública, <code>npm run versions</code> (com <code>--write</code>). Ninguém o correu.
+    </p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Onde</th><th>Diz</th></tr></thead>
+        <tbody>
+          <tr><td>Site em produção</td><td class="num"><span class="wrong">V4.4</span></td></tr>
+          <tr><td>Código local (<code>src/site.ts</code>)</td><td class="num"><span class="wrong">4.12.0</span></td></tr>
+          <tr><td>Produto publicado</td><td class="num"><span class="right">4.18.1</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      A máquina existe e está bem pensada — o comentário explica porque não corre no build
+      (rede, reprodutibilidade) e porque não corre no browser (a CSP bloquearia). Falta só
+      ser parte do ritual de release.
     </p>
   </div>
 
@@ -478,8 +502,9 @@ GET https://repomanager.bolalabs.pt/isto-nao-existe     → 200 · text/html (o 
       <h3>Corrigir os limites dos planos</h3>
       <p>
         Três escalões × quatro línguas, em <code>src/LanguageContext.tsx</code>. Os números certos
-        estão na tabela do ponto 01. É o único destes problemas que está a mostrar informação
-        errada neste momento — e a corrigir para melhor, o que é raro.
+        estão na tabela do ponto 01 — e corrigem para melhor, o que é raro. No mesmo passo,
+        <code>npm run versions --write</code>: a ferramenta já existe e põe
+        <code>PRODUCT_VERSIONS</code> de acordo com a última release.
       </p>
     </li>
     <li>
@@ -515,9 +540,10 @@ GET https://repomanager.bolalabs.pt/isto-nao-existe     → 200 · text/html (o 
       <span class="owner">Ambas</span>
       <h3>Fechar o círculo entre site e app</h3>
       <p>
-        No mesmo dia: a FAQ passa a «sim, aqui», a página do produto ganha o link para o
-        subdomínio, <code>/license</code> deixa de dar 404, e o badge da versão passa a ler-se
-        do <code>package.json</code> em vez de estar escrito à mão.
+        No mesmo dia: a FAQ passa a «sim, aqui» e <code>/license</code> deixa de dar 404. O
+        ponto «live» do menu, os CTAs da página do produto e o <code>LAUNCH.md</code> já
+        assumem que a app existe — a partir deste momento passam a ter razão, e é por isso
+        que este passo não pode vir antes do quatro.
       </p>
     </li>
     <li>
