@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 // Premium dev orchestrator for `npm run dev:all`.
 //
 // Supervises the Express backend + Vite dev server in ONE process so it can

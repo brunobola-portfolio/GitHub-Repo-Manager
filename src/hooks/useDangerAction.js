@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 import { useCallback, useEffect, useRef } from 'react'
 import { useModal } from './useModal'
 import { openConfirm } from '../utils/openConfirm'

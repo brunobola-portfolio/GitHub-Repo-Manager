@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 // Fast dependency-drift guard for the dev orchestrator (scripts/dev.mjs).
 //
 // npm writes a snapshot of the resolved tree to node_modules/.package-lock.json

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 import { ExternalLink } from 'lucide-react'
 import { Tooltip } from '../ui/Tooltip'
 import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
