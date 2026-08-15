@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Notifications Digest — categorised summary of activity since the user last
  * looked at the bell. Pure DB aggregation; composes the same primitives the

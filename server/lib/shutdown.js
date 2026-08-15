@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 //
 // Single-fire shutdown registry. index.js registers its gracefulShutdown
 // closure here; both OS signal handlers and the managed-mode

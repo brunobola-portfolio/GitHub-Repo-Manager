@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Background sweeper for Work Board persistence:
  *   - work_board_cache: delete rows whose expires_at is past the grace window

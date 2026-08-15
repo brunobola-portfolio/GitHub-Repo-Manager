@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Per-call output-token cap for AI generations. Bounds the cost and latency of
  * a single request so a runaway generation can't drain budget or hang the UI

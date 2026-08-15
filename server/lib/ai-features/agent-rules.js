@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Agent Rules Generator — grounded AGENTS.md / CLAUDE.md generator (Feature 3,
  * Wave 6). Mirrors `readme-enhance.js` / `community-health-fix.js`'s

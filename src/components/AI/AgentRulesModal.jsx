@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 import { useCallback, useEffect, useState } from 'react'
 import { DiffView } from '@git-diff-view/react'
 import '@git-diff-view/react/styles/diff-view.css'

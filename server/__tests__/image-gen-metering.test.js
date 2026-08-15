@@ -1,5 +1,5 @@
 // @vitest-environment node
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Wave 6c — feature-flags + usage-meter coverage for the new
  * `imageGenPerMonth` quota key and its `ai_image` usage metric.

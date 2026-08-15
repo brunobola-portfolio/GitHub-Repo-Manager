@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 // Operator-facing environment tooling status + assisted install (SSE).
 import express from 'express';
 import { requireAuth, errorResponse, safeError } from '../middleware/auth.js';

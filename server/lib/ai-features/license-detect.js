@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * License detection — pure, deterministic fingerprinting of an existing
  * `LICENSE` file's content against the templates this app already ships

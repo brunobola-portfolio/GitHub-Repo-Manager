@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 //
 // Core primitives plus orchestration for the Windows one-click self-update:
 // marker files that hand off state across process boundaries (this server ->

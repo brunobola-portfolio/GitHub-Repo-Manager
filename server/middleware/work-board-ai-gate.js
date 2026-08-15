@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Gate for Work Board AI Assistant endpoints. Applies in this order:
  *   1. Feature flag (WORK_BOARD_AI_ENABLED env var) → 404 when off

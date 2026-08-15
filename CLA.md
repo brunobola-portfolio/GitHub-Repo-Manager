@@ -24,7 +24,7 @@ publicly perform, sublicense, and distribute your Contributions and derivative w
 ### 3. Dual Licensing
 
 You understand that the Project is dual-licensed:
-- **AGPL v3** for the open-source community
+- **Apache-2.0** for everyone
 - **Commercial license** for organizations that require it
 
 Your Contributions may be included in both the open-source and commercially licensed

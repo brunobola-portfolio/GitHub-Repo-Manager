@@ -4340,7 +4340,7 @@ Run initial system setup (create tables, verify schema, seed data).
 
 ### `GET /api/system/source`
 
-AGPL §13 source-offer endpoint (machine-readable). Unauthenticated by design — a network operator running a modified version must be able to point at this from anywhere to satisfy the source-disclosure obligation. Forks should edit [`server/routes/system.js`](../../server/routes/system.js) to update `sourceUrl` to their own modified source.
+Machine-readable provenance. Unauthenticated by design, so anyone can check what a deployment claims to be without reading its HTML. Under the previous AGPL licence this discharged the §13 source-disclosure obligation; under Apache-2.0 there is no such obligation and the endpoint is kept as a courtesy. Forks should edit [`server/routes/system.js`](../../server/routes/system.js) and point `sourceUrl` at their own source — nothing compels it, but answering with someone else's repository tells users something untrue.
 
 | Detail | Value |
 |---|---|
@@ -4349,10 +4349,10 @@ AGPL §13 source-offer endpoint (machine-readable). Unauthenticated by design �
 **Response (200):**
 ```json
 {
-  "license": "AGPL-3.0-only",
+  "license": "Apache-2.0",
   "sourceUrl": "https://github.com/brunobola-portfolio/GitHub-Repo-Manager",
-  "commercialLicenseUrl": "https://bolalabs.pt/license",
-  "notice": "Modified versions running as a network service must offer their corresponding source under AGPL §13."
+  "trademarksUrl": "https://github.com/brunobola-portfolio/GitHub-Repo-Manager/blob/main/TRADEMARKS.md",
+  "notice": "Apache-2.0 grants broad rights over the code and none over the RepoManager name or mark."
 }
 ```
 

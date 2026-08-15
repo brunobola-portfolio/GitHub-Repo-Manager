@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// SPDX-License-Identifier: AGPL-3.0-only
-// Copyright (c) 2025-2026 Bola Labs. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2025-2026 Bola Labs, Inc. Licensed under the Apache License 2.0.
 
 // Kills any process holding the dev-server ports (backend 3001, Vite 5173 +
 // fallbacks 5174-5180). Vite hops to the next free port when 5173 is taken,

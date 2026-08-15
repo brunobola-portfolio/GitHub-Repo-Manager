@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 // @vitest-environment node
 //
 // Coverage for the embed-into-repo routes added to server/routes/ai/diagrams.js

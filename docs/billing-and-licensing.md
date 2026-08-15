@@ -188,7 +188,7 @@ const { privateKey, publicKey } = await generateKeyPair()
 `server/lib/ai-spend-cap.js` enforces an optional monthly per-user dollar
 ceiling on AI spend, on top of the count-based quotas in `feature-flags.js`.
 
-**Self-hosted AGPL deployments stay disabled by default** — the cap only
+**Self-hosted deployments stay disabled by default** — the cap only
 activates if an operator explicitly sets one of the env overrides below.
 There is no bill-shock risk from running the open-source project as-is.
 

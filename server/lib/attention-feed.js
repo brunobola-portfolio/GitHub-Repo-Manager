@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Attention Feed — aggregates "repos that need your eyes this week" from the
  * data we already store locally. No GitHub round-trips on the v1 path: we

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 // Detects system CLI tools. NEVER throws — returns a status object. The child
 // process is reached through an injectable `runner` seam so tests don't spawn.
 

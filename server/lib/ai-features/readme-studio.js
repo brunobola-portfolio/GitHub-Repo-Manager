@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * README Studio — consolidated grounded prompt builder + signal fetcher for
  * the score/improve flow (Feature 1, Wave 6).

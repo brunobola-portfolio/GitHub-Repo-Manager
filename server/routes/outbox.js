@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /*
  * Outbox status endpoint — lets the client display "pending sync" mutations
  * to the user when GitHub has been flaky and the gh_outbox has rows that

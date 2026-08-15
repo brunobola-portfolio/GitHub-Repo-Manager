@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Per-provider/per-model/per-quality flat-cents pricing for AI raster image
  * generation (Wave 6c). Deliberately **not** a mirror of `provider-pricing.js`

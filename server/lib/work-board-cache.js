@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Per-user cache for Work Board live-fetch responses.
  * TTL-based with ETag passthrough for conditional GETs.

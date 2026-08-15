@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * AI Assistant monthly cost tracking. Accumulates estimated spend per user
  * per month. Read by the cost-cap middleware; written by routes that make

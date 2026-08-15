@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 // Pure formatting helpers for the dev orchestrator (scripts/dev.mjs).
 // No I/O, no side effects — safe to import in unit tests.
 

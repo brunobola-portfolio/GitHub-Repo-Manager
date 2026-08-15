@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 // `npm run doctor` — validate migration tooling; `--fix` installs what's missing.
 import process from 'node:process';
 import { createInterface } from 'node:readline';

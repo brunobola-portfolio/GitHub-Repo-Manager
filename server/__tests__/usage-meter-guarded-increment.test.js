@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 // Tests for the atomic guarded-increment primitives added to close the
 // check-then-increment TOCTOU race in usage-meter.js (checkUsageLimit() /
 // incrementUsage() have a read-only check followed, after an awaited

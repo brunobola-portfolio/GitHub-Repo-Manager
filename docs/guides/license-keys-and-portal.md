@@ -172,7 +172,7 @@ these straight by hand:
   support and licence terms.
 - **BYOK is permanent.** Every tier uses the customer's own provider key.
   Do not advertise managed inference, included tokens, or "AI credits".
-- **Self-hosting is free forever** under AGPL v3.
+- **Self-hosting is free forever** under Apache-2.0.
 - **No seat enforcement.** `seats` is recorded in the licence payload and is
   not enforced in code. Do not sell it as a technical limit.
 - **Not SOC 2 certified**, no SAML SSO, no PostgreSQL support — all three are

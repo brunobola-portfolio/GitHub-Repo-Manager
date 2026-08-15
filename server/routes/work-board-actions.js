@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Work Board mutation endpoints — snooze, review-action, presets, ai-summary.
  * Split from work-board.js so read and write concerns live in focused files.

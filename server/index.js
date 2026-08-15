@@ -196,7 +196,12 @@ app.use(helmet({
         }
     } : false,
     crossOriginEmbedderPolicy: false,
-    hsts: config.nodeEnv === 'production' ? { maxAge: 63072000, includeSubDomains: true, preload: true } : false,
+    // No `preload`. The preload list only accepts apex domains, and this app is
+    // served from a subdomain whose apex sends a bare max-age — so the directive
+    // could never be honoured, and a header that asks for something impossible is
+    // just noise. includeSubDomains stays: it costs nothing and is correct if this
+    // is ever served from an apex.
+    hsts: config.nodeEnv === 'production' ? { maxAge: 63072000, includeSubDomains: true } : false,
 }));
 app.use(cors({
     origin: config.nodeEnv === 'production' ? config.frontendUrl : true,

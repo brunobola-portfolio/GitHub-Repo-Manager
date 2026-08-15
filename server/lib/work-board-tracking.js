@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * CRUD on work_board_tracked_repos. Every mutation records an undo-log
  * entry so the user can revert within UNDO_TTL_HOURS. Mutations are

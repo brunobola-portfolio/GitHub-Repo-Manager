@@ -1,5 +1,5 @@
 // @vitest-environment node
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Wave 6 (2026-07-18 community-launch WOW) — usage-meter coverage for the
  * 3 new per-feature metrics added in Slice 1 (Foundation):

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Undo log for Work Board mutations (pin, mute, bulk ops, AI-applied changes).
  * Entries live for UNDO_TTL_HOURS then are eligible for cleanup. Before/after

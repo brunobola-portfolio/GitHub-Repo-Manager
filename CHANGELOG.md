@@ -7,6 +7,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The licence is now Apache-2.0.** It was AGPL-3.0-only, with a commercial
+  licence sold as an exemption from copyleft. Apache-2.0 has no copyleft, so
+  there is nothing left to exempt and nothing of the sort is sold: run it,
+  modify it, embed it in a proprietary product, redistribute it — no
+  permission, no fee.
+
+  What money buys is unchanged, because it never described legal permissions:
+  headroom, a hosted instance, support with a response commitment, compliance
+  deliverables. `docs/LICENSE-COMMERCIAL.md` is now a **subscription
+  agreement** and opens by saying, in as many words, that nothing on it is
+  required to use the software.
+
+  **The name and the mark are reserved** — Apache-2.0 §6, spelled out in the
+  new [`TRADEMARKS.md`](TRADEMARKS.md): fork freely, rename the fork. A
+  `NOTICE` file ships alongside, which §4(d) gives meaning to.
+
+  The relicence touched 213 source headers, the manifest, eight live
+  documents and the provenance endpoint, and it is gated:
+  `tests/build/license-consistency.test.js` fails if the LICENSE text is
+  truncated, if any header still says AGPL, if a document claims a copyleft
+  obligation that no longer exists, or if anything links a reader at
+  `bolalabs.pt/license`, which 404s. Historical plans and specs are exempt on
+  purpose — they record what was true when they were written.
+
+  `GET /api/system/source` stays. Under AGPL it discharged §13; now it is a
+  courtesy, and reports `Apache-2.0`.
+
+### Added
+
+- **`deploy/iis/deploy.ps1` — a server deploy that can undo itself.** The
+  documented upgrade was `git checkout; npm ci; npm run build` on the
+  production box: a clone, a toolchain and a network build, with no backup and
+  no way back. The new script consumes the immutable artifact CI already
+  builds and smoke-tests (`github-repo-manager-<version>-win-x64.zip`) and
+  never rebuilds anything on the server.
+
+  Eight ordered guarantees, none running before the previous is confirmed:
+  package validated → free disk → backup with the file count verified →
+  service stopped → content swapped → service started → **health checked
+  against the version just installed** → automatic rollback if it is not.
+
+  That seventh step is the one that matters: a check that only asks "are you
+  alive?" passes when the *old* build is still running. `-FromRelease latest`
+  verifies the download against the published SHA-256 and refuses an artifact
+  whose file name disagrees with its own `package.json`. `-DryRun` and
+  `-ListBackups` need no elevation, so you can look before you commit.
+
+### Removed
+
+- **`.github/workflows/deploy.yml`.** It was named "Build Verify" and
+  contained deploy jobs for Railway and Vercel, behind a variable nobody ever
+  set, next to a real IIS server. Its one surviving job existed only to gate
+  those two. `ci.yml` is what actually runs; the README badge now points
+  there.
+
+- **`preload` from the HSTS header.** The preload list only accepts apex
+  domains and this app is served from a subdomain whose apex sends a bare
+  `max-age` — the directive could never be honoured. `includeSubDomains` and
+  the two-year max-age stay.
+
 ## [4.18.1] - 2026-08-10
 
 ### Changed

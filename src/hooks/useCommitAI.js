@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 import { useCallback, useState } from 'react'
 import { apiCall } from '../utils/api'
 import { heuristicRisk, sortFilesByRisk } from '../components/PRReview/hooks/useReviewAI'

@@ -1,5 +1,5 @@
 // @vitest-environment node
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Migrations 30 + 31 — indexes that exist purely so two hot maintenance paths
  * stop full-scanning:

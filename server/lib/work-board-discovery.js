@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Discovery — hits GitHub to surface repos where the user has active work.
  * Five parallel signal collectors, each returning a normalised shape.

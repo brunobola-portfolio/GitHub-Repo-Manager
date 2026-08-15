@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 // @vitest-environment node
 /**
  * POST /api/migration/analyze — full AI metering (2026-07-19 launch-readiness

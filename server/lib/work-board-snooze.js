@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Per-user snooze table. Hides PRs/issues from Work Board read endpoints
  * until `until_at`. Cross-device (server-stored, not localStorage).

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 //
 // Managed-mode (packaged Windows) runtime state. start.ps1 sets GRM_MANAGED=1;
 // the server then writes a per-boot shutdown token whose value authorizes

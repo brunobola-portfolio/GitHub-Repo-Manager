@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 // Installs a registry tool via the host's native package manager. Consented by
 // the caller (CLI prompt / admin endpoint). Never auto-elevates; never throws.
 

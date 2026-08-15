@@ -4,7 +4,7 @@
  * warning toast before the 7-day absolute-ceiling trips.
  *
  * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
- * Licensed under the GNU AGPL v3.0 only (SPDX: AGPL-3.0-only). See LICENSE in the project root.
+ * Licensed under the Apache License 2.0 (SPDX: Apache-2.0). See LICENSE in the project root.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react'

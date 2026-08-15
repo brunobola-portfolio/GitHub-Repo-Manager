@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 
 /**
  * Open the shared `showConfirm` modal and resolve the user's decision as a

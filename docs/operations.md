@@ -34,7 +34,7 @@ how-to-build side, see [`docs/index.md`](index.md).
 | Release notes | [`CHANGELOG.md`](../CHANGELOG.md) + [GitHub Releases](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases) |
 | Security boundaries | [`docs/security-hardening.md`](security-hardening.md) (G1–G9) |
 | Env reference | [`.env.example`](../.env.example) |
-| CI pipelines | `.github/workflows/` (`ci.yml`, `deploy.yml`) |
+| CI pipelines | `.github/workflows/` (`ci.yml`, `release.yml`, `windows-package.yml`) |
 
 ---
 

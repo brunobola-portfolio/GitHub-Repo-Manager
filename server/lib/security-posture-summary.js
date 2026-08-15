@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Security Posture AI summary — one `guardedGenerate` call that turns the 10
  * deterministic check results (server/lib/security-posture-checks.js) into a

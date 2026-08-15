@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 // Pure semver-ish helpers for tool detection. No I/O.
 
 /** Extract the first capture group of `regex` from `output`, or null. */

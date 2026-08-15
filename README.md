@@ -17,13 +17,13 @@
 <br>
 
 [![CI](https://img.shields.io/github/actions/workflow/status/brunobola-portfolio/GitHub-Repo-Manager/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI)](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/actions/workflows/ci.yml)
-[![Build Verify](https://img.shields.io/github/actions/workflow/status/brunobola-portfolio/GitHub-Repo-Manager/deploy.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=Build%20Verify)](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/actions/workflows/deploy.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/brunobola-portfolio/GitHub-Repo-Manager/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI)](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/actions/workflows/ci.yml)
 ![Tests](https://img.shields.io/badge/Tests-7%2C000%2B_passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
-![License](https://img.shields.io/badge/License-AGPL_v3-blue?style=for-the-badge&logo=gnu&logoColor=white)
+![License](https://img.shields.io/badge/License-Apache_2.0-3f7d12?style=for-the-badge&logoColor=white)
 [![Release](https://img.shields.io/github/v/release/brunobola-portfolio/GitHub-Repo-Manager?style=for-the-badge&logo=github&logoColor=white)](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases)
 [![Windows](https://img.shields.io/badge/Windows-installer_%2B_portable_ZIP-0078D4?style=for-the-badge)](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest)
 
-**Free-first** (full AI surface + every Work Board tab + unlimited teams on Free) · **Self-hosting free forever** (AGPL v3) · **Native on Windows**
+**Free-first** (full AI surface + every Work Board tab + unlimited teams on Free) · **Self-hosting free forever** (Apache-2.0) · **Native on Windows**
 
 [**Try the Demo**](#quick-start-demo-mode) · [Features](#features) · [Installation](#installation) · [Documentation](docs/index.md) · [Pricing](#plans--pricing) · [Download for Windows](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest) · [What's new in v4.15 — the brand guide](CHANGELOG.md#4150---2026-08-09)
 
@@ -66,7 +66,7 @@ Managing a real GitHub estate means juggling several disconnected tools: dozens 
 - **Native on Windows** — an installer or a portable ZIP, both with a bundled Node.js runtime: download, double-click, your browser opens. No Docker, no Node.js install, no admin rights. See [`docs/windows.md`](docs/windows.md).
 - **Zero setup to try** — Demo Mode ships with 87 pre-loaded mock repositories.
 
-> Built on React 19, Vite 8, Express 5, Tailwind CSS 4, and better-sqlite3 — self-hostable under AGPL v3, with a free-first hosted plan.
+> Built on React 19, Vite 8, Express 5, Tailwind CSS 4, and better-sqlite3 — self-hostable under Apache-2.0, with a free-first hosted plan.
 
 ---
 
@@ -151,7 +151,7 @@ AI is integrated via **BYOK** and is **provider-neutral** (`AI_PROVIDER`) — co
 > is `aiSpendCapCents: 0` on *all three tiers*
 > ([`server/lib/feature-flags.js`](server/lib/feature-flags.js)), i.e.
 > **no dollar ceiling is enforced until you set one**. That is deliberate for
-> self-hosted AGPL installs: it's your own provider key, so the project won't
+> self-hosted installs: it's your own provider key, so the project won't
 > silently cut you off. Opt in with `AI_SPEND_CAP_CENTS` (flat) or
 > `AI_SPEND_CAP_CENTS_FREE` / `_PRO` / `_ENTERPRISE` (per tier) — see
 > [`.env.example`](.env.example). The **per-call output-token cap is active by
@@ -281,7 +281,7 @@ The hosted product is **free-first**: nearly every product feature — bulk ops,
 
 † **"Repo Advisor" names two surfaces, and only one of them is behind a flag.** The floating conversational assistant in this row is `POST /api/ai/chat` (`server/routes/ai/core.js`) — no deployment flag gates it, and it works out of the box on a self-hosted install with nothing but a BYOK key. The *Repo Advisor card inside the Work Board* — the 7-day trend summary, the suggestion chips, the preview-then-apply edits — is the gated one: `server/middleware/work-board-ai-gate.js` returns `404 AI_FEATURE_FLAG_OFF` unless `WORK_BOARD_AI_ENABLED=true` is set in the environment (`docker-compose.yml` forwards the variable), and each user must then opt in under `Settings → Work Board`. Both are tier-free — no plan unlocks either. No row in this matrix is gated by an environment flag.
 
-Self-hosting under AGPL v3 is free forever — see [LICENSE](LICENSE). The matrix above applies to self-hosted Pro/Enterprise licenses today (Stripe checkout → emailed license key — see [`docs/billing-and-licensing.md`](docs/billing-and-licensing.md)), and will apply equally to the hosted SaaS once it launches. "Advanced bulk" and "Mirror Sync apply" carry a tier-independent daily anti-abuse ceiling on top of the existing dry-run + confirmation-token safety flow, regardless of plan. Priority Support and White-glove migration are manual, service-based deliverables (support ticket + contract), not gated by a feature flag.
+Self-hosting is free forever under Apache-2.0 — see [LICENSE](LICENSE). The matrix above applies to self-hosted Pro/Enterprise licenses today (Stripe checkout → emailed license key — see [`docs/billing-and-licensing.md`](docs/billing-and-licensing.md)), and will apply equally to the hosted SaaS once it launches. "Advanced bulk" and "Mirror Sync apply" carry a tier-independent daily anti-abuse ceiling on top of the existing dry-run + confirmation-token safety flow, regardless of plan. Priority Support and White-glove migration are manual, service-based deliverables (support ticket + contract), not gated by a feature flag.
 
 See the [Free Tier Expansion spec](docs/specs/2026-04-15-free-tier-expansion.md) for the design rationale and enforcement details.
 
@@ -652,18 +652,38 @@ Before committing: `npm run lint` (zero warnings), `npm test` for touched files,
 
 ## License
 
-Distributed under the **GNU Affero General Public License v3 (AGPL-3.0)** — see [`LICENSE`](LICENSE). A **commercial license** is available for organizations that need to use this software without AGPL obligations — see [`LICENSE-COMMERCIAL.md`](docs/LICENSE-COMMERCIAL.md) or contact [bruno@bolalabs.pt](mailto:bruno@bolalabs.pt).
+Distributed under the **Apache License 2.0** — see [`LICENSE`](LICENSE). Run it,
+modify it, embed it in a proprietary product, redistribute it: no copyleft, no
+permission needed, no fee.
+
+The **name and the mark are reserved** — that is Apache-2.0 §6, spelled out in
+[`TRADEMARKS.md`](TRADEMARKS.md). Fork freely; rename the fork.
+
+A **commercial subscription** buys capacity, a hosted instance, support with a
+response commitment and compliance deliverables — never permission, which the
+licence above already gave you. See
+[`docs/LICENSE-COMMERCIAL.md`](docs/LICENSE-COMMERCIAL.md) or contact
+[bruno@bolalabs.pt](mailto:bruno@bolalabs.pt).
 
 <details>
-<summary><strong>AGPL §13 — source offer for network operators</strong></summary>
+<summary><strong>Was this AGPL?</strong></summary>
 
-If you run a modified version as a network service, AGPL §13 requires you to offer users the corresponding source. This repo exposes a machine-readable endpoint for that:
+Until v4.19.0, yes — AGPL-3.0-only, with a commercial licence sold as an
+exemption from copyleft. Apache-2.0 has no copyleft, so there is no exemption
+left to sell and none is sold; the paid tiers describe headroom and service,
+which is what they always described.
+
+The provenance endpoint stays, now as a courtesy rather than an obligation:
 
 ```http
 GET /api/v1/system/source
 ```
 
-If you fork and deploy this as a service, edit [`server/routes/system.js`](server/routes/system.js) and update `sourceUrl` to point at your modified source. Keep the endpoint reachable without authentication.
+If you fork and deploy this as a service, edit
+[`server/routes/system.js`](server/routes/system.js) and point `sourceUrl` at
+your own source. Nothing compels you to — that is the difference — but a
+deployment that answers with someone else's repository is telling its users
+something untrue.
 
 </details>
 
