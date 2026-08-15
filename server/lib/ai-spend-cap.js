@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Generalized monthly AI spend cap — a denial-of-wallet guard (OWASP LLM10)
  * for the whole AI surface, not just the Work Board (which has its own per-user

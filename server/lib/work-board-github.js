@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Live cross-repo GitHub fetchers used by the Work Board when webhook data
  * is missing or stale. Each function calls the shared githubApi() wrapper —

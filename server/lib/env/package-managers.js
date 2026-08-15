@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 // Resolves the host's native package manager and builds install commands.
 // All args are static/allowlisted — no user input is ever interpolated.
 

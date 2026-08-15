@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Translate Search — turns a natural-language palette query into one or two
  * GitHub search query strings the existing /search/github endpoint already

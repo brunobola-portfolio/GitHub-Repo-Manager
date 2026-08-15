@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 // Declarative catalog of the system CLI tools the migration engine needs.
 // Pure data + lookups — no I/O. This is the single source of truth that
 // detect/installer/readiness and every surface (doctor CLI, /api/env, UI) read.

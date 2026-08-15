@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * True only for a direct loopback connection. A request that arrived through
  * a reverse proxy has a proxy-owned socket (which may itself be loopback on

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Pure-function merge: takes existing tracked rows + freshly-discovered
  * candidates and decides what to add/remove/keep. Respects user state

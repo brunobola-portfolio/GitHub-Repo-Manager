@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Deterministic pattern matcher for AI Assistant suggestions.
  * LLM-free for MVP — later phases can add LLM-generated phrasing.

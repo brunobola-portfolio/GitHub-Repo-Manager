@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Post-query filter that drops items whose `repoFullName` is in the user's
  * muted set. Retrocompat: returns items unchanged when the user has no

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /*
  * PR-context AI slash commands routes. Free tier (2026-07-18 rebalance),
  * metered against prCommandPerMonth.

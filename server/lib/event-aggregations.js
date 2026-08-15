@@ -1,6 +1,5 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-// Copyright (c) 2025-2026 Bola Labs. All rights reserved.
-// Commercial license: https://bolalabs.pt/license
+// SPDX-License-Identifier: Apache-2.0
+// Copyright 2025-2026 Bola Labs, Inc. Licensed under the Apache License 2.0.
 
 /**
  * E2 — Aggregation query helpers that turn raw webhook events into useful

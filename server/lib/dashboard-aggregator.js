@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Dashboard aggregator — composes the Live Inbox by fanning out to existing
  * event-aggregation helpers (webhook/DB fallback) or live GitHub Search
