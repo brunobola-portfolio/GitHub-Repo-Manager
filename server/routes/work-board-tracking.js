@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Work Board — tracked repos CRUD + prefs + undo + discover trigger.
  * Mounted at /api/v1/work-board.

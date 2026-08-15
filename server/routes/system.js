@@ -108,15 +108,21 @@ router.post('/setup', setupLimiter, async (req, res) => {
     }
 });
 
-// AGPL §13 source-disclosure endpoint (machine-readable). Forks should update
-// `sourceUrl` to point at their own modified source so downstream consumers
-// can find it programmatically.
+// Machine-readable provenance. Under AGPL this endpoint discharged the §13
+// source-disclosure obligation; under Apache-2.0 there is no such obligation
+// and it is kept deliberately, as a courtesy: an operator running a modified
+// build can point downstream consumers at their own source, and anyone can
+// check what a deployment claims to be without reading its HTML.
+//
+// Forks: update `sourceUrl` to your own repository. Nothing compels you to —
+// that is the difference — but a deployment that answers with someone else's
+// repository is telling its users something untrue.
 router.get('/source', (req, res) => {
     res.json({
-        license: 'AGPL-3.0-only',
+        license: 'Apache-2.0',
         sourceUrl: 'https://github.com/brunobola-portfolio/GitHub-Repo-Manager',
-        commercialLicenseUrl: 'https://bolalabs.pt/license',
-        notice: 'Modified versions running as a network service must offer their corresponding source under AGPL §13.'
+        trademarksUrl: 'https://github.com/brunobola-portfolio/GitHub-Repo-Manager/blob/main/TRADEMARKS.md',
+        notice: 'Apache-2.0 grants broad rights over the code and none over the RepoManager name or mark.'
     });
 });
 

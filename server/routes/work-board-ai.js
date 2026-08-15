@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Work Board AI Assistant routes. Mounted at /api/v1/work-board/ai.
  * Every route requires requireAuth + requireWorkBoardAI.
