@@ -1,21 +1,34 @@
 GitHub Repo Manager
-Copyright (c) 2025-2026 Bruno Marques - Bola Labs
+Copyright 2025-2026 Bola Labs, Inc.
 
-This software is licensed under the GNU Affero General Public License v3 (AGPL-3.0).
-See the LICENSE file for the full license text.
+This product includes software developed at Bola Labs, Inc.
+(https://bolalabs.pt).
 
-Commercial License
-------------------
-A commercial license is available for organizations that wish to use this software
-without the obligations of the AGPL.
+Licensed under the Apache License, Version 2.0. See LICENSE for the full
+terms, and TRADEMARKS.md for what the licence does not grant: the Apache
+License gives you broad rights over the code, and none at all over the
+name "RepoManager" or the RepoManager mark (section 6).
 
-The commercial Pro and Enterprise tiers do not unlock product features: nearly
-the whole product ships in this AGPL build with generous monthly caps. Paid
-tiers raise those caps (AI headroom), grant more API keys, and add
-compliance/service deliverables - Enterprise adds an exportable audit log,
-priority support with an SLA, and white-glove migration services. AI is always
-bring-your-own-key on every tier; no tier includes managed inference.
+---
 
-See docs/LICENSE-COMMERCIAL.md for details.
-For commercial licensing inquiries, contact: bruno@bolalabs.pt
-Website: https://bolalabs.pt/license
+Third-party notices
+
+This software depends on open-source packages whose licences are recorded
+in package.json / package-lock.json and shipped inside node_modules. The
+distribution is predominantly MIT, ISC, Apache-2.0 and BSD; the only
+copyleft components are MPL-2.0 (file-level, build and test tooling), which
+imposes no obligation on this project's own source.
+
+Bundled fonts are redistributed under the SIL Open Font Licence 1.1 and
+carry their own licence files:
+
+  public/fonts/Mona-Sans-LICENSE.txt
+  brand/fonts/OFL.txt
+
+---
+
+Trademark
+
+RepoManager manages GitHub repositories and is not affiliated with,
+endorsed by, or sponsored by GitHub, Inc. GitHub and the GitHub logo are
+trademarks of GitHub, Inc.

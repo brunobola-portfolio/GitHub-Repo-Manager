@@ -1,29 +1,44 @@
-# Commercial License Agreement
+# Subscription Agreement
 
-**GitHub Repo Manager - Commercial License**
+**GitHub Repo Manager — commercial subscription**
 **Bola Labs**
 
-## 1. Grant of License
+## 1. What this is
 
-Subject to the terms of this agreement, Bola Labs grants the licensee a
-non-exclusive, non-transferable license to use GitHub Repo Manager
-without the obligations of the GNU Affero General Public License v3.
+The software is licensed to everyone under the [Apache License 2.0](../LICENSE).
+That licence already grants you the right to run, modify, redistribute and
+embed this code — commercially, privately, without asking and without paying.
+**Nothing on this page takes any of that away, and nothing on it is required
+to use the software.**
 
-## 2. Scope
+This is a **subscription agreement**: what you buy is capacity, service and
+accountability on top of a licence you already have.
 
-This commercial license covers:
+## 2. What money actually buys
 
-- **Self-hosted deployments** for internal business use
-- **On-premises installations** within the licensee's infrastructure
-- **Modifications** for internal use (no obligation to publish source)
-- **Integration** into proprietary systems without AGPL copyleft requirements
+| | Included in the Apache-2.0 licence | Included in a subscription |
+|---|---|---|
+| Run it, anywhere, forever | ✓ | ✓ |
+| Modify it, keep changes private | ✓ | ✓ |
+| Embed it in a proprietary product | ✓ | ✓ |
+| Redistribute it | ✓ | ✓ |
+| Higher monthly AI and API ceilings | — | ✓ |
+| Hosted instance, run by us | — | ✓ |
+| Support with a response commitment | — | ✓ |
+| Compliance and audit deliverables | — | ✓ |
+| Use of the RepoManager name and mark | — | by agreement — see [TRADEMARKS.md](../TRADEMARKS.md) |
+
+Under the previous AGPL-3.0 licence, the thing being sold was an exemption
+from copyleft. Apache-2.0 has no copyleft, so that exemption no longer exists
+and is no longer sold. The tiers below are unchanged, because they never
+described legal permissions in the first place — they described headroom.
 
 ## 3. License Tiers
 
 A paid tier does **not** unlock product features. Nearly the entire product —
 including the full AI surface, bulk operations, mirror sync, AI Deep Review,
 Prompt Studio, PR Chat, PR slash commands, semantic search, DORA metrics and
-unlimited-seat teams — ships on the free AGPL build with generous monthly
+unlimited-seat teams — ships on the free build with generous monthly
 caps. What money buys is **headroom**, **more API keys**, and
 **compliance/service deliverables**:
 
@@ -52,17 +67,26 @@ caps. What money buys is **headroom**, **more API keys**, and
 > - **Priority Support + SLA** and **white-glove migration services** are
 >   manual, contracted deliverables — they are not gated by a feature flag.
 
-## 4. License Key
+## 4. Subscription Key
 
-Each commercial license is delivered as a cryptographically signed license key.
-The key encodes the tier, seat count, and expiration date. No internet connection
-is required for validation.
+Each subscription is delivered as a cryptographically signed key that encodes
+the tier, seat count and expiry. Validation is offline — the software never
+phones home.
+
+The key is an **entitlement**, not a permission: it tells your instance which
+ceilings to apply. It is not what makes your use of the software lawful; the
+Apache licence already did that, for everyone, unconditionally.
 
 ## 5. Restrictions
 
-- License keys are non-transferable and bound to the purchasing organization
-- Resale, sublicensing, or redistribution of the software under this license is prohibited
-- The license does not grant rights to use Bola Labs trademarks
+- Subscription keys are non-transferable and bound to the purchasing organization
+- Reselling a key, or sharing one across organizations, ends the subscription
+- No rights to the Bola Labs or RepoManager name or mark — those are reserved
+  separately in [TRADEMARKS.md](../TRADEMARKS.md), and Apache-2.0 §6 says the
+  same thing
+
+Note what is **not** restricted, because it cannot be: redistributing the
+software itself. Apache-2.0 permits that to anyone, subscriber or not.
 
 ## 6. Term and Renewal
 
@@ -83,7 +107,8 @@ is required for validation.
   instance **they run**, which is a fraud/abuse control on hosted and
   self-managed deployments, not a remote kill switch over yours. See
   [`billing-and-licensing.md`](billing-and-licensing.md) for the full policy.
-- Upon expiration, the software reverts to AGPL v3 community features (free tier)
+- Upon expiration the ceilings revert to the free tier. The software keeps
+  working and stays yours to run — Apache-2.0 does not expire
 - No data is lost upon expiration
 
 ## 7. Support
@@ -93,9 +118,12 @@ is required for validation.
 
 ## 8. Contact
 
-For licensing inquiries:
+For subscription enquiries:
 - Email: bruno@bolalabs.pt
-- Website: https://bolalabs.pt/license
+- Web: <https://bolalabs.pt>
+
+(There is no `/license` page yet. Until there is, this document is the terms,
+and the email is the way in.)
 
 ## See also
 

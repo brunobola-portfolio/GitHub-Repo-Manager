@@ -144,7 +144,7 @@ will call it out explicitly.
 Recent specs — full list under each directory:
 
 - [Platform Transformation](specs/2026-04-01-platform-transformation-spec.md) — open-core + SaaS master spec.
-- [AGPL Open-Core License Key System](specs/2026-04-03-agpl-open-core-license-key-system.md) — Ed25519-signed JWT license keys.
+- [Open-Core License Key System](specs/2026-04-03-agpl-open-core-license-key-system.md) — Ed25519-signed JWT subscription keys. Written while the project was AGPL; the key mechanism is unchanged, what a key *means* is not (see [`TRADEMARKS.md`](../TRADEMARKS.md) and [`LICENSE-COMMERCIAL.md`](LICENSE-COMMERCIAL.md)).
 - [PR Review Experience](specs/2026-04-09-pr-review-experience-design.md) — file tree, diff viewer, AI insights, conversation threads.
 - [Modal System Redesign](specs/2026-04-11-modal-system-redesign.md) — shared Modal primitive + scrollbar fix + InsightCard/StatBar.
 - [License Mint Automation](specs/2026-04-11-license-mint-automation-design.md) — GitHub Actions–based Ed25519 minting with Resend delivery.
@@ -166,7 +166,7 @@ Validation and audit-panel reports live in [`reports/`](reports/). Recent:
 ## Other
 
 - [Commercial License](LICENSE-COMMERCIAL.md) — terms for commercial /
-  closed-source use alongside the AGPL v3 public license.
+  service and capacity alongside the Apache-2.0 public license.
 - [Article](ARTICLE.md) — project article / blog post.
 - [Images](images/) — screenshots, named `NN_description_hd.png` (HD
   captures via Playwright MCP at 1920x1080).

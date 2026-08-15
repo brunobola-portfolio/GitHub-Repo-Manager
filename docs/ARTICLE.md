@@ -124,7 +124,7 @@ To be precise about scope: **migration is Azure DevOps → GitHub only.** No Git
 
 ## Pricing: free-first, on purpose
 
-Nearly everything — bulk operations, mirror sync, AI Deep Review, Prompt Studio, PR Chat, slash commands, the DORA Metrics tab, unlimited teams — ships on the **Free** tier with generous, non-infinite monthly caps. Pro ($19/mo) and Enterprise sell **AI headroom** and compliance/service deliverables, not feature unlocks. Self-hosting under AGPL v3 is free forever.
+Nearly everything — bulk operations, mirror sync, AI Deep Review, Prompt Studio, PR Chat, slash commands, the DORA Metrics tab, unlimited teams — ships on the **Free** tier with generous, non-infinite monthly caps. Pro ($19/mo) and Enterprise sell **AI headroom** and compliance/service deliverables, not feature unlocks. Self-hosting is free forever under Apache-2.0.
 
 Two trust details shipped this week: **Settings → Usage now shows every one of the Free tier's per-feature quotas** with your month's consumption — you see the limit before you hit it, not at the 429. And **license keys now match what you paid for**: a monthly subscription gets a one-month key, automatically re-issued on every renewal invoice; only yearly plans get a 12-month key. (Honest caveat, documented: issued keys aren't remotely revocable.)
 
@@ -176,7 +176,7 @@ Dev demo mode runs the full UI with 87 realistic mock repositories and mock AI r
 
 ## Licensing
 
-**Open-core under AGPL-3.0** — free to self-host forever, contributions under a CLA. If you run a modified version as a network service, AGPL §13 applies, and the app ships a machine-readable source-offer endpoint (`GET /api/v1/system/source`) to make that easy to honor. A **commercial license** is available for organizations that need the software without AGPL obligations — **[bruno@bolalabs.pt](mailto:bruno@bolalabs.pt)**.
+**Apache-2.0** — free to run, modify, embed and redistribute, forever, with no copyleft. The name and the mark are reserved (Apache-2.0 §6, spelled out in `TRADEMARKS.md`): fork freely, rename the fork. A **commercial subscription** buys capacity, a hosted instance and support — never permission, which the licence already granted — **[bruno@bolalabs.pt](mailto:bruno@bolalabs.pt)**.
 
 ---
 

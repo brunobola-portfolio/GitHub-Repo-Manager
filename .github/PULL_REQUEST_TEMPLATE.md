@@ -28,6 +28,6 @@ Closes #
 
 ## Contributor License Agreement
 
-First-time contributors: this project requires a one-time CLA signature so contributions can be included in both the AGPL v3 release and the commercial license. After opening this PR the bot will comment asking you to sign — reply with the exact phrase **`I have read the CLA and I agree`** and you're set for all future PRs.
+First-time contributors: this project requires a one-time CLA signature so contributions can be included in the Apache-2.0 release and in the commercial subscription build. After opening this PR the bot will comment asking you to sign — reply with the exact phrase **`I have read the CLA and I agree`** and you're set for all future PRs.
 
 See [CLA.md](../CLA.md) for the full text.
