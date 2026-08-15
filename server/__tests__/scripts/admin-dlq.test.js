@@ -1,5 +1,5 @@
 // @vitest-environment node
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Unit tests for the admin-dlq CLI core functions (summary/list/retry/resolve).
  *

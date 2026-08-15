@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Community Health AI Auto-Fix — generators for the standard community files
  * a healthy GitHub repo should ship (LICENSE, CODE_OF_CONDUCT, CONTRIBUTING,

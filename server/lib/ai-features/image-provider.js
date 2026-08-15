@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Provider image generation layer (Wave 6c / R5 — AI raster image generation).
  *

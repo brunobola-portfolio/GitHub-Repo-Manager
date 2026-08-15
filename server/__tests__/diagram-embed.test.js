@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 // @vitest-environment node
 //
 // Coverage for server/lib/ai-features/diagram-embed.js — the pure marker

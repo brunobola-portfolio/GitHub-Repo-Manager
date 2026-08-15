@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 //
 // Schema assertions for tables added to initDB() that are not covered by a
 // dedicated migration test file. Each describe block corresponds to one table.

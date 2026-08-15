@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Wave 6c — image-pricing.js coverage. Confirms the per-model/per-quality
  * flat-cents table resolves real tiered numbers (not a single flattened

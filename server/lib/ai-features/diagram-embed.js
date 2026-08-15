@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: Apache-2.0
 /**
  * Diagram embed — pure helpers for writing a generated Mermaid diagram INTO
  * the repository itself (Addendum 6b.1, docs/specs/2026-07-18-community-wow-
