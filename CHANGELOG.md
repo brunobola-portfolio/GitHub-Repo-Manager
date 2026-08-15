@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.19.0] - 2026-08-15
+
 ### Changed
 
 - **The licence is now Apache-2.0.** It was AGPL-3.0-only, with a commercial
@@ -2999,6 +3001,7 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 ---
 
 [Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.15.0...HEAD
+[4.19.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.18.1...v4.19.0
 [4.18.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.18.0...v4.18.1
 [4.18.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.17.0...v4.18.0
 [4.17.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.16.0...v4.17.0

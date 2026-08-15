@@ -27,6 +27,14 @@ below links to the canonical page for that topic.
 
 The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.19.0 (2026-08-15) — Apache-2.0, and a deploy that can undo itself.** The
+  licence moves off AGPL: run it, modify it, embed it, redistribute it, no
+  permission and no fee. The name and the mark stay reserved
+  ([`TRADEMARKS.md`](../TRADEMARKS.md)), and what a subscription buys — headroom,
+  hosting, support — is unchanged, because it never described permissions.
+  `deploy/iis/deploy.ps1` replaces a build-on-the-production-box upgrade with an
+  immutable artifact, a verified backup, a health check against the version just
+  installed, and automatic rollback.
 - **v4.18.1 (2026-08-10) — the polish pass.** The solid brand surface became
   one decision instead of two (`.ds-brand-solid`: deep green under white in
   light, the lime under ink in dark), the floating assistant stopped covering
@@ -53,11 +61,6 @@ The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHAN
   every mark, both cuts, the tiles, the fonts with their OFL licence and the
   written spec into one file you can hand to press or a contractor. Settings →
   About links to it; the archive is byte-reproducible.
-- **v4.14.1 (2026-08-09) — consistency pass.** `.gitattributes` said nothing
-  about `.svg`, so a Windows checkout turned the generated marks into CRLF and
-  failed the brand gate on a developer machine while staying green on CI. Plus
-  a sweep of stale counts and version links across the README, AGENTS.md and
-  this page.
 
 
 ## Architecture
