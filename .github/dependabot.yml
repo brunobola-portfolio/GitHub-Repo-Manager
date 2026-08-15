@@ -10,7 +10,7 @@ updates:
           - "minor"
           - "patch"
     # Workflow files that use SHA-pinned actions are auto-updated.
-    # Tag-pinned workflows (ci.yml, cla.yml, deploy.yml, docker.yml) get
+    # Tag-pinned workflows (ci.yml, cla.yml, docker.yml, release.yml) get
     # PRs too but those only bump tags — SHA pinning lives in mint-license.yml.
 
   # npm was missing entirely, so nothing watched the dependency tree: the repo

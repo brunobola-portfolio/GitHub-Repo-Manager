@@ -451,21 +451,58 @@ re-buffers SSE.)
 
 ## 8. Upgrading
 
+One command, and it puts itself back if the new build does not come up:
+
 ```powershell
-nssm stop GitHubRepoManager
-cd C:\apps\GitHubRepoManager
-git fetch --tags; git checkout v4.13.0     # or unpack the release
-npm ci
-npm run build
-nssm start GitHubRepoManager
-Invoke-RestMethod https://your-host.example/api/health   # confirm the version
+.\deploy\iis\deploy.ps1 -FromRelease latest -AppRoot C:pps\GitHubRepoManager
 ```
 
-Database migrations run automatically at boot. `DATA_DIR` is untouched by the
-upgrade, which is the whole reason it lives outside the install tree.
+`-FromRelease latest` pulls the release zip, verifies its SHA-256 against the
+published sidecar, and refuses a mislabelled artifact — a file called
+`…-4.18.1-…` whose `package.json` says something else never gets unpacked.
 
-Re-run `install-service.ps1` instead of `nssm start` if the Node version or the
-`.env` location changed — it reconfigures in place.
+**One version, one immutable artifact.** The package is
+`github-repo-manager-<version>-win-x64.zip`, built and smoke-tested by CI (it
+boots, the native module loads, `/api/health/ready` answers). It is never
+rebuilt here: a production box has no business running `npm ci` against the
+network, and a build that happens twice can differ twice.
+
+| Step | What must hold before the next one runs |
+|------|------------------------------------------|
+| 1 | Package opens, carries `server/` + `dist/`, version matches its file name |
+| 2 | Free disk covers the backup **and** the new content |
+| 3 | Backup taken, file count verified against the source |
+| 4 | Service stopped — releases file handles, and stops traffic hitting a half-swapped tree |
+| 5 | Content swapped, retrying files that are briefly locked |
+| 6 | Service started |
+| 7 | `/api/health` reports **the version just installed**, `/api/health/ready` reports every dependency ok |
+| 8 | If step 7 fails: automatic rollback to the step-3 backup, service restarted from it |
+
+Step 7 is the one that matters most. A health check that only asks "are you
+alive?" passes when the old build is still running — healthy, and not what you
+deployed.
+
+**`DATA_DIR` is never touched.** The database, the `.env` and the logs live
+outside the install tree precisely so an upgrade cannot reach them. Migrations
+run at boot, from the application.
+
+Other things it does:
+
+```powershell
+# See what would happen; changes nothing, needs no elevation
+.\deploy\iis\deploy.ps1 -ZipPath .\pkg.zip -AppRoot C:pps\GitHubRepoManager -DryRun
+
+# What can I go back to?
+.\deploy\iis\deploy.ps1 -AppRoot C:pps\GitHubRepoManager -ListBackups
+
+# Go back (most recent, or -BackupName)
+.\deploy\iis\deploy.ps1 -AppRoot C:pps\GitHubRepoManager -Rollback
+```
+
+Three backups are kept by default (`-KeepBackups`). Re-run
+`install-service.ps1` instead if the Node version or the `.env` location
+changed — that reconfigures the service in place; `deploy.ps1` only swaps
+content.
 
 ---
 
