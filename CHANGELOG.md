@@ -53,7 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **The upgrade section of the IIS guide was unusable.** Four commands carried
-  a BEL control character where `C:pps` should be — a `` escape written
+  a BEL control character where `C:\apps` should be — a `\a` escape written
   literally — so every copy-paste failed with `AppRoot does not exist:
   C:pps\GitHubRepoManager`. Same corruption class fixed in
   `production.env.example`.
