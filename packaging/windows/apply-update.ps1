@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-only
+# SPDX-License-Identifier: Apache-2.0
 #
 # Applies a portable one-click update. Runs from a COPY inside the data dir
 # (never from the package root - every root file gets replaced below). The

@@ -28,6 +28,8 @@ COPY server ./server
 # self-hosted LICENSE_KEY silently degrades to the Free tier. Public key only —
 # keys/private.pem stays gitignored + .dockerignored.
 COPY keys/public.pem ./keys/public.pem
+# Apache-2.0 §4(a)/§4(d) — the image is a distribution, so it carries the terms.
+COPY LICENSE NOTICE TRADEMARKS.md ./
 
 # Create data directory
 RUN mkdir -p server/data && chown -R node:node server/data

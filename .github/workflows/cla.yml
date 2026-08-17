@@ -32,5 +32,5 @@ jobs:
             Please read the CLA and comment **"I have read the CLA and I agree"** to sign.
 
             This is a one-time requirement. The CLA allows us to distribute your contributions
-            under both our open-source (AGPL v3) and commercial licenses.
+            under the Apache-2.0 release and the commercial subscription build.
           custom-pr-sign-comment: 'I have read the CLA and I agree'

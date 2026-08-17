@@ -26,7 +26,7 @@ A mirror of the in-app Roadmap page (`/roadmap`). Everything in **Next** and **L
 
 ## Next (Q3 2026)
 
-- **Pierre diff + tree primitives** — Adopt `@pierre/diffs` (Apache-2.0, AGPL-compatible) as the canonical PR / commit diff renderer, `@pierre/trees` as the repo file-tree primitive.
+- **Pierre diff + tree primitives** — Adopt `@pierre/diffs` (Apache-2.0) as the canonical PR / commit diff renderer, `@pierre/trees` as the repo file-tree primitive.
 - **Vercel AI Elements migration** — Port Repo Advisor, AI Issue Planner, and the Dashboard AI narrative onto Vercel's shadcn-shaped AI Elements (streaming, reasoning, tool calls).
 - **Cross-repo Command Palette (Ctrl+K / ⌘K v2)** — Cross-repo jump, recent-PR / issue search, AI-driven action quick-fire.
 - **GitLab Migration Importer** — Clone GitLab repos with history. Scope: sources, branches, default protections, issues (best-effort).
@@ -114,6 +114,6 @@ shipping free on every tier. Moved here to stop the double-listing:
 - **Health Dashboard Premium** (v3.0.x) — tabbed organisation, visual polish.
 - **Rate Limit UX** (v3.0.x) — friendly notices + dev-mode exemption.
 - **Landing Page** (v3.0.0) — hero, features, CTA.
-- **AGPL Open-Core License Key System** (v3.0.0) — Ed25519 JWT.
+- **Open-Core License Key System** (v3.0.0) — Ed25519 JWT.
 
 See `docs/specs/` and `docs/plans/` for detailed design and implementation history.

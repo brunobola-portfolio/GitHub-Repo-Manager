@@ -82,7 +82,7 @@ function LandingFooter() {
             rel="noopener noreferrer"
             className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors duration-200 ds-font-display"
           >
-            AGPL v3
+            Apache-2.0
           </a>
         </div>
       </div>

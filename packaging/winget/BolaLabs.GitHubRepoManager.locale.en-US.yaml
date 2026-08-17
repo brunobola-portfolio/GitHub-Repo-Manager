@@ -21,7 +21,7 @@ PublisherUrl: https://github.com/brunobola-portfolio
 PublisherSupportUrl: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/issues
 PackageName: GitHub Repo Manager
 PackageUrl: https://github.com/brunobola-portfolio/GitHub-Repo-Manager
-License: AGPL-3.0-only
+License: Apache-2.0
 LicenseUrl: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/blob/main/LICENSE
 ShortDescription: Modern GitHub repository management dashboard with AI-powered insights, team collaboration, and Azure DevOps migration
 Moniker: github-repo-manager

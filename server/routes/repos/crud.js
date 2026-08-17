@@ -58,8 +58,42 @@ function validatePath(path) {
     if (typeof path !== 'string') return false;
     if (path.includes('\0')) return false;
     if (path.startsWith('/')) return false;
-    if (path.split('/').some(segment => segment === '..')) return false;
+    // Compare against the DECODED segments. Express decodes the query string
+    // once, so `%252e%252e` arrives here as the literal text `%2e%2e` — which
+    // is not `..`, and used to pass. The URL parser inside fetch then decodes
+    // it a second time and collapses the result, turning
+    //   /repos/o/r/contents/%2e%2e/%2e%2e/%2e%2e/user/repos
+    // into /repos/user/repos — a different endpoint, reached with the caller's
+    // OAuth token, which carries delete_repo and admin:org.
+    for (const segment of path.split('/')) {
+        let decoded = segment
+        // A loop, not one pass: `%25252e` would survive a single decode.
+        for (let i = 0; i < 4 && decoded.includes('%'); i += 1) {
+            let next
+            try {
+                next = decodeURIComponent(decoded)
+            } catch {
+                return false // malformed encoding is never a real file name
+            }
+            if (next === decoded) break
+            decoded = next
+        }
+        if (decoded === '..' || decoded === '.') return false
+        if (decoded.includes('\0') || decoded.includes('/') || decoded.includes('\\')) return false
+    }
     return true;
+}
+
+/**
+ * Encode a repository file path for a GitHub Contents URL.
+ *
+ * Per SEGMENT, so the slashes separating directories survive and everything
+ * else is escaped. validatePath already rejects traversal; this is the second
+ * half of the same defence — if a segment ever slipped through, it reaches
+ * GitHub as a literal name rather than as a path instruction.
+ */
+function encodePath(path) {
+    return String(path || '').split('/').map(encodeURIComponent).join('/');
 }
 
 // ------------------------------------------------------------------
@@ -306,7 +340,7 @@ router.get('/:owner/:repo/contents', requireAuth, async (req, res) => {
             return res.status(400).json({ error: 'Invalid path: must be relative and cannot contain ".." or null bytes' });
         }
 
-        let url = `/repos/${owner}/${repo}/contents/${path}`;
+        let url = `/repos/${owner}/${repo}/contents/${encodePath(path)}`;
         if (ref) url += `?ref=${encodeURIComponent(ref)}`;
 
         const { data } = await githubApi(url, req.session.accessToken);
@@ -329,7 +363,7 @@ router.put('/:owner/:repo/contents', requireAuth, validateBody(contentsCreateUpd
             return res.status(400).json({ error: 'Invalid path: must be relative and cannot contain ".." or null bytes' });
         }
 
-        const { data } = await githubApi(`/repos/${owner}/${repo}/contents/${path}`, req.session.accessToken, {
+        const { data } = await githubApi(`/repos/${owner}/${repo}/contents/${encodePath(path)}`, req.session.accessToken, {
             method: 'PUT',
             body: JSON.stringify({ message, content, branch, sha })
         });
@@ -352,7 +386,7 @@ router.delete('/:owner/:repo/contents', requireAuth, validateBody(contentsDelete
             return res.status(400).json({ error: 'Invalid path: must be relative and cannot contain ".." or null bytes' });
         }
 
-        const { data } = await githubApi(`/repos/${owner}/${repo}/contents/${path}`, req.session.accessToken, {
+        const { data } = await githubApi(`/repos/${owner}/${repo}/contents/${encodePath(path)}`, req.session.accessToken, {
             method: 'DELETE',
             body: JSON.stringify({ message, sha, branch })
         });

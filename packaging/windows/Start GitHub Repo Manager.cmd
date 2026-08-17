@@ -1,5 +1,5 @@
 @echo off
-rem SPDX-License-Identifier: AGPL-3.0-only
+rem SPDX-License-Identifier: Apache-2.0
 rem
 rem Thin wrapper: the real logic lives in start.ps1. %~dp0 is quoted
 rem throughout so this works from an install path with spaces or non-ASCII
