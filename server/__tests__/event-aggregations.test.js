@@ -1,6 +1,11 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+// The aggregations refuse to run without a server-derived tenant scope
+// (repoIdsFilter). These fixtures own every repo they insert, so the test
+// scope is "all repo ids present" — narrowing is exercised via repoIds.
+const ALL_REPOS = Array.from({ length: 1000 }, (_, i) => i + 1)
+
 // ---------------------------------------------------------------------------
 // Mock db — in-memory store driven by per-test mockRows setup
 // ---------------------------------------------------------------------------
@@ -103,7 +108,7 @@ describe('listMyPendingReviews', () => {
 describe('listStalePRs', () => {
     it('returns empty array when no stale PRs', () => {
         mockRows = []
-        expect(listStalePRs()).toEqual([])
+        expect(listStalePRs({ scopeRepoIds: ALL_REPOS })).toEqual([])
     })
 
     it('returns stale PR rows with ageDays', () => {
@@ -116,7 +121,7 @@ describe('listStalePRs', () => {
             openedAt,
         }]
 
-        const result = listStalePRs({ staleAfterDays: 7 })
+        const result = listStalePRs({ staleAfterDays: 7, scopeRepoIds: ALL_REPOS })
         expect(result).toHaveLength(1)
         expect(result[0].ageDays).toBeGreaterThan(13)
         expect(result[0].ageDays).toBeLessThan(15)
@@ -124,19 +129,41 @@ describe('listStalePRs', () => {
 
     it('applies repoIds filter by passing bindings', () => {
         mockRows = []
-        listStalePRs({ staleAfterDays: 7, repoIds: [1, 2, 3] })
+        listStalePRs({ staleAfterDays: 7, repoIds: [1, 2, 3], scopeRepoIds: ALL_REPOS })
         // The prepare call should include an IN clause
         const sql = mockPrepare.mock.calls[0][0]
         expect(sql).toContain('IN (')
     })
 
-    it('does not add IN clause when repoIds is empty', () => {
+    it('still scopes to the tenant when repoIds is empty', () => {
+        // This asserted the opposite until v4.19.x, and the opposite was the
+        // vulnerability: an absent or empty client filter produced no IN clause
+        // at all, so the query spanned every tenant's events. An empty repoIds
+        // means "do not narrow", never "do not scope".
         mockRows = []
-        listStalePRs({ staleAfterDays: 7, repoIds: [] })
+        listStalePRs({ staleAfterDays: 7, repoIds: [], scopeRepoIds: ALL_REPOS })
         const sql = mockPrepare.mock.calls[0][0]
-        // No repoIds IN clause should be present
-        const hasInClause = /AND repo_id IN/.test(sql)
-        expect(hasInClause).toBe(false)
+        expect(/AND repo_id IN/.test(sql)).toBe(true)
+    })
+
+    it('matches nothing when the tenant scope is empty', () => {
+        // A user who tracks no repos must see no events — the safe direction.
+        mockRows = []
+        listStalePRs({ staleAfterDays: 7, scopeRepoIds: [] })
+        const sql = mockPrepare.mock.calls[0][0]
+        expect(sql).toContain('AND 0')
+        expect(/AND repo_id IN/.test(sql)).toBe(false)
+    })
+
+    it('refuses to run without a scope rather than running unscoped', () => {
+        expect(() => listStalePRs({ staleAfterDays: 7 })).toThrow(/tenant boundary/)
+    })
+
+    it('cannot be widened by the client past the tenant scope', () => {
+        mockRows = []
+        listStalePRs({ staleAfterDays: 7, repoIds: [1, 2, 999], scopeRepoIds: [1, 2] })
+        const bindings = mockPrepare.mock.results[0].value.all.mock.calls[0]
+        expect(bindings).not.toContain(999)
     })
 })
 
@@ -195,7 +222,7 @@ describe('listMyOpenIssues', () => {
 describe('deployFrequency', () => {
     it('returns zero totals when no deployments', () => {
         mockRows = []
-        const result = deployFrequency()
+        const result = deployFrequency({ scopeRepoIds: ALL_REPOS })
         expect(result.totalDeployments).toBe(0)
         expect(result.perDay).toEqual([])
     })
@@ -205,14 +232,14 @@ describe('deployFrequency', () => {
             { date: '2026-04-01', count: 3 },
             { date: '2026-04-02', count: 5 },
         ]
-        const result = deployFrequency({ environment: 'production' })
+        const result = deployFrequency({ environment: 'production', scopeRepoIds: ALL_REPOS })
         expect(result.totalDeployments).toBe(8)
         expect(result.perDay).toHaveLength(2)
     })
 
     it('applies repoIds filter', () => {
         mockRows = []
-        deployFrequency({ repoIds: [10, 20] })
+        deployFrequency({ repoIds: [10, 20], scopeRepoIds: ALL_REPOS })
         const sql = mockPrepare.mock.calls[0][0]
         expect(sql).toContain('IN (')
     })
@@ -220,7 +247,7 @@ describe('deployFrequency', () => {
     it('uses provided since date in query bindings', () => {
         mockRows = []
         const since = new Date('2026-01-01')
-        deployFrequency({ since })
+        deployFrequency({ since, scopeRepoIds: ALL_REPOS })
         const allArgs = mockPrepare.mock.results[0].value.all.mock.calls[0]
         expect(allArgs).toContain('production')
         expect(allArgs).toContain(since.toISOString())
@@ -234,7 +261,7 @@ describe('deployFrequency', () => {
 describe('leadTimeForChanges', () => {
     it('returns null metrics when no data', () => {
         mockRows = []
-        const result = leadTimeForChanges()
+        const result = leadTimeForChanges({ scopeRepoIds: ALL_REPOS })
         expect(result.sampleSize).toBe(0)
         expect(result.medianHours).toBeNull()
         expect(result.p90).toBeNull()
@@ -248,7 +275,7 @@ describe('leadTimeForChanges', () => {
             openedAt: new Date(now - h * 60 * 60 * 1000).toISOString(),
             closedAt: now.toISOString(),
         }))
-        const result = leadTimeForChanges()
+        const result = leadTimeForChanges({ scopeRepoIds: ALL_REPOS })
         expect(result.sampleSize).toBe(5)
         expect(result.p50).toBeCloseTo(30, 0)
         expect(result.p90).toBeCloseTo(50, 0)
@@ -256,7 +283,7 @@ describe('leadTimeForChanges', () => {
 
     it('applies repoIds filter when provided', () => {
         mockRows = []
-        leadTimeForChanges({ repoIds: [1] })
+        leadTimeForChanges({ repoIds: [1], scopeRepoIds: ALL_REPOS })
         const sql = mockPrepare.mock.calls[0][0]
         expect(sql).toContain('IN (')
     })
@@ -269,7 +296,7 @@ describe('leadTimeForChanges', () => {
 describe('reviewLoadByReviewer', () => {
     it('returns empty array when no data', () => {
         mockRows = []
-        expect(reviewLoadByReviewer()).toEqual([])
+        expect(reviewLoadByReviewer({ scopeRepoIds: ALL_REPOS })).toEqual([])
     })
 
     it('returns reviewer rows with submitted + pending counts', () => {
@@ -277,7 +304,7 @@ describe('reviewLoadByReviewer', () => {
             { reviewerLogin: 'alice', reviewsSubmitted: 12, reviewsPending: 3 },
             { reviewerLogin: 'bob',   reviewsSubmitted: 5,  reviewsPending: 8 },
         ]
-        const result = reviewLoadByReviewer()
+        const result = reviewLoadByReviewer({ scopeRepoIds: ALL_REPOS })
         expect(result).toHaveLength(2)
         expect(result[0].reviewerLogin).toBe('alice')
         expect(result[1].reviewsPending).toBe(8)
@@ -285,7 +312,7 @@ describe('reviewLoadByReviewer', () => {
 
     it('applies repoIds filter when provided', () => {
         mockRows = []
-        reviewLoadByReviewer({ repoIds: [5, 6] })
+        reviewLoadByReviewer({ repoIds: [5, 6], scopeRepoIds: ALL_REPOS })
         const sql = mockPrepare.mock.calls[0][0]
         expect(sql).toContain('IN (')
     })
@@ -293,7 +320,7 @@ describe('reviewLoadByReviewer', () => {
     it('uses provided since date', () => {
         mockRows = []
         const since = new Date('2026-03-01')
-        reviewLoadByReviewer({ since })
+        reviewLoadByReviewer({ since, scopeRepoIds: ALL_REPOS })
         const allArgs = mockPrepare.mock.results[0].value.all.mock.calls[0]
         expect(allArgs).toContain(since.toISOString())
     })
@@ -306,7 +333,7 @@ describe('reviewLoadByReviewer', () => {
 describe('changeFailureRate', () => {
     it('returns null rate when no deployments in window', () => {
         mockRows = []
-        const result = changeFailureRate()
+        const result = changeFailureRate({ scopeRepoIds: ALL_REPOS })
         expect(result.total).toBe(0)
         expect(result.rate).toBeNull()
     })
@@ -318,7 +345,7 @@ describe('changeFailureRate', () => {
             { state: 'success' }, { state: 'success' }, { state: 'success' },
             { state: 'failure' },
         ]
-        const result = changeFailureRate()
+        const result = changeFailureRate({ scopeRepoIds: ALL_REPOS })
         expect(result.total).toBe(10)
         expect(result.failed).toBe(1)
         expect(result.successful).toBe(9)
@@ -327,7 +354,7 @@ describe('changeFailureRate', () => {
 
     it('treats "error" state as a failure', () => {
         mockRows = [{ state: 'success' }, { state: 'error' }]
-        const result = changeFailureRate()
+        const result = changeFailureRate({ scopeRepoIds: ALL_REPOS })
         expect(result.failed).toBe(1)
         expect(result.rate).toBeCloseTo(0.5, 3)
     })
@@ -340,7 +367,7 @@ describe('changeFailureRate', () => {
 describe('meanTimeToRecovery', () => {
     it('returns zero sample when no failures', () => {
         mockRows = []
-        const result = meanTimeToRecovery()
+        const result = meanTimeToRecovery({ scopeRepoIds: ALL_REPOS })
         expect(result.sampleSize).toBe(0)
         expect(result.p50).toBeNull()
         expect(result.unresolved).toBe(0)
@@ -360,7 +387,7 @@ describe('meanTimeToRecovery', () => {
             mkPair(40, 36), // 4h
             mkPair(50, 40), // 10h
         ]
-        const result = meanTimeToRecovery()
+        const result = meanTimeToRecovery({ scopeRepoIds: ALL_REPOS })
         expect(result.sampleSize).toBe(5)
         expect(result.p50).toBeCloseTo(3, 0)
         expect(result.p90).toBeCloseTo(10, 0)
@@ -373,7 +400,7 @@ describe('meanTimeToRecovery', () => {
             { repoId: 1, failedAt: hoursAgo(3), recoveredAt: null },
             { repoId: 2, failedAt: hoursAgo(2), recoveredAt: null },
         ]
-        const result = meanTimeToRecovery()
+        const result = meanTimeToRecovery({ scopeRepoIds: ALL_REPOS })
         expect(result.sampleSize).toBe(1)
         expect(result.unresolved).toBe(2)
     })
@@ -397,7 +424,7 @@ describe('listTechDebtIssues', () => {
                 rawAssignees: '[]', openedAt: daysAgo(3),
             },
         ]
-        const result = listTechDebtIssues()
+        const result = listTechDebtIssues({ scopeRepoIds: ALL_REPOS })
         expect(result).toHaveLength(1)
         expect(result[0].issueNumber).toBe(10)
         expect(result[0].labels).toContain('tech-debt')
@@ -409,9 +436,9 @@ describe('listTechDebtIssues', () => {
             { repoFullName: 'o/a', repoId: 1, issueNumber: 1, title: 't',
               rawLabels: JSON.stringify(['custom-flag']), rawAssignees: '[]', openedAt: daysAgo(1) },
         ]
-        const empty = listTechDebtIssues({ labels: ['debt'] })
+        const empty = listTechDebtIssues({ labels: ['debt'], scopeRepoIds: ALL_REPOS })
         expect(empty).toEqual([])
-        const matched = listTechDebtIssues({ labels: ['custom-flag'] })
+        const matched = listTechDebtIssues({ labels: ['custom-flag'], scopeRepoIds: ALL_REPOS })
         expect(matched).toHaveLength(1)
     })
 
@@ -420,7 +447,7 @@ describe('listTechDebtIssues', () => {
             { repoFullName: 'o/a', repoId: 1, issueNumber: 1, title: 't',
               rawLabels: 'not-json', rawAssignees: 'also-not-json', openedAt: daysAgo(1) },
         ]
-        const result = listTechDebtIssues()
+        const result = listTechDebtIssues({ scopeRepoIds: ALL_REPOS })
         expect(result).toEqual([])
     })
 
@@ -429,7 +456,7 @@ describe('listTechDebtIssues', () => {
             repoFullName: 'o/a', repoId: 1, issueNumber: i + 1, title: `t${i}`,
             rawLabels: JSON.stringify(['debt']), rawAssignees: '[]', openedAt: daysAgo(1),
         }))
-        const result = listTechDebtIssues({ limit: 2 })
+        const result = listTechDebtIssues({ limit: 2, scopeRepoIds: ALL_REPOS })
         expect(result).toHaveLength(2)
     })
 })
@@ -445,7 +472,7 @@ describe('techDebtHotspots', () => {
             { repoFullName: 'org/a', repoId: 1, issueNumber: 2, title: 't', rawLabels: JSON.stringify(['debt']), rawAssignees: '[]', openedAt: daysAgo(10) },
             { repoFullName: 'org/b', repoId: 2, issueNumber: 3, title: 't', rawLabels: JSON.stringify(['debt']), rawAssignees: '[]', openedAt: daysAgo(5) },
         ]
-        const result = techDebtHotspots()
+        const result = techDebtHotspots({ scopeRepoIds: ALL_REPOS })
         expect(result).toHaveLength(2)
         expect(result[0].repoFullName).toBe('org/a')
         expect(result[0].count).toBe(2)

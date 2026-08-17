@@ -3,6 +3,14 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 
+// The aggregations refuse to run without a server-derived tenant scope
+// (repoIdsFilter). importOriginal spread so the module's other exports keep
+// working — the pattern AGENTS.md prescribes for widely-imported modules.
+vi.mock('../lib/work-board-tracking.js', async (importOriginal) => ({
+    ...(await importOriginal()),
+    getScopedRepoIds: () => [1, 2, 3],
+}));
+
 vi.mock('../lib/work-board-snooze.js', () => ({
     snooze: vi.fn(() => ({ untilAt: '2026-04-22T00:00:00.000Z' })),
     unsnooze: vi.fn(() => 1),

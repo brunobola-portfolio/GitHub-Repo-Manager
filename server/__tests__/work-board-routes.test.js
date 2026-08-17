@@ -26,6 +26,14 @@ const mockFetchStalePRs = vi.fn(async () => ({ items: [], totalCount: 0 }))
 const mockFetchMyOpenIssues = vi.fn(async () => ({ items: [], totalCount: 0 }))
 const mockFetchTechDebtIssues = vi.fn(async () => ({ items: [], totalCount: 0 }))
 
+// The aggregations refuse to run without a server-derived tenant scope
+// (repoIdsFilter). importOriginal spread so the module's other exports keep
+// working — the pattern AGENTS.md prescribes for widely-imported modules.
+vi.mock('../lib/work-board-tracking.js', async (importOriginal) => ({
+    ...(await importOriginal()),
+    getScopedRepoIds: () => [1, 2, 3],
+}));
+
 vi.mock('../lib/event-aggregations.js', () => ({
     listMyPendingReviews: (...a) => mockListMyPendingReviews(...a),
     listStalePRs: (...a) => mockListStalePRs(...a),

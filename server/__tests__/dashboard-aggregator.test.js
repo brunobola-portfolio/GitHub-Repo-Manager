@@ -78,6 +78,18 @@ describe('composeInbox — my_prs section', () => {
     beforeEach(() => {
         db.prepare('DELETE FROM pr_events').run();
         db.prepare('DELETE FROM dashboard_inbox_state').run();
+        db.prepare('DELETE FROM work_board_tracked_repos').run();
+        // work_board_tracked_repos has an FK to users; the fixture never
+        // created the row because nothing needed it until the scope did.
+        db.prepare('INSERT OR IGNORE INTO users (id, username) VALUES (?, ?)').run(USER_ID, LOGIN);
+        // The webhook that writes an event also tracks the repo for its owner,
+        // and that tracking row IS the tenant boundary the aggregations scope
+        // on. A fixture that inserts events without it is not reproducing a
+        // real deployment — it is reproducing the state where the query used
+        // to span every tenant.
+        db.prepare(`INSERT INTO work_board_tracked_repos
+            (user_id, repo_full_name, repo_id, source_signal, is_pinned, is_muted)
+            VALUES (?, ?, ?, 'webhook', 0, 0)`).run(USER_ID, 'foo/bar', 1);
     });
 
     it('lists PRs authored by user', async () => {

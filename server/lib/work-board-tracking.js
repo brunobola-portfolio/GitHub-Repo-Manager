@@ -273,6 +273,29 @@ export function bulkUpdate(userId, repoFullNames, action) {
  * @param {string} repoFullName
  * @param {number|null|undefined} repoId
  */
+/**
+ * The repo ids this user is allowed to see webhook-derived events for.
+ *
+ * The event tables (pr_events, issue_events, deployment_events,
+ * review_assignments) are written by an ingest webhook and carry NO user_id —
+ * they are a shared pool keyed on repo. The only thing that says "this repo is
+ * yours" is work_board_tracked_repos, which the same webhook populates from
+ * `repository.owner.login`. So this is the tenant boundary for every
+ * aggregation over those tables, and it must be derived here, from the session
+ * user, never from a query parameter.
+ *
+ * Returns [] for a user who tracks nothing — which is correct and safe: an
+ * empty scope must produce an empty result, not an unfiltered one.
+ */
+export function getScopedRepoIds(userId) {
+    if (!userId) return [];
+    return db.prepare(`
+        SELECT DISTINCT repo_id
+          FROM work_board_tracked_repos
+         WHERE user_id = ? AND repo_id IS NOT NULL
+    `).all(userId).map((row) => row.repo_id);
+}
+
 export function upsertTrackedRepoFromWebhook(userId, repoFullName, repoId) {
     if (!userId || !repoFullName) return;
     db.prepare(`
