@@ -52,6 +52,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   licence is now gated on `DEPLOYMENT_MODE` (default `self-host`, so nothing
   changes for existing installs) and never applies to an anonymous caller.
 
+- **The bulk write routes took any string with a slash in it.** `repos` was
+  `z.string().min(1).max(200)` and the handler's only check was
+  `includes('/')`, then the name went into `/repos/${name}` with the caller's
+  token. The token bounds the blast radius to repositories the caller can
+  already reach, so this is not an escalation — but the app's own guardrails
+  do not survive it: `a/../../repos/other/thing` resolves to a different
+  repository than the one the daily destructive ceiling counted and than the
+  one the audit row names, so on the six routes that change visibility,
+  archive, transfer, mirror or delete, the log stops describing what actually
+  happened. `isValidGitHubFullName` has enforced this shape for the AI routes
+  all along; the bulk schemas simply never called it.
+
 - **The Contents traversal had thirty siblings.** Closing it in `crud.js`
   left the same shape everywhere else `/api/repos/*` interpolates a route
   param into a GitHub API URL. Express decodes route params, and `%2f` does
