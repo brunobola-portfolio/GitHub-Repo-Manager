@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.20.0] - 2026-08-17
+
 ### Security
 
 - **Work Board aggregations were unscoped across tenants.** The webhook event
