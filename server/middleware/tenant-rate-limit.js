@@ -140,9 +140,41 @@ export async function createTenantLimiters(type = 'api', options = {}) {
  * Global safety-net limiter for unauthenticated / pre-session requests.
  * Applied before session middleware so it cannot use per-user state.
  */
+/**
+ * True when the request carries SOMETHING that claims an identity — a session
+ * cookie or an API-key bearer. Not proof of one: the cookie may be forged and
+ * the key may be invalid. That is deliberate. This runs before session
+ * middleware, so no real identity exists yet, and the only question it has to
+ * answer is "should the per-IP flood net be the binding limit for this
+ * request, or should the per-tier limiter be?".
+ */
+function claimsAnIdentity(req) {
+    if (bearerApiKey(req)) return true;
+    const cookie = req.headers?.cookie;
+    // express-session's default cookie name — no `name:` is set in index.js.
+    return typeof cookie === 'string' && cookie.includes('connect.sid=');
+}
+
+/**
+ * Global safety net for requests that carry no identity at all.
+ *
+ * It used to apply to every /api request, which quietly made it the real
+ * limit for everyone: an Enterprise tenant is sold 2,000 api requests per 15
+ * minutes and got 200, because this ran first and is keyed per IP — so a team
+ * behind one office NAT shared a single 200-request budget between them, about
+ * thirteen requests a minute for the whole company.
+ *
+ * A request that claims an identity now passes through to `apiLimiter`, which
+ * is where the tier budgets actually live, and which keys per user or per API
+ * key rather than per IP. A forged cookie skips this net but still meets that
+ * limiter and then `requireAuth`, so the escape is bounded — and pre-session
+ * flood protection for genuinely anonymous traffic is unchanged, as are the
+ * tighter dedicated limiters on /api/auth and the webhook endpoints.
+ */
 export const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 200,
+    skip: claimsAnIdentity,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Too many requests, please try again later.' },

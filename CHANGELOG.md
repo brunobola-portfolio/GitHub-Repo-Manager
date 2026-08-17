@@ -52,6 +52,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   licence is now gated on `DEPLOYMENT_MODE` (default `self-host`, so nothing
   changes for existing installs) and never applies to an anonymous caller.
 
+- **A paying tenant got the anonymous rate limit.** `globalLimiter` is
+  mounted on all of `/api` before session middleware, so it ran ahead of
+  `apiLimiter` — the limiter that reads `req.userTier` and applies the budgets
+  the tiers are sold with. Being first and keyed per IP, its 200/15min was the
+  binding constraint for everyone: an Enterprise tenant sold 2,000 requests per
+  15 minutes received 200, shared across every colleague behind the same office
+  NAT — about thirteen requests a minute for the whole company. A request
+  carrying a session cookie or an API-key bearer now passes through to the
+  per-tier limiter, which keys per user rather than per IP. A forged cookie
+  skips the net but still meets that limiter and then `requireAuth`, and
+  pre-session flood protection for genuinely anonymous traffic is unchanged,
+  as are the tighter dedicated limiters on `/api/auth` and the webhooks.
+
 - **The bulk write routes took any string with a slash in it.** `repos` was
   `z.string().min(1).max(200)` and the handler's only check was
   `includes('/')`, then the name went into `/repos/${name}` with the caller's
