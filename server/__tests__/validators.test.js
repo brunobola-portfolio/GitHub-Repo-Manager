@@ -7,6 +7,7 @@ import {
     bulkDeleteSchema,
     bulkTransferSchema,
     checkConflictsSchema,
+    bulkMirrorSchema,
     teamCreateSchema,
     teamMemberSchema,
     teamRepoSchema,
@@ -411,3 +412,57 @@ describe('userAIConfigSchema — featureOverrides model values', () => {
 // migrated to `validateBody` / `validateQuery` / `validateParams` from
 // `server/middleware/validate-request.js`. Coverage for that middleware
 // lives in `validate-request.test.js`.
+
+describe('the bulk write schemas require a real "owner/repo"', () => {
+    /*
+     * They accepted any string containing a slash, and the route spliced it
+     * into `/repos/${name}` with the caller's token. The token bounds the
+     * blast radius to repositories the caller can already reach — but the
+     * app's own guardrails do not survive it: `a/../../repos/other/thing`
+     * resolves to a different repository than the one the daily destructive
+     * ceiling counted and than the one the audit row names, so the log stops
+     * describing what happened.
+     *
+     * Every bulk schema is checked, not just delete: they share one shape and
+     * a future one added without it is the same defect back again.
+     */
+    const SCHEMAS = {
+        bulkVisibilitySchema: (repos) => bulkVisibilitySchema.safeParse({ repos, makePublic: false }),
+        bulkArchiveSchema: (repos) => bulkArchiveSchema.safeParse({ repos }),
+        bulkDeleteSchema: (repos) => bulkDeleteSchema.safeParse({ repos }),
+        bulkTransferSchema: (repos) => bulkTransferSchema.safeParse({ repos, toOrg: 'target-org' }),
+        checkConflictsSchema: (repos) => checkConflictsSchema.safeParse({ repos, targetOrg: 'target-org' }),
+        bulkMirrorSchema: (repos) => bulkMirrorSchema.safeParse({ repos, toOrg: 'target-org' }),
+    }
+
+    const REJECTED = [
+        ['a/../../repos/victim/thing', 'traversal that keeps a slash — the old includes("/") check passed it'],
+        ['a/..', 'one level up'],
+        ['../../user/repos', 'bare traversal'],
+        ['a/b/c', 'three segments'],
+        ['octo/repo?foo=1', 'query hijack'],
+        ['octo/repo#frag', 'fragment'],
+        ['-bad/repo', 'owner cannot start with a hyphen'],
+        ['octo/.hidden', 'repo cannot start with a dot'],
+        ['no-slash', 'not a full name at all'],
+        ['octo/re po', 'space'],
+    ]
+
+    for (const [name, parse] of Object.entries(SCHEMAS)) {
+        it(`${name} accepts the names GitHub actually issues`, () => {
+            for (const ok of ['octo/hello-world', 'octo-org/my.repo_v2', 'a/b']) {
+                expect(parse([ok]).success, `${name} rejected ${ok}`).toBe(true)
+            }
+        })
+
+        it(`${name} rejects anything that is not one`, () => {
+            for (const [bad, why] of REJECTED) {
+                expect(parse([bad]).success, `${name} accepted ${bad} (${why})`).toBe(false)
+            }
+        })
+
+        it(`${name} rejects a bad name hidden among good ones`, () => {
+            expect(parse(['octo/good', 'a/../../repos/victim/thing', 'octo/also-good']).success).toBe(false)
+        })
+    }
+})

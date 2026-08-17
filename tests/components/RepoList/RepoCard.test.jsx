@@ -114,3 +114,32 @@ describe('RepoCard — accessible card structure (nested-interactive fix)', () =
         expect(onToggle).not.toHaveBeenCalled()
     })
 })
+
+describe('RepoCard — the description clamp pays for what it shows', () => {
+    /*
+     * The base clamp was `line-clamp-1` while `min-h-[2.5em]` reserved two
+     * lines. Measured in the real app at 375px: a 35px box painting a single
+     * 20px line, with the second line cut. The grid is
+     * `minmax(min(--card-min-width, 100%), 1fr)`, so a phone gets ONE
+     * full-width card — the widest the card ever is relative to its viewport,
+     * and so the worst place to clamp hardest.
+     *
+     * Only the base clamp is asserted. Raising the clamp at wider breakpoints
+     * (`xl:line-clamp-3`) is the normal mobile-first direction and needs no
+     * guard; it was the base falling BELOW what the reserved height pays for
+     * that produced the defect.
+     */
+    it('shows at least as many lines as the reserved height pays for', () => {
+        renderCard()
+        const cls = screen.getByText(repo.description).className
+
+        const reserved = cls.match(/min-h-\[([\d.]+)em\]/)
+        expect(reserved, 'the reserved height went away — re-derive this bound').not.toBeNull()
+        const linesPaidFor = Math.floor(Number(reserved[1]) / 1.25)
+
+        const base = cls.match(/(?:^|\s)line-clamp-(\d+)/)
+        expect(base, 'the description lost its base line-clamp').not.toBeNull()
+        expect(Number(base[1]), `line-clamp-${base[1]} in a box that pays for ${linesPaidFor} lines`)
+            .toBeGreaterThanOrEqual(linesPaidFor)
+    })
+})

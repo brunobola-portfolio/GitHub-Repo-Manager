@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.20.0] - 2026-08-17
+
 ### Security
 
 - **Work Board aggregations were unscoped across tenants.** The webhook event
@@ -50,7 +52,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   licence is now gated on `DEPLOYMENT_MODE` (default `self-host`, so nothing
   changes for existing installs) and never applies to an anonymous caller.
 
+- **A paying tenant got the anonymous rate limit.** `globalLimiter` is
+  mounted on all of `/api` before session middleware, so it ran ahead of
+  `apiLimiter` — the limiter that reads `req.userTier` and applies the budgets
+  the tiers are sold with. Being first and keyed per IP, its 200/15min was the
+  binding constraint for everyone: an Enterprise tenant sold 2,000 requests per
+  15 minutes received 200, shared across every colleague behind the same office
+  NAT — about thirteen requests a minute for the whole company. A request
+  carrying a session cookie or an API-key bearer now passes through to the
+  per-tier limiter, which keys per user rather than per IP. A forged cookie
+  skips the net but still meets that limiter and then `requireAuth`, and
+  pre-session flood protection for genuinely anonymous traffic is unchanged,
+  as are the tighter dedicated limiters on `/api/auth` and the webhooks.
+
+- **The bulk write routes took any string with a slash in it.** `repos` was
+  `z.string().min(1).max(200)` and the handler's only check was
+  `includes('/')`, then the name went into `/repos/${name}` with the caller's
+  token. The token bounds the blast radius to repositories the caller can
+  already reach, so this is not an escalation — but the app's own guardrails
+  do not survive it: `a/../../repos/other/thing` resolves to a different
+  repository than the one the daily destructive ceiling counted and than the
+  one the audit row names, so on the six routes that change visibility,
+  archive, transfer, mirror or delete, the log stops describing what actually
+  happened. `isValidGitHubFullName` has enforced this shape for the AI routes
+  all along; the bulk schemas simply never called it.
+
+- **The Contents traversal had thirty siblings.** Closing it in `crud.js`
+  left the same shape everywhere else `/api/repos/*` interpolates a route
+  param into a GitHub API URL. Express decodes route params, and `%2f` does
+  not split a segment during routing, so one param carries a whole path:
+  `PATCH /api/repos/o/r/issues/%2e%2e%2f%2e%2e%2f%2e%2e%2fuser%2frepos` gave
+  `issue_number = '../../../user/repos'` and resolved to `/repos/user/repos`
+  — an arbitrary authenticated call with the caller's OAuth token. Reproduced
+  against a bare Express router before fixing. The bare `..` and `%2e%2e`
+  forms already 404 (Express resolves the path and no route matches), which
+  is why the dangerous variant is the one that keeps the segment count
+  intact. `server/middleware/no-path-traversal.js` now refuses decoded dot
+  segments once, on `/api`, ahead of every router that builds an upstream
+  URL — so a route added next month is covered by default. Deliberately
+  narrow: `%2f` on its own stays legal, because `feature/thing` is a real
+  branch name.
+
 ### Fixed
+
+- **A phone cut the repository card's description in half.** The clamp was
+  `line-clamp-1` below 640px while `min-h-[2.5em]` reserved two lines, so the
+  box was 35px tall, painted a single 20px line, and truncated the rest. The
+  grid is `minmax(min(--card-min-width, 100%), 1fr)`, so a phone gets one
+  full-width card — the widest the card ever is relative to its viewport, and
+  the worst place to clamp hardest. Measured `truncated: false` at 375, 414,
+  639 and 640px after, with no row growth where the text already fitted.
+
+- **The migration wizard's Git URL tile was emerald**, not as a status but so
+  it would not look like the two brand-coloured tiles beside it. Colour used
+  only to tell two cards apart is what the single accent ramp replaced.
 
 - **The upgrade section of the IIS guide was unusable.** Four commands carried
   a BEL control character where `C:\apps` should be — a `\a` escape written

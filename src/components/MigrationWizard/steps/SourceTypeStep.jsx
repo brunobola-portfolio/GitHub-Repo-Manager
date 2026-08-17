@@ -27,13 +27,17 @@ const SOURCE_TYPES = [
     desc: 'Any public or private Git repository URL',
     icon: Globe,
     recommended: false,
+    // Was emerald, purely so this tile did not look like its two neighbours.
+    // emerald is a status colour here as everywhere else; a source type is not
+    // a status, and colour used only to tell two cards apart is what the one
+    // accent ramp replaced. The icon and the label carry the difference.
     accent: {
-      icon: 'bg-emerald-500',
+      icon: 'bg-brand-500',
       iconText: 'text-white',
       glow: '',
-      border: 'border-emerald-400/60 dark:border-emerald-400/40',
-      bg: 'bg-emerald-50/80 dark:bg-emerald-950/30',
-      ring: 'ring-emerald-400/20',
+      border: 'border-brand-400/60 dark:border-brand-400/40',
+      bg: 'bg-brand-50/80 dark:bg-brand-950/30',
+      ring: 'ring-brand-400/20',
     },
   },
   {

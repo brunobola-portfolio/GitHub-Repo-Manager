@@ -12,6 +12,23 @@ const orgNameSchema = z.string().min(1).max(39).regex(
     'Organization name can only contain alphanumeric characters and hyphens'
 );
 
+/*
+ * An "owner/repo" full name, for the bulk write routes.
+ *
+ * They spliced a free-form string straight into `/repos/${name}` with the
+ * caller's token, guarded only by `includes('/')`. The token bounds the blast
+ * radius to repositories the caller can already reach, but the app's own
+ * guardrails do not survive: `a/../../repos/other/thing` resolves to a
+ * different repository than the one the daily destructive ceiling counted and
+ * than the one the audit row records, so the log stops describing what
+ * happened. `isValidGitHubFullName` in middleware/auth.js has enforced this
+ * shape for the AI routes all along; the bulk routes simply never called it.
+ */
+const repoFullNameSchema = z.string().min(3).max(140).regex(
+    /^[a-zA-Z0-9](?:[a-zA-Z0-9]|-(?=[a-zA-Z0-9])){0,38}\/[a-zA-Z0-9_-][a-zA-Z0-9._-]{0,99}$/,
+    'Expected an "owner/repo" name',
+);
+
 // --- Route-specific schemas ---
 
 // .strict() because this schema decides repository VISIBILITY. Zod's default
@@ -30,19 +47,19 @@ export const createRepoSchema = z.object({
 }).strict();
 
 export const bulkVisibilitySchema = z.object({
-    repos: z.array(z.string().min(1).max(200)).min(1).max(100),
+    repos: z.array(repoFullNameSchema).min(1).max(100),
     makePublic: z.boolean(),
     dryRun: z.boolean().optional().default(false)
 });
 
 export const bulkArchiveSchema = z.object({
-    repos: z.array(z.string().min(1).max(200)).min(1).max(100),
+    repos: z.array(repoFullNameSchema).min(1).max(100),
     archive: z.boolean().optional().default(true),
     dryRun: z.boolean().optional().default(false)
 });
 
 export const bulkDeleteSchema = z.object({
-    repos: z.array(z.string().min(1).max(200)).min(1).max(100),
+    repos: z.array(repoFullNameSchema).min(1).max(100),
     dryRun: z.boolean().optional().default(false)
 });
 
@@ -54,19 +71,19 @@ const strategySchema = z.discriminatedUnion('action', [
 ])
 
 export const bulkTransferSchema = z.object({
-    repos: z.array(z.string().min(1).max(200)).min(1).max(100),
+    repos: z.array(repoFullNameSchema).min(1).max(100),
     toOrg: z.string().min(1).max(39),
     strategies: z.record(z.string(), strategySchema).optional(),
     dryRun: z.boolean().optional().default(false)
 });
 
 export const checkConflictsSchema = z.object({
-    repos: z.array(z.string().min(1).max(200)).min(1).max(100),
+    repos: z.array(repoFullNameSchema).min(1).max(100),
     targetOrg: z.string().min(1).max(39)
 });
 
 export const bulkMirrorSchema = z.object({
-    repos: z.array(z.string().min(1).max(200)).min(1).max(100),
+    repos: z.array(repoFullNameSchema).min(1).max(100),
     toOrg: z.string().min(1).max(39),
     dryRun: z.boolean().optional().default(false)
 });

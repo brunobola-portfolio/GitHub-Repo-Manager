@@ -229,8 +229,14 @@ export const RepoCard = memo(function RepoCard({
 				</div>
 
 				{/* Description */}
+				{/* The base clamp was 1 while min-h reserves 2.5em, so below 640px
+				    the box was 35px tall, painted a single 20px line, and cut the
+				    rest — paying for a second line and then refusing to show it.
+				    Grid columns are `minmax(min(--card-min-width, 100%), 1fr)`, so a
+				    phone gets ONE full-width card: the widest the card ever is
+				    relative to its viewport, and the worst place to clamp hardest. */}
 				{isGrid && (
-					<p className="w-full text-sm text-slate-600 dark:text-slate-400 line-clamp-1 sm:line-clamp-2 xl:line-clamp-3 min-h-[2.5em] mt-1 break-words [overflow-wrap:anywhere]">
+					<p className="w-full text-sm text-slate-600 dark:text-slate-400 line-clamp-2 xl:line-clamp-3 min-h-[2.5em] mt-1 break-words [overflow-wrap:anywhere]">
 						{repo.description || <span className="italic opacity-50">No description provided</span>}
 					</p>
 				)}

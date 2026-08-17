@@ -28,6 +28,15 @@ below links to the canonical page for that topic.
 
 The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.20.0 (2026-08-17) — the four launch blockers.** Work Board aggregations
+  crossed the tenant boundary: the webhook event tables carry no `user_id`, and
+  the filter that was meant to scope them took a client-supplied list that
+  defaulted to nothing, so any authenticated user read every tenant's private
+  repo names, PR titles and reviewer logins. An API key could permanently
+  rewrite the browser session to another identity. Encoded path traversal
+  (`%252e%252e`) reached the Contents routes carrying the caller's OAuth token.
+  An instance licence upgraded every tenant on a billed deployment. Each has a
+  regression test named after the mechanism, not the symptom.
 - **v4.19.0 (2026-08-15) — Apache-2.0, and a deploy that can undo itself.** The
   licence moves off AGPL: run it, modify it, embed it, redistribute it, no
   permission and no fee. The name and the mark stay reserved
@@ -56,12 +65,6 @@ The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHAN
   credential scrub that went from 36 seconds to 24 ms on 200 KB of adversarial
   input. The remaining 48 CodeQL alerts were dismissed one by one with written
   reasons; the policy is now in [Security](../SECURITY.md).
-- **v4.16.0 (2026-08-10) — the brand guide became a media kit.** Every
-  deployment serves it at `/brand`, and
-  [`brand/repomanager-media-kit.zip`](../brand/repomanager-media-kit.zip) puts
-  every mark, both cuts, the tiles, the fonts with their OFL licence and the
-  written spec into one file you can hand to press or a contractor. Settings →
-  About links to it; the archive is byte-reproducible.
 
 
 ## Architecture
