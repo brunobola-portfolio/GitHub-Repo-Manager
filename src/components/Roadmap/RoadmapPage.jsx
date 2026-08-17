@@ -9,7 +9,7 @@ const STAGES = [
   {
     id: 'next',
     items: [
-      { title: 'Pierre diff + tree primitives', description: 'Adopt @pierre/diffs (Apache-2.0, AGPL-compatible) as the canonical PR / commit diff renderer; @pierre/trees as the repo file-tree primitive' },
+      { title: 'Pierre diff + tree primitives', description: 'Adopt @pierre/diffs (Apache-2.0) as the canonical PR / commit diff renderer; @pierre/trees as the repo file-tree primitive' },
       { title: 'Vercel AI Elements migration', description: 'Port Repo Advisor, AI Issue Planner and the Dashboard AI narrative onto Vercel’s shadcn-shaped AI Elements (streaming, reasoning, tool calls)' },
       { title: 'Cross-repo Command Palette (Ctrl+K / ⌘K v2)', description: 'Cross-repo jump, recent-PR / issue search, AI-driven action quick-fire' },
       { title: 'GitLab Migration Importer', description: 'Clone GitLab repos with history + issues (best-effort)' },

@@ -37,7 +37,7 @@ export function LegalFooter() {
             rel="noopener noreferrer"
             className="underline hover:text-brand-600 dark:hover:text-brand-400 ds-focus-ring rounded"
           >
-            Source code (AGPL v3)
+            Source code (Apache-2.0)
           </a>
         </span>
         <div className="flex items-center gap-3">

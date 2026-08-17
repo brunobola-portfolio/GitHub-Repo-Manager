@@ -12,6 +12,7 @@
 
 import db from '../db.js';
 import { listMyPendingReviews, listMyOpenPRs, listMyOpenIssues, listStalePRs } from './event-aggregations.js';
+import { getScopedRepoIds } from './work-board-tracking.js';
 import {
     fetchMyPendingReviews,
     fetchMyOpenPRs,
@@ -88,7 +89,11 @@ const SECTION_CONFIG = {
     stale_drafts: {
         label: 'Stale drafts',
         live: ({ token, login }) => fetchStalePRs({ token, login }).then(r => r.items),
-        fallback: ({ login }) => listStalePRs({ staleAfterDays: 7 }).filter(r => r.authorLogin === login),
+        // scopeRepoIds is the tenant boundary for the shared event tables —
+        // the authorLogin filter below narrows the result, it does not scope
+        // the query. See repoIdsFilter in event-aggregations.js.
+        fallback: ({ login, scopeRepoIds }) =>
+            listStalePRs({ staleAfterDays: 7, scopeRepoIds }).filter(r => r.authorLogin === login),
         map: (r) => ({
             id: prKey(r.repoFullName, r.prNumber), kind: 'pr', section: 'stale_drafts',
             repoFullName: r.repoFullName, prNumber: r.prNumber, title: r.title,
@@ -102,7 +107,7 @@ const SECTION_CONFIG = {
  * (rate limit, network) fall back to the webhook/DB query so one bad section
  * never blanks the whole inbox.
  */
-async function sourceSection(key, { token, login, logger }) {
+async function sourceSection(key, { token, login, logger, scopeRepoIds }) {
     const cfg = SECTION_CONFIG[key];
     if (token) {
         try {
@@ -112,7 +117,7 @@ async function sourceSection(key, { token, login, logger }) {
             logger?.warn?.({ err, section: key }, 'inbox live fetch failed; falling back to webhook data');
         }
     }
-    return cfg.fallback({ login }).map(cfg.map);
+    return cfg.fallback({ login, scopeRepoIds }).map(cfg.map);
 }
 
 /**
@@ -126,13 +131,15 @@ async function sourceSection(key, { token, login, logger }) {
  * @returns {Promise<{ sections: Array<{ key, label, items: Array }> }>}
  */
 export async function composeInbox(userId, opts = {}) {
+    // One lookup per compose: the tenant boundary for the webhook fallbacks.
+    const scopeRepoIds = getScopedRepoIds(userId);
     const { userLogin, token = null, sections = SECTION_KEYS, includeArchived = false, logger = null } = opts;
     const requested = sections.filter(k => SECTION_KEYS.includes(k));
     const { archived, snoozedUntil } = loadInboxState(userId);
     const now = Date.now();
 
     const sourced = await Promise.all(
-        requested.map(async key => [key, await sourceSection(key, { token, login: userLogin, logger })]),
+        requested.map(async key => [key, await sourceSection(key, { token, login: userLogin, logger, scopeRepoIds })]),
     );
 
     const raw = {};

@@ -7,6 +7,14 @@ import { makeIntegrationDb } from './helpers/integration-db.js';
 
 const { initDB } = await vi.importActual('../db.js');
 const db = makeIntegrationDb(initDB);
+// The aggregations refuse to run without a server-derived tenant scope
+// (repoIdsFilter). importOriginal spread so the module's other exports keep
+// working — the pattern AGENTS.md prescribes for widely-imported modules.
+vi.mock('../lib/work-board-tracking.js', async (importOriginal) => ({
+    ...(await importOriginal()),
+    getScopedRepoIds: () => [1, 2, 3],
+}));
+
 vi.mock('../db.js', () => ({ default: db }));
 
 // Stub requireAuth so we don't need real session middleware in tests

@@ -9,6 +9,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { makeIntegrationDb } from './helpers/integration-db.js';
 
+// The aggregations refuse to run without a server-derived tenant scope
+// (repoIdsFilter). These fixtures own every repo they insert, so the test
+// scope is "all repo ids present" — narrowing is exercised via repoIds.
+const ALL_REPOS = Array.from({ length: 1000 }, (_, i) => i + 1)
+
 // Grab the real initDB via importActual so the mock registered below does not
 // hide the schema-building function we need for the test DB.
 const { initDB: realInitDB } = await vi.importActual('../db.js');
@@ -86,7 +91,7 @@ describe('listStalePRs (integration)', () => {
     it('includes stale open PR authored by user', () => {
         insertPrEvent(1, 'org/repo', 10, 'opened', 'bob', 'stale PR', OLD_DATE);
 
-        const rows = listStalePRs({ staleAfterDays: 7 });
+        const rows = listStalePRs({ staleAfterDays: 7, scopeRepoIds: ALL_REPOS });
         expect(rows.map(r => r.prNumber)).toContain(10);
     });
 
@@ -94,7 +99,7 @@ describe('listStalePRs (integration)', () => {
         insertPrEvent(1, 'org/repo', 20, 'opened', 'bob', 'will close', OLD_DATE);
         insertPrEvent(1, 'org/repo', 20, 'closed', 'bob', 'will close', '2026-01-02T00:00:00Z');
 
-        const rows = listStalePRs({ staleAfterDays: 7 });
+        const rows = listStalePRs({ staleAfterDays: 7, scopeRepoIds: ALL_REPOS });
         expect(rows.map(r => r.prNumber)).not.toContain(20);
     });
 
@@ -103,7 +108,7 @@ describe('listStalePRs (integration)', () => {
         insertPrEvent(1, 'org/repo', 30, 'closed',   'bob', 'reopen me', '2026-01-02T00:00:00Z');
         insertPrEvent(1, 'org/repo', 30, 'reopened', 'bob', 'reopen me', '2026-01-03T00:00:00Z');
 
-        const rows = listStalePRs({ staleAfterDays: 7 });
+        const rows = listStalePRs({ staleAfterDays: 7, scopeRepoIds: ALL_REPOS });
         expect(rows.map(r => r.prNumber)).toContain(30);
     });
 });
@@ -184,12 +189,12 @@ describe('listTechDebtIssues (integration)', () => {
     });
 
     it('scopes to repoIds: only that repo\'s open debt issues, latest snapshot, closed excluded', () => {
-        const nums = listTechDebtIssues({ repoIds: [1] }).map(r => r.issueNumber).sort((a, b) => a - b);
+        const nums = listTechDebtIssues({ repoIds: [1], scopeRepoIds: ALL_REPOS }).map(r => r.issueNumber).sort((a, b) => a - b);
         expect(nums).toEqual([1, 3]); // issue 2 closed; repo 2 excluded
     });
 
     it('global call (no repoIds) returns open debt issues across all repos', () => {
-        const keys = listTechDebtIssues({}).map(r => `${r.repoFullName}#${r.issueNumber}`).sort();
+        const keys = listTechDebtIssues({ scopeRepoIds: ALL_REPOS }).map(r => `${r.repoFullName}#${r.issueNumber}`).sort();
         expect(keys).toEqual(['baz/qux#5', 'foo/bar#1', 'foo/bar#3']);
     });
 });

@@ -11,7 +11,7 @@
  * new metric degrades to "Ai New Thing" instead of leaking `ai_new_thing`.
  *
  * Copyright (c) 2025-2026 Bruno Marques - Bola Labs, Inc.
- * Licensed under the GNU AGPL v3.0 only (SPDX: AGPL-3.0-only).
+ * Licensed under the Apache License 2.0 (SPDX: Apache-2.0).
  */
 
 export const METRIC_LABELS = Object.freeze({

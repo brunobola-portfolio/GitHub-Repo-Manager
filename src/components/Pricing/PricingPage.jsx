@@ -151,7 +151,7 @@ const FAQS = [
   },
   {
     q: 'Is my data secure?',
-    a: 'Traffic is encrypted in transit over HTTPS/TLS, and the credentials you store — your GitHub and Azure PATs plus any bring-your-own-key AI provider keys — are encrypted at rest with AES-256-GCM. The stack is security-hardened (Content-Security-Policy, rate limiting, and an append-only, SHA-256 hash-chained audit log), and because the app is self-hostable under AGPL you can run it on your own infrastructure so your data never leaves it. We never access your code without explicit permission.',
+    a: 'Traffic is encrypted in transit over HTTPS/TLS, and the credentials you store — your GitHub and Azure PATs plus any bring-your-own-key AI provider keys — are encrypted at rest with AES-256-GCM. The stack is security-hardened (Content-Security-Policy, rate limiting, and an append-only, SHA-256 hash-chained audit log), and because the app is self-hostable under Apache-2.0 you can run it on your own infrastructure so your data never leaves it. We never access your code without explicit permission.',
   },
   {
     q: 'Do you offer a free trial for Pro or Enterprise?',

@@ -138,9 +138,34 @@ export function apiKeyAuth(req, res, next) {
         return res.status(401).json({ error: 'API key has expired' });
     }
 
-    // Set user context
-    req.session = req.session || {};
-    req.session.userId = row.user_id;
+    // Set user context.
+    //
+    // NEVER write into a live cookie session. This used to do
+    // `req.session.userId = row.user_id` on the real express-session object;
+    // with `resave:false` the store persists a session whose contents changed,
+    // so ONE GET carrying a read-only key permanently rewrote the browser
+    // session's identity. Afterwards, cookie-only requests had no req.apiKeyId,
+    // so requireScope's "session has all scopes" waiver applied and the key's
+    // scope limits were gone — and revocation could not help, because
+    // revocation is only checked here, on requests that carry the key.
+    //
+    // A request that presents both a cookie session and an API key for
+    // DIFFERENT users is not a case worth reconciling: no client does that by
+    // accident, and picking a winner is how the escalation happened.
+    if (req.session?.userId && req.session.userId !== row.user_id) {
+        logger.warn(
+            { ip: getClientIp(req), keyId: row.id },
+            'API key auth failed: cookie session and API key identify different users',
+        );
+        return res.status(401).json({ error: 'Cookie session and API key identify different users' });
+    }
+
+    // Request-scoped identity. Downstream code reads req.session.userId, so the
+    // shape is preserved — but this object is not the session store's, and
+    // nothing here outlives the request. API keys never carry an accessToken
+    // (see the note above apiKeyAuth), so no GitHub-proxy route is reachable
+    // this way and there is nothing else the real session needed to provide.
+    req.session = { userId: row.user_id };
     req.tenantId = row.user_id;
     req.apiKeyId = row.id;
     try {

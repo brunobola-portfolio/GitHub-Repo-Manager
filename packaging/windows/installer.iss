@@ -1,4 +1,4 @@
-; SPDX-License-Identifier: AGPL-3.0-only
+; SPDX-License-Identifier: Apache-2.0
 ;
 ; Inno Setup script for the GitHub Repo Manager Windows installer. Builds
 ; from the SAME staged tree as the portable ZIP (scripts/package-windows.mjs)
@@ -51,6 +51,10 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
+; Apache-2.0 §4(a): the terms travel with the distribution. The staged tree
+; carries LICENSE (scripts/package-windows.mjs), so the installer shows it on
+; the way in rather than shipping software whose terms the user never saw.
+LicenseFile={#StagingRoot}\app\LICENSE
 ; No admin prompt, no UAC -installs per-user under LocalAppData, exactly
 ; what winget expects for a "user" scope installer.
 PrivilegesRequired=lowest

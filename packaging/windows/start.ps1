@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: AGPL-3.0-only
+# SPDX-License-Identifier: Apache-2.0
 #
 # Boots GitHub Repo Manager using the bundled runtime\node.exe. Shared by both
 # distribution forms:

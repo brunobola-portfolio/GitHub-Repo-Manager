@@ -48,6 +48,7 @@ import { applyTrackedFilter } from '../lib/work-board-filter.js';
 import { getSnapshots } from '../lib/work-board-kpi-snapshots.js';
 import { todayISO } from '../lib/dates.js';
 import db from '../db.js';
+import { getScopedRepoIds } from '../lib/work-board-tracking.js';
 
 const router = express.Router();
 
@@ -234,7 +235,9 @@ router.get('/stale-prs', requireAuth, async (req, res) => {
         );
         const repoIds = parseRepoIds(req.query.repoIds);
         const limit = Math.min(Number.parseInt(req.query.limit || '50', 10), 200);
-        const webhookData = listStalePRs({ staleAfterDays, repoIds, limit });
+        // Server-derived tenant boundary — see repoIdsFilter.
+        const scopeRepoIds = getScopedRepoIds(req.session?.userId);
+        const webhookData = listStalePRs({ staleAfterDays, repoIds, limit, scopeRepoIds });
 
         // Live search uses author:<login>; it can't replicate per-repo filtering
         // so we only invoke it when no repoIds filter was supplied.
@@ -267,7 +270,9 @@ router.get('/review-load', requireAuth, (req, res) => {
     try {
         const repoIds = parseRepoIds(req.query.repoIds);
         const since = req.query.since ? new Date(req.query.since) : undefined;
-        const data = reviewLoadByReviewer({ since, repoIds });
+        // Server-derived tenant boundary — see repoIdsFilter.
+        const scopeRepoIds = getScopedRepoIds(req.session?.userId);
+        const data = reviewLoadByReviewer({ since, repoIds, scopeRepoIds });
         const isEmpty = !Array.isArray(data) || data.length === 0;
         res.json({
             data,
@@ -290,7 +295,9 @@ router.get('/deploy-freq', requireAuth, (req, res) => {
         const environment = req.query.environment || 'production';
         const repoIds = parseRepoIds(req.query.repoIds);
         const since = req.query.since ? new Date(req.query.since) : undefined;
-        const data = deployFrequency({ environment, since, repoIds });
+        // Server-derived tenant boundary — see repoIdsFilter.
+        const scopeRepoIds = getScopedRepoIds(req.session?.userId);
+        const data = deployFrequency({ environment, since, repoIds, scopeRepoIds });
         res.json({ data });
     } catch (err) {
         errorResponse(res, 500, safeError(err, 'Failed to fetch deploy frequency'));
@@ -304,7 +311,9 @@ router.get('/lead-time', requireAuth, (req, res) => {
     try {
         const repoIds = parseRepoIds(req.query.repoIds);
         const since = req.query.since ? new Date(req.query.since) : undefined;
-        const data = leadTimeForChanges({ since, repoIds });
+        // Server-derived tenant boundary — see repoIdsFilter.
+        const scopeRepoIds = getScopedRepoIds(req.session?.userId);
+        const data = leadTimeForChanges({ since, repoIds, scopeRepoIds });
         res.json({ data });
     } catch (err) {
         errorResponse(res, 500, safeError(err, 'Failed to fetch lead time'));
@@ -319,7 +328,9 @@ router.get('/change-failure-rate', requireAuth, (req, res) => {
         const environment = req.query.environment || 'production';
         const repoIds = parseRepoIds(req.query.repoIds);
         const since = req.query.since ? new Date(req.query.since) : undefined;
-        const data = changeFailureRate({ environment, since, repoIds });
+        // Server-derived tenant boundary — see repoIdsFilter.
+        const scopeRepoIds = getScopedRepoIds(req.session?.userId);
+        const data = changeFailureRate({ environment, since, repoIds, scopeRepoIds });
         res.json({ data });
     } catch (err) {
         errorResponse(res, 500, safeError(err, 'Failed to fetch change failure rate'));
@@ -334,7 +345,9 @@ router.get('/mttr', requireAuth, (req, res) => {
         const environment = req.query.environment || 'production';
         const repoIds = parseRepoIds(req.query.repoIds);
         const since = req.query.since ? new Date(req.query.since) : undefined;
-        const data = meanTimeToRecovery({ environment, since, repoIds });
+        // Server-derived tenant boundary — see repoIdsFilter.
+        const scopeRepoIds = getScopedRepoIds(req.session?.userId);
+        const data = meanTimeToRecovery({ environment, since, repoIds, scopeRepoIds });
         res.json({ data });
     } catch (err) {
         errorResponse(res, 500, safeError(err, 'Failed to fetch MTTR'));
@@ -350,10 +363,12 @@ router.get('/dora', requireAuth, (req, res) => {
         const repoIds = parseRepoIds(req.query.repoIds);
         const since = req.query.since ? new Date(req.query.since) : undefined;
 
-        const deploy = deployFrequency({ environment, since, repoIds });
-        const lead = leadTimeForChanges({ since, repoIds });
-        const cfr = changeFailureRate({ environment, since, repoIds });
-        const mttr = meanTimeToRecovery({ environment, since, repoIds });
+        // Server-derived tenant boundary — see repoIdsFilter.
+        const scopeRepoIds = getScopedRepoIds(req.session?.userId);
+        const deploy = deployFrequency({ environment, since, repoIds, scopeRepoIds });
+        const lead = leadTimeForChanges({ since, repoIds, scopeRepoIds });
+        const cfr = changeFailureRate({ environment, since, repoIds, scopeRepoIds });
+        const mttr = meanTimeToRecovery({ environment, since, repoIds, scopeRepoIds });
 
         const isEmpty = (deploy?.totalDeployments || 0) === 0
             && (lead?.sampleSize || 0) === 0
@@ -396,10 +411,12 @@ router.get('/dora.csv', requireAuth, (req, res) => {
         const repoIds = parseRepoIds(req.query.repoIds);
         const since = req.query.since ? new Date(req.query.since) : undefined;
 
-        const deploy = deployFrequency({ environment, since, repoIds });
-        const lead = leadTimeForChanges({ since, repoIds });
-        const cfr = changeFailureRate({ environment, since, repoIds });
-        const mttr = meanTimeToRecovery({ environment, since, repoIds });
+        // Server-derived tenant boundary — see repoIdsFilter.
+        const scopeRepoIds = getScopedRepoIds(req.session?.userId);
+        const deploy = deployFrequency({ environment, since, repoIds, scopeRepoIds });
+        const lead = leadTimeForChanges({ since, repoIds, scopeRepoIds });
+        const cfr = changeFailureRate({ environment, since, repoIds, scopeRepoIds });
+        const mttr = meanTimeToRecovery({ environment, since, repoIds, scopeRepoIds });
 
         const headerRows = [
             ['metric', 'value'],
@@ -445,8 +462,10 @@ router.get('/tech-debt', requireAuth, async (req, res) => {
         const labels = req.query.labels
             ? String(req.query.labels).split(',').map(s => s.trim()).filter(Boolean)
             : undefined;
-        const webhookItems = listTechDebtIssues({ labels, repoIds, limit });
-        const hotspots = techDebtHotspots({ labels, repoIds });
+        // Server-derived tenant boundary — see repoIdsFilter.
+        const scopeRepoIds = getScopedRepoIds(req.session?.userId);
+        const webhookItems = listTechDebtIssues({ labels, repoIds, limit, scopeRepoIds });
+        const hotspots = techDebtHotspots({ labels, repoIds, scopeRepoIds });
 
         // Only use live fallback when no per-repo filtering is requested —
         // GitHub search cannot scope to our internal repoIds.

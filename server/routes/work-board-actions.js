@@ -21,6 +21,7 @@ import * as aggregations from '../lib/event-aggregations.js';
 import db from '../db.js';
 import { getSnapshots } from '../lib/work-board-kpi-snapshots.js';
 import logger from '../lib/logger.js';
+import { getScopedRepoIds } from '../lib/work-board-tracking.js';
 
 const router = express.Router();
 
@@ -286,13 +287,18 @@ function loadDataSources(userId, userLogin) {
     // meaningful and listMyOpenIssues runs an unbounded scan. Short-circuit
     // to an empty payload — the AI fact sheet will still render.
     const hasLogin = typeof userLogin === 'string' && userLogin.length > 0;
+    // Server-derived tenant boundary for the event-table aggregations below —
+    // see repoIdsFilter in lib/event-aggregations.js. Without it this fact
+    // sheet would put other tenants' private repo names and issue titles into
+    // this user's AI prompt.
+    const scopeRepoIds = getScopedRepoIds(userId);
     return {
         reviews:  hasLogin ? pluck('my_reviews', () => aggregations.listMyPendingReviews({ reviewerLogin: userLogin, limit: 20 })) : [],
-        stalePRs: pluck('stale_prs',  () => aggregations.listStalePRs({ staleAfterDays: 7, limit: 20 })),
+        stalePRs: pluck('stale_prs',  () => aggregations.listStalePRs({ staleAfterDays: 7, limit: 20, scopeRepoIds })),
         issues:   hasLogin ? pluck('my_issues',  () => aggregations.listMyOpenIssues({ assigneeLogin: userLogin, limit: 20 })) : [],
         techDebt: pluck('tech_debt', () => ({
-            items: aggregations.listTechDebtIssues({ limit: 20 }),
-            hotspots: aggregations.techDebtHotspots({}),
+            items: aggregations.listTechDebtIssues({ limit: 20, scopeRepoIds }),
+            hotspots: aggregations.techDebtHotspots({ scopeRepoIds }),
         }), { items: [], hotspots: [] }),
     };
 }

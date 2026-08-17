@@ -231,11 +231,32 @@ function copyStaticAppFiles(repoRoot, appDir) {
     copyFileSync(path.join(repoRoot, 'package.json'), path.join(appDir, 'package.json'));
     copyFileSync(path.join(repoRoot, 'package-lock.json'), path.join(appDir, 'package-lock.json'));
     cpSync(path.join(repoRoot, 'dist'), path.join(appDir, 'dist'), { recursive: true });
+
+    // Apache-2.0 §4(a) and §4(d): anyone who receives this archive must get the
+    // licence and the NOTICE with it. Without these, a downstream redistributor
+    // physically cannot comply from what we handed them.
+    for (const legal of ['LICENSE', 'NOTICE', 'TRADEMARKS.md']) {
+        copyFileSync(path.join(repoRoot, legal), path.join(appDir, legal));
+    }
+
     mkdirSync(path.join(appDir, 'scripts'), { recursive: true });
-    copyFileSync(
-        path.join(repoRoot, 'scripts', 'first-run.mjs'),
-        path.join(appDir, 'scripts', 'first-run.mjs'),
-    );
+    // first-run.mjs boots a fresh install; generate-secrets.mjs is the only
+    // tool the deploy guide gives for rotating CREDENTIAL_ENCRYPTION_KEY, and
+    // a server upgrade repopulates the whole tree from this archive — leave it
+    // out and the rotation procedure has no tool on the box.
+    for (const script of ['first-run.mjs', 'generate-secrets.mjs']) {
+        copyFileSync(
+            path.join(repoRoot, 'scripts', script),
+            path.join(appDir, 'scripts', script),
+        );
+    }
+
+    // The deploy tooling has to survive the deploy. deploy.ps1 empties AppRoot
+    // and repopulates it from this archive, so anything not in here is gone
+    // after the first upgrade — including deploy.ps1 itself, and the rollback
+    // command it prints on the way out.
+    cpSync(path.join(repoRoot, 'deploy'), path.join(appDir, 'deploy'), { recursive: true });
+
     copyServerTree(repoRoot, appDir);
     copyPublicKeyOnly(repoRoot, appDir);
 }

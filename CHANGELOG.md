@@ -7,6 +7,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Work Board aggregations were unscoped across tenants.** The webhook event
+  tables carry no `user_id` — one ingest writes every customer's events into
+  one pool keyed on repo — and `repoIdsFilter` took a single *optional,
+  client-supplied* `repoIds`, returning an empty clause when it was absent.
+  That is the default call. So `/stale-prs`, `/review-load`, `/tech-debt` and
+  the four DORA metrics returned every tenant's private repo names, PR titles,
+  issue titles and reviewer logins to any authenticated user on any tier, and
+  the Work Board AI fact sheet put them into that user's prompt.
+
+  The boundary now lives in `repoIdsFilter`: `scopeRepoIds` is mandatory and
+  derived from the session user's tracked repos, the client's `repoIds` can
+  only intersect it, an empty scope produces `AND 0` rather than no clause,
+  and a caller that forgets it gets a `TypeError` naming the boundary instead
+  of a silent full-table read. Threaded through 19 call sites.
+
+- **An API key could permanently rewrite the browser session.**
+  `apiKeyAuth` assigned `req.session.userId` on the real express-session
+  object; with `resave:false` the store persists it. One GET with a read-only
+  key rewrote the caller's cookie session to another identity — and on every
+  later cookie-only request `req.apiKeyId` was undefined, so `requireScope`'s
+  session waiver applied and the key's scope limits were gone. Revoking the
+  key did not help: revocation is only checked on requests carrying it.
+  Mixed-identity requests are now refused, and the identity is written to a
+  request-scoped object rather than the store's.
+
+- **Encoded path traversal in the Contents routes.** The guard compared each
+  segment to the literal `..`; Express decodes once, so `%252e%252e` arrived
+  as `%2e%2e` and passed, and the URL parser inside fetch collapsed it —
+  turning `/repos/o/r/contents/%2e%2e/%2e%2e/%2e%2e/user/repos` into
+  `/repos/user/repos`, reached with the caller's OAuth token (scopes include
+  `delete_repo` and `admin:org`) on GET, PUT **and** DELETE. Segments are now
+  decoded to a fixed point before comparison, and encoded per segment at all
+  three sinks.
+
+- **An instance licence upgraded every tenant.** `getUserTier` used the userId
+  only for the Stripe lookup, then returned the module-global licence tier to
+  any caller — including anonymous requests, since `attachTier` runs on all of
+  them. Correct for self-hosting, wrong the moment billing is on. The instance
+  licence is now gated on `DEPLOYMENT_MODE` (default `self-host`, so nothing
+  changes for existing installs) and never applies to an anonymous caller.
+
+### Fixed
+
+- **The upgrade section of the IIS guide was unusable.** Four commands carried
+  a BEL control character where `C:\apps` should be — a `\a` escape written
+  literally — so every copy-paste failed with `AppRoot does not exist:
+  C:pps\GitHubRepoManager`. Same corruption class fixed in
+  `production.env.example`.
+
+- **No distributed artifact carried the licence.** The Docker image, the
+  Windows ZIP and the installer all omitted `LICENSE` and `NOTICE`, so a
+  downstream redistributor could not comply with Apache-2.0 §4(a)/§4(d) from
+  what they were given. The installer now shows the terms, and the package
+  carries `LICENSE`, `NOTICE` and `TRADEMARKS.md`.
+
+- **`deploy.ps1` deleted its own tooling on the first upgrade.** It empties
+  `AppRoot` and repopulates from the release zip, which did not contain
+  `deploy/` — so the rollback command it prints on the way out pointed at a
+  file it had just removed, and the documented secret-rotation tool went with
+  it. The package now carries both.
+
+- **The licence sweep was incomplete.** The visible ones mattered most: the
+  app footer read "Source code (AGPL v3)" on every view, the landing page
+  labelled the Apache text "AGPL v3", and the pricing FAQ told buyers the app
+  was "self-hostable under AGPL". Also corrected: the winget manifest, the CLA
+  bot's comment to first-time contributors, `.env.example`'s §13 instructions,
+  seven `packaging/windows` headers, `CLA.md` and `CONTRIBUTING.md`'s
+  "dual-license model", and the repository's own `agpl` topic.
+
+- **`production.env.example` was missing the two variables that stand between
+  a public launch and an open-ended bill** — `AI_SPEND_CAP_CENTS_*` and
+  `AI_REQUIRE_USER_CONFIG`. The per-user quotas are counts, not money.
+
 ## [4.19.0] - 2026-08-15
 
 ### Changed

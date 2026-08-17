@@ -454,7 +454,7 @@ re-buffers SSE.)
 One command, and it puts itself back if the new build does not come up:
 
 ```powershell
-.\deploy\iis\deploy.ps1 -FromRelease latest -AppRoot C:pps\GitHubRepoManager
+.\deploy\iis\deploy.ps1 -FromRelease latest -AppRoot C:\apps\GitHubRepoManager
 ```
 
 `-FromRelease latest` pulls the release zip, verifies its SHA-256 against the
@@ -490,13 +490,13 @@ Other things it does:
 
 ```powershell
 # See what would happen; changes nothing, needs no elevation
-.\deploy\iis\deploy.ps1 -ZipPath .\pkg.zip -AppRoot C:pps\GitHubRepoManager -DryRun
+.\deploy\iis\deploy.ps1 -ZipPath .\pkg.zip -AppRoot C:\apps\GitHubRepoManager -DryRun
 
 # What can I go back to?
-.\deploy\iis\deploy.ps1 -AppRoot C:pps\GitHubRepoManager -ListBackups
+.\deploy\iis\deploy.ps1 -AppRoot C:\apps\GitHubRepoManager -ListBackups
 
 # Go back (most recent, or -BackupName)
-.\deploy\iis\deploy.ps1 -AppRoot C:pps\GitHubRepoManager -Rollback
+.\deploy\iis\deploy.ps1 -AppRoot C:\apps\GitHubRepoManager -Rollback
 ```
 
 Three backups are kept by default (`-KeepBackups`). Re-run

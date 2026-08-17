@@ -7,7 +7,7 @@
  * Vite's DCE drops the entire import branch in production bundles.
  *
  * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
- * Licensed under the AGPL-3.0. See LICENSE in the project root.
+ * Licensed under the Apache License 2.0. See LICENSE in the project root.
  */
 
 // Simple deterministic hash so same repo always gets same mock data.

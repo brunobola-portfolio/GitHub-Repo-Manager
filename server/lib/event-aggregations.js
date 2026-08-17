@@ -14,15 +14,42 @@ import db from '../db.js';
 // ---------------------------------------------------------------------------
 
 /**
- * Build an IN-clause fragment + bindings when repoIds is provided.
- * Returns { clause: '', bindings: [] } when repoIds is absent/empty.
+ * Build the repo IN-clause for a query over the shared event tables.
+ *
+ * THE TENANT BOUNDARY LIVES HERE. pr_events, issue_events, deployment_events
+ * and review_assignments have no user_id column — one webhook ingests events
+ * for every customer into one pool, keyed on repo. The only thing that says a
+ * repo belongs to someone is work_board_tracked_repos.
+ *
+ * This used to take one optional, CLIENT-SUPPLIED `repoIds` and return an
+ * empty clause when it was absent, which meant the default call — the one
+ * every route makes when the user has not picked a filter — read every
+ * tenant's private repo names, PR titles and issue titles.
+ *
+ * `scopeRepoIds` is now mandatory and server-derived (getScopedRepoIds).
+ * `repoIds` remains the caller's optional narrowing and can only ever
+ * intersect, never widen. An empty scope yields a clause that matches
+ * nothing — the safe direction.
  */
-function repoIdsFilter(repoIds) {
-    if (!Array.isArray(repoIds) || repoIds.length === 0) {
-        return { clause: '', bindings: [] };
+function repoIdsFilter(repoIds, scopeRepoIds) {
+    if (!Array.isArray(scopeRepoIds)) {
+        // Fail closed and loudly. A caller that forgot the scope is a caller
+        // that was about to read another tenant's data.
+        throw new TypeError('repoIdsFilter: scopeRepoIds is required (tenant boundary)');
     }
-    const placeholders = repoIds.map(() => '?').join(', ');
-    return { clause: ` AND repo_id IN (${placeholders})`, bindings: repoIds };
+
+    let allowed = scopeRepoIds;
+    if (Array.isArray(repoIds) && repoIds.length > 0) {
+        const requested = new Set(repoIds.map(Number));
+        allowed = scopeRepoIds.filter((id) => requested.has(Number(id)));
+    }
+
+    if (allowed.length === 0) {
+        // `AND 0` rather than an empty clause: no rows, by construction.
+        return { clause: ' AND 0', bindings: [] };
+    }
+    const placeholders = allowed.map(() => '?').join(', ');
+    return { clause: ` AND repo_id IN (${placeholders})`, bindings: allowed };
 }
 
 function daysSince(isoDate) {
@@ -96,8 +123,8 @@ export function listMyPendingReviews({ reviewerLogin, limit = 100 }) {
  * @param {number} [opts.limit=50]
  * @returns {Array<{ repoFullName, prNumber, title, authorLogin, openedAt, ageDays }>}
  */
-export function listStalePRs({ staleAfterDays = 7, repoIds, limit = 50 } = {}) {
-    const { clause, bindings } = repoIdsFilter(repoIds);
+export function listStalePRs({ staleAfterDays = 7, repoIds, limit = 50, scopeRepoIds } = {}) {
+    const { clause, bindings } = repoIdsFilter(repoIds, scopeRepoIds);
     const cutoff = new Date(Date.now() - staleAfterDays * 24 * 60 * 60 * 1000).toISOString();
 
     // GitHub sends action='closed' for both merged and unmerged closes (no
@@ -232,9 +259,9 @@ export function listMyOpenIssues({ assigneeLogin, limit = 100 }) {
  * @param {number[]} [opts.repoIds]
  * @returns {{ totalDeployments, perDay: Array<{ date, count }> }}
  */
-export function deployFrequency({ environment = 'production', since, repoIds } = {}) {
+export function deployFrequency({ environment = 'production', since, repoIds, scopeRepoIds } = {}) {
     const sinceDate = since instanceof Date ? since : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const { clause, bindings } = repoIdsFilter(repoIds);
+    const { clause, bindings } = repoIdsFilter(repoIds, scopeRepoIds);
 
     const rows = db.prepare(`
         SELECT
@@ -269,9 +296,9 @@ export function deployFrequency({ environment = 'production', since, repoIds } =
  * @param {number[]} [opts.repoIds]
  * @returns {{ sampleSize, medianHours, p50, p90 }}
  */
-export function leadTimeForChanges({ since, repoIds } = {}) {
+export function leadTimeForChanges({ since, repoIds, scopeRepoIds } = {}) {
     const sinceDate = since instanceof Date ? since : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const { clause, bindings } = repoIdsFilter(repoIds);
+    const { clause, bindings } = repoIdsFilter(repoIds, scopeRepoIds);
 
     // Pairs: (opened_at, closed_at) for merged PRs closed in window
     const rows = db.prepare(`
@@ -337,10 +364,10 @@ const DEFAULT_DEBT_LABELS = [
  * @param {number} [opts.limit=100]
  * @returns {Array<{ repoFullName, issueNumber, title, labels, openedAt, ageDays, assignees }>}
  */
-export function listTechDebtIssues({ labels, repoIds, limit = 100 } = {}) {
+export function listTechDebtIssues({ labels, repoIds, limit = 100, scopeRepoIds } = {}) {
     const wanted = (Array.isArray(labels) && labels.length > 0 ? labels : DEFAULT_DEBT_LABELS)
         .map(l => String(l).toLowerCase());
-    const { clause, bindings } = repoIdsFilter(repoIds);
+    const { clause, bindings } = repoIdsFilter(repoIds, scopeRepoIds);
 
     // When repoIds is supplied, scope the "latest row per (repo, issue)"
     // computation to those repos so the inner GROUP BY is a bounded indexed
@@ -415,8 +442,10 @@ export function listTechDebtIssues({ labels, repoIds, limit = 100 } = {}) {
  * Count of open debt-labelled issues grouped by repo — used by the Tech Debt
  * tab to show hotspots.
  */
-export function techDebtHotspots({ labels, repoIds } = {}) {
-    const items = listTechDebtIssues({ labels, repoIds, limit: 1000 });
+export function techDebtHotspots({ labels, repoIds, scopeRepoIds } = {}) {
+    // Forward the scope: this delegates, so forgetting it here would be the
+    // same tenant leak one call deeper.
+    const items = listTechDebtIssues({ labels, repoIds, limit: 1000, scopeRepoIds });
     const byRepo = new Map();
     for (const it of items) {
         const prev = byRepo.get(it.repoFullName) || { repoFullName: it.repoFullName, count: 0, oldestAgeDays: 0 };
@@ -442,9 +471,9 @@ export function techDebtHotspots({ labels, repoIds } = {}) {
  * @param {number[]} [opts.repoIds]
  * @returns {{ total, failed, successful, rate }}  — rate is 0..1 (null if total=0)
  */
-export function changeFailureRate({ environment = 'production', since, repoIds } = {}) {
+export function changeFailureRate({ environment = 'production', since, repoIds, scopeRepoIds } = {}) {
     const sinceDate = since instanceof Date ? since : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const { clause, bindings } = repoIdsFilter(repoIds);
+    const { clause, bindings } = repoIdsFilter(repoIds, scopeRepoIds);
 
     // For each deployment_id, the final recorded state in the window.
     const rows = db.prepare(`
@@ -490,9 +519,9 @@ export function changeFailureRate({ environment = 'production', since, repoIds }
  * @param {number[]} [opts.repoIds]
  * @returns {{ sampleSize, medianHours, p50, p90, unresolved }}
  */
-export function meanTimeToRecovery({ environment = 'production', since, repoIds } = {}) {
+export function meanTimeToRecovery({ environment = 'production', since, repoIds, scopeRepoIds } = {}) {
     const sinceDate = since instanceof Date ? since : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const { clause, bindings } = repoIdsFilter(repoIds);
+    const { clause, bindings } = repoIdsFilter(repoIds, scopeRepoIds);
 
     const rows = db.prepare(`
         SELECT
@@ -599,9 +628,9 @@ export function listMyOpenPRs({ authorLogin, limit = 100 } = {}) {
  * @param {number[]} [opts.repoIds]
  * @returns {Array<{ reviewerLogin, reviewsSubmitted, reviewsPending }>}
  */
-export function reviewLoadByReviewer({ since, repoIds } = {}) {
+export function reviewLoadByReviewer({ since, repoIds, scopeRepoIds } = {}) {
     const sinceDate = since instanceof Date ? since : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const { clause, bindings } = repoIdsFilter(repoIds);
+    const { clause, bindings } = repoIdsFilter(repoIds, scopeRepoIds);
 
     const rows = db.prepare(`
         SELECT
