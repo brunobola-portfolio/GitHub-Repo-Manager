@@ -54,6 +54,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A phone cut the repository card's description in half.** The clamp was
+  `line-clamp-1` below 640px while `min-h-[2.5em]` reserved two lines, so the
+  box was 35px tall, painted a single 20px line, and truncated the rest. The
+  grid is `minmax(min(--card-min-width, 100%), 1fr)`, so a phone gets one
+  full-width card — the widest the card ever is relative to its viewport, and
+  the worst place to clamp hardest. Measured `truncated: false` at 375, 414,
+  639 and 640px after, with no row growth where the text already fitted.
+
+- **The migration wizard's Git URL tile was emerald**, not as a status but so
+  it would not look like the two brand-coloured tiles beside it. Colour used
+  only to tell two cards apart is what the single accent ramp replaced.
+
 - **The upgrade section of the IIS guide was unusable.** Four commands carried
   a BEL control character where `C:\apps` should be — a `\a` escape written
   literally — so every copy-paste failed with `AppRoot does not exist:
