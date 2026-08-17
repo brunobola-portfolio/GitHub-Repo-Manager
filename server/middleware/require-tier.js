@@ -84,11 +84,34 @@ function maybeKickLicenseRefresh() {
     .finally(() => { licenseRefreshInFlight = null })
 }
 
+/**
+ * Does the instance licence grant a tier to this caller?
+ *
+ * A licence key is an INSTANCE entitlement — "this deployment is Pro" — which
+ * is exactly right for self-hosting, where the operator and the user are the
+ * same person. It is exactly wrong for a multi-tenant deployment, where it
+ * would hand every signup the tier the operator bought for themselves.
+ *
+ * Two guards, both conservative:
+ *
+ *  - An anonymous request never receives a paid tier. `attachTier` runs on
+ *    every /api/* request including unauthenticated ones, so without this the
+ *    rate-limit budget of a paid tier applies before anyone has logged in.
+ *  - In SaaS mode the instance licence grants nothing; Stripe is the only
+ *    source of a paid tier. Mode is explicit (DEPLOYMENT_MODE) and defaults to
+ *    self-host, which is what every existing install is — this changes nothing
+ *    for them, and an operator who turns on billing has to say so.
+ */
+function instanceLicenceApplies(userId) {
+  if (!userId) return false
+  return (process.env.DEPLOYMENT_MODE || 'self-host') !== 'saas'
+}
+
 export function getUserTier(userId) {
   const stripeTier = getStripeTier(userId)
   if (stripeTier && stripeTier !== 'free') return stripeTier
 
-  if (cachedLicenseTier && PUBLIC_KEY) {
+  if (cachedLicenseTier && PUBLIC_KEY && instanceLicenceApplies(userId)) {
     if (cachedLicensePayload && isLicenseExpired(cachedLicensePayload)) {
       // Cache the exp before we null the payload so the log line shows the
       // real expiration timestamp instead of `undefined` (caught in review).
