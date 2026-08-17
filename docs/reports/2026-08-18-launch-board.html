@@ -1,0 +1,566 @@
+<title>Repo Manager Launch Board</title>
+<style>
+  /* Light is the base set. Every colour is a token; nothing is declared only
+     inside a media block, so the un-stamped "system" state resolves too. */
+  :root {
+    --ground:      #fbfcfa;
+    --surface:     #ffffff;
+    --surface-sunk:#f2f5f2;
+    --ink:         #101a12;
+    --muted:       #5a6b5d;
+    --line:        #dde5df;
+    --line-strong: #c3d0c6;
+
+    /* The product's own accent. #3f7d12 is 5.06:1 on white AND on ink, so it
+       carries text in both directions; the lime is fill-only, never type. */
+    --accent:      #3f7d12;
+    --accent-soft: #eaf4e0;
+    --lime:        #7fc528;
+
+    --done:        #3f7d12;
+    --done-soft:   #eaf4e0;
+    --open:        #8a4f00;
+    --open-soft:   #fbf0dd;
+    --wait:        #3c5a86;
+    --wait-soft:   #e6edf7;
+
+    --shadow: 0 1px 2px rgba(16,26,18,.05), 0 8px 24px -12px rgba(16,26,18,.12);
+
+    --display: "Segoe UI Variable Display", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+    --body:    "Segoe UI Variable Text", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+    --data:    "Cascadia Code", "Cascadia Mono", ui-monospace, SFMono-Regular, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0b110c;
+      --surface:     #131a14;
+      --surface-sunk:#0f1610;
+      --ink:         #e6ede7;
+      --muted:       #93a396;
+      --line:        #243026;
+      --line-strong: #354538;
+
+      --accent:      #8fd23f;
+      --accent-soft: #1a2a12;
+      --lime:        #7fc528;
+
+      --done:        #8fd23f;
+      --done-soft:   #1a2a12;
+      --open:        #e8b45c;
+      --open-soft:   #2c2213;
+      --wait:        #9db9e0;
+      --wait-soft:   #16202e;
+
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #0b110c;
+    --surface:     #131a14;
+    --surface-sunk:#0f1610;
+    --ink:         #e6ede7;
+    --muted:       #93a396;
+    --line:        #24302e;
+    --line-strong: #354538;
+
+    --accent:      #8fd23f;
+    --accent-soft: #1a2a12;
+    --lime:        #7fc528;
+
+    --done:        #8fd23f;
+    --done-soft:   #1a2a12;
+    --open:        #e8b45c;
+    --open-soft:   #2c2213;
+    --wait:        #9db9e0;
+    --wait-soft:   #16202e;
+
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 61rem;
+    margin: 0 auto;
+    padding: clamp(2rem, 5vw, 4rem) clamp(1.1rem, 4vw, 2.5rem) 5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3.5rem;
+  }
+
+  /* ---- masthead ---- */
+  .mast { display: flex; flex-direction: column; gap: 1.25rem; }
+  .eyebrow {
+    font-family: var(--data);
+    font-size: .74rem;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(2rem, 5.5vw, 3rem);
+    line-height: 1.06;
+    letter-spacing: -.024em;
+    text-wrap: balance;
+    margin: 0;
+  }
+  .standfirst {
+    max-width: 60ch;
+    color: var(--muted);
+    font-size: 1.06rem;
+    margin: 0;
+  }
+
+  .figures {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: .5rem;
+  }
+  .figure { background: var(--surface); padding: .95rem 1.1rem; display: flex; flex-direction: column; gap: .2rem; }
+  .figure b {
+    font-family: var(--data);
+    font-variant-numeric: tabular-nums;
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -.02em;
+    line-height: 1.1;
+  }
+  .figure span { font-size: .8rem; color: var(--muted); }
+
+  /* ---- sections ---- */
+  section { display: flex; flex-direction: column; gap: 1.4rem; }
+  h2 {
+    font-family: var(--display);
+    font-size: 1.34rem;
+    font-weight: 650;
+    letter-spacing: -.014em;
+    margin: 0;
+    padding-bottom: .6rem;
+    border-bottom: 2px solid var(--line-strong);
+  }
+  h2 .count {
+    font-family: var(--data);
+    font-size: .8rem;
+    font-weight: 500;
+    color: var(--muted);
+    margin-left: .55rem;
+  }
+  .lede { margin: 0; color: var(--muted); max-width: 68ch; }
+
+  /* ---- lane ---- */
+  .lane { display: flex; flex-direction: column; gap: .85rem; }
+  .lane-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .4rem .9rem;
+  }
+  .lane-head h3 {
+    font-family: var(--display);
+    font-size: 1rem;
+    font-weight: 650;
+    margin: 0;
+    letter-spacing: -.008em;
+  }
+  .lane-head code, .path {
+    font-family: var(--data);
+    font-size: .8rem;
+    color: var(--muted);
+  }
+
+  /* ---- item card: the stripe is the status, so it is never decoration ---- */
+  .items { display: flex; flex-direction: column; gap: .55rem; }
+  .item {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--line-strong);
+    border-radius: 8px;
+    padding: .85rem 1.05rem;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+  }
+  .item.done { border-left-color: var(--done); }
+  .item.open { border-left-color: var(--open); }
+  .item.wait { border-left-color: var(--wait); }
+
+  .item-top { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; }
+  .item-top strong { font-weight: 620; font-size: .96rem; letter-spacing: -.005em; }
+  .item p { margin: 0; color: var(--muted); font-size: .9rem; }
+  .item p + p { margin-top: .3rem; }
+
+  .pill {
+    font-family: var(--data);
+    font-size: .68rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: .16rem .5rem;
+    border-radius: 999px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .pill.done { background: var(--done-soft); color: var(--done); }
+  .pill.open { background: var(--open-soft); color: var(--open); }
+  .pill.wait { background: var(--wait-soft); color: var(--wait); }
+
+  code.inl {
+    font-family: var(--data);
+    font-size: .84em;
+    background: var(--surface-sunk);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: .06em .34em;
+    word-break: break-word;
+  }
+
+  /* ---- the server sequence: numbered because the order is load-bearing ---- */
+  ol.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .55rem; counter-reset: s; }
+  ol.steps > li {
+    counter-increment: s;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: .85rem 1.05rem .85rem 3.1rem;
+    position: relative;
+    box-shadow: var(--shadow);
+  }
+  ol.steps > li::before {
+    content: counter(s);
+    position: absolute;
+    left: 1rem;
+    top: .85rem;
+    font-family: var(--data);
+    font-variant-numeric: tabular-nums;
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-soft);
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 5px;
+    display: grid;
+    place-items: center;
+  }
+  ol.steps strong { display: block; font-weight: 620; font-size: .96rem; margin-bottom: .18rem; }
+  ol.steps p { margin: 0; color: var(--muted); font-size: .9rem; }
+  .warn {
+    display: block;
+    margin-top: .45rem;
+    padding-left: .7rem;
+    border-left: 2px solid var(--open);
+    color: var(--ink);
+    font-size: .88rem;
+  }
+
+  .scroller { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; min-width: 30rem; }
+  th, td { text-align: left; padding: .5rem .8rem; border-bottom: 1px solid var(--line); }
+  th { font-family: var(--data); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+  td.num { font-family: var(--data); font-variant-numeric: tabular-nums; }
+
+  footer { color: var(--muted); font-size: .85rem; border-top: 1px solid var(--line); padding-top: 1.2rem; }
+</style>
+
+<div class="wrap">
+
+  <header class="mast">
+    <p class="eyebrow">Estado · 18 agosto 2026</p>
+    <h1>Repo Manager Launch Board</h1>
+    <p class="standfirst">
+      Onde está cada peça do lançamento em <code class="inl">repomanager.bolalabs.pt</code>,
+      o que fechei nesta sessão, e o que falta — separado por onde o trabalho vive.
+    </p>
+
+    <div class="figures">
+      <div class="figure"><b>4.20.0</b><span>versão a sair</span></div>
+      <div class="figure"><b>7&nbsp;223</b><span>testes a passar</span></div>
+      <div class="figure"><b>10</b><span>correções fechadas hoje</span></div>
+      <div class="figure"><b>2</b><span>achados ainda abertos</span></div>
+    </div>
+  </header>
+
+  <section>
+    <h2>Fechado nesta sessão <span class="count">10 itens · 2 repositórios</span></h2>
+
+    <div class="lane">
+      <div class="lane-head">
+        <h3>Aplicação</h3>
+        <code>brunobola-portfolio/GitHub-Repo-Manager · PR #329</code>
+      </div>
+      <div class="items">
+
+        <div class="item done">
+          <div class="item-top"><strong>Travessia de caminho nos parâmetros de rota</strong><span class="pill done">segurança</span></div>
+          <p>
+            Fechar o caso do Contents fechou uma porta em trinta. O Express descodifica os
+            parâmetros de rota e <code class="inl">%2f</code> não separa segmentos durante o
+            encaminhamento, por isso um parâmetro carrega um caminho inteiro:
+            <code class="inl">PATCH /api/repos/o/r/issues/%2e%2e%2f%2e%2e%2f%2e%2e%2fuser%2frepos</code>
+            resolvia para <code class="inl">/repos/user/repos</code> — chamada autenticada
+            arbitrária com o token OAuth de quem pede.
+          </p>
+          <p>
+            Reproduzido contra um router Express antes de escrever a correção. Um
+            <code class="inl">..</code> simples já dava 404 sozinho, o que é precisamente por
+            que um teste que só experimenta <code class="inl">..</code> prova o contrário do que
+            parece provar. Resolvido uma vez em <code class="inl">middleware/no-path-traversal.js</code>,
+            à frente de todos os routers.
+          </p>
+        </div>
+
+        <div class="item done">
+          <div class="item-top"><strong>Tarifa anónima aplicada a clientes pagantes</strong><span class="pill done">faturação</span></div>
+          <p>
+            O limitador global corre antes da sessão, logo antes do limitador por escalão — e
+            sendo o primeiro, e por IP, era o limite real para toda a gente. Um cliente
+            Enterprise a quem se vendem 2&nbsp;000 pedidos/15&nbsp;min recebia 200, partilhados
+            por todos os colegas atrás do mesmo NAT do escritório. Cerca de treze pedidos por
+            minuto para a empresa inteira.
+          </p>
+        </div>
+
+        <div class="item done">
+          <div class="item-top"><strong>Rotas bulk aceitavam qualquer texto com uma barra</strong><span class="pill done">segurança</span></div>
+          <p>
+            Não é escalada — o token já limita o alcance. O que se perdia era a contabilidade
+            da própria aplicação: <code class="inl">a/../../repos/other/thing</code> contava como
+            uma entrada no tecto diário destrutivo, ia literal para a linha de auditoria, e
+            depois resolvia para outro repositório. O registo de uma ação destrutiva deixava de
+            descrever a ação.
+          </p>
+        </div>
+
+        <div class="item done">
+          <div class="item-top"><strong>Descrição do cartão cortada ao meio no telemóvel</strong><span class="pill done">interface</span></div>
+          <p>
+            Medido na app a correr a 375&nbsp;px: caixa de 35&nbsp;px, uma linha de 20&nbsp;px
+            pintada, segunda linha cortada — a grelha pagava por uma linha que depois se
+            recusava a mostrar, no ecrã mais estreito.
+          </p>
+        </div>
+
+        <div class="item done">
+          <div class="item-top"><strong>Azulejo fora da marca no assistente de migração</strong><span class="pill done">marca</span></div>
+          <p>
+            O separador «Git URL» era emerald, não como estado mas para não se parecer com os
+            dois vizinhos. Cor usada só para distinguir dois cartões é exatamente o que a rampa
+            única substituiu.
+          </p>
+        </div>
+
+        <div class="item done">
+          <div class="item-top"><strong>Lockfile a declarar uma versão falsa</strong><span class="pill done">higiene</span></div>
+          <p>
+            O bump da 4.19.0 reescreveu o campo <code class="inl">version</code> do
+            <code class="inl">lodash-es</code> com uma substituição cega. O tarball resolvido
+            sempre foi o 4.18.1, por isso o <code class="inl">npm ci</code> nunca reparou — o
+            lockfile apenas afirmava algo falso sobre uma dependência.
+          </p>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="lane" style="margin-top:1.6rem">
+      <div class="lane-head">
+        <h3>Site</h3>
+        <code>BolaLabs/MainSite · PR #1</code>
+      </div>
+      <div class="items">
+
+        <div class="item done">
+          <div class="item-top"><strong>Licença: AGPL-3.0 → Apache-2.0</strong><span class="pill done">jurídico</span></div>
+          <p>
+            Nove textos ainda diziam «open-core (AGPL-3.0)», e o <code class="inl">/terms</code>
+            dizia a quem visitava que as funcionalidades Enterprise precisam de licença comercial
+            à parte. Sob Apache-2.0 a aplicação inteira está coberta e ninguém precisa de
+            autorização — logo, não sobra autorização nenhuma para vender. Corrigido nas quatro
+            línguas.
+          </p>
+        </div>
+
+        <div class="item done">
+          <div class="item-top"><strong>Limites dos planos, todos errados por defeito</strong><span class="pill done">conteúdo</span></div>
+          <div class="scroller">
+            <table>
+              <thead><tr><th>Plano</th><th>O site dizia</th><th>É</th></tr></thead>
+              <tbody>
+                <tr><td>Free</td><td class="num">200 repos · 200 IA/mês · 3 equipas · 5 chaves</td><td class="num">repos e equipas ilimitados · 1 000 IA/mês · 25 chaves</td></tr>
+                <tr><td>Pro</td><td class="num">5 000 IA/mês · 15 membros · 10 chaves</td><td class="num">10 000 IA/mês · membros ilimitados · 50 chaves</td></tr>
+                <tr><td>Enterprise</td><td class="num">50 chaves</td><td class="num">100 chaves</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Saiu também o «cerca de 20% de desconto no plano anual»: o produto deriva esse
+            desconto do preço Stripe do operador, por isso nenhuma percentagem fixa é verdadeira.
+            Contagem de testes atualizada de 4 640 para 7 200+.
+          </p>
+        </div>
+
+        <div class="item done">
+          <div class="item-top"><strong>«Em produção» era um booleano em quatro sítios</strong><span class="pill done">coerência</span></div>
+          <p>
+            O subdomínio responde, mas com uma página de espera <code class="inl">noindex</code>.
+            A afirmação estava escrita à mão no menu de produtos, no terminal da Home (onde
+            alimenta o contador <code class="inl">{live}</code>, portanto contava um produto
+            público que não existe) e em dois botões «Abrir a app» que aterravam na página de
+            espera. Passam todos a derivar de <code class="inl">REPOMANAGER_IS_LIVE</code>.
+          </p>
+        </div>
+
+        <div class="item done">
+          <div class="item-top"><strong>As dez capturas eram do branding antigo</strong><span class="pill done">marca</span></div>
+          <p>
+            A página vendia uma aplicação violeta-e-índigo que já não existe. Seis tinham
+            equivalente atual no repo do produto; quatro voltei a captar em modo mock a
+            1920×1080 — a dimensão que o manifesto fixa. Duas ficaram melhores do que as que
+            substituem: o assistente mostra agora uma pergunta e resposta reais em vez de um
+            painel vazio, e o assistente de migração mostra o passo de ligação ao Azure DevOps
+            em vez de três azulejos num frame vazio.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Ainda aberto <span class="count">2 achados · nenhum bloqueia o arranque</span></h2>
+    <p class="lede">
+      Validei ambos no código esta sessão. Nenhum é uma correção de linha — por isso trago-os
+      em vez de os empurrar para dentro de uma release.
+    </p>
+    <div class="items">
+
+      <div class="item open">
+        <div class="item-top"><strong>Diffs de PR chegam aos fornecedores de IA sem redação</strong><span class="pill open">a decidir</span></div>
+        <p>
+          <code class="inl">secret-redactor.js</code> existe e funciona, mas só está ligado ao
+          <code class="inl">repo-context-builder.js</code>. As três funcionalidades que enviam
+          diffs — <code class="inl">pr-deep-review</code>, <code class="inl">pr-chat</code>,
+          <code class="inl">pr-review</code> — não o chamam. Um PR que acrescente um
+          <code class="inl">.env</code> ou uma chave escrita à mão envia essa linha tal e qual.
+        </p>
+        <p>
+          <b>Porque não o corrigi já:</b> a regex atual apanha nomes de identificadores
+          (<code class="inl">token</code>, <code class="inl">secret</code>,
+          <code class="inl">password</code>), o que num diff de revisão apagaria metade das
+          linhas e tornaria a funcionalidade inútil. O que isto precisa é de padrões com a forma
+          do <em>valor</em> — <code class="inl">sk-</code>, <code class="inl">ghp_</code>,
+          <code class="inl">github_pat_</code>, chaves AWS, atribuições de alta entropia. É meia
+          hora de trabalho, mas é uma decisão sobre falsos positivos, não uma correção óbvia.
+        </p>
+      </div>
+
+      <div class="item open">
+        <div class="item-top"><strong>Segredo de webhook único para toda a instância</strong><span class="pill open">só em SaaS</span></div>
+        <p>
+          Em auto-alojamento está correto: o operador é o dono da instância. Em multi-inquilino,
+          cada cliente configuraria o mesmo segredo no seu GitHub, e portanto poderia assinar
+          eventos para repositórios de outro. O isolamento do Work Board que fechei no PR #328
+          limita o que daí se vê, mas a escrita de eventos falsos continua possível.
+        </p>
+        <p>
+          <b>Só morde se abrires o SaaS multi-inquilino.</b> Com
+          <code class="inl">DEPLOYMENT_MODE=self-host</code> — o que vais lançar — não se
+          aplica. A correção é uma coluna por inquilino e um fluxo de rotação, não um patch.
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>O que fazes a seguir</h2>
+    <p class="lede">
+      Por esta ordem. Os passos 3 a 5 são no servidor e a ordem aí é obrigatória — o certificado
+      tem de existir antes de forçares o redirect, ou fechas-te fora do site.
+    </p>
+    <ol class="steps">
+
+      <li>
+        <strong>Fazer merge do PR #329 e marcar a v4.20.0</strong>
+        <p>
+          Leva as quatro correções de segurança, as duas de interface e o reparo do lockfile.
+          Confirma tu o <code class="inl">gh pr checks</code> da execução mais recente antes do
+          merge — a proteção de branch aqui não bloqueia merges com verificações vermelhas.
+        </p>
+      </li>
+
+      <li>
+        <strong>Fazer merge do PR #1 em BolaLabs/MainSite</strong>
+        <p>
+          O site deixa de afirmar a licença errada, os limites errados e uma produção que ainda
+          não existe. <code class="inl">npm run build</code> e
+          <code class="inl">tsc --noEmit</code> verdes.
+        </p>
+      </li>
+
+      <li>
+        <strong>Instalar o ARR no IIS</strong>
+        <p>
+          Application Request Routing mais URL Rewrite. Sem o ARR, o IIS não faz proxy reverso
+          para o Node em <code class="inl">127.0.0.1:3001</code> e o site fica no ar sem
+          aplicação por trás.
+        </p>
+      </li>
+
+      <li>
+        <strong>Emitir o certificado para <code class="inl">repomanager.bolalabs.pt</code></strong>
+        <p>
+          Segue as nove secções do guia em <code class="inl">docs/guides/deploy-iis-windows.md</code>.
+        </p>
+        <span class="warn">
+          O redirect HTTP→HTTPS vai depois do certificado, nunca antes. Ao contrário ficas com um
+          site que reencaminha para um endereço que ainda não serve TLS.
+        </span>
+      </li>
+
+      <li>
+        <strong>Correr <code class="inl">deploy/iis/deploy.ps1 -FromRelease latest</code></strong>
+        <p>
+          Verifica o SHA-256, recusa artefactos mal rotulados, faz uma cópia de segurança,
+          confirma a versão que acabou de instalar e reverte sozinho se a verificação de saúde
+          falhar. Experimenta primeiro com <code class="inl">-DryRun</code>, que não precisa de
+          elevação.
+        </p>
+      </li>
+
+      <li>
+        <strong>Pôr <code class="inl">REPOMANAGER_IS_LIVE = true</code></strong>
+        <p>
+          Em <code class="inl">src/site.ts</code> no repo do site. É a última coisa, depois de
+          confirmares que o domínio serve mesmo a aplicação. Um booleano — o menu, o contador da
+          Home e os dois botões «Abrir a app» seguem-no todos.
+        </p>
+      </li>
+
+    </ol>
+  </section>
+
+  <footer>
+    Gerado a partir do estado real dos dois repositórios e de
+    <code class="inl">curl</code> ao subdomínio, a 18 de agosto de 2026.
+    Suite completa verde em 7 223 testes.
+  </footer>
+
+</div>
