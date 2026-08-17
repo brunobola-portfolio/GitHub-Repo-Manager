@@ -24,6 +24,7 @@ import compression from 'compression';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { createTenantLimiters, globalLimiter, createWebhookLimiter } from './middleware/tenant-rate-limit.js';
+import { noPathTraversal } from './middleware/no-path-traversal.js';
 import { randomUUID } from 'crypto';
 import path from 'path';
 import fs from 'fs';
@@ -278,6 +279,11 @@ const devSafetyNet = isDev
     ? rateLimit({ windowMs: 15 * 60 * 1000, max: 1000, standardHeaders: true, legacyHeaders: false })
     : globalLimiter;
 app.use('/api/', devSafetyNet);
+
+// Before any handler can interpolate a route param into a GitHub API URL.
+// Mounted here rather than per-router so a route added later is covered by
+// default — the failure mode is a 400 on a path nobody legitimately sends.
+app.use('/api/', noPathTraversal);
 
 // Session configuration for secure auth persistence
 // Store selection priority:

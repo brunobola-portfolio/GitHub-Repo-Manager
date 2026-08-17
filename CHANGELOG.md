@@ -52,6 +52,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   licence is now gated on `DEPLOYMENT_MODE` (default `self-host`, so nothing
   changes for existing installs) and never applies to an anonymous caller.
 
+- **The Contents traversal had thirty siblings.** Closing it in `crud.js`
+  left the same shape everywhere else `/api/repos/*` interpolates a route
+  param into a GitHub API URL. Express decodes route params, and `%2f` does
+  not split a segment during routing, so one param carries a whole path:
+  `PATCH /api/repos/o/r/issues/%2e%2e%2f%2e%2e%2f%2e%2e%2fuser%2frepos` gave
+  `issue_number = '../../../user/repos'` and resolved to `/repos/user/repos`
+  — an arbitrary authenticated call with the caller's OAuth token. Reproduced
+  against a bare Express router before fixing. The bare `..` and `%2e%2e`
+  forms already 404 (Express resolves the path and no route matches), which
+  is why the dangerous variant is the one that keeps the segment count
+  intact. `server/middleware/no-path-traversal.js` now refuses decoded dot
+  segments once, on `/api`, ahead of every router that builds an upstream
+  URL — so a route added next month is covered by default. Deliberately
+  narrow: `%2f` on its own stays legal, because `feature/thing` is a real
+  branch name.
+
 ### Fixed
 
 - **A phone cut the repository card's description in half.** The clamp was
