@@ -17,7 +17,7 @@
  * has to work on a machine with no daemon.
  */
 import { describe, it, expect } from 'vitest'
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync } from 'node:fs'
 
 const DOCKERFILE = readFileSync('Dockerfile', 'utf8')
 const IGNORE = readFileSync('.dockerignore', 'utf8')
@@ -60,6 +60,23 @@ function reachesContext(path) {
     return !ignored
 }
 
+/**
+ * The real files a COPY source names. A literal path resolves to itself when
+ * it exists; a glob is expanded against the directory it sits in.
+ * @returns {string[]} repo-relative paths, empty when nothing matches
+ */
+function resolveSource(src) {
+    if (!src.includes('*')) return existsSync(src) ? [src] : []
+    const slash = src.lastIndexOf('/')
+    const dir = slash === -1 ? '.' : src.slice(0, slash)
+    const glob = slash === -1 ? src : src.slice(slash + 1)
+    if (!existsSync(dir)) return []
+    const re = new RegExp(`^${glob.split('*').map((s) => s.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('[^/]*')}$`)
+    return readdirSync(dir)
+        .filter((name) => re.test(name))
+        .map((name) => (dir === '.' ? name : `${dir}/${name}`))
+}
+
 function matches(pattern, path) {
     const p = pattern.replace(/^\.\//, '').replace(/^\*\*\//, '')
     if (p === path) return true
@@ -83,16 +100,17 @@ describe('the Docker build context', () => {
     })
 
     it.each(contextCopySources())('%s is not excluded by .dockerignore', (src) => {
-        // `package*.json` and friends: check what the glob actually resolves to.
-        if (src.includes('*')) {
-            expect(reachesContext(src.replace('*', ''))).toBe(true)
-            return
+        // A glob is checked against the files it really resolves to on disk.
+        // Stripping the star and testing the remainder tested a DIFFERENT
+        // path: `package*.json` became `package.json`, which says nothing
+        // about `package-lock.json` — the file the glob exists to include.
+        for (const file of resolveSource(src)) {
+            expect(reachesContext(file), `.dockerignore excludes ${file}, so \`COPY ${src}\` fails`).toBe(true)
         }
-        expect(reachesContext(src), `.dockerignore excludes ${src}, so the COPY fails`).toBe(true)
     })
 
-    it.each(contextCopySources().filter((s) => !s.includes('*')))('%s exists in the repository', (src) => {
-        expect(existsSync(src), `Dockerfile COPYs ${src}, which is not in the repo`).toBe(true)
+    it.each(contextCopySources())('%s matches something in the repository', (src) => {
+        expect(resolveSource(src).length, `Dockerfile COPYs ${src}, which matches nothing in the repo`).toBeGreaterThan(0)
     })
 
     it('still excludes the things it is meant to', () => {
