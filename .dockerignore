@@ -58,6 +58,12 @@ e2e
 docs
 *.md
 !README.md
+# The image is a distribution, so it carries the terms — Apache-2.0 §4(d)
+# names the NOTICE file, and TRADEMARKS.md is what tells a redistributor what
+# they may do with the name and the mark. LICENSE and NOTICE have no
+# extension and were never caught by the rule above; this one was, silently,
+# because the Dockerfile only COPYs it on a release build.
+!TRADEMARKS.md
 
 # Editor
 .vscode
