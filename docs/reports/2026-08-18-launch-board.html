@@ -294,6 +294,7 @@
       <div class="figure"><b>7&nbsp;223</b><span>testes a passar</span></div>
       <div class="figure"><b>10</b><span>correções fechadas hoje</span></div>
       <div class="figure"><b>2</b><span>achados ainda abertos</span></div>
+      <div class="figure"><b>2</b><span>PRs à tua espera</span></div>
     </div>
   </header>
 
@@ -492,12 +493,25 @@
   <section>
     <h2>O que fazes a seguir</h2>
     <p class="lede">
-      A v4.20.0 já saiu — está marcada, publicada e com os artefactos a compilar. Sobra isto,
-      por esta ordem. Os passos 2 a 4 são no servidor e a ordem aí é obrigatória: o certificado
-      tem de existir antes de forçares o redirect, ou reencaminhas para um endereço que ainda
-      não serve TLS.
+      A v4.20.0 saiu — marcada, publicada, seis artefactos com os checksums a bater. Sobra
+      isto, por esta ordem. Os passos 3 a 5 são no servidor e a ordem aí é obrigatória: o
+      certificado tem de existir antes de forçares o redirect, ou reencaminhas para um endereço
+      que ainda não serve TLS.
     </p>
     <ol class="steps">
+
+      <li>
+        <strong>Fazer merge do PR #330 — tem de ser por ti</strong>
+        <p>
+          Toca em <code class="inl">.github/workflows/</code>, e o token que uso aqui não tem
+          alcance para o fazer. Corrige duas falhas de conformidade que só apareceram depois de
+          a versão estar publicada: o build Docker falhou no ficheiro de marcas que era suposto
+          transportar, e o <code class="inl">dist.tar.gz</code> saiu sem nenhum dos três
+          ficheiros de licença — ao contrário do que as notas da release afirmam. Ambos passam a
+          ter guarda no conjunto de testes que corre em cada PR, em vez de num workflow que só
+          dispara com a versão já no ar.
+        </p>
+      </li>
 
       <li>
         <strong>Fazer merge do PR #1 em BolaLabs/MainSite</strong>
