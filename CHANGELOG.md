@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The v4.20.0 Docker build failed on the licence file it was meant to
+  carry.** `COPY LICENSE NOTICE TRADEMARKS.md ./` arrived with the licence
+  sweep; `.dockerignore` has excluded `*.md` since PR #10. `LICENSE` and
+  `NOTICE` have no extension so they passed the rule and the third file did
+  not. Nothing caught it because the Docker workflow only runs on a release
+  tag — by the time it failed, the version was already published.
+
+- **The release tarball was the one artifact that never carried the terms.**
+  The 4.20.0 notes said every distributed artifact did. The Windows zip and
+  the installer were true; `dist.tar.gz` shipped with only the bundled font
+  licences, so someone redistributing that bundle had nothing to comply with
+  Apache-2.0 §4(a)/§4(d) from. Verified by downloading the published asset
+  and listing it, which is how this was found.
+
+  Both now have gates in the suite every PR runs, rather than in a workflow
+  that only fires once the version is out: one parses the Dockerfile's context
+  `COPY` sources and applies `.dockerignore`'s rules to each, the other checks
+  all three packaging paths name all three files.
+
 ## [4.20.0] - 2026-08-17
 
 ### Security

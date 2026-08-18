@@ -54,6 +54,11 @@ jobs:
       - name: Package dist bundle
         run: |
           set -euo pipefail
+          # The tarball is a distribution like any other, so it carries the
+          # terms. The Windows zip and the installer already did; this one was
+          # missed, and shipped a bundle a redistributor could not comply with
+          # Apache-2.0 4(a)/4(d) from.
+          cp LICENSE NOTICE TRADEMARKS.md dist/
           tar -czf "github-repo-manager-${TAG}-dist.tar.gz" dist/
           sha256sum "github-repo-manager-${TAG}-dist.tar.gz" \
             > "github-repo-manager-${TAG}-dist.tar.gz.sha256"
