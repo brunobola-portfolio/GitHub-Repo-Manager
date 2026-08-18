@@ -290,7 +290,7 @@
     </p>
 
     <div class="figures">
-      <div class="figure"><b>4.20.0</b><span>versão a sair</span></div>
+      <div class="figure"><b>4.20.0</b><span>lançada</span></div>
       <div class="figure"><b>7&nbsp;223</b><span>testes a passar</span></div>
       <div class="figure"><b>10</b><span>correções fechadas hoje</span></div>
       <div class="figure"><b>2</b><span>achados ainda abertos</span></div>
@@ -492,26 +492,20 @@
   <section>
     <h2>O que fazes a seguir</h2>
     <p class="lede">
-      Por esta ordem. Os passos 3 a 5 são no servidor e a ordem aí é obrigatória — o certificado
-      tem de existir antes de forçares o redirect, ou fechas-te fora do site.
+      A v4.20.0 já saiu — está marcada, publicada e com os artefactos a compilar. Sobra isto,
+      por esta ordem. Os passos 2 a 4 são no servidor e a ordem aí é obrigatória: o certificado
+      tem de existir antes de forçares o redirect, ou reencaminhas para um endereço que ainda
+      não serve TLS.
     </p>
     <ol class="steps">
-
-      <li>
-        <strong>Fazer merge do PR #329 e marcar a v4.20.0</strong>
-        <p>
-          Leva as quatro correções de segurança, as duas de interface e o reparo do lockfile.
-          Confirma tu o <code class="inl">gh pr checks</code> da execução mais recente antes do
-          merge — a proteção de branch aqui não bloqueia merges com verificações vermelhas.
-        </p>
-      </li>
 
       <li>
         <strong>Fazer merge do PR #1 em BolaLabs/MainSite</strong>
         <p>
           O site deixa de afirmar a licença errada, os limites errados e uma produção que ainda
           não existe. <code class="inl">npm run build</code> e
-          <code class="inl">tsc --noEmit</code> verdes.
+          <code class="inl">tsc --noEmit</code> verdes. É o único passo que sobra fora do
+          servidor.
         </p>
       </li>
 
