@@ -9,6 +9,7 @@
  * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
  * Licensed under the Apache License 2.0. See LICENSE in the project root.
  */
+import { mockRepoByFullName } from './mockRepos'
 
 // Simple deterministic hash so same repo always gets same mock data.
 function seed(str) {
@@ -493,7 +494,14 @@ export function mockRepoDetailFetch(url) {
     if (resource && _e2eRepoApiLiveResources?.has(resource)) return undefined
 
     // /api/repos/:owner/:repo
-    if (!resource) return { id: 1, name: repo, full_name: repoName, description: 'Demo repository', private: false, fork: false, owner: { login: owner }, default_branch: 'main', stargazers_count: 42, forks_count: 7, open_issues_count: 5, created_at: '2024-03-12T09:30:00Z', updated_at: '2026-07-15T18:04:00Z', pushed_at: '2026-07-16T07:41:00Z' }
+    if (!resource) {
+        // The same object the card was built from: stars, forks, dates and
+        // description all agree. The literal this replaces said 42 stars for
+        // every repository while the list said 253.
+        const listed = mockRepoByFullName(repoName)
+        if (listed) return listed
+        return { id: 1, name: repo, full_name: repoName, description: 'Demo repository', private: false, fork: false, owner: { login: owner }, default_branch: 'main', stargazers_count: 42, forks_count: 7, open_issues_count: 5, created_at: '2024-03-12T09:30:00Z', updated_at: '2026-07-15T18:04:00Z', pushed_at: '2026-07-16T07:41:00Z' }
+    }
 
     if (resource === 'readme') return { content: btoa(MOCK_README), encoding: 'base64' }
 

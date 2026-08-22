@@ -1,5 +1,4 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { useTier, isProOrAbove } from './useTier'
 
 const ENDPOINTS = {
     reviews: '/api/v1/work-board/my-reviews?limit=50',
@@ -65,7 +64,6 @@ function buildCategoryState(key, currentCount) {
 }
 
 export function useYourWork() {
-    const tier = useTier()
     const [state, setState] = useState({
         status: 'loading',
         hidden: false,
@@ -79,16 +77,15 @@ export function useYourWork() {
 
     const refresh = useCallback(async () => {
         const id = ++fetchIdRef.current
-        // Stale PRs is Pro+ — keep the slot in the result so the UI can
-        // still render a "hidden" tile, but avoid the 403 network log on
-        // Free by short-circuiting here instead of relying on the server.
-        const stalePromise = () =>
-            isProOrAbove(tier)
-                ? fetchCount(ENDPOINTS.stale)
-                : Promise.resolve({ count: 0, hidden: true })
+        // Stale PRs used to be Pro+, and this hook kept short-circuiting it
+        // on Free long after /api/v1/work-board/stale-prs went all-tiers ("read-
+        // only dashboard", server/routes/work-board.js). So the Dashboard said
+        // "Stale PRs 0" two rows above a Work Board that said 10 — on the same
+        // screen a newcomer sees first. If the server ever gates it again, the
+        // 403 path in fetchCount already turns into a hidden tile.
         const [r, s, i] = await Promise.all([
             fetchCount(ENDPOINTS.reviews),
-            stalePromise(),
+            fetchCount(ENDPOINTS.stale),
             fetchCount(ENDPOINTS.issues),
         ])
         if (id !== fetchIdRef.current) return // a newer call has taken over
@@ -117,7 +114,7 @@ export function useYourWork() {
             status: failed ? 'error' : 'ready',
             hidden, reviews, stale, issues, lastFetchedAt: fetchedAt,
         })
-    }, [tier])
+    }, [])
 
     useEffect(() => {
         let cancelled = false

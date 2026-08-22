@@ -33,29 +33,61 @@ const TEMPLATES = [
   { name: 'marketing-landing-pages', lang: 'HTML', desc: 'High-conversion landing pages for marketing campaigns' },
 ]
 
-export function generateMockRepos(page = 1, perPage = 30) {
-  const totalRepos = 87
-  const totalPages = Math.ceil(totalRepos / perPage)
-  const startIndex = (page - 1) * perPage
-  const endIndex = Math.min(startIndex + perPage, totalRepos)
-  const repos = []
-  for (let i = startIndex; i < endIndex; i++) {
-    const template = TEMPLATES[i % TEMPLATES.length]
-    const suffix = Math.floor(i / TEMPLATES.length) > 0 ? `-${Math.floor(i / TEMPLATES.length) + 1}` : ''
-    repos.push({
-      id: i + 1,
-      name: `${template.name}${suffix}`,
-      full_name: `dev-user/${template.name}${suffix}`,
-      description: template.desc,
-      fork: i % 5 === 0,
-      private: i % 3 === 0,
-      owner: { login: 'dev-user' },
-      html_url: `https://github.com/dev-user/${template.name}${suffix}`,
-      updated_at: new Date(Date.now() - i * 3600000 * (Math.random() * 10)).toISOString(),
-      stargazers_count: Math.floor(Math.random() * 500) + (i * 10),
-      language: template.lang,
-      topics: ['react', 'typescript', 'dashboard', 'ui', 'finance'].slice(0, Math.floor(Math.random() * 5)),
-    })
+const TOTAL_REPOS = 87
+
+// Deterministic per index. The numbers used to come from Math.random(), so
+// the same repository showed 253 stars on the card and 234 after a reload,
+// and the detail page — a separate fixture — said 42. A demo where the
+// numbers move under you reads as broken, not as a demo. A small LCG seeded
+// by the index gives a different but STABLE value for each repo.
+function seeded(i, salt) {
+  let x = (i + 1) * 2654435761 + salt * 40503
+  x = (x ^ (x >>> 15)) * 2246822519
+  x = (x ^ (x >>> 13)) * 3266489917
+  return ((x ^ (x >>> 16)) >>> 0) / 4294967296
+}
+
+export function mockRepoAt(i) {
+  const template = TEMPLATES[i % TEMPLATES.length]
+  const suffix = Math.floor(i / TEMPLATES.length) > 0 ? `-${Math.floor(i / TEMPLATES.length) + 1}` : ''
+  const name = `${template.name}${suffix}`
+  return {
+    id: i + 1,
+    name,
+    full_name: `dev-user/${name}`,
+    description: template.desc,
+    fork: i % 5 === 0,
+    private: i % 3 === 0,
+    owner: { login: 'dev-user' },
+    html_url: `https://github.com/dev-user/${name}`,
+    default_branch: 'main',
+    // Anchored to a fixed instant so "updated 3h ago" does not drift between
+    // the card and the detail page rendered a minute apart.
+    created_at: new Date(Date.UTC(2024, 2, 12, 9, 30) - i * 86400000 * 3).toISOString(),
+    updated_at: new Date(Date.UTC(2026, 6, 15, 18, 4) - i * 3600000 * (1 + seeded(i, 1) * 9)).toISOString(),
+    pushed_at: new Date(Date.UTC(2026, 6, 16, 7, 41) - i * 3600000 * (1 + seeded(i, 2) * 9)).toISOString(),
+    stargazers_count: Math.floor(seeded(i, 3) * 500) + i * 10,
+    forks_count: Math.floor(seeded(i, 4) * 60),
+    open_issues_count: Math.floor(seeded(i, 5) * 12),
+    language: template.lang,
+    topics: ['react', 'typescript', 'dashboard', 'ui', 'finance'].slice(0, Math.floor(seeded(i, 6) * 5)),
   }
+}
+
+/** The same repo the list shows, by full name — so detail never disagrees with the card. */
+export function mockRepoByFullName(fullName) {
+  for (let i = 0; i < TOTAL_REPOS; i++) {
+    const r = mockRepoAt(i)
+    if (r.full_name === fullName || r.name === fullName.split('/').pop()) return r
+  }
+  return null
+}
+
+export function generateMockRepos(page = 1, perPage = 30) {
+  const totalPages = Math.ceil(TOTAL_REPOS / perPage)
+  const startIndex = (page - 1) * perPage
+  const endIndex = Math.min(startIndex + perPage, TOTAL_REPOS)
+  const repos = []
+  for (let i = startIndex; i < endIndex; i++) repos.push(mockRepoAt(i))
   return { repos, totalPages }
 }
