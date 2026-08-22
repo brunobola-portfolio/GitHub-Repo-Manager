@@ -290,11 +290,11 @@
     </p>
 
     <div class="figures">
-      <div class="figure"><b>4.20.0</b><span>lançada</span></div>
+      <div class="figure"><b>4.21.0</b><span>lançada</span></div>
       <div class="figure"><b>7&nbsp;223</b><span>testes a passar</span></div>
       <div class="figure"><b>10</b><span>correções fechadas hoje</span></div>
       <div class="figure"><b>2</b><span>achados ainda abertos</span></div>
-      <div class="figure"><b>2</b><span>PRs à tua espera</span></div>
+      <div class="figure"><b>0</b><span>PRs à tua espera</span></div>
     </div>
   </header>
 
@@ -493,35 +493,12 @@
   <section>
     <h2>O que fazes a seguir</h2>
     <p class="lede">
-      A v4.20.0 saiu — marcada, publicada, seis artefactos com os checksums a bater. Sobra
-      isto, por esta ordem. Os passos 3 a 5 são no servidor e a ordem aí é obrigatória: o
+      A v4.21.0 saiu — fecha o painel de nove lentes; os dois repositórios estão no <code class="inl">main</code>, sem PRs abertos. Sobra
+      isto, por esta ordem. Os três primeiros são no servidor e a ordem é obrigatória: o
       certificado tem de existir antes de forçares o redirect, ou reencaminhas para um endereço
       que ainda não serve TLS.
     </p>
     <ol class="steps">
-
-      <li>
-        <strong>Fazer merge do PR #330 — tem de ser por ti</strong>
-        <p>
-          Toca em <code class="inl">.github/workflows/</code>, e o token que uso aqui não tem
-          alcance para o fazer. Corrige duas falhas de conformidade que só apareceram depois de
-          a versão estar publicada: o build Docker falhou no ficheiro de marcas que era suposto
-          transportar, e o <code class="inl">dist.tar.gz</code> saiu sem nenhum dos três
-          ficheiros de licença — ao contrário do que as notas da release afirmam. Ambos passam a
-          ter guarda no conjunto de testes que corre em cada PR, em vez de num workflow que só
-          dispara com a versão já no ar.
-        </p>
-      </li>
-
-      <li>
-        <strong>Fazer merge do PR #1 em BolaLabs/MainSite</strong>
-        <p>
-          O site deixa de afirmar a licença errada, os limites errados e uma produção que ainda
-          não existe. <code class="inl">npm run build</code> e
-          <code class="inl">tsc --noEmit</code> verdes. É o único passo que sobra fora do
-          servidor.
-        </p>
-      </li>
 
       <li>
         <strong>Instalar o ARR no IIS</strong>
@@ -534,6 +511,13 @@
 
       <li>
         <strong>Emitir o certificado para <code class="inl">repomanager.bolalabs.pt</code></strong>
+        <p>
+          Já agora, o mesmo para <code class="inl">arcva.pt</code>: o certificado atual só cobre
+          <code class="inl">www.arcva.pt</code>, por isso <code class="inl">https://arcva.pt</code> dá
+          aviso de segurança no browser e <code class="inl">http://</code> não redireciona. O site já
+          linka <code class="inl">www</code> para se proteger; reemitir com os dois nomes e um
+          redirect apex→www fecha isso de vez.
+        </p>
         <p>
           Segue as nove secções do guia em <code class="inl">docs/guides/deploy-iis-windows.md</code>.
         </p>
