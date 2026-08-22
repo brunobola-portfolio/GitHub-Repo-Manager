@@ -8,6 +8,7 @@
 // Cross-platform (Windows-first). No runtime dependencies beyond Vite + dotenv.
 
 import { spawn } from 'node:child_process'
+import { randomBytes } from 'node:crypto'
 import { createInterface } from 'node:readline'
 import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
@@ -26,7 +27,6 @@ import {
 } from './dev/format.mjs'
 import { ensureDepsFresh } from './dev/ensure-deps.mjs'
 
-dotenv.config({ quiet: true })
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(__dirname, '..')
@@ -34,6 +34,31 @@ const require = createRequire(import.meta.url)
 const pkg = require('../package.json')
 
 const DEBUG = process.argv.includes('--debug')
+// `--demo` is what `npm run demo` passes. It turns the whole stack into the
+// mock universe (87 fake repos, simulated AI) WITHOUT the newcomer editing a
+// .env: .env.example ships VITE_MOCK_MODE=false on purpose, because a build
+// with it on must never reach production, and the README's Quick Start had
+// been promising a demo that this default silently refused to start.
+//
+// Set before dotenv so a committed .env cannot turn it back off, and before
+// the backend is spawned so it inherits the same answer. NODE_ENV stays
+// 'development', which is the allow-list the mock sign-in route checks.
+const DEMO = process.argv.includes('--demo')
+if (DEMO) {
+  process.env.VITE_MOCK_MODE = 'true'
+  process.env.NODE_ENV = process.env.NODE_ENV || 'development'
+}
+// dotenv never overrides a variable that is already set, so the demo flag
+// above wins over a .env that says otherwise.
+dotenv.config({ quiet: true })
+if (DEMO && !process.env.SESSION_SECRET) {
+  // SESSION_SECRET is the one variable the server refuses to boot without,
+  // and a fresh clone has no .env at all. A demo's sessions live exactly as
+  // long as this process, so a secret that does the same is the right one —
+  // and it never gets written anywhere, so it cannot leak into a real
+  // deployment by being copied along.
+  process.env.SESSION_SECRET = randomBytes(32).toString('hex')
+}
 const COLOR = supportsColor({ isTTY: process.stdout.isTTY, env: process.env })
 
 // Read the few env vars the banner needs directly (mirrors server/config.js

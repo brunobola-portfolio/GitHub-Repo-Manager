@@ -31,7 +31,13 @@ function findPidsWindows() {
     // netstat -ano lists PID as the last column. Filter to LISTEN state on
     // our ports to avoid catching transient TIME_WAIT sockets (which have
     // no owning PID and don't block new listeners anyway).
-    const out = run('netstat -ano -p tcp')
+    //
+    // No `-p tcp`: that flag is IPv4-only, and Vite 8 binds `[::1]:5173`, so
+    // the one process this script exists to kill was invisible to it — the
+    // README's "port already in use" remedy did nothing. Without the filter
+    // netstat lists both families; the regex below accepts `[::1]:5173` and
+    // `127.0.0.1:5173` alike and skips UDP rows by the leading `TCP`.
+    const out = run('netstat -ano')
     const pids = new Set()
     for (const line of out.split(/\r?\n/)) {
         const match = line.match(/^\s*TCP\s+\S+:(\d+)\s+\S+\s+LISTENING\s+(\d+)/)
