@@ -85,7 +85,7 @@ export default function AllowlistFixPanel({
   return (
     <div className="rounded-2xl border border-amber-300 dark:border-amber-700 bg-amber-50/60 dark:bg-amber-900/15 overflow-hidden">
       <div className="px-4 py-2.5 flex items-center gap-2 bg-amber-100/60 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-800">
-        <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+        <ShieldAlert className="w-4 h-4 text-amber-700 dark:text-amber-400" />
         <span className="text-sm font-semibold text-amber-800 dark:text-amber-200">
           Server not authorized by the backend
         </span>

@@ -508,9 +508,9 @@ function MetricCard({ title, value, icon: Icon, color, index = 0 }) {
 
     const iconColors = {
         blue: 'text-blue-600 dark:text-blue-400',
-        green: 'text-green-600 dark:text-green-400',
-        amber: 'text-amber-600 dark:text-amber-400',
-        emerald: 'text-emerald-600 dark:text-emerald-400'
+        green: 'text-green-700 dark:text-green-400',
+        amber: 'text-amber-700 dark:text-amber-400',
+        emerald: 'text-emerald-700 dark:text-emerald-400'
     };
 
     return (

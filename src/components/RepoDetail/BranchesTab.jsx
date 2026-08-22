@@ -267,7 +267,7 @@ export function BranchesTab({ api, repoData }) {
                             {b.name === repoData?.default_branch ? (
                                 <BranchProtectionPanel api={api} branch={b.name} archived={!!repoData.archived} variant="inline" />
                             ) : b.protected && (
-                                <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                                <span className="flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400">
                                     <Shield className="w-3 h-3" /> Protected
                                 </span>
                             )}

@@ -668,7 +668,7 @@ function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen,
                     </ul>
                 )}
                 {error && totalCount === 0 && (
-                    <p className="px-4 pb-3 ds-text-meta text-amber-600 dark:text-amber-400">
+                    <p className="px-4 pb-3 ds-text-meta text-amber-700 dark:text-amber-400">
                         Couldn't load digest — we'll try again on next focus.
                     </p>
                 )}

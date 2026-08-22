@@ -139,7 +139,7 @@ function PRCommandCard({ owner, repo, prNumber, command }) {
                         {publishStatus ? (
                             <span className={`text-xs ${
                                 publishStatus.kind === 'success'
-                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                    ? 'text-emerald-700 dark:text-emerald-400'
                                     : publishStatus.kind === 'error'
                                         ? 'text-red-600 dark:text-red-400'
                                         : 'text-slate-500 dark:text-slate-400'

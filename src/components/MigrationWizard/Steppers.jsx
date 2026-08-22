@@ -142,12 +142,12 @@ function StepDisc({ status, index, icon: Icon }) {
 }
 
 const ROW_TONE = {
-  done:    { row: 'hover:bg-emerald-50/60 dark:hover:bg-emerald-900/10 cursor-pointer', label: 'text-slate-800 dark:text-slate-100', hint: 'text-emerald-600/80 dark:text-emerald-400/70', pill: null },
+  done:    { row: 'hover:bg-emerald-50/60 dark:hover:bg-emerald-900/10 cursor-pointer', label: 'text-slate-800 dark:text-slate-100', hint: 'text-emerald-700/80 dark:text-emerald-400/70', pill: null },
   current: { row: 'bg-gradient-to-r from-brand-50/80 to-transparent dark:from-brand-500/[0.12] dark:to-transparent', label: 'text-brand-700 dark:text-brand-200', hint: 'text-brand-500/80 dark:text-brand-300/80', pill: { label: 'NOW', cls: 'bg-brand-500 text-white' } },
   pending: { row: '', label: 'text-slate-500 dark:text-slate-500', hint: 'text-slate-400 dark:text-slate-600', pill: null },
   loading: { row: 'bg-gradient-to-r from-brand-50/80 to-transparent dark:from-brand-500/[0.10] dark:to-transparent', label: 'text-brand-700 dark:text-brand-200', hint: 'text-brand-500/80 dark:text-brand-300/80', pill: { label: 'PROCESSING', cls: 'bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300' } },
   error:   { row: 'bg-gradient-to-r from-red-50/80 to-transparent dark:from-red-500/[0.10] dark:to-transparent', label: 'text-red-700 dark:text-red-300', hint: 'text-red-600/80 dark:text-red-400/80', pill: { label: 'ACTION', cls: 'bg-red-500 text-white' } },
-  warning: { row: 'bg-gradient-to-r from-amber-50/70 to-transparent dark:from-amber-500/[0.10] dark:to-transparent', label: 'text-amber-700 dark:text-amber-300', hint: 'text-amber-600/80 dark:text-amber-400/80', pill: { label: 'WARNING', cls: 'bg-amber-400 text-white' } },
+  warning: { row: 'bg-gradient-to-r from-amber-50/70 to-transparent dark:from-amber-500/[0.10] dark:to-transparent', label: 'text-amber-700 dark:text-amber-300', hint: 'text-amber-700/80 dark:text-amber-400/80', pill: { label: 'WARNING', cls: 'bg-amber-400 text-white' } },
   skipped: { row: '', label: 'text-slate-400 dark:text-slate-600', hint: 'text-slate-300 dark:text-slate-700 italic', pill: { label: 'SKIPPED', cls: 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400' } },
 }
 
@@ -362,7 +362,7 @@ export function HorizontalStepper({ steps, currentStepIndex, onGoToStep }) {
                   {isCompleted ? <Check className="w-3 h-3" /> : index + 1}
                 </button>
                 <span className={`mt-1 ds-text-micro font-medium truncate max-w-[52px] text-center
-                  ${isActive ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                  ${isActive ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : isCompleted ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}>
                   {label}
                 </span>
               </div>

@@ -169,7 +169,7 @@ export function CodeReviewSurface({
                         <div className="min-w-0">
                             <div className="sticky top-0 z-10 flex items-center gap-2 px-4 py-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-100 dark:border-slate-800 text-xs">
                                 <span className="font-mono text-slate-700 dark:text-slate-200 font-medium truncate">{activeFile.filename}</span>
-                                <span className="flex-shrink-0 text-green-600 dark:text-green-400">+{activeFile.additions}</span>
+                                <span className="flex-shrink-0 text-green-700 dark:text-green-400">+{activeFile.additions}</span>
                                 <span className="flex-shrink-0 text-red-600 dark:text-red-400">−{activeFile.deletions}</span>
                             </div>
                             {activeFile.patch ? (

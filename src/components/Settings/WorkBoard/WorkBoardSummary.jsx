@@ -60,7 +60,7 @@ export function WorkBoardSummary({ prefs, totalCount, mutedCount, pinnedCount, t
                     <span>Repo Advisor</span>
                     <span className={`ml-auto inline-flex items-center gap-1 font-semibold ds-text-micro uppercase tracking-wide ${
                         ai.enabled
-                            ? 'text-emerald-600 dark:text-emerald-400'
+                            ? 'text-emerald-700 dark:text-emerald-400'
                             : 'text-slate-500 dark:text-slate-400'
                     }`}>
                         <span className={`inline-block w-1.5 h-1.5 rounded-full ${ai.enabled ? 'bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.12)]' : 'bg-slate-300 dark:bg-slate-600'}`} />
@@ -75,7 +75,7 @@ export function WorkBoardSummary({ prefs, totalCount, mutedCount, pinnedCount, t
 function StatTile({ label, value, icon: Icon, color }) {
     const colorClass = {
         indigo: 'bg-brand-50 text-[color:var(--ds-accent-brand)] ring-brand-200 dark:bg-brand-900/30 dark:text-brand-200 dark:ring-brand-800/60',
-        emerald: 'bg-emerald-50 text-emerald-600 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:ring-emerald-800/60',
+        emerald: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:ring-emerald-800/60',
         slate: 'bg-slate-100 text-slate-600 ring-slate-200 dark:bg-slate-800/80 dark:text-slate-300 dark:ring-slate-700',
     }[color] || ''
     return (

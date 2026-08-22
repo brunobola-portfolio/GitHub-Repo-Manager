@@ -46,7 +46,7 @@ export function TestButton({ onTest, disabled, result, countdown, isDirty }) {
             </Button>
 
             {isDirty && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1">
                     <Info className="w-3.5 h-3.5 shrink-0" />
                     Save your changes first to test the current configuration.
                 </p>

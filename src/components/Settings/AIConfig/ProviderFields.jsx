@@ -26,7 +26,7 @@ export function ProviderFields({ provider, form, onChange, errors }) {
                             <span className="flex items-center justify-between w-full">
                                 <span>{defaults.apiKeyLabel}</span>
                                 {form.hasCompletionKey && (
-                                    <span className="inline-flex items-center gap-1 ds-text-micro font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                                    <span className="inline-flex items-center gap-1 ds-text-micro font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
                                         <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
                                         Stored
                                     </span>

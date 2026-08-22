@@ -6,9 +6,9 @@ import { useAIFeaturesHealth } from '../../../hooks/useAIFeaturesHealth'
 import { formatRelativeTime } from '../../../utils/format'
 
 const HEALTH_PILL = {
-    ok:           { Icon: CheckCircle2,  cls: 'text-emerald-600 dark:text-emerald-400 bg-emerald-100/70 dark:bg-emerald-900/40 ring-emerald-200/70 dark:ring-emerald-800/60', label: 'OK' },
+    ok:           { Icon: CheckCircle2,  cls: 'text-emerald-700 dark:text-emerald-400 bg-emerald-100/70 dark:bg-emerald-900/40 ring-emerald-200/70 dark:ring-emerald-800/60', label: 'OK' },
     invalid:      { Icon: AlertTriangle, cls: 'text-red-600 dark:text-red-400 bg-red-100/70 dark:bg-red-900/40 ring-red-200/70 dark:ring-red-800/60',                    label: 'Invalid' },
-    unreachable:  { Icon: WifiOff,       cls: 'text-amber-600 dark:text-amber-400 bg-amber-100/70 dark:bg-amber-900/40 ring-amber-200/70 dark:ring-amber-800/60',          label: 'Down' },
+    unreachable:  { Icon: WifiOff,       cls: 'text-amber-700 dark:text-amber-400 bg-amber-100/70 dark:bg-amber-900/40 ring-amber-200/70 dark:ring-amber-800/60',          label: 'Down' },
     unknown:      { Icon: HelpCircle,    cls: 'text-slate-500 dark:text-slate-400 bg-slate-100/70 dark:bg-slate-800/60 ring-slate-200/70 dark:ring-slate-700/60',          label: '—' },
 }
 
@@ -138,7 +138,7 @@ export function CurrentConfigSummary({ form }) {
                             </div>
                         )}
                         {form.serverFallbackAvailable && !hasKey && (
-                            <div className="mt-1 ds-text-meta text-amber-600 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 ring-1 ring-inset ring-amber-200/60 dark:ring-amber-800/50 rounded-lg px-2 py-1.5">
+                            <div className="mt-1 ds-text-meta text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/20 ring-1 ring-inset ring-amber-200/60 dark:ring-amber-800/50 rounded-lg px-2 py-1.5">
                                 Falling back to server key.
                             </div>
                         )}
@@ -146,7 +146,7 @@ export function CurrentConfigSummary({ form }) {
                             <div className="flex items-center gap-1.5 pt-2 -mb-1 border-t border-slate-200/70 dark:border-slate-800 ds-text-micro text-slate-500 dark:text-slate-400">
                                 <Clock className="w-3 h-3" aria-hidden="true" />
                                 <span>Saved {savedAgo}</span>
-                                <span className="ml-auto inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                                <span className="ml-auto inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
                                     <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
                                     Persisted
                                 </span>
@@ -161,8 +161,8 @@ export function CurrentConfigSummary({ form }) {
 
 function SummaryRow({ label, icon: Icon, value, hint, mono = false, accent }) {
     const accentColor = {
-        emerald: 'text-emerald-600 dark:text-emerald-400',
-        amber: 'text-amber-600 dark:text-amber-400',
+        emerald: 'text-emerald-700 dark:text-emerald-400',
+        amber: 'text-amber-700 dark:text-amber-400',
         indigo: 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]',
     }[accent] || 'text-slate-700 dark:text-slate-200'
 

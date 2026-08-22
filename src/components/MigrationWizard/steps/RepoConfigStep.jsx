@@ -267,7 +267,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
           role="alert"
           className="mb-4 flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200"
         >
-          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-amber-700 dark:text-amber-400" aria-hidden="true" />
           <div className="flex-1 min-w-0">
             <p className="font-medium">Azure credentials not validated</p>
             <p className="text-xs opacity-90 mt-0.5">

@@ -197,7 +197,7 @@ export const RepoCard = memo(function RepoCard({
 			{/* Icon & Title */}
 			<div className={`flex ${isGrid ? 'flex-col items-start gap-3' : 'items-center gap-4 flex-1'}`}>
 				<div className="flex items-center gap-3 w-full">
-					<div className={`p-2.5 rounded-xl ${repo.private ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' : 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400'}`}>
+					<div className={`p-2.5 rounded-xl ${repo.private ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400' : 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400'}`}>
 						{repo.private ? <Lock className="w-5 h-5" /> : <Globe className="w-5 h-5" />}
 					</div>
 					<div className="flex-1 min-w-0">

@@ -172,7 +172,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
             type="button"
             onClick={handleMagicDescription}
             disabled={!name || isGenerating}
-            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             title="Generate with AI"
             aria-label="Generate with AI"
         >

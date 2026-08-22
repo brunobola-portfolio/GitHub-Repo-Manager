@@ -328,7 +328,7 @@ export function AgentRulesModal({ isOpen, onClose, repo, hasExistingAgents = fal
     const renderCommittedStage = () => (
         <div className="flex flex-col items-center text-center gap-4 py-8">
             <div className="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+                <CheckCircle className="w-8 h-8 text-emerald-700 dark:text-emerald-400" />
             </div>
             <div>
                 <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg">Agent rules updated</h3>

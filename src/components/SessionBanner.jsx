@@ -20,12 +20,12 @@ export function SessionBanner({ visible, onLogin, onDismiss }) {
               {/* Left: icon + message */}
               <div className="flex items-center gap-3 min-w-0">
                 <div className="shrink-0 w-8 h-8 rounded-lg bg-amber-500/15 dark:bg-amber-400/10 flex items-center justify-center">
-                  <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400" strokeWidth={2} />
+                  <ShieldAlert className="w-4 h-4 text-amber-700 dark:text-amber-400" strokeWidth={2} />
                 </div>
                 <p className="text-sm font-medium text-amber-800 dark:text-amber-200/90 truncate">
                   <span className="hidden sm:inline">Your session has expired. </span>
                   <span className="sm:hidden">Session expired. </span>
-                  <span className="text-amber-600 dark:text-amber-300/70">Please sign in again to continue.</span>
+                  <span className="text-amber-700 dark:text-amber-300/70">Please sign in again to continue.</span>
                 </p>
               </div>
 

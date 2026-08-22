@@ -249,7 +249,7 @@ export function ActionHistoryRow({ result: r }) {
     return (
         <div className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
             <div className="flex items-start gap-3">
-                <div className={`mt-0.5 p-1 rounded-full ${r.success ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'}`}>
+                <div className={`mt-0.5 p-1 rounded-full ${r.success ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'}`}>
                     {r.success ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
                 </div>
                 <div className="flex-1 min-w-0">

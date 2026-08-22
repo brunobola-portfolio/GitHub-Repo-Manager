@@ -230,8 +230,8 @@ function RowDb({ entry, canEdit, onDeleted }) {
     <li className="px-4 py-2.5 flex items-center gap-3">
       <div className="shrink-0 w-7 h-7 rounded-md bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
         {isWildcard
-          ? <Globe className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-          : <ServerIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
+          ? <Globe className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
+          : <ServerIcon className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />}
       </div>
       <div className="flex-1 min-w-0">
         <code className="block text-sm font-mono text-slate-800 dark:text-slate-200 truncate">
@@ -374,7 +374,7 @@ function AddHostForm({ onAdded }) {
         </div>
       )}
       {success && (
-        <div role="status" className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+        <div role="status" className="text-xs text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
           <CheckCircle2 className="w-3.5 h-3.5" /> Added · no restart needed
         </div>
       )}

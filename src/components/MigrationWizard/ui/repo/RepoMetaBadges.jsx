@@ -22,7 +22,7 @@ function Badge({ icon: Icon, children, tone = 'slate' }) {
     slate:  'bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-400',
     purple: 'bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400',
     sky:    'bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400',
-    amber:  'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
+    amber:  'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
     violet: 'bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400',
   }[tone]
   return (

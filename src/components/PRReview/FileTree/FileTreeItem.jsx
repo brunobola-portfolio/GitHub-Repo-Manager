@@ -85,7 +85,7 @@ export function FileTreeItem({ file, id, isActive, isFocused, isReviewed, aiRisk
         {basename(filename)}
       </span>
 
-      {/* Addition / deletion counts. ds-text-* (not text-green-600) because the
+      {/* Addition / deletion counts. ds-text-* (not text-green-700) because the
           SELECTED row's blue tint is the darkest background these land on —
           green-600 measured 2.64:1 there. See --ds-fg-success. */}
       <span className="shrink-0 text-xs ds-text-success font-mono">

@@ -506,7 +506,7 @@ function MemberCard({ member, currentUserRole, onUpdateRole, onRemove, isMe }) {
                     <button
                         onClick={() => onRemove(member.id)}
                         className={`p-2 rounded-lg transition-colors ${isMe
-                            ? 'text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                            ? 'text-slate-400 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20'
                             : 'text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
                             }`}
                         aria-label={isMe ? "Leave Team" : "Remove Member"}

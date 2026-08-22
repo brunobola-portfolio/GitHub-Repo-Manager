@@ -243,7 +243,7 @@ function OAuthSection({ status, startOAuth, retryOAuth, setValidationError }) {
   }
   if (status === 'success') {
     return (
-      <span className="inline-flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400">
+      <span className="inline-flex items-center gap-1.5 text-sm text-emerald-700 dark:text-emerald-400">
         <CheckCircle2 className="w-4 h-4" />
         Authenticated via Azure AD
       </span>

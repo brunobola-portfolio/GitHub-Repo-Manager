@@ -101,7 +101,7 @@ export default function SavedCredentialsPicker({ host, org, value, onPick, onOpe
             {option.label}
           </span>
           {option.isExactOrg && (
-            <span className="shrink-0 ds-text-micro uppercase tracking-wider font-semibold text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/40">
+            <span className="shrink-0 ds-text-micro uppercase tracking-wider font-semibold text-emerald-700 dark:text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/40">
               exact match
             </span>
           )}

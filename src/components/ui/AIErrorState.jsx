@@ -77,7 +77,7 @@ export function AIErrorState({ error, onRetry, onDismiss, context, variant = 'ca
 
     return (
         <div role="alert" aria-live="polite" className={containerClass}>
-            <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" aria-hidden />
+            <AlertCircle className="w-5 h-5 text-amber-700 dark:text-amber-400 mt-0.5 shrink-0" aria-hidden />
             <div className="flex-1 min-w-0 text-sm">
                 <div className="font-medium text-amber-900 dark:text-amber-100">
                     {formatted.title}

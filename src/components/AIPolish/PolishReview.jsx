@@ -143,7 +143,7 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                                     </div>
                                 )}
                                 {row.status === 'quota' && (
-                                    <p className="text-xs text-amber-600 dark:text-amber-400 inline-flex items-center gap-1">
+                                    <p className="text-xs text-amber-700 dark:text-amber-400 inline-flex items-center gap-1">
                                         <Ban className="w-3 h-3" /> Skipped (quota)
                                     </p>
                                 )}
@@ -172,7 +172,7 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                                         <Spinner size="xs" /> Applying
                                     </span>
                                 ) : row.status === 'done' ? (
-                                    <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                                    <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
                                         <CheckCircle2 className="w-3.5 h-3.5" /> Applied
                                     </span>
                                 ) : row.status === 'ready' ? (

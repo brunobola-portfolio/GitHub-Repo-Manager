@@ -434,7 +434,7 @@ export function PricingPage({ onGetStarted } = {}) {
                   animate={{ opacity: 1, scale: 1, x: 0 }}
                   exit={{ opacity: 0, scale: 0.8, x: -6 }}
                   transition={{ duration: 0.2 }}
-                  className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                  className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20"
                 >
                   Save 20%
                 </motion.span>

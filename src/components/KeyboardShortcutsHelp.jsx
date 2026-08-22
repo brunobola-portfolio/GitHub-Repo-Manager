@@ -22,7 +22,7 @@ export function KeyboardShortcutsHelp({ isOpen, onClose, shortcuts }) {
             size="sm"
         >
             {isCoarsePointer && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 mb-3 text-center" role="note">
+                <p className="text-xs text-amber-700 dark:text-amber-400 mb-3 text-center" role="note">
                     These shortcuts need a physical keyboard — connect one to use them on this device.
                 </p>
             )}

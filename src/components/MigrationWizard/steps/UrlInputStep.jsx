@@ -174,7 +174,7 @@ export default function UrlInputStep({ source, onChange }) {
         </Button>
 
         {source.urlValidation === 'valid' && (
-          <span className="inline-flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400">
+          <span className="inline-flex items-center gap-1.5 text-sm text-emerald-700 dark:text-emerald-400">
             <CheckCircle2 className="w-4 h-4" />
             Repository accessible
           </span>

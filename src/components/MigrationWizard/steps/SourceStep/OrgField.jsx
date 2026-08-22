@@ -278,7 +278,7 @@ export default function OrgField({
                       href={buildPatSettingsUrl(source.host, source.org) || `https://dev.azure.com/${encodeURIComponent(source.org)}/_usersSettings/tokens`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400 hover:text-amber-500 underline"
+                      className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 dark:text-amber-400 hover:text-amber-500 underline"
                     >
                       <KeyRound className="w-3 h-3" />
                       Create a PAT for this org

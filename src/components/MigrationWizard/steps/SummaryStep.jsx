@@ -642,7 +642,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
           </div>
           <div>
             <p className="text-sm font-medium text-amber-700 dark:text-amber-300">Dry Run Mode</p>
-            <p className="text-xs text-amber-600/80 dark:text-amber-400/70 mt-0.5">
+            <p className="text-xs text-amber-700/80 dark:text-amber-400/70 mt-0.5">
               This was a simulation — no repositories were actually migrated or modified.
             </p>
           </div>

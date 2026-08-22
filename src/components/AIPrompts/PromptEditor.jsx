@@ -200,7 +200,7 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                             + Add
                         </Button>
                         {pathRules.length >= MAX_PATH_RULES ? (
-                            <span className="ds-text-micro text-amber-600 dark:text-amber-400 ml-2">Maximum {MAX_PATH_RULES} rules</span>
+                            <span className="ds-text-micro text-amber-700 dark:text-amber-400 ml-2">Maximum {MAX_PATH_RULES} rules</span>
                         ) : null}
                     </div>
                     {pathRules.length === 0 ? (

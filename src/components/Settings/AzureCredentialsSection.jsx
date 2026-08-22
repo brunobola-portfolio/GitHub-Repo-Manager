@@ -109,7 +109,7 @@ function Header({ onAdd }) {
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xl">
           Save Personal Access Tokens once and reuse them in the migration wizard.
           Tokens are stored <strong>encrypted</strong> in the database —
-          {' '}<span className="text-emerald-600 dark:text-emerald-400">never</span> returned to the browser after being saved.
+          {' '}<span className="text-emerald-700 dark:text-emerald-400">never</span> returned to the browser after being saved.
         </p>
       </div>
       <button
@@ -590,14 +590,14 @@ function HostAllowlistChip({ status }) {
   }
   if (status === 'allowed') {
     return (
-      <span role="status" className="ds-text-meta inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+      <span role="status" className="ds-text-meta inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
         <ShieldCheck className="w-3 h-3" /> authorized host
       </span>
     )
   }
   if (status === 'blocked') {
     return (
-      <span role="status" className="ds-text-meta inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
+      <span role="status" className="ds-text-meta inline-flex items-center gap-1 text-amber-700 dark:text-amber-400">
         <ShieldAlert className="w-3 h-3" /> not in the allowlist
       </span>
     )

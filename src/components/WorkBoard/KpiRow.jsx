@@ -87,7 +87,7 @@ const KPI_ACCENTS = {
     brand: BRAND_ACCENT,
     attention: {
         dot: 'bg-amber-500',
-        text: 'text-amber-600 dark:text-amber-300',
+        text: 'text-amber-700 dark:text-amber-300',
         sparkColor: 'var(--ds-chart-series-3)',
     },
     purple: BRAND_ACCENT,

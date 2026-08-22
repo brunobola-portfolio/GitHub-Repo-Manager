@@ -22,7 +22,7 @@ import { invalidatePRData } from '../../hooks/usePRData'
 import { prActions } from '../../actions/prActions'
 
 const REVIEW_STATES = {
-    APPROVED: { label: 'Approved', color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20', icon: ShieldCheck },
+    APPROVED: { label: 'Approved', color: 'text-green-700 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20', icon: ShieldCheck },
     CHANGES_REQUESTED: { label: 'Changes requested', color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/20', icon: ShieldAlert },
     COMMENTED: { label: 'Commented', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', icon: MessageCircle },
     DISMISSED: { label: 'Dismissed', color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-50 dark:bg-slate-800', icon: Eye },
@@ -238,7 +238,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                 <span className="flex items-center gap-1.5">
                                     <FileText className="w-3 h-3" />
                                     {files.length} files
-                                    <span className="text-green-600 dark:text-green-400">+{totalAdditions}</span>
+                                    <span className="text-green-700 dark:text-green-400">+{totalAdditions}</span>
                                     <span className="text-red-500 dark:text-red-400">-{totalDeletions}</span>
                                 </span>
                             )}
@@ -320,7 +320,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                             {isOpen && !isMerged && (
                                 <Card className="p-4 border border-green-200 dark:border-green-800/50 bg-green-50/50 dark:bg-green-900/10">
                                     <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2">
-                                        <GitMerge className="w-4 h-4 text-green-600" />
+                                        <GitMerge className="w-4 h-4 text-green-700" />
                                         Merge pull request
                                     </h4>
                                     <div className="flex gap-1 p-1 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 mb-3">

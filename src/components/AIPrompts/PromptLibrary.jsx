@@ -73,7 +73,7 @@ export function PromptLibrary({ presets, loading, onNew, onEdit, onDelete, onSet
                                             shared · {p.scopeTarget}
                                         </span>
                                     ) : null}
-                                    {p.isDefault ? <span className="ds-text-micro uppercase tracking-wide text-emerald-600">default</span> : null}
+                                    {p.isDefault ? <span className="ds-text-micro uppercase tracking-wide text-emerald-700">default</span> : null}
                                     {isOrgShared && p.ownedByUser === false ? (
                                         <span className="ds-text-micro uppercase tracking-wide opacity-60">read-only</span>
                                     ) : null}

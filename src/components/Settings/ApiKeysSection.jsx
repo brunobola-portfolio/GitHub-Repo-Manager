@@ -223,7 +223,7 @@ function NewKeyReveal({ keyData, onDismiss }) {
             className="rounded-2xl border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-900/20 p-5 space-y-3"
         >
             <div className="flex items-start gap-2">
-                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <AlertTriangle className="w-5 h-5 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
                 <div>
                     <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Save your API key now</p>
                     <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">

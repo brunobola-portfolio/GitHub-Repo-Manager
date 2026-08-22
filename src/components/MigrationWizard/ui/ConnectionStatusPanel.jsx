@@ -162,7 +162,7 @@ function stepToneClasses(status) {
     case 'ok':
       return {
         bg: 'bg-emerald-100 dark:bg-emerald-900/30',
-        text: 'text-emerald-600 dark:text-emerald-400',
+        text: 'text-emerald-700 dark:text-emerald-400',
         detailText: 'text-emerald-700 dark:text-emerald-300',
       }
     case 'error':
@@ -174,7 +174,7 @@ function stepToneClasses(status) {
     case 'warn':
       return {
         bg: 'bg-amber-100 dark:bg-amber-900/30',
-        text: 'text-amber-600 dark:text-amber-400',
+        text: 'text-amber-700 dark:text-amber-400',
         detailText: 'text-amber-700 dark:text-amber-300',
       }
     case 'loading':

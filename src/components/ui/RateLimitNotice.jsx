@@ -61,7 +61,7 @@ export function RateLimitNotice({ retryAt, variant = 'toast', onRetry, onDismiss
                 animate={{ rotate: isReady ? 0 : [0, 180] }}
                 transition={{ repeat: isReady ? 0 : Infinity, duration: 2, ease: 'easeInOut' }}
             >
-                <Hourglass className="w-4 h-4 text-amber-600 dark:text-amber-300" />
+                <Hourglass className="w-4 h-4 text-amber-700 dark:text-amber-300" />
             </motion.div>
             {!isReady && (
                 <span className="sr-only">{secondsLeft} seconds remaining</span>

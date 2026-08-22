@@ -27,7 +27,7 @@ export function BranchSelector({ branches = [], selected, onSelect, label, defau
                         ? {
                               badge: 'default',
                               badgeColor:
-                                  'text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 font-semibold',
+                                  'text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30 font-semibold',
                           }
                         : {}),
                 }

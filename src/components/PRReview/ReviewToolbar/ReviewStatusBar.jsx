@@ -127,7 +127,7 @@ export function ReviewStatusBar({
             </span>
 
             {pendingCommentCount > 0 && (
-                <span className="shrink-0 text-xs font-medium text-amber-600 dark:text-amber-400">
+                <span className="shrink-0 text-xs font-medium text-amber-700 dark:text-amber-400">
                     {pendingCommentCount} pending {pendingCommentCount === 1 ? 'comment' : 'comments'}
                 </span>
             )}

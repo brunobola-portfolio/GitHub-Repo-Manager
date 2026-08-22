@@ -69,7 +69,7 @@ export function FileTreePicker({ isOpen, owner, repoName, branch, onPick, onClos
                 )}
 
                 {data?.truncated && (
-                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                    <p className="text-xs text-amber-700 dark:text-amber-400">
                         Repo is large — only the first 500 files are shown. Use search to find more.
                     </p>
                 )}

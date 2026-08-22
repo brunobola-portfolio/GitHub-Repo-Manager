@@ -107,7 +107,7 @@ export function PromptPicker({ presets, activeKey, onChange, disabled }) {
                             <div className="flex items-center gap-2">
                                 <span className="flex-1 truncate">{p.name}</span>
                                 {p.builtin ? <span className="ds-text-micro uppercase tracking-wide opacity-50">built-in</span> : null}
-                                {p.isDefault ? <span className="ds-text-micro uppercase tracking-wide text-emerald-600">default</span> : null}
+                                {p.isDefault ? <span className="ds-text-micro uppercase tracking-wide text-emerald-700">default</span> : null}
                             </div>
                             {p.severityFloor ? (
                                 <div className="ds-text-micro opacity-60 mt-0.5">≥ {p.severityFloor}</div>

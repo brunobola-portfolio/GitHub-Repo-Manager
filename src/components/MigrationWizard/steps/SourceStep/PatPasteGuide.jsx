@@ -129,7 +129,7 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
         subtitle={
           hasContext
             ? <>On your server <code className="px-1 rounded bg-slate-100 dark:bg-slate-800 ds-text-meta">{host}</code> · org <code className="px-1 rounded bg-slate-100 dark:bg-slate-800 ds-text-meta">{org}</code></>
-            : <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
+            : <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400">
                 <AlertTriangle className="w-3 h-3" />
                 Paste the Azure DevOps / TFS URL above first — without it we don't know which server to create the PAT for
               </span>
@@ -203,13 +203,13 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
           <p className={`mt-1.5 ds-text-meta inline-flex items-center gap-1 ${
             patCheck.severity === 'error'
               ? 'text-red-600 dark:text-red-400'
-              : 'text-amber-600 dark:text-amber-400'
+              : 'text-amber-700 dark:text-amber-400'
           }`}>
             <AlertTriangle className="w-3 h-3 shrink-0" /> {patCheck.message}
           </p>
         )}
         {patCheck.ok && (
-          <p className="mt-1.5 ds-text-meta inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+          <p className="mt-1.5 ds-text-meta inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
             <CheckCircle2 className="w-3 h-3 shrink-0" /> {patCheck.message}
           </p>
         )}
@@ -218,7 +218,7 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
             has to re-paste this PAT. */}
         {patCheck.ok && hasContext && !savedJustNow && (
           <div className="mt-2 flex items-stretch gap-2 px-3 py-2 rounded-lg bg-emerald-50/60 dark:bg-emerald-900/15 border border-emerald-200 dark:border-emerald-800">
-            <Bookmark className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+            <Bookmark className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400 shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <div className="text-xs font-medium text-emerald-800 dark:text-emerald-200">
                 Save for future sessions?

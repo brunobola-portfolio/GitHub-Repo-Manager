@@ -25,7 +25,7 @@ describe('pricingTier', () => {
     })
 
     it('exposes a tailwind class per tier in PRICING_TIER_CLS', () => {
-        expect(PRICING_TIER_CLS.cheap).toBe('text-emerald-600 dark:text-emerald-300')
+        expect(PRICING_TIER_CLS.cheap).toBe('text-emerald-700 dark:text-emerald-300')
         expect(PRICING_TIER_CLS.mid).toBe('text-slate-600 dark:text-slate-300')
         expect(PRICING_TIER_CLS.premium).toBe('text-rose-500 dark:text-rose-300')
     })

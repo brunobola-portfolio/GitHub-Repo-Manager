@@ -173,7 +173,7 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
         if (!savedRules) {
             return <span className="inline-flex items-center gap-1 ds-text-micro text-slate-500 dark:text-slate-400">unprotected</span>
         }
-        return <span className="inline-flex items-center gap-1 ds-text-micro text-emerald-600 dark:text-emerald-400">protected</span>
+        return <span className="inline-flex items-center gap-1 ds-text-micro text-emerald-700 dark:text-emerald-400">protected</span>
     }
 
     return (
@@ -310,7 +310,7 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
                                 checked={rules.allowForcePushes}
                                 onChange={(e) => setRules(r => ({ ...r, allowForcePushes: e.target.checked }))}
                                 disabled={archived || saving}
-                                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-amber-600 focus:ring-amber-500/40" />
+                                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-amber-700 focus:ring-amber-500/40" />
                             <span className="text-sm text-amber-700 dark:text-amber-400">Allow force pushes</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -319,13 +319,13 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
                                 checked={rules.allowDeletions}
                                 onChange={(e) => setRules(r => ({ ...r, allowDeletions: e.target.checked }))}
                                 disabled={archived || saving}
-                                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-amber-600 focus:ring-amber-500/40" />
+                                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-amber-700 focus:ring-amber-500/40" />
                             <span className="text-sm text-amber-700 dark:text-amber-400">Allow branch deletion</span>
                         </label>
                     </div>
 
                     <div className="flex items-center justify-between gap-2 pt-1">
-                        <span className={`text-xs transition-opacity ${isDirty ? 'opacity-100 text-amber-600 dark:text-amber-400' : 'opacity-0'}`} aria-live="polite">
+                        <span className={`text-xs transition-opacity ${isDirty ? 'opacity-100 text-amber-700 dark:text-amber-400' : 'opacity-0'}`} aria-live="polite">
                             {isDirty ? 'Unsaved changes' : ''}
                         </span>
                         <div className="flex items-center gap-2">

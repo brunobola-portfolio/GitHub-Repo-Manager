@@ -99,7 +99,7 @@ export function RoadmapPage({ onNavigatePricing } = {}) {
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-7
               bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20"
           >
-            <Map className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <Map className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
             <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 tracking-wide">
               Public Roadmap
             </span>

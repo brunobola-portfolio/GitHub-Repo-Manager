@@ -202,8 +202,8 @@ export function RepoCard({
             }`} />
             <span className={`ds-text-meta ${
               repo.conflictAction === 'replace' ? 'text-red-600 dark:text-red-400' :
-              conflictStatus === 'clear' ? 'text-emerald-600 dark:text-emerald-400' :
-              conflictStatus === 'checking' ? 'text-amber-600 dark:text-amber-400' :
+              conflictStatus === 'clear' ? 'text-emerald-700 dark:text-emerald-400' :
+              conflictStatus === 'checking' ? 'text-amber-700 dark:text-amber-400' :
               conflictStatus === 'conflict' ? 'text-red-600 dark:text-red-400' :
               'text-slate-500 dark:text-slate-400'
             }`}>
@@ -276,7 +276,7 @@ export function RepoCard({
                   {repo.hasLfsMarker && (
                     <span
                       title="LFS pointers were detected in .gitattributes — enabled automatically"
-                      className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 ds-text-micro font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400"
+                      className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 ds-text-micro font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400"
                     >
                       <Sparkles className="w-2.5 h-2.5" aria-hidden="true" />
                       Auto-detected

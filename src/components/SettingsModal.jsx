@@ -274,7 +274,7 @@ function GeneralTabContent({
                             {clearing ? 'Clearing…' : 'Clear cache now'}
                         </Button>
                         {cacheMessage ? (
-                            <p role="status" className={`ds-text-meta font-medium ${cacheMessage.type === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                            <p role="status" className={`ds-text-meta font-medium ${cacheMessage.type === 'success' ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                 {cacheMessage.text}
                             </p>
                         ) : (

@@ -97,7 +97,7 @@ function toneFor(state) {
       return {
         container: 'border-emerald-300 dark:border-emerald-700 bg-emerald-50/70 dark:bg-emerald-900/15 ring-1 ring-emerald-200/50 dark:ring-emerald-800/40',
         iconBg: 'bg-emerald-100 dark:bg-emerald-900/40',
-        iconText: 'text-emerald-600 dark:text-emerald-400',
+        iconText: 'text-emerald-700 dark:text-emerald-400',
         hintText: 'text-emerald-700 dark:text-emerald-300',
       }
     case 'selected':

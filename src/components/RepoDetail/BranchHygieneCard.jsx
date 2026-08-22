@@ -66,7 +66,7 @@ export function BranchHygieneCard({ branches, defaultBranch = 'main', className 
 
                 {insights.suspicious.length > 0 && (
                     <div>
-                        <div className="ds-text-micro font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400 mb-1.5">
+                        <div className="ds-text-micro font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400 mb-1.5">
                             Likely throwaway branches
                         </div>
                         <ul className="space-y-1 text-xs text-slate-700 dark:text-slate-200">

@@ -24,7 +24,7 @@ export function DiffSummary({ files = [], summary, loading }) {
                     {summary?.files_changed || files.length} files changed
                 </span>
                 <span className="text-xs text-slate-500">
-                    <span className="text-emerald-600 dark:text-emerald-400">+{summary?.additions || 0}</span>
+                    <span className="text-emerald-700 dark:text-emerald-400">+{summary?.additions || 0}</span>
                     {' '}
                     <span className="text-red-600 dark:text-red-400">−{summary?.deletions || 0}</span>
                 </span>
@@ -40,7 +40,7 @@ export function DiffSummary({ files = [], summary, loading }) {
                             <ChevronRight className={`w-3 h-3 text-slate-400 transition-transform ${expandedFile === file.filename ? 'rotate-90' : ''}`} />
                             <FileCode className="w-3 h-3 text-slate-400 shrink-0" />
                             <span className="flex-1 text-left text-slate-700 dark:text-slate-300 font-mono truncate">{file.filename}</span>
-                            <span className="text-emerald-600 dark:text-emerald-400">+{file.additions}</span>
+                            <span className="text-emerald-700 dark:text-emerald-400">+{file.additions}</span>
                             <span className="text-red-600 dark:text-red-400">−{file.deletions}</span>
                         </button>
                         <AnimatePresence>

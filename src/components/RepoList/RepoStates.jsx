@@ -26,7 +26,7 @@ export function ErrorState({ error, errorInfo, onRefresh, onLogin }) {
 		return (
 			<div className="flex flex-col items-center justify-center py-20">
 				<div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mb-4">
-					<Lock className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+					<Lock className="w-8 h-8 text-amber-700 dark:text-amber-400" />
 				</div>
 				<p className="text-slate-700 dark:text-slate-300 font-medium text-center mb-2">Session Expired</p>
 				<p className="text-slate-500 dark:text-slate-400 text-sm text-center max-w-md mb-4">

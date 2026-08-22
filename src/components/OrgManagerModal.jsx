@@ -412,7 +412,7 @@ function SettingsTab({ org }) {
         <div className="space-y-4">
             <InsightCard tone="warning" hover={false}>
                 <div className="flex items-start gap-3">
-                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                    <AlertTriangle className="w-5 h-5 text-amber-700 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                     <div>
                         <h4 className="font-medium text-amber-800 dark:text-amber-200">Advanced Settings</h4>
                         <p className="text-sm text-amber-700 dark:text-amber-100/80 mt-1">
@@ -451,7 +451,7 @@ function StatCard({ icon: IconComp, label, value, color }) {
     const colors = {
         blue: 'bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-200',
         purple: 'bg-brand-50 text-brand-600 dark:bg-brand-900/40 dark:text-brand-200',
-        green: 'bg-green-50 text-green-600 dark:bg-green-900/40 dark:text-green-200',
+        green: 'bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-200',
         orange: 'bg-orange-50 text-orange-600 dark:bg-orange-900/40 dark:text-orange-200'
     }
     return (

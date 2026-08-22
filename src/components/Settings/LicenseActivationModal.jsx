@@ -125,7 +125,7 @@ export function LicenseActivationModal({ isOpen, onClose }) {
         {result && (
           <div className="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 space-y-3" data-testid="license-activated-card">
             <div className="flex items-start gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-5 h-5 text-emerald-700 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-300">License activated</p>
                 <p className="text-xs text-emerald-800/80 dark:text-emerald-300/80 mt-0.5">Your plan and Pro features are now live across the app.</p>

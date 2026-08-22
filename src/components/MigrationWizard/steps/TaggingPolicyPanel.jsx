@@ -22,7 +22,7 @@ function Toggle({ id, checked, onChange, label, hint, icon: Icon, warning }) {
         </div>
         <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{hint}</div>
         {warning ? (
-          <div className="mt-1 text-xs text-amber-600 dark:text-amber-300/80" role="alert">
+          <div className="mt-1 text-xs text-amber-700 dark:text-amber-300/80" role="alert">
             ⚠ {warning}
           </div>
         ) : null}

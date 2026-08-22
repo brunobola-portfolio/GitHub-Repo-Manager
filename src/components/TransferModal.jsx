@@ -311,7 +311,7 @@ export function TransferModal({
 												</div>
 											)}
 											{hasConflict && !resolution && (
-												<span className="text-xs text-amber-600 dark:text-amber-400 font-medium">Conflict</span>
+												<span className="text-xs text-amber-700 dark:text-amber-400 font-medium">Conflict</span>
 											)}
 										</div>
 										{hasConflict && (

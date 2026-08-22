@@ -258,7 +258,7 @@ export function IssuesTab({ api, repoFullName }) {
                                             Close
                                         </Button>
                                     ) : (
-                                        <Button variant="ghost" size="sm" onClick={() => handleReopen(issue)} className="text-green-600 dark:text-green-400 text-xs shrink-0">
+                                        <Button variant="ghost" size="sm" onClick={() => handleReopen(issue)} className="text-green-700 dark:text-green-400 text-xs shrink-0">
                                             Reopen
                                         </Button>
                                     )}

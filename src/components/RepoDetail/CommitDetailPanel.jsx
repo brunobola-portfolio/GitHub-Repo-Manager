@@ -114,7 +114,7 @@ export function CommitDetailPanel({ owner, repo, sha, onClose }) {
                 <div className="flex items-center gap-3 flex-wrap text-xs px-4 pt-3 pb-2 border-b border-slate-100 dark:border-slate-800">
                     <CopyButton value={sha?.slice(0, 12) || ''} label="commit SHA" />
                     {author?.date && <span className="text-slate-500 dark:text-slate-400">{formatRelativeTime(author.date)}</span>}
-                    <span className="text-emerald-600 dark:text-emerald-400">+{stats.additions}</span>
+                    <span className="text-emerald-700 dark:text-emerald-400">+{stats.additions}</span>
                     <span className="text-rose-600 dark:text-rose-400">−{stats.deletions}</span>
                     {data?.html_url && (
                         <a href={data.html_url} target="_blank" rel="noopener noreferrer"

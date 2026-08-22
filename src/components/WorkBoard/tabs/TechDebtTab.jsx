@@ -42,7 +42,7 @@ export function TechDebtTab() {
             {hotspots.length > 0 && (
                 <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/40">
                     <div className="flex items-center gap-2 mb-2">
-                        <Flame className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                        <Flame className="w-4 h-4 text-amber-700 dark:text-amber-400" />
                         <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wider">
                             Hotspots
                         </span>
@@ -54,7 +54,7 @@ export function TechDebtTab() {
                                 className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/80 dark:bg-slate-900/60 text-xs font-medium text-slate-700 dark:text-slate-200"
                             >
                                 <span className="font-mono text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">{h.repoFullName}</span>
-                                <span className="text-amber-600 dark:text-amber-400 font-semibold">{h.count}</span>
+                                <span className="text-amber-700 dark:text-amber-400 font-semibold">{h.count}</span>
                                 {h.oldestAgeDays > 0 && (
                                     <span className="text-slate-400 ds-text-micro">· oldest {Math.round(h.oldestAgeDays)}d</span>
                                 )}
@@ -103,7 +103,7 @@ export function TechDebtTab() {
                                             )}
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap flex-shrink-0">
+                                    <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 font-medium whitespace-nowrap flex-shrink-0">
                                         <Clock className="w-3 h-3" />
                                         {dayLabel(issue.ageDays)}
                                         <WorkBoardRowMenu

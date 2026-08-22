@@ -387,7 +387,7 @@ function OverviewGrid({ data }) {
                     </h3>
                     <div className="grid sm:grid-cols-2 gap-2">
                         {data.highlights.map((h, i) => (
-                            <div key={`${i}-${h}`} className="flex items-start gap-2 text-sm text-emerald-600 dark:text-emerald-400">
+                            <div key={`${i}-${h}`} className="flex items-start gap-2 text-sm text-emerald-700 dark:text-emerald-400">
                                 <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
                                 <span className="break-words">{h}</span>
                             </div>
@@ -474,7 +474,7 @@ function QualityGrid({ data }) {
                         {featureEntries.map(([key, value]) => (
                             <div
                                 key={key}
-                                className={`flex items-center gap-2 text-sm ${value ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}
+                                className={`flex items-center gap-2 text-sm ${value ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`}
                             >
                                 {value ? (
                                     <CheckCircle2 className="w-4 h-4 shrink-0" />
@@ -532,7 +532,7 @@ function ReadmeGrid({ data, repo }) {
             <div className="grid gap-4">
                 <InsightCard tone="success" hover={false} className="text-center py-8">
                     <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
-                    <p className="text-emerald-600 dark:text-emerald-400 font-medium">README looks complete!</p>
+                    <p className="text-emerald-700 dark:text-emerald-400 font-medium">README looks complete!</p>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                         All recommended sections are present.
                     </p>
@@ -597,7 +597,7 @@ const SUGGESTION_TYPE_STYLES = {
         wrapper:
             'bg-amber-500/5 dark:bg-amber-500/10 border-amber-500/20 hover:border-amber-500/40',
         iconColor: 'text-amber-500 dark:text-amber-400',
-        badgeBg: 'bg-amber-500/15 text-amber-600 dark:text-amber-300',
+        badgeBg: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
     },
     info: {
         icon: Info,
@@ -631,7 +631,7 @@ function SuggestionsGrid({ data, loading, error, onRetry }) {
         return (
             <InsightCard tone="success" hover={false} className="text-center py-8">
                 <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
-                <p className="text-emerald-600 dark:text-emerald-400 font-medium">
+                <p className="text-emerald-700 dark:text-emerald-400 font-medium">
                     No suggestions — looking great!
                 </p>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">

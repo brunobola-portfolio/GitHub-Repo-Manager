@@ -89,7 +89,7 @@ export function BatchIndexProgressModal({ isOpen, onClose, repos = [] }) {
           </div>
         )}
         <div className="flex gap-4 text-sm">
-          <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+          <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
             <CheckCircle2 className="w-4 h-4" /> {successCount} indexed
           </span>
           {failCount > 0 && (

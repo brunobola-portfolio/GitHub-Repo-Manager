@@ -99,7 +99,7 @@ export function Field({
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.15 }}
-                        className="text-xs font-medium text-emerald-600 dark:text-emerald-400"
+                        className="text-xs font-medium text-emerald-700 dark:text-emerald-400"
                     >
                         {success}
                     </motion.p>

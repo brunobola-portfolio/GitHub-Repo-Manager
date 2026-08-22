@@ -54,7 +54,7 @@ function FieldCard({
     if (mode === 'noChange') {
         return (
             <InsightCard tone="success" hover={false}>
-                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm">
+                <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 text-sm">
                     <CheckCircle2 className="w-4 h-4" />
                     {label} already great — no change suggested.
                 </div>

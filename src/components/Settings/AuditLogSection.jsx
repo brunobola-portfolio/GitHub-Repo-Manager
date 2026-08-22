@@ -29,10 +29,10 @@ const ACTION_OPTIONS = [
 ]
 
 const ACTION_COLORS = {
-    'auth.login': 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30',
+    'auth.login': 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30',
     'auth.logout': 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800',
     'repo.delete': 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30',
-    'repo.transfer': 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30',
+    'repo.transfer': 'text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30',
     'api_key.revoke': 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30',
     'team.delete': 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30',
 }

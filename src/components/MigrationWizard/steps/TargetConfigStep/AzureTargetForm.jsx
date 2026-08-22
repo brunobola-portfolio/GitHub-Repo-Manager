@@ -243,7 +243,7 @@ function NewProjectForm({ source, onChange }) {
         {creating ? 'Creating project…' : 'Create project now'}
       </button>
       {result && (
-        <p className="text-xs text-emerald-600 dark:text-emerald-400">
+        <p className="text-xs text-emerald-700 dark:text-emerald-400">
           ✓ Project {result.project?.name} created{result.repo ? ` with repo ${result.repo.name}` : ''}.
         </p>
       )}

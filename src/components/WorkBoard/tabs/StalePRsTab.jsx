@@ -113,7 +113,7 @@ function StalePRRow({ pr, idx, isFocused, onFocus, hasAI, onSnooze, onPing }) {
                                 {pr.authorLogin && <> by <strong>{pr.authorLogin}</strong></>}
                             </div>
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap flex-shrink-0">
+                        <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 font-medium whitespace-nowrap flex-shrink-0">
                             <Clock className="w-3 h-3" />
                             {dayLabel(pr.ageDays)}
                         </div>

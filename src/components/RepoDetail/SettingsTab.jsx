@@ -364,7 +364,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
                     the fold (slice 5 docs pattern: md:hidden fixed bottom-0 inset-x-0
                     + md:flex inline). */}
                 <div className="hidden md:flex items-center justify-between gap-2 pt-1">
-                    <span className={`text-xs transition-opacity ${isDirty ? 'opacity-100 text-amber-600 dark:text-amber-400' : 'opacity-0'}`} aria-live="polite">
+                    <span className={`text-xs transition-opacity ${isDirty ? 'opacity-100 text-amber-700 dark:text-amber-400' : 'opacity-0'}`} aria-live="polite">
                         {isDirty ? 'Unsaved changes' : ''}
                     </span>
                     <div className="flex items-center gap-2">
@@ -388,7 +388,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
                         className="md:hidden fixed inset-x-0 z-[var(--ds-z-composer)] flex items-center justify-between gap-2 px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/60 dark:border-slate-700/50 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]"
                         style={{ bottom: 'calc(56px + var(--safe-area-inset-bottom, 0px))' }}
                     >
-                        <span className="text-xs text-amber-600 dark:text-amber-400" aria-live="polite">
+                        <span className="text-xs text-amber-700 dark:text-amber-400" aria-live="polite">
                             Unsaved changes
                         </span>
                         <div className="flex items-center gap-2">

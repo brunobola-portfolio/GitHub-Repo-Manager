@@ -46,7 +46,7 @@ const TONE_CLASSES = {
     },
     attention: {
         iconBg: 'bg-amber-500/10',
-        iconColor: 'text-amber-600 dark:text-amber-400',
+        iconColor: 'text-amber-700 dark:text-amber-400',
         countActive: 'text-amber-700 dark:text-amber-400',
         hoverBorder: 'hover:border-amber-300 dark:hover:border-amber-500/50',
         ring: 'focus-visible:ring-amber-500',
@@ -90,7 +90,7 @@ function CategoryCard({ category, data, onClick }) {
                 </span>
                 {showDelta && (
                     <span
-                        className={`inline-flex items-center gap-0.5 text-xs font-semibold ${delta > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}
+                        className={`inline-flex items-center gap-0.5 text-xs font-semibold ${delta > 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}
                         aria-label={`${Math.abs(delta)} ${delta > 0 ? 'more than' : 'fewer than'} previous`}
                     >
                         {delta > 0 ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}

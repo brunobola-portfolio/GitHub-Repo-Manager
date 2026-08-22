@@ -274,7 +274,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">No risks detected</p>
-                  <p className="text-xs text-emerald-600/60 dark:text-emerald-400/50 mt-0.5">Migration plan looks safe to proceed.</p>
+                  <p className="text-xs text-emerald-700/60 dark:text-emerald-400/50 mt-0.5">Migration plan looks safe to proceed.</p>
                 </div>
               </motion.div>
             )}
@@ -318,7 +318,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
               >
                 <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-amber-200/40 dark:border-amber-500/10">
                   <CircleAlert className="w-3.5 h-3.5 text-amber-500" />
-                  <span className="ds-text-meta font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                  <span className="ds-text-meta font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
                     Warnings ({aiPlan.warnings.length})
                   </span>
                 </div>
@@ -370,7 +370,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
                   </motion.div>
                   <div>
                     <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Plan approved</p>
-                    <p className="text-xs text-emerald-600/60 dark:text-emerald-400/50 mt-0.5">You can proceed to the next step.</p>
+                    <p className="text-xs text-emerald-700/60 dark:text-emerald-400/50 mt-0.5">You can proceed to the next step.</p>
                   </div>
                 </motion.div>
               )}

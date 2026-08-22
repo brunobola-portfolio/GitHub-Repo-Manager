@@ -3,7 +3,7 @@ import { AlertOctagon, AlertTriangle, Info } from 'lucide-react'
 // Light-first classes + dark: variants — the -400 text weights read fine on a
 // dark surface but are materially lower contrast on a white light-mode card.
 // Matches the app's own convention used one file over in SummaryStep's LFS
-// pills (`text-red-600 dark:text-red-400`, `text-amber-600 dark:text-amber-400`).
+// pills (`text-red-600 dark:text-red-400`, `text-amber-700 dark:text-amber-400`).
 const LEVEL_STYLE = {
   blocker: {
     icon: AlertOctagon,
@@ -12,7 +12,7 @@ const LEVEL_STYLE = {
   },
   warning: {
     icon: AlertTriangle,
-    cls:  'bg-amber-50 text-amber-600 border-amber-300 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30',
+    cls:  'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-500/15 dark:text-amber-400 dark:border-amber-500/30',
     aria: 'warning',
   },
   info: {

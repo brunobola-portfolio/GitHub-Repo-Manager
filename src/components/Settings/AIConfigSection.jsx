@@ -358,7 +358,7 @@ export function AIConfigSection() {
                 <div className="relative rounded-2xl ring-1 ring-amber-400/40">
                     <div className="flex items-start gap-3 rounded-2xl bg-amber-50/80 dark:bg-amber-900/10 backdrop-blur-md px-3.5 py-3">
                         <div className="w-8 h-8 shrink-0 rounded-lg bg-amber-500/15 ring-1 ring-inset ring-amber-500/30 flex items-center justify-center">
-                            <Info className="w-4 h-4 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                            <Info className="w-4 h-4 text-amber-700 dark:text-amber-400" aria-hidden="true" />
                         </div>
                         <div className="flex-1 min-w-0 text-sm text-amber-900 dark:text-amber-200">
                             <div className="font-semibold">
@@ -477,7 +477,7 @@ export function AIConfigSection() {
                                 exit={{ opacity: 0 }}
                                 className={`text-sm font-medium flex items-center gap-1.5 ${
                                     saveMessage.type === 'success'
-                                        ? 'text-emerald-600 dark:text-emerald-400'
+                                        ? 'text-emerald-700 dark:text-emerald-400'
                                         : 'text-red-600 dark:text-red-400'
                                 }`}
                             >

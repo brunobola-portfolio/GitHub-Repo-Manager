@@ -104,14 +104,14 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
             </span>
             <span className={`text-sm font-semibold ${tone.text}`}>{provider.label}</span>
             {!host && (
-              <span className="inline-flex items-center gap-1 ds-text-micro uppercase tracking-wider text-amber-600 dark:text-amber-400 font-semibold">
+              <span className="inline-flex items-center gap-1 ds-text-micro uppercase tracking-wider text-amber-700 dark:text-amber-400 font-semibold">
                 <AlertCircle className="w-3 h-3" />
                 not set
               </span>
             )}
             {host && allowlistStatus === true && (
               <span
-                className="inline-flex items-center gap-1 ds-text-micro uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-semibold"
+                className="inline-flex items-center gap-1 ds-text-micro uppercase tracking-wider text-emerald-700 dark:text-emerald-400 font-semibold"
                 title="Server authorized by the backend (.env)"
               >
                 <ShieldCheck className="w-3 h-3" />
@@ -120,7 +120,7 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
             )}
             {host && allowlistStatus === false && (
               <span
-                className="inline-flex items-center gap-1 ds-text-micro uppercase tracking-wider text-amber-600 dark:text-amber-400 font-semibold"
+                className="inline-flex items-center gap-1 ds-text-micro uppercase tracking-wider text-amber-700 dark:text-amber-400 font-semibold"
                 title="The backend has an allowlist and this host isn't included"
               >
                 <ShieldAlert className="w-3 h-3" />

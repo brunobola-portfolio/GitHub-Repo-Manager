@@ -80,9 +80,9 @@ export function ConflictPanel({ conflict, repoName, onResolve, resolution }) {
 
     const summaryColorClass =
         summary.type === 'source'
-            ? 'text-emerald-600 dark:text-emerald-400'
+            ? 'text-emerald-700 dark:text-emerald-400'
             : summary.type === 'target'
-            ? 'text-amber-600 dark:text-amber-400'
+            ? 'text-amber-700 dark:text-amber-400'
             : 'text-slate-500 dark:text-slate-400'
 
     // --- Resolved state ---
@@ -123,7 +123,7 @@ export function ConflictPanel({ conflict, repoName, onResolve, resolution }) {
                 <div className="px-3 py-2 text-xs font-semibold text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] uppercase tracking-wide">
                     Source
                 </div>
-                <div className="px-3 py-2 text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wide">
+                <div className="px-3 py-2 text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
                     Target
                 </div>
 

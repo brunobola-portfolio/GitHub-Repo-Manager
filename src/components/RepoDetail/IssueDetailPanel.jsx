@@ -281,7 +281,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                                 variant="ghost"
                                 size="sm"
                                 onClick={handleStateToggle}
-                                className={isOpen ? 'text-brand-600 dark:text-brand-400' : 'text-green-600 dark:text-green-400'}
+                                className={isOpen ? 'text-brand-600 dark:text-brand-400' : 'text-green-700 dark:text-green-400'}
                             >
                                 {isOpen ? (
                                     <><XCircle className="w-4 h-4 mr-1" /> Close issue</>

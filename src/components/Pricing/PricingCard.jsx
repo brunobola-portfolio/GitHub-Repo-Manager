@@ -21,7 +21,7 @@ function FeatureRow({ label, included, highlighted, enterprise }) {
               ? 'bg-brand-500/20 text-brand-400'
               : enterprise
                 ? 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400'
-                : 'bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                : 'bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
             : 'bg-slate-100 dark:bg-white/[0.05] text-slate-300 dark:text-slate-600'
           }`}
       >

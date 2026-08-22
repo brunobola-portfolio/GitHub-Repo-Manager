@@ -146,7 +146,7 @@ function PreviewCard({ plan, i, onSignIn }) {
 												: 'bg-brand-500/10 dark:bg-brand-500/20'
 										}`}
 								>
-									<Check className={`w-3 h-3 ${plan.popular ? 'text-white' : plan.enterprise ? 'text-amber-600 dark:text-amber-400' : 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'}`} strokeWidth={2.5} />
+									<Check className={`w-3 h-3 ${plan.popular ? 'text-white' : plan.enterprise ? 'text-amber-700 dark:text-amber-400' : 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'}`} strokeWidth={2.5} />
 								</div>
 								<span className={`text-sm ds-font-display ${plan.popular ? 'text-brand-50' : 'text-slate-600 dark:text-slate-300'}`}>
 									{feat}

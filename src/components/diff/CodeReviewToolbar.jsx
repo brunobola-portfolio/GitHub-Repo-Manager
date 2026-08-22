@@ -47,7 +47,7 @@ export function CodeReviewToolbar({
                 )}
                 <span>
                     <span className="font-semibold text-slate-700 dark:text-slate-200">{filesCount}</span> files changed
-                    {' · '}<span className="text-green-600 dark:text-green-400">+{additions}</span>{' '}
+                    {' · '}<span className="text-green-700 dark:text-green-400">+{additions}</span>{' '}
                     <span className="text-red-600 dark:text-red-400">−{deletions}</span>
                 </span>
                 <span className="text-slate-400">·</span>

@@ -166,7 +166,7 @@ export function ConnectGitHubSetup({ isOpen, onClose, status: statusProp }) {
                            user exactly what the operator must do instead. */
                         <motion.div key="operator" {...STEP_MOTION} className="space-y-4">
                             <div className="flex items-start gap-3 rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 p-4">
-                                <ServerCog className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                                <ServerCog className="w-5 h-5 text-amber-700 dark:text-amber-400 flex-shrink-0 mt-0.5" aria-hidden="true" />
                                 <div className="text-sm text-amber-800 dark:text-amber-200">
                                     <p className="font-semibold mb-1">GitHub sign-in isn&apos;t configured on this server yet.</p>
                                     <p className="text-amber-700 dark:text-amber-300/90">
@@ -283,7 +283,7 @@ export function ConnectGitHubSetup({ isOpen, onClose, status: statusProp }) {
                         </motion.form>
                     ) : (
                         <motion.div key="done" {...STEP_MOTION} className="py-6 flex flex-col items-center text-center gap-4">
-                            <div className="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                            <div className="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 flex items-center justify-center">
                                 <AnimatedCheck size={28} />
                             </div>
                             <div>

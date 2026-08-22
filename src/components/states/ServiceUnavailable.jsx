@@ -216,7 +216,7 @@ function InlineService({ service, reason, className }) {
             'text-xs',
             className
         )}>
-            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-amber-700 dark:text-amber-400" />
             <div className="min-w-0">
                 <p className="font-semibold text-amber-900 dark:text-amber-200">
                     {service} unavailable

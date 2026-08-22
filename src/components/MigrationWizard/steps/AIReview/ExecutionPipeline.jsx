@@ -96,7 +96,7 @@ export function ExecutionPipeline({ order, repos, source }) {
               {/* Badges */}
               <div className="flex items-center gap-1 shrink-0">
                 {usesExisting && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-amber-100 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400" title="Reusing an existing empty repo in the target project">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400" title="Reusing an existing empty repo in the target project">
                     <Recycle className="w-2.5 h-2.5" />
                     Existing
                   </span>

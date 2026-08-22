@@ -323,7 +323,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                 {(plan.status === 'interrupted' || plan.status === 'paused') && (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleResumePlan(plan) }}
-                                                        className="p-1.5 rounded-lg text-amber-600 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20 transition-colors"
+                                                        className="p-1.5 rounded-lg text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20 transition-colors"
                                                         title="Resume migration"
                                                         aria-label="Resume migration"
                                                     >

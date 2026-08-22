@@ -195,7 +195,7 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
               {!resolvedLocally && (
                 <button
                   onClick={handleResolve}
-                  className="ml-auto flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 rounded"
+                  className="ml-auto flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-green-700 dark:hover:text-green-400 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 rounded"
                 >
                   <CheckCircle size={13} />
                   Resolve
@@ -203,7 +203,7 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
               )}
 
               {resolvedLocally && (
-                <span className="ml-auto flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                <span className="ml-auto flex items-center gap-1 text-xs text-green-700 dark:text-green-400">
                   <CheckCircle size={13} />
                   Resolved
                 </span>

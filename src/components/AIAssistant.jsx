@@ -610,7 +610,7 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus, currentRe
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setActiveContext(null)}
-                                                                className="shrink-0 p-0.5 rounded hover:bg-amber-200/50 dark:hover:bg-amber-900/40 text-amber-600 dark:text-amber-300 transition-colors ds-focus-ring"
+                                                                className="shrink-0 p-0.5 rounded hover:bg-amber-200/50 dark:hover:bg-amber-900/40 text-amber-700 dark:text-amber-300 transition-colors ds-focus-ring"
                                                                 aria-label="Clear context"
                                                             >
                                                                 <X size={12} />
@@ -706,7 +706,7 @@ function MessageBubble({ message, onAction, onRetry, onOpenSettings }) {
                                     />
                                 )}
                                 {message.interrupted && (
-                                    <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+                                    <p className="mt-1.5 flex items-center gap-1 text-xs font-medium text-amber-700 dark:text-amber-400">
                                         <AlertTriangle size={11} aria-hidden="true" />
                                         Response interrupted — retry below to continue.
                                     </p>

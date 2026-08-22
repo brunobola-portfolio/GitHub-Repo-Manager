@@ -56,7 +56,7 @@ export function AINotHealthyBanner({
         >
             <div className="flex items-start gap-3">
                 <div className="shrink-0 w-10 h-10 rounded-xl bg-amber-500/25 dark:bg-amber-500/35 ring-1 ring-inset ring-amber-500/40 flex items-center justify-center">
-                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-300" aria-hidden="true" />
+                    <AlertTriangle className="w-5 h-5 text-amber-700 dark:text-amber-300" aria-hidden="true" />
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">

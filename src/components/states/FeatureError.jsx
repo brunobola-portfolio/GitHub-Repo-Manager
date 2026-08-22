@@ -19,7 +19,7 @@ const TONES = {
         surface: 'bg-amber-50/70 dark:bg-amber-500/10',
         title: 'text-amber-900 dark:text-amber-200',
         body: 'text-amber-800/80 dark:text-amber-200/80',
-        accent: 'text-amber-600 dark:text-amber-400',
+        accent: 'text-amber-700 dark:text-amber-400',
         chip: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/20',
     },
     info: {

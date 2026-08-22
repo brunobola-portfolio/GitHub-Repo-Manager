@@ -19,8 +19,8 @@
 const SOLID_TONES = {
     purple:  'bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400',
     violet:  'bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400',
-    amber:   'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
-    emerald: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400',
+    amber:   'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
+    emerald: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
     blue:    'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
     indigo:  'bg-brand-100 dark:bg-brand-900/30 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]',
     sky:     'bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400',
@@ -32,8 +32,8 @@ const SOLID_TONES = {
 const SOFT_TONES = {
     purple:  'bg-brand-500/10  text-brand-600 dark:text-brand-400',
     violet:  'bg-brand-500/15  text-brand-600 dark:text-brand-400',
-    amber:   'bg-amber-500/10   text-amber-600 dark:text-amber-400',
-    emerald: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+    amber:   'bg-amber-500/10   text-amber-700 dark:text-amber-400',
+    emerald: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
     blue:    'bg-blue-500/10    text-blue-600 dark:text-blue-400',
     indigo:  'bg-brand-500/10  text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]',
     sky:     'bg-brand-500/10     text-brand-600 dark:text-brand-400',

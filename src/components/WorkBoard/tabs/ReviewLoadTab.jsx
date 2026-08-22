@@ -87,9 +87,9 @@ export function ReviewLoadTab() {
                                 </div>
                             </div>
                             <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 tabular-nums w-24 text-right">
-                                <span className="text-emerald-600 dark:text-emerald-400">{submitted}</span>
+                                <span className="text-emerald-700 dark:text-emerald-400">{submitted}</span>
                                 <span className="text-slate-400 mx-1">·</span>
-                                <span className="text-amber-600 dark:text-amber-400">{pending}</span>
+                                <span className="text-amber-700 dark:text-amber-400">{pending}</span>
                             </div>
                         </motion.div>
                     )

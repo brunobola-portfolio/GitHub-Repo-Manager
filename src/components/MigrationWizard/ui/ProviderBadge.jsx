@@ -34,7 +34,7 @@ export default function ProviderBadge({ host, variant = 'inline', className = ''
             {provider.type === PROVIDERS.ON_PREM && (
               <>
                 {' · '}
-                <span className="text-amber-600 dark:text-amber-400">requires a PAT created on that server</span>
+                <span className="text-amber-700 dark:text-amber-400">requires a PAT created on that server</span>
               </>
             )}
           </p>
