@@ -4,10 +4,11 @@ Thank you for your interest in contributing to GitHub Repo Manager! This documen
 
 ## Contributor License Agreement (CLA)
 
-This project uses a dual-license model:
-
-- **Apache-2.0** for everyone
-- **Commercial license** for organizations (see [LICENSE-COMMERCIAL.md](docs/LICENSE-COMMERCIAL.md))
+This project is licensed under **Apache-2.0** — one licence, for everyone,
+covering the whole application. There is no second, commercial licence to the
+code: paid subscriptions buy a hosted instance, higher quotas and support
+([subscription terms](docs/LICENSE-COMMERCIAL.md)), never permission to use
+what Apache-2.0 already grants.
 
 Before your first contribution can be merged, you must sign our [CLA](CLA.md) by
 commenting "I have read the CLA and I agree" on your pull request. This is a one-time

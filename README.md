@@ -77,11 +77,11 @@ Try the full app instantly — **no API keys or GitHub account needed**.
 ```bash
 git clone https://github.com/brunobola-portfolio/GitHub-Repo-Manager.git
 cd GitHub-Repo-Manager
-npm install
-npm run dev:all
+npm ci
+npm run demo
 ```
 
-Open **[http://localhost:5173](http://localhost:5173)** — Vite (:5173) proxies `/api` to Express (:3001). Explore with **87 mock repositories**, simulated organizations, teams, and AI responses. For real mode (your GitHub account), see [Installation](#installation).
+Open **[http://localhost:5173](http://localhost:5173)**. No `.env`, no OAuth app, no keys: `npm run demo` switches the whole stack into the mock universe — **87 repositories**, organizations, teams, a live inbox and simulated AI — and signs you in as a demo user. Vite (:5173) proxies `/api` to Express (:3001). For real mode with your own GitHub account, see [Installation](#installation); `npm run dev:all` is the real-mode dev command and reads your `.env`.
 
 > **On Windows?** Skip the toolchain — download from the [latest release](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest) and double-click **GitHub Repo Manager**.
 
@@ -426,9 +426,9 @@ deployment guide, including the `docker run` form for the prebuilt image.
 
 ### Mock Mode vs. Real Mode
 
-| Feature | Mock Mode (default) | Real Mode |
+| Feature | Demo mode (`npm run demo`) | Real mode (`npm run dev:all`) |
 |---------|--------------------|-----------|
-| **Setup** | Zero config | GitHub OAuth + `.env` |
+| **Setup** | Zero config — no `.env` | GitHub OAuth + `.env` |
 | **Repositories** | 87 mock repos | Your real repos |
 | **AI features** | Mock responses | AI-powered (BYOK) |
 | **Migration** | UI only | Fully functional |
@@ -441,13 +441,24 @@ deployment guide, including the `docker run` form for the prebuilt image.
 GITHUB_CLIENT_ID=your_github_oauth_client_id
 GITHUB_CLIENT_SECRET=your_github_oauth_client_secret
 
-# Server security (required in production)
+# Server security — all four are required in production; `npm run gen:secrets`
+# prints fresh values. Without CREDENTIAL_ENCRYPTION_KEY, stored provider keys
+# and PATs cannot be encrypted at rest; without API_KEY_SECRET, API keys
+# cannot be hashed.
 SESSION_SECRET=<random 48+ byte string>
 WEBHOOK_SECRET=<random 48+ byte string>
+API_KEY_SECRET=<random 48+ byte string>
+CREDENTIAL_ENCRYPTION_KEY=<random 48+ byte string>
 
-# Frontend / dev
+# Deployment shape. `self-host` (the default) lets an instance licence set the
+# tier for everyone on the box; `saas` makes Stripe the only source of a paid
+# tier, so one operator's key never upgrades other tenants.
+DEPLOYMENT_MODE=self-host
+
+# Frontend / dev. Leave VITE_MOCK_MODE=false here — `npm run demo` turns it on
+# for its own process, and a production build with it on serves fake data.
 FRONTEND_URL=http://localhost:5173
-VITE_MOCK_MODE=true
+VITE_MOCK_MODE=false
 ```
 
 See [`.env.example`](.env.example) for the full list, including AI config (`GEMINI_API_KEY`, `AI_REQUIRE_USER_CONFIG`), email (`EMAIL_PROVIDER`, `RESEND_API_KEY`), Stripe (`STRIPE_SECRET_KEY`), license issuance (`LICENSE_SIGNING_PRIVATE_KEY_PEM`), data retention (`DATA_RETENTION_DAYS`), and observability (`LOG_LEVEL`, `SENTRY_DSN`).

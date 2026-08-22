@@ -21,14 +21,13 @@ You grant to Bola Labs a perpetual, worldwide, non-exclusive, no-charge, royalty
 irrevocable license to use, reproduce, prepare derivative works of, publicly display,
 publicly perform, sublicense, and distribute your Contributions and derivative works.
 
-### 3. Dual Licensing
+### 3. Licence of the Project
 
-You understand that the Project is dual-licensed:
-- **Apache-2.0** for everyone
-- **Commercial license** for organizations that require it
-
-Your Contributions may be included in both the open-source and commercially licensed
-versions of the software.
+You understand that the Project is licensed under Apache-2.0 and that your
+Contributions will be distributed under that licence. You also understand that
+BolaLabs may offer the software as a hosted service and sell subscriptions to
+it; that is a service, not a different licence to your Contributions, which
+remain available to everyone under Apache-2.0.
 
 ### 4. Your Rights
 
