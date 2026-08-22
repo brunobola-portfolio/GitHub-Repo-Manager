@@ -23,7 +23,7 @@ const STRONG = 'a'.repeat(40); // 40-char random-like string, no weak words
 let envSnapshot;
 
 const TRACKED_KEYS = [
-    'SESSION_SECRET', 'WEBHOOK_SECRET', 'CREDENTIAL_ENCRYPTION_KEY',
+    'SESSION_SECRET', 'WEBHOOK_SECRET', 'CREDENTIAL_ENCRYPTION_KEY', 'API_KEY_SECRET',
     'DISABLE_HTTPS_ENFORCEMENT', 'STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET',
     'LICENSE_SIGNING_PRIVATE_KEY_PEM', 'EMAIL_PROVIDER', 'RESEND_API_KEY',
     'FRONTEND_URL', 'ALLOW_MOCK_AUTH', 'VITE_MOCK_MODE', 'ALLOW_CONSOLE_EMAIL',
@@ -109,8 +109,38 @@ describe('G4 — verifySecretsAtStartup', () => {
         process.env.SESSION_SECRET = STRONG;
         process.env.WEBHOOK_SECRET = STRONG;
         process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
+        process.env.API_KEY_SECRET = STRONG;
         const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
         expect(errors).toHaveLength(0);
+    });
+
+    it('production + missing API_KEY_SECRET → error', () => {
+        process.env.SESSION_SECRET = STRONG;
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
+        delete process.env.API_KEY_SECRET;
+        const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(errors.some(e => e.includes('API_KEY_SECRET'))).toBe(true);
+    });
+
+    it('production + the template placeholder → error, not a warning', () => {
+        // .env.example ships this exact value. It is 41 characters, so the
+        // length check passed it, and "contains weak keyword" was only a
+        // warning: a copied template booted in production with a secret that
+        // is in the public repository.
+        process.env.SESSION_SECRET = 'change-me-to-a-random-32-plus-byte-string';
+        process.env.WEBHOOK_SECRET = STRONG;
+        process.env.CREDENTIAL_ENCRYPTION_KEY = STRONG;
+        process.env.API_KEY_SECRET = STRONG;
+        const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
+        expect(errors.some(e => /SESSION_SECRET.*placeholder/.test(e))).toBe(true);
+    });
+
+    it('development + the template placeholder → warning only', () => {
+        process.env.SESSION_SECRET = 'change-me-to-a-random-32-plus-byte-string';
+        const { errors, warnings } = verifySecretsAtStartup({ nodeEnv: 'development' });
+        expect(errors).toHaveLength(0);
+        expect(warnings.some(w => /placeholder/.test(w))).toBe(true);
     });
 
     // -----------------------------------------------------------------------

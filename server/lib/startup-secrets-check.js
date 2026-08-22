@@ -24,7 +24,11 @@ export function verifySecretsAtStartup({ nodeEnv }) {
     // CREDENTIAL_ENCRYPTION_KEY joins the required list (S1 — P0 security):
     // without a dedicated key, a leaked .env or session-store dump would also
     // expose every user BYOK credential and Azure PAT.
-    const required = ['SESSION_SECRET', 'WEBHOOK_SECRET', 'CREDENTIAL_ENCRYPTION_KEY'];
+    // API_KEY_SECRET was missing from this list: index.js checks it is SET in
+    // production but nothing checked what it was set TO, so the template's
+    // own placeholder passed. It hashes every API key; a guessable value
+    // means forgeable keys.
+    const required = ['SESSION_SECRET', 'WEBHOOK_SECRET', 'CREDENTIAL_ENCRYPTION_KEY', 'API_KEY_SECRET'];
 
     if (nodeEnv === 'production') {
         for (const key of required) {
@@ -131,6 +135,23 @@ export function verifySecretsAtStartup({ nodeEnv }) {
             warnings.push(
                 `FRONTEND_URL=${feUrl} is not HTTPS — browsers will reject cookies with ` +
                 'Secure flag and HSTS will fail. Serve over HTTPS or proxy through one.'
+            );
+        }
+    }
+
+    // The template's own placeholders ("change-me-to-a-random-32-plus-byte-
+    // string", "CHANGE_THIS_SECRET") are 41 characters long, so they passed
+    // the length check above and only produced the warning below. A copied
+    // .env.example therefore booted in production with a secret that is in
+    // the public repository. In production that is an error; the broader
+    // keyword check stays a warning, because "test" or "secret" can occur in
+    // a genuinely random base64 string.
+    const PLACEHOLDER = /change[-_ ]?(me|this)/i;
+    for (const key of required) {
+        const v = process.env[key] ?? '';
+        if (v && PLACEHOLDER.test(v)) {
+            (nodeEnv === 'production' ? errors : warnings).push(
+                `${key} is the template placeholder — generate a real value (npm run gen:secrets)`
             );
         }
     }

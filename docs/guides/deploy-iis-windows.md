@@ -10,6 +10,7 @@ Ready-to-copy artefacts live in [`deploy/iis/`](../../deploy/iis/):
 | [`web.config`](../../deploy/iis/web.config) | ARR reverse-proxy rule, SSE buffering off, request limits |
 | [`production.env.example`](../../deploy/iis/production.env.example) | Annotated production `.env` |
 | [`install-service.ps1`](../../deploy/iis/install-service.ps1) | Registers the Windows service and health-checks it |
+| [`deploy.ps1`](../../deploy/iis/deploy.ps1) | Installs or upgrades from a release zip: SHA-256 check, verified backup, health check against the new version, automatic rollback |
 
 Running on Linux or in Docker instead? Use
 [`deploy/Caddyfile.example`](../../deploy/Caddyfile.example) and the nginx
@@ -92,16 +93,26 @@ Get-WebGlobalModule | Where-Object Name -match 'ApplicationRequestRouting|Rewrit
 
 ---
 
-## 1. Build the app
+## 1. Get the app onto the box
 
-Build on the server, or on any Windows box — `better-sqlite3` ships a
-prebuilt, Node-API binary, so the artefact is not tied to the Node version
-that produced it (see the prerequisite note above).
+Two ways, and only one of them belongs on a production server.
+
+**Use the release (recommended).** Every release ships a `win-x64.zip` with
+`dist/`, `server/`, `node_modules/` and the licence files already inside,
+plus a `.sha256` beside it. `deploy.ps1 -FromRelease latest` (section 8)
+downloads it, verifies the hash and lays it out under `AppRoot` — nothing is
+built on the server, and a box that never runs `npm` has one less thing that
+can differ from what was tested. Skip to section 2.
+
+**Build it yourself** — for a fork, a patched build, or an air-gapped box.
+Do it on a workstation, not on the server, and carry the result over as the
+zip `deploy.ps1` expects: `better-sqlite3` ships a prebuilt Node-API binary,
+so the artefact is not tied to the Node version that produced it.
 
 ```powershell
-cd C:\apps\GitHubRepoManager
 npm ci
 npm run build
+node scripts/package-windows.mjs     # writes the same zip layout the release uses
 ```
 
 `npm ci` runs a postinstall native-module check; if it reports a

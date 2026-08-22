@@ -7,7 +7,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **A copied `.env.example` booted in production with the template's own
+  secrets.** `SESSION_SECRET=change-me-to-a-random-32-plus-byte-string` is 41
+  characters, so it cleared the length gate, and "contains a weak keyword" was
+  only a warning. `API_KEY_SECRET` — which hashes every API key — was not in
+  the startup check at all. The placeholder family is now a fatal error in
+  production, and all four secrets are checked.
+
+- **The site's public contact form had no rate limit** while `enforceRateLimit`
+  already existed for login. Per-email and global buckets now, the second
+  because that layer never sees an IP and an email is free to invent.
+
 ### Fixed
+
+- **The Quick Start did not start the demo.** `.env.example` ships
+  `VITE_MOCK_MODE=false` (deliberately — a production build with it on serves
+  fake data), so `npm run dev:all` landed on the sign-in page with three 401s;
+  and a fresh clone has no `.env`, so the server refused to boot without
+  `SESSION_SECRET`. New `npm run demo` turns on mock mode for its own process
+  and mints a per-run session secret that is never written to disk. Verified
+  on a clean clone: `npm ci`, `npm run demo`, Dashboard in 6 seconds.
+
+- **`.env.example` disabled backups.** `DB_BACKUP_DIR=` uncommented is the
+  explicit opt-out, so every install that copied the template ran without
+  backups while `operations.md` said they were on by default.
+
+- **`DEPLOYMENT_MODE` existed only in the IIS template.** The 4.20.0
+  tenant-boundary switch is now in `.env.example`, `docker-compose.yml` (the
+  parity gate caught that one) and the README, next to the two production
+  secrets the README had never mentioned.
+
+- **`npm run dev:kill` could not kill Vite on Windows** — `netstat -p tcp` is
+  IPv4-only and Vite 8 binds `[::1]:5173`.
+
+- **The lockfile still said `AGPL-3.0-only`**, so `npm install` dirtied it on
+  every fresh clone.
+
+- **CONTRIBUTING and the CLA still described a "dual-license model"** with a
+  commercial licence to the code. One licence; the earlier sweep caught the
+  AGPL words and missed this sentence.
+
+- **The IIS guide told the operator to `npm ci && npm run build` on the
+  server** in step 1, then in step 8 that a production box must never run
+  `npm ci`. Step 1 now leads with the release zip and `deploy.ps1`, which was
+  also missing from the guide's artefact table.
+
+### Accessibility
+
+- **Team cards were `<div onClick>`** — team detail was unreachable by
+  keyboard or screen reader. Same fix RepoCard got: a stretched `<button>`
+  as the background layer, the actions menu a sibling above it.
+- **Six hover-reveal controls took keyboard focus at opacity 0** (repo card
+  quick actions, Branches delete, Teams invite, Work Board preset delete,
+  sidebar row actions). Each also reveals on focus now.
+- **`Button variant="warning"` was white on amber-500: 2.15:1.** amber-700
+  is 5.02:1 and still reads as amber; same on the four ad-hoc copies.
+- **Work Board mobile chips had dark-only colours in light** — "Snooze 7d"
+  at 1.24:1. amber-800 on amber-100 is 6.37:1.
+- **"Review" on the PR toolbar was icon-only below `sm`** (axe button-name,
+  critical). sr-only text instead of hidden.
+- **Settings ignored Escape.** `closeOnBackdrop={false}` is about stray
+  clicks outside a wide modal, and Modal disables Escape by default when it
+  is set — right for a running transfer, wrong here.
+
+### Changed
+
+- **The mobile quick-actions FAB no longer "peeks".** It was translated 55%
+  off the right edge and revealed on hover — and a phone has no hover, so
+  what a first-time user saw was a green semicircle clipped by the viewport.
+  Full FAB above the bottom nav; measured at 390px: 56px wide, right edge
+  at 374.
+- **The retired indigo survived the hex gate as decimal triples** in eight
+  places — the repo card's selection ring was `rgba(129, 140, 248, …)` under
+  a comment reading "brand-400 ring". Swapped for the brand steps' channels;
+  the palette gate now matches `rgb()`/`rgba()` triples too.
+- **README**: the CI badge was duplicated and "What's new" pointed five
+  versions back; the Quick Start and the configuration table now describe
+  `npm run demo` and real mode as two commands, not one default.
+
+### Fixed (carried from the 4.20.0 release run)
 
 - **The v4.20.0 Docker build failed on the licence file it was meant to
   carry.** `COPY LICENSE NOTICE TRADEMARKS.md ./` arrived with the licence
@@ -3151,7 +3231,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.15.0...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.20.0...HEAD
+[4.20.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.19.0...v4.20.0
 [4.19.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.18.1...v4.19.0
 [4.18.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.18.0...v4.18.1
 [4.18.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.17.0...v4.18.0
