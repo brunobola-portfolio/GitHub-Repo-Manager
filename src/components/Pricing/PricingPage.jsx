@@ -325,7 +325,7 @@ export function PricingPage({ onGetStarted } = {}) {
         <div
           className="absolute inset-0 opacity-[0.025] dark:opacity-[0.05]"
           style={{
-            backgroundImage: 'linear-gradient(rgba(99,102,241,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.5) 1px, transparent 1px)',
+            backgroundImage: 'linear-gradient(rgba(85,131,27,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(85,131,27,0.5) 1px, transparent 1px)',
             backgroundSize: '48px 48px',
           }}
         />

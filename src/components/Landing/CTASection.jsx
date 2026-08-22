@@ -15,7 +15,7 @@ export function CTASection({ onSignIn }) {
         aria-hidden="true"
         style={{
           background:
-            'radial-gradient(ellipse 70% 60% at 50% 50%, rgba(99,102,241,0.08) 0%, transparent 70%)',
+            'radial-gradient(ellipse 70% 60% at 50% 50%, rgba(85,131,27,0.08) 0%, transparent 70%)',
         }}
       />
 

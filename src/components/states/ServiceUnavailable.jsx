@@ -106,7 +106,7 @@ function CardService({ service, reason, docsHref, contactEmail, contactSubject, 
                             target={docsHref.startsWith('http') ? '_blank' : undefined}
                             rel={docsHref.startsWith('http') ? 'noopener noreferrer' : undefined}
                             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold
-                                       bg-amber-500 text-white shadow-md
+                                       bg-amber-700 text-white shadow-md
                                        hover:bg-amber-600 transition-colors ds-focus-ring"
                         >
                             <BookOpen className="w-3.5 h-3.5" /> Setup guide
@@ -173,7 +173,7 @@ function BannerService({ service, reason, docsHref, contactEmail, contactSubject
                         target={docsHref.startsWith('http') ? '_blank' : undefined}
                         rel={docsHref.startsWith('http') ? 'noopener noreferrer' : undefined}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold
-                                   bg-amber-500 text-white hover:bg-amber-600 transition-colors ds-focus-ring"
+                                   bg-amber-700 text-white hover:bg-amber-800 transition-colors ds-focus-ring"
                     >
                         <BookOpen className="w-3 h-3" /> Setup
                     </a>

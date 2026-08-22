@@ -72,6 +72,25 @@ describe('the product has one accent ramp', () => {
         expect(offenders).toEqual([])
     })
 
+    it('carries no retired colour as an rgb()/rgba() triple either', () => {
+        // The hex check above let eight survive for four releases: the repo
+        // card's selection ring was `rgba(129, 140, 248, …)` with a comment
+        // reading "brand-400 ring" — indigo-400, by its channels. Same colour,
+        // different spelling, and a screenshot is the only thing that notices.
+        // Indigo 400/500/600 as decimal triples, any spacing.
+        const TRIPLES = [[129, 140, 248], [99, 102, 241], [79, 70, 229], [165, 180, 252], [167, 139, 250], [192, 132, 252]]
+        const alternatives = TRIPLES.map(([r, g, b]) => `${r}\\s*,\\s*${g}\\s*,\\s*${b}`).join('|')
+        const pattern = new RegExp(`rgba?\\(\\s*(?:${alternatives})\\b`)
+        const offenders = []
+        for (const file of FILES) {
+            const src = readFileSync(file, 'utf8')
+            src.split(/\r?\n/).forEach((line, i) => {
+                if (pattern.test(line)) offenders.push(`${file}:${i + 1}  ${line.trim().slice(0, 80)}`)
+            })
+        }
+        expect(offenders).toEqual([])
+    })
+
     it('defines the brand ramp it tells everyone to use', () => {
         const css = readFileSync('src/index.css', 'utf8')
         for (const step of [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]) {

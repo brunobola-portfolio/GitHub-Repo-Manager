@@ -39,7 +39,7 @@ export function HeroSection({ onSignIn }) {
           className="absolute inset-0 opacity-[0.025] dark:opacity-[0.05]"
           style={{
             backgroundImage:
-              'radial-gradient(circle, rgba(99,102,241,0.8) 1px, transparent 1px)',
+              'radial-gradient(circle, rgba(85,131,27,0.8) 1px, transparent 1px)',
             backgroundSize: '40px 40px',
           }}
         />
