@@ -28,6 +28,14 @@ below links to the canonical page for that topic.
 
 The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.21.0 (2026-08-22) — the first ten minutes.** A nine-lens review panel
+  walked both the product and the site as strangers. The Quick Start did not
+  start the demo (`npm run demo` now does, on a clone with no `.env`); a
+  copied `.env.example` booted in production with the template's own secrets
+  and with backups off; team cards were unreachable by keyboard; status text
+  was short of AA in light mode across 99 files; the mobile FAB looked
+  clipped; and the demo's numbers moved between renders. All closed, each
+  with the measurement that found it.
 - **v4.20.0 (2026-08-17) — the four launch blockers.** Work Board aggregations
   crossed the tenant boundary: the webhook event tables carry no `user_id`, and
   the filter that was meant to scope them took a client-supplied list that
@@ -58,14 +66,6 @@ The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHAN
   across ~1,650 call sites — every step luminance-matched so no pairing needed
   re-checking. Cards in a grid row are equal height at every width; they were
   312 px apart at 1024. See [Brand](BRAND.md).
-- **v4.17.0 (2026-08-10) — the bot backlog, closed.** Every GitHub request is
-  pinned to `api.github.com`; `full_name` is validated rather than split; the
-  inbound webhooks — which mount before session and so were never seen by the
-  global limiter — have a per-IP ceiling. Plus eight smaller real ones, and a
-  credential scrub that went from 36 seconds to 24 ms on 200 KB of adversarial
-  input. The remaining 48 CodeQL alerts were dismissed one by one with written
-  reasons; the policy is now in [Security](../SECURITY.md).
-
 
 ## Architecture
 
