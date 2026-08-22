@@ -6,12 +6,14 @@
 // (or the snapshot is missing) node_modules is out of sync with the lockfile —
 // the classic "pulled / switched branch and forgot to reinstall" drift that
 // makes Vite fail to resolve a freshly-added dependency mid-session. We detect
-// that in microseconds (two stat() calls) and run `npm ci` before booting.
+// that in microseconds (two stat() calls) and run `npm install` before booting.
 //
-// `ci`, not `install`: the lockfile is generated on Linux (see the CI note in
-// MEMORY/AGENTS), and an `install` from a different npm rewrites it — on a
-// fresh Windows clone the very first `npm run dev:all` left package-lock.json
-// modified. `ci` reads the lockfile and never writes it.
+// `install`, not `ci`, and this was learned the hard way: `ci` deletes
+// node_modules before it installs, and on Windows a single locked file (an
+// esbuild.exe still held by a dying Vite, a .node addon) fails it halfway —
+// leaving no node_modules at all, which is a worse morning than a lockfile
+// with some `peer: true` annotations moved around. `install` only adds.
+// Newcomers get `npm ci` in the README, where there is nothing to delete.
 
 import { spawnSync } from 'node:child_process'
 import { statSync } from 'node:fs'
@@ -45,7 +47,7 @@ function safeMtimeMs(file) {
 }
 
 // Reconcile node_modules with the lockfile when they've drifted. Returns
-// { drifted, installed, code, elapsedMs, summary, output }. Runs `npm ci`
+// { drifted, installed, code, elapsedMs, summary, output }. Runs `npm install`
 // synchronously (output captured, not inherited) so the caller can render a
 // clean summary instead of npm's raw spam. Never throws — on install failure it
 // returns a non-zero `code` and the captured output for the caller to surface.
@@ -64,7 +66,7 @@ export function ensureDepsFresh(root, { onStart, now = Date.now } = {}) {
   // --no-audit/--no-fund/--no-progress keep the captured output terse. shell:true
   // lets Windows resolve `npm` → npm.cmd via PATHEXT; args are static (no
   // interpolation) so there's no shell-injection surface here.
-  const res = spawnSync('npm', ['ci', '--no-audit', '--no-fund', '--no-progress'], {
+  const res = spawnSync('npm', ['install', '--no-audit', '--no-fund', '--no-progress'], {
     cwd: root,
     encoding: 'utf8',
     shell: true,

@@ -187,7 +187,9 @@ export function ReviewToolbar({ pr, repoName, repoFullName, viewMode, onToggleVi
           aria-haspopup="menu"
         >
           <Send size={14} />
-          <span className="hidden sm:inline">{submitting ? 'Submitting…' : 'Review'}</span>
+          {/* sr-only, not hidden: below `sm` the icon was the whole button and
+              axe flagged button-name as critical on the PR review view. */}
+          <span className="sr-only sm:not-sr-only">{submitting ? 'Submitting…' : 'Review'}</span>
 
           {/* Pending count badge */}
           {pendingCount > 0 && (

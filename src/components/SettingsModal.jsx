@@ -130,6 +130,11 @@ export function SettingsModal({ isOpen, onClose, initialTab, isAdmin = false }) 
             icon={SettingsIcon}
             size="3xl"
             closeOnBackdrop={false}
+            // closeOnBackdrop={false} is about a stray click outside a wide
+            // modal; Modal then ALSO disables Escape by default, which is right
+            // for a running transfer and wrong here. Escape is the one way a
+            // keyboard user expects to leave; there is nothing in flight.
+            disableEscape={false}
             tabs={isAdmin ? [...TABS, ...ADMIN_TABS] : TABS}
             activeTab={activeTab}
             onTabChange={setActiveTab}

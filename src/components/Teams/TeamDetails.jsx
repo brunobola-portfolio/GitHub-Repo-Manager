@@ -616,7 +616,7 @@ function RepoCard({ repo, teamMembers }) {
                         href={`https://github.com/${repo.repo_full_name}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="opacity-0 group-hover:opacity-100 text-brand-500 hover:text-brand-600 text-xs font-medium bg-brand-50 dark:bg-brand-900/30 px-2 py-1 rounded-md transition-all"
+                        className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-brand-500 hover:text-brand-600 text-xs font-medium bg-brand-50 dark:bg-brand-900/30 px-2 py-1 rounded-md transition-all"
                     >
                         GitHub &rarr;
                     </a>

@@ -51,13 +51,13 @@ export function MobileQuickActionsFab(props) {
                 )}
             </AnimatePresence>
 
-            {/* Group container — hover/focus-within reveals the peek FAB.
-                When idle, the trigger is translated 55 % off-screen to the right
-                so only its left third (~24 px) peeks past the viewport edge,
-                a soft indigo halo breathes behind it to keep it discoverable,
-                and a vertical stripe on the visible edge nudges "swipe / tap
-                me". Content underneath gets the full viewport width back;
-                the FAB only re-emerges when the user actually reaches for it. */}
+            {/* The trigger used to "peek": translated 55 % off the right edge
+                with a stripe as the affordance, revealed on hover/focus. On a
+                phone there is no hover, so what a first-time user saw was a
+                green semicircle clipped by the viewport — a newcomer walkthrough
+                called it the one floating control that looked broken. A full
+                FAB above the bottom nav is the shape every phone user already
+                knows; the breathing halo keeps it discoverable without tricks. */}
             <div className="group fixed right-0 bottom-[calc(56px+1rem+var(--safe-area-inset-bottom,0px))] z-[var(--ds-z-popover)] flex flex-col items-end gap-3 pr-4">
                 {/* Bare conditional (not AnimatePresence): jsdom doesn't drive exit
                     animations, so the ESC-closes test wouldn't observe the unmount
@@ -102,9 +102,8 @@ export function MobileQuickActionsFab(props) {
                     </motion.ul>
                 )}
 
-                {/* Breathing halo — sits behind the trigger to keep it discoverable
-                    while peeking; killed when the menu is open or any reveal state
-                    is active so the FAB lock-in feels clean and decisive. */}
+                {/* Breathing halo behind the trigger; gone while the menu is
+                    open so the open state feels settled. */}
                 <div className="relative">
                     {!open && (
                         <motion.span
@@ -124,20 +123,8 @@ export function MobileQuickActionsFab(props) {
                         animate={{ rotate: open ? 45 : 0 }}
                         whileTap={TAP}
                         transition={{ ...SPRING.panel, mass: 0.7 }}
-                        className={`relative w-14 h-14 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 dark:from-brand-400 dark:to-brand-500 shadow-xl shadow-brand-500/40 dark:shadow-brand-500/30 ring-1 ring-white/15 flex items-center justify-center text-white ds-focus-ring transition-[transform,opacity,box-shadow] duration-500 ease-[var(--ds-ease-emphasized)] hover:shadow-2xl hover:shadow-brand-500/50 ${
-                            open
-                                ? 'translate-x-0'
-                                : 'translate-x-[55%] opacity-95 group-hover:translate-x-0 group-hover:opacity-100 group-focus-within:translate-x-0 group-focus-within:opacity-100 group-active:translate-x-0'
-                        }`}
+                        className="relative w-14 h-14 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 dark:from-brand-400 dark:to-brand-500 shadow-xl shadow-brand-500/40 dark:shadow-brand-500/30 ring-1 ring-white/15 flex items-center justify-center text-white ds-focus-ring transition-[transform,box-shadow] duration-500 ease-[var(--ds-ease-emphasized)] hover:shadow-2xl hover:shadow-brand-500/50"
                     >
-                        {/* Edge stripe — only shows in peek state, hints "more on
-                            the right" so the FAB doesn't read as a clipped icon. */}
-                        {!open && (
-                            <span
-                                aria-hidden="true"
-                                className="absolute left-1.5 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-full bg-white/70 transition-opacity duration-[var(--ds-duration)] group-hover:opacity-0 group-focus-within:opacity-0"
-                            />
-                        )}
                         {open ? <X className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
                     </motion.button>
                 </div>

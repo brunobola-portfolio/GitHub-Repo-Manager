@@ -83,7 +83,7 @@ export function PresetDropdown({ currentFilters, onApply }) {
                                     <button
                                         type="button"
                                         onClick={() => remove(p.id)}
-                                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 text-slate-400 hover:text-rose-500 transition"
+                                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 text-slate-400 hover:text-rose-500 transition"
                                         aria-label={`Delete preset ${p.name}`}
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />

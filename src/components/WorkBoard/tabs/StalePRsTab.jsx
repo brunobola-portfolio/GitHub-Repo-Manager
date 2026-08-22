@@ -40,7 +40,7 @@ function ChipStrip({ pr, hasAI, onSnooze, onPing }) {
             <button
                 type="button"
                 onClick={() => onSnooze(pr, 168)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30 transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/30 dark:hover:bg-amber-500/30 transition-colors"
             >
                 <Clock className="w-3 h-3" />
                 Snooze 7d
@@ -50,7 +50,7 @@ function ChipStrip({ pr, hasAI, onSnooze, onPing }) {
                 href={`https://github.com/${pr.repoFullName}/pull/${pr.prNumber}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-white/10 text-slate-400 hover:text-slate-200 hover:border-white/20 transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 dark:border-white/10 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-white/20 transition-colors"
             >
                 <ExternalLink className="w-3 h-3" />
                 View on GitHub

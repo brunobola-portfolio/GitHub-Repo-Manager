@@ -68,6 +68,8 @@ export function LicenseActivationModal({ isOpen, onClose }) {
       title="Activate License"
       size="lg"
       closeOnBackdrop={false}
+      // Escape stays available except while the key is being verified.
+      disableEscape={activating}
       data-testid="license-activation-modal"
       footer={
         <ModalFooter align="between">

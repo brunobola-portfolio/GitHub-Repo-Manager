@@ -31,7 +31,7 @@ function RepoCardQuickActions({ repo, onAction, onOpenContextMenu }) {
 		.slice(0, QUICK_LIMIT)
 
 	return (
-		<div className="relative z-10 flex items-center gap-0.5 ml-auto flex-shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-[var(--ds-duration)]">
+		<div className="relative z-10 flex items-center gap-0.5 ml-auto flex-shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-all duration-[var(--ds-duration)]">
 			{top.map((a) => {
 				const Icon = resolveValue(a.icon, repo)
 				const label = resolveValue(a.label, repo)

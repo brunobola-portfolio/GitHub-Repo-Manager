@@ -272,7 +272,7 @@ export function BranchesTab({ api, repoData }) {
                                 </span>
                             )}
                             <Button variant="ghost" size="sm" onClick={() => handleDelete(b)}
-                                className="text-red-500 hover:text-red-700 dark:hover:text-red-400 md:opacity-0 md:group-hover:opacity-100"
+                                className="text-red-500 hover:text-red-700 dark:hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
                                 title="Delete branch" aria-label={`Delete branch ${b.name}`}>
                                 <Trash2 className="w-3.5 h-3.5" />
                             </Button>
