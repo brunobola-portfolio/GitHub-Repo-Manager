@@ -97,7 +97,7 @@ export function FeaturesSection() {
         aria-hidden="true"
         style={{
           background:
-            'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(99,102,241,0.05) 0%, transparent 70%)',
+            'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(85,131,27,0.05) 0%, transparent 70%)',
         }}
       />
 

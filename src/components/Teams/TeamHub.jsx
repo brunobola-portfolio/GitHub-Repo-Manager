@@ -283,8 +283,19 @@ function TeamCard({ team, onClick, onEdit, onDelete }) {
     const [showMenu, setShowMenu] = useState(false);
 
     return (
-        <motion.div layoutId={`team-${team.id}`} onClick={onClick} className="group">
+        <motion.div layoutId={`team-${team.id}`} className="group">
         <Card hover className="relative p-6 hover:shadow-2xl hover:border-brand-500/50">
+            {/* The card used to be a <div onClick>: team detail was unreachable
+                by keyboard or screen reader. Same fix as RepoCard — a real,
+                stretched <button> as the background layer, with the actions
+                menu a sibling ABOVE it (z-10), so nothing interactive is
+                nested inside a button. */}
+            <button
+                type="button"
+                onClick={onClick}
+                aria-label={`Open team ${team.name}`}
+                className="absolute inset-0 z-0 rounded-[inherit] ds-focus-ring"
+            />
             <div className="flex items-start justify-between mb-4">
                 <div className="w-12 h-12 rounded-2xl bg-brand-100 dark:bg-brand-900/50 flex items-center justify-center text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">
                     <Users className="w-6 h-6" />
@@ -292,7 +303,7 @@ function TeamCard({ team, onClick, onEdit, onDelete }) {
 
                 {/* Actions Menu */}
                 {team.role === 'owner' ? (
-                    <div className="relative">
+                    <div className="relative z-10">
                         <button
                             onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
                             className="p-2 text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-lg transition-colors"

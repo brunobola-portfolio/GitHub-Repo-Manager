@@ -93,7 +93,7 @@ function StepDisc({ status, index, icon: Icon }) {
   }
   if (status === 'current') {
     return (
-      <div className="relative w-9 h-9 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white shadow-[0_0_0_4px_rgba(99,102,241,0.15),0_4px_14px_-2px_rgba(99,102,241,0.5)]">
+      <div className="relative w-9 h-9 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white shadow-[0_0_0_4px_rgba(85,131,27,0.15),0_4px_14px_-2px_rgba(85,131,27,0.5)]">
         <Icon className="w-4 h-4" strokeWidth={2.25} />
         <motion.span
           aria-hidden="true"

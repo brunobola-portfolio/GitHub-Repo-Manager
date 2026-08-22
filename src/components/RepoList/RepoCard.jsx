@@ -105,9 +105,9 @@ export const RepoCard = memo(function RepoCard({
 
 	// Ring + border via inline style to guarantee visibility (Tailwind v4 class-order can't override inline)
 	const ringShadow = isContextTarget
-		? '0 0 0 2px rgba(129, 140, 248, 0.85)'  // brand-400 ring
+		? '0 0 0 2px rgba(107, 165, 34, 0.85)'  // brand-400 ring
 		: isSelected
-			? '0 0 0 2px rgba(99, 102, 241, 0.9)'   // brand-500 ring
+			? '0 0 0 2px rgba(85, 131, 27, 0.9)'   // brand-500 ring
 			: null
 
 	// Neutral, theme-aware elevation from the design system (see --ds-shadow-lg).
@@ -118,7 +118,7 @@ export const RepoCard = memo(function RepoCard({
 	const stateStyle = ringShadow
 		? {
 			boxShadow: `${ringShadow}, ${baseShadow}`,
-			borderColor: isContextTarget ? 'rgba(129, 140, 248, 0.6)' : 'transparent',
+			borderColor: isContextTarget ? 'rgba(107, 165, 34, 0.6)' : 'transparent',
 		}
 		: {}
 

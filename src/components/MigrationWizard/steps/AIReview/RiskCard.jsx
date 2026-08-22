@@ -26,7 +26,7 @@ const SEVERITY_CONFIG = {
     iconBg: 'bg-amber-100 dark:bg-amber-500/15',
     icon: AlertTriangle,
     iconColor: 'text-amber-500',
-    badge: 'bg-amber-500 text-white',
+    badge: 'bg-amber-700 text-white',
     accentBar: 'from-amber-500 to-orange-500',
   },
   low: {

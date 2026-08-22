@@ -46,7 +46,7 @@ export function WorkBoardSummary({ prefs, totalCount, mutedCount, pinnedCount, t
                     <span>Plan</span>
                     <span className={`ml-auto inline-flex items-center px-1.5 py-0.5 rounded-full font-semibold ds-text-micro uppercase tracking-wide ${
                         tier === 'enterprise'
-                            ? 'bg-amber-500 text-white'
+                            ? 'bg-amber-700 text-white'
                             : tier === 'pro'
                             ? 'bg-brand-500 text-white'
                             : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'
