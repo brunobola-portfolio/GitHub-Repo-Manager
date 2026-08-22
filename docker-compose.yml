@@ -85,6 +85,10 @@ services:
       # Without this, a paying self-host customer's LICENSE_KEY never
       # reaches the container and the deployment silently runs as Free.
       - "LICENSE_KEY=${LICENSE_KEY:-}"
+      # What that key is allowed to mean. self-host (default): it sets the tier
+      # for this box. saas: it grants nothing and Stripe is the only source of a
+      # paid tier — set before opening registration to other customers.
+      - "DEPLOYMENT_MODE=${DEPLOYMENT_MODE:-self-host}"
       # Database backups (server/lib/db-backup.js). Points at the separate
       # app-backups volume below (NOT app-data) so a corrupted/lost live
       # volume doesn't take the backups down with it — see
