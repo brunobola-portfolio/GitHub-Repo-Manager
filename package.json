@@ -30,6 +30,7 @@
     "dev": "vite",
     "dev:server": "node server/index.js",
     "dev:all": "node scripts/dev.mjs",
+    "demo": "node scripts/dev.mjs --demo",
     "dev:all:debug": "node scripts/dev.mjs --debug",
     "dev:kill": "node scripts/kill-dev-ports.js",
     "build": "vite build",
