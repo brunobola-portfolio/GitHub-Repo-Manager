@@ -143,3 +143,39 @@ describe('the licence is Apache-2.0, everywhere it is claimed', () => {
         expect(offenders, offenders.join(NEWLINE)).toEqual([])
     })
 })
+
+describe('every distributed artifact carries the terms', () => {
+    /*
+     * The v4.20.0 notes claimed all of them did. The Windows zip and the
+     * installer were true; the dist tarball was not — it shipped with only the
+     * bundled font licences, so someone redistributing that bundle had nothing
+     * to comply with Apache-2.0 4(a)/4(d) from.
+     *
+     * Each packaging path is checked at its own source, because they are three
+     * separate mechanisms and fixing one says nothing about the others.
+     */
+    it('the release tarball copies them into dist/ before archiving', () => {
+        const wf = readFileSync('.github/workflows/release.yml', 'utf8')
+        const step = wf.slice(wf.indexOf('Package dist bundle'), wf.indexOf('dist.tar.gz.sha256'))
+        for (const f of ['LICENSE', 'NOTICE', 'TRADEMARKS.md']) {
+            expect(step, `the dist tarball ships without ${f}`).toContain(f)
+        }
+    })
+
+    it('the Docker image copies them, and .dockerignore lets them through', () => {
+        const dockerfile = readFileSync('Dockerfile', 'utf8')
+        const ignore = readFileSync('.dockerignore', 'utf8')
+        expect(dockerfile).toMatch(/COPY .*LICENSE.*NOTICE.*TRADEMARKS\.md/)
+        // The COPY existed for a release while the ignore file blocked the
+        // third file, and the build only runs on a tag. See
+        // tests/build/dockerfile-context.test.js for the general rule.
+        expect(ignore, 'TRADEMARKS.md is excluded from the build context again').toContain('!TRADEMARKS.md')
+    })
+
+    it('the Windows package copies them into the staged app', () => {
+        const pkg = readFileSync('scripts/package-windows.mjs', 'utf8')
+        for (const f of ['LICENSE', 'NOTICE', 'TRADEMARKS.md']) {
+            expect(pkg, `the Windows package ships without ${f}`).toContain(f)
+        }
+    })
+})
