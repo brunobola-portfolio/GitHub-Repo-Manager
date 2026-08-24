@@ -20,6 +20,7 @@ import express from 'express';
 import { reserveAIQuota } from '../ai-quota.js';
 
 import { requireAuth, errorResponse } from '../../middleware/auth.js';
+import { redactValues } from '../../lib/secret-redactor.js';
 import { createInMemoryRateLimiter } from '../../lib/in-memory-rate-limiter.js';
 import { githubApi } from '../../lib/github-api.js';
 import { readThrough } from '../../lib/gh-cache.js';
@@ -174,9 +175,14 @@ router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res
         return errorResponse(res, 502, 'PR data is missing the head commit SHA.', 'GITHUB_FETCH_FAILED');
     }
 
-    const diffPatch = (files || [])
+    const rawDiffPatch = (files || [])
         .map((f) => `--- ${f.filename}\n${f.patch || ''}`)
         .join('\n\n');
+    // Value-shaped redaction before anything leaves toward a provider: the
+    // caller's OAuth-fetched diff can contain a committed credential, and a
+    // provider log is the one place it must never land. Lines survive; only
+    // credential-shaped values are replaced (see secret-redactor.js).
+    const diffPatch = redactValues(rawDiffPatch).content;
 
     // Resolve which preset to use BEFORE the LLM round-trip. `?presetKey=`
     // accepts either a built-in key (general/security/...) or a numeric id of

@@ -13,6 +13,7 @@
 
 import express from 'express';
 import { reserveAIQuota } from '../ai-quota.js';
+import { redactValues } from '../../lib/secret-redactor.js';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError, isValidGitHubFullName } from '../../middleware/auth.js';
 import { requireScope } from '../../middleware/api-key-auth.js';
@@ -107,7 +108,15 @@ router.post('/ai/review-summary', requireAuth, requireScope('ai'), validateBody(
     }
 
     try {
-        const { fileManifest, topFilePatches, prMetadata } = req.validatedBody;
+        const { fileManifest, topFilePatches: rawPatches, prMetadata } = req.validatedBody;
+        // These patches are CLIENT-supplied (the browser already holds the
+        // diff), so they get the same value-shaped redaction as the
+        // server-fetched ones in deep-review/pr-commands before any provider
+        // sees them. Lines survive; only credential-shaped values go.
+        const topFilePatches = (rawPatches || []).map((f) => ({
+            ...f,
+            patch: f.patch ? redactValues(f.patch).content : f.patch,
+        }));
 
         if (req.query.stream === 'true') {
             // Denial-of-wallet guard (OWASP LLM10): refuse before opening the

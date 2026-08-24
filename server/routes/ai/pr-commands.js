@@ -19,6 +19,7 @@ import { reserveAIQuota } from '../ai-quota.js';
 import { createHash } from 'crypto';
 
 import { requireAuth, errorResponse } from '../../middleware/auth.js';
+import { redactValues } from '../../lib/secret-redactor.js';
 import { githubApi } from '../../lib/github-api.js';
 import { readThrough } from '../../lib/gh-cache.js';
 import { executeViaOutbox } from '../../lib/outbox-helper.js';
@@ -212,9 +213,14 @@ router.post('/:owner/:repo/:pr/:command', requireAuth, generateRateLimit, async 
         return errorResponse(res, 502, 'PR data is missing the head commit SHA.', 'GITHUB_FETCH_FAILED');
     }
 
-    const diffPatch = (files || [])
+    const rawDiffPatch = (files || [])
         .map((f) => `--- ${f.filename}\n${f.patch || ''}`)
         .join('\n\n');
+    // Value-shaped redaction before anything leaves toward a provider: the
+    // caller's OAuth-fetched diff can contain a committed credential, and a
+    // provider log is the one place it must never land. Lines survive; only
+    // credential-shaped values are replaced (see secret-redactor.js).
+    const diffPatch = redactValues(rawDiffPatch).content;
 
     let result;
     try {
