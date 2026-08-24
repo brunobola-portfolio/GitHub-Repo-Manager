@@ -56,9 +56,15 @@ export function isValidGitHubFullName(fullName) {
  * @param {string} signature - Value of the X-Hub-Signature-256 header
  * @returns {boolean}
  */
-export function verifyWebhookSignature(payload, signature) {
-    const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET;
+export function verifyWebhookSignature(payload, signature, secretOverride) {
+    // `secretOverride` is the per-tenant ingest secret (webhook_ingest_tokens).
+    // Without it this verifies against the instance-wide WEBHOOK_SECRET — the
+    // right key for a self-hosted box, and the wrong one the moment two
+    // tenants share the instance, which is why the SaaS path always passes
+    // the override and never falls back.
+    const WEBHOOK_SECRET = secretOverride ?? process.env.WEBHOOK_SECRET;
     if (!WEBHOOK_SECRET) {
+        if (secretOverride !== undefined) return false; // empty per-tenant secret never passes
         // In development, accept unsigned webhooks so local ngrok testing works.
         // Production MUST set WEBHOOK_SECRET (enforced by startup-secrets-check).
         if (process.env.NODE_ENV !== 'production') {

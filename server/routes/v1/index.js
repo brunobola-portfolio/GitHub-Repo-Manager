@@ -31,6 +31,7 @@ import reposSecurityRouter from './repos-security.js';
 import userAIConfigRoutes from '../user-ai-config.js';
 import userDataRoutes from '../user-data.js';
 import workBoardRoutes from '../work-board.js';
+import webhookIngestTokenRoutes from '../webhook-ingest-token.js';
 import workBoardActionsRoutes from '../work-board-actions.js';
 import workBoardTrackingRoutes from '../work-board-tracking.js';
 import workBoardAIRoutes from '../work-board-ai.js';
@@ -54,6 +55,9 @@ router.use('/auth', authSetupRoutes);
 // enforced per-op in teams.js). attachTier sets req.userTier for those caps.
 router.use('/teams', attachTier, teamsRoutes);
 router.use('/system', systemRoutes);
+// Personal webhook URLs (per-tenant ingest tokens) — authenticated JSON API,
+// distinct from the raw-body ingest endpoints mounted early in index.js.
+router.use('/webhooks', webhookIngestTokenRoutes);
 router.use('/', azureRoutes);
 router.use('/', importRoutes);
 router.use('/', webhooksRoutes);

@@ -228,6 +228,7 @@ app.post('/api/v1/webhooks/actions', webhookLimiter, express.raw({ type: 'applic
 app.post('/api/webhooks/actions', webhookLimiter, express.raw({ type: 'application/json' }), actionsWebhookHandler);
 // GitHub event ingestion pipeline (Phase E1) — PR, issues, deployments
 import { githubEventsWebhookHandler } from './routes/github-events-webhook.js';
+app.post('/api/v1/webhooks/github/t/:tokenId', webhookLimiter, express.raw({ type: 'application/json' }), githubEventsWebhookHandler);
 app.post('/api/v1/webhooks/github', webhookLimiter, express.raw({ type: 'application/json' }), githubEventsWebhookHandler);
 app.post('/api/webhooks/github', webhookLimiter, express.raw({ type: 'application/json' }), githubEventsWebhookHandler);
 

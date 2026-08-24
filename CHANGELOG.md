@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Every tenant held the key that signs everyone's webhooks.** The Work
+  Board setup hint told each user to configure the instance-wide
+  `WEBHOOK_SECRET` on their repositories — right on a self-hosted box, a
+  forgery kit the moment two tenants share the instance. Each user now gets
+  a personal ingest URL (`/api/v1/webhooks/github/t/<id>`) with its own
+  secret, shown once at generation like an API key; events on it are
+  attributed to the token's owner directly instead of guessed from the
+  repository owner's login; regenerating rotates both halves. On
+  `DEPLOYMENT_MODE=saas` the shared endpoint answers 410 outright.
+  Proven against the running app: token-signed delivery 200,
+  instance-secret-signed delivery on the same URL 401, GET never returns
+  the secret.
+
+- **Diffs reached AI providers unredacted.** The redactor existed but was
+  wired only into repository context, and its line-kill approach was
+  unusable for diffs anyway — a PR touching auth code says "token" on half
+  its meaningful lines. The three routes that send patches (deep review,
+  PR commands, review summary) now run value-shaped redaction: the line
+  survives, only the credential-shaped value goes. `const token =
+  req.headers.authorization` passes byte-for-byte; `ghp_…`, JWTs, PEM
+  blocks and quoted literals assigned to secret-named keys do not.
+
 ## [4.21.0] - 2026-08-22
 
 ### Security

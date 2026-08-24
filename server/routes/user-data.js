@@ -93,6 +93,9 @@ export const ERASURE_REGISTRY = [
     { table: 'workflows_meta', action: 'erase', key: { column: 'user_id', source: 'userId' } },
     { table: 'usage_metrics', action: 'erase', key: { column: 'user_id', source: 'userId' } },
     { table: 'api_keys', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    // Personal webhook ingest URL+secret: credential material, so it dies
+    // with the account like api_keys does.
+    { table: 'webhook_ingest_tokens', action: 'erase', key: { column: 'user_id', source: 'userId' } },
     { table: 'user_subscriptions', action: 'erase', key: { column: 'user_id', source: 'userId' } },
     { table: 'team_members', action: 'erase', key: { column: 'user_id', source: 'userId' } },
     { table: 'dashboard_inbox_state', action: 'erase', key: { column: 'user_id', source: 'userId' } },

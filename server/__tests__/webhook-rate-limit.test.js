@@ -19,6 +19,9 @@ const WEBHOOK_ROUTES = [
     '/api/v1/webhooks/stripe',
     '/api/v1/webhooks/actions',
     '/api/webhooks/actions',
+    // Per-tenant ingest URLs — listed BEFORE the bare /github mount in
+    // index.js so Express matches the token path first.
+    '/api/v1/webhooks/github/t/:tokenId',
     '/api/v1/webhooks/github',
     '/api/webhooks/github',
 ]

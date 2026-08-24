@@ -704,6 +704,22 @@ export function initDB(targetDb = db) {
         `);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_review_assignments_reviewer_state ON review_assignments(reviewer_login, state)`);
 
+        // Per-tenant webhook ingest tokens. The instance-wide WEBHOOK_SECRET
+        // is one key for the whole box: right for self-host, and a forgery kit
+        // the moment two tenants share the instance — the setup hint told
+        // every customer to configure the SAME secret on their repos, so any
+        // of them could sign events for all the others. One row per user;
+        // regenerating replaces (INSERT OR REPLACE keeps the UNIQUE user_id).
+        db.exec(`
+            CREATE TABLE IF NOT EXISTS webhook_ingest_tokens (
+                id TEXT PRIMARY KEY,
+                user_id INTEGER NOT NULL UNIQUE,
+                secret TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                last_used_at DATETIME
+            )
+        `);
+
         // Indexes for performance
         db.exec(`CREATE INDEX IF NOT EXISTS idx_members_user ON team_members(user_id)`);
         db.exec(`CREATE INDEX IF NOT EXISTS idx_repos_team ON repo_assignments(team_id)`);

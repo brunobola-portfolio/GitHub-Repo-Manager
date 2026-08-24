@@ -39,8 +39,33 @@ export async function githubEventsWebhookHandler(req, res) {
         const eventType = req.headers['x-github-event'];
         const deliveryId = req.headers['x-github-delivery'];
 
-        if (!verifyWebhookSignature(req.body, signature)) {
-            return errorResponse(res, 401, 'Invalid webhook signature');
+        // Two front doors, one dispatcher. /t/:tokenId verifies with THAT
+        // tenant's secret and attributes events to the token's owner. The
+        // legacy path verifies with the instance-wide WEBHOOK_SECRET — right
+        // for self-host, a forgery kit between tenants, so a saas deployment
+        // refuses it outright rather than trusting every customer with the
+        // same key.
+        let tokenUserId = null;
+        const tokenId = req.params?.tokenId;
+        if (tokenId) {
+            const tokenRow = db.prepare(
+                'SELECT user_id, secret FROM webhook_ingest_tokens WHERE id = ?'
+            ).get(tokenId);
+            // Unknown token and bad signature answer identically: 401 with no
+            // detail, so token ids cannot be probed apart from secrets.
+            if (!tokenRow || !verifyWebhookSignature(req.body, signature, tokenRow.secret)) {
+                return errorResponse(res, 401, 'Invalid webhook signature');
+            }
+            tokenUserId = tokenRow.user_id;
+            db.prepare('UPDATE webhook_ingest_tokens SET last_used_at = CURRENT_TIMESTAMP WHERE id = ?').run(tokenId);
+        } else {
+            if ((process.env.DEPLOYMENT_MODE || 'self-host') === 'saas') {
+                return errorResponse(res, 410,
+                    'The shared webhook endpoint is disabled on this deployment. Generate your personal webhook URL in the Work Board.');
+            }
+            if (!verifyWebhookSignature(req.body, signature)) {
+                return errorResponse(res, 401, 'Invalid webhook signature');
+            }
         }
 
         if (!eventType) {
@@ -73,13 +98,18 @@ export async function githubEventsWebhookHandler(req, res) {
             // This is a best-effort, fire-and-forget side-effect — failures are
             // logged but must not re-route the event to the DLQ.
             try {
-                const ownerLogin = payload?.repository?.owner?.login;
                 const repoFullName = payload?.repository?.full_name;
                 const repoId = payload?.repository?.id;
-                if (ownerLogin && repoFullName) {
-                    const userRow = db.prepare('SELECT id FROM users WHERE username = ?').get(ownerLogin);
-                    if (userRow) {
-                        upsertTrackedRepoFromWebhook(userRow.id, repoFullName, repoId);
+                if (tokenUserId && repoFullName) {
+                    // Token URL: the owner is known, not guessed.
+                    upsertTrackedRepoFromWebhook(tokenUserId, repoFullName, repoId);
+                } else {
+                    const ownerLogin = payload?.repository?.owner?.login;
+                    if (ownerLogin && repoFullName) {
+                        const userRow = db.prepare('SELECT id FROM users WHERE username = ?').get(ownerLogin);
+                        if (userRow) {
+                            upsertTrackedRepoFromWebhook(userRow.id, repoFullName, repoId);
+                        }
                     }
                 }
             } catch (trackErr) {
