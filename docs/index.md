@@ -28,6 +28,13 @@ below links to the canonical page for that topic.
 
 The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.22.0 (2026-08-24) — the tenant keys.** The two findings the launch
+  review left open, closed. Diffs bound for AI providers get value-shaped
+  redaction: the line survives, only the credential-shaped value goes, so a
+  PR touching auth code stays reviewable while a committed `ghp_…` does not
+  leave the server. And each user gets a personal webhook URL with its own
+  secret — the instance-wide `WEBHOOK_SECRET` was one key for every tenant;
+  on `DEPLOYMENT_MODE=saas` the shared endpoint now answers 410.
 - **v4.21.0 (2026-08-22) — the first ten minutes.** A nine-lens review panel
   walked both the product and the site as strangers. The Quick Start did not
   start the demo (`npm run demo` now does, on a clone with no `.env`); a
@@ -58,15 +65,6 @@ The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHAN
   light, the lime under ink in dark), the floating assistant stopped covering
   the footer — measured at six widths, seven overlaps before and zero after —
   and thirteen doc screenshots that still showed the violet UI were recaptured.
-- **v4.18.0 (2026-08-10) — the brand, applied.** The repository documented a
-  lime mark and shipped a violet product: a hand-drawn logo with four gradients,
-  GitHub's Octocat as the product icon, and three accent hues used
-  interchangeably. The mark the app renders is now generated from the same
-  geometry as the kit, and one ramp (`brand-*`) replaces indigo/violet/purple
-  across ~1,650 call sites — every step luminance-matched so no pairing needed
-  re-checking. Cards in a grid row are equal height at every width; they were
-  312 px apart at 1024. See [Brand](BRAND.md).
-
 ## Architecture
 
 - [Overview](architecture/overview.md) — system shape, routes, hardening
