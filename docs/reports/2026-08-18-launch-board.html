@@ -293,7 +293,7 @@
       <div class="figure"><b>4.21.0</b><span>lançada</span></div>
       <div class="figure"><b>7&nbsp;223</b><span>testes a passar</span></div>
       <div class="figure"><b>10</b><span>correções fechadas hoje</span></div>
-      <div class="figure"><b>2</b><span>achados ainda abertos</span></div>
+      <div class="figure"><b>0</b><span>achados ainda abertos</span></div>
       <div class="figure"><b>0</b><span>PRs à tua espera</span></div>
     </div>
   </header>
@@ -453,7 +453,7 @@
     <div class="items">
 
       <div class="item open">
-        <div class="item-top"><strong>Diffs de PR chegam aos fornecedores de IA sem redação</strong><span class="pill open">a decidir</span></div>
+        <div class="item-top"><strong>Diffs de PR chegam aos fornecedores de IA sem redação</strong><span class="pill done">fechado</span></div>
         <p>
           <code class="inl">secret-redactor.js</code> existe e funciona, mas só está ligado ao
           <code class="inl">repo-context-builder.js</code>. As três funcionalidades que enviam
@@ -462,18 +462,18 @@
           <code class="inl">.env</code> ou uma chave escrita à mão envia essa linha tal e qual.
         </p>
         <p>
-          <b>Porque não o corrigi já:</b> a regex atual apanha nomes de identificadores
-          (<code class="inl">token</code>, <code class="inl">secret</code>,
-          <code class="inl">password</code>), o que num diff de revisão apagaria metade das
-          linhas e tornaria a funcionalidade inútil. O que isto precisa é de padrões com a forma
-          do <em>valor</em> — <code class="inl">sk-</code>, <code class="inl">ghp_</code>,
-          <code class="inl">github_pat_</code>, chaves AWS, atribuições de alta entropia. É meia
-          hora de trabalho, mas é uma decisão sobre falsos positivos, não uma correção óbvia.
+          <b>Fechado (2026-08-24):</b> exatamente com os padrões por <em>valor</em> que este
+          cartão pedia — <code class="inl">ghp_</code>/<code class="inl">github_pat_</code>,
+          <code class="inl">sk-</code>, JWT, blocos PEM, chaves AWS, literais atribuídos a nomes
+          de segredo. A linha sobrevive, só o valor é substituído:
+          <code class="inl">const token = req.headers.authorization</code> passa byte a byte.
+          Ligado aos três caminhos que enviam patches, com um teste de ligação que avermelha se
+          algum deixar de o chamar.
         </p>
       </div>
 
       <div class="item open">
-        <div class="item-top"><strong>Segredo de webhook único para toda a instância</strong><span class="pill open">só em SaaS</span></div>
+        <div class="item-top"><strong>Segredo de webhook único para toda a instância</strong><span class="pill done">fechado</span></div>
         <p>
           Em auto-alojamento está correto: o operador é o dono da instância. Em multi-inquilino,
           cada cliente configuraria o mesmo segredo no seu GitHub, e portanto poderia assinar
@@ -481,9 +481,12 @@
           limita o que daí se vê, mas a escrita de eventos falsos continua possível.
         </p>
         <p>
-          <b>Só morde se abrires o SaaS multi-inquilino.</b> Com
-          <code class="inl">DEPLOYMENT_MODE=self-host</code> — o que vais lançar — não se
-          aplica. A correção é uma coluna por inquilino e um fluxo de rotação, não um patch.
+          <b>Fechado (2026-08-24):</b> cada utilizador gera o seu URL pessoal
+          (<code class="inl">/api/v1/webhooks/github/t/&lt;id&gt;</code>) com segredo próprio,
+          mostrado uma única vez e rodado ao regenerar; os eventos são atribuídos ao dono do
+          token, não adivinhados pelo login. Em <code class="inl">DEPLOYMENT_MODE=saas</code> o
+          endpoint partilhado responde 410; em self-host nada muda. Provado contra a app real:
+          entrega assinada com o segredo do token → 200, com o da instância → 401.
         </p>
       </div>
 
