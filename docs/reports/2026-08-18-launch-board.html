@@ -282,19 +282,20 @@
 <div class="wrap">
 
   <header class="mast">
-    <p class="eyebrow">Estado · 18 agosto 2026</p>
+    <p class="eyebrow">Estado · 28 agosto 2026</p>
     <h1>Repo Manager Launch Board</h1>
     <p class="standfirst">
       Onde está cada peça do lançamento em <code class="inl">repomanager.bolalabs.pt</code>,
-      o que fechei nesta sessão, e o que falta — separado por onde o trabalho vive.
+      o que está fechado nos dois repositórios, e o que falta — que hoje é tudo no servidor.
+      O código está pronto; o que ainda não está é <em>publicado</em>.
     </p>
 
     <div class="figures">
-      <div class="figure"><b>4.21.0</b><span>lançada</span></div>
-      <div class="figure"><b>7&nbsp;223</b><span>testes a passar</span></div>
-      <div class="figure"><b>10</b><span>correções fechadas hoje</span></div>
+      <div class="figure"><b>4.22.0</b><span>app lançada</span></div>
+      <div class="figure"><b>7&nbsp;320</b><span>testes a passar</span></div>
+      <div class="figure"><b>1.1.0</b><span>site — release cortada hoje</span></div>
       <div class="figure"><b>0</b><span>achados ainda abertos</span></div>
-      <div class="figure"><b>0</b><span>PRs à tua espera</span></div>
+      <div class="figure"><b>5</b><span>passos, todos no servidor</span></div>
     </div>
   </header>
 
@@ -496,56 +497,77 @@
   <section>
     <h2>O que fazes a seguir</h2>
     <p class="lede">
-      A v4.21.0 saiu — fecha o painel de nove lentes; os dois repositórios estão no <code class="inl">main</code>, sem PRs abertos. Sobra
-      isto, por esta ordem. Os três primeiros são no servidor e a ordem é obrigatória: o
-      certificado tem de existir antes de forçares o redirect, ou reencaminhas para um endereço
-      que ainda não serve TLS.
+      Verificado a 28 de agosto com <code class="inl">curl</code> aos três domínios: o
+      <code class="inl">bolalabs.pt</code> ao vivo ainda é o build de 8 de agosto (canonicals sem
+      barra, «AGPL» no HTML, Downloads a dizer «Request early access»); o subdomínio do Repo
+      Manager serve a página de espera; e o <code class="inl">arcva.pt</code> passou a redirecionar
+      o HTTP para um HTTPS que o certificado não cobre. Nada disto é código — é tudo publicação.
+      Por esta ordem; os passos 3 e 4 têm ordem obrigatória entre si.
     </p>
     <ol class="steps">
 
       <li>
-        <strong>Instalar o ARR no IIS</strong>
+        <strong>Publicar o site — <code class="inl">bolalabs-platform v1.1.0</code></strong>
         <p>
-          Application Request Routing mais URL Rewrite. Sem o ARR, o IIS não faz proxy reverso
-          para o Node em <code class="inl">127.0.0.1:3001</code> e o site fica no ar sem
-          aplicação por trás.
+          Cortei a release hoje; o workflow constrói, corre <code class="inl">npm run verify</code>
+          e anexa o zip mais os três scripts de deploy. Tudo o que o painel corrigiu no site
+          (licença, limites, Downloads, funil de contacto, canonicals, imagens OG, AITOOL 2.8.3)
+          só existe para os visitantes depois deste passo. No servidor, numa consola elevada:
+        </p>
+        <p>
+          <code class="inl">.\deploy.ps1 -ZipPath .\bolalabs-platform-v1.1.0.zip -SitePath C:\inetpub\bolalabs -HostHeader bolalabs.pt</code>
+        </p>
+        <p>
+          Valida o pacote, faz backup, troca com o app pool parado, re-verifica em disco e reverte
+          sozinho se o smoke test falhar. Confirmas com
+          <code class="inl">curl -sI https://bolalabs.pt/en/repomanager</code> — tem de dar 301
+          para a forma com barra e o HTML já não conter «AGPL».
         </p>
       </li>
 
       <li>
-        <strong>Emitir o certificado para <code class="inl">repomanager.bolalabs.pt</code></strong>
+        <strong>Reemitir o certificado do <code class="inl">arcva.pt</code> com o apex</strong>
         <p>
-          Já agora, o mesmo para <code class="inl">arcva.pt</code>: o certificado atual só cobre
-          <code class="inl">www.arcva.pt</code>, por isso <code class="inl">https://arcva.pt</code> dá
-          aviso de segurança no browser e <code class="inl">http://</code> não redireciona. O site já
-          linka <code class="inl">www</code> para se proteger; reemitir com os dois nomes e um
-          redirect apex→www fecha isso de vez.
+          O certificado só tem <code class="inl">www.arcva.pt</code> no SAN. Desde a última
+          verificação o servidor passou a fazer <code class="inl">http://arcva.pt</code> → 301 →
+          <code class="inl">https://arcva.pt</code>, que falha o handshake — quem escreve o domínio
+          à mão cai num aviso de segurança. Reemitir com os dois nomes e redirecionar apex→www
+          fecha isto; o site já linka <code class="inl">www</code>, por isso o passo 1 não depende
+          deste.
         </p>
+      </li>
+
+      <li>
+        <strong>Instalar o ARR no IIS e emitir o certificado para <code class="inl">repomanager.bolalabs.pt</code></strong>
         <p>
-          Segue as nove secções do guia em <code class="inl">docs/guides/deploy-iis-windows.md</code>.
+          Application Request Routing mais URL Rewrite — sem ARR o IIS não faz proxy reverso para
+          o Node em <code class="inl">127.0.0.1:3001</code>. Segue as secções 5 e 6b do guia em
+          <code class="inl">docs/guides/deploy-iis-windows.md</code>.
         </p>
         <span class="warn">
-          O redirect HTTP→HTTPS vai depois do certificado, nunca antes. Ao contrário ficas com um
-          site que reencaminha para um endereço que ainda não serve TLS.
+          O redirect HTTP→HTTPS vai depois do certificado, nunca antes — é exatamente o estado em
+          que o <code class="inl">arcva.pt</code> está hoje.
         </span>
       </li>
 
       <li>
         <strong>Correr <code class="inl">deploy/iis/deploy.ps1 -FromRelease latest</code></strong>
         <p>
-          Verifica o SHA-256, recusa artefactos mal rotulados, faz uma cópia de segurança,
-          confirma a versão que acabou de instalar e reverte sozinho se a verificação de saúde
-          falhar. Experimenta primeiro com <code class="inl">-DryRun</code>, que não precisa de
-          elevação.
+          Apanha a v4.22.0: verifica o SHA-256, recusa artefactos mal rotulados, faz cópia de
+          segurança, confirma a versão instalada e reverte sozinho se a verificação de saúde
+          falhar. Primeiro com <code class="inl">-DryRun</code>, que não precisa de elevação.
+          Confirmas com <code class="inl">curl https://repomanager.bolalabs.pt/api/health</code>
+          — hoje devolve o HTML da página de espera, tem de passar a devolver JSON.
         </p>
       </li>
 
       <li>
-        <strong>Pôr <code class="inl">REPOMANAGER_IS_LIVE = true</code></strong>
+        <strong>Pôr <code class="inl">REPOMANAGER_IS_LIVE = true</code> e publicar o site outra vez</strong>
         <p>
-          Em <code class="inl">src/site.ts</code> no repo do site. É a última coisa, depois de
-          confirmares que o domínio serve mesmo a aplicação. Um booleano — o menu, o contador da
-          Home e os dois botões «Abrir a app» seguem-no todos.
+          Em <code class="inl">src/site.ts</code>, só depois do passo 4 confirmado. Um booleano —
+          menu, terminal da Home, faixa de prova, FAQ e os dois botões «Abrir a app» seguem-no
+          todos. Depois <code class="inl">npm version patch &amp;&amp; git push --follow-tags</code>
+          e o mesmo <code class="inl">deploy.ps1</code> do passo 1.
         </p>
       </li>
 
@@ -554,8 +576,8 @@
 
   <footer>
     Gerado a partir do estado real dos dois repositórios e de
-    <code class="inl">curl</code> ao subdomínio, a 18 de agosto de 2026.
-    Suite completa verde em 7 223 testes.
+    <code class="inl">curl</code> aos três domínios, a 28 de agosto de 2026.
+    Suite completa verde em 7 320 testes.
   </footer>
 
 </div>
