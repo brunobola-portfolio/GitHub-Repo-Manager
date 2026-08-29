@@ -4360,7 +4360,7 @@ Machine-readable provenance. Unauthenticated by design, so anyone can check what
 
 ### `GET /api/system/update-check`
 
-Self-hosted "new version available" signal for Settings → About (notify-only — the app never self-updates). Forwards to [`checkForUpdate()`](../../server/lib/update-check.js), which makes a single unauthenticated `GET` to GitHub's public releases API (no query params, no identifying data) and caches the result — 24h on success, 1h after a failure so a transient outage retries sooner. Never throws: a network failure, a malformed release payload, or a dev build running ahead of the last tag all degrade to an "inconclusive" result rather than a 500, and an unexpected error in the route handler itself still returns `200 { current }`.
+Self-hosted "new version available" signal for Settings → About. Notify-only everywhere except the packaged Windows build, which exposes `POST /api/system/update` (loopback-only, rate-limited) for a one-click update from the tray launcher. Forwards to [`checkForUpdate()`](../../server/lib/update-check.js), which makes a single unauthenticated `GET` to GitHub's public releases API (no query params, no identifying data) and caches the result — 24h on success, 1h after a failure so a transient outage retries sooner. Never throws: a network failure, a malformed release payload, or a dev build running ahead of the last tag all degrade to an "inconclusive" result rather than a 500, and an unexpected error in the route handler itself still returns `200 { current }`.
 
 | Detail | Value |
 |---|---|

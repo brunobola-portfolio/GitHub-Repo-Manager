@@ -57,8 +57,6 @@ export function Toast({ id, type = 'info', message, content, onDismiss, duration
 		<motion.div
 			layout
 			role={type === 'error' ? 'alert' : 'status'}
-			aria-live={type === 'error' ? 'assertive' : 'polite'}
-			aria-atomic="true"
 			initial={{ opacity: 0, x: 24, scale: 0.98 }}
 			animate={{ opacity: 1, x: 0, scale: 1 }}
 			exit={{ opacity: 0, x: '110%' }}
@@ -89,13 +87,31 @@ export function Toast({ id, type = 'info', message, content, onDismiss, duration
 }
 
 export function ToastContainer({ toasts, onDismiss }) {
+	// Two live regions that exist BEFORE any toast does. A live region only
+	// announces changes made after it is in the tree; the old pattern put
+	// aria-live on each toast as it mounted with its text already present, so
+	// screen readers announced nothing. Errors go to the assertive region,
+	// everything else to the polite one. The regions carry no role of their
+	// own: an always-mounted empty role="alert" is noise, and it would make
+	// every "no error banner" query in the suite find an alert.
+	const errors = toasts.filter((t) => t.type === 'error')
+	const others = toasts.filter((t) => t.type !== 'error')
 	return (
 		<div className="fixed inset-x-0 bottom-20 z-[var(--ds-z-toast)] flex flex-col items-end px-4 space-y-2 pointer-events-none sm:items-end sm:right-4 sm:left-auto sm:max-w-sm safe-area-bottom safe-area-right">
-			<AnimatePresence>
-				{toasts.map(toast => (
-					<Toast key={toast.id} {...toast} onDismiss={onDismiss} />
-				))}
-			</AnimatePresence>
+			<div aria-live="polite" aria-relevant="additions" className="contents">
+				<AnimatePresence>
+					{others.map(toast => (
+						<Toast key={toast.id} {...toast} onDismiss={onDismiss} />
+					))}
+				</AnimatePresence>
+			</div>
+			<div aria-live="assertive" aria-relevant="additions" className="contents">
+				<AnimatePresence>
+					{errors.map(toast => (
+						<Toast key={toast.id} {...toast} onDismiss={onDismiss} />
+					))}
+				</AnimatePresence>
+			</div>
 		</div>
 	)
 }

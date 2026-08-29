@@ -213,10 +213,17 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 		}
 	}, [focusedIndex, activeSubmenu, items, actionableIndices, isSubmenu, onClose, handleItemClick])
 
-	// Focus menu on mount
+	// Focus menu on mount, and give the focus BACK on unmount. Before, Escape
+	// (or picking an item) left document.activeElement on <body>, so a keyboard
+	// user lost their place in the grid every time they opened a menu.
 	useEffect(() => {
-		if (!isSubmenu) {
-			menuRef.current?.focus()
+		if (isSubmenu) return
+		const origin = document.activeElement
+		menuRef.current?.focus()
+		return () => {
+			if (origin && origin !== document.body && document.contains(origin) && typeof origin.focus === 'function') {
+				origin.focus()
+			}
 		}
 	}, [isSubmenu])
 
@@ -268,6 +275,10 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 				ref={menuRef}
 				role="menu"
 				tabIndex={-1}
+				// Virtual focus: the container keeps DOM focus and tells assistive
+				// tech which item is current. Without this, arrow keys moved a
+				// highlight a screen reader could not see.
+				aria-activedescendant={focusedIndex >= 0 ? `${descBaseId}-item-${focusedIndex}` : undefined}
 				initial={{ opacity: 0, scale: 0.95 }}
 				animate={{ opacity: 1, scale: 1 }}
 				exit={{ opacity: 0, scale: 0.95 }}
@@ -311,6 +322,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 						<div
 							key={item.id || item.label || `item-${index}`}
 							ref={(el) => { itemRefs.current[index] = el }}
+							id={`${descBaseId}-item-${index}`}
 							role="menuitem"
 							aria-disabled={item.disabled ? 'true' : undefined}
 							aria-haspopup={hasChildren ? 'true' : undefined}

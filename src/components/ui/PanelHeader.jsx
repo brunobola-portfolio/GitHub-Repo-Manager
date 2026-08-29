@@ -30,8 +30,11 @@ export function PanelHeader({
     actions,
     className = '',
 }) {
+    // A <div>, not <header>: this renders inside dialogs and tab panels, where
+    // a <header> is a second banner landmark (axe landmark-no-duplicate-banner
+    // on six Settings tabs). The app's <header> is the only banner.
     return (
-        <header className={`relative flex items-start gap-4 pb-1 ${className}`.trim()}>
+        <div className={`relative flex items-start gap-4 pb-1 ${className}`.trim()}>
             <span
                 aria-hidden="true"
                 className="absolute -left-1 top-1 bottom-1 w-0.5 rounded-full bg-brand-500 opacity-80"
@@ -59,6 +62,6 @@ export function PanelHeader({
                     {actions}
                 </div>
             )}
-        </header>
+        </div>
     )
 }

@@ -359,12 +359,11 @@ the Phase 2 `useTrackedRepos` context.
   with pin/mute/untrack. Not tracked → ghost `Track` button calling
   `hook.track()` directly.
 
-- **Dashboard `YourWorkCard`** (`src/components/Dashboard/YourWorkCard.jsx`) —
-  counts card showing `reviews waiting · stale PRs · issues` with an
-  "Open board →" button that routes to the Work Board page. Silently
-  hides on 401/403/404 so the Dashboard doesn't break for unauthenticated
-  or tier-gated users.
-
+- **Dashboard "What needs you" row** (`src/components/Dashboard/DashboardHero.jsx`,
+  which replaced the former `YourWorkCard`) — KPI tiles for
+  `reviews waiting · stale PRs · issues` with an "Open Work Board →" link that
+  routes to the Work Board page. Silently degrades to zeros when the
+  aggregation endpoints are gated or unreachable.
 - **Header nav badge** — `NavButton` extended with optional `badge` prop.
   `useWorkBoardBadgeCounts` hook provides the count (reviews + stale PRs);
   hidden when 0, rendered as `9+` when > 9. Cached in `localStorage` to

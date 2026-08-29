@@ -22,6 +22,12 @@ export function useFocusTrap(isOpen, onClose, options = {}) {
     const { disableEscape = false, initialFocusRef, restoreFocusRef } = options
     const ref = useRef(null)
     const previouslyFocusedRef = useRef(null)
+    // `onClose` lives in a ref so an inline `onClose={() => …}` (19 callers)
+    // does not re-run the effect on every parent render. Each re-run used to
+    // overwrite previouslyFocusedRef with an element INSIDE the trap, so on
+    // close focus landed on <body> instead of the trigger.
+    const onCloseRef = useRef(onClose)
+    useEffect(() => { onCloseRef.current = onClose }, [onClose])
 
     useEffect(() => {
         if (!isOpen) return
@@ -35,7 +41,7 @@ export function useFocusTrap(isOpen, onClose, options = {}) {
 
         const handleKeyDown = (e) => {
             if (e.key === 'Escape') {
-                if (!disableEscape) onClose()
+                if (!disableEscape) onCloseRef.current()
                 return
             }
             if (e.key !== 'Tab') return
@@ -92,7 +98,7 @@ export function useFocusTrap(isOpen, onClose, options = {}) {
                 restore.focus()
             }
         }
-    }, [isOpen, onClose, disableEscape, initialFocusRef, restoreFocusRef])
+    }, [isOpen, disableEscape, initialFocusRef, restoreFocusRef])
 
     return ref
 }

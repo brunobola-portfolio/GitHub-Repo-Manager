@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Command } from 'cmdk'
+import { Command, useCommandState } from 'cmdk'
 import * as Dialog from '@radix-ui/react-dialog'
 import {
   GitFork, LayoutDashboard, Users, Tag, Map, Wand2, History, Plus,
@@ -220,6 +220,16 @@ function useAskModeResults(translatedQueries, enabled) {
     }, [enabled, translatedQueries])
     /* eslint-enable react-hooks/set-state-in-effect */
     return { results, loading }
+}
+
+/** cmdk's list keeps role="listbox" even when nothing matches; hide it then. */
+function ResultsList({ children, className }) {
+  const count = useCommandState((state) => state.filtered.count)
+  return (
+    <Command.List className={className} hidden={count === 0}>
+      {children}
+    </Command.List>
+  )
 }
 
 export function CommandPalette({
@@ -475,15 +485,17 @@ export function CommandPalette({
           onValueChange={setInput}
           loading={loading || ask.loading || askResults.loading}
         />
-        <Command.List className="max-h-[400px] overflow-y-auto p-2">
-          <Command.Empty className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+        {/* Empty state OUTSIDE the listbox: a role="listbox" with no option is an
+            aria-required-children violation (critical) on every no-results scan.
+            ResultsList hides the list itself while the filter matches nothing. */}
+        <Command.Empty className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
             {error === 'RATE_LIMITED'
               ? 'GitHub search rate limit reached. Try again in a minute.'
               : error === 'AUTH_EXPIRED'
                 ? 'Your GitHub session expired — please sign in again.'
                 : 'No results.'}
-          </Command.Empty>
-
+        </Command.Empty>
+        <ResultsList className="max-h-[400px] overflow-y-auto p-2">
           {MOCK_MODE && (
             <div
               data-testid="command-palette-demo-hint"
@@ -775,7 +787,7 @@ export function CommandPalette({
 
           <GitHubResults live={live} onOpen={openExternal} />
           </>)}
-        </Command.List>
+        </ResultsList>
         <div className={`border-t px-3 py-2 ds-text-meta flex items-center justify-between ${
           askMode
             ? 'border-brand-200 dark:border-brand-800 text-[color:var(--ds-accent-brand)] dark:text-brand-300 bg-brand-50/40 dark:bg-brand-950/20'

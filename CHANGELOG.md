@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Screen readers heard nothing from toasts.** Each toast mounted its own
+  live region with the text already inside; a live region only announces
+  what changes after it exists. The container now owns two persistent
+  regions (polite for status, assertive for errors) and toasts are plain
+  items within them.
+
+- **The context menu lost the keyboard user's place.** Escape, or picking an
+  item, left focus on `<body>`; arrow keys moved a highlight assistive tech
+  could not see. The menu now returns focus to the element that opened it
+  and exposes the current item through `aria-activedescendant`.
+
+- **Modals with an inline `onClose` returned focus to `<body>`.**
+  `useFocusTrap` re-ran on every parent render and overwrote the remembered
+  trigger with an element inside the trap. `onClose` lives in a ref now;
+  the trigger is captured once, on open.
+
+- **Two dashboard panels animated with an invalid easing.** `ease: EASE`
+  passed the whole vocabulary object instead of `EASE.emphasized`, so
+  Framer fell back to its default curve.
+
+- **The command palette's empty state was an empty `listbox`.** axe
+  flagged aria-required-children (critical) on every no-results scan; the
+  list is now hidden while the filter matches nothing.
+
+- **A dead skip link** ("Skip to navigation") pointed at an id nothing
+  carried. Removed; the working "Skip to main content" link stays.
+
+- **Six Settings tabs rendered a second banner landmark** — the panel
+  header used `<header>` inside a dialog. It is a `<div>` now.
+
+### Documentation
+
+- The security-hardening G4 table said `CREDENTIAL_ENCRYPTION_KEY` *or*
+  `SESSION_SECRET` sufficed and omitted five production gates
+  (`API_KEY_SECRET`, template placeholders, the Stripe pair, email
+  delivery, `ALLOW_MOCK_AUTH`). Regenerated from the checks themselves.
+- `API.md` said the app never self-updates; the packaged Windows build
+  exposes `POST /api/system/update`. The architecture doc for Work Board
+  tracking described a component deleted two releases ago.
+
+
 ## [4.22.0] - 2026-08-24
 
 ### Security

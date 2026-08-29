@@ -743,14 +743,9 @@ function AppContent() {
       >
         Skip to main content
       </a>
-      {user && activeView === 'repos' && (
-        <a
-          href="#sidebar-navigation"
-          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-40 focus:z-50 focus:px-4 focus:py-2 focus:bg-brand-600 focus:text-white focus:rounded-lg focus:shadow-lg"
-        >
-          Skip to navigation
-        </a>
-      )}
+      {/* A second skip link ('Skip to navigation') used to point at
+          #sidebar-navigation, an id nothing carried — axe flagged it on every
+          repositories-view scan. One working skip link beats two, one broken. */}
 
       <div className="min-h-screen bg-slate-50 text-slate-900 pb-12 font-sans dark:bg-slate-950 dark:text-slate-50">
         <DemoModeBanner />

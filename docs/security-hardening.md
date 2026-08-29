@@ -189,11 +189,14 @@ A repeat call from the same session (or a new session for the same `user_id`) re
 
 | Check | Failure mode |
 |---|---|
-| `SESSION_SECRET` must be set | `error` → `process.exit(1)` |
-| `SESSION_SECRET` must be ≥ 32 bytes | `error` → `process.exit(1)` |
-| `WEBHOOK_SECRET` must be set | `error` → `process.exit(1)` |
-| `WEBHOOK_SECRET` must be ≥ 32 bytes | `error` → `process.exit(1)` |
-| `CREDENTIAL_ENCRYPTION_KEY` OR `SESSION_SECRET` must be set (for credential encryption) | `error` → `process.exit(1)` |
+| `SESSION_SECRET`, `WEBHOOK_SECRET`, `CREDENTIAL_ENCRYPTION_KEY`, `API_KEY_SECRET` — each must be set | `error` → `process.exit(1)` |
+| Each of the four must be ≥ 32 bytes | `error` → `process.exit(1)` |
+| Any of the four still carries the template placeholder (`change-me…`) | `error` → `process.exit(1)` (a warning outside production) |
+| `STRIPE_SECRET_KEY` set without `LICENSE_SIGNING_PRIVATE_KEY_PEM` | `error` → `process.exit(1)` |
+| `STRIPE_SECRET_KEY` set without `STRIPE_WEBHOOK_SECRET` | `error` → `process.exit(1)` |
+| `EMAIL_PROVIDER` is not a real delivery driver | `error` → `process.exit(1)`; `warning` only with `ALLOW_CONSOLE_EMAIL=true` |
+| `EMAIL_PROVIDER=resend` without `RESEND_API_KEY` | `error` → `process.exit(1)` |
+| `ALLOW_MOCK_AUTH=true` | `error` → `process.exit(1)` (would expose the unauthenticated mock login) |
 | `DISABLE_HTTPS_ENFORCEMENT=true` | `warning` (logged, does not abort) |
 
 #### Any environment
