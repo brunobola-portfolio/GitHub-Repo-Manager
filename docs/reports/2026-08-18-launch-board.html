@@ -291,9 +291,9 @@
     </p>
 
     <div class="figures">
-      <div class="figure"><b>4.22.0</b><span>app lançada</span></div>
+      <div class="figure"><b>4.23.0</b><span>app lançada hoje</span></div>
       <div class="figure"><b>7&nbsp;320</b><span>testes a passar</span></div>
-      <div class="figure"><b>1.1.0</b><span>site — release cortada hoje</span></div>
+      <div class="figure"><b>1.2.0</b><span>site — release cortada hoje</span></div>
       <div class="figure"><b>0</b><span>achados ainda abertos</span></div>
       <div class="figure"><b>5</b><span>passos, todos no servidor</span></div>
     </div>
@@ -507,15 +507,15 @@
     <ol class="steps">
 
       <li>
-        <strong>Publicar o site — <code class="inl">bolalabs-platform v1.1.0</code></strong>
+        <strong>Publicar o site — <code class="inl">bolalabs-platform v1.2.0</code></strong>
         <p>
-          Cortei a release hoje; o workflow constrói, corre <code class="inl">npm run verify</code>
-          e anexa o zip mais os três scripts de deploy. Tudo o que o painel corrigiu no site
-          (licença, limites, Downloads, funil de contacto, canonicals, imagens OG, AITOOL 2.8.3)
+          Cortei a v1.1.0 e, após a reanálise, a v1.2.0 hoje; o workflow constrói, corre
+          <code class="inl">npm run verify</code> e anexa o zip mais os três scripts de deploy. Tudo o que o painel corrigiu no site
+          (licença, limites, Downloads, funil de contacto, canonicals, imagens OG, copy honesta do portal, tipografia francesa, AITOOL 2.8.3)
           só existe para os visitantes depois deste passo. No servidor, numa consola elevada:
         </p>
         <p>
-          <code class="inl">.\deploy.ps1 -ZipPath .\bolalabs-platform-v1.1.0.zip -SitePath C:\inetpub\bolalabs -HostHeader bolalabs.pt</code>
+          <code class="inl">.\deploy.ps1 -ZipPath .\bolalabs-platform-v1.2.0.zip -SitePath C:\inetpub\bolalabs -HostHeader bolalabs.pt</code>
         </p>
         <p>
           Valida o pacote, faz backup, troca com o app pool parado, re-verifica em disco e reverte
@@ -553,7 +553,7 @@
       <li>
         <strong>Correr <code class="inl">deploy/iis/deploy.ps1 -FromRelease latest</code></strong>
         <p>
-          Apanha a v4.22.0: verifica o SHA-256, recusa artefactos mal rotulados, faz cópia de
+          Apanha a v4.23.0: verifica o SHA-256, recusa artefactos mal rotulados, faz cópia de
           segurança, confirma a versão instalada e reverte sozinho se a verificação de saúde
           falhar. Primeiro com <code class="inl">-DryRun</code>, que não precisa de elevação.
           Confirmas com <code class="inl">curl https://repomanager.bolalabs.pt/api/health</code>
