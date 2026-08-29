@@ -26,7 +26,7 @@ below links to the canonical page for that topic.
 
 ## Recent releases
 
-The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
+The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
 - **v4.23.0 (2026-08-28) — what a screen reader hears.** The panel's
   remaining accessibility findings, closed: toasts announce (persistent live
