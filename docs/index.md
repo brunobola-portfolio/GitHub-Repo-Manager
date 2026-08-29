@@ -28,6 +28,14 @@ below links to the canonical page for that topic.
 
 The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.23.0 (2026-08-28) — what a screen reader hears.** The panel's
+  remaining accessibility findings, closed: toasts announce (persistent live
+  regions instead of per-toast ones), the context menu returns focus and
+  exposes its current item, modals with an inline `onClose` return focus to
+  their trigger, the command palette no longer presents an empty listbox,
+  and Settings tabs stop rendering a second banner. Plus an invalid easing
+  on two dashboard panels, a dead skip link, and three docs that described
+  gates or components that no longer exist.
 - **v4.22.0 (2026-08-24) — the tenant keys.** The two findings the launch
   review left open, closed. Diffs bound for AI providers get value-shaped
   redaction: the line survives, only the credential-shaped value goes, so a
@@ -52,21 +60,6 @@ The 5 latest, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHAN
   (`%252e%252e`) reached the Contents routes carrying the caller's OAuth token.
   An instance licence upgraded every tenant on a billed deployment. Each has a
   regression test named after the mechanism, not the symptom.
-- **v4.19.0 (2026-08-15) — Apache-2.0, and a deploy that can undo itself.** The
-  licence moves off AGPL: run it, modify it, embed it, redistribute it, no
-  permission and no fee. The name and the mark stay reserved
-  ([`TRADEMARKS.md`](../TRADEMARKS.md)), and what a subscription buys — headroom,
-  hosting, support — is unchanged, because it never described permissions.
-  `deploy/iis/deploy.ps1` replaces a build-on-the-production-box upgrade with an
-  immutable artifact, a verified backup, a health check against the version just
-  installed, and automatic rollback.
-- **v4.18.1 (2026-08-10) — the polish pass.** The solid brand surface became
-  one decision instead of two (`.ds-brand-solid`: deep green under white in
-  light, the lime under ink in dark), the floating assistant stopped covering
-  the footer — measured at six widths, seven overlaps before and zero after —
-  and thirteen doc screenshots that still showed the violet UI were recaptured.
-## Architecture
-
 - [Overview](architecture/overview.md) — system shape, routes, hardening
   summary, component diagram.
 - [Backend](architecture/backend.md) — Express routes, middleware stack,

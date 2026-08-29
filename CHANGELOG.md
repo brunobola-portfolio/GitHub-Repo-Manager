@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.23.0] - 2026-08-28
+
 ### Fixed
 
 - **Screen readers heard nothing from toasts.** Each toast mounted its own
@@ -3302,7 +3304,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.22.0...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.23.0...HEAD
+[4.23.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.22.0...v4.23.0
 [4.22.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.21.0...v4.22.0
 [4.21.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.20.0...v4.21.0
 [4.20.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.19.0...v4.20.0
