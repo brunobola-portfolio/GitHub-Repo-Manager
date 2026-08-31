@@ -28,6 +28,12 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.23.1 (2026-08-31) — releases deploy themselves.** The release
+  workflow gained an opt-in `deploy` job on a self-hosted runner on the
+  production VPS, gated by the `AUTO_DEPLOY` repository variable: the same
+  `deploy.ps1` an operator would run — backup, health check against the
+  freshly installed version, automatic rollback — now runs itself the
+  moment a tag is cut.
 - **v4.23.0 (2026-08-28) — what a screen reader hears.** The panel's
   remaining accessibility findings, closed: toasts announce (persistent live
   regions instead of per-toast ones), the context menu returns focus and
