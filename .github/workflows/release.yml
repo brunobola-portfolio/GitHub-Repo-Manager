@@ -508,3 +508,35 @@ jobs:
               --token $env:WINGET_TOKEN `
               --submit
         continue-on-error: true
+  # ---------------------------------------------------------------------------
+  # Automatic deploy on the production VPS — behind TWO switches: the
+  # repository variable AUTO_DEPLOY='true' AND a self-hosted runner registered
+  # on this repo with the 'bolalabs-vps' label. With either missing, a release
+  # behaves exactly as before (manual deploy.ps1 — docs/guides/
+  # deploy-iis-windows.md §8). Needs the windows job: the win-x64.zip this
+  # deploys is uploaded there. The runner service runs as LocalSystem (the
+  # deploy stops the Windows service); GITHUB_TOKEN authenticates the private
+  # release download — deploy.ps1 accepts it as the gh-less path, so nothing
+  # depends on a logged-in user. The last step keeps the operator's copy of
+  # the tooling current from the tree this very deploy laid down.
+  deploy:
+    needs: [release, windows]
+    if: ${{ startsWith(github.ref, 'refs/tags/v') && vars.AUTO_DEPLOY == 'true' }}
+    runs-on: [self-hosted, Windows, bolalabs-vps]
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - name: Deploy the tagged win-x64 package (backup, health check, rollback)
+        shell: powershell
+        run: |
+          Set-Location C:\deploy\repomanager
+          .\deploy.ps1 -FromRelease $env:GITHUB_REF_NAME -AppRoot C:\apps\GitHubRepoManager
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Keep the operator deploy tooling current
+        shell: powershell
+        run: |
+          Copy-Item C:\apps\GitHubRepoManager\deploy\iis\deploy.ps1 C:\deploy\repomanager\deploy.ps1 -Force
+          Copy-Item C:\apps\GitHubRepoManager\deploy\iis\install-service.ps1 C:\deploy\repomanager\install-service.ps1 -Force
