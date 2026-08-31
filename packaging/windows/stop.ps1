@@ -1,4 +1,4 @@
-# SPDX-License-Identifier: Apache-2.0
+﻿# SPDX-License-Identifier: Apache-2.0
 #
 # Stops the server started by start.ps1. Reads the PID that Start wrote to
 # .grm.pid in the data directory (pre-4.8.0: app\.grm.pid) and terminates

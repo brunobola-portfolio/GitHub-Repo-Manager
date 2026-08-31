@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Deploys a released GitHub Repo Manager package onto a Windows server:
     validates the artifact, backs up what is running, swaps it with the

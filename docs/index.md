@@ -28,6 +28,11 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.23.2 (2026-08-31) — the tooling survives PowerShell 5.1.** The
+  Windows `.ps1` scripts shipped without a BOM, so real Windows PowerShell
+  read them as ANSI and choked on the em dashes before running a single
+  line — the exact way the first automatic deploy failed. All five carry
+  the BOM now, and the deploy job runs under `pwsh` as well.
 - **v4.23.1 (2026-08-31) — releases deploy themselves.** The release
   workflow gained an opt-in `deploy` job on a self-hosted runner on the
   production VPS, gated by the `AUTO_DEPLOY` repository variable: the same

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.23.2] - 2026-08-31
+
+### Fixed
+
+- **The Windows deploy tooling now survives Windows PowerShell 5.1.** Every
+  `.ps1` shipped for Windows (deploy, service install, launcher scripts) was
+  UTF-8 without a BOM; PowerShell 5.1 reads that as ANSI, so the em dashes in
+  string literals became parse errors and the script would not even start -
+  which is exactly how the first automatic deploy failed. All five now carry
+  the BOM, and the release workflow's deploy job runs under `pwsh` as a
+  second line of defense.
+
+
 ## [4.23.1] - 2026-08-31
 
 ### Added

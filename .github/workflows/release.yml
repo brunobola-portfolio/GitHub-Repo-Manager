@@ -530,13 +530,13 @@ jobs:
       GITHUB_TOKEN: ${{ github.token }}
     steps:
       - name: Deploy the tagged win-x64 package (backup, health check, rollback)
-        shell: powershell
+        shell: pwsh
         run: |
           Set-Location C:\deploy\repomanager
           .\deploy.ps1 -FromRelease $env:GITHUB_REF_NAME -AppRoot C:\apps\GitHubRepoManager
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Keep the operator deploy tooling current
-        shell: powershell
+        shell: pwsh
         run: |
           Copy-Item C:\apps\GitHubRepoManager\deploy\iis\deploy.ps1 C:\deploy\repomanager\deploy.ps1 -Force
           Copy-Item C:\apps\GitHubRepoManager\deploy\iis\install-service.ps1 C:\deploy\repomanager\install-service.ps1 -Force

@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
     Registers GitHub Repo Manager as a Windows service behind an IIS reverse proxy.
