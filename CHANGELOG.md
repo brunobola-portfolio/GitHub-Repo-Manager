@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.23.1] - 2026-08-31
+
+### Added
+
+- **Releases now deploy themselves.** The release workflow gained an opt-in
+  `deploy` job that runs on a self-hosted runner on the production VPS -
+  gated by the `AUTO_DEPLOY` repository variable - and installs the freshly
+  built win-x64 package with the same `deploy.ps1` an operator would run:
+  backup, health check against the new version, automatic rollback.
+
+
 ## [4.23.0] - 2026-08-28
 
 ### Fixed
