@@ -92,7 +92,10 @@ export default defineConfig({
   webServer: [
     {
       command: 'npm run dev:server',
-      url: 'http://localhost:3001/api/system/status',
+      // Same PORT the backend and the Vite proxy read, so a machine where
+      // :3001 is unavailable (Windows reserves 2906-3005 for Hyper-V on
+      // some installs) runs the suite with PORT=3006 and nothing else.
+      url: `http://localhost:${Number(process.env.PORT) || 3001}/api/system/status`,
       reuseExistingServer: !process.env.CI,
       timeout: 120 * 1000,
       stdout: 'ignore',
