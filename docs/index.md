@@ -168,6 +168,7 @@ Recent specs — full list under each directory:
 
 Validation and audit-panel reports live in [`reports/`](reports/). Recent:
 
+- [Premium-readiness panel (2026-09-04)](reports/2026-09-04-premium-panel.md) — eight lenses on v4.23.2; what closed, what was measured, what is still open.
 - [Prod/Premium readiness panel (2026-07-05)](reports/2026-07-05-prod-premium-readiness-panel.md) — 8-specialist audit behind the v4.5.0 remediation.
 - [Codebase audit panel (2026-06-26)](reports/2026-06-26-codebase-audit-panel.md) — full-codebase multi-specialist review.
 - [Validation report](reports/VALIDATION-REPORT.md) — earlier code analysis and validation results (partially outdated).
