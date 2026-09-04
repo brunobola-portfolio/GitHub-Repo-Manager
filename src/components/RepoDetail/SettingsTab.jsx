@@ -621,7 +621,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
                             variant="secondary"
                             onClick={loadTopicSuggestions}
                             disabled={aiOff || repoData.archived}
-                            title={aiOff ? 'Configure AI in Settings → AI to enable suggestions' : (repoData.archived ? 'Archived repos cannot be modified' : undefined)}
+                            title={aiOff ? 'Configure AI in Settings → AI Configuration to enable suggestions' : (repoData.archived ? 'Archived repos cannot be modified' : undefined)}
                         >
                             <Tag className="w-3.5 h-3.5" /> Suggest topics
                         </Button>

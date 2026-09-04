@@ -1,3 +1,4 @@
+import { plural } from '../../utils/format'
 import { useState, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { WizardPanel } from '../ui/WizardPanel'
@@ -26,7 +27,7 @@ const STEP_META = {
   repoConfig:   { title: 'Configure Repositories',    subtitle: 'Set target names and options for each repo.' },
   workItems:    { title: 'Work Items',                subtitle: 'Configure work item migration settings.' },
   wiki:         { title: 'Wiki',                      subtitle: 'Configure wiki migration settings.' },
-  aiReview:     { title: 'AI Review',                 subtitle: 'Review the migration plan with AI assistance.' },
+  aiReview:     { title: 'Plan review',               subtitle: 'Review the migration plan with AI assistance.' },
   schedule:     { title: 'Schedule',                  subtitle: 'Choose when to run the migration.' },
   progress:     { title: 'Migration in Progress',     subtitle: 'Your migration is running.' },
   summary:      { title: 'Migration Complete',        subtitle: 'Review the results of your migration.' },
@@ -212,9 +213,9 @@ export default function MigrationWizard({
           disabled={advanceBlocked}
           title={
             blockerCount > 0
-              ? `${blockerCount} blocker(s) must be resolved — open a row to see options`
+              ? `${plural(blockerCount, 'blocker')} must be resolved — open a row to see options`
               : conflictCount > 0
-                ? `Resolve ${conflictCount} naming conflict(s) to continue — choose Replace, Rename or Skip`
+                ? `Resolve ${plural(conflictCount, 'naming conflict')} to continue — choose Replace, Rename or Skip`
                 : undefined
           }
         >

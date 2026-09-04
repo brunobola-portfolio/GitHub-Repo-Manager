@@ -3,6 +3,7 @@ import ErrorBoundary from './ErrorBoundary'
 import { ViewErrorFallback } from './ui/ViewErrorFallback'
 import { ConfirmModal } from './ui/ConfirmModal'
 import { normalizeTransferModalData } from '../utils/transferModalData'
+import { plural } from '../utils/format'
 
 // Lazy-loaded modal surfaces. Each is code-split so its chunk only loads when
 // the modal first opens; App keeps the open/close state in ModalContext.
@@ -111,11 +112,11 @@ export function ModalSurfaces({
                 // Simulate: the dry-run validated server-side (no throw) but
                 // nothing was moved. Keep the modal open so the user can review
                 // and then run it for real.
-                toast.success(`Dry-run OK — ${repoNames.length} repo(s) would be transferred to ${targetOrg}. No changes made.`)
+                toast.success(`Dry-run OK — ${plural(repoNames.length, 'repository', 'repositories')} would be transferred to ${targetOrg}. No changes made.`)
                 return
               }
               if (result?.success) {
-                toast.success(`Transferred ${repoNames.length} repo(s) to ${targetOrg}`)
+                toast.success(`Transferred ${plural(repoNames.length, 'repository', 'repositories')} to ${targetOrg}`)
                 closeModal('showTransfer')
                 // performAction refetches the repo list and (via useGitHub's
                 // wrapper) the org counts + stats — the lists and "N repos"
@@ -133,11 +134,11 @@ export function ModalSurfaces({
             try {
               const result = await performAction('mirror', repoNames, targetOrg, { dryRunOnly: dryRun })
               if (dryRun) {
-                toast.success(`Dry-run OK — ${repoNames.length} repo(s) would be mirrored to ${targetOrg}. No changes made.`)
+                toast.success(`Dry-run OK — ${plural(repoNames.length, 'repository', 'repositories')} would be mirrored to ${targetOrg}. No changes made.`)
                 return
               }
               if (result?.success) {
-                toast.success(`Mirrored ${repoNames.length} repo(s) to ${targetOrg}`)
+                toast.success(`Mirrored ${plural(repoNames.length, 'repository', 'repositories')} to ${targetOrg}`)
                 closeModal('showTransfer')
                 // performAction refetches the repo list and (via useGitHub's
                 // wrapper) the target org's counts — its "N repos" badge bumps

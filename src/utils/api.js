@@ -199,7 +199,7 @@ const ERROR_MESSAGES = {
     // The developer hint lives behind import.meta.env.DEV in RepoStates.
     [ErrorType.BACKEND_UNAVAILABLE]: 'Cannot reach the GitHub Repo Manager service. It may still be starting up.',
     [ErrorType.TIMEOUT]: 'The request took too long to complete. Please try again.',
-    [ErrorType.AUTHENTICATION]: 'Your session has expired. Please login again.',
+    [ErrorType.AUTHENTICATION]: 'Your session expired. Sign in again to continue.',
     [ErrorType.AUTHORIZATION]: 'You do not have permission to perform this action.',
     [ErrorType.NOT_FOUND]: 'The requested resource was not found.',
     [ErrorType.RATE_LIMIT]: 'Too many requests. Please wait a moment before trying again.',

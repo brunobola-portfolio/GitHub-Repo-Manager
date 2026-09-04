@@ -205,7 +205,7 @@ export function StalePRsTab({ hasAI = false }) {
                 <EmptyStateDiscovery
                     icon={GitPullRequest}
                     plainTitle={`No PRs open for more than ${staleAfterDays} days`}
-                    plainSubtitle="Your team is on top of it!"
+                    plainSubtitle="No pull requests have gone stale."
                 />
             ) : (
                 <div className="divide-y divide-slate-100 dark:divide-slate-800/60">

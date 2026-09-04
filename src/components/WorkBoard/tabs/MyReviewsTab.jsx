@@ -285,7 +285,7 @@ export function MyReviewsTab({ hasAI = false }) {
             <EmptyStateDiscovery
                 icon={GitPullRequest}
                 plainTitle="No pending reviews"
-                plainSubtitle="Great work! You have no open review requests right now."
+                plainSubtitle="No open review requests right now."
             />
         )
     }

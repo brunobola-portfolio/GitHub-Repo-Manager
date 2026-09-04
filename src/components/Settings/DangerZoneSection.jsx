@@ -29,7 +29,7 @@ export function DangerZoneSection({ onErased }) {
 
     const handleExport = async () => {
         if (MOCK_MODE) {
-            setExportMsg({ type: 'error', text: 'Data export is disabled in demo mode. Set VITE_MOCK_MODE=false to use real exports.' })
+            setExportMsg({ type: 'error', text: 'Data export is turned off in the demo. Sign in to the full app to export your data.' })
             return
         }
         setExporting(true)
@@ -153,7 +153,7 @@ export function DangerZoneSection({ onErased }) {
                 isOpen={confirmOpen}
                 onClose={() => setConfirmOpen(false)}
                 onConfirm={performErase}
-                title="Erase account — this cannot be undone"
+                title="Delete your account — this cannot be undone"
                 message="This permanently deletes every row of your personal data (AI config, migration plans, webhook events attributed to you, API keys, subscription records, team memberships). Your audit log entries are retained but anonymised. Type the confirmation below to proceed."
                 confirmText="Erase account"
                 cancelText="Cancel"

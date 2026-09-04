@@ -46,7 +46,7 @@ test.describe('Bulk Actions', () => {
     await dropdownButton.click()
 
     // Selection menu items should appear
-    await expect(page.getByText('Select All').or(page.getByText('Deselect All'))).toBeVisible()
+    await expect(page.getByText('Select all').or(page.getByText('Deselect all'))).toBeVisible()
     await expect(page.getByText('Invert Selection')).toBeVisible()
     await expect(page.getByText('Clear Selection')).toBeVisible()
   })

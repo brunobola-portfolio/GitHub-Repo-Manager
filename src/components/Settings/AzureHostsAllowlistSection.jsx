@@ -220,7 +220,7 @@ function RowDb({ entry, canEdit, onDeleted }) {
       }
       onDeleted?.()
     } catch (e) {
-      toast.error(e.message)
+      toast.errorFromException(e, { fallbackTitle: 'Could not update the allowlist' })
       setDeleting(false)
       setConfirming(false)
     }

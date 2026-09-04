@@ -73,7 +73,7 @@ export function DescriptionField({ repo, index, aiAvailable, isGenerating, mode,
           disabled={isGenerating}
           title={aiAvailable
             ? 'Generate a professional description with AI'
-            : 'Template-based suggestion — enable Gemini in Settings → AI for AI-written descriptions'}
+            : 'Template-based suggestion — enable Gemini in Settings → AI Configuration for AI-written descriptions'}
           className={`group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg ds-text-meta font-semibold shrink-0
             transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed ds-focus-ring
             ${aiAvailable

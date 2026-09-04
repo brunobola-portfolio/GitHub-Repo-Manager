@@ -204,8 +204,8 @@ export function AgentRulesModal({ isOpen, onClose, repo, hasExistingAgents = fal
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Field label="Target file(s)">
-                    <Select label="Target file(s)" value={target} onChange={setTarget} options={TARGET_OPTIONS} disabled={generating} />
+                <Field label="Target files">
+                    <Select label="Target files" value={target} onChange={setTarget} options={TARGET_OPTIONS} disabled={generating} />
                 </Field>
                 <Field label="Mode" hint={hasExistingAgents ? 'AGENTS.md already exists in this repo' : 'No AGENTS.md detected yet'}>
                     <Select label="Mode" value={mode} onChange={setMode} options={MODE_OPTIONS} disabled={generating} />

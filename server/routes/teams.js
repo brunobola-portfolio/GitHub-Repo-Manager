@@ -38,7 +38,7 @@ router.post('/', requireAuth, validateBody(teamCreateSchema), (req, res) => {
         if (flags.teamsMax !== undefined && flags.teamsMax !== Infinity) {
             const owned = db.prepare('SELECT COUNT(*) as n FROM teams WHERE owner_id = ?').get(req.session.userId).n;
             if (owned >= flags.teamsMax) {
-                return errorResponse(res, 403, `Team limit reached (${flags.teamsMax}). Upgrade to Pro for unlimited teams.`, 'tier_limit_exceeded');
+                return errorResponse(res, 403, `Team limit reached (${flags.teamsMax}). Delete a team you own to create another.`, 'tier_limit_exceeded');
             }
         }
 

@@ -348,7 +348,7 @@ export function AIConfigSection() {
         <div className="space-y-5">
             <PanelHeader
                 eyebrowIcon={Sparkles}
-                eyebrow="AI Workspace"
+                eyebrow="AI"
                 title="Bring your own AI"
                 description="Connect your own provider API key. Your choices override the server default and stay private to your account."
             />

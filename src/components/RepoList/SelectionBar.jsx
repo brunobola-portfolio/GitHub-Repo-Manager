@@ -74,7 +74,7 @@ export function SelectionBar({ repos, onAction, onClear, onSelectAll }) {
 				</div>
 
 				{onSelectAll && (
-					<PillButton id="__select_all" repos={repos} onAction={() => onSelectAll()} label="Select All" Icon={CheckSquare} />
+					<PillButton id="__select_all" repos={repos} onAction={() => onSelectAll()} label="Select all" Icon={CheckSquare} />
 				)}
 
 				{inline.map((it) => (

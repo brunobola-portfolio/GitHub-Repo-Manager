@@ -159,7 +159,7 @@ describe('useGitHub', () => {
     it('handles ApiError instances correctly', () => {
       const apiError = new ApiError(ErrorType.AUTHENTICATION, 'Auth failed', 401)
       expect(apiError.type).toBe(ErrorType.AUTHENTICATION)
-      expect(apiError.userMessage).toBe('Your session has expired. Please login again.')
+      expect(apiError.userMessage).toBe('Your session expired. Sign in again to continue.')
       expect(apiError.status).toBe(401)
       expect(apiError.isRetryable).toBe(false)
     })

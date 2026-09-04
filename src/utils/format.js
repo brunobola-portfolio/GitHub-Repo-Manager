@@ -286,3 +286,17 @@ export function formatRelativeTime(date) {
 	const years = Math.floor(months / 12)
 	return `${years}y ago`
 }
+
+/**
+ * Count + noun with the right plural form: `plural(3, 'repository',
+ * 'repositories')` → "3 repositories", `plural(1, 'blocker')` → "1 blocker".
+ * Exists so confirmations never fall back to "3 repo(s)", which reads as
+ * machine output at exactly the moment the user needs confidence.
+ * @param {number} count
+ * @param {string} one - singular noun
+ * @param {string} [many] - plural noun (default: one + 's')
+ */
+export function plural(count, one, many = `${one}s`) {
+	const n = Number(count) || 0
+	return `${formatNumber(n)} ${n === 1 ? one : many}`
+}

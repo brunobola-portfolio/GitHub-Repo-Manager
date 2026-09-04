@@ -9,7 +9,7 @@ import { useAIStatus } from '../../hooks/useAIStatus'
  * Adapts label and tone to the user's AI configuration:
  *   - configured + ready          → "Run with AI" (indigo gradient)
  *   - not configured              → "<heuristicLabel>" with tooltip pointing
- *                                   the user at the Settings → AI tab. The
+ *                                   the user at the Settings → AI Configuration tab. The
  *                                   button stays clickable when a heuristic
  *                                   fallback exists (`heuristicAvailable`),
  *                                   otherwise it's disabled.

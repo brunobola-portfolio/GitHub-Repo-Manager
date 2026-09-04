@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Users, Plus, ChevronRight, MoreVertical, Trash2, Edit2, Lock, Sparkles, AlertTriangle } from 'lucide-react';
+import { Users, Plus, ChevronRight, MoreVertical, Trash2, Edit2, AlertTriangle } from 'lucide-react';
 import { Github } from '../icons/GithubIcon';
 import { useToast } from '../../hooks/useToast';
 import { ConfirmModal } from '../ui/ConfirmModal';
@@ -89,8 +89,8 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
     const handleDelete = (teamId, e) => {
         e.stopPropagation(); // Prevent card click
         setConfirmAction({
-            title: 'Delete Team',
-            message: 'Are you sure you want to delete this team? This cannot be undone.',
+            title: 'Delete team',
+            message: 'Members lose access and the team\'s repository assignments are removed. The repositories themselves are not affected. This cannot be undone.',
             confirmText: 'Delete',
             onConfirm: async () => {
                 try {
@@ -126,7 +126,7 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
     return (
         <PageShell maxWidth="full">
             <PageHeader
-                eyebrow="Workspace"
+                eyebrow="Teams"
                 title="Team Hub"
                 description="Collaborate and manage repositories together."
                 icon={Users}
@@ -140,11 +140,10 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
                             setShowCreate(true);
                         }}
                         disabled={upgradeRequired}
-                        title={upgradeRequired ? 'Teams require the Pro plan' : undefined}
                         className="gap-2"
                     >
-                        {upgradeRequired ? <Lock className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
-                        <span>Create Team</span>
+                        <Plus className="w-5 h-5" />
+                        <span>Create team</span>
                     </Button>
                 }
             />
@@ -246,20 +245,16 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
                     )}
 
                     {teams.length === 0 && upgradeRequired && (
-                        <div className="col-span-full py-14 px-6 text-center bg-brand-500/8 dark:bg-brand-500/12 rounded-3xl ring-1 ring-brand-500/20">
-                            <div className="inline-flex items-center justify-center w-14 h-14 mb-4 rounded-2xl bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] shadow-md">
-                                <Sparkles className="w-7 h-7 text-white" strokeWidth={2.5} />
-                            </div>
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-2">
-                                Teams are a Pro feature
-                            </h3>
-                            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
-                                Collaborate with teammates, assign repositories, and track team activity. Upgrade to unlock shared workspaces and member management.
-                            </p>
-                            <Button variant="primary" onClick={() => onNavigatePricing?.()}>
-                                <Sparkles className="w-4 h-4" />
-                                View Pricing
-                            </Button>
+                        // Every tier ships teams unlimited (feature-flags.js), so
+                        // this only renders if a deployment adds a cap later. It
+                        // must never name a plan the flags do not implement.
+                        <div className="col-span-full">
+                            <EmptyState
+                                icon={Users}
+                                title="Teams aren't available on this plan"
+                                description="This deployment limits how many teams you can own. See what each plan includes."
+                                action={{ label: 'View plans', onClick: () => onNavigatePricing?.() }}
+                            />
                         </div>
                     )}
                 </div>

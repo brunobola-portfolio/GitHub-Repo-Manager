@@ -415,7 +415,7 @@ export function useRepos(user) {
             return { success: true, message: msg }
         }
 
-        if (isSessionExpired()) return { success: false, error: 'Session expired', message: 'Your session has expired. Please login again.' }
+        if (isSessionExpired()) return { success: false, error: 'Session expired', message: 'Your session expired. Sign in again to continue.' }
         setIsPerforming(true)
         try {
             const r = await fetchWithRetry(`${API_BASE}/repos`, {
@@ -425,7 +425,7 @@ export function useRepos(user) {
                 body: JSON.stringify({ name, ...options })
             }, { maxRetries: 0 })
             if (r.status === 401) {
-                return { success: false, error: 'Session expired', message: 'Your session has expired. Please login again.' }
+                return { success: false, error: 'Session expired', message: 'Your session expired. Sign in again to continue.' }
             }
             const data = await safeParseJson(r)
             if (r.ok) {
@@ -463,7 +463,7 @@ export function useRepos(user) {
             return { success: true, message: msg }
         }
 
-        if (isSessionExpired()) return { success: false, error: 'Session expired', message: 'Your session has expired. Please login again.' }
+        if (isSessionExpired()) return { success: false, error: 'Session expired', message: 'Your session expired. Sign in again to continue.' }
         setIsPerforming(true)
         setMessage('Starting Azure DevOps import...')
         try {
@@ -480,7 +480,7 @@ export function useRepos(user) {
                 })
             }, { maxRetries: 0 })
             if (r.status === 401) {
-                return { success: false, error: 'Session expired', message: 'Your session has expired. Please login again.' }
+                return { success: false, error: 'Session expired', message: 'Your session expired. Sign in again to continue.' }
             }
             const data = await safeParseJson(r)
             if (r.ok) {

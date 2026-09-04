@@ -36,7 +36,7 @@ export function WorkBoardFilterBar({
             {/* Repos */}
             {availableRepos.length > 0 && (
                 <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="ds-text-micro font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mr-1">Repo</span>
+                    <span className="ds-text-micro font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mr-1">Repository</span>
                     {availableRepos.map(r => (
                         <FilterChip key={r} label={r} tone="indigo"
                             active={repos.has(r)}

@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react'
 import { isAIUnavailable, subscribeAIUnavailable } from '../../../utils/aiAvailability'
 
 // Maps a markAIUnavailable("<status>:<endpoint>") reason into a single short
-// user-facing line — specific enough to help debugging (Settings → AI) without
+// user-facing line — specific enough to help debugging (Settings → AI Configuration) without
 // dumping HTTP status codes on the user.
 function humanizeAIReason(reason = '') {
   if (reason.startsWith('404:')) return 'AI unavailable: the configured model was not found. Check GEMINI_MODEL in Settings.'
-  if (reason.startsWith('422:')) return 'AI unavailable: invalid or expired key. Update it in Settings → AI.'
+  if (reason.startsWith('422:')) return 'AI unavailable: invalid or expired key. Update it in Settings → AI Configuration.'
   if (reason.startsWith('400:')) return 'AI unavailable: no AI key configured. Set one up in Settings.'
   return 'AI unavailable for this session — suggestions use the template.'
 }

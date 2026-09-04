@@ -87,7 +87,7 @@ const CONFIGURE_CTA_CODES = new Set([
 const WELCOME_MESSAGE = {
     id: 'welcome',
     role: 'assistant',
-    text: "Hi! I'm Repo Advisor. Ask me to open the migration wizard, create a repo, or help you manage your projects.",
+    text: "I'm Repo Advisor. Ask me to open the migration wizard, create a repository, or help you manage your projects.",
 }
 
 // Capability-led starter prompts shown in the empty state. Concrete examples
@@ -317,7 +317,7 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus, currentRe
             if (err?.code === 'SESSION_EXPIRED') {
                 setMessages(prev => [...prev, {
                     id: nextMsgId(), role: 'assistant', isError: true,
-                    text: 'Your session has expired. Please log in again to continue.',
+                    text: 'Your session expired. Sign in again to continue.',
                 }])
                 return
             }

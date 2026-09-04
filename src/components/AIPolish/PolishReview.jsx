@@ -74,7 +74,7 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
             <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
                 <div className="grid grid-cols-[40px_1fr_2fr_120px] text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 px-3 py-2 border-b border-slate-200 dark:border-slate-700">
                     <span aria-hidden="true" />
-                    <span>Repo</span>
+                    <span>Repository</span>
                     <span>Description</span>
                     <span className="text-right">Status</span>
                 </div>

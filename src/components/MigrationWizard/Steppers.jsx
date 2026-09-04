@@ -18,7 +18,7 @@ const STEP_LABELS = {
   repoConfig: 'Configure',
   workItems: 'Work Items',
   wiki: 'Wiki',
-  aiReview: 'AI Review',
+  aiReview: 'Plan review',
   schedule: 'Schedule',
   progress: 'Progress',
   summary: 'Summary',

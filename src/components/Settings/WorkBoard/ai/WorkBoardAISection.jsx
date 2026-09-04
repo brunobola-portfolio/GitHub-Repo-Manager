@@ -56,7 +56,7 @@ export function WorkBoardAISection() {
             }
             return result
         } catch (e) {
-            toast.error(`Apply failed: ${e.message}`)
+            toast.errorFromException(e, { fallbackTitle: 'Could not apply the suggestion' })
             throw e
         }
     }

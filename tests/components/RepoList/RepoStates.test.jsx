@@ -1,7 +1,7 @@
 /*
  * RepoStates — the AUTHENTICATION error branch used to render text only
  * ("Please login again") with no actionable control. It now threads an
- * `onLogin` callback and renders a primary "Log in again" button so the
+ * `onLogin` callback and renders a primary "Sign in again" button so the
  * user isn't stuck reading instructions with nothing to click.
  */
 import { describe, it, expect, vi } from 'vitest'
@@ -9,7 +9,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { ErrorState } from '@/components/RepoList/RepoStates'
 
 describe('RepoStates — ErrorState (AUTHENTICATION branch)', () => {
-    it('renders a "Log in again" button when onLogin is provided', () => {
+    it('renders a "Sign in again" button when onLogin is provided', () => {
         render(
             <ErrorState
                 error="Session expired"
@@ -18,10 +18,10 @@ describe('RepoStates — ErrorState (AUTHENTICATION branch)', () => {
                 onLogin={vi.fn()}
             />
         )
-        expect(screen.getByRole('button', { name: /log in again/i })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /sign in again/i })).toBeInTheDocument()
     })
 
-    it('clicking "Log in again" calls onLogin', () => {
+    it('clicking "Sign in again" calls onLogin', () => {
         const onLogin = vi.fn()
         render(
             <ErrorState
@@ -31,7 +31,7 @@ describe('RepoStates — ErrorState (AUTHENTICATION branch)', () => {
                 onLogin={onLogin}
             />
         )
-        fireEvent.click(screen.getByRole('button', { name: /log in again/i }))
+        fireEvent.click(screen.getByRole('button', { name: /sign in again/i }))
         expect(onLogin).toHaveBeenCalledTimes(1)
     })
 
@@ -43,7 +43,7 @@ describe('RepoStates — ErrorState (AUTHENTICATION branch)', () => {
                 onRefresh={vi.fn()}
             />
         )
-        expect(screen.queryByRole('button', { name: /log in again/i })).not.toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: /sign in again/i })).not.toBeInTheDocument()
     })
 
     it('non-auth errors still render the generic "Try Again" control, unaffected', () => {
@@ -56,7 +56,7 @@ describe('RepoStates — ErrorState (AUTHENTICATION branch)', () => {
                 onLogin={vi.fn()}
             />
         )
-        expect(screen.queryByRole('button', { name: /log in again/i })).not.toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: /sign in again/i })).not.toBeInTheDocument()
         fireEvent.click(screen.getByRole('button', { name: /try again/i }))
         expect(onRefresh).toHaveBeenCalledTimes(1)
     })

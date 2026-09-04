@@ -8,7 +8,7 @@ import { Button } from '../ui/Button'
 /**
  * AINotConfiguredBanner — premium inline banner shown on AI surfaces when
  * the server has no Gemini provider configured. The UI shows degraded
- * results (no scores, no recommendations) plus a CTA to open Settings → AI.
+ * results (no scores, no recommendations) plus a CTA to open Settings → AI Configuration.
  *
  * Variants:
  *   - "inline" (default): compact banner for placement at the top of

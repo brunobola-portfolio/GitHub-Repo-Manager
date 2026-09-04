@@ -121,7 +121,7 @@ const KNOWN_ERRORS = {
     },
     UNAUTHORIZED: {
         title: 'Session expired',
-        body: 'Please sign in again to continue.',
+        body: 'Sign in again to continue.',
         action: { label: 'Sign in', kind: 'reauth', type: 'configure' },
     },
     AI_KEY_INVALID: {
@@ -131,7 +131,7 @@ const KNOWN_ERRORS = {
     },
     AI_NOT_CONFIGURED: {
         title: 'AI is not configured',
-        body: 'Configure an AI provider key in Settings → AI to use this feature.',
+        body: 'Configure an AI provider key in Settings → AI Configuration to use this feature.',
         action: { label: 'Open Settings', kind: 'open-settings', type: 'configure', settingsTab: 'ai' },
     },
     TIER_REQUIRED_PRO: {
@@ -162,12 +162,12 @@ const KNOWN_ERRORS = {
     // -----------------------------------------------------------------
     INVALID_API_KEY: {
         title: 'AI key rejected',
-        body: 'The provider rejected the configured API key. Update it in Settings → AI.',
+        body: 'The provider rejected the configured API key. Update it in Settings → AI Configuration.',
         action: { label: 'Update key', kind: 'open-settings', type: 'configure', settingsTab: 'ai' },
     },
     NO_AI_PROVIDER: {
         title: 'No AI provider configured',
-        body: 'Set up a provider API key in Settings → AI to use this feature.',
+        body: 'Set up a provider API key in Settings → AI Configuration to use this feature.',
         action: { label: 'Open Settings', kind: 'open-settings', type: 'configure', settingsTab: 'ai' },
     },
     AI_DISABLED: {
@@ -214,7 +214,7 @@ const KNOWN_ERRORS = {
     },
     MODEL_NOT_FOUND: {
         title: 'AI model unavailable',
-        body: 'The configured model is not available. Verify the model setting in Settings → AI.',
+        body: 'The configured model is not available. Verify the model setting in Settings → AI Configuration.',
         action: { label: 'Open Settings', kind: 'open-settings', type: 'configure', settingsTab: 'ai' },
     },
     PRESET_NOT_FOUND: {
@@ -225,7 +225,7 @@ const KNOWN_ERRORS = {
     // AI Image Generator (Wave 6c / R5, server/routes/ai/images.js).
     PROVIDER_NO_IMAGE_SUPPORT: {
         title: 'Image generation not available',
-        body: 'Your current AI provider doesn’t support image output. Switch to a provider that does (Gemini, OpenAI, or OpenRouter) in Settings → AI.',
+        body: 'Your current AI provider doesn’t support image output. Switch to a provider that does (Gemini, OpenAI, or OpenRouter) in Settings → AI Configuration.',
         action: { label: 'Open AI Settings', kind: 'open-settings', type: 'configure', settingsTab: 'ai' },
     },
     IMAGE_REFUSAL: {
@@ -235,7 +235,7 @@ const KNOWN_ERRORS = {
     },
     IMAGE_PRICING_UNAVAILABLE: {
         title: 'Image pricing not configured',
-        body: 'This provider/model combination isn’t priced yet, so the request was declined rather than billed unpredictably. Try a different provider in Settings → AI.',
+        body: 'This provider/model combination isn’t priced yet, so the request was declined rather than billed unpredictably. Try a different provider in Settings → AI Configuration.',
         action: { label: 'Open AI Settings', kind: 'open-settings', type: 'configure', settingsTab: 'ai' },
     },
     // Emitted by handleAIError (server/routes/ai/shared.js) for EVERY AI
@@ -274,7 +274,7 @@ const KNOWN_ERRORS = {
     },
     PROVIDER_LOOKUP_FAILED: {
         title: 'Could not load AI configuration',
-        body: 'Failed to resolve your AI provider settings. Check Settings → AI.',
+        body: 'Failed to resolve your AI provider settings. Check Settings → AI Configuration.',
         action: { label: 'Open Settings', kind: 'open-settings', type: 'configure', settingsTab: 'ai' },
     },
     AI_REVIEW_DISABLED: {
@@ -289,7 +289,7 @@ const KNOWN_ERRORS = {
     },
     AI_SUMMARY_FAILED: {
         title: 'AI summary unavailable',
-        body: 'The summary could not be generated. Try again — if it keeps failing, check your AI provider in Settings → AI.',
+        body: 'The summary could not be generated. Try again — if it keeps failing, check your AI provider in Settings → AI Configuration.',
         action: { label: 'Retry', kind: 'retry', type: 'retry' },
     },
     INVALID_HOST: {

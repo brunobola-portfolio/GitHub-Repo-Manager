@@ -108,7 +108,7 @@ export function WebhookHint() {
 
     return (
         <div className="mt-3 p-4 rounded-xl bg-brand-50 dark:bg-brand-950/30 border border-brand-200/60 dark:border-brand-800/50 text-sm text-brand-700 dark:text-brand-300">
-            <strong>No data yet.</strong> Add a webhook to your repository (Settings → Webhooks)
+            <strong>No data yet.</strong> Add a webhook in the repository's GitHub settings (Settings → Webhooks on github.com)
             pointing at your personal ingest URL — events start populating the Work Board within
             seconds of the first delivery.
             {state.phase === 'have' ? (

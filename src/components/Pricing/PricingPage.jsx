@@ -282,7 +282,7 @@ export function PricingPage({ onGetStarted } = {}) {
 
   const handleTierAction = useCallback((tier) => {
     if (tier === 'Enterprise') {
-      window.location.href = `mailto:${SALES_EMAIL}?subject=${encodeURIComponent('GitHub Repo Manager — Enterprise inquiry')}&body=${encodeURIComponent('Hi Bruno,\n\nI\'m interested in the Enterprise plan for GitHub Repo Manager.\n\nOrganization: \nTeam size: \nUse case: \n\nThanks!')}`
+      window.location.href = `mailto:${SALES_EMAIL}?subject=${encodeURIComponent('GitHub Repo Manager — Enterprise inquiry')}&body=${encodeURIComponent('Hello,\n\nI\'m interested in the Enterprise plan for GitHub Repo Manager.\n\nOrganization: \nTeam size: \nUse case: \n')}`
       return
     }
     if (tier === 'Pro') {
@@ -455,7 +455,7 @@ export function PricingPage({ onGetStarted } = {}) {
             // Capability statements only — never usage-stat claims ("X repos
             // managed", "Y active users"): we don't aggregate that number
             // anywhere, so advertising it would be unverified.
-            { icon: GitBranch, text: 'Scales to thousands of repos per workspace' },
+            { icon: GitBranch, text: 'No per-repository limit on any plan' },
             { icon: Cpu, text: 'Multi-provider AI (Gemini, Claude, GPT, OpenRouter)' },
             // Substantiated in code: helmet CSP + express-rate-limit +
             // append-only SHA-256 hash-chained audit log. No SOC 2 attestation

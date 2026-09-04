@@ -24,7 +24,7 @@ describe('ApiError', () => {
   it('uses default message when not provided', () => {
     const error = new ApiError(ErrorType.AUTHENTICATION)
 
-    expect(error.userMessage).toBe('Your session has expired. Please login again.')
+    expect(error.userMessage).toBe('Your session expired. Sign in again to continue.')
   })
 
   it('marks retryable errors correctly', () => {

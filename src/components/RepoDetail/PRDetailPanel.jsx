@@ -251,7 +251,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                 size="sm"
                                 onClick={() => onGenerateDescription?.(pr)}
                                 disabled={aiOff}
-                                title={aiOff ? 'Configure AI in Settings → AI to enable generation' : undefined}
+                                title={aiOff ? 'Configure AI in Settings → AI Configuration to enable generation' : undefined}
                             >
                                 <Wand2 className="w-4 h-4" />
                                 Generate Description

@@ -392,7 +392,7 @@ export function DashboardPremium({
                     <div data-section="organizations">
                         <CategorySection
                             id="organizations"
-                            eyebrow="Workspaces"
+                            eyebrow="Organizations"
                             title="Organizations"
                             icon={Building2}
                             count={orgs.length}

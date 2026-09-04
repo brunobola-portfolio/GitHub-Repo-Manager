@@ -164,8 +164,8 @@ export function ImageGeneratorModal({ isOpen, onClose, repo, onFallbackToDiagram
                 <h3 className="font-bold text-slate-900 dark:text-slate-100">Image generation isn&apos;t available with the current AI provider</h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
                     {capability?.provider
-                        ? `Your configured provider (${capability.provider}) doesn't support image output. Switch to Gemini, OpenAI, or OpenRouter in Settings → AI to use this feature.`
-                        : 'No AI provider is configured. Set one up in Settings → AI to use this feature.'}
+                        ? `Your configured provider (${capability.provider}) doesn't support image output. Switch to Gemini, OpenAI, or OpenRouter in Settings → AI Configuration to use this feature.`
+                        : 'No AI provider is configured. Set one up in Settings → AI Configuration to use this feature.'}
                 </p>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2">

@@ -22,7 +22,7 @@ export const ONBOARDING_STEPS = [
     {
         id: 'launch-features',
         icon: Rocket,
-        title: 'New: README Studio, diagrams, Agent Rules & Security Posture',
+        title: 'README Studio, diagrams, Agent Rules & Security Posture',
         body: "From a repo's Overview tab: generate a polished README, an architecture diagram, or AGENTS.md/CLAUDE.md rules. Right-click a repo for a Security Posture scan.",
     },
 ]

@@ -126,7 +126,7 @@ export function SystemSetup({ onComplete }) {
                                 onClick={onComplete}
                                 className="w-full"
                             >
-                                <span>Launch Workspace</span>
+                                <span>Open the app</span>
                                 <ArrowRight className="w-5 h-5" aria-hidden="true" />
                             </Button>
                         </motion.div>

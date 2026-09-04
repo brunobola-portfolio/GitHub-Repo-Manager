@@ -171,9 +171,10 @@ export async function runRetentionPass({ now = new Date(), dryRun = false } = {}
             continue
         }
 
+        // Rendered as "12 March 2027": this lands in a subject line a person
+        // reads, and an ISO date there reads as machine output.
         const purgeDate = new Date(updatedAt.getTime() + retentionMs)
-            .toISOString()
-            .slice(0, 10) // YYYY-MM-DD
+            .toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
 
         logger.info({ userId: row.user_id, purgeDate, dryRun }, 'retention: sending warning email')
 

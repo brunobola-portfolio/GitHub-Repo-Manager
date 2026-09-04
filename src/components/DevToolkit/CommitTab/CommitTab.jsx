@@ -231,7 +231,7 @@ export function CommitTab({ toolkit }) {
                 size="md"
                 onClick={handleGenerate}
                 disabled={aiOff || !canGenerate || isStreaming}
-                title={aiOff ? 'Configure AI in Settings → AI to enable generation' : undefined}
+                title={aiOff ? 'Configure AI in Settings → AI Configuration to enable generation' : undefined}
             >
                 {isStreaming ? (
                     <><RefreshCw className="w-3.5 h-3.5 animate-spin" />Generating...</>

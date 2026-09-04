@@ -30,10 +30,10 @@ export function ErrorState({ error, errorInfo, onRefresh, onLogin }) {
 				</div>
 				<p className="text-slate-700 dark:text-slate-300 font-medium text-center mb-2">Session Expired</p>
 				<p className="text-slate-500 dark:text-slate-400 text-sm text-center max-w-md mb-4">
-					Your session has expired. Please login again to access your repositories.
+					Your session expired. Sign in again to see your repositories.
 				</p>
 				{onLogin && (
-					<Button variant="primary" onClick={onLogin}>Log in again</Button>
+					<Button variant="primary" onClick={onLogin}>Sign in again</Button>
 				)}
 			</div>
 		)

@@ -58,7 +58,7 @@ export function useAI() {
             }
         }
         if (isSessionExpired()) {
-            const err = new Error('Your session has expired. Please login again.')
+            const err = new Error('Your session expired. Sign in again to continue.')
             err.code = 'SESSION_EXPIRED'
             throw err
         }
@@ -161,7 +161,7 @@ export function useAI() {
         }
 
         if (isSessionExpired()) {
-            const err = new Error('Your session has expired. Please login again.')
+            const err = new Error('Your session expired. Sign in again to continue.')
             err.code = 'SESSION_EXPIRED'
             throw err
         }
