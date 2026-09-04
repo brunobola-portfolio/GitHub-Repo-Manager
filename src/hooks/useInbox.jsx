@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { fetchInbox, archiveInboxItem, restoreInboxItem, snoozeInboxItem } from '../api/dashboardInbox';
 import { useOptimisticMutation } from './useOptimisticMutation';
 import { useToast } from './useToast';
+import { useFocusedRow } from './useFocusedRow';
 
 const ALL_SECTIONS = ['needs_review', 'my_prs', 'mentions', 'stale_drafts'];
 
@@ -15,7 +16,7 @@ function removeFromSections(state, itemId) {
     };
 }
 
-export function useInbox({ sections = ALL_SECTIONS } = {}) {
+export function useInbox({ sections = ALL_SECTIONS, onOpenItem } = {}) {
     const [data, setData] = useState({ sections: [], meta: null });
     const dataRef = useRef(data);
     // Keep ref in sync so archive/snooze can read current state without stale closure.
@@ -120,6 +121,17 @@ export function useInbox({ sections = ALL_SECTIONS } = {}) {
         await refresh();
     }, [refresh]);
 
+    // j/k/Enter row navigation across every section's items, in section
+    // order — the Live Inbox side of G4 (row nav that used to exist only
+    // on the Work Board). Flattened once per data/section-order change so
+    // useFocusedRow's `items` identity stays stable across re-renders that
+    // don't actually change the list.
+    const flatItems = useMemo(
+        () => data.sections.flatMap(s => s.items),
+        [data.sections],
+    );
+    const { focusedIndex, setFocusedIndex, focusedItem } = useFocusedRow(flatItems, { onOpen: onOpenItem });
+
     return {
         sections: data.sections,
         meta: data.meta,
@@ -129,5 +141,8 @@ export function useInbox({ sections = ALL_SECTIONS } = {}) {
         archive,
         snooze,
         restore,
+        focusedIndex,
+        setFocusedIndex,
+        focusedItem,
     };
 }

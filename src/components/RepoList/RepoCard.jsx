@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import {
 	GitFork, Lock, Globe, Star,
@@ -78,6 +78,16 @@ function RepoCardQuickActions({ repo, onAction, onOpenContextMenu }) {
  * Callback contract: every handler receives the repo (or the event plus the
  * repo) as an argument, so the parent can pass one stable function for the
  * whole collection instead of one closure per card.
+ *
+ * Row-focus contract (`isFocused`, driven by RepoGrid's `useFocusedRow`):
+ * rather than a hand-rolled ring class, the focused card's stretched select
+ * button (the `absolute inset-0` control below — it already spans the
+ * whole card and already carries `ds-focus-ring`) is given real DOM focus.
+ * That makes the SAME `:focus-visible` CSS every other control in the app
+ * uses light up here too, instead of inventing a second ring recipe — and
+ * it comes with the behaviour for free: browsers only show `:focus-visible`
+ * for keyboard/script-driven focus, never for a mouse click or hover, so
+ * j/k never shows a ring the mouse didn't ask for.
  */
 export const RepoCard = memo(function RepoCard({
 	repo,
@@ -85,6 +95,7 @@ export const RepoCard = memo(function RepoCard({
 	viewMode,
 	isSelected,
 	isContextTarget,
+	isFocused = false,
 	onToggle,
 	onAction,
 	onContextMenu,
@@ -94,6 +105,10 @@ export const RepoCard = memo(function RepoCard({
 	skipEntranceAnimation = false,
 }) {
 	const isGrid = viewMode === 'grid'
+	const selectRef = useRef(null)
+	useEffect(() => {
+		if (isFocused) selectRef.current?.focus()
+	}, [isFocused])
 	// Staggered entrance: each card lands a beat after the previous one. Capped
 	// at 10 slots so a 100-repo grid never waits seconds for the tail — beyond
 	// the cap the remaining cards share the final delay. Standalone usages (no
@@ -169,6 +184,7 @@ export const RepoCard = memo(function RepoCard({
 			    overlay via z-10, not descendants of a button role. onContextMenu
 			    stays on the container (not an ARIA-interactive attribute). */}
 			<button
+				ref={selectRef}
 				type="button"
 				onClick={() => onToggle(repo)}
 				aria-pressed={isSelected}
@@ -311,6 +327,7 @@ export const RepoCard = memo(function RepoCard({
 		prevProps.viewMode === nextProps.viewMode &&
 		prevProps.isSelected === nextProps.isSelected &&
 		prevProps.isContextTarget === nextProps.isContextTarget &&
+		prevProps.isFocused === nextProps.isFocused &&
 		prevProps.skipEntranceAnimation === nextProps.skipEntranceAnimation &&
 		prevProps.index === nextProps.index &&
 		prevProps.onToggle === nextProps.onToggle &&

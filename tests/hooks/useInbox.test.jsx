@@ -65,4 +65,40 @@ describe('useInbox', () => {
         await act(async () => { await result.current.archive('pr:foo/bar#1'); });
         expect(result.current.sections[0].items).toHaveLength(1);
     });
+
+    // G4 — j/k row navigation parity with the Work Board, across the WHOLE
+    // inbox (every section flattened in order), not just the active one.
+    it('exposes j/k row navigation across the flattened, section-ordered items', async () => {
+        api.fetchInbox.mockResolvedValue({
+            sections: [
+                { key: 'needs_review', label: 'Needs my review', items: [{ id: 'pr:foo/bar#1' }, { id: 'pr:foo/bar#2' }] },
+                { key: 'my_prs', label: 'My PRs', items: [{ id: 'pr:foo/bar#3' }] },
+            ],
+        });
+        const { result } = renderHook(() => useInbox());
+        await waitFor(() => expect(result.current.loading).toBe(false));
+
+        expect(result.current.focusedIndex).toBe(-1);
+        act(() => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'j' })); });
+        expect(result.current.focusedItem).toEqual({ id: 'pr:foo/bar#1' });
+        act(() => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'j' })); });
+        act(() => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'j' })); });
+        // Third 'j' crosses into the second section — flattened in section order.
+        expect(result.current.focusedItem).toEqual({ id: 'pr:foo/bar#3' });
+        act(() => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k' })); });
+        expect(result.current.focusedItem).toEqual({ id: 'pr:foo/bar#2' });
+    });
+
+    it('calls the onOpenItem callback with the focused item on Enter', async () => {
+        api.fetchInbox.mockResolvedValue({
+            sections: [{ key: 'needs_review', label: 'Needs my review', items: [{ id: 'pr:foo/bar#1' }] }],
+        });
+        const onOpenItem = vi.fn();
+        const { result } = renderHook(() => useInbox({ onOpenItem }));
+        await waitFor(() => expect(result.current.loading).toBe(false));
+
+        act(() => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'j' })); });
+        act(() => { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' })); });
+        expect(onOpenItem).toHaveBeenCalledWith({ id: 'pr:foo/bar#1' });
+    });
 });

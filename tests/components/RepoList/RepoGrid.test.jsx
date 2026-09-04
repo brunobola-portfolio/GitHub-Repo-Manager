@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor, act, within } from '@testing-library/react'
+import { render, screen, waitFor, act, within, fireEvent, cleanup } from '@testing-library/react'
 import { RepoGrid } from '@/components/RepoList/RepoGrid'
 
 // Isolate RepoCard from its data hooks, same as RepoCard.test.jsx.
@@ -180,5 +180,50 @@ describe('RepoGrid — list-mode windowing (useVirtualWindow)', () => {
         render(<RepoGrid {...baseProps(repos)} viewMode="grid" />)
         expect(screen.getAllByTestId('repo-card')).toHaveLength(200)
         expect(screen.queryByTestId('repo-grid-virtual-window')).not.toBeInTheDocument()
+    })
+})
+
+describe('RepoGrid — j/k/Enter row navigation (G4: parity with the Work Board)', () => {
+    afterEach(() => cleanup())
+
+    it('j/k move real DOM focus across the cards’ select controls (so ds-focus-ring — a :focus-visible rule — lights up without a bespoke ring class)', () => {
+        const repos = [makeRepo(1), makeRepo(2), makeRepo(3)]
+        render(<RepoGrid {...baseProps(repos)} />)
+        const cards = screen.getAllByTestId('repo-card-select')
+
+        fireEvent.keyDown(window, { key: 'j' })
+        expect(document.activeElement).toBe(cards[0])
+
+        fireEvent.keyDown(window, { key: 'j' })
+        expect(document.activeElement).toBe(cards[1])
+
+        fireEvent.keyDown(window, { key: 'k' })
+        expect(document.activeElement).toBe(cards[0])
+    })
+
+    it('Enter opens the focused repo and does not also toggle its selection', () => {
+        const repos = [makeRepo(1), makeRepo(2)]
+        const onRepoClick = vi.fn()
+        const onToggle = vi.fn()
+        render(<RepoGrid {...baseProps(repos)} onRepoClick={onRepoClick} onToggle={onToggle} />)
+
+        fireEvent.keyDown(window, { key: 'j' })
+        fireEvent.keyDown(window, { key: 'Enter' })
+
+        expect(onRepoClick).toHaveBeenCalledWith(repos[0])
+        expect(onToggle).not.toHaveBeenCalled()
+    })
+
+    it('does not move focus while typing in an unrelated input (useFocusedRow input guard)', () => {
+        const repos = [makeRepo(1), makeRepo(2)]
+        render(<RepoGrid {...baseProps(repos)} />)
+        const input = document.createElement('input')
+        document.body.appendChild(input)
+        input.focus()
+
+        fireEvent.keyDown(input, { key: 'j' })
+        expect(document.activeElement).toBe(input)
+
+        input.remove()
     })
 })

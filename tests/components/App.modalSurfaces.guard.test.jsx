@@ -232,10 +232,12 @@ describe('App modal surfaces (ModalSurfaces guard)', () => {
         await waitFor(() => expect(screen.queryByTestId('m-wizard')).toBeNull(), { timeout: 5000 })
     })
 
-    it("'g' opens DevToolkitPanel and closes it", { timeout: 30000 }, async () => {
+    it("'`' opens DevToolkitPanel and closes it", { timeout: 30000 }, async () => {
+        // `g` became the navigation chord prefix (g d / g r / g w / g t / g p),
+        // so the Dev Toolkit moved to the backtick.
         renderApp()
         await settle()
-        await pressKey('g')
+        await pressKey('`')
         await screen.findByTestId('m-devtoolkit', {}, { timeout: 8000 })
         fireEvent.click(screen.getByText('close-devtoolkit'))
         await waitFor(() => expect(screen.queryByTestId('m-devtoolkit')).toBeNull(), { timeout: 5000 })

@@ -3,6 +3,7 @@ import { AnimatePresence } from 'framer-motion'
 import { RepoCard } from './RepoCard'
 import { useRepoMetadata } from '../../hooks/useRepoMetadata'
 import { useVirtualWindow } from '../../hooks/useVirtualWindow'
+import { useFocusedRow } from '../../hooks/useFocusedRow'
 
 // Mirrors the migration wizard's VIRTUALIZATION_THRESHOLD
 // (RepoSelectStep/RepoList.jsx): below it the wizard wraps rows in
@@ -100,6 +101,12 @@ export function RepoGrid({
 	const handleRepoClick = useCallback((repo) => handlersRef.current.onRepoClick?.(repo), [])
 	const handleExplainHealth = useCallback((repo) => handlersRef.current.onExplainHealth?.(repo), [])
 
+	// j/k/Enter row navigation (G4 — parity with the Work Board's
+	// useFocusedRow usage). onOpen dispatches through the same ref-stable
+	// handler the title button already uses, so Enter and a click on the
+	// card open the repo through one code path.
+	const { focusedIndex } = useFocusedRow(repos, { onOpen: handleRepoClick })
+
 	const renderCard = (repo, i) => (
 		<RepoCard
 			key={repo.id}
@@ -109,6 +116,7 @@ export function RepoGrid({
 			viewMode={viewMode}
 			isSelected={selectedIds.has(repo.id)}
 			isContextTarget={contextTargetId === repo.id}
+			isFocused={focusedIndex === i}
 			onToggle={handleToggle}
 			onAction={handleAction}
 			onContextMenu={handleContextMenu}
