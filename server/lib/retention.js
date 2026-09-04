@@ -24,8 +24,8 @@ function buildWarningHtml({ purgeDate }) {
     to power features such as AI chat, code review suggestions, and smart search.
   </p>
   <p>
-    Our data retention policy requires that credentials unused for
-    <strong>365 days</strong> are automatically deleted for your security.
+    Credentials that go unused for <strong>365 days</strong> are erased
+    automatically, so a key you have stopped using cannot sit here indefinitely.
   </p>
   <p>
     <strong>Your credentials are scheduled to be erased on ${purgeDate}.</strong>
@@ -65,8 +65,8 @@ function buildWarningText({ purgeDate }) {
 GitHub Repo Manager stores your AI API credentials (Bring-Your-Own-Key)
 to power features such as AI chat, code review suggestions, and smart search.
 
-Our data retention policy requires that credentials unused for 365 days are
-automatically deleted for your security.
+Credentials that go unused for 365 days are erased automatically, so a key you
+have stopped using cannot sit here indefinitely.
 
 Your credentials are scheduled to be erased on ${purgeDate}.
 
