@@ -73,10 +73,12 @@ export function Modal({
     iconGradient = 'none',
     bodyClassName = '',
     mobileVariant = 'sheet',
-    // Disable Escape-to-close. Defaults to true whenever backdrop click is
-    // also disabled (e.g. mid-running TransferModal) so both dismissal
-    // vectors are protected together. Callers can override explicitly.
-    disableEscape = !closeOnBackdrop,
+    // Disable Escape-to-close. Independent of closeOnBackdrop: most modals
+    // decline a stray backdrop click because they hold a form or a long read,
+    // and coupling the two had left 16 of them ignoring the keyboard's first
+    // dismissal gesture. A modal protecting a running operation passes
+    // disableEscape={running} itself (TransferModal, BatchIndexProgressModal).
+    disableEscape = false,
     // Signal that async content is loading — forwarded to the body's aria-busy
     // so screen readers hear a "busy" state while skeletons show.
     isBusy = false,

@@ -34,7 +34,13 @@ export function useAppEventBridge({
   orgRepos,
   selectedRepoDetail,
   handleOpenRepo,
+  // Toast API, for the one case where a bridged intent cannot be fulfilled.
+  toast,
 }) {
+  // Read through a ref so the subscription effects below keep their empty
+  // dependency arrays; the toast object is recreated by its provider.
+  const toastRef = useRef(toast)
+  useEffect(() => { toastRef.current = toast }, [toast])
   // Quota-exceeded modal: detail emitted via 'app:show-quota-exceeded' by
   // toast.errorFromException's 'open-quota' action.
   useEffect(() => {
@@ -268,7 +274,16 @@ export function useAppEventBridge({
       const items = Array.isArray(ev.detail) ? ev.detail : []
       const match = items.find((i) => i?.number === pending.number)
       pendingItemRef.current = null
-      if (!match) return
+      if (!match) {
+        // The tab loaded but the item is not in it (closed, or on a later
+        // page). A silent no-op here read as a dead-end click from the Work
+        // Board — say so, and leave the user on the list they can search.
+        toastRef.current?.info?.(
+          `${kind === 'pr' ? 'Pull request' : 'Issue'} #${pending.number} is not in this list`,
+          { description: 'It may be closed or on a later page.' },
+        )
+        return
+      }
       if (kind === 'pr') {
         emitAppEvent(APP_EVENTS.REPO_DETAIL_SELECT_PR, match)
       } else {

@@ -26,17 +26,17 @@ function pick(arr, n) {
 // headings (sticky TOC), fenced code blocks (highlighting + copy button),
 // a table, links and inline code. Keep it ASCII-only — btoa() throws on
 // anything outside Latin-1.
-const MOCK_README = [
-    '# Demo Repository',
+const mockReadmeFor = (owner, name) => [
+    `# ${name}`,
     '',
-    'Machine learning pipeline for predictive customer behavior analysis.',
+    (mockRepoByFullName(`${owner}/${name}`)?.description) || 'Machine learning pipeline for predictive customer behavior analysis.',
     'This README is simulated so you can try the reading experience - headings feed the table of contents, and code blocks get syntax highlighting with one-click copy.',
     '',
     '## Quick start',
     '',
     '```bash',
-    'git clone https://github.com/dev-user/ai-analytics-platform.git',
-    'cd ai-analytics-platform',
+    `git clone https://github.com/${owner}/${name}.git`,
+    `cd ${name}`,
     'pip install -r requirements.txt',
     'python -m pipeline.run --config configs/dev.yaml',
     '```',
@@ -503,7 +503,7 @@ export function mockRepoDetailFetch(url) {
         return { id: 1, name: repo, full_name: repoName, description: 'Demo repository', private: false, fork: false, owner: { login: owner }, default_branch: 'main', stargazers_count: 42, forks_count: 7, open_issues_count: 5, created_at: '2024-03-12T09:30:00Z', updated_at: '2026-07-15T18:04:00Z', pushed_at: '2026-07-16T07:41:00Z' }
     }
 
-    if (resource === 'readme') return { content: btoa(MOCK_README), encoding: 'base64' }
+    if (resource === 'readme') return { content: btoa(mockReadmeFor(owner, repo)), encoding: 'base64' }
 
     if (resource === 'branches') {
         if (!sub1) return generateMockBranches(repoName)
@@ -780,7 +780,7 @@ export function mockCommitsFetch(url) {
         // Playwright spec supply its own README via page.route instead of this
         // generic demo content.
         if (_e2eRepoApiLiveResources?.has('readme')) return undefined
-        return { content: btoa(MOCK_README), encoding: 'base64' }
+        return { content: btoa(mockReadmeFor(readmeMatch[1], readmeMatch[2])), encoding: 'base64' }
     }
 
     const m = path.match(/^\/api\/v1\/repos\/([^/]+)\/([^/]+)\/commits(?:\/([^/]+))?/)

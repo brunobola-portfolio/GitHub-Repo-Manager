@@ -7,6 +7,7 @@ import { Card } from '../ui/Card'
 import { EmptyState } from '../ui/EmptyState'
 import { SectionPanel } from '../ui/SectionPanel'
 import { Skeleton } from '../ui/Skeleton'
+import { TabLoadError } from './TabLoadError'
 import { Spinner } from '../ui/Spinner'
 import { StaleDataBadge } from '../ui/StaleDataBadge'
 import { useResilientFetch } from '../../hooks/useResilientFetch'
@@ -134,18 +135,7 @@ export function CommitsTab({ repo }) {
                 />
             )
         }
-        if (error.status === 401 || error.status === 403) {
-            return (
-                <div className="px-4 py-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl text-sm text-amber-700 dark:text-amber-400">
-                    Sign in again to view commits.
-                </div>
-            )
-        }
-        return (
-            <div className="px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">
-                Couldn&apos;t load commits. Please retry.
-            </div>
-        )
+        return <TabLoadError error={error} onRetry={reload} resourceLabel="commits" />
     }
 
     if (items.length === 0) {

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Badge } from '../ui/Badge'
 import { EmptyState } from '../ui/EmptyState'
+import { TabLoadError } from './TabLoadError'
 import { ReadmeToc } from '../ui/ReadmeToc'
 import { RepoMarkdown } from '../ui/RepoMarkdown'
 import { SectionPanel } from '../ui/SectionPanel'
@@ -171,14 +172,8 @@ export function OverviewTab({ api, repoData, onUpdate }) {
                                 title="No README"
                                 description="This repository doesn't have a README yet."
                             />
-                        ) : (error.status === 401 || error.status === 403) ? (
-                            <div className="px-4 py-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl text-sm text-amber-700 dark:text-amber-400">
-                                Sign in again to view this README.
-                            </div>
                         ) : (
-                            <div className="px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">
-                                Couldn&apos;t load the README. Please retry.
-                            </div>
+                            <TabLoadError error={error} onRetry={reload} resourceLabel="this README" />
                         )
                     ) : readme?.content ? (
                         <div className="flex gap-6 items-start">

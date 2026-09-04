@@ -244,9 +244,7 @@ export function ImageGeneratorModal({ isOpen, onClose, repo, onFallbackToDiagram
                 </div>
 
                 {commitError && (
-                    <div role="alert" className="px-3 py-2.5 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-sm text-red-600 dark:text-red-400">
-                        {commitError.message || 'Failed to commit. Please retry.'}
-                    </div>
+                    <AIErrorState error={commitError} context="Commit" variant="inline" />
                 )}
 
                 <div className="relative flex justify-center rounded-lg border border-slate-200 dark:border-slate-800 p-3 bg-white dark:bg-slate-900">
@@ -363,7 +361,7 @@ export function ImageGeneratorModal({ isOpen, onClose, repo, onFallbackToDiagram
             iconGradient="primary"
             size="lg"
             footer={renderFooter()}
-            closeOnBackdrop={!committing}
+            closeOnBackdrop={!committing} disableEscape={committing}
         >
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={TRANSITION.fast}>
                 {body}

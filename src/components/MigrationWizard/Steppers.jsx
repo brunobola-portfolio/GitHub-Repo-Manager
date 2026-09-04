@@ -143,7 +143,7 @@ function StepDisc({ status, index, icon: Icon }) {
 
 const ROW_TONE = {
   done:    { row: 'hover:bg-emerald-50/60 dark:hover:bg-emerald-900/10 cursor-pointer', label: 'text-slate-800 dark:text-slate-100', hint: 'text-emerald-700/80 dark:text-emerald-400/70', pill: null },
-  current: { row: 'bg-gradient-to-r from-brand-50/80 to-transparent dark:from-brand-500/[0.12] dark:to-transparent', label: 'text-brand-700 dark:text-brand-200', hint: 'text-brand-500/80 dark:text-brand-300/80', pill: { label: 'NOW', cls: 'bg-brand-500 text-white' } },
+  current: { row: 'bg-gradient-to-r from-brand-50/80 to-transparent dark:from-brand-500/[0.12] dark:to-transparent', label: 'text-brand-700 dark:text-brand-200', hint: 'text-brand-500/80 dark:text-brand-300/80', pill: { label: 'Current', cls: 'bg-brand-500 text-white' } },
   pending: { row: '', label: 'text-slate-500 dark:text-slate-500', hint: 'text-slate-400 dark:text-slate-600', pill: null },
   loading: { row: 'bg-gradient-to-r from-brand-50/80 to-transparent dark:from-brand-500/[0.10] dark:to-transparent', label: 'text-brand-700 dark:text-brand-200', hint: 'text-brand-500/80 dark:text-brand-300/80', pill: { label: 'PROCESSING', cls: 'bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300' } },
   error:   { row: 'bg-gradient-to-r from-red-50/80 to-transparent dark:from-red-500/[0.10] dark:to-transparent', label: 'text-red-700 dark:text-red-300', hint: 'text-red-600/80 dark:text-red-400/80', pill: { label: 'ACTION', cls: 'bg-red-500 text-white' } },

@@ -6,7 +6,7 @@
  * Licensed under the Apache License 2.0 (SPDX: Apache-2.0). See LICENSE in the project root.
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { isAbort } from '../utils/errorClassification'
 import {
     safeParseJson,
@@ -48,14 +48,20 @@ export function useRepos(user) {
         const fromUrl = Number.parseInt(new URLSearchParams(window.location.search).get('page'), 10)
         return Number.isFinite(fromUrl) && fromUrl > 0 ? fromUrl : 1
     })
+    const pageRef = useRef(1)
     const setPage = useCallback((next) => {
-        setPageState(next)
+        // Accepts a value or an updater, like setState — an updater used to be
+        // stringified straight into the URL as "?page=(p) => p + 1".
+        const resolved = typeof next === 'function' ? next(pageRef.current) : next
+        pageRef.current = resolved
+        setPageState(resolved)
         if (typeof window === 'undefined') return
         const params = new URLSearchParams(window.location.search)
-        if (!next || next === 1) params.delete('page')
-        else params.set('page', String(next))
+        if (!resolved || resolved === 1) params.delete('page')
+        else params.set('page', String(resolved))
         const qs = params.toString()
-        const url = qs ? `${window.location.pathname}?${qs}` : window.location.pathname
+        // Keep the "#/repos" hash: dropping it sent a reload to the dashboard.
+        const url = `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash}`
         window.history.replaceState(null, '', url)
     }, [])
     // Sync state with browser back/forward: if the user navigates between
@@ -65,6 +71,7 @@ export function useRepos(user) {
         const onPop = () => {
             const fromUrl = Number.parseInt(new URLSearchParams(window.location.search).get('page'), 10)
             const next = Number.isFinite(fromUrl) && fromUrl > 0 ? fromUrl : 1
+            pageRef.current = next
             setPageState(next)
         }
         window.addEventListener('popstate', onPop)

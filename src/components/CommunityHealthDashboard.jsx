@@ -12,7 +12,7 @@ import { TabBar } from './ui/TabBar';
 import { Tooltip } from './ui/Tooltip';
 import { CommunityHealthFixModal } from './AI/CommunityHealthFixModal';
 import { AgentRulesModal } from './AI/AgentRulesModal';
-import { formatFileSize } from '../utils/format';
+import { formatFileSize, formatDateTime } from '../utils/format';
 
 /**
  * Map between the file labels surfaced by the community-health analyser and
@@ -126,6 +126,7 @@ const HEALTH_TABS = [
 export function CommunityHealthDashboard({ repo, onClose }) {
     const [health, setHealth] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
     const { toast } = useToast();
     const isDesktop = useIsDesktop();
@@ -170,6 +171,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
     const fetchHealth = async (repoFullName, refresh = false) => {
         try {
             setLoading(true);
+            setLoadError(false);
             const [owner, repoName] = repoFullName.split('/');
             const res = await fetch(
                 `/api/repos/${owner}/${repoName}/community-health${refresh ? '?refresh=true' : ''}`,
@@ -181,6 +183,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
             const data = await res.json();
             setHealth(data);
         } catch {
+            setLoadError(true);
             toast.error('Failed to load community health');
         } finally {
             setLoading(false);
@@ -236,6 +239,15 @@ export function CommunityHealthDashboard({ repo, onClose }) {
             </div>
 
             <div className="space-y-6">
+                    {!loading && !health && loadError ? (
+                        <div role="alert" className="rounded-3xl p-8 text-center border border-slate-200 dark:border-slate-800 bg-white dark:bg-[color:var(--ds-surface-dark)]">
+                            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Couldn't load community health</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">The health check did not complete. Try again in a moment.</p>
+                            <Button variant="secondary" size="sm" className="mt-4" onClick={() => repo?.full_name && fetchHealth(repo.full_name)}>
+                                Retry
+                            </Button>
+                        </div>
+                    ) : null}
                     <AnimatePresence mode="wait">
                         {showContent ? (
                             <motion.div
@@ -380,7 +392,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
 
                                 {/* Last Updated — always visible */}
                                 <div className="text-center text-sm text-slate-400">
-                                    Last analyzed: {new Date(health.lastUpdated).toLocaleString()}
+                                    Last analyzed: {formatDateTime(health.lastUpdated)}
                                     {health.cached && ' (cached)'}
                                 </div>
                             </motion.div>

@@ -518,9 +518,7 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
                 )}
 
                 {commitError && (
-                    <div role="alert" className="px-3 py-2.5 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-sm text-red-600 dark:text-red-400">
-                        {commitError.message || 'Failed to commit. Please retry.'}
-                    </div>
+                    <AIErrorState error={commitError} context="Commit" variant="inline" />
                 )}
 
                 {data.svg && (
@@ -692,7 +690,7 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
             iconGradient="primary"
             size="xl"
             footer={renderFooter()}
-            closeOnBackdrop={!committing}
+            closeOnBackdrop={!committing} disableEscape={committing}
         >
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={TRANSITION.fast}>
                 {stageContent}

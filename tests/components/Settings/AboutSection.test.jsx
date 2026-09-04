@@ -353,11 +353,15 @@ describe('AboutSection — one-click self-update (managed Windows only)', () => 
 });
 
 describe('AboutSection — mock-mode fixture (real backend 401s here, so this must not depend on apiCall)', () => {
-    it('renders the update-available banner from the mock fixture when VITE_MOCK_MODE=true, never calling apiCall', async () => {
+    it('renders "Up to date" from the mock fixture when VITE_MOCK_MODE=true, never calling apiCall', async () => {
+        // The fixture used to announce a fake "v99.0.0 available" — an obvious
+        // placeholder in the one panel an evaluator opens to check the product
+        // is real. The demo now reports the running version as current.
         vi.stubEnv('VITE_MOCK_MODE', 'true');
         try {
             render(<AboutSection />);
-            expect(await screen.findByText(/v99\.0\.0 available/i)).toBeInTheDocument();
+            expect(await screen.findByText(/up to date/i)).toBeInTheDocument();
+            expect(screen.queryByText(/available/i)).not.toBeInTheDocument();
             expect(apiCall).not.toHaveBeenCalled();
         } finally {
             // Restore the file-level default (real-fetch branch) for every other test.

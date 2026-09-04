@@ -22,7 +22,15 @@ import { Button } from '../ui/Button'
 import { AIErrorState } from '../ui/AIErrorState'
 import { AINotConfiguredBanner } from './AINotConfiguredBanner'
 import { AINotHealthyBanner } from './AINotHealthyBanner'
-import { useAIStatus } from '../../hooks/useAIStatus'
+
+// "hasCI" must read "CI", not "C I": split camelCase but keep runs of capitals.
+function humanizeFlag(key) {
+    return key
+        .replace(/^has/, '')
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+        .trim()
+}import { useAIStatus } from '../../hooks/useAIStatus'
 
 // ReadmeEnhanceDiffPanel pulls in @git-diff-view/react + shiki (~1 MB). Only load
 // it when the user actually clicks "Enhance with AI" so the main Insights modal
@@ -482,7 +490,7 @@ function QualityGrid({ data }) {
                                     <AlertCircle className="w-4 h-4 shrink-0" />
                                 )}
                                 <span className="truncate">
-                                    {key.replace('has', '').replace(/([A-Z])/g, ' $1').trim()}
+                                    {humanizeFlag(key)}
                                 </span>
                             </div>
                         ))}

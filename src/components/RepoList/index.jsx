@@ -141,6 +141,9 @@ export function RepoList({
 					onClearFilters={clearAllFilters}
 				/>
 			) : (
+				// Reserve the strip the floating selection bar rests in, the way the
+				// pagination block already does, so it never covers a card.
+				<div className={selectedIds.size > 0 ? 'pb-24' : ''}>
 				<RepoGrid
 					repos={filteredRepos}
 					viewMode={viewMode}
@@ -153,6 +156,7 @@ export function RepoList({
 					onExplainHealth={(repo) => openModalWithData('showRepoInsights', { repo, initialTab: 'quality' })}
 					onRepoClick={onRepoClick}
 				/>
+				</div>
 			)}
 
 			{/* Pagination */}
@@ -163,8 +167,8 @@ export function RepoList({
 					totalPages={totalPages}
 					canGoBack={canGoBack}
 					canGoNext={canGoNext}
-					onPrev={() => setPage(p => p - 1)}
-					onNext={() => setPage(p => p + 1)}
+					onPrev={() => setPage(page - 1)}
+					onNext={() => setPage(page + 1)}
 					loading={loading}
 				/>
 			)}

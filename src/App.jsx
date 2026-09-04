@@ -171,7 +171,7 @@ function AppContent() {
     return () => clearTimeout(t)
   }, [onboarding.shouldShow])
   const { toasts, toast, dismissToast } = useToast()
-  const { modalStates, openModal, openModalWithData, closeModal, getModalData } = useModal()
+  const { modalStates, openModal, openModalWithData, closeModal, closeAllModals, getModalData } = useModal()
   const { selectedIds } = useSelection()
   const { leftMode, rightMode } = useResponsiveLayout()
   // showMigrationHistory is now in ModalContext
@@ -299,6 +299,16 @@ function AppContent() {
     return unsubscribe
   }, [toast])
 
+  // A modal belongs to the view it was opened on. Repo Insights stayed
+  // mounted (and kept body scroll-locked) across hash navigation and browser
+  // Back, so leaving a view closes whatever was open on it.
+  const modalViewRef = useRef(activeView)
+  useEffect(() => {
+    if (modalViewRef.current === activeView) return
+    modalViewRef.current = activeView
+    closeAllModals()
+  }, [activeView, closeAllModals])
+
   // Bidirectional hash <-> activeView routing (deep-links + view->hash sync).
   useAppRouter({
     activeView,
@@ -320,6 +330,7 @@ function AppContent() {
     setSelectedRepoDetail,
     setReviewingPR,
     setQuotaModal,
+    toast,
     setTourOpen,
     setRepoDetailEntities,
     openModalWithData,

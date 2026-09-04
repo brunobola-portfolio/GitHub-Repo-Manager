@@ -19,9 +19,11 @@
 export function getMockUpdateCheck() {
   return {
     current: import.meta.env.VITE_APP_VERSION || '0.0.0',
-    latest: '99.0.0',
-    updateAvailable: true,
-    releaseUrl: 'https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/tag/v99.0.0',
+    // Up to date: a fake "v99.0.0 available" banner read as a placeholder in
+    // the one panel an evaluator opens to check the product is real.
+    latest: import.meta.env.VITE_APP_VERSION || '0.0.0',
+    updateAvailable: false,
+    releaseUrl: null,
     disabled: false,
     canSelfUpdate: false,
   }

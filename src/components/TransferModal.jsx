@@ -153,7 +153,7 @@ export function TransferModal({
 			size="xl"
 			staggerChildren={!isPerforming}
 			mobileVariant="sheet"
-			closeOnBackdrop={!isPerforming}
+			closeOnBackdrop={!isPerforming} disableEscape={isPerforming}
 			footer={
 				<ModalFooter align="between">
 					<span className="text-sm text-slate-500 dark:text-slate-400">
