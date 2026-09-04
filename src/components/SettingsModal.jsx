@@ -1,8 +1,8 @@
-import { useState, useEffect, lazy, Suspense } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { Moon, Sun, Monitor, Zap, Trash2, GitBranch, Key, Shield, BadgeCheck, Sparkles, Kanban, Wand2, Palette, Cloud, ShieldCheck, Wrench, Info } from 'lucide-react'
 import { useTheme } from '../hooks/useTheme'
 import { useToast } from '../hooks/useToast'
-import { API_BASE_URL } from '../config'
+import { API_BASE } from '../config'
 // Settings tabs lazy-loaded — opening Settings most often means "General" or
 // "API Keys"; the rest (AI Config, Audit Log, License, Work Board) are each
 // hefty enough to split into their own chunks.
@@ -82,11 +82,18 @@ export function SettingsModal({ isOpen, onClose, initialTab, isAdmin = false }) 
     const [clearing, setClearing] = useState(false)
     const [cacheMessage, setCacheMessage] = useState(null)
 
-    // Reset tab when modal opens — honour initialTab if provided
-    useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot tab reset on open, not a cascading render concern
+    // Reset tab when modal opens — honour initialTab if provided. Computed
+    // during render (comparing against what this render has already
+    // accounted for) instead of a follow-up effect, so opening the modal
+    // doesn't flash whatever tab was active from the previous session before
+    // correcting to `initialTab` on the next paint.
+    const [committedIsOpen, setCommittedIsOpen] = useState(isOpen)
+    const [committedInitialTab, setCommittedInitialTab] = useState(initialTab)
+    if (isOpen !== committedIsOpen || initialTab !== committedInitialTab) {
+        setCommittedIsOpen(isOpen)
+        setCommittedInitialTab(initialTab)
         if (isOpen) setActiveTab(initialTab ?? 'general')
-    }, [isOpen, initialTab])
+    }
 
     const handleSave = () => {
         localStorage.setItem('cache-settings', JSON.stringify(cacheSettings))
@@ -101,7 +108,7 @@ export function SettingsModal({ isOpen, onClose, initialTab, isAdmin = false }) 
         try {
             const headers = {}
             try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
-            const response = await fetch(`${API_BASE_URL}/api/stats/clear-cache`, {
+            const response = await fetch(`${API_BASE}/stats/clear-cache`, {
                 method: 'POST',
                 credentials: 'include',
                 headers,

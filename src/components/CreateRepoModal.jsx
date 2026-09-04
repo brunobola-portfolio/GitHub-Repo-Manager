@@ -11,7 +11,8 @@ import { useDebounce } from '../hooks/useDebounce'
 import { isAbort } from '../utils/errorClassification'
 import { Plus, Sparkles, CheckCircle2, XCircle, Lock, Globe } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
-import { getCsrfToken } from '../utils/api'
+import { apiCall } from '../utils/api'
+import { API_BASE } from '../config'
 
 export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming, askAI }) {
     const [name, setName] = useState('')
@@ -41,30 +42,22 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
         const controller = new AbortController()
         ;(async () => {
             try {
-                const headers = { 'Content-Type': 'application/json' }
-                try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
-                if (controller.signal.aborted) return
-                const res = await fetch('/api/import/check-duplicates', {
+                // maxRetries: 0 — debounced on every keystroke; a retryable 5xx
+                // should fall back to null fast rather than stall behind a backoff.
+                const data = await apiCall(`${API_BASE}/import/check-duplicates`, {
                     method: 'POST',
-                    credentials: 'include',
-                    headers,
+                    headers: { 'Content-Type': 'application/json' },
                     // The route's schema is `{ repos, targetOwner }` and is
                     // .strict() — `{ names, org }` 400'd on every keystroke.
                     body: JSON.stringify({ repos: [debouncedName], targetOwner: targetOrg || undefined }),
                     signal: controller.signal,
-                })
+                }, { maxRetries: 0 })
                 if (controller.signal.aborted) return
-                if (res.ok) {
-                    const data = await res.json()
-                    if (controller.signal.aborted) return
-                    // `duplicates` is an OBJECT keyed by repo name, not an
-                    // array — reading `.length` yielded undefined, so the
-                    // indicator said "available" no matter what came back.
-                    const duplicates = data.duplicates || {}
-                    setNameStatus(duplicates[debouncedName] ? 'taken' : 'available')
-                } else {
-                    setNameStatus(null)
-                }
+                // `duplicates` is an OBJECT keyed by repo name, not an
+                // array — reading `.length` yielded undefined, so the
+                // indicator said "available" no matter what came back.
+                const duplicates = data.duplicates || {}
+                setNameStatus(duplicates[debouncedName] ? 'taken' : 'available')
             } catch (err) {
                 if (isAbort(err, controller.signal)) return
                 setNameStatus(null)

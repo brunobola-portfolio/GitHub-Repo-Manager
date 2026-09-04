@@ -1,9 +1,28 @@
 import { useMemo } from 'react'
-import { getCsrfToken } from '../utils/api'
+import { fetchWithRetry } from '../utils/api'
+import { API_BASE } from '../config'
 
-const API_BASE = '/api/repos'
+// This hook's own request base — `/api/repos` under the app's configured
+// API_BASE — distinct in MEANING from utils/api's `apiCall`/`fetchWithRetry`,
+// which take a full path. Named `REPOS_BASE` (not `API_BASE`) so it no longer
+// shadows the config export of the same name with a different meaning.
+const REPOS_BASE = `${API_BASE}/repos`
 
-const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+// Re-shape fetchWithRetry's ApiError into the plain Error{status,code} this
+// hook's 60+ call sites have always expected, so none of them need to change
+// to gain CSRF header injection, the 403 csrf_invalid rotation-retry, and
+// retry-on-5xx that fetchWithRetry adds over the raw `fetch` this used to do.
+function unwrapApiError(err) {
+    if (err?.name !== 'ApiError') return err
+    const wrapped = new Error(err.data?.error || err.message || `API error: ${err.status}`)
+    wrapped.status = err.status
+    // Forward the optional structured code so callers can branch on a
+    // stable identifier (e.g. 'GITHUB_PRO_REQUIRED') instead of regex-
+    // matching the human message — which gets sanitised in production.
+    const code = err.data?.code ?? err.code
+    if (code) wrapped.code = code
+    return wrapped
+}
 
 async function apiFetch(url, options = {}) {
     const method = (options.method || 'GET').toUpperCase()
@@ -18,23 +37,11 @@ async function apiFetch(url, options = {}) {
         'Content-Type': 'application/json',
         ...options.headers
     }
-    if (MUTATION_METHODS.has(method) && !headers['X-CSRF-Token']) {
-        try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* fall through; server will 403 */ }
-    }
-    const res = await fetch(url, {
-        credentials: 'include',
-        ...options,
-        headers,
-    })
-    if (!res.ok) {
-        const body = await res.json().catch(() => null)
-        const err = new Error(body?.error || `API error: ${res.status}`)
-        err.status = res.status
-        // Forward the optional structured code so callers can branch on a
-        // stable identifier (e.g. 'GITHUB_PRO_REQUIRED') instead of regex-
-        // matching the human message — which gets sanitised in production.
-        if (body?.code) err.code = body.code
-        throw err
+    let res
+    try {
+        res = await fetchWithRetry(url, { ...options, headers })
+    } catch (err) {
+        throw unwrapApiError(err)
     }
     return res.json()
 }
@@ -47,7 +54,7 @@ export function useRepoDetail(owner, repo) {
     // re-firing forever and flooding the network. Identity now changes only
     // when owner/repo change, which is the actual contract.
     return useMemo(() => {
-        const base = `${API_BASE}/${owner}/${repo}`
+        const base = `${REPOS_BASE}/${owner}/${repo}`
 
         return {
             // Repo
@@ -109,11 +116,11 @@ export function useRepoDetail(owner, repo) {
                 if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
                     return `diff --git a/src/example.jsx b/src/example.jsx\nindex abc123..def456 100644\n--- a/src/example.jsx\n+++ b/src/example.jsx\n@@ -1,5 +1,8 @@\n import React from 'react'\n+import { clsx } from 'clsx'\n \n-export function Example() {\n-  return <div>old</div>\n+export function Example({ className }) {\n+  return <div className={clsx('example', className)}>new</div>\n }`
                 }
-                const r = await fetch(`${base}/pulls/${number}/diff`, { credentials: 'include' })
-                if (!r.ok) {
-                    const err = new Error(`API error: ${r.status}`)
-                    err.status = r.status
-                    throw err
+                let r
+                try {
+                    r = await fetchWithRetry(`${base}/pulls/${number}/diff`, {})
+                } catch (err) {
+                    throw unwrapApiError(err)
                 }
                 return r.text()
             },

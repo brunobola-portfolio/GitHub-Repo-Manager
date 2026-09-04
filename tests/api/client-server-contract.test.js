@@ -18,8 +18,18 @@ import {
 } from '../../server/lib/validators.js'
 
 
-vi.mock('@/config', () => ({ MOCK_MODE: false, API_BASE_URL: '' }))
-vi.mock('@/utils/api', () => ({ getCsrfToken: vi.fn(async () => 'csrf') }))
+vi.mock('@/config', async (importOriginal) => ({
+    ...(await importOriginal()),
+    MOCK_MODE: false,
+    API_BASE_URL: '',
+}))
+// fetchWithRetry (real, so createBranch actually calls captureBody's fetch
+// mock) alongside a stubbed getCsrfToken — no need for the mock's own fetch
+// stand-in to also answer the CSRF-token probe.
+vi.mock('@/utils/api', async (importOriginal) => ({
+    ...(await importOriginal()),
+    getCsrfToken: vi.fn(async () => 'csrf'),
+}))
 
 const { useRepoDetail } = await import('@/hooks/useRepoDetail')
 
