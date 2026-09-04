@@ -18,6 +18,7 @@ dist/bundle-analysis.html
 # Separate dirs so the gates cannot clobber each other in parallel workers.
 dist-honesty-check/
 dist-budget-check/
+dist-precompress-check/
 coverage
 *.local
 .augment/

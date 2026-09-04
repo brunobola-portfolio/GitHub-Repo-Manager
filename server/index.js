@@ -60,6 +60,7 @@ import { createSessionTokenLookup } from './lib/session-token-lookup.js';
 import { registerShutdown, requestShutdown } from './lib/shutdown.js';
 import { isManaged, initManagedRuntime, clearManagedRuntime } from './lib/managed-runtime.js';
 import { getDataDir } from './lib/data-dir.js';
+import { servePrecompressedAssets } from './lib/static-precompressed.js';
 import { resolveIntentOnBoot } from './lib/updater.js';
 
 // API v1 route aggregator
@@ -178,6 +179,12 @@ app.use((req, res, next) => {
 // chunks flush to the client immediately instead of being buffered by the
 // gzip transform (compression's default filter already excludes
 // text/event-stream, but we assert it explicitly for clarity + safety).
+// No extra filter is needed to skip already-precompressed /assets responses
+// (see server/lib/static-precompressed.js below): compression's own
+// onHeaders hook already declines to re-encode a response whose
+// Content-Encoding header is already set to something other than 'identity'
+// (node_modules/compression/index.js, the "already encoded" branch) — this
+// module never sees those bytes to begin with.
 app.use(compression({
     filter: (req, res) => {
         if (res.getHeader('Content-Type') === 'text/event-stream') return false;
@@ -437,6 +444,17 @@ app.use('/api', (_req, res) => {
 if (config.nodeEnv === 'production') {
     const distPath = path.join(__dirname, '..', 'dist');
     if (fs.existsSync(distPath)) {
+        // Serves prebuilt .br/.gz siblings (scripts/precompress-assets.mjs, run
+        // as `postbuild`) at brotli quality 11 / gzip level 9 — far better
+        // ratios than the `compression` middleware's per-request quality 4
+        // default, and free of its per-request CPU cost, because these
+        // content-hashed files never change (see PERF-04,
+        // .dev/panel-2026-09-04/performance.md). Scoped to /assets only and
+        // mounted before express.static below: on a miss (no sibling, or the
+        // client doesn't send a matching Accept-Encoding) it calls next() and
+        // express.static handles the request exactly as it did before this.
+        app.use('/assets', servePrecompressedAssets(path.join(distPath, 'assets')));
+
         // Vite content-hashes filenames under /assets (e.g. index-a1b2c3.js), so
         // those are safe to cache forever (immutable). Everything else — most
         // importantly index.html, whose asset references change every deploy —

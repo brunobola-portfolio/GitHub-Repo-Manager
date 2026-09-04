@@ -34,6 +34,7 @@
     "dev:all:debug": "node scripts/dev.mjs --debug",
     "dev:kill": "node scripts/kill-dev-ports.js",
     "build": "vite build",
+    "postbuild": "node scripts/precompress-assets.mjs",
     "build:analyze": "cross-env ANALYZE=true vite build",
     "lint": "eslint . --max-warnings 0",
     "guards": "node scripts/check-debug-statements.mjs --all && node scripts/check-no-static-mock-imports.mjs --all && node scripts/check-no-raw-z-index.mjs --all",
