@@ -60,7 +60,12 @@ describe('useRepos.loadAllPages', () => {
 
     it('a later paged fetch turns allPagesLoaded back off', async () => {
         fetchWithRetry.mockResolvedValue(page([{ id: 1, name: 'a' }], 1))
-        const { result } = renderHook(() => useRepos(null))
+        // A signed-in user: refresh() only fetches when there is one. Stable
+        // identity, as App holds it in state — a fresh object per render would
+        // retrigger the mount fetch forever.
+        const user = { login: 'dev-user' }
+        const { result } = renderHook(() => useRepos(user))
+        await act(async () => {})
         await act(async () => { await result.current.loadAllPages() })
         expect(result.current.allPagesLoaded).toBe(true)
 

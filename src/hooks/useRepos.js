@@ -81,7 +81,15 @@ export function useRepos(user) {
     const [totalPages, setTotalPages] = useState(null)
     // True once loadAllPages() has replaced the paged slice with the whole
     // account; a paged fetch (page change, refresh) turns it back off.
-    const [allPagesLoaded, setAllPagesLoaded] = useState(false)
+    const [allPagesLoaded, setAllPagesLoadedState] = useState(false)
+    // Mirrored in a ref so the page/perPage effect below can skip the paged
+    // refetch that loadAllPages' own setPage/setPerPage would otherwise
+    // trigger — a refetch that replaced the whole account with page one again.
+    const allPagesLoadedRef = useRef(false)
+    const setAllPagesLoaded = useCallback((value) => {
+        allPagesLoadedRef.current = value
+        setAllPagesLoadedState(value)
+    }, [])
     const [isPerforming, setIsPerforming] = useState(false)
     const [results, setResults] = useState([])
 
@@ -130,7 +138,7 @@ export function useRepos(user) {
         } finally {
             setLoading(false)
         }
-    }, [setPage])
+    }, [setPage, setAllPagesLoaded])
 
     /**
      * Load every page of the account into one list so a text search can see
@@ -143,11 +151,11 @@ export function useRepos(user) {
         if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             const { generateMockRepos } = await import('../__mocks__/mockRepos.js')
             const { repos: all } = generateMockRepos(1, 1000)
+            setAllPagesLoaded(true)
             setRepos(all)
             setTotalPages(1)
             setPerPage(all.length)
             setPage(1)
-            setAllPagesLoaded(true)
             return
         }
         const MAX_ALL_PAGES = 20
@@ -170,11 +178,12 @@ export function useRepos(user) {
                     pages = parsedTotal || (slice.length === 100 ? p + 1 : p)
                 }
             }
+            // Flag first: the setPage/setPerPage below re-run the paged effect.
+            setAllPagesLoaded(true)
             setRepos(all)
             setTotalPages(1)
             setPerPage(all.length || 100)
             setPage(1)
-            setAllPagesLoaded(true)
             setMessage('')
         } catch (e) {
             if (isAbort(e)) return
@@ -185,12 +194,15 @@ export function useRepos(user) {
         } finally {
             setLoading(false)
         }
-    }, [setPage])
+    }, [setPage, setAllPagesLoaded])
 
     // Fetch repos when page or perPage changes.
     // When unauthenticated, avoid calling the repos API and instead
     // clear the current list so the UI can show an auth empty state.
     useEffect(() => {
+        // The whole account is already on screen; the only page/perPage
+        // change that can arrive here is the one loadAllPages made itself.
+        if (allPagesLoadedRef.current) return undefined
         if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             let cancelled = false
             ;(async () => {
@@ -381,7 +393,7 @@ export function useRepos(user) {
         }
 
         fetchRepos(page, perPage)
-    }, [page, perPage, user, fetchRepos])
+    }, [page, perPage, user, fetchRepos, setAllPagesLoaded])
 
     /**
      * Archive/unarchive repositories
