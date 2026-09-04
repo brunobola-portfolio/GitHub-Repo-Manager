@@ -103,9 +103,12 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      // Proxy API requests to the Express backend
+      // Proxy API requests to the Express backend. PORT is the same variable
+      // the backend and scripts/dev.mjs read, so a backend moved off :3001
+      // (Windows reserves 2906-3005 for Hyper-V on some machines) is still
+      // reachable without editing this file.
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'http://localhost:' + (Number(process.env.PORT) || 3001),
         changeOrigin: true,
         secure: false
       }
