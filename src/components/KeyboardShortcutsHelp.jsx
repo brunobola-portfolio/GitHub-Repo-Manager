@@ -34,7 +34,7 @@ export function KeyboardShortcutsHelp({ isOpen, onClose, shortcuts }) {
             </div>
 
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-4 text-center">
-                Press <kbd className="px-1 bg-slate-100 dark:bg-slate-800 rounded text-xs font-mono">Esc</kbd> to close
+                Press <kbd className="px-1 bg-slate-100 dark:bg-slate-800 rounded text-xs font-mono text-slate-600 dark:text-slate-300">Esc</kbd> to close
             </p>
         </Modal>
     )
@@ -49,7 +49,7 @@ function ShortcutGroup({ title, items }) {
                 {items.map(s => (
                     <div key={s.key} className="flex items-center justify-between">
                         <span className="text-sm text-slate-700 dark:text-slate-300">{s.description}</span>
-                        <kbd className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs font-mono text-slate-600 dark:text-slate-400 min-w-[24px] text-center">
+                        <kbd className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs font-mono text-slate-600 dark:text-slate-300 min-w-[24px] text-center">
                             {s.key}
                         </kbd>
                     </div>

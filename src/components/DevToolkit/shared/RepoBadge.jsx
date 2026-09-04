@@ -38,7 +38,7 @@ export function RepoBadge({ repos = [], selectedRepo, isPinned, onSelectRepo, on
                     {selectedRepo ? (
                         <span className="truncate max-w-[280px]">{selectedRepo.full_name}</span>
                     ) : (
-                        <span className="text-slate-500 dark:text-slate-400">Select repo...</span>
+                        <span className="text-slate-600 dark:text-slate-300">Select repository…</span>
                     )}
                     <ChevronDown className="w-3.5 h-3.5 shrink-0" />
                 </button>

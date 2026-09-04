@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Plus, X, Download, Wand2, FolderPlus, Search, Sparkles } from 'lucide-react'
 import { TAP, EASE, SPRING } from './ui/motion'
 
@@ -22,6 +22,7 @@ const ITEMS = [
 
 export function MobileQuickActionsFab(props) {
     const [open, setOpen] = useState(false)
+    const reducedMotion = useReducedMotion()
 
     useEffect(() => {
         if (!open) return
@@ -78,6 +79,7 @@ export function MobileQuickActionsFab(props) {
                             return (
                                 <motion.li
                                     key={item.id}
+                                    role="none"
                                     variants={{
                                         hidden: { opacity: 0, y: 12, scale: 0.9 },
                                         visible: { opacity: 1, y: 0, scale: 1 },
@@ -109,8 +111,10 @@ export function MobileQuickActionsFab(props) {
                         <motion.span
                             aria-hidden="true"
                             className="absolute inset-0 rounded-full bg-brand-500/40 dark:bg-brand-400/30 blur-2xl pointer-events-none transition-opacity duration-[var(--ds-duration)] group-hover:opacity-0 group-focus-within:opacity-0"
-                            animate={{ scale: [1, 1.18, 1], opacity: [0.55, 0.85, 0.55] }}
-                            transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
+                            // JS-driven, so the CSS prefers-reduced-motion clamp in
+                            // design-system.css cannot stop it; a static halo instead.
+                            animate={reducedMotion ? { scale: 1, opacity: 0.55 } : { scale: [1, 1.18, 1], opacity: [0.55, 0.85, 0.55] }}
+                            transition={reducedMotion ? { duration: 0 } : { duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
                         />
                     )}
 

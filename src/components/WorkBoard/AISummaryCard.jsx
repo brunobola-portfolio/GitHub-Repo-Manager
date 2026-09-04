@@ -118,8 +118,7 @@ export function AISummaryCard({ meta: metaProp } = {}) {
                         type="button"
                         onClick={() => setDismissed(true)}
                         aria-label="Dismiss"
-                        title="Dismiss"
-                        className="ml-auto p-1 rounded-lg hover:bg-amber-100/60 dark:hover:bg-amber-900/30 text-slate-500 dark:text-slate-400 transition"
+                        className="ml-auto p-2.5 -m-1.5 rounded-lg hover:bg-amber-100/60 dark:hover:bg-amber-900/30 text-slate-500 dark:text-slate-400 transition ds-focus-ring"
                     >
                         <X className="w-3.5 h-3.5" />
                     </button>

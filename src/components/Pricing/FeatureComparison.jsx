@@ -309,15 +309,17 @@ export function FeatureComparison() {
           className="overflow-y-auto max-h-[560px]"
         >
         <table className="w-full min-w-[600px] border-collapse">
+          <caption className="sr-only">Feature comparison by plan: Free, Pro and Enterprise</caption>
           {/* Sticky header */}
           <thead className={`transition-shadow${elevated ? ' shadow-[0_1px_4px_0_rgba(0,0,0,0.08)]' : ''}`}>
             <tr className="border-b border-slate-200/60 dark:border-white/[0.08]">
-              <th className="sticky top-0 left-0 z-20 w-1/2 px-6 py-5 text-left text-sm font-semibold text-slate-500 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
+              <th scope="col" className="sticky top-0 left-0 z-20 w-1/2 px-6 py-5 text-left text-sm font-semibold text-slate-500 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
                 Feature
               </th>
               {TIERS.map((tier, i) => (
                 <th
                   key={tier}
+                  scope="col"
                   className={`sticky top-0 z-10 w-1/6 px-4 py-5 text-center text-sm font-bold backdrop-blur-md
                     ${i === 1
                       ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] bg-brand-50/80 dark:bg-brand-500/[0.08]'
@@ -360,9 +362,9 @@ export function FeatureComparison() {
                       className={`group transition-colors duration-150 hover:bg-slate-50/60 dark:hover:bg-white/[0.03]
                         ${!isLast ? 'border-b border-slate-100/70 dark:border-white/[0.04]' : ''}`}
                     >
-                      <td className="px-6 py-3.5 text-sm text-slate-600 dark:text-slate-300">
+                      <th scope="row" className="px-6 py-3.5 text-sm font-normal text-left text-slate-600 dark:text-slate-300">
                         {row.feature}
-                      </td>
+                      </th>
                       {row.values.map((val, colIdx) => (
                         <td
                           key={colIdx}

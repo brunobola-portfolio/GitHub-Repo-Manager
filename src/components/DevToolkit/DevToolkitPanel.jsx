@@ -192,7 +192,7 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
                                 </div>
                                 <div className="flex items-center gap-2">
                                     {toolkit.autoDraftEnabled && (
-                                        <span className="px-2 py-0.5 ds-text-micro font-medium uppercase tracking-wider rounded-full bg-white/20 text-white">
+                                        <span className="px-2 py-0.5 ds-text-micro font-semibold uppercase tracking-wider rounded-full bg-white text-[color:var(--ds-accent-brand)]">
                                             auto-draft
                                         </span>
                                     )}

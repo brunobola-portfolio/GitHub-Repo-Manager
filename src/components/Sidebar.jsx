@@ -236,7 +236,7 @@ function ActionButton({ icon: IconComp, label, subLabel, onClick, disabled, vari
             <IconComp className="w-3.5 h-3.5" />
             <div className="flex flex-col items-start leading-none">
                 <span>{label}</span>
-                {subLabel && <span className="text-[9px] opacity-70 font-normal mt-0.5">{subLabel}</span>}
+                {subLabel && <span className="ds-text-meta font-normal mt-0.5">{subLabel}</span>}
             </div>
         </button>
     )
