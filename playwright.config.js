@@ -80,6 +80,16 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] }
     },
+    // Runs only the a11y smoke spec at a fixed 375×667 viewport (panel
+    // 2026-09-04 gap #2). Scoped via testMatch so it doesn't double the
+    // runtime of every other e2e spec — an explicit viewport rather than a
+    // device preset because the gate needs the exact width the audit used,
+    // not an arbitrary phone's DPR/UA metadata.
+    {
+      name: 'mobile-a11y',
+      testMatch: '**/a11y-smoke.spec.js',
+      use: { ...devices['Desktop Chrome'], viewport: { width: 375, height: 667 } }
+    },
     ...(process.env.E2E_MOBILE
       ? [{ name: 'mobile', use: { ...devices['iPhone 13'] } }]
       : [])
