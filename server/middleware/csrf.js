@@ -16,13 +16,13 @@
  *      crypto.timingSafeEqual.
  *
  * Bypass list:
- *   - /api/auth/*         — OAuth flow can't include a CSRF token before login
- *   - /api/v1/auth/*      — same, under the versioned mount
  *   - /api/webhooks/*     — signature-verified (GitHub, Stripe) webhooks
  *   - /api/v1/webhooks/*  — same, under the versioned mount
  *   - /api/system/shutdown, /api/v1/system/shutdown
  *                         — managed-mode graceful stop, authenticated by
  *                           loopback + secret token file (routes/system.js)
+ *   - a short, exact allowlist of /api/auth/* mutations (see
+ *     AUTH_BYPASS_EXACT below) — NOT the whole /api/auth/* subtree (B-19).
  *
  * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
  */
@@ -36,10 +36,17 @@ const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
  * req.path (which is relative to the mount point when mounted via
  * app.use(), but absolute when applied globally — we check the raw URL
  * via req.originalUrl to stay consistent across both styles).
+ *
+ * /api/auth/* and /api/v1/auth/* used to be blanket-exempted here (B-19):
+ * the whole subtree bypassed CSRF, when the only genuine requirement is the
+ * OAuth redirect, which is a GET the MUTATION_METHODS check below already
+ * lets through for free. That blanket exemption silently covered every
+ * mutation under /api/auth/*, including ones added later with no CSRF
+ * consideration (POST /setup-oauth ended up here despite already enforcing
+ * its own check — see auth-setup.js). The auth subtree's mutations are now
+ * an explicit, justified allowlist in AUTH_BYPASS_EXACT below instead.
  */
 const BYPASS_PREFIXES = [
-    '/api/auth/',
-    '/api/v1/auth/',
     '/api/webhooks/',
     '/api/v1/webhooks/',
 ];
@@ -57,6 +64,47 @@ const BYPASS_EXACT = [
 ];
 
 /**
+ * The narrowed /api/auth/* mutation allowlist (B-19). Each entry is a
+ * conscious decision, not "the whole subtree is close enough":
+ *
+ *   - /login, /callback   — the actual OAuth entry/redirect. Both are GET,
+ *     so MUTATION_METHODS already exempts them; listed anyway so the OAuth
+ *     flow stays self-documenting here rather than only "working by
+ *     accident" via the method check.
+ *   - /mock                — src/App.jsx's checkAuth() posts here with a
+ *     plain `fetch(..., { method: 'POST' })`, no X-CSRF-Token — there is no
+ *     session yet to have primed one, mirroring the OAuth callback's
+ *     position. Also self-defended by ALLOW_MOCK_AUTH/NODE_ENV (auth.js).
+ *   - /logout               — src/components/OrgPanel.jsx signs out with a
+ *     plain fetch, no CSRF header. A forged cross-site logout is a low-value
+ *     nuisance (session teardown, not a state change an attacker benefits
+ *     from), which is why this stayed acceptable to exempt rather than a
+ *     reason to fix the client in this pass.
+ *   - /refresh-session      — src/hooks/useSessionExpiry.js posts here with a
+ *     plain fetch, no CSRF header, to keep the ROLLING cookie alive past a
+ *     warning threshold. A forged refresh only extends the victim's own
+ *     session; it grants an attacker nothing.
+ *
+ * POST /setup-oauth is deliberately NOT here any more: src/api/authSetup.js
+ * calls it through apiCall(), which fetches /api/auth/csrf-token and injects
+ * X-CSRF-Token first — it already sends a valid token, and the route already
+ * runs its own csrfHeaderMatchesSession() check (see auth-setup.js), so
+ * exempting it here bought nothing but an unjustified wider surface.
+ *
+ * /mock, /logout and /refresh-session are load-bearing exemptions until
+ * their client call-sites are updated to send a CSRF token — that is a
+ * frontend change outside this pass; narrowing the exemption further here
+ * without it would 403 real logout/refresh/mock-login traffic.
+ */
+const AUTH_BYPASS_EXACT = [
+    '/api/auth/login', '/api/v1/auth/login',
+    '/api/auth/callback', '/api/v1/auth/callback',
+    '/api/auth/mock', '/api/v1/auth/mock',
+    '/api/auth/logout', '/api/v1/auth/logout',
+    '/api/auth/refresh-session', '/api/v1/auth/refresh-session',
+];
+
+/**
  * Returns true when the request path should bypass CSRF enforcement.
  * Exported for unit testing and for any upstream middleware that wants
  * to short-circuit CSRF-related work before hitting the enforcement gate.
@@ -71,6 +119,7 @@ export function isCsrfBypassed(url) {
     return (
         BYPASS_PREFIXES.some((prefix) => path.startsWith(prefix))
         || BYPASS_EXACT.includes(path)
+        || AUTH_BYPASS_EXACT.includes(path)
     );
 }
 

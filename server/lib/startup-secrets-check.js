@@ -7,6 +7,16 @@
  * returned, abort with process.exit(1).
  *
  * No runtime dependencies beyond Node built-ins.
+ *
+ * Deliberately reads process.env directly rather than server/config.js: this
+ * runs as an independent, redundant secrets audit (it returns descriptive
+ * errors/warnings for the caller to log, distinct from config.js's
+ * fail-fast process.exit on a malformed value) and its own test suite
+ * (startup-secrets-check.test.js) exercises it by mutating process.env
+ * per-case with no module reset. config.js still validates ALLOW_MOCK_AUTH
+ * and DISABLE_HTTPS_ENFORCEMENT at boot (B-12); this file's checks are a
+ * second, environment-aware pass (e.g. ALLOW_MOCK_AUTH is only an error in
+ * production).
  */
 
 /**

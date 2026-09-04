@@ -114,6 +114,11 @@ function maybeKickLicenseRefresh() {
  */
 function instanceLicenceApplies(userId) {
   if (!userId) return false
+  // Read live, not config.deploymentMode: saas-tier-isolation.test.js and
+  // webhook-ingest-token.test.js toggle this per-case with no module reset.
+  // config.js still validates it's 'self-host'|'saas' at boot (B-12) — a
+  // typo'd DEPLOYMENT_MODE now fails fast instead of silently falling
+  // through the `|| 'self-host'` default below.
   return (process.env.DEPLOYMENT_MODE || 'self-host') !== 'saas'
 }
 

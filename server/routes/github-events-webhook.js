@@ -59,6 +59,9 @@ export async function githubEventsWebhookHandler(req, res) {
             tokenUserId = tokenRow.user_id;
             db.prepare('UPDATE webhook_ingest_tokens SET last_used_at = CURRENT_TIMESTAMP WHERE id = ?').run(tokenId);
         } else {
+            // Live read — see the matching comment in
+            // server/middleware/require-tier.js (B-12); this file's own
+            // webhook-ingest-token.test.js toggles DEPLOYMENT_MODE per-case.
             if ((process.env.DEPLOYMENT_MODE || 'self-host') === 'saas') {
                 return errorResponse(res, 410,
                     'The shared webhook endpoint is disabled on this deployment. Generate your personal webhook URL in the Work Board.');

@@ -91,6 +91,25 @@ self-host, control where the app binds and where it persists state:
 | `GRM_DISABLE_WEB_SETUP` | unset (`false`) | Set to `true` to turn off the in-app first-run GitHub OAuth setup (`POST /api/auth/setup-oauth`) entirely. The endpoint is already restricted to loopback clients while OAuth is unconfigured; this is the belt-and-suspenders off switch for operators who want `.env` to be the only configuration channel. |
 | `UPDATE_CHECK` | unset (enabled) | Notify-only "new version available" signal for Settings → About. Set to `false` to disable the outbound `GET /api/v1/system/update-check` call entirely — the endpoint then just echoes the current version. |
 
+### Additional operator flags
+
+Validated by [`server/config.js`](../server/config.js)'s zod schema at boot —
+an invalid value (e.g. `WORK_BOARD_AI_ENABLED=True` instead of `true`) now
+fails startup instead of silently taking the wrong default.
+
+| Var | Default | Meaning |
+| --- | ------- | ------- |
+| `ALLOW_MOCK_AUTH` | unset (`false`) | Enables `POST /api/auth/mock`, which mints a fully authenticated session with no credentials. Always available in development; this is the explicit opt-in elsewhere. The [startup secrets check](#health-probes-live-vs-ready) hard-fails production boot if this is `true`. |
+| `WORK_BOARD_AI_ENABLED` | unset (`false`) | Turns on the Work Board AI Assistant endpoints (`/api/v1/work-board/ai/*`). Off by default; also gated per-user by an opt-in preference and a monthly cost cap. |
+| `DEPLOYMENT_MODE` | `self-host` | `self-host`: an instance `LICENSE_KEY` grants its tier to every user of this deployment. `saas`: multi-tenant — the instance licence grants nothing and Stripe is the only source of a paid tier. Also gates the shared webhook endpoint (`saas` requires each tenant's personal webhook URL instead). |
+| `ALLOW_LOCAL_AI_ENDPOINTS` | unset (`false`) | Opt-in for a BYOK `local` provider (LMStudio/Ollama) to point at a loopback or private address. Off by default as an SSRF guard. |
+| `DISABLE_HTTPS_ENFORCEMENT` | unset (`false`) | Escape hatch to skip HTTPS-only enforcement. The startup secrets check logs a loud warning if this is `true` in production — never set it there. |
+| `CREDENTIAL_ENCRYPTION_KEY_PREVIOUS` | unset | Old key during a `CREDENTIAL_ENCRYPTION_KEY` rotation — see the comment above. Drop once all stored credentials have been re-saved. |
+| `WORK_BOARD_SNAPSHOT_RETENTION_DAYS` | `90` | How many days of Work Board KPI snapshots the daily sweeper keeps (backs the 7-day sparklines and delta badges). |
+| `EMAIL_RETRY_BASE_DELAY_MS` | `1000` | Base delay for exponential backoff on failed outbound email sends before a message lands in the dead-letter queue. |
+| `SQLITE_VERBOSE` | unset (`false`) | Logs every SQLite statement at debug level, including bound parameters. Debugging only — never on a production instance. |
+| `ENV_TOOLING_INSTALL_ENABLED` | unset (`true`) | Set to `false` to disable the admin-gated `POST /api/env/tooling/:id/install` endpoint, which runs installer commands on the host. Recommended on shared/hosted deployments. |
+
 ---
 
 ## Reverse proxy & TLS

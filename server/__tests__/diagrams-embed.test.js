@@ -365,7 +365,7 @@ describe('embed-commit path hardening', () => {
                 svg: { path: 'docs/evil/../../secrets.svg', content: '<svg xmlns="http://www.w3.org/2000/svg"></svg>', commitMessage: 'x' },
             })
         expect(res.status).toBe(400)
-        expect(res.body.code).toBe('validation_failed')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 
     it('rejects a readme.path that is not a README file or traverses', async () => {
@@ -379,7 +379,7 @@ describe('embed-commit path hardening', () => {
                     readme: { path, content: '# x', commitMessage: 'x' },
                 })
             expect(res.status).toBe(400)
-            expect(res.body.code).toBe('validation_failed')
+            expect(res.body.code).toBe('VALIDATION_ERROR')
         }
     })
 })

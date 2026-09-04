@@ -44,7 +44,7 @@ describe('GET /api/v1/search/github', () => {
         const app = makeApp()
         const res = await request(app).get('/api/v1/search/github')
         expect(res.status).toBe(400)
-        expect(res.body.code).toBe('validation_failed')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 
     it('rejects q longer than 256 chars', async () => {

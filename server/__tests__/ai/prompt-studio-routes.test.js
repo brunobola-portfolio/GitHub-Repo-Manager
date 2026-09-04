@@ -284,7 +284,7 @@ describe('POST /api/ai/prompt-studio/presets', () => {
             .post('/api/ai/prompt-studio/presets')
             .send({ scope: 'user' });
         expect(res.status).toBe(400);
-        expect(res.body.code).toBe('validation_failed');
+        expect(res.body.code).toBe('VALIDATION_ERROR');
     });
 
     it('rejects scope=repo without scopeTarget → 400', async () => {
@@ -292,7 +292,7 @@ describe('POST /api/ai/prompt-studio/presets', () => {
             .post('/api/ai/prompt-studio/presets')
             .send({ ...validBody, scope: 'repo', scopeTarget: null });
         expect(res.status).toBe(400);
-        expect(res.body.code).toBe('validation_failed');
+        expect(res.body.code).toBe('VALIDATION_ERROR');
     });
 });
 
@@ -593,14 +593,14 @@ describe('POST /presets — scope=org membership gate', () => {
         const res = await request(makeApp())
             .post('/api/ai/prompt-studio/presets').send({ ...orgBody, scopeTarget: null });
         expect(res.status).toBe(400);
-        expect(res.body.code).toBe('validation_failed');
+        expect(res.body.code).toBe('VALIDATION_ERROR');
     });
 
     it('rejects malformed org login (e.g. "invalid/slashes") at validation → 400', async () => {
         const res = await request(makeApp())
             .post('/api/ai/prompt-studio/presets').send({ ...orgBody, scopeTarget: 'inv/alid' });
         expect(res.status).toBe(400);
-        expect(res.body.code).toBe('validation_failed');
+        expect(res.body.code).toBe('VALIDATION_ERROR');
     });
 });
 

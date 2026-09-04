@@ -66,6 +66,10 @@ function resolvePrimarySecret() {
  */
 function resolveSecrets() {
   const primary = resolvePrimarySecret()
+  // Read live, not config.credentialEncryptionKeyPrevious:
+  // credential-encryption.test.js / session-store-encryption.test.js set and
+  // clear this per-case with no module reset. config.js still validates it's
+  // a string at boot (B-12).
   const previous = process.env.CREDENTIAL_ENCRYPTION_KEY_PREVIOUS
   return (previous && previous !== primary) ? [primary, previous] : [primary]
 }

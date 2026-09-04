@@ -20,6 +20,7 @@ const EXEMPT = new Map([
     ['VITE_API_BASE_URL', 'build-time frontend variable, baked into the image'],
     ['VITE_MOCK_MODE', 'build-time frontend variable, baked into the image'],
     ['VITE_SUPPORT_EMAIL', 'build-time frontend variable, baked into the image'],
+    ['ALLOW_MOCK_AUTH', 'development-only escape hatch for the mock sign-in route; never set in a container'],
     ['DATABASE_URL', 'PostgreSQL is intentionally unsupported and rejected at boot; forwarding it would imply otherwise'],
 ])
 

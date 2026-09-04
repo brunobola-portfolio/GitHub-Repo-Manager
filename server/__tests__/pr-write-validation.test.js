@@ -134,7 +134,7 @@ describe('PUT /pulls/:n/merge — validation', () => {
     it('400s on an invalid merge_method', async () => {
         const res = await request(makeApp()).put(`${base}/pulls/1/merge`).send({ merge_method: 'bogus' })
         expect(res.status).toBe(400)
-        expect(res.body.code).toBe('validation_failed')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 
     it('400s on an unknown key (strict)', async () => {
@@ -156,7 +156,7 @@ describe('POST /pulls/:n/comments — validation', () => {
     it('400s when required fields are missing', async () => {
         const res = await request(makeApp()).post(`${base}/pulls/1/comments`).send({ body: 'nit' })
         expect(res.status).toBe(400)
-        expect(res.body.code).toBe('validation_failed')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 
     it('400s on a non-LEFT/RIGHT side', async () => {
@@ -184,7 +184,7 @@ describe('POST /pulls/:n/comments/:id/replies — validation', () => {
     it('400s on a missing body', async () => {
         const res = await request(makeApp()).post(`${base}/pulls/1/comments/42/replies`).send({})
         expect(res.status).toBe(400)
-        expect(res.body.code).toBe('validation_failed')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 
     it('400s on an empty body string', async () => {
@@ -240,7 +240,7 @@ describe('POST /pulls/:n/reviews — validation', () => {
     it('400s on a missing event', async () => {
         const res = await request(makeApp()).post(`${base}/pulls/1/reviews`).send({ body: 'x' })
         expect(res.status).toBe(400)
-        expect(res.body.code).toBe('validation_failed')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 
     it('400s on an invalid event', async () => {
@@ -260,7 +260,7 @@ describe('POST /labels — validation', () => {
     it('400s on a missing name', async () => {
         const res = await request(makeApp()).post(`${base}/labels`).send({ color: 'd73a4a' })
         expect(res.status).toBe(400)
-        expect(res.body.code).toBe('validation_failed')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 
     it('400s on a malformed color', async () => {

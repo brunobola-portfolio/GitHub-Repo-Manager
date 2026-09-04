@@ -3,7 +3,7 @@
  * Route body-validation contract for the "mapped remainder" write endpoints
  * hardened with zod + validateBody. Runs the REAL schemas + real validateBody
  * middleware (only external edges are mocked) to prove each endpoint:
- *   - 400 + { code: 'validation_failed' } on malformed / unknown-shape bodies
+ *   - 400 + { code: 'VALIDATION_ERROR' } on malformed / unknown-shape bodies
  *   - 2xx on the exact shapes the frontend sends
  *
  * Companion to actions-community-fix-routes.test.js, which locks the
@@ -165,7 +165,7 @@ describe('PUT /contents — create/update file validation', () => {
             .put(`${base}/contents?path=README.md`)
             .send({ message: 'x' })
         expect(res.status).toBe(400)
-        expect(res.body.code).toBe('validation_failed')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 
     it('400s on non-base64 content', async () => {
@@ -197,7 +197,7 @@ describe('DELETE /contents — delete file validation', () => {
             .delete(`${base}/contents?path=old.txt`)
             .send({ message: 'remove' })
         expect(res.status).toBe(400)
-        expect(res.body.code).toBe('validation_failed')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 
     it('400s on an unknown key (strict)', async () => {
@@ -224,7 +224,7 @@ describe('PUT /issues/:n/labels — replace labels validation', () => {
     it('400s when labels is not an array', async () => {
         const res = await request(makeApp()).put(`${base}/issues/5/labels`).send({ labels: 'bug' })
         expect(res.status).toBe(400)
-        expect(res.body.code).toBe('validation_failed')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 
     it('400s on an empty-string label item', async () => {
@@ -252,7 +252,7 @@ describe('POST/DELETE /issues/:n/assignees — validation', () => {
     it('400s when assignees is not an array', async () => {
         const res = await request(makeApp()).post(`${base}/issues/5/assignees`).send({ assignees: 'octocat' })
         expect(res.status).toBe(400)
-        expect(res.body.code).toBe('validation_failed')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 
     it('400s on an over-long login', async () => {
@@ -282,7 +282,7 @@ describe('PATCH /hooks/:id — webhook update validation', () => {
     it('400s on a bad content_type', async () => {
         const res = await request(makeApp()).patch(`${base}/hooks/123`).send({ config: { content_type: 'xml' } })
         expect(res.status).toBe(400)
-        expect(res.body.code).toBe('validation_failed')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 
     it('400s on an unknown top-level key (strict)', async () => {
@@ -301,7 +301,7 @@ describe('POST /hooks/:id/pings — empty-body validation', () => {
     it('400s on a stray field (strict empty)', async () => {
         const res = await request(makeApp()).post(`${base}/hooks/123/pings`).send({ evil: 1 })
         expect(res.status).toBe(400)
-        expect(res.body.code).toBe('validation_failed')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 })
 
@@ -328,7 +328,7 @@ describe('POST /actions/workflows/:id/dispatches — validation', () => {
             .post(`${base}/actions/workflows/42/dispatches`)
             .send({ inputs: { x: { nested: true } } })
         expect(res.status).toBe(400)
-        expect(res.body.code).toBe('validation_failed')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 
     it('400s on an unknown key (strict)', async () => {
@@ -349,7 +349,7 @@ describe('POST /actions/sync — empty-body validation', () => {
     it('400s on a stray field (strict empty)', async () => {
         const res = await request(makeApp()).post(`${base}/actions/sync`).send({ evil: 1 })
         expect(res.status).toBe(400)
-        expect(res.body.code).toBe('validation_failed')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 })
 
@@ -372,7 +372,7 @@ describe('POST /community-health/generate — envelope validation', () => {
     it('400s when fileType is missing', async () => {
         const res = await request(makeApp()).post(`${base}/community-health/generate`).send({})
         expect(res.status).toBe(400)
-        expect(res.body.code).toBe('validation_failed')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 
     it('400s on an unknown envelope key (strict)', async () => {
@@ -397,7 +397,7 @@ describe('POST /community-health/commit-fix — envelope validation', () => {
             .post(`${base}/community-health/commit-fix`)
             .send({ fileType: 'license', content: 'x', commitMessage: 'c', mode: 'evil' })
         expect(res.status).toBe(400)
-        expect(res.body.code).toBe('validation_failed')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 
     it('400s on an unknown key (strict) — filePath is no longer accepted', async () => {

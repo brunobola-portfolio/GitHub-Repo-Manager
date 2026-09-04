@@ -206,7 +206,7 @@ router.post('/ai/generate-diagram', requireAuth, requireScope('ai'), validateBod
     const { repo, diagramType, focus, retry, failedSource, parseError } = req.validatedBody;
 
     if (!isValidGitHubFullName(repo.full_name)) {
-        return res.status(400).json({ error: 'Invalid repo.full_name', code: 'validation_failed' });
+        return res.status(400).json({ error: "That repository name isn't valid. Use the owner/name form.", code: 'INVALID_REPO_NAME' });
     }
 
     // Reserve-once: only the initial (non-retry) attempt consumes the
@@ -291,7 +291,7 @@ router.post('/ai/generate-diagram', requireAuth, requireScope('ai'), validateBod
 router.post('/ai/generate-diagram/deterministic', requireAuth, requireScope('ai'), validateBody(deterministicDiagramSchema), async (req, res) => {
     const { repo, diagramType } = req.validatedBody;
     if (!isValidGitHubFullName(repo.full_name)) {
-        return res.status(400).json({ error: 'Invalid repo.full_name', code: 'validation_failed' });
+        return res.status(400).json({ error: "That repository name isn't valid. Use the owner/name form.", code: 'INVALID_REPO_NAME' });
     }
     const [owner, repoName] = repo.full_name.split('/');
 
@@ -384,7 +384,7 @@ async function hasPushAccess({ owner, repo, accessToken, log }) {
 router.post('/ai/generate-diagram/embed-preview', requireAuth, validateBody(embedDiagramPreviewSchema), async (req, res) => {
     const { repo, diagramType, target, mermaid, svg, placement, customAnchor, truncated } = req.validatedBody;
     if (!isValidGitHubFullName(repo.full_name)) {
-        return res.status(400).json({ error: 'Invalid repo.full_name', code: 'validation_failed' });
+        return res.status(400).json({ error: "That repository name isn't valid. Use the owner/name form.", code: 'INVALID_REPO_NAME' });
     }
     const [owner, repoName] = repo.full_name.split('/');
 
@@ -449,16 +449,16 @@ router.post('/ai/generate-diagram/embed-preview', requireAuth, validateBody(embe
 router.post('/ai/generate-diagram/embed-commit', requireAuth, validateBody(embedDiagramCommitSchema), async (req, res) => {
     const { repo, diagramType, target, readme, svg, mode } = req.validatedBody;
     if (!isValidGitHubFullName(repo.full_name)) {
-        return res.status(400).json({ error: 'Invalid repo.full_name', code: 'validation_failed' });
+        return res.status(400).json({ error: "That repository name isn't valid. Use the owner/name form.", code: 'INVALID_REPO_NAME' });
     }
     // Defence in depth: never trust client-echoed paths from preview. The SVG
     // path is fully derivable from diagramType; the README path must be an
     // actual README file with no traversal.
     if (svg && svg.path !== svgPathFor(diagramType)) {
-        return res.status(400).json({ error: `svg.path must be ${svgPathFor(diagramType)} for this diagram type.`, code: 'validation_failed' });
+        return res.status(400).json({ error: `svg.path must be ${svgPathFor(diagramType)} for this diagram type.`, code: 'VALIDATION_ERROR' });
     }
     if (readme && (!/(^|\/)README\.md$/i.test(readme.path) || readme.path.includes('..') || readme.path.startsWith('/'))) {
-        return res.status(400).json({ error: 'readme.path must be a README.md path inside the repository.', code: 'validation_failed' });
+        return res.status(400).json({ error: 'readme.path must be a README.md path inside the repository.', code: 'VALIDATION_ERROR' });
     }
     const [owner, repoName] = repo.full_name.split('/');
 

@@ -43,19 +43,19 @@ function makeApp() {
 }
 
 describe('POST /api/v1/teams — validateBody migration', () => {
-    it('rejects empty name with code "validation_failed"', async () => {
+    it('rejects empty name with code "VALIDATION_ERROR"', async () => {
         const res = await request(makeApp()).post('/api/v1/teams').send({ name: '' });
         expect(res.status).toBe(400);
-        expect(res.body.code).toBe('validation_failed');
+        expect(res.body.code).toBe('VALIDATION_ERROR');
         expect(res.body.error).toMatch(/^name: /);
     });
 });
 
 describe('POST /api/v1/teams/:id/members — validateBody migration', () => {
-    it('rejects missing username with code "validation_failed"', async () => {
+    it('rejects missing username with code "VALIDATION_ERROR"', async () => {
         const res = await request(makeApp()).post('/api/v1/teams/1/members').send({});
         expect(res.status).toBe(400);
-        expect(res.body.code).toBe('validation_failed');
+        expect(res.body.code).toBe('VALIDATION_ERROR');
         expect(res.body.error).toMatch(/^username: /);
     });
 });

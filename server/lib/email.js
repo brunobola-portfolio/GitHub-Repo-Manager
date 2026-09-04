@@ -4,6 +4,7 @@
 import logger from './logger.js'
 import { stripUntilStable } from './strip-until-stable.js'
 import db from '../db.js'
+import { config } from '../config.js'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -11,9 +12,12 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 // backoff (1 s, 3 s, 9 s + up to 250 ms jitter). Only 5xx and network errors
 // are retried; 4xx is treated as un-retryable (bad input).
 const INITIAL_ATTEMPTS = 3
-// Tests can override the base delay to keep retry tests fast. In production
+// Tests override the base delay (and re-import this module via
+// vi.resetModules(), which re-evaluates config.js against the mutated
+// process.env too — dotenv never overwrites an already-set var, so this
+// still picks up the test's value) to keep retry tests fast. In production
 // the env var is unset → default 1 000 ms → 1 s / 3 s / 9 s backoff.
-const BASE_DELAY_MS = Number.parseInt(process.env.EMAIL_RETRY_BASE_DELAY_MS ?? '1000', 10)
+const BASE_DELAY_MS = config.emailRetryBaseDelayMs
 
 /**
  * Derive a plain-text fallback from an HTML body.

@@ -503,7 +503,7 @@ router.post('/ai/readme/enhance', requireAuth, requireScope('ai'), validateBody(
         // the GitHub-shape regex, but we also reject anything that fails the
         // canonical username/repo validator before it touches GitHub URLs.
         if (!isValidGitHubFullName(repo.full_name)) {
-            return res.status(400).json({ error: 'Invalid repo.full_name', code: 'validation_failed' });
+            return res.status(400).json({ error: "That repository name isn't valid. Use the owner/name form.", code: 'INVALID_REPO_NAME' });
         }
         const safeFullName = encodeURI(repo.full_name);
 
@@ -572,7 +572,7 @@ router.post('/ai/readme-studio/improve', requireAuth, requireScope('ai'), valida
         // matches buildImprovePrompt's own fallback.
         const mode = req.validatedBody.mode === 'full-rewrite' ? 'full-rewrite' : 'missing-sections';
         if (!isValidGitHubFullName(repo.full_name)) {
-            return res.status(400).json({ error: 'Invalid repo.full_name', code: 'validation_failed' });
+            return res.status(400).json({ error: "That repository name isn't valid. Use the owner/name form.", code: 'INVALID_REPO_NAME' });
         }
         const [owner, repoName] = repo.full_name.split('/');
 
@@ -666,7 +666,7 @@ router.post('/ai/readme-studio/improve', requireAuth, requireScope('ai'), valida
 router.post('/ai/readme-studio/improve/deterministic', requireAuth, requireScope('ai'), validateBody(deterministicReadmeStudioSchema), async (req, res) => {
     const { repo, mode } = req.validatedBody;
     if (!isValidGitHubFullName(repo.full_name)) {
-        return res.status(400).json({ error: 'Invalid repo.full_name', code: 'validation_failed' });
+        return res.status(400).json({ error: "That repository name isn't valid. Use the owner/name form.", code: 'INVALID_REPO_NAME' });
     }
     const [owner, repoName] = repo.full_name.split('/');
 

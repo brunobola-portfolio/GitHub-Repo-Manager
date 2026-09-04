@@ -17,11 +17,13 @@
  *   2. Loopback-only: the requesting socket must be 127.0.0.1/::1 AND the
  *      request must not have crossed a reverse proxy (any X-Forwarded-For
  *      denies) — a hosted deployment behind a local proxy never exposes it.
- *   3. CSRF token required — enforced BY THIS ROUTE, not by the global /api
- *      mutation middleware: that middleware bypasses all of /api/auth/* (the
- *      OAuth redirect flow can't carry a token), so the explicit
- *      csrfHeaderMatchesSession() check in POST /setup-oauth is the only one.
- *      Deleting it as redundant removes the layer entirely.
+ *   3. CSRF token required — enforced by BOTH the global /api mutation
+ *      middleware (server/middleware/csrf.js no longer exempts
+ *      /setup-oauth; see B-19 / AUTH_BYPASS_EXACT there) and the explicit
+ *      csrfHeaderMatchesSession() check below. The explicit check predates
+ *      the narrowed bypass and is kept as defense in depth — deleting it
+ *      does NOT remove CSRF coverage the way it used to, but still removes
+ *      a layer.
  *   4. Tight rate limit.
  *   5. GRM_DISABLE_WEB_SETUP=true turns the whole surface off for operators
  *      who want .env to be the only configuration channel.
@@ -58,6 +60,9 @@ function oauthConfigured() {
 }
 
 function setupDisabled() {
+    // Read live, not config.grmDisableWebSetup: auth-setup.test.js toggles
+    // this per-case with no module reset. config.js still validates the
+    // value fails fast at real boot on a typo (B-12).
     return process.env.GRM_DISABLE_WEB_SETUP === 'true';
 }
 
@@ -81,9 +86,9 @@ router.get('/setup-status', (req, res) => {
 });
 
 router.post('/setup-oauth', setupLimiter, (req, res) => {
-    // Explicit CSRF check: the global middleware bypasses ALL of /api/auth/*
-    // (the OAuth redirect flow can't carry tokens), so this mutation must
-    // enforce its own. The frontend fetches the token from /api/auth/csrf-token.
+    // Explicit CSRF check, defense-in-depth alongside the global middleware
+    // (which no longer exempts this path — B-19). The frontend fetches the
+    // token from /api/auth/csrf-token via apiCall() before this call.
     if (!csrfHeaderMatchesSession(req)) {
         return res.status(403).json({ error: 'Invalid CSRF token', code: 'csrf_invalid' });
     }

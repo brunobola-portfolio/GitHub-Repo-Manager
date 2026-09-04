@@ -288,7 +288,7 @@ router.post('/logout', (req, res) => {
 // exist.
 router.post('/mock', (req, res) => {
     const isDev = config.nodeEnv === 'development';
-    const isExplicitlyAllowed = process.env.ALLOW_MOCK_AUTH === 'true';
+    const isExplicitlyAllowed = config.allowMockAuth;
     if (!isDev && !isExplicitlyAllowed) {
         return res.status(404).json({ error: 'Not found' });
     }

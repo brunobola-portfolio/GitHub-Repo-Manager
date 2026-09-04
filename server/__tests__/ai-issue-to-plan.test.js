@@ -33,13 +33,13 @@ vi.mock('../middleware/auth.js', () => ({
 // The ai/migration route uses the real `aiIssueToPlanSchema` through the new
 // `validateBody` middleware. To keep the "malformed repoFullName" test giving
 // a 400, we pass schemas through but use the real Zod `.safeParse`. The
-// new-middleware envelope is `{ code: 'validation_failed' }`.
+// new-middleware envelope is `{ code: 'VALIDATION_ERROR' }`.
 vi.mock('../middleware/validate-request.js', () => ({
     validateBody: (schema) => (req, res, next) => {
         if (schema && typeof schema.safeParse === 'function') {
             const result = schema.safeParse(req.body)
             if (!result.success) {
-                return res.status(400).json({ error: 'Validation failed', code: 'validation_failed' })
+                return res.status(400).json({ error: 'Validation failed', code: 'VALIDATION_ERROR' })
             }
             req.validatedBody = result.data
             return next()
@@ -174,7 +174,7 @@ describe('POST /api/ai/issue-to-plan', () => {
             .post('/api/ai/issue-to-plan')
             .send({ repoFullName: '../../etc/passwd', issueNumber: 1 })
         expect(res.status).toBe(400)
-        expect(res.body.code).toBe('validation_failed')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 
 
@@ -185,7 +185,7 @@ describe('POST /api/ai/issue-to-plan', () => {
             .post('/api/ai/issue-to-plan')
             .send({ repoFullName: 'acme/app', issueNumber: 5 })
         expect(res.status).toBe(429)
-        expect(res.body.error).toBe('usage_limit_exceeded')
+        expect(res.body.code).toBe('QUOTA_EXCEEDED')
         expect(mockAiProviderGenerate).not.toHaveBeenCalled()
     })
 

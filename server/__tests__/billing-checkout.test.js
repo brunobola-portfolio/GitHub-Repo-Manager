@@ -156,7 +156,7 @@ describe('POST /billing/checkout — billing-period price selection', () => {
             .post('/api/v1/billing/checkout')
             .send({ tier: 'pro', billingPeriod: 'weekly' })
         expect(res.status).toBe(400)
-        expect(res.body).toEqual({ error: 'Invalid input' })
+        expect(res.body).toMatchObject({ code: 'VALIDATION_ERROR' })
         expect(mockSessionsCreate).not.toHaveBeenCalled()
     })
 

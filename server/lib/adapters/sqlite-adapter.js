@@ -84,6 +84,13 @@ export class SQLiteAdapter {
             throw error;
         }
 
+        // Read live, not config.sqliteVerbose: this adapter opens during
+        // server/db.js's top-level module evaluation, ahead of where
+        // server/config.js is otherwise first reached in the import graph —
+        // depending on config.js here would make its (harmless but
+        // unnecessary) SESSION_SECRET etc. validation a hard dependency of
+        // DB bootstrap itself. config.js still validates the value's shape
+        // at boot for documentation/parity purposes (B-12).
         const verbose = process.env.SQLITE_VERBOSE === 'true' ? (msg) => logger.debug(msg) : undefined;
         const isFileDb = this.dbPath !== ':memory:' && !this.dbPath.startsWith('file::memory:');
 

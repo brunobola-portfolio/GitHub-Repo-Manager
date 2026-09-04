@@ -12,7 +12,7 @@ export function createMarksRouter({ db }) {
   // tenant can't read another's migration provenance.
   router.get('/', (req, res) => {
     const userId = req.session?.userId
-    if (!userId) return res.status(401).json({ error: 'auth required' })
+    if (!userId) return res.status(401).json({ error: 'Sign in to continue.', code: 'AUTH_REQUIRED' })
     const { targetFullName, targetKind } = req.query
     const where = ['p.user_id = ?']
     const args = [userId]
@@ -38,7 +38,7 @@ export function createMarksRouter({ db }) {
   // where writtenAt is the latest 'written' timestamp (for the pill tooltip).
   router.get('/mine', (req, res) => {
     const userId = req.session?.userId
-    if (!userId) return res.status(401).json({ error: 'auth required' })
+    if (!userId) return res.status(401).json({ error: 'Sign in to continue.', code: 'AUTH_REQUIRED' })
     const rows = db.prepare(
       `SELECT m.target_id, m.status, m.written_at
          FROM migration_marks m
@@ -63,7 +63,7 @@ export function createMarksRouter({ db }) {
   // tenant's provenance — closes the IDOR-by-plan-id).
   router.get('/plan/:id', (req, res) => {
     const userId = req.session?.userId
-    if (!userId) return res.status(401).json({ error: 'auth required' })
+    if (!userId) return res.status(401).json({ error: 'Sign in to continue.', code: 'AUTH_REQUIRED' })
     const planId = Number(req.params.id)
     if (!Number.isFinite(planId)) {
       return res.status(400).json({ error: 'invalid plan id' })

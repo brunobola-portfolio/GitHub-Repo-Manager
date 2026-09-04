@@ -35,7 +35,7 @@ router.get('/', requireAuth, (req, res) => {
 // Generate new API key
 router.post('/', requireAuth, (req, res) => {
     const parsed = createKeySchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ error: 'Invalid input', details: parsed.error.format() });
+    if (!parsed.success) return res.status(400).json({ error: 'That request was missing something the server needs.', code: 'VALIDATION_ERROR', details: parsed.error.format() });
 
     const userId = req.session.userId;
     const userTier = req.session.user?.tier || req.userTier || 'free';

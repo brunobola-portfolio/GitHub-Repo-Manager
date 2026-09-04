@@ -216,6 +216,8 @@ export function isInternalUrl(urlString) {
  * @returns {URL}
  */
 export function assertSafeAIEndpoint(raw, { provider } = {}) {
+    // Live read — see the matching comment in server/lib/ai-provider.js
+    // (B-12); url-validator.test.js also toggles this per-case.
     const allowLocal = provider === 'local' && process.env.ALLOW_LOCAL_AI_ENDPOINTS === 'true';
     if (allowLocal) {
         // Opt-in local endpoint: still require a parseable http(s) URL with no

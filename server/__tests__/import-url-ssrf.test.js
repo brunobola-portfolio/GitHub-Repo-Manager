@@ -117,12 +117,12 @@ describe('POST /api/import/url — SSRF guard', () => {
         expect(res.body.success).toBe(true);
     });
 
-    it('rejects a malformed body (missing sourceUrl) with code "validation_failed"', async () => {
+    it('rejects a malformed body (missing sourceUrl) with code "VALIDATION_ERROR"', async () => {
         const res = await request(app)
             .post('/api/import/url')
             .send({ targetOrg: 'myorg' });
         expect(res.status).toBe(400);
-        expect(res.body.code).toBe('validation_failed');
+        expect(res.body.code).toBe('VALIDATION_ERROR');
     });
 });
 

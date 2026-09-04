@@ -36,13 +36,13 @@ describe('validateBody', () => {
         expect(res.body.rawBody).toEqual({ name: 'alice', count: 3 });
     });
 
-    it('returns 400 { error, code: "validation_failed" } for invalid body', async () => {
+    it('returns 400 { error, code: "VALIDATION_ERROR" } for invalid body', async () => {
         const app = makeApp((a) => {
             a.post('/t', validateBody(schema), (_req, res) => res.json({ ok: true }));
         });
         const res = await request(app).post('/t').send({ name: '', count: 3 });
         expect(res.status).toBe(400);
-        expect(res.body.code).toBe('validation_failed');
+        expect(res.body.code).toBe('VALIDATION_ERROR');
         expect(typeof res.body.error).toBe('string');
         expect(res.body.error).toMatch(/^name: /);
     });
@@ -72,7 +72,7 @@ describe('validateBody', () => {
         });
         const res = await request(app).post('/t').send({ user: { profile: { age: -1 } } });
         expect(res.status).toBe(400);
-        expect(res.body.code).toBe('validation_failed');
+        expect(res.body.code).toBe('VALIDATION_ERROR');
         expect(res.body.error.startsWith('user.profile.age: ')).toBe(true);
     });
 
@@ -103,7 +103,7 @@ describe('validateBody', () => {
             .set('Content-Type', 'application/json')
             .send('{"not":"a string"}');
         expect(res.status).toBe(400);
-        expect(res.body.code).toBe('validation_failed');
+        expect(res.body.code).toBe('VALIDATION_ERROR');
         // No leading "path:" segment when issue.path is empty
         expect(res.body.error).not.toMatch(/^\s*:\s/);
     });
@@ -129,7 +129,7 @@ describe('validateQuery', () => {
         });
         const res = await request(app).get('/t?limit=9999');
         expect(res.status).toBe(400);
-        expect(res.body.code).toBe('validation_failed');
+        expect(res.body.code).toBe('VALIDATION_ERROR');
         expect(res.body.error).toMatch(/^limit: /);
     });
 });
@@ -154,7 +154,7 @@ describe('validateParams', () => {
         });
         const res = await request(app).get('/thing/not-a-number');
         expect(res.status).toBe(400);
-        expect(res.body.code).toBe('validation_failed');
+        expect(res.body.code).toBe('VALIDATION_ERROR');
         expect(res.body.error).toMatch(/^id: /);
     });
 });

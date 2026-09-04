@@ -71,7 +71,12 @@ router.post(
         const usage = checkUsageLimit(userId, 'ai_queries');
         if (!usage.allowed) {
             return res.status(429).json({
-                error: 'usage_limit_exceeded',
+                error: `You've used ${usage.current}/${usage.limit} AI queries this month`,
+                // QUOTA_EXCEEDED (not a new slug): src/api/aiFetch.js and
+                // src/utils/aiFetch.js already special-case 429s on
+                // `code === 'QUOTA_EXCEEDED'` — reusing it here means this
+                // route's quota UI keeps working without touching src/.
+                code: 'QUOTA_EXCEEDED',
                 message: `You've used ${usage.current}/${usage.limit} AI queries this month`,
                 upgradeUrl: '/pricing',
             });
@@ -220,12 +225,12 @@ router.post('/ai/migration-risk', requireAuth, requireScope('ai'), requireAI, as
     try {
         const { repo, source = 'github', target = 'github' } = req.body;
         if (!repo || !repo.full_name) {
-            return res.status(400).json({ error: 'repo.full_name is required', code: 'VALIDATION_ERROR' });
+            return res.status(400).json({ error: 'A repository is required.', code: 'VALIDATION_ERROR' });
         }
         // Full-name is spliced into GitHub API URLs below — reject anything that
         // would let a caller escape the intended repo scope.
         if (!isValidGitHubFullName(repo.full_name)) {
-            return res.status(400).json({ error: 'Invalid repo.full_name format', code: 'VALIDATION_ERROR' });
+            return res.status(400).json({ error: "That repository name isn't valid. Use the owner/name form.", code: 'INVALID_REPO_NAME' });
         }
         const allowedPlatforms = new Set(['github', 'azure-devops', 'gitlab', 'bitbucket', 'other']);
         const safeSource = allowedPlatforms.has(source) ? source : 'other';

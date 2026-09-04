@@ -9,6 +9,9 @@
 import db from '../db.js';
 
 export function requireWorkBoardAI(req, res, next) {
+    // Read live, not config.workBoardAiEnabled: work-board-ai-gate.test.js
+    // toggles this per-case with no module reset. config.js still validates
+    // the value fails fast at real boot on a typo (B-12).
     if (process.env.WORK_BOARD_AI_ENABLED !== 'true') {
         return res.status(404).json({ code: 'AI_FEATURE_FLAG_OFF', error: 'AI Assistant is not enabled on this deployment' });
     }

@@ -47,7 +47,7 @@ router.post('/ai/quality-report', requireAuth, requireScope('ai'), validateBody(
     try {
         const { repo } = req.validatedBody;
         if (!isValidGitHubFullName(repo.full_name)) {
-            return res.status(400).json({ error: 'Invalid repo.full_name', code: 'validation_failed' });
+            return res.status(400).json({ error: "That repository name isn't valid. Use the owner/name form.", code: 'INVALID_REPO_NAME' });
         }
         const safeFullName = encodeURI(repo.full_name);
 

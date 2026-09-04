@@ -25,6 +25,7 @@
 
 import logger from './logger.js';
 import db from '../db.js';
+import { config } from '../config.js';
 import { runRetentionPass } from './retention.js';
 import { purgeOlderThan as purgeGhCache } from './gh-cache.js';
 import { purgeOldSucceeded as purgeGhOutbox } from './gh-outbox.js';
@@ -63,6 +64,11 @@ const EVENT_PURGE_BATCH = 5000;
  * @returns {{ skipped: boolean, retentionDays: number, perTable: Record<string, number> }}
  */
 export function purgeOldEvents({ database = db, retentionDays, batchSize = EVENT_PURGE_BATCH } = {}) {
+    // Reads process.env directly rather than config.eventRetentionDays (which
+    // also exists, purely for boot-time validation — see server/config.js):
+    // maintenance-janitors.test.js sets/deletes this var between cases with no
+    // module reset, so this needs a live read to stay in sync with the test.
+    // config.js still validates the value fails fast at real boot on a typo.
     const days = retentionDays ?? parseInt(process.env.EVENT_RETENTION_DAYS ?? String(DEFAULT_EVENT_RETENTION_DAYS), 10);
     if (!Number.isFinite(days) || days <= 0) {
         return { skipped: true, retentionDays: 0, perTable: {} };
@@ -120,7 +126,7 @@ export async function runDailyMaintenanceOnce() {
             logger.warn({ err }, '[maintenance] retention pass failed');
         }
         try {
-            const maxAgeDays = parseInt(process.env.GH_CACHE_MAX_AGE_DAYS ?? '30', 10);
+            const maxAgeDays = config.ghCacheMaxAgeDays;
             summary.ghCachePurged = purgeGhCache(maxAgeDays) || 0;
         } catch (err) {
             logger.warn({ err }, '[maintenance] gh_cache purge failed');

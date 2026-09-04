@@ -790,6 +790,9 @@ export function resolveServerProviderFromEnv(featureKey) {
  * which are loopback/private by design.
  */
 async function assertEndpointHostIsPublic(endpointUrl, provider) {
+    // Read live, not config.allowLocalAiEndpoints: ai-provider-user.test.js
+    // toggles this per-case with no module reset. config.js still validates
+    // the value fails fast at real boot on a typo (B-12).
     const allowLocal = provider === 'local' && process.env.ALLOW_LOCAL_AI_ENDPOINTS === 'true';
     if (allowLocal) return;
     const safe = await resolveAndValidateHost(endpointUrl);

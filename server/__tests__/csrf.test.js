@@ -63,14 +63,35 @@ describe('CSRF middleware', () => {
         expect(t).toMatch(/^[A-Za-z0-9_-]+$/)
     })
 
-    it('isCsrfBypassed recognises auth and webhook prefixes', () => {
-        expect(isCsrfBypassed('/api/auth/callback')).toBe(true)
-        expect(isCsrfBypassed('/api/v1/auth/login')).toBe(true)
+    it('isCsrfBypassed recognises webhook prefixes and the narrow auth-mutation allowlist (B-19)', () => {
         expect(isCsrfBypassed('/api/webhooks/stripe')).toBe(true)
         expect(isCsrfBypassed('/api/v1/webhooks/github')).toBe(true)
         expect(isCsrfBypassed('/api/repos/touch')).toBe(false)
         expect(isCsrfBypassed('/api/auth-tricky/callback')).toBe(false) // no trailing slash match
-        expect(isCsrfBypassed('/api/auth/csrf-token?foo=bar')).toBe(true)
+
+        // The OAuth entry/redirect — GET, so already exempt via the method
+        // check, but listed explicitly and asserted here too.
+        expect(isCsrfBypassed('/api/auth/callback')).toBe(true)
+        expect(isCsrfBypassed('/api/v1/auth/login')).toBe(true)
+
+        // Still-bypassed mutations: real client call-sites don't yet send a
+        // CSRF token for these (see the AUTH_BYPASS_EXACT comment in
+        // middleware/csrf.js for the exact call-sites and why each is safe
+        // to leave exempt for now).
+        expect(isCsrfBypassed('/api/auth/mock')).toBe(true)
+        expect(isCsrfBypassed('/api/auth/logout')).toBe(true)
+        expect(isCsrfBypassed('/api/v1/auth/refresh-session')).toBe(true)
+
+        // NOT bypassed any more (B-19): the blanket /api/auth/* subtree
+        // exemption used to cover these too. csrf-token/session/session-info
+        // are GET-only so this only matters if a POST is ever added to them.
+        expect(isCsrfBypassed('/api/auth/csrf-token')).toBe(false)
+        expect(isCsrfBypassed('/api/auth/session')).toBe(false)
+        expect(isCsrfBypassed('/api/auth/session-info')).toBe(false)
+        // setup-oauth already sends a real token (apiCall()) and enforces
+        // its own check — no longer needs the blanket exemption either.
+        expect(isCsrfBypassed('/api/auth/setup-oauth')).toBe(false)
+        expect(isCsrfBypassed('/api/auth/csrf-token?foo=bar')).toBe(false)
     })
 
     it('isCsrfBypassed recognises the managed-mode shutdown path (loopback + token auth, no session)', () => {

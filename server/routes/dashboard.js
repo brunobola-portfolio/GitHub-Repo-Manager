@@ -52,7 +52,7 @@ router.post('/inbox/:itemId/archive', requireAuth, (req, res) => {
     try {
         const itemId = decodeURIComponent(req.params.itemId);
         if (!isValidItemId(itemId)) {
-            return res.status(400).json({ error: 'Invalid item id' });
+            return res.status(400).json({ error: "That inbox item's ID isn't valid.", code: 'INVALID_ITEM_ID' });
         }
         const now = new Date().toISOString();
         db.prepare(`
@@ -71,7 +71,7 @@ router.post('/inbox/:itemId/restore', requireAuth, (req, res) => {
     try {
         const itemId = decodeURIComponent(req.params.itemId);
         if (!isValidItemId(itemId)) {
-            return res.status(400).json({ error: 'Invalid item id' });
+            return res.status(400).json({ error: "That inbox item's ID isn't valid.", code: 'INVALID_ITEM_ID' });
         }
         db.prepare(`
             UPDATE dashboard_inbox_state
@@ -89,7 +89,7 @@ router.post('/inbox/:itemId/snooze', requireAuth, (req, res) => {
     try {
         const itemId = decodeURIComponent(req.params.itemId);
         if (!isValidItemId(itemId)) {
-            return res.status(400).json({ error: 'Invalid item id' });
+            return res.status(400).json({ error: "That inbox item's ID isn't valid.", code: 'INVALID_ITEM_ID' });
         }
         const until = req.body?.until;
         const ts = Date.parse(until);

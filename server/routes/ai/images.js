@@ -230,7 +230,7 @@ router.post('/ai/generate-image', requireAuth, requireScope('ai'), validateBody(
     const { repo, preset, promptExtras } = req.validatedBody;
 
     if (!isValidGitHubFullName(repo.full_name)) {
-        return res.status(400).json({ error: 'Invalid repo.full_name', code: 'validation_failed' });
+        return res.status(400).json({ error: "That repository name isn't valid. Use the owner/name form.", code: 'INVALID_REPO_NAME' });
     }
 
     // Atomic guarded reserve, not a read-only check. A plain
@@ -286,7 +286,7 @@ router.post('/ai/generate-image', requireAuth, requireScope('ai'), validateBody(
 router.post('/ai/generate-image/commit', requireAuth, validateBody(commitImageSchema), async (req, res) => {
     const { repo, preset, base64, commitMessage, mode } = req.validatedBody;
     if (!isValidGitHubFullName(repo.full_name)) {
-        return res.status(400).json({ error: 'Invalid repo.full_name', code: 'validation_failed' });
+        return res.status(400).json({ error: "That repository name isn't valid. Use the owner/name form.", code: 'INVALID_REPO_NAME' });
     }
     const [owner, repoName] = repo.full_name.split('/');
     const cfg = IMAGE_PRESETS[preset];

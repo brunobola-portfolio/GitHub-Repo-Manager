@@ -141,7 +141,7 @@ router.get('/config', async (req, res) => {
 router.post('/checkout', requireAuth, requireStripe, async (req, res) => {
     try {
         const parsed = checkoutSchema.safeParse(req.body);
-        if (!parsed.success) return res.status(400).json({ error: 'Invalid input' });
+        if (!parsed.success) return res.status(400).json({ error: 'That request was missing something the server needs.', code: 'VALIDATION_ERROR' });
 
         const { tier, billingPeriod } = parsed.data;
         const stripe = getStripe();

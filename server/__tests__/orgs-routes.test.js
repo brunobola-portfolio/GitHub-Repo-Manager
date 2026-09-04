@@ -160,7 +160,7 @@ describe('PATCH /api/v1/orgs/:org body schema', () => {
             .send({ default_repository_permission: 'owner' })
 
         expect(res.status).toBe(400)
-        expect(res.body.code).toBe('validation_failed')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
         expect(mockGithubApi).not.toHaveBeenCalled()
     })
 

@@ -337,7 +337,7 @@ router.get('/:owner/:repo/contents', requireAuth, async (req, res) => {
         const { path = '', ref } = req.query;
 
         if (!validatePath(path)) {
-            return res.status(400).json({ error: 'Invalid path: must be relative and cannot contain ".." or null bytes' });
+            return res.status(400).json({ error: "That file path isn't allowed. Use a path inside the repository, without \"..\".", code: 'INVALID_PATH' });
         }
 
         let url = `/repos/${owner}/${repo}/contents/${encodePath(path)}`;
@@ -360,7 +360,7 @@ router.put('/:owner/:repo/contents', requireAuth, validateBody(contentsCreateUpd
 
         if (!path) return res.status(400).json({ error: 'Path query parameter required' });
         if (!validatePath(path)) {
-            return res.status(400).json({ error: 'Invalid path: must be relative and cannot contain ".." or null bytes' });
+            return res.status(400).json({ error: "That file path isn't allowed. Use a path inside the repository, without \"..\".", code: 'INVALID_PATH' });
         }
 
         const { data } = await githubApi(`/repos/${owner}/${repo}/contents/${encodePath(path)}`, req.session.accessToken, {
@@ -383,7 +383,7 @@ router.delete('/:owner/:repo/contents', requireAuth, validateBody(contentsDelete
 
         if (!path) return res.status(400).json({ error: 'Path query parameter required' });
         if (!validatePath(path)) {
-            return res.status(400).json({ error: 'Invalid path: must be relative and cannot contain ".." or null bytes' });
+            return res.status(400).json({ error: "That file path isn't allowed. Use a path inside the repository, without \"..\".", code: 'INVALID_PATH' });
         }
 
         const { data } = await githubApi(`/repos/${owner}/${repo}/contents/${encodePath(path)}`, req.session.accessToken, {

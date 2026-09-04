@@ -168,6 +168,10 @@ export function sweepPartials(backupDir) {
  * @returns {string|null} absolute backup dir, or null when disabled/unresolvable
  */
 export function resolveBackupDir(dbPath) {
+    // Read live, not config.dbBackupDir: db-backup.test.js / data-dir.test.js
+    // set and clear this per-case, calling this function directly (no module
+    // reset). config.js still validates it's a string at boot (B-12), and
+    // mirrors this file's unset/''/path tri-state exactly.
     const configured = process.env.DB_BACKUP_DIR;
     if (configured === '') return null;              // explicit opt-out
     if (configured) return path.resolve(configured);

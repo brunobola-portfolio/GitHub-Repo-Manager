@@ -5,6 +5,20 @@
 import './lib/env/load-dotenv.js';
 import { z } from 'zod';
 
+// --- Operator boolean-toggle helper (B-12) ----------------------------------
+// Case-sensitive 'true'/'false' only. Unset AND explicit-empty (`KEY=` in a
+// .env file, which dotenv parses as '') both resolve to `def`; anything else
+// (a typo like 'True', 'yes', '1') is passed through unchanged so the
+// z.boolean() check that wraps this rejects it — a bad value fails config
+// parsing at boot instead of silently taking the default or the opposite
+// meaning. Mirrors the two toggles migrated ahead of this pass, below.
+const boolFlag = (def) => z.preprocess((v) => {
+    if (v === undefined || v === null || v === '') return def;
+    if (v === 'true') return true;
+    if (v === 'false') return false;
+    return v;
+}, z.boolean());
+
 const configSchema = z.object({
     // Server
     nodeEnv: z.enum(['development', 'production', 'test']).default('development'),
@@ -87,6 +101,49 @@ const configSchema = z.object({
 
     // Mock mode
     mockMode: z.string().optional(),
+
+    // --- B-12: operator-facing vars formerly read straight from process.env,
+    // outside this schema's fail-fast validation. Each now parses (and boots
+    // fail-fast on a typo'd value) here. Several call sites deliberately keep
+    // reading process.env directly rather than config.x — see the comment at
+    // each such call site — because they are proven, by tests that toggle the
+    // var mid-suite with no module reset, to need a live (not boot-frozen)
+    // read; this schema entry still gives them boot-time validation.
+    workBoardAiEnabled: boolFlag(false),
+    allowMockAuth: boolFlag(false),
+    metricsToken: z.string().optional(),
+    deploymentMode: z.preprocess(
+        (v) => (v === undefined || v === null || v === '') ? 'self-host' : v,
+        z.enum(['self-host', 'saas']),
+    ),
+    allowLocalAiEndpoints: boolFlag(false),
+    disableHttpsEnforcement: boolFlag(false),
+    grmDisableWebSetup: boolFlag(false),
+    credentialEncryptionKeyPrevious: z.string().optional(),
+    // Tri-state, preserved as-is (see server/lib/db-backup.js resolveBackupDir):
+    // unset -> undefined (derive default dir), '' -> '' (explicit opt-out),
+    // a path -> that path. No default collapses the unset/'' distinction.
+    dbBackupDir: z.string().optional(),
+    ghCacheMaxAgeDays: z.preprocess(
+        (v) => (v === undefined || v === null || v === '') ? 30 : v,
+        z.coerce.number().int(),
+    ),
+    // Docs: "0/empty disables event purging entirely" — unset keeps the
+    // shipped-template default (365); an explicit empty string is a distinct
+    // operator choice (disable) from "not set at all".
+    eventRetentionDays: z.preprocess(
+        (v) => (v === undefined || v === null) ? 365 : (v === '' ? 0 : v),
+        z.coerce.number().int(),
+    ),
+    emailRetryBaseDelayMs: z.preprocess(
+        (v) => (v === undefined || v === null || v === '') ? 1000 : v,
+        z.coerce.number().int(),
+    ),
+    workBoardSnapshotRetentionDays: z.preprocess(
+        (v) => (v === undefined || v === null || v === '') ? 90 : v,
+        z.coerce.number().int(),
+    ),
+    sqliteVerbose: boolFlag(false),
 });
 
 function loadConfig() {
@@ -127,6 +184,21 @@ function loadConfig() {
         disableAiReview: process.env.DISABLE_AI_REVIEW,
         logLevel: process.env.LOG_LEVEL,
         mockMode: process.env.VITE_MOCK_MODE,
+
+        workBoardAiEnabled: process.env.WORK_BOARD_AI_ENABLED,
+        allowMockAuth: process.env.ALLOW_MOCK_AUTH,
+        metricsToken: process.env.METRICS_TOKEN,
+        deploymentMode: process.env.DEPLOYMENT_MODE,
+        allowLocalAiEndpoints: process.env.ALLOW_LOCAL_AI_ENDPOINTS,
+        disableHttpsEnforcement: process.env.DISABLE_HTTPS_ENFORCEMENT,
+        grmDisableWebSetup: process.env.GRM_DISABLE_WEB_SETUP,
+        credentialEncryptionKeyPrevious: process.env.CREDENTIAL_ENCRYPTION_KEY_PREVIOUS,
+        dbBackupDir: process.env.DB_BACKUP_DIR,
+        ghCacheMaxAgeDays: process.env.GH_CACHE_MAX_AGE_DAYS,
+        eventRetentionDays: process.env.EVENT_RETENTION_DAYS,
+        emailRetryBaseDelayMs: process.env.EMAIL_RETRY_BASE_DELAY_MS,
+        workBoardSnapshotRetentionDays: process.env.WORK_BOARD_SNAPSHOT_RETENTION_DAYS,
+        sqliteVerbose: process.env.SQLITE_VERBOSE,
     });
 
     if (!result.success) {

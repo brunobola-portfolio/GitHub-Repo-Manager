@@ -10,9 +10,10 @@ import { purgeExpired } from './work-board-cache.js';
 import { purgeExpiredSnoozes } from './work-board-snooze.js';
 import logger from './logger.js';
 import db from '../db.js';
+import { config } from '../config.js';
 import { writeSnapshot, pruneSnapshots } from './work-board-kpi-snapshots.js';
 
-const SNAPSHOT_RETENTION_DAYS = parseInt(process.env.WORK_BOARD_SNAPSHOT_RETENTION_DAYS || '90', 10);
+const SNAPSHOT_RETENTION_DAYS = config.workBoardSnapshotRetentionDays;
 
 let timer = null;
 

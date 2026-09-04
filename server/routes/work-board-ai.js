@@ -53,6 +53,8 @@ function extractJsonBlob(text) {
 // gated endpoints when the feature is off. Never returns 403/404 itself; the
 // client reads `enabled` and decides.
 router.get('/status', requireAuth, (req, res) => {
+    // Live read to stay consistent with work-board-ai-gate.js — see that
+    // file's comment (config.js validates the value at boot; B-12).
     const featureFlagEnabled = process.env.WORK_BOARD_AI_ENABLED === 'true';
     if (!featureFlagEnabled) {
         return res.json({ enabled: false, reason: 'AI_FEATURE_FLAG_OFF' });

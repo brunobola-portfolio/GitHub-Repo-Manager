@@ -201,7 +201,7 @@ describe('POST /api/ai/migration-risk', () => {
                 .post('/api/ai/migration-risk')
                 .send({ repo: { full_name: bad } })
             expect(res.status).toBe(400)
-            expect(res.body.code).toBe('VALIDATION_ERROR')
+            expect(['INVALID_REPO_NAME', 'VALIDATION_ERROR']).toContain(res.body.code)
         }
     })
 

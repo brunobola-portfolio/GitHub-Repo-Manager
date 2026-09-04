@@ -40,6 +40,9 @@ function safeEqual(a, b) {
 }
 
 export function metricsAuth(req, res, next) {
+    // Read live, not config.metricsToken: metrics.test.js / metrics-rate-limit.test.js
+    // set/clear this per-case with no module reset. config.js still validates
+    // it's a string at boot (B-12) — there's no invalid shape to reject here.
     const token = process.env.METRICS_TOKEN;
     const header = req.headers.authorization || '';
     if (token && header.startsWith('Bearer ') && safeEqual(header.slice(7), token)) {

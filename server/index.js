@@ -24,6 +24,7 @@ import compression from 'compression';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { createTenantLimiters, globalLimiter, createWebhookLimiter } from './middleware/tenant-rate-limit.js';
+import { AI_BUCKET_EXTRA_EXPRESS_PATHS } from './middleware/ai-rate-limit-routes.js';
 import { noPathTraversal } from './middleware/no-path-traversal.js';
 import { randomUUID } from 'crypto';
 import path from 'path';
@@ -388,6 +389,14 @@ app.use('/api/', apiLimiter);
 app.use('/api/auth/', authLimiter);
 app.use('/api/ai/', aiLimiter);
 app.use('/api/v1/ai/', aiLimiter);
+// B-09: four routes outside the /api{,/v1}/ai/* barrel still invoke an LLM
+// (migration risk analysis, agent-rules generation, security-posture summary,
+// Work Board AI summary) and previously fell back to the much looser `api`
+// bucket. Mounted on the exact paths (both back-compat and /v1 variants) so
+// nothing else on those routers picks up the tighter budget by accident.
+// See server/middleware/ai-rate-limit-routes.js and
+// server/__tests__/ai-rate-limit-coverage.test.js.
+app.use(AI_BUCKET_EXTRA_EXPRESS_PATHS, aiLimiter);
 
 // ------------------------------------------------------------------
 // Health check (used by useOnlineStatus for connectivity detection)

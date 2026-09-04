@@ -115,11 +115,11 @@ describe('POST /api/v1/work-board/snooze', () => {
         expect(res.status).toBe(400);
     });
 
-    it('returns code "validation_failed" when the body is malformed', async () => {
+    it('returns code "VALIDATION_ERROR" when the body is malformed', async () => {
         const res = await request(makeApp()).post('/api/v1/work-board/snooze')
             .send({ repoFullName: 'not-valid', itemType: 'pr', itemNumber: 1 });
         expect(res.status).toBe(400);
-        expect(res.body.code).toBe('validation_failed');
+        expect(res.body.code).toBe('VALIDATION_ERROR');
         // Path-prefixed message: "repoFullName: ..."
         expect(res.body.error).toMatch(/^repoFullName: /);
     });

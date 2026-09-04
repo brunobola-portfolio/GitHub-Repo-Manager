@@ -208,7 +208,7 @@ describe('POST /api/api-keys', () => {
             .send({ scopes: ['read'] })
 
         expect(res.status).toBe(400)
-        expect(res.body.error).toBe('Invalid input')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 
     it('rejects when name is empty string', async () => {
@@ -217,7 +217,7 @@ describe('POST /api/api-keys', () => {
             .send({ name: '', scopes: ['read'] })
 
         expect(res.status).toBe(400)
-        expect(res.body.error).toBe('Invalid input')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 
     it('rejects invalid scope values', async () => {
@@ -226,7 +226,7 @@ describe('POST /api/api-keys', () => {
             .send({ name: 'Bad Scopes', scopes: ['delete_all'] })
 
         expect(res.status).toBe(400)
-        expect(res.body.error).toBe('Invalid input')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 
     it('rejects name exceeding max length', async () => {
@@ -235,7 +235,7 @@ describe('POST /api/api-keys', () => {
             .send({ name: 'A'.repeat(101), scopes: ['read'] })
 
         expect(res.status).toBe(400)
-        expect(res.body.error).toBe('Invalid input')
+        expect(res.body.code).toBe('VALIDATION_ERROR')
     })
 
     it('enforces tier limit', async () => {
