@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Cloud, FolderGit2, FolderPlus, Plus } from 'lucide-react'
 import { Field, Input, Textarea } from '../../../ui/form'
 import { Spinner } from '../../../ui/Spinner'
+import { formatUserError } from '../../../../utils/errors'
 import { Select } from '../../../ui/Select'
 import { getCsrfToken } from '../../../../utils/api'
 
@@ -112,13 +113,13 @@ function SameProjectForm({ source, onChange }) {
 function ExistingProjectForm({ source, onChange }) {
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     if (!source.org || !source.host) return
     let cancelled = false
     ;(async () => {
-      setLoading(true); setError('')
+      setLoading(true); setError(null)
       try {
         const csrfToken = await getCsrfToken().catch(() => null)
         const res = await fetch('/api/azure/projects', {
@@ -132,7 +133,7 @@ function ExistingProjectForm({ source, onChange }) {
         if (!res.ok) throw new Error(data.error || 'Failed to list projects')
         setProjects(data.projects || [])
       } catch (e) {
-        if (!cancelled) setError(e.message)
+        if (!cancelled) setError(formatUserError(e, { fallbackTitle: 'Failed to list projects' }))
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -157,7 +158,7 @@ function ExistingProjectForm({ source, onChange }) {
             ]}
           />
         )}
-        {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
+        {error && <p className="text-xs text-red-500 mt-1">{error.title}</p>}
       </Field>
       <Field label="Target repo name" htmlFor="azure-tgt-existing-name">
         <Input
@@ -175,10 +176,10 @@ function ExistingProjectForm({ source, onChange }) {
 function NewProjectForm({ source, onChange }) {
   const [creating, setCreating] = useState(false)
   const [result, setResult] = useState(null)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(null)
 
   const createProject = async () => {
-    setCreating(true); setError(''); setResult(null)
+    setCreating(true); setError(null); setResult(null)
     try {
       const csrfToken = await getCsrfToken().catch(() => null)
       const res = await fetch('/api/azure/projects/create', {
@@ -199,7 +200,7 @@ function NewProjectForm({ source, onChange }) {
       setResult(data)
       onChange({ azureTargetProject: data.project?.name, azureTargetProjectId: data.project?.id })
     } catch (e) {
-      setError(e.message)
+      setError(formatUserError(e, { fallbackTitle: 'Failed to create project' }))
     } finally {
       setCreating(false)
     }
@@ -247,7 +248,7 @@ function NewProjectForm({ source, onChange }) {
           ✓ Project {result.project?.name} created{result.repo ? ` with repo ${result.repo.name}` : ''}.
         </p>
       )}
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-red-500">{error.title}</p>}
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { CreditCard, Zap, Building2, Star, AlertTriangle, ExternalLink, ArrowRight, Shield, Key, ChevronDown, ChevronUp, Info } from 'lucide-react'
 import { API_BASE_URL } from '../../config'
+import { formatUserError } from '../../utils/errors'
 import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
@@ -331,7 +332,7 @@ export function LicensePlanSection() {
             if (err.message?.toLowerCase().includes('stripe') || err.message?.toLowerCase().includes('not configured')) {
                 setBillingUnavailable(true)
             } else {
-                setError(err.message)
+                setError(formatUserError(err, { fallbackTitle: 'Failed to load subscription' }))
             }
         } finally {
             setLoading(false)
@@ -419,9 +420,12 @@ export function LicensePlanSection() {
                     </p>
                 </Card>
             ) : error ? (
-                <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300 flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 shrink-0" />
-                    {error}
+                <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>
+                        <span className="font-medium">{error.title}</span>
+                        {error.body ? <span className="block text-xs opacity-80 mt-0.5">{error.body}</span> : null}
+                    </span>
                 </div>
             ) : license ? (
                 <LicenseCard license={license} onChangeLicenseKey={() => openModal('showLicenseActivation')} />

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { copyToClipboard } from '../../../utils/clipboard'
 import { motion } from 'framer-motion'
 import { Lightbulb, X } from 'lucide-react'
 import { Button } from '../../ui/Button'
@@ -8,15 +9,15 @@ import { Tooltip } from '../../ui/Tooltip'
 export function MultiCommitSplit({ commits = [], onDismiss, onUseAll }) {
     const [copiedIdx, setCopiedIdx] = useState(null)
 
-    const handleCopy = (msg, idx) => {
-        navigator.clipboard.writeText(msg)
+    const handleCopy = async (msg, idx) => {
+        if (!await copyToClipboard(msg)) return
         setCopiedIdx(idx)
         setTimeout(() => setCopiedIdx(null), 2000)
     }
 
-    const handleUseAll = () => {
+    const handleUseAll = async () => {
         const all = commits.map((c, i) => `${i + 1}. ${c.message}`).join('\n')
-        navigator.clipboard.writeText(all)
+        await copyToClipboard(all)
         onUseAll?.()
     }
 

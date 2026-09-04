@@ -5,8 +5,10 @@ import { repoActionsApi } from '../../api/repo-actions'
 import { EmptyState } from '../ui/EmptyState'
 import { SectionPanel } from '../ui/SectionPanel'
 import { Skeleton } from '../ui/Skeleton'
+import { TabLoadError } from './TabLoadError'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
+import { formatDateTime } from '../../utils/format'
 
 const STATUS_ICONS = {
   success: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
@@ -75,18 +77,7 @@ export function ActionsTab({ repo }) {
         />
       )
     }
-    if (error.status === 401 || error.status === 403) {
-      return (
-        <div className="px-4 py-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl text-sm text-amber-700 dark:text-amber-400">
-          Sign in again to view workflow runs.
-        </div>
-      )
-    }
-    return (
-      <div className="px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">
-        Couldn&apos;t load workflows. Please retry.
-      </div>
-    )
+    return <TabLoadError error={error} onRetry={load} resourceLabel="workflow runs" />
   }
 
   if (workflows.length === 0) {
@@ -161,7 +152,7 @@ export function ActionsTab({ repo }) {
                         {run.display_title || run.name || `Run #${run.run_number}`}
                       </p>
                       <p className="text-xs text-slate-500">
-                        {run.head_branch} · {run.event} · {new Date(run.created_at).toLocaleString()}
+                        {run.head_branch} · {run.event} · {formatDateTime(run.created_at)}
                       </p>
                     </div>
                   </div>

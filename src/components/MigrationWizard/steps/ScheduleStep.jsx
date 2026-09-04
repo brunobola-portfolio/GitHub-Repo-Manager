@@ -10,7 +10,7 @@ import { Field, Input } from '../../ui/form'
 import { migrationApi } from '../../../api/migration'
 import { useToast } from '../../../hooks/useToast'
 import { StatCard } from '../ui/repo/StatCard'
-import { formatFileSize } from '../../../utils/format'
+import { formatFileSize, formatDateTime } from '../../../utils/format'
 import { TaggingPolicyPanel } from './TaggingPolicyPanel'
 import { DEFAULT_TAGGING_POLICY } from './taggingDefaults'
 import { buildRepoTaskConfig } from './buildRepoTaskConfig'
@@ -303,7 +303,7 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
       {scheduled && (
         <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-sm">
           <Calendar className="w-4 h-4 shrink-0" />
-          <span>Migration scheduled for {schedule.scheduledAt ? new Date(schedule.scheduledAt).toLocaleString() : 'later'}. You can close this wizard.</span>
+          <span>Migration scheduled for {formatDateTime(schedule.scheduledAt) || 'later'}. You can close this wizard.</span>
         </div>
       )}
 

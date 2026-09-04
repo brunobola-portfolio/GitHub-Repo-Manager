@@ -84,6 +84,3 @@ export function measure(name, startMark, endMark) {
     }
 }
 
-// Exposed for tests — lets us verify the no-op vs active branches
-// without mocking the entire @sentry/react module surface.
-export const __internals = { isSentryActive };

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
+import { useCopyToClipboard } from '../../../hooks/useCopyToClipboard'
 import { RefreshCw, GitPullRequest, Rocket, Info, CheckCircle2, FileText } from 'lucide-react'
 import { AnimatedCopyIcon } from '../../ui/AnimatedCopyIcon'
 import { Button } from '../../ui/Button'
@@ -21,10 +22,10 @@ export function PRTab({ toolkit }) {
     const [reviewers, setReviewers] = useState([])
     const [loading, setLoading] = useState(false)
     const [refiningSection, setRefiningSection] = useState(null)
+    const { copied, copy } = useCopyToClipboard()
     const [templateBadge, setTemplateBadge] = useState(null)
     const [confirmAction, setConfirmAction] = useState(null)
     const [actionLoading, setActionLoading] = useState(false)
-    const [copied, setCopied] = useState(false)
     const [prUrl, setPrUrl] = useState(null)
     const [localError, setLocalError] = useState(null)
 
@@ -145,11 +146,8 @@ export function PRTab({ toolkit }) {
 
     const handleCopyAll = useCallback(() => {
         const body = buildBody()
-        const full = `${sections?.title || ''}\n\n${body}`
-        navigator.clipboard.writeText(full)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-    }, [sections, buildBody])
+        copy(`${sections?.title || ''}\n\n${body}`)
+    }, [sections, buildBody, copy])
 
     const handleCreateOrUpdate = useCallback(async () => {
         if (!sections || !selectedRepo) return

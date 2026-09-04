@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import { DiffView } from '@git-diff-view/react'
 import '@git-diff-view/react/styles/diff-view.css'
 import { aiApi } from '../../api/ai'
@@ -13,11 +14,11 @@ import { useResponsiveDiffMode } from '../../hooks/useResponsiveDiffMode'
 export function ReadmeEnhanceDiffPanel({ repo }) {
   const { isDark } = useTheme()
   const diffViewMode = useResponsiveDiffMode()
+  const { copied, copy } = useCopyToClipboard()
   const [loading, setLoading] = useState(true)
   const [enhanced, setEnhanced] = useState(null)
   const [currentReadme, setCurrentReadme] = useState('')
   const [error, setError] = useState(null)
-  const [copied, setCopied] = useState(false)
   const [lastRepoId, setLastRepoId] = useState(repo?.id)
   // Bumped by retry() to force the parallel-fetch effect to re-run on the
   // same repo. The repo-change reset above is the canonical state-reset path;
@@ -75,9 +76,7 @@ export function ReadmeEnhanceDiffPanel({ repo }) {
 
   const handleCopy = () => {
     if (!enhanced) return
-    navigator.clipboard.writeText(enhanced)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    copy(enhanced)
   }
 
   if (loading) {

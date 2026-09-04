@@ -3,24 +3,19 @@ import { render, screen } from '@testing-library/react'
 import { HeroHalo } from '../../../src/components/ui/HeroHalo'
 
 describe('HeroHalo', () => {
-    it('renders with default indigo palette + top position', () => {
+    it('renders with default neutral palette + top position', () => {
         render(<HeroHalo />)
         const halo = screen.getByTestId('hero-halo')
         expect(halo).toBeInTheDocument()
-        expect(halo.dataset.palette).toBe('indigo')
+        expect(halo.dataset.palette).toBe('neutral')
         expect(halo.dataset.position).toBe('top')
+        expect(halo.className).toMatch(/from-slate/)
     })
 
     it('is aria-hidden so it stays out of the a11y tree', () => {
         render(<HeroHalo />)
         const halo = screen.getByTestId('hero-halo')
         expect(halo).toHaveAttribute('aria-hidden', 'true')
-    })
-
-    it('applies emerald palette classes when palette="emerald"', () => {
-        render(<HeroHalo palette="emerald" />)
-        const halo = screen.getByTestId('hero-halo')
-        expect(halo.className).toMatch(/from-emerald/)
     })
 
     it('applies the topRight position when requested', () => {
@@ -33,7 +28,6 @@ describe('HeroHalo', () => {
     it('falls back to default classes for unknown palette/position', () => {
         render(<HeroHalo palette="unknown" position="bogus" />)
         const halo = screen.getByTestId('hero-halo')
-        // default palette is 'indigo' but now maps to slate-based classes
         expect(halo.className).toMatch(/from-slate/)
         expect(halo.className).toMatch(/-top-24/)
     })

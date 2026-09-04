@@ -3,7 +3,7 @@ import { getAIQuotaState, subscribeAIQuotaState } from '../api/aiFetch'
 
 /**
  * React subscription to the global AI quota gate exposed by `aiFetch`. Any
- * surface that fans out AI calls (AttentionFeed, narrative pills, AI
+ * surface that fans out AI calls (dashboard inbox, narrative pills, AI
  * insights, …) can render a friendly inline notice using this hook instead
  * of inventing its own quota tracking.
  *

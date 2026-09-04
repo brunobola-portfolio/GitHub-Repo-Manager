@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useCopyToClipboard } from '../../../../hooks/useCopyToClipboard'
 import { ExternalLink, Terminal, Eye, EyeOff, Lock, AlertTriangle, Bookmark, Check, CheckCircle2 } from 'lucide-react'
 import { AnimatedCopyIcon } from '../../../ui/AnimatedCopyIcon'
 import { SpinnerIcon } from '../../../ui/Spinner'
@@ -329,14 +330,7 @@ function ScopeChips({ required = [], recommended = [], tfvc = [] }) {
 }
 
 function CliAlternative({ cmd }) {
-  const [copied, setCopied] = useState(false)
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(cmd)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    } catch { /* clipboard blocked */ }
-  }
+  const { copied, copy } = useCopyToClipboard(1500)
   return (
     <details className="group">
       <summary className="cursor-pointer text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 inline-flex items-center gap-1.5">

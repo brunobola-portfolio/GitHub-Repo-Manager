@@ -17,15 +17,7 @@ import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
 import { RotateCw, CheckCircle2 } from 'lucide-react'
 import { SectionSpinner } from '../ui/Spinner'
-import { parseServerTimestamp } from '../../utils/format'
-
-function formatTimestamp(iso) {
-    if (!iso) return '—'
-    // parseServerTimestamp reads SQLite's naive 'YYYY-MM-DD HH:MM:SS' as UTC.
-    const d = parseServerTimestamp(iso)
-    if (!d) return typeof iso === 'string' ? iso : '—'
-    return d.toLocaleString()
-}
+import { formatTimestamp } from '../../utils/format'
 
 function tryPrettyJson(raw) {
     if (!raw || typeof raw !== 'string') return raw

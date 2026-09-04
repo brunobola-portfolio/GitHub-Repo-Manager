@@ -33,7 +33,7 @@ import { bulkExecuteWithConfirmation } from '../api/bulkConfirm'
  * bulkArchiveSchema / bulkDeleteSchema / bulkVisibilitySchema /
  * bulkTransferSchema in server/lib/validators.js — keep the two in step.
  */
-export const BULK_REPO_LIMIT = 100
+const BULK_REPO_LIMIT = 100
 
 /**
  * Fail an over-cap selection here rather than letting the server answer with a

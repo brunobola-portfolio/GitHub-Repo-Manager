@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, lazy, Suspense } from 'react'
+import { useState, useMemo, lazy, Suspense } from 'react'
 import {
     BarChart3, TrendingUp, Activity, GitPullRequest,
     Zap, Heart, Users, Building2,
@@ -7,11 +7,8 @@ import {
 } from 'lucide-react'
 import { TodayPanel } from './TodayPanel'
 import { DashboardShell } from './DashboardShell'
-import { AttentionFeed } from './AttentionFeed'
 // InboxPanel is code-split so it doesn't inflate the dashboard initial chunk.
-// The static import of isEnabled remains — it's a tiny synchronous flag read.
 const InboxPanel = lazy(() => import('./Premium/InboxPanel').then(m => ({ default: m.InboxPanel })))
-import { isEnabled } from '../../lib/featureFlags'
 import { CategorySection } from './CategorySection'
 import { StatCard } from './StatCard'
 // ActivityChart + LanguageChart pull recharts (~360 kB); split them out so
@@ -24,6 +21,7 @@ import { OrganizationCard } from './OrganizationCard'
 import { shouldShowCategory, aggregateRepoStats, aggregateLanguages, calculateActivityMetrics } from '../../utils/statsAggregator'
 import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 import { useModal } from '../../hooks/useModal'
+import { useTier } from '../../hooks/useTier'
 import { Skeleton } from '../ui/Skeleton'
 import { RowIconBadge } from '../ui/RowIconBadge'
 import { motion } from 'framer-motion'
@@ -59,28 +57,11 @@ export function DashboardPremium({
     lastSyncedAt,
 }) {
     const [timeRange, setTimeRange] = useState('7d')
-    const [licenseTier, setLicenseTier] = useState('free')
+    // The app already resolves the tier once into TierContext (App.jsx feeds it
+    // from useLicense). Fetching /api/v1/license again here made the shell load
+    // the same endpoint twice in the same millisecond.
+    const licenseTier = useTier()
     const { openModal, openModalWithData } = useModal()
-
-    useEffect(() => {
-        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') return
-        const controller = new AbortController()
-        fetch('/api/v1/license', { credentials: 'include', signal: controller.signal })
-            .then((r) => (r.ok ? r.json() : null))
-            .then((data) => {
-                if (!data || controller.signal.aborted) return
-                // For an active licence the endpoint reports source as 'env' or
-                // 'db' (never the literal 'license_key'), so gate on active+tier
-                // rather than a specific source string — otherwise the promo
-                // strip stays stuck on free-tier copy while the quota meter
-                // (which reads /api/v1/usage) correctly shows the paid tier.
-                if (data.active && data.tier) {
-                    setLicenseTier(data.tier)
-                }
-            })
-            .catch(() => { /* fall back to free copy */ })
-        return () => controller.abort()
-    }, [])
 
     const handleOpenWorkBoard = (params = {}) => {
         onViewChange?.('work-board', params)
@@ -162,24 +143,18 @@ export function DashboardPremium({
                 />
 
                 <div id="attention" className="scroll-mt-20">
-                    {isEnabled('inbox') ? (
-                        <Suspense fallback={<Skeleton variant="card" className="h-48 rounded-2xl" />}>
-                            <InboxPanel onSelectItem={(item) => {
-                                const number = item.prNumber ?? item.issueNumber
-                                if (item.kind === 'pr' && Number.isFinite(number)) {
-                                    emitAppEvent(APP_EVENTS.OPEN_REPO_PR, { repoFullName: item.repoFullName, number })
-                                } else if (item.kind === 'issue' && Number.isFinite(number)) {
-                                    emitAppEvent(APP_EVENTS.OPEN_REPO_ISSUE, { repoFullName: item.repoFullName, number })
-                                } else {
-                                    onViewChange?.('repos', { highlightRepoFullName: item.repoFullName })
-                                }
-                            }} />
-                        </Suspense>
-                    ) : (
-                        <AttentionFeed onSelectRepo={(repoFullName) => {
-                            onViewChange?.('repos', { highlightRepoFullName: repoFullName })
+                    <Suspense fallback={<Skeleton variant="card" className="h-48 rounded-2xl" />}>
+                        <InboxPanel onSelectItem={(item) => {
+                            const number = item.prNumber ?? item.issueNumber
+                            if (item.kind === 'pr' && Number.isFinite(number)) {
+                                emitAppEvent(APP_EVENTS.OPEN_REPO_PR, { repoFullName: item.repoFullName, number })
+                            } else if (item.kind === 'issue' && Number.isFinite(number)) {
+                                emitAppEvent(APP_EVENTS.OPEN_REPO_ISSUE, { repoFullName: item.repoFullName, number })
+                            } else {
+                                onViewChange?.('repos', { highlightRepoFullName: item.repoFullName })
+                            }
                         }} />
-                    )}
+                    </Suspense>
                 </div>
 
                 {/* CATEGORY 1: Overview Essencial (Always Visible) */}

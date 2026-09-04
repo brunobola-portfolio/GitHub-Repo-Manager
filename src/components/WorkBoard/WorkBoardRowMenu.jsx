@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { copyToClipboard } from '../../utils/clipboard'
 import * as Popover from '@radix-ui/react-popover'
 import { MoreHorizontal, Pin, PinOff, Bell, BellOff, X, ExternalLink, Copy, Eye } from 'lucide-react'
 import { clsx } from 'clsx'
@@ -58,7 +59,7 @@ export function WorkBoardRowMenu({ repoFullName, itemUrl, itemType, itemNumber }
 
     const handleCopy = () => {
         setOpen(false)
-        navigator.clipboard?.writeText(itemUrl)
+        copyToClipboard(itemUrl)
         toast.success('Link copied')
     }
 

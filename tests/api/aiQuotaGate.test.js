@@ -3,7 +3,7 @@
  *
  * The first 429+QUOTA_EXCEEDED response should "close the gate": subsequent
  * aiFetch calls inside the TTL must throw AIQuotaExceededError WITHOUT
- * touching the network. This is what stops AttentionFeed and similar
+ * touching the network. This is what stops the dashboard inbox and similar
  * fan-out surfaces from spamming the devtools console with 429s.
  */
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'

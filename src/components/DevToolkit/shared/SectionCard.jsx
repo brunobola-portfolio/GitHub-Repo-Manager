@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
+import { useCopyToClipboard } from '../../../hooks/useCopyToClipboard'
 import { Pencil } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { AnimatedCopyIcon } from '../../ui/AnimatedCopyIcon'
@@ -8,13 +9,9 @@ import { Tooltip } from '../../ui/Tooltip'
 
 export function SectionCard({ title, content, onContentChange, chips, onRefine, refining, loading }) {
     const [editing, setEditing] = useState(false)
-    const [copied, setCopied] = useState(false)
+    const { copied, copy } = useCopyToClipboard()
 
-    const handleCopy = useCallback(() => {
-        navigator.clipboard.writeText(content || '')
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-    }, [content])
+    const handleCopy = () => copy(content || '')
 
     if (loading) {
         return <div className="h-20 ds-skeleton rounded-xl" />

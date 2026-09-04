@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
+import { formatUserError } from '../../utils/errors'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Key, Plus, Trash2, AlertTriangle, Shield } from 'lucide-react'
 import { AnimatedCopyIcon } from '../ui/AnimatedCopyIcon'
@@ -204,17 +206,9 @@ function NewKeyForm({ onCreated, onCancel }) {
 }
 
 function NewKeyReveal({ keyData, onDismiss }) {
-    const [copied, setCopied] = useState(false)
+    const { copied, copy } = useCopyToClipboard()
 
-    const handleCopy = useCallback(async () => {
-        try {
-            await navigator.clipboard.writeText(keyData.key)
-            setCopied(true)
-            setTimeout(() => setCopied(false), 2000)
-        } catch {
-            // clipboard API not available
-        }
-    }, [keyData.key])
+    const handleCopy = useCallback(() => { copy(keyData.key) }, [copy, keyData.key])
 
     return (
         <motion.div
@@ -368,7 +362,7 @@ export function ApiKeysSection() {
                 if (data?.limits) setLimits(data.limits)
             }
         } catch (err) {
-            setError(err.message)
+            setError(formatUserError(err, { fallbackTitle: 'Failed to load API keys' }))
         } finally {
             setLoading(false)
         }
@@ -452,9 +446,12 @@ export function ApiKeysSection() {
                     ))}
                 </div>
             ) : error ? (
-                <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300 flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 shrink-0" />
-                    {error}
+                <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>
+                        <span className="font-medium">{error.title}</span>
+                        {error.body ? <span className="block text-xs opacity-80 mt-0.5">{error.body}</span> : null}
+                    </span>
                 </div>
             ) : keys.length === 0 ? (
                 <EmptyState

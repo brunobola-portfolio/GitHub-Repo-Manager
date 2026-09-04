@@ -290,14 +290,18 @@ describe('ImageGeneratorModal — preview → commit', () => {
         expect(await screen.findByRole('link', { name: /view pr/i })).toHaveAttribute('href', 'https://github.com/acme/lib/pull/9')
     })
 
-    it('shows a commit error inline without losing the preview', async () => {
+    it('shows a commit error inline without losing the preview, through the curated vocabulary', async () => {
         const user = userEvent.setup()
         aiApi.images.commit.mockRejectedValue(new Error('write failed'))
         await toPreview(user)
 
         await user.click(screen.getByRole('button', { name: /^apply$/i }))
 
-        expect(await screen.findByRole('alert')).toHaveTextContent(/write failed/i)
+        const alert = await screen.findByRole('alert')
+        expect(alert).toHaveTextContent(/commit/i)
+        // AIErrorState renders formatUserError's copy — the raw provider string
+        // must not reach the user (FE-21).
+        expect(alert).not.toHaveTextContent(/write failed/i)
         expect(screen.getByTestId('image-generator-preview')).toBeInTheDocument()
     })
 })

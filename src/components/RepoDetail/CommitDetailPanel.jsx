@@ -2,6 +2,7 @@
 import { GitCommit, ExternalLink, Sparkles } from 'lucide-react'
 import { AnimatedCopyIcon } from '../ui/AnimatedCopyIcon'
 import { useState } from 'react'
+import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import { Button } from '../ui/Button'
 import { Modal } from '../ui/Modal'
 import { Spinner } from '../ui/Spinner'
@@ -65,14 +66,8 @@ function CommitAIPanel({ summary, loading, error, hasRequested, generate }) {
 }
 
 function CopyButton({ value, label }) {
-    const [copied, setCopied] = useState(false)
-    const onClick = async () => {
-        try {
-            await navigator.clipboard.writeText(value)
-            setCopied(true)
-            setTimeout(() => setCopied(false), 1200)
-        } catch { /* clipboard denied; ignore */ }
-    }
+    const { copied, copy } = useCopyToClipboard(1200)
+    const onClick = () => copy(value)
     return (
         <button type="button" onClick={onClick}
             className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-mono text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"

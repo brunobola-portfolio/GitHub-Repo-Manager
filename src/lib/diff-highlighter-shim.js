@@ -63,7 +63,7 @@ lowlight.register('vue', function hljsDefineVue(hljs) {
 
 // processAST — identical to @git-diff-view/lowlight's implementation.
 // @git-diff-view/core re-exports this, so the signature must match exactly.
-export function processAST(ast) {
+function processAST(ast) {
   let lineNumber = 1
   const syntaxObj = {}
   const loopAST = (nodes, wrapper) => {
@@ -132,14 +132,6 @@ export function processAST(ast) {
   }
   loopAST(ast.children)
   return { syntaxFileObject: syntaxObj, syntaxFileLineNumber: lineNumber }
-}
-
-// Type-helper only — never called at runtime (mirrors @git-diff-view/lowlight).
-export function _getAST(_raw, _fileName, _lang, _theme) {
-  if (process.env.NODE_ENV === 'development') {
-    console.warn('This is a type helper function, do not call it directly.')
-  }
-  return {}
 }
 
 export const versions = '0.1.3'

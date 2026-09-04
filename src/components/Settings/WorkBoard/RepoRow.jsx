@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { copyToClipboard } from '../../../utils/clipboard'
 import * as Popover from '@radix-ui/react-popover'
 import { MoreHorizontal, Pin, PinOff, Bell, BellOff, X, ExternalLink, Copy } from 'lucide-react'
 import { clsx } from 'clsx'
@@ -90,7 +91,7 @@ export function RepoRow({ repo, onAction, selected = false, onSelectionChange })
                     <MenuItem
                         icon={<Copy className="w-3.5 h-3.5" />}
                         label="Copy name"
-                        onClick={() => { navigator.clipboard?.writeText(repo.repo_full_name); setMenuOpen(false) }}
+                        onClick={() => { copyToClipboard(repo.repo_full_name); setMenuOpen(false) }}
                     />
                     <MenuItem
                         icon={<ExternalLink className="w-3.5 h-3.5" />}

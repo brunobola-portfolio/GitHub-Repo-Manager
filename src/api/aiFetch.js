@@ -105,7 +105,7 @@ export class AIQuotaExceededError extends Error {
 // short window. Subsequent aiFetch() calls bail out *without* hitting the
 // network — the request never leaves the browser, so the devtools console
 // no longer fills with "POST /api/ai/foo 429" lines on dashboards that
-// fan-out (e.g. AttentionFeed firing 3 narratives in parallel).
+// fan-out (e.g. the dashboard inbox firing 3 narratives in parallel).
 //
 // State clears on:
 //   - any successful AI response (server flipped state)

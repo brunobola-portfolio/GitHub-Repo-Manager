@@ -5,22 +5,19 @@
  * (relative) parent so the halo anchors at the top-center.
  *
  * Props:
- *  - palette?:   'indigo'|'emerald'|'amber'|'rose'  preset gradient
+ *  - palette?:   'neutral'                          preset gradient
  *  - intensity?: 'subtle'|'default'|'strong'        opacity tier
  *  - position?:  'top'|'topRight'|'topLeft'         where the halo originates
  *  - className?: string                             extra utility classes
  */
 export function HeroHalo({
-    palette = 'indigo',
+    palette = 'neutral',
     intensity = 'default',
     position = 'top',
     className = '',
 }) {
     const palettes = {
-        indigo:  'from-slate-400/30 via-slate-300/15 to-transparent dark:from-slate-600/20 dark:via-slate-500/10',
-        emerald: 'from-emerald-400/40 via-brand-400/20 to-transparent dark:from-emerald-500/30 dark:via-brand-500/15',
-        amber:   'from-amber-400/40 via-orange-400/20 to-transparent dark:from-amber-500/30 dark:via-orange-500/15',
-        rose:    'from-rose-400/40 via-rose-300/20 to-transparent dark:from-rose-500/30 dark:via-rose-400/15',
+        neutral: 'from-slate-400/30 via-slate-300/15 to-transparent dark:from-slate-600/20 dark:via-slate-500/10',
     }
     const intensities = {
         subtle:  'opacity-50',
@@ -32,7 +29,7 @@ export function HeroHalo({
         topRight: '-top-20 right-0',
         topLeft:  '-top-20 left-0',
     }
-    const p = palettes[palette] || palettes.indigo
+    const p = palettes[palette] || palettes.neutral
     const i = intensities[intensity] || intensities.default
     const pos = positions[position] || positions.top
 

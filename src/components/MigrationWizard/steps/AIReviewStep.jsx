@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { formatUserError } from '../../../utils/errors'
 import {
   Shield, AlertTriangle, CheckCircle2,
   RefreshCw, Clock, Zap,
@@ -87,7 +88,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
         warnings: result.warnings || [],
       })
     } catch (err) {
-      setError(err.message || 'Analysis failed')
+      setError(formatUserError(err, { fallbackTitle: 'Analysis failed' }))
     } finally {
       setAnalyzing(false)
     }
@@ -151,8 +152,8 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
             <AlertTriangle className="w-4 h-4 text-red-500" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-red-700 dark:text-red-400">Analysis failed</p>
-            <p className="text-xs text-red-600/80 dark:text-red-400/60 mt-0.5">{error}</p>
+            <p className="text-sm font-medium text-red-700 dark:text-red-400">{error.title}</p>
+            <p className="text-xs text-red-600/80 dark:text-red-400/60 mt-0.5">{error.body}</p>
           </div>
           <button
             type="button"

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { SectionSpinner } from '../ui/Spinner'
+import { formatUserError } from '../../utils/errors'
 
 function UsageBar({ label, current, limit }) {
   const isInf = limit === 'Infinity' || limit === Infinity || limit === null || limit === undefined
@@ -88,7 +89,7 @@ export function UsageDashboard() {
       })
       .catch(err => {
         if (!cancelled) {
-          setError(err.message)
+          setError(formatUserError(err, { fallbackTitle: 'Failed to load usage' }))
           setLoading(false)
         }
       })
@@ -104,7 +105,8 @@ export function UsageDashboard() {
   if (error) {
     return (
       <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-900 dark:text-red-300 text-sm">
-        {error}
+        <p className="font-medium">{error.title}</p>
+        {error.body ? <p className="text-xs opacity-80 mt-0.5">{error.body}</p> : null}
       </div>
     )
   }

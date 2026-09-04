@@ -37,21 +37,23 @@ async function parseFromResponse(res, context) {
         // Non-JSON response — fine, we'll fall through to the status code.
     }
 
+    const serverText = humanOrNull(body?.error) || humanOrNull(body?.message)
+
     if (status === 401) {
         if (isUpgradeBody(body)) return upgradeFromBody(body)
-        return { kind: 'unauthenticated', message: body?.error || 'Sign in to continue' }
+        return { kind: 'unauthenticated', message: serverText || 'Sign in to continue' }
     }
 
     if (status === 403) {
         if (isUpgradeBody(body)) return upgradeFromBody(body)
-        return { kind: 'forbidden', message: body?.error || body?.message || 'Access denied' }
+        return { kind: 'forbidden', message: serverText || 'Access denied' }
     }
 
     if (status === 503) {
         return {
             kind: 'service-unavailable',
             service: context.service ?? 'this feature',
-            hint: body?.error || body?.message || null,
+            hint: serverText,
         }
     }
 
@@ -60,14 +62,14 @@ async function parseFromResponse(res, context) {
         return {
             kind: 'rate-limited',
             retryAfterSec: Number.isFinite(headerRetry) ? headerRetry : null,
-            message: body?.error || 'Too many requests',
+            message: serverText || 'Too many requests',
         }
     }
 
     return {
         kind: 'generic',
         status,
-        message: body?.error || body?.message || `Request failed (${status})`,
+        message: serverText || `Request failed (${status})`,
     }
 }
 
@@ -81,7 +83,10 @@ async function parseFromResponse(res, context) {
  */
 function isUpgradeBody(body) {
     if (!body) return false
+    // The slug moved from `error` to `code` when the server adopted the
+    // { error: <human>, code: <slug> } contract; accept both during the overlap.
     return body.error === 'upgrade_required'
+        || body.code === 'upgrade_required'
         || (typeof body.code === 'string' && body.code.startsWith('TIER_REQUIRED'))
 }
 
@@ -90,8 +95,20 @@ function upgradeFromBody(body) {
         kind: 'upgrade-required',
         tier: body.requiredTier ?? tierFromCode(body.code) ?? 'pro',
         currentTier: body.currentTier ?? 'free',
-        message: body.message ?? null,
+        message: body.message ?? humanOrNull(body.error),
     }
+}
+
+/**
+ * A machine slug is never a message. Older routes (and any that regress) put
+ * `lid_required` or `AI_NOT_CONFIGURED` in `error`, and FeatureState printed
+ * it as the hint. A string with no space that is all lower_snake or all
+ * SCREAMING_SNAKE is treated as absent so the caller's own copy renders.
+ */
+function humanOrNull(value) {
+    if (typeof value !== 'string' || !value.trim()) return null
+    if (!value.includes(' ') && /^[a-z0-9_]+$|^[A-Z0-9_]+$/.test(value)) return null
+    return value
 }
 
 function tierFromCode(code) {

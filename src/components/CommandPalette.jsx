@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { copyToClipboard } from '../utils/clipboard'
 import { Command, useCommandState } from 'cmdk'
 import * as Dialog from '@radix-ui/react-dialog'
 import {
@@ -363,8 +364,7 @@ export function CommandPalette({
           }
           break
         case 'copy':
-          if (item.text && navigator.clipboard?.writeText) {
-            await navigator.clipboard.writeText(item.text)
+          if (item.text && await copyToClipboard(item.text)) {
             toast.success('Copied to clipboard')
           }
           break

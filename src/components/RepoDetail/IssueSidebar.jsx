@@ -5,6 +5,7 @@ import { Card } from '../ui/Card'
 import { Spinner } from '../ui/Spinner'
 import { useToast } from '../../hooks/useToast'
 import { issueLabelChipStyle } from '../../utils/issueLabelColors'
+import { formatDate, formatDateTime } from '../../utils/format'
 
 /**
  * IssueSidebar — labels, assignees, milestone editor for the right rail of
@@ -247,7 +248,7 @@ function MilestoneInfo({ issue }) {
                     <div className="font-medium text-slate-700 dark:text-slate-300">{ms.title}</div>
                     {ms.due_on && (
                         <div className="text-slate-500 mt-0.5">
-                            due {new Date(ms.due_on).toLocaleDateString()}
+                            due {formatDate(ms.due_on)}
                         </div>
                     )}
                 </div>
@@ -323,7 +324,7 @@ export function IssueTimeline({ owner: _owner, repo: _repo, number, api }) {
                                     {ev.assignee?.login && <span className="ml-1 font-medium">{ev.assignee.login}</span>}
                                     {ev.created_at && (
                                         <span className="ml-2 text-slate-400">
-                                            {new Date(ev.created_at).toLocaleString()}
+                                            {formatDateTime(ev.created_at)}
                                         </span>
                                     )}
                                 </div>

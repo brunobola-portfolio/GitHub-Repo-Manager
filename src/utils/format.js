@@ -12,7 +12,7 @@
  * Override per-call via `options.locale` on formatNumber/formatCompact if a
  * localised surface ever lands.
  */
-export const APP_LOCALE = 'en-US'
+const APP_LOCALE = 'en-US'
 
 /**
  * Formats a number with thousand separators
@@ -202,6 +202,22 @@ export function formatDateTime(value) {
 	} catch {
 		return d.toISOString()
 	}
+}
+
+/**
+ * Timestamp for a table cell or detail row. Like formatDateTime, but never
+ * renders an empty cell: nullish becomes the placeholder and an unparseable
+ * value is shown verbatim so an operator can still read what the server sent.
+ *
+ * @param {Date|string|number|null|undefined} value
+ * @param {string} [placeholder='—']
+ * @returns {string}
+ */
+export function formatTimestamp(value, placeholder = '—') {
+	if (!value) return placeholder
+	const formatted = formatDateTime(value)
+	if (formatted) return formatted
+	return typeof value === 'string' ? value : placeholder
 }
 
 /**

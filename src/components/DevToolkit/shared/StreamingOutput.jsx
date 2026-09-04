@@ -2,14 +2,15 @@ import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Copy, Check, Terminal, Square } from 'lucide-react'
 import { shellQuote } from '../../../utils/shellQuote'
+import { copyToClipboard } from '../../../utils/clipboard'
 import { Tooltip } from '../../ui/Tooltip'
 
 export function StreamingOutput({ content, streamingText, isStreaming, onCancel, label = 'Generated Output', retryCount = 0 }) {
     const [copiedId, setCopiedId] = useState(null)
     const displayText = isStreaming ? streamingText : content
 
-    const handleCopy = useCallback((text, id) => {
-        navigator.clipboard.writeText(text)
+    const handleCopy = useCallback(async (text, id) => {
+        if (!await copyToClipboard(text)) return
         setCopiedId(id)
         setTimeout(() => setCopiedId(null), 2000)
     }, [])

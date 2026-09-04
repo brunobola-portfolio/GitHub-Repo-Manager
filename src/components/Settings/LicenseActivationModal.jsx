@@ -6,6 +6,7 @@ import { CheckCircle2, XCircle } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
 import { fetchWithRetry } from '../../utils/api'
 import { formatUserError } from '../../utils/errors'
+import { formatDate } from '../../utils/format'
 import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
 export function LicenseActivationModal({ isOpen, onClose }) {
@@ -57,9 +58,7 @@ export function LicenseActivationModal({ isOpen, onClose }) {
     onClose()
   }
 
-  const formattedExpires = result?.expiresAt
-    ? new Date(result.expiresAt).toLocaleDateString()
-    : null
+  const formattedExpires = formatDate(result?.expiresAt) || null
 
   return (
     <Modal

@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { useCopyToClipboard } from '../../../hooks/useCopyToClipboard'
+import { formatUserError } from '../../../utils/errors'
 import { motion, AnimatePresence } from 'framer-motion'
 import { EASE, SPRING } from '../../ui/motion'
 import {
@@ -305,8 +307,8 @@ function TaskResultRow({ task, index, maxIndex = 10, onFixLfsUpload }) {
    ═══════════════════════════════════════════ */
 
 function ErrorCard({ error, index, onReplaceRetry, onLfsRetry }) {
+  const { copied, copy } = useCopyToClipboard()
   const [expanded, setExpanded] = useState(index === 0)
-  const [copied, setCopied] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const typeConfig = TYPE_CONFIG[error.type] || TYPE_CONFIG.repo
   const TypeIcon = typeConfig.icon
@@ -316,11 +318,7 @@ function ErrorCard({ error, index, onReplaceRetry, onLfsRetry }) {
   // the Replace action does not apply to them.
   const isConflict = isConflictError(error)
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(error.error)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
+  const handleCopy = () => copy(error.error)
 
   return (
     <motion.div
@@ -565,7 +563,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
     let cancelled = false
     migrationApi.getReport(planId)
       .then((data) => { if (!cancelled) setReport(data) })
-      .catch((err) => { if (!cancelled) setError(err.message) })
+      .catch((err) => { if (!cancelled) setError(formatUserError(err, { fallbackTitle: 'Failed to load report' })) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [planId])
@@ -595,8 +593,8 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
       <div className="flex flex-col items-center gap-3 p-12 text-center">
         <RowIconBadge icon={XCircle} tone="red" size="xl" surface="soft" />
         <div>
-          <p className="text-sm font-medium text-red-600 dark:text-red-400">Failed to load report</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{error}</p>
+          <p className="text-sm font-medium text-red-600 dark:text-red-400">{error.title}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{error.body}</p>
         </div>
       </div>
     )

@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
 import { apiCall } from '../../../utils/api'
+import { formatUserError } from '../../../utils/errors'
 
 /**
  * Group an array of comments by filename into a plain object.
@@ -46,7 +47,7 @@ export function useReviewData(owner, repo, pullNumber, api) {
             loadedHeadShaRef.current = headSha
             setData({ pr, files, comments, reviews, headSha })
         } catch (e) {
-            setError(e.message ?? 'Failed to load PR data')
+            setError(formatUserError(e, { fallbackTitle: 'Failed to load PR data' }).title)
         } finally {
             setLoading(false)
         }

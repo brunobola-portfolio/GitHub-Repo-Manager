@@ -5,6 +5,7 @@ import {
 	Upload, FlaskConical, Download, Sparkles, Heart,
 } from 'lucide-react'
 import { copyToClipboard } from '../utils/clipboard'
+import { formatDateTime } from '../utils/format'
 import { buildActionCommands } from './buildActionCommands'
 import { emitAppEvent, APP_EVENTS } from '../utils/appEvents'
 
@@ -246,7 +247,7 @@ export const repoActions = {
 		isApplicable: (repo) => !!repo?.isMirror,
 		run: async (repo, ctx) => {
 			const p = await ctx.api.previewSync(repo.owner.login, repo.name)
-			const last = p.lastSyncedAt ? new Date(p.lastSyncedAt).toLocaleString() : 'never synced'
+			const last = formatDateTime(p.lastSyncedAt) || 'never synced'
 			// Sync apply is free on every tier (2026-07-18 rebalance), capped at
 			// syncApplyPerMonth — show remaining runs instead of the old
 			// (now-removed) applyRequiresPro gate.

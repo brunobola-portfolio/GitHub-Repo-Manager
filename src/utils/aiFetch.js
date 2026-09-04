@@ -18,6 +18,7 @@ import {
   AIQuotaExceededError,
 } from '../api/aiFetch'
 import { getCsrfToken, invalidateCsrfToken } from './api'
+import { isAbort } from './errorClassification'
 
 const CSRF_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
 
@@ -100,7 +101,7 @@ export async function fetchJSONWithTimeout(url, options = {}, { timeoutMs = 60_0
   try {
     return await fetchJSON(url, { ...options, signal: controller.signal })
   } catch (err) {
-    if (err?.name === 'AbortError') {
+    if (isAbort(err, controller.signal)) {
       const timeoutErr = new Error(`${label} timed out after ${Math.round(timeoutMs / 1000)}s.`)
       timeoutErr.code = 'AI_TIMEOUT'
       throw timeoutErr

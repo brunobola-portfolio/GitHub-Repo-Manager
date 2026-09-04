@@ -2,7 +2,6 @@
  * Utility functions for aggregating statistics across repositories, organizations, and teams
  */
 
-import { MS_PER_DAY } from './time'
 
 /**
  * Calculate if a category should be shown based on data availability
@@ -78,36 +77,6 @@ export function aggregateLanguages(repos = []) {
   return Object.entries(langCount)
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value)
-}
-
-/**
- * Group repositories by update time buckets
- */
-export function groupByUpdateTime(repos = []) {
-  const now = new Date()
-  const buckets = {
-    today: [],
-    thisWeek: [],
-    thisMonth: [],
-    older: []
-  }
-
-  repos.forEach(repo => {
-    if (!repo.updated_at) {
-      buckets.older.push(repo)
-      return
-    }
-
-    const updated = new Date(repo.updated_at)
-    const daysDiff = Math.floor((now - updated) / MS_PER_DAY)
-
-    if (daysDiff === 0) buckets.today.push(repo)
-    else if (daysDiff <= 7) buckets.thisWeek.push(repo)
-    else if (daysDiff <= 30) buckets.thisMonth.push(repo)
-    else buckets.older.push(repo)
-  })
-
-  return buckets
 }
 
 /**

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 import { SpinnerIcon } from '../ui/Spinner'
 import { getCsrfToken } from '../../utils/api'
+import { formatUserError } from '../../utils/errors'
 import { useToast } from '../../hooks/useToast'
 import { formatDate } from '../../utils/format'
 
@@ -22,17 +23,17 @@ import { formatDate } from '../../utils/format'
 export default function AzureHostsAllowlistSection() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(null)
 
   const load = useCallback(async () => {
-    setLoading(true); setError('')
+    setLoading(true); setError(null)
     try {
       const res = await fetch('/api/azure/host-allowlist', { credentials: 'include' })
       const json = await res.json()
       if (!res.ok) throw new Error(json?.error || 'Failed to load allowlist')
       setData(json)
     } catch (e) {
-      setError(e.message)
+      setError(formatUserError(e, { fallbackTitle: 'Failed to load the host allowlist' }))
     } finally {
       setLoading(false)
     }
@@ -56,7 +57,7 @@ export default function AzureHostsAllowlistSection() {
   if (!data) {
     return (
       <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300">
-        <AlertCircle className="w-4 h-4 shrink-0" /> {error || 'Error loading'}
+        <AlertCircle className="w-4 h-4 shrink-0" /> {error?.title || 'Error loading'}
       </div>
     )
   }
@@ -294,13 +295,13 @@ function AddHostForm({ onAdded }) {
   const [pattern, setPattern] = useState('')
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
 
   const handleSubmit = async (e) => {
     e?.preventDefault?.()
     if (!pattern.trim()) return
-    setSubmitting(true); setError(''); setSuccess(false)
+    setSubmitting(true); setError(null); setSuccess(false)
     try {
       const csrf = await getCsrfToken().catch(() => null)
       const res = await fetch('/api/azure/host-allowlist', {
@@ -315,7 +316,7 @@ function AddHostForm({ onAdded }) {
       onAdded?.()
       setTimeout(() => setSuccess(false), 3000)
     } catch (e) {
-      setError(e.message)
+      setError(formatUserError(e, { fallbackTitle: 'Failed to add the host pattern' }))
     } finally {
       setSubmitting(false)
     }
@@ -370,7 +371,7 @@ function AddHostForm({ onAdded }) {
       </p>
       {error && (
         <div role="alert" className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1.5">
-          <AlertCircle className="w-3.5 h-3.5" /> {error}
+          <AlertCircle className="w-3.5 h-3.5" /> {error.title}
         </div>
       )}
       {success && (

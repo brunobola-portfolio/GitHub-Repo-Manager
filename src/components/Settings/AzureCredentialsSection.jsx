@@ -7,6 +7,7 @@ import {
 import { SpinnerIcon } from '../ui/Spinner'
 import AllowlistFixPanel from '../ui/AllowlistFixPanel'
 import { getCsrfToken } from '../../utils/api'
+import { formatUserError } from '../../utils/errors'
 import { useHostAllowlist } from '../../hooks/useHostAllowlist'
 import { useToast } from '../../hooks/useToast'
 import { formatDate, formatRelativeTime } from '../../utils/format'
@@ -27,10 +28,10 @@ export default function AzureCredentialsSection() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(null)
 
   const fetchItems = useCallback(async () => {
-    setLoading(true); setError('')
+    setLoading(true); setError(null)
     try {
       const res = await fetch('/api/azure/credentials', { credentials: 'include' })
       const data = await res.json().catch(() => null)
@@ -38,7 +39,7 @@ export default function AzureCredentialsSection() {
       if (!data) throw new Error('Unexpected response from the server')
       setItems(data.items || [])
     } catch (e) {
-      setError(e.message)
+      setError(formatUserError(e, { fallbackTitle: 'Failed to load Azure credentials' }))
     } finally {
       setLoading(false)
     }
@@ -55,7 +56,7 @@ export default function AzureCredentialsSection() {
 
       {error && (
         <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300">
-          <XCircle className="w-4 h-4 shrink-0" /> {error}
+          <XCircle className="w-4 h-4 shrink-0" /> {error.title}
         </div>
       )}
 
@@ -76,7 +77,9 @@ export default function AzureCredentialsSection() {
           ))}
         </div>
       ) : items.length === 0 ? (
-        <EmptyState onAdd={() => setShowForm(true)} />
+        // A failed load says nothing about the user's data; the error banner
+        // above is the whole state until a retry succeeds.
+        error ? null : <EmptyState onAdd={() => setShowForm(true)} />
       ) : (
         <ul className="space-y-2">
           {items.map((c) => (
@@ -368,7 +371,7 @@ function AddCredentialForm({ onClose, onCreated }) {
   const [showPat, setShowPat] = useState(false)
   const [scopes, setScopes] = useState({ code: true, project: true, workItems: false, wiki: false })
   const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
+  const [error, setError] = useState(null)
 
   const provider = classifyProvider(host)
   const tone = providerToneClasses(provider.tone)
@@ -379,7 +382,7 @@ function AddCredentialForm({ onClose, onCreated }) {
   const handleSubmit = async (e) => {
     e?.preventDefault?.()
     if (!canSubmit) return
-    setSubmitting(true); setError('')
+    setSubmitting(true); setError(null)
     try {
       const csrf = await getCsrfToken().catch(() => null)
       const scopeList = Object.entries(scopes).filter(([, v]) => v).map(([k]) => ({
@@ -398,7 +401,7 @@ function AddCredentialForm({ onClose, onCreated }) {
       if (!res.ok || !data) throw new Error(data?.error || `HTTP ${res.status}`)
       onCreated(data)
     } catch (e) {
-      setError(e.message)
+      setError(formatUserError(e, { fallbackTitle: 'Failed to save the credential' }))
     } finally {
       setSubmitting(false)
     }
@@ -553,7 +556,7 @@ function AddCredentialForm({ onClose, onCreated }) {
 
       {error && (
         <div role="alert" className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1.5">
-          <AlertCircle className="w-3.5 h-3.5" /> {error}
+          <AlertCircle className="w-3.5 h-3.5" /> {error.title}
         </div>
       )}
 

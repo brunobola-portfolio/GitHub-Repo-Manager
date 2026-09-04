@@ -5,7 +5,8 @@ import {
   formatPercentage,
   formatFileSize,
   formatRelativeTime,
-  formatDurationSeconds
+  formatDurationSeconds,
+  formatTimestamp
 } from '@/utils/format'
 
 describe('formatNumber', () => {
@@ -281,3 +282,24 @@ describe("formatDurationSeconds", () => {
   })
 })
 
+describe('formatTimestamp', () => {
+  it('reads a naive SQLite timestamp as UTC and pins the locale to en-US', () => {
+    // The naive shape carries no zone; reading it as local time is the bug
+    // parseServerTimestamp exists for. Compared against an explicit-UTC
+    // control so the assertion holds in any runner timezone.
+    const out = formatTimestamp('2026-03-04 12:00:00')
+    expect(out).toBe(new Date('2026-03-04T12:00:00Z').toLocaleString('en-US'))
+    expect(out).toMatch(/^\d{1,2}\/\d{1,2}\/2026/)
+  })
+
+  it('renders the placeholder for nullish values so table cells never go blank', () => {
+    expect(formatTimestamp(null)).toBe('—')
+    expect(formatTimestamp('')).toBe('—')
+    expect(formatTimestamp(undefined, 'n/a')).toBe('n/a')
+  })
+
+  it('falls back to the raw string when the value is unparseable', () => {
+    expect(formatTimestamp('not-a-date')).toBe('not-a-date')
+    expect(formatTimestamp({}, '-')).toBe('-')
+  })
+})

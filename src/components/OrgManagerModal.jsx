@@ -9,6 +9,7 @@ import { Modal, ModalFooter } from './ui/Modal'
 import { InsightCard } from './ui/InsightCard'
 import { EmptyState } from './ui/EmptyState'
 import { isAbort } from '../utils/errorClassification'
+import { formatDate } from '../utils/format'
 import { Spinner } from './ui/Spinner'
 import { Tooltip } from './ui/Tooltip'
 import { Field, Input, Textarea } from './ui/form'
@@ -267,7 +268,7 @@ function OverviewTab({ org, isPersonal, editing, editForm, setEditForm, onEdit, 
                         <DetailRow label="Email" value={org.email} icon={Mail} />
                         <DetailRow label="Location" value={org.location} icon={MapPin} />
                         <DetailRow label="Website" value={org.blog} icon={LinkIcon} isLink />
-                        <DetailRow label="Created" value={org.created_at ? new Date(org.created_at).toLocaleDateString() : null} />
+                        <DetailRow label="Created" value={formatDate(org.created_at) || null} />
                     </div>
                 )}
             </InsightCard>

@@ -16,6 +16,7 @@
 import { API_BASE } from '../config';
 import { getCsrfToken } from '../utils/api';
 import { getAIStatus } from './aiStatus';
+import { recordAIQuotaExceeded } from './aiFetch';
 
 // AI mocks live in src/__mocks__/mockAI.js. Each callsite inlines the
 // `import.meta.env.DEV && VITE_MOCK_MODE === 'true'` check so Vite can
@@ -81,6 +82,10 @@ async function withAIConfigured(mockFactory) {
 async function handleAIResponse(res, operation) {
     if (res.status === 429) {
         const body = await res.json().catch(() => ({}));
+        // Arm the shared gate so the ~20 endpoints on this contract stop
+        // firing 429s at a server that has already said no. Bare rate-limits
+        // clear on their own and must not mute the feature.
+        if (body?.code === 'QUOTA_EXCEEDED') recordAIQuotaExceeded(body);
         const error = new Error(body.error || 'AI query limit exceeded');
         error.status = 429;
         error.tierError = true;

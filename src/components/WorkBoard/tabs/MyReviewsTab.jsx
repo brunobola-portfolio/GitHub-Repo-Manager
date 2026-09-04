@@ -15,6 +15,8 @@ import { PingAuthorPopover, AnimatedChipStrip } from '../shared/PingAuthorPopove
 import { RowIconBadge } from '../../ui/RowIconBadge'
 import { ageLabel } from '../shared/formatters'
 import { getCsrfToken } from '../../../utils/api'
+import { isAbort } from '../../../utils/errorClassification'
+import { AIErrorState } from '../../ui/AIErrorState'
 import { WorkBoardRowMenu } from '../WorkBoardRowMenu'
 import { WorkBoardRowLink } from '../WorkBoardRowLink'
 import { EmptyStateDiscovery } from '../EmptyStateDiscovery'
@@ -150,35 +152,60 @@ function ReviewRow({ review, isFocused, onFocus, hasAI, onApprove, onSnooze, onR
 function DraftCommentModal({ review, intent, onConfirm, onClose }) {
     const [text, setText] = useState('')
     const [draftLoading, setDraftLoading] = useState(true)
+    const [draftError, setDraftError] = useState(null)
     const intervalRef = useRef(null)
     const fullTextRef = useRef('')
 
     useEffect(() => {
-        (async () => {
-            const csrf = await getCsrfToken()
-            return fetch('/api/v1/work-board/draft-comment', {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-                body: JSON.stringify({ repoFullName: review.repoFullName, prNumber: review.prNumber, intent }),
-            })
-        })()
-            .then(r => r.json())
-            .then(({ draft }) => {
-                fullTextRef.current = draft || ''
-                setDraftLoading(false)
+        const controller = new AbortController()
+        // The typewriter interval is registered on the ref BEFORE the state
+        // updates that can unmount this modal, and cleanup runs off the same
+        // ref — otherwise an unmount during the fetch clears a null ref and
+        // leaves a 25 ms interval calling setText forever.
+        const run = async () => {
+            try {
+                const csrf = await getCsrfToken()
+                const res = await fetch('/api/v1/work-board/draft-comment', {
+                    method: 'POST',
+                    credentials: 'include',
+                    signal: controller.signal,
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+                    body: JSON.stringify({ repoFullName: review.repoFullName, prNumber: review.prNumber, intent }),
+                })
+                const body = await res.json().catch(() => ({}))
+                if (!res.ok) {
+                    const err = new Error(body?.error || `status ${res.status}`)
+                    err.status = res.status
+                    err.code = body?.code
+                    throw err
+                }
+                if (controller.signal.aborted) return
+                fullTextRef.current = body?.draft || ''
                 let idx = 0
                 intervalRef.current = setInterval(() => {
                     idx++
                     setText(fullTextRef.current.slice(0, idx))
-                    if (idx >= fullTextRef.current.length) clearInterval(intervalRef.current)
+                    if (idx >= fullTextRef.current.length) {
+                        clearInterval(intervalRef.current)
+                        intervalRef.current = null
+                    }
                 }, 25)
-            })
-            .catch(() => {
                 setDraftLoading(false)
-            })
+            } catch (err) {
+                if (isAbort(err, controller.signal)) return
+                setDraftError(err)
+                setDraftLoading(false)
+            }
+        }
+        run()
 
-        return () => clearInterval(intervalRef.current)
+        return () => {
+            controller.abort()
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current)
+                intervalRef.current = null
+            }
+        }
     }, [review, intent])
 
     function handleTextareaClick() {
@@ -213,6 +240,14 @@ function DraftCommentModal({ review, intent, onConfirm, onClose }) {
                 </ModalFooter>
             }
         >
+            {draftError && (
+                <AIErrorState
+                    error={draftError}
+                    context="Draft comment"
+                    variant="inline"
+                    className="mb-2"
+                />
+            )}
             <div className="relative">
                 {draftLoading && (
                     <div className="absolute top-2 right-2">
@@ -225,12 +260,12 @@ function DraftCommentModal({ review, intent, onConfirm, onClose }) {
                         value={text}
                         onChange={e => setText(e.target.value)}
                         onClick={handleTextareaClick}
-                        placeholder={draftLoading ? 'Drafting review comment…' : ''}
+                        placeholder={draftLoading ? 'Drafting review comment…' : (draftError ? 'Write your comment' : '')}
                         rows={5}
                     />
                 </Field>
             </div>
-            {!draftLoading && (
+            {!draftLoading && !draftError && (
                 <p className="mt-1 flex items-center gap-1 ds-text-meta text-slate-500">
                     <Sparkles className="w-3 h-3" /> AI draft — edit before sending
                 </p>

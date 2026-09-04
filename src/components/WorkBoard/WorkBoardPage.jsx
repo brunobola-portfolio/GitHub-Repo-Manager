@@ -316,7 +316,7 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
             ) : (
             /* Main card */
             <div className="relative rounded-3xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
-                <HeroHalo palette="indigo" intensity="subtle" position="top" />
+                <HeroHalo palette="neutral" intensity="subtle" position="top" />
 
                 {/* Tab bar */}
                 <LayoutGroup>

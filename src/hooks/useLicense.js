@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { API_BASE_URL, MOCK_MODE } from '../config'
 import { onAppEvent, APP_EVENTS } from '../utils/appEvents'
+import { formatUserError } from '../utils/errors'
 
 /**
  * useLicense — fetches the current license/plan from the backend.
@@ -50,7 +51,7 @@ export function useLicense() {
             })
             .catch(err => {
                 if (cancelled) return
-                setError(err.message)
+                setError(formatUserError(err, { fallbackTitle: 'Failed to load license' }).title)
                 setIsLoading(false)
                 // Fall back to a free-tier license object so consumers
                 // don't need to null-guard tier in every render.

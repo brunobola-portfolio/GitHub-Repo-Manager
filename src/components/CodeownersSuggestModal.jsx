@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import { Modal, ModalFooter } from './ui/Modal'
 import { Button } from './ui/Button'
 import { Card } from './ui/Card'
@@ -20,10 +21,10 @@ import { reposApi } from '../api/repos'
  *   repo    : string
  */
 export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
+    const { copied, copy } = useCopyToClipboard(2500)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null)
     const [data, setData] = useState(null)
-    const [copied, setCopied] = useState(false)
 
     // Tunables — mirror the backend query params so the user can iterate
     // quickly on the suggestion shape without leaving the modal.
@@ -35,7 +36,6 @@ export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
         if (!owner || !repo) return
         setLoading(true)
         setError(null)
-        setCopied(false)
         try {
             const res = await reposApi.suggestCodeowners(owner, repo, { commits, minTouches, maxOwners })
             setData(res)
@@ -53,18 +53,11 @@ export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
     }, [isOpen, owner, repo])
     /* eslint-enable react-hooks/set-state-in-effect */
 
-    const handleCopy = async () => {
+    // A denied clipboard leaves `copied` false; the preview textarea below
+    // stays selectable, which is the accessible manual fallback.
+    const handleCopy = () => {
         if (!data?.preview) return
-        try {
-            await navigator.clipboard.writeText(data.preview)
-            setCopied(true)
-            setTimeout(() => setCopied(false), 2500)
-        } catch {
-            // Clipboard permission denied — fall back to a textarea the user
-            // can manually select. ConfirmModal / Modal doesn't wrap the
-            // preview textarea so the user can still Ctrl+A the textarea
-            // below, which is the accessible fallback path.
-        }
+        copy(data.preview)
     }
 
     // Compute hotspots inline — the backend already ranks rules by touch

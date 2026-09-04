@@ -19,6 +19,7 @@ const EXEMPT = new Map([
     ['DATA_DIR', 'container path is fixed by the app-data volume mount'],
     ['VITE_API_BASE_URL', 'build-time frontend variable, baked into the image'],
     ['VITE_MOCK_MODE', 'build-time frontend variable, baked into the image'],
+    ['VITE_SUPPORT_EMAIL', 'build-time frontend variable, baked into the image'],
     ['DATABASE_URL', 'PostgreSQL is intentionally unsupported and rejected at boot; forwarding it would imply otherwise'],
 ])
 

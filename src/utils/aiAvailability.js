@@ -15,7 +15,6 @@
  */
 
 let _unavailable = false
-let _reason = null
 const _listeners = new Set()
 
 const FATAL_STATUSES = new Set([400, 404, 422])
@@ -24,14 +23,9 @@ export function isAIUnavailable() {
   return _unavailable
 }
 
-export function getAIUnavailableReason() {
-  return _reason
-}
-
 export function markAIUnavailable(reason = 'unknown') {
   if (_unavailable) return
   _unavailable = true
-  _reason = reason
   _listeners.forEach((fn) => {
     try { fn(reason) } catch { /* listener errors must not break the cache */ }
   })
@@ -57,11 +51,3 @@ export function subscribeAIUnavailable(listener) {
   return () => { _listeners.delete(listener) }
 }
 
-/**
- * Reset state. Intended for tests and for the "user reconfigured AI" path
- * (settings page) — production code in the wizard never calls this.
- */
-export function resetAIAvailability() {
-  _unavailable = false
-  _reason = null
-}

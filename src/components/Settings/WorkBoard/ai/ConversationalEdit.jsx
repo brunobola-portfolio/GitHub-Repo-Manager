@@ -4,6 +4,7 @@ import { Textarea } from '../../../ui/form'
 import { Button } from '../../../ui/Button'
 import { Spinner } from '../../../ui/Spinner'
 import { MessageSquare, Check, Pencil } from 'lucide-react'
+import { formatUserError } from '../../../../utils/errors'
 
 export function ConversationalEdit({ onInterpret, onApply }) {
     const [prompt, setPrompt] = useState('')
@@ -18,7 +19,7 @@ export function ConversationalEdit({ onInterpret, onApply }) {
             const result = await onInterpret(prompt.trim())
             setDiff(result)
         } catch (e) {
-            setError(e.message || 'Preview failed')
+            setError(formatUserError(e, { fallbackTitle: 'Preview failed' }))
         } finally {
             setLoading(false)
         }
@@ -32,7 +33,7 @@ export function ConversationalEdit({ onInterpret, onApply }) {
             setDiff(null)
             setPrompt('')
         } catch (e) {
-            setError(e.message || 'Apply failed')
+            setError(formatUserError(e, { fallbackTitle: 'Apply failed' }))
         } finally {
             setLoading(false)
         }
@@ -84,7 +85,7 @@ export function ConversationalEdit({ onInterpret, onApply }) {
                     </div>
                 )}
 
-                {error && <p className="text-xs text-rose-600 dark:text-rose-400">{error}</p>}
+                {error && <p className="text-xs text-rose-600 dark:text-rose-400">{error.title}</p>}
             </div>
         </InsightCard>
     )

@@ -141,7 +141,7 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription,
 
     return (
         <PageMount className="space-y-6 relative">
-            <HeroHalo palette="indigo" intensity="subtle" position="top" />
+            <HeroHalo palette="neutral" intensity="subtle" position="top" />
             {isStaleData && (
                 <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl text-sm text-amber-700 dark:text-amber-400">
                     <span>Could not refresh repo data. Showing cached version.</span>
