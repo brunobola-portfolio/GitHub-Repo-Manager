@@ -86,8 +86,12 @@ describe('mutation actions', () => {
 		expect(cfg.variant).toBe('warning')
 	})
 
-	it('archive does not gate (toast-only by design)', () => {
-		expect(repoActions.archive.confirm).toBeUndefined()
+	it('archive gates on archiving but not on unarchiving', () => {
+		const cfg = repoActions.archive.confirm({ name: 'r', full_name: 'me/r', archived: false })
+		expect(cfg).toBeTruthy()
+		expect(cfg.variant).toBe('warning')
+		expect(cfg.confirmText).toBe('Archive')
+		expect(repoActions.archive.confirm({ name: 'r', full_name: 'me/r', archived: true })).toBeNull()
 	})
 
 	it('sync isApplicable returns false for non-mirror repos', () => {
