@@ -3,6 +3,7 @@ import { ShieldAlert, ShieldCheck, Terminal, Sparkles, Lock } from 'lucide-react
 import { AnimatedCopyIcon } from './AnimatedCopyIcon'
 import { SpinnerIcon } from './Spinner'
 import { getCsrfToken } from '../../utils/api'
+import { copyToClipboard } from '../../utils/clipboard'
 
 /**
  * Self-fix panel for "host not in ALLOWED_AZURE_HOSTS".
@@ -46,11 +47,9 @@ export default function AllowlistFixPanel({
   const copyValue = envLine
 
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(copyValue)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1800)
-    } catch { /* clipboard blocked */ }
+    if (!(await copyToClipboard(copyValue))) return
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1800)
   }
 
   const addNow = async () => {
@@ -195,11 +194,9 @@ function AdminQuickFix({ host, adding, error, onAdd, envLine, patternsKnown, env
 function NonAdminGuidance({ host, envLine, patternsKnown, envCopied, onEnvCopy }) {
   const [hostCopied, setHostCopied] = useState(false)
   const copyHost = async () => {
-    try {
-      await navigator.clipboard.writeText(host)
-      setHostCopied(true)
-      setTimeout(() => setHostCopied(false), 1800)
-    } catch { /* clipboard blocked */ }
+    if (!(await copyToClipboard(host))) return
+    setHostCopied(true)
+    setTimeout(() => setHostCopied(false), 1800)
   }
   return (
     <div className="space-y-3">

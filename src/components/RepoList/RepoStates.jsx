@@ -67,7 +67,7 @@ export function ErrorState({ error, errorInfo, onRefresh, onLogin }) {
  * Two empty states: "no repos at all" (pitch the create/import CTAs)
  * versus "filters hide everything" (pitch clearing filters).
  */
-export function EmptyState({ hasRepos, onCreateRepo, onImport, onClearFilters }) {
+export function EmptyState({ hasRepos, onCreateRepo, onImport, onClearFilters, pagedSearch = false, onSearchAllPages }) {
 	if (!hasRepos) {
 		return (
 			<div data-testid="empty-state" className="flex flex-col items-center justify-center py-20 text-slate-500 dark:text-slate-400">
@@ -92,12 +92,25 @@ export function EmptyState({ hasRepos, onCreateRepo, onImport, onClearFilters })
 		)
 	}
 
+	// Text search is client-side over the page on screen. Saying "no
+	// matches" when the match sits on page two blamed the filters for a
+	// pagination artefact, so the state names its scope and offers the rest.
+	if (pagedSearch && onSearchAllPages) {
+		return (
+			<UIEmptyState
+				icon={Search}
+				title="No matches on this page"
+				description="Search looked at the repositories on this page only. Load every page to search your whole account."
+				action={{ label: 'Search all pages', onClick: onSearchAllPages }}
+			/>
+		)
+	}
 	return (
 		<UIEmptyState
 			icon={Search}
 			title="No matches"
 			description="No repositories match your current filters."
-			action={{ label: 'Clear Filters', onClick: onClearFilters }}
+			action={{ label: 'Clear filters', onClick: onClearFilters }}
 		/>
 	)
 }

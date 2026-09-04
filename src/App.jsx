@@ -192,6 +192,8 @@ function AppContent() {
     results,
     isMockMode,
     setPage,
+    loadAllPages,
+    allPagesLoaded,
     performAction,
     fetchUser: fetchGitHubUser,
     refresh,
@@ -872,6 +874,8 @@ function AppContent() {
                     setPage={setPage}
                     perPage={perPage}
                     totalPages={totalPages}
+                    onLoadAllPages={loadAllPages}
+                    allPagesLoaded={allPagesLoaded}
                     onRefresh={refresh}
                     onRepoClick={handleOpenRepo}
                     onLogin={handleLogin}

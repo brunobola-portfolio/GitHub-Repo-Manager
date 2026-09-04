@@ -79,6 +79,9 @@ export function useRepos(user) {
     }, [])
     const [perPage, setPerPage] = useState(PAGINATION.defaultPerPage)
     const [totalPages, setTotalPages] = useState(null)
+    // True once loadAllPages() has replaced the paged slice with the whole
+    // account; a paged fetch (page change, refresh) turns it back off.
+    const [allPagesLoaded, setAllPagesLoaded] = useState(false)
     const [isPerforming, setIsPerforming] = useState(false)
     const [results, setResults] = useState([])
 
@@ -116,6 +119,7 @@ export function useRepos(user) {
             setMessage('')
             setPage(pageToLoad)
             setPerPage(per)
+            setAllPagesLoaded(false)
         } catch (e) {
             if (isAbort(e)) return
             const info = getErrorInfo(e)
@@ -123,6 +127,61 @@ export function useRepos(user) {
             setErrorInfo(info)
             setMessage(info.message)
             setRepos([])
+        } finally {
+            setLoading(false)
+        }
+    }, [setPage])
+
+    /**
+     * Load every page of the account into one list so a text search can see
+     * all of it. Plain-text search is client-side and used to filter only the
+     * 30 repositories on screen, telling the user nothing matched when the
+     * match sat on page two. Bounded to MAX_ALL_PAGES × 100 repositories; an
+     * account larger than that keeps paging.
+     */
+    const loadAllPages = useCallback(async (signal) => {
+        if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+            const { generateMockRepos } = await import('../__mocks__/mockRepos.js')
+            const { repos: all } = generateMockRepos(1, 1000)
+            setRepos(all)
+            setTotalPages(1)
+            setPerPage(all.length)
+            setPage(1)
+            setAllPagesLoaded(true)
+            return
+        }
+        const MAX_ALL_PAGES = 20
+        setLoading(true)
+        setError(null)
+        setErrorInfo(null)
+        try {
+            const all = []
+            let pages = 1
+            for (let p = 1; p <= pages && p <= MAX_ALL_PAGES; p++) {
+                const r = await fetchWithRetry(`${API_ENDPOINTS.repos}?page=${p}&per_page=100`, { credentials: 'include', signal })
+                const parsed = await safeParseJson(r)
+                const slice = parsed && Array.isArray(parsed.repos) ? parsed.repos : Array.isArray(parsed) ? parsed : []
+                all.push(...slice)
+                if (parsed && Array.isArray(parsed.repos) && parsed.totalPages) {
+                    pages = parsed.totalPages
+                } else {
+                    const link = r.headers?.get('link')
+                    const parsedTotal = link ? parseLinkHeaderTotal(link) : null
+                    pages = parsedTotal || (slice.length === 100 ? p + 1 : p)
+                }
+            }
+            setRepos(all)
+            setTotalPages(1)
+            setPerPage(all.length || 100)
+            setPage(1)
+            setAllPagesLoaded(true)
+            setMessage('')
+        } catch (e) {
+            if (isAbort(e)) return
+            const info = getErrorInfo(e)
+            setError(info.message)
+            setErrorInfo(info)
+            setMessage(info.message)
         } finally {
             setLoading(false)
         }
@@ -309,6 +368,7 @@ export function useRepos(user) {
                 const { repos: mockRepos, totalPages: mockTotalPages } = generateMockRepos(page, perPage)
                 setRepos(mockRepos)
                 setTotalPages(mockTotalPages)
+                setAllPagesLoaded(false)
             })()
             return
         }
@@ -539,6 +599,8 @@ export function useRepos(user) {
         isPerforming,
         results,
         setPage,
+        loadAllPages,
+        allPagesLoaded,
         refresh,
         patchRepoLocal,
         performAction,

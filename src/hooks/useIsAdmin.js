@@ -15,6 +15,7 @@
  * rather hide the admin UI than leak a button that 403s on click.
  */
 import { useState, useEffect } from 'react'
+import { fetchSessionInfo } from '../api/sessionInfo'
 
 export function useIsAdmin() {
     const [state, setState] = useState({ isAdmin: false, loading: true })
@@ -23,10 +24,7 @@ export function useIsAdmin() {
         let cancelled = false
         ;(async () => {
             try {
-                const res = await fetch('/api/auth/session-info', {
-                    method: 'GET',
-                    credentials: 'include',
-                })
+                const res = await fetchSessionInfo()
                 if (!res.ok) {
                     if (!cancelled) setState({ isAdmin: false, loading: false })
                     return

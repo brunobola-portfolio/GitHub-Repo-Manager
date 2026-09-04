@@ -263,6 +263,10 @@ export function Header({
                                         <img
                                             src={user.avatar_url || 'https://github.com/ghost.png'}
                                             alt={user.login}
+                                            width={26}
+                                            height={26}
+                                            loading="lazy"
+                                            decoding="async"
                                             className="w-[26px] h-[26px] rounded-full ring-2 ring-slate-200/80 dark:ring-slate-500/50"
                                         />
                                         <ChevronDown className={`w-3 h-3 text-slate-400 dark:text-slate-500 transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`} />
@@ -515,6 +519,10 @@ function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, o
                     <img
                         src={user.avatar_url || 'https://github.com/ghost.png'}
                         alt={user.login}
+                        width={48}
+                        height={48}
+                        loading="lazy"
+                        decoding="async"
                         className="w-12 h-12 rounded-full ring-2 ring-white dark:ring-slate-600 shadow"
                     />
                     <div className="flex-1 min-w-0">

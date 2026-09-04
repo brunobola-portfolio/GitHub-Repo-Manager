@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useToast } from './useToast'
+import { fetchSessionInfo } from '../api/sessionInfo'
 
 // ============ Constants ============
 
@@ -75,10 +76,7 @@ export function useSessionExpiry({ enabled = true } = {}) {
 
     const poll = useCallback(async () => {
         try {
-            const res = await fetch('/api/auth/session-info', {
-                method: 'GET',
-                credentials: 'include',
-            })
+            const res = await fetchSessionInfo()
             if (!res.ok) return // silent — the session-expired 401 handler
                                  // in api.js already surfaces a banner.
             const data = await res.json()

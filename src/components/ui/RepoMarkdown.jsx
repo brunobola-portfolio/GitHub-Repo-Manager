@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import { rehypeSlugInline } from './__rehype-slug-inline'
+import { copyToClipboard } from '../../utils/clipboard'
 import { AnimatedCopyIcon } from './AnimatedCopyIcon'
 import { parseAndSanitizeSvg } from '../../utils/sanitizeSvg'
 
@@ -166,14 +167,11 @@ function ReadmeCodeBlock({ children, ...preRest }) {
     }
 
     const handleCopy = async () => {
-        if (!rawText || !navigator.clipboard?.writeText) return
-        try {
-            await navigator.clipboard.writeText(rawText)
-            setCopied(true)
-            setTimeout(() => setCopied(false), 1500)
-        } catch {
-            // Clipboard permission denied / unavailable — no-op, button stays idle.
-        }
+        if (!rawText) return
+        // Denied or unavailable clipboard resolves false: the button stays idle.
+        if (!(await copyToClipboard(rawText))) return
+        setCopied(true)
+        setTimeout(() => setCopied(false), 1500)
     }
 
     return (

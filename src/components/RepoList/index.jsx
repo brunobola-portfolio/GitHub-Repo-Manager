@@ -33,6 +33,8 @@ export function RepoList({
 	setPage,
 	perPage,
 	totalPages,
+	onLoadAllPages,
+	allPagesLoaded = false,
 	onRefresh,
 	onRepoClick,
 	onLogin,
@@ -124,6 +126,8 @@ export function RepoList({
 				clearAllFilters={clearAllFilters}
 				totalCount={repos.length}
 				filteredCount={filteredRepos.length}
+				pagedSearch={!!searchQuery && !isAISearch && !allPagesLoaded && (totalPages || 1) > 1}
+				onSearchAllPages={onLoadAllPages}
 				sortBy={sortBy}
 				setSortBy={setSortBy}
 			/>
@@ -139,6 +143,8 @@ export function RepoList({
 					onCreateRepo={() => openModal('showCreateRepo')}
 					onImport={() => openModal('showMigrationWizard')}
 					onClearFilters={clearAllFilters}
+					pagedSearch={!!searchQuery && !isAISearch && !allPagesLoaded && (totalPages || 1) > 1}
+					onSearchAllPages={onLoadAllPages}
 				/>
 			) : (
 				// Reserve the strip the floating selection bar rests in, the way the

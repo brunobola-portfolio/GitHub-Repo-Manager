@@ -52,6 +52,8 @@ export function RepoFilterBar({
 	clearAllFilters,
 	totalCount,
 	filteredCount,
+	pagedSearch = false,
+	onSearchAllPages,
 	// sort
 	sortBy,
 	setSortBy,
@@ -433,8 +435,17 @@ export function RepoFilterBar({
 					Filtering
 					{typeof totalCount === 'number' && typeof filteredCount === 'number' && (
 						<span className="ml-1 normal-case tracking-normal font-medium text-slate-500/80 dark:text-slate-400/80">
-							· {filteredCount} of {totalCount}
+							· {filteredCount} of {totalCount}{pagedSearch ? ' on this page' : ''}
 						</span>
+					)}
+					{pagedSearch && onSearchAllPages && (
+						<button
+							type="button"
+							onClick={onSearchAllPages}
+							className="ml-2 normal-case tracking-normal font-semibold text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline ds-focus-ring rounded"
+						>
+							Search all pages
+						</button>
 					)}
 				</span>
 				{activeChips.map(chip => (
