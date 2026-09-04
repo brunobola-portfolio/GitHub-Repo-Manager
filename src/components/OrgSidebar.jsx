@@ -4,6 +4,7 @@ import { Building2, ChevronRight } from 'lucide-react'
 import CollapsiblePanel from './ui/CollapsiblePanel'
 import { Drawer } from './ui/Drawer'
 import { OrgPanel } from './OrgPanel'
+import { Tooltip } from './ui/Tooltip'
 import { BREAKPOINTS } from '../hooks/useMediaQuery'
 import { SPRING } from './ui/motion'
 
@@ -71,60 +72,56 @@ export function OrgSidebar({ user, orgs, selectedOrg, stats, leftMode, onSelectO
 
       <div className="w-6 border-t border-slate-200 dark:border-slate-700/50" />
 
-      <button
-        onClick={() => onSelectOrg(null)}
-        className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all group ${
-          !selectedOrg
-            ? 'bg-brand-100 dark:bg-brand-900/40 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ring-2 ring-brand-500/30'
-            : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-        }`}
-        aria-label="All Organizations"
-      >
-        <Building2 className="w-5 h-5" />
-        <span className="absolute left-full ml-3 px-2 py-1 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-[var(--ds-z-popover)]">
-          All Orgs
-        </span>
-      </button>
+      <Tooltip label="All Orgs" side="right">
+        <button
+          onClick={() => onSelectOrg(null)}
+          className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all ds-focus-ring ${
+            !selectedOrg
+              ? 'bg-brand-100 dark:bg-brand-900/40 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ring-2 ring-brand-500/30'
+              : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+          aria-label="All Organizations"
+        >
+          <Building2 className="w-5 h-5" />
+        </button>
+      </Tooltip>
 
       {(orgs || []).slice(0, 8).map(org => (
-        <button
-          key={org.login}
-          onClick={() => onSelectOrg(org.login)}
-          className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all group ${
-            selectedOrg === org.login
-              ? 'ring-2 ring-brand-500/30'
-              : 'hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-          aria-label={org.login}
-        >
-          {org.avatar_url ? (
-            <img src={org.avatar_url} alt={org.login} className="w-8 h-8 rounded-lg" />
-          ) : (
-            <span className="w-8 h-8 rounded-lg ds-brand-solid flex items-center justify-center text-xs font-bold">
-              {org.login.charAt(0).toUpperCase()}
-            </span>
-          )}
-          <span className="absolute left-full ml-3 px-2 py-1 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-[var(--ds-z-popover)]">
-            {org.login}
-          </span>
-          {selectedOrg === org.login && (
-            <span className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-1 h-5 rounded-full bg-brand-500" />
-          )}
-        </button>
+        <Tooltip key={org.login} label={org.login} side="right">
+          <button
+            onClick={() => onSelectOrg(org.login)}
+            className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all ds-focus-ring ${
+              selectedOrg === org.login
+                ? 'ring-2 ring-brand-500/30'
+                : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+            aria-label={org.login}
+          >
+            {org.avatar_url ? (
+              <img src={org.avatar_url} alt={org.login} className="w-8 h-8 rounded-lg" />
+            ) : (
+              <span className="w-8 h-8 rounded-lg ds-brand-solid flex items-center justify-center text-xs font-bold">
+                {org.login.charAt(0).toUpperCase()}
+              </span>
+            )}
+            {selectedOrg === org.login && (
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 w-1 h-5 rounded-full bg-brand-500" />
+            )}
+          </button>
+        </Tooltip>
       ))}
 
       <div className="flex-1" />
 
       {user && (
-        <button
-          className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
-          aria-label={user.login}
-        >
-          <img src={user.avatar_url} alt={user.login} className="w-8 h-8 rounded-lg" />
-          <span className="absolute left-full ml-3 px-2 py-1 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-[var(--ds-z-popover)]">
-            {user.login}
-          </span>
-        </button>
+        <Tooltip label={user.login} side="right">
+          <button
+            className="w-10 h-10 rounded-xl flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ds-focus-ring"
+            aria-label={user.login}
+          >
+            <img src={user.avatar_url} alt={user.login} className="w-8 h-8 rounded-lg" />
+          </button>
+        </Tooltip>
       )}
     </>
   )

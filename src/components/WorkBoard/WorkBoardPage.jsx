@@ -11,7 +11,7 @@
  */
 
 import { useState, useEffect, lazy, Suspense } from 'react'
-import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
     GitPullRequest, CircleDot, BarChart3,
     AlertTriangle, Wrench, Users, RefreshCw,
@@ -31,6 +31,7 @@ import { Badge } from '../ui/Badge'
 import { PageHeader } from '../ui/PageHeader'
 import { PageMount } from '../ui/PageMount'
 import { HeroHalo } from '../ui/HeroHalo'
+import { TabBar } from '../ui/TabBar'
 import { EmptyState as SharedEmptyState } from '../ui/EmptyState'
 import { Inbox } from 'lucide-react'
 import { WorkBoardFilterBar } from './filters/WorkBoardFilterBar'
@@ -55,7 +56,6 @@ import { SectionSpinner } from '../ui/Spinner'
 import { ManageReposButton } from './ManageReposButton'
 import { MOCK_MODE } from '../../config'
 import { emitAppEvent, onAppEvent, APP_EVENTS } from '../../utils/appEvents'
-import { SPRING } from '../ui/motion'
 
 // ---------------------------------------------------------------------------
 // Tab definitions
@@ -69,6 +69,18 @@ const TABS = [
     { id: 'techdebt',    label: 'Tech Debt',   icon: Wrench,         component: TechDebtTab, accent: 'attention' },
     { id: 'dora',        label: 'DORA',        icon: BarChart3,      component: DORATab, accent: 'brand' },
 ]
+
+// TabBar's per-tab `badge` slot renders any tier pill a tab carries (none
+// currently do — DORA moved to Free 2026-07-18 — but the mapping stays so a
+// future gated tab doesn't need to hand-roll the tab bar again).
+const WORK_BOARD_TABS = TABS.map(tab => ({
+    ...tab,
+    badge: tab.badge ? (
+        <Badge tone={tab.badge === 'Enterprise' ? 'warning' : 'brand'} size="xs" className="font-bold">
+            {tab.badge}
+        </Badge>
+    ) : undefined,
+}))
 
 // ---------------------------------------------------------------------------
 // WorkBoardEmptyState — shared <EmptyState> + an inline webhook checklist.
@@ -319,44 +331,15 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
                 <HeroHalo palette="neutral" intensity="subtle" position="top" />
 
                 {/* Tab bar */}
-                <LayoutGroup>
-                <div role="tablist" aria-label="Work Board sections" className="relative flex items-center gap-1 p-2.5 border-b border-slate-100 dark:border-slate-800/60 bg-slate-50/60 dark:bg-slate-800/30 overflow-x-auto">
-                    {TABS.map(tab => {
-                        const Icon = tab.icon
-                        const isActive = activeTab === tab.id
-                        return (
-                            <button
-                                key={tab.id}
-                                role="tab"
-                                aria-selected={isActive}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`
-                                    relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-colors duration-200
-                                    ${isActive
-                                        ? 'text-[color:var(--ds-accent-brand)] dark:text-brand-300'
-                                        : 'text-slate-500 dark:text-slate-400 hover:bg-white/70 dark:hover:bg-slate-700/50 hover:text-slate-700 dark:hover:text-slate-200'
-                                    }
-                                `}
-                            >
-                                <Icon className="w-4 h-4" />
-                                {tab.label}
-                                {tab.badge && (
-                                    <Badge tone={tab.badge === 'Enterprise' ? 'warning' : 'brand'} size="xs" className="font-bold">
-                                        {tab.badge}
-                                    </Badge>
-                                )}
-                                {isActive && (
-                                    <motion.div
-                                        layoutId="work-board-tab-indicator"
-                                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-500 rounded-full"
-                                        transition={SPRING.knob}
-                                    />
-                                )}
-                            </button>
-                        )
-                    })}
-                </div>
-                </LayoutGroup>
+                <TabBar
+                    tabs={WORK_BOARD_TABS}
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                    variant="pill"
+                    layoutId="work-board-tab-indicator"
+                    ariaLabel="Work Board sections"
+                    className="m-2.5 overflow-x-auto"
+                />
 
                 {/* Tab content */}
                 <AnimatePresence mode="wait">

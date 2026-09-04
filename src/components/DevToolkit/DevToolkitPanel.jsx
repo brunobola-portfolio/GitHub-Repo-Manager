@@ -10,12 +10,21 @@ import { SmartContextBar } from './shared/SmartContextBar'
 import { CommitTab } from './CommitTab/CommitTab'
 import { PRTab } from './PRTab/PRTab'
 import { ReviewTab } from './ReviewTab/ReviewTab'
+import { TabBar } from '../ui/TabBar'
+import { Kbd } from '../ui/Kbd'
 
 const TABS = [
     { id: 'commits', label: 'Commits', icon: GitCommitHorizontal, shortcut: '1' },
     { id: 'pr', label: 'Pull Request', icon: GitPullRequest, shortcut: '2' },
     { id: 'review', label: 'Review', icon: Eye, shortcut: '3' },
 ]
+
+// TabBar's per-tab `trailing` slot renders the numeric shortcut hint that
+// used to be a raw <kbd> hand-typed into the inline tab bar this replaces.
+const DEV_TOOLKIT_TABS = TABS.map(tab => ({
+    ...tab,
+    trailing: <span className="hidden sm:inline"><Kbd>{tab.shortcut}</Kbd></span>,
+}))
 
 const MIN_WIDTH = 480
 const MAX_WIDTH = 900
@@ -220,37 +229,14 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
                         </header>
 
                         {/* Tab bar */}
-                        <nav className="flex border-b border-slate-200/60 dark:border-slate-700/40 px-2" role="tablist">
-                            {TABS.map((tab) => {
-                                const Icon = tab.icon
-                                const isActive = toolkit.activeTab === tab.id
-                                return (
-                                    <button
-                                        key={tab.id}
-                                        role="tab"
-                                        aria-selected={isActive}
-                                        onClick={() => toolkit.setActiveTab(tab.id)}
-                                        className={`relative flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors ${
-                                            isActive
-                                                ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
-                                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                                        }`}
-                                        title={`${tab.label} (${tab.shortcut})`}
-                                    >
-                                        <Icon className="w-4 h-4" />
-                                        {tab.label}
-                                        <kbd className="hidden sm:inline ml-1 text-[9px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded font-mono">{tab.shortcut}</kbd>
-                                        {isActive && (
-                                            <motion.div
-                                                layoutId="dev-toolkit-panel-tabs"
-                                                className="absolute bottom-0 left-0 right-0 h-0.5 bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-dark)] rounded-full"
-                                                transition={{ duration: 0.2, ease: EASE.standard }}
-                                            />
-                                        )}
-                                    </button>
-                                )
-                            })}
-                        </nav>
+                        <TabBar
+                            tabs={DEV_TOOLKIT_TABS}
+                            activeTab={toolkit.activeTab}
+                            onTabChange={toolkit.setActiveTab}
+                            variant="underline"
+                            layoutId="dev-toolkit-panel-tabs"
+                            className="px-2"
+                        />
 
                         {/* SmartContextBar */}
                         <SmartContextBar

@@ -5,6 +5,7 @@ import { Spinner } from './ui/Spinner'
 import { Button } from './ui/Button'
 import { Card } from './ui/Card'
 import { Input } from './ui/form'
+import { Tooltip } from './ui/Tooltip'
 import ReactMarkdown from 'react-markdown'
 import { useModal } from '../hooks/useModal'
 import { useFocusTrap } from '../hooks/useFocusTrap'
@@ -142,6 +143,26 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus, currentRe
     // backend can ground the answer in the error knowledge base, and surfaced
     // as a dismissible chip so the user can see what Repo Advisor is looking at.
     const [activeContext, setActiveContext] = useState(null)
+
+    // A `right: <offset>` fixed element anchors to the OUTER viewport edge
+    // (innerWidth), not the visible content edge (documentElement.clientWidth)
+    // — when a vertical scrollbar is present those differ by its width, so
+    // the FAB (and its hover-expanding label) sits partly under/behind the
+    // scrollbar track instead of flush with visible content. Measuring the
+    // gap and folding it into the offset keeps the FAB clear of the
+    // scrollbar and its label from clipping at the true edge.
+    const [fabRight, setFabRight] = useState('0.75rem')
+    useEffect(() => {
+        const measure = () => {
+            const scrollbarW = Math.max(0, window.innerWidth - document.documentElement.clientWidth)
+            // Mirrors the right-3 / sm:right-6 breakpoint this offset replaces.
+            const base = window.innerWidth >= 640 ? 1.5 : 0.75
+            setFabRight(`calc(${base}rem + ${scrollbarW}px)`)
+        }
+        measure()
+        window.addEventListener('resize', measure)
+        return () => window.removeEventListener('resize', measure)
+    }, [])
 
     const handlePasteAnswer = useCallback((field, value) => {
       setPasteDialog((prev) => {
@@ -420,8 +441,11 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus, currentRe
                            resting position is empty space rather than the
                            "Status / Commercial license" links it used to sit
                            on top of. */
-                        className="hidden md:flex fixed right-3 sm:right-6 z-[var(--ds-z-composer)] group"
-                        style={{ bottom: 'calc(var(--ds-fab-safe-bottom) - 44px)' }}
+                        className="hidden md:flex fixed z-[var(--ds-z-composer)] group"
+                        style={{
+                            bottom: 'calc(var(--ds-fab-safe-bottom) - 44px)',
+                            right: fabRight,
+                        }}
                         aria-label="Open Repo Advisor"
                     >
                         {/* Idle is a QUIETER control, not a dimmer one. The old
@@ -470,8 +494,8 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus, currentRe
                         // clear other composer-level FABs, never coexist/compete with them —
                         // z-[var(--ds-z-popover)] is the contract's next rung up and is
                         // already reused for other fixed floating widgets in the app.
-                        className="fixed right-3 sm:right-6 z-[var(--ds-z-popover)]"
-                        style={{ bottom: 'calc(var(--ds-fab-safe-bottom) - 44px)' }}
+                        className="fixed z-[var(--ds-z-popover)]"
+                        style={{ bottom: 'calc(var(--ds-fab-safe-bottom) - 44px)', right: fabRight }}
                     >
                         <Card className={`w-[calc(100vw-2rem)] sm:w-[22rem] md:w-[26rem] flex flex-col shadow-[var(--ds-shadow-overlay)] border border-slate-200 dark:border-[color:var(--ds-border-dark)] bg-white dark:bg-[color:var(--ds-surface-dark)] overflow-hidden rounded-2xl transition-all duration-[var(--ds-duration-slow)] ${
                             isMinimized ? '' : 'h-[65vh] xl:h-[540px]'
@@ -499,30 +523,33 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus, currentRe
                                     </div>
                                 </div>
                                 <div className="relative z-10 flex items-center gap-0.5">
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); openModal('showSettings') }}
-                                        className="p-1.5 hover:bg-white/15 rounded-lg transition-colors ds-focus-ring"
-                                        title="AI Settings"
-                                        aria-label="AI Settings"
-                                    >
-                                        <Settings size={14} />
-                                    </button>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); setIsMinimized(!isMinimized) }}
-                                        className="p-1.5 hover:bg-white/15 rounded-lg transition-colors ds-focus-ring"
-                                        title={isMinimized ? 'Expand' : 'Minimize'}
-                                        aria-label={isMinimized ? 'Expand assistant' : 'Minimize assistant'}
-                                    >
-                                        <Minus size={14} />
-                                    </button>
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); setIsOpen(false) }}
-                                        className="p-1.5 hover:bg-white/15 rounded-lg transition-colors ds-focus-ring"
-                                        title="Close assistant"
-                                        aria-label="Close assistant"
-                                    >
-                                        <X size={14} />
-                                    </button>
+                                    <Tooltip label="AI Settings">
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); openModal('showSettings') }}
+                                            className="p-1.5 hover:bg-white/15 rounded-lg transition-colors ds-focus-ring"
+                                            aria-label="AI Settings"
+                                        >
+                                            <Settings size={14} />
+                                        </button>
+                                    </Tooltip>
+                                    <Tooltip label={isMinimized ? 'Expand' : 'Minimize'}>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setIsMinimized(!isMinimized) }}
+                                            className="p-1.5 hover:bg-white/15 rounded-lg transition-colors ds-focus-ring"
+                                            aria-label={isMinimized ? 'Expand assistant' : 'Minimize assistant'}
+                                        >
+                                            <Minus size={14} />
+                                        </button>
+                                    </Tooltip>
+                                    <Tooltip label="Close assistant">
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setIsOpen(false) }}
+                                            className="p-1.5 hover:bg-white/15 rounded-lg transition-colors ds-focus-ring"
+                                            aria-label="Close assistant"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </Tooltip>
                                 </div>
                             </div>
 
@@ -631,15 +658,16 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus, currentRe
                                                         />
                                                     </div>
                                                     {isLoading && askAIStream ? (
-                                                        <button
-                                                            type="button"
-                                                            onClick={handleStop}
-                                                            className="shrink-0 inline-flex items-center justify-center h-11 w-11 bg-slate-700 dark:bg-slate-600 text-white rounded-xl hover:opacity-90 transition-colors shadow-sm ds-focus-ring"
-                                                            aria-label="Stop generating"
-                                                            title="Stop"
-                                                        >
-                                                            <Square size={14} fill="currentColor" />
-                                                        </button>
+                                                        <Tooltip label="Stop">
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleStop}
+                                                                className="shrink-0 inline-flex items-center justify-center h-11 w-11 bg-slate-700 dark:bg-slate-600 text-white rounded-xl hover:opacity-90 transition-colors shadow-sm ds-focus-ring"
+                                                                aria-label="Stop generating"
+                                                            >
+                                                                <Square size={14} fill="currentColor" />
+                                                            </button>
+                                                        </Tooltip>
                                                     ) : (
                                                         <button
                                                             type="submit"

@@ -9,6 +9,7 @@ import {
     Loader2, Send, CheckCircle2, XCircle, ArrowLeft, Tag, Sparkles
 } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
+import { Tooltip } from '../ui/Tooltip'
 import { AIIssuePlanner } from './AIIssuePlanner'
 import { IssueSidebar, IssueTimeline } from './IssueSidebar'
 import { useDraftPersistence } from '../../hooks/useDraftPersistence'
@@ -149,30 +150,32 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                         {repoFullName && isOpen && (
-                            <button
-                                type="button"
-                                onClick={() => setShowPlanner(v => !v)}
-                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                                    showPlanner
-                                        ? 'ds-brand-solid shadow-sm'
-                                        : 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] bg-brand-50 dark:bg-brand-950/40 hover:bg-brand-100 dark:hover:bg-brand-900/50'
-                                }`}
-                                title="Generate an AI implementation plan for this issue"
-                            >
-                                <Sparkles className="w-3.5 h-3.5" />
-                                AI plan
-                            </button>
+                            <Tooltip label="Generate an AI implementation plan for this issue">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPlanner(v => !v)}
+                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ds-focus-ring ${
+                                        showPlanner
+                                            ? 'ds-brand-solid shadow-sm'
+                                            : 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] bg-brand-50 dark:bg-brand-950/40 hover:bg-brand-100 dark:hover:bg-brand-900/50'
+                                    }`}
+                                >
+                                    <Sparkles className="w-3.5 h-3.5" />
+                                    AI plan
+                                </button>
+                            </Tooltip>
                         )}
                         {current.html_url && (
-                            <a
-                                href={current.html_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-2 text-slate-400 hover:text-brand-500 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/60"
-                                title="View on GitHub"
-                            >
-                                <ExternalLink className="w-4 h-4" />
-                            </a>
+                            <Tooltip label="View on GitHub">
+                                <a
+                                    href={current.html_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-2 text-slate-400 hover:text-brand-500 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/60 ds-focus-ring"
+                                >
+                                    <ExternalLink className="w-4 h-4" />
+                                </a>
+                            </Tooltip>
                         )}
                     </div>
                 </div>

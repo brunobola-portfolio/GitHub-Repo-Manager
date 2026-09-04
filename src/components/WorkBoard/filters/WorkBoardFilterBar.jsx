@@ -1,5 +1,19 @@
 import { FilterChip } from './FilterChip'
 
+// Each filter group (Repository / By / Label / Age) gets its own row with
+// the label above the chips — inlining the label with the chips wrapped it
+// mid-group at 1440 and 375 (e.g. "BY" landing at the end of one line and
+// its chips starting the next), which read as unparseable. Stacking removes
+// the ambiguity regardless of viewport width or chip count.
+function FilterGroup({ label, children }) {
+    return (
+        <div className="flex flex-col gap-1.5">
+            <span className="ds-text-micro font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</span>
+            <div className="flex items-center gap-1.5 flex-wrap">{children}</div>
+        </div>
+    )
+}
+
 const AGE_BUCKETS = [
     { id: '24h', label: '24h' },
     { id: '7d', label: '7d' },
@@ -32,55 +46,51 @@ export function WorkBoardFilterBar({
     const labels = csvToSet(filters.labels)
 
     return (
-        <div className="flex flex-wrap items-center gap-2 p-3 rounded-2xl border border-slate-200/50 dark:border-slate-700/40 bg-white/60 dark:bg-slate-900/40 backdrop-blur">
+        <div className="flex flex-col gap-3 p-3 rounded-2xl border border-slate-200/50 dark:border-slate-700/40 bg-white/60 dark:bg-slate-900/40 backdrop-blur">
             {/* Repos */}
             {availableRepos.length > 0 && (
-                <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="ds-text-micro font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mr-1">Repository</span>
+                <FilterGroup label="Repository">
                     {availableRepos.map(r => (
                         <FilterChip key={r} label={r} tone="indigo"
                             active={repos.has(r)}
                             onToggle={() => setFilters({ repos: toggleMulti(filters.repos, r) })} />
                     ))}
-                </div>
+                </FilterGroup>
             )}
 
             {/* Authors */}
             {availableAuthors.length > 0 && (
-                <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="ds-text-micro font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mr-1">By</span>
+                <FilterGroup label="By">
                     {availableAuthors.map(a => (
                         <FilterChip key={a} label={a} tone="emerald"
                             active={authors.has(a)}
                             onToggle={() => setFilters({ authors: toggleMulti(filters.authors, a) })} />
                     ))}
-                </div>
+                </FilterGroup>
             )}
 
             {/* Labels */}
             {availableLabels.length > 0 && (
-                <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="ds-text-micro font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mr-1">Label</span>
+                <FilterGroup label="Label">
                     {availableLabels.map(l => (
                         <FilterChip key={l} label={l} tone="amber"
                             active={labels.has(l)}
                             onToggle={() => setFilters({ labels: toggleMulti(filters.labels, l) })} />
                     ))}
-                </div>
+                </FilterGroup>
             )}
 
             {/* Age — single-select */}
-            <div className="flex items-center gap-1.5">
-                <span className="ds-text-micro font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mr-1">Age</span>
+            <FilterGroup label="Age">
                 {AGE_BUCKETS.map(b => (
                     <FilterChip key={b.id} label={b.label} tone="slate"
                         active={filters.age === b.id}
                         onToggle={() => setFilters({ age: filters.age === b.id ? '' : b.id })} />
                 ))}
-            </div>
+            </FilterGroup>
 
             {/* Snooze toggle */}
-            <div className="ml-auto flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-slate-200/50 dark:border-slate-700/40">
                 <FilterChip
                     label="Hide snoozed"
                     tone="slate"

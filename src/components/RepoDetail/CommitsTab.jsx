@@ -7,6 +7,7 @@ import { Card } from '../ui/Card'
 import { EmptyState } from '../ui/EmptyState'
 import { SectionPanel } from '../ui/SectionPanel'
 import { Skeleton } from '../ui/Skeleton'
+import { Kbd } from '../ui/Kbd'
 import { TabLoadError } from './TabLoadError'
 import { Spinner } from '../ui/Spinner'
 import { StaleDataBadge } from '../ui/StaleDataBadge'
@@ -278,10 +279,10 @@ export function CommitsTab({ repo }) {
 function KeyboardHint() {
     return (
         <span className="hidden md:inline-flex items-center gap-1 ds-text-micro text-slate-500 dark:text-slate-400 ml-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-slate-700 dark:text-slate-300">j</kbd>
-            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-slate-700 dark:text-slate-300">k</kbd>
+            <Kbd>j</Kbd>
+            <Kbd>k</Kbd>
             <span>to navigate</span>
-            <kbd className="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-slate-700 dark:text-slate-300">↵</kbd>
+            <Kbd>↵</Kbd>
             <span>to open</span>
         </span>
     )

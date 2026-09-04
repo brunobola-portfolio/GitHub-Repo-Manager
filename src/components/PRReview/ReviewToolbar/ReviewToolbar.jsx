@@ -13,6 +13,7 @@ import { TrackedChip } from '../../WorkBoard/TrackedChip'
 import { PRRiskBadges } from '../../RepoDetail/PRRiskBadges'
 import { Button } from '../../ui/Button'
 import { Textarea } from '../../ui/form'
+import { Tooltip } from '../../ui/Tooltip'
 
 const REVIEW_OPTIONS = [
   {
@@ -144,34 +145,36 @@ export function ReviewToolbar({ pr, repoName, repoFullName, viewMode, onToggleVi
 
       {/* View mode toggle */}
       <div className="shrink-0 flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-700 p-0.5">
-        <button
-          onClick={() => viewMode !== 'split' && onToggleViewMode?.()}
-          className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 ${
-            viewMode === 'split'
-              ? 'bg-blue-600 text-white'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-          aria-pressed={viewMode === 'split'}
-          aria-label="Split view"
-          title="Split view"
-        >
-          <Columns2 size={13} aria-hidden="true" />
-          <span className="hidden sm:inline">Split</span>
-        </button>
-        <button
-          onClick={() => viewMode !== 'unified' && onToggleViewMode?.()}
-          className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 ${
-            viewMode === 'unified'
-              ? 'bg-blue-600 text-white'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-          aria-pressed={viewMode === 'unified'}
-          aria-label="Unified view"
-          title="Unified view"
-        >
-          <AlignJustify size={13} aria-hidden="true" />
-          <span className="hidden sm:inline">Unified</span>
-        </button>
+        <Tooltip label="Split view">
+          <button
+            onClick={() => viewMode !== 'split' && onToggleViewMode?.()}
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 ${
+              viewMode === 'split'
+                ? 'bg-blue-600 text-white'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+            aria-pressed={viewMode === 'split'}
+            aria-label="Split view"
+          >
+            <Columns2 size={13} aria-hidden="true" />
+            <span className="hidden sm:inline">Split</span>
+          </button>
+        </Tooltip>
+        <Tooltip label="Unified view">
+          <button
+            onClick={() => viewMode !== 'unified' && onToggleViewMode?.()}
+            className={`flex items-center gap-1 px-2 py-1 rounded text-xs transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 ${
+              viewMode === 'unified'
+                ? 'bg-blue-600 text-white'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+            aria-pressed={viewMode === 'unified'}
+            aria-label="Unified view"
+          >
+            <AlignJustify size={13} aria-hidden="true" />
+            <span className="hidden sm:inline">Unified</span>
+          </button>
+        </Tooltip>
       </div>
 
       {/* Submit Review button + dropdown */}

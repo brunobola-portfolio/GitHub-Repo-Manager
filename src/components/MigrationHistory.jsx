@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Button } from './ui/Button'
 import { Modal } from './ui/Modal'
 import { EmptyState } from './ui/EmptyState'
+import { Tooltip } from './ui/Tooltip'
 import {
     History, CheckCircle2, XCircle, ExternalLink,
     Clock, ArrowRight, RefreshCw, Cloud, Globe, GitBranch,
@@ -311,34 +312,37 @@ export function MigrationHistory({ isOpen, onClose }) {
                                             <div className="flex items-center gap-2 shrink-0">
                                                 <PlanMarksCell planId={plan.id} />
                                                 {plan.status === 'failed' && (
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); handleRerunPlan(plan) }}
-                                                        className="p-1.5 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors"
-                                                        title="Re-run migration"
-                                                        aria-label="Re-run migration"
-                                                    >
-                                                        <RotateCcw className="w-4 h-4" />
-                                                    </button>
+                                                    <Tooltip label="Re-run migration">
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleRerunPlan(plan) }}
+                                                            className="p-1.5 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors ds-focus-ring"
+                                                            aria-label="Re-run migration"
+                                                        >
+                                                            <RotateCcw className="w-4 h-4" />
+                                                        </button>
+                                                    </Tooltip>
                                                 )}
                                                 {(plan.status === 'interrupted' || plan.status === 'paused') && (
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); handleResumePlan(plan) }}
-                                                        className="p-1.5 rounded-lg text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20 transition-colors"
-                                                        title="Resume migration"
-                                                        aria-label="Resume migration"
-                                                    >
-                                                        <RotateCcw className="w-4 h-4" />
-                                                    </button>
+                                                    <Tooltip label="Resume migration">
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleResumePlan(plan) }}
+                                                            className="p-1.5 rounded-lg text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-900/20 transition-colors ds-focus-ring"
+                                                            aria-label="Resume migration"
+                                                        >
+                                                            <RotateCcw className="w-4 h-4" />
+                                                        </button>
+                                                    </Tooltip>
                                                 )}
                                                 {(plan.status === 'complete' || plan.status === 'completed') && (
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); handleExportReport(plan) }}
-                                                        className="p-1.5 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors"
-                                                        title="Export report"
-                                                        aria-label="Export report"
-                                                    >
-                                                        <FileText className="w-4 h-4" />
-                                                    </button>
+                                                    <Tooltip label="Export report">
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleExportReport(plan) }}
+                                                            className="p-1.5 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors ds-focus-ring"
+                                                            aria-label="Export report"
+                                                        >
+                                                            <FileText className="w-4 h-4" />
+                                                        </button>
+                                                    </Tooltip>
                                                 )}
                                                 {isExpandable && (
                                                     isLoadingTasks
@@ -433,12 +437,13 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                 )}
                                             </div>
                                             {meta?.repoUrl && (job.status === 'complete' || job.status === 'completed') && (
-                                                <a href={meta.repoUrl} target="_blank" rel="noopener noreferrer"
-                                                    aria-label="Open migrated repository in new tab"
-                                                    title="Open migrated repository in new tab"
-                                                    className="text-brand-500 hover:text-brand-700 dark:hover:text-brand-300 shrink-0">
-                                                    <ExternalLink className="w-4 h-4" />
-                                                </a>
+                                                <Tooltip label="Open migrated repository in new tab">
+                                                    <a href={meta.repoUrl} target="_blank" rel="noopener noreferrer"
+                                                        aria-label="Open migrated repository in new tab"
+                                                        className="text-brand-500 hover:text-brand-700 dark:hover:text-brand-300 shrink-0 ds-focus-ring rounded-sm">
+                                                        <ExternalLink className="w-4 h-4" />
+                                                    </a>
+                                                </Tooltip>
                                             )}
                                         </div>
                                     </div>

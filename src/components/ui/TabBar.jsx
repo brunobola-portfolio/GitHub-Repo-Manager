@@ -10,7 +10,10 @@ const VARIANT_CONTAINER = {
 const VARIANT_BUTTON = {
     pill: {
         active: 'text-slate-900 dark:text-slate-100',
-        inactive: 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300',
+        // slate-500 measured 4.43:1 on the pill container's tinted
+        // bg-slate-100/80 ground in light mode — axe flagged it on the team
+        // detail page. slate-600 clears AA on the tint; dark is unaffected.
+        inactive: 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200',
     },
     underline: {
         active: 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]',
@@ -33,7 +36,7 @@ const SIZE_CLASSES = {
     md: 'px-4 py-2.5 text-sm',
 };
 
-export function TabBar({ tabs, activeTab, onTabChange, variant = 'pill', layoutId, className = '', size = 'md' }) {
+export function TabBar({ tabs, activeTab, onTabChange, variant = 'pill', layoutId, className = '', size = 'md', ariaLabel }) {
     const handleKeyDown = (e) => {
         const currentIndex = tabs.findIndex(t => t.id === activeTab);
         let nextIndex;
@@ -65,11 +68,12 @@ export function TabBar({ tabs, activeTab, onTabChange, variant = 'pill', layoutI
     return (
         <div
             role="tablist"
+            aria-label={ariaLabel}
             tabIndex={0}
             className={`${VARIANT_CONTAINER[variant]} ${className} ds-focus-ring rounded-lg`}
             onKeyDown={handleKeyDown}
         >
-            {tabs.map(({ id, label, icon: Icon }) => {
+            {tabs.map(({ id, label, icon: Icon, trailing, badge }) => {
                 const isActive = activeTab === id;
                 const buttonStyle = VARIANT_BUTTON[variant];
                 return (
@@ -95,6 +99,8 @@ export function TabBar({ tabs, activeTab, onTabChange, variant = 'pill', layoutI
                         <span className={indicatorClass ? 'relative z-10 flex items-center gap-1.5' : 'flex items-center gap-1.5'}>
                             {Icon && <Icon className="w-4 h-4" />}
                             {label}
+                            {badge}
+                            {trailing}
                         </span>
                     </button>
                 );

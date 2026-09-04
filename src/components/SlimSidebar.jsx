@@ -1,6 +1,7 @@
 import { memo, useState, useEffect, useRef } from 'react'
 import { Zap, History, Clock, Download, Kanban } from 'lucide-react'
 import { QuickActionButtons, ActionHistoryRow, ActivityRow } from './Sidebar'
+import { Tooltip } from './ui/Tooltip'
 
 // SlimSidebar is split into its own module (not co-located in Sidebar.jsx)
 // specifically so it can be lazy-loaded from App.jsx: it's the collapsed-rail
@@ -63,33 +64,31 @@ function SlimPopover({ isOpen, onClose, children, triggerRef, ariaLabel = 'Quick
 function SlimIconButton({ icon: Icon, label, isActive, onClick, accent, buttonRef, count = 0 }) {
   const hasCount = count > 0
   return (
-    <button
-      ref={buttonRef}
-      onClick={onClick}
-      className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 group ds-focus-ring ${
-        accent
-          ? 'ds-brand-solid hover:opacity-90 shadow-md'
-          : isActive
-            ? 'bg-brand-100 dark:bg-brand-900/40 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
-            : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300'
-      }`}
-      aria-label={hasCount ? `${label} (${count})` : label}
-      aria-haspopup={accent ? undefined : 'true'}
-      aria-expanded={isActive || undefined}
-    >
-      <Icon className="w-5 h-5" />
-      {hasCount && (
-        <span
-          aria-hidden="true"
-          className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-brand-500 text-white ds-text-micro font-bold leading-[16px] text-center ring-2 ring-white dark:ring-slate-900"
-        >
-          {count > 99 ? '99+' : count}
-        </span>
-      )}
-      <span className="absolute right-full mr-3 px-2 py-1 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-[var(--ds-z-popover)]">
-        {label}
-      </span>
-    </button>
+    <Tooltip label={label} side="right" ref={buttonRef}>
+      <button
+        onClick={onClick}
+        className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 ds-focus-ring ${
+          accent
+            ? 'ds-brand-solid hover:opacity-90 shadow-md'
+            : isActive
+              ? 'bg-brand-100 dark:bg-brand-900/40 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
+              : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300'
+        }`}
+        aria-label={hasCount ? `${label} (${count})` : label}
+        aria-haspopup={accent ? undefined : 'true'}
+        aria-expanded={isActive || undefined}
+      >
+        <Icon className="w-5 h-5" />
+        {hasCount && (
+          <span
+            aria-hidden="true"
+            className="absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-brand-500 text-white ds-text-micro font-bold leading-[16px] text-center ring-2 ring-white dark:ring-slate-900"
+          >
+            {count > 99 ? '99+' : count}
+          </span>
+        )}
+      </button>
+    </Tooltip>
   )
 }
 

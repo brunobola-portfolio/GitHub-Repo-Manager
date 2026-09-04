@@ -22,6 +22,10 @@
  *    top→bottom **flip** when there isn't room above (and horizontal
  *    clamping to the viewport), so it never clips at the viewport edge —
  *    e.g. the Header theme toggle in the sticky top bar.
+ *  - `side` picks the preferred edge: "top" (default, flips to bottom when
+ *    there's no room) or "right"/"left" (flips to the other side when
+ *    there's no room) — for icon rails where the trigger sits flush against
+ *    a viewport edge, e.g. the collapsed OrgSidebar/SlimSidebar rails.
  *  - On **touch** the label reveals on tap and auto-dismisses (timeout +
  *    outside-pointer), so it can't stick on screen.
  *  - Animates in with Framer Motion, honouring prefers-reduced-motion.
@@ -76,15 +80,35 @@ const PAD = 8 // min distance from the viewport edge
 const ARROW = 5 // half the arrow width, for clamping it inside the bubble
 const TOUCH_AUTO_HIDE = 1600 // ms before a tap-revealed tooltip dismisses itself
 
-// Flip-aware placement: prefer above the trigger, drop below when there
-// isn't room, and clamp horizontally so the bubble never leaves the
-// viewport. All coordinates are viewport-relative (the bubble is
-// position:fixed), matching how ContextMenu positions its portal.
-function computePosition(triggerEl, tipEl) {
+// Flip-aware placement: prefer the requested `side`, flip to the opposite
+// edge when there isn't room, and clamp on the cross-axis so the bubble
+// never leaves the viewport. All coordinates are viewport-relative (the
+// bubble is position:fixed), matching how ContextMenu positions its portal.
+function computePosition(triggerEl, tipEl, side = 'top') {
   const t = triggerEl.getBoundingClientRect()
   const tip = tipEl.getBoundingClientRect()
   const vw = window.innerWidth
   const vh = window.innerHeight
+
+  if (side === 'left' || side === 'right') {
+    let sidePlacement = side
+    let sideLeft = side === 'right' ? t.right + GAP : t.left - tip.width - GAP
+    if (side === 'right' && sideLeft + tip.width > vw - PAD) {
+      sidePlacement = 'left'
+      sideLeft = t.left - tip.width - GAP
+    } else if (side === 'left' && sideLeft < PAD) {
+      sidePlacement = 'right'
+      sideLeft = t.right + GAP
+    }
+    sideLeft = Math.max(PAD, Math.min(sideLeft, vw - tip.width - PAD))
+
+    const centerY = t.top + t.height / 2
+    let sideTop = centerY - tip.height / 2
+    sideTop = Math.max(PAD, Math.min(sideTop, vh - tip.height - PAD))
+    const arrowTop = Math.max(ARROW + 2, Math.min(centerY - sideTop, tip.height - ARROW - 2))
+
+    return { top: sideTop, left: sideLeft, placement: sidePlacement, arrowTop }
+  }
 
   let placement = 'top'
   let top = t.top - tip.height - GAP
@@ -109,7 +133,7 @@ function computePosition(triggerEl, tipEl) {
 }
 
 export const Tooltip = forwardRef(function Tooltip(
-  { label, children, delay = 300, ...triggerProps },
+  { label, children, delay = 300, side = 'top', ...triggerProps },
   forwardedRef,
 ) {
   const [visible, setVisible] = useState(false)
@@ -147,9 +171,9 @@ export const Tooltip = forwardRef(function Tooltip(
   useLayoutEffect(() => {
     if (!visible || !label) return
     if (triggerRef.current && tipRef.current) {
-      setCoords(computePosition(triggerRef.current, tipRef.current))
+      setCoords(computePosition(triggerRef.current, tipRef.current, side))
     }
-  }, [visible, label])
+  }, [visible, label, side])
 
   // While visible: keep position correct on scroll/resize, and dismiss on an
   // outside pointer (covers the touch "stuck label" case).
@@ -157,7 +181,7 @@ export const Tooltip = forwardRef(function Tooltip(
     if (!visible) return undefined
     const reposition = () => {
       if (triggerRef.current && tipRef.current) {
-        setCoords(computePosition(triggerRef.current, tipRef.current))
+        setCoords(computePosition(triggerRef.current, tipRef.current, side))
       }
     }
     const onOutsidePointer = (e) => {
@@ -188,9 +212,12 @@ export const Tooltip = forwardRef(function Tooltip(
       document.removeEventListener('pointerdown', onOutsidePointer, true)
       document.removeEventListener('keydown', onKeyDown, true)
     }
-  }, [visible])
+  }, [visible, side])
 
   const placeBelow = coords?.placement === 'bottom'
+  const placeLeft = coords?.placement === 'left'
+  const placeRight = coords?.placement === 'right'
+  const isHorizontal = placeLeft || placeRight
 
   return (
     <span className="relative inline-flex">
@@ -223,8 +250,10 @@ export const Tooltip = forwardRef(function Tooltip(
           ref={tipRef}
           id={id}
           role="tooltip"
-          initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: placeBelow ? -2 : 2 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
+          initial={reduceMotion ? { opacity: 0 } : (isHorizontal
+            ? { opacity: 0, scale: 0.96, x: placeRight ? -2 : 2 }
+            : { opacity: 0, scale: 0.96, y: placeBelow ? -2 : 2 })}
+          animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
           transition={{ duration: 0.12, ease: 'easeOut' }}
           style={{
             position: 'fixed',
@@ -235,15 +264,27 @@ export const Tooltip = forwardRef(function Tooltip(
           className="px-2 py-0.5 text-[12px] text-white bg-[color:var(--ds-surface-dark)] rounded-[var(--ds-radius-sm)] whitespace-nowrap pointer-events-none shadow-[var(--ds-shadow-overlay)] z-[var(--ds-z-ceiling)]"
         >
           {label}
-          <span
-            aria-hidden="true"
-            style={{ left: coords ? coords.arrowLeft : '50%' }}
-            className={`absolute -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-l-transparent border-r-transparent ${
-              placeBelow
-                ? 'bottom-full border-b-4 border-b-[color:var(--ds-surface-dark)]'
-                : 'top-full border-t-4 border-t-[color:var(--ds-surface-dark)]'
-            }`}
-          />
+          {isHorizontal ? (
+            <span
+              aria-hidden="true"
+              style={{ top: coords ? coords.arrowTop : '50%' }}
+              className={`absolute -translate-y-1/2 w-0 h-0 border-t-4 border-b-4 border-t-transparent border-b-transparent ${
+                placeRight
+                  ? 'right-full border-r-4 border-r-[color:var(--ds-surface-dark)]'
+                  : 'left-full border-l-4 border-l-[color:var(--ds-surface-dark)]'
+              }`}
+            />
+          ) : (
+            <span
+              aria-hidden="true"
+              style={{ left: coords ? coords.arrowLeft : '50%' }}
+              className={`absolute -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-l-transparent border-r-transparent ${
+                placeBelow
+                  ? 'bottom-full border-b-4 border-b-[color:var(--ds-surface-dark)]'
+                  : 'top-full border-t-4 border-t-[color:var(--ds-surface-dark)]'
+              }`}
+            />
+          )}
         </motion.span>,
         document.body,
       )}

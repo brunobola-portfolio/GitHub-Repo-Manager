@@ -77,24 +77,26 @@ export function CodeReviewToolbar({
 
                 <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1" />
 
-                <button
-                    type="button"
-                    onClick={() => emitAppEvent(APP_EVENTS.DIFF_EXPAND_ALL)}
-                    className="inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
-                    title="Expand all collapsed diffs"
-                    aria-label="Expand all"
-                >
-                    <ChevronsDown className="w-3.5 h-3.5" /> Expand all
-                </button>
-                <button
-                    type="button"
-                    onClick={() => emitAppEvent(APP_EVENTS.DIFF_COLLAPSE_ALL)}
-                    className="inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
-                    title="Collapse all large diffs"
-                    aria-label="Collapse all"
-                >
-                    <ChevronsUp className="w-3.5 h-3.5" /> Collapse all
-                </button>
+                <Tooltip label="Expand all collapsed diffs">
+                    <button
+                        type="button"
+                        onClick={() => emitAppEvent(APP_EVENTS.DIFF_EXPAND_ALL)}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors ds-focus-ring"
+                        aria-label="Expand all"
+                    >
+                        <ChevronsDown className="w-3.5 h-3.5" /> Expand all
+                    </button>
+                </Tooltip>
+                <Tooltip label="Collapse all large diffs">
+                    <button
+                        type="button"
+                        onClick={() => emitAppEvent(APP_EVENTS.DIFF_COLLAPSE_ALL)}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors ds-focus-ring"
+                        aria-label="Collapse all"
+                    >
+                        <ChevronsUp className="w-3.5 h-3.5" /> Collapse all
+                    </button>
+                </Tooltip>
 
                 <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-1" />
 
