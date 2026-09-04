@@ -1,13 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Archive, Clock, ChevronRight } from 'lucide-react';
 import { formatRelativeTime } from '../../../utils/format';
 import { Badge } from '../../ui/Badge';
 
 const KIND_LABEL = { pr: 'PR', issue: 'Issue' };
 
-export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null }) {
+export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null, isFocused = false }) {
     const [expanded, setExpanded] = useState(false);
     const ago = formatRelativeTime(item.since);
+    // j/k row navigation (useInbox → useFocusedRow) moves real DOM focus to
+    // the title button, so the shared :focus-visible ring lights up and Enter
+    // opens the item through the button's own click — no second key handler.
+    const titleRef = useRef(null);
+    useEffect(() => {
+        if (isFocused && titleRef.current && document.activeElement !== titleRef.current) {
+            titleRef.current.focus({ preventScroll: false });
+        }
+    }, [isFocused]);
 
     return (
         <li className="border-b border-slate-200/60 dark:border-slate-800/60">
@@ -27,9 +36,10 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
                 </button>
 
                 <button
+                    ref={titleRef}
                     type="button"
                     onClick={() => onSelect?.(item)}
-                    className="flex-1 min-w-0 text-left"
+                    className="flex-1 min-w-0 text-left rounded ds-focus-ring"
                 >
                     <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">

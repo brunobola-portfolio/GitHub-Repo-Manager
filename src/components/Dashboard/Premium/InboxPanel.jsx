@@ -32,7 +32,7 @@ const EMPTY_STATE_COPY = {
 };
 
 export function InboxPanel({ onSelectItem }) {
-    const { sections, meta, loading, error, refresh, archive, snooze } = useInbox();
+    const { sections, meta, loading, error, refresh, archive, snooze, focusedItem } = useInbox({ onOpenItem: onSelectItem });
     const { toast } = useToast();
     const [activeKey, setActiveKey] = useState(null);
     const [snoozingItem, setSnoozingItem] = useState(null);
@@ -44,16 +44,14 @@ export function InboxPanel({ onSelectItem }) {
     // per distinct unmapped error, and this recomputes on every render otherwise.
     const formattedError = useMemo(() => (error ? formatUserError(error) : null), [error]);
 
-    // Default to the first non-empty section once data lands
-    useEffect(() => {
-        if (activeKey) return;
-        const first = sections.find(s => s.items.length > 0) ?? sections[0];
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot default selection when sections load; no cascading render concern
-        if (first) setActiveKey(first.key);
-    }, [sections, activeKey]);
-
+    // Default to the first non-empty section until the user picks one
+    // explicitly — computed directly in the derived value below instead of a
+    // one-shot effect that set `activeKey` after data landed (which rendered
+    // an unselected/wrong-default frame first, then corrected itself).
     const active = useMemo(
-        () => sections.find(s => s.key === activeKey) ?? sections[0],
+        () => sections.find(s => s.key === activeKey)
+            ?? sections.find(s => s.items.length > 0)
+            ?? sections[0],
         [sections, activeKey],
     );
 
@@ -168,7 +166,7 @@ export function InboxPanel({ onSelectItem }) {
                             key={s.key}
                             label={s.label || s.key.replace(/_/g, ' ')}
                             count={s.items.length}
-                            active={s.key === activeKey}
+                            active={s.key === active?.key}
                             onClick={() => setActiveKey(s.key)}
                         />
                     ))}
@@ -229,6 +227,7 @@ export function InboxPanel({ onSelectItem }) {
                                     onArchive={(id) => archive(id).catch(e => toast.errorFromException(e, { fallbackTitle: 'Archive failed' }))}
                                     onSnooze={setSnoozingItem}
                                     onSelect={onSelectItem}
+                                    isFocused={focusedItem?.id === item.id}
                                 />
                             ))}
                         </ul>
