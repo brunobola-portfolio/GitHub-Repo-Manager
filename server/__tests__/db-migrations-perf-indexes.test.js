@@ -162,3 +162,69 @@ describe('migration 31 — NOCASE gh_cache index for prefix invalidation', () =>
         }
     });
 });
+
+describe('migration 34 — deployment_events(deployment_id, environment, id DESC)', () => {
+    let db;
+
+    beforeAll(async () => {
+        db = await makeFullDb();
+    });
+
+    // The exact correlated subquery changeFailureRate / meanTimeToRecovery run
+    // (lib/event-aggregations.js). deployment_id carried no index at all, so
+    // the inner MAX(id) full-scanned the table once per candidate row.
+    const cfrSql = `
+        SELECT state
+        FROM deployment_events de_outer
+        WHERE environment = ?
+          AND created_at  >= ?
+          AND id = (
+              SELECT MAX(id)
+              FROM deployment_events de_inner
+              WHERE de_inner.deployment_id = de_outer.deployment_id
+                AND de_inner.environment   = de_outer.environment
+          )`;
+
+    it('is registered and idempotent when re-applied', async () => {
+        expect(migration(34)).toBeDefined();
+        const fresh = await makeFullDb();
+        expect(() => migration(34).up(fresh)).not.toThrow();
+        expect(() => migration(34).up(fresh)).not.toThrow();
+    });
+
+    it('creates the index with deployment_id leading', () => {
+        const row = db
+            .prepare(`SELECT name, tbl_name FROM sqlite_master WHERE type='index' AND name = 'idx_deployment_events_dep_env'`)
+            .get();
+        expect(row).toBeDefined();
+        expect(row.tbl_name).toBe('deployment_events');
+
+        const columns = db.prepare('PRAGMA index_info(idx_deployment_events_dep_env)').all();
+        expect(columns.map((c) => c.name)).toEqual(['deployment_id', 'environment', 'id']);
+    });
+
+    it('turns the correlated MAX(id) into an index seek instead of a per-row scan', () => {
+        const detail = plan(db, cfrSql, 'production', new Date(0).toISOString());
+        // Without this index the inner plan is a bare `SEARCH de_inner` — the
+        // planner building a transient automatic index per query, which is the
+        // quadratic behaviour the migration exists to remove. Assert the seek
+        // names the index and covers both bound columns.
+        expect(detail).toMatch(
+            /SEARCH de_inner USING COVERING INDEX idx_deployment_events_dep_env \(deployment_id=\? AND environment=\?\)/,
+        );
+    });
+
+    it('still returns only the latest state per deployment', () => {
+        const insert = db.prepare(`
+            INSERT INTO deployment_events
+                (github_event_id, repo_id, repo_full_name, deployment_id, environment, state, created_at)
+            VALUES (?, 9931, 'acme/site', ?, 'production', ?, datetime('now'))
+        `);
+        insert.run('mig34-a1', 5001, 'pending');
+        insert.run('mig34-a2', 5001, 'success');
+        insert.run('mig34-b1', 5002, 'failure');
+
+        const rows = db.prepare(cfrSql).all('production', new Date(0).toISOString());
+        expect(rows.map((r) => r.state).sort()).toEqual(['failure', 'success']);
+    });
+});

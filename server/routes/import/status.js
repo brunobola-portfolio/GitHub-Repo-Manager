@@ -3,6 +3,7 @@ import db from '../../db.js';
 import * as importService from '../../import-service.js';
 import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js';
 import { safeJsonParse } from '../../lib/utils.js';
+import { clampPerPage } from '../repos/_shared.js';
 
 const router = express.Router();
 
@@ -46,8 +47,11 @@ router.get('/import/status/:id', requireAuth, async (req, res) => {
 
 router.get('/migrations', requireAuth, async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const perPage = parseInt(req.query.per_page) || 20;
+        // Both need a floor, not just a cap: a negative LIMIT is "no limit" in
+        // SQLite and a negative OFFSET is undefined behaviour, so `?page=-5`
+        // and `?limit=-1` both escaped pagination entirely.
+        const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+        const perPage = clampPerPage(req.query.per_page, 20);
         const offset = (page - 1) * perPage;
 
         const jobs = db.prepare(`

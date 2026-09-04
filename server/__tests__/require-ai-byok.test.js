@@ -50,7 +50,8 @@ describe('createRequireAI (BYOK-aware)', () => {
 
             expect(res.status).toHaveBeenCalledWith(400)
             const body = res.json.mock.calls[0][0]
-            expect(body.error).toBe('AI_NOT_CONFIGURED')
+            expect(body.code).toBe('AI_NOT_CONFIGURED')
+            expect(body.error).toMatch(/provider API key/i)
             expect(body.configureUrl).toBe('/settings#ai')
             expect(next).not.toHaveBeenCalled()
         })
@@ -229,6 +230,11 @@ describe('attachAIProvider middleware', () => {
         const req = { session: { userId: 1 } }
         await mw(req, {}, makeNext())
 
+        // The shim is populated by the first resolution, not eagerly by the
+        // middleware — a route that never asks for a provider never pays for
+        // one (a DB read, a decrypt and a DNS lookup on every /api/* request).
+        expect(req.aiProvider).toBeUndefined()
+        await req.getAIProvider('completion')
         expect(req.aiProvider).toBe(provider)
         expect(req.genAI).toBe(provider.rawSDK)
     })
@@ -244,6 +250,7 @@ describe('attachAIProvider middleware', () => {
 
         const req = { session: { userId: 1 } }
         await mw(req, {}, makeNext())
+        await req.getAIProvider('completion')
 
         expect(req.aiProvider).toBe(provider)
         expect(req.genAI).toBeNull()
@@ -300,6 +307,7 @@ describe('attachAIProvider middleware', () => {
 
         const req = {} // no session
         await mw(req, {}, makeNext())
+        await req.getAIProvider('completion')
 
         expect(mockCreate).toHaveBeenCalledWith(undefined, 'completion')
     })

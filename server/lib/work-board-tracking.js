@@ -201,11 +201,28 @@ export function bulkUpdate(userId, repoFullNames, action) {
     const afterStates = [];
     const skipped = [];
 
+    // Compiled once per call, not once per item: BULK_MAX is 200, so the
+    // per-iteration prepare() was up to 400 sqlite3_prepare_v2 calls in a
+    // single synchronous request. better-sqlite3 does not cache statements.
+    const selectExisting = db.prepare(
+        'SELECT * FROM work_board_tracked_repos WHERE user_id = ? AND repo_full_name = ?'
+    );
+    const deleteRow = db.prepare(
+        'DELETE FROM work_board_tracked_repos WHERE user_id = ? AND repo_full_name = ?'
+    );
+    const upsertRow = db.prepare(`
+        INSERT INTO work_board_tracked_repos
+            (user_id, repo_full_name, source_signal, is_pinned, is_muted, last_synced_at)
+        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id, repo_full_name) DO UPDATE SET
+            is_pinned = excluded.is_pinned,
+            is_muted = excluded.is_muted,
+            last_synced_at = CURRENT_TIMESTAMP
+    `);
+
     const tx = db.transaction(() => {
         for (const repo of repoFullNames) {
-            const existing = db.prepare(
-                'SELECT * FROM work_board_tracked_repos WHERE user_id = ? AND repo_full_name = ?'
-            ).get(userId, repo);
+            const existing = selectExisting.get(userId, repo);
 
             if (EXISTING_REQUIRED.has(action) && !existing) {
                 skipped.push(repo);
@@ -216,8 +233,7 @@ export function bulkUpdate(userId, repoFullNames, action) {
             if (before) beforeStates.push(before);
 
             if (action === 'untrack') {
-                db.prepare('DELETE FROM work_board_tracked_repos WHERE user_id = ? AND repo_full_name = ?')
-                  .run(userId, repo);
+                deleteRow.run(userId, repo);
                 afterStates.push({ repo_full_name: repo, is_pinned: 0, is_muted: 0, deleted: true });
                 continue;
             }
@@ -235,15 +251,7 @@ export function bulkUpdate(userId, repoFullNames, action) {
                                break;
             }
 
-            db.prepare(`
-                INSERT INTO work_board_tracked_repos
-                    (user_id, repo_full_name, source_signal, is_pinned, is_muted, last_synced_at)
-                VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-                ON CONFLICT(user_id, repo_full_name) DO UPDATE SET
-                    is_pinned = excluded.is_pinned,
-                    is_muted = excluded.is_muted,
-                    last_synced_at = CURRENT_TIMESTAMP
-            `).run(userId, repo, source_signal, is_pinned, is_muted);
+            upsertRow.run(userId, repo, source_signal, is_pinned, is_muted);
 
             afterStates.push({ repo_full_name: repo, is_pinned, is_muted });
         }

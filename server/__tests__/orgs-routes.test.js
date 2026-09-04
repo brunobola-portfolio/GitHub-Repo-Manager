@@ -16,7 +16,11 @@ vi.mock('../lib/github-api.js', () => ({
     githubApi: (...a) => mockGithubApi(...a),
 }))
 
-vi.mock('../middleware/auth.js', () => ({
+// importOriginal spread: validate-request.js pulls `errorResponse` from this
+// same module, and a wholesale mock left it undefined — the PATCH schema's
+// rejection path then threw instead of answering 400.
+vi.mock('../middleware/auth.js', async (importOriginal) => ({
+    ...(await importOriginal()),
     requireAuth: (req, res, next) => {
         if (!req.session?.accessToken) return res.status(401).json({ error: 'Session expired. Please login again.' })
         next()
@@ -24,6 +28,8 @@ vi.mock('../middleware/auth.js', () => ({
     safeError: (_err, fallback) => fallback,
     isValidGitHubUsername: (s) => /^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$/.test(s || ''),
 }))
+
+vi.mock('../lib/audit.js', () => ({ auditLog: vi.fn() }))
 
 const { default: orgsRouter } = await import('../routes/orgs.js')
 
@@ -119,5 +125,78 @@ describe('GET /api/v1/orgs', () => {
         const res = await request(makeApp()).get('/api/v1/orgs/invalid..org')
         expect(res.status).toBe(400)
         expect(res.body.error).toMatch(/invalid organization name/i)
+    })
+})
+
+
+// ---------------------------------------------------------------------------
+// PATCH /:org — schema
+// ---------------------------------------------------------------------------
+// The handler used to name-whitelist eight fields and forward them untyped.
+// `default_repository_permission` has a fixed GitHub enum,
+// `members_can_create_repositories` is a boolean, and an object or array in
+// any string field was JSON.stringify'd through verbatim — GitHub answered
+// 422 and this router re-emitted it as an opaque passthrough. `name` renames
+// the organisation, which is irreversible in practice.
+describe('PATCH /api/v1/orgs/:org body schema', () => {
+    function patchApp() {
+        mockGithubApi.mockResolvedValue({ data: { login: 'acme' } })
+        return makeApp()
+    }
+
+    it('forwards exactly the validated fields', async () => {
+        const res = await request(patchApp())
+            .patch('/api/v1/orgs/acme')
+            .send({ description: 'hello', default_repository_permission: 'read' })
+
+        expect(res.status).toBe(200)
+        const [, , opts] = mockGithubApi.mock.calls[0]
+        expect(JSON.parse(opts.body)).toEqual({ description: 'hello', default_repository_permission: 'read' })
+    })
+
+    it('rejects an out-of-enum default_repository_permission with a 400, never a GitHub round-trip', async () => {
+        const res = await request(patchApp())
+            .patch('/api/v1/orgs/acme')
+            .send({ default_repository_permission: 'owner' })
+
+        expect(res.status).toBe(400)
+        expect(res.body.code).toBe('validation_failed')
+        expect(mockGithubApi).not.toHaveBeenCalled()
+    })
+
+    it('rejects a non-boolean members_can_create_repositories', async () => {
+        const res = await request(patchApp())
+            .patch('/api/v1/orgs/acme')
+            .send({ members_can_create_repositories: 'yes' })
+
+        expect(res.status).toBe(400)
+        expect(mockGithubApi).not.toHaveBeenCalled()
+    })
+
+    it('rejects an object where a string is expected', async () => {
+        const res = await request(patchApp())
+            .patch('/api/v1/orgs/acme')
+            .send({ blog: { url: 'https://example.com' } })
+
+        expect(res.status).toBe(400)
+        expect(mockGithubApi).not.toHaveBeenCalled()
+    })
+
+    it('rejects unknown keys instead of silently dropping them', async () => {
+        const res = await request(patchApp())
+            .patch('/api/v1/orgs/acme')
+            .send({ description: 'ok', billing_email: 'x@example.com' })
+
+        expect(res.status).toBe(400)
+        expect(mockGithubApi).not.toHaveBeenCalled()
+    })
+
+    it('rejects an empty organisation name', async () => {
+        const res = await request(patchApp())
+            .patch('/api/v1/orgs/acme')
+            .send({ name: '' })
+
+        expect(res.status).toBe(400)
+        expect(mockGithubApi).not.toHaveBeenCalled()
     })
 })

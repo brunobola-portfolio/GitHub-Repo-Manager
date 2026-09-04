@@ -574,6 +574,22 @@ export const MIGRATIONS = [
             }
         },
     },
+    {
+        version: 34,
+        name: 'deployment_events: (deployment_id, environment, id DESC) for the DORA rollups',
+        up(db) {
+            // event-aggregations.js resolves each deployment's latest status
+            // with a correlated `MAX(id)` subquery keyed on deployment_id.
+            // deployment_id carried no index at all, so that subquery
+            // full-scanned the table once per candidate row — O(rows²) inside
+            // one synchronous .all(), on every dashboard and Work Board DORA
+            // load. Leading with deployment_id makes the correlation a seek;
+            // environment and `id DESC` are carried so the environment filter
+            // and the MAX(id) are both answered from the index.
+            db.exec(`CREATE INDEX IF NOT EXISTS idx_deployment_events_dep_env
+                     ON deployment_events(deployment_id, environment, id DESC)`);
+        },
+    },
 ];
 
 // The highest version this build of the app knows how to apply. Used to

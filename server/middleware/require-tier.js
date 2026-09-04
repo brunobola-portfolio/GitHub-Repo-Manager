@@ -61,11 +61,21 @@ export async function resolveEffectiveTier(stripeTier, licenseKey, publicKey) {
   return 'free'
 }
 
+// Lazy module-scope statement (the pattern in lib/audit.js). This runs on every
+// /api/* request via attachTier and three or four more times per metered call
+// from lib/usage-meter.js; better-sqlite3 does not cache compiled statements,
+// so each one re-ran sqlite3_prepare_v2 on an invariant query. Cannot be
+// prepared at module load: some test fixtures swap the underlying db behind a
+// Proxy after import.
+let stripeTierStmt = null
 function getStripeTier(userId) {
   if (!userId) return null
-  const row = db.prepare(
-    'SELECT tier FROM user_subscriptions WHERE user_id = ? AND status = ?'
-  ).get(userId, 'active')
+  if (!stripeTierStmt) {
+    stripeTierStmt = db.prepare(
+      'SELECT tier FROM user_subscriptions WHERE user_id = ? AND status = ?'
+    )
+  }
+  const row = stripeTierStmt.get(userId, 'active')
   return row?.tier || null
 }
 
@@ -140,11 +150,22 @@ export function getLicenseSource() {
   return cachedLicenseSource
 }
 
+/**
+ * Resolve this request's tier, reusing the value attachTier already put on the
+ * request. attachTier runs on every /api/* request, so without this every
+ * requireTier-gated route repeated the same subscription read (plus the
+ * license-cache walk) for a value already sitting on `req`.
+ */
+function resolveRequestTier(req) {
+  if (typeof req.userTier === 'string') return req.userTier
+  req.userTier = getUserTier(req.session?.userId || req.tenantId)
+  return req.userTier
+}
+
 export function requireTier(minTier, feature = null) {
   const minOrder = getTierOrder(minTier)
   return (req, res, next) => {
-    const userTier = getUserTier(req.session?.userId || req.tenantId)
-    req.userTier = userTier
+    const userTier = resolveRequestTier(req)
     if (getTierOrder(userTier) >= minOrder) return next()
     // Canonical 403 payload — every tier-gated route now uses the same shape
     // so QuotaExceededState on the frontend can render uniformly.

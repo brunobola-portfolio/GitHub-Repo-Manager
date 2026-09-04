@@ -31,6 +31,48 @@ function isoPlusMs(ms) {
 }
 
 /**
+ * Build the cache-hit result.
+ *
+ * `data` is a lazy getter and `payload` is the stored JSON string, because the
+ * dominant cost of a hit used to be `JSON.parse` on a payload the route then
+ * handed straight to `res.json()`, which re-stringified the identical bytes —
+ * a commit list at per_page=100 is a hundred objects parsed and serialised for
+ * nothing. Consumers that inspect or reshape the value still read `.data` and
+ * pay the parse exactly once; pure pass-through routes use sendCachedJson().
+ */
+function cacheHit(payload, { stale, fetchedAt }) {
+    let parsed;
+    let parsedOnce = false;
+    return {
+        payload,
+        get data() {
+            if (!parsedOnce) {
+                parsed = JSON.parse(payload);
+                parsedOnce = true;
+            }
+            return parsed;
+        },
+        fromCache: true,
+        stale,
+        fetchedAt,
+    };
+}
+
+/**
+ * Send a readThrough() result as the response body.
+ *
+ * On a cache hit this forwards the stored JSON string untouched; on a miss it
+ * falls back to res.json() over the freshly fetched value. Only for routes
+ * that return the cached payload verbatim.
+ */
+export function sendCachedJson(res, result) {
+    if (typeof result?.payload === 'string') {
+        return res.type('json').send(result.payload);
+    }
+    return res.json(result?.data);
+}
+
+/**
  * Read a value through the cache.
  *
  * @param {object} args
@@ -58,12 +100,7 @@ export async function readThrough({ userId, resourceType, resourceKey, ttlMs = D
     const fresh = cached && new Date(cached.stale_at + 'Z').getTime() > now;
 
     if (fresh) {
-        return {
-            data: JSON.parse(cached.payload),
-            fromCache: true,
-            stale: false,
-            fetchedAt: cached.fetched_at,
-        };
+        return cacheHit(cached.payload, { stale: false, fetchedAt: cached.fetched_at });
     }
 
     // Stale or missing — try to revalidate. We pass the stored ETag so the
@@ -80,12 +117,10 @@ export async function readThrough({ userId, resourceType, resourceKey, ttlMs = D
                     stale_at = ?
                 WHERE user_id = ? AND resource_type = ? AND resource_key = ?
             `).run(isoPlusMs(ttlMs), userId, resourceType, resourceKey);
-            return {
-                data: JSON.parse(cached.payload),
-                fromCache: true,
+            return cacheHit(cached.payload, {
                 stale: false,
                 fetchedAt: new Date().toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, ''),
-            };
+            });
         }
 
         // 200 — replace the cached row
@@ -120,12 +155,7 @@ export async function readThrough({ userId, resourceType, resourceKey, ttlMs = D
                 { userId, resourceType, resourceKey, err: err?.message, status },
                 '[gh-cache] live fetch failed, serving stale cache',
             );
-            return {
-                data: JSON.parse(cached.payload),
-                fromCache: true,
-                stale: true,
-                fetchedAt: cached.fetched_at,
-            };
+            return cacheHit(cached.payload, { stale: true, fetchedAt: cached.fetched_at });
         }
 
         // Cold cache + network failure — let the caller surface the error

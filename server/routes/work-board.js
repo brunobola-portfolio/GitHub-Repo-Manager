@@ -67,6 +67,18 @@ function parseRepoIds(raw) {
 }
 
 // ---------------------------------------------------------------------------
+// Helper — clamp a client ?limit= into [1, max]
+//
+// A bare Math.min() is not a bound: SQLite reads a negative LIMIT as "no
+// limit", and better-sqlite3 binds NaN as NULL, which it reads the same way.
+// `?limit=-1` and `?limit=abc` therefore both returned the entire table.
+// Mirrors clampPerPage (routes/repos/_shared.js), which has the floor.
+// ---------------------------------------------------------------------------
+function clampLimit(value, defaultVal, max) {
+    return Math.min(Math.max(Number.parseInt(value, 10) || defaultVal, 1), max);
+}
+
+// ---------------------------------------------------------------------------
 // Helper — has this deployment ever ingested a GitHub webhook event?
 //
 // GitHub webhook ingestion writes pr_events / issue_events / deployment_events
@@ -173,7 +185,7 @@ router.get('/my-reviews', requireAuth, async (req, res) => {
         if (!reviewerLogin) {
             return errorResponse(res, 400, 'GitHub login not found in session');
         }
-        const limit = Math.min(Number.parseInt(req.query.limit || '100', 10), 200);
+        const limit = clampLimit(req.query.limit, 100, 200);
         const webhookData = listMyPendingReviews({ reviewerLogin, limit });
         const { data, meta } = await resolveTabData({
             userId: req.session?.userId,
@@ -203,7 +215,7 @@ router.get('/my-issues', requireAuth, async (req, res) => {
         if (!assigneeLogin) {
             return errorResponse(res, 400, 'GitHub login not found in session');
         }
-        const limit = Math.min(Number.parseInt(req.query.limit || '100', 10), 200);
+        const limit = clampLimit(req.query.limit, 100, 200);
         const webhookData = listMyOpenIssues({ assigneeLogin, limit });
         const { data, meta } = await resolveTabData({
             userId: req.session?.userId,
@@ -234,7 +246,7 @@ router.get('/stale-prs', requireAuth, async (req, res) => {
             Number.parseInt(req.query.staleAfterDays || '7', 10),
         );
         const repoIds = parseRepoIds(req.query.repoIds);
-        const limit = Math.min(Number.parseInt(req.query.limit || '50', 10), 200);
+        const limit = clampLimit(req.query.limit, 50, 200);
         // Server-derived tenant boundary — see repoIdsFilter.
         const scopeRepoIds = getScopedRepoIds(req.session?.userId);
         const webhookData = listStalePRs({ staleAfterDays, repoIds, limit, scopeRepoIds });
@@ -458,7 +470,7 @@ router.get('/dora.csv', requireAuth, (req, res) => {
 router.get('/tech-debt', requireAuth, async (req, res) => {
     try {
         const repoIds = parseRepoIds(req.query.repoIds);
-        const limit = Math.min(Number.parseInt(req.query.limit || '100', 10), 500);
+        const limit = clampLimit(req.query.limit, 100, 500);
         const labels = req.query.labels
             ? String(req.query.labels).split(',').map(s => s.trim()).filter(Boolean)
             : undefined;

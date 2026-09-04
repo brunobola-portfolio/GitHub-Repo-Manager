@@ -43,7 +43,12 @@ function isRetryable(err) {
 }
 
 function computeNextRetryIso(attempts) {
-    const ms = Math.min(FIRST_RETRY_MS * Math.pow(2, attempts - 1), 24 * 60 * 60 * 1000);
+    // ±20% jitter, same shape as computeBackoff in routes/ai/shared.js. Rows
+    // failed by one outage share an `attempts` count, so a deterministic
+    // backoff re-fires the whole batch in the same tick against the same
+    // still-recovering dependency.
+    const jitter = 0.8 + Math.random() * 0.4;
+    const ms = Math.min(FIRST_RETRY_MS * Math.pow(2, attempts - 1) * jitter, 24 * 60 * 60 * 1000);
     return new Date(Date.now() + ms).toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
 }
 

@@ -72,7 +72,10 @@ router.put('/ai/prompts/:key', requireAuth, validateBody(promptSchema), (req, re
         });
     } catch (err) {
         req.log?.warn({ err, key }, 'Save AI prompt override failed');
-        res.status(400).json({ error: err.message || 'Failed to save prompt' });
+        // validateBody(promptSchema) already rejects the empty/too-long cases
+        // with a precise message, so anything reaching here is internal —
+        // safeError keeps it out of the response in production.
+        res.status(400).json({ error: safeError(err, 'Failed to save prompt'), code: 'prompt_save_failed' });
     }
 });
 

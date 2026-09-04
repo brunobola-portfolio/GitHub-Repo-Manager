@@ -375,13 +375,16 @@ router.post('/community-health/compare', requireAuth, async (req, res) => {
 
         const BATCH_SIZE = 5;
         const comparison = [];
+        // One compile for the whole request instead of one per repo (up to 50).
+        const selectCachedHealth = db.prepare(
+            'SELECT health_score FROM community_health_cache WHERE user_id = ? AND repo_id = ?'
+        );
         for (let i = 0; i < parsedRepos.length; i += BATCH_SIZE) {
             const batch = parsedRepos.slice(i, i + BATCH_SIZE);
             const results = await Promise.all(batch.map(async ({ repoFullName, parsed }) => {
                 const { owner, repo } = parsed;
                 const { data: repoData } = await githubApi(`/repos/${owner}/${repo}`, req.session.accessToken);
-                const cached = db.prepare('SELECT health_score FROM community_health_cache WHERE user_id = ? AND repo_id = ?')
-                    .get(userId, repoData.id);
+                const cached = selectCachedHealth.get(userId, repoData.id);
                 return {
                     repo: repoFullName,
                     score: cached?.health_score || 0,

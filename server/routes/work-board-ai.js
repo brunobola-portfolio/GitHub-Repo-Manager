@@ -10,6 +10,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { requireWorkBoardAI } from '../middleware/work-board-ai-gate.js';
 import { computeSuggestions, dismissSuggestion } from '../lib/work-board-suggestions-engine.js';
 import { createProviderForUser } from '../lib/ai-provider.js';
+import { guardedGenerate, handleAIError } from './ai/shared.js';
 import { loadPrompt } from '../lib/ai-features/work-board-assistant/prompts/index.js';
 import { signDiffToken, verifyDiffToken } from '../lib/work-board-ai-hmac.js';
 import { recordSpend, getMonthlySpend, getCurrentMonthKey } from '../lib/work-board-ai-cost.js';
@@ -109,11 +110,21 @@ router.post('/interpret', requireAuth, interpretLimiter, requireWorkBoardAI, asy
     try {
         provider = await createProviderForUser(userId, 'completion');
     } catch (e) {
-        return res.status(503).json({ code: 'AI_PROVIDER_UNAVAILABLE', error: e.message });
+        // Provider errors embed upstream response bodies and endpoint URLs;
+        // never echo them to the client (see redact-secrets.js).
+        req.log?.error?.({ err: e }, 'Work Board interpret: provider resolution failed');
+        return res.status(503).json({
+            error: 'The AI provider could not be reached. Check your AI configuration and try again.',
+            code: 'AI_PROVIDER_UNAVAILABLE',
+        });
     }
     if (!provider) {
-        return res.status(403).json({ code: 'AI_NOT_CONFIGURED', error: 'Configure a provider in AI Configuration' });
+        return res.status(403).json({ error: 'Configure a provider in AI Configuration', code: 'AI_NOT_CONFIGURED' });
     }
+    // guardedGenerate reads the provider off the request. This route predates
+    // attachAIProvider's shim and resolves its own, so hand it over before the
+    // call or the spend cap would be evaluated against an absent provider.
+    req.aiProvider = provider;
 
     const tracked = listTrackedReposForPrompt(userId);
     const systemPrompt = loadPrompt('interpret');
@@ -121,37 +132,45 @@ router.post('/interpret', requireAuth, interpretLimiter, requireWorkBoardAI, asy
 
     let llmText;
     try {
-        const result = await provider.generate({
+        // guardedGenerate carries the OWASP-LLM10 guards every other blocking
+        // AI call in the app gets: global spend-cap check, output-token
+        // ceiling, operator spend recording, and the PII-safe audit entry.
+        const result = await guardedGenerate(req, {
             prompt: userPrompt,
             systemPrompt,
             generationConfig: { maxOutputTokens: 1500, max_tokens: 1500 },
-        });
+        }, { feature: 'work_board_interpret' });
         llmText = result?.text;
     } catch (e) {
-        return res.status(502).json({ code: 'AI_PROVIDER_ERROR', error: e.message });
+        req.log?.error?.({ err: e }, 'Work Board interpret generation failed');
+        return handleAIError(res, e, 'The AI assistant could not interpret that request. Please try again.');
     }
-
-    const parsed = extractJsonBlob(llmText);
-    if (!parsed || !Array.isArray(parsed.actions)) {
-        return res.status(502).json({ code: 'AI_INVALID_RESPONSE', error: 'LLM did not return a valid diff' });
-    }
-
-    const trackedSet = new Set(tracked.map(r => r.repo_full_name));
-    const validActions = parsed.actions.filter(a =>
-        a && typeof a.repo === 'string' && VALID_ACTIONS.has(a.action) && trackedSet.has(a.repo)
-    );
 
     // Estimate cost from the actual prompt + response sizes and the provider's
     // model. This replaces the previous flat 1¢ that ignored both. The
     // estimate uses ~4 chars/token and per-model pricing in provider-pricing.js
     // so the per-user monthly cap reflects real usage within an order of
     // magnitude (vs. always 1¢).
+    //
+    // Recorded BEFORE the parse gate below: a completion the parser rejects
+    // still burned provider tokens, and billing it nowhere let a user loop
+    // malformed responses past their monthly cap for free.
     const callCostCents = estimateCallCostCents({
         modelName: provider.getModelName?.() ?? null,
         promptChars: (systemPrompt?.length ?? 0) + userPrompt.length,
         responseChars: llmText?.length ?? 0,
     });
     recordSpend(userId, callCostCents);
+
+    const parsed = extractJsonBlob(llmText);
+    if (!parsed || !Array.isArray(parsed.actions)) {
+        return res.status(502).json({ error: 'The AI assistant did not return a valid change set.', code: 'AI_INVALID_RESPONSE' });
+    }
+
+    const trackedSet = new Set(tracked.map(r => r.repo_full_name));
+    const validActions = parsed.actions.filter(a =>
+        a && typeof a.repo === 'string' && VALID_ACTIONS.has(a.action) && trackedSet.has(a.repo)
+    );
 
     const validity_token = signDiffToken({ userId, actions: validActions });
 

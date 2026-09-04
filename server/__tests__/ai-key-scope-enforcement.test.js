@@ -282,34 +282,80 @@ describe('carve-out allowlist / requireScope("ai") parity', () => {
 // is a new callsite appearing, which is visible in the source.
 // ---------------------------------------------------------------------------
 describe('requireScope("ai") outside the ai barrel', () => {
-    // Every entry is a deliberate decision, and each carries a comment at the
-    // callsite explaining why it is not allowlisted. Adding a route here must
-    // be a choice, not an oversight.
-    const KNOWN_OUTSIDE_BARREL = [
-        'server/routes/migration.js',
-        'server/routes/repos/actions-community.js',
-        'server/routes/v1/repos-security.js',
-    ]
+    // Every entry is a deliberate decision, keyed by the exact route it
+    // covers rather than by file: the previous version of this gate listed
+    // FILES, so a second ai-scoped route added to an already-listed file was
+    // invisible to it. Each value is the reason the route is not in
+    // AI_GENERATION_ROUTE_PATHS; each callsite repeats it in a comment.
+    const INTENTIONALLY_EXCLUDED = {
+        'server/routes/migration.js::/analyze':
+            'outside the ai barrel — fail-closed: an ai-only key 403s at the generic write gate',
+        'server/routes/repos/actions-community.js::/:owner/:repo/agent-rules/generate':
+            'outside the ai barrel — fail-closed: an ai-only key 403s at the generic write gate',
+        'server/routes/v1/repos-security.js::/repos/:owner/:repo/security/summary':
+            'outside the ai barrel — fail-closed: an ai-only key 403s at the generic write gate',
+    }
 
-    function filesUsingAiScope() {
+    // A source scan rather than a router walk: importing the v1 tree boots the
+    // database and the whole middleware stack, and the failure mode being
+    // guarded is a new callsite appearing, which is visible in the source.
+    const ROUTE_WITH_AI_SCOPE =
+        /router\.(?:get|post|put|patch|delete|all)\(\s*'([^']+)'.*?requireScope\(\s*'ai'\s*\)/g
+    const AI_SCOPE_ANY = /requireScope\(\s*'ai'\s*\)/g
+
+    function routeFiles() {
         const dir = 'server/routes'
         return readdirSync(dir, { recursive: true })
             .filter((f) => typeof f === 'string' && f.endsWith('.js'))
             .map((f) => join(dir, f).split(sep).join('/'))
             .filter((f) => !f.startsWith('server/routes/ai/') && f !== 'server/routes/ai.js')
-            .filter((f) => /requireScope\(\s*'ai'\s*\)/.test(readFileSync(f, 'utf8')))
             .sort()
     }
 
-    it('is confined to the three known, deliberately non-allowlisted routes', () => {
+    function scan() {
+        const found = []
+        let unmatched = 0
+        for (const file of routeFiles()) {
+            // Comments at each callsite quote requireScope('ai') to explain the
+            // exclusion; only code counts.
+            const src = readFileSync(file, 'utf8').replace(/^\s*\/\/.*$/gm, '')
+            const declared = (src.match(AI_SCOPE_ANY) || []).length
+            if (declared === 0) continue
+            const matches = [...src.matchAll(ROUTE_WITH_AI_SCOPE)]
+            for (const m of matches) found.push(`${file}::${m[1]}`)
+            // A registration spread over several lines would slip past the
+            // single-line regex — i.e. fail OPEN. Count instead of trusting it.
+            unmatched += declared - matches.length
+        }
+        return { found: found.sort(), unmatched }
+    }
+
+    it('every ai-scoped route callsite is visible to this scan', () => {
         expect(
-            filesUsingAiScope(),
-            'a new ai-scoped route outside the barrel — decide whether it belongs in AI_GENERATION_ROUTE_PATHS',
-        ).toEqual(KNOWN_OUTSIDE_BARREL)
+            scan().unmatched,
+            "a requireScope('ai') callsite this regex cannot see — reformat the route registration onto one line, or widen the pattern",
+        ).toBe(0)
+    })
+
+    it('every ai-scoped route outside the barrel is explicitly excluded from the carve-out', () => {
+        const undecided = scan().found.filter((r) => !(r in INTENTIONALLY_EXCLUDED))
+        expect(
+            undecided,
+            'a new ai-scoped route outside the barrel — decide whether it belongs in AI_GENERATION_ROUTE_PATHS, then record it here',
+        ).toEqual([])
+    })
+
+    it('has no stale exclusions', () => {
+        const live = new Set(scan().found)
+        expect(
+            Object.keys(INTENTIONALLY_EXCLUDED).filter((r) => !live.has(r)),
+            "this route no longer carries requireScope('ai') — drop the exclusion",
+        ).toEqual([])
     })
 
     it('each one documents why it is not in the allowlist', () => {
-        const undocumented = KNOWN_OUTSIDE_BARREL.filter(
+        const files = [...new Set(Object.keys(INTENTIONALLY_EXCLUDED).map((r) => r.split('::')[0]))]
+        const undocumented = files.filter(
             (f) => !/AI_GENERATION_ROUTE_PATHS/.test(readFileSync(f, 'utf8')),
         )
         expect(undocumented, 'the callsite must say why it sits outside the carve-out').toEqual([])

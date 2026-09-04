@@ -97,7 +97,13 @@ router.get('/azure/oauth/callback', async (req, res) => {
         });
         const tokenRes = await fetch(
             `https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/token`,
-            { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body }
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body,
+                // Same reasoning as the GitHub token exchange in routes/auth.js.
+                signal: AbortSignal.timeout(15_000),
+            }
         );
         const tokenData = await tokenRes.json();
         if (tokenData.access_token) {

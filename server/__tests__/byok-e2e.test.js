@@ -113,7 +113,8 @@ describe('Scenario A — no provider (no user config, no GEMINI_API_KEY)', () =>
         const res = await request(app).get('/api/ai/ping')
 
         expect(res.status).toBe(400)
-        expect(res.body.error).toBe('AI_NOT_CONFIGURED')
+        expect(res.body.code).toBe('AI_NOT_CONFIGURED')
+        expect(res.body.error).toMatch(/provider API key/i)
         expect(res.body.configureUrl).toBe('/settings#ai')
     })
 })

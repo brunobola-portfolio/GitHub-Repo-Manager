@@ -221,7 +221,8 @@ describe('createRequireAI middleware (BYOK-aware)', () => {
         await middleware(req, res, next)
         expect(res.status).toHaveBeenCalledWith(400)
         const body = res.json.mock.calls[0][0]
-        expect(body.error).toBe('AI_NOT_CONFIGURED')
+        expect(body.code).toBe('AI_NOT_CONFIGURED')
+        expect(body.error).toMatch(/provider API key/i)
         expect(body.configureUrl).toBe('/settings#ai')
         expect(next).not.toHaveBeenCalled()
     })

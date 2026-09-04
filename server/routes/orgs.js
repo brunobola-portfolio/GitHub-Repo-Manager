@@ -10,6 +10,7 @@
  */
 
 import express from 'express';
+import { z } from 'zod';
 import { githubApi } from '../lib/github-api.js';
 import { requireAuth, safeError, isValidGitHubUsername } from '../middleware/auth.js';
 import { orgRepoCreateSchema } from '../lib/validators.js';
@@ -17,6 +18,27 @@ import { validateBody } from '../middleware/validate-request.js';
 import { auditLog } from '../lib/audit.js';
 
 const router = express.Router();
+
+// PATCH /:org body. Name-whitelisting alone let an object or array through to
+// GitHub verbatim, which answered 422 and this router re-emitted as an opaque
+// passthrough instead of a clean 400. `.strict()` because the handler only
+// ever forwarded these eight keys — an unknown one was silently dropped, which
+// reads to the caller as a successful no-op.
+const ORG_PATCH_ENUMS = Object.freeze({
+    defaultRepositoryPermission: ['read', 'write', 'admin', 'none'],
+});
+const orgPatchSchema = z.object({
+    // GitHub renames the organisation on this field. Irreversible in practice
+    // (the old login is released), so it is bounded rather than free-form.
+    name: z.string().min(1).max(255),
+    description: z.string().max(1000),
+    company: z.string().max(255),
+    location: z.string().max(255),
+    email: z.string().max(320),
+    blog: z.string().max(500),
+    default_repository_permission: z.enum(ORG_PATCH_ENUMS.defaultRepositoryPermission),
+    members_can_create_repositories: z.boolean(),
+}).partial().strict();
 
 // Validate :org param
 router.param('org', (req, res, next, org) => {
@@ -98,23 +120,17 @@ router.get('/:org', requireAuth, async (req, res) => {
 });
 
 // Update organization
-router.patch('/:org', requireAuth, async (req, res) => {
+router.patch('/:org', requireAuth, validateBody(orgPatchSchema), async (req, res) => {
     try {
-        // Whitelist allowed fields to prevent unintended org modifications
-        const { name, description, company, location, email, blog, default_repository_permission, members_can_create_repositories } = req.body;
-        const allowedFields = {};
-        if (name !== undefined) allowedFields.name = name;
-        if (description !== undefined) allowedFields.description = description;
-        if (company !== undefined) allowedFields.company = company;
-        if (location !== undefined) allowedFields.location = location;
-        if (email !== undefined) allowedFields.email = email;
-        if (blog !== undefined) allowedFields.blog = blog;
-        if (default_repository_permission !== undefined) allowedFields.default_repository_permission = default_repository_permission;
-        if (members_can_create_repositories !== undefined) allowedFields.members_can_create_repositories = members_can_create_repositories;
-
+        // The schema is `.strict()` and fully optional, so req.validatedBody
+        // already IS the whitelist — no key can reach GitHub that isn't here.
         const { data } = await githubApi(`/orgs/${req.params.org}`, req.session.accessToken, {
             method: 'PATCH',
-            body: JSON.stringify(allowedFields)
+            body: JSON.stringify(req.validatedBody)
+        });
+        auditLog(req, 'org.update', 'org', req.params.org, {
+            fields: Object.keys(req.validatedBody),
+            renamed: req.validatedBody.name !== undefined,
         });
         res.json(data);
     } catch (error) {

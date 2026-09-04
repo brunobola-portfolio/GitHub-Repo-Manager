@@ -117,7 +117,8 @@ vi.mock('../lib/gh-outbox.js', () => ({
     stopGhOutboxWorker: vi.fn(),
     purgeOldSucceeded: vi.fn(() => 0),
 }))
-vi.mock('../lib/gh-cache.js', () => ({
+vi.mock('../lib/gh-cache.js', async (importOriginal) => ({
+    ...(await importOriginal()),
     readThrough: vi.fn(async ({ fetcher }) => {
         const r = await fetcher({})
         return { data: r.data, fromCache: false, stale: false, fetchedAt: '2026-05-02 00:00:00' }

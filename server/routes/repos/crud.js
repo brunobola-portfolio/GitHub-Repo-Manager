@@ -28,7 +28,7 @@ import express from 'express';
 import db from '../../db.js';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, isValidGitHubUsername, safeError, errorResponse } from '../../middleware/auth.js';
-import { readThrough } from '../../lib/gh-cache.js';
+import { readThrough, sendCachedJson } from '../../lib/gh-cache.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import {
     createRepoSchema,
@@ -418,7 +418,7 @@ router.get('/:owner/:repo/readme', requireAuth, async (req, res) => {
 
         if (result.stale) res.setHeader('X-Cache', 'stale');
         res.setHeader('X-Cache-Fetched-At', result.fetchedAt);
-        res.json(result.data);
+        sendCachedJson(res, result);
     } catch (error) {
         if (error.status === 404) {
             res.json({ exists: false });
@@ -511,7 +511,7 @@ router.get('/:owner/:repo/commits', requireAuth, async (req, res) => {
 
         if (result.stale) res.setHeader('X-Cache', 'stale');
         res.setHeader('X-Cache-Fetched-At', result.fetchedAt);
-        res.json(result.data);
+        sendCachedJson(res, result);
     } catch (error) {
         req.log.error({ err: error }, 'List commits failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });

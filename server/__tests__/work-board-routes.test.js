@@ -606,3 +606,45 @@ describe('snooze filter (/my-reviews)', () => {
         expect(res2.body.data.map(r => r.prNumber)).toEqual([42, 43]);
     });
 })
+
+// ---------------------------------------------------------------------------
+// ?limit= clamping
+// ---------------------------------------------------------------------------
+// Math.min() alone is not a bound. SQLite reads a negative LIMIT as "no
+// limit", and better-sqlite3 binds NaN as NULL, which it reads the same way —
+// so `?limit=-1` and `?limit=abc` both turned a user-facing list into a full
+// table read. Every clamped route must hand the aggregation a positive
+// integer no greater than its own maximum.
+describe('?limit= is floored as well as capped', () => {
+    const cases = [
+        { path: '/my-reviews', spy: () => mockListMyPendingReviews, max: 200, def: 100 },
+        { path: '/my-issues', spy: () => mockListMyOpenIssues, max: 200, def: 100 },
+        { path: '/stale-prs', spy: () => mockListStalePRs, max: 200, def: 50 },
+        { path: '/tech-debt', spy: () => mockListTechDebtIssues, max: 500, def: 100 },
+    ]
+
+    for (const { path, spy, max, def } of cases) {
+        it(`${path} clamps -1, abc, 0 and an over-max value`, async () => {
+            for (const [query, expected] of [
+                // Same shape as clampPerPage: a parsable-but-out-of-range value
+                // is pulled to the nearest bound, an unparsable one falls back
+                // to the route's default. Both are positive and bounded, which
+                // is the property that matters.
+                ['limit=-1', 1],
+                ['limit=abc', def],
+                ['limit=0', def],
+                [`limit=${max + 5000}`, max],
+                ['limit=7', 7],
+            ]) {
+                spy().mockClear()
+                const res = await request(makeApp('enterprise')).get(`/api/v1/work-board${path}?${query}`)
+                expect(res.status).toBe(200)
+                const passed = spy().mock.calls[0][0].limit
+                expect(Number.isInteger(passed), `${query} passed ${passed}`).toBe(true)
+                expect(passed).toBe(expected)
+                expect(passed).toBeGreaterThan(0)
+                expect(passed).toBeLessThanOrEqual(max)
+            }
+        })
+    }
+})

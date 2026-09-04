@@ -25,12 +25,16 @@ let timer = null;
 
 /**
  * Compute the next-retry timestamp given the NEW attempts count.
- * Backoff: min(5 * 2^attempts, 1440) minutes, rendered as a SQLite
+ * Backoff: min(5 * 2^attempts * jitter, 1440) minutes, rendered as a SQLite
  * datetime string in the UTC `YYYY-MM-DD HH:MM:SS` format produced by
  * SQLite's own `datetime('now')` so string comparisons work.
  */
 function computeNextRetryIso(attempts) {
-    const minutes = Math.min(5 * Math.pow(2, attempts), MAX_BACKOFF_MINUTES);
+    // ±20% jitter, same shape as computeBackoff in routes/ai/shared.js. Rows
+    // dead-lettered by one outage share an `attempts` count, so a deterministic
+    // backoff re-delivers the whole batch in a single tick.
+    const jitter = 0.8 + Math.random() * 0.4;
+    const minutes = Math.min(5 * Math.pow(2, attempts) * jitter, MAX_BACKOFF_MINUTES);
     const d = new Date(Date.now() + minutes * 60 * 1000);
     return d.toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
 }

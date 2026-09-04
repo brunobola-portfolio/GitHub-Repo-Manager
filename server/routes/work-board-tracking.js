@@ -112,6 +112,21 @@ router.post('/undo/:operation_id', requireAuth, (req, res) => {
     try {
         const { operationType, beforeState, afterState } = undoOperation(req.session.userId, operation_id);
 
+        // An undo replays a bulk op, so both loops are BULK_MAX-sized (200).
+        // Compile once, outside the transaction callback.
+        const deleteRow = db.prepare(
+            'DELETE FROM work_board_tracked_repos WHERE user_id = ? AND repo_full_name = ?'
+        );
+        const restoreRow = db.prepare(`
+            INSERT INTO work_board_tracked_repos
+                (user_id, repo_full_name, source_signal, is_pinned, is_muted, last_synced_at)
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_id, repo_full_name) DO UPDATE SET
+                is_pinned = excluded.is_pinned,
+                is_muted = excluded.is_muted,
+                last_synced_at = CURRENT_TIMESTAMP
+        `);
+
         const applyTx = db.transaction(() => {
             const beforeNames = new Set(beforeState.map(r => r.repo_full_name));
 
@@ -119,22 +134,13 @@ router.post('/undo/:operation_id', requireAuth, (req, res) => {
             // (present in after_state but absent from before_state)
             for (const a of afterState) {
                 if (!beforeNames.has(a.repo_full_name)) {
-                    db.prepare('DELETE FROM work_board_tracked_repos WHERE user_id = ? AND repo_full_name = ?')
-                      .run(req.session.userId, a.repo_full_name);
+                    deleteRow.run(req.session.userId, a.repo_full_name);
                 }
             }
 
             // Restore before_state rows
             for (const row of beforeState) {
-                db.prepare(`
-                    INSERT INTO work_board_tracked_repos
-                        (user_id, repo_full_name, source_signal, is_pinned, is_muted, last_synced_at)
-                    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-                    ON CONFLICT(user_id, repo_full_name) DO UPDATE SET
-                        is_pinned = excluded.is_pinned,
-                        is_muted = excluded.is_muted,
-                        last_synced_at = CURRENT_TIMESTAMP
-                `).run(
+                restoreRow.run(
                     req.session.userId,
                     row.repo_full_name,
                     row.source_signal ?? 'pinned',

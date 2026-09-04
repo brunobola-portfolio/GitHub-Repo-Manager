@@ -143,6 +143,10 @@ router.get('/callback', authRouteLimiter, async (req, res) => {
         // Exchange the temporary code for a persistent access token
         const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
             method: 'POST',
+            // The user is staring at a blank redirect while this runs; without
+            // a signal a stalled GitHub held the request for undici's default
+            // five minutes before the browser gave up on its own.
+            signal: AbortSignal.timeout(15_000),
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
@@ -166,6 +170,7 @@ router.get('/callback', authRouteLimiter, async (req, res) => {
 
         // Fetch User Profile to sync with DB
         const userRes = await fetch('https://api.github.com/user', {
+            signal: AbortSignal.timeout(30_000),
             headers: {
                 'Authorization': `Bearer ${tokenData.access_token}`,
                 'Accept': 'application/vnd.github+json',

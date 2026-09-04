@@ -23,7 +23,7 @@ import {
     issueAssigneesSchema,
 } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
-import { readThrough, invalidate } from '../../lib/gh-cache.js';
+import { readThrough, invalidate, sendCachedJson } from '../../lib/gh-cache.js';
 import { executeViaOutbox } from '../../lib/outbox-helper.js';
 import { clampPerPage, applyOwnerRepoParamValidators } from './_shared.js';
 
@@ -66,7 +66,7 @@ router.get('/:owner/:repo/issues', requireAuth, async (req, res) => {
 
         if (result.stale) res.setHeader('X-Cache', 'stale');
         res.setHeader('X-Cache-Fetched-At', result.fetchedAt);
-        res.json(result.data);
+        sendCachedJson(res, result);
     } catch (error) {
         req.log.error({ err: error }, 'List issues failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
@@ -154,7 +154,7 @@ router.get('/:owner/:repo/issues/:issue_number', requireAuth, async (req, res) =
         });
         if (result.stale) res.setHeader('X-Cache', 'stale');
         res.setHeader('X-Cache-Fetched-At', result.fetchedAt);
-        res.json(result.data);
+        sendCachedJson(res, result);
     } catch (error) {
         req.log.error({ err: error }, 'Get issue failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
@@ -178,7 +178,7 @@ router.get('/:owner/:repo/issues/:issue_number/comments', requireAuth, async (re
         });
         if (result.stale) res.setHeader('X-Cache', 'stale');
         res.setHeader('X-Cache-Fetched-At', result.fetchedAt);
-        res.json(result.data);
+        sendCachedJson(res, result);
     } catch (error) {
         req.log.error({ err: error }, 'List issue comments failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
@@ -269,7 +269,7 @@ router.get('/:owner/:repo/assignees', requireAuth, async (req, res) => {
         });
         if (result.stale) res.setHeader('X-Cache', 'stale');
         res.setHeader('X-Cache-Fetched-At', result.fetchedAt);
-        res.json(result.data);
+        sendCachedJson(res, result);
     } catch (error) {
         req.log.error({ err: error }, 'List assignees failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
@@ -298,7 +298,7 @@ router.get('/:owner/:repo/issues/:issue_number/timeline', requireAuth, async (re
         });
         if (result.stale) res.setHeader('X-Cache', 'stale');
         res.setHeader('X-Cache-Fetched-At', result.fetchedAt);
-        res.json(result.data);
+        sendCachedJson(res, result);
     } catch (error) {
         req.log.error({ err: error }, 'Get issue timeline failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });

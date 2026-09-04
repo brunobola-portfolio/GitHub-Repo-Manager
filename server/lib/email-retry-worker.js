@@ -31,10 +31,15 @@ let timer = null
  * Compute the next-retry timestamp given the total attempt count so far.
  * attempts here is the NEW attempt counter (after increment).
  *
- * Backoff: min(5 * 2^attempts, 1440) minutes.
+ * Backoff: min(5 * 2^attempts * jitter, 1440) minutes.
  */
 function computeNextRetryIso(attempts) {
-    const minutes = Math.min(5 * Math.pow(2, attempts), MAX_BACKOFF_MINUTES)
+    // ±20% jitter, same shape as computeBackoff in routes/ai/shared.js. Rows
+    // failed by one provider outage share an `attempts` count, so without it
+    // the whole batch re-fires in the same tick against the same recovering
+    // provider.
+    const jitter = 0.8 + Math.random() * 0.4
+    const minutes = Math.min(5 * Math.pow(2, attempts) * jitter, MAX_BACKOFF_MINUTES)
     return toSqliteDatetime(new Date(Date.now() + minutes * 60 * 1000))
 }
 

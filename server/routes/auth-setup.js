@@ -17,7 +17,11 @@
  *   2. Loopback-only: the requesting socket must be 127.0.0.1/::1 AND the
  *      request must not have crossed a reverse proxy (any X-Forwarded-For
  *      denies) — a hosted deployment behind a local proxy never exposes it.
- *   3. CSRF token required (global /api mutation middleware).
+ *   3. CSRF token required — enforced BY THIS ROUTE, not by the global /api
+ *      mutation middleware: that middleware bypasses all of /api/auth/* (the
+ *      OAuth redirect flow can't carry a token), so the explicit
+ *      csrfHeaderMatchesSession() check in POST /setup-oauth is the only one.
+ *      Deleting it as redundant removes the layer entirely.
  *   4. Tight rate limit.
  *   5. GRM_DISABLE_WEB_SETUP=true turns the whole surface off for operators
  *      who want .env to be the only configuration channel.

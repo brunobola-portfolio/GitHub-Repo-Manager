@@ -34,7 +34,7 @@ import {
     prReviewSubmitSchema,
 } from '../../lib/validators.js';
 import { validateBody } from '../../middleware/validate-request.js';
-import { readThrough, invalidate } from '../../lib/gh-cache.js';
+import { readThrough, invalidate, sendCachedJson } from '../../lib/gh-cache.js';
 import { executeViaOutbox } from '../../lib/outbox-helper.js';
 import { clampPerPage, applyOwnerRepoParamValidators } from './_shared.js';
 
@@ -89,7 +89,7 @@ router.get('/:owner/:repo/pulls', requireAuth, async (req, res) => {
 
         if (result.stale) res.setHeader('X-Cache', 'stale');
         res.setHeader('X-Cache-Fetched-At', result.fetchedAt);
-        res.json(result.data);
+        sendCachedJson(res, result);
     } catch (error) {
         req.log.error({ err: error }, 'List pull requests failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
@@ -175,7 +175,7 @@ router.get('/:owner/:repo/pulls/:pull_number', requireAuth, async (req, res) => 
         });
         if (result.stale) res.setHeader('X-Cache', 'stale');
         res.setHeader('X-Cache-Fetched-At', result.fetchedAt);
-        res.json(result.data);
+        sendCachedJson(res, result);
     } catch (error) {
         req.log.error({ err: error }, 'Get pull request failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });
@@ -199,7 +199,7 @@ router.get('/:owner/:repo/pulls/:pull_number/reviews', requireAuth, async (req, 
         });
         if (result.stale) res.setHeader('X-Cache', 'stale');
         res.setHeader('X-Cache-Fetched-At', result.fetchedAt);
-        res.json(result.data);
+        sendCachedJson(res, result);
     } catch (error) {
         req.log.error({ err: error }, 'List PR reviews failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });

@@ -98,6 +98,9 @@ async function sendResend({ to, subject, html, text }) {
     try {
         response = await fetch('https://api.resend.com/emails', {
             method: 'POST',
+            // A stalled Resend used to pin the caller — including the retry
+            // worker's tick, which then ran far past its interval.
+            signal: AbortSignal.timeout(30_000),
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',

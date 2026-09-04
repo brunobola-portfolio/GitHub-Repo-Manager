@@ -359,6 +359,35 @@ describe('email retry + dead-letter', () => {
             }
         }
 
+        it('spreads the rescheduled retries with jitter instead of stacking them', async () => {
+            // Every row failed by one provider outage carries the same
+            // `attempts`, so a deterministic backoff gave them an identical
+            // next_retry_at and the whole batch re-fired in a single tick
+            // against the same still-recovering provider.
+            seedDue(30)
+            vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500, text: async () => 'down' }))
+
+            const { runEmailRetryOnce } = await import('../lib/email-retry-worker.js')
+            await runEmailRetryOnce()
+
+            const times = memDb
+                .prepare('SELECT next_retry_at FROM email_dead_letter WHERE next_retry_at IS NOT NULL')
+                .all()
+                .map((r) => r.next_retry_at)
+
+            expect(times.length).toBe(30)
+            expect(new Set(times).size).toBeGreaterThan(1)
+
+            // Bounded: attempts becomes 4, so base is 5 * 2^4 = 80 minutes and
+            // jitter is 0.8..1.2 of that. Allow a minute of clock slack.
+            const now = Date.now()
+            for (const t of times) {
+                const deltaMin = (new Date(`${t.replace(' ', 'T')}Z`).getTime() - now) / 60000
+                expect(deltaMin).toBeGreaterThan(80 * 0.8 - 1)
+                expect(deltaMin).toBeLessThan(80 * 1.2 + 1)
+            }
+        })
+
         it('processes at most 50 rows per tick', async () => {
             // The backoff is derived from `attempts`, so a provider outage makes a
             // whole batch eligible in the same window.

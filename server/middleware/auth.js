@@ -152,13 +152,17 @@ export const requireAuth = (req, res, next) => {
  * `req.getAIProvider(kind)` — async, cached per-request.
  * `req.aiProvider` and `req.genAI` — shimmed for backward compat with
  *   call-sites that haven't been migrated to the provider abstraction yet.
+ *   They are populated as a side effect of the FIRST `getAIProvider('completion')`
+ *   call, so a route that never asks for a provider never pays for one; any
+ *   route reading them directly must resolve through the accessor first
+ *   (requireAI does this for every gated AI route).
  *
  * Call this middleware AFTER session is populated.
  *
  * @returns {(req, res, next) => void}
  */
 export function attachAIProvider() {
-    return async (req, _res, next) => {
+    return (req, _res, next) => {
         // Skip eager resolution when there's no user session and no server-wide
         // fallback key. Keeps /api/health and similar unauthenticated endpoints
         // from triggering a DB lookup on every poll.
@@ -174,24 +178,35 @@ export function attachAIProvider() {
             if (req._aiProviderCache.has(kind)) return req._aiProviderCache.get(kind);
             const promise = (async () => {
                 const { createProviderForUser } = await import('../lib/ai-provider.js');
-                return createProviderForUser(req.session?.userId, kind).catch(() => null);
+                return createProviderForUser(req.session?.userId, kind).catch((err) => {
+                    // The user still gets a clean AI_NOT_CONFIGURED from
+                    // requireAI, but the operator used to get nothing at all:
+                    // a misconfigured or unreachable credential store produced
+                    // zero log lines anywhere in the process. Debug level keeps
+                    // it out of prod noise while making it reachable via
+                    // LOG_LEVEL.
+                    req.log?.debug?.({ err, kind }, 'AI provider resolution failed');
+                    return null;
+                });
             })();
             req._aiProviderCache.set(kind, promise);
+            // Populating the legacy shim is a side effect of the first
+            // resolution, not of every request. This used to be an eager
+            // `await` here in the middleware, which cost a prepared statement,
+            // a user_ai_config read, an AES-GCM decrypt and — for a BYOK
+            // endpointUrl — an uncached dns.lookup() on 100% of /api/* traffic,
+            // including /api/auth/session and /api/repos, for a value most
+            // routes never read. requireAI (and the two routes that resolve a
+            // provider themselves) re-resolve through this same cached
+            // accessor, so nothing downstream changed except who pays.
+            promise.then((p) => {
+                if (!p) return;
+                if (kind === 'completion' && !req.aiProvider) req.aiProvider = p;
+                // rawSDK is only defined on GeminiProvider; null for other providers.
+                if (kind === 'completion' && !req.genAI) req.genAI = p.rawSDK ?? null;
+            }).catch(() => { /* the awaiting caller owns this rejection */ });
             return promise;
         };
-
-        // Best-effort legacy shim: set req.aiProvider / req.genAI to the user's
-        // completion provider so unmigrated call-sites keep working.
-        try {
-            const p = await req.getAIProvider('completion');
-            if (p) {
-                req.aiProvider = p;
-                // rawSDK is only defined on GeminiProvider; null for other providers.
-                req.genAI = p.rawSDK ?? null;
-            }
-        } catch {
-            // Soft-fail — requireAI will surface the error when the route runs.
-        }
 
         next();
     };
@@ -219,9 +234,13 @@ export function createRequireAI(_aiService) {
         }
 
         if (!provider) {
+            // `error` is the human string and `code` the machine slug — the
+            // house contract (lib/response-shapes.js). Inverted, every client
+            // in src/api/ rendered the literal text "AI_NOT_CONFIGURED" to the
+            // user, since they all read body.error as the display message.
             return res.status(400).json({
-                error: 'AI_NOT_CONFIGURED',
-                message: 'AI features require a provider API key. Configure one in Settings → AI Configuration.',
+                error: 'AI features require a provider API key. Configure one in Settings → AI Configuration.',
+                code: 'AI_NOT_CONFIGURED',
                 configureUrl: '/settings#ai',
             });
         }

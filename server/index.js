@@ -45,6 +45,7 @@ import db, { initDB, seedMockData } from './db.js';
 import { DBSchemaFromFutureError } from './lib/db-migrations.js';
 import { aiService } from './ai-service.js';
 import { safeError, attachAIProvider } from './middleware/auth.js';
+import { ERROR_CODE } from './lib/response-shapes.js';
 import { createSQLiteStore } from './lib/session-store.js';
 import logger, { requestLoggerMiddleware } from './lib/logger.js';
 import { requestTiming } from './middleware/request-timing.js';
@@ -219,18 +220,26 @@ app.use(metricsMiddleware);
 // raw body for HMAC and must work without a session), which left them the one
 // unauthenticated write path with no ceiling at all. See createWebhookLimiter.
 const webhookLimiter = createWebhookLimiter();
+// GitHub delivers up to 25 MB per webhook; body-parser's raw() default is
+// 102400 bytes, so a push with many commits or a pull_request on a large PR
+// 413'd upstream of the handler. GitHub then sees a non-2xx and redelivers the
+// same oversized payload forever, and the fast-ack + dead-letter design in
+// routes/github-events-webhook.js never gets to run. 5mb sits far above real
+// traffic and well under GitHub's ceiling, matching the deliberate jsonAiLarge
+// carve-out below.
+const webhookRaw = express.raw({ type: 'application/json', limit: '5mb' });
 // Stripe webhooks need raw body (must be before express.json())
 import { stripeWebhookHandler } from './routes/stripe-webhooks.js';
-app.post('/api/v1/webhooks/stripe', webhookLimiter, express.raw({ type: 'application/json' }), stripeWebhookHandler);
+app.post('/api/v1/webhooks/stripe', webhookLimiter, webhookRaw, stripeWebhookHandler);
 // GitHub Actions webhooks need raw body for HMAC signature verification
 import { actionsWebhookHandler } from './routes/webhooks.js';
-app.post('/api/v1/webhooks/actions', webhookLimiter, express.raw({ type: 'application/json' }), actionsWebhookHandler);
-app.post('/api/webhooks/actions', webhookLimiter, express.raw({ type: 'application/json' }), actionsWebhookHandler);
+app.post('/api/v1/webhooks/actions', webhookLimiter, webhookRaw, actionsWebhookHandler);
+app.post('/api/webhooks/actions', webhookLimiter, webhookRaw, actionsWebhookHandler);
 // GitHub event ingestion pipeline (Phase E1) — PR, issues, deployments
 import { githubEventsWebhookHandler } from './routes/github-events-webhook.js';
-app.post('/api/v1/webhooks/github/t/:tokenId', webhookLimiter, express.raw({ type: 'application/json' }), githubEventsWebhookHandler);
-app.post('/api/v1/webhooks/github', webhookLimiter, express.raw({ type: 'application/json' }), githubEventsWebhookHandler);
-app.post('/api/webhooks/github', webhookLimiter, express.raw({ type: 'application/json' }), githubEventsWebhookHandler);
+app.post('/api/v1/webhooks/github/t/:tokenId', webhookLimiter, webhookRaw, githubEventsWebhookHandler);
+app.post('/api/v1/webhooks/github', webhookLimiter, webhookRaw, githubEventsWebhookHandler);
+app.post('/api/webhooks/github', webhookLimiter, webhookRaw, githubEventsWebhookHandler);
 
 // The global JSON cap stays tight (10kb) to keep the attack surface small.
 // AI review endpoints (PR review-summary, deep-review, pr-commands, pr-chat)
@@ -250,14 +259,12 @@ app.use((req, res, next) =>
 );
 app.use(requestLoggerMiddleware);
 
-// Cap per_page query parameter to prevent excessive data requests
-app.use('/api/', (req, _res, next) => {
-    if (req.query.per_page) {
-        const parsed = parseInt(req.query.per_page);
-        req.query.per_page = String(Math.min(Math.max(parsed || 30, 1), 100));
-    }
-    next();
-});
+// A global per_page cap used to sit here. Express 5 defines req.query as a
+// non-memoised getter that re-parses the URL on every access, so writing to it
+// changed nothing the handler ever saw — the guard had never worked, and
+// reading like an app-wide guarantee is what made it dangerous. Every per_page
+// reader clamps at its own call-site (clampPerPage in routes/repos/_shared.js),
+// which is the only place the value is actually observed.
 
 // Health probes must be mounted BEFORE rate limiters, session, CSRF, etc.
 // K8s-style probes fire frequently and must succeed even under load; they
@@ -416,6 +423,16 @@ app.use('/api/v1', v1Routes);
 // Backward compatibility: /api/* maps to /api/v1/*
 app.use('/api', v1Routes);
 
+// Unmatched /api/* — JSON, in every environment. Without this the request
+// falls through to Express's default handler, which answers an HTML error
+// page; every client in src/api/ calls res.json() on the error path, so a
+// typo'd or removed endpoint surfaced as a JSON parse exception instead of a
+// message. The production SPA fallback below used to be the only JSON 404 for
+// this prefix, and it is registered only when dist/ exists.
+app.use('/api', (_req, res) => {
+    res.status(404).json({ error: 'Not found', code: 'NOT_FOUND' });
+});
+
 // Serve frontend in production
 if (config.nodeEnv === 'production') {
     const distPath = path.join(__dirname, '..', 'dist');
@@ -455,8 +472,11 @@ if (config.nodeEnv === 'production') {
         // registration ("Missing parameter name") — the named splat form is
         // required, or the whole production process crashes before listen().
         app.get('/{*splat}', (req, res) => {
+            // Unreachable for /api/* (the JSON 404 above claims that prefix
+            // first) — kept so the fallback stays correct if it is ever
+            // remounted ahead of it.
             if (req.path.startsWith('/api/')) {
-                return res.status(404).json({ error: 'Not found' });
+                return res.status(404).json({ error: 'Not found', code: 'NOT_FOUND' });
             }
             // Never cache the app shell — it must always pick up the latest
             // hashed asset references after a deploy.
@@ -477,9 +497,15 @@ app.use(getSentryErrorHandler());
 // -----------------------------------------------------------------------------
 
 app.use((err, req, res, _next) => {
-    logger.error({ err, path: req.path, method: req.method }, 'Unhandled error');
+    logger.error({ err, path: req.path, method: req.method, requestId: req.id }, 'Unhandled error');
+    // `code` and `requestId` are what the per-route handlers this backstops
+    // already give clients: without them the entire unhandled-error class
+    // arrived with `body.code === undefined`, and a user-reported 500 could
+    // not be tied back to a log line from the response body alone.
     res.status(err.status || 500).json({
-        error: safeError(err, 'An internal error occurred')
+        error: safeError(err, 'An internal error occurred'),
+        code: err.code || ERROR_CODE.SERVER_ERROR,
+        requestId: req.id,
     });
 });
 

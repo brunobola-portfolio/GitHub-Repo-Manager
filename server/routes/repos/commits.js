@@ -18,7 +18,7 @@
 import express from 'express';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js';
-import { readThrough } from '../../lib/gh-cache.js';
+import { readThrough, sendCachedJson } from '../../lib/gh-cache.js';
 import { applyOwnerRepoParamValidators } from './_shared.js';
 
 const router = express.Router();
@@ -51,7 +51,7 @@ router.get('/:owner/:repo/commits/:sha', requireAuth, async (req, res) => {
 
         if (result.stale) res.setHeader('X-Cache', 'stale');
         res.setHeader('X-Cache-Fetched-At', result.fetchedAt);
-        res.json(result.data);
+        sendCachedJson(res, result);
     } catch (error) {
         req.log.error({ err: error }, 'Get commit failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });

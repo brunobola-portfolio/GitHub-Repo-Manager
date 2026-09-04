@@ -331,8 +331,8 @@ router.post('/plans', requireAuth, async (req, res) => {
     const isFree = userOrder < getTierOrder('pro');
     if (isFree && schedule?.isDryRun === false && schedule?.mode === 'scheduled') {
       return res.status(403).json({
-        error: 'upgrade_required',
-        message: 'Scheduling a full migration requires the Pro plan. Free-tier users can run one full migration per month immediately, or schedule unlimited dry-runs.',
+        error: 'Scheduling a full migration requires the Pro plan. Free-tier users can run one full migration per month immediately, or schedule unlimited dry-runs.',
+        code: 'upgrade_required',
         requiredTier: 'pro',
         upgradeUrl: '/pricing',
       });
@@ -344,7 +344,7 @@ router.post('/plans', requireAuth, async (req, res) => {
     if (source.host) {
       const hostCheck = await validateAzureHost(source.host);
       if (!hostCheck.ok) {
-        return res.status(400).json({ error: 'invalid_host', message: `Source host rejected: ${hostCheck.reason}` });
+        return res.status(400).json({ error: `Source host rejected: ${hostCheck.reason}`, code: 'invalid_host' });
       }
     }
     const isDryRun = !!schedule?.isDryRun;
@@ -419,7 +419,7 @@ router.put('/plans/:id', requireAuth, async (req, res) => {
     if (parsed.data.source?.host) {
       const hostCheck = await validateAzureHost(parsed.data.source.host);
       if (!hostCheck.ok) {
-        return res.status(400).json({ error: 'invalid_host', message: `Source host rejected: ${hostCheck.reason}` });
+        return res.status(400).json({ error: `Source host rejected: ${hostCheck.reason}`, code: 'invalid_host' });
       }
     }
     engine.updatePlan(id, parsed.data);

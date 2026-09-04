@@ -53,10 +53,25 @@ vi.mock('../middleware/auth.js', async (importOriginal) => {
     };
 });
 
-const mockProvider = { generate: vi.fn(), getModelName: () => 'test-model' };
-vi.mock('../lib/ai-provider.js', () => ({
+const mockProvider = { generate: vi.fn(), getModelName: () => 'test-model', model: 'test-model' };
+// Spread the original: /interpret now runs through guardedGenerate, which
+// imports AIError / AI_ERROR_CODE / toAIError / isServerKeyProvider from this
+// same module. A wholesale mock leaves those undefined and the route 500s at
+// the first `instanceof` check.
+vi.mock('../lib/ai-provider.js', async (importOriginal) => ({
+    ...(await importOriginal()),
     createProviderForUser: vi.fn(async () => mockProvider),
 }));
+
+// The global spend cap and the audit chain each own their storage, neither of
+// which exists in this suite's in-memory schema. Their behaviour is covered by
+// ai-spend-cap.test.js / audit-chain.test.js; here they are boundaries.
+const spendCapResult = { allowed: true };
+vi.mock('../lib/ai-spend-cap.js', () => ({
+    checkAISpendCap: vi.fn(() => spendCapResult),
+    recordAISpend: vi.fn(),
+}));
+vi.mock('../lib/audit.js', () => ({ auditLog: vi.fn() }));
 
 const USER_ID = 94001;
 const ORIGINAL_ENV = { ...process.env };
@@ -73,6 +88,9 @@ beforeEach(() => {
     Object.assign(process.env, ORIGINAL_ENV);
     process.env.WORK_BOARD_AI_ENABLED = 'true';
     process.env.AI_DIFF_SIGNING_KEY = 'test-key-32-chars-minimum-for-hmac-ok';
+    spendCapResult.allowed = true;
+    delete spendCapResult.spentCents;
+    delete spendCapResult.capCents;
     mockProvider.generate.mockReset();
     testDb.prepare('DELETE FROM work_board_tracked_repos WHERE user_id = ?').run(USER_ID);
     testDb.prepare('DELETE FROM work_board_ai_dismissed WHERE user_id = ?').run(USER_ID);
@@ -200,6 +218,36 @@ describe('POST /api/v1/work-board/ai/interpret', () => {
             .send({ prompt: 'whatever' });
         expect(res.status).toBe(502);
         expect(res.body.code).toBe('AI_INVALID_RESPONSE');
+    });
+
+    it('refuses the call when the global AI spend cap is reached', async () => {
+        spendCapResult.allowed = false;
+        spendCapResult.spentCents = 500;
+        spendCapResult.capCents = 500;
+
+        const res = await request(app)
+            .post('/api/v1/work-board/ai/interpret')
+            .send({ prompt: 'mute everything' });
+
+        expect(res.status).toBe(429);
+        expect(res.body.code).toBe('AI_SPEND_CAP_REACHED');
+        // The guard must fire BEFORE any provider token is spent.
+        expect(mockProvider.generate).not.toHaveBeenCalled();
+    });
+
+    it('records Work Board spend even when the completion fails to parse', async () => {
+        mockProvider.generate.mockResolvedValue({ text: 'still not JSON' });
+
+        const res = await request(app)
+            .post('/api/v1/work-board/ai/interpret')
+            .send({ prompt: 'mute everything' });
+        expect(res.status).toBe(502);
+
+        const month = new Date().toISOString().slice(0, 7);
+        const row = testDb
+            .prepare('SELECT cents FROM work_board_ai_spend WHERE user_id = ? AND month = ?')
+            .get(USER_ID, month);
+        expect(row?.cents).toBeGreaterThan(0);
     });
 });
 

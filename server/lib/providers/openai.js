@@ -16,6 +16,12 @@
 import { AIError, AI_ERROR_CODE, toAIError, extractRetryAfterMs, throwIfCanceled } from '../ai-provider.js';
 import { computeCostUSD } from '../provider-pricing.js';
 
+// Ceiling for the blocking (non-streaming) POST. Long enough for a large
+// completion, short enough that a dead peer can't hold an Express request for
+// undici's five-minute default. Surfaces as a retryable TIMEOUT/NETWORK
+// AIError, which providerGenerateWithRetry already re-attempts.
+const BLOCKING_POST_TIMEOUT_MS = 120_000;
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -182,6 +188,10 @@ export class OpenAIProvider {
                 method: 'POST',
                 headers: this._headers(),
                 body: JSON.stringify(body),
+                // _postStream already takes a signal; this blocking path had
+                // none, so a stalled peer held the Express request (and its
+                // session/DB resources) for undici's full five-minute default.
+                signal: AbortSignal.timeout(BLOCKING_POST_TIMEOUT_MS),
             });
         } catch (networkErr) {
             throw toAIError(networkErr);

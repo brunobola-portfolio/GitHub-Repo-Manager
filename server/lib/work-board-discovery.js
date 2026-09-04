@@ -136,21 +136,28 @@ export async function runDiscovery(userId, token, prefs) {
 
     const { add, remove } = mergeCandidates(existing, candidates, prefs);
 
+    // Compiled once per discovery run rather than once per candidate: both
+    // lists are user-sized (max_auto_repos defaults to 50 and can be raised),
+    // and better-sqlite3 does not cache compiled statements.
+    const deleteRow = db.prepare(
+        'DELETE FROM work_board_tracked_repos WHERE user_id = ? AND repo_full_name = ?'
+    );
+    const upsertRow = db.prepare(`
+        INSERT INTO work_board_tracked_repos
+            (user_id, repo_full_name, repo_id, source_signal, is_pinned, is_muted, last_activity_at)
+        VALUES (?, ?, ?, ?, 0, 0, ?)
+        ON CONFLICT(user_id, repo_full_name) DO UPDATE SET
+            source_signal = excluded.source_signal,
+            last_activity_at = excluded.last_activity_at,
+            last_synced_at = CURRENT_TIMESTAMP
+    `);
+
     const tx = db.transaction(() => {
         for (const row of remove) {
-            db.prepare('DELETE FROM work_board_tracked_repos WHERE user_id = ? AND repo_full_name = ?')
-              .run(userId, row.repo_full_name);
+            deleteRow.run(userId, row.repo_full_name);
         }
         for (const c of add) {
-            db.prepare(`
-                INSERT INTO work_board_tracked_repos
-                    (user_id, repo_full_name, repo_id, source_signal, is_pinned, is_muted, last_activity_at)
-                VALUES (?, ?, ?, ?, 0, 0, ?)
-                ON CONFLICT(user_id, repo_full_name) DO UPDATE SET
-                    source_signal = excluded.source_signal,
-                    last_activity_at = excluded.last_activity_at,
-                    last_synced_at = CURRENT_TIMESTAMP
-            `).run(userId, c.repo_full_name, c.repo_id, c.source_signal, c.last_activity_at);
+            upsertRow.run(userId, c.repo_full_name, c.repo_id, c.source_signal, c.last_activity_at);
         }
         db.prepare(`
             INSERT INTO work_board_prefs (user_id, last_discovery_at)

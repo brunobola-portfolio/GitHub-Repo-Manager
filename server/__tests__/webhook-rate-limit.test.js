@@ -39,7 +39,7 @@ describe('inbound webhooks are rate limited', () => {
         expect(
             line.indexOf('webhookLimiter'),
             `${route} parses the body before deciding to reject`,
-        ).toBeLessThan(line.indexOf('express.raw'))
+        ).toBeLessThan(Math.max(line.indexOf('express.raw'), line.indexOf('webhookRaw')))
     })
 
     it('leaves no webhook route unlimited', () => {

@@ -12,7 +12,7 @@
 import express from 'express';
 import { z } from 'zod';
 import logger from '../../lib/logger.js';
-import { requireAuth } from '../../middleware/auth.js';
+import { requireAuth, safeError } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { checkUsageLimit, incrementUsage } from '../../lib/usage-meter.js';
 import { checkAISpendCap, recordAISpend } from '../../lib/ai-spend-cap.js';
@@ -152,8 +152,13 @@ router.post(
                 },
             });
         } catch (err) {
-            // Builder throws on budget violations — surface as 400.
-            return res.status(400).json({ error: err.message });
+            // Builder throws on budget violations — surface as 400. The
+            // message can name repository file paths, so it goes through
+            // safeError rather than straight to the client.
+            return res.status(400).json({
+                error: safeError(err, 'The selected context exceeds the allowed size. Deselect some signals and retry.'),
+                code: 'context_budget_exceeded',
+            });
         }
 
         // Build a concatenated signals block for the prompt template.

@@ -136,7 +136,8 @@ describe('POST /api/v1/license/revocations', () => {
         expect((await request(app).post('/api/v1/license/revocations').send({ lid })).status).toBe(400)
         const blank = await request(app).post('/api/v1/license/revocations').send({ lid, reason: '   ' })
         expect(blank.status).toBe(400)
-        expect(blank.body.error).toBe('reason_required')
+        expect(blank.body.code).toBe('reason_required')
+        expect(blank.body.error).toMatch(/revocation reason is required/i)
     })
 
     it('requires a lid or a key — 400', async () => {
@@ -144,7 +145,8 @@ describe('POST /api/v1/license/revocations', () => {
             .post('/api/v1/license/revocations')
             .send({ reason: 'refund' })
         expect(res.status).toBe(400)
-        expect(res.body.error).toBe('lid_required')
+        expect(res.body.code).toBe('lid_required')
+        expect(res.body.error).toMatch(/license id/i)
     })
 
     it('revokes from the full key, capturing org/tier/expiry, and audits it', async () => {
@@ -291,7 +293,8 @@ describe('GET / DELETE /api/v1/license/revocations', () => {
         const app = makeApp({ userId: 1, isAdmin: true })
         const missing = await request(app).delete('/api/v1/license/revocations/not-a-known-lid')
         expect(missing.status).toBe(404)
-        expect(missing.body.error).toBe('not_revoked')
+        expect(missing.body.code).toBe('not_revoked')
+        expect(missing.body.error).toMatch(/not on the revocation list/i)
 
         expect((await request(makeApp({ userId: 4 })).delete('/api/v1/license/revocations/x')).status).toBe(403)
     })

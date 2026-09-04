@@ -309,12 +309,12 @@ router.post('/revocations', requireAuth, requireAdmin, async (req, res) => {
 
   if (typeof reason !== 'string' || reason.trim().length === 0) {
     return res.status(400).json({
-      error: 'reason_required',
-      message: 'A revocation reason is required — it is the only record of why this key was killed.',
+      error: 'A revocation reason is required — it is the only record of why this key was killed.',
+      code: 'reason_required',
     })
   }
   if (reason.length > MAX_REASON_LENGTH) {
-    return res.status(400).json({ error: 'reason_too_long', message: `Reason must be at most ${MAX_REASON_LENGTH} characters.` })
+    return res.status(400).json({ error: `Reason must be at most ${MAX_REASON_LENGTH} characters.`, code: 'reason_too_long' })
   }
 
   const parsed = typeof key === 'string' && key ? parseLicenseKey(key) : null
@@ -324,8 +324,8 @@ router.post('/revocations', requireAuth, requireAdmin, async (req, res) => {
 
   if (!lid || lid.length > MAX_LID_LENGTH) {
     return res.status(400).json({
-      error: 'lid_required',
-      message: 'Provide the license id (`lid`) or the full license `key` to revoke.',
+      error: 'Provide the license id (`lid`) or the full license `key` to revoke.',
+      code: 'lid_required',
     })
   }
 
@@ -371,12 +371,12 @@ router.post('/revocations', requireAuth, requireAdmin, async (req, res) => {
 router.delete('/revocations/:lid', requireAuth, requireAdmin, async (req, res) => {
   const lid = String(req.params.lid || '').trim()
   if (!lid || lid.length > MAX_LID_LENGTH) {
-    return res.status(400).json({ error: 'lid_required' })
+    return res.status(400).json({ error: 'Provide the license id (`lid`) to remove from the revocation list.', code: 'lid_required' })
   }
   try {
     const removed = unrevokeLicense(db, lid)
     if (!removed) {
-      return res.status(404).json({ error: 'not_revoked', message: 'That license id is not on the revocation list.' })
+      return res.status(404).json({ error: 'That license id is not on the revocation list.', code: 'not_revoked' })
     }
     const refreshed = await refreshLicenseCache()
     auditLog(req, 'license.unrevoke', 'license', lid, {})

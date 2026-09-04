@@ -12,7 +12,7 @@ vi.mock('../db.js', () => ({
         transaction: (fn) => fn,
     },
 }))
-vi.mock('../lib/gh-cache.js', () => ({ readThrough: vi.fn() }))
+vi.mock('../lib/gh-cache.js', async (importOriginal) => ({ ...(await importOriginal()), readThrough: vi.fn() }))
 vi.mock('../middleware/auth.js', () => ({
     requireAuth: (req, res, next) => {
         if (!req.session?.accessToken) return res.status(401).json({ error: 'Session expired' })

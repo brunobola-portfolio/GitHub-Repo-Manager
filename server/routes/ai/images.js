@@ -46,6 +46,7 @@ import { AI_ERROR_CODE, resolveImageProviderConfig } from '../../lib/ai-provider
 import { detectImageCapability, generateImage } from '../../lib/ai-features/image-provider.js';
 import { getImageCostCents } from '../../lib/ai-features/image-pricing.js';
 import { commitOrOpenPR } from '../../lib/ai-features/community-health-fix.js';
+import { redactSecrets } from '../../lib/redact-secrets.js';
 
 const router = express.Router();
 
@@ -167,20 +168,36 @@ function presetSummary(presetKey, capability) {
  * `handleAIError()` for either would produce a misleading Gemini-specific
  * "verify the GEMINI_MODEL setting" message, so both are special-cased here.
  */
+// Provider errors routinely embed the upstream response body and endpoint
+// URL. These three branches deliberately surface the provider's own wording
+// (a refusal reason is only useful verbatim), so they get the treatment
+// lib/ai-error-format.js applies to the same class of string: strip
+// `sk-*`/`AIza*`/basic-auth URLs, then bound the length.
+function safeProviderMessage(error, fallback) {
+    const cleaned = redactSecrets(error?.message || '').slice(0, 200);
+    return cleaned || fallback;
+}
+
 function handleImageError(req, res, error) {
     if (error?.code === 'IMAGE_REFUSAL') {
-        return res.status(422).json({ error: error.message, code: 'IMAGE_REFUSAL' });
+        return res.status(422).json({
+            error: safeProviderMessage(error, 'The provider refused to generate this image.'),
+            code: 'IMAGE_REFUSAL',
+        });
     }
     if (error?.code === AI_ERROR_CODE.NOT_FOUND && error?.details?.reason) {
         return res.status(404).json({
-            error: error.message,
+            error: safeProviderMessage(error, 'The configured provider cannot generate images.'),
             code: 'provider_no_image_support',
             reason: error.details.reason,
             provider: error.details.provider || null,
         });
     }
     if (error?.status === 501) {
-        return res.status(501).json({ error: error.message, code: 'image_pricing_unavailable' });
+        return res.status(501).json({
+            error: safeProviderMessage(error, 'No pricing is configured for this provider/size combination.'),
+            code: 'image_pricing_unavailable',
+        });
     }
     req.log.error({ err: error }, 'Image generation failed');
     handleAIError(res, error, 'Failed to generate the image. Please try again later.');
