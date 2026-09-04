@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
 import { Modal } from '@/components/ui/Modal'
+import { useFocusTrap } from '@/hooks/useFocusTrap'
 
 vi.mock('@/hooks/useFocusTrap', () => ({
-  useFocusTrap: () => ({ current: null })
+  useFocusTrap: vi.fn(() => ({ current: null }))
 }))
 
 describe('Modal — base', () => {
@@ -230,6 +231,23 @@ describe('Modal — interactions', () => {
     const backdrop = container.querySelector('[data-modal-backdrop="true"]')
     fireEvent.click(backdrop)
     expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('Escape still closes a modal that declines backdrop clicks', () => {
+    // disableEscape used to default to !closeOnBackdrop, which left sixteen
+    // dialogs (AI Insights, Community Health, the keyboard-shortcuts help
+    // itself) deaf to the keyboard's first dismissal gesture.
+    // The trap is mocked here (it owns the document keydown listener), so
+    // the contract under test is the option Modal hands it.
+    const onClose = vi.fn()
+    render(
+      <Modal isOpen={true} onClose={onClose} title="Hi" closeOnBackdrop={false}>x</Modal>
+    )
+    expect(useFocusTrap).toHaveBeenLastCalledWith(
+      true,
+      onClose,
+      expect.objectContaining({ disableEscape: false }),
+    )
   })
 
   it('forwards isBusy to aria-busy on the body region', () => {

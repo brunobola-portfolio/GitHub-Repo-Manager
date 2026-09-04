@@ -65,6 +65,24 @@ describe('useRepos pagination URL persistence', () => {
         expect(new URL(window.location.href).searchParams.has('page')).toBe(false)
     })
 
+    it('setPage accepts an updater instead of stringifying it into the URL', () => {
+        // RepoPagination used to call setPage(p => p + 1); the function was
+        // written to the address bar as "?page=(p) => p + 1".
+        const { result } = renderHook(() => useRepos(null))
+        act(() => result.current.setPage(2))
+        act(() => result.current.setPage((p) => p + 1))
+        expect(result.current.page).toBe(3)
+        expect(new URL(window.location.href).searchParams.get('page')).toBe('3')
+    })
+
+    it('setPage keeps the route hash, so a reload stays on the repositories view', () => {
+        window.history.replaceState(null, '', '/#/repos')
+        const { result } = renderHook(() => useRepos(null))
+        act(() => result.current.setPage(2))
+        expect(window.location.hash).toBe('#/repos')
+        expect(new URL(window.location.href).searchParams.get('page')).toBe('2')
+    })
+
     it('popstate (browser back/forward) re-reads the URL into state', () => {
         const { result } = renderHook(() => useRepos(null))
         // Simulate back-button to a previously-bookmarked /?page=2.
