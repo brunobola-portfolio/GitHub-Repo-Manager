@@ -106,7 +106,7 @@ export function ActivityTab({ teamId }) {
             {Object.entries(groupedEvents).map(([date, dayEvents]) => (
                 <div key={date} className="relative">
                     <div className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-sm py-2 px-1 mb-4 flex items-center gap-4">
-                        <span className="text-sm font-bold text-slate-400 uppercase tracking-wider">{date}</span>
+                        <span className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{date}</span>
                         <div className="h-px bg-slate-200 dark:bg-slate-700 flex-1"></div>
                     </div>
                     <div className="space-y-4 pl-2 lg:pl-0">
@@ -142,7 +142,7 @@ function ActivityItem({ event }) {
     const getEventDescription = (event) => {
         const repo = event.repo_name ? event.repo_name.split('/')[1] : 'unknown-repo';
         const actor = <span className="font-medium text-slate-900 dark:text-slate-100">{event.actor.login}</span>;
-        const repoLink = <span className="font-medium text-brand-500">{repo}</span>;
+        const repoLink = <span className="font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">{repo}</span>;
         const payload = event.payload || {};
 
         switch (event.type) {
@@ -184,7 +184,7 @@ function ActivityItem({ event }) {
                         alt={`Avatar for ${event.actor.login || 'activity actor'}`}
                         className="w-5 h-5 rounded-full border border-slate-200 dark:border-slate-700"
                     />
-                    <span className="text-xs text-slate-400 flex items-center gap-1">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {eventTime ? eventTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                     </span>

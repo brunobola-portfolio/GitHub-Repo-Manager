@@ -184,7 +184,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
         <div className="max-w-7xl mx-auto p-6">
             <button
                 onClick={onBack}
-                className="flex items-center gap-2 text-slate-500 hover:text-slate-900 dark:hover:text-white mb-6 transition-colors"
+                className="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white mb-6 transition-colors ds-focus-ring rounded"
             >
                 <ArrowLeft className="w-5 h-5" />
                 <span>Back to Teams</span>
