@@ -5,7 +5,7 @@ import { Spinner } from '../ui/Spinner'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { Shield, ShieldOff, Save, Undo2, Sparkles, ExternalLink } from 'lucide-react'
 import { useToast } from '../../hooks/useToast'
-import { Input } from '../ui/form'
+import { Input, Checkbox } from '../ui/form'
 
 // Reasonable defaults applied when the user enables protection from scratch.
 // Mirrors what GitHub.com offers as "recommended" toggles when you click
@@ -245,13 +245,12 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
                 </div>
             ) : (
                 <>
-                    <label className="flex items-center gap-2 cursor-pointer select-none">
-                        <input
-                            type="checkbox"
+                    <label htmlFor="bp-require-pr" className="flex items-center gap-2 cursor-pointer select-none">
+                        <Checkbox
+                            id="bp-require-pr"
                             checked={rules.requirePR}
                             onChange={(e) => setRules(r => ({ ...r, requirePR: e.target.checked }))}
-                            disabled={archived || saving}
-                            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-brand-500/40" />
+                            disabled={archived || saving} />
                         <span className="text-sm text-slate-700 dark:text-slate-300">Require pull request reviews before merging</span>
                     </label>
 
@@ -272,54 +271,51 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
                                     />
                                 </div>
                             </div>
-                            <label className="flex items-center gap-2 cursor-pointer select-none">
-                                <input
-                                    type="checkbox"
+                            <label htmlFor="bp-dismiss-stale-reviews" className="flex items-center gap-2 cursor-pointer select-none">
+                                <Checkbox
+                                    id="bp-dismiss-stale-reviews"
                                     checked={rules.dismissStaleReviews}
                                     onChange={(e) => setRules(r => ({ ...r, dismissStaleReviews: e.target.checked }))}
-                                    disabled={archived || saving}
-                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-brand-500/40" />
+                                    disabled={archived || saving} />
                                 <span className="text-sm text-slate-600 dark:text-slate-400">Dismiss stale reviews when new commits are pushed</span>
                             </label>
-                            <label className="flex items-center gap-2 cursor-pointer select-none">
-                                <input
-                                    type="checkbox"
+                            <label htmlFor="bp-require-codeowner-reviews" className="flex items-center gap-2 cursor-pointer select-none">
+                                <Checkbox
+                                    id="bp-require-codeowner-reviews"
                                     checked={rules.requireCodeOwnerReviews}
                                     onChange={(e) => setRules(r => ({ ...r, requireCodeOwnerReviews: e.target.checked }))}
-                                    disabled={archived || saving}
-                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-brand-500/40" />
+                                    disabled={archived || saving} />
                                 <span className="text-sm text-slate-600 dark:text-slate-400">Require review from CODEOWNERS</span>
                             </label>
                         </div>
                     )}
 
-                    <label className="flex items-center gap-2 cursor-pointer select-none">
-                        <input
-                            type="checkbox"
+                    <label htmlFor="bp-require-conversation-resolution" className="flex items-center gap-2 cursor-pointer select-none">
+                        <Checkbox
+                            id="bp-require-conversation-resolution"
                             checked={rules.requireConversationResolution}
                             onChange={(e) => setRules(r => ({ ...r, requireConversationResolution: e.target.checked }))}
-                            disabled={archived || saving}
-                            className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-brand-500/40" />
+                            disabled={archived || saving} />
                         <span className="text-sm text-slate-700 dark:text-slate-300">Require conversation resolution before merging</span>
                     </label>
 
                     <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700/50 space-y-2">
-                        <label className="flex items-center gap-2 cursor-pointer select-none">
-                            <input
-                                type="checkbox"
+                        <label htmlFor="bp-allow-force-pushes" className="flex items-center gap-2 cursor-pointer select-none">
+                            <Checkbox
+                                id="bp-allow-force-pushes"
                                 checked={rules.allowForcePushes}
                                 onChange={(e) => setRules(r => ({ ...r, allowForcePushes: e.target.checked }))}
                                 disabled={archived || saving}
-                                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-amber-700 focus:ring-amber-500/40" />
+                                className="accent-amber-500" />
                             <span className="text-sm text-amber-700 dark:text-amber-400">Allow force pushes</span>
                         </label>
-                        <label className="flex items-center gap-2 cursor-pointer select-none">
-                            <input
-                                type="checkbox"
+                        <label htmlFor="bp-allow-deletions" className="flex items-center gap-2 cursor-pointer select-none">
+                            <Checkbox
+                                id="bp-allow-deletions"
                                 checked={rules.allowDeletions}
                                 onChange={(e) => setRules(r => ({ ...r, allowDeletions: e.target.checked }))}
                                 disabled={archived || saving}
-                                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-amber-700 focus:ring-amber-500/40" />
+                                className="accent-amber-500" />
                             <span className="text-sm text-amber-700 dark:text-amber-400">Allow branch deletion</span>
                         </label>
                     </div>

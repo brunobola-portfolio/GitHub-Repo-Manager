@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import { Spinner } from '../../../ui/Spinner'
 import { Select } from '../../../ui/Select'
-import { Input, Switch } from '../../../ui/form'
+import { Input, Switch, Checkbox } from '../../../ui/form'
 import { RiskBadge } from '../../ui/repo/RiskBadge'
 import { RepoMetadataBadges } from './RepoMetadataBadges'
 import { ConflictResolutionPanel } from './ConflictResolutionPanel'
@@ -303,9 +303,9 @@ export function RepoCard({
               {/* Branch list (Git only) */}
               {!repo.isTfvc && branchExpanded && (
                 <div className="p-3 rounded-lg bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
+                  <label htmlFor={`mirror-all-branches-${index}`} className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      id={`mirror-all-branches-${index}`}
                       checked={repo.branchFilter !== 'selected'}
                       onChange={(e) => {
                         handlers.onUpdateRepo(index, {
@@ -313,7 +313,6 @@ export function RepoCard({
                           ...(e.target.checked ? { selectedBranches: [] } : {}),
                         })
                       }}
-                      className="rounded border-slate-300 dark:border-slate-600 text-brand-500 focus:ring-brand-500"
                     />
                     <span className="text-xs font-medium text-slate-700 dark:text-slate-300">Mirror all branches</span>
                   </label>
@@ -328,8 +327,7 @@ export function RepoCard({
                       ) : (branchList || []).length > 0 ? (
                         (branchList || []).map((branch) => (
                           <label key={branch.name} className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
+                            <Checkbox
                               checked={(repo.selectedBranches || []).includes(branch.name)}
                               onChange={(e) => {
                                 const current = repo.selectedBranches || []
@@ -338,7 +336,6 @@ export function RepoCard({
                                   : current.filter((b) => b !== branch.name)
                                 handlers.onUpdateRepo(index, { selectedBranches: next })
                               }}
-                              className="rounded border-slate-300 dark:border-slate-600 text-brand-500 focus:ring-brand-500"
                             />
                             <span className="text-xs text-slate-600 dark:text-slate-400">{branch.name}</span>
                           </label>

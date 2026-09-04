@@ -5,6 +5,7 @@ import { MoreHorizontal, Pin, PinOff, Bell, BellOff, X, ExternalLink, Copy } fro
 import { clsx } from 'clsx'
 import { formatRelativeTime } from '../../../utils/format'
 import { Tooltip } from '../../ui/Tooltip'
+import { Checkbox } from '../../ui/form'
 
 const SIGNAL_LABELS = {
     review_requested: 'review requested',
@@ -34,11 +35,9 @@ export function RepoRow({ repo, onAction, selected = false, onSelectionChange })
             )}
         >
             {onSelectionChange && (
-                <input
-                    type="checkbox"
+                <Checkbox
                     checked={selected}
                     onChange={(e) => onSelectionChange(repo.repo_full_name, e.target.checked)}
-                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 accent-brand-500"
                     aria-label={`Select ${repo.repo_full_name}`}
                 />
             )}

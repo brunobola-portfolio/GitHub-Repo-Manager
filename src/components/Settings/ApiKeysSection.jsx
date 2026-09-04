@@ -10,7 +10,7 @@ import { Badge } from '../ui/Badge'
 import { Card } from '../ui/Card'
 import { EmptyState } from '../ui/EmptyState'
 import { Skeleton } from '../ui/Skeleton'
-import { Field, Input } from '../ui/form'
+import { Field, Input, Checkbox } from '../ui/form'
 import { PanelHeader } from '../ui/PanelHeader'
 import { RowIconBadge } from '../ui/RowIconBadge'
 import { formatDate as formatDateBase } from '../../utils/format'
@@ -149,12 +149,11 @@ function NewKeyForm({ onCreated, onCancel }) {
                                                 : 'bg-white dark:bg-slate-900/40 border-slate-200 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-500/40'
                                         }`}
                                     >
-                                        <input
+                                        <Checkbox
                                             id={`scope-${scope.id}`}
-                                            type="checkbox"
                                             checked={checked}
                                             onChange={() => toggleScope(scope.id)}
-                                            className="mt-0.5 w-4 h-4 accent-brand-600 cursor-pointer ds-focus-ring rounded"
+                                            className="mt-0.5 cursor-pointer"
                                         />
                                         <div className="min-w-0">
                                             <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{scope.label}</p>

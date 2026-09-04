@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { SpinnerIcon } from '../ui/Spinner'
 import AllowlistFixPanel from '../ui/AllowlistFixPanel'
+import { Checkbox } from '../ui/form'
 import { getCsrfToken } from '../../utils/api'
 import { formatUserError } from '../../utils/errors'
 import { useHostAllowlist } from '../../hooks/useHostAllowlist'
@@ -492,8 +493,7 @@ function AddCredentialForm({ onClose, onCreated }) {
               >
                 {/* sr-only (NOT hidden/display:none) keeps the checkbox in the
                     tab order and accessibility tree. */}
-                <input
-                  type="checkbox"
+                <Checkbox
                   className="sr-only"
                   checked={scopes[s.key]}
                   onChange={(e) => setScopes((prev) => ({ ...prev, [s.key]: e.target.checked }))}

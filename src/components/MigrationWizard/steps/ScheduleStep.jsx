@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { Spinner } from '../../ui/Spinner'
 import { Button } from '../../ui/Button'
-import { Field, Input } from '../../ui/form'
+import { Field, Input, Checkbox } from '../../ui/form'
 import { migrationApi } from '../../../api/migration'
 import { useToast } from '../../../hooks/useToast'
 import { StatCard } from '../ui/repo/StatCard'
@@ -269,11 +269,9 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
       {/* Dry-run checkbox */}
       {/* eslint-disable-next-line jsx-a11y/label-has-associated-control */}
       <label className="flex items-center gap-3 cursor-pointer">
-        <input
-          type="checkbox"
+        <Checkbox
           checked={schedule.isDryRun}
           onChange={(e) => onUpdate({ isDryRun: e.target.checked })}
-          className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-brand-500 focus:ring-brand-500"
         />
         <div>
           <span className="text-sm font-medium text-slate-900 dark:text-slate-100">Dry Run</span>

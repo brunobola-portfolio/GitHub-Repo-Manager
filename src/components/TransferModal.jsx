@@ -6,6 +6,7 @@ import { Modal, ModalFooter } from './ui/Modal'
 import { InsightCard } from './ui/InsightCard'
 import { StatBar } from './ui/StatBar'
 import { EmptyState } from './ui/EmptyState'
+import { Checkbox } from './ui/form'
 import { ConflictPanel } from './ConflictPanel'
 import { useDebounce } from '../hooks/useDebounce'
 import { API_ENDPOINTS } from '../config'
@@ -383,12 +384,11 @@ export function TransferModal({
 				)}
 
 				{/* Dry-run toggle */}
-				<label className="flex items-center gap-2 cursor-pointer px-1">
-					<input
-						type="checkbox"
+				<label htmlFor="transfer-dry-run" className="flex items-center gap-2 cursor-pointer px-1">
+					<Checkbox
+						id="transfer-dry-run"
 						checked={dryRun}
 						onChange={(e) => setDryRun(e.target.checked)}
-						className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 dark:bg-slate-700"
 					/>
 					<span className="text-sm text-slate-600 dark:text-slate-400">Simulate transfer (dry-run)</span>
 				</label>

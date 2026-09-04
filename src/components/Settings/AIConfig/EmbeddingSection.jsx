@@ -9,7 +9,7 @@ import { useEmbeddingModels } from '../../../hooks/useProviderModels'
 import { PROVIDERS_NEEDING_EMBEDDING_OVERRIDE, LABEL_CLS } from './constants'
 import { PriceHint } from './PriceHint'
 import { ModelCombobox } from './ModelCombobox'
-import { Field, Input } from '../../ui/form'
+import { Field, Input, Checkbox } from '../../ui/form'
 import { Select } from '../../ui/Select'
 
 // ---------------------------------------------------------------------------
@@ -27,12 +27,10 @@ export function EmbeddingSection({ form, onChange }) {
     if (!needsEmbedding && !showOverride) {
         return (
             <div className="flex items-center gap-2">
-                <input
-                    type="checkbox"
+                <Checkbox
                     id="emb-override"
                     checked={false}
                     onChange={(e) => setShowOverride(e.target.checked)}
-                    className="accent-brand-600"
                 />
                 <label
                     htmlFor="emb-override"
@@ -48,8 +46,7 @@ export function EmbeddingSection({ form, onChange }) {
         <div className="space-y-3">
             {!needsEmbedding && (
                 <div className="flex items-center gap-2">
-                    <input
-                        type="checkbox"
+                    <Checkbox
                         id="emb-override"
                         checked={showOverride}
                         onChange={(e) => {
@@ -60,7 +57,6 @@ export function EmbeddingSection({ form, onChange }) {
                                 onChange('embeddingModel', null)
                             }
                         }}
-                        className="accent-brand-600"
                     />
                     <label
                         htmlFor="emb-override"

@@ -4,7 +4,7 @@ import { Modal, ModalFooter } from '../ui/Modal'
 import { InsightCard } from '../ui/InsightCard'
 import { Button } from '../ui/Button'
 import { Spinner } from '../ui/Spinner'
-import { Input, Textarea } from '../ui/form'
+import { Input, Textarea, Checkbox } from '../ui/form'
 import { aiApi } from '../../api/ai'
 import { reposApi } from '../../api/repos'
 import { useToast } from '../../hooks/useToast'
@@ -77,11 +77,9 @@ function FieldCard({
                 <div className="flex items-center justify-between mb-3">
                     <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{label}</h3>
                     <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
-                        <input
-                            type="checkbox"
+                        <Checkbox
                             checked={useField}
                             onChange={(e) => onToggleUse(e.target.checked)}
-                            className="accent-brand-500"
                             aria-label={`Use this ${label.toLowerCase()}`}
                         />
                         Use this {label.toLowerCase()}
@@ -104,11 +102,9 @@ function FieldCard({
             <div className="flex items-center justify-between mb-3">
                 <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{label}</h3>
                 <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
-                    <input
-                        type="checkbox"
+                    <Checkbox
                         checked={useField}
                         onChange={(e) => onToggleUse(e.target.checked)}
-                        className="accent-brand-500"
                         aria-label={`Use this ${label.toLowerCase()}`}
                     />
                     Use this {label.toLowerCase()}
@@ -412,9 +408,9 @@ export default function SuggestNameDescriptionModal({ isOpen, repo, onClose, onA
 
                 {nameWillChange && (
                     <InsightCard tone="warning" hover={false}>
-                        <label className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-300 cursor-pointer">
-                            <input
-                                type="checkbox"
+                        <label htmlFor="ack-rename" className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-300 cursor-pointer">
+                            <Checkbox
+                                id="ack-rename"
                                 checked={ackRename}
                                 onChange={(e) => setAckRename(e.target.checked)}
                                 className="mt-0.5 accent-amber-500"

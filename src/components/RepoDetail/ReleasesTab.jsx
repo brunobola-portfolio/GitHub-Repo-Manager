@@ -7,7 +7,7 @@ import { RowIconBadge } from '../ui/RowIconBadge'
 import { SectionPanel } from '../ui/SectionPanel'
 import { Tag, Plus, Trash2, Loader2, ExternalLink, CheckCircle2, XCircle, Package, RefreshCw } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
-import { Field, Input, Textarea } from '../ui/form'
+import { Field, Input, Textarea, Checkbox } from '../ui/form'
 import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
 import { formatRelativeTime, formatDateTime } from '../../utils/format'
@@ -126,14 +126,12 @@ export function ReleasesTab({ api }) {
                             rows={4} placeholder="Describe this release..." />
                     </Field>
                     <div className="flex items-center gap-4">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" checked={form.draft} onChange={e => setForm(f => ({ ...f, draft: e.target.checked }))}
-                                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)]" />
+                        <label htmlFor="release-draft" className="flex items-center gap-2 cursor-pointer">
+                            <Checkbox id="release-draft" checked={form.draft} onChange={e => setForm(f => ({ ...f, draft: e.target.checked }))} />
                             <span className="text-sm text-slate-700 dark:text-slate-300">Draft</span>
                         </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" checked={form.prerelease} onChange={e => setForm(f => ({ ...f, prerelease: e.target.checked }))}
-                                className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)]" />
+                        <label htmlFor="release-prerelease" className="flex items-center gap-2 cursor-pointer">
+                            <Checkbox id="release-prerelease" checked={form.prerelease} onChange={e => setForm(f => ({ ...f, prerelease: e.target.checked }))} />
                             <span className="text-sm text-slate-700 dark:text-slate-300">Pre-release</span>
                         </label>
                     </div>

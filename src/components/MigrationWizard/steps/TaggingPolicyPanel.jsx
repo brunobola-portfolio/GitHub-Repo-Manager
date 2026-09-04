@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { Tags, ShieldCheck, GitBranch, EyeOff } from 'lucide-react'
+import { Checkbox } from '../../ui/form'
 import { DEFAULT_TAGGING_POLICY } from './taggingDefaults'
 
 function Toggle({ id, checked, onChange, label, hint, icon: Icon, warning }) {
@@ -8,12 +9,11 @@ function Toggle({ id, checked, onChange, label, hint, icon: Icon, warning }) {
       htmlFor={id}
       className="flex items-start gap-3 rounded-lg border border-slate-200/60 dark:border-white/5 p-3 hover:bg-slate-50 dark:hover:bg-white/5 cursor-pointer transition"
     >
-      <input
+      <Checkbox
         id={id}
-        type="checkbox"
         checked={!!checked}
         onChange={e => onChange(e.target.checked)}
-        className="mt-1 accent-brand-500"
+        className="mt-1"
       />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 text-sm text-slate-900 dark:text-slate-100">
@@ -57,13 +57,11 @@ export function TaggingPolicyPanel({ policy = DEFAULT_TAGGING_POLICY, onChange, 
         </div>
       </header>
 
-      <label className="flex items-center gap-3 rounded-xl border border-brand-200/60 dark:border-brand-500/20 bg-brand-500/5 p-3 cursor-pointer">
-        <input
-          type="checkbox"
+      <label htmlFor="tagging-enabled" className="flex items-center gap-3 rounded-xl border border-brand-200/60 dark:border-brand-500/20 bg-brand-500/5 p-3 cursor-pointer">
+        <Checkbox
+          id="tagging-enabled"
           checked={!!policy.enabled}
           onChange={e => setField('enabled', e.target.checked)}
-          className="accent-brand-500"
-          aria-label="Enable tagging"
         />
         <div className="flex-1 min-w-0">
           <div className="text-sm text-slate-900 dark:text-slate-100 font-medium">Enable tagging</div>

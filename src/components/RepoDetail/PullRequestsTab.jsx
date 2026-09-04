@@ -8,7 +8,7 @@ import { SectionPanel } from '../ui/SectionPanel'
 import { Select } from '../ui/Select'
 import { GitPullRequest, Plus, Loader2, CheckCircle2, XCircle, GitMerge, ExternalLink, RefreshCw } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
-import { Field, Input, Textarea } from '../ui/form'
+import { Field, Input, Textarea, Checkbox } from '../ui/form'
 import { PRDetailPanel } from './PRDetailPanel'
 import { PRRiskBadges } from './PRRiskBadges'
 import { prActions } from '../../actions/prActions'
@@ -250,12 +250,11 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                             rows={3} placeholder="Describe the changes..." aria-label="Pull request description" />
                     </Field>
                     <div className="flex items-center justify-between">
-                        <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer select-none">
-                            <input
-                                type="checkbox"
+                        <label htmlFor="pr-create-as-draft" className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer select-none">
+                            <Checkbox
+                                id="pr-create-as-draft"
                                 checked={form.draft}
                                 onChange={e => setForm(f => ({ ...f, draft: e.target.checked }))}
-                                className="rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-brand-500"
                             />
                             Create as draft
                         </label>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ChevronDown, RotateCcw, Sparkles } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { TRANSITION } from '../ui/motion'
+import { Checkbox } from '../ui/form'
 import { formatFileSize } from '../../utils/format'
 
 const SIGNAL_LABELS = {
@@ -72,12 +73,10 @@ export function ContextPicker({
                         const expected = EXPECTED_BYTES[kind] || 0
                         return (
                             <label key={kind} className="flex items-center gap-2 text-sm cursor-pointer">
-                                <input
-                                    type="checkbox"
+                                <Checkbox
                                     checked={checked}
                                     onChange={(e) => onSignalChange(kind, e.target.checked)}
                                     aria-label={SIGNAL_LABELS[kind]}
-                                    className="accent-brand-500"
                                 />
                                 <span className="flex-1 text-slate-700 dark:text-slate-200">{SIGNAL_LABELS[kind]}</span>
                                 {checked && <span className="text-xs text-slate-500">{formatFileSize(expected, 1)}</span>}

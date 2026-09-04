@@ -1,7 +1,7 @@
 // src/components/MigrationWizard/steps/RepoSelectStep/FixPlanItem.jsx
 import { ArrowRight, Check, AlertCircle, Loader2 } from 'lucide-react'
 import { Spinner } from '../../../ui/Spinner'
-import { Input } from '../../../ui/form'
+import { Input, Checkbox } from '../../../ui/form'
 
 const TYPE_LABEL = {
   'invalid-chars': 'Invalid chars',
@@ -17,8 +17,7 @@ export function FixPlanItem({ item, checked, conflictStatus, onToggle, onEdit })
       className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-sm
         ${disabled ? 'border-red-300 bg-red-50 dark:border-red-500/40 dark:bg-red-950/10' : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/40'}`}
     >
-      <input
-        type="checkbox"
+      <Checkbox
         checked={checked && !disabled}
         disabled={disabled}
         onChange={(e) => onToggle(item, e.target.checked)}

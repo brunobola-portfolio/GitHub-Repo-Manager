@@ -12,7 +12,7 @@ import { aiApi } from '../../api/ai'
 import { reposApi } from '../../api/repos'
 import { Settings, Save, AlertTriangle, Lock, Globe, Webhook, Trash2, Plus, RefreshCw, Users, Tag, Sparkles, Undo2, X, GitMerge, Archive, ArchiveRestore } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
-import { Field, Input } from '../ui/form'
+import { Field, Input, Checkbox } from '../ui/form'
 
 export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChange = () => {} }) {
     const { toast } = useToast()
@@ -324,10 +324,9 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
                             { key: 'allow_forking', label: 'Allow Forking' }
                         ].map(feat => (
                             <label key={feat.key} className="flex items-center gap-2 cursor-pointer select-none py-1 rounded hover:bg-slate-50 dark:hover:bg-slate-800/50 px-1 -mx-1 transition-colors">
-                                <input type="checkbox" checked={form[feat.key]}
+                                <Checkbox checked={form[feat.key]}
                                     onChange={e => setForm(f => ({ ...f, [feat.key]: e.target.checked }))}
-                                    disabled={saving}
-                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-brand-500/40" />
+                                    disabled={saving} />
                                 <span className="text-sm text-slate-700 dark:text-slate-300">{feat.label}</span>
                             </label>
                         ))}
@@ -348,10 +347,9 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
                             { key: 'delete_branch_on_merge', label: 'Auto-delete head branches' },
                         ].map(feat => (
                             <label key={feat.key} className="flex items-center gap-2 cursor-pointer select-none py-1 rounded hover:bg-slate-50 dark:hover:bg-slate-800/50 px-1 -mx-1 transition-colors">
-                                <input type="checkbox" checked={form[feat.key]}
+                                <Checkbox checked={form[feat.key]}
                                     onChange={e => setForm(f => ({ ...f, [feat.key]: e.target.checked }))}
-                                    disabled={saving}
-                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-brand-500/40" />
+                                    disabled={saving} />
                                 <span className="text-sm text-slate-700 dark:text-slate-300">{feat.label}</span>
                             </label>
                         ))}
@@ -664,8 +662,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
                             {topicsState.items.map((t) => (
                                 <li key={t}>
                                     <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200 cursor-pointer">
-                                        <input
-                                            type="checkbox"
+                                        <Checkbox
                                             checked={selectedTopics.has(t)}
                                             onChange={() => toggleTopic(t)}
                                             aria-label={t}

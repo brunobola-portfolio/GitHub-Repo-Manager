@@ -6,7 +6,7 @@ import { Button } from '../ui/Button'
 import { useAIPolish } from '../../hooks/useAIPolish'
 import { ContextPicker } from '../AI/ContextPicker'
 import { useContextPrefs } from '../../hooks/useContextPrefs'
-import { Input } from '../ui/form'
+import { Input, Checkbox } from '../ui/form'
 
 /**
  * Batch table for post-migration AI polish.
@@ -90,13 +90,12 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                         >
                             {/* Include toggle */}
                             <div className="flex items-center justify-center">
-                                <input
-                                    type="checkbox"
+                                <Checkbox
                                     checked={row.include}
                                     onChange={() => toggleInclude(row.fullName)}
                                     disabled={row.status === 'applying' || row.status === 'done'}
                                     aria-label={`Include ${row.fullName}`}
-                                    className="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-brand-500/40 cursor-pointer"
+                                    className="cursor-pointer"
                                 />
                             </div>
 

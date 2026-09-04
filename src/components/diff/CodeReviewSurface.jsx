@@ -3,6 +3,7 @@ import { FileTree } from '../PRReview/FileTree/FileTree'
 import { Spinner } from '../ui/Spinner'
 import { CodeReviewToolbar } from './CodeReviewToolbar'
 import { MobileFileTreeSheet } from './MobileFileTreeSheet'
+import { Checkbox } from '../ui/form'
 import { useDiffPreferences } from '../../hooks/useDiffPreferences'
 import { onAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
@@ -149,12 +150,11 @@ export function CodeReviewSurface({
                         />
                         {activeFile && (
                             <div className="px-3 py-2 border-t border-slate-100 dark:border-slate-800">
-                                <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 cursor-pointer select-none">
-                                    <input
-                                        type="checkbox"
+                                <label htmlFor="code-review-mark-reviewed" className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 cursor-pointer select-none">
+                                    <Checkbox
+                                        id="code-review-mark-reviewed"
                                         checked={reviewed.has(activeFile.filename)}
                                         onChange={() => toggleReviewed(activeFile.filename)}
-                                        className="rounded border-slate-300 dark:border-slate-600 text-[color:var(--ds-accent-brand)] focus:ring-brand-500"
                                     />
                                     Mark as reviewed
                                 </label>
