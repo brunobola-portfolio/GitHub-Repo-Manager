@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { EASE } from '../ui/motion'
 import { Check, Zap, Crown } from 'lucide-react'
 import { SUPPORT_EMAIL } from '../../utils/supportContact'
+import { BACKDROP_WASH_COLOR } from '../ui/_variants'
 
 const plans = [
   {
@@ -191,7 +192,7 @@ export function PricingPreview({ onSignIn }) {
         aria-hidden="true"
         style={{
           background:
-            'radial-gradient(ellipse 80% 60% at 50% 100%, rgba(85,131,27,0.06) 0%, transparent 70%)',
+            `radial-gradient(ellipse 80% 60% at 50% 100%, ${BACKDROP_WASH_COLOR} 0%, transparent 70%)`,
         }}
       />
 

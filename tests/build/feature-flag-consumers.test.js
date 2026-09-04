@@ -119,7 +119,6 @@ const DOCUMENTATION_ONLY_FLAGS = new Set([
     // `prReviewCommentSchema`.
     'bulkAdvanced',
     'aiAssistant',
-    'prReview',
     // SSO/SAML is roadmap, not shipped: false on every tier, and every surface
     // marks it as such. If it is ever flipped true anywhere, the
     // identical-across-tiers test below fails and demands a real consumer.

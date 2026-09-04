@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronRight } from 'lucide-react'
 import { calculateMenuPosition } from '@/lib/menuPositioning'
+import { POPOVER_SURFACE_CLASS } from './_variants'
 
 /**
  * ContextMenu - Reusable cascading context menu with keyboard navigation
@@ -283,7 +284,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 				animate={{ opacity: 1, scale: 1 }}
 				exit={{ opacity: 0, scale: 0.95 }}
 				transition={{ duration: 0.12, ease: 'easeOut' }}
-				className="fixed z-[var(--ds-z-ceiling)] min-w-[260px] max-w-[340px] overflow-visible p-1 rounded-xl border border-black/5 dark:border-white/10 bg-white/85 dark:bg-slate-900/90 backdrop-blur-md outline-none shadow-[0_20px_40px_-12px_rgba(0,0,0,0.25),0_2px_6px_-2px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.55),0_2px_6px_-2px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.06)]"
+				className={`fixed z-[var(--ds-z-ceiling)] min-w-[260px] max-w-[340px] overflow-visible p-1 outline-none ${POPOVER_SURFACE_CLASS}`}
 				style={{ top: position.top, left: position.left }}
 				onClick={(e) => e.stopPropagation()}
 			>

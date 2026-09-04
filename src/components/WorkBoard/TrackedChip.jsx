@@ -4,6 +4,7 @@ import { Pin, PinOff, Bell, BellOff, X } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useTrackedRepos } from '../../hooks/useTrackedRepos'
 import { useToast } from '../../hooks/useToast'
+import { POPOVER_SURFACE_CLASS } from '../ui/_variants'
 
 export function TrackedChip({ repoFullName }) {
     const [open, setOpen] = useState(false)
@@ -74,7 +75,7 @@ export function TrackedChip({ repoFullName }) {
                 align="start"
                 sideOffset={6}
                 onClick={(e) => e.stopPropagation()}
-                className="z-[var(--ds-z-popover)] min-w-[180px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 shadow-xl"
+                className={`z-[var(--ds-z-popover)] min-w-[180px] p-1 ${POPOVER_SURFACE_CLASS}`}
             >
                 {isPinned
                     ? <ChipMenuItem icon={<PinOff className="w-3.5 h-3.5" />} label="Unpin" onClick={() => runAction(hook.unpin, `Unpinned ${repoFullName}`)} />

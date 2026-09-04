@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { getCsrfToken } from '../../../utils/api'
+import { apiCall } from '../../../utils/api'
+import { API_BASE } from '../../../config'
 
 /**
  * Owns per-row target-name conflict detection for RepoConfigStep. Status per
@@ -48,21 +49,17 @@ export function useRepoNameConflicts({ source, isAzureDevops, azureProjectRepoNa
 
       debounceTimers.current[repoName] = setTimeout(async () => {
         try {
-          const csrfToken = await getCsrfToken().catch(() => null)
-          const res = await fetch('/api/import/check-duplicates', {
+          // maxRetries: 0 — debounced on every keystroke; a retryable 5xx should
+          // fall back to 'idle' fast rather than stall behind a backoff.
+          const data = await apiCall(`${API_BASE}/import/check-duplicates`, {
             method: 'POST',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               repos: [targetName],
               targetOwner: source.targetOrg || undefined,
             }),
-          })
-          const data = await res.json()
-          if (res.ok && data.duplicates) {
+          }, { maxRetries: 0 })
+          if (data.duplicates) {
             setConflicts((prev) => ({
               ...prev,
               [repoName]: data.duplicates[targetName] ? 'conflict' : 'clear',

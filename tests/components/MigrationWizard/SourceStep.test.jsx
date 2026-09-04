@@ -15,14 +15,22 @@ const mockOauthHook = {
   resumePolling: vi.fn(),
 }
 
+// apiCall's safeParseJson reads response.headers.get('content-type') and
+// falls back to response.text() — both must be present on the mock Response.
+const JSON_HEADERS = { get: (k) => (k?.toLowerCase?.() === 'content-type' ? 'application/json' : null) }
+function jsonResponse(body, ok = true) {
+  return Promise.resolve({
+    ok,
+    status: ok ? 200 : 500,
+    json: () => Promise.resolve(body),
+    text: () => Promise.resolve(JSON.stringify(body)),
+    headers: JSON_HEADERS,
+  })
+}
+
 // Mock fetch globally
 beforeEach(() => {
-  global.fetch = vi.fn(() =>
-    Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve({ available: false, configured: false }),
-    })
-  )
+  global.fetch = vi.fn(() => jsonResponse({ available: false, configured: false }))
 })
 
 describe('SourceStep', () => {
@@ -66,7 +74,7 @@ describe('SourceStep', () => {
       const body = url.includes('/api/azure/env-auth') ? { available: true }
         : url.includes('/api/azure/oauth-status') ? { configured: false }
         : {}
-      return Promise.resolve({ ok: true, json: () => Promise.resolve(body) })
+      return jsonResponse(body)
     }
 
     it('does NOT warn about on-prem before any host is detected', async () => {

@@ -6,7 +6,8 @@ import { SpinnerIcon } from '../../../ui/Spinner'
 import { buildPatSettingsUrl, buildAzCliCommand, classifyProvider } from '../../../../utils/azureProvider'
 import { Input } from '../../../ui/form'
 import { Tooltip } from '../../../ui/Tooltip'
-import { getCsrfToken } from '../../../../utils/api'
+import { apiCall } from '../../../../utils/api'
+import { API_BASE } from '../../../../config'
 import { emitAppEvent, APP_EVENTS } from '../../../../utils/appEvents'
 import { validatePatFormat } from '../../../../utils/patFormat'
 import SavedCredentialsPicker from './SavedCredentialsPicker'
@@ -55,24 +56,20 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
     if (!source.pat?.trim() || !host) return
     setSavingPat(true); setSaveError('')
     try {
-      const csrf = await getCsrfToken().catch(() => null)
-      const res = await fetch('/api/azure/credentials', {
+      const data = await apiCall(`${API_BASE}/azure/credentials`, {
         method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRF-Token': csrf } : {}) },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           label: saveLabel.trim() || `${host}${org ? ` · ${org}` : ''}`,
           host, org: org || null, pat: source.pat,
         }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'Failed to save')
       setSavedJustNow(true)
       // After saving, transparently switch to using the saved credential so
       // subsequent calls don't carry the raw PAT around.
       onChange({ savedCredentialId: data.id })
     } catch (e) {
-      setSaveError(e.message)
+      setSaveError(e.data?.error || e.message)
     } finally {
       setSavingPat(false)
     }

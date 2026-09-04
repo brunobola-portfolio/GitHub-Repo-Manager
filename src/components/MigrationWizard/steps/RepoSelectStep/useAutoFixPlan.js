@@ -2,7 +2,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { buildDeterministicPlan } from './autoFixRules.js'
 import { SIZE_CRITICAL_BYTES } from './riskRules.js'
-import { getCsrfToken } from '../../../../utils/api'
+import { apiCall } from '../../../../utils/api'
+import { API_BASE } from '../../../../config'
 import { isAIUnavailable, markAIUnavailable } from '../../../../utils/aiAvailability'
 import { isAbort } from '../../../../utils/errorClassification'
 
@@ -55,44 +56,19 @@ export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, confl
       // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag around a network request; setState is guarded by plan.length and the AbortController pattern below.
       setIsValidating(true)
       const names = plan.map((p) => p.to)
-      // Mint the CSRF token BEFORE the POST. The global requireCsrfToken guard
-      // (mounted ahead of this route) 403s any mutation missing the header, so
-      // this call — which previously sent none — silently failed ('unchecked')
-      // on every fire. Mirror the Phase-3 AI call below, which already attaches it.
-      getCsrfToken()
-        .catch(() => null)
-        .then((csrf) =>
-          fetch('/api/import/check-duplicates', {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(csrf ? { 'X-CSRF-Token': csrf } : {}),
-            },
-            body: JSON.stringify({ targetOrg, repos: names }),
-            signal: controller.signal,
-          })
-        )
-        .then(async (res) => {
-          // Fix 2: priority-aware auth error
-          if (res.status === 401) {
-            setError((prev) => worseError(prev, { type: 'auth', message: 'Azure DevOps token expired — please reconnect.' }))
-            return
-          }
-          if (!res.ok) {
-            const unchecked = {}
-            plan.forEach((p) => { unchecked[repos[p.repoIndex].id] = 'unchecked' })
-            // Fix 3: prune stale entries from conflictStatuses
-            const currentIds = new Set(plan.map((p) => repos[p.repoIndex].id))
-            setConflictStatuses((prev) => {
-              const retained = Object.fromEntries(
-                Object.entries(prev).filter(([id]) => currentIds.has(id))
-              )
-              return { ...retained, ...unchecked }
-            })
-            return
-          }
-          const data = await res.json()
+      // Routed through apiCall so CSRF header injection + the 403 csrf_invalid
+      // rotation-retry apply automatically (a raw fetch here previously sent no
+      // CSRF header at all and silently failed 'unchecked' on every fire).
+      // maxRetries: 0 — this is a soft, re-triggerable name-conflict check that
+      // already degrades gracefully to 'unchecked'; a multi-second exponential
+      // backoff before that fallback would stall the UI far longer than useful.
+      apiCall(`${API_BASE}/import/check-duplicates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetOrg, repos: names }),
+        signal: controller.signal,
+      }, { maxRetries: 0 })
+        .then((data) => {
           const next = {}
           plan.forEach((p) => {
             const repoId = repos[p.repoIndex].id
@@ -111,6 +87,11 @@ export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, confl
         })
         .catch((e) => {
           if (isAbort(e)) return
+          // Fix 2: priority-aware auth error
+          if (e.status === 401) {
+            setError((prev) => worseError(prev, { type: 'auth', message: 'Azure DevOps token expired — please reconnect.' }))
+            return
+          }
           const unchecked = {}
           plan.forEach((p) => { unchecked[repos[p.repoIndex].id] = 'unchecked' })
           // Fix 3: prune stale entries from conflictStatuses
@@ -133,28 +114,28 @@ export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, confl
       setIsAILoading(true)
       Promise.allSettled(
         sizeCritical.map(async (repo) => {
-          const csrf = await getCsrfToken()
-          const res = await fetch('/api/ai/migration-size-strategy', {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-            body: JSON.stringify({
-              repoId: repo.id,
-              size: repo.size,
-              hasLfsMarker: !!repo.hasLfsMarker,
-              branches: repo.branches,
-              lastCommitDate: repo.lastCommitDate,
-            }),
-            signal: controller.signal,
-          })
-          if (res.status === 429) throw new Error('quota')
-          if (res.status === 404 || res.status === 422 || res.status === 400) {
-            markAIUnavailable(`${res.status}:migration-size-strategy`)
-            throw new Error('unavailable')
+          try {
+            const body = await apiCall(`${API_BASE}/ai/migration-size-strategy`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                repoId: repo.id,
+                size: repo.size,
+                hasLfsMarker: !!repo.hasLfsMarker,
+                branches: repo.branches,
+                lastCommitDate: repo.lastCommitDate,
+              }),
+              signal: controller.signal,
+            })
+            return { repoId: repo.id, body }
+          } catch (err) {
+            if (err.status === 429) throw new Error('quota')
+            if (err.status === 404 || err.status === 422 || err.status === 400) {
+              markAIUnavailable(`${err.status}:migration-size-strategy`)
+              throw new Error('unavailable')
+            }
+            throw err
           }
-          if (!res.ok) throw new Error('server')
-          const body = await res.json()
-          return { repoId: repo.id, body }
         }),
       )
         .then((results) => {

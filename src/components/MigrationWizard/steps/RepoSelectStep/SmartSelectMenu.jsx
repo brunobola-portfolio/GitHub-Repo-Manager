@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Sparkles, ChevronDown, Zap, Clock, XCircle, Archive, AlertOctagon, Pencil } from 'lucide-react'
 import { PatternSelectModal } from './PatternSelectModal'
 import { Button } from '../../../ui/Button'
+import { POPOVER_SURFACE_CLASS } from '../../../ui/_variants'
 
 const PRESETS = [
   { id: 'recommended', icon: Zap,         label: 'Recommended',          predicate: (r) => r.risk?.level === 'ok' && !r.isDisabled },
@@ -83,7 +84,7 @@ export function SmartSelectMenu({ repos, onSelect }) {
           ref={menuRef}
           role="menu"
           aria-label="Smart selection presets"
-          className="absolute right-0 mt-1 w-64 rounded-xl bg-white dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 shadow-xl z-20"
+          className={`absolute right-0 mt-1 w-64 z-20 ${POPOVER_SURFACE_CLASS}`}
         >
           <ul className="py-1">
             {PRESETS.map((p) => {
@@ -95,7 +96,7 @@ export function SmartSelectMenu({ repos, onSelect }) {
                     type="button"
                     role="menuitem"
                     onClick={() => apply(p)}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:bg-slate-100 dark:focus:bg-slate-800"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 ds-focus-ring"
                   >
                     <Icon className="w-3.5 h-3.5 text-brand-500 dark:text-[color:var(--ds-accent-brand-dark)]" aria-hidden="true" />
                     <span className="flex-1">{p.label}</span>

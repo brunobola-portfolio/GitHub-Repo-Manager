@@ -12,7 +12,8 @@ const E2E_LIVE_AZURE_AUTH = (() => {
 const MOCK_MODE = import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true' && !E2E_LIVE_AZURE_AUTH
 import { parseAzureUrl } from '../../../utils/azureUrlParser'
 import { classifyProvider } from '../../../utils/azureProvider'
-import { getCsrfToken } from '../../../utils/api'
+import { apiCall } from '../../../utils/api'
+import { API_BASE } from '../../../config'
 import { isAbort } from '../../../utils/errorClassification'
 import { useHostAllowlist } from '../../../hooks/useHostAllowlist'
 
@@ -79,8 +80,8 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
       return undefined
     }
     Promise.all([
-      fetch('/api/azure/env-auth', { credentials: 'include' }).then((r) => r.json()),
-      fetch('/api/azure/oauth-status', { credentials: 'include' }).then((r) => r.json()),
+      apiCall(`${API_BASE}/azure/env-auth`),
+      apiCall(`${API_BASE}/azure/oauth-status`),
     ])
       .then(([envAuth, oauthStatus]) => {
         if (cancelled) return
@@ -259,14 +260,9 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
               : { pat: source.pat })
           : {}),
       }
-      const csrfToken = await getCsrfToken().catch(() => null)
       const fetchOpts = {
         method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
         signal: controller.signal,
       }
@@ -274,21 +270,30 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
       // (e.g., `Trigenius` → `tfs/Trigenius`) can rewrite the org before the
       // projects fetch uses it. Running these in parallel risks projects
       // probing the wrong collection path.
-      const validateRes = await fetch('/api/azure/validate', fetchOpts)
-      if (controller.signal.aborted) return
-      const validateData = await validateRes.json().catch(() => ({}))
-      // Backend may return HTTP 400 with { error } (e.g., decrypted PAT
-      // couldn't be retrieved from the vault) or HTTP 200 with { valid: false }
-      // for credential failures. Treat both as validation errors with the
-      // exact backend message — never let the panel hang on "pending".
-      if (!validateRes.ok || !validateData.valid) {
+      let validateData
+      try {
+        validateData = await apiCall(`${API_BASE}/azure/validate`, fetchOpts)
+      } catch (err) {
+        if (isAbort(err)) return
         onChange({ validated: false })
-        const msg = validateData.error
-          || validateData.message
-          || (validateRes.status === 401 || validateRes.status === 403
+        // Backend may return HTTP 400 with { error } (e.g., decrypted PAT
+        // couldn't be retrieved from the vault) — surface the exact backend
+        // message, with a status-aware fallback so the panel never hangs on
+        // "pending".
+        const msg = err.data?.error
+          || err.data?.message
+          || (err.status === 401 || err.status === 403
               ? 'Credentials rejected by the server (401/403)'
-              : `Validation failed (HTTP ${validateRes.status})`)
+              : `Validation failed (HTTP ${err.status})`)
         setValidationError(msg)
+        return
+      }
+      if (controller.signal.aborted) return
+      // HTTP 200 with { valid: false } is also a credential failure — never
+      // let the panel hang on "pending".
+      if (!validateData.valid) {
+        onChange({ validated: false })
+        setValidationError(validateData.error || validateData.message || 'Validation failed')
         return
       }
       const effectiveOrg = validateData.resolvedOrg || source.org
@@ -300,17 +305,19 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
         onChange({ org: effectiveOrg })
       }
       const projectsBody = { ...body, org: effectiveOrg }
-      const projectsRes = await fetch('/api/azure/projects', {
-        ...fetchOpts,
-        body: JSON.stringify(projectsBody),
-      })
-      if (controller.signal.aborted) return
-      const projectsData = await projectsRes.json()
-      if (!projectsRes.ok) {
+      let projectsData
+      try {
+        projectsData = await apiCall(`${API_BASE}/azure/projects`, {
+          ...fetchOpts,
+          body: JSON.stringify(projectsBody),
+        })
+      } catch (err) {
+        if (isAbort(err)) return
         onChange({ validated: false })
-        setValidationError(projectsData.error || `Failed to list projects (HTTP ${projectsRes.status})`)
+        setValidationError(err.data?.error || `Failed to list projects (HTTP ${err.status})`)
         return
       }
+      if (controller.signal.aborted) return
       const list = projectsData.projects || []
       onChange({ validated: true })
       setProjects(list)
@@ -397,17 +404,11 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
           if (cancelled) return
           const p = queue.shift()
           try {
-            const csrfToken = await getCsrfToken().catch(() => null)
-            const res = await fetch('/api/azure/repos', {
+            const data = await apiCall(`${API_BASE}/azure/repos`, {
               method: 'POST',
-              credentials: 'include',
-              headers: {
-                'Content-Type': 'application/json',
-                ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-              },
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ host: source.host || 'dev.azure.com', org, project: p.name, ...credPayload }),
             })
-            const data = await res.json()
             meta[p.name] = {
               repoCount: (data.repos || []).length,
               vcType: data.versionControlType || 'Git',

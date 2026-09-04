@@ -16,6 +16,8 @@ import { SkeletonRow } from '../ui/repo/SkeletonRow'
 import { ShortcutsOverlay } from './RepoSelectStep/ShortcutsOverlay'
 import { ReplaceConfirmModal } from './RepoConfigStep/ReplaceConfirmModal'
 import { isAIUnavailable, subscribeAIUnavailable } from '../../../utils/aiAvailability'
+import { apiCall } from '../../../utils/api'
+import { API_BASE } from '../../../config'
 
 const FILTER_PREDICATES = {
   'recommended': (r) => r.risk?.level === 'ok' && !r.isDisabled,
@@ -64,8 +66,8 @@ export default function RepoSelectStep({ repos, onSetRepos, onUpdateRepo, source
 
   useEffect(() => {
     let cancelled = false
-    fetch('/api/config/ai-status', { credentials: 'include' })
-      .then((r) => (r.ok ? r.json() : { configured: false }))
+    apiCall(`${API_BASE}/config/ai-status`)
+      .catch(() => ({ configured: false }))
       .then((d) => {
         if (cancelled) return
         // Skip enabling AI features if a previous step in this session already

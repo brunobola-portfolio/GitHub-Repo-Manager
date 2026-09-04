@@ -38,6 +38,17 @@ const TABS = [
 
 export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription, initialTab = 'overview', onRepoMutated, onTabChange }) {
     const [activeTab, setActiveTab] = useState(initialTab)
+    // Tracks the `initialTab` value this render has already accounted for.
+    // An external change (browser back/forward landing on a different
+    // #/repo/.../:tab for the same repo already on screen) is applied
+    // synchronously below instead of through a follow-up effect — the effect
+    // version committed the STALE tab for one frame, then re-rendered with
+    // the right one, which is the tab-flash FE-14 reported.
+    const [committedInitialTab, setCommittedInitialTab] = useState(initialTab)
+    if (initialTab !== committedInitialTab) {
+        setCommittedInitialTab(initialTab)
+        setActiveTab(initialTab)
+    }
     const [repoData, setRepoData] = useState(repo)
     const [loadingRepo, setLoadingRepo] = useState(false)
     const [isStaleData, setIsStaleData] = useState(false)
@@ -108,13 +119,6 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription,
     useEffect(() => {
         onTabChange?.(activeTab)
     }, [activeTab, onTabChange])
-
-    // Follow `initialTab` when it changes from outside (browser back/forward
-    // landing on a different #/repo/.../:tab for the repo already on screen).
-    useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setActiveTab(initialTab)
-    }, [initialTab])
 
     // Local repo-data setter that also notifies the App-level repos list
     // so RepoList / Dashboard cards reflect the change without a refetch.

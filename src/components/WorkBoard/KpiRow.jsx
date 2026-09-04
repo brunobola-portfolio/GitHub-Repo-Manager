@@ -188,7 +188,10 @@ export function KpiRow({ activeTab, setActiveTab, reviews, stale, issues, debt, 
     const techDebtHistory = snapshots.map(s => s.techDebt)
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        // 2x2 below 640px (was grid-cols-1 — one KPI per screen pushed the tab
+        // strip and the actual work items ~4 screens below the fold on the
+        // surface whose entire purpose is that list, U24).
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
             <KpiTile
                 icon={GitPullRequest}
                 label="Pending reviews"

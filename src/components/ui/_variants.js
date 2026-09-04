@@ -64,6 +64,53 @@ export const HEADER_CLASS =
     'border-b border-slate-200 dark:border-[color:var(--ds-border-dark)] text-slate-900 dark:text-slate-100'
 
 /**
+ * Shared surface recipe for floating popovers/dropdowns/menus (as opposed to
+ * the modal-class overlays above). Lifted verbatim from ContextMenu.jsx,
+ * which had the most considered version — backdrop-blur, a hairline border
+ * that reads on both themes, and a layered shadow with an inset top
+ * highlight in dark mode. Before this existed, 22 popover surfaces each
+ * picked their own radius (5 different values) and shadow (6 different
+ * values); this is the one to converge on.
+ *
+ * Callers still own their own z-index, sizing and positioning classes —
+ * only the visual surface (radius + border + bg + blur + shadow) lives here.
+ */
+export const POPOVER_SURFACE_CLASS =
+    'rounded-xl border border-black/5 dark:border-white/10 bg-white/85 dark:bg-slate-900/90 backdrop-blur-md shadow-[0_20px_40px_-12px_rgba(0,0,0,0.25),0_2px_6px_-2px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.55),0_2px_6px_-2px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.06)]'
+
+/**
+ * Elevation applied to a sticky table `<thead>` once its scroll container
+ * has been scrolled past the top — pair with the `useStickyHeaderShadow`
+ * hook (src/hooks/useStickyHeaderShadow.js), which tracks the boolean and
+ * leaves the visual token here. Was copy-pasted as the same raw shadow
+ * literal in three tables; centralising it means a future elevation-scale
+ * change (see --ds-shadow-sm) only has one call site to update.
+ *
+ *   const elevated = useStickyHeaderShadow(scrollRef)
+ *   <thead className={`sticky top-0 z-10 transition-shadow ${elevated ? STICKY_HEAD_SHADOW_CLASS : ''}`}>
+ */
+export const STICKY_HEAD_SHADOW_CLASS = 'shadow-[var(--ds-shadow-sm)]'
+
+/**
+ * Decorative backdrop colours for full-bleed marketing/dashboard surfaces
+ * (Landing sections, RoadmapPage, PricingPage). Two motifs, two constants:
+ *
+ *  - GRID: the repeating dot/line texture behind Hero, Roadmap and Pricing.
+ *    Roadmap previously drew this in emerald while Pricing drew the
+ *    visually identical grid in brand — same motif, different hue, no
+ *    reason for the two to disagree (F26).
+ *  - WASH: the soft radial ellipse glow behind Features/CTA/PricingPreview.
+ *    Same motif, three different opacities (0.05/0.06/0.08) for what reads
+ *    as one design element scrolling past — unified on the value already
+ *    used by PricingPreview.
+ *
+ * Inline `style` values (not Tailwind classes) because both are consumed
+ * inside a `backgroundImage`/`background` CSS value, not a class list.
+ */
+export const BACKDROP_GRID_COLOR = 'rgba(85,131,27,0.5)'
+export const BACKDROP_WASH_COLOR = 'rgba(85,131,27,0.06)'
+
+/**
  * Resolve the icon-tile class for a popup header. `iconGradient` wins over
  * `variant` whenever it points at a real class (any value other than 'none').
  */

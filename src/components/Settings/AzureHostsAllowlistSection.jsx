@@ -4,6 +4,7 @@ import {
   Server as ServerIcon, AlertCircle, CheckCircle2, FileCode,
 } from 'lucide-react'
 import { SpinnerIcon } from '../ui/Spinner'
+import { Input } from '../ui/form'
 import { getCsrfToken } from '../../utils/api'
 import { formatUserError } from '../../utils/errors'
 import { useToast } from '../../hooks/useToast'
@@ -334,25 +335,26 @@ function AddHostForm({ onAdded }) {
       <div className="grid grid-cols-1 sm:grid-cols-[2fr_3fr_auto] gap-2">
         <div>
           <label htmlFor={`${formId}-pattern`} className="sr-only">Host pattern</label>
-          <input
+          <Input
             id={`${formId}-pattern`}
             type="text"
+            size="sm"
             value={pattern}
             onChange={(e) => setPattern(e.target.value)}
             placeholder="tfs.company.com  or  *.tfs.company.com"
-            className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 font-mono"
+            className="font-mono"
             required
           />
         </div>
         <div>
           <label htmlFor={`${formId}-notes`} className="sr-only">Notes (optional)</label>
-          <input
+          <Input
             id={`${formId}-notes`}
             type="text"
+            size="sm"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Notes (optional) — e.g. 'Acme internal TFS'"
-            className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
             maxLength={200}
           />
         </div>

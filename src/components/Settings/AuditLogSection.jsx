@@ -4,6 +4,7 @@ import { Shield, ChevronLeft, ChevronRight, Filter, RefreshCw, Download } from '
 import { API_BASE_URL } from '../../config'
 import { formatDateTime as formatDateTimeBase } from '../../utils/format'
 import { Card } from '../ui/Card'
+import { STICKY_HEAD_SHADOW_CLASS } from '../ui/_variants'
 import { Skeleton } from '../ui/Skeleton'
 import { Button } from '../ui/Button'
 import { Field, Input } from '../ui/form'
@@ -212,7 +213,7 @@ export function AuditLogSection() {
                         className="overflow-y-auto max-h-[420px]"
                     >
                     <table className="w-full text-sm">
-                        <thead className={`sticky top-0 z-10 transition-shadow${elevated ? ' shadow-[0_1px_4px_0_rgba(0,0,0,0.08)]' : ''}`}>
+                        <thead className={`sticky top-0 z-10 transition-shadow${elevated ? ` ${STICKY_HEAD_SHADOW_CLASS}` : ''}`}>
                             <tr className="border-b border-slate-200/70 dark:border-slate-700/50 bg-slate-50/80 dark:bg-slate-800/80">
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Date</th>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Action</th>

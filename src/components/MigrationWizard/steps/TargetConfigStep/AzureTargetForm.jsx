@@ -4,7 +4,7 @@ import { Field, Input, Textarea } from '../../../ui/form'
 import { Spinner } from '../../../ui/Spinner'
 import { formatUserError } from '../../../../utils/errors'
 import { Select } from '../../../ui/Select'
-import { getCsrfToken } from '../../../../utils/api'
+import { azurePost } from '../../../../api/azure'
 
 /**
  * Azure target picker — 4 modes for Azure DevOps source migrations:
@@ -121,16 +121,8 @@ function ExistingProjectForm({ source, onChange }) {
     ;(async () => {
       setLoading(true); setError(null)
       try {
-        const csrfToken = await getCsrfToken().catch(() => null)
-        const res = await fetch('/api/azure/projects', {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json', ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}) },
-          body: JSON.stringify({ host: source.host, org: source.org, pat: source.pat }),
-        })
-        const data = await res.json()
+        const data = await azurePost('/azure/projects', source, { org: source.org })
         if (cancelled) return
-        if (!res.ok) throw new Error(data.error || 'Failed to list projects')
         setProjects(data.projects || [])
       } catch (e) {
         if (!cancelled) setError(formatUserError(e, { fallbackTitle: 'Failed to list projects' }))
@@ -139,7 +131,8 @@ function ExistingProjectForm({ source, onChange }) {
       }
     })()
     return () => { cancelled = true }
-  }, [source.host, source.org, source.pat])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately scoped to the fields azureCredPayload(source) actually reads, not the whole `source` object (which also carries unrelated wizard state that must not re-trigger this fetch).
+  }, [source.host, source.org, source.pat, source.credentialMode, source.savedCredentialId])
 
   return (
     <div className="space-y-3 pt-2">
@@ -181,22 +174,12 @@ function NewProjectForm({ source, onChange }) {
   const createProject = async () => {
     setCreating(true); setError(null); setResult(null)
     try {
-      const csrfToken = await getCsrfToken().catch(() => null)
-      const res = await fetch('/api/azure/projects/create', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json', ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}) },
-        body: JSON.stringify({
-          host: source.host,
-          org: source.org,
-          pat: source.pat,
-          name: source.azureNewProjectName,
-          description: source.azureNewProjectDesc || '',
-          repoName: source.azureTargetRepoName,
-        }),
+      const data = await azurePost('/azure/projects/create', source, {
+        org: source.org,
+        name: source.azureNewProjectName,
+        description: source.azureNewProjectDesc || '',
+        repoName: source.azureTargetRepoName,
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to create project')
       setResult(data)
       onChange({ azureTargetProject: data.project?.name, azureTargetProjectId: data.project?.id })
     } catch (e) {

@@ -3,6 +3,7 @@ import { AlertTriangle } from 'lucide-react'
 import { Modal, ModalFooter } from './Modal'
 import { Button } from './Button'
 import { Kbd } from './Kbd'
+import { Input } from './form'
 
 /**
  * ConfirmModal — danger/warning/info confirmation dialog.
@@ -126,14 +127,14 @@ export function ConfirmModal({
                         Type <span className="font-semibold text-red-600 dark:text-red-400">{requiresInput}</span> to confirm:
                         <span className="ml-1 text-xs font-normal text-slate-500 dark:text-slate-400">(case-sensitive)</span>
                     </label>
-                    <input
+                    <Input
                         id="confirm-input"
                         type="text"
                         value={inputValue}
                         onChange={(e) => { setInputValue(e.target.value); setInputError(''); }}
-                        className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[color:var(--ds-accent-brand)] focus:border-[color:var(--ds-accent-brand)]"
                         placeholder={requiresInput}
                         autoComplete="off"
+                        status={inputError ? 'error' : 'idle'}
                         aria-describedby={inputError ? 'confirm-input-error' : undefined}
                     />
                     {inputError && (

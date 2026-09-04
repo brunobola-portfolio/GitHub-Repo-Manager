@@ -6,6 +6,7 @@ import { clsx } from 'clsx'
 import { formatRelativeTime } from '../../../utils/format'
 import { Tooltip } from '../../ui/Tooltip'
 import { Checkbox } from '../../ui/form'
+import { POPOVER_SURFACE_CLASS } from '../../ui/_variants'
 
 const SIGNAL_LABELS = {
     review_requested: 'review requested',
@@ -85,7 +86,7 @@ export function RepoRow({ repo, onAction, selected = false, onSelectionChange })
                     side="bottom"
                     align="end"
                     sideOffset={4}
-                    className="z-[var(--ds-z-popover)] min-w-[180px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 shadow-xl"
+                    className={`z-[var(--ds-z-popover)] min-w-[180px] p-1 ${POPOVER_SURFACE_CLASS}`}
                 >
                     <MenuItem
                         icon={<Copy className="w-3.5 h-3.5" />}

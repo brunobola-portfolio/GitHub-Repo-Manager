@@ -112,11 +112,17 @@ function PromptEditor({ entry, onSaved, onReset }) {
     const [resetting, setResetting] = useState(false)
     const [showResetConfirm, setShowResetConfirm] = useState(false)
 
-    useEffect(() => {
-        // External changes to the entry (after save) refresh the buffer.
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- sync local edit buffer with parent's persisted value
+    // Resync the buffer when the PERSISTED value changes externally (after
+    // save/reset) — computed during render, not via a follow-up effect, so a
+    // save doesn't flash the pre-save draft for one frame before correcting
+    // itself. A full remount-by-key (the alternative fix) was rejected here:
+    // this component also owns `expanded`/`tab`, and a remount would collapse
+    // the card the user just saved from — only the buffer should reset.
+    const [committedUserPrompt, setCommittedUserPrompt] = useState(entry.userPrompt || '')
+    if ((entry.userPrompt || '') !== committedUserPrompt) {
+        setCommittedUserPrompt(entry.userPrompt || '')
         setDraft(entry.userPrompt || '')
-    }, [entry.userPrompt, entry.key])
+    }
 
     const trimmed = draft.trim()
     const isDirty = trimmed !== (entry.userPrompt || '').trim()

@@ -2,6 +2,7 @@ import { Command } from 'cmdk'
 import { useEffect, useState } from 'react'
 import { Plus, Loader2 } from 'lucide-react'
 import { Spinner } from '../../ui/Spinner'
+import { EmptyState } from '../../ui/EmptyState'
 import { searchRepos } from '../../../api/workBoardTracking'
 import { useDebounce } from '../../../hooks/useDebounce'
 
@@ -38,13 +39,17 @@ export function AddRepoInput({ onAdd }) {
         <Command
             label="Add repository"
             shouldFilter={false}
-            className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+            /* focus-within (not the child input's own focus:outline) so the
+               ring reads as belonging to the whole composer, matching every
+               other bordered field in the app (F29 — the input used to strip
+               its outline with no replacement at all). */
+            className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 transition-shadow focus-within:ring-2 focus-within:ring-offset-0 focus-within:ring-[color:var(--ds-accent-brand)] dark:focus-within:ring-[color:var(--ds-accent-brand-dark)]"
         >
             <Command.Input
                 value={query}
                 onValueChange={setQuery}
                 placeholder="owner/repo"
-                className="w-full px-3 py-2 text-sm bg-transparent focus:outline-none"
+                className="w-full px-3 py-2 text-sm bg-transparent outline-none"
             />
             {(query || loading) && (
                 <Command.List className="max-h-48 overflow-auto p-1 border-t border-slate-200 dark:border-slate-700">
@@ -79,9 +84,7 @@ export function AddRepoInput({ onAdd }) {
                         </Command.Item>
                     )}
                     {!loading && !hasResults && !looksLikeRepo && query.trim() && (
-                        <div className="px-2 py-1.5 text-xs text-slate-500">
-                            Type owner/repo to add a new repository.
-                        </div>
+                        <EmptyState size="inline" title="Type owner/repo to add a new repository." />
                     )}
                 </Command.List>
             )}

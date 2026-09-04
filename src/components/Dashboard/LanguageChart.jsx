@@ -135,7 +135,11 @@ export function LanguageChart({ data = [], loading }) {
                                 <div
                                     className="grid gap-3"
                                     style={{
-                                        gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                                        // 150px→220px: at 150 a single word like "TypeScript" or
+                                        // "JavaScript" truncated mid-word inside a card with
+                                        // hundreds of px of unused width (U29) — the column
+                                        // needed room, not an ellipsis.
+                                        gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
                                         gridAutoRows: 'minmax(0, auto)'
                                     }}
                                 >
@@ -148,7 +152,7 @@ export function LanguageChart({ data = [], loading }) {
                                                 className="w-4 h-4 rounded-md flex-shrink-0 shadow-sm ring-1 ring-black/5 dark:ring-white/10 transition-colors"
                                                 style={{ backgroundColor: lang.color }}
                                             />
-                                            <span className="text-sm text-slate-700 dark:text-slate-300 font-medium truncate flex-1 min-w-0">
+                                            <span className="text-sm text-slate-700 dark:text-slate-300 font-medium flex-1 min-w-0">
                                                 {lang.name}
                                             </span>
                                             <div className="flex items-center gap-2 text-xs flex-shrink-0">
@@ -173,7 +177,7 @@ export function LanguageChart({ data = [], loading }) {
                                         className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
                                         style={{ backgroundColor: lang.color }}
                                     />
-                                    <span className="text-xs text-slate-700 dark:text-slate-300 font-medium truncate flex-1 min-w-0">
+                                    <span className="text-xs text-slate-700 dark:text-slate-300 font-medium flex-1 min-w-0">
                                         {lang.name}
                                     </span>
                                     <span className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0">

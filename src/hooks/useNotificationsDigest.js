@@ -8,6 +8,45 @@ const EMPTY = {
     items: { reviews: [], issues: [], failed_migrations: [], stale_pinned: [] },
 }
 
+// Demo-mode digest. The dashboard's "Reviews waiting" / "Issues for you" tiles
+// (useYourWork) and the Work Board nav badge (useWorkBoardBadgeCounts) both
+// short-circuit to literal mock counts in mock mode — the seeded backend needs
+// a real GitHub session the demo doesn't have, so a genuine fetch there 401s.
+// This hook used to short-circuit to the always-empty EMPTY digest instead, so
+// the bell said "You're all caught up" right next to those same tiles saying
+// 5 reviews / 3 issues were waiting. reviews/issues below match those counts
+// exactly (same underlying "pending review" / "assigned issue" concept the
+// real digest endpoint aggregates); failed_migrations stays 0 to match the
+// dashboard's own Migration Activity card ("Failed: 0") on the same screen.
+function buildMockDigest() {
+    const hoursAgo = (h) => new Date(Date.now() - h * 60 * 60 * 1000).toISOString()
+    const daysAgo = (d) => new Date(Date.now() - d * 24 * 60 * 60 * 1000).toISOString()
+    return {
+        since: hoursAgo(8),
+        now: new Date().toISOString(),
+        totals: { reviews: 5, issues: 3, failed_migrations: 0, stale_pinned: 2 },
+        items: {
+            // First two mirror the Live Inbox's "Needs my review" entries so the
+            // bell and the dashboard inbox agree on what's actually pending.
+            reviews: [
+                { repo: 'acme/backend', prNumber: 142, title: 'Add rate limiting to /api/auth', since: hoursAgo(2) },
+                { repo: 'acme/auth', prNumber: 98, title: 'Add OAuth refresh-token flow', since: hoursAgo(5) },
+                { repo: 'dev-user/fintech-dashboard', prNumber: 57, title: 'Fix pagination on transactions table', since: hoursAgo(7) },
+            ],
+            issues: [
+                { repo: 'dev-user/fintech-dashboard', issueNumber: 12, title: 'Chart tooltip misaligned on Safari', since: hoursAgo(3) },
+                { repo: 'dev-user/ai-analytics-platform', issueNumber: 7, title: 'Model retraining job times out on large batches', since: hoursAgo(6) },
+                { repo: 'dev-user/auth-service', issueNumber: 31, title: 'Refresh token rotation race on concurrent requests', since: daysAgo(1) },
+            ],
+            failed_migrations: [],
+            stale_pinned: [
+                { repo: 'dev-user/graphql-federation', since: daysAgo(9), lastActivity: daysAgo(9) },
+                { repo: 'dev-user/docs-portal', since: daysAgo(12), lastActivity: daysAgo(12) },
+            ],
+        },
+    }
+}
+
 /**
  * Notifications digest fetcher. Refreshes on:
  *   - mount,
@@ -26,8 +65,11 @@ export function useNotificationsDigest({ enabled = true } = {}) {
     const refresh = useCallback(async () => {
         if (!enabled) return EMPTY
         if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
+            const mock = buildMockDigest()
+            setDigest(mock)
+            setError(null)
             setLoading(false)
-            return EMPTY
+            return mock
         }
         ctrlRef.current?.abort()
         const ctrl = new AbortController()

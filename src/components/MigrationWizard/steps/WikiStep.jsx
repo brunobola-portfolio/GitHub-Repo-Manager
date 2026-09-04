@@ -6,8 +6,7 @@ import { SectionSpinner } from '../../ui/Spinner'
 import { EmptyState } from '../../ui/EmptyState'
 import { Badge } from '../../ui/Badge'
 import { Switch } from '../../ui/form'
-import { getCsrfToken } from '../../../utils/api'
-import { azureCredPayload } from '../../../utils/azureRequestPayload'
+import { azurePost } from '../../../api/azure'
 
 /**
  * WikiStep - Configure wiki migration for the Migration Wizard.
@@ -30,29 +29,18 @@ export default function WikiStep({ wiki, onUpdate, source }) {
       setLoading(true)
       setError('')
       try {
-        const csrfToken = await getCsrfToken().catch(() => null)
-        const res = await fetch('/api/azure/wikis', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-          },
-          body: JSON.stringify({
-            org: source.org,
-            project: source.project,
-            ...azureCredPayload(source),
-          }),
+        const data = await azurePost('/azure/wikis', source, {
+          org: source.org,
+          project: source.project,
         })
-        const data = await res.json()
-        if (res.ok && data.wikis) {
+        if (data.wikis) {
           onUpdate({ wikis: data.wikis })
           setFetched(true)
         } else {
           setError(data.error || 'Failed to load wikis')
         }
-      } catch {
-        setError('Could not reach server')
+      } catch (e) {
+        setError(e.data?.error || e.message || 'Could not reach server')
       } finally {
         setLoading(false)
       }

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { EASE } from '../ui/motion'
 import { Check, X } from 'lucide-react'
 import { Card } from '../ui/Card'
+import { STICKY_HEAD_SHADOW_CLASS } from '../ui/_variants'
 import { useStickyHeaderShadow } from '../../hooks/useStickyHeaderShadow'
 import { useBelowBreakpoint } from '../../hooks/useMediaQuery'
 
@@ -311,7 +312,7 @@ export function FeatureComparison() {
         <table className="w-full min-w-[600px] border-collapse">
           <caption className="sr-only">Feature comparison by plan: Free, Pro and Enterprise</caption>
           {/* Sticky header */}
-          <thead className={`transition-shadow${elevated ? ' shadow-[0_1px_4px_0_rgba(0,0,0,0.08)]' : ''}`}>
+          <thead className={`transition-shadow${elevated ? ` ${STICKY_HEAD_SHADOW_CLASS}` : ''}`}>
             <tr className="border-b border-slate-200/60 dark:border-white/[0.08]">
               <th scope="col" className="sticky top-0 left-0 z-20 w-1/2 px-6 py-5 text-left text-sm font-semibold text-slate-500 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
                 Feature

@@ -5,6 +5,7 @@ import * as Popover from '@radix-ui/react-popover'
 import { clsx } from 'clsx'
 import { Spinner } from '../../ui/Spinner'
 import { Textarea } from '../../ui/form'
+import { POPOVER_SURFACE_CLASS } from '../../ui/_variants'
 import { getCsrfToken } from '../../../utils/api'
 
 // Module-level cache shared across every PingAuthorPopover instance
@@ -98,7 +99,7 @@ export function PingAuthorPopover({ cacheKey, requestPayload, onPing, disabled =
                 side="bottom"
                 align="start"
                 avoidCollisions
-                className="z-[var(--ds-z-popover)] w-72 rounded-xl border border-slate-200 bg-white dark:border-white/10 dark:bg-slate-900 p-3 shadow-xl"
+                className={`z-[var(--ds-z-popover)] w-72 p-3 ${POPOVER_SURFACE_CLASS}`}
             >
                 <p className="mb-2 ds-text-meta text-slate-500 dark:text-slate-400">AI draft — edit before sending</p>
                 <Textarea

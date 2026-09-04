@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { Pin, PinOff, ChevronDown, Search } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Input } from '../../ui/form'
+import { EmptyState } from '../../ui/EmptyState'
 
 export function RepoBadge({ repos = [], selectedRepo, isPinned, onSelectRepo, onTogglePin }) {
     const [open, setOpen] = useState(false)
@@ -78,7 +79,7 @@ export function RepoBadge({ repos = [], selectedRepo, isPinned, onSelectRepo, on
                             />
                         </div>
                         {filtered.length === 0 ? (
-                            <div className="px-3 py-4 text-center text-xs text-slate-400">No repos found</div>
+                            <EmptyState size="inline" title="No repos found" />
                         ) : (
                             filtered.map(repo => (
                                 <button

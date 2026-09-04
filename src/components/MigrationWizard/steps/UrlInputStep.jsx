@@ -7,7 +7,8 @@ import { parseAzureUrl } from '../../../utils/azureUrlParser'
 import { Button } from '../../ui/Button'
 import { Spinner } from '../../ui/Spinner'
 import { Field, Input } from '../../ui/form'
-import { getCsrfToken } from '../../../utils/api'
+import { apiCall } from '../../../utils/api'
+import { API_BASE } from '../../../config'
 
 /**
  * UrlInputStep - Git URL entry + authentication for the unified Migration Wizard.
@@ -35,17 +36,11 @@ export default function UrlInputStep({ source, onChange }) {
   const handleValidate = async () => {
     onChange({ urlValidation: 'validating', urlError: '' })
     try {
-      const csrfToken = await getCsrfToken().catch(() => null)
-      const res = await fetch('/api/import/validate-url', {
+      const data = await apiCall(`${API_BASE}/import/validate-url`, {
         method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: source.sourceUrl, credentials: buildCredentials() }),
       })
-      const data = await res.json()
       if (data.valid) {
         const autoName = source.sourceUrl.replace(/\.git$/, '').split('/').pop() || ''
         onChange({ urlValidation: 'valid', targetName: autoName })
@@ -53,7 +48,7 @@ export default function UrlInputStep({ source, onChange }) {
         onChange({ urlValidation: 'invalid', urlError: data.error || 'Cannot access repository' })
       }
     } catch (e) {
-      onChange({ urlValidation: 'invalid', urlError: e.message })
+      onChange({ urlValidation: 'invalid', urlError: e.data?.error || e.message })
     }
   }
 
@@ -69,7 +64,12 @@ export default function UrlInputStep({ source, onChange }) {
   return (
     <div className="space-y-5">
       {/* URL input */}
-      <Field label="Clone URL" htmlFor="source-url">
+      <Field
+        label="Clone URL"
+        htmlFor="source-url"
+        required
+        hint={source.sourceUrl.trim() === '' ? 'Paste the HTTPS clone URL of the repository you want to import — required before you can validate or continue.' : undefined}
+      >
         <Input
           id="source-url"
           type="url"
@@ -160,9 +160,13 @@ export default function UrlInputStep({ source, onChange }) {
         </div>
       )}
 
-      {/* Validate button + status */}
+      {/* Validate button + status. `canValidate` false (empty URL) renders as
+          the shared muted/outline disabled treatment, not a washed-out
+          primary fill — a tinted fill still reads as "the CTA to click"
+          even at 50% opacity, which sent users clicking a button that could
+          never respond (U27). */}
       <div className="flex items-center gap-3">
-        <Button variant="primary" type="button" onClick={handleValidate} disabled={!canValidate}>
+        <Button variant={canValidate ? 'primary' : 'outline'} type="button" onClick={handleValidate} disabled={!canValidate}>
           {source.urlValidation === 'validating' ? (
             <>
               <Spinner size="md" tone="onPrimary" />

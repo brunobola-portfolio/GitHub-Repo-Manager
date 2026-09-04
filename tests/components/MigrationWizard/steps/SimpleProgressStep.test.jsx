@@ -108,8 +108,16 @@ describe('SimpleProgressStep — cancel + honest status rendering', () => {
     })
 
     it('disables the Cancel button while the request is in flight and re-enables it if the request fails', async () => {
+      // apiCall mints its own CSRF token via a separate GET first — resolve
+      // that one immediately so `resolveFetch` below controls only the
+      // actual cancel POST, matching the pre-migration single-fetch shape.
       let resolveFetch
-      global.fetch = vi.fn(() => new Promise((resolve) => { resolveFetch = resolve }))
+      global.fetch = vi.fn((url) => {
+        if (String(url).includes('csrf-token')) {
+          return Promise.resolve({ ok: true, json: async () => ({ token: 'tok' }) })
+        }
+        return new Promise((resolve) => { resolveFetch = resolve })
+      })
 
       const importJobs = {
         jobId: 7,

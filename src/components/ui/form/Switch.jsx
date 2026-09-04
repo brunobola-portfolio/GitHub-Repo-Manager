@@ -10,6 +10,15 @@ import { SPRING } from '../motion'
  * accent tones (indigo / emerald / amber / rose).
  *
  *   <Switch checked={isPrivate} onChange={setIsPrivate} label="Private" />
+ *
+ * The bare form above only uses `label` as the accessible name (no
+ * visible text) — that's why several call sites hand-rolled their own
+ * track/knob to get a visible "label + description on the left, toggle
+ * on the right" row. Pass `showLabel` (or just `description`) to render
+ * that row instead of reaching for a bespoke switch:
+ *
+ *   <Switch checked={enabled} onChange={setEnabled} showLabel
+ *     label="Repo Advisor" description="Opt-in; uses your BYOK provider." />
  */
 const TONE_BG = {
     indigo: 'bg-brand-500',
@@ -24,9 +33,11 @@ export function Switch({
     checked = false,
     onChange,
     label,
+    description,
     disabled = false,
     tone = 'indigo',
     size = 'md',
+    showLabel = false,
 }) {
     const handleToggle = () => {
         if (disabled) return
@@ -39,16 +50,16 @@ export function Switch({
     const knobOffX = 2
     const accentBg = TONE_BG[tone] || TONE_BG.indigo
 
-    return (
+    const toggle = (
         <button
             type="button"
             role="switch"
             aria-checked={checked}
-            aria-label={label}
+            aria-label={showLabel ? undefined : label}
             disabled={disabled}
             onClick={handleToggle}
             className={`
-                relative inline-flex items-center rounded-full
+                relative inline-flex items-center rounded-full shrink-0
                 ${track}
                 ${checked ? accentBg : 'bg-slate-300 dark:bg-slate-700'}
                 transition-colors duration-200
@@ -68,5 +79,25 @@ export function Switch({
                 transition={KNOB_SPRING}
             />
         </button>
+    )
+
+    if (!showLabel) return toggle
+
+    return (
+        <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+                {label && (
+                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        {label}
+                    </div>
+                )}
+                {description && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {description}
+                    </p>
+                )}
+            </div>
+            {toggle}
+        </div>
     )
 }

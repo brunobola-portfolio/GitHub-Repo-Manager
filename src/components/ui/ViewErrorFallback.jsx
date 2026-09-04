@@ -22,10 +22,11 @@
  *               react (or reload as a last resort).
  *  - variant  : 'inline' | 'modal'. Defaults to 'inline'.
  */
-import { AlertTriangle, RotateCcw, Home, X } from 'lucide-react'
+import { AlertTriangle, RotateCcw, Home } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 import { Heading } from './Heading'
+import { CloseButton } from './CloseButton'
 import { SPRING } from './motion'
 
 export function ViewErrorFallback({
@@ -134,14 +135,12 @@ export function ViewErrorFallback({
             onClick={(e) => e.stopPropagation()}
             className="relative max-w-md w-full bg-white dark:bg-slate-900 rounded-2xl shadow-lg ring-1 ring-slate-200/60 dark:ring-slate-700/60 p-7 overflow-hidden"
           >
-            <button
-              type="button"
+            <CloseButton
               onClick={handleGoHome}
-              aria-label="Close"
-              className="absolute top-3 right-3 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors ds-focus-ring"
-            >
-              <X className="w-4 h-4" />
-            </button>
+              size="sm"
+              aria-label="Close error dialog"
+              className="absolute top-3 right-3"
+            />
             <div id="view-error-title" className="sr-only">
               Something went wrong in {viewName}
             </div>

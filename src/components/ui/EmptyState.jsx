@@ -14,6 +14,11 @@ import { listContainer, listItem } from './motion'
  * @param {function} [onAction] - Optional CTA button handler (legacy prop)
  * @param {{ label: string, onClick: function }} [action] - Optional action with label and onClick
  * @param {string} [gradient] - Deprecated, ignored
+ * @param {'default'|'inline'} [size] - 'inline' is the compact, no-CTA form
+ *   for dropdown/popover empty states (a preset list with nothing saved yet,
+ *   a search with no matches) — the default p-12/20px-icon-tile treatment is
+ *   too heavy at that scale. Renders just an optional small icon + title
+ *   (+ description) at `px-3 py-4`.
  */
 export function EmptyState({
   icon: Icon,
@@ -23,12 +28,28 @@ export function EmptyState({
   onAction,
   action,
   gradient: _gradient,
+  size = 'default',
 }) {
   // Support both legacy (actionLabel/onAction) and new (action) prop shapes
   const resolvedLabel = action?.label || actionLabel
   const resolvedOnClick = action?.onClick || onAction
   const resolvedDisabled = action?.disabled || false
   const resolvedHref = action?.href
+
+  if (size === 'inline') {
+    return (
+      <div data-testid="empty-state" className="px-3 py-4 text-center">
+        {Icon && (
+          <Icon className="w-4 h-4 mx-auto mb-1.5 text-slate-400 dark:text-slate-500" aria-hidden="true" strokeWidth={2} />
+        )}
+        <p className="ds-text-meta text-slate-500 dark:text-slate-400">{title}</p>
+        {description && (
+          <p className="ds-text-meta text-slate-400 dark:text-slate-500 mt-0.5">{description}</p>
+        )}
+      </div>
+    )
+  }
+
   return (
     <motion.div
       data-testid="empty-state"

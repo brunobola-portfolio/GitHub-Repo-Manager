@@ -70,7 +70,12 @@ function getStepsForSourceType(sourceType, workItemsEnabled, wikiEnabled) {
     case 'github':
       return ['sourceType', 'githubSource', 'targetConfig', 'progress', 'summary']
     default:
-      return ['sourceType']
+      // Before the user picks a source, fall back to the git-URL flow's step
+      // list (the wizard's own default entry point — see MigrationWizard's
+      // `wizardTitle`) rather than a single-item list. That keeps the
+      // progress rail present and meaningful on step 1 instead of it
+      // appearing only from step 2 onward (U26).
+      return ['sourceType', 'urlInput', 'targetConfig', 'progress', 'summary']
   }
 }
 

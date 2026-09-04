@@ -193,7 +193,14 @@ export default function MigrationWizard({
   const isProgressOrSummary = currentStep === 'progress' || currentStep === 'summary'
   const isFirstStep = currentStep === 'sourceType'
 
-  const showSidebar = !!source.sourceType
+  // Always true: step 1 ("Choose Source") used to hide the sidebar/rail
+  // entirely because it gated on `source.sourceType`, which isn't set until
+  // the user picks one — so the step where you decide whether to start was
+  // the one step that hid how long the flow takes (U26). `steps` now
+  // defaults to a real 5-item list before a source is chosen (see
+  // useMigrationWizard's getStepsForSourceType), so the rail has something
+  // meaningful to render from the first paint.
+  const showSidebar = true
   const effectiveMaximized = isMobile || isMaximized
 
   // Footer

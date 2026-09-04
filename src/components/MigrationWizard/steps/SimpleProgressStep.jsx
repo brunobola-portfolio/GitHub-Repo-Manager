@@ -7,6 +7,8 @@ import { Spinner, SpinnerIcon } from '../../ui/Spinner'
 import { Button } from '../../ui/Button'
 import { Badge } from '../../ui/Badge'
 import { useToast } from '../../../hooks/useToast'
+import { apiCall } from '../../../utils/api'
+import { API_BASE } from '../../../config'
 
 // Consecutive failed polls (silent `!res.ok` / network errors) before the
 // "Connection lost — retrying" pill appears. A single blip shouldn't alarm
@@ -99,13 +101,12 @@ function StatusBadge({ status }) {
 // url.js, server/routes/import/_shared.js). Throws with a user-facing
 // message on failure so callers can surface it via toast.
 async function cancelImportJob(jobId) {
-  const res = await fetch(`/api/import/${jobId}/cancel`, {
-    method: 'POST',
-    credentials: 'include',
-  })
-  if (!res.ok) {
-    const body = await res.json().catch(() => null)
-    throw new Error(body?.error || body?.message || 'Failed to cancel import')
+  try {
+    // maxRetries: 0 — the user is actively waiting on a "Cancelling..." button;
+    // fail fast and let the toast surface the error rather than retrying silently.
+    await apiCall(`${API_BASE}/import/${jobId}/cancel`, { method: 'POST' }, { maxRetries: 0 })
+  } catch (err) {
+    throw new Error(err.data?.error || err.data?.message || err.message || 'Failed to cancel import')
   }
 }
 
@@ -170,7 +171,7 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
 
     const tick = async () => {
       try {
-        const res = await fetch(`/api/import/status/${importJobs.jobId}`, {
+        const res = await fetch(`${API_BASE}/import/status/${importJobs.jobId}`, {
           credentials: 'include',
           signal: controller.signal,
         })
@@ -235,7 +236,7 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
 
       const tick = async () => {
         try {
-          const res = await fetch(`/api/import/status/${job.jobId}`, {
+          const res = await fetch(`${API_BASE}/import/status/${job.jobId}`, {
             credentials: 'include',
             signal: abortControllers[job.jobId]?.signal,
           })

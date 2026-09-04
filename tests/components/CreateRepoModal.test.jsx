@@ -77,12 +77,26 @@ describe('CreateRepoModal — toast feedback', () => {
  * Fixing one without the other looks like a fix and is not.
  */
 describe('CreateRepoModal — duplicate-name check speaks the server contract', () => {
+    // apiCall's safeParseJson reads response.headers.get('content-type') and
+    // falls back to response.text() — both must be present on the mock Response.
+    const JSON_HEADERS = { get: (k) => (k?.toLowerCase?.() === 'content-type' ? 'application/json' : null) }
     function captureFetch(responseBody) {
         const sent = {}
         global.fetch = vi.fn(async (url, init) => {
+            // apiCall mints its own CSRF token via a separate GET first — answer
+            // it directly so `sent` below ends up capturing the real POST call.
+            if (String(url).includes('csrf-token')) {
+                return { ok: true, status: 200, json: async () => ({ token: 'tok' }), headers: JSON_HEADERS }
+            }
             sent.url = url
             sent.body = init?.body ? JSON.parse(init.body) : undefined
-            return { ok: true, status: 200, json: async () => responseBody }
+            return {
+                ok: true,
+                status: 200,
+                json: async () => responseBody,
+                text: async () => JSON.stringify(responseBody),
+                headers: JSON_HEADERS,
+            }
         })
         return sent
     }

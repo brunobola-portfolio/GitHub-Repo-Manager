@@ -173,11 +173,18 @@ function renderApp() {
 const settle = () =>
     screen.findByRole('heading', { name: /repo manager/i }, { timeout: 5000 })
 
-// Navigate to the repos view via the global `r` shortcut, then wait for the
-// right bulk sidebar (always present in repos when authenticated) to confirm
-// the view switched.
+// Navigate to the repos view via the `g r` navigation chord (bare `r` no
+// longer navigates — `g` is the chord prefix), then wait for the right bulk
+// sidebar (always present in repos when authenticated) to confirm the view
+// switched.
 async function gotoRepos() {
-    await act(async () => { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'r' })) })
+    // Both keys inside one act: the chord window is 800 ms of wall clock, and
+    // a separate act per key let React's flush push the second key past it
+    // under load, which made this guard flaky rather than wrong.
+    await act(async () => {
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'g' }))
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'r' }))
+    })
     await screen.findByTestId('bulk-sidebar', {}, { timeout: 8000 })
 }
 

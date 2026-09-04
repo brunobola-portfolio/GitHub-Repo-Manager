@@ -4,6 +4,17 @@ import { ArrowLeft, ArrowRight, X } from 'lucide-react'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { ONBOARDING_STEPS } from './onboardingSteps'
 import { Button } from '../ui/Button'
+import { ProviderKeyForm } from '../Settings/AIConfig/ProviderKeyForm'
+
+// Form fields (text/password inputs, selects) where Left/Right arrow keys
+// move the text cursor or a native picker, not the tour's steps. Without
+// this the ai-config step's key field would fight the user every time they
+// pressed an arrow key while typing or picking a provider.
+function isEditableTarget(target) {
+    if (!target) return false
+    const tag = target.tagName
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable
+}
 
 /**
  * OnboardingTour — modal carousel for first-run users (steps come from
@@ -19,16 +30,21 @@ export function OnboardingTour({ isOpen, onClose, onNeverShow }) {
     const [stepIndex, setStepIndex] = useState(0)
     const dialogRef = useFocusTrap(isOpen, onClose)
 
-    useEffect(() => {
-        if (isOpen) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setStepIndex(0)
-        }
-    }, [isOpen])
+    // Reset to the first step whenever the tour (re)opens — computed during
+    // render (comparing against the `isOpen` value this render already
+    // accounted for) instead of a follow-up effect, so reopening doesn't
+    // flash whichever step was active when it last closed before correcting
+    // to step 1 on the next paint.
+    const [committedIsOpen, setCommittedIsOpen] = useState(isOpen)
+    if (isOpen !== committedIsOpen) {
+        setCommittedIsOpen(isOpen)
+        if (isOpen) setStepIndex(0)
+    }
 
     useEffect(() => {
         if (!isOpen) return
         const onKey = (e) => {
+            if (isEditableTarget(e.target)) return
             if (e.key === 'ArrowRight') {
                 setStepIndex((i) => Math.min(ONBOARDING_STEPS.length - 1, i + 1))
             } else if (e.key === 'ArrowLeft') {
@@ -71,7 +87,7 @@ export function OnboardingTour({ isOpen, onClose, onNeverShow }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25 }}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-lg p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-[var(--ds-shadow-overlay)]"
+                className={`w-full p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-[var(--ds-shadow-overlay)] ${step.hasForm ? 'max-w-xl' : 'max-w-lg'}`}
             >
                 <div className="flex justify-between items-start mb-6">
                     <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -102,6 +118,11 @@ export function OnboardingTour({ isOpen, onClose, onNeverShow }) {
                         </div>
                         <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100 mb-2">{step.title}</h2>
                         <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">{step.body}</p>
+                        {step.hasForm && (
+                            <div className="mt-5">
+                                <ProviderKeyForm />
+                            </div>
+                        )}
                     </motion.div>
                 </AnimatePresence>
 

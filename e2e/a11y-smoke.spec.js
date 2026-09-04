@@ -242,10 +242,6 @@ const VIEWS = [
     //    Plus ActivityTab repo-name chips (`text-brand-500`, no dark
     //    variant) at 3.94:1 — src/components/Teams/ActivityTab.jsx:145.
     // See the final report for the full axe node dump.
-    knownFailing: {
-      light: 'GATE-NEW-1: TabBar pill inactive-tab text 4.43:1 on tinted ground (TabBar.jsx:13) + ActivityTab date divider 2.51:1 (ActivityTab.jsx:109)',
-      dark: 'GATE-NEW-2: TeamDetails "Back to Teams" resting-state text 4.23:1 in dark (TeamDetails.jsx:187) + ActivityTab repo-name chip text-brand-500 3.94:1 in dark (ActivityTab.jsx:145)',
-    },
     async setup(page) {
       await page.goto('/')
       await expect(page.getByAltText(MOCK_USER.login)).toBeVisible({ timeout: 15000 })

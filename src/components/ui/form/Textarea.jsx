@@ -46,7 +46,7 @@ export const Textarea = forwardRef(function Textarea(
                     'placeholder:text-slate-500 dark:placeholder:text-slate-400',
                     'border outline-none transition-all duration-150 resize-none',
                     'focus:ring-4 focus:shadow-sm',
-                    'disabled:opacity-60 disabled:cursor-not-allowed',
+                    'disabled:opacity-50 disabled:cursor-not-allowed',
                     'px-3.5 py-3',
                     trailing ? 'pr-12' : '',
                     statusClass,

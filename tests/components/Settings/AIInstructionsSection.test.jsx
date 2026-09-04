@@ -89,6 +89,15 @@ describe('AIInstructionsSection', () => {
                 body: JSON.stringify({ prompt: 'Speak like a pirate.' }),
             }))
         })
+
+        // Regression (FE-14): the edit buffer used to resync via a follow-up
+        // effect, which didn't cause data loss but did mean the card's other
+        // local state was a separate concern from the buffer sync entirely.
+        // Assert both survive the save: the card stays expanded (a remount-
+        // via-key fix would have collapsed it) and the editor still shows the
+        // saved text (not blanked or reverted).
+        expect(screen.getByLabelText(/Your prompt/i)).toBeInTheDocument()
+        expect(screen.getByLabelText(/Your prompt/i)).toHaveValue('Speak like a pirate.')
     })
 
     it('clears an override via DELETE and updates the badge to Default', async () => {

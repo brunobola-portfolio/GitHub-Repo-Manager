@@ -2,29 +2,35 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { makeRepo } from './fixtures.js'
-
-// Stub CSRF token fetch so mockFetchImpl only needs to match the AI endpoint.
-vi.mock('../../../../../src/utils/api', () => ({
-    getCsrfToken: vi.fn(async () => 'test-csrf-token'),
-}))
+import { _resetCsrfTokenForTests } from '../../../../../src/utils/api'
 
 const { useAutoFixPlan } = await import('../../../../../src/components/MigrationWizard/steps/RepoSelectStep/useAutoFixPlan.js')
 
+const JSON_HEADERS = { get: (k) => (k?.toLowerCase?.() === 'content-type' ? 'application/json' : null) }
+
 beforeEach(() => {
   global.fetch = vi.fn()
+  _resetCsrfTokenForTests()
 })
 afterEach(() => {
   vi.resetAllMocks()
 })
 
+// The hook now routes through apiCall/fetchWithRetry, which mints its own
+// CSRF token via a real GET /api/auth/csrf-token — mock it alongside every
+// endpoint under test so mockFetchImpl callers don't each need to know that.
 function mockFetchImpl(responses) {
   global.fetch.mockImplementation(async (url) => {
+    if (String(url).includes('csrf-token')) {
+      return { ok: true, status: 200, json: async () => ({ token: 'test-csrf-token' }), headers: JSON_HEADERS }
+    }
     const handler = Object.keys(responses).find((k) => url.includes(k))
     if (!handler) throw new Error(`Unmocked fetch: ${url}`)
     return {
       ok: responses[handler].ok ?? true,
       status: responses[handler].status ?? 200,
       json: async () => responses[handler].body,
+      headers: JSON_HEADERS,
     }
   })
 }

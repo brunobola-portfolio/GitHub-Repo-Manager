@@ -208,10 +208,14 @@ describe('MigrationWizard guard — extraction safety net', () => {
     expect(screen.getByTestId('wp-sidebar')).not.toBeEmptyDOMElement()
   })
 
-  it('omits the sidebar stepper before a source type is chosen', () => {
+  // U26: step 1 used to omit the progress rail entirely (gated on
+  // `source.sourceType`, unset until the user picks one) — the step where
+  // you decide whether to start was the one step hiding how long the flow
+  // takes. It now renders the same rail steps 2+ show.
+  it('renders the sidebar stepper even before a source type is chosen', () => {
     h.wizard = makeWizard({ currentStep: 'sourceType', currentStepIndex: 0, source: { sourceType: '' } })
     render(<MigrationWizard onClose={vi.fn()} />)
-    expect(screen.getByTestId('wp-sidebar')).toBeEmptyDOMElement()
+    expect(screen.getByTestId('wp-sidebar')).not.toBeEmptyDOMElement()
   })
 
   // --- handleStartImport (useWizardNavigation-adjacent) --------------------

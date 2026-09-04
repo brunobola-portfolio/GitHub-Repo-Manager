@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Server, Cloud, Check, AlertCircle, Pencil, ShieldCheck, ShieldAlert } from 'lucide-react'
+import { Input } from '../../../ui/form'
 import { classifyProvider, providerToneClasses, PROVIDERS } from '../../../../utils/azureProvider'
 
 /**
@@ -22,12 +23,18 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(host || '')
 
-  // Reset local draft buffer when the canonical `host` prop changes (paste vs
-  // manual edit). Computing during render would race with the edit mode toggle.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs derived state with prop
+  // Resync the draft buffer when the canonical `host` prop changes externally
+  // (e.g. a URL pasted elsewhere in the wizard auto-detects a server) —
+  // computed during render, comparing against the last `host` this render
+  // already accounted for, rather than through a follow-up effect (which
+  // rendered the STALE draft for one frame first). `startCustomEdit` below
+  // sets `draft` in the same tick as `editing`, with `host` unchanged, so
+  // this check doesn't fire and doesn't clobber it.
+  const [committedHost, setCommittedHost] = useState(host || '')
+  if ((host || '') !== committedHost) {
+    setCommittedHost(host || '')
     setDraft(host || '')
-  }, [host])
+  }
 
   const commit = () => {
     const v = draft.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '')
@@ -54,8 +61,9 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
           Enter your on-premises server hostname (without <code className="px-1 rounded bg-slate-200 dark:bg-slate-700">https://</code>):
         </div>
         <div className="flex items-stretch gap-2">
-          <input
+          <Input
             type="text"
+            size="sm"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
@@ -63,7 +71,7 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
               if (e.key === 'Escape') { e.preventDefault(); setEditing(false) }
             }}
             placeholder="e.g. tfs.company.com  or  tfs.company.com:8080"
-            className="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition"
+            className="flex-1"
             autoFocus
           />
           <button

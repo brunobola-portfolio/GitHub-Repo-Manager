@@ -17,6 +17,15 @@ import { twMerge } from 'tailwind-merge'
  *  - tone?:           'indigo'|'emerald'         Focus accent. Some flows
  *                                                 (Create / Confirm) use the
  *                                                 emerald CTA family.
+ *  - bare?:           boolean                    Drop the surface (bg/border/
+ *                                                 ring/radius) and keep only
+ *                                                 typography + padding. For a
+ *                                                 combobox that supplies its
+ *                                                 own outer chrome (a listbox
+ *                                                 wrapper, a dropdown shell) —
+ *                                                 the input still needs Input's
+ *                                                 sizing/placeholder/disabled
+ *                                                 rules, just not a second box.
  */
 export const Input = forwardRef(function Input(
     {
@@ -26,6 +35,7 @@ export const Input = forwardRef(function Input(
         status = 'idle',
         size = 'md',
         tone = 'indigo',
+        bare = false,
         id: idProp,
         ...rest
     },
@@ -66,17 +76,20 @@ export const Input = forwardRef(function Input(
                 ref={ref}
                 id={id}
                 className={twMerge(
-                    'block w-full rounded-xl font-medium',
-                    'bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm',
+                    'block w-full font-medium',
                     'text-slate-900 dark:text-slate-100',
                     'placeholder:text-slate-500 dark:placeholder:text-slate-400',
-                    'border outline-none transition-all duration-150',
-                    'focus:ring-4 focus:shadow-sm',
-                    'disabled:opacity-60 disabled:cursor-not-allowed',
+                    'outline-none transition-all duration-150',
+                    'disabled:opacity-50 disabled:cursor-not-allowed',
+                    bare
+                        ? 'bg-transparent border-0 focus:ring-0'
+                        : twMerge(
+                            'rounded-xl bg-white/80 dark:bg-slate-900/60 backdrop-blur-sm border focus:ring-4 focus:shadow-sm',
+                            statusClass,
+                        ),
                     sizeClass,
                     padLeft,
                     padRight,
-                    statusClass,
                     className,
                 )}
                 aria-invalid={status === 'error' || undefined}

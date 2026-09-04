@@ -23,6 +23,14 @@ const VARIANTS_REDUCED = {
 /**
  * InsightCard — shared card used inside modals for a consistent look.
  *
+ * Geometry is deliberately identical to Card.jsx — same radius token
+ * (--ds-radius-lg) and same shadow token (--ds-shadow-sm). The ONLY
+ * difference between the two is tone: Card is neutral (bg-white/slate-900,
+ * a hairline border), InsightCard is tinted (a soft ring + tone-coloured
+ * background via TONE_CLASSES). Keeping the geometry in lock-step means a
+ * Card and an InsightCard can sit in the same column without their corners
+ * visibly disagreeing (F20).
+ *
  * - Tones: default, info, success, warning, danger, ai
  * - Hover: ds-hover-lift (opt-out with hover={false})
  * - Animates in on mount with its own `hidden → visible` variants. When
@@ -47,7 +55,7 @@ export function InsightCard({
       initial="hidden"
       animate="visible"
       variants={reduced ? VARIANTS_REDUCED : VARIANTS}
-      className={`rounded-xl p-4 ring-1 ${toneClass} ${hoverClass} ${className}`}
+      className={`rounded-[var(--ds-radius-lg)] p-4 ring-1 shadow-[var(--ds-shadow-sm)] ${toneClass} ${hoverClass} ${className}`}
       {...rest}
     >
       {children}

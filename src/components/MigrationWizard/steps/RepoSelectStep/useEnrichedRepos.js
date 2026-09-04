@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { getCsrfToken, apiCall } from '../../../../utils/api'
-import { azureCredPayload } from '../../../../utils/azureRequestPayload'
+import { apiCall } from '../../../../utils/api'
+import { API_BASE } from '../../../../config'
+import { azurePost } from '../../../../api/azure'
 
 /**
  * Orchestrates the Select step's data lifecycle:
@@ -31,19 +32,11 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
       setLoading(true)
       setError('')
       try {
-        const csrfToken = await getCsrfToken().catch(() => null)
-        const csrfHeaders = csrfToken ? { 'X-CSRF-Token': csrfToken } : {}
-        const res = await fetch('/api/azure/repos', {
-          method: 'POST', credentials: 'include',
-          headers: { 'Content-Type': 'application/json', ...csrfHeaders },
-          body: JSON.stringify({
-            org: source.org,
-            project: source.project,
-            ...azureCredPayload(source),
-          }),
+        const data = await azurePost('/azure/repos', source, {
+          org: source.org,
+          project: source.project,
         })
-        const data = await res.json()
-        if (!res.ok || !data.repos) {
+        if (!data.repos) {
           if (!cancelled) setError(data.error || 'Failed to load repositories')
           return
         }
@@ -65,15 +58,9 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
         let tfvcMapped = []
         if (isTfvc) {
           try {
-            const tfvcRes = await fetch('/api/azure/tfvc/items', {
-              method: 'POST', credentials: 'include',
-              headers: { 'Content-Type': 'application/json', ...csrfHeaders },
-              body: JSON.stringify({
-                org: source.org, project: source.project,
-                ...azureCredPayload(source),
-              }),
+            const tfvcData = await azurePost('/azure/tfvc/items', source, {
+              org: source.org, project: source.project,
             })
-            const tfvcData = await tfvcRes.json()
             const items = (tfvcData.items || []).filter((i) => i.isFolder)
             tfvcMapped = items.map((item) => ({
               id: item.path, name: item.path.split('/').pop(),
@@ -91,8 +78,8 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
         if (cancelled) return
         onSetRepos([...tfvcMapped, ...gitMapped])
         setFetched(true)
-      } catch {
-        if (!cancelled) setError('Could not reach server. Check your connection.')
+      } catch (e) {
+        if (!cancelled) setError(e.data?.error || 'Could not reach server. Check your connection.')
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -111,29 +98,15 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
     if (!needsEnrichment) return
 
     let cancelled = false
-    const payload = {
+    const extra = {
       org: source.org, project: source.project,
-      ...azureCredPayload(source),
       repos: gitRepos.map((r) => ({ id: r.id, defaultBranch: r.defaultBranch })),
     }
     setEnriching(true)
     ;(async () => {
-      const csrfToken = await getCsrfToken().catch(() => null)
-      const headers = {
-        'Content-Type': 'application/json',
-        ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-      }
       const [activityRes, lfsRes] = await Promise.allSettled([
-        fetch('/api/azure/repos/activity', {
-          method: 'POST', credentials: 'include',
-          headers,
-          body: JSON.stringify(payload),
-        }).then((r) => r.json()),
-        fetch('/api/azure/repos/lfs-check', {
-          method: 'POST', credentials: 'include',
-          headers,
-          body: JSON.stringify(payload),
-        }).then((r) => r.json()),
+        azurePost('/azure/repos/activity', source, extra),
+        azurePost('/azure/repos/lfs-check', source, extra),
       ])
       if (cancelled) return
       const activity = activityRes.status === 'fulfilled' ? (activityRes.value.activity || {}) : {}
@@ -164,7 +137,7 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
       // targetOwner is sent only when truthy; the server resolves to the
       // authenticated user's GitHub login when omitted (avoids the old bug
       // where the Azure org name was sent as a GitHub owner).
-      const data = await apiCall('/api/import/check-duplicates', {
+      const data = await apiCall(`${API_BASE}/import/check-duplicates`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(targetOwner ? { repos: names, targetOwner } : { repos: names }),

@@ -146,10 +146,12 @@ describe('useMigrationWizard', () => {
     expect(result.current.canGoBack).toBe(false)
   })
 
-  it('canGoNext is false at last step', () => {
+  it('step 1 already knows the steps ahead of it', () => {
     const { result } = renderHook(() => useMigrationWizard())
-    // At first step with no sourceType set, steps = ['sourceType'] (length 1), so canGoNext is false
-    expect(result.current.canGoNext).toBe(false)
+    // Before a source is chosen the rail lists the git-URL flow (U26), so the
+    // first step is no longer the only step and the rail renders on step 1.
+    expect(result.current.steps.length).toBeGreaterThan(1)
+    expect(result.current.canGoNext).toBe(true)
   })
 
   it('updateRepo modifies a specific repo', () => {

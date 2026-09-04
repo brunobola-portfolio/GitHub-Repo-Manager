@@ -1,10 +1,10 @@
 import { useId } from 'react'
-import { X } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import { useMobileKeyboardFix } from '../../hooks/useMobileKeyboardFix'
 import { TabBar } from './TabBar'
+import { CloseButton } from './CloseButton'
 import { HEADER_CLASS, MODAL_BACKDROP_CLASS, resolveIconTileClass } from './_variants'
 import { SPRING } from './motion'
 
@@ -203,13 +203,7 @@ export function Modal({
                                     )}
                                 </div>
                                 {showCloseButton && (
-                                    <button
-                                        onClick={onClose}
-                                        className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-all duration-200 flex-shrink-0 ds-focus-ring"
-                                        aria-label="Close modal"
-                                    >
-                                        <X className="w-4 h-4" strokeWidth={2} />
-                                    </button>
+                                    <CloseButton onClick={onClose} size="sm" aria-label="Close modal" />
                                 )}
                             </div>
                             {tabs && tabs.length > 0 && (

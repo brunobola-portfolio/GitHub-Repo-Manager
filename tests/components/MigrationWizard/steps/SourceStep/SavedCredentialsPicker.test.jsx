@@ -2,14 +2,20 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { render, screen, cleanup, waitFor, fireEvent } from '@testing-library/react'
 import SavedCredentialsPicker from '@/components/MigrationWizard/steps/SourceStep/SavedCredentialsPicker'
 
+// apiCall's safeParseJson reads response.headers.get('content-type') and
+// falls back to response.text() — both must be present on the mock Response.
+const JSON_HEADERS = { get: (k) => (k?.toLowerCase?.() === 'content-type' ? 'application/json' : null) }
+const CREDS_BODY = {
+    items: [
+        { id: 'c1', label: 'Prod token', org: 'acme', prefix: 'ghp_aaa', lastUsedAt: null },
+        { id: 'c2', label: 'Personal token', org: null, prefix: 'ghp_bbb', lastUsedAt: null },
+    ],
+}
 const CREDS_RESPONSE = {
     ok: true,
-    json: async () => ({
-        items: [
-            { id: 'c1', label: 'Prod token', org: 'acme', prefix: 'ghp_aaa', lastUsedAt: null },
-            { id: 'c2', label: 'Personal token', org: null, prefix: 'ghp_bbb', lastUsedAt: null },
-        ],
-    }),
+    json: async () => CREDS_BODY,
+    text: async () => JSON.stringify(CREDS_BODY),
+    headers: JSON_HEADERS,
 }
 
 /**

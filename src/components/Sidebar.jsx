@@ -355,7 +355,11 @@ function ActivityListBody({ activity }) {
     }
 
     return (
-        <div className="flex-1 min-h-0 divide-y divide-slate-100 dark:divide-slate-800/60 overflow-y-auto ds-scrollbar">
+        <div className="flex-1 min-h-0 divide-y divide-slate-100 dark:divide-slate-800/60 overflow-y-auto ds-scrollbar pb-16">
+            {/* pb-16: the Repo Advisor FAB floats over this rail's bottom edge
+                on every route (U30) — without reserved space its last rows sit
+                under the FAB. Container-side padding is the fix available here;
+                the FAB's own right-inset lives in AIAssistant.jsx, out of scope. */}
             {activity.map((event) => (
                 event ? <ActivityRow key={event.id} event={event} /> : null
             ))}

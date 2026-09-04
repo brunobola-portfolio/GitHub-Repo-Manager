@@ -3,6 +3,7 @@ import { EASE } from '../ui/motion'
 import { Map } from 'lucide-react'
 import { RoadmapStage } from './RoadmapStage'
 import { Button } from '../ui/Button'
+import { BACKDROP_GRID_COLOR } from '../ui/_variants'
 
 /* ─── Roadmap data ─── */
 const STAGES = [
@@ -82,7 +83,7 @@ export function RoadmapPage({ onNavigatePricing } = {}) {
         <div
           className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04]"
           style={{
-            backgroundImage: 'linear-gradient(rgba(16,185,129,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,0.5) 1px, transparent 1px)',
+            backgroundImage: `linear-gradient(${BACKDROP_GRID_COLOR} 1px, transparent 1px), linear-gradient(90deg, ${BACKDROP_GRID_COLOR} 1px, transparent 1px)`,
             backgroundSize: '48px 48px',
           }}
         />

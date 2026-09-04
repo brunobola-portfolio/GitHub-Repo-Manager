@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo, useId } from 'react'
 import { ChevronDown, Check, Search } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Skeleton } from './Skeleton'
+import { POPOVER_SURFACE_CLASS } from './_variants'
 
 /**
  * Custom Select Component with sections, badges, search, skeleton, and footer.
@@ -335,14 +336,7 @@ export function Select({
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute z-[var(--ds-z-popover)] w-full mt-2
-                            bg-white/95 dark:bg-slate-900/95
-                            backdrop-blur-md
-                            border border-slate-200/80 dark:border-slate-700/60
-                            ring-1 ring-black/[0.04] dark:ring-white/10
-                            rounded-2xl
-                            shadow-2xl shadow-slate-900/15 dark:shadow-black/60
-                            overflow-hidden"
+                        className={`absolute z-[var(--ds-z-popover)] w-full mt-2 overflow-hidden ${POPOVER_SURFACE_CLASS}`}
                     >
                         {/* Search input */}
                         {searchable && (

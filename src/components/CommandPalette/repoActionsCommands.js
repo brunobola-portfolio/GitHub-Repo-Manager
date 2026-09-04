@@ -1,56 +1,29 @@
 /**
- * Adapter — converts the cross-surface action registry
- * (`src/actions/repoActions.js` → `buildRepoActionCommands`) into the cmdk
- * palette item shape used elsewhere in this folder.
+ * Adapter — the command palette's "Repo Actions" group entry point.
  *
- * Why an adapter and not a direct registry consumption: the registry returns
- * `{ id, label, description, run }` items already, but the palette renders
- * via cmdk + `runContextCommand` switch on `kind`. Adding `kind: 'run'` to
- * that switch + this builder keeps registry items rendering consistently
- * alongside the existing event/copy/open-external commands.
+ * Emits ONE item per repo (a picker), not the old action × repo cartesian
+ * product. Selecting a repo pushes CommandPalette's second-level "scoped"
+ * mode, whose items enumerate the FULL, uncapped action list for that one
+ * repo via `buildRepoActionCommands` from the registry
+ * (`src/actions/repoActions.js`) — see CommandPalette.jsx's `repoActionMode`
+ * state.
  *
- * Limit reposLimit to keep the palette palatable — the registry would
- * otherwise emit one item per (action × repo) which scales O(N×M) with
- * repo count.
+ * The old shape (one item per action × repo, capped at `reposLimit` repos
+ * to keep the combinatorics sane) could only ever reach the first few
+ * repos' worth of actions. A picker scales to as many repos as the palette
+ * already shows elsewhere — the caller passes `displayRepos`, capped to 10
+ * the same way "Your Repositories" is — and the per-repo drill-down itself
+ * has no cap at all, since it is bounded by the action registry (~20
+ * entries), not by repo count.
  */
-import { buildRepoActionCommands, repoActions } from '../../actions/repoActions'
-
-const ICON_KEY_BY_ACTION = {
-    open_detail: 'ExternalLink',
-    open_repo_settings: 'Settings',
-    open_on_github: 'ExternalLink',
-    migration_history: 'Clock',
-    community_health: 'ShieldAlert',
-    fix_community_health: 'ShieldAlert',
-    copy_clone_https: 'Copy',
-    copy_clone_ssh: 'Copy',
-    copy_clone_gh: 'Copy',
+export function buildRepoActionsCommands(repos) {
+    if (!Array.isArray(repos) || repos.length === 0) return []
+    return repos.map((repo) => ({
+        id: `repo-actions-picker::${repo.id}`,
+        label: repo.full_name,
+        searchValue: `Repo actions ${repo.full_name}`,
+        icon: 'GitFork',
+        kind: 'drill',
+        repo,
+    }))
 }
-
-/**
- * @param {Array} repos          subset of repos to enumerate (callers usually
- *                               pass the top displayRepos to bound work)
- * @param {Object} ctx           result of useRepoActionContext()
- * @param {Object} [opts]
- * @param {number} [opts.reposLimit=3]   hard cap on repos enumerated
- * @returns {Array} palette items: { id, label, searchValue, icon, kind: 'run', run }
- */
-export function buildRepoActionsCommands(repos, ctx, { reposLimit = 3 } = {}) {
-    if (!Array.isArray(repos) || repos.length === 0 || !ctx) return []
-    const sliced = repos.slice(0, reposLimit)
-    const raw = buildRepoActionCommands(sliced, ctx)
-    return raw.map((item) => {
-        const actionId = item.id.split('::')[0]
-        return {
-            id: item.id,
-            label: item.label,
-            searchValue: item.label,
-            icon: ICON_KEY_BY_ACTION[actionId] ?? null,
-            kind: 'run',
-            run: item.run,
-        }
-    })
-}
-
-// Re-export so callers can import both from the same module.
-export { repoActions }

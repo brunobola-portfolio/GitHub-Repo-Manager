@@ -18,7 +18,9 @@ describe('WorkBoard — mobile parity (slice 5 rows 10+11)', () => {
     it('KpiRow stacks single-column at < sm and widens to 2 / 4 at sm / md', () => {
         const source = readFileSync('src/components/WorkBoard/KpiRow.jsx', 'utf8')
         // The grid container must include the sub-sm 1-column layout.
-        expect(source).toMatch(/grid-cols-1\s+sm:grid-cols-2\s+md:grid-cols-4/)
+        // 2x2 below 640px (U24): one KPI per screen had pushed the tab strip
+        // and the list itself four screens below the fold on a phone.
+        expect(source).toMatch(/grid-cols-2\s+md:grid-cols-4/)
     })
 
     it('AISummaryCard breaks to flex-col below sm so the gauge stacks above the content', () => {

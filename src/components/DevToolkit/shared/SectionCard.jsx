@@ -6,6 +6,7 @@ import { AnimatedCopyIcon } from '../../ui/AnimatedCopyIcon'
 import { RefinementChips } from './RefinementChips'
 import { Card } from '../../ui/Card'
 import { Tooltip } from '../../ui/Tooltip'
+import { EmptyState } from '../../ui/EmptyState'
 
 export function SectionCard({ title, content, onContentChange, chips, onRefine, refining, loading }) {
     const [editing, setEditing] = useState(false)
@@ -55,10 +56,12 @@ export function SectionCard({ title, content, onContentChange, chips, onRefine, 
                         className="w-full min-h-[60px] bg-transparent text-sm text-slate-700 dark:text-slate-300 resize-y outline-none font-mono"
                         autoFocus
                     />
-                ) : (
+                ) : content ? (
                     <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap font-mono leading-relaxed">
-                        {content || <span className="text-slate-400 italic">No content generated</span>}
+                        {content}
                     </div>
+                ) : (
+                    <EmptyState size="inline" title="No content generated" />
                 )}
             </div>
             {chips && chips.length > 0 && (

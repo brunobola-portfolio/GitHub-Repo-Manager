@@ -1,6 +1,7 @@
 import { Sparkles } from 'lucide-react'
 import { InsightCard } from '../../../ui/InsightCard'
 import { Select } from '../../../ui/Select'
+import { Switch } from '../../../ui/form'
 import { useTrackedRepos } from '../../../../hooks/useTrackedRepos'
 
 const CAP_OPTIONS = [
@@ -28,20 +29,11 @@ export function AIAssistantToggle() {
                             Natural-language commands and smart suggestions. Opt-in; uses your BYOK provider.
                         </p>
                     </div>
-                    <button
-                        type="button"
-                        role="switch"
-                        aria-checked={enabled}
-                        aria-label="Enable Repo Advisor"
-                        onClick={() => updatePrefs({ ai_assistant_enabled: enabled ? 0 : 1 })}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            enabled ? 'bg-brand-500' : 'bg-slate-300 dark:bg-slate-600'
-                        }`}
-                    >
-                        <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                            enabled ? 'translate-x-5' : 'translate-x-0.5'
-                        }`} />
-                    </button>
+                    <Switch
+                        checked={enabled}
+                        onChange={(v) => updatePrefs({ ai_assistant_enabled: v ? 1 : 0 })}
+                        label="Enable Repo Advisor"
+                    />
                 </div>
 
                 {enabled && (

@@ -3,6 +3,8 @@ import { motion } from 'framer-motion'
 import { EASE } from '../../ui/motion'
 import { Cloud, Globe, GitBranch, AlertTriangle, Loader2, Star, ChevronRight } from 'lucide-react'
 import { Spinner } from '../../ui/Spinner'
+import { apiCall } from '../../../utils/api'
+import { API_BASE } from '../../../config'
 
 const SOURCE_TYPES = [
   {
@@ -83,8 +85,7 @@ export default function SourceTypeStep({ source, onChange, onAdvance }) {
 
   useEffect(() => {
     if (MOCK_MODE) return
-    fetch('/api/import/git-status', { credentials: 'include' })
-      .then((r) => r.json())
+    apiCall(`${API_BASE}/import/git-status`)
       .then((data) => setGitAvailable(data.available !== false))
       .catch(() => setGitAvailable(false))
   }, [])

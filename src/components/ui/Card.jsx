@@ -5,6 +5,12 @@ import { twMerge } from 'tailwind-merge'
 // design-system.css). The `shadow-slate-200/40` this replaces tinted the shadow
 // slate-200 at 40%, i.e. the colour of the slate-50 page it falls on: measured
 // 1.07:1 against the page, which is why light mode had no elevation at all.
+//
+// Card = neutral (this file). InsightCard (./InsightCard.jsx) = tinted. Both
+// share the same radius token (--ds-radius-lg) and draw their shadow from
+// this same --ds-shadow-* scale (InsightCard uses the lighter `sm` step,
+// appropriate to its denser, more-numerous-per-screen usage) so geometry
+// never drifts between them — tone is the only intended difference (F20).
 const SHADOW_CLASS = {
     lg: 'shadow-[var(--ds-shadow-lg)]',
     sm: 'shadow-[var(--ds-shadow-sm)]',

@@ -15,6 +15,7 @@ import { Eye, RotateCw, CheckCircle2, Inbox } from 'lucide-react'
 import { Badge } from '../ui/Badge'
 import { Card } from '../ui/Card'
 import { EmptyState } from '../ui/EmptyState'
+import { STICKY_HEAD_SHADOW_CLASS } from '../ui/_variants'
 import { useStickyHeaderShadow } from '../../hooks/useStickyHeaderShadow'
 import { formatTimestamp } from '../../utils/format'
 
@@ -61,7 +62,7 @@ export function DLQTable({
                 className="overflow-x-auto overflow-y-auto max-h-[480px]"
             >
             <table className="w-full text-sm">
-                <thead className={`sticky top-0 z-10 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700 transition-shadow${elevated ? ' shadow-[0_1px_4px_0_rgba(0,0,0,0.08)]' : ''}`}>
+                <thead className={`sticky top-0 z-10 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700 transition-shadow${elevated ? ` ${STICKY_HEAD_SHADOW_CLASS}` : ''}`}>
                     <tr className="text-left text-slate-500 dark:text-slate-400 uppercase ds-text-meta tracking-wider">
                         <th className="px-4 py-3 font-semibold">ID</th>
                         {kind === 'email' ? (

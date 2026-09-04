@@ -167,8 +167,18 @@ export function useOrgs(user) {
         if (!isLoggedIn) return
 
         if (justLoggedIn) {
+            // `user` gates the real fetch (no session yet ⇒ no point calling
+            // /orgs), but in mock mode this effect's first run fires before
+            // useAuth's mock-user effect has committed — `user` is still null
+            // in this closure even though `mocksEnabled` is already true. That
+            // race used to skip fetchOrgs() here, and since `wasLoggedInRef`
+            // flips to true in the same tick, the next run (once `user` does
+            // land) takes the "org switch" branch below and never retries it —
+            // orgs stayed [] for the rest of the session. fetchOrgs() itself
+            // already no-ops safely without a session in real mode, so gating
+            // on `mocksEnabled` too costs nothing there.
             Promise.resolve().then(() => {
-                if (user) fetchOrgs()
+                if (user || mocksEnabled) fetchOrgs()
                 fetchStats()
             })
             return

@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import { SpinnerIcon } from '../ui/Spinner'
 import AllowlistFixPanel from '../ui/AllowlistFixPanel'
-import { Checkbox } from '../ui/form'
+import { Checkbox, Input } from '../ui/form'
 import { getCsrfToken } from '../../utils/api'
 import { formatUserError } from '../../utils/errors'
 import { useHostAllowlist } from '../../hooks/useHostAllowlist'
@@ -429,26 +429,25 @@ function AddCredentialForm({ onClose, onCreated }) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Name (for your reference)" htmlFor={ids.label}>
-          <input
+          <Input
             id={ids.label}
             type="text"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="e.g. Trigenius TFS · main"
-            className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
             maxLength={60}
             required
           />
         </Field>
 
         <Field label="Host (without https://)" htmlFor={ids.host}>
-          <input
+          <Input
             id={ids.host}
             type="text"
             value={host}
             onChange={(e) => setHost(e.target.value)}
             placeholder="dev.azure.com  or  tfs.company.com"
-            className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 font-mono"
+            className="font-mono"
             required
           />
           {host && (
@@ -463,13 +462,13 @@ function AddCredentialForm({ onClose, onCreated }) {
         </Field>
 
         <Field label="Organization / Collection (optional)" htmlFor={ids.org}>
-          <input
+          <Input
             id={ids.org}
             type="text"
             value={org}
             onChange={(e) => setOrg(e.target.value)}
             placeholder="e.g. Trigenius  or  tfs/DefaultCollection"
-            className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 font-mono"
+            className="font-mono"
           />
           <p className="ds-text-micro text-slate-500 mt-1">Enables the "Test" button and auto-match in the wizard.</p>
         </Field>
@@ -509,26 +508,26 @@ function AddCredentialForm({ onClose, onCreated }) {
       </div>
 
       <Field label="Personal Access Token" htmlFor={ids.pat}>
-        <div className="relative">
-          <input
-            id={ids.pat}
-            type={showPat ? 'text' : 'password'}
-            value={pat}
-            onChange={(e) => setPat(e.target.value)}
-            placeholder="Paste the PAT generated on the server here"
-            className="w-full px-3 py-2 pr-10 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 font-mono"
-            required
-          />
-          <button
-            type="button"
-            onClick={() => setShowPat((v) => !v)}
-            aria-label={showPat ? 'Hide token' : 'Show token'}
-            aria-pressed={showPat}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
-          >
-            {showPat ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-          </button>
-        </div>
+        <Input
+          id={ids.pat}
+          type={showPat ? 'text' : 'password'}
+          value={pat}
+          onChange={(e) => setPat(e.target.value)}
+          placeholder="Paste the PAT generated on the server here"
+          className="font-mono"
+          required
+          trailing={
+            <button
+              type="button"
+              onClick={() => setShowPat((v) => !v)}
+              aria-label={showPat ? 'Hide token' : 'Show token'}
+              aria-pressed={showPat}
+              className="p-1 text-slate-400 hover:text-slate-600"
+            >
+              {showPat ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          }
+        />
         {patUrl && (
           <a
             href={patUrl}

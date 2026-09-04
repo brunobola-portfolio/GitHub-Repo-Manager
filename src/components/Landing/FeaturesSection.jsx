@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { EASE } from '../ui/motion'
 import { Brain, Search, GitBranch, Users, FileText, LayoutDashboard } from 'lucide-react'
+import { BACKDROP_WASH_COLOR } from '../ui/_variants'
 
 const features = [
   {
@@ -97,7 +98,7 @@ export function FeaturesSection() {
         aria-hidden="true"
         style={{
           background:
-            'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(85,131,27,0.05) 0%, transparent 70%)',
+            `radial-gradient(ellipse 80% 50% at 50% 0%, ${BACKDROP_WASH_COLOR} 0%, transparent 70%)`,
         }}
       />
 

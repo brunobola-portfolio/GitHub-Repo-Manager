@@ -8,8 +8,7 @@ import { Drawer } from '../../../ui/Drawer'
 import { Tooltip } from '../../../ui/Tooltip'
 import { RepoMetaBadges } from '../../ui/repo/RepoMetaBadges'
 import { RepoRiskReport } from '../../ui/repo/RepoRiskReport'
-import { getCsrfToken } from '../../../../utils/api'
-import { azureCredPayload } from '../../../../utils/azureRequestPayload'
+import { azurePost } from '../../../../api/azure'
 
 // Sanitize schema for README previews: defaults + the handful of layout
 // attributes GitHub/Azure READMEs habitually use (alignment, image sizing).
@@ -50,35 +49,19 @@ export function RepoDetailPanel({ repo, source, onClose, onPrev, onNext, onRiskA
     // stay hidden because every section is gated on `empty`.
     if (empty) return
     let cancelled = false
-    const payload = {
-      org: source.org, project: source.project, repoId: repo.id, defaultBranch: repo.defaultBranch,
-      ...azureCredPayload(source),
-    }
+    const extra = { org: source.org, project: source.project, repoId: repo.id, defaultBranch: repo.defaultBranch }
     ;(async () => {
-      const csrfToken = await getCsrfToken().catch(() => null)
+      // Yield a microtask first (keeps setState out of the synchronous effect
+      // body) so switching repos shows fresh skeletons.
+      await Promise.resolve()
       if (cancelled) return
-      // Reset to the loading state after the first await (keeps setState out of
-      // the synchronous effect body) so switching repos shows fresh skeletons.
       setStats(null)
       setReadme(null)
       setActivity(null)
-      const headers = {
-        'Content-Type': 'application/json',
-        ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-      }
       const [statsRes, readmeRes, activityRes] = await Promise.all([
-        fetch('/api/azure/repos/full-stats', {
-          method: 'POST', credentials: 'include', headers,
-          body: JSON.stringify(payload),
-        }).then((r) => r.ok ? r.json() : null).catch(() => null),
-        fetch('/api/azure/repos/readme', {
-          method: 'POST', credentials: 'include', headers,
-          body: JSON.stringify(payload),
-        }).then((r) => r.ok ? r.json() : null).catch(() => null),
-        fetch('/api/azure/repos/commit-activity', {
-          method: 'POST', credentials: 'include', headers,
-          body: JSON.stringify({ ...payload, months: 12 }),
-        }).then((r) => r.ok ? r.json() : null).catch(() => null),
+        azurePost('/azure/repos/full-stats', source, extra).catch(() => null),
+        azurePost('/azure/repos/readme', source, extra).catch(() => null),
+        azurePost('/azure/repos/commit-activity', source, { ...extra, months: 12 }).catch(() => null),
       ])
       if (cancelled) return
       setStats(statsRes)

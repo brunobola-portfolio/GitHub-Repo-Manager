@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-
-vi.mock('@/utils/api', () => ({ getCsrfToken: vi.fn().mockResolvedValue('tok') }))
+import { _resetCsrfTokenForTests } from '@/utils/api'
 
 const { useRepoNameConflicts } = await import('@/components/MigrationWizard/hooks/useRepoNameConflicts')
+
+const JSON_HEADERS = { get: (k) => (k?.toLowerCase?.() === 'content-type' ? 'application/json' : null) }
 
 const base = { source: { org: 'o', targetOrg: 'to' } }
 // Stable references — the re-seed effect deps on `repos`, and in the real
@@ -11,7 +12,10 @@ const base = { source: { org: 'o', targetOrg: 'to' } }
 const NO_REPOS = []
 
 describe('useRepoNameConflicts', () => {
-  beforeEach(() => { global.fetch = vi.fn() })
+  beforeEach(() => {
+    _resetCsrfTokenForTests()
+    global.fetch = vi.fn()
+  })
 
   it('seeds from repo.risk name-conflict flags on mount', () => {
     const repos = [
@@ -62,9 +66,16 @@ describe('useRepoNameConflicts', () => {
   it('GitHub path: omits targetOwner from the POST body when no targetOrg is set (falls back to authed user on server)', async () => {
     // source has no targetOrg — the engine resolves owner from the session user.
     // The hook must NOT substitute source.org as the owner.
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ duplicates: { 'my-repo': false }, duplicateDetails: {} }),
+    global.fetch = vi.fn((url) => {
+      const u = String(url)
+      if (u.includes('csrf-token')) {
+        return Promise.resolve({ ok: true, json: async () => ({ token: 'tok' }), headers: JSON_HEADERS })
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ duplicates: { 'my-repo': false }, duplicateDetails: {} }),
+        headers: JSON_HEADERS,
+      })
     })
     const noOrg = { source: { org: 'azure-org', targetOrg: undefined } }
     const { result } = renderHook(() =>
@@ -73,8 +84,9 @@ describe('useRepoNameConflicts', () => {
     act(() => { result.current.checkConflict('my-repo', 'my-repo') })
     // Wait for the debounced fetch (500ms)
     await act(() => new Promise((r) => setTimeout(r, 600)))
-    expect(global.fetch).toHaveBeenCalledOnce()
-    const body = JSON.parse(global.fetch.mock.calls[0][1].body)
+    expect(global.fetch).toHaveBeenCalledTimes(2) // 1 CSRF token fetch + 1 check-duplicates POST
+    const postCall = global.fetch.mock.calls.find(([callUrl]) => String(callUrl).includes('check-duplicates'))
+    const body = JSON.parse(postCall[1].body)
     // targetOwner must be omitted or undefined — never the Azure org string.
     expect(body.targetOwner).toBeUndefined()
   })

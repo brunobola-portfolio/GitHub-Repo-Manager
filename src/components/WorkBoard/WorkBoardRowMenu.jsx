@@ -6,6 +6,7 @@ import { clsx } from 'clsx'
 import { useTrackedRepos } from '../../hooks/useTrackedRepos'
 import { useToast } from '../../hooks/useToast'
 import { Tooltip } from '../ui/Tooltip'
+import { POPOVER_SURFACE_CLASS } from '../ui/_variants'
 import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
 /**
@@ -101,7 +102,7 @@ export function WorkBoardRowMenu({ repoFullName, itemUrl, itemType, itemNumber }
                 align="end"
                 sideOffset={4}
                 onClick={(e) => e.stopPropagation()}
-                className="z-[var(--ds-z-popover)] min-w-[220px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 shadow-xl"
+                className={`z-[var(--ds-z-popover)] min-w-[220px] p-1 ${POPOVER_SURFACE_CLASS}`}
             >
                 {itemType && Number.isFinite(itemNumber) && (
                     <MenuItem

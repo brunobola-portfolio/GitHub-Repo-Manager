@@ -92,3 +92,52 @@ describe('SettingsModal — cache clear toast', () => {
         })
     })
 })
+
+// Regression (FE-14): the active-tab reset used to run in a follow-up effect
+// keyed on [isOpen, initialTab]. These exercise the render-time replacement:
+// it must still reset on open/reopen and on an initialTab change while open,
+// but must NOT fight a manual tab click when re-invoked with an unchanged
+// initialTab (the bug a naive "always sync from prop" version would have).
+describe('SettingsModal — active tab tracks initialTab across open/reopen', () => {
+    it('honours initialTab on open, and again when initialTab changes while still open', async () => {
+        fetchMock.mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({}) })
+
+        const { rerender } = renderWithProviders(
+            <ThemeProvider>
+                <SettingsModal isOpen={true} onClose={() => {}} initialTab="general" />
+            </ThemeProvider>
+        )
+        expect(await screen.findByRole('tab', { name: /^General$/i })).toHaveAttribute('aria-selected', 'true')
+
+        rerender(
+            <ThemeProvider>
+                <SettingsModal isOpen={true} onClose={() => {}} initialTab="about" />
+            </ThemeProvider>
+        )
+        expect(await screen.findByRole('tab', { name: /^About$/i })).toHaveAttribute('aria-selected', 'true')
+        expect(screen.getByRole('tab', { name: /^General$/i })).toHaveAttribute('aria-selected', 'false')
+    })
+
+    it('does not override a manual tab switch on a re-render with the same initialTab', async () => {
+        fetchMock.mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({}) })
+
+        const { rerender } = renderWithProviders(
+            <ThemeProvider>
+                <SettingsModal isOpen={true} onClose={() => {}} initialTab="general" />
+            </ThemeProvider>
+        )
+        await screen.findByRole('tab', { name: /^General$/i })
+
+        fireEvent.click(screen.getByRole('tab', { name: /^About$/i }))
+        expect(await screen.findByRole('tab', { name: /^About$/i })).toHaveAttribute('aria-selected', 'true')
+
+        // Re-render with the SAME initialTab prop — an unrelated parent
+        // re-render, not a fresh "open with initialTab" request.
+        rerender(
+            <ThemeProvider>
+                <SettingsModal isOpen={true} onClose={() => {}} initialTab="general" />
+            </ThemeProvider>
+        )
+        expect(screen.getByRole('tab', { name: /^About$/i })).toHaveAttribute('aria-selected', 'true')
+    })
+})

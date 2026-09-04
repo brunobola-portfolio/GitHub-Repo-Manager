@@ -148,7 +148,7 @@ export function Header({
                                 label="Dashboard"
                             />
                             <NavButton
-                                active={activeView === 'repos'}
+                                active={activeView === 'repos' || activeView === 'repo-detail'}
                                 onClick={() => onViewChange?.('repos')}
                                 icon={FolderGit2}
                                 label="Repositories"
@@ -220,7 +220,8 @@ export function Header({
                                                 ? `${notif.totalCount} notifications`
                                                 : 'Show notifications'}
                                         aria-expanded={showNotifications}
-                                        aria-haspopup="true"
+                                        aria-haspopup="dialog"
+                                        aria-controls="header-notifications-popover"
                                         active={showNotifications}
                                     >
                                         <Bell className="w-4 h-4" />
@@ -257,8 +258,9 @@ export function Header({
                                                 : 'hover:bg-white/80 dark:hover:bg-slate-700'
                                         }`}
                                         aria-label={showUserMenu ? 'Close user menu' : 'Open user menu'}
-                                        aria-haspopup="true"
+                                        aria-haspopup="menu"
                                         aria-expanded={showUserMenu}
+                                        aria-controls="header-user-menu"
                                     >
                                         <img
                                             src={user.avatar_url || 'https://github.com/ghost.png'}
@@ -506,13 +508,38 @@ function NavButton({ active, onClick, icon, label, badge }) {
     )
 }
 
+// Closes a popover the instant focus lands outside it. useFocusTrap's Tab
+// handling already stops keyboard focus from escaping, but that leaves every
+// other way focus can move on — a click that lands on a non-focusable
+// ancestor (no 'mousedown' bubble to the outside-click listener below it),
+// a link opening in a new tab, programmatic focus from elsewhere — with no
+// listener at all, so the popover would sit open, unfocused, and orphaned.
+function useCloseOnFocusLeave(ref, onClose) {
+    useEffect(() => {
+        const el = ref.current
+        if (!el) return undefined
+        const handleFocusOut = (e) => {
+            if (!el.contains(e.relatedTarget)) onClose()
+        }
+        el.addEventListener('focusout', handleFocusOut)
+        return () => el.removeEventListener('focusout', handleFocusOut)
+    }, [ref, onClose])
+}
+
 // User Dropdown Menu
 function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, onOpenSettings, onMigrationHistory, onClose, isAdmin = false, onOpenAdminDLQ }) {
     // Escape-to-close + focus into the menu on open + focus return to the
     // trigger on close (the menu only mounts while open).
     const trapRef = useFocusTrap(true, onClose)
+    useCloseOnFocusLeave(trapRef, onClose)
     return (
-        <div ref={trapRef} className="absolute right-0 top-full mt-2 w-72 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl shadow-[var(--ds-shadow-overlay)] border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in">
+        <div
+            ref={trapRef}
+            id="header-user-menu"
+            role="menu"
+            aria-label="User menu"
+            className="absolute right-0 top-full mt-2 w-72 ds-surface-card rounded-2xl shadow-[var(--ds-shadow-overlay)] border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in"
+        >
             {/* User Info */}
             <div className="p-4 bg-slate-50/70 dark:bg-slate-700/50 border-b border-slate-200/60 dark:border-slate-700/50">
                 <div className="flex items-center gap-3">
@@ -544,6 +571,7 @@ function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, o
                         orgs.map(org => (
                             <button
                                 type="button"
+                                role="menuitem"
                                 key={org.login}
                                 onClick={() => { onOpenOrgManager?.(org); onClose() }}
                                 aria-label={`Open ${org.login} organization`}
@@ -601,6 +629,7 @@ function MenuButton({ icon, onClick, children, danger }) {
     return (
         <button
             type="button"
+            role="menuitem"
             onClick={onClick}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ds-focus-ring ${danger
                 ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30'
@@ -628,9 +657,17 @@ function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen,
     const sinceLabel = formatRelativeTime(digest.since)
     // Escape-to-close + focus management (panel only mounts while open).
     const trapRef = useFocusTrap(true, onClose)
+    useCloseOnFocusLeave(trapRef, onClose)
 
     return (
-        <div ref={trapRef} className="absolute right-0 top-full mt-2 w-96 max-w-[calc(100vw-1rem)] bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl shadow-[var(--ds-shadow-overlay)] border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in">
+        <div
+            ref={trapRef}
+            id="header-notifications-popover"
+            role="dialog"
+            aria-modal="false"
+            aria-label="Notifications"
+            className="absolute right-0 top-full mt-2 w-96 max-w-[calc(100vw-1rem)] ds-surface-card rounded-2xl shadow-[var(--ds-shadow-overlay)] border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in"
+        >
             <div className="px-4 pt-3.5 pb-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <div className="min-w-0">
                     <p className="ds-text-micro font-semibold uppercase tracking-[0.22em] text-[color:var(--ds-accent-brand)] dark:text-brand-300">

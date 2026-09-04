@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { apiCall } from '../../../utils/api'
+import { API_BASE } from '../../../config'
 import { isAIUnavailable, subscribeAIUnavailable } from '../../../utils/aiAvailability'
 
 // Maps a markAIUnavailable("<status>:<endpoint>") reason into a single short
@@ -26,8 +28,8 @@ export function useAiAvailability() {
 
   useEffect(() => {
     let cancelled = false
-    fetch('/api/config/ai-status', { credentials: 'include' })
-      .then((r) => (r.ok ? r.json() : { configured: false }))
+    apiCall(`${API_BASE}/config/ai-status`)
+      .catch(() => ({ configured: false }))
       .then((d) => {
         if (cancelled) return
         // Honor any session-scoped unavailability (set by a previous wizard step

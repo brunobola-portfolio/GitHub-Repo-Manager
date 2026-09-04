@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { Eye } from 'lucide-react'
 import { Button } from '../../ui/Button'
 import { useStreaming } from '../../../hooks/useStreaming'
@@ -44,21 +44,26 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
         return () => controller.abort()
     }, [selectedRepo, repoOwner])
 
-    useEffect(() => {
-        if (prContext?.number && pulls.length) {
-            const pr = pulls.find(p => p.number === prContext.number)
-            // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs selectedPR when an external prContext arrives
-            if (pr) setSelectedPR(pr)
+    // Auto-select a PR from an external signal — either the toolkit opened
+    // with a specific PR in mind (prContext), or a PR was just created by the
+    // generator (generatedPR). Consolidated from two near-identical effects
+    // into one render-time check (generatedPR keeps precedence when both are
+    // present, matching the old effect declaration order): applies at most
+    // once per distinct target number, so a later manual "Change PR" click
+    // isn't fought, and naturally retries once `pulls` finishes loading if
+    // the target wasn't found in it yet.
+    const externalTargetNumber = useMemo(
+        () => generatedPR?.number ?? prContext?.number ?? null,
+        [generatedPR, prContext],
+    )
+    const [appliedExternalTarget, setAppliedExternalTarget] = useState(null)
+    if (externalTargetNumber && externalTargetNumber !== appliedExternalTarget && pulls.length) {
+        const pr = pulls.find(p => p.number === externalTargetNumber)
+        if (pr) {
+            setAppliedExternalTarget(externalTargetNumber)
+            setSelectedPR(pr)
         }
-    }, [prContext, pulls])
-
-    useEffect(() => {
-        if (generatedPR?.number && pulls.length) {
-            const pr = pulls.find(p => p.number === generatedPR.number)
-            // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs selectedPR when a freshly-created PR appears in the list
-            if (pr) setSelectedPR(pr)
-        }
-    }, [generatedPR, pulls])
+    }
 
     const fetchSummary = useCallback(async (pr) => {
         if (!selectedRepo || !pr) return

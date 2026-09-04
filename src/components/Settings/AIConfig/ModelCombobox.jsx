@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, useId } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { ModelDropdown } from './ModelDropdown'
 import { useFilteredModels } from '../../../hooks/useFilteredModels'
-import { INPUT_CLS } from './constants'
+import { Input } from '../../ui/form'
 
 /**
  * Typeable input + curated model picker.
@@ -104,14 +104,13 @@ export function ModelCombobox({
 
     if (!hasOptions) {
         return (
-            <input
+            <Input
                 id={id}
                 ref={inputRef}
                 type="text"
                 value={value ?? ''}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={placeholder}
-                className={INPUT_CLS}
                 aria-describedby={ariaDescribedBy}
             />
         )
@@ -120,7 +119,7 @@ export function ModelCombobox({
     return (
         <div ref={rootRef} className="relative">
             <div className="relative">
-                <input
+                <Input
                     id={id}
                     ref={inputRef}
                     type="text"
@@ -137,22 +136,23 @@ export function ModelCombobox({
                     onFocus={() => setOpen(true)}
                     onKeyDown={onKeyDown}
                     placeholder={placeholder}
-                    className={`${INPUT_CLS} pr-9`}
                     aria-describedby={ariaDescribedBy}
                     autoComplete="off"
+                    trailing={
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setOpen((v) => !v)
+                                inputRef.current?.focus()
+                            }}
+                            aria-label={open ? 'Close model list' : 'Open model list'}
+                            tabIndex={-1}
+                            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-700/50 transition-colors pointer-events-auto"
+                        >
+                            <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+                        </button>
+                    }
                 />
-                <button
-                    type="button"
-                    onClick={() => {
-                        setOpen((v) => !v)
-                        inputRef.current?.focus()
-                    }}
-                    aria-label={open ? 'Close model list' : 'Open model list'}
-                    tabIndex={-1}
-                    className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-700/50 transition-colors"
-                >
-                    <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
-                </button>
             </div>
 
             {open && (

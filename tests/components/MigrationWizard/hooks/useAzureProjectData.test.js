@@ -1,26 +1,32 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
+import { _resetCsrfTokenForTests } from '@/utils/api'
 
-vi.mock('@/utils/api', () => ({ getCsrfToken: vi.fn().mockResolvedValue('tok') }))
 vi.mock('@/utils/azureRequestPayload', () => ({ azureCredPayload: () => ({}) }))
 
 const { useAzureProjectData } = await import('@/components/MigrationWizard/hooks/useAzureProjectData')
 
+const JSON_HEADERS = { get: (k) => (k?.toLowerCase?.() === 'content-type' ? 'application/json' : null) }
+
 describe('useAzureProjectData', () => {
   beforeEach(() => {
+    _resetCsrfTokenForTests()
     global.fetch = vi.fn((url) => {
       const u = String(url)
+      if (u.includes('csrf-token')) {
+        return Promise.resolve({ ok: true, json: async () => ({ token: 'tok' }), headers: JSON_HEADERS })
+      }
       if (u.includes('/api/azure/repos')) {
         return Promise.resolve({ ok: true, json: async () => ({ repos: [
           { name: 'Existing', isTfvc: false, isEmpty: false },
           { id: 'e1', name: 'EmptyOne', isTfvc: false, isEmpty: true, webUrl: 'u' },
           { name: 'TfvcThing', isTfvc: true },
-        ] }) })
+        ] }), headers: JSON_HEADERS })
       }
       if (u.includes('/api/azure/projects')) {
-        return Promise.resolve({ ok: true, json: async () => ({ projects: [{ id: 'p1', name: 'Proj', extra: 1 }] }) })
+        return Promise.resolve({ ok: true, json: async () => ({ projects: [{ id: 'p1', name: 'Proj', extra: 1 }] }), headers: JSON_HEADERS })
       }
-      return Promise.resolve({ ok: false, json: async () => ({}) })
+      return Promise.resolve({ ok: false, json: async () => ({}), headers: JSON_HEADERS })
     })
   })
 

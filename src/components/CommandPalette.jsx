@@ -28,6 +28,7 @@ import { buildPRReviewCommands } from './CommandPalette/prReviewCommands'
 import { buildTeamsCommands } from './CommandPalette/teamsCommands'
 import { buildReposCommands } from './CommandPalette/reposCommands'
 import { buildRepoActionsCommands } from './CommandPalette/repoActionsCommands'
+import { buildRepoActionCommands } from '../actions/repoActions'
 import { useRepoActionContext } from '../actions/repoActionContext'
 import { buildPRActionCommands } from '../actions/prActions'
 import { buildBranchActionCommands } from '../actions/branchActions'
@@ -254,6 +255,13 @@ export function CommandPalette({
   onSignOut = null,
 }) {
   const [input, setInput] = useState('')
+  // Second-level "scoped" mode (G8): selecting a repo from the top-level
+  // "Repo Actions" picker pushes this page — a full, uncapped action list
+  // for that one repo. null = top-level. Escape still closes the whole
+  // palette (Radix Dialog's own handling, untouched by this state);
+  // Backspace on an empty query pops back to the top level (see
+  // handleSearchInputKeyDown below).
+  const [repoActionMode, setRepoActionMode] = useState(null)
   // Track whether a PRReviewView is currently mounted + focused. PRReviewView
   // dispatches `pr-review:focused` on mount and `pr-review:blurred` on unmount;
   // the palette renders the PR-scoped commands group only while this is true.
@@ -267,7 +275,10 @@ export function CommandPalette({
     ]
     return () => offs.forEach(off => off())
   }, [])
-  const { askMode, askQuery } = parseAskMode(input)
+  // Ask mode is input-driven ("?query") and doesn't make sense while
+  // scoped into a repo's action list — force it off there so the two
+  // "swap the whole result list" modes never fight over rendering.
+  const { askMode, askQuery } = repoActionMode ? { askMode: false, askQuery: '' } : parseAskMode(input)
   const displayRepos = useMemo(() => repos.slice(0, 10), [repos])
   const liveEnabled = isOpen && !MOCK_MODE && !askMode
   const { data: live, loading, error } = useDebouncedGitHubSearch(input, liveEnabled)
@@ -310,14 +321,41 @@ export function CommandPalette({
     () => (activeView === 'repos' ? buildReposCommands() : []),
     [activeView]
   )
-  // Top-3 repo actions surfaced when the user is on the repos list. Cross-surface
-  // discovery — slice 1 unified the registry, this is the palette's consumer.
+  // Repo picker surfaced when the user is on the repos list — one item per
+  // repo (uncapped; displayRepos is already bounded to 10). Selecting a
+  // repo drills into `scopedRepoActionCommands` below rather than running
+  // an action directly, so this group is rendered with bespoke JSX (not the
+  // generic <CommandGroup>, whose onSelect always closes the palette).
   const repoActionsCommands = useMemo(
-    () => (activeView === 'repos'
-      ? buildRepoActionsCommands(displayRepos, repoActionCtx, { reposLimit: 3 })
-      : []),
-    [activeView, displayRepos, repoActionCtx]
+    () => (activeView === 'repos' ? buildRepoActionsCommands(displayRepos) : []),
+    [activeView, displayRepos]
   )
+
+  // Second-level scoped list (G8): the FULL, uncapped action registry for
+  // the one repo the user drilled into — same builder the old cartesian
+  // product used, just called with a single-repo array and no cap.
+  const scopedRepoActionCommands = useMemo(
+    () => (repoActionMode ? buildRepoActionCommands([repoActionMode], repoActionCtx) : []),
+    [repoActionMode, repoActionCtx]
+  )
+
+  const enterRepoActionMode = (repo) => {
+    setRepoActionMode(repo)
+    setInput('')
+  }
+  const exitRepoActionMode = () => {
+    setRepoActionMode(null)
+    setInput('')
+  }
+  // Backspace on an empty query pops back to the top level. Forwarded to
+  // cmdk's own input so normal text editing (deleting typed characters) is
+  // completely unaffected — this only fires once the field is already empty.
+  const handleSearchInputKeyDown = (e) => {
+    if (e.key === 'Backspace' && input === '' && repoActionMode) {
+      e.preventDefault()
+      exitRepoActionMode()
+    }
+  }
 
   // Repo-detail entity registries — adopted opt-in: the App passes
   // `selectedRepoDetailEntities = { prs, branches, issues }` once it has
@@ -413,11 +451,11 @@ export function CommandPalette({
     }
   }
 
-  // Reset input on close so a fresh open starts clean.
+  // Reset input + drill-down mode on close so a fresh open starts clean.
   // Deferred via setTimeout to avoid synchronous setState inside an effect.
   useEffect(() => {
     if (!isOpen) {
-      const id = setTimeout(() => setInput(''), 0)
+      const id = setTimeout(() => { setInput(''); setRepoActionMode(null) }, 0)
       return () => clearTimeout(id)
     }
   }, [isOpen])
@@ -458,13 +496,29 @@ export function CommandPalette({
     onClose()
   }
 
+  // A3 (a11y report): cmdk tracks its selected item as a value STRING on a
+  // store that lives on the <Command> instance. Swapping the entire visible
+  // item set in place (top-level <-> ask mode <-> this drill-down's scoped
+  // page) can leave that stored value pointing at an item that no longer
+  // exists, so aria-activedescendant on the input goes stale/dangling —
+  // reproduced directly: it still referenced a repo-actions item's id after
+  // Backspace popped back out to the top level. cmdk's own documented fix
+  // for multi-page command UIs is to key the <Command> root per "page" so
+  // React fully remounts it (fresh store, nothing stale to reference)
+  // instead of morphing the same instance's children in place. Radix's
+  // Root/Portal/Overlay/Content stay mounted throughout — only the cmdk
+  // store + its input/list remount — so this does not reopen the dialog or
+  // replay its entrance transition.
+  const paletteModeKey = askMode ? 'ask' : repoActionMode ? `scoped:${repoActionMode.id}` : 'top'
+
   return (
-    <Command.Dialog
-      open={isOpen}
-      onOpenChange={(open) => { if (!open) onClose() }}
+    <Dialog.Root open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
+    <Dialog.Portal>
+    <Dialog.Overlay cmdk-overlay="" className="fixed inset-0 z-[var(--ds-z-modal)] bg-black/50 backdrop-blur-sm" />
+    <Dialog.Content aria-label="Command Palette" cmdk-dialog="" className="fixed left-1/2 top-[20%] z-[var(--ds-z-ceiling)] -translate-x-1/2 w-full max-w-[640px] px-4">
+    <Command
+      key={paletteModeKey}
       label="Command Palette"
-      overlayClassName="fixed inset-0 z-[var(--ds-z-modal)] bg-black/50 backdrop-blur-sm"
-      contentClassName="fixed left-1/2 top-[20%] z-[var(--ds-z-ceiling)] -translate-x-1/2 w-full max-w-[640px] px-4"
       shouldFilter={true}
     >
       {/* Radix Dialog requires Title + Description for screen readers; cmdk
@@ -483,7 +537,9 @@ export function CommandPalette({
           askMode={askMode}
           value={input}
           onValueChange={setInput}
+          onKeyDown={handleSearchInputKeyDown}
           loading={loading || ask.loading || askResults.loading}
+          breadcrumb={repoActionMode?.full_name ?? null}
         />
         {/* Empty state OUTSIDE the listbox: a role="listbox" with no option is an
             aria-required-children violation (critical) on every no-results scan.
@@ -580,11 +636,11 @@ export function CommandPalette({
             </>
           ) : null)}
 
-          {!askMode && recents.length > 0 && input.trim() === '' && (
+          {!askMode && !repoActionMode && recents.length > 0 && input.trim() === '' && (
             <RecentGroup recents={recents} navigateItems={NAVIGATE_ITEMS} onSelect={handleRecentSelect} />
           )}
 
-          {!askMode && (<>
+          {!askMode && !repoActionMode && (<>
           <Command.Group heading="Navigate" className={GROUP_HEADING_CLASSES}>
             {NAVIGATE_ITEMS.map((item) => {
               const Icon = item.icon
@@ -741,7 +797,25 @@ export function CommandPalette({
 
           <CommandGroup heading="Repositories" commands={reposCommands} iconMap={CONTEXT_CMD_ICONS} onRun={runContextCommand} onClose={onClose} />
 
-          <CommandGroup heading="Repo Actions" commands={repoActionsCommands} iconMap={CONTEXT_CMD_ICONS} onRun={runContextCommand} onClose={onClose} />
+          {repoActionsCommands.length > 0 && (
+            <Command.Group heading="Repo Actions" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+              {repoActionsCommands.map((item) => (
+                <Command.Item
+                  key={item.id}
+                  value={item.searchValue}
+                  onSelect={() => enterRepoActionMode(item.repo)}
+                  className={ITEM_CLASSES}
+                >
+                  <GitFork className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-brand-500" />
+                  {/* Single text node, not a separate "repo name" span — the
+                      "Your Repositories" nav group already renders the bare
+                      full_name, and tests key off that exact string. Keeping
+                      this composite avoids an ambiguous getByText match. */}
+                  <span className="flex-1 min-w-0 truncate">Actions for {item.label}…</span>
+                </Command.Item>
+              ))}
+            </Command.Group>
+          )}
 
           {activeView === 'work-board' && (
             <Command.Group heading="Work Board" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
@@ -787,6 +861,24 @@ export function CommandPalette({
 
           <GitHubResults live={live} onOpen={openExternal} />
           </>)}
+
+          {!askMode && repoActionMode && (
+            <Command.Group heading={`Actions — ${repoActionMode.full_name}`} className={GROUP_HEADING_CLASSES}>
+              {scopedRepoActionCommands.map((item) => (
+                <Command.Item
+                  key={item.id}
+                  value={item.label}
+                  onSelect={async () => {
+                    try { await item.run() } catch (e) { toast.errorFromException(e, { fallbackTitle: `${item.label} failed` }) }
+                    onClose()
+                  }}
+                  className={ITEM_CLASSES}
+                >
+                  {item.label}
+                </Command.Item>
+              ))}
+            </Command.Group>
+          )}
         </ResultsList>
         <div className={`border-t px-3 py-2 ds-text-meta flex items-center justify-between ${
           askMode
@@ -808,6 +900,9 @@ export function CommandPalette({
           </span>
         </div>
       </div>
-    </Command.Dialog>
+    </Command>
+    </Dialog.Content>
+    </Dialog.Portal>
+    </Dialog.Root>
   )
 }

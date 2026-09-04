@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence, useReducedMotion, useDragControls, useMotionValue } from 'framer-motion'
-import { X, Maximize2, Minimize2, GripHorizontal } from 'lucide-react'
+import { Maximize2, Minimize2, GripHorizontal } from 'lucide-react'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
 import { useMobileKeyboardFix } from '../../hooks/useMobileKeyboardFix'
+import { CloseButton } from './CloseButton'
 import { VARIANT_ICON_STYLES, WIZARD_BACKDROP_CLASS } from './_variants'
 import { clampPanelSize } from './wizardPanelGeometry'
 import { SPRING } from './motion'
@@ -256,14 +257,7 @@ export function WizardPanel({
                     }
                   </button>
                 )}
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors ds-focus-ring"
-                  aria-label="Close wizard"
-                >
-                  <X className="w-4 h-4" strokeWidth={2} />
-                </button>
+                <CloseButton onClick={onClose} size="sm" aria-label="Close wizard" />
               </div>
             </div>
 

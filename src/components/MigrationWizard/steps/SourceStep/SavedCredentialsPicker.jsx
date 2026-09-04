@@ -3,6 +3,8 @@ import { KeyRound, Plus, Check, Settings } from 'lucide-react'
 import { Spinner } from '../../../ui/Spinner'
 import { Select } from '../../../ui/Select'
 import { formatRelativeTime } from '../../../../utils/format'
+import { apiCall } from '../../../../utils/api'
+import { API_BASE } from '../../../../config'
 
 // Sentinel option value for the "paste a different PAT" row. Selecting it clears
 // the saved-credential pick (onPick(null)); modelling it as a real Select option
@@ -32,8 +34,7 @@ export default function SavedCredentialsPicker({ host, org, value, onPick, onOpe
     }
     let cancelled = false
     setLoading(true)
-    fetch(`/api/azure/credentials?host=${encodeURIComponent(host)}`, { credentials: 'include' })
-      .then((r) => r.ok ? r.json() : null)
+    apiCall(`${API_BASE}/azure/credentials?host=${encodeURIComponent(host)}`)
       .then((data) => {
         if (cancelled || !data) return
         setItems(data.items || [])

@@ -5,11 +5,17 @@ import userEvent from '@testing-library/user-event'
 import { AutoFixDrawer } from '../../../../../src/components/MigrationWizard/steps/RepoSelectStep/AutoFixDrawer.jsx'
 import { makeRepo } from './fixtures.js'
 
+// apiCall's safeParseJson reads response.headers.get('content-type') and
+// falls back to response.text() — both must be present on every mock Response.
+const JSON_HEADERS = { get: (k) => (k?.toLowerCase?.() === 'content-type' ? 'application/json' : null) }
+
 beforeEach(() => {
   global.fetch = vi.fn().mockResolvedValue({
     ok: true,
     status: 200,
     json: async () => ({ duplicates: {} }),
+    text: async () => '{"duplicates":{}}',
+    headers: JSON_HEADERS,
   })
 })
 afterEach(() => vi.resetAllMocks())
@@ -172,9 +178,11 @@ describe('AutoFixDrawer', () => {
           ok: true,
           status: 200,
           json: async () => ({ duplicates: { 'existing-name': true } }),
+          text: async () => '{"duplicates":{"existing-name":true}}',
+          headers: JSON_HEADERS,
         })
       }
-      return Promise.resolve({ ok: true, status: 200, json: async () => ({}) })
+      return Promise.resolve({ ok: true, status: 200, json: async () => ({}), text: async () => '{}', headers: JSON_HEADERS })
     })
     const user = userEvent.setup({ delay: null })
     const repos = [makeRepo({ id: 'a', name: 'api', selected: true })]

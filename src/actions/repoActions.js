@@ -161,7 +161,7 @@ export const repoActions = {
 	},
 
 	// ───── Mutation: archive ─────
-	/** @unconfirmed-by-design highly reversible — toast feedback is enough; modal would feel pedantic */
+	/** @unconfirmed-by-design unarchive direction only — reactivating is the reversal, and toast feedback is enough; archiving itself confirms below since it makes the repo read-only until someone reverses it. */
 	archive: {
 		id: 'archive',
 		label: (repo) => repo.archived ? 'Unarchive' : 'Archive',
@@ -172,6 +172,13 @@ export const repoActions = {
 		intent: 'mutation',
 		surfaces: ['contextMenu', 'quickAction', 'commandPalette'],
 		quickActionPriority: 30,
+		// Archiving only — unarchiving is the reversal and needs no gate.
+		confirm: (repo) => repo.archived ? null : ({
+			title: `Archive ${repo.name}?`,
+			message: 'Marks the repo read-only on GitHub — no pushes, issues, or PRs until you unarchive it. You can unarchive it any time.',
+			confirmText: 'Archive',
+			variant: 'warning',
+		}),
 		// NOTE: ctx.archiveRepos wrapper already refreshes — no triggersRefresh.
 		run: async (repo, ctx) => {
 			await ctx.archiveRepos([repo.full_name], !repo.archived)

@@ -5,7 +5,8 @@ import {
 import { Spinner } from '../../ui/Spinner'
 import { Field, Input, Textarea } from '../../ui/form'
 import { Select } from '../../ui/Select'
-import { getCsrfToken } from '../../../utils/api'
+import { apiCall } from '../../../utils/api'
+import { API_BASE } from '../../../config'
 import AzureTargetForm from './TargetConfigStep/AzureTargetForm'
 
 /**
@@ -36,22 +37,14 @@ export default function TargetConfigStep({ source, onChange, orgs, importJobs: _
 
       debounceRef.current = setTimeout(async () => {
         try {
-          const csrfToken = await getCsrfToken().catch(() => null)
-          const res = await fetch('/api/import/check-duplicates', {
+          // maxRetries: 0 — debounced on every keystroke; a retryable 5xx should
+          // fall back to 'idle' fast rather than stall behind a backoff.
+          const data = await apiCall(`${API_BASE}/import/check-duplicates`, {
             method: 'POST',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ repos: [name], targetOwner: source.targetOrg || '' }),
-          })
-          const data = await res.json()
-          if (res.ok && data.duplicates) {
-            setNameStatus(data.duplicates[name] ? 'conflict' : 'clear')
-          } else {
-            setNameStatus('idle')
-          }
+          }, { maxRetries: 0 })
+          setNameStatus(data.duplicates ? (data.duplicates[name] ? 'conflict' : 'clear') : 'idle')
         } catch {
           setNameStatus('idle')
         }

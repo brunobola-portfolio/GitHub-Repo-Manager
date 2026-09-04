@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react'
-import { getCsrfToken } from '../../../utils/api'
-import { azureCredPayload } from '../../../utils/azureRequestPayload'
+import { azurePost } from '../../../api/azure'
 
 /**
  * Owns the lazy per-repo branch list for RepoConfigStep — which repos are
@@ -28,23 +27,12 @@ export function useBranchCache(source) {
     if (!isExpanded && !branchCache[key]) {
       setLoadingBranches((prev) => ({ ...prev, [key]: true }))
       try {
-        const csrfToken = await getCsrfToken().catch(() => null)
-        const res = await fetch('/api/azure/branches', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-          },
-          body: JSON.stringify({
-            org: source.org,
-            project: source.project,
-            repoId: repo.id,
-            ...azureCredPayload(source),
-          }),
+        const data = await azurePost('/azure/branches', source, {
+          org: source.org,
+          project: source.project,
+          repoId: repo.id,
         })
-        const data = await res.json()
-        if (res.ok && data.branches) {
+        if (data.branches) {
           setBranchCache((prev) => ({ ...prev, [key]: data.branches }))
         }
       } catch { /* ignore */ }

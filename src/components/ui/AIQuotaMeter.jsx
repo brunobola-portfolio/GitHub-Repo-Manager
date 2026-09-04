@@ -4,6 +4,7 @@ import { Sparkles, ExternalLink } from 'lucide-react'
 import { openAppSettings } from '../../utils/appEvents'
 import { formatTimeUntil } from '../../utils/format'
 import { QuotaUpgradeButton } from './QuotaUpgradeButton'
+import { POPOVER_SURFACE_CLASS } from './_variants'
 
 const TONE = {
     indigo: {
@@ -145,7 +146,7 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute right-0 mt-2 z-[var(--ds-z-overlay)] w-72 rounded-xl bg-white dark:bg-slate-900 ring-1 ring-slate-200 dark:ring-slate-800 shadow-xl p-4"
+                        className={`absolute right-0 mt-2 z-[var(--ds-z-overlay)] w-72 p-4 ${POPOVER_SURFACE_CLASS}`}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between gap-2 mb-2">

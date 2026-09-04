@@ -10,8 +10,11 @@ export const ONBOARDING_STEPS = [
     {
         id: 'ai-config',
         icon: Sparkles,
-        title: 'Add your AI key in Settings → AI Configuration',
-        body: 'Power semantic search, README enhance, commit AI, and topic suggestions with your own AI provider key (Gemini, Anthropic, OpenAI, OpenRouter, or local). Free tier works without it but most AI features need a key.',
+        title: 'Connect your AI provider',
+        body: 'Add your own key below to power Deep Review, semantic search, README enhance, and commit AI. Free tier works without it, but most AI features need a key — you can always finish this later in Settings → AI Configuration.',
+        // Renders <ProviderKeyForm /> inline beneath the body text (see
+        // OnboardingTour.jsx) instead of just describing where to find it.
+        hasForm: true,
     },
     {
         id: 'work-board',

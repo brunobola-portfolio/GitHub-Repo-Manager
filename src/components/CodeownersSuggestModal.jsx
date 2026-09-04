@@ -5,7 +5,7 @@ import { Button } from './ui/Button'
 import { Card } from './ui/Card'
 import { Loader2, Copy, CheckCircle2, AlertTriangle, Users, GitCommit, Settings2 } from 'lucide-react'
 import { Spinner } from './ui/Spinner'
-import { Textarea } from './ui/form'
+import { Textarea, Input } from './ui/form'
 import { reposApi } from '../api/repos'
 
 /**
@@ -101,37 +101,43 @@ export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
             {/* Tuning controls */}
             <div className="flex items-center gap-3 flex-wrap p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/40 mb-4">
                 <Settings2 className="w-4 h-4 text-slate-500 flex-shrink-0" />
-                <label className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                <label htmlFor="codeowners-commits" className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
                     Commits to analyse
-                    <input
+                    <Input
+                        id="codeowners-commits"
                         type="number"
+                        size="sm"
                         value={commits}
                         onChange={(e) => setCommits(Math.min(200, Math.max(20, Number(e.target.value) || 100)))}
                         min={20}
                         max={200}
-                        className="w-16 px-1.5 py-0.5 text-xs text-center rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
+                        className="w-16 text-center"
                     />
                 </label>
-                <label className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                <label htmlFor="codeowners-min-touches" className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
                     Min touches
-                    <input
+                    <Input
+                        id="codeowners-min-touches"
                         type="number"
+                        size="sm"
                         value={minTouches}
                         onChange={(e) => setMinTouches(Math.max(1, Number(e.target.value) || 1))}
                         min={1}
                         max={10}
-                        className="w-14 px-1.5 py-0.5 text-xs text-center rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
+                        className="w-14 text-center"
                     />
                 </label>
-                <label className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                <label htmlFor="codeowners-max-owners" className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
                     Max owners
-                    <input
+                    <Input
+                        id="codeowners-max-owners"
                         type="number"
+                        size="sm"
                         value={maxOwners}
                         onChange={(e) => setMaxOwners(Math.min(5, Math.max(1, Number(e.target.value) || 1)))}
                         min={1}
                         max={5}
-                        className="w-14 px-1.5 py-0.5 text-xs text-center rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
+                        className="w-14 text-center"
                     />
                 </label>
                 <Button

@@ -1,7 +1,7 @@
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
-import { X } from 'lucide-react'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
+import { CloseButton } from './CloseButton'
 import { SPRING as MOTION_SPRING, DURATION } from './motion'
 
 const SPRING = MOTION_SPRING.drawer
@@ -130,14 +130,11 @@ export function Drawer({
                                     ) : null}
                                 </div>
                                 {showCloseButton ? (
-                                    <button
-                                        type="button"
+                                    <CloseButton
                                         onClick={onClose}
-                                        aria-label="Close"
-                                        className="shrink-0 w-9 h-9 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 flex items-center justify-center transition-colors ds-focus-ring"
-                                    >
-                                        <X className="w-4 h-4" aria-hidden="true" />
-                                    </button>
+                                        size="sm"
+                                        aria-label={typeof title === 'string' && title ? `Close ${title}` : 'Close panel'}
+                                    />
                                 ) : null}
                             </div>
                         ) : null}

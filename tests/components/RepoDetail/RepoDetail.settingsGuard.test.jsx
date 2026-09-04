@@ -103,4 +103,22 @@ describe('RepoDetail — unsaved Settings guard', () => {
         fireEvent.click(screen.getByRole('button', { name: /discard/i }))
         expect(onBack).toHaveBeenCalledTimes(1)
     })
+
+    it('follows an external initialTab change (e.g. browser back/forward onto a different #/repo/.../:tab)', async () => {
+        const onBack = vi.fn()
+        const { rerender } = render(<RepoDetail repo={REPO} onBack={onBack} initialTab="overview" />)
+        expect(await screen.findByTestId('overview-stub')).toBeInTheDocument()
+
+        rerender(<RepoDetail repo={REPO} onBack={onBack} initialTab="settings" />)
+        expect(await screen.findByTestId('settings-stub')).toBeInTheDocument()
+        expect(screen.queryByTestId('overview-stub')).not.toBeInTheDocument()
+
+        // A later render with the SAME initialTab must not fight a manual
+        // tab click — this only re-syncs on an actual prop change.
+        fireEvent.click(screen.getByRole('tab', { name: /Overview/i }))
+        expect(await screen.findByTestId('overview-stub')).toBeInTheDocument()
+        rerender(<RepoDetail repo={REPO} onBack={onBack} initialTab="settings" />)
+        expect(screen.getByTestId('overview-stub')).toBeInTheDocument()
+        expect(screen.queryByTestId('settings-stub')).not.toBeInTheDocument()
+    })
 })

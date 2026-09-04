@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { EASE } from '../ui/motion'
 import { ArrowRight, Terminal } from 'lucide-react'
 import { Github } from '../icons/GithubIcon'
+import { BACKDROP_WASH_COLOR } from '../ui/_variants'
 
 const DOCKER_CMD = 'docker compose up -d'
 
@@ -15,7 +16,7 @@ export function CTASection({ onSignIn }) {
         aria-hidden="true"
         style={{
           background:
-            'radial-gradient(ellipse 70% 60% at 50% 50%, rgba(85,131,27,0.08) 0%, transparent 70%)',
+            `radial-gradient(ellipse 70% 60% at 50% 50%, ${BACKDROP_WASH_COLOR} 0%, transparent 70%)`,
         }}
       />
 

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getCsrfToken } from '../../../utils/api'
-import { azureCredPayload } from '../../../utils/azureRequestPayload'
+import { azurePost } from '../../../api/azure'
 
 /**
  * Loads target-side Azure DevOps data for RepoConfigStep:
@@ -35,22 +34,11 @@ export function useAzureProjectData({ isAzureDevops, source, targetProject }) {
     let cancelled = false
     const load = async () => {
       try {
-        const csrfToken = await getCsrfToken().catch(() => null)
-        const res = await fetch('/api/azure/repos', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-          },
-          body: JSON.stringify({
-            org: source.org,
-            project: targetProject,
-            ...azureCredPayload(source),
-          }),
+        const data = await azurePost('/azure/repos', source, {
+          org: source.org,
+          project: targetProject,
         })
-        const data = await res.json().catch(() => ({}))
-        if (cancelled || !res.ok || !Array.isArray(data.repos)) return
+        if (cancelled || !Array.isArray(data.repos)) return
         const names = new Set(
           data.repos
             .filter((r) => !r.isTfvc && r.name)
@@ -81,21 +69,10 @@ export function useAzureProjectData({ isAzureDevops, source, targetProject }) {
     setProjectsLoading(true)
     const load = async () => {
       try {
-        const csrfToken = await getCsrfToken().catch(() => null)
-        const res = await fetch('/api/azure/projects', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-          },
-          body: JSON.stringify({
-            org: source.org,
-            ...azureCredPayload(source),
-          }),
+        const data = await azurePost('/azure/projects', source, {
+          org: source.org,
         })
-        const data = await res.json().catch(() => ({}))
-        if (cancelled || !res.ok || !Array.isArray(data.projects)) return
+        if (cancelled || !Array.isArray(data.projects)) return
         setAzureProjects(data.projects.map((p) => ({ id: p.id, name: p.name })))
       } catch { /* ignore — picker falls back to source.project only */ }
       finally { if (!cancelled) setProjectsLoading(false) }

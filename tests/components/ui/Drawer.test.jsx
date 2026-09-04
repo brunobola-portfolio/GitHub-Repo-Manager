@@ -88,7 +88,7 @@ describe('Drawer', () => {
                 <p>body</p>
             </Drawer>,
         )
-        fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+        fireEvent.click(screen.getByRole('button', { name: /^close/i }))
         expect(onClose).toHaveBeenCalledTimes(1)
     })
 
@@ -128,7 +128,7 @@ describe('Drawer', () => {
                 <p>body</p>
             </Drawer>,
         )
-        expect(screen.queryByRole('button', { name: 'Close' })).not.toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: /^close/i })).not.toBeInTheDocument()
     })
 
     it('renders subtitle and icon when provided', () => {

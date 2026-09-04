@@ -6,22 +6,49 @@
  * Licensed under the Apache License 2.0 (SPDX: Apache-2.0). See LICENSE in the project root.
  */
 
-export const mockAnalysis = (repo) => ({
-  summary: `${repo.name} is a ${repo.language || 'multi-language'} project focused on ${repo.description || 'software development'}.`,
-  health_score: Math.floor(Math.random() * 30) + 65,
-  project_type: 'application',
-  suggested_topics: ['open-source', repo.language?.toLowerCase() || 'code', 'development'].filter(Boolean),
-  improvements: [
-    'Add comprehensive documentation with examples',
-    'Set up automated testing with CI/CD pipeline',
-    'Include contribution guidelines (CONTRIBUTING.md)',
-    'Add status badges to README',
-  ],
-  readme_suggestions: ['Installation', 'Usage Examples', 'API Reference'],
-  highlights: [`Active ${repo.language || 'multi-language'} project`, 'Well-structured codebase'],
-  quality_breakdown: { documentation: 15, community: 10, engineering: 12, polish: 5 },
-  patterns: { hasInstallation: true, hasUsage: false, hasTests: true, hasCI: true, hasLicense: true },
-})
+import { mockRepoAt } from './mockRepos.js'
+
+// api/ai.js's mock branch for GET metadata only has a repo *id* to work
+// with (the real endpoint would look the row up server-side), so it
+// synthesizes a placeholder `{ id, name: 'project-<id>', language:
+// 'JavaScript' }` and hands that to mockAnalysis(). Left alone, that leaked
+// straight into the AI Insights summary — "project-1 is a JavaScript
+// project" for whatever repo the user actually opened (e.g.
+// fintech-dashboard), while the modal header (driven by the real repo prop)
+// named the right one. mockRepoAt() uses the exact same id = index + 1
+// scheme mockRepos.js hands out everywhere else, so the placeholder is
+// resolvable back to the real seeded repo without touching the caller.
+function resolvePlaceholderRepo(repo) {
+  const looksLikePlaceholder = repo && !repo.full_name && !repo.description && /^project-\d+$/.test(repo.name || '')
+  if (!looksLikePlaceholder) return repo
+  const id = Number(repo.id)
+  if (!Number.isInteger(id) || id < 1) return repo
+  try {
+    return mockRepoAt(id - 1)
+  } catch {
+    return repo
+  }
+}
+
+export const mockAnalysis = (repo) => {
+  const r = resolvePlaceholderRepo(repo)
+  return {
+    summary: `${r.name} is a ${r.language || 'multi-language'} project focused on ${r.description || 'software development'}.`,
+    health_score: Math.floor(Math.random() * 30) + 65,
+    project_type: 'application',
+    suggested_topics: ['open-source', r.language?.toLowerCase() || 'code', 'development'].filter(Boolean),
+    improvements: [
+      'Add comprehensive documentation with examples',
+      'Set up automated testing with CI/CD pipeline',
+      'Include contribution guidelines (CONTRIBUTING.md)',
+      'Add status badges to README',
+    ],
+    readme_suggestions: ['Installation', 'Usage Examples', 'API Reference'],
+    highlights: [`Active ${r.language || 'multi-language'} project`, 'Well-structured codebase'],
+    quality_breakdown: { documentation: 15, community: 10, engineering: 12, polish: 5 },
+    patterns: { hasInstallation: true, hasUsage: false, hasTests: true, hasCI: true, hasLicense: true },
+  }
+}
 
 export const mockSearchResults = (query) => [
   { repo_id: 1, score: 0.92, name: 'project-1', full_name: 'dev-user/project-1', description: `Matches "${query}" - React dashboard`, summary: 'A React-based dashboard for data visualization' },

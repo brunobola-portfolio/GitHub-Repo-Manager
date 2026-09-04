@@ -4,6 +4,8 @@ import { ChevronDown, Bookmark, Trash2, Plus } from 'lucide-react'
 import { useWorkBoardPresets } from '../../../hooks/useWorkBoardPresets'
 import { Input } from '../../ui/form'
 import { Button } from '../../ui/Button'
+import { EmptyState } from '../../ui/EmptyState'
+import { POPOVER_SURFACE_CLASS } from '../../ui/_variants'
 
 function serialisableFilters(filters) {
     // Keep only the filter keys we actually use, drop anything else.
@@ -62,14 +64,14 @@ export function PresetDropdown({ currentFilters, onApply }) {
                         initial={{ opacity: 0, y: -4 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
-                        className="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white dark:bg-slate-900 shadow-xl z-[var(--ds-z-popover)] overflow-hidden"
+                        className={`absolute right-0 top-full mt-2 w-72 z-[var(--ds-z-popover)] overflow-hidden ${POPOVER_SURFACE_CLASS}`}
                         role="menu"
                     >
                         <div className="p-2 max-h-64 overflow-y-auto">
                             {loading && <div className="p-2 text-xs text-slate-400">Loading…</div>}
                             {error && <div className="p-2 text-xs text-rose-500">{error.message || 'Failed to load'}</div>}
                             {!loading && !error && presets.length === 0 && (
-                                <div className="p-2 text-xs text-slate-400">No presets yet. Save the current filters below.</div>
+                                <EmptyState size="inline" title="No presets yet. Save the current filters below." />
                             )}
                             {presets.map(p => (
                                 <div key={p.id} className="group flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/60">

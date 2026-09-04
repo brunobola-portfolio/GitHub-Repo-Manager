@@ -6,8 +6,7 @@ import {
 import { SectionSpinner } from '../../ui/Spinner'
 import { Input, Switch } from '../../ui/form'
 import { Badge } from '../../ui/Badge'
-import { getCsrfToken } from '../../../utils/api'
-import { azureCredPayload } from '../../../utils/azureRequestPayload'
+import { azurePost } from '../../../api/azure'
 
 const DEFAULT_LABEL_MAPPING = {
   Bug: 'bug',
@@ -47,22 +46,11 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
       setLoading(true)
       setError('')
       try {
-        const csrfToken = await getCsrfToken().catch(() => null)
-        const res = await fetch('/api/azure/work-items/counts', {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-          },
-          body: JSON.stringify({
-            org: source.org,
-            project: source.project,
-            ...azureCredPayload(source),
-          }),
+        const data = await azurePost('/azure/work-items/counts', source, {
+          org: source.org,
+          project: source.project,
         })
-        const data = await res.json()
-        if (res.ok && data.counts) {
+        if (data.counts) {
           setTypeCounts(data.counts)
           // Update wizard state with counts
           onUpdate({ counts: data.counts })
@@ -73,8 +61,8 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
         } else {
           setError(data.error || 'Failed to load work item counts')
         }
-      } catch {
-        setError('Could not reach server')
+      } catch (e) {
+        setError(e.data?.error || e.message || 'Could not reach server')
       } finally {
         setLoading(false)
       }
@@ -221,33 +209,21 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
                 { key: 'includeAttachments', label: 'Include Attachments', icon: Paperclip },
                 { key: 'includeHistory', label: 'Include History', icon: History },
               ].map(({ key, label, icon: Icon }) => (
-                <button
+                <div
                   key={key}
-                  type="button"
-                  onClick={() => handleToggleOption(key)}
                   className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-brand-400/50 transition-all text-sm"
                 >
                   <Icon className="w-4 h-4 text-slate-400 shrink-0" />
                   <span className="text-slate-700 dark:text-slate-300">{label}</span>
                   <div className="ml-auto">
-                    <div
-                      role="switch"
-                      aria-checked={!!workItems[key]}
-                      aria-label={label}
-                      className={`relative w-9 h-5 rounded-full transition-colors ${
-                        workItems[key]
-                          ? 'bg-brand-500'
-                          : 'bg-slate-300 dark:bg-slate-600'
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                          workItems[key] ? 'translate-x-4' : 'translate-x-0'
-                        }`}
-                      />
-                    </div>
+                    <Switch
+                      size="sm"
+                      checked={!!workItems[key]}
+                      onChange={() => handleToggleOption(key)}
+                      label={label}
+                    />
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           </div>
@@ -294,32 +270,18 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
           </div>
 
           {/* Create Project Board */}
-          <button
-            type="button"
-            onClick={handleToggleProjectBoard}
-            className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-brand-400/50 transition-all text-sm"
-          >
+          <div className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-brand-400/50 transition-all text-sm">
             <LayoutGrid className="w-4 h-4 text-slate-400 shrink-0" />
             <span className="text-slate-700 dark:text-slate-300">Create GitHub Project Board</span>
             <div className="ml-auto">
-              <div
-                role="switch"
-                aria-checked={!!workItems.createProjectBoard}
-                aria-label="Create GitHub Project Board"
-                className={`relative w-9 h-5 rounded-full transition-colors ${
-                  workItems.createProjectBoard
-                    ? 'bg-brand-500'
-                    : 'bg-slate-300 dark:bg-slate-600'
-                }`}
-              >
-                <span
-                  className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                    workItems.createProjectBoard ? 'translate-x-4' : 'translate-x-0'
-                  }`}
-                />
-              </div>
+              <Switch
+                size="sm"
+                checked={!!workItems.createProjectBoard}
+                onChange={handleToggleProjectBoard}
+                label="Create GitHub Project Board"
+              />
             </div>
-          </button>
+          </div>
 
           {/* Preview */}
           {totalSelected > 0 && (
