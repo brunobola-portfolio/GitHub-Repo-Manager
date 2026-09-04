@@ -56,7 +56,7 @@ describe('AIInstructionsSection', () => {
     it('renders an inline error with retry when the catalog fetch fails', async () => {
         apiCall.mockRejectedValueOnce(new Error('boom'))
         render(<AIInstructionsSection />)
-        await waitFor(() => expect(screen.getByText(/Could not load prompt registry/i)).toBeInTheDocument())
+        await waitFor(() => expect(screen.getByText(/Couldn.t load prompt registry/i)).toBeInTheDocument())
         expect(screen.getByRole('button', { name: /Retry/i })).toBeInTheDocument()
     })
 

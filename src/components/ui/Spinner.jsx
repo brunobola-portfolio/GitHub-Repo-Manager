@@ -12,7 +12,7 @@ const TONE = {
     primary: 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]',
     onPrimary: 'text-white',
     muted: 'text-[color:var(--ds-fg-muted)]',
-    danger: 'text-red-500 dark:text-red-400',
+    danger: 'text-rose-500 dark:text-rose-400',
     success: 'text-emerald-500 dark:text-emerald-400',
     warning: 'text-amber-500 dark:text-amber-400',
 }

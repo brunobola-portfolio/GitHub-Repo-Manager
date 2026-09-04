@@ -40,7 +40,7 @@ export function VersionHistory({ versions = [], onRestore }) {
                                     <span className="truncate text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-slate-200">
                                         {v.instruction || `v${versions.length - versions.indexOf(v)}`}
                                     </span>
-                                    <span className="ml-auto ds-text-micro text-slate-400 shrink-0">{v.time}</span>
+                                    <span className="ml-auto ds-text-micro text-slate-500 dark:text-slate-400 shrink-0">{v.time}</span>
                                 </button>
                             ))}
                         </div>

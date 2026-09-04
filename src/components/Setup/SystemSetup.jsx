@@ -43,7 +43,7 @@ export function SystemSetup({ onComplete }) {
             await wait(800);
             setCompleted(true);
         } catch (e) {
-            setError(e?.message || 'System setup failed. Please try again.');
+            setError(e?.message || 'System setup failed. Try again.');
         }
     };
 
@@ -101,7 +101,7 @@ export function SystemSetup({ onComplete }) {
                 </div>
 
                 {error && (
-                    <div className="mt-8 px-4 py-3 bg-red-950/30 border border-red-800/50 rounded-xl text-sm text-red-400 flex items-center justify-between gap-3">
+                    <div className="mt-8 px-4 py-3 bg-rose-950/30 border border-rose-800/50 rounded-xl text-sm text-rose-400 flex items-center justify-between gap-3">
                         <span>{error}</span>
                         <Button
                             variant="secondary"

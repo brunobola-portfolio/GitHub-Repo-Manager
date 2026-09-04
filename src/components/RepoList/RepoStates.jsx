@@ -41,8 +41,8 @@ export function ErrorState({ error, errorInfo, onRefresh, onLogin }) {
 
 	return (
 		<div className="flex flex-col items-center justify-center py-20">
-			<AlertCircle className="w-10 h-10 mb-4 text-red-500 dark:text-red-400" />
-			<p className="text-center max-w-md text-red-500 dark:text-red-400">{error}</p>
+			<AlertCircle className="w-10 h-10 mb-4 text-rose-500 dark:text-rose-400" />
+			<p className="text-center max-w-md text-rose-600 dark:text-rose-400">{error}</p>
 			{/* Terminal instructions only make sense to someone running from a
 			    checkout. The packaged Windows build ships to people who have
 			    neither, so this stays behind the dev guard. */}

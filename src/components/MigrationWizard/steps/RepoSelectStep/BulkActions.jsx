@@ -4,8 +4,8 @@ import { Button } from '../../../ui/Button'
 export function BulkActions({ selectedCount, filteredCount, totalCount, hasActiveFilter, onSelectAll, onDeselectAll, onInvert }) {
   const primaryLabel =
     selectedCount === 0 && hasActiveFilter ? `Select ${filteredCount} in filter`
-    : selectedCount === 0 ? 'Select All'
-    : `Deselect All (${selectedCount})`
+    : selectedCount === 0 ? 'Select all'
+    : `Deselect all (${selectedCount})`
   const primaryOnClick = selectedCount === 0 ? onSelectAll : onDeselectAll
   return (
     <div className="flex items-center gap-2 flex-wrap">

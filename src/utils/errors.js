@@ -51,7 +51,7 @@ export function getErrorInfo(error) {
     if (!navigator.onLine) {
         return {
             type: ErrorType.OFFLINE,
-            message: 'You appear to be offline. Please check your connection.',
+            message: 'You appear to be offline. Check your connection.',
             isRetryable: true,
             status: null
         }
@@ -249,7 +249,7 @@ const KNOWN_ERRORS = {
         action: { label: 'Dismiss', kind: 'dismiss', type: 'dismiss' },
     },
     GITHUB_FETCH_FAILED: {
-        title: 'Could not load PR data from GitHub',
+        title: 'Couldn’t load PR data from GitHub',
         body: 'GitHub did not return the PR contents. Check your connection and retry.',
         action: { label: 'Retry', kind: 'retry', type: 'retry' },
     },
@@ -274,7 +274,7 @@ const KNOWN_ERRORS = {
         action: { label: 'Retry', kind: 'retry', type: 'retry' },
     },
     PROVIDER_LOOKUP_FAILED: {
-        title: 'Could not load AI configuration',
+        title: 'Couldn’t load AI configuration',
         body: 'Failed to resolve your AI provider settings. Check Settings → AI Configuration.',
         action: { label: 'Open Settings', kind: 'open-settings', type: 'configure', settingsTab: 'ai' },
     },
@@ -320,7 +320,7 @@ const KNOWN_ERRORS = {
     // which for a deterministic 4xx is both wrong about the cause and offers
     // an action that cannot possibly work.
     BAD_REQUEST: {
-        title: 'We couldn’t send that request',
+        title: 'Couldn’t send that request',
         body: 'The app built a request the server rejected. Retrying won’t help — reload the page, and if it keeps happening this is a bug worth reporting.',
         action: { label: 'Dismiss', kind: 'dismiss', type: 'dismiss' },
     },
@@ -558,7 +558,7 @@ export function formatUserError(err, ctx = {}) {
     // is worth pressing, and for 4xx it never is.
     //
     // The caller's fallbackTitle still wins for the title — it names the
-    // operation ("Failed to load branch protection"), which is knowledge the
+    // operation ("Couldn’t load branch protection"), which is knowledge the
     // status alone can't supply. The ladder contributes the part the caller
     // can't know: why it failed and whether retrying is worth offering.
     const ladderKey = STATUS_FALLBACKS[status] || (status >= 500 ? 'SERVER_ERROR' : null)

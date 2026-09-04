@@ -63,7 +63,7 @@ export function FeatureState({
                     title="Too many requests"
                     hint={error.retryAfterSec
                         ? 'Slow down a touch — the server is throttling.'
-                        : 'Please try again shortly.'}
+                        : 'Try again shortly.'}
                     retryAfterSec={error.retryAfterSec ?? undefined}
                     onRetry={onRetry}
                     variant={variant === 'inline' ? 'inline' : 'card'}
@@ -101,7 +101,7 @@ export function FeatureState({
                     title={
                         error.status >= 500
                             ? "Something went wrong on our side"
-                            : "We couldn't load this view"
+                            : "Couldn't load this view"
                     }
                     hint={error.message}
                     onRetry={onRetry}

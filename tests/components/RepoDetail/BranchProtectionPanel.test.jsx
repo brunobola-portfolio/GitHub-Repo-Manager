@@ -37,7 +37,7 @@ describe('BranchProtectionPanel — upgrade-required state', () => {
         )
 
         // No toast about the failure — the inline card replaces it.
-        expect(screen.queryByText(/Failed to load branch protection/i)).not.toBeInTheDocument()
+        expect(screen.queryByText(/Couldn.t load branch protection/i)).not.toBeInTheDocument()
         // The "Enable protection" CTA must NOT be offered (would 403 again).
         expect(screen.queryByRole('button', { name: /enable protection/i })).not.toBeInTheDocument()
         // Pricing link points outward.
@@ -52,7 +52,7 @@ describe('BranchProtectionPanel — upgrade-required state', () => {
         renderWithProviders(<BranchProtectionPanel api={api} branch="main" archived={false} />)
 
         // Generic-error path: toast title appears in the DOM via ToastProvider.
-        expect(await screen.findByText(/Failed to load branch protection/i)).toBeInTheDocument()
+        expect(await screen.findByText(/Couldn.t load branch protection/i)).toBeInTheDocument()
         // Upgrade card must NOT render for unrelated failures.
         expect(screen.queryByText(/requires GitHub Pro/i)).not.toBeInTheDocument()
     })
@@ -163,7 +163,7 @@ describe('BranchProtectionPanel — permission-denied state', () => {
         )
 
         // Quiet failure: no toast, no upgrade card, no enable CTA.
-        expect(screen.queryByText(/Failed to load branch protection/i)).not.toBeInTheDocument()
+        expect(screen.queryByText(/Couldn't load branch protection/i)).not.toBeInTheDocument()
         expect(screen.queryByText(/requires GitHub Pro/i)).not.toBeInTheDocument()
         expect(screen.queryByRole('button', { name: /enable protection/i })).not.toBeInTheDocument()
     })
@@ -178,7 +178,7 @@ describe('BranchProtectionPanel — permission-denied state', () => {
         await waitFor(() =>
             expect(screen.getByRole('heading', { name: /admin access required/i })).toBeInTheDocument()
         )
-        expect(screen.queryByText(/Failed to load branch protection/i)).not.toBeInTheDocument()
+        expect(screen.queryByText(/Couldn't load branch protection/i)).not.toBeInTheDocument()
     })
 
     it('renders an "admin only" chip in inline variant when INSUFFICIENT_PERMISSIONS', async () => {

@@ -174,7 +174,7 @@ function AdminQuickFix({ host, adding, error, onAdd, envLine, patternsKnown, env
         </button>
       </div>
       {error && (
-        <div role="alert" className="text-xs text-red-600 dark:text-red-400 px-1">
+        <div role="alert" className="text-xs text-rose-600 dark:text-rose-400 px-1">
           ✗ {error}
         </div>
       )}

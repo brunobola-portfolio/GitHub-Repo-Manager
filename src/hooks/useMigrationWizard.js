@@ -167,13 +167,13 @@ const validators = {
     // Validate credentials BEFORE checking project — project is only populated
     // (auto-picked from the URL or chosen from the dropdown) once validation
     // succeeds, so a "Project is required" message before that is misleading.
-    if (!state.source.validated) return 'Please validate your credentials'
+    if (!state.source.validated) return 'Validate your credentials'
     if (!state.source.project) return 'Project is required'
     return null
   },
   urlInput: (state) => {
     if (!state.source.sourceUrl.trim()) return 'Repository URL is required'
-    if (state.source.urlValidation !== 'valid') return 'Please validate the URL first'
+    if (state.source.urlValidation !== 'valid') return 'Validate the URL first'
     return null
   },
   githubSource: (state) => {
@@ -326,7 +326,7 @@ export function useMigrationWizard({
 
   // Clear a stale wizard-level error once the user-visible reason changes —
   // either resolved entirely, or shifted to a different validator complaint
-  // (e.g. "Please validate your credentials" should disappear once the PAT
+  // (e.g. "Validate your credentials" should disappear once the PAT
   // auto-validates, even if "Project is required" is now the live problem;
   // that next message will surface when the user clicks Next again).
   useEffect(() => {

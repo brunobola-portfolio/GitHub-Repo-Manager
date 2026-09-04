@@ -8,9 +8,9 @@ import { Button } from '../../../ui/Button'
  */
 export function ConflictResolutionPanel({ onReplace, onRename, onSkip }) {
   return (
-    <div className="flex items-center gap-2 p-2.5 rounded-lg bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20">
-      <AlertTriangle className="w-3.5 h-3.5 text-red-500 dark:text-red-400 shrink-0" />
-      <span className="text-xs text-red-700 dark:text-red-300 mr-auto">
+    <div className="flex items-center gap-2 p-2.5 rounded-lg bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20">
+      <AlertTriangle className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 shrink-0" />
+      <span className="text-xs text-rose-700 dark:text-rose-300 mr-auto">
         A repository with this name already exists
       </span>
       <Button

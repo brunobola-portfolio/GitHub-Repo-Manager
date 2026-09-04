@@ -251,7 +251,7 @@ describe('WorkBoardPage', () => {
 
         renderPage()
         fireEvent.click(screen.getByRole('tab', { name: /dora/i }))
-        expect(await screen.findByText(/failed to load dora metrics/i)).toBeInTheDocument()
+        expect(await screen.findByText(/couldn.t load dora metrics/i)).toBeInTheDocument()
         expect(screen.queryByText(/enterprise feature/i)).not.toBeInTheDocument()
     })
 

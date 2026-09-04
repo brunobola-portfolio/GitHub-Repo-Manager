@@ -233,10 +233,10 @@ export default function RepoSelectStep({ repos, onSetRepos, onUpdateRepo, source
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-3">
-        <div className="p-3 rounded-full bg-red-100 dark:bg-red-900/30">
-          <AlertCircle className="w-6 h-6 text-red-500" />
+        <div className="p-3 rounded-full bg-rose-100 dark:bg-rose-900/30">
+          <AlertCircle className="w-6 h-6 text-rose-500" />
         </div>
-        <p className="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>
+        <p className="text-sm font-medium text-rose-600 dark:text-rose-400">{error}</p>
         <button onClick={retry} className="text-sm text-brand-500 hover:text-brand-400 underline">Try again</button>
       </div>
     )

@@ -65,7 +65,7 @@ export function useAuth() {
                 setAuthError('Invalid response')
                 setAuthErrorInfo({
                     type: ErrorType.SERVER,
-                    message: 'Unexpected response from server. Please try again.',
+                    message: 'Unexpected response from server. Try again.',
                     isRetryable: true
                 })
                 setAuthMessage('Unexpected response from server.')

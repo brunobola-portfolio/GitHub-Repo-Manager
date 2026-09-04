@@ -37,7 +37,7 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
           project: source.project,
         })
         if (!data.repos) {
-          if (!cancelled) setError(data.error || 'Failed to load repositories')
+          if (!cancelled) setError(data.error || "Couldn't load repositories")
           return
         }
         const isTfvc = data.versionControlType === 'Tfvc'
@@ -72,7 +72,7 @@ export function useEnrichedRepos({ source, repos, onSetRepos, onChange, targetOr
               lastCommitDate: null, lastCommitAuthor: null, hasLfsMarker: false,
             }))
           } catch {
-            if (!cancelled) setTfvcWarning('Could not load TFVC folders — only Git repos are shown.')
+            if (!cancelled) setTfvcWarning("Couldn't load TFVC folders — only Git repos are shown.")
           }
         }
         if (cancelled) return

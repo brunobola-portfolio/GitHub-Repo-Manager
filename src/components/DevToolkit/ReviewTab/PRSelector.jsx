@@ -25,7 +25,7 @@ export function PRSelector({ pulls = [], loading, onSelect }) {
                             <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
                                 {pr.title} <span className="text-slate-400 font-normal">#{pr.number}</span>
                             </p>
-                            <div className="flex items-center gap-3 mt-1 text-xs text-slate-400">
+                            <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400">
                                 <span>{pr.user?.login}</span>
                                 {pr.draft && <span className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400">Draft</span>}
                                 <span className="flex items-center gap-0.5"><FileCode className="w-3 h-3" />{pr.changed_files || '?'}</span>

@@ -87,7 +87,7 @@ export function OrgManagerModal({
             }
         } catch (e) {
             if (isAbort(e, signal)) return
-            setError(e?.message || 'Failed to load organization details')
+            setError(e?.message || "Couldn't load organization details")
         } finally {
             if (!signal?.aborted) setLoading(false)
         }
@@ -153,7 +153,7 @@ export function OrgManagerModal({
         >
             {/* Error Banner */}
             {error && (
-                <div className="mb-4 px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">
+                <div className="mb-4 px-4 py-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl text-sm text-rose-600 dark:text-rose-400">
                     {error}
                 </div>
             )}
@@ -452,8 +452,8 @@ function StatCard({ icon: IconComp, label, value, color }) {
     const colors = {
         blue: 'bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-200',
         purple: 'bg-brand-50 text-brand-600 dark:bg-brand-900/40 dark:text-brand-200',
-        green: 'bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-200',
-        orange: 'bg-orange-50 text-orange-600 dark:bg-orange-900/40 dark:text-orange-200'
+        green: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200',
+        orange: 'bg-amber-50 text-amber-600 dark:bg-amber-900/40 dark:text-amber-200'
     }
     return (
         <div className={`p-4 rounded-lg ${colors[color]} text-center`}>

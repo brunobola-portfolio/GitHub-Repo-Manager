@@ -249,7 +249,7 @@ export function ActionHistoryRow({ result: r }) {
     return (
         <div className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
             <div className="flex items-start gap-3">
-                <div className={`mt-0.5 p-1 rounded-full ${r.success ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'}`}>
+                <div className={`mt-0.5 p-1 rounded-full ${r.success ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400'}`}>
                     {r.success ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -267,7 +267,7 @@ export function ActionHistoryRow({ result: r }) {
                     {!r.success && r.details?.length > 0 && (
                         <div className="mt-1 space-y-0.5">
                             {r.details.map((d, j) => (
-                                <div key={j} className="ds-text-micro text-red-500/80 dark:text-red-400/70 leading-tight">
+                                <div key={j} className="ds-text-micro text-rose-600/80 dark:text-rose-400/70 leading-tight">
                                     {d.field ? `${d.field}: ` : ''}{d.message}
                                 </div>
                             ))}
@@ -316,7 +316,7 @@ function ActionHistory({ results, isPerforming, message }) {
             <div className="px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800/60 ds-text-meta text-slate-500 dark:text-slate-400 truncate flex items-center gap-2">
                 <div className={`w-1.5 h-1.5 rounded-full ${
                     isPerforming ? 'bg-amber-400 animate-pulse'
-                    : results[0]?.success === false ? 'bg-red-400'
+                    : results[0]?.success === false ? 'bg-rose-400'
                     : 'bg-emerald-400'
                 }`} />
                 {message || 'Ready'}

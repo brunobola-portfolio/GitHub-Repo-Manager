@@ -27,14 +27,14 @@ const REVIEW_OPTIONS = [
     event: 'APPROVE',
     label: 'Approve',
     icon: CheckCircle,
-    iconClass: 'text-green-500 dark:text-green-400',
+    iconClass: 'text-emerald-500 dark:text-emerald-400',
     description: 'Submit feedback and approve merging these changes.',
   },
   {
     event: 'REQUEST_CHANGES',
     label: 'Request changes',
     icon: XCircle,
-    iconClass: 'text-red-500 dark:text-red-400',
+    iconClass: 'text-rose-500 dark:text-rose-400',
     description: 'Submit feedback that must be addressed before merging.',
   },
 ]
@@ -127,7 +127,7 @@ export function ReviewToolbar({ pr, repoName, repoFullName, viewMode, onToggleVi
       {/* Breadcrumbs */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-1 flex-1 min-w-0 overflow-hidden">
         <Crumb label={repoName ?? 'Repository'} onClick={onBack} />
-        <Crumb label="Pull Requests" onClick={onBack} />
+        <Crumb label="Pull requests" onClick={onBack} />
         <Crumb
           label={prNumber ? `${prNumber} ${prTitle}` : prTitle}
           isLast

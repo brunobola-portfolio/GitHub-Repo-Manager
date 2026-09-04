@@ -41,7 +41,7 @@ export function usePRData(api, { owner, repo, number, enabled = true } = {}) {
       if (requestKey === keyRef.current) setState(next)
     } catch (e) {
       if (requestKey === keyRef.current) {
-        setState(s => ({ ...s, loading: false, error: e?.message ?? 'Failed to load PR' }))
+        setState(s => ({ ...s, loading: false, error: e?.message ?? "Couldn't load PR" }))
       }
     }
   }, [api, owner, repo, number, enabled])

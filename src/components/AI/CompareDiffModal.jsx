@@ -71,7 +71,7 @@ function FilePane({ label, loading, result }) {
                 ? 'File does not exist in this repo.'
                 : result.reason === 'unsupported-shape'
                     ? 'Unsupported contents response (directory or symlink).'
-                    : `Failed to load: ${result.reason}`
+                    : `Couldn't load: ${result.reason}`
         return (
             <div className="flex items-center gap-2 p-3 rounded-lg text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/40">
                 <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 text-amber-500" />
@@ -87,7 +87,7 @@ function FilePane({ label, loading, result }) {
     const truncated = lines.length > 200
     return (
         <div>
-            <div className="ds-text-micro uppercase tracking-wider text-slate-400 mb-1 flex items-center justify-between">
+            <div className="ds-text-micro uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 flex items-center justify-between">
                 <span>{label}</span>
                 <span>
                     {lines.length} lines

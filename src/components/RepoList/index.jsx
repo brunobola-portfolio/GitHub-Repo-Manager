@@ -62,6 +62,7 @@ export function RepoList({
 		filteredRepos,
 		hasActiveFilters,
 		clearAllFilters,
+		applyFilters,
 	} = useRepoFiltering(repos, { ...initialFilters, sort: initialSort })
 
 	const allFilteredSelected = filteredRepos.length > 0 && filteredRepos.every(r => selectedIds.has(r.id))
@@ -130,6 +131,7 @@ export function RepoList({
 				onSearchAllPages={onLoadAllPages}
 				sortBy={sortBy}
 				setSortBy={setSortBy}
+				onApplySavedView={applyFilters}
 			/>
 
 			{/* Content Area */}

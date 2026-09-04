@@ -91,7 +91,7 @@ export function PromptLibrary({ presets, loading, onNew, onEdit, onDelete, onSet
                                     <button type="button" onClick={() => onEdit(p.id)} className="px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
                                         Edit
                                     </button>
-                                    <button type="button" onClick={() => onDelete(p.id)} className="px-2 py-1 rounded hover:bg-red-50 text-red-700 dark:hover:bg-red-950 dark:text-red-300">
+                                    <button type="button" onClick={() => onDelete(p.id)} className="px-2 py-1 rounded hover:bg-rose-50 text-rose-700 dark:hover:bg-rose-950 dark:text-rose-300">
                                         Delete
                                     </button>
                                 </div>

@@ -93,7 +93,7 @@ export function BatchIndexProgressModal({ isOpen, onClose, repos = [] }) {
             <CheckCircle2 className="w-4 h-4" /> {successCount} indexed
           </span>
           {failCount > 0 && (
-            <span className="inline-flex items-center gap-1.5 text-red-600 dark:text-red-400">
+            <span className="inline-flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
               <XCircle className="w-4 h-4" /> {failCount} failed
             </span>
           )}

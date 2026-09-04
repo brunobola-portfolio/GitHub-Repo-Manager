@@ -108,7 +108,7 @@ function ScoreBadge({ score, className = '' }) {
         emerald: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
         blue: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800',
         amber: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800',
-        red: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800'
+        red: 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800'
     };
     return (
         <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${badgeColors[config.tailwind]} ${className}`}>
@@ -184,7 +184,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
             setHealth(data);
         } catch {
             setLoadError(true);
-            toast.error('Failed to load community health');
+            toast.error("Couldn't load community health");
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -391,7 +391,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                 )}
 
                                 {/* Last Updated — always visible */}
-                                <div className="text-center text-sm text-slate-400">
+                                <div className="text-center text-sm text-slate-500 dark:text-slate-400">
                                     Last analyzed: {formatDateTime(health.lastUpdated)}
                                     {health.cached && ' (cached)'}
                                 </div>
@@ -438,13 +438,13 @@ export function CommunityHealthDashboard({ repo, onClose }) {
 function AgentRulesCard({ exists, onGenerate }) {
     return (
         <motion.div
-            className={`flex items-center justify-between p-3 rounded-xl min-h-[44px] bg-white/60 dark:bg-slate-900/60 border ${exists ? 'border-slate-200/40 dark:border-slate-800/40' : 'border-red-300/40 dark:border-red-500/20'} transition-all`}>
+            className={`flex items-center justify-between p-3 rounded-xl min-h-[44px] bg-white/60 dark:bg-slate-900/60 border ${exists ? 'border-slate-200/40 dark:border-slate-800/40' : 'border-rose-300/40 dark:border-rose-500/20'} transition-all`}>
             <div className="flex items-center gap-3 min-w-0">
                 {exists ? (
                     <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 0.2, ease: EASE.standard }}>
                         <CheckCircle className="w-5 h-5 text-emerald-500" />
                     </motion.div>
-                ) : (<XCircle className="w-5 h-5 text-red-400 dark:text-red-500" />)}
+                ) : (<XCircle className="w-5 h-5 text-rose-400 dark:text-rose-500" />)}
                 <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">AGENTS.md</span>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -468,17 +468,17 @@ function FileCheckItem({ file, exists, size, onFix }) {
     const canFix = !exists && typeof onFix === 'function' && FILE_TYPE_BY_LABEL[file]
     return (
         <motion.div
-            className={`flex items-center justify-between p-3 rounded-xl min-h-[44px] bg-white/60 dark:bg-slate-900/60 border ${exists ? 'border-slate-200/40 dark:border-slate-800/40' : 'border-red-300/40 dark:border-red-500/20'} transition-all`}>
+            className={`flex items-center justify-between p-3 rounded-xl min-h-[44px] bg-white/60 dark:bg-slate-900/60 border ${exists ? 'border-slate-200/40 dark:border-slate-800/40' : 'border-rose-300/40 dark:border-rose-500/20'} transition-all`}>
             <div className="flex items-center gap-3 min-w-0">
                 {exists ? (
                     <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 0.2, ease: EASE.standard }}>
                         <CheckCircle className="w-5 h-5 text-emerald-500" />
                     </motion.div>
-                ) : (<XCircle className="w-5 h-5 text-red-400 dark:text-red-500" />)}
+                ) : (<XCircle className="w-5 h-5 text-rose-400 dark:text-rose-500" />)}
                 <span className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{file}</span>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-                {exists && size > 0 && (<span className="text-xs text-slate-400">{formatFileSize(size, 1)}</span>)}
+                {exists && size > 0 && (<span className="text-xs text-slate-500 dark:text-slate-400">{formatFileSize(size, 1)}</span>)}
                 {canFix && (
                     <Tooltip label={`Generate ${file} with AI and commit it to the repo`}>
                         <button
@@ -513,14 +513,14 @@ function AnimatedNumber({ value }) {
 function MetricCard({ title, value, icon: Icon, color, index = 0 }) {
     const gradientColors = {
         blue: 'from-blue-500/20 to-blue-600/10 dark:from-blue-500/30 dark:to-blue-600/20',
-        green: 'from-green-500/20 to-green-600/10 dark:from-green-500/30 dark:to-green-600/20',
+        green: 'from-emerald-500/20 to-emerald-600/10 dark:from-emerald-500/30 dark:to-emerald-600/20',
         amber: 'from-amber-500/20 to-amber-600/10 dark:from-amber-500/30 dark:to-amber-600/20',
         emerald: 'from-emerald-500/20 to-emerald-600/10 dark:from-emerald-500/30 dark:to-emerald-600/20'
     };
 
     const iconColors = {
         blue: 'text-blue-600 dark:text-blue-400',
-        green: 'text-green-700 dark:text-green-400',
+        green: 'text-emerald-700 dark:text-emerald-400',
         amber: 'text-amber-700 dark:text-amber-400',
         emerald: 'text-emerald-700 dark:text-emerald-400'
     };
@@ -545,19 +545,19 @@ function MetricCard({ title, value, icon: Icon, color, index = 0 }) {
 
 function RecommendationItem({ recommendation }) {
     const priorityColors = {
-        high: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800',
+        high: 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800',
         medium: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800',
         low: 'bg-blue-100/60 dark:bg-blue-900/20 text-blue-600 dark:text-blue-500 border-blue-200/60 dark:border-blue-800/40'
     };
 
     const iconGradients = {
-        high: 'bg-red-500/20 dark:bg-red-500/30',
+        high: 'bg-rose-500/20 dark:bg-rose-500/30',
         medium: 'bg-amber-500/20 dark:bg-amber-500/30',
         low: 'bg-blue-500/15 dark:bg-blue-500/20'
     };
 
     const iconColors = {
-        high: 'text-red-500',
+        high: 'text-rose-500',
         medium: 'text-amber-500',
         low: 'text-blue-400 dark:text-blue-500'
     };

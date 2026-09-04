@@ -195,7 +195,7 @@ export const reposApi = {
     });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
-      const err = new Error(data?.error || 'Failed to load repo tree');
+      const err = new Error(data?.error || "Couldn't load repo tree");
       err.status = res.status;
       throw err;
     }

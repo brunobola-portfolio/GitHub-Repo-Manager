@@ -62,6 +62,6 @@ describe('<FileTreePicker />', () => {
     it('renders error state on fetch failure', async () => {
         reposApi.getTree.mockRejectedValueOnce(new Error('boom'));
         render(<FileTreePicker isOpen owner="o" repoName="r" branch="main" onPick={() => {}} onClose={() => {}} />);
-        await waitFor(() => expect(screen.getByText(/could not load/i)).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText(/couldn.t load/i)).toBeInTheDocument());
     });
 });

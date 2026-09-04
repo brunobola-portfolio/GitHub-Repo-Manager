@@ -102,7 +102,7 @@ export function ReleasesTab({ api }) {
         <div className="space-y-4">
             {message && (
                 <div className={`flex items-center gap-2 p-2 rounded-lg text-sm ${
-                    message.type === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+                    message.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400'
                 }`}>
                     {message.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                     {message.text}
@@ -155,7 +155,7 @@ export function ReleasesTab({ api }) {
                                     <span className="font-bold text-slate-900 dark:text-slate-100">{r.name || r.tag_name}</span>
                                     <span className="text-xs font-mono bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-400">{r.tag_name}</span>
                                     {r.draft && <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">Draft</span>}
-                                    {r.prerelease && <span className="text-xs px-1.5 py-0.5 rounded bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400">Pre-release</span>}
+                                    {r.prerelease && <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">Pre-release</span>}
                                 </div>
                                 {r.body && (
                                     <p className="text-sm text-slate-600 dark:text-slate-400 mt-1 line-clamp-2">{r.body}</p>
@@ -171,7 +171,7 @@ export function ReleasesTab({ api }) {
                                     )}
                                 </div>
                             </div>
-                            <Button variant="ghost" size="sm" onClick={() => handleDelete(r)} className="text-red-500 hover:text-red-700"
+                            <Button variant="ghost" size="sm" onClick={() => handleDelete(r)} className="text-rose-500 hover:text-rose-700"
                                 aria-label={`Delete release ${r.name || r.tag_name}`}
                                 title={`Delete release ${r.name || r.tag_name}`}>
                                 <Trash2 className="w-3.5 h-3.5" />

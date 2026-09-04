@@ -167,9 +167,9 @@ function stepToneClasses(status) {
       }
     case 'error':
       return {
-        bg: 'bg-red-100 dark:bg-red-900/30',
-        text: 'text-red-600 dark:text-red-400',
-        detailText: 'text-red-700 dark:text-red-300',
+        bg: 'bg-rose-100 dark:bg-rose-900/30',
+        text: 'text-rose-600 dark:text-rose-400',
+        detailText: 'text-rose-700 dark:text-rose-300',
       }
     case 'warn':
       return {
@@ -196,9 +196,9 @@ function deriveOverall(steps) {
   if (steps.some((s) => s.status === 'error')) {
     return {
       label: 'Connection failed',
-      bg: 'bg-red-50/50 dark:bg-red-950/20',
-      border: 'border-red-200 dark:border-red-800',
-      text: 'text-red-700 dark:text-red-300',
+      bg: 'bg-rose-50/50 dark:bg-rose-950/20',
+      border: 'border-rose-200 dark:border-rose-800',
+      text: 'text-rose-700 dark:text-rose-300',
     }
   }
   if (steps.some((s) => s.status === 'loading')) {

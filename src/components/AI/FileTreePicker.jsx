@@ -64,7 +64,7 @@ export function FileTreePicker({ isOpen, owner, repoName, branch, onPick, onClos
 
                 {error && (
                     <div className="flex items-center gap-2 p-3 rounded-lg bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 text-sm">
-                        <AlertTriangle className="w-4 h-4" /> Could not load repo tree.
+                        <AlertTriangle className="w-4 h-4" /> Couldn't load repo tree.
                     </div>
                 )}
 
@@ -84,7 +84,7 @@ export function FileTreePicker({ isOpen, owner, repoName, branch, onPick, onClos
                             >
                                 <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" aria-hidden="true" />
                                 <span className="flex-1 truncate">{e.path}</span>
-                                <span className="text-xs text-slate-400">{formatBytes(e.size)}</span>
+                                <span className="text-xs text-slate-500 dark:text-slate-400">{formatBytes(e.size)}</span>
                             </button>
                         </li>
                     ))}

@@ -363,7 +363,7 @@ describe('InboxPanel — load-failure state', () => {
         api.fetchInbox.mockRejectedValue(new TypeError('Failed to fetch'));
         render(<InboxPanel />);
         const alert = await screen.findByRole('alert');
-        expect(alert.innerHTML).toMatch(/text-red-600/);
-        expect(alert.innerHTML).toMatch(/dark:text-red-400/);
+        expect(alert.innerHTML).toMatch(/text-rose-600/);
+        expect(alert.innerHTML).toMatch(/dark:text-rose-400/);
     });
 });

@@ -173,7 +173,7 @@ export function BranchesTab({ api, repoData }) {
 
             {message && (
                 <div className={`flex items-center gap-2 p-2 rounded-lg text-sm ${
-                    message.type === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+                    message.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400'
                 }`}>
                     {message.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                     {message.text}
@@ -272,7 +272,7 @@ export function BranchesTab({ api, repoData }) {
                                 </span>
                             )}
                             <Button variant="ghost" size="sm" onClick={() => handleDelete(b)}
-                                className="text-red-500 hover:text-red-700 dark:hover:text-red-400 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+                                className="text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
                                 title="Delete branch" aria-label={`Delete branch ${b.name}`}>
                                 <Trash2 className="w-3.5 h-3.5" />
                             </Button>

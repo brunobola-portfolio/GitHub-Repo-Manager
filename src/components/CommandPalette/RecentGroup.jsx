@@ -30,7 +30,7 @@ export function RecentGroup({ recents, navigateItems, onSelect }) {
           >
             <Icon className="w-4 h-4 shrink-0 text-slate-400 dark:text-slate-500 group-aria-selected:text-brand-500" />
             {entry.label}
-            <span className="ml-auto ds-text-micro uppercase tracking-wide text-slate-400">
+            <span className="ml-auto ds-text-micro uppercase tracking-wide text-slate-500 dark:text-slate-400">
               {entry.kind}
             </span>
           </Command.Item>

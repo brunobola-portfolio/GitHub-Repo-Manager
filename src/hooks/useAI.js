@@ -66,7 +66,7 @@ export function useAI() {
         try {
             csrfHeader = await getCsrfToken()
         } catch (csrfErr) {
-            const err = new Error('Could not establish a secure session. Please reload and try again.')
+            const err = new Error('Could not establish a secure session. Reload and try again.')
             err.code = 'CSRF_FETCH_FAILED'
             err.cause = csrfErr
             throw err
@@ -88,7 +88,7 @@ export function useAI() {
             })
         } catch (networkErr) {
             if (isAbort(networkErr)) {
-                const err = new Error('AI request timed out after 60s. Please try again.')
+                const err = new Error('AI request timed out after 60s. Try again.')
                 err.code = 'AI_TIMEOUT'
                 throw err
             }
@@ -112,14 +112,14 @@ export function useAI() {
         try {
             body = await safeParseJson(r)
         } catch (parseErr) {
-            const err = new Error('AI returned an invalid response. Please retry.')
+            const err = new Error('AI returned an invalid response. Retry.')
             err.code = 'AI_PARSE_ERROR'
             err.cause = parseErr
             throw err
         }
         const reply = body?.reply || body?.message
         if (typeof reply !== 'string' || !reply) {
-            const err = new Error('AI returned an empty response. Please retry.')
+            const err = new Error('AI returned an empty response. Retry.')
             err.code = 'AI_EMPTY_REPLY'
             throw err
         }
@@ -169,7 +169,7 @@ export function useAI() {
         try {
             csrfHeader = await getCsrfToken()
         } catch (csrfErr) {
-            const err = new Error('Could not establish a secure session. Please reload and try again.')
+            const err = new Error('Could not establish a secure session. Reload and try again.')
             err.code = 'CSRF_FETCH_FAILED'
             err.cause = csrfErr
             throw err

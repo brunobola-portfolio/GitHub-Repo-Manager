@@ -11,13 +11,21 @@
  * a signal, not decoration. Nor are the language colours in
  * src/utils/languageColors.js — a categorical chart needs a hue per category,
  * and folding those into one ramp makes the chart unreadable.
+ *
+ * A second kind of drift snuck in behind the first: `red` and `green` were
+ * used next to `rose` and `emerald` for the exact same meaning (danger,
+ * success), and `yellow`/`orange` next to `amber` for warning — two spellings
+ * of one signal, picked per-component instead of per-meaning (2026-09-04
+ * panel, finding FE-05). `red`, `green`, `yellow` and `orange` are retired in
+ * favour of the survivors above. `blue` is not part of this pass — it still
+ * has open, undecided uses (see the panel) — so it stays ungated for now.
  */
 import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
 /** Accent families that no longer have a job in this product. */
-const RETIRED = ['indigo', 'violet', 'purple', 'fuchsia', 'sky', 'cyan', 'pink', 'teal']
+const RETIRED = ['indigo', 'violet', 'purple', 'fuchsia', 'sky', 'cyan', 'pink', 'teal', 'red', 'green', 'yellow', 'orange']
 const UTILITY = new RegExp(`\\b(${RETIRED.join('|')})-(?:50|100|200|300|400|500|600|700|800|900|950)\\b`)
 
 /** Literal hexes from the retired identity — the logo's gradient stops. */
@@ -74,6 +82,11 @@ describe('the product has one accent ramp', () => {
             src.split('\n').forEach((line, i) => {
                 // index.css explains the replacement and names what it replaced.
                 if (file === 'src/index.css') return
+                // design-system.css documents its --ds-risk-* hex tokens with
+                // "/* red-700 */"-style comments naming the Tailwind shade
+                // they were sourced from (see the RISK TOKENS block) — prose,
+                // not a utility class the app can render.
+                if (file === 'src/design-system.css') return
                 const hit = line.match(UTILITY)
                 if (hit) offenders.push(`${file}:${i + 1} ${hit[0]}`)
             })
@@ -133,6 +146,32 @@ describe('the product has one accent ramp', () => {
         // a filled button reaching for it would fail AA on contact.
         const css = readFileSync('src/index.css', 'utf8')
         expect(css).not.toMatch(/--color-brand-\d+\s*:\s*#7fc528/i)
+    })
+})
+
+describe('muted body text always carries its dark-mode pair', () => {
+    // `text-slate-400` alone is 2.56:1 on white — AA-failing as running text.
+    // The v4.13.0 sweep fixed 99 instances to `text-slate-500 dark:text-slate-400`
+    // and left icons alone (their fill only needs 3:1, and dark:slate-500
+    // clears it). 48 more sites reverted to the bare class since (2026-09-04
+    // panel, finding F03). This only flags a class string that is sized as
+    // text (a `text-*`/`ds-text-*` size utility on the same line) and has no
+    // `dark:text-` anywhere on it — an aria-hidden icon with just `w-4 h-4`
+    // and no size class never matches.
+    const SIZED = /text-(?:xs|sm|base|lg|xl|2xl|3xl)\b|ds-text-(?:micro|meta|sm|md|lg)\b/
+    const SLATE_400 = /\btext-slate-400\b/
+    const DARK_TEXT = /dark:text-/
+
+    it('never sizes text-slate-400 as body text without a dark: pair', () => {
+        const offenders = []
+        for (const file of FILES.filter((f) => /\.jsx?$/.test(f))) {
+            readFileSync(file, 'utf8').split(NEWLINE).forEach((line, i) => {
+                if (SLATE_400.test(line) && SIZED.test(line) && !DARK_TEXT.test(line)) {
+                    offenders.push(`${file}:${i + 1} ${line.trim()}`)
+                }
+            })
+        }
+        expect(offenders, `use text-slate-500 dark:text-slate-400:\n${offenders.slice(0, 20).join('\n')}`).toEqual([])
     })
 })
 

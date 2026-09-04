@@ -33,7 +33,7 @@ function PillButton({ id, repos, onAction, label, Icon, danger = false }) {
 			aria-label={label}
 			className={`p-2 rounded-full transition-colors ${
 				danger
-					? 'text-red-400 dark:text-red-600 hover:bg-red-500/20'
+					? 'text-rose-400 dark:text-rose-600 hover:bg-rose-500/20'
 					: 'text-white dark:text-slate-900 hover:bg-white/10 dark:hover:bg-slate-900/10'
 			}`}
 		>

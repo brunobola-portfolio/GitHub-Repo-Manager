@@ -22,11 +22,11 @@ import { invalidatePRData } from '../../hooks/usePRData'
 import { prActions } from '../../actions/prActions'
 
 const REVIEW_STATES = {
-    APPROVED: { label: 'Approved', color: 'text-green-700 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20', icon: ShieldCheck },
-    CHANGES_REQUESTED: { label: 'Changes requested', color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-900/20', icon: ShieldAlert },
+    APPROVED: { label: 'Approved', color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20', icon: ShieldCheck },
+    CHANGES_REQUESTED: { label: 'Changes requested', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20', icon: ShieldAlert },
     COMMENTED: { label: 'Commented', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', icon: MessageCircle },
     DISMISSED: { label: 'Dismissed', color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-50 dark:bg-slate-800', icon: Eye },
-    PENDING: { label: 'Pending', color: 'text-yellow-600 dark:text-yellow-400', bg: 'bg-yellow-50 dark:bg-yellow-900/20', icon: Eye },
+    PENDING: { label: 'Pending', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20', icon: Eye },
 }
 
 export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGenerateDescription }) {
@@ -76,7 +76,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                     setComments(Array.isArray(commentsData) ? commentsData : [])
                 }
             } catch (e) {
-                if (!cancelled) setFetchError(e?.message || 'Failed to load pull request details')
+                if (!cancelled) setFetchError(e?.message || "Couldn't load pull request details")
             } finally {
                 if (!cancelled) setLoading(false)
             }
@@ -156,8 +156,8 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
 
     function getPrState() {
         if (isMerged) return { label: 'Merged', colorClass: 'bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400', iconColor: 'text-brand-500', Icon: GitMerge }
-        if (!isOpen) return { label: 'Closed', colorClass: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400', iconColor: 'text-red-500', Icon: GitPullRequest }
-        return { label: 'Open', colorClass: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400', iconColor: 'text-green-500', Icon: GitPullRequest }
+        if (!isOpen) return { label: 'Closed', colorClass: 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400', iconColor: 'text-rose-500', Icon: GitPullRequest }
+        return { label: 'Open', colorClass: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400', iconColor: 'text-emerald-500', Icon: GitPullRequest }
     }
 
     const prState = getPrState()
@@ -188,7 +188,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
             </button>
 
             {/* Header */}
-            <Card className={`p-5 border-l-4 ${isMerged ? 'border-l-brand-500' : isOpen ? 'border-l-green-500' : 'border-l-red-500'}`}>
+            <Card className={`p-5 border-l-4 ${isMerged ? 'border-l-brand-500' : isOpen ? 'border-l-emerald-500' : 'border-l-rose-500'}`}>
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
@@ -201,7 +201,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                     Draft
                                 </span>
                             )}
-                            <span className="text-xs text-slate-400">#{current.number}</span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">#{current.number}</span>
                         </div>
                         <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{current.title}</h3>
 
@@ -211,7 +211,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                             <span className="font-mono text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded">
                                 {current.head?.ref || 'unknown'}
                             </span>
-                            <span className="text-xs text-slate-400">→</span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">→</span>
                             <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded">
                                 {current.base?.ref || 'main'}
                             </span>
@@ -238,8 +238,8 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                 <span className="flex items-center gap-1.5">
                                     <FileText className="w-3 h-3" />
                                     {files.length} files
-                                    <span className="text-green-700 dark:text-green-400">+{totalAdditions}</span>
-                                    <span className="text-red-500 dark:text-red-400">-{totalDeletions}</span>
+                                    <span className="text-emerald-700 dark:text-emerald-400">+{totalAdditions}</span>
+                                    <span className="text-rose-600 dark:text-rose-400">-{totalDeletions}</span>
                                 </span>
                             )}
                         </div>
@@ -283,7 +283,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
             </Card>
 
             {fetchError && (
-                <div className="px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">
+                <div className="px-4 py-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl text-sm text-rose-600 dark:text-rose-400">
                     {fetchError}
                 </div>
             )}
@@ -318,9 +318,9 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
 
                             {/* Merge section (open PRs only) */}
                             {isOpen && !isMerged && (
-                                <Card className="p-4 border border-green-200 dark:border-green-800/50 bg-green-50/50 dark:bg-green-900/10">
+                                <Card className="p-4 border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50/50 dark:bg-emerald-900/10">
                                     <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2">
-                                        <GitMerge className="w-4 h-4 text-green-700" />
+                                        <GitMerge className="w-4 h-4 text-emerald-700" />
                                         Merge pull request
                                     </h4>
                                     <div className="flex gap-1 p-1 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 mb-3">
@@ -334,7 +334,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                                 onClick={() => setMergeMethod(method.id)}
                                                 className={`flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-all ${
                                                     mergeMethod === method.id
-                                                        ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 shadow-sm'
+                                                        ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 shadow-sm'
                                                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                                                 }`}
                                             >
@@ -347,7 +347,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                             size="sm"
                                             onClick={requestMerge}
                                             disabled={merging}
-                                            className="bg-green-600 hover:bg-green-700 text-white"
+                                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
                                         >
                                             {merging ? (
                                                 <Spinner size="sm" className="mr-1" />
@@ -356,7 +356,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                             )}
                                             {mergeMethod === 'merge' ? 'Merge' : mergeMethod === 'squash' ? 'Squash and merge' : 'Rebase and merge'}
                                         </Button>
-                                        <Button variant="ghost" size="sm" onClick={requestClose} className="text-red-500">
+                                        <Button variant="ghost" size="sm" onClick={requestClose} className="text-rose-600 dark:text-rose-400">
                                             <XCircle className="w-4 h-4 mr-1" /> Close PR
                                         </Button>
                                     </div>
@@ -387,7 +387,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                             <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
                                                 {comment.user?.login}
                                             </span>
-                                            <span className="text-xs text-slate-400">
+                                            <span className="text-xs text-slate-500 dark:text-slate-400">
                                                 {formatRelativeTime(comment.created_at)}
                                             </span>
                                         </div>
@@ -402,7 +402,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                             <Card className="p-4">
                                 {message && (
                                     <div className={`flex items-center gap-2 p-2 rounded-lg text-sm mb-3 ${
-                                        message.type === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+                                        message.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400'
                                     }`}>
                                         {message.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                                         {message.text}
@@ -487,7 +487,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                                     </div>
                                                 )}
                                             </div>
-                                            <span className="text-xs text-slate-400 flex-shrink-0">
+                                            <span className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0">
                                                 {formatRelativeTime(review.submitted_at)}
                                             </span>
                                         </div>
@@ -591,7 +591,7 @@ function ReviewComposer({ api, prNumber, onSubmitted }) {
                     size="sm"
                     onClick={() => submit('REQUEST_CHANGES')}
                     disabled={!!submitting}
-                    className="bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/40 border border-orange-200 dark:border-orange-800/50"
+                    className="bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 border border-amber-200 dark:border-amber-800/50"
                 >
                     {submitting === 'REQUEST_CHANGES'
                         ? <Spinner size="sm" tone="warning" />

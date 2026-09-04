@@ -127,8 +127,8 @@ export function CommitDetailPanel({ owner, repo, sha, onClose }) {
                 )}
 
                 {error && !data && (
-                    <div className="m-4 px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">
-                        Couldn&apos;t load commit. Please retry.
+                    <div className="m-4 px-4 py-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl text-sm text-rose-600 dark:text-rose-400">
+                        Couldn&apos;t load commit. Try again.
                     </div>
                 )}
 

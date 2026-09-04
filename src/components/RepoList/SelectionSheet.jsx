@@ -60,7 +60,7 @@ export function SelectionSheet({ isOpen, repos, onAction, onClose }) {
 								onClick={() => onAction(id, repos)}
 								className={`flex items-start gap-3 px-3 py-3 rounded-lg text-left transition-colors ${
 									isDestructive
-										? 'text-red-600 dark:text-red-400 hover:bg-red-500/10'
+										? 'text-rose-600 dark:text-rose-400 hover:bg-rose-500/10'
 										: 'text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
 								}`}
 							>

@@ -116,7 +116,7 @@ export function AdminDLQPage() {
             const full = await handlers.get(row.id)
             setOpenEntry(full)
         } catch (err) {
-            toast.errorFromException(err, { fallbackTitle: 'Failed to load entry' })
+            toast.errorFromException(err, { fallbackTitle: "Couldn't load entry" })
             setOpenEntry(null)
         } finally {
             setOpenLoading(false)
@@ -217,8 +217,8 @@ export function AdminDLQPage() {
             )}
 
             {!loading && error && error.status !== 403 && (
-                <div className="rounded-xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/40 p-4 text-sm text-red-700 dark:text-red-300">
-                    Failed to load DLQ entries: {error.message}
+                <div className="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50 dark:bg-rose-950/40 p-4 text-sm text-rose-700 dark:text-rose-300">
+                    Couldn't load DLQ entries: {error.message}
                 </div>
             )}
 

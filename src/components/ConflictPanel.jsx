@@ -153,7 +153,7 @@ export function ConflictPanel({ conflict, repoName, onResolve, resolution }) {
                 {/* Replace flow */}
                 {pendingAction === 'replace' ? (
                     <div className="space-y-2">
-                        <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+                        <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">
                             This will overwrite the existing target repository. This cannot be undone.
                         </p>
                         <div className="flex gap-2">

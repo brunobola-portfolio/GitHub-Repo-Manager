@@ -52,7 +52,7 @@ export function ReplaceConfirmModal({ isOpen, repoFullName, onCancel, onConfirm 
             disabled={!matches}
             onClick={handleConfirm}
             className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg text-white transition-colors ds-focus-ring
-              ${matches ? 'bg-red-600 hover:bg-red-700' : 'bg-red-600/40 cursor-not-allowed'}`}
+              ${matches ? 'bg-rose-600 hover:bg-rose-700' : 'bg-rose-600/40 cursor-not-allowed'}`}
           >
             Delete &amp; Replace
           </button>
@@ -62,7 +62,7 @@ export function ReplaceConfirmModal({ isOpen, repoFullName, onCancel, onConfirm 
       <div className="p-5 space-y-4">
         <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
           This will <strong>permanently delete</strong>{' '}
-          <span className="font-semibold text-red-600 dark:text-red-400">{repoFullName}</span>{' '}
+          <span className="font-semibold text-rose-600 dark:text-rose-400">{repoFullName}</span>{' '}
           on GitHub — including its issues, pull requests, stars and settings — and recreate it
           from the source. <strong>This cannot be undone.</strong>
         </p>

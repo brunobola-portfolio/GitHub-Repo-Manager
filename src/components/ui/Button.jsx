@@ -4,7 +4,7 @@ import { twMerge } from 'tailwind-merge'
 const variants = {
     primary: 'ds-brand-solid shadow-sm ds-focus-ring',
     secondary: 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-300 dark:hover:border-slate-600 disabled:text-slate-400 dark:disabled:text-slate-500 shadow-sm dark:shadow-slate-900/50 ds-focus-ring',
-    danger: 'bg-red-600 text-white hover:bg-red-700 shadow-sm ds-focus-ring',
+    danger: 'bg-rose-600 text-white hover:bg-rose-700 shadow-sm ds-focus-ring',
     // amber-700, not 500: white on amber-500 is 2.15:1 and fails AA as text
     // on a button (amber-600 is 3.19:1, still short). 700 is 5.02:1; the fill
     // stays unmistakably amber. Same pair on the four ad-hoc copies outside.
@@ -17,13 +17,13 @@ const variants = {
     // ConflictPanel, similar in BulkActions). Hover fills the bg lightly to
     // match the existing call-sites' look.
     outline: 'bg-transparent text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-500 ds-focus-ring',
-    'outline-danger': 'bg-transparent text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 ds-focus-ring',
+    'outline-danger': 'bg-transparent text-rose-600 dark:text-rose-400 border border-rose-300 dark:border-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30 ds-focus-ring',
     'outline-primary': 'bg-transparent text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] border border-brand-300 dark:border-brand-700 hover:bg-brand-50 dark:hover:bg-brand-900/30 ds-focus-ring',
     // Soft variants — tinted background with matching text, no border.
     // For inline destructive / accent CTAs that should read as 'a step
     // softer than danger' (AIConfigSection Remove key, soft-indigo Test
     // Connection, etc).
-    'soft-danger': 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 ds-focus-ring',
+    'soft-danger': 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/30 ds-focus-ring',
     'soft-primary': 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 hover:bg-brand-100 dark:hover:bg-brand-900/50 border border-brand-200 dark:border-brand-700/50 ds-focus-ring',
     'soft-warning': 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/30 ds-focus-ring',
 }

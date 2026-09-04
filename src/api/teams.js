@@ -16,7 +16,7 @@
  *    a 403 with `{ error: 'upgrade_required', ... }`. That's *not* an
  *    error from the user's perspective — it's an upsell signal. We treat
  *    it as "empty list, upgrade needed" so callers can show a CTA instead
- *    of a `toast.error('Could not load teams')`.
+ *    of a `toast.error('Couldn't load teams')`.
  *
  * 3. **Shape consistency** — always returns `{ teams, upgradeRequired, error }`
  *    so callers can destructure predictably regardless of outcome. The

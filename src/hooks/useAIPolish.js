@@ -120,7 +120,7 @@ export function useAIPolish(repoFullNames, contextOptions = null) {
                 status: 'loading',
             })
         } catch (e) {
-            updateRow(row.fullName, { status: 'error', error: e?.message || 'Failed to load repo' })
+            updateRow(row.fullName, { status: 'error', error: e?.message || "Couldn't load repo" })
             return
         }
 

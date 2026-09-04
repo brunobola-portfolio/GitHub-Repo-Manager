@@ -46,7 +46,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                     setComments(Array.isArray(commentsData) ? commentsData : [])
                 }
             } catch (e) {
-                if (!cancelled) setFetchError(e?.message || 'Failed to load issue details')
+                if (!cancelled) setFetchError(e?.message || "Couldn't load issue details")
             } finally {
                 if (!cancelled) setLoading(false)
             }
@@ -110,19 +110,19 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
             </button>
 
             {/* Header */}
-            <Card className={`p-5 border-l-4 ${isOpen ? 'border-l-green-500' : 'border-l-brand-500'}`}>
+            <Card className={`p-5 border-l-4 ${isOpen ? 'border-l-emerald-500' : 'border-l-brand-500'}`}>
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
-                            <CircleDot className={`w-5 h-5 flex-shrink-0 ${isOpen ? 'text-green-500' : 'text-brand-500'}`} />
+                            <CircleDot className={`w-5 h-5 flex-shrink-0 ${isOpen ? 'text-emerald-500' : 'text-brand-500'}`} />
                             <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                                 isOpen
-                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
                                     : 'bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-400'
                             }`}>
                                 {isOpen ? 'Open' : 'Closed'}
                             </span>
-                            <span className="text-xs text-slate-400">#{current.number}</span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">#{current.number}</span>
                         </div>
                         <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{current.title}</h3>
                         <div className="flex items-center gap-3 mt-2 text-xs text-slate-500 dark:text-slate-400">
@@ -206,7 +206,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
             )}
 
             {fetchError && (
-                <div className="px-4 py-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 rounded-xl text-sm text-red-600 dark:text-red-400">
+                <div className="px-4 py-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 rounded-xl text-sm text-rose-600 dark:text-rose-400">
                     {fetchError}
                 </div>
             )}
@@ -250,7 +250,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                                     <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
                                         {comment.user?.login}
                                     </span>
-                                    <span className="text-xs text-slate-400">
+                                    <span className="text-xs text-slate-500 dark:text-slate-400">
                                         {formatRelativeTime(comment.created_at)}
                                     </span>
                                 </div>
@@ -265,7 +265,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                     <Card className="p-4">
                         {message && (
                             <div className={`flex items-center gap-2 p-2 rounded-lg text-sm mb-3 ${
-                                message.type === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+                                message.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400'
                             }`}>
                                 {message.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                                 {message.text}
@@ -284,7 +284,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                                 variant="ghost"
                                 size="sm"
                                 onClick={handleStateToggle}
-                                className={isOpen ? 'text-brand-600 dark:text-brand-400' : 'text-green-700 dark:text-green-400'}
+                                className={isOpen ? 'text-brand-600 dark:text-brand-400' : 'text-emerald-700 dark:text-emerald-400'}
                             >
                                 {isOpen ? (
                                     <><XCircle className="w-4 h-4 mr-1" /> Close issue</>

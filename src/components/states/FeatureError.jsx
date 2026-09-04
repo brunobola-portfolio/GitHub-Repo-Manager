@@ -6,12 +6,12 @@ import { twMerge } from 'tailwind-merge'
 const TONES = {
     error: {
         icon: AlertTriangle,
-        ring: 'border-red-200 dark:border-red-500/30',
-        surface: 'bg-red-50/70 dark:bg-red-500/10',
-        title: 'text-red-900 dark:text-red-200',
-        body: 'text-red-800/80 dark:text-red-200/80',
-        accent: 'text-red-600 dark:text-red-400',
-        chip: 'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/20',
+        ring: 'border-rose-200 dark:border-rose-500/30',
+        surface: 'bg-rose-50/70 dark:bg-rose-500/10',
+        title: 'text-rose-900 dark:text-rose-200',
+        body: 'text-rose-800/80 dark:text-rose-200/80',
+        accent: 'text-rose-600 dark:text-rose-400',
+        chip: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/20',
     },
     warn: {
         icon: Clock,

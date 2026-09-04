@@ -28,7 +28,7 @@ describe('SelectionBar (desktop pill)', () => {
 	it('Delete button has destructive styling', () => {
 		render(<SelectionBar repos={repos} onAction={() => { }} onClear={() => { }} />)
 		const del = screen.getByRole('button', { name: /delete 2 repos/i })
-		expect(del.className).toMatch(/text-red-/)
+		expect(del.className).toMatch(/text-rose-/) // destructive is rose now, red retired (FE-05)
 	})
 
 	it('clicking Archive calls onAction with archive_selected', () => {

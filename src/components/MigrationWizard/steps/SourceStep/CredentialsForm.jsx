@@ -251,7 +251,7 @@ function OAuthSection({ status, startOAuth, retryOAuth, setValidationError }) {
   }
   if (status === 'error' || status === 'timeout') {
     return (
-      <div className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+      <div className="flex items-center gap-2 text-sm text-rose-600 dark:text-rose-400">
         <XCircle className="w-4 h-4" />
         {status === 'timeout' ? 'Timed out — ' : 'Authentication error — '}
         <button type="button" onClick={retryOAuth} className="underline">try again</button>

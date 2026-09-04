@@ -99,7 +99,7 @@ export function ConnectGitHubSetup({ isOpen, onClose, status: statusProp }) {
             await submitOAuthSetup({ clientId: clientId.trim(), clientSecret: clientSecret.trim() })
             setStep('done')
         } catch (err) {
-            setSubmitError(err?.data?.error || 'Could not save the configuration. Please try again.')
+            setSubmitError(err?.data?.error || 'Could not save the configuration. Try again.')
         } finally {
             setSubmitting(false)
         }

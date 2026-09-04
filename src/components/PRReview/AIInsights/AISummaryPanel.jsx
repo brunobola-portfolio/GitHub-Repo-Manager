@@ -59,7 +59,7 @@ export function AISummaryPanel({
         aria-expanded={!collapsed}
       >
         <ChevronIcon size={14} className="shrink-0 text-slate-500 dark:text-slate-400" aria-hidden="true" />
-        <AlertTriangle size={14} className="shrink-0 text-yellow-500 dark:text-yellow-400" aria-hidden="true" />
+        <AlertTriangle size={14} className="shrink-0 text-amber-500 dark:text-amber-400" aria-hidden="true" />
         <span className="flex-1 font-semibold text-slate-700 dark:text-slate-200">
           {headerLabel}
         </span>

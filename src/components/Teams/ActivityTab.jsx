@@ -70,7 +70,7 @@ export function ActivityTab({ teamId }) {
         <EmptyState
             icon={AlertTriangle}
             title="Couldn't load activity"
-            description="We couldn't reach the activity feed. Check your connection and try again."
+            description="Couldn't reach the activity feed. Check your connection and try again."
             action={{ label: 'Retry', onClick: () => setReloadKey(k => k + 1) }}
         />
     );
@@ -131,10 +131,10 @@ function ActivityItem({ event }) {
             case 'PullRequestEvent': return <GitPullRequest className="w-4 h-4 text-brand-500" />;
             case 'IssuesEvent': return <CircleDot className="w-4 h-4 text-amber-500" />;
             case 'CreateEvent': return <FileCode className="w-4 h-4 text-blue-500" />;
-            case 'WatchEvent': return <Star className="w-4 h-4 text-yellow-500" />;
+            case 'WatchEvent': return <Star className="w-4 h-4 text-amber-500" />;
             case 'ForkEvent': return <GitFork className="w-4 h-4 text-brand-500" />;
-            case 'ReleaseEvent': return <Tag className="w-4 h-4 text-green-500" />;
-            case 'DeleteEvent': return <Trash2 className="w-4 h-4 text-red-400" />;
+            case 'ReleaseEvent': return <Tag className="w-4 h-4 text-emerald-500" />;
+            case 'DeleteEvent': return <Trash2 className="w-4 h-4 text-rose-400" />;
             default: return <Activity className="w-4 h-4 text-slate-400" />;
         }
     };

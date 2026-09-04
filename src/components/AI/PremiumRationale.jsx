@@ -39,7 +39,7 @@ export function PremiumRationale({ source, rationale, confidence, signalsUsed = 
 
             {signalsUsed.length > 0 && (
                 <div>
-                    <p className="ds-text-micro uppercase tracking-wider text-slate-400 mb-1">Signals used</p>
+                    <p className="ds-text-micro uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Signals used</p>
                     <ul className="flex flex-wrap gap-1">
                         {signalsUsed.map((s) => (
                             <li key={s.kind + ':' + s.label} className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-xs text-slate-700 dark:text-slate-300">
@@ -65,7 +65,7 @@ export function PremiumRationale({ source, rationale, confidence, signalsUsed = 
             )}
 
             {!isAI && (
-                <p className="ds-text-meta text-slate-400 inline-flex items-center gap-1">
+                <p className="ds-text-meta text-slate-500 dark:text-slate-400 inline-flex items-center gap-1">
                     <Info className="w-3 h-3" /> AI not available — used deterministic fallback.
                 </p>
             )}

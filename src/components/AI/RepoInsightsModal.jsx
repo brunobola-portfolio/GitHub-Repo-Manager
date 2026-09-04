@@ -163,7 +163,7 @@ export default function RepoInsightsModal({ repo, isOpen, onClose, initialTab = 
         } catch (err) {
             // Preserve err.code so AIErrorState can render the right CTA
             // (configure / upgrade / retry) instead of a generic fallback.
-            if (!signal?.aborted) setError(err || new Error('Failed to generate insights. Please try again.'))
+            if (!signal?.aborted) setError(err || new Error('Failed to generate insights. Try again.'))
         } finally {
             if (!signal?.aborted) setLoading(false)
         }
@@ -196,7 +196,7 @@ export default function RepoInsightsModal({ repo, isOpen, onClose, initialTab = 
             const result = await aiApi.getSuggestions(repo)
             if (!signal?.aborted) setSuggestionsData(result)
         } catch (err) {
-            if (!signal?.aborted) setSuggestionsError(err || new Error('Failed to generate suggestions. Please try again.'))
+            if (!signal?.aborted) setSuggestionsError(err || new Error('Failed to generate suggestions. Try again.'))
         } finally {
             if (!signal?.aborted) setSuggestionsLoading(false)
         }
@@ -224,7 +224,7 @@ export default function RepoInsightsModal({ repo, isOpen, onClose, initialTab = 
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title="AI Insights"
+            title="AI insights"
             subtitle={repo?.full_name}
             icon={Sparkles}
             iconGradient="primary"
@@ -256,7 +256,7 @@ export default function RepoInsightsModal({ repo, isOpen, onClose, initialTab = 
                 <AIErrorState
                     error={error}
                     onRetry={startFetch}
-                    context="AI Insights"
+                    context="AI insights"
                 />
             )}
             {analysis && !loading && activeTab === 'overview'    && <OverviewGrid    data={analysis} />}
@@ -289,7 +289,7 @@ function CircularScore({ value, max = 100 }) {
     const colorClass =
         clamped >= 80 ? 'stroke-emerald-500' :
         clamped >= 50 ? 'stroke-amber-500'  :
-                        'stroke-red-500'
+                        'stroke-rose-500'
 
     return (
         <div className="relative inline-flex items-center justify-center" style={{ width: size, height: size }} aria-label={`Health score ${clamped} out of ${max}`} role="img">

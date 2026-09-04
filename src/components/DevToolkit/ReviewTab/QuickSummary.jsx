@@ -3,8 +3,8 @@ import { Shield, Clock, AlertTriangle } from 'lucide-react'
 const RISK_COLORS = {
     low: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
     medium: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
-    high: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-    critical: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+    high: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+    critical: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
 }
 
 export function QuickSummary({ summary, loading, error, onRetry }) {
@@ -21,7 +21,7 @@ export function QuickSummary({ summary, loading, error, onRetry }) {
     if (error) {
         return (
             <div className="text-center py-6">
-                <p className="text-sm text-red-600 dark:text-red-400 mb-2">{error}</p>
+                <p className="text-sm text-rose-600 dark:text-rose-400 mb-2">{error}</p>
                 <button type="button" onClick={onRetry} className="text-xs text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline">Retry</button>
             </div>
         )
@@ -66,7 +66,7 @@ export function QuickSummary({ summary, loading, error, onRetry }) {
                     <div className="space-y-1">
                         {summary.fileRisks.slice(0, 5).map((file, i) => (
                             <div key={i} className="flex items-center gap-2 text-xs">
-                                <AlertTriangle className={`w-3 h-3 ${file.level === 'high' || file.level === 'critical' ? 'text-red-500' : 'text-amber-500'}`} />
+                                <AlertTriangle className={`w-3 h-3 ${file.level === 'high' || file.level === 'critical' ? 'text-rose-500' : 'text-amber-500'}`} />
                                 <span className="font-mono text-slate-600 dark:text-slate-300 truncate flex-1">{file.filename}</span>
                                 <span className="text-slate-400 shrink-0">{file.reason}</span>
                             </div>

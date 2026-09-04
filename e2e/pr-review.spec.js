@@ -263,7 +263,7 @@ test.describe('PR Review view', () => {
         // the button wasn't ready yet, leaving the test to time out.
         const backCrumb = page
             .getByRole('navigation', { name: /breadcrumb/i })
-            .getByRole('button', { name: 'Pull Requests', exact: true })
+            .getByRole('button', { name: 'Pull requests', exact: true })
         await expect(backCrumb).toBeVisible()
         await backCrumb.click()
 

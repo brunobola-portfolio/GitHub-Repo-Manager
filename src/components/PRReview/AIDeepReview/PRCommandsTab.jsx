@@ -141,7 +141,7 @@ function PRCommandCard({ owner, repo, prNumber, command }) {
                                 publishStatus.kind === 'success'
                                     ? 'text-emerald-700 dark:text-emerald-400'
                                     : publishStatus.kind === 'error'
-                                        ? 'text-red-600 dark:text-red-400'
+                                        ? 'text-rose-600 dark:text-rose-400'
                                         : 'text-slate-500 dark:text-slate-400'
                             }`}>
                                 {publishStatus.message}
@@ -230,7 +230,7 @@ function ImproveResult({ result }) {
 
 function priorityTone(priority) {
     switch (priority) {
-        case 'high': return 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200';
+        case 'high': return 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200';
         case 'medium': return 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200';
         default: return 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300';
     }

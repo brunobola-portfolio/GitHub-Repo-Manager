@@ -239,7 +239,7 @@ export function CommitsTab({ repo }) {
                     // *this* page instead of "Load more" — which would silently skip
                     // straight to the next page and drop this one's commits.
                     <>
-                        <p className="text-xs text-red-600 dark:text-red-400">
+                        <p className="text-xs text-rose-600 dark:text-rose-400">
                             Couldn&apos;t load more commits.
                         </p>
                         <Button variant="secondary" size="sm" onClick={reload}>

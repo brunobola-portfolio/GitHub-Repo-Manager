@@ -18,7 +18,7 @@ export function GitHubResults({ live, onOpen }) {
   return (
     <>
       {live.prs.length > 0 && (
-        <Command.Group heading="GitHub — Pull Requests" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+        <Command.Group heading="GitHub — Pull requests" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
           {live.prs.map((pr) => (
             <Command.Item
               key={`pr-${pr.id}`}

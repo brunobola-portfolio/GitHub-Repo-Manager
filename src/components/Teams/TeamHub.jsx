@@ -42,7 +42,7 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
         // your first team" CTA.
         setLoadError(!!result.error);
         if (result.error) {
-            toast.error('Could not load teams');
+            toast.error("Couldn't load teams");
         }
         setLoading(false);
     };
@@ -227,7 +227,7 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
                             <EmptyState
                                 icon={AlertTriangle}
                                 title="Couldn't load teams"
-                                description="We couldn't reach the team service. Check your connection and try again."
+                                description="Couldn't reach the team service. Check your connection and try again."
                                 action={{ label: 'Retry', onClick: fetchTeams }}
                             />
                         </div>
@@ -319,7 +319,7 @@ function TeamCard({ team, onClick, onEdit, onDelete }) {
                                 </button>
                                 <button
                                     onClick={onDelete}
-                                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 text-left"
+                                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-left"
                                 >
                                     <Trash2 className="w-3 h-3" /> Delete
                                 </button>

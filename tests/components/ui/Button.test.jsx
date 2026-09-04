@@ -18,7 +18,7 @@ describe('Button', () => {
 
     it('applies the requested variant', () => {
         render(<Button variant="danger">x</Button>)
-        expect(screen.getByRole('button').className).toContain('bg-red-600')
+        expect(screen.getByRole('button').className).toContain('bg-rose-600') // danger is rose now, red retired (FE-05)
     })
 
     it('falls back to primary for an unknown variant', () => {
@@ -81,11 +81,12 @@ describe('Button', () => {
         expect(cls).toContain('border-slate-300')
     })
 
-    it('renders outline-danger with red border + red text', () => {
+    it('renders outline-danger with rose border + rose text', () => {
         render(<Button variant="outline-danger">x</Button>)
         const cls = screen.getByRole('button').className
-        expect(cls).toContain('border-red-300')
-        expect(cls).toContain('text-red-600')
+        // danger's palette is rose now, red retired (2026-09-04 panel FE-05)
+        expect(cls).toContain('border-rose-300')
+        expect(cls).toContain('text-rose-600')
     })
 
     it('renders outline-primary with indigo border + brand-token text', () => {
@@ -95,11 +96,12 @@ describe('Button', () => {
         expect(cls).toContain('text-[color:var(--ds-accent-brand)]')
     })
 
-    it('renders soft-danger with red-50 bg + red text and no border', () => {
+    it('renders soft-danger with rose-50 bg + rose text and no border', () => {
         render(<Button variant="soft-danger">x</Button>)
         const cls = screen.getByRole('button').className
-        expect(cls).toContain('bg-red-50')
-        expect(cls).toContain('text-red-700')
+        // danger's palette is rose now, red retired (2026-09-04 panel FE-05)
+        expect(cls).toContain('bg-rose-50')
+        expect(cls).toContain('text-rose-700')
     })
 
     it('renders soft-primary with brand-50 bg + indigo text + indigo border', () => {

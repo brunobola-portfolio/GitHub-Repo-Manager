@@ -15,9 +15,9 @@ export function OversizedFilesPanel({ files, fallback }) {
   return (
     <div className="space-y-3">
       {/* Headline */}
-      <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-red-500/5 border border-red-500/15">
-        <FileWarning className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
-        <div className="text-xs text-red-700 dark:text-red-300/90 leading-relaxed">
+      <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-rose-500/5 border border-rose-500/15">
+        <FileWarning className="w-4 h-4 text-rose-500 mt-0.5 shrink-0" />
+        <div className="text-xs text-rose-700 dark:text-rose-300/90 leading-relaxed">
           <p className="font-medium">
             {files.length} file{files.length === 1 ? '' : 's'} exceed GitHub's 100 MB per-file limit
             <span className="ml-1.5 font-normal opacity-80">({formatFileSize(total, 1)} total)</span>
@@ -30,29 +30,29 @@ export function OversizedFilesPanel({ files, fallback }) {
 
       {/* File list */}
       <div className="relative group/files">
-        <div className="rounded-lg border border-red-500/15 bg-red-950/10 dark:bg-red-950/30 overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-red-500/10 ds-text-micro font-semibold uppercase tracking-wider text-red-500/80">
+        <div className="rounded-lg border border-rose-500/15 bg-rose-950/10 dark:bg-rose-950/30 overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-rose-500/10 ds-text-micro font-semibold uppercase tracking-wider text-rose-600/80 dark:text-rose-400/80">
             <span>Offending paths</span>
             <button
               type="button"
               onClick={handleCopy}
               aria-label="Copy file list"
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-red-400 hover:bg-red-900/30"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-rose-400 hover:bg-rose-900/30"
             >
               <AnimatedCopyIcon copied={copied} size="w-3 h-3" />
               {copied ? 'Copied' : 'Copy'}
             </button>
           </div>
-          <ul className="divide-y divide-red-500/10 max-h-48 overflow-y-auto ds-scrollbar">
+          <ul className="divide-y divide-rose-500/10 max-h-48 overflow-y-auto ds-scrollbar">
             {files.map((f, i) => (
               <li
                 key={`${f.path}-${i}`}
                 className="flex items-center gap-2 px-3 py-1.5 text-xs"
               >
-                <span className="font-[var(--ds-font-mono)] text-red-600 dark:text-red-400/90 truncate flex-1" title={f.path}>
+                <span className="font-[var(--ds-font-mono)] text-rose-600 dark:text-rose-400/90 truncate flex-1" title={f.path}>
                   {f.path}
                 </span>
-                <span className="shrink-0 tabular-nums text-red-500/90 font-medium">
+                <span className="shrink-0 tabular-nums text-rose-600/90 dark:text-rose-400/90 font-medium">
                   {formatFileSize(f.sizeBytes, 1)}
                 </span>
               </li>

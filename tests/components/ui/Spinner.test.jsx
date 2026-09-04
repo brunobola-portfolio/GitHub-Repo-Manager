@@ -19,7 +19,7 @@ describe('Spinner', () => {
 
     it('applies the requested tone', () => {
         render(<Spinner tone="danger" />)
-        expect(screen.getByRole('status').className).toContain('text-red-500')
+        expect(screen.getByRole('status').className).toContain('text-rose-500') // danger is rose now, red retired (FE-05)
     })
 
     it('falls back to defaults for unknown tone/size', () => {

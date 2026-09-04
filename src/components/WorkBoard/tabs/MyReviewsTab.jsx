@@ -114,7 +114,7 @@ function ReviewRow({ review, isFocused, onFocus, hasAI, onApprove, onSnooze, onR
                             {review.authorLogin && <> by <strong>{review.authorLogin}</strong></>}
                         </div>
                     </div>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-400 whitespace-nowrap flex-shrink-0">
+                    <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap flex-shrink-0">
                         <Clock className="w-3 h-3" />
                         {ageLabel(review.ageHours)}
                     </div>

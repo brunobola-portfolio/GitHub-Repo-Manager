@@ -340,8 +340,8 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 								}
 								${(item.danger || item.intent === 'destructive') && !item.disabled
 									? isHovered
-										? 'bg-red-500/10 dark:bg-red-500/15 text-red-600 dark:text-red-400'
-										: 'text-red-600 dark:text-red-400'
+										? 'bg-rose-500/10 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400'
+										: 'text-rose-600 dark:text-rose-400'
 									: isHovered && !item.disabled
 										? 'bg-black/[0.06] dark:bg-white/[0.08] text-slate-900 dark:text-slate-100'
 										: 'text-slate-700 dark:text-slate-300'
@@ -374,7 +374,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 											id={`${descBaseId}-desc-${index}`}
 										className={`ds-text-meta leading-snug mt-0.5 line-clamp-2 ${
 											(item.danger || item.intent === 'destructive')
-												? 'text-red-500/80 dark:text-red-400/80'
+												? 'text-rose-600/80 dark:text-rose-400/80'
 												: 'text-slate-500 dark:text-slate-400'
 										}`}
 									>

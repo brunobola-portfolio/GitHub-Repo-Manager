@@ -246,14 +246,14 @@ function ReadmeMermaidBlock({ source }) {
                 if (!cancelled) setMermaidError(err?.message || 'Failed to render diagram')
             })
         }).catch((err) => {
-            if (!cancelled) setMermaidError(err?.message || 'Failed to load mermaid')
+            if (!cancelled) setMermaidError(err?.message || "Couldn't load mermaid")
         })
 
         return () => { cancelled = true }
     }, [source, theme])
 
     if (mermaidError) {
-        return <p className="text-xs text-red-600 dark:text-red-400">Diagram failed to render: {mermaidError}</p>
+        return <p className="text-xs text-rose-600 dark:text-rose-400">Diagram failed to render: {mermaidError}</p>
     }
     return (
         <div

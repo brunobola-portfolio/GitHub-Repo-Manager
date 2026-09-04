@@ -49,9 +49,9 @@ const STATUS_CONFIG = {
   failed: {
     icon: XCircle,
     label: 'Failed',
-    color: 'text-red-500',
-    bg: 'bg-red-500/10 dark:bg-red-500/10',
-    border: 'border-red-500/20 dark:border-red-500/20',
+    color: 'text-rose-500',
+    bg: 'bg-rose-500/10 dark:bg-rose-500/10',
+    border: 'border-rose-500/20 dark:border-rose-500/20',
     tone: 'danger',
   },
   skipped: {
@@ -91,7 +91,7 @@ function CircularProgress({ score, size = 100, strokeWidth = 7 }) {
       ? 'text-emerald-500'
       : isMedium
         ? 'text-amber-500'
-        : 'text-red-500'
+        : 'text-rose-500'
 
   const glowColor = isPerfect
     ? 'drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]'
@@ -325,7 +325,7 @@ function ErrorCard({ error, index, onReplaceRetry, onLfsRetry }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.08, duration: 0.35, ease: EASE.emphasized }}
-      className="rounded-xl border border-red-500/20 dark:border-red-500/15 bg-red-500/5 dark:bg-red-500/5 overflow-hidden"
+      className="rounded-xl border border-rose-500/20 dark:border-rose-500/15 bg-rose-500/5 dark:bg-rose-500/5 overflow-hidden"
     >
       {/* Header — always visible */}
       <button
@@ -333,14 +333,14 @@ function ErrorCard({ error, index, onReplaceRetry, onLfsRetry }) {
         onClick={() => setExpanded(!expanded)}
         aria-expanded={expanded}
         aria-label={`${expanded ? 'Collapse' : 'Expand'} error details for task ${error.taskId}`}
-        className="w-full flex items-center gap-3 p-3.5 text-left hover:bg-red-500/5 transition-colors"
+        className="w-full flex items-center gap-3 p-3.5 text-left hover:bg-rose-500/5 transition-colors"
       >
-        <div className="shrink-0 w-8 h-8 rounded-lg bg-red-500/10 dark:bg-red-500/10 flex items-center justify-center">
-          <XCircle className="w-4.5 h-4.5 text-red-500" />
+        <div className="shrink-0 w-8 h-8 rounded-lg bg-rose-500/10 dark:bg-rose-500/10 flex items-center justify-center">
+          <XCircle className="w-4.5 h-4.5 text-rose-500" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-red-700 dark:text-red-300">
+            <span className="text-sm font-medium text-rose-700 dark:text-rose-300">
               Task #{error.taskId}
             </span>
             <Badge tone="danger" size="xs" className="uppercase tracking-wider" icon={<TypeIcon className="w-3 h-3" />}>
@@ -350,9 +350,9 @@ function ErrorCard({ error, index, onReplaceRetry, onLfsRetry }) {
         </div>
         <div className="shrink-0">
           {expanded ? (
-            <ChevronUp className="w-4 h-4 text-red-400" />
+            <ChevronUp className="w-4 h-4 text-rose-400" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-red-400" />
+            <ChevronDown className="w-4 h-4 text-rose-400" />
           )}
         </div>
       </button>
@@ -381,14 +381,14 @@ function ErrorCard({ error, index, onReplaceRetry, onLfsRetry }) {
               ) : (
                 <>
                   <div className="relative group/err">
-                    <pre className="text-xs text-red-600 dark:text-red-400/90 bg-red-950/10 dark:bg-red-950/30 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all font-[var(--ds-font-mono)]">
+                    <pre className="text-xs text-rose-600 dark:text-rose-400/90 bg-rose-950/10 dark:bg-rose-950/30 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap break-all font-[var(--ds-font-mono)]">
                       {error.error}
                     </pre>
                     <button
                       type="button"
                       onClick={handleCopy}
                       aria-label="Copy error message"
-                      className="absolute top-2 right-2 p-1 rounded-md bg-red-900/20 hover:bg-red-900/40 text-red-400 opacity-0 group-hover/err:opacity-100 focus:opacity-100 transition-all"
+                      className="absolute top-2 right-2 p-1 rounded-md bg-rose-900/20 hover:bg-rose-900/40 text-rose-400 opacity-0 group-hover/err:opacity-100 focus:opacity-100 transition-all"
                     >
                       <AnimatedCopyIcon copied={copied} size="w-3 h-3" />
                     </button>
@@ -449,7 +449,7 @@ function getStatusHeadline(plan, score) {
 function getStatusIcon(score) {
   if (score === 100) return { Icon: Trophy, color: 'text-emerald-500', bg: 'bg-emerald-500/10' }
   if (score >= 50) return { Icon: BarChart3, color: 'text-amber-500', bg: 'bg-amber-500/10' }
-  return { Icon: AlertTriangle, color: 'text-red-500', bg: 'bg-red-500/10' }
+  return { Icon: AlertTriangle, color: 'text-rose-500', bg: 'bg-rose-500/10' }
 }
 
 /* ═══════════════════════════════════════════
@@ -482,7 +482,7 @@ function PreflightSummary({ flags }) {
           Pre-flight review resolved {total} issue{total === 1 ? '' : 's'} before migration
         </span>
       </div>
-      <ul className="text-xs text-slate-400 space-y-1 ml-6 list-disc">
+      <ul className="text-xs text-slate-500 dark:text-slate-400 space-y-1 ml-6 list-disc">
         {Object.entries(byType).map(([type, count]) => (
           <li key={type}>{count} {labels[type] || type}</li>
         ))}
@@ -563,7 +563,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
     let cancelled = false
     migrationApi.getReport(planId)
       .then((data) => { if (!cancelled) setReport(data) })
-      .catch((err) => { if (!cancelled) setError(formatUserError(err, { fallbackTitle: 'Failed to load report' })) })
+      .catch((err) => { if (!cancelled) setError(formatUserError(err, { fallbackTitle: "Couldn't load report" })) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [planId])
@@ -593,7 +593,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
       <div className="flex flex-col items-center gap-3 p-12 text-center">
         <RowIconBadge icon={XCircle} tone="red" size="xl" surface="soft" />
         <div>
-          <p className="text-sm font-medium text-red-600 dark:text-red-400">{error.title}</p>
+          <p className="text-sm font-medium text-rose-600 dark:text-rose-400">{error.title}</p>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{error.body}</p>
         </div>
       </div>
@@ -684,7 +684,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
                   icon={XCircle}
                   label="Failed"
                   value={summary.failed}
-                  color="text-red-500"
+                  color="text-rose-500"
                 />
               )}
               {summary.skipped > 0 && (
@@ -742,11 +742,11 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
       {taskErrors.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <Shield className="w-3.5 h-3.5 text-red-500" />
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">
+            <Shield className="w-3.5 h-3.5 text-rose-500" />
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-rose-600 dark:text-rose-400">
               Error Details
             </h4>
-            <span className="text-xs text-red-400 dark:text-red-500 tabular-nums">
+            <span className="text-xs text-rose-600 dark:text-rose-400 tabular-nums">
               {taskErrors.length} {taskErrors.length === 1 ? 'error' : 'errors'}
             </span>
           </div>

@@ -38,7 +38,7 @@ export function AINotHealthyBanner({
     }
     const descriptionByState = {
         invalid: 'Your provider replied with an authentication error. Check the key in Settings — it may be expired, revoked, or wrong.',
-        unreachable: 'We couldn\'t reach your AI provider. Network or provider outage — try again or check provider status.',
+        unreachable: 'Couldn\'t reach your AI provider. Network or provider outage — try again or check provider status.',
         unknown: 'Your AI provider hasn\'t responded yet. AI features may misbehave until the next health check.',
     }
     const title = titleByState[state] || titleByState.invalid

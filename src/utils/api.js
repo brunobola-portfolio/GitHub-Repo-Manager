@@ -193,20 +193,20 @@ function notifyRateLimit(info) {
 
 // User-friendly error messages
 const ERROR_MESSAGES = {
-    [ErrorType.NETWORK]: 'Unable to connect to the server. Please check your internet connection.',
+    [ErrorType.NETWORK]: 'Unable to connect to the server. Check your internet connection.',
     // Neutral by design: this string reaches every end user, including people
     // running the packaged Windows build who have no terminal and no checkout.
     // The developer hint lives behind import.meta.env.DEV in RepoStates.
     [ErrorType.BACKEND_UNAVAILABLE]: 'Cannot reach the GitHub Repo Manager service. It may still be starting up.',
-    [ErrorType.TIMEOUT]: 'The request took too long to complete. Please try again.',
+    [ErrorType.TIMEOUT]: 'The request took too long to complete. Try again.',
     [ErrorType.AUTHENTICATION]: 'Your session expired. Sign in again to continue.',
     [ErrorType.AUTHORIZATION]: 'You do not have permission to perform this action.',
     [ErrorType.NOT_FOUND]: 'The requested resource was not found.',
-    [ErrorType.RATE_LIMIT]: 'Too many requests. Please wait a moment before trying again.',
-    [ErrorType.SERVER]: 'The server encountered an error. Please try again later.',
-    [ErrorType.VALIDATION]: 'Invalid request. Please check your input.',
-    [ErrorType.OFFLINE]: 'You appear to be offline. Please check your connection.',
-    [ErrorType.UNKNOWN]: 'An unexpected error occurred. Please try again.'
+    [ErrorType.RATE_LIMIT]: 'Too many requests. Wait a moment before trying again.',
+    [ErrorType.SERVER]: 'The server encountered an error. Try again later.',
+    [ErrorType.VALIDATION]: 'Invalid request. Check your input.',
+    [ErrorType.OFFLINE]: 'You appear to be offline. Check your connection.',
+    [ErrorType.UNKNOWN]: 'An unexpected error occurred. Try again.'
 }
 
 // Custom API Error class

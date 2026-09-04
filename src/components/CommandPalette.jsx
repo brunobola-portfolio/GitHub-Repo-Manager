@@ -574,7 +574,7 @@ export function CommandPalette({
             <>
               <AskModeBanner summary={ask.data.summary} hasQueries={ask.data.queries.length > 0} />
               {askResults.results.pr.length > 0 && (
-                <Command.Group heading="Pull Requests" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
+                <Command.Group heading="Pull requests" className={`mt-1 ${GROUP_HEADING_CLASSES}`}>
                   {askResults.results.pr.map((pr) => (
                     <Command.Item
                       key={`ask-pr-${pr.id}`}

@@ -185,7 +185,7 @@ export default function UrlInputStep({ source, onChange }) {
         )}
 
         {source.urlValidation === 'invalid' && (
-          <span className="inline-flex items-center gap-1.5 text-sm text-red-600 dark:text-red-400">
+          <span className="inline-flex items-center gap-1.5 text-sm text-rose-600 dark:text-rose-400">
             <XCircle className="w-4 h-4" />
             {source.urlError}
           </span>

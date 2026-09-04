@@ -146,19 +146,19 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-start gap-3 p-4 rounded-xl bg-red-50/60 dark:bg-red-500/[0.04] border border-red-200/80 dark:border-red-500/20"
+          className="flex items-start gap-3 p-4 rounded-xl bg-rose-50/60 dark:bg-rose-500/[0.04] border border-rose-200/80 dark:border-rose-500/20"
         >
-          <div className="shrink-0 w-8 h-8 rounded-lg bg-red-100 dark:bg-red-500/15 flex items-center justify-center">
-            <AlertTriangle className="w-4 h-4 text-red-500" />
+          <div className="shrink-0 w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-500/15 flex items-center justify-center">
+            <AlertTriangle className="w-4 h-4 text-rose-500" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-red-700 dark:text-red-400">{error.title}</p>
-            <p className="text-xs text-red-600/80 dark:text-red-400/60 mt-0.5">{error.body}</p>
+            <p className="text-sm font-medium text-rose-700 dark:text-rose-400">{error.title}</p>
+            <p className="text-xs text-rose-600/80 dark:text-rose-400/60 mt-0.5">{error.body}</p>
           </div>
           <button
             type="button"
             onClick={analyze}
-            className="shrink-0 text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 underline underline-offset-2"
+            className="shrink-0 text-xs font-medium text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 underline underline-offset-2"
           >
             Retry
           </button>
@@ -183,8 +183,8 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
                 icon={Shield}
                 label="Risks Found"
                 value={allRisks.length}
-                iconColor={highRisks.length > 0 ? 'text-red-500' : 'text-emerald-500'}
-                iconBg={highRisks.length > 0 ? 'bg-red-100 dark:bg-red-500/15' : 'bg-emerald-100 dark:bg-emerald-500/15'}
+                iconColor={highRisks.length > 0 ? 'text-rose-500' : 'text-emerald-500'}
+                iconBg={highRisks.length > 0 ? 'bg-rose-100 dark:bg-rose-500/15' : 'bg-emerald-100 dark:bg-emerald-500/15'}
                 delay={0.08}
               />
               <MetricCard

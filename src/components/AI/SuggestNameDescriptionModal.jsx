@@ -90,7 +90,7 @@ function FieldCard({
                 ) : (
                     <Input type="text" {...editProps} />
                 )}
-                <p className="ds-text-meta text-slate-400 mt-2">Edit manually, or use “Suggest with AI” below to fill this in.</p>
+                <p className="ds-text-meta text-slate-500 dark:text-slate-400 mt-2">Edit manually, or use “Suggest with AI” below to fill this in.</p>
             </InsightCard>
         )
     }
@@ -112,7 +112,7 @@ function FieldCard({
             </div>
             <div className="grid sm:grid-cols-2 gap-3">
                 <div>
-                    <p className="ds-text-meta uppercase tracking-wider text-slate-400 mb-1">Current</p>
+                    <p className="ds-text-meta uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Current</p>
                     <p className={`text-sm break-words ${emptyCurrent ? 'italic text-slate-400' : 'text-slate-700 dark:text-slate-200'}`}>
                         {emptyCurrent ? '(no description set)' : currentValue}
                     </p>

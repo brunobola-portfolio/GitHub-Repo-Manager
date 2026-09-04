@@ -16,7 +16,7 @@ const COMPLETED_CONFIG = { icon: CheckCircle2, color: 'text-emerald-500', bg: 'b
 const STATUS_CONFIG = {
   complete: COMPLETED_CONFIG,
   completed: COMPLETED_CONFIG,
-  failed: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-500/10', label: 'Failed' },
+  failed: { icon: XCircle, color: 'text-rose-500', bg: 'bg-rose-500/10', label: 'Failed' },
   running: { icon: SpinnerIcon, color: 'text-blue-500', bg: 'bg-blue-500/10', label: 'Running', animate: false },
   pending: { icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10', label: 'Pending' },
 }
@@ -110,7 +110,7 @@ export function MigrationActivity({ loading: parentLoading }) {
       <EmptyState
         icon={AlertTriangle}
         title="Couldn't load migrations"
-        description="We couldn't reach the migration service. Check your connection and try again."
+        description="Couldn't reach the migration service. Check your connection and try again."
         action={{ label: 'Retry', onClick: loadStats }}
       />
     )
@@ -138,7 +138,7 @@ export function MigrationActivity({ loading: parentLoading }) {
           <MiniStat label="TFVC Converted" value={stats.tfvc} icon={AlertTriangle} color="text-amber-500" onClick={openHistory} />
         )}
         {stats.tfvc === 0 && (
-          <MiniStat label="Failed" value={stats.failed} icon={XCircle} color="text-red-500" onClick={openHistory} />
+          <MiniStat label="Failed" value={stats.failed} icon={XCircle} color="text-rose-500" onClick={openHistory} />
         )}
       </div>
 

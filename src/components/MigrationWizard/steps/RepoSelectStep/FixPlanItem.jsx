@@ -15,7 +15,7 @@ export function FixPlanItem({ item, checked, conflictStatus, onToggle, onEdit })
   return (
     <div
       className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-sm
-        ${disabled ? 'border-red-300 bg-red-50 dark:border-red-500/40 dark:bg-red-950/10' : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/40'}`}
+        ${disabled ? 'border-rose-300 bg-rose-50 dark:border-rose-500/40 dark:bg-rose-950/10' : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/40'}`}
     >
       <Checkbox
         checked={checked && !disabled}
@@ -49,7 +49,7 @@ export function FixPlanItem({ item, checked, conflictStatus, onToggle, onEdit })
 function ConflictIcon({ status }) {
   if (status === 'checking') return <Spinner size="md" tone="muted" label="Checking target" />
   if (status === 'clear') return <Check className="h-4 w-4 text-emerald-500" aria-label="Clear" />
-  if (status === 'conflict') return <AlertCircle className="h-4 w-4 text-red-500" aria-label="Conflict" />
+  if (status === 'conflict') return <AlertCircle className="h-4 w-4 text-rose-500" aria-label="Conflict" />
   if (status === 'unchecked') return <AlertCircle className="h-4 w-4 text-amber-500" aria-label="Unchecked" />
   return null
 }

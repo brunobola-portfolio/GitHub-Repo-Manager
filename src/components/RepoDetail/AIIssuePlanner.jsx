@@ -110,7 +110,7 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
                                 placeholder="e.g. scope to the frontend, avoid DB migrations, reuse existing auth middleware…"
                             />
                         </Field>
-                        <span className="block ds-text-micro text-right text-slate-400 mt-0.5">
+                        <span className="block ds-text-micro text-right text-slate-500 dark:text-slate-400 mt-0.5">
                             {extra.length}/2000
                         </span>
                     </div>

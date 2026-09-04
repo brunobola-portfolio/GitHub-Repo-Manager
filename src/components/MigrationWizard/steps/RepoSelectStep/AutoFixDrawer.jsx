@@ -138,7 +138,7 @@ export function AutoFixDrawer({
       footer={footer}
     >
       {error?.type === 'auth' && (
-        <div className="m-4 rounded-md border border-red-500/40 bg-red-50 dark:bg-red-950/30 p-3 text-sm text-red-700 dark:text-red-200">
+        <div className="m-4 rounded-md border border-rose-500/40 bg-rose-50 dark:bg-rose-950/30 p-3 text-sm text-rose-700 dark:text-rose-200">
           {error.message}
         </div>
       )}
@@ -170,7 +170,7 @@ export function AutoFixDrawer({
           <section>
             <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
               Large repositories
-              {isAILoading && <span className="text-xs text-slate-400">(AI analyzing…)</span>}
+              {isAILoading && <span className="text-xs text-slate-500 dark:text-slate-400">(AI analyzing…)</span>}
             </h3>
             {!aiAvailable && (
               <div className="mb-2 flex items-start gap-2 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 p-2 text-xs text-slate-600 dark:text-slate-300">

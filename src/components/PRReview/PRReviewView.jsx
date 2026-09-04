@@ -350,7 +350,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
     return (
       <div className="flex items-center justify-center h-full min-h-0 flex-1 bg-white dark:bg-slate-950">
         <div className="text-center space-y-3">
-          <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+          <p className="text-rose-600 dark:text-rose-400 text-sm">{error}</p>
           <button
             onClick={() => onBack?.()}
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"

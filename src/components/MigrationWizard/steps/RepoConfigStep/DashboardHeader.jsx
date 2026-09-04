@@ -168,7 +168,7 @@ export function DashboardHeader({
               <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">Private</div>
             </div>
             <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
-              <div className="text-xl font-bold text-orange-400">{stats.publicCount}</div>
+              <div className="text-xl font-bold text-amber-400">{stats.publicCount}</div>
               <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">Public</div>
             </div>
           </>

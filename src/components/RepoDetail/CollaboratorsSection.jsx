@@ -48,7 +48,7 @@ export function CollaboratorsSection({ owner, repo, archived }) {
             setCollaborators(Array.isArray(list) ? list : [])
             setLoaded(true)
         } catch (err) {
-            toast.errorFromException(err, { fallbackTitle: 'Failed to load collaborators' })
+            toast.errorFromException(err, { fallbackTitle: "Couldn't load collaborators" })
         } finally {
             setLoading(false)
         }
@@ -174,7 +174,7 @@ export function CollaboratorsSection({ owner, repo, archived }) {
                                 size="sm"
                                 onClick={() => handleRemove(c)}
                                 disabled={removingId === c.id || archived}
-                                className="text-red-500 hover:text-red-600"
+                                className="text-rose-500 hover:text-rose-600"
                                 title={archived ? 'Archived repos cannot be modified' : `Remove ${c.login}`}
                             >
                                 {removingId === c.id ? <Spinner size="sm" /> : <Trash2 className="w-3.5 h-3.5" />}

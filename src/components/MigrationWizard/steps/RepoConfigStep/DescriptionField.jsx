@@ -21,7 +21,7 @@ export function DescriptionField({ repo, index, aiAvailable, isGenerating, mode,
   const near = !over && length > REPO_DESCRIPTION_MAX - 30
 
   const counterTone = over
-    ? 'text-red-600 dark:text-red-400'
+    ? 'text-rose-600 dark:text-rose-400'
     : near
       ? 'text-amber-700 dark:text-amber-400'
       : 'text-slate-500 dark:text-slate-400'

@@ -40,7 +40,7 @@ export function SelectionSummaryBar({ selected, warnings, blockers, autoFixCount
               </span>
             )}
             {blockers > 0 && (
-              <span className="flex items-center gap-1 text-red-400">
+              <span className="flex items-center gap-1 text-rose-400">
                 <AlertOctagon className="w-3.5 h-3.5" aria-hidden="true" /> {blockers} blocker{blockers === 1 ? '' : 's'}
               </span>
             )}

@@ -114,7 +114,7 @@ function StepDisc({ status, index, icon: Icon }) {
   }
   if (status === 'error') {
     return (
-      <div className="w-9 h-9 rounded-full bg-red-500 dark:bg-red-500/90 flex items-center justify-center text-white shadow-[0_2px_8px_-2px_rgba(239,68,68,0.5)]">
+      <div className="w-9 h-9 rounded-full bg-rose-500 dark:bg-rose-500/90 flex items-center justify-center text-white shadow-[0_2px_8px_-2px_rgba(239,68,68,0.5)]">
         <XCircle className="w-4 h-4" strokeWidth={2.5} />
       </div>
     )
@@ -146,7 +146,7 @@ const ROW_TONE = {
   current: { row: 'bg-gradient-to-r from-brand-50/80 to-transparent dark:from-brand-500/[0.12] dark:to-transparent', label: 'text-brand-700 dark:text-brand-200', hint: 'text-brand-500/80 dark:text-brand-300/80', pill: { label: 'Current', cls: 'bg-brand-500 text-white' } },
   pending: { row: '', label: 'text-slate-500 dark:text-slate-500', hint: 'text-slate-400 dark:text-slate-600', pill: null },
   loading: { row: 'bg-gradient-to-r from-brand-50/80 to-transparent dark:from-brand-500/[0.10] dark:to-transparent', label: 'text-brand-700 dark:text-brand-200', hint: 'text-brand-500/80 dark:text-brand-300/80', pill: { label: 'PROCESSING', cls: 'bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300' } },
-  error:   { row: 'bg-gradient-to-r from-red-50/80 to-transparent dark:from-red-500/[0.10] dark:to-transparent', label: 'text-red-700 dark:text-red-300', hint: 'text-red-600/80 dark:text-red-400/80', pill: { label: 'ACTION', cls: 'bg-red-500 text-white' } },
+  error:   { row: 'bg-gradient-to-r from-rose-50/80 to-transparent dark:from-rose-500/[0.10] dark:to-transparent', label: 'text-rose-700 dark:text-rose-300', hint: 'text-rose-600/80 dark:text-rose-400/80', pill: { label: 'ACTION', cls: 'bg-rose-500 text-white' } },
   warning: { row: 'bg-gradient-to-r from-amber-50/70 to-transparent dark:from-amber-500/[0.10] dark:to-transparent', label: 'text-amber-700 dark:text-amber-300', hint: 'text-amber-700/80 dark:text-amber-400/80', pill: { label: 'WARNING', cls: 'bg-amber-400 text-white' } },
   skipped: { row: '', label: 'text-slate-400 dark:text-slate-600', hint: 'text-slate-300 dark:text-slate-700 italic', pill: { label: 'SKIPPED', cls: 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400' } },
 }

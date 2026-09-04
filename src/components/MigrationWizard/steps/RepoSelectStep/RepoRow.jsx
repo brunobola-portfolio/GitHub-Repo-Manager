@@ -4,8 +4,8 @@ import { RepoMetaBadges } from '../../ui/repo/RepoMetaBadges'
 import { RiskBadge } from '../../ui/repo/RiskBadge'
 
 const ACCENT = {
-  blocker: 'from-red-500 to-red-600',
-  warning: 'from-amber-500 to-orange-500',
+  blocker: 'from-rose-500 to-rose-600',
+  warning: 'from-amber-500 to-amber-600',
   info:    'from-slate-400 to-slate-500',
   ok:      'bg-brand-500',
 }

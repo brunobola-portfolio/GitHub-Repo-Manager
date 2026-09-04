@@ -6,8 +6,8 @@ const TONE_MAP = {
   cyan:    'text-brand-400',
   emerald: 'text-emerald-400',
   amber:   'text-amber-400',
-  orange:  'text-orange-400',
-  red:     'text-red-400',
+  orange:  'text-amber-400',
+  red:     'text-rose-400',
   slate:   'text-slate-400',
 }
 

@@ -129,7 +129,7 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
                 setQaResponses(prev => [...prev, { role: 'assistant', content: result.refined_content }])
             }
         } catch {
-            setQaResponses(prev => [...prev, { role: 'assistant', content: 'Failed to get answer. Please try again.' }])
+            setQaResponses(prev => [...prev, { role: 'assistant', content: 'Failed to get answer. Try again.' }])
         }
     }, [selectedRepo, selectedPR, qaHistory, summary, startStream, repoOwner])
 

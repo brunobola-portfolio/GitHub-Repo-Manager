@@ -97,7 +97,7 @@ describe('CommunityHealthDashboard', () => {
         expect(screen.getByText('Add CONTRIBUTING.md')).toBeInTheDocument();
     });
 
-    it('shows red border on missing files', async () => {
+    it('shows rose border on missing files', async () => {
         global.fetch.mockResolvedValueOnce({
             ok: true,
             json: () => Promise.resolve(mockHealthData)
@@ -107,8 +107,9 @@ describe('CommunityHealthDashboard', () => {
             expect(screen.getByText('CONTRIBUTING.md')).toBeInTheDocument();
         });
         const contributingEl = screen.getByText('CONTRIBUTING.md');
-        // The FileCheckItem wraps content in a motion.div with border-red-300/40 for missing files
-        const container = contributingEl.closest('[class*="border-red"]');
+        // The FileCheckItem wraps content in a motion.div with border-rose-300/40
+        // for missing files (red retired in favour of rose, FE-05)
+        const container = contributingEl.closest('[class*="border-rose"]');
         expect(container).toBeTruthy();
     });
 

@@ -5,21 +5,21 @@ const TYPE_STYLES = {
     feature: { label: 'Feature', color: 'text-emerald-400' },
     bugfix: { label: 'Bugfix', color: 'text-amber-400' },
     refactor: { label: 'Refactor', color: 'text-blue-400' },
-    breaking: { label: 'Breaking', color: 'text-red-400' },
+    breaking: { label: 'Breaking', color: 'text-rose-400' },
     chore: { label: 'Chore', color: 'text-slate-400' },
 }
 
 const COMPLEXITY_STYLES = {
     low: 'text-emerald-400',
     medium: 'text-amber-400',
-    high: 'text-red-400',
+    high: 'text-rose-400',
 }
 
 export function SmartContextBar({ analysis, diffSummary, loading, onSuggestionClick, onDismissSuggestion }) {
     if (loading) {
         return (
             <div className="px-4 py-2 border-b border-brand-500/20 bg-brand-500/5">
-                <div className="flex items-center gap-2 text-xs text-slate-400">
+                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                     <Sparkles className="w-3.5 h-3.5 animate-pulse" /> Analyzing changes...
                 </div>
             </div>
@@ -40,7 +40,7 @@ export function SmartContextBar({ analysis, diffSummary, loading, onSuggestionCl
                 <span className="text-slate-400">{diffSummary.files_changed} files</span>
                 <span className="text-slate-500">&middot;</span>
                 <span className="text-emerald-400">+{diffSummary.additions}</span>
-                <span className="text-red-400">&minus;{diffSummary.deletions}</span>
+                <span className="text-rose-400">&minus;{diffSummary.deletions}</span>
                 <span className="text-slate-500">&middot;</span>
                 <span className={complexityStyle}>{analysis.complexity}</span>
             </div>

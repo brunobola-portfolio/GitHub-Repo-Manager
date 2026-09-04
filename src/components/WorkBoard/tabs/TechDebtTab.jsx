@@ -56,7 +56,7 @@ export function TechDebtTab() {
                                 <span className="font-mono text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">{h.repoFullName}</span>
                                 <span className="text-amber-700 dark:text-amber-400 font-semibold">{h.count}</span>
                                 {h.oldestAgeDays > 0 && (
-                                    <span className="text-slate-400 ds-text-micro">· oldest {Math.round(h.oldestAgeDays)}d</span>
+                                    <span className="text-slate-500 dark:text-slate-400 ds-text-micro">· oldest {Math.round(h.oldestAgeDays)}d</span>
                                 )}
                             </span>
                         ))}
@@ -97,7 +97,7 @@ export function TechDebtTab() {
                                                 </Badge>
                                             ))}
                                             {issue.assignees?.length > 0 && (
-                                                <span className="ds-text-micro text-slate-400">
+                                                <span className="ds-text-micro text-slate-500 dark:text-slate-400">
                                                     → {issue.assignees.slice(0, 2).join(', ')}
                                                 </span>
                                             )}

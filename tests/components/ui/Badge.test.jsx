@@ -27,7 +27,7 @@ describe('Badge — backward compatibility (legacy variant prop)', () => {
     ['secondary', 'bg-slate-200'],
     ['success', 'bg-emerald-100'],
     ['warning', 'bg-amber-100'],
-    ['danger', 'bg-red-100'],
+    ['danger', 'bg-rose-100'], // danger merged onto rose (red retired, 2026-09-04 panel FE-05)
     ['info', 'bg-brand-100'],
   ])('legacy variant "%s" keeps its palette', (variant, expectedBg) => {
     render(<Badge data-testid="b" variant={variant}>x</Badge>)
@@ -41,7 +41,7 @@ describe('Badge — tone prop', () => {
     ['brand', 'bg-brand-100'],
     ['success', 'bg-emerald-100'],
     ['warning', 'bg-amber-100'],
-    ['danger', 'bg-red-100'],
+    ['danger', 'bg-rose-100'], // danger merged onto rose (red retired, 2026-09-04 panel FE-05)
     ['rose', 'bg-rose-100'],
     ['info', 'bg-brand-100'],
     ['blue', 'bg-blue-100'],
@@ -56,7 +56,7 @@ describe('Badge — tone prop', () => {
     ['indigo', 'bg-brand-100'],
     ['emerald', 'bg-emerald-100'],
     ['amber', 'bg-amber-100'],
-    ['red', 'bg-red-100'],
+    ['red', 'bg-rose-100'], // "red" alias still resolves to "danger", which is rose now (red retired, FE-05)
     ['sky', 'bg-brand-100'],
     ['purple', 'bg-brand-100'],
   ])('alias "%s" resolves to the canonical tone', (alias, expectedBg) => {
@@ -68,7 +68,7 @@ describe('Badge — tone prop', () => {
     render(<Badge data-testid="b" variant="danger" tone="success">x</Badge>)
     const cls = screen.getByTestId('b').className
     expect(cls).toContain('bg-emerald-100')
-    expect(cls).not.toContain('bg-red-100')
+    expect(cls).not.toContain('bg-rose-100') // danger's palette is rose now, not red (FE-05)
   })
 
   it('every tone ships a dark: pair for AA contrast', () => {

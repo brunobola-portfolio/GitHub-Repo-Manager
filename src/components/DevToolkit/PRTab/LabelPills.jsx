@@ -19,7 +19,7 @@ export function LabelPills({ labels = [], onRemove, onAdd }) {
             {labels.map(label => (
                 <span key={label} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950/30 text-brand-700 dark:text-brand-300 text-xs border border-brand-200 dark:border-brand-800">
                     {label}
-                    <button type="button" onClick={() => onRemove(label)} className="hover:text-red-500 transition-colors" aria-label={`Remove ${label}`}>
+                    <button type="button" onClick={() => onRemove(label)} className="hover:text-rose-500 transition-colors" aria-label={`Remove ${label}`}>
                         <X className="w-2.5 h-2.5" />
                     </button>
                 </span>
@@ -37,7 +37,7 @@ export function LabelPills({ labels = [], onRemove, onAdd }) {
                     className="w-24 h-6 text-xs rounded-full px-2 bg-transparent border-brand-300 dark:border-brand-700"
                 />
             ) : (
-                <button type="button" onClick={() => setAdding(true)} className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs text-slate-400 hover:text-brand-500 border border-dashed border-slate-300 dark:border-slate-700 hover:border-brand-400 transition-colors">
+                <button type="button" onClick={() => setAdding(true)} className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs text-slate-500 dark:text-slate-400 hover:text-brand-500 border border-dashed border-slate-300 dark:border-slate-700 hover:border-brand-400 transition-colors">
                     <Plus className="w-2.5 h-2.5" /> Add
                 </button>
             )}

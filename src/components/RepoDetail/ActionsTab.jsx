@@ -12,7 +12,7 @@ import { formatDateTime } from '../../utils/format'
 
 const STATUS_ICONS = {
   success: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
-  failure: <XCircle className="w-4 h-4 text-red-500" />,
+  failure: <XCircle className="w-4 h-4 text-rose-500" />,
   in_progress: <Spinner size="sm" />,
   cancelled: <Clock className="w-4 h-4 text-slate-400" />
 }
@@ -74,6 +74,7 @@ export function ActionsTab({ repo }) {
           icon={Zap}
           title="GitHub Actions not enabled"
           description="This repository does not have any workflows configured yet."
+          action={{ label: 'Set up a workflow on GitHub', href: `https://github.com/${repo.full_name}/actions/new` }}
         />
       )
     }

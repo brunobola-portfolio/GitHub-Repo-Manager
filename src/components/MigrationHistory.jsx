@@ -52,9 +52,9 @@ const SOURCE_ICONS = {
 }
 
 const STATUS_STYLES = {
-    complete: { bg: 'bg-green-100 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-400', icon: CheckCircle2 },
-    completed: { bg: 'bg-green-100 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-400', icon: CheckCircle2 },
-    failed: { bg: 'bg-red-100 dark:bg-red-900/20', text: 'text-red-700 dark:text-red-400', icon: XCircle },
+    complete: { bg: 'bg-emerald-100 dark:bg-emerald-900/20', text: 'text-emerald-700 dark:text-emerald-400', icon: CheckCircle2 },
+    completed: { bg: 'bg-emerald-100 dark:bg-emerald-900/20', text: 'text-emerald-700 dark:text-emerald-400', icon: CheckCircle2 },
+    failed: { bg: 'bg-rose-100 dark:bg-rose-900/20', text: 'text-rose-700 dark:text-rose-400', icon: XCircle },
     running: { bg: 'bg-blue-100 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-400', icon: SpinnerIcon },
     executing: { bg: 'bg-blue-100 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-400', icon: SpinnerIcon },
     pending: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-400', icon: Clock },
@@ -252,7 +252,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                             <EmptyState
                                 icon={AlertCircle}
                                 title="Couldn't load your migration plans"
-                                description="We couldn't reach the server. Your plans are safe — this is only the list."
+                                description="Couldn't reach the server. Your plans are safe — this is only the list."
                                 action={{ label: 'Try again', onClick: loadPlans }}
                             />
                         ) : plans.length === 0 ? (
@@ -433,7 +433,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                     </div>
                                                 )}
                                                 {job.errorMessage && (
-                                                    <p className="text-xs text-red-500 dark:text-red-400 mt-1 truncate">{job.errorMessage}</p>
+                                                    <p className="text-xs text-rose-600 dark:text-rose-400 mt-1 truncate">{job.errorMessage}</p>
                                                 )}
                                             </div>
                                             {meta?.repoUrl && (job.status === 'complete' || job.status === 'completed') && (

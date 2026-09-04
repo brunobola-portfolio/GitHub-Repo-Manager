@@ -60,7 +60,7 @@ export function RepoCard({
       transition={{ duration: 0.2, delay: index * 0.05 }}
       className={`relative bg-slate-50 dark:bg-slate-800 border rounded-xl overflow-hidden transition-colors
         ${(conflictStatus === 'conflict' || repo.conflictAction === 'replace')
-          ? 'border-red-500/30'
+          ? 'border-rose-500/30'
           : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
         }`}
     >
@@ -148,7 +148,7 @@ export function RepoCard({
                         <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                       )}
                       {conflictStatus === 'conflict' && (
-                        <XCircle className="w-3 h-3 text-red-500" />
+                        <XCircle className="w-3 h-3 text-rose-500" />
                       )}
                     </>
                   }
@@ -164,7 +164,7 @@ export function RepoCard({
             branches={repo.branches}
           />
           {repo.conflictAction === 'replace' && (
-            <span role="status" className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded ds-text-micro font-semibold uppercase tracking-wide bg-red-500/10 text-red-600 dark:text-red-400">
+            <span role="status" className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded ds-text-micro font-semibold uppercase tracking-wide bg-rose-500/10 text-rose-600 dark:text-rose-400">
               <AlertTriangle className="w-2.5 h-2.5" />
               Will replace (delete) existing repo
             </span>
@@ -194,17 +194,17 @@ export function RepoCard({
           {/* Status dot + label */}
           <div className="flex items-center gap-1.5 min-w-[70px]">
             <div className={`w-2 h-2 rounded-full shrink-0 ${
-              repo.conflictAction === 'replace' ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]' :
+              repo.conflictAction === 'replace' ? 'bg-rose-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]' :
               conflictStatus === 'clear' ? 'bg-emerald-500 shadow-[0_0_6px_rgba(34,197,94,0.5)]' :
               conflictStatus === 'checking' ? 'bg-amber-500 animate-pulse shadow-[0_0_6px_rgba(245,158,11,0.5)]' :
-              conflictStatus === 'conflict' ? 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]' :
+              conflictStatus === 'conflict' ? 'bg-rose-500 shadow-[0_0_6px_rgba(239,68,68,0.5)]' :
               'bg-slate-300 dark:bg-slate-600'
             }`} />
             <span className={`ds-text-meta ${
-              repo.conflictAction === 'replace' ? 'text-red-600 dark:text-red-400' :
+              repo.conflictAction === 'replace' ? 'text-rose-600 dark:text-rose-400' :
               conflictStatus === 'clear' ? 'text-emerald-700 dark:text-emerald-400' :
               conflictStatus === 'checking' ? 'text-amber-700 dark:text-amber-400' :
-              conflictStatus === 'conflict' ? 'text-red-600 dark:text-red-400' :
+              conflictStatus === 'conflict' ? 'text-rose-600 dark:text-rose-400' :
               'text-slate-500 dark:text-slate-400'
             }`}>
               {repo.conflictAction === 'replace' ? 'Will replace' :

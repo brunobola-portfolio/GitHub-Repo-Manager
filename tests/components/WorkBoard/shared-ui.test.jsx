@@ -13,14 +13,14 @@ describe('WorkBoard ErrorState — honest 401 vs generic', () => {
     it('renders a generic load failure with a working Retry for non-401 errors', () => {
         const onRetry = vi.fn()
         render(<ErrorState error={{ status: 500 }} what="reviews" onRetry={onRetry} />)
-        expect(screen.getByText(/failed to load reviews/i)).toBeInTheDocument()
+        expect(screen.getByText(/couldn.t load reviews/i)).toBeInTheDocument()
         fireEvent.click(screen.getByRole('button', { name: /retry/i }))
         expect(onRetry).toHaveBeenCalledOnce()
     })
 
     it('omits the Retry button when no onRetry is provided', () => {
         render(<ErrorState error={{ status: 500 }} what="data" />)
-        expect(screen.getByText(/failed to load data/i)).toBeInTheDocument()
+        expect(screen.getByText(/couldn.t load data/i)).toBeInTheDocument()
         expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument()
     })
 })

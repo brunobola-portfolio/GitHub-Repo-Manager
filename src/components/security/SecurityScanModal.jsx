@@ -264,7 +264,7 @@ export function SecurityScanModal({ isOpen, onClose, repo }) {
                     // isn't an AI surface and the message is a real GitHub/network error,
                     // not something to hide behind a generic code-mapped string — but it
                     // still needs a way out other than closing the whole modal.
-                    <div role="alert" className="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-900 dark:text-red-300 text-sm space-y-2">
+                    <div role="alert" className="p-4 rounded-lg bg-rose-50 dark:bg-rose-950/30 text-rose-900 dark:text-rose-300 text-sm space-y-2">
                         <p>{error.message || String(error)}</p>
                         <Button variant="secondary" size="sm" onClick={loadScan}>
                             <RotateCcw className="w-3.5 h-3.5" /> Retry

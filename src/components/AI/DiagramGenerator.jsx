@@ -199,7 +199,7 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
                 handleRenderFailure(err?.message || 'Failed to render diagram', src)
             })
         }).catch((err) => {
-            if (!cancelled) setRenderError(err?.message || 'Failed to load mermaid')
+            if (!cancelled) setRenderError(err?.message || "Couldn't load mermaid")
         })
 
         return () => { cancelled = true }
@@ -421,7 +421,7 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
             )}
 
             {!selfRepairing && !generating && renderError && (
-                <div role="alert" className="px-3 py-2.5 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-sm text-red-600 dark:text-red-400">
+                <div role="alert" className="px-3 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 text-sm text-rose-600 dark:text-rose-400">
                     Diagram failed to render: {renderError}
                 </div>
             )}
@@ -505,7 +505,7 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
                 </div>
 
                 {data.readOnly && (
-                    <div role="alert" className="px-3 py-2.5 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-sm text-red-600 dark:text-red-400">
+                    <div role="alert" className="px-3 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/50 text-sm text-rose-600 dark:text-rose-400">
                         You don&apos;t have push access to this repository — embedding requires push rights (opening a pull request from a fork isn&apos;t supported yet).
                     </div>
                 )}

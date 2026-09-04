@@ -19,7 +19,7 @@ const TAB_ITEMS = [
     { tab: 'branches', label: 'Open Branches tab', icon: 'GitBranch' },
     { tab: 'releases', label: 'Open Releases tab', icon: 'Tag' },
     { tab: 'issues', label: 'Open Issues tab', icon: 'CircleDot' },
-    { tab: 'pulls', label: 'Open Pull Requests tab', icon: 'GitPullRequest' },
+    { tab: 'pulls', label: 'Open pull requests tab', icon: 'GitPullRequest' },
     { tab: 'settings', label: 'Open Settings tab', icon: 'Settings' },
 ]
 

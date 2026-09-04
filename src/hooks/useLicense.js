@@ -39,7 +39,7 @@ export function useLicense() {
         if (MOCK_MODE) return undefined
         let cancelled = false
         fetch(`${API_BASE_URL}/api/v1/usage`, { credentials: 'include' })
-            .then(r => r.ok ? r.json() : Promise.reject(new Error('Failed to load license')))
+            .then(r => r.ok ? r.json() : Promise.reject(new Error("Couldn't load license")))
             .then(data => {
                 if (cancelled) return
                 setLicense({
@@ -51,7 +51,7 @@ export function useLicense() {
             })
             .catch(err => {
                 if (cancelled) return
-                setError(formatUserError(err, { fallbackTitle: 'Failed to load license' }).title)
+                setError(formatUserError(err, { fallbackTitle: "Couldn't load license" }).title)
                 setIsLoading(false)
                 // Fall back to a free-tier license object so consumers
                 // don't need to null-guard tier in every render.

@@ -108,7 +108,7 @@ function LabelEditor({ owner, repo, issue, api, onMutate }) {
                 <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-2 space-y-1 max-h-[260px] overflow-y-auto">
                     {loading && <div className="flex justify-center py-3"><Spinner size="sm" /></div>}
                     {!loading && available?.length === 0 && (
-                        <p className="text-xs text-slate-400 text-center py-2">No labels in this repo</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 text-center py-2">No labels in this repo</p>
                     )}
                     {!loading && available?.map(l => (
                         <button
@@ -192,7 +192,7 @@ function AssigneePicker({ owner: _owner, repo: _repo, issue, api, onMutate }) {
 
             <div className="flex flex-wrap items-center gap-1.5 min-h-[24px]">
                 {(issue.assignees || []).length === 0 ? (
-                    <span className="text-xs text-slate-400">No assignees</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">No assignees</span>
                 ) : (
                     issue.assignees.map(a => (
                         <span key={a.login} className="inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
@@ -209,7 +209,7 @@ function AssigneePicker({ owner: _owner, repo: _repo, issue, api, onMutate }) {
                 <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-2 space-y-1 max-h-[260px] overflow-y-auto">
                     {loading && <div className="flex justify-center py-3"><Spinner size="sm" /></div>}
                     {!loading && available?.length === 0 && (
-                        <p className="text-xs text-slate-400 text-center py-2">No collaborators with assign access</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 text-center py-2">No collaborators with assign access</p>
                     )}
                     {!loading && available?.map(u => (
                         <button
@@ -253,7 +253,7 @@ function MilestoneInfo({ issue }) {
                     )}
                 </div>
             ) : (
-                <span className="text-xs text-slate-400">No milestone</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">No milestone</span>
             )}
         </div>
     )
@@ -313,7 +313,7 @@ export function IssueTimeline({ owner: _owner, repo: _repo, number, api }) {
                 <div className="mt-3 space-y-2">
                     {loading && <div className="flex justify-center py-3"><Spinner size="sm" tone="muted" /></div>}
                     {!loading && (events?.length === 0
-                        ? <p className="text-xs text-slate-400">No timeline events</p>
+                        ? <p className="text-xs text-slate-500 dark:text-slate-400">No timeline events</p>
                         : events?.map((ev, idx) => (
                             <div key={ev.id || idx} className="flex items-start gap-2 text-xs text-slate-500 dark:text-slate-400">
                                 <span className="text-slate-400 mt-0.5">·</span>

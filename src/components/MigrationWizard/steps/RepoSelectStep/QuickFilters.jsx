@@ -59,7 +59,7 @@ function Chip({ icon: Icon, label, count, active, onClick, tone = 'slate' }) {
   // in both light and dark modes, unlike the previous solid-fill actives.
   const activeCls = {
     indigo:  'bg-brand-500/15 text-[color:var(--ds-accent-brand)] dark:text-brand-300 border-brand-500/40 shadow-sm',
-    red:     'bg-red-500/15 text-red-600 dark:text-red-300 border-red-500/40 shadow-sm',
+    red:     'bg-rose-500/15 text-rose-600 dark:text-rose-300 border-rose-500/40 shadow-sm',
     amber:   'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40 shadow-sm',
     emerald: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 shadow-sm',
     violet:  'bg-brand-500/15 text-brand-600 dark:text-brand-300 border-brand-500/40 shadow-sm',

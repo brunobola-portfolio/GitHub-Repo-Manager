@@ -73,7 +73,7 @@ export default function TargetConfigStep({ source, onChange, orgs, importJobs: _
     <>
       {nameStatus === 'checking' && <Spinner size="md" tone="warning" />}
       {nameStatus === 'clear' && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
-      {nameStatus === 'conflict' && <XCircle className="w-4 h-4 text-red-500" />}
+      {nameStatus === 'conflict' && <XCircle className="w-4 h-4 text-rose-500" />}
     </>
   )
 

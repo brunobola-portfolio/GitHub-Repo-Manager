@@ -54,7 +54,7 @@ export function WalkthroughTab({ walkthrough }) {
             }).catch((err) => {
                 if (!cancelled) setMermaidError(err?.message || 'Failed to render diagram');
             });
-        }).catch((err) => setMermaidError(err?.message || 'Failed to load mermaid'));
+        }).catch((err) => setMermaidError(err?.message || "Couldn't load mermaid"));
 
         return () => { cancelled = true; };
     }, [walkthrough?.mermaid, theme]);
@@ -110,7 +110,7 @@ export function WalkthroughTab({ walkthrough }) {
                 <div>
                     <h4 className="font-medium mb-2 text-slate-700 dark:text-slate-300">Diagram</h4>
                     {mermaidError ? (
-                        <p className="text-xs text-red-600 dark:text-red-400">Diagram failed to render: {mermaidError}</p>
+                        <p className="text-xs text-rose-600 dark:text-rose-400">Diagram failed to render: {mermaidError}</p>
                     ) : (
                         <div ref={mermaidRef} className="overflow-auto rounded border border-slate-200 dark:border-slate-800 p-2" />
                     )}
@@ -122,8 +122,8 @@ export function WalkthroughTab({ walkthrough }) {
 
 function riskTone(level) {
     switch (level) {
-        case 'critical': return 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200';
-        case 'high': return 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-200';
+        case 'critical': return 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200';
+        case 'high': return 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200';
         case 'medium': return 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200';
         default: return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200';
     }

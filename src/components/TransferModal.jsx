@@ -92,7 +92,7 @@ export function TransferModal({
 
 	const handleSubmit = () => {
 		if (!targetOrg) {
-			setFormError('Please select a target organization')
+			setFormError('Select a target organization')
 			return
 		}
 		if (isTransferToSelf) {
@@ -270,7 +270,7 @@ export function TransferModal({
 						/>
 					)}
 					{formError && (
-						<p className="mt-3 flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+						<p className="mt-3 flex items-center gap-2 text-sm text-rose-600 dark:text-rose-400">
 							<AlertTriangle className="w-4 h-4" />
 							<span>{formError}</span>
 						</p>
@@ -351,7 +351,7 @@ export function TransferModal({
 								<p className="text-sm text-slate-600 dark:text-slate-400 flex items-center gap-2">
 									{progress.status === 'running' && <Spinner size="sm" />}
 									{progress.status === 'success' && <CheckCircle className="w-4 h-4 text-emerald-500" />}
-									{progress.status === 'error' && <XCircle className="w-4 h-4 text-red-500" />}
+									{progress.status === 'error' && <XCircle className="w-4 h-4 text-rose-500" />}
 									{progress.message}
 								</p>
 							)}
@@ -363,7 +363,7 @@ export function TransferModal({
 											className={`text-xs px-2 py-1 rounded flex items-center gap-2 ${
 												r.success
 													? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
-													: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+													: 'bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400'
 											}`}
 										>
 											{r.success ? (
@@ -373,7 +373,7 @@ export function TransferModal({
 											)}
 											<span className="font-medium truncate">{r.name}</span>
 											{r.error && (
-												<span className="text-red-500 dark:text-red-400 truncate ml-auto">{r.error}</span>
+												<span className="text-rose-600 dark:text-rose-400 truncate ml-auto">{r.error}</span>
 											)}
 										</div>
 									))}

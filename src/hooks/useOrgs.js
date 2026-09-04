@@ -91,7 +91,7 @@ export function useOrgs(user) {
         } catch (e) {
             if (e instanceof ApiError && e.type === ErrorType.AUTHENTICATION) return
             console.error('fetchOrgRepos error:', e)
-            setTimedError('Failed to load organization repositories')
+            setTimedError("Couldn't load organization repositories")
         }
     }
 
@@ -149,7 +149,7 @@ export function useOrgs(user) {
         } catch (e) {
             if (e instanceof ApiError && e.type === ErrorType.AUTHENTICATION) return
             console.error('fetchStats error:', e)
-            setTimedError('Failed to load dashboard statistics')
+            setTimedError("Couldn't load dashboard statistics")
         }
     }, [setTimedError])
 
@@ -213,7 +213,7 @@ export function useOrgs(user) {
         } catch (e) {
             if (e instanceof ApiError && e.type === ErrorType.AUTHENTICATION) return
             console.error('fetchActivity error:', e)
-            setTimedError('Failed to load activity feed')
+            setTimedError("Couldn't load activity feed")
         }
     }, [setTimedError])
 

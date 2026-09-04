@@ -632,7 +632,7 @@ function MenuButton({ icon, onClick, children, danger }) {
             role="menuitem"
             onClick={onClick}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ds-focus-ring ${danger
-                ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30'
+                ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30'
                 : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                 }`}
         >
@@ -649,7 +649,7 @@ const CATEGORY_ORDER = ['reviews', 'issues', 'failed_migrations', 'stale_pinned'
 const CATEGORY_META = {
     reviews:           { label: 'Reviews waiting',  Icon: GitPullRequest, accent: 'text-emerald-500 dark:text-emerald-400', dot: 'bg-emerald-500' },
     issues:            { label: 'Issues for you',   Icon: CircleDot,      accent: 'text-amber-500 dark:text-amber-400',     dot: 'bg-amber-500' },
-    failed_migrations: { label: 'Failed migrations',Icon: AlertTriangle,  accent: 'text-red-500 dark:text-red-400',         dot: 'bg-red-500' },
+    failed_migrations: { label: 'Failed migrations',Icon: AlertTriangle,  accent: 'text-rose-500 dark:text-rose-400',         dot: 'bg-rose-500' },
     stale_pinned:      { label: 'Stale pinned',     Icon: Pin,            accent: 'text-slate-500 dark:text-slate-400',     dot: 'bg-slate-400' },
 }
 
@@ -714,7 +714,7 @@ function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen,
                 )}
                 {error && totalCount === 0 && (
                     <p className="px-4 pb-3 ds-text-meta text-amber-700 dark:text-amber-400">
-                        Couldn't load digest — we'll try again on next focus.
+                        Couldn't load digest — it retries on next focus.
                     </p>
                 )}
             </div>

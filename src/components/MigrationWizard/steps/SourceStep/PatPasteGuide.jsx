@@ -200,7 +200,7 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
         {patCheck.severity !== 'empty' && patCheck.severity !== 'ok' && (
           <p className={`mt-1.5 ds-text-meta inline-flex items-center gap-1 ${
             patCheck.severity === 'error'
-              ? 'text-red-600 dark:text-red-400'
+              ? 'text-rose-600 dark:text-rose-400'
               : 'text-amber-700 dark:text-amber-400'
           }`}>
             <AlertTriangle className="w-3 h-3 shrink-0" /> {patCheck.message}
@@ -244,7 +244,7 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
                     : <><Bookmark className="w-3 h-3" /> Save</>}
                 </button>
               </div>
-              {saveError && <div className="ds-text-meta text-red-600 dark:text-red-400 mt-1">✗ {saveError}</div>}
+              {saveError && <div className="ds-text-meta text-rose-600 dark:text-rose-400 mt-1">✗ {saveError}</div>}
             </div>
           </div>
         )}

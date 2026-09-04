@@ -94,7 +94,7 @@ describe('ConfirmModal', () => {
     // Click without typing
     fireEvent.click(screen.getByText('Confirm'))
     expect(onConfirm).not.toHaveBeenCalled()
-    expect(screen.getByText('Please type "DELETE" to confirm')).toBeInTheDocument()
+    expect(screen.getByText('Type "DELETE" to confirm')).toBeInTheDocument()
   })
 
   it('allows confirm when input matches', async () => {

@@ -44,7 +44,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
                 setTopicsState({ kind: 'not-indexed' })
                 return
             }
-            toast.errorFromException(err, { fallbackTitle: 'Failed to load topic suggestions' })
+            toast.errorFromException(err, { fallbackTitle: "Couldn't load topic suggestions" })
             setTopicsState({ kind: 'idle' })
         }
     }
@@ -221,7 +221,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
             setWebhooks(data.data || data || [])
             setHooksLoaded(true)
         } catch (err) {
-            toast.errorFromException(err, { fallbackTitle: 'Failed to load webhooks' })
+            toast.errorFromException(err, { fallbackTitle: "Couldn't load webhooks" })
         } finally {
             setLoadingHooks(false)
         }
@@ -440,7 +440,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
                         {webhooks.map(hook => (
                             <div key={hook.id} className="flex items-center gap-3 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50">
                                 <div
-                                    className={`w-2 h-2 rounded-full ${hook.active ? 'bg-green-500' : 'bg-slate-400'}`}
+                                    className={`w-2 h-2 rounded-full ${hook.active ? 'bg-emerald-500' : 'bg-slate-400'}`}
                                     role="img"
                                     aria-label={hook.active ? 'Webhook active' : 'Webhook inactive'}
                                     title={hook.active ? 'Active' : 'Inactive'}
@@ -453,7 +453,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
                                     title="Ping">
                                     <RefreshCw className="w-3.5 h-3.5" />
                                 </Button>
-                                <Button variant="ghost" size="sm" onClick={() => deleteHook(hook.id)} className="text-red-500"
+                                <Button variant="ghost" size="sm" onClick={() => deleteHook(hook.id)} className="text-rose-500"
                                     aria-label={hook.config?.url ? `Delete webhook ${hook.config.url}` : 'Delete webhook'}
                                     title="Delete webhook">
                                     <Trash2 className="w-3.5 h-3.5" />
@@ -471,12 +471,12 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
             <CollaboratorsSection owner={owner} repo={repo} archived={!!repoData.archived} />
 
             {/* Danger Zone */}
-            <Card className="p-5 border-red-200 dark:border-red-900/50">
-                <h3 className="font-semibold text-red-600 dark:text-red-400 flex items-center gap-2 mb-3">
+            <Card className="p-5 border-rose-200 dark:border-rose-900/50">
+                <h3 className="font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-2 mb-3">
                     <AlertTriangle className="w-5 h-5" /> Danger Zone
                 </h3>
                 <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 border border-red-200 dark:border-red-900/50 rounded-lg">
+                    <div className="flex items-center justify-between p-3 border border-rose-200 dark:border-rose-900/50 rounded-lg">
                         <div>
                             <p className="text-sm font-medium text-slate-900 dark:text-slate-100">Change Visibility</p>
                             <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -505,7 +505,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
                         </Button>
                     </div>
 
-                    <div className="flex items-center justify-between p-3 border border-red-200 dark:border-red-900/50 rounded-lg">
+                    <div className="flex items-center justify-between p-3 border border-rose-200 dark:border-rose-900/50 rounded-lg">
                         <div>
                             <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{repoData.archived ? 'Unarchive Repository' : 'Archive Repository'}</p>
                             <p className="text-xs text-slate-500 dark:text-slate-400">

@@ -32,7 +32,7 @@ describe('InsightCard', () => {
 
   it('applies danger tone classes', () => {
     render(<InsightCard tone="danger" data-testid="card">x</InsightCard>)
-    expect(screen.getByTestId('card').className).toMatch(/ring-red-500\/20/)
+    expect(screen.getByTestId('card').className).toMatch(/ring-rose-500\/20/) // danger is rose now, red retired (FE-05)
   })
 
   it('applies ai tone classes', () => {

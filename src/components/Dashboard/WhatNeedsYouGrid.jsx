@@ -161,7 +161,7 @@ function CouldNotCheck({ onRetry }) {
             </div>
             <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 ds-font-display">Couldn&rsquo;t check your work</h3>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-                We couldn&rsquo;t reach GitHub just now, so this may be out of date. Nothing has changed on your side.
+                Couldn&rsquo;t reach GitHub just now, so this may be out of date. Nothing has changed on your side.
             </p>
             <button
                 type="button"

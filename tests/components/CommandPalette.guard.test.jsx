@@ -114,7 +114,7 @@ describe('CommandPalette guard — extraction safety net', () => {
     await user.type(screen.getByPlaceholderText(/Type a command or search/i), 'payment')
 
     expect(await screen.findByText('Fix payment race', undefined, { timeout: 2000 })).toBeInTheDocument()
-    expect(screen.getByText('GitHub — Pull Requests')).toBeInTheDocument()
+    expect(screen.getByText('GitHub — Pull requests')).toBeInTheDocument()
     expect(screen.getByText('GitHub — Issues')).toBeInTheDocument()
     expect(screen.getByText('payment double charge')).toBeInTheDocument()
     expect(screen.getByText('GitHub — Repositories')).toBeInTheDocument()

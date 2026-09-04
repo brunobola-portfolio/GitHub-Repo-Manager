@@ -10,14 +10,14 @@ import {
 
 const SEVERITY_CONFIG = {
   high: {
-    border: 'border-red-200/80 dark:border-red-500/25',
-    bg: 'bg-red-50/40 dark:bg-red-500/[0.04]',
-    glow: 'hover:shadow-lg hover:shadow-red-500/8',
-    iconBg: 'bg-red-100 dark:bg-red-500/15',
+    border: 'border-rose-200/80 dark:border-rose-500/25',
+    bg: 'bg-rose-50/40 dark:bg-rose-500/[0.04]',
+    glow: 'hover:shadow-lg hover:shadow-rose-500/8',
+    iconBg: 'bg-rose-100 dark:bg-rose-500/15',
     icon: XCircle,
-    iconColor: 'text-red-500',
-    badge: 'bg-red-500 text-white',
-    accentBar: 'from-red-500 to-rose-500',
+    iconColor: 'text-rose-500',
+    badge: 'bg-rose-500 text-white',
+    accentBar: 'from-rose-500 to-rose-600',
   },
   medium: {
     border: 'border-amber-200/80 dark:border-amber-500/25',
@@ -27,7 +27,7 @@ const SEVERITY_CONFIG = {
     icon: AlertTriangle,
     iconColor: 'text-amber-500',
     badge: 'bg-amber-700 text-white',
-    accentBar: 'from-amber-500 to-orange-500',
+    accentBar: 'from-amber-500 to-amber-600',
   },
   low: {
     border: 'border-brand-200/80 dark:border-brand-500/25',

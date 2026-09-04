@@ -67,7 +67,7 @@ export function ErrorState({ error, what = 'data', onRetry }) {
     }
     return (
         <div className="p-4 text-sm text-rose-600 dark:text-rose-400">
-            Failed to load {what}.{' '}
+            Couldn't load {what}.{' '}
             {onRetry && <button onClick={onRetry} className="underline">Retry</button>}
         </div>
     )

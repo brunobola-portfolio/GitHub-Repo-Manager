@@ -151,7 +151,7 @@ function ExistingProjectForm({ source, onChange }) {
             ]}
           />
         )}
-        {error && <p className="text-xs text-red-500 mt-1">{error.title}</p>}
+        {error && <p className="text-xs text-rose-600 dark:text-rose-400 mt-1">{error.title}</p>}
       </Field>
       <Field label="Target repo name" htmlFor="azure-tgt-existing-name">
         <Input
@@ -231,7 +231,7 @@ function NewProjectForm({ source, onChange }) {
           ✓ Project {result.project?.name} created{result.repo ? ` with repo ${result.repo.name}` : ''}.
         </p>
       )}
-      {error && <p className="text-xs text-red-500">{error.title}</p>}
+      {error && <p className="text-xs text-rose-600 dark:text-rose-400">{error.title}</p>}
     </div>
   )
 }

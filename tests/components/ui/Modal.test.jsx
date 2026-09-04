@@ -151,7 +151,7 @@ describe('Modal — semantic variants', () => {
   const Icon = () => <svg data-testid="icon" />
 
   it.each([
-    ['danger',  /bg-red-(100|500\/15)/],
+    ['danger',  /bg-rose-(100|500\/15)/],
     ['warning', /bg-amber-(100|500\/15)/],
     ['info',    /bg-brand-(100|500\/15)/],
     ['success', /bg-emerald-(100|500\/15)/],
@@ -171,7 +171,7 @@ describe('Modal — semantic variants', () => {
       <Modal isOpen={true} onClose={() => {}} title="X" icon={Icon} variant="danger" iconGradient="none">x</Modal>
     )
     const iconTile = container.querySelector('[data-icon-tile="true"]')
-    expect(iconTile.className).toMatch(/bg-red-(100|500\/15)/)
+    expect(iconTile.className).toMatch(/bg-rose-(100|500\/15)/)
   })
 
   it('iconGradient="primary" overrides a danger variant (affordance wins over semantic)', () => {
@@ -180,7 +180,7 @@ describe('Modal — semantic variants', () => {
     )
     const iconTile = container.querySelector('[data-icon-tile="true"]')
     expect(iconTile.className).toMatch(/bg-brand-(100|500\/15)/)
-    expect(iconTile.className).not.toMatch(/bg-red-/)
+    expect(iconTile.className).not.toMatch(/bg-rose-/)
   })
 
   it('default variant + iconGradient="none" renders the neutral slate tile', () => {

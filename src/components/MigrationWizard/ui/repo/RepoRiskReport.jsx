@@ -1,7 +1,7 @@
 import { AlertOctagon, AlertTriangle, Info } from 'lucide-react'
 
 const TONE = {
-  blocker: { Icon: AlertOctagon,  bg: 'bg-red-500/10 border-red-500/30 text-red-400' },
+  blocker: { Icon: AlertOctagon,  bg: 'bg-rose-500/10 border-rose-500/30 text-rose-400' },
   warning: { Icon: AlertTriangle, bg: 'bg-amber-500/10 border-amber-500/30 text-amber-400' },
   info:    { Icon: Info,          bg: 'bg-slate-500/10 border-slate-500/30 text-slate-400' },
 }

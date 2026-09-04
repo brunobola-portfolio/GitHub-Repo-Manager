@@ -32,7 +32,7 @@ const TABS = [
     { id: 'releases', label: 'Releases', icon: Tag },
     { id: 'actions', label: 'Actions', icon: Zap },
     { id: 'issues', label: 'Issues', icon: CircleDot },
-    { id: 'pulls', label: 'Pull Requests', icon: GitPullRequest },
+    { id: 'pulls', label: 'Pull requests', icon: GitPullRequest },
     { id: 'settings', label: 'Settings', icon: Settings }
 ]
 

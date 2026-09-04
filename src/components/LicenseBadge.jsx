@@ -63,7 +63,7 @@ export default function LicenseBadge() {
   const isExpiringCritical = daysUntilExpiry !== null && daysUntilExpiry <= 7 && daysUntilExpiry > 0
 
   const warningClass = isExpiringCritical
-    ? 'ring-2 ring-red-500 motion-safe:animate-pulse'
+    ? 'ring-2 ring-rose-500 motion-safe:animate-pulse'
     : isExpiringSoon
     ? 'ring-2 ring-amber-500'
     : ''

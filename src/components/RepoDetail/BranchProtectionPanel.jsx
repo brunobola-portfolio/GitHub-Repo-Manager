@@ -97,7 +97,7 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
                 setPermissionDenied(true)
                 return
             }
-            toast.errorFromException(err, { fallbackTitle: 'Failed to load branch protection' })
+            toast.errorFromException(err, { fallbackTitle: "Couldn't load branch protection" })
         } finally {
             setLoading(false)
         }
@@ -152,7 +152,7 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
 
     // Inline variant: compact status chip for per-branch rows
     if (variant === 'inline') {
-        if (loading) return <span className="text-xs text-slate-400">Checking protection…</span>
+        if (loading) return <span className="text-xs text-slate-500 dark:text-slate-400">Checking protection…</span>
         if (upgradeRequired) {
             return (
                 <a href="https://github.com/pricing" target="_blank" rel="noopener noreferrer"
@@ -193,7 +193,7 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
                         size="sm"
                         onClick={() => setConfirmRemove(true)}
                         disabled={archived || removing}
-                        className="text-red-500 hover:text-red-600"
+                        className="text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-500"
                     >
                         <ShieldOff className="w-4 h-4 mr-1" /> Remove
                     </Button>

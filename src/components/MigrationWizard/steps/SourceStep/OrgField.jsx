@@ -86,9 +86,9 @@ export default function OrgField({
         return { text: 'No access to this org', color: 'text-amber-500 dark:text-amber-400', dot: 'bg-amber-500' }
       }
       if (validationError.includes('not found') || validationError.includes('404')) {
-        return { text: 'Org not found', color: 'text-red-400 dark:text-red-400', dot: 'bg-red-400' }
+        return { text: 'Org not found', color: 'text-rose-400 dark:text-rose-400', dot: 'bg-rose-400' }
       }
-      return { text: 'Connection error', color: 'text-red-400 dark:text-red-400', dot: 'bg-red-400' }
+      return { text: 'Connection error', color: 'text-rose-400 dark:text-rose-400', dot: 'bg-rose-400' }
     }
     return null
   }, [validating, source.validated, validationError, projects.length])
@@ -125,7 +125,7 @@ export default function OrgField({
               emptyState={
                 orgsError ? (
                   <div className="px-3 py-4 text-center">
-                    <p className="text-sm text-red-500 dark:text-red-400 mb-2">
+                    <p className="text-sm text-rose-600 dark:text-rose-400 mb-2">
                       {orgsError === 'TOKEN_EXPIRED' ? 'Session expired — authenticate again' : orgsError}
                     </p>
                     <button

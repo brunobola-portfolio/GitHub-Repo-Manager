@@ -45,7 +45,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
             setLoading(true);
             setLoadError(false);
             const res = await fetch(`/api/teams/${team.id}`);
-            if (!res.ok) throw new Error('Failed to load team details');
+            if (!res.ok) throw new Error("Couldn't load team details");
             const data = await res.json();
             setMembers(data.members);
             setAssignedRepos(data.repos);
@@ -55,7 +55,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
             // empty — otherwise the Members/Repos tabs render their "nothing
             // here yet" CTA and quietly hide the fact that the fetch broke.
             setLoadError(true);
-            toast.error('Failed to load details');
+            toast.error("Couldn't load details");
         } finally {
             setLoading(false);
         }
@@ -308,7 +308,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                             <EmptyState
                                 icon={AlertTriangle}
                                 title="Couldn't load members"
-                                description="We couldn't reach the team service. Check your connection and try again."
+                                description="Couldn't reach the team service. Check your connection and try again."
                                 action={{ label: 'Retry', onClick: fetchDetails }}
                             />
                         ) : (
@@ -367,11 +367,11 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                                         .map(repo => {
                                             // Language Colors
                                             const langColors = {
-                                                JavaScript: 'bg-yellow-400',
+                                                JavaScript: 'bg-amber-400',
                                                 TypeScript: 'bg-blue-500',
-                                                Python: 'bg-green-500',
+                                                Python: 'bg-emerald-500',
                                                 Go: 'bg-brand-500',
-                                                HTML: 'bg-orange-500',
+                                                HTML: 'bg-amber-500',
                                                 CSS: 'bg-brand-500',
                                                 default: 'bg-slate-400'
                                             };
@@ -418,7 +418,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                                         <EmptyState
                                             icon={AlertTriangle}
                                             title="Couldn't load repositories"
-                                            description="We couldn't reach the team service. Check your connection and try again."
+                                            description="Couldn't reach the team service. Check your connection and try again."
                                             action={{ label: 'Retry', onClick: fetchDetails }}
                                         />
                                     ) : (
@@ -475,7 +475,7 @@ function MemberCard({ member, currentUserRole, onUpdateRole, onRemove, isMe }) {
             <div className="flex-1 min-w-0">
                 <h4 className="font-bold text-slate-900 dark:text-slate-100 truncate">{member.username}</h4>
                 <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-slate-400">Joined {formatDate(member.joined_at)}</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">Joined {formatDate(member.joined_at)}</span>
                     {isMe && <span className="ds-text-micro bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-[color:var(--ds-accent-brand-dark)] px-1.5 py-0.5 rounded-full">You</span>}
                 </div>
             </div>
@@ -507,7 +507,7 @@ function MemberCard({ member, currentUserRole, onUpdateRole, onRemove, isMe }) {
                         onClick={() => onRemove(member.id)}
                         className={`p-2 rounded-lg transition-colors ${isMe
                             ? 'text-slate-400 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20'
-                            : 'text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+                            : 'text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20'
                             }`}
                         aria-label={isMe ? "Leave Team" : "Remove Member"}
                         title={isMe ? "Leave Team" : "Remove Member"}
@@ -644,11 +644,11 @@ function RepoCard({ repo, teamMembers }) {
 
                             {/* Existing Collaborators */}
                             <div>
-                                <h5 className="ds-text-micro uppercase font-bold text-slate-400 mb-2">Collaborators</h5>
+                                <h5 className="ds-text-micro uppercase font-bold text-slate-500 dark:text-slate-400 mb-2">Collaborators</h5>
                                 {loadingCollabs ? (
                                     <Spinner size="sm" className="mx-auto" />
                                 ) : collabError ? (
-                                    <div className="flex items-center gap-2 text-xs text-red-500 dark:text-red-400">
+                                    <div className="flex items-center gap-2 text-xs text-rose-600 dark:text-rose-400">
                                         <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
                                         <span>Couldn't load collaborators.</span>
                                         <button
@@ -670,7 +670,7 @@ function RepoCard({ repo, teamMembers }) {
                                                 className="w-6 h-6 rounded-full border border-slate-200 dark:border-slate-600"
                                             />
                                         ))}
-                                        {collaborators.length === 0 && <span className="text-xs text-slate-400">No collaborators found.</span>}
+                                        {collaborators.length === 0 && <span className="text-xs text-slate-500 dark:text-slate-400">No collaborators found.</span>}
                                     </div>
                                 )}
                             </div>
@@ -678,7 +678,7 @@ function RepoCard({ repo, teamMembers }) {
                             {/* Missing Team Members */}
                             {missingMembers.length > 0 && (
                                 <div>
-                                    <h5 className="ds-text-micro uppercase font-bold text-slate-400 mb-2">Not in Repo</h5>
+                                    <h5 className="ds-text-micro uppercase font-bold text-slate-500 dark:text-slate-400 mb-2">Not in Repo</h5>
                                     <div className="space-y-1">
                                         {missingMembers.map(m => (
                                             <div key={m.username} className="flex items-center justify-between text-xs bg-slate-50 dark:bg-slate-700/30 p-1.5 rounded-lg border border-slate-100 dark:border-slate-700">
@@ -738,16 +738,16 @@ function ActionsTab({ assignedRepos, onShowStats }) {
             // "No workflows found" empty state — flag it as an error instead.
             if (!wfRes.ok) {
                 setActionsError(true);
-                toast.error('Failed to load actions');
+                toast.error("Couldn't load actions");
             } else if (!runRes.ok) {
                 // Workflows loaded fine but runs didn't — a narrower failure
                 // than actionsError (which blanks the whole tab), so just
                 // toast it and leave the workflow list usable.
-                toast.error('Failed to load workflow runs');
+                toast.error("Couldn't load workflow runs");
             }
         } catch (error) {
             setActionsError(true);
-            toast.error('Failed to load actions');
+            toast.error("Couldn't load actions");
         } finally {
             setLoading(false);
         }
@@ -818,7 +818,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                     <EmptyState
                         icon={AlertTriangle}
                         title="Couldn't load actions"
-                        description="We couldn't reach GitHub Actions for this repository. Check your connection and try again."
+                        description="Couldn't reach GitHub Actions for this repository. Check your connection and try again."
                         action={{ label: 'Retry', onClick: () => fetchWorkflows(selectedRepo) }}
                     />
                 ) : (
@@ -859,9 +859,9 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                                     <div key={run.id} className="flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors">
                                         <div className="flex items-center gap-3">
                                             {run.conclusion === 'success' ? (
-                                                <CheckCircle className="w-5 h-5 text-green-500" />
+                                                <CheckCircle className="w-5 h-5 text-emerald-500" />
                                             ) : run.conclusion === 'failure' ? (
-                                                <XCircle className="w-5 h-5 text-red-500" />
+                                                <XCircle className="w-5 h-5 text-rose-500" />
                                             ) : (
                                                 <Spinner size="md" tone="warning" />
                                             )}

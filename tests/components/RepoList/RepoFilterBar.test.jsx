@@ -4,7 +4,7 @@
  * role=menu/menuitem, first item focused on open, ArrowUp/Down roving, and
  * Escape closes + returns focus to the trigger.
  */
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { RepoFilterBar } from '@/components/RepoList/RepoFilterBar'
 
@@ -79,5 +79,39 @@ describe('RepoFilterBar — bulk selection menu a11y', () => {
   it('exposes aria-haspopup=menu on the trigger', () => {
     renderBar()
     expect(screen.getByRole('button', { name: /open selection menu/i })).toHaveAttribute('aria-haspopup', 'menu')
+  })
+})
+
+// G5 — saved views on the repositories filter bar. Unit tests run under
+// MOCK_MODE (see .env.test), so the underlying useSavedViews hook persists
+// to localStorage rather than fetching — no network mocking needed here.
+describe('RepoFilterBar — saved views (G5)', () => {
+  beforeEach(() => { localStorage.clear() })
+
+  it('does not render the Presets dropdown when onApplySavedView is not provided', () => {
+    renderBar()
+    expect(screen.queryByRole('button', { name: /presets/i })).toBeNull()
+  })
+
+  it('renders the Presets dropdown when onApplySavedView is provided', () => {
+    renderBar({ onApplySavedView: vi.fn() })
+    expect(screen.getByRole('button', { name: /presets/i })).toBeInTheDocument()
+  })
+
+  it('saves the current filters under the "repos" scope and applies a saved view back', async () => {
+    const onApply = vi.fn()
+    renderBar({ onApplySavedView: onApply, typeFilter: 'fork', sortBy: 'stars' })
+
+    fireEvent.click(screen.getByRole('button', { name: /presets/i }))
+    fireEvent.change(screen.getByLabelText('Preset name'), { target: { value: 'Forks by stars' } })
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }))
+
+    await screen.findByText('Forks by stars')
+    fireEvent.click(screen.getByText('Forks by stars'))
+    expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ type: 'fork', sort: 'stars' }))
+
+    const stored = JSON.parse(localStorage.getItem('saved-views:repos'))
+    expect(stored).toHaveLength(1)
+    expect(stored[0].name).toBe('Forks by stars')
   })
 })

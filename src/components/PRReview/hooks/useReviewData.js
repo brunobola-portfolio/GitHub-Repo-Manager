@@ -47,7 +47,7 @@ export function useReviewData(owner, repo, pullNumber, api) {
             loadedHeadShaRef.current = headSha
             setData({ pr, files, comments, reviews, headSha })
         } catch (e) {
-            setError(formatUserError(e, { fallbackTitle: 'Failed to load PR data' }).title)
+            setError(formatUserError(e, { fallbackTitle: "Couldn't load PR data" }).title)
         } finally {
             setLoading(false)
         }

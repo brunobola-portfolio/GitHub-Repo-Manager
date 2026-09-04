@@ -133,8 +133,8 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
 
     function getPrIcon(pr) {
         if (pr.merged_at || pr.merged) return <GitMerge className="w-4 h-4 text-brand-500" />
-        if (pr.state === 'closed') return <GitPullRequest className="w-4 h-4 text-red-500" />
-        return <GitPullRequest className="w-4 h-4 text-green-500" />
+        if (pr.state === 'closed') return <GitPullRequest className="w-4 h-4 text-rose-500" />
+        return <GitPullRequest className="w-4 h-4 text-emerald-500" />
     }
 
     // Show detail panel when a PR is selected
@@ -157,7 +157,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
     return (
         <SectionPanel
             icon={GitPullRequest}
-            title="Pull Requests"
+            title="Pull requests"
             subtitle="Review, merge, and create requests for this repository"
             actions={
                 <>
@@ -192,7 +192,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
         <div className="space-y-4">
             {message && (
                 <div className={`flex items-center gap-2 p-2 rounded-lg text-sm ${
-                    message.type === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+                    message.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400'
                 }`}>
                     {message.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                     {message.text}
@@ -330,7 +330,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                                             <GitMerge className="w-3.5 h-3.5 mr-1" /> Merge
                                         </Button>
                                         <Button variant="ghost" size="sm" onClick={() => handleClose(pr)}
-                                            className="text-red-600 dark:text-red-400 text-xs">
+                                            className="text-rose-600 dark:text-rose-400 text-xs">
                                             Close
                                         </Button>
                                     </div>

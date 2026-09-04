@@ -164,11 +164,11 @@ describe('LicenseBadge — expiry warnings', () => {
     const badge = screen.getByTestId('license-badge')
     // Amber ring should be present (isExpiringSoon = true, 20 days <= 30)
     expect(badge.className).toContain('ring-amber-500')
-    // Should NOT have red ring or pulse
-    expect(badge.className).not.toContain('ring-red-500')
+    // Should NOT have the danger (rose) ring or pulse
+    expect(badge.className).not.toContain('ring-rose-500') // danger is rose now, red retired (FE-05)
   })
 
-  it('shows red pulse and AlertTriangle when expiresAt is 3 days from now', async () => {
+  it('shows rose pulse and AlertTriangle when expiresAt is 3 days from now', async () => {
     const expiresAt = new Date(Date.now() + 3 * 86400000).toISOString()
     global.fetch.mockResolvedValueOnce({
       ok: true,
@@ -188,8 +188,8 @@ describe('LicenseBadge — expiry warnings', () => {
       expect(screen.getByTestId('license-badge')).toHaveTextContent(/enterprise/i)
     })
     const badge = screen.getByTestId('license-badge')
-    // Critical expiry: red ring + motion-safe pulse
-    expect(badge.className).toContain('ring-red-500')
+    // Critical expiry: rose ring + motion-safe pulse (red retired, FE-05)
+    expect(badge.className).toContain('ring-rose-500')
     expect(badge.className).toContain('motion-safe:animate-pulse')
     // aria-live should be polite when expiring soon
     expect(badge.getAttribute('aria-live')).toBe('polite')

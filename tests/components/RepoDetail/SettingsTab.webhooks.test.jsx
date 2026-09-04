@@ -107,7 +107,7 @@ describe('SettingsTab — webhook load failure', () => {
         await waitFor(() =>
             expect(toastMock.errorFromException).toHaveBeenCalledWith(
                 expect.any(Error),
-                expect.objectContaining({ fallbackTitle: 'Failed to load webhooks' }),
+                expect.objectContaining({ fallbackTitle: "Couldn't load webhooks" }),
             ),
         )
     })

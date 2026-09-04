@@ -78,6 +78,20 @@ describe('useAppRouter — hash -> state', () => {
         expect(p.setActiveView).toHaveBeenCalledWith('teams')
     })
 
+    it('routes #/audit to the audit view (G6)', () => {
+        window.location.hash = '#/audit'
+        const p = mkProps()
+        renderHook(() => useAppRouter(p))
+        expect(p.setActiveView).toHaveBeenCalledWith('audit')
+    })
+
+    it('mirrors the audit view into #/audit on in-app navigation (G6)', () => {
+        const p = mkProps({ activeView: 'dashboard' })
+        const { rerender } = renderHook((props) => useAppRouter(props), { initialProps: p })
+        act(() => { rerender({ ...p, activeView: 'audit' }) })
+        expect(window.location.hash).toBe('#/audit')
+    })
+
     it('restores the previous top-level view on a Back (popstate) that changed the hash', () => {
         // Browser Back that changes the fragment fires popstate (and hashchange).
         // The router now listens to popstate too, so this alone restores state.

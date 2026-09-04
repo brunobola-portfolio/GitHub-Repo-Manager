@@ -25,7 +25,7 @@ export function SessionBanner({ visible, onLogin, onDismiss }) {
                 <p className="text-sm font-medium text-amber-800 dark:text-amber-200/90 truncate">
                   <span className="hidden sm:inline">Your session has expired. </span>
                   <span className="sm:hidden">Session expired. </span>
-                  <span className="text-amber-700 dark:text-amber-300/70">Please sign in again to continue.</span>
+                  <span className="text-amber-700 dark:text-amber-300/70">Sign in again to continue.</span>
                 </p>
               </div>
 

@@ -31,7 +31,7 @@ export function StreamingOutput({ content, streamingText, isStreaming, onCancel,
                             <span className="ds-text-micro text-amber-400 animate-pulse">Reconnecting ({retryCount}/3)...</span>
                         )}
                         {isStreaming && (
-                            <button type="button" onClick={onCancel} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs text-red-400 hover:text-red-300 rounded transition-colors">
+                            <button type="button" onClick={onCancel} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs text-rose-400 hover:text-rose-300 rounded transition-colors">
                                 <Square className="w-3 h-3" /> Stop
                             </button>
                         )}

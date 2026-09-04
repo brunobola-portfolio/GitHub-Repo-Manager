@@ -165,7 +165,7 @@ export function OrgPanel({
 								</DropdownMenu.Item>
 								<DropdownMenu.Separator className="h-px bg-slate-200/70 dark:bg-slate-700/70 my-1.5" />
 								<DropdownMenu.Item
-									className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 data-[highlighted]:bg-red-50 dark:data-[highlighted]:bg-red-900/20 data-[highlighted]:text-red-800 dark:data-[highlighted]:text-red-300 rounded-xl cursor-pointer outline-none transition-colors"
+									className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 data-[highlighted]:bg-rose-50 dark:data-[highlighted]:bg-rose-900/20 data-[highlighted]:text-rose-800 dark:data-[highlighted]:text-rose-300 rounded-xl cursor-pointer outline-none transition-colors"
 									onSelect={() => {
 										fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
 											.finally(() => window.location.reload())

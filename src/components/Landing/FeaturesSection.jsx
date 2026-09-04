@@ -62,7 +62,7 @@ const features = [
       // batch menu plus three on the Work Board bulk bar. A gate keeps this
       // figure from drifting above what ships — see
       // tests/components/Landing/FeaturesSectionClaims.test.jsx.
-      'Beautiful analytics, language breakdowns, commit activity, dark mode, and 10 bulk operations at your fingertips.',
+      'Language breakdowns, commit activity, dark mode, and 10 bulk operations, all in one dashboard.',
     iconColor: 'text-brand-500 dark:text-brand-400',
     glow: '',
     iconBg: 'bg-brand-500/15 dark:bg-brand-500/25',

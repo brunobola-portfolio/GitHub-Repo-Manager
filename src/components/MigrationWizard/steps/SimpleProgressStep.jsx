@@ -28,7 +28,7 @@ const STATUS_BADGES = {
   // the same badge so a genuinely finished import never silently falls back
   // to the 'pending' look.
   completed: { icon: CheckCircle2, color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20', label: 'Complete' },
-  failed: { icon: XCircle, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-900/20', label: 'Failed' },
+  failed: { icon: XCircle, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/20', label: 'Failed' },
   skipped: { icon: Clock, color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800', label: 'Skipped' },
   // Cancellation is a distinct, honest terminal outcome — never conflated
   // with 'Failed' (mirrors the Azure ProgressStep's own cancelled styling).
@@ -437,9 +437,9 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
                 <motion.div
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                  className="p-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800"
                 >
-                  <p className="text-sm text-red-700 dark:text-red-300">{status.errorMessage}</p>
+                  <p className="text-sm text-rose-700 dark:text-rose-300">{status.errorMessage}</p>
                 </motion.div>
               )}
 
@@ -559,7 +559,7 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
 
                 {/* Error message */}
                 {(currentStatus === 'failed' || currentStatus === 'interrupted') && jobStatus?.errorMessage && (
-                  <p className="mt-2 text-xs text-red-600 dark:text-red-400">
+                  <p className="mt-2 text-xs text-rose-600 dark:text-rose-400">
                     {jobStatus.errorMessage}
                   </p>
                 )}

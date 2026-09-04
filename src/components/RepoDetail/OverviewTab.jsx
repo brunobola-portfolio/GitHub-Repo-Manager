@@ -94,7 +94,7 @@ export function OverviewTab({ api, repoData, onUpdate }) {
             <div className="lg:col-span-3 flex flex-wrap gap-2">
                 <Button variant="primary" onClick={() => openModalWithData('showRepoInsights', { repo: repoData, initialTab: 'quality' })}>
                     <Sparkles className="w-4 h-4" />
-                    View AI Insights
+                    View AI insights
                 </Button>
                 <Button variant="secondary" onClick={() => setReadmeStudioOpen(true)}>
                     <Wand2 className="w-4 h-4" />
@@ -171,6 +171,7 @@ export function OverviewTab({ api, repoData, onUpdate }) {
                                 icon={BookOpen}
                                 title="No README"
                                 description="This repository doesn't have a README yet."
+                                action={{ label: 'Generate a README', onClick: () => setReadmeStudioOpen(true) }}
                             />
                         ) : (
                             <TabLoadError error={error} onRetry={reload} resourceLabel="this README" />
@@ -192,6 +193,7 @@ export function OverviewTab({ api, repoData, onUpdate }) {
                             icon={BookOpen}
                             title="No README"
                             description="This repository doesn't have a README yet."
+                            action={{ label: 'Generate a README', onClick: () => setReadmeStudioOpen(true) }}
                         />
                     )}
                 </SectionPanel>

@@ -12,11 +12,11 @@ const STATUS_ICONS = {
 }
 
 const STATUS_COLORS = {
-  added: 'text-green-500 dark:text-green-400',
-  removed: 'text-red-500 dark:text-red-400',
+  added: 'text-emerald-500 dark:text-emerald-400',
+  removed: 'text-rose-500 dark:text-rose-400',
   renamed: 'text-blue-500 dark:text-blue-400',
-  modified: 'text-yellow-500 dark:text-yellow-400',
-  changed: 'text-yellow-500 dark:text-yellow-400',
+  modified: 'text-amber-500 dark:text-amber-400',
+  changed: 'text-amber-500 dark:text-amber-400',
 }
 
 function basename(path) {
@@ -85,9 +85,9 @@ export function FileTreeItem({ file, id, isActive, isFocused, isReviewed, aiRisk
         {basename(filename)}
       </span>
 
-      {/* Addition / deletion counts. ds-text-* (not text-green-700) because the
+      {/* Addition / deletion counts. ds-text-* (not text-emerald-700) because the
           SELECTED row's blue tint is the darkest background these land on —
-          green-600 measured 2.64:1 there. See --ds-fg-success. */}
+          emerald-600 measured 2.64:1 there. See --ds-fg-success. */}
       <span className="shrink-0 text-xs ds-text-success font-mono">
         +{additions}
       </span>

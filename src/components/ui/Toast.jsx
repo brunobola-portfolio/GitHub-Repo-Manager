@@ -16,7 +16,7 @@ const STYLES = {
 	success:
 		'bg-emerald-50/90 dark:bg-emerald-900/60 border-emerald-300 dark:border-emerald-500 text-emerald-900 dark:text-emerald-100 border-l-4 border-l-emerald-500',
 	error:
-		'bg-red-50/90 dark:bg-red-900/60 border-red-300 dark:border-red-500 text-red-900 dark:text-red-100 border-l-4 border-l-red-500',
+		'bg-rose-50/90 dark:bg-rose-900/60 border-rose-300 dark:border-rose-500 text-rose-900 dark:text-rose-100 border-l-4 border-l-rose-500',
 	info:
 		'bg-blue-50/90 dark:bg-blue-900/60 border-blue-300 dark:border-blue-500 text-blue-900 dark:text-blue-100 border-l-4 border-l-blue-500',
 	warning:
@@ -25,7 +25,7 @@ const STYLES = {
 
 const ICON_STYLES = {
     success: 'text-emerald-500 dark:text-emerald-400',
-    error: 'text-red-500 dark:text-red-400',
+    error: 'text-rose-500 dark:text-rose-400',
     info: 'text-blue-500 dark:text-blue-400',
     warning: 'text-amber-500 dark:text-amber-400'
 }

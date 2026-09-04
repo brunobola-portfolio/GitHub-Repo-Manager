@@ -39,7 +39,7 @@ function KPI({ label, value, sub }) {
         <Card glass={false} shadow="none" className="flex-1 p-4 text-center bg-slate-50 dark:bg-slate-800/50">
             <div className="text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-100 ds-font-display">{value ?? '—'}</div>
             <div className="text-xs font-semibold text-slate-600 dark:text-slate-300 mt-0.5">{label}</div>
-            {sub && <div className="ds-text-micro text-slate-400 mt-0.5">{sub}</div>}
+            {sub && <div className="ds-text-micro text-slate-500 dark:text-slate-400 mt-0.5">{sub}</div>}
         </Card>
     )
 }
@@ -160,7 +160,7 @@ export function DORATab() {
                         Daily successful deploys (last 30 days)
                     </div>
                     <SparkLine perDay={perDay} />
-                    <div className="flex justify-between ds-text-micro text-slate-400 mt-1">
+                    <div className="flex justify-between ds-text-micro text-slate-500 dark:text-slate-400 mt-1">
                         <span>{perDay[0]?.date}</span>
                         <span>{perDay[perDay.length - 1]?.date}</span>
                     </div>

@@ -10,7 +10,7 @@ test.describe('AI Search & Features', () => {
   })
 
   test('should show AI search toggle button', async ({ page }) => {
-    const aiToggle = page.getByTitle('Toggle AI Semantic Search')
+    const aiToggle = page.getByTitle('Toggle AI semantic search')
     await expect(aiToggle).toBeVisible()
   })
 
@@ -19,7 +19,7 @@ test.describe('AI Search & Features', () => {
     await expect(searchInput).toBeVisible()
 
     // Click AI toggle
-    const aiToggle = page.getByTitle('Toggle AI Semantic Search')
+    const aiToggle = page.getByTitle('Toggle AI semantic search')
     // Dispatch click directly on the button to bypass the z-40 select-all
     // wrapper that intercepts pointer events on narrow/wrapped toolbars.
     await aiToggle.evaluate((el) => el.click())
@@ -29,7 +29,7 @@ test.describe('AI Search & Features', () => {
   })
 
   test('should switch back to normal search on second toggle', async ({ page }) => {
-    const aiToggle = page.getByTitle('Toggle AI Semantic Search')
+    const aiToggle = page.getByTitle('Toggle AI semantic search')
 
     // Toggle on
     // Dispatch click directly on the button to bypass the z-40 select-all
@@ -45,7 +45,7 @@ test.describe('AI Search & Features', () => {
   })
 
   test('should show search input in the brand tone in AI mode', async ({ page }) => {
-    const aiToggle = page.getByTitle('Toggle AI Semantic Search')
+    const aiToggle = page.getByTitle('Toggle AI semantic search')
     // Dispatch click directly on the button to bypass the z-40 select-all
     // wrapper that intercepts pointer events on narrow/wrapped toolbars.
     await aiToggle.evaluate((el) => el.click())

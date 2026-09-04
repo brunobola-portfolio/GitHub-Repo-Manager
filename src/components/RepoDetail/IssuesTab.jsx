@@ -164,7 +164,7 @@ export function IssuesTab({ api, repoFullName }) {
         <div className="space-y-4">
             {message && (
                 <div className={`flex items-center gap-2 p-2 rounded-lg text-sm ${
-                    message.type === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
+                    message.type === 'success' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400'
                 }`}>
                     {message.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                     {message.text}
@@ -208,7 +208,7 @@ export function IssuesTab({ api, repoFullName }) {
                             }`}
                         >
                             <div className="flex items-start gap-3">
-                                <div className={`mt-0.5 ${issue.state === 'open' ? 'text-green-500' : 'text-brand-500'}`}>
+                                <div className={`mt-0.5 ${issue.state === 'open' ? 'text-emerald-500' : 'text-brand-500'}`}>
                                     <CircleDot className="w-4 h-4" />
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -258,7 +258,7 @@ export function IssuesTab({ api, repoFullName }) {
                                             Close
                                         </Button>
                                     ) : (
-                                        <Button variant="ghost" size="sm" onClick={() => handleReopen(issue)} className="text-green-700 dark:text-green-400 text-xs shrink-0">
+                                        <Button variant="ghost" size="sm" onClick={() => handleReopen(issue)} className="text-emerald-700 dark:text-emerald-400 text-xs shrink-0">
                                             Reopen
                                         </Button>
                                     )}

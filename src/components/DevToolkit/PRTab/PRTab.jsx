@@ -92,8 +92,8 @@ export function PRTab({ toolkit }) {
                 setReviewers(result.suggested_reviewers || [])
             }
         } catch {
-            setLocalError('Error generating PR description. Please try again.')
-            setSections({ title: '', summary: 'Error generating PR description. Please try again.', test_plan: '', breaking_changes: null, related_issues: [] })
+            setLocalError('Error generating PR description. Try again.')
+            setSections({ title: '', summary: 'Error generating PR description. Try again.', test_plan: '', breaking_changes: null, related_issues: [] })
         } finally {
             setLoading(false)
         }
@@ -222,7 +222,7 @@ export function PRTab({ toolkit }) {
                         </div>
                     )}
                     {templateBadge && (
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-500/10 border border-slate-500/20 text-xs text-slate-400">
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-500/10 border border-slate-500/20 text-xs text-slate-500 dark:text-slate-400">
                             <FileText className="w-3.5 h-3.5 shrink-0" />
                             {templateBadge}
                         </div>
@@ -231,7 +231,7 @@ export function PRTab({ toolkit }) {
             )}
 
             {displayError && (
-                <div className="px-3 py-2 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 text-xs text-red-600 dark:text-red-400">
+                <div className="px-3 py-2 rounded-lg bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800/50 text-xs text-rose-600 dark:text-rose-400">
                     {displayError}
                 </div>
             )}

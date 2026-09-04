@@ -21,7 +21,7 @@ export function PRFilesTab({ files = [], owner, repo, pr }) {
 
     const rightSlot = MOCK_MODE && !aiSummary && !aiLoading ? (
         <div className="rounded-lg border border-slate-200 dark:border-slate-700 p-3 text-xs text-slate-500 dark:text-slate-400">
-            <p className="font-semibold text-slate-600 dark:text-slate-300 mb-1">AI Insights</p>
+            <p className="font-semibold text-slate-600 dark:text-slate-300 mb-1">AI insights</p>
             <p>AI analysis not available in demo mode. Configure a provider in Settings → AI Configuration.</p>
         </div>
     ) : (

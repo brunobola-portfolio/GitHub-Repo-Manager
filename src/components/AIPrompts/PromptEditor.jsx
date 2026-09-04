@@ -226,7 +226,7 @@ export function PromptEditor({ initial, onSave, onCancel, onTest, saving }) {
                                         aria-label={`Path rule prompt ${i + 1}`}
                                         className="text-xs"
                                     />
-                                    <button type="button" onClick={() => removeRule(i)} className="text-xs text-red-600 dark:text-red-400 hover:underline">
+                                    <button type="button" onClick={() => removeRule(i)} className="text-xs text-rose-600 dark:text-rose-400 hover:underline">
                                         Remove
                                     </button>
                                 </li>

@@ -37,7 +37,7 @@ export default function WikiStep({ wiki, onUpdate, source }) {
           onUpdate({ wikis: data.wikis })
           setFetched(true)
         } else {
-          setError(data.error || 'Failed to load wikis')
+          setError(data.error || "Couldn't load wikis")
         }
       } catch (e) {
         setError(e.data?.error || e.message || 'Could not reach server')
@@ -90,10 +90,10 @@ export default function WikiStep({ wiki, onUpdate, source }) {
 
       {wiki.enabled && error && (
         <div className="flex flex-col items-center justify-center py-8 gap-3">
-          <div className="p-3 rounded-full bg-red-100 dark:bg-red-900/30">
-            <AlertCircle className="w-6 h-6 text-red-500" />
+          <div className="p-3 rounded-full bg-rose-100 dark:bg-rose-900/30">
+            <AlertCircle className="w-6 h-6 text-rose-500" />
           </div>
-          <p className="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>
+          <p className="text-sm font-medium text-rose-600 dark:text-rose-400">{error}</p>
           <button
             type="button"
             onClick={() => {

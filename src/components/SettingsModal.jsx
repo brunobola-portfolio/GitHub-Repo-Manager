@@ -118,11 +118,11 @@ export function SettingsModal({ isOpen, onClose, initialTab, isAdmin = false }) 
                 setCacheMessage({ type: 'success', text: `Cache cleared! (${data.cleared} entries removed)` })
                 toast.success(`Cache cleared — ${data.cleared} entries removed`)
             } else {
-                setCacheMessage({ type: 'error', text: 'Failed to clear cache. Please try again.' })
+                setCacheMessage({ type: 'error', text: 'Failed to clear cache. Try again.' })
                 toast.error('Failed to clear cache')
             }
         } catch {
-            setCacheMessage({ type: 'error', text: 'Failed to clear cache. Please try again.' })
+            setCacheMessage({ type: 'error', text: 'Failed to clear cache. Try again.' })
             toast.error('Failed to clear cache')
         } finally {
             setClearing(false)
@@ -281,7 +281,7 @@ function GeneralTabContent({
                             {clearing ? 'Clearing…' : 'Clear cache now'}
                         </Button>
                         {cacheMessage ? (
-                            <p role="status" className={`ds-text-meta font-medium ${cacheMessage.type === 'success' ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                            <p role="status" className={`ds-text-meta font-medium ${cacheMessage.type === 'success' ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                                 {cacheMessage.text}
                             </p>
                         ) : (

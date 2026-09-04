@@ -253,7 +253,7 @@ describe('AIConfigSection — Test Connection button', () => {
             ok: false,
             status: 429,
             headers: { get: () => null },
-            json: () => Promise.resolve({ error: 'Rate limited. Please wait.', code: 'RATE_LIMITED' }),
+            json: () => Promise.resolve({ error: 'Rate limited. Try again shortly.', code: 'RATE_LIMITED' }),
         })
 
         await act(async () => {
@@ -270,7 +270,7 @@ describe('AIConfigSection — Test Connection button', () => {
         await waitFor(() => {
             // The premium error card shows the title and the message both
             // matching /rate limited/i, so use the exact message string.
-            expect(screen.getByText('Rate limited. Please wait.')).toBeInTheDocument()
+            expect(screen.getByText('Rate limited. Try again shortly.')).toBeInTheDocument()
         })
     })
 })
