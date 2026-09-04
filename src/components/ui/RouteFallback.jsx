@@ -25,7 +25,7 @@ export function RouteFallback({ variant = 'page', label = 'Loading…' }) {
 
     return (
         <div
-            className="flex items-center justify-center min-h-[400px]"
+            className="flex items-center justify-center min-h-[calc(100dvh-10rem)]"
             role="status"
             aria-live="polite"
         >

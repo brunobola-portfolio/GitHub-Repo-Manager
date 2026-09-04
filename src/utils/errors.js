@@ -7,6 +7,7 @@
  */
 
 import { ApiError, ErrorType } from './api'
+import { SUPPORT_EMAIL } from './supportContact'
 
 /**
  * Map server-returned `reason` values from bulk confirmation errors to
@@ -358,7 +359,7 @@ const KNOWN_ERRORS = {
 
 const FALLBACK = {
     title: 'Something went wrong',
-    body: 'Please try again. If the problem persists, contact bruno@bolalabs.pt.',
+    body: `Try again. If the problem persists, contact ${SUPPORT_EMAIL}.`,
     action: { label: 'Retry', kind: 'retry', type: 'retry' },
 }
 

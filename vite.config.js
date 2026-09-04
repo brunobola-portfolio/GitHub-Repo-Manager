@@ -156,11 +156,14 @@ export default defineConfig({
           if (/[\\/]node_modules[\\/]lucide-react[\\/]/.test(id)) return 'vendor-icons'
           if (/[\\/]node_modules[\\/]@radix-ui[\\/]/.test(id)) return 'vendor-ui'
           if (/[\\/]node_modules[\\/]react-markdown[\\/]/.test(id)) return 'vendor-markdown'
-          // @git-diff-view/* + lowlight (common subset via alias shim) + highlight.js
-          // languages. The shiki/* packages listed here are kept for future-proofing
-          // in case @git-diff-view adds a shiki code path; they produce no output
-          // today because nothing imports them after the lowlight alias redirect.
-          if (/[\\/]node_modules[\\/](@git-diff-view|lowlight|highlight\.js|shiki|@shikijs)[\\/]/.test(id)) return 'vendor-diff'
+          // @git-diff-view + lowlight + highlight.js are deliberately NOT
+          // force-grouped either, for the same reason as recharts above: a
+          // 'vendor-diff' group made rolldown place react/cjs/react.production.js
+          // inside it (and not in vendor-react), so the entry's jsx/jsxs bindings
+          // resolved through the diff chunk and index.html modulepreloaded 316 KB
+          // of diff viewer + 40 grammars on every cold load (2026-09-04 panel:
+          // 87 KB brotli, 22.9% of first-load bytes, zero first-paint pixels).
+          // Every consumer is React.lazy, so per-consumer chunking keeps it lazy.
         }
       }
     }

@@ -1,6 +1,7 @@
 import { UpgradeRequired } from './UpgradeRequired'
 import { ServiceUnavailable } from './ServiceUnavailable'
 import { FeatureError } from './FeatureError'
+import { SUPPORT_EMAIL } from '../../utils/supportContact'
 
 /**
  * Renders the right empty/error state for a parsed API descriptor.
@@ -18,7 +19,7 @@ export function FeatureState({
     feature,
     benefits,
     onRetry,
-    contactEmail = 'bruno@bolalabs.pt',
+    contactEmail = SUPPORT_EMAIL,
     contactSubject,
     docsHref,
     pricingHref = '#/pricing',

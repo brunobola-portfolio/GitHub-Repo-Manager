@@ -17,7 +17,7 @@ const features = [
     icon: Search,
     title: 'Semantic Search',
     description:
-      'Find repositories by meaning, not just keywords. Describe what you need and let AI surface the right repos instantly.',
+      'Find repositories by meaning, not just keywords. Describe what you need and let your AI provider surface the right ones.',
     iconColor: 'text-brand-500 dark:text-brand-400',
     glow: '',
     iconBg: 'bg-brand-500/15 dark:bg-brand-500/25',
@@ -37,7 +37,7 @@ const features = [
     icon: Users,
     title: 'Team Collaboration',
     description:
-      'Shared dashboards, activity feeds, per-team repo assignment, and fine-grained access management across organizations.',
+      'Shared dashboards, activity feeds and per-team repository assignment. Teams live in your instance and never change GitHub permissions.',
     iconColor: 'text-emerald-500 dark:text-emerald-400',
     glow: '',
     iconBg: 'bg-emerald-500/15 dark:bg-emerald-500/25',
@@ -47,7 +47,7 @@ const features = [
     icon: FileText,
     title: 'README Generation',
     description:
-      'AI-crafted documentation in seconds. Auto-detect project structure, tech stack, and generate polished READMEs.',
+      'Generates a README from your detected stack and structure, with TODO placeholders instead of invented commands or versions.',
     iconColor: 'text-brand-500 dark:text-brand-400',
     glow: '',
     iconBg: 'bg-brand-500/15 dark:bg-brand-500/25',

@@ -23,6 +23,26 @@ const UTILITY = new RegExp(`\\b(${RETIRED.join('|')})-(?:50|100|200|300|400|500|
 /** Literal hexes from the retired identity — the logo's gradient stops. */
 const RETIRED_HEXES = ['#4f46e5', '#6366f1', '#818cf8', '#4338ca', '#a5b4fc', '#312e81', '#4c1d95', '#1e1b4b', '#a78bfa', '#c084fc']
 
+/**
+ * The same colours written as rgb()/rgba() triplets. The utility and hex
+ * checks above never saw these, which is how violet-500 came back as the
+ * pricing preview's radial wash and indigo-500 as the PR review progress
+ * ring (2026-09-04 panel). 400/500/600 of every retired family.
+ */
+const RETIRED_RGB = [
+    [129, 140, 248], [99, 102, 241], [79, 70, 229],      // indigo
+    [167, 139, 250], [139, 92, 246], [124, 58, 237],     // violet
+    [192, 132, 252], [168, 85, 247], [147, 51, 234],     // purple
+    [232, 121, 249], [217, 70, 239], [192, 38, 211],     // fuchsia
+    [56, 189, 248], [14, 165, 233], [2, 132, 199],       // sky
+    [34, 211, 238], [6, 182, 212], [8, 145, 178],        // cyan
+    [244, 114, 182], [236, 72, 153], [219, 39, 119],     // pink
+    [45, 212, 191], [20, 184, 166], [13, 148, 136],      // teal
+]
+const RGB_TRIPLET = new RegExp(
+    `rgba?\\(\\s*(?:${RETIRED_RGB.map(([r, g, b]) => `${r}\\s*[, ]\\s*${g}\\s*[, ]\\s*${b}`).join('|')})\\b`,
+)
+
 const ALLOWED = new Set([
     // Categorical data, not brand. Each language needs its own hue.
     'src/utils/languageColors.js',
@@ -77,10 +97,11 @@ describe('the product has one accent ramp', () => {
         // card's selection ring was `rgba(129, 140, 248, …)` with a comment
         // reading "brand-400 ring" — indigo-400, by its channels. Same colour,
         // different spelling, and a screenshot is the only thing that notices.
-        // Indigo 400/500/600 as decimal triples, any spacing.
-        const TRIPLES = [[129, 140, 248], [99, 102, 241], [79, 70, 229], [165, 180, 252], [167, 139, 250], [192, 132, 252]]
-        const alternatives = TRIPLES.map(([r, g, b]) => `${r}\\s*,\\s*${g}\\s*,\\s*${b}`).join('|')
-        const pattern = new RegExp(`rgba?\\(\\s*(?:${alternatives})\\b`)
+        // Then a second pair got past THIS check: violet-500 was not in the
+        // list, and indigo-500 was written with the CSS4 space syntax
+        // `rgb(99 102 241)` that the comma-only pattern skipped. RETIRED_RGB
+        // now covers 400/500/600 of every retired family, in either syntax.
+        const pattern = RGB_TRIPLET
         const offenders = []
         for (const file of FILES) {
             const src = readFileSync(file, 'utf8')

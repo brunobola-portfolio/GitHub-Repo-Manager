@@ -107,7 +107,7 @@ export function ReviewStatusBar({
                     cy="18"
                     r={RADIUS}
                     fill="none"
-                    stroke={allReviewed ? 'rgb(34 197 94)' : 'rgb(99 102 241)'}
+                    stroke={allReviewed ? 'var(--ds-risk-low)' : 'var(--ds-accent-brand)'}
                     strokeWidth="3"
                     strokeLinecap="round"
                     strokeDasharray={CIRCUMFERENCE}

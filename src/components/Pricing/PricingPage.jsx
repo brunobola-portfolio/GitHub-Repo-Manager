@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, ArrowRight, Sparkles, GitBranch, Shield, Cpu } from 'lucide-react'
 import { PricingCard } from './PricingCard'
+import { SUPPORT_EMAIL } from '../../utils/supportContact'
 import { FeatureComparison } from './FeatureComparison'
 import { API_BASE_URL } from '../../config'
 import { getCsrfToken } from '../../utils/api'
@@ -211,7 +212,7 @@ function FaqItem({ q, a, index }) {
 }
 
 /* ─── Main page ─── */
-const SALES_EMAIL = 'bruno@bolalabs.pt'
+const SALES_EMAIL = SUPPORT_EMAIL
 
 export function PricingPage({ onGetStarted } = {}) {
   const [isYearly, setIsYearly] = useState(false)
@@ -506,8 +507,8 @@ export function PricingPage({ onGetStarted } = {}) {
             </h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base max-w-lg mx-auto">
               Can't find the answer? Reach us at{' '}
-              <a href="mailto:bruno@bolalabs.pt" className="text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline">
-                bruno@bolalabs.pt
+              <a href={`mailto:${SALES_EMAIL}`} className="text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline">
+                {SALES_EMAIL}
               </a>
             </p>
           </motion.div>

@@ -54,8 +54,13 @@ import { describe, it, expect, beforeAll } from 'vitest'
 // reaches a user. With NODE_ENV pinned (see beforeAll), the SHIPPED bundle
 // measures 69.38 KB index and 349.53 KB eager across 24 chunks, so the budgets
 // below carry ~3.8% and ~4.4% margin over reality.
-const EAGER_INDEX_GZ_BUDGET = 72 * 1024
-const EAGER_TOTAL_GZ_BUDGET = 365 * 1024
+//
+// RE-BASELINED 2026-09-04: dropping the vendor-diff manualChunks group (see
+// vite.config.js) took the diff viewer off the entry's static closure. The
+// TRANSITIVE eager closure now measures 55.7 KB index / 292.9 KB total across
+// 41 chunks (it was 340.4 KB with the diff chunk hoisted in). ~4% margin.
+const EAGER_INDEX_GZ_BUDGET = 58 * 1024
+const EAGER_TOTAL_GZ_BUDGET = 305 * 1024
 
 const RUN = process.env.RUN_BUILD_TESTS === '1'
 
@@ -77,7 +82,46 @@ function findFiles(dir, prefix) {
         .map((f) => join(dir, f))
 }
 
+/**
+ * Every chunk reachable from the entry through STATIC imports, transitively.
+ * The previous version scanned only the entry's own `from"./x.js"` lines, so a
+ * heavy chunk pulled in one hop deeper (vendor-diff via vendor-react's jsx
+ * runtime, 2026-09-04 panel: 87 KB brotli on every cold load) was invisible to
+ * the budget. Captures `from"./chunk.js"` (rolldown) and `from "./chunk.js"`.
+ */
+function eagerClosure(entryPath) {
+    const re = /from\s*['"]\.\/([^'"]+\.js)['"]/g
+    const seen = new Set()
+    const queue = [entryPath]
+    while (queue.length) {
+        const file = queue.shift()
+        if (!existsSync(file)) continue
+        const content = readFileSync(file, 'utf8')
+        let m
+        while ((m = re.exec(content))) {
+            if (!seen.has(m[1])) {
+                seen.add(m[1])
+                queue.push(join(ASSETS, m[1]))
+            }
+        }
+    }
+    return seen
+}
+
 describe.skipIf(!RUN)('bundle size budget', () => {
+    it('the diff viewer is not on the critical path', () => {
+        // index.html modulepreloads the entry's static closure. The diff
+        // viewer (@git-diff-view + highlight.js grammars, ~316 KB raw) has no
+        // first-paint consumer — every one is React.lazy — so neither a
+        // vendor-diff chunk nor its stylesheet may appear there.
+        const html = readFileSync(join(OUT_DIR, 'index.html'), 'utf8')
+        expect(html).not.toMatch(/vendor-diff/)
+        expect(html).not.toMatch(/diff-view[^"']*\.css/)
+        const indexFiles = findFiles(ASSETS, 'index-')
+        const eager = [...eagerClosure(indexFiles[0])]
+        expect(eager.filter((c) => /vendor-diff|DiffRenderer|diff-view/i.test(c))).toEqual([])
+    })
+
     beforeAll(() => {
         // NODE_ENV must be pinned. Vitest sets NODE_ENV=test and
         // execSync inherits it, so `--mode production` still produced a
@@ -103,17 +147,7 @@ describe.skipIf(!RUN)('bundle size budget', () => {
 
     it(`eager bundle gzipped sum is under ${(EAGER_TOTAL_GZ_BUDGET / 1024).toFixed(0)} KB`, () => {
         const indexFiles = findFiles(ASSETS, 'index-')
-        const indexContent = readFileSync(indexFiles[0], 'utf8')
-
-        // Find every chunk filename referenced by `import "./..."` in the entry.
-        // Captures both `from"./chunk.js"` (rolldown output style) and
-        // `from "./chunk.js"` (rollup style with a space).
-        const re = /from\s*['"]\.\/([^'"]+\.js)['"]/g
-        const eagerChunks = new Set()
-        let m
-        while ((m = re.exec(indexContent))) {
-            eagerChunks.add(m[1])
-        }
+        const eagerChunks = eagerClosure(indexFiles[0])
 
         let totalGz = gzipSize(indexFiles[0])
         const breakdown = [{ chunk: indexFiles[0].replace(/\\/g, '/'), gz: totalGz }]

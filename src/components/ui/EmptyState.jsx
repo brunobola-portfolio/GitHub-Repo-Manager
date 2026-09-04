@@ -48,7 +48,7 @@ export function EmptyState({
       {/* Title */}
       <motion.h3
         variants={listItem}
-        className="text-md font-semibold ds-font-display text-slate-900 dark:text-slate-100 mb-2"
+        className="text-base font-semibold ds-font-display text-slate-900 dark:text-slate-100 mb-2"
       >
         {title}
       </motion.h3>

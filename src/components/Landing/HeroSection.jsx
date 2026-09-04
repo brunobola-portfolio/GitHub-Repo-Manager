@@ -79,8 +79,9 @@ export function HeroSection({ onSignIn }) {
         {...fadeUp(0.2)}
         className="text-lg sm:text-xl text-slate-500 dark:text-slate-400 max-w-2xl leading-relaxed mb-10 ds-font-display"
       >
-        The open-source platform for intelligent repository management — migrate, organize, analyze,
-        and collaborate with the help of AI.
+        Your repositories, your server, your AI keys. Migrate from Azure DevOps and TFVC, review
+        pull requests as drafts you publish yourself, and run it all under Apache-2.0 — on Docker,
+        IIS, or a Windows installer.
       </motion.p>
 
       {/* CTA Buttons */}
@@ -128,7 +129,7 @@ export function HeroSection({ onSignIn }) {
         {...fadeUp(0.45)}
         className="mt-6 text-xs text-slate-500 dark:text-slate-400 ds-font-display"
       >
-        Free & open-source · No credit card required · Self-host with Docker
+        Apache-2.0 · Bring your own AI key, on every plan · Self-host on Docker, IIS or Windows · No credit card
       </motion.p>
     </section>
   )
