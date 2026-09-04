@@ -1,6 +1,7 @@
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useId, useState } from 'react'
+import { TRANSITION } from './motion'
 
 /**
  * SectionPanel — Premium section container with gradient bg, 2px border,
@@ -74,7 +75,7 @@ export function SectionPanel({
             </div>
             {actions ? <div className="flex items-center gap-2 shrink-0">{actions}</div> : null}
             {collapsible ? (
-                <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${open ? '' : '-rotate-90'}`} aria-hidden="true" />
+                <ChevronDown className={`w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0 transition-transform duration-[var(--ds-duration)] ${open ? '' : '-rotate-90'}`} aria-hidden="true" />
             ) : null}
         </>
     )
@@ -91,7 +92,9 @@ export function SectionPanel({
                         onClick={() => setOpen((o) => !o)}
                         aria-expanded={open}
                         aria-controls={contentId}
-                        className="w-full text-left flex items-start gap-3 px-5 py-4"
+                        // The section clips to its rounded corners, so the ring
+                        // is inset rather than outset to stay visible.
+                        className="w-full text-left flex items-start gap-3 px-5 py-4 ds-focus-ring ds-focus-ring-inset rounded-t-3xl"
                     >
                         {headerCommon}
                     </button>
@@ -110,7 +113,7 @@ export function SectionPanel({
                         initial={collapsible && !reduced ? { height: 0, opacity: 0 } : false}
                         animate={collapsible && !reduced ? { height: 'auto', opacity: 1 } : undefined}
                         exit={collapsible && !reduced ? { height: 0, opacity: 0 } : undefined}
-                        transition={{ duration: reduced ? 0 : 0.2 }}
+                        transition={reduced ? { duration: 0 } : TRANSITION.standard}
                         className={`px-5 pb-5 ${hasHeader ? '' : 'pt-5'}`.trim()}
                     >
                         {children}

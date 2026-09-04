@@ -1,4 +1,6 @@
-import { useFocusTrap } from '../../../hooks/useFocusTrap';
+import { Clock } from 'lucide-react';
+import { Modal } from '../../ui/Modal';
+import { Button } from '../../ui/Button';
 
 function in1Hour() { return new Date(Date.now() + 60 * 60_000).toISOString(); }
 function tomorrow9am() {
@@ -20,51 +22,37 @@ const PRESETS = [
     { label: '1 week', iso: in1Week },
 ];
 
+/**
+ * Snooze an inbox item until one of four moments. Built on the shared Modal
+ * so it gets the same backdrop, entrance, focus trap and close control as
+ * every other dialog instead of its own hand-rolled shell.
+ */
 export function SnoozeModal({ open, onConfirm, onClose }) {
-    // useFocusTrap handles Escape → onClose, Tab cycling, focus restore.
-    // The returned ref is attached to the inner card (the trap root), not the backdrop.
-    const trapRef = useFocusTrap(open, onClose);
-
-    if (!open) return null;
-
     return (
-        /* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */
-        <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="snooze-modal-title"
-            className="fixed inset-0 z-[var(--ds-z-modal)] flex items-center justify-center bg-black/40 backdrop-blur-sm"
-            onClick={onClose}
-        >
-            {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
-            <div
-                ref={trapRef}
-                className="w-full max-w-sm rounded-2xl bg-white dark:bg-[color:var(--ds-surface-dark)] p-6 shadow-[var(--ds-shadow-lg)]"
-                onClick={e => e.stopPropagation()}
-            >
-                <h3 id="snooze-modal-title" className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-4 ds-font-display">
-                    Snooze until…
-                </h3>
-                <div className="grid grid-cols-2 gap-2">
-                    {PRESETS.map(p => (
-                        <button
-                            key={p.label}
-                            type="button"
-                            onClick={() => { onConfirm(p.iso()); onClose?.(); }}
-                            className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm text-slate-800 dark:text-slate-200"
-                        >
-                            {p.label}
-                        </button>
-                    ))}
-                </div>
-                <button
-                    type="button"
-                    onClick={onClose}
-                    className="mt-4 w-full text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
-                >
+        <Modal
+            isOpen={!!open}
+            onClose={onClose}
+            size="sm"
+            icon={Clock}
+            title="Snooze until…"
+            footer={
+                <Button variant="ghost" size="sm" onClick={onClose}>
                     Cancel
-                </button>
+                </Button>
+            }
+        >
+            <div className="grid grid-cols-2 gap-2">
+                {PRESETS.map(p => (
+                    <Button
+                        key={p.label}
+                        variant="outline"
+                        size="md"
+                        onClick={() => { onConfirm(p.iso()); onClose?.(); }}
+                    >
+                        {p.label}
+                    </Button>
+                ))}
             </div>
-        </div>
+        </Modal>
     );
 }
