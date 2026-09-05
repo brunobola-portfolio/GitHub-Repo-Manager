@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { SafeMarkdown } from '../../AIPrompts/SafeMarkdown';
 import { parseAndSanitizeSvg } from '../../../utils/sanitizeSvg';
-import { mermaidInitConfig } from '../../../utils/mermaidConfig';
 
 export function WalkthroughTab({ walkthrough }) {
     const mermaidRef = useRef(null);
@@ -29,7 +28,7 @@ export function WalkthroughTab({ walkthrough }) {
         if (!src || !mermaidRef.current) return undefined;
 
         // Lazy-load to keep mermaid (~200kB) out of the initial bundle
-        import('mermaid').then((mod) => {
+        Promise.all([import('mermaid'), import('../../../utils/mermaidConfig')]).then(([mod, { mermaidInitConfig }]) => {
             if (cancelled) return;
             const mermaid = mod.default || mod;
             // securityLevel: 'strict' is the v11 default — pinned explicitly so

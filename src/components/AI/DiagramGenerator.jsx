@@ -16,7 +16,6 @@ import { TRANSITION } from '../ui/motion'
 import { aiApi } from '../../api/ai'
 import { copyToClipboard } from '../../utils/clipboard'
 import { parseAndSanitizeSvg } from '../../utils/sanitizeSvg'
-import { mermaidInitConfig } from '../../utils/mermaidConfig'
 import { useToast } from '../../hooks/useToast'
 import { useResponsiveDiffMode } from '../../hooks/useResponsiveDiffMode'
 
@@ -175,7 +174,7 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
         const src = mermaidSource?.trim()
         if (!src || !mermaidRef.current) return undefined
 
-        import('mermaid').then((mod) => {
+        Promise.all([import('mermaid'), import('../../utils/mermaidConfig')]).then(([mod, { mermaidInitConfig }]) => {
             if (cancelled) return
             const mermaid = mod.default || mod
             // htmlLabels:false forces SVG <text> labels instead of <foreignObject>

@@ -59,7 +59,14 @@ import { describe, it, expect, beforeAll } from 'vitest'
 // vite.config.js) took the diff viewer off the entry's static closure. The
 // TRANSITIVE eager closure now measures 55.7 KB index / 292.9 KB total across
 // 41 chunks (it was 340.4 KB with the diff chunk hoisted in). ~4% margin.
-const EAGER_INDEX_GZ_BUDGET = 58 * 1024
+//
+// RE-BASELINED 2026-09-06: the index chunk measures 62.3 KB after saved views
+// reached the Repositories filter bar (PresetDropdown + useWorkBoardPresets),
+// the keyboard-shortcut registry, the digest hook and the boot/navigation
+// hooks split out of App.jsx. All of it is app-shell code the first paint
+// needs; nothing lazy was hoisted (the module list in the sourcemap holds 99
+// src/ modules and no vendor chunk). ~4% margin again.
+const EAGER_INDEX_GZ_BUDGET = 65 * 1024
 const EAGER_TOTAL_GZ_BUDGET = 305 * 1024
 
 const RUN = process.env.RUN_BUILD_TESTS === '1'

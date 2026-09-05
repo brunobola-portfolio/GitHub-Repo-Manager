@@ -7,7 +7,6 @@ import { rehypeSlugInline } from './__rehype-slug-inline'
 import { copyToClipboard } from '../../utils/clipboard'
 import { AnimatedCopyIcon } from './AnimatedCopyIcon'
 import { parseAndSanitizeSvg } from '../../utils/sanitizeSvg'
-import { mermaidInitConfig } from '../../utils/mermaidConfig'
 
 // Sanitize schema: defaults + relax a handful of attributes that GitHub
 // READMEs habitually use. Tag/attribute lists are explicit-allow only.
@@ -226,7 +225,7 @@ function ReadmeMermaidBlock({ source }) {
         const src = source?.trim()
         if (!src || !mermaidRef.current) return undefined
 
-        import('mermaid').then((mod) => {
+        Promise.all([import('mermaid'), import('../../utils/mermaidConfig')]).then(([mod, { mermaidInitConfig }]) => {
             if (cancelled) return
             const mermaid = mod.default || mod
             // htmlLabels:false emits SVG <text> labels instead of <foreignObject>

@@ -11,8 +11,8 @@
  * files (2026-09-05 panel follow-up).
  *
  * What this gate does NOT flag, on purpose:
- *   - `shadow-[var(--ds-shadow-*)]` — already the token, just spelled as an
- *     arbitrary value instead of the .ds-elevation-* class (Card, Modal,
+ *   - an arbitrary-value shadow utility wrapping a `--ds-shadow-*` token — already
+ *     the token, just spelled inline instead of the .ds-elevation-* class (Card, Modal,
  *     Drawer, WizardPanel, InsightCard all do this).
  *   - Any `hover:`/`focus:`/`focus-visible:`/`group-hover:`-prefixed shadow
  *     utility. `.ds-elevation-*` are plain CSS classes (not Tailwind
