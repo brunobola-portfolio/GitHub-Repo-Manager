@@ -87,7 +87,7 @@ describe('listTeams — real mode (free tier)', () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: async () => payload,
+      headers: { get: () => 'application/json' }, json: async () => payload,
     })
     const { listTeams } = await import('@/api/teams')
 
@@ -128,7 +128,7 @@ describe('listTeams — real mode (free tier)', () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: async () => ({ unexpected: 'object' }),
+      headers: { get: () => 'application/json' }, json: async () => ({ unexpected: 'object' }),
     })
     const { listTeams } = await import('@/api/teams')
 

@@ -12,7 +12,6 @@ const VIEW_TITLES = {
   'work-board': 'Work Board',
   'prompt-studio': 'Prompt Studio',
   pricing: 'Pricing',
-  roadmap: 'Roadmap',
   'pr-review': 'PR Review',
   'admin-dlq': 'Admin',
   audit: 'Audit Log',
@@ -57,7 +56,6 @@ export function useAppRouter({
   // review / wizard live in modal-ish state and stay out of the hash space.
   const HASH_ROUTES = useMemo(() => ({
     '#/ai/prompts': 'prompt-studio',
-    '#/roadmap':    'roadmap',
     '#/pricing':    'pricing',
     '#/repos':      'repos',
     '#/work':       'work-board',
@@ -136,7 +134,6 @@ export function useAppRouter({
   // work, and the URL is shareable. Inverse of HASH_ROUTES.
   const VIEW_TO_HASH = useMemo(() => ({
     'prompt-studio': '#/ai/prompts',
-    'roadmap':       '#/roadmap',
     'pricing':       '#/pricing',
     'repos':         '#/repos',
     'work-board':    '#/work',

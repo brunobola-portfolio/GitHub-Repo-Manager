@@ -25,8 +25,8 @@ function withTier(tier) {
 describe('useWorkBoardBadgeCounts', () => {
     it('fetches reviews + stale-prs on mount when Pro', async () => {
         global.fetch
-            .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [{}, {}, {}] }) })
-            .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [{}, {}] }) })
+            .mockResolvedValueOnce({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ data: [{}, {}, {}] }) })
+            .mockResolvedValueOnce({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ data: [{}, {}] }) })
 
         const { result } = renderHook(() => useWorkBoardBadgeCounts(), { wrapper: withTier('pro') })
         await waitFor(() => expect(result.current.count).toBe(5))
@@ -34,7 +34,7 @@ describe('useWorkBoardBadgeCounts', () => {
     })
 
     it('skips stale-prs on Free tier (no 403 in console)', async () => {
-        global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({ data: [{}, {}, {}] }) })
+        global.fetch.mockResolvedValueOnce({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ data: [{}, {}, {}] }) })
 
         const { result } = renderHook(() => useWorkBoardBadgeCounts(), { wrapper: withTier('free') })
         await waitFor(() => expect(result.current.isLoading).toBe(false))
@@ -65,12 +65,12 @@ describe('useWorkBoardBadgeCounts', () => {
         const { result } = renderHook(() => useWorkBoardBadgeCounts(), { wrapper: withTier('pro') })
         expect(result.current.count).toBe(7)
 
-        resolveFetch({ ok: true, json: async () => ({ data: [] }) })
+        resolveFetch({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) })
     })
 
     it('stops polling while the tab is hidden', async () => {
         vi.useFakeTimers()
-        global.fetch.mockResolvedValue({ ok: true, json: async () => ({ data: [] }) })
+        global.fetch.mockResolvedValue({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) })
 
         let hidden = false
         const originalHidden = Object.getOwnPropertyDescriptor(Document.prototype, 'hidden')
@@ -94,8 +94,8 @@ describe('useWorkBoardBadgeCounts', () => {
 
     it('persists count to localStorage after successful fetch', async () => {
         global.fetch
-            .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [{}, {}] }) })
-            .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [{}] }) })
+            .mockResolvedValueOnce({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ data: [{}, {}] }) })
+            .mockResolvedValueOnce({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ data: [{}] }) })
 
         renderHook(() => useWorkBoardBadgeCounts(), { wrapper: withTier('pro') })
         await waitFor(() => expect(localStorage.getItem('work_board_badge_count')).toBe('3'))

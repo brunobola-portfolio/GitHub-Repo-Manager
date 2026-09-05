@@ -1,22 +1,20 @@
 import { useState, useCallback, useEffect, useMemo, useRef, lazy, Suspense } from 'react'
 import { useGitHub } from './hooks/useGitHub'
 import { Header } from './components/Header'
-import { Sidebar } from './components/Sidebar'
 import { RepoList } from './components/RepoList'
 import { Spinner } from './components/ui/Spinner'
 import { useOnboarding } from './hooks/useOnboarding'
 import { useToast } from './hooks/useToast'
 import ErrorBoundary from './components/ErrorBoundary'
-import { AUTH_ENDPOINTS, MOCK_MODE } from './config'
+import { AUTH_ENDPOINTS, MOCK_MODE , API_BASE_URL } from './config'
 import { listTeams } from './api/teams'
 import { getAuthSetupStatus } from './api/authSetup'
-import { onSessionExpired, onRateLimit, resetSessionExpired, fetchWithRetry, safeParseJson } from './utils/api'
+import { onSessionExpired, onRateLimit, resetSessionExpired, fetchWithRetry, safeParseJson, apiCall } from './utils/api'
 import { trackBreadcrumb, mark } from './lib/observability'
 import { SelectionProvider } from './contexts/SelectionContext'
 import { ModalProvider } from './contexts/ModalContext'
 import { TrackedReposProvider } from './contexts/TrackedReposContext'
 import { TierContext } from './contexts/contexts'
-import { useSelection } from './hooks/useSelection'
 import { useModal } from './hooks/useModal'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useSessionExpiry } from './hooks/useSessionExpiry'
@@ -30,14 +28,6 @@ const CommandPalette = lazy(() =>
   import('./components/CommandPalette').then((m) => ({ default: m.CommandPalette }))
 )
 import { useResponsiveLayout } from './hooks/useResponsiveLayout'
-import CollapsiblePanel from './components/ui/CollapsiblePanel'
-// SlimSidebar lives in its own module (not co-located with the eager Sidebar)
-// specifically so it can be lazy: it's the collapsed-rail presentation of the
-// repos-view sidebar, shown only when CollapsiblePanel is in 'slim' mode —
-// never part of the dashboard first paint. CollapsiblePanel already reserves
-// the rail's width independent of its content, so a null Suspense fallback
-// causes no layout shift.
-const SlimSidebar = lazy(() => import('./components/SlimSidebar').then(m => ({ default: m.SlimSidebar })))
 import { RateLimitNotice } from './components/ui/RateLimitNotice'
 // HeaderBanners aggregates three banners (rate-limit, session-expired, BYOK
 // upgrade nudge) that are ALL false/null on a typical mount — each renders
@@ -71,9 +61,6 @@ import { useTheme } from './hooks/useTheme.jsx'
 
 // Lazy load Pricing page
 const PricingPage = lazy(() => import('./components/Pricing/PricingPage').then(m => ({ default: m.PricingPage })))
-
-// Lazy load Roadmap page
-const RoadmapPage = lazy(() => import('./components/Roadmap/RoadmapPage').then(m => ({ default: m.RoadmapPage })))
 
 // Lazy load heavy route components for code splitting
 const DashboardPremium = lazy(() => import('./components/Dashboard/DashboardPremium').then(m => ({ default: m.DashboardPremium })))
@@ -173,8 +160,11 @@ function AppContent() {
   }, [onboarding.shouldShow])
   const { toasts, toast, dismissToast } = useToast()
   const { modalStates, openModal, openModalWithData, closeModal, closeAllModals, getModalData } = useModal()
-  const { selectedIds } = useSelection()
-  const { leftMode, rightMode } = useResponsiveLayout()
+  // rightMode (from the same hook) drove the repos-view right rail, removed
+  // 2026-09-05 — Quick Actions/Import duplicated header buttons and palette
+  // commands, and Action History was empty for a new user. leftMode still
+  // drives OrgSidebar's expanded/slim rail.
+  const { leftMode } = useResponsiveLayout()
   // showMigrationHistory is now in ModalContext
   const [isSwitchingOrg, setIsSwitchingOrg] = useState(false)
   const [teams, setTeams] = useState([])
@@ -185,12 +175,10 @@ function AppContent() {
     loading: githubLoading,
     error,
     errorInfo,
-    message,
     page,
     perPage,
     totalPages,
     isPerforming,
-    results,
     isMockMode,
     setPage,
     loadAllPages,
@@ -520,7 +508,7 @@ function AppContent() {
       return
     }
     try {
-      const res = await fetchWithRetry('/api/system/status', { credentials: 'include' })
+      const res = await fetchWithRetry(`${API_BASE_URL}/api/system/status`, { credentials: 'include' })
       const data = await safeParseJson(res)
       // Boot-time corruption recovery happened (sqlite-adapter quarantined the
       // damaged file). Tell the user — their data either came from the most
@@ -562,7 +550,7 @@ function AppContent() {
       setAppLoading(true)
 
       if (MOCK_MODE) {
-        await fetch('/api/auth/mock', { method: 'POST' })
+        await fetch(`${API_BASE_URL}/api/auth/mock`, { method: 'POST' })
         setSession({ userId: 999999, accessToken: 'mock_token' })
         setAppLoading(false)
         return
@@ -571,7 +559,7 @@ function AppContent() {
       // Use raw fetch here — a 401 means "not logged in", NOT "session expired".
       // fetchWithRetry would trigger notifySessionExpired on 401, showing the
       // expiry banner even when the user simply hasn't logged in yet.
-      const res = await fetch('/api/auth/session', { credentials: 'include' })
+      const res = await fetch(`${API_BASE_URL}/api/auth/session`, { credentials: 'include' })
       if (res.ok) {
         const data = await res.json().catch(() => null)
         if (data) {
@@ -632,11 +620,6 @@ function AppContent() {
 
   const displayRepos = selectedOrg ? orgRepos : repos
 
-  const selectedRepos = useMemo(
-    () => displayRepos.filter(r => selectedIds.has(r.id)),
-    [displayRepos, selectedIds]
-  )
-
   // Slice 1: handleQuickAction switch (~115 lines) deleted — RepoList now uses
   // runAction(actionId, target, ctx, repoActions) directly via useRepoActionContext.
 
@@ -656,7 +639,7 @@ function AppContent() {
 
   const handleLogout = async () => {
     try {
-      await fetch(AUTH_ENDPOINTS.logout, { method: 'POST', credentials: 'include' })
+      await apiCall(AUTH_ENDPOINTS.logout, { method: 'POST' })
       window.location.reload()
     } catch {
       window.location.reload()
@@ -677,16 +660,6 @@ function AppContent() {
       setIsSwitchingOrg(false)
     }
   }
-
-  // Memoised so child Sidebar / SlimSidebar (now React.memo'd) don't re-render
-  // on every parent render — only when an actual sidebarProps field changes.
-  const sidebarProps = useMemo(() => ({
-    isPerforming,
-    message,
-    results,
-    selectedRepos,
-    activity,
-  }), [isPerforming, message, results, selectedRepos, activity])
 
   if (systemInitialized === false) {
     return (
@@ -725,7 +698,7 @@ function AppContent() {
             retryAt={rateLimitBanner.retryAt}
             onRetry={() => {
               setRateLimitBanner(null)
-              window.location.href = '/api/auth/login'
+              window.location.href = `${API_BASE_URL}/api/auth/login`
             }}
             onDismiss={() => setRateLimitBanner(null)}
           />
@@ -793,7 +766,7 @@ function AppContent() {
             setRateLimitBanner(null)
             // After countdown, re-attempt the original action. For the login case,
             // navigating directly to /api/auth/login restarts the OAuth flow.
-            window.location.href = '/api/auth/login'
+            window.location.href = `${API_BASE_URL}/api/auth/login`
           }}
           onRateLimitDismiss={() => setRateLimitBanner(null)}
           sessionExpired={sessionExpired}
@@ -807,13 +780,7 @@ function AppContent() {
       <main id="main-content" className="max-w-[var(--layout-max-w)] mx-auto px-[var(--layout-px)] pt-3 md:pt-4 lg:pt-5 pb-52 md:pb-6 transition-all duration-[var(--ds-duration-slow)] relative z-[1]">
         {activeView === 'pricing' && (
           <ViewShell name="Pricing">
-            <PricingPage onGetStarted={(dest) => setActiveView(dest === 'roadmap' ? 'roadmap' : 'dashboard')} />
-          </ViewShell>
-        )}
-
-        {activeView === 'roadmap' && (
-          <ViewShell name="Roadmap">
-            <RoadmapPage onNavigatePricing={() => setActiveView('pricing')} />
+            <PricingPage onGetStarted={() => setActiveView('dashboard')} />
           </ViewShell>
         )}
 
@@ -885,25 +852,6 @@ function AppContent() {
                   />
                 </ErrorBoundary>
               </div>
-
-              {user && (
-                <CollapsiblePanel
-                  side="right"
-                  mode={rightMode}
-                  expandedWidth={280}
-                  slimContent={
-                    <Suspense fallback={null}>
-                      <SlimSidebar
-                        {...sidebarProps}
-                        onOpenImport={() => openModal('showMigrationWizard')}
-                        onNavigateWorkBoard={() => setActiveView('work-board')}
-                      />
-                    </Suspense>
-                  }
-                >
-                  <Sidebar {...sidebarProps} />
-                </CollapsiblePanel>
-              )}
             </div>
           </>
         )}
@@ -1069,7 +1017,8 @@ function AppContent() {
           slot, creating two stacked indigo circles. Its functionality is
           covered on mobile by the MobileQuickActionsFab menu (Import / Create
           / AI / Search), the SelectionBar (bulk actions when items selected),
-          and the bottom-nav More drawer (Pricing / History / Settings). */}
+          the bottom-nav More drawer (History / Settings / Re-authorize /
+          Logout), and Pricing via the user (avatar) menu's "Plans & billing". */}
       <Suspense fallback={null}>
         <MobileOrgDrawer
           user={user}

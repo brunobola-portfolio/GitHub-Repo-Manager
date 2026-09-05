@@ -18,7 +18,7 @@ describe('MigratedPill — batched via useMigratedRepos', () => {
   it('makes ONE request for many pills and renders only for migrated repos', async () => {
     const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue({
       ok: true,
-      json: async () => ({ migrated: { 'owner/a': { writtenAt: '2026-05-23T10:00:00Z' } } }),
+      headers: { get: () => 'application/json' }, json: async () => ({ migrated: { 'owner/a': { writtenAt: '2026-05-23T10:00:00Z' } } }),
     })
 
     render(
@@ -49,7 +49,7 @@ describe('MigratedPill — batched via useMigratedRepos', () => {
   })
 
   it('renders nothing when the user has no migrated repos', async () => {
-    vi.spyOn(global, 'fetch').mockResolvedValue({ ok: true, json: async () => ({ migrated: {} }) })
+    vi.spyOn(global, 'fetch').mockResolvedValue({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ migrated: {} }) })
     render(<MigratedPill fullName="owner/a" />)
     // Give the shared fetch a tick to resolve, then assert no pill.
     await waitFor(() => expect(global.fetch).toHaveBeenCalled())

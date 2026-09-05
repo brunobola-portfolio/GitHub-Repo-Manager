@@ -33,7 +33,7 @@ describe('commitCommunityHealthFix', () => {
 
     it('posts to the community-health/commit-fix path with the CSRF header when not in mock mode', async () => {
         vi.stubEnv('VITE_MOCK_MODE', 'false')
-        const fetchSpy = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ committed: true, mode: 'direct', branch: 'main' }) })
+        const fetchSpy = vi.fn().mockResolvedValue({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ committed: true, mode: 'direct', branch: 'main' }) })
         vi.stubGlobal('fetch', fetchSpy)
         vi.doMock('../../src/utils/api', () => ({ getCsrfToken: vi.fn().mockResolvedValue('tok-123') }))
         const { commitCommunityHealthFix } = await import('../../src/api/repos')

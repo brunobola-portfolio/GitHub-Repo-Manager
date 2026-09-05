@@ -18,7 +18,7 @@ function makeOkResponse(data) {
     return Promise.resolve({
         ok: true,
         status: 200,
-        json: () => Promise.resolve({ data }),
+        headers: { get: () => 'application/json' }, json: () => Promise.resolve({ data }),
     })
 }
 
@@ -229,7 +229,7 @@ describe('useWorkBoardFetch race safety', () => {
         resolveB({
             ok: true,
             status: 200,
-            json: () => Promise.resolve({ data: [{ prNumber: 30 }] }),
+            headers: { get: () => 'application/json' }, json: () => Promise.resolve({ data: [{ prNumber: 30 }] }),
         })
         await waitFor(() => expect(result.current.data).toEqual([{ prNumber: 30 }]))
 
@@ -237,7 +237,7 @@ describe('useWorkBoardFetch race safety', () => {
         resolveA({
             ok: true,
             status: 200,
-            json: () => Promise.resolve({ data: [{ prNumber: 7 }] }),
+            headers: { get: () => 'application/json' }, json: () => Promise.resolve({ data: [{ prNumber: 7 }] }),
         })
         // Flush any pending microtasks from A's resolution.
         await act(async () => { await Promise.resolve(); await Promise.resolve() })

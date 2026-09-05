@@ -5,7 +5,6 @@ import { HeroOrgChip } from './HeroOrgChip'
 import { HeroTimeRangeChip } from './HeroTimeRangeChip'
 import { HeroSyncChip } from './HeroSyncChip'
 import { WhatNeedsYouGrid } from './WhatNeedsYouGrid'
-import { AIPromoStrip } from './AIPromoStrip'
 import { useRelativeTime } from '../../hooks/useRelativeTime.js'
 import {
     getGreeting,
@@ -38,11 +37,17 @@ function formatEyebrow(date, lastSyncedRelative) {
 /**
  * TodayPanel — one cohesive top region.
  *
- * Fuses the greeting, context chips, "what needs your eyes" tiles and
- * (optionally) the AI promo into a single panel so the dashboard opens
- * on one statement instead of three stacked banners. Anchored to the
- * shared shell ambient backdrop, so the surface stays light and lets
- * the canvas read through.
+ * Fuses the greeting, context chips and "what needs your eyes" tiles into a
+ * single panel so the dashboard opens on one statement instead of stacked
+ * banners. Anchored to the shared shell ambient backdrop, so the surface
+ * stays light and lets the canvas read through.
+ *
+ * The AI promo strip that used to live here ("Try AI insights — free") was
+ * removed 2026-09-05: a signed-in, self-hosted user has no tier to upgrade
+ * to, so marketing at them inside their own tool read as noise. Its one real
+ * entry point (Get Insights on a repo) already lives in repo context —
+ * RepoList's health badge and RepoDetail's Overview tab both open the same
+ * `showRepoInsights` modal.
  */
 export function TodayPanel({
     user,
@@ -55,9 +60,6 @@ export function TodayPanel({
     onSync,
     lastSyncedAt,
     onOpenWorkBoard,
-    repos,
-    licenseTier,
-    onOpenInsights,
 }) {
     const now = useMemo(() => new Date(), [])
     const lastSyncedRelative = useRelativeTime(lastSyncedAt)
@@ -71,7 +73,7 @@ export function TodayPanel({
             initial="hidden"
             animate="visible"
             aria-label="Dashboard hero"
-            className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/60 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/55 backdrop-blur-sm shadow-sm"
+            className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-slate-200/60 dark:border-slate-800/70 bg-white/70 dark:bg-slate-900/55 backdrop-blur-sm ds-elevation-sm"
         >
             {/* Spine node — same visual anchor as CategorySection so Today
                 reads as the first stop on the dashboard thread. */}
@@ -133,17 +135,6 @@ export function TodayPanel({
 
                 <motion.div variants={childVariants}>
                     <WhatNeedsYouGrid onOpenWorkBoard={onOpenWorkBoard} />
-                </motion.div>
-
-                {/* Inline AI promo — sits inside the same surface so it reads
-                    as part of "Today" instead of a separate banner. The strip
-                    self-hides when not visible (dismissed / no repos / etc.). */}
-                <motion.div variants={childVariants}>
-                    <AIPromoStrip
-                        repos={repos}
-                        licenseTier={licenseTier}
-                        onOpenInsights={onOpenInsights}
-                    />
                 </motion.div>
             </div>
         </motion.section>

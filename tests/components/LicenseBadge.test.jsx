@@ -23,7 +23,7 @@ describe('LicenseBadge — real license always wins', () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: async () => ({
+      headers: { get: () => 'application/json' }, json: async () => ({
         active: true,
         source: 'license_key',
         tier: 'enterprise',
@@ -61,7 +61,7 @@ describe('LicenseBadge — real license always wins', () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: async () => ({
+      headers: { get: () => 'application/json' }, json: async () => ({
         active: true,
         source: 'license_key',
         tier: 'enterprise',
@@ -83,7 +83,7 @@ describe('LicenseBadge — real license always wins', () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: async () => ({
+      headers: { get: () => 'application/json' }, json: async () => ({
         active: true,
         source: 'license_key',
         tier: 'pro',
@@ -108,7 +108,7 @@ describe('LicenseBadge — no real license', () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: async () => ({
+      headers: { get: () => 'application/json' }, json: async () => ({
         active: false,
         source: 'none',
         tier: 'free',
@@ -126,7 +126,7 @@ describe('LicenseBadge — no real license', () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: async () => ({
+      headers: { get: () => 'application/json' }, json: async () => ({
         active: false,
         source: 'none',
         tier: 'free',
@@ -147,7 +147,7 @@ describe('LicenseBadge — expiry warnings', () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: async () => ({
+      headers: { get: () => 'application/json' }, json: async () => ({
         active: true,
         source: 'license_key',
         tier: 'pro',
@@ -173,7 +173,7 @@ describe('LicenseBadge — expiry warnings', () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      json: async () => ({
+      headers: { get: () => 'application/json' }, json: async () => ({
         active: true,
         source: 'license_key',
         tier: 'enterprise',

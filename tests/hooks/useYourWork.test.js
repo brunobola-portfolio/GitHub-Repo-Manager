@@ -32,9 +32,9 @@ describe('useYourWork', () => {
 
     it('returns counts after successful fetch (Pro)', async () => {
         global.fetch
-            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: new Array(5) }) })
-            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: new Array(3) }) })
-            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: new Array(7) }) })
+            .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: new Array(5) }) })
+            .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: new Array(3) }) })
+            .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: new Array(7) }) })
 
         const { result } = renderHook(() => useYourWork(), proWrap)
         await waitFor(() => expect(result.current.status).toBe('ready'))
@@ -52,7 +52,7 @@ describe('useYourWork', () => {
         global.fetch.mockImplementation(async (url) => ({
             ok: true,
             status: 200,
-            json: async () => ({ data: new Array(url.includes('stale-prs') ? 10 : url.includes('issues') ? 2 : 5) }),
+            headers: { get: () => 'application/json' }, json: async () => ({ data: new Array(url.includes('stale-prs') ? 10 : url.includes('issues') ? 2 : 5) }),
         }))
 
         const { result } = renderHook(() => useYourWork(), { wrapper: withTier('free') })
@@ -74,9 +74,9 @@ describe('useYourWork', () => {
     it('computes positive delta when current count is higher than baseline', async () => {
         sessionStorage.setItem('your-work:reviews', JSON.stringify({ count: 3, timestamp: Date.now() - 3600_000 }))
         global.fetch
-            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: new Array(5) }) })
-            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: [] }) })
-            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: [] }) })
+            .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: new Array(5) }) })
+            .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) })
+            .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) })
 
         const { result } = renderHook(() => useYourWork(), proWrap)
         await waitFor(() => expect(result.current.status).toBe('ready'))
@@ -85,9 +85,9 @@ describe('useYourWork', () => {
 
     it('returns null delta on first session (no baseline)', async () => {
         global.fetch
-            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: new Array(5) }) })
-            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: [] }) })
-            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: [] }) })
+            .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: new Array(5) }) })
+            .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) })
+            .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) })
 
         const { result } = renderHook(() => useYourWork(), proWrap)
         await waitFor(() => expect(result.current.status).toBe('ready'))
@@ -96,9 +96,9 @@ describe('useYourWork', () => {
 
     it('persists snapshot to sessionStorage after fetch', async () => {
         global.fetch
-            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: new Array(5) }) })
-            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: [] }) })
-            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: [] }) })
+            .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: new Array(5) }) })
+            .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) })
+            .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) })
 
         const { result } = renderHook(() => useYourWork(), proWrap)
         await waitFor(() => expect(result.current.status).toBe('ready'))
@@ -110,9 +110,9 @@ describe('useYourWork', () => {
     it('computes negative delta when count is lower than baseline', async () => {
         sessionStorage.setItem('your-work:reviews', JSON.stringify({ count: 8, timestamp: Date.now() - 3600_000 }))
         global.fetch
-            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: new Array(5) }) })
-            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: [] }) })
-            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: [] }) })
+            .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: new Array(5) }) })
+            .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) })
+            .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) })
 
         const { result } = renderHook(() => useYourWork(), proWrap)
         await waitFor(() => expect(result.current.status).toBe('ready'))
@@ -120,7 +120,7 @@ describe('useYourWork', () => {
     })
 
     it('does not refetch on visibilitychange within 30 seconds of last fetch', async () => {
-        global.fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ data: [] }) })
+        global.fetch.mockResolvedValue({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) })
         const { result } = renderHook(() => useYourWork(), proWrap)
         await waitFor(() => expect(result.current.status).toBe('ready'))
 
@@ -134,7 +134,7 @@ describe('useYourWork', () => {
     })
 
     it('refetches on visibilitychange after 30 seconds since last fetch', async () => {
-        global.fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ data: [] }) })
+        global.fetch.mockResolvedValue({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) })
         const { result } = renderHook(() => useYourWork(), proWrap)
         await waitFor(() => expect(result.current.status).toBe('ready'))
 

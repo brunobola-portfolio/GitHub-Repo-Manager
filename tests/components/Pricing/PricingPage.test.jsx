@@ -17,7 +17,7 @@ const { PricingPage } = await import('@/components/Pricing/PricingPage.jsx')
 const TOGGLE_LABEL = 'Toggle yearly billing'
 
 function mockConfigResponse(body) {
-    return { ok: true, status: 200, json: async () => body }
+    return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => body }
 }
 
 describe('PricingPage — yearly billing toggle feature-detection', () => {
@@ -70,7 +70,7 @@ describe('PricingPage — yearly billing toggle feature-detection', () => {
         // 1st fetch: /billing/config → yearly available. 2nd: /billing/checkout.
         global.fetch
             .mockResolvedValueOnce(mockConfigResponse({ stripeEnabled: true, yearlyBillingAvailable: true }))
-            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) }) // no url → no navigation
+            .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({}) }) // no url → no navigation
 
         render(<PricingPage />)
 
@@ -90,7 +90,7 @@ describe('PricingPage — yearly billing toggle feature-detection', () => {
     it('sends billingPeriod=monthly when the toggle is available but left on monthly', async () => {
         global.fetch
             .mockResolvedValueOnce(mockConfigResponse({ stripeEnabled: true, yearlyBillingAvailable: true }))
-            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) })
+            .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({}) })
 
         render(<PricingPage />)
 

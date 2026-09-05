@@ -2,8 +2,8 @@ import { useState, useMemo, lazy, Suspense } from 'react'
 import {
     BarChart3, TrendingUp, Activity, GitPullRequest,
     Zap, Heart, Users, Building2,
-    Code2, Folder, Archive, Star, GitFork, CheckCircle2,
-    Download,
+    Folder, Star, CheckCircle2,
+    Download, Clock,
 } from 'lucide-react'
 import { TodayPanel } from './TodayPanel'
 import { DashboardShell } from './DashboardShell'
@@ -17,11 +17,15 @@ import { StatCard } from './StatCard'
 const ActivityChart = lazy(() => import('./ActivityChart').then(m => ({ default: m.ActivityChart })))
 const LanguageChart = lazy(() => import('./LanguageChart').then(m => ({ default: m.LanguageChart })))
 import { MigrationActivity } from './MigrationActivity'
+// ActivityRow used to live in the repos-view right rail (Sidebar.jsx), removed
+// 2026-09-05 — Quick Actions and Import duplicated header buttons/palette
+// commands, and Action History was empty for a new user. Recent Activity's
+// only home now is the dashboard, reusing the same row from its new module.
+import { ActivityRow } from '../ActivityRow'
 import { OrganizationCard } from './OrganizationCard'
 import { shouldShowCategory, aggregateRepoStats, aggregateLanguages, calculateActivityMetrics } from '../../utils/statsAggregator'
 import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 import { useModal } from '../../hooks/useModal'
-import { useTier } from '../../hooks/useTier'
 import { Skeleton } from '../ui/Skeleton'
 import { RowIconBadge } from '../ui/RowIconBadge'
 import { motion } from 'framer-motion'
@@ -31,7 +35,7 @@ import { motion } from 'framer-motion'
  *
  * Composition:
  *   <DashboardShell>          ambient backdrop + sticky TOC + cross-links
- *     <TodayPanel />          greeting + chips + WhatNeedsYou + AI promo
+ *     <TodayPanel />          greeting + chips + WhatNeedsYou
  *     <AttentionFeed />       (or premium Inbox behind feature flag)
  *     <CategorySection> × N   overview / migrations / health / teams / orgs
  *   </DashboardShell>
@@ -57,10 +61,6 @@ export function DashboardPremium({
     lastSyncedAt,
 }) {
     const [timeRange, setTimeRange] = useState('7d')
-    // The app already resolves the tier once into TierContext (App.jsx feeds it
-    // from useLicense). Fetching /api/v1/license again here made the shell load
-    // the same endpoint twice in the same millisecond.
-    const licenseTier = useTier()
     const { openModal, openModalWithData } = useModal()
 
     const handleOpenWorkBoard = (params = {}) => {
@@ -105,13 +105,14 @@ export function DashboardPremium({
             { id: 'attention', label: 'Attention' },
             { id: 'overview', label: 'Overview', count: stats?.totalRepos ?? repoStats.total },
             { id: 'migrations', label: 'Migrations' },
+            { id: 'activity', label: 'Activity', count: activity.length },
         ]
         if (showHealth) list.push({ id: 'health', label: 'Health', count: sourceRepoCount })
         if (showTeams) list.push({ id: 'teams', label: 'Teams', count: teams.length })
         if (showOrgs) list.push({ id: 'organizations', label: 'Organizations', count: orgs.length })
         if (showDiscover) list.push({ id: 'discover', label: 'Discover' })
         return list
-    }, [stats, repoStats.total, showHealth, sourceRepoCount, showTeams, teams.length, showOrgs, orgs.length, showDiscover])
+    }, [stats, repoStats.total, activity.length, showHealth, sourceRepoCount, showTeams, teams.length, showOrgs, orgs.length, showDiscover])
 
     const containerVariants = {
         hidden: { opacity: 0 },
@@ -137,9 +138,6 @@ export function DashboardPremium({
                     onSync={onSync}
                     lastSyncedAt={lastSyncedAt}
                     onOpenWorkBoard={handleOpenWorkBoard}
-                    repos={repos}
-                    licenseTier={licenseTier}
-                    onOpenInsights={(repo) => openModalWithData('showRepoInsights', { repo })}
                 />
 
                 <div id="attention" className="scroll-mt-20">
@@ -169,8 +167,16 @@ export function DashboardPremium({
                         onClick: () => onViewChange?.('work-board'),
                     }}
                 >
-                    {/* Key Metrics Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 mb-6 lg:mb-7">
+                    {/* Key Metrics Grid — three tiles a professional actually acts
+                        on, in one row. The other five (Public/Private, Total
+                        Stars, Total Forks, Archived, Source) were vanity counts
+                        nobody drills into from here; every one of them is
+                        already a pre-filtered repo-view chip
+                        (RepoFilterBar / onViewChange('repos', { initialFilters })),
+                        so demoting them loses no capability, only decorative
+                        tiles — one of which (Archived) rendered "0" for most
+                        accounts. */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 lg:gap-5 mb-6 lg:mb-7">
                         <StatCard
                             title="Total Repositories"
                             value={stats?.totalRepos || repoStats.total}
@@ -180,20 +186,12 @@ export function DashboardPremium({
                             hint="View all repositories"
                         />
                         <StatCard
-                            title="Public / Private"
-                            value={`${stats?.publicRepos || repoStats.public} / ${stats?.privateRepos || repoStats.private}`}
-                            icon={Archive}
+                            title="Commits (7d)"
+                            value={activityMetrics.commits}
+                            icon={Activity}
                             loading={loading}
-                            onClick={() => onViewChange?.('repos', { initialFilters: { visibility: 'public' } })}
-                            hint="Filter to public repositories"
-                        />
-                        <StatCard
-                            title="Total Stars"
-                            value={repoStats.totalStars}
-                            icon={Star}
-                            loading={loading}
-                            onClick={() => onViewChange?.('repos', { initialSort: 'stars' })}
-                            hint="Sort repos by star count"
+                            onClick={() => onViewChange?.('work-board', { initialTimeRange: '7d' })}
+                            hint="Open Work Board (7d window)"
                         />
                         <StatCard
                             title="Organizations"
@@ -205,38 +203,6 @@ export function DashboardPremium({
                                 if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
                             }}
                             hint="Jump to organizations"
-                        />
-                        <StatCard
-                            title="Total Forks"
-                            value={stats?.forks || repoStats.totalForks}
-                            icon={GitFork}
-                            loading={loading}
-                            onClick={() => onViewChange?.('repos', { initialSort: 'forks' })}
-                            hint="Sort repos by fork count"
-                        />
-                        <StatCard
-                            title="Commits (7d)"
-                            value={activityMetrics.commits}
-                            icon={Activity}
-                            loading={loading}
-                            onClick={() => onViewChange?.('work-board', { initialTimeRange: '7d' })}
-                            hint="Open Work Board (7d window)"
-                        />
-                        <StatCard
-                            title="Archived Repos"
-                            value={repoStats.archived}
-                            icon={Archive}
-                            loading={loading}
-                            onClick={() => onViewChange?.('repos', { initialFilters: { archived: true } })}
-                            hint="Show archived repositories"
-                        />
-                        <StatCard
-                            title="Source Repos"
-                            value={repoStats.sources}
-                            icon={Code2}
-                            loading={loading}
-                            onClick={() => onViewChange?.('repos', { initialFilters: { type: 'source' } })}
-                            hint="Filter to source (non-fork) repos"
                         />
                     </div>
 
@@ -273,6 +239,29 @@ export function DashboardPremium({
                     }}
                 >
                     <MigrationActivity loading={loading} />
+                </CategorySection>
+
+                {/* CATEGORY: Recent Activity (Always visible) */}
+                <CategorySection
+                    id="activity"
+                    eyebrow="Feed"
+                    title="Recent Activity"
+                    icon={Clock}
+                    tone="neutral"
+                    defaultExpanded={true}
+                >
+                    {activity.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-10 text-slate-400">
+                            <Clock className="w-8 h-8 opacity-30 mb-2" />
+                            <span className="text-sm">No recent activity found</span>
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                            {activity.slice(0, 8).map((event) => (
+                                event ? <ActivityRow key={event.id} event={event} /> : null
+                            ))}
+                        </div>
+                    )}
                 </CategorySection>
 
                 {/* CATEGORY 4: Health & Quality (Conditional) */}

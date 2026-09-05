@@ -22,14 +22,14 @@ const renderPro = (ui) =>
     render(createElement(TierContext.Provider, { value: 'pro' }, ui))
 
 function mockAllZero() {
-    global.fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ data: [] }) })
+    global.fetch.mockResolvedValue({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) })
 }
 
 function mockCounts(reviews, stale, issues) {
     global.fetch
-        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: new Array(reviews) }) })
-        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: new Array(stale) }) })
-        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: new Array(issues) }) })
+        .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: new Array(reviews) }) })
+        .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: new Array(stale) }) })
+        .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: new Array(issues) }) })
 }
 
 describe('WhatNeedsYouGrid', () => {
@@ -84,9 +84,9 @@ describe('WhatNeedsYouGrid — when the sources could not be read', () => {
 
     it('does not claim it when only one source failed', async () => {
         global.fetch
-            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: [] }) })
+            .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) })
             .mockResolvedValueOnce(boom)
-            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ data: [] }) })
+            .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) })
         renderPro(<WhatNeedsYouGrid onOpenWorkBoard={() => {}} />)
         await waitFor(() => expect(screen.getByText(/couldn.t check your work/i)).toBeInTheDocument())
         expect(screen.queryByText(/all caught up/i)).not.toBeInTheDocument()

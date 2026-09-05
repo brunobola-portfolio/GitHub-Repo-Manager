@@ -44,9 +44,9 @@ beforeEach(() => {
     global.fetch = vi.fn((url, opts = {}) => {
         calls.push({ url, method: opts.method || 'GET', body: opts.body })
         if (url === '/api/teams/1' && (!opts.method || opts.method === 'GET')) {
-            return Promise.resolve({ ok: true, json: async () => ({ members: [BOB], repos: [], currentUserRole: 'owner' }) })
+            return Promise.resolve({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ members: [BOB], repos: [], currentUserRole: 'owner' }) })
         }
-        return Promise.resolve({ ok: true, json: async () => ({}) })
+        return Promise.resolve({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({}) })
     })
 })
 
@@ -116,12 +116,12 @@ describe('TeamDetails — member management wiring', () => {
         global.fetch = vi.fn((url, opts = {}) => {
             calls.push({ url, method: opts.method || 'GET', body: opts.body })
             if (url === '/api/teams/1' && (!opts.method || opts.method === 'GET')) {
-                return Promise.resolve({ ok: true, json: async () => ({ members: [BOB], repos: [], currentUserRole: 'owner' }) })
+                return Promise.resolve({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ members: [BOB], repos: [], currentUserRole: 'owner' }) })
             }
             if (url.startsWith('/api/search/users')) {
-                return Promise.resolve({ ok: true, json: async () => ([{ id: 9, login: 'newdev', avatar_url: '' }]) })
+                return Promise.resolve({ ok: true, headers: { get: () => 'application/json' }, json: async () => ([{ id: 9, login: 'newdev', avatar_url: '' }]) })
             }
-            return Promise.resolve({ ok: true, json: async () => ({}) })
+            return Promise.resolve({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({}) })
         })
         renderDetails()
         await gotoMembers()
@@ -143,7 +143,7 @@ describe('TeamDetails — load errors surface (not empty states)', () => {
             if (url === '/api/teams/1' && (!opts.method || opts.method === 'GET')) {
                 return Promise.resolve({ ok: false, status: 500, json: async () => ({}) })
             }
-            return Promise.resolve({ ok: true, json: async () => ({}) })
+            return Promise.resolve({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({}) })
         })
         renderDetails()
         await screen.findByText('Platform', {}, { timeout: 5000 })
@@ -157,9 +157,9 @@ describe('TeamDetails — load errors surface (not empty states)', () => {
         global.fetch = vi.fn((url, opts = {}) => {
             if (url === '/api/teams/1' && (!opts.method || opts.method === 'GET')) {
                 if (failNext) { failNext = false; return Promise.resolve({ ok: false, status: 500, json: async () => ({}) }) }
-                return Promise.resolve({ ok: true, json: async () => ({ members: [BOB], repos: [], currentUserRole: 'owner' }) })
+                return Promise.resolve({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ members: [BOB], repos: [], currentUserRole: 'owner' }) })
             }
-            return Promise.resolve({ ok: true, json: async () => ({}) })
+            return Promise.resolve({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({}) })
         })
         renderDetails()
         await screen.findByText('Platform', {}, { timeout: 5000 })
@@ -171,7 +171,7 @@ describe('TeamDetails — load errors surface (not empty states)', () => {
     it('shows an error + Retry (not "no collaborators found") when a repo\'s collaborators fail to load', { timeout: 20000 }, async () => {
         global.fetch = vi.fn((url, opts = {}) => {
             if (url === '/api/teams/1' && (!opts.method || opts.method === 'GET')) {
-                return Promise.resolve({ ok: true, json: async () => ({
+                return Promise.resolve({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({
                     members: [BOB],
                     repos: [{ id: 10, repo_full_name: 'acme/api', created_at: '2026-01-01T00:00:00.000Z' }],
                     currentUserRole: 'owner',
@@ -180,7 +180,7 @@ describe('TeamDetails — load errors surface (not empty states)', () => {
             if (String(url).includes('/collaborators')) {
                 return Promise.resolve({ ok: false, status: 500, json: async () => ({}) })
             }
-            return Promise.resolve({ ok: true, json: async () => ({}) })
+            return Promise.resolve({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({}) })
         })
         renderDetails()
         await screen.findByText('Platform', {}, { timeout: 5000 })

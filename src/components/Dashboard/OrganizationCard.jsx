@@ -50,10 +50,10 @@ export const OrganizationCard = memo(function OrganizationCard({ org, repos = []
                                 alt={org.login}
                                 loading="lazy"
                                 decoding="async"
-                                className="w-14 h-14 rounded-2xl ring-2 ring-slate-200 dark:ring-slate-700 shadow-sm"
+                                className="w-14 h-14 rounded-2xl ring-2 ring-slate-200 dark:ring-slate-700 ds-elevation-sm"
                             />
                             {hasRecentActivity && (
-                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 shadow-sm">
+                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 ds-elevation-sm">
                                     <div className="w-full h-full bg-emerald-500 rounded-full" />
                                 </div>
                             )}
@@ -89,7 +89,7 @@ export const OrganizationCard = memo(function OrganizationCard({ org, repos = []
                         icon={GitFork}
                         value={formatCompact(totalForks)}
                         label="Forks"
-                        color="text-blue-500"
+                        color="text-brand-500"
                     />
                     <StatItem
                         icon={GitPullRequest}

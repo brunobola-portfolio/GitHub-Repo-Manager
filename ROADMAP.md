@@ -1,6 +1,10 @@
 # Roadmap
 
-A mirror of the in-app Roadmap page (`/roadmap`). Everything in **Next** and **Later** is unshipped — the in-app page no longer carries a separate "Shipping Now" stage, so this mirror doesn't either.
+This is the canonical roadmap. It used to be mirrored by an in-app page at
+`/roadmap`; that page was removed on 2026-09-05 — a wall of unshipped
+features inside a paid product reads as unfinished, not aspirational, and
+this file is linked from the Pricing page instead. Everything in **Next** and
+**Later** is unshipped.
 
 > **No tier labels on unshipped work.** Roadmap items used to carry a
 > "Pro"/"Enterprise" badge, which promised exactly the feature-unlock
@@ -19,10 +23,6 @@ A mirror of the in-app Roadmap page (`/roadmap`). Everything in **Next** and **L
 > keys; they never include managed inference. You always bring your own
 > provider key (Anthropic · OpenAI · Gemini · OpenRouter · local), and BYOK
 > sends your data straight to your own provider.
->
-> The in-app `/roadmap` page still renders a per-item tier badge; those badges
-> are being retired. Where the two disagree, this file and the README pricing
-> matrix are correct.
 
 ## Next (Q3 2026)
 

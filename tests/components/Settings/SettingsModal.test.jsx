@@ -48,7 +48,7 @@ beforeEach(() => {
     fetchMock = vi.fn()
     vi.stubGlobal('fetch', vi.fn((url, opts) => {
         if (String(url).includes('/notifications/digest/settings')) {
-            return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ frequency: 'off' }) })
+            return Promise.resolve({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: () => Promise.resolve({ frequency: 'off' }) })
         }
         return fetchMock(url, opts)
     }))
@@ -71,7 +71,7 @@ describe('SettingsModal — cache clear toast', () => {
         fetchMock.mockResolvedValueOnce({
             ok: true,
             status: 200,
-            json: () => Promise.resolve({ cleared: 42 }),
+            headers: { get: () => 'application/json' }, json: () => Promise.resolve({ cleared: 42 }),
         })
 
         renderModal()
@@ -109,10 +109,10 @@ describe('SettingsModal — General tab digest-frequency control (G7)', () => {
     it('loads the current frequency and PATCHes on change', async () => {
         vi.stubGlobal('fetch', vi.fn((url, opts) => {
             if (String(url).includes('/notifications/digest/settings') && (!opts || opts.method === undefined)) {
-                return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ frequency: 'off' }) })
+                return Promise.resolve({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: () => Promise.resolve({ frequency: 'off' }) })
             }
             if (String(url).includes('/notifications/digest/settings') && opts?.method === 'PATCH') {
-                return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ frequency: 'daily' }) })
+                return Promise.resolve({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: () => Promise.resolve({ frequency: 'daily' }) })
             }
             return fetchMock(url, opts)
         }))
@@ -139,7 +139,7 @@ describe('SettingsModal — General tab digest-frequency control (G7)', () => {
 // initialTab (the bug a naive "always sync from prop" version would have).
 describe('SettingsModal — active tab tracks initialTab across open/reopen', () => {
     it('honours initialTab on open, and again when initialTab changes while still open', async () => {
-        fetchMock.mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({}) })
+        fetchMock.mockResolvedValue({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: () => Promise.resolve({}) })
 
         const { rerender } = renderWithProviders(
             <ThemeProvider>
@@ -158,7 +158,7 @@ describe('SettingsModal — active tab tracks initialTab across open/reopen', ()
     })
 
     it('does not override a manual tab switch on a re-render with the same initialTab', async () => {
-        fetchMock.mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({}) })
+        fetchMock.mockResolvedValue({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: () => Promise.resolve({}) })
 
         const { rerender } = renderWithProviders(
             <ThemeProvider>

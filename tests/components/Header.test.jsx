@@ -99,7 +99,7 @@ describe('Header', () => {
         expect(heading).toBeInTheDocument()
     })
 
-    it('shows all five nav buttons when authenticated', () => {
+    it('shows all four nav buttons when authenticated', () => {
         renderHeader()
         // The desktop nav renders each label as visible text. We scope to the
         // <nav> to avoid matching the mobile bottom nav, which uses "Repos"
@@ -112,7 +112,21 @@ describe('Header', () => {
         expect(within(nav).getByText('Repositories')).toBeInTheDocument()
         expect(within(nav).getByText('Teams')).toBeInTheDocument()
         expect(within(nav).getByText('Work Board')).toBeInTheDocument()
-        expect(within(nav).getByText('Pricing')).toBeInTheDocument()
+        // Pricing left the primary nav 2026-09-05 (2026-09-04 panel, R1): no
+        // premium tool sells to you from its own toolbar. It's still
+        // reachable — via the user menu's "Plans & billing" (below) and the
+        // command palette — just not as a peer of Dashboard/Repositories/etc.
+        expect(within(nav).queryByText('Pricing')).toBeNull()
+    })
+
+    it('keeps Pricing reachable from the user menu as "Plans & billing"', () => {
+        const onViewChange = vi.fn()
+        renderHeader({ onViewChange })
+        fireEvent.click(screen.getByRole('button', { name: /open user menu/i }))
+        const item = screen.getByRole('menuitem', { name: /plans.*billing/i })
+        expect(item).toBeInTheDocument()
+        fireEvent.click(item)
+        expect(onViewChange).toHaveBeenCalledWith('pricing')
     })
 
     it('marks the active nav button with aria-current=page', () => {

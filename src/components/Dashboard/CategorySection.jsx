@@ -52,7 +52,7 @@ export function CategorySection({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: DURATION.reveal }}
-            className="relative scroll-mt-20 p-4 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl bg-white/70 dark:bg-slate-900/55 backdrop-blur-sm border border-slate-200/60 dark:border-slate-800/70 shadow-sm transition-colors"
+            className="relative scroll-mt-20 p-4 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl bg-white/70 dark:bg-slate-900/55 backdrop-blur-sm border border-slate-200/60 dark:border-slate-800/70 ds-elevation-sm transition-colors"
         >
             {/* Spine node — small dot centered on the shell's spine line,
                 anchoring each section to the same vertical thread. Hidden

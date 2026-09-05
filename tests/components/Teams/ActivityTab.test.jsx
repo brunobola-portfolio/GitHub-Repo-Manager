@@ -53,7 +53,7 @@ describe('ActivityTab — honest error handling', () => {
     it('retries the fetch when Retry is clicked and then renders the empty state on success', async () => {
         const fetchMock = vi.fn()
             .mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({}) })
-            .mockResolvedValueOnce({ ok: true, json: async () => ({ events: [], totalRepos: 0, scannedRepos: 0, truncated: false }) })
+            .mockResolvedValueOnce({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ events: [], totalRepos: 0, scannedRepos: 0, truncated: false }) })
         global.fetch = fetchMock
         render(<ActivityTab teamId={1} />)
         fireEvent.click(await screen.findByRole('button', { name: /retry/i }, { timeout: 5000 }))
@@ -64,7 +64,7 @@ describe('ActivityTab — honest error handling', () => {
     it('renders real events returned by the feed', async () => {
         global.fetch = vi.fn().mockResolvedValue({
             ok: true,
-            json: async () => ({
+            headers: { get: () => 'application/json' }, json: async () => ({
                 events: [{
                     id: 'e1',
                     type: 'PushEvent',

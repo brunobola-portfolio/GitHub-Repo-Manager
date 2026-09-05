@@ -17,7 +17,7 @@ afterEach(() => {
 
 function mockFetch(response) {
   global.fetch = vi.fn(() =>
-    Promise.resolve({ ok: true, json: () => Promise.resolve(response) })
+    Promise.resolve({ ok: true, headers: { get: () => 'application/json' }, json: () => Promise.resolve(response) })
   )
 }
 
@@ -85,7 +85,7 @@ describe('useAzureOAuth', () => {
     global.fetch = vi.fn(() => {
       callCount++
       const ready = callCount === 1
-      return Promise.resolve({ ok: true, json: () => Promise.resolve({ ready, error: false }) })
+      return Promise.resolve({ ok: true, headers: { get: () => 'application/json' }, json: () => Promise.resolve({ ready, error: false }) })
     })
     const { result } = renderHook(() => useAzureOAuth())
     act(() => result.current.startOAuth())

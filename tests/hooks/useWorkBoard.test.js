@@ -23,7 +23,7 @@ const { useMyPendingReviews, invalidateCached, clearCache } = await import('@/ho
 describe('useWorkBoard — auto-refresh', () => {
     it('polls at the configured interval while page is visible', async () => {
         vi.useFakeTimers({ shouldAdvanceTime: true });
-        global.fetch.mockResolvedValue({ ok: true, json: async () => ({ data: [], meta: { fetchedAt: new Date().toISOString() } }) });
+        global.fetch.mockResolvedValue({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ data: [], meta: { fetchedAt: new Date().toISOString() } }) });
 
         renderHook(() => useMyPendingReviews({ refreshIntervalMs: 1000 }));
         await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
@@ -34,7 +34,7 @@ describe('useWorkBoard — auto-refresh', () => {
 
     it('pauses polling when document is hidden', async () => {
         vi.useFakeTimers({ shouldAdvanceTime: true });
-        global.fetch.mockResolvedValue({ ok: true, json: async () => ({ data: [], meta: {} }) });
+        global.fetch.mockResolvedValue({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ data: [], meta: {} }) });
         renderHook(() => useMyPendingReviews({ refreshIntervalMs: 1000 }));
         await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
 
@@ -47,7 +47,7 @@ describe('useWorkBoard — auto-refresh', () => {
 
     it('immediately re-fetches when page becomes visible after being hidden', async () => {
         vi.useFakeTimers({ shouldAdvanceTime: true });
-        global.fetch.mockResolvedValue({ ok: true, json: async () => ({ data: [], meta: {} }) });
+        global.fetch.mockResolvedValue({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ data: [], meta: {} }) });
         renderHook(() => useMyPendingReviews({ refreshIntervalMs: 10000 }));
         await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
 
@@ -62,21 +62,21 @@ describe('useWorkBoard — auto-refresh', () => {
     });
 
     it('exposes lastFetchedAt as a Date instance', async () => {
-        global.fetch.mockResolvedValue({ ok: true, json: async () => ({ data: [], meta: { fetchedAt: '2026-04-21T10:00:00.000Z' } }) });
+        global.fetch.mockResolvedValue({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ data: [], meta: { fetchedAt: '2026-04-21T10:00:00.000Z' } }) });
         const { result } = renderHook(() => useMyPendingReviews({ refreshIntervalMs: 0 }));
         await waitFor(() => expect(result.current.lastFetchedAt).toBeInstanceOf(Date));
         expect(result.current.lastFetchedAt.toISOString()).toBe('2026-04-21T10:00:00.000Z');
     });
 
     it('exposes meta envelope when present', async () => {
-        global.fetch.mockResolvedValue({ ok: true, json: async () => ({ data: [], meta: { source: 'live', fetchedAt: new Date().toISOString() } }) });
+        global.fetch.mockResolvedValue({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ data: [], meta: { source: 'live', fetchedAt: new Date().toISOString() } }) });
         const { result } = renderHook(() => useMyPendingReviews({ refreshIntervalMs: 0 }));
         await waitFor(() => expect(result.current.meta?.source).toBe('live'));
     });
 
     it('refreshIntervalMs=0 disables polling (fetch only on mount)', async () => {
         vi.useFakeTimers({ shouldAdvanceTime: true });
-        global.fetch.mockResolvedValue({ ok: true, json: async () => ({ data: [], meta: {} }) });
+        global.fetch.mockResolvedValue({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ data: [], meta: {} }) });
         renderHook(() => useMyPendingReviews({ refreshIntervalMs: 0 }));
         await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
         await act(async () => { await vi.advanceTimersByTimeAsync(30000); });
@@ -84,7 +84,7 @@ describe('useWorkBoard — auto-refresh', () => {
     });
 
     it('manual refresh() triggers an immediate fetch', async () => {
-        global.fetch.mockResolvedValue({ ok: true, json: async () => ({ data: [], meta: {} }) });
+        global.fetch.mockResolvedValue({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ data: [], meta: {} }) });
         const { result } = renderHook(() => useMyPendingReviews({ refreshIntervalMs: 0 }));
         await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
         await act(async () => { await result.current.refresh(); });
@@ -96,7 +96,7 @@ describe('useWorkBoard — stale-while-revalidate', () => {
     it('cold mount (no cache) starts with loading:true and settles to loading:false, validating:false', async () => {
         global.fetch.mockResolvedValue({
             ok: true,
-            json: async () => ({ data: [{ prNumber: 1 }], meta: { fetchedAt: new Date().toISOString() } }),
+            headers: { get: () => 'application/json' }, json: async () => ({ data: [{ prNumber: 1 }], meta: { fetchedAt: new Date().toISOString() } }),
         });
         const { result } = renderHook(() => useMyPendingReviews({ refreshIntervalMs: 0 }));
         // Before the fetch resolves, loading should be true (cold start)
@@ -113,7 +113,7 @@ describe('useWorkBoard — stale-while-revalidate', () => {
         // First mount to populate cache
         global.fetch.mockResolvedValue({
             ok: true,
-            json: async () => ({ data: [{ prNumber: 42 }], meta: { fetchedAt: '2026-04-20T10:00:00.000Z' } }),
+            headers: { get: () => 'application/json' }, json: async () => ({ data: [{ prNumber: 42 }], meta: { fetchedAt: '2026-04-20T10:00:00.000Z' } }),
         });
         const first = renderHook(() => useMyPendingReviews({ refreshIntervalMs: 0 }));
         await waitFor(() => expect(first.result.current.loading).toBe(false));
@@ -134,7 +134,7 @@ describe('useWorkBoard — stale-while-revalidate', () => {
     it('refresh() keeps data visible and flips validating true->false (no skeleton flash)', async () => {
         global.fetch.mockResolvedValue({
             ok: true,
-            json: async () => ({ data: [{ prNumber: 7 }], meta: { fetchedAt: new Date().toISOString() } }),
+            headers: { get: () => 'application/json' }, json: async () => ({ data: [{ prNumber: 7 }], meta: { fetchedAt: new Date().toISOString() } }),
         });
         const { result } = renderHook(() => useMyPendingReviews({ refreshIntervalMs: 0 }));
         await waitFor(() => expect(result.current.loading).toBe(false));
@@ -158,7 +158,7 @@ describe('useWorkBoard — stale-while-revalidate', () => {
         // First successful fetch populates data
         global.fetch.mockResolvedValueOnce({
             ok: true,
-            json: async () => ({ data: [{ prNumber: 99 }], meta: { fetchedAt: new Date().toISOString() } }),
+            headers: { get: () => 'application/json' }, json: async () => ({ data: [{ prNumber: 99 }], meta: { fetchedAt: new Date().toISOString() } }),
         });
         const { result } = renderHook(() => useMyPendingReviews({ refreshIntervalMs: 0 }));
         await waitFor(() => expect(result.current.loading).toBe(false));
@@ -182,7 +182,7 @@ describe('useWorkBoard — stale-while-revalidate', () => {
     it('invalidateCached(url) clears the cache so next mount is cold again', async () => {
         global.fetch.mockResolvedValue({
             ok: true,
-            json: async () => ({ data: [{ prNumber: 1 }], meta: { fetchedAt: new Date().toISOString() } }),
+            headers: { get: () => 'application/json' }, json: async () => ({ data: [{ prNumber: 1 }], meta: { fetchedAt: new Date().toISOString() } }),
         });
         const first = renderHook(() => useMyPendingReviews({ refreshIntervalMs: 0 }));
         await waitFor(() => expect(first.result.current.loading).toBe(false));

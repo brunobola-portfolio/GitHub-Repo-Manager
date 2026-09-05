@@ -18,7 +18,7 @@ vi.stubEnv('VITE_MOCK_MODE', 'false')
 
 const { useYourWork } = await import('../../src/hooks/useYourWork.js')
 
-const ok = (data) => ({ ok: true, status: 200, json: async () => ({ data }) })
+const ok = (data) => ({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ data }) })
 const boom = () => ({ ok: false, status: 500, json: async () => ({}) })
 const gated = () => ({ ok: false, status: 403, json: async () => ({}) })
 

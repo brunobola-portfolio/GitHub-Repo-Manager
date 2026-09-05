@@ -48,7 +48,7 @@ describe('useRepoDescriptionSuggestion', () => {
         globalThis.fetch = vi.fn(() => Promise.resolve({
             ok: true,
             status: 200,
-            json: async () => ({ description: 'Payment system migrated from Azure DevOps TFVC.' }),
+            headers: { get: () => 'application/json' }, json: async () => ({ description: 'Payment system migrated from Azure DevOps TFVC.' }),
         }))
         const { result } = renderHook(() => useRepoDescriptionSuggestion({ aiAvailable: true }))
 
@@ -97,7 +97,7 @@ describe('useRepoDescriptionSuggestion', () => {
         globalThis.fetch = vi.fn(() => Promise.resolve({
             ok: true,
             status: 200,
-            json: async () => ({ description: '   ' }),
+            headers: { get: () => 'application/json' }, json: async () => ({ description: '   ' }),
         }))
         const { result } = renderHook(() => useRepoDescriptionSuggestion({ aiAvailable: true }))
 
@@ -113,7 +113,7 @@ describe('useRepoDescriptionSuggestion', () => {
         globalThis.fetch = vi.fn(() => Promise.resolve({
             ok: true,
             status: 200,
-            json: async () => ({ description: '🚀 Hello\n\nWorld' }),
+            headers: { get: () => 'application/json' }, json: async () => ({ description: '🚀 Hello\n\nWorld' }),
         }))
         const { result } = renderHook(() => useRepoDescriptionSuggestion({ aiAvailable: true }))
 

@@ -16,7 +16,7 @@ describe('useMigrationMarksFor', () => {
   it('fetches and returns marks for a target full name', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ marks: [{ id: 1, scope: 'destination', status: 'written', target_id: 'foo/bar' }] })
+      headers: { get: () => 'application/json' }, json: async () => ({ marks: [{ id: 1, scope: 'destination', status: 'written', target_id: 'foo/bar' }] })
     })
     const { result } = renderHook(() => useMigrationMarksFor('foo/bar'))
     await waitFor(() => expect(result.current.loading).toBe(false))
@@ -46,7 +46,7 @@ describe('useMarksForPlan', () => {
   it('fetches plan marks and groups by scope', async () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
-      json: async () => ({
+      headers: { get: () => 'application/json' }, json: async () => ({
         planId: 42,
         byScope: {
           source: [{ id: 1, status: 'written' }],

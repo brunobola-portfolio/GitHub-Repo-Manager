@@ -25,7 +25,7 @@ function mockLicence(overrides = {}) {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        json: async () => ({
+        headers: { get: () => 'application/json' }, json: async () => ({
             active: true, source: 'license_key', tier: 'pro', org: 'Acme',
             email: 'a@b.c', seats: 1, seatsUsed: 4,
             expiresAt: '2027-01-01T00:00:00.000Z', issuedAt: '2026-01-01T00:00:00.000Z',

@@ -15,7 +15,7 @@ import { UsageDashboard } from '@/components/Settings/UsageDashboard'
 function stubUsageFetch(body) {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => body,
+        headers: { get: () => 'application/json' }, json: async () => body,
     }))
 }
 

@@ -11,11 +11,21 @@
  *   - slim      -> the rail renders; an org button drives the org switch
  *   - slim      -> the expand button opens the overlay; selecting closes it
  *   - overlay   -> Escape closes it
- *   - the right bulk Sidebar renders alongside
  *
- * OrgPanel / Sidebar are stubbed to prop-echo so the test asserts the region's
- * wiring (which panel renders in which mode, and that selection reaches the
- * org-switch handler) rather than those leaves' internals.
+ * OrgPanel is stubbed to prop-echo so the test asserts the region's wiring
+ * (which panel renders in which mode, and that selection reaches the
+ * org-switch handler) rather than the leaf's internals.
+ *
+ * The right bulk Sidebar / SlimSidebar rail this guard used to also assert on
+ * was removed from the repos view entirely on 2026-09-05 (2026-09-04 panel,
+ * item R3 / U22): Quick Actions and Import duplicated header buttons and
+ * palette commands, and Action History was empty for a new user — a rail
+ * that taught a first-time visitor nothing. Sidebar.jsx / SlimSidebar.jsx no
+ * longer exist (their one live part, ActivityRow, moved to
+ * src/components/ActivityRow.jsx and now backs the dashboard's Recent
+ * Activity section instead), so this guard no longer mocks or asserts on
+ * them — the repos view is confirmed mounted via RepoList's own empty state
+ * instead of the deleted rail's testid.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
@@ -93,14 +103,6 @@ vi.mock('@/components/OrgPanel', () => ({
     ),
 }))
 
-vi.mock('@/components/Sidebar', () => ({
-    Sidebar: () => <div data-testid="bulk-sidebar">Sidebar</div>,
-}))
-
-vi.mock('@/components/SlimSidebar', () => ({
-    SlimSidebar: () => <div data-testid="slim-sidebar">SlimSidebar</div>,
-}))
-
 const MOCK_USER = { login: 'octocat', name: 'The Octocat', id: 1, avatar_url: 'https://github.com/octocat.png' }
 const ORGS = [
     { login: 'acme', avatar_url: '' },
@@ -155,7 +157,6 @@ const { ThemeProvider } = await import('@/hooks/useTheme')
 // Module-scope await is paid once and is not subject to testTimeout.
 await Promise.all([
     import('@/components/NotificationLayer'),
-    import('@/components/SlimSidebar'),
     import('@/components/HeaderBanners'),
 ])
 
@@ -174,9 +175,11 @@ const settle = () =>
     screen.findByRole('heading', { name: /repo manager/i }, { timeout: 5000 })
 
 // Navigate to the repos view via the `g r` navigation chord (bare `r` no
-// longer navigates — `g` is the chord prefix), then wait for the right bulk
-// sidebar (always present in repos when authenticated) to confirm the view
-// switched.
+// longer navigates — `g` is the chord prefix), then wait for RepoList's own
+// empty state ("No repositories yet" — the mock useGitHub below returns
+// repos: []) to confirm the view switched. This used to wait on the right
+// rail's testid; that rail is gone, so the content column is the only thing
+// left that's guaranteed to render in repos view regardless of leftMode.
 async function gotoRepos() {
     // Both keys inside one act: the chord window is 800 ms of wall clock, and
     // a separate act per key let React's flush push the second key past it
@@ -185,7 +188,7 @@ async function gotoRepos() {
         document.dispatchEvent(new KeyboardEvent('keydown', { key: 'g' }))
         document.dispatchEvent(new KeyboardEvent('keydown', { key: 'r' }))
     })
-    await screen.findByTestId('bulk-sidebar', {}, { timeout: 8000 })
+    await screen.findByText(/no repositories yet/i, {}, { timeout: 8000 })
 }
 
 beforeEach(() => {
@@ -204,13 +207,12 @@ beforeEach(() => {
 })
 
 describe('App org-sidebar region (OrgSidebar guard)', () => {
-    it('renders the expanded OrgPanel (wired to org switch) and the right Sidebar in repos view', { timeout: 30000 }, async () => {
+    it('renders the expanded OrgPanel (wired to org switch) in repos view', { timeout: 30000 }, async () => {
         renderApp()
         await settle()
         await gotoRepos()
         const panel = await screen.findByTestId('org-panel', {}, { timeout: 8000 })
         expect(panel).toHaveAttribute('data-orgs', '2')
-        expect(screen.getByTestId('bulk-sidebar')).toBeInTheDocument()
         fireEvent.click(screen.getByText('op-acme'))
         await waitFor(() => expect(h.fetchOrgRepos).toHaveBeenCalledWith('acme'), { timeout: 5000 })
     })

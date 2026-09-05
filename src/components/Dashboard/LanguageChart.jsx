@@ -44,7 +44,7 @@ export function LanguageChart({ data = [], loading }) {
             <Card
                 className="h-full"
                 /* Border + shadow come from Card's --ds-elevation-* defaults —
-                   the local `border-slate-200 shadow-sm` override used to win
+                   the local `border-slate-200 ds-elevation-sm` override used to win
                    through twMerge and reinstated the flat light-mode card. */
                 className="p-4 sm:p-6 transition-all duration-[var(--ds-duration)]"
                 style={{ minHeight: `${chartHeight + 60}px` }}
@@ -150,7 +150,7 @@ export function LanguageChart({ data = [], loading }) {
                                             className="flex items-center gap-3 group p-2.5 rounded-xl transition-all duration-200"
                                         >
                                             <div
-                                                className="w-4 h-4 rounded-md flex-shrink-0 shadow-sm ring-1 ring-black/5 dark:ring-white/10 transition-colors"
+                                                className="w-4 h-4 rounded-md flex-shrink-0 ds-elevation-sm ring-1 ring-black/5 dark:ring-white/10 transition-colors"
                                                 style={{ backgroundColor: lang.color }}
                                             />
                                             <span className="text-sm text-slate-700 dark:text-slate-300 font-medium flex-1 min-w-0">

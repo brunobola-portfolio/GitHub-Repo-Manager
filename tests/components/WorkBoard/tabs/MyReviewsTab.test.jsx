@@ -56,7 +56,7 @@ describe('MyReviewsTab — DraftCommentModal lifecycle (FE-06)', () => {
 
         const setIntervalSpy = vi.spyOn(globalThis, 'setInterval')
         await act(async () => {
-            resolveFetch({ ok: true, status: 200, json: async () => ({ draft: 'Please rebase.' }) })
+            resolveFetch({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ draft: 'Please rebase.' }) })
             await Promise.resolve()
             await Promise.resolve()
             await Promise.resolve()

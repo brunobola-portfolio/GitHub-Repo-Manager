@@ -91,7 +91,7 @@ export function Header({
 
     return (
         <>
-        <header className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-700/50 sticky top-0 z-20 transition-all duration-[var(--ds-duration-slow)] shadow-sm dark:shadow-black/20 safe-area-top">
+        <header className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-700/50 sticky top-0 z-20 transition-all duration-[var(--ds-duration-slow)] ds-elevation-sm dark:shadow-black/20 safe-area-top">
             <div className="max-w-[var(--layout-max-w)] mx-auto px-[var(--layout-px)] h-14 sm:h-16 flex items-center gap-3">
                 {/* Left: Logo & Title */}
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink-0">
@@ -109,7 +109,7 @@ export function Header({
                             accent with a glyph dropped on top. The tile IS the
                             icon; it is the same artwork a user sees pinned to a
                             taskbar. */}
-                        <AppLogo size={34} className="shadow-md" title="" />
+                        <AppLogo size={34} className="ds-elevation-md" title="" />
                         <div className="min-w-0 hidden sm:block">
                             {/* Brand label demoted from <h1> to <h2>: the page-level h1 lives in
                                 each route's PageHeader (e.g. the dashboard greeting). Two
@@ -165,12 +165,6 @@ export function Header({
                                 icon={Kanban}
                                 label="Work Board"
                                 badge={workBoardCount}
-                            />
-                            <NavButton
-                                active={activeView === 'pricing'}
-                                onClick={() => onViewChange?.('pricing')}
-                                icon={CreditCard}
-                                label="Pricing"
                             />
                         </nav>
                     )}
@@ -254,7 +248,7 @@ export function Header({
                                         onClick={() => setShowUserMenu(!showUserMenu)}
                                         className={`flex items-center gap-1 h-[34px] px-1.5 rounded-[9px] transition-all duration-200 ds-focus-ring ${
                                             showUserMenu
-                                                ? 'bg-white dark:bg-slate-600 shadow-sm'
+                                                ? 'bg-white dark:bg-slate-600 ds-elevation-sm'
                                                 : 'hover:bg-white/80 dark:hover:bg-slate-700'
                                         }`}
                                         aria-label={showUserMenu ? 'Close user menu' : 'Open user menu'}
@@ -283,6 +277,7 @@ export function Header({
                                             onOpenOrgManager={onOpenOrgManager}
                                             onOpenSettings={onOpenSettings}
                                             onMigrationHistory={onMigrationHistory}
+                                            onViewChange={onViewChange}
                                             onClose={closeUserMenu}
                                             isAdmin={isAdmin}
                                             onOpenAdminDLQ={onOpenAdminDLQ}
@@ -302,7 +297,7 @@ export function Header({
                                     className="flex items-center gap-1.5 h-[34px] px-3 sm:px-3.5 rounded-[9px]
                                         bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-[color:var(--ds-accent-brand)]
                                         text-white ds-text-sm font-semibold
-                                        shadow-sm
+                                        ds-elevation-sm
                                         hover:shadow-md
                                         transition-colors duration-200
                                         ds-focus-ring"
@@ -376,14 +371,6 @@ export function Header({
             <div className="space-y-1 px-4 py-3">
               <button
                 type="button"
-                onClick={() => { onViewChange?.('pricing'); setMoreOpen(false) }}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left ds-focus-ring"
-              >
-                <CreditCard className="w-4 h-4" />
-                Pricing
-              </button>
-              <button
-                type="button"
                 onClick={() => { onMigrationHistory?.(); setMoreOpen(false) }}
                 className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left ds-focus-ring"
               >
@@ -441,7 +428,7 @@ function ThemeToggleButton({ isDark, toggleTheme }) {
                 className={`relative flex items-center justify-center rounded-[9px] transition-all duration-[var(--ds-duration-slow)] ds-focus-ring w-[34px] h-[34px] ${
                     isDark
                         ? 'bg-slate-600/80 text-amber-300 hover:bg-slate-500/80 hover:text-amber-200'
-                        : 'bg-white text-[color:var(--ds-accent-brand)] shadow-sm hover:bg-brand-50 hover:text-brand-700'
+                        : 'bg-white text-[color:var(--ds-accent-brand)] ds-elevation-sm hover:bg-brand-50 hover:text-brand-700'
                 }`}
                 aria-label={label}
             >
@@ -466,7 +453,7 @@ function HeaderIconButton({ onClick, label, title, children, disabled, active, .
                     ds-focus-ring
                     disabled:opacity-40 disabled:cursor-not-allowed
                     ${active
-                        ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
+                        ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 ds-elevation-sm'
                         : 'text-slate-500 dark:text-slate-400 hover:bg-white/80 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100'
                     }`}
                 aria-label={label}
@@ -489,7 +476,7 @@ function NavButton({ active, onClick, icon, label, badge }) {
                 aria-current={active ? 'page' : undefined}
                 aria-label={label}
                 className={`relative flex items-center gap-1.5 px-2.5 lg:px-3.5 h-[34px] rounded-[9px] ds-text-sm font-semibold transition-all duration-200 ds-focus-ring ds-font-display ${active
-                    ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
+                    ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 ds-elevation-sm'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-600/40'
                     }`}
             >
@@ -527,7 +514,7 @@ function useCloseOnFocusLeave(ref, onClose) {
 }
 
 // User Dropdown Menu
-function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, onOpenSettings, onMigrationHistory, onClose, isAdmin = false, onOpenAdminDLQ }) {
+function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, onOpenSettings, onMigrationHistory, onViewChange, onClose, isAdmin = false, onOpenAdminDLQ }) {
     // Escape-to-close + focus into the menu on open + focus return to the
     // trigger on close (the menu only mounts while open).
     const trapRef = useFocusTrap(true, onClose)
@@ -596,6 +583,9 @@ function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, o
                 </MenuButton>
                 <MenuButton icon={Shield} onClick={onReauthorize}>
                     Re-authorize Permissions
+                </MenuButton>
+                <MenuButton icon={CreditCard} onClick={() => { onViewChange?.('pricing'); onClose() }}>
+                    Plans &amp; billing
                 </MenuButton>
                 <MenuButton icon={Settings} onClick={() => { onOpenSettings?.(); onClose() }}>
                     Settings

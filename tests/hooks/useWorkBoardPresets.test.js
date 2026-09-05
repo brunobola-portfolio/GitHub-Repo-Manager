@@ -13,7 +13,7 @@ beforeEach(() => { global.fetch = vi.fn(); })
 
 const { useWorkBoardPresets } = await import('@/hooks/useWorkBoardPresets')
 
-function ok(body) { return { ok: true, json: async () => ({ data: body }) } }
+function ok(body) { return { ok: true, headers: { get: () => 'application/json' }, json: async () => ({ data: body }) } }
 function err(status, body = {}) { return { ok: false, status, json: async () => body } }
 
 describe('useWorkBoardPresets', () => {

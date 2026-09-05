@@ -94,7 +94,7 @@ describe('AllowlistFixPanel — .env line merge logic', () => {
 
 describe('AllowlistFixPanel — admin add flow', () => {
     it('POSTs the host to /api/azure/host-allowlist, shows the success state, and calls onAdded', async () => {
-        fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve({}) })
+        fetchMock.mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: () => Promise.resolve({}) })
         const onAdded = vi.fn()
 
         render(

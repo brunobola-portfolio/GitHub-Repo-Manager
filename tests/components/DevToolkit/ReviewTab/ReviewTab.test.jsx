@@ -23,7 +23,7 @@ const PULLS = [
 ]
 
 function mockPullsResponse(pulls = PULLS) {
-    return { ok: true, json: () => Promise.resolve(pulls) }
+    return { ok: true, headers: { get: () => 'application/json' }, json: () => Promise.resolve(pulls) }
 }
 
 const baseToolkit = (overrides = {}) => ({

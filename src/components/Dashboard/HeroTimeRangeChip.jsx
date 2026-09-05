@@ -30,7 +30,7 @@ export function HeroTimeRangeChip({ value, onChange }) {
                 <Popover.Content
                     sideOffset={8}
                     align="start"
-                    className="w-[200px] p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-md ds-animate-scale-in z-[var(--ds-z-popover)]"
+                    className="w-[200px] p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl ds-elevation-md ds-animate-scale-in z-[var(--ds-z-popover)]"
                 >
                     {RANGES.map(r => (
                         <button

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { API_BASE_URL } from '../../config'
 import { motion } from 'framer-motion'
 import {
   Download, CheckCircle2, XCircle, Cloud,
@@ -8,6 +9,7 @@ import { SectionSpinner, SpinnerIcon } from '../ui/Spinner'
 import { EmptyState } from '../ui/EmptyState'
 import { formatRelativeTime } from '../../utils/format'
 import { useModal } from '../../hooks/useModal'
+import { apiCall } from '../../utils/api'
 
 // Terminal-success config, aliased under BOTH legacy spellings ('complete' from
 // the legacy import pipeline, 'completed' from bulk-mirror + the new engine) so
@@ -17,7 +19,7 @@ const STATUS_CONFIG = {
   complete: COMPLETED_CONFIG,
   completed: COMPLETED_CONFIG,
   failed: { icon: XCircle, color: 'text-rose-500', bg: 'bg-rose-500/10', label: 'Failed' },
-  running: { icon: SpinnerIcon, color: 'text-blue-500', bg: 'bg-blue-500/10', label: 'Running', animate: false },
+  running: { icon: SpinnerIcon, color: 'text-brand-500', bg: 'bg-brand-500/10', label: 'Running', animate: false },
   pending: { icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10', label: 'Pending' },
 }
 
@@ -44,11 +46,7 @@ export function MigrationActivity({ loading: parentLoading }) {
   const loadStats = useCallback(() => {
     setLoading(true)
     setError(false)
-    fetch('/api/migrations/stats', { credentials: 'include' })
-      .then(r => {
-        if (!r.ok) throw new Error(`stats request failed: ${r.status}`)
-        return r.json()
-      })
+    apiCall(`${API_BASE_URL}/api/migrations/stats`)
       .then(data => { if (mountedRef.current) setStats(data) })
       .catch(() => {
         // Distinguish a genuine failure from an empty result so the UI can
@@ -133,7 +131,7 @@ export function MigrationActivity({ loading: parentLoading }) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <MiniStat label="Total Imports" value={stats.total} icon={Download} color="text-brand-500" onClick={openHistory} />
         <MiniStat label="Successful" value={stats.completed} icon={CheckCircle2} color="text-emerald-500" onClick={openHistory} />
-        <MiniStat label="In Progress" value={stats.running} icon={stats.running > 0 ? SpinnerIcon : Clock} color="text-blue-500" animate={false} onClick={openHistory} />
+        <MiniStat label="In Progress" value={stats.running} icon={stats.running > 0 ? SpinnerIcon : Clock} color="text-brand-500" animate={false} onClick={openHistory} />
         {stats.tfvc > 0 && (
           <MiniStat label="TFVC Converted" value={stats.tfvc} icon={AlertTriangle} color="text-amber-500" onClick={openHistory} />
         )}
@@ -190,7 +188,7 @@ export function MigrationActivity({ loading: parentLoading }) {
                   <div className="w-16 shrink-0">
                     <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                        className="h-full bg-brand-500 rounded-full transition-all duration-500"
                         style={{ width: `${job.progressPct || 0}%` }}
                       />
                     </div>

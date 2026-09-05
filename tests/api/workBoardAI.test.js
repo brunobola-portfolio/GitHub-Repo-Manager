@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-vi.mock('../../src/utils/api', () => ({
+vi.mock('../../src/utils/api', async (importOriginal) => ({
+    ...(await importOriginal()),
     getCsrfToken: vi.fn(async () => 'csrf-t'),
 }))
 
@@ -12,13 +13,13 @@ beforeEach(() => { global.fetch = vi.fn() })
 
 describe('workBoardAI client', () => {
     it('fetchSuggestions GETs /suggestions', async () => {
-        global.fetch.mockResolvedValue({ ok: true, json: async () => ({ suggestions: [] }) })
+        global.fetch.mockResolvedValue({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ suggestions: [] }) })
         await fetchSuggestions()
         expect(global.fetch.mock.calls[0][0]).toBe('/api/v1/work-board/ai/suggestions')
     })
 
     it('dismissSuggestion POSTs with CSRF', async () => {
-        global.fetch.mockResolvedValue({ ok: true, json: async () => ({ dismissed: true }) })
+        global.fetch.mockResolvedValue({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ dismissed: true }) })
         await dismissSuggestion('BotPrefix', 'dependabot')
         const call = global.fetch.mock.calls[0]
         expect(call[0]).toBe('/api/v1/work-board/ai/dismiss-suggestion')
@@ -29,7 +30,7 @@ describe('workBoardAI client', () => {
     it('interpretPrompt POSTs prompt and returns validity_token', async () => {
         global.fetch.mockResolvedValue({
             ok: true,
-            json: async () => ({ summary: 'x', actions: [], validity_token: 't.s', skipped: 0 }),
+            headers: { get: () => 'application/json' }, json: async () => ({ summary: 'x', actions: [], validity_token: 't.s', skipped: 0 }),
         })
         const res = await interpretPrompt('mute all')
         expect(res.validity_token).toBe('t.s')
@@ -37,13 +38,13 @@ describe('workBoardAI client', () => {
     })
 
     it('applyDiff POSTs the token back', async () => {
-        global.fetch.mockResolvedValue({ ok: true, json: async () => ({ applied: 2, operation_id: 'op' }) })
+        global.fetch.mockResolvedValue({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ applied: 2, operation_id: 'op' }) })
         await applyDiff('t.s')
         expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toEqual({ validity_token: 't.s' })
     })
 
     it('fetchActivity GETs /activity', async () => {
-        global.fetch.mockResolvedValue({ ok: true, json: async () => ({ month: '2026-04', spent_cents: 0, cap_cents: 500 }) })
+        global.fetch.mockResolvedValue({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ month: '2026-04', spent_cents: 0, cap_cents: 500 }) })
         const out = await fetchActivity()
         expect(out.cap_cents).toBe(500)
     })

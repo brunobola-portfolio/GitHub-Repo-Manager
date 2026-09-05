@@ -17,7 +17,7 @@ beforeEach(() => { global.fetch = vi.fn() })
 
 const { useSavedViews } = await import('@/hooks/useWorkBoardPresets')
 
-function ok(body) { return { ok: true, json: async () => ({ data: body }) } }
+function ok(body) { return { ok: true, headers: { get: () => 'application/json' }, json: async () => ({ data: body }) } }
 
 describe('useSavedViews — non-default scope (G5)', () => {
     it('lists with a scope query param', async () => {

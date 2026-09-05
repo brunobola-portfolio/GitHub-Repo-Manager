@@ -20,7 +20,7 @@ async function advancePoll(ticks = 1) {
 
 describe('SimpleProgressStep — cancel + honest status rendering', () => {
   beforeEach(() => {
-    global.fetch = vi.fn(async () => ({ ok: true, json: async () => ({ success: true }) }))
+    global.fetch = vi.fn(async () => ({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ success: true }) }))
   })
 
   afterEach(() => {
@@ -114,7 +114,7 @@ describe('SimpleProgressStep — cancel + honest status rendering', () => {
       let resolveFetch
       global.fetch = vi.fn((url) => {
         if (String(url).includes('csrf-token')) {
-          return Promise.resolve({ ok: true, json: async () => ({ token: 'tok' }) })
+          return Promise.resolve({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ token: 'tok' }) })
         }
         return new Promise((resolve) => { resolveFetch = resolve })
       })
@@ -265,7 +265,7 @@ describe('SimpleProgressStep — cancel + honest status rendering', () => {
 
     it('stops polling a single import while the tab is hidden and re-syncs the moment it returns', async () => {
       vi.useFakeTimers()
-      global.fetch = vi.fn(async () => ({ ok: true, json: async () => ({ status: 'running', progressPct: 50 }) }))
+      global.fetch = vi.fn(async () => ({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ status: 'running', progressPct: 50 }) }))
 
       const importJobs = { jobId: 42, importing: true, jobStatus: { status: 'running', progressPct: 10 } }
       render(<SimpleProgressStep importJobs={importJobs} onUpdate={() => {}} source={{}} />)
@@ -287,7 +287,7 @@ describe('SimpleProgressStep — cancel + honest status rendering', () => {
 
     it('stops every batch job timer while hidden and ticks each one on return', async () => {
       vi.useFakeTimers()
-      global.fetch = vi.fn(async () => ({ ok: true, json: async () => ({ status: 'running', progressPct: 20 }) }))
+      global.fetch = vi.fn(async () => ({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ status: 'running', progressPct: 20 }) }))
 
       const importJobs = {
         batchJobs: [{ jobId: 1, repoName: 'repo-a' }, { jobId: 2, repoName: 'repo-b' }],
@@ -319,7 +319,7 @@ describe('SimpleProgressStep — cancel + honest status rendering', () => {
       global.fetch = vi.fn(async () => {
         calls++
         if (calls <= 3) return { ok: false, status: 500, json: async () => ({}) }
-        return { ok: true, json: async () => ({ status: 'running', progressPct: 50 }) }
+        return { ok: true, headers: { get: () => 'application/json' }, json: async () => ({ status: 'running', progressPct: 50 }) }
       })
 
       const importJobs = { jobId: 42, importing: true, jobStatus: { status: 'running', progressPct: 10 } }
@@ -349,7 +349,7 @@ describe('SimpleProgressStep — cancel + honest status rendering', () => {
       global.fetch = vi.fn(async () => {
         calls++
         if (calls <= 3) return { ok: false, status: 500, json: async () => ({}) }
-        return { ok: true, json: async () => ({ status: 'running', progressPct: 20 }) }
+        return { ok: true, headers: { get: () => 'application/json' }, json: async () => ({ status: 'running', progressPct: 20 }) }
       })
 
       const importJobs = {

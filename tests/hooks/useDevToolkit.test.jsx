@@ -9,7 +9,7 @@ describe('useDevToolkit', () => {
     beforeEach(() => {
         fetchSpy = vi.fn().mockResolvedValue({
             ok: true,
-            json: () => Promise.resolve([]),
+            headers: { get: () => 'application/json' }, json: () => Promise.resolve([]),
         })
         globalThis.fetch = fetchSpy
 
@@ -106,7 +106,7 @@ describe('useDevToolkit', () => {
         // fetchBranches returns branches with 'main' as default
         fetchSpy.mockResolvedValue({
             ok: true,
-            json: () => Promise.resolve([{ name: 'main' }, { name: 'dev' }]),
+            headers: { get: () => 'application/json' }, json: () => Promise.resolve([{ name: 'main' }, { name: 'dev' }]),
         })
 
         const { result } = renderHook(() => useDevToolkit({ repos: mockRepos }))
@@ -159,10 +159,10 @@ describe('useDevToolkit', () => {
             if (typeof url === 'string' && url.includes('/repos/user/repo-b/branches')) {
                 return Promise.resolve({
                     ok: true,
-                    json: () => Promise.resolve([{ name: 'main' }, { name: 'repo-b-feature' }]),
+                    headers: { get: () => 'application/json' }, json: () => Promise.resolve([{ name: 'main' }, { name: 'repo-b-feature' }]),
                 })
             }
-            return Promise.resolve({ ok: true, json: () => Promise.resolve([]) })
+            return Promise.resolve({ ok: true, headers: { get: () => 'application/json' }, json: () => Promise.resolve([]) })
         })
 
         const { result } = renderHook(() => useDevToolkit({ repos: mockRepos }))
@@ -266,11 +266,11 @@ describe('useDevToolkit', () => {
         fetchSpy
             .mockResolvedValueOnce({
                 ok: true,
-                json: () => Promise.resolve([{ name: 'main' }, { name: 'dev' }]),
+                headers: { get: () => 'application/json' }, json: () => Promise.resolve([{ name: 'main' }, { name: 'dev' }]),
             })
             .mockResolvedValueOnce({
                 ok: true,
-                json: () => Promise.resolve({
+                headers: { get: () => 'application/json' }, json: () => Promise.resolve({
                     ahead_by: 2,
                     behind_by: 0,
                     total_commits: 2,
@@ -326,11 +326,11 @@ describe('useDevToolkit', () => {
         fetchSpy
             .mockResolvedValueOnce({
                 ok: true,
-                json: () => Promise.resolve(branchesResponse),
+                headers: { get: () => 'application/json' }, json: () => Promise.resolve(branchesResponse),
             })
             .mockResolvedValueOnce({
                 ok: true,
-                json: () => Promise.resolve(compareResponse),
+                headers: { get: () => 'application/json' }, json: () => Promise.resolve(compareResponse),
             })
 
         const { result } = renderHook(() => useDevToolkit({ repos: mockRepos }))

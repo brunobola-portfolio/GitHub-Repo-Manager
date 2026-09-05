@@ -23,7 +23,7 @@ beforeEach(() => {
     mockQuotaState.mockReturnValue(null)
     fetchMock = vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => SAMPLE,
+        headers: { get: () => 'application/json' }, json: async () => SAMPLE,
     })
     vi.stubGlobal('fetch', fetchMock)
 })
@@ -45,7 +45,7 @@ describe('useAIUsage', () => {
     it('coerces null/Infinity limit into Infinity with percent 0', async () => {
         fetchMock.mockResolvedValueOnce({
             ok: true,
-            json: async () => ({ tier: 'pro', aiQueries: { current: 9001, limit: null }, aiFeatures: {} }),
+            headers: { get: () => 'application/json' }, json: async () => ({ tier: 'pro', aiQueries: { current: 9001, limit: null }, aiFeatures: {} }),
         })
         const { useAIUsage } = await import('../../src/hooks/useAIUsage')
         const { result } = renderHook(() => useAIUsage())
