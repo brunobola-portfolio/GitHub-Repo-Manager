@@ -78,7 +78,7 @@ function ModeCard({ active, onClick, icon: Icon, title, desc }) {
       className={`text-left p-3 rounded-xl border transition-colors
         ${active
           ? 'border-brand-400 dark:border-brand-500 bg-brand-50 dark:bg-brand-900/20'
-          : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+          : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'} ds-focus-ring`}
     >
       <div className="flex items-center gap-2 mb-1">
         <Icon className={`w-4 h-4 ${active ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : 'text-slate-500'}`} />
@@ -221,7 +221,7 @@ function NewProjectForm({ source, onChange }) {
         type="button"
         onClick={createProject}
         disabled={creating || !source.azureNewProjectName?.trim()}
-        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl ds-brand-solid disabled:bg-slate-300 disabled:cursor-not-allowed"
+        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl ds-brand-solid disabled:bg-slate-300 disabled:cursor-not-allowed ds-focus-ring"
       >
         {creating ? <Spinner size="md" tone="onPrimary" /> : <Plus className="w-4 h-4" />}
         {creating ? 'Creating project…' : 'Create project now'}

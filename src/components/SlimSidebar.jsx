@@ -54,7 +54,7 @@ function SlimPopover({ isOpen, onClose, children, triggerRef, ariaLabel = 'Quick
       // sidebar/page stays interactive while this is open.
       aria-modal="false"
       aria-label={ariaLabel}
-      className="absolute right-full mr-2 top-0 w-72 max-h-80 overflow-y-auto rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white dark:bg-slate-900 backdrop-blur-md shadow-xl z-[var(--ds-z-popover)] p-3 outline-none"
+      className="absolute right-full mr-2 top-0 w-72 max-h-80 overflow-y-auto rounded-2xl border border-slate-200/60 dark:border-slate-700/50 bg-white dark:bg-slate-900 backdrop-blur-md ds-elevation-overlay z-[var(--ds-z-popover)] p-3 outline-none"
     >
       {children}
     </div>
@@ -98,7 +98,7 @@ const SLIM_ROW_LIMIT = 5
 
 function SlimPopoverHeading({ children }) {
   return (
-    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 px-1">
+    <p className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-2 px-1">
       {children}
     </p>
   )
@@ -169,7 +169,7 @@ function SlimSidebarBase({
             ariaLabel="Quick Actions"
           >
           <div className="flex items-center justify-between mb-2 px-1">
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Quick Actions</p>
+            <p className="ds-eyebrow text-slate-500 dark:text-slate-400">Quick Actions</p>
             {hasSelection && (
               <span className="ds-text-micro font-medium px-2 py-0.5 rounded-full bg-[color:var(--ds-surface-muted)] dark:bg-[color:var(--ds-surface-muted-dark)] text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">
                 {selectionCount} selected

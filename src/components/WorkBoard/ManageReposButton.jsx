@@ -48,7 +48,7 @@ export function ManageReposButton({ onOpenSettings }) {
                 <button
                     type="button"
                     aria-label="Manage repos"
-                    className="flex items-center gap-1.5 p-2 rounded-xl border border-slate-200/60 dark:border-slate-700/50 bg-white/70 dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-600 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                    className="flex items-center gap-1.5 p-2 rounded-xl border border-slate-200/60 dark:border-slate-700/50 bg-white/70 dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-600 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors ds-focus-ring"
                 >
                     <Settings2 className="w-4 h-4" />
                     <span className="hidden sm:inline text-xs font-medium">Manage</span>
@@ -58,7 +58,7 @@ export function ManageReposButton({ onOpenSettings }) {
                 side="bottom"
                 align="end"
                 sideOffset={6}
-                className="z-[var(--ds-z-popover)] w-80 max-w-[calc(100vw-1rem)] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl overflow-hidden"
+                className="z-[var(--ds-z-popover)] w-80 max-w-[calc(100vw-1rem)] rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 ds-elevation-overlay overflow-hidden"
             >
                 <div className="p-2 border-b border-slate-200/60 dark:border-slate-700/60">
                     <Input
@@ -95,7 +95,7 @@ export function ManageReposButton({ onOpenSettings }) {
                     <button
                         type="button"
                         onClick={() => { setOpen(false); onOpenSettings?.() }}
-                        className="w-full text-xs font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline px-2 py-1"
+                        className="w-full text-xs font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline px-2 py-1 ds-focus-ring rounded"
                     >
                         See all in Settings →
                     </button>
@@ -143,7 +143,8 @@ function IconButton({ active, label, onClick, Icon }) {
                 'p-1 rounded-md transition-colors',
                 active
                     ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] bg-brand-50 dark:bg-brand-900/30'
-                    : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50'
+                    : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50',
+                'ds-focus-ring'
             )}
         >
             <Icon className="w-3.5 h-3.5" />

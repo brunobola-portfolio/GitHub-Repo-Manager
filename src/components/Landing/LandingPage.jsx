@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { Sun, Moon } from 'lucide-react'
-import { EASE } from '../ui/motion'
+import { EASE, DURATION } from '../ui/motion'
 import { Github } from '../icons/GithubIcon'
 import { AppLogo } from '../AppLogo'
 import { HeroSection } from './HeroSection'
@@ -30,7 +30,7 @@ function LandingFooter() {
       initial={{ opacity: 0 }}
       whileInView={{ opacity: 1 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.6 }}
+      transition={{ duration: DURATION.ambient }}
       className="border-t border-slate-200/50 dark:border-white/[0.06] py-8 px-4"
     >
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -98,7 +98,7 @@ export function LandingPage({ onSignIn }) {
       <motion.nav
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: EASE.emphasized }}
+        transition={{ duration: DURATION.gentle, ease: EASE.emphasized }}
         className="sticky top-0 z-20 backdrop-blur-md bg-white/75 dark:bg-slate-950/75 border-b border-slate-200/50 dark:border-white/[0.06]"
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">

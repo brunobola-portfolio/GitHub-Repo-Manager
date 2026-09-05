@@ -106,7 +106,7 @@ export function ActivityTab({ teamId }) {
             {Object.entries(groupedEvents).map(([date, dayEvents]) => (
                 <div key={date} className="relative">
                     <div className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-sm py-2 px-1 mb-4 flex items-center gap-4">
-                        <span className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{date}</span>
+                        <span className="ds-eyebrow text-slate-500 dark:text-slate-400">{date}</span>
                         <div className="h-px bg-slate-200 dark:bg-slate-700 flex-1"></div>
                     </div>
                     <div className="space-y-4 pl-2 lg:pl-0">

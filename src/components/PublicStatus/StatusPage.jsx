@@ -144,7 +144,7 @@ export function StatusPage() {
                 </section>
 
                 <section className="mt-8">
-                    <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-3">Components</h2>
+                    <h2 className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-3">Components</h2>
                     <ul className="rounded-xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-200 dark:divide-slate-800 overflow-hidden">
                         {COMPONENTS.map(({ key, label }) => {
                             const raw = state.checks?.[key]

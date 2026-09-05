@@ -197,7 +197,7 @@ export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
                     {/* Hotspots */}
                     {hotspots.length > 0 && (
                         <div>
-                            <p className="ds-text-meta font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                            <p className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-1.5">
                                 Most-contended paths
                             </p>
                             <div className="flex flex-wrap gap-2">
@@ -218,13 +218,13 @@ export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
 
                     {/* Rules table */}
                     <div>
-                        <p className="ds-text-meta font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                        <p className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-1.5">
                             Suggested rules
                         </p>
                         <Card glass={false} shadow="none" className="rounded-xl">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
-                                    <thead className="bg-slate-50 dark:bg-slate-900/60 text-left ds-text-meta uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                    <thead className="ds-eyebrow bg-slate-50 dark:bg-slate-900/60 text-left text-slate-500 dark:text-slate-400">
                                         <tr>
                                             <th className="px-3 py-2 font-semibold">Path</th>
                                             <th className="px-3 py-2 font-semibold">Owners</th>
@@ -233,7 +233,7 @@ export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                                         {data.rules.map((r) => (
                                             <tr key={r.pattern}>
-                                                <td className="px-3 py-2 font-mono text-[13px] text-slate-800 dark:text-slate-200">
+                                                <td className="px-3 py-2 font-mono ds-text-sm text-slate-800 dark:text-slate-200">
                                                     {r.pattern}
                                                 </td>
                                                 <td className="px-3 py-2 text-slate-700 dark:text-slate-300">
@@ -256,7 +256,7 @@ export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
 
                     {/* Preview — plain textarea so users can Ctrl+A on denied clipboards. */}
                     <div>
-                        <p className="ds-text-meta font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                        <p className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-1.5">
                             .github/CODEOWNERS preview
                         </p>
                         <Textarea

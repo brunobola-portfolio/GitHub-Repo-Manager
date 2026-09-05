@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { EASE } from '../ui/motion'
+import { EASE, DURATION } from '../ui/motion'
 import { Lock, Sparkles, Check, ArrowRight } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
 
@@ -77,7 +77,7 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
         <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, ease: EASE.emphasized }}
+            transition={{ duration: DURATION.reveal, ease: EASE.emphasized }}
             role="region"
             aria-label={`${tierName(tier)} feature`}
             className={twMerge(
@@ -95,7 +95,7 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
                 <motion.div
                     initial={{ scale: 0.6, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.1, duration: 0.5, ease: EASE.emphasized }}
+                    transition={{ delay: 0.1, duration: DURATION.gentle, ease: EASE.emphasized }}
                     className={twMerge(
                         'relative mb-5 inline-flex items-center justify-center',
                         'w-16 h-16 rounded-2xl',
@@ -111,7 +111,7 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
                 {/* Eyebrow */}
                 <span className={twMerge(
                     'inline-flex items-center gap-1.5 px-2.5 py-1 mb-3',
-                    'ds-text-micro font-semibold uppercase tracking-[0.14em]',
+                    'ds-eyebrow',
                     'rounded-full text-white',
                     copy.bg
                 )}>
@@ -136,7 +136,7 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
                                 key={i}
                                 initial={{ opacity: 0, x: -8 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.2 + i * 0.05, duration: 0.3 }}
+                                transition={{ delay: 0.2 + i * 0.05, duration: DURATION.slow }}
                                 className="flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-300"
                             >
                                 <span className={twMerge(
@@ -219,7 +219,7 @@ function BannerUpgrade({ tier, feature, copy, pricingHref, onPricingClick, onDis
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25 }}
+            transition={{ duration: DURATION.standard }}
             role="status"
             className={twMerge(
                 'relative overflow-hidden',

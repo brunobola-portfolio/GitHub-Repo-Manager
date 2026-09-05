@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { EASE } from '../../ui/motion'
+import { EASE, DURATION } from '../../ui/motion'
 import { Cloud, Globe, GitBranch, AlertTriangle, Loader2, Star, ChevronRight } from 'lucide-react'
 import { Spinner } from '../../ui/Spinner'
 import { apiCall } from '../../../utils/api'
@@ -67,7 +67,7 @@ const cardVariants = {
     scale: 1,
     transition: {
       delay: i * 0.08,
-      duration: 0.4,
+      duration: DURATION.reveal,
       ease: EASE.emphasized,
     },
   }),
@@ -194,7 +194,7 @@ export default function SourceTypeStep({ source, onChange, onAdvance }) {
                   )}
                 </div>
                 <p className={`
-                  text-[13px] mt-0.5 leading-relaxed
+                  ds-text-sm mt-0.5 leading-relaxed
                   ${selected
                     ? 'text-slate-600 dark:text-slate-300'
                     : 'text-slate-500 dark:text-slate-400'

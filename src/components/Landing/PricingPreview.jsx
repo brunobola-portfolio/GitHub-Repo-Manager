@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { EASE } from '../ui/motion'
+import { EASE, DURATION } from '../ui/motion'
 import { Check, Zap, Crown } from 'lucide-react'
 import { SUPPORT_EMAIL } from '../../utils/supportContact'
 import { BACKDROP_WASH_COLOR } from '../ui/_variants'
@@ -68,7 +68,7 @@ const cardVariants = {
   visible: (i) => ({
     opacity: 1,
     y: 0,
-    transition: { duration: 0.65, delay: i * 0.12, ease: EASE.emphasized },
+    transition: { duration: DURATION.ambient, delay: i * 0.12, ease: EASE.emphasized },
   }),
 }
 
@@ -108,7 +108,7 @@ function PreviewCard({ plan, i, onSignIn }) {
 			<div
 				className={`relative rounded-2xl p-7 flex flex-col gap-6 h-full transition-colors duration-200 overflow-hidden
 					${plan.popular
-						? 'bg-brand-700 dark:bg-brand-600 border-2 border-brand-400/30 shadow-2xl'
+						? 'bg-brand-700 dark:bg-brand-600 border-2 border-brand-400/30 ds-elevation-lg'
 						: plan.enterprise
 							? 'bg-white/60 dark:bg-white/[0.04] border border-amber-400/30 dark:border-amber-500/20 backdrop-blur-sm shadow-lg shadow-amber-500/5 hover:shadow-amber-500/30'
 							: 'bg-white/60 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.08] backdrop-blur-sm hover:border-slate-300 dark:hover:border-slate-600'
@@ -202,10 +202,10 @@ export function PricingPreview({ onSignIn }) {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.7, ease: EASE.emphasized }}
+          transition={{ duration: DURATION.ambient, ease: EASE.emphasized }}
           className="text-center mb-14 sm:mb-16"
         >
-          <p className="text-xs font-semibold tracking-widest uppercase text-brand-500 dark:text-[color:var(--ds-accent-brand-dark)] mb-3 ds-font-display">
+          <p className="ds-eyebrow text-brand-500 dark:text-[color:var(--ds-accent-brand-dark)] mb-3 ds-font-display">
             Pricing
           </p>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-slate-100 tracking-tight ds-font-display mb-4">
@@ -229,7 +229,7 @@ export function PricingPreview({ onSignIn }) {
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.4 }}
+          transition={{ duration: DURATION.ambient, delay: 0.4 }}
           className="text-center mt-10 text-sm text-slate-500 dark:text-slate-400 ds-font-display"
         >
           Prefer to self-host? The full app is free and open-source on GitHub — forever.

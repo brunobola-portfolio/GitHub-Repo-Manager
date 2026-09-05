@@ -35,7 +35,7 @@ export function PublishReviewModal({ isOpen, onClose, draft, onPublish, publishi
                     <button
                         type="button"
                         onClick={onClose}
-                        className="px-3 py-1.5 text-sm rounded hover:bg-black/5 dark:hover:bg-white/5"
+                        className="px-3 py-1.5 text-sm rounded hover:bg-black/5 dark:hover:bg-white/5 ds-focus-ring"
                     >
                         Cancel
                     </button>
@@ -43,7 +43,7 @@ export function PublishReviewModal({ isOpen, onClose, draft, onPublish, publishi
                         type="button"
                         onClick={() => onPublish(event)}
                         disabled={publishing}
-                        className={`px-3 py-1.5 text-sm font-medium rounded text-white disabled:opacity-60 ${activeEvent?.tone}`}
+                        className={`px-3 py-1.5 text-sm font-medium rounded text-white disabled:opacity-60 ${activeEvent?.tone} ds-focus-ring`}
                     >
                         {publishing ? 'Publishing…' : `Publish as ${activeEvent?.label}`}
                     </button>

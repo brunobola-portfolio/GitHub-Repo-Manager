@@ -188,7 +188,7 @@ export function RepoList({
 						<button
 							type="button"
 							onClick={() => setSheetOpen(true)}
-							className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[var(--ds-z-popover)] flex items-center gap-2 px-4 py-2 bg-slate-900/90 text-white rounded-full shadow-2xl"
+							className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[var(--ds-z-popover)] flex items-center gap-2 px-4 py-2 bg-slate-900/90 text-white rounded-full ds-elevation-overlay ds-focus-ring"
 						>
 							<span className="text-sm font-medium">{selectedIds.size} selected</span>
 							<span className="text-xs opacity-70">— tap for actions</span>

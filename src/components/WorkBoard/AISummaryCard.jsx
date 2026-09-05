@@ -10,6 +10,7 @@ import { AIErrorState } from '../ui/AIErrorState'
 import { Skeleton } from '../ui/Skeleton'
 import { onAppEvent, APP_EVENTS } from '../../utils/appEvents'
 import { formatRelativeTime } from '../../utils/format'
+import { DURATION } from '../ui/motion'
 
 function bulletHref(link) {
     if (!link || !link.repo || !link.number) return null
@@ -113,7 +114,7 @@ export function AISummaryCard({ meta: metaProp } = {}) {
                 <div className="flex items-center gap-2 mb-1.5">
                     <Sparkles className="w-4 h-4 text-amber-500" aria-hidden="true" />
                     <span className="font-medium text-sm text-slate-800 dark:text-slate-200">AI Work Summary</span>
-                    <span className="ds-text-micro uppercase tracking-wide text-amber-700 dark:text-amber-300">demo</span>
+                    <span className="ds-eyebrow text-amber-700 dark:text-amber-300">demo</span>
                     <button
                         type="button"
                         onClick={() => setDismissed(true)}
@@ -180,12 +181,12 @@ export function AISummaryCard({ meta: metaProp } = {}) {
 
             {/* Left column — gauge + controls */}
             <div className="relative flex flex-col items-center gap-2 min-w-[100px] sm:pl-2 sm:pr-4 sm:border-r sm:border-slate-200/50 sm:dark:border-slate-700/40">
-                <div className="inline-flex items-center gap-1.5 ds-text-micro font-semibold uppercase tracking-[0.18em] text-brand-500 dark:text-[color:var(--ds-accent-brand-dark)] self-start sm:self-center">
+                <div className="ds-eyebrow inline-flex items-center gap-1.5 text-brand-500 dark:text-[color:var(--ds-accent-brand-dark)] self-start sm:self-center">
                     <Sparkles className="w-3 h-3" aria-hidden="true" />
                     AI summary
                 </div>
                 <UrgencyGauge score={urgency} />
-                <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: severity.token }}>
+                <span className="ds-eyebrow" style={{ color: severity.token }}>
                     {severity.label}
                 </span>
                 {(provider || model) && (
@@ -202,7 +203,7 @@ export function AISummaryCard({ meta: metaProp } = {}) {
                             aria-label="Regenerate summary"
                             className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-500 dark:text-slate-400 transition-colors disabled:opacity-50 ds-focus-ring"
                         >
-                            <motion.div animate={{ rotate: state.status === 'loading' ? 360 : 0 }} transition={{ duration: 0.6 }}>
+                            <motion.div animate={{ rotate: state.status === 'loading' ? 360 : 0 }} transition={{ duration: DURATION.ambient }}>
                                 <RefreshCw className="w-4 h-4" />
                             </motion.div>
                         </button>
@@ -226,7 +227,7 @@ export function AISummaryCard({ meta: metaProp } = {}) {
                     {headline}
                 </h3>
                 {trendLine && (
-                    <p className="text-[12px] text-slate-400">{trendLine}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">{trendLine}</p>
                 )}
                 <AnimatePresence>
                     <motion.ul className="mt-2 space-y-2">
@@ -248,7 +249,7 @@ export function AISummaryCard({ meta: metaProp } = {}) {
                                     transition={{ delay: i * 0.04 }}
                                 >
                                     {href ? (
-                                        <a href={href} target="_blank" rel="noopener noreferrer" className="block hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg px-1 -mx-1 transition-colors">
+                                        <a href={href} target="_blank" rel="noopener noreferrer" className="block hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg px-1 -mx-1 transition-colors ds-focus-ring">
                                             {content}
                                         </a>
                                     ) : (

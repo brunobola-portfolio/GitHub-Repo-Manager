@@ -16,7 +16,7 @@ export function SelectionDashboard({ repos, aggregate, staleCount, onSmartSelect
             type="button"
             onClick={onReset}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
-              bg-slate-500/15 text-slate-400 border border-slate-500/20 hover:bg-slate-500/25 transition-colors"
+              bg-slate-500/15 text-slate-400 border border-slate-500/20 hover:bg-slate-500/25 transition-colors ds-focus-ring"
           >
             Reset
           </button>

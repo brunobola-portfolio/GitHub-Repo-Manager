@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Server, Cloud, Check, AlertCircle, Pencil, ShieldCheck, ShieldAlert } from 'lucide-react'
 import { Input } from '../../../ui/form'
 import { classifyProvider, providerToneClasses, PROVIDERS } from '../../../../utils/azureProvider'
+import { DURATION } from '../../../ui/motion'
 
 /**
  * Always-visible "Server" picker. Eliminates the silent dev.azure.com
@@ -78,14 +79,14 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
             type="button"
             onClick={commit}
             disabled={!draft.trim()}
-            className="px-3 py-2 text-xs font-semibold rounded-lg ds-brand-solid disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors"
+            className="px-3 py-2 text-xs font-semibold rounded-lg ds-brand-solid disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors ds-focus-ring"
           >
             Save
           </button>
           <button
             type="button"
             onClick={() => setEditing(false)}
-            className="px-2 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            className="px-2 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ds-focus-ring"
           >
             Cancel
           </button>
@@ -107,19 +108,19 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="ds-text-micro uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">
+            <span className="ds-eyebrow text-slate-500 dark:text-slate-400">
               Server
             </span>
             <span className={`text-sm font-semibold ${tone.text}`}>{provider.label}</span>
             {!host && (
-              <span className="inline-flex items-center gap-1 ds-text-micro uppercase tracking-wider text-amber-700 dark:text-amber-400 font-semibold">
+              <span className="ds-eyebrow inline-flex items-center gap-1 text-amber-700 dark:text-amber-400">
                 <AlertCircle className="w-3 h-3" />
                 not set
               </span>
             )}
             {host && allowlistStatus === true && (
               <span
-                className="inline-flex items-center gap-1 ds-text-micro uppercase tracking-wider text-emerald-700 dark:text-emerald-400 font-semibold"
+                className="ds-eyebrow inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400"
                 title="Server authorized by the backend (.env)"
               >
                 <ShieldCheck className="w-3 h-3" />
@@ -128,7 +129,7 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
             )}
             {host && allowlistStatus === false && (
               <span
-                className="inline-flex items-center gap-1 ds-text-micro uppercase tracking-wider text-amber-700 dark:text-amber-400 font-semibold"
+                className="ds-eyebrow inline-flex items-center gap-1 text-amber-700 dark:text-amber-400"
                 title="The backend has an allowlist and this host isn't included"
               >
                 <ShieldAlert className="w-3 h-3" />
@@ -165,7 +166,7 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
               <button
                 type="button"
                 onClick={startCustomEdit}
-                className="ml-1 p-1.5 rounded-md text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="ml-1 p-1.5 rounded-md text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ds-focus-ring"
                 aria-label="Edit server"
                 title="Edit manually"
               >
@@ -181,7 +182,7 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.18 }}
+            transition={{ duration: DURATION.standard }}
             className="overflow-hidden"
           >
             <div className="px-3.5 pb-2.5 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200/40 dark:border-slate-700/40 pt-2">
@@ -205,7 +206,7 @@ function PresetButton({ active, onClick, title, children }) {
       className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border transition-colors
         ${active
           ? 'border-brand-400 dark:border-brand-500 bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300'
-          : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800'}`}
+          : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800'} ds-focus-ring`}
     >
       {active && <Check className="w-3 h-3" />}
       {children}

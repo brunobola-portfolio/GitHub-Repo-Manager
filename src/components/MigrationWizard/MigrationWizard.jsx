@@ -16,6 +16,7 @@ import StepRenderer from './StepRenderer'
 import BreadcrumbNav from './BreadcrumbNav'
 import { SidebarStepper, HorizontalStepper, MobileProgressBar } from './Steppers'
 import { ArrowLeft, ArrowRight, Rocket, Download, AlertCircle, Zap } from 'lucide-react'
+import { DURATION, EASE } from '../ui/motion'
 
 const STEP_META = {
   sourceType:   { title: 'Choose Source',            subtitle: 'Select where to import your repositories from.' },
@@ -332,7 +333,7 @@ export default function MigrationWizard({
                   initial="enter"
                   animate="center"
                   exit="exit"
-                  transition={{ duration: 0.25, ease: 'easeInOut' }}
+                  transition={{ duration: DURATION.standard, ease: EASE.standard }}
                 >
                   <StepRenderer ctx={stepCtx} />
                 </motion.div>

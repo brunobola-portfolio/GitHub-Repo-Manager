@@ -132,7 +132,7 @@ export default function WikiStep({ wiki, onUpdate, source }) {
                       <span className="font-medium text-slate-900 dark:text-slate-100">
                         {w.name}
                       </span>
-                      <Badge tone="neutral" size="xs" className="uppercase tracking-wide">
+                      <Badge tone="neutral" size="xs" className="ds-eyebrow">
                         {w.type === 'projectWiki' ? 'Project Wiki' : 'Code Wiki'}
                       </Badge>
                     </div>

@@ -1,4 +1,4 @@
-import { EASE } from '../ui/motion'
+import { EASE, DURATION } from '../ui/motion'
 import { useState, useEffect, useRef } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { motion } from 'framer-motion'
@@ -97,7 +97,7 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 40 }}
-            transition={{ duration: 0.25, ease: EASE.emphasized }}
+            transition={{ duration: DURATION.standard, ease: EASE.emphasized }}
             className="space-y-4"
         >
             {/* Back button */}

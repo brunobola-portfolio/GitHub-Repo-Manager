@@ -33,7 +33,7 @@ export function AIInlineComment({ comment, idx, onDismiss, onEdit }) {
             </span>
             <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">AI</span>
             {comment.severity && (
-                <span className={`shrink-0 px-1.5 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wide ${severityClass}`}>
+                <span className={`ds-eyebrow shrink-0 px-1.5 py-0.5 rounded-full ${severityClass}`}>
                     {comment.severity}
                 </span>
             )}
@@ -68,13 +68,13 @@ export function AIInlineComment({ comment, idx, onDismiss, onEdit }) {
                     <div className="flex gap-2 mt-2 justify-end">
                         <button
                             onClick={() => setEditing(false)}
-                            className="px-2.5 py-1 text-xs rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            className="px-2.5 py-1 text-xs rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ds-focus-ring"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={() => { onEdit(idx, { body, suggestion }); setEditing(false) }}
-                            className="px-2.5 py-1 text-xs font-semibold rounded-md ds-brand-solid shadow-sm transition-colors"
+                            className="px-2.5 py-1 text-xs font-semibold rounded-md ds-brand-solid shadow-sm transition-colors ds-focus-ring"
                         >
                             Save
                         </button>
@@ -97,13 +97,13 @@ export function AIInlineComment({ comment, idx, onDismiss, onEdit }) {
                 <div className="flex gap-2 mt-3 pt-2 border-t border-slate-100 dark:border-slate-700 justify-end">
                     <button
                         onClick={() => setEditing(true)}
-                        className="px-2.5 py-1 text-xs rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                        className="px-2.5 py-1 text-xs rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors ds-focus-ring"
                     >
                         Edit
                     </button>
                     <button
                         onClick={() => onDismiss(idx)}
-                        className="px-2.5 py-1 text-xs rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                        className="px-2.5 py-1 text-xs rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors ds-focus-ring"
                     >
                         Dismiss
                     </button>

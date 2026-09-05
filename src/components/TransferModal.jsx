@@ -185,7 +185,7 @@ export function TransferModal({
 								action === 'transfer'
 									? 'bg-white dark:bg-slate-800 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] shadow-sm'
 									: 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-							}`}
+							} ds-focus-ring`}
 						>
 							<ArrowRightLeft className="w-4 h-4" />
 							Transfer (Move)
@@ -196,7 +196,7 @@ export function TransferModal({
 								action === 'mirror'
 									? 'bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm'
 									: 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-							}`}
+							} ds-focus-ring`}
 						>
 							<Copy className="w-4 h-4" />
 							Mirror (Fork)
@@ -242,7 +242,7 @@ export function TransferModal({
 										targetOrg === org.login
 											? 'border-brand-500 bg-brand-50 dark:bg-brand-900/30'
 											: 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
-									}`}
+									} ds-focus-ring`}
 								>
 									<img
 										src={org.avatar_url}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { EASE } from './ui/motion'
+import { EASE, DURATION } from './ui/motion'
 import { Sparkles, X, ArrowRight } from 'lucide-react'
 import { Tooltip } from './ui/Tooltip'
 import { API_BASE_URL, MOCK_MODE } from '../config'
@@ -59,7 +59,7 @@ export function BYOKUpgradeBanner({ isAuthenticated, onOpenAISettings }) {
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.3, ease: EASE.emphasized }}
+                    transition={{ duration: DURATION.slow, ease: EASE.emphasized }}
                     className="relative z-[var(--ds-z-floating)]"
                 >
                     <div className="bg-[color:var(--ds-accent-brand)] dark:bg-brand-700">

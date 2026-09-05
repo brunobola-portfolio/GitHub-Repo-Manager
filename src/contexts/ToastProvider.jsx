@@ -57,7 +57,7 @@ function ErrorToastContent({ formatted, ctx }) {
                 <button
                     type="button"
                     onClick={() => dispatchAction(formatted.action, ctx)}
-                    className="mt-1 inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md bg-white/30 dark:bg-white/10 hover:bg-white/40 dark:hover:bg-white/20 transition-colors"
+                    className="mt-1 inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md bg-white/30 dark:bg-white/10 hover:bg-white/40 dark:hover:bg-white/20 transition-colors ds-focus-ring"
                 >
                     {formatted.action.label}
                 </button>
@@ -225,7 +225,7 @@ export function ToastProvider({ children }) {
                             <button
                                 type="button"
                                 onClick={() => window.location.reload()}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md bg-white/30 dark:bg-white/10 hover:bg-white/40 dark:hover:bg-white/20 transition-colors"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md bg-white/30 dark:bg-white/10 hover:bg-white/40 dark:hover:bg-white/20 transition-colors ds-focus-ring"
                             >
                                 Reload
                             </button>

@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion'
-import { EASE } from '../../ui/motion'
+import { EASE, DURATION } from '../../ui/motion'
 import { FilePlus, FileMinus, FileEdit, Check } from 'lucide-react'
 import { FileRiskBadge } from '../AIInsights/FileRiskBadge'
 
@@ -62,7 +62,7 @@ export function FileTreeItem({ file, id, isActive, isFocused, isReviewed, aiRisk
   return (
     <motion.button
       layout={reducedMotion ? false : 'position'}
-      transition={reducedMotion ? { duration: 0 } : { duration: 0.2, ease: EASE.standard }}
+      transition={reducedMotion ? { duration: 0 } : { duration: DURATION.standard, ease: EASE.standard }}
       id={id}
       role="treeitem"
       tabIndex={-1}
@@ -101,7 +101,7 @@ export function FileTreeItem({ file, id, isActive, isFocused, isReviewed, aiRisk
           data-reviewed-marker="true"
           initial={reducedMotion ? false : { scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={reducedMotion ? { duration: 0 } : { duration: 0.2, ease: EASE.standard }}
+          transition={reducedMotion ? { duration: 0 } : { duration: DURATION.standard, ease: EASE.standard }}
           className="shrink-0 inline-flex"
         >
           <Check

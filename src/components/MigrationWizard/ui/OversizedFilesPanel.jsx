@@ -31,13 +31,13 @@ export function OversizedFilesPanel({ files, fallback }) {
       {/* File list */}
       <div className="relative group/files">
         <div className="rounded-lg border border-rose-500/15 bg-rose-950/10 dark:bg-rose-950/30 overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-rose-500/10 ds-text-micro font-semibold uppercase tracking-wider text-rose-600/80 dark:text-rose-400/80">
+          <div className="ds-eyebrow flex items-center justify-between px-3 py-2 border-b border-rose-500/10 text-rose-600/80 dark:text-rose-400/80">
             <span>Offending paths</span>
             <button
               type="button"
               onClick={handleCopy}
               aria-label="Copy file list"
-              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-rose-400 hover:bg-rose-900/30"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-rose-400 hover:bg-rose-900/30 ds-focus-ring"
             >
               <AnimatedCopyIcon copied={copied} size="w-3 h-3" />
               {copied ? 'Copied' : 'Copy'}

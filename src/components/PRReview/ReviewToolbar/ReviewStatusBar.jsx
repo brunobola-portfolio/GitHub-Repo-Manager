@@ -158,7 +158,7 @@ export function ReviewStatusBar({
                         aria-busy={submitting}
                         /* --ds-cta, not emerald-600: white on emerald-600 is
                            3.67:1 in both themes (see --ds-cta-text). */
-                        className="inline-flex items-center justify-center gap-1 px-3 py-1.5 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-semibold bg-[color:var(--ds-cta)] dark:bg-[color:var(--ds-cta-dark)] text-[color:var(--ds-cta-text)] shadow-[var(--ds-shadow-sm)] hover:bg-[color:var(--ds-cta-hover)] dark:hover:bg-[color:var(--ds-cta-hover-dark)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="inline-flex items-center justify-center gap-1 px-3 py-1.5 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-semibold bg-[color:var(--ds-cta)] dark:bg-[color:var(--ds-cta-dark)] text-[color:var(--ds-cta-text)] shadow-[var(--ds-shadow-sm)] hover:bg-[color:var(--ds-cta-hover)] dark:hover:bg-[color:var(--ds-cta-hover-dark)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed ds-focus-ring"
                         aria-label="Approve"
                     >
                         <ShieldCheck className="w-3.5 h-3.5" /> Approve
@@ -168,7 +168,7 @@ export function ReviewStatusBar({
                         onClick={() => submitOnce('COMMENT')}
                         disabled={submitting}
                         aria-busy={submitting}
-                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-medium bg-transparent border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-medium bg-transparent border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed ds-focus-ring"
                         aria-label="Comment"
                     >
                         <MessageCircle className="w-3.5 h-3.5" /> Comment
@@ -178,7 +178,7 @@ export function ReviewStatusBar({
                         onClick={() => submitOnce('REQUEST_CHANGES')}
                         disabled={submitting}
                         aria-busy={submitting}
-                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-medium bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        className="inline-flex items-center justify-center gap-1 px-2.5 py-1 max-md:min-h-11 max-md:flex-1 rounded-md text-xs font-medium bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed ds-focus-ring"
                         aria-label="Request changes"
                     >
                         <ShieldAlert className="w-3.5 h-3.5" /> Request changes

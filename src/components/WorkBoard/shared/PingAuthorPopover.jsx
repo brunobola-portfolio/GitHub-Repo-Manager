@@ -7,6 +7,7 @@ import { Spinner } from '../../ui/Spinner'
 import { Textarea } from '../../ui/form'
 import { POPOVER_SURFACE_CLASS } from '../../ui/_variants'
 import { getCsrfToken } from '../../../utils/api'
+import { DURATION, EASE } from '../../ui/motion'
 
 // Module-level cache shared across every PingAuthorPopover instance
 // (and across the two tabs that mount them). Entries live 30 minutes.
@@ -87,6 +88,7 @@ export function PingAuthorPopover({ cacheKey, requestPayload, onPing, disabled =
                         pingState === 'error'
                             ? 'border-rose-500/50 text-rose-600 dark:text-rose-400'
                             : 'border-brand-500/50 text-brand-600 hover:bg-brand-50 dark:text-brand-300 dark:hover:bg-brand-500/10',
+                        'ds-focus-ring',
                     )}
                 >
                     {pingState === 'loading'
@@ -112,7 +114,7 @@ export function PingAuthorPopover({ cacheKey, requestPayload, onPing, disabled =
                     <button
                         type="button"
                         onClick={() => setPopoverOpen(false)}
-                        className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                        className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 ds-focus-ring rounded"
                     >
                         Cancel
                     </button>
@@ -120,7 +122,7 @@ export function PingAuthorPopover({ cacheKey, requestPayload, onPing, disabled =
                         <button
                             type="button"
                             onClick={() => setEditing(true)}
-                            className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                            className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 ds-focus-ring rounded"
                         >
                             Edit first
                         </button>
@@ -128,7 +130,7 @@ export function PingAuthorPopover({ cacheKey, requestPayload, onPing, disabled =
                     <button
                         type="button"
                         onClick={() => { setPopoverOpen(false); onPing?.(pingBody) }}
-                        className="px-3 py-1 text-xs ds-brand-solid hover:bg-brand-500 rounded-lg"
+                        className="px-3 py-1 text-xs ds-brand-solid hover:bg-brand-500 rounded-lg ds-focus-ring"
                     >
                         Send
                     </button>
@@ -152,7 +154,7 @@ export function AnimatedChipStrip({ children }) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
+            transition={{ duration: DURATION.standard, ease: EASE.emphasized }}
         >
             {children}
         </motion.div>

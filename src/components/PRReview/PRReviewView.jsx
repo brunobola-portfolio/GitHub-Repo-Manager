@@ -353,7 +353,7 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
           <p className="text-rose-600 dark:text-rose-400 text-sm">{error}</p>
           <button
             onClick={() => onBack?.()}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors ds-focus-ring"
           >
             Go back
           </button>

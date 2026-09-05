@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { EASE } from '../../../ui/motion'
+import { EASE, DURATION } from '../../../ui/motion'
 import {
   AlertTriangle, XCircle, Info, ShieldCheck,
 } from 'lucide-react'
@@ -49,7 +49,7 @@ export function RiskCard({ risk, index }) {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.07, duration: 0.4, ease: EASE.emphasized }}
+      transition={{ delay: index * 0.07, duration: DURATION.reveal, ease: EASE.emphasized }}
       className={`relative overflow-hidden rounded-xl border ${config.border} ${config.bg} ${config.glow} transition-all duration-[var(--ds-duration)]`}
     >
       {/* Left accent bar */}
@@ -63,15 +63,15 @@ export function RiskCard({ risk, index }) {
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1.5">
-              <span className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 leading-tight">
+              <span className="ds-text-sm font-semibold text-slate-900 dark:text-slate-100 leading-tight">
                 {risk.title}
               </span>
-              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${config.badge} shadow-sm`}>
+              <span className={`ds-eyebrow px-1.5 py-0.5 rounded ${config.badge} shadow-sm`}>
                 {risk.severity}
               </span>
             </div>
 
-            <p className="text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed">
+            <p className="ds-text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
               {risk.description}
             </p>
 
@@ -86,7 +86,7 @@ export function RiskCard({ risk, index }) {
               >
                 <ShieldCheck className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
                 <div className="min-w-0">
-                  <p className="ds-text-micro font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-0.5">
+                  <p className="ds-eyebrow text-emerald-700 dark:text-emerald-400 mb-0.5">
                     Mitigation
                   </p>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">

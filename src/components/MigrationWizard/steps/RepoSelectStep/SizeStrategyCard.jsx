@@ -19,7 +19,7 @@ export function SizeStrategyCard({ repo, aiSuggestion, selectedStrategy, onSelec
           <Package className="h-4 w-4 text-amber-500" />
           {repo.name}
           {repo.sizeStrategy && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 ds-text-micro font-medium uppercase tracking-wide text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-950/30 dark:text-emerald-300">
+            <span className="ds-eyebrow inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-950/30 dark:text-emerald-300">
               <CheckCircle2 className="h-3 w-3" />
               Fix applied
             </span>
@@ -48,7 +48,7 @@ export function SizeStrategyCard({ repo, aiSuggestion, selectedStrategy, onSelec
                 ${active
                   ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-100'
                   : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-brand-400/60 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-300'
-                }`}
+                } ds-focus-ring`}
             >
               <span className="flex items-center gap-1 font-medium">
                 <Icon className="h-3.5 w-3.5" />
@@ -78,7 +78,7 @@ function AISuggestionBanner({ suggestion, onAccept }) {
       <button
         type="button"
         onClick={onAccept}
-        className="shrink-0 rounded bg-brand-500 px-2 py-1 ds-text-meta font-medium text-white hover:bg-brand-400"
+        className="shrink-0 rounded bg-brand-500 px-2 py-1 ds-text-meta font-medium text-white hover:bg-brand-400 ds-focus-ring"
       >
         Accept
       </button>

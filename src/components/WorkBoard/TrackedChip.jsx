@@ -41,7 +41,7 @@ export function TrackedChip({ repoFullName }) {
                     runAction(hook.track, `Added ${repoFullName}`)
                 }}
                 aria-label={`Track ${repoFullName}`}
-                className="inline-flex items-center gap-1 px-2 py-1.5 ds-text-meta font-medium rounded-full border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-brand-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors"
+                className="inline-flex items-center gap-1 px-2 py-1.5 ds-text-meta font-medium rounded-full border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-brand-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors ds-focus-ring"
             >
                 + Track
             </button>
@@ -63,7 +63,8 @@ export function TrackedChip({ repoFullName }) {
                         'inline-flex items-center gap-1 px-2 py-1.5 ds-text-meta font-medium rounded-full border transition-colors',
                         isMuted
                             ? 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400'
-                            : 'bg-brand-50 dark:bg-brand-900/30 border-brand-200 dark:border-brand-700/50 text-brand-700 dark:text-brand-300'
+                            : 'bg-brand-50 dark:bg-brand-900/30 border-brand-200 dark:border-brand-700/50 text-brand-700 dark:text-brand-300',
+                        'ds-focus-ring'
                     )}
                 >
                     <span className={clsx('w-1.5 h-1.5 rounded-full', isMuted ? 'border border-slate-400' : 'bg-brand-500')} />
@@ -104,7 +105,8 @@ function ChipMenuItem({ icon, label, onClick, destructive = false }) {
                 'flex w-full items-center gap-2 px-2.5 py-1.5 text-sm rounded-lg transition-colors text-left',
                 destructive
                     ? 'text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/20'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800',
+                'ds-focus-ring'
             )}
         >
             {icon}

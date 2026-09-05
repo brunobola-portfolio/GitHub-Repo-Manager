@@ -12,6 +12,7 @@ import RestartServerHint from './RestartServerHint'
 import ProviderBadge from '../../ui/ProviderBadge'
 import ConnectionStatusPanel from '../../ui/ConnectionStatusPanel'
 import { classifyProvider, PROVIDERS } from '../../../../utils/azureProvider'
+import { DURATION } from '../../../ui/motion'
 
 /**
  * Azure DevOps source configuration step.
@@ -125,7 +126,7 @@ export default function SourceStep({ source, onChange, oauthHook, orgsHook }) {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: DURATION.standard }}
             className="overflow-hidden"
           >
             <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-900/15 border border-emerald-200 dark:border-emerald-800">
@@ -304,7 +305,7 @@ export default function SourceStep({ source, onChange, oauthHook, orgsHook }) {
           <button
             type="button"
             onClick={runValidation}
-            className="shrink-0 px-2.5 py-1 text-xs font-medium rounded-md border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-colors"
+            className="shrink-0 px-2.5 py-1 text-xs font-medium rounded-md border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-colors ds-focus-ring"
           >
             Try again
           </button>

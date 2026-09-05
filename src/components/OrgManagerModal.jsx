@@ -279,7 +279,7 @@ function OverviewTab({ org, isPersonal, editing, editForm, setEditForm, onEdit, 
                     href={org.html_url || `https://github.com/${org.login}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors ds-focus-ring"
                 >
                     <ExternalLink className="w-4 h-4" />
                     View on GitHub
@@ -288,7 +288,7 @@ function OverviewTab({ org, isPersonal, editing, editForm, setEditForm, onEdit, 
                     href={githubSettingsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ds-focus-ring"
                 >
                     <Settings className="w-4 h-4" />
                     {isPersonal ? 'Profile Settings' : 'GitHub Settings'}
@@ -335,7 +335,7 @@ function CapabilitiesCard({ isPersonal }) {
                     </p>
                     <div className="mt-3 grid sm:grid-cols-2 gap-3 text-sm">
                         <div>
-                            <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Available</div>
+                            <div className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-1">Available</div>
                             <ul className="space-y-1">
                                 {available.map(item => (
                                     <li key={item} className="flex items-start gap-1.5 text-slate-700 dark:text-slate-200">
@@ -347,7 +347,7 @@ function CapabilitiesCard({ isPersonal }) {
                         </div>
                         {unavailable.length > 0 && (
                             <div>
-                                <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1">Not available</div>
+                                <div className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-1">Not available</div>
                                 <ul className="space-y-1">
                                     {unavailable.map(item => (
                                         <li key={item} className="flex items-start gap-1.5 text-slate-500 dark:text-slate-400">
@@ -509,7 +509,7 @@ function SettingsLink({ href, icon: IconComp, title, desc }) {
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+            className="flex items-center gap-3 p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 transition-colors ds-focus-ring"
         >
             <IconComp className="w-5 h-5 text-slate-400 dark:text-slate-500" />
             <div className="flex-1">

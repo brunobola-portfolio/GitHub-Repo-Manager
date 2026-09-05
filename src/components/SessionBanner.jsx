@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { EASE } from './ui/motion'
+import { EASE, DURATION } from './ui/motion'
 import { ShieldAlert, LogIn, X } from 'lucide-react'
 import { Tooltip } from './ui/Tooltip'
 import { Button } from './ui/Button'
@@ -12,7 +12,7 @@ export function SessionBanner({ visible, onLogin, onDismiss }) {
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.35, ease: EASE.emphasized }}
+          transition={{ duration: DURATION.slow, ease: EASE.emphasized }}
           className="relative z-[var(--ds-z-floating)]"
         >
           <div className="ds-session-banner">

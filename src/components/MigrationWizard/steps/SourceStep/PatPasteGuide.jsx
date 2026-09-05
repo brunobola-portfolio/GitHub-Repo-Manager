@@ -141,7 +141,7 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
             // Explicit name = the visible label, so the Tooltip's aria mirror
             // can't overwrite it with the raw URL (keeps WCAG 2.5.3 label-in-name).
             aria-label={openedAt ? 'Reopen PAT page' : hasContext ? `Open PAT on ${provider.shortName}` : 'Paste URL first'}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg ds-brand-solid dark:hover:bg-brand-400 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed disabled:hover:bg-slate-300 transition-colors shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg ds-brand-solid dark:hover:bg-brand-400 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed disabled:hover:bg-slate-300 transition-colors shadow-sm ds-focus-ring"
           >
             <ExternalLink className="w-3.5 h-3.5" />
             {openedAt ? 'Reopen PAT page' : hasContext ? `Open PAT on ${provider.shortName}` : 'Paste URL first'}
@@ -237,7 +237,7 @@ export default function PatPasteGuide({ source, onChange, showPat, setShowPat })
                   type="button"
                   onClick={handleSaveForLater}
                   disabled={savingPat}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors ds-focus-ring"
                 >
                   {savingPat
                     ? <><SpinnerIcon className="w-3 h-3" /> Saving</>
@@ -341,7 +341,7 @@ function CliAlternative({ cmd }) {
         <button
           type="button"
           onClick={copy}
-          className="px-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+          className="px-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition-colors ds-focus-ring"
           aria-label="Copy command"
         >
           <AnimatedCopyIcon copied={copied} size="w-3.5 h-3.5" checkClassName="text-emerald-500" />

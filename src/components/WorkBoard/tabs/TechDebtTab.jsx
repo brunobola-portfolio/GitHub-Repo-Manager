@@ -43,7 +43,7 @@ export function TechDebtTab() {
                 <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/40">
                     <div className="flex items-center gap-2 mb-2">
                         <Flame className="w-4 h-4 text-amber-700 dark:text-amber-400" />
-                        <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wider">
+                        <span className="ds-eyebrow text-amber-700 dark:text-amber-300">
                             Hotspots
                         </span>
                     </div>

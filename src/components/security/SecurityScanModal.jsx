@@ -66,7 +66,7 @@ function levelForCheck(check) {
 function CheckStatusPill({ check }) {
     const level = levelForCheck(check)
     return (
-        <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wide ${riskTintClass(level)} ${riskTextClass(level)} ${riskRingClass(level)}`}>
+        <span className={`ds-eyebrow inline-flex items-center px-1.5 py-0.5 rounded-full ${riskTintClass(level)} ${riskTextClass(level)} ${riskRingClass(level)}`}>
             {STATUS_LABEL[check.status] || check.status}
         </span>
     )
@@ -108,7 +108,7 @@ function ScoreHeader({ score }) {
                 <div className="text-3xl font-bold text-slate-900 dark:text-slate-100 ds-font-display">
                     {pct === null ? '—' : `${pct}%`}
                 </div>
-                <div className="ds-text-micro uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <div className="ds-eyebrow text-slate-500 dark:text-slate-400">
                     {passing}/{total} checks passing
                 </div>
             </div>

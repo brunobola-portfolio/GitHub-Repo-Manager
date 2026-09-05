@@ -57,7 +57,7 @@ export function ChatTab({ owner, repo, prNumber, headSha }) {
                     type="button"
                     onClick={onClear}
                     disabled={messages.length === 0 && !sending}
-                    className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 disabled:opacity-40"
+                    className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 disabled:opacity-40 ds-focus-ring"
                     aria-label="Clear conversation"
                 >
                     <Trash2 size={12} /> Clear

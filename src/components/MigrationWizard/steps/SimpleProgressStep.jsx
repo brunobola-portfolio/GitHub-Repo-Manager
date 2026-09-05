@@ -9,6 +9,7 @@ import { Badge } from '../../ui/Badge'
 import { useToast } from '../../../hooks/useToast'
 import { apiCall } from '../../../utils/api'
 import { API_BASE } from '../../../config'
+import { DURATION, EASE } from '../../ui/motion'
 
 // Consecutive failed polls (silent `!res.ok` / network errors) before the
 // "Connection lost — retrying" pill appears. A single blip shouldn't alarm
@@ -65,7 +66,7 @@ function ProgressBar({ pct = 0, label = 'Import progress' }) {
         className="h-full bg-brand-500 rounded-full"
         initial={{ width: 0 }}
         animate={{ width: `${clamped}%` }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
+        transition={{ duration: DURATION.reveal, ease: EASE.emphasized }}
       />
     </div>
   )

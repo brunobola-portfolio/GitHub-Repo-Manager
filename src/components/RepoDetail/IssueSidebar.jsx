@@ -76,7 +76,7 @@ function LabelEditor({ owner, repo, issue, api, onMutate }) {
     return (
         <div className="space-y-2">
             <div className="flex items-center justify-between">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <h4 className="ds-eyebrow text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                     <Tag className="w-3 h-3" /> Labels
                 </h4>
                 <button
@@ -116,7 +116,7 @@ function LabelEditor({ owner, repo, issue, api, onMutate }) {
                             type="button"
                             onClick={() => toggle(l.name)}
                             disabled={saving}
-                            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-slate-50 dark:hover:bg-slate-800/40 text-left transition-colors disabled:opacity-60"
+                            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-slate-50 dark:hover:bg-slate-800/40 text-left transition-colors disabled:opacity-60 ds-focus-ring"
                         >
                             <span
                                 className="w-3 h-3 rounded-full flex-shrink-0"
@@ -178,7 +178,7 @@ function AssigneePicker({ owner: _owner, repo: _repo, issue, api, onMutate }) {
     return (
         <div className="space-y-2">
             <div className="flex items-center justify-between">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <h4 className="ds-eyebrow text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                     <Users className="w-3 h-3" /> Assignees
                 </h4>
                 <button
@@ -217,7 +217,7 @@ function AssigneePicker({ owner: _owner, repo: _repo, issue, api, onMutate }) {
                             type="button"
                             onClick={() => toggle(u.login)}
                             disabled={saving}
-                            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-slate-50 dark:hover:bg-slate-800/40 text-left transition-colors disabled:opacity-60"
+                            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs hover:bg-slate-50 dark:hover:bg-slate-800/40 text-left transition-colors disabled:opacity-60 ds-focus-ring"
                         >
                             {u.avatar_url && (
                                 <img src={u.avatar_url} alt="" className="w-5 h-5 rounded-full flex-shrink-0" />
@@ -240,7 +240,7 @@ function MilestoneInfo({ issue }) {
     const ms = issue.milestone
     return (
         <div className="space-y-2">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+            <h4 className="ds-eyebrow text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                 <Milestone className="w-3 h-3" /> Milestone
             </h4>
             {ms ? (

@@ -1,7 +1,8 @@
 import { useState, lazy, Suspense } from 'react'
-import { Moon, Sun, Monitor, Zap, Trash2, GitBranch, Key, Shield, BadgeCheck, Sparkles, Kanban, Wand2, Palette, Cloud, ShieldCheck, Wrench, Info } from 'lucide-react'
+import { Moon, Sun, Monitor, Zap, Trash2, GitBranch, Key, Shield, BadgeCheck, Sparkles, Kanban, Wand2, Palette, Cloud, ShieldCheck, Wrench, Info, Mail } from 'lucide-react'
 import { useTheme } from '../hooks/useTheme'
 import { useToast } from '../hooks/useToast'
+import { useDigestSettings } from '../hooks/useDigestSettings'
 import { API_BASE } from '../config'
 // Settings tabs lazy-loaded — opening Settings most often means "General" or
 // "API Keys"; the rest (AI Config, Audit Log, License, Work Board) are each
@@ -19,6 +20,7 @@ import { Modal, ModalFooter } from './ui/Modal'
 import { InsightCard } from './ui/InsightCard'
 import { Button } from './ui/Button'
 import { Input, Switch } from './ui/form'
+import { Select } from './ui/Select'
 import { SectionSpinner } from './ui/Spinner'
 const ProbeStatsSection = lazy(() => import('./Settings/ProbeStatsSection').then(m => ({ default: m.ProbeStatsSection })))
 const EnvironmentToolingSection = lazy(() => import('./Settings/EnvironmentToolingSection').then(m => ({ default: m.EnvironmentToolingSection })))
@@ -67,6 +69,7 @@ const ADMIN_TABS = [
 export function SettingsModal({ isOpen, onClose, initialTab, isAdmin = false }) {
     const { theme, setTheme } = useTheme()
     const { toast } = useToast()
+    const digestSettings = useDigestSettings()
     const [activeTab, setActiveTab] = useState('general')
 
     // Load cache settings from localStorage
@@ -170,6 +173,8 @@ export function SettingsModal({ isOpen, onClose, initialTab, isAdmin = false }) 
                     clearing={clearing}
                     cacheMessage={cacheMessage}
                     onClearCache={handleClearCache}
+                    digestSettings={digestSettings}
+                    toast={toast}
                 />
             )}
             {activeTab !== 'general' && (
@@ -186,7 +191,7 @@ export function SettingsModal({ isOpen, onClose, initialTab, isAdmin = false }) 
                                     onClose()
                                     window.location.hash = '#/ai/prompts'
                                 }}
-                                className="block rounded-md border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-600 p-3 mb-3 transition-colors"
+                                className="block rounded-md border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-600 p-3 mb-3 transition-colors ds-focus-ring"
                             >
                                 <div className="flex items-start gap-2">
                                     <div className="flex-1">
@@ -221,6 +226,7 @@ function GeneralTabContent({
     cacheSettings, setCacheSettings,
     migrationSettings, setMigrationSettings,
     clearing, cacheMessage, onClearCache,
+    digestSettings, toast,
 }) {
     // Premium two-column layout: Appearance spans full width because the three
     // theme tiles benefit from the breathing room; the dense config cards
@@ -330,6 +336,33 @@ function GeneralTabContent({
                         </div>
                     </div>
                 </InsightCard>
+
+                {/* Email digest (G7) — opt-in, off by default */}
+                <InsightCard tone="default" hover={false} className="flex flex-col">
+                    <SectionHeader icon={Mail} iconClassName="text-brand-500" label="Email digest" />
+                    <div className="mt-3 space-y-2.5">
+                        <div className="flex items-center justify-between gap-3 p-2.5 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+                            <span className="text-sm text-slate-600 dark:text-slate-400 min-w-0">Send me a summary email</span>
+                            <div className="w-32 flex-shrink-0">
+                                <Select
+                                    value={digestSettings.frequency}
+                                    onChange={(v) => digestSettings.setFrequency(v).catch(() => toast.error('Failed to update digest settings'))}
+                                    disabled={digestSettings.loading || digestSettings.saving}
+                                    options={[
+                                        { value: 'off', label: 'Off' },
+                                        { value: 'daily', label: 'Daily' },
+                                        { value: 'weekly', label: 'Weekly' },
+                                    ]}
+                                    label="Email digest frequency"
+                                    size="sm"
+                                />
+                            </div>
+                        </div>
+                        <p className="ds-text-meta text-slate-500 dark:text-slate-400 px-0.5">
+                            A summary of pending reviews, assigned issues, failed migrations and stale pinned repos — the same digest the bell shows, mailed on the cadence you pick. One-click unsubscribe link on every email.
+                        </p>
+                    </div>
+                </InsightCard>
             </div>
 
             {/* Danger Zone — GDPR Art. 17 + 20 self-service */}
@@ -359,7 +392,7 @@ function VisibilityToggleButton({ active, onClick, children }) {
                 active
                     ? 'bg-white dark:bg-slate-800 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] shadow-sm'
                     : 'text-slate-600 dark:text-slate-300'
-            }`}
+            } ds-focus-ring`}
         >
             {children}
         </button>
@@ -377,7 +410,7 @@ const ThemeOption = ({ value, icon: IconComp, label, currentTheme, setTheme }) =
             className={`flex flex-col items-center gap-1.5 py-2.5 rounded-lg border transition-all ${active
                 ? 'bg-brand-50 dark:bg-brand-900/20 border-brand-500 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ring-2 ring-brand-500/20'
                 : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-brand-300 dark:hover:border-brand-700 hover:text-slate-700 dark:hover:text-slate-300'
-                }`}
+                } ds-focus-ring`}
         >
             <IconComp size={18} />
             <span className="text-xs font-medium">{label}</span>

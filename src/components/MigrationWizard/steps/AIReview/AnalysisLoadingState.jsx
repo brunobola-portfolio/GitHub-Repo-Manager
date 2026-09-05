@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { EASE } from '../../../ui/motion'
+import { EASE, DURATION } from '../../../ui/motion'
 import {
   Brain, Shield, Search, Route, Timer,
 } from 'lucide-react'
@@ -28,7 +28,7 @@ function AnalysisAspect({ aspect, index }) {
     <motion.div
       initial={{ opacity: 0, x: -16 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.1, duration: 0.45, ease: EASE.emphasized }}
+      transition={{ delay: index * 0.1, duration: DURATION.reveal, ease: EASE.emphasized }}
       className="flex items-center gap-3"
     >
       <div className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center bg-brand-500/10 dark:bg-brand-500/[0.12] border border-brand-500/20">
@@ -37,7 +37,7 @@ function AnalysisAspect({ aspect, index }) {
       <motion.p
         className="text-sm text-slate-600 dark:text-slate-300"
         animate={{ opacity: [0.55, 1, 0.55] }}
-        transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut', delay: index * 0.2 }}
+        transition={{ duration: 1.8, repeat: Infinity, ease: EASE.standard, delay: index * 0.2 }}
       >
         {aspect.label}
       </motion.p>
@@ -63,7 +63,7 @@ export function AnalysisLoadingState() {
           <motion.div
             className="w-11 h-11 rounded-xl bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] flex items-center justify-center shadow-md"
             animate={{ rotate: [0, 5, -5, 0] }}
-            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+            transition={{ duration: 4, repeat: Infinity, ease: EASE.standard }}
           >
             <Brain className="w-6 h-6 text-white" />
           </motion.div>

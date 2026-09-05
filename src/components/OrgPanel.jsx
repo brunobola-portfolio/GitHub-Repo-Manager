@@ -9,7 +9,7 @@ import { formatNumber, formatCompact } from '../utils/format'
 import { getOrgRepoCount } from '../utils/orgRepoCount'
 import { motion, AnimatePresence } from 'framer-motion'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
-import { TAP, EASE } from './ui/motion'
+import { TAP, EASE, DURATION } from './ui/motion'
 import { useModal } from '../hooks/useModal'
 import { Input } from './ui/form'
 
@@ -43,7 +43,7 @@ export function OrgPanel({
 					<div className="flex items-center gap-1">
 						<button
 							onClick={() => setViewMode(viewMode === 'list' ? 'grid' : 'list')}
-							className="p-2 text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-xl transition-colors duration-200"
+							className="p-2 text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-xl transition-colors duration-200 ds-focus-ring"
 							title={viewMode === 'list' ? "Switch to Grid View" : "Switch to List View"}
 							aria-label={viewMode === 'list' ? "Switch to Grid View" : "Switch to List View"}
 						>
@@ -51,7 +51,7 @@ export function OrgPanel({
 						</button>
 						<button
 							onClick={onCreateOrg}
-							className="p-2 text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-xl transition-colors duration-200"
+							className="p-2 text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-xl transition-colors duration-200 ds-focus-ring"
 							title="Add Organization"
 							aria-label="Add Organization"
 						>
@@ -139,7 +139,7 @@ export function OrgPanel({
 							<button
 								type="button"
 								aria-label="Open user settings menu"
-								className="p-2.5 text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-xl transition-colors duration-200"
+								className="p-2.5 text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-xl transition-colors duration-200 ds-focus-ring"
 							>
 								<Settings size={18} aria-hidden="true" />
 							</button>
@@ -195,7 +195,7 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 			initial={{ opacity: 0, scale: 0.95 }}
 			animate={{ opacity: 1, scale: 1 }}
 			whileHover={{
-				transition: { duration: 0.2, ease: EASE.emphasized }
+				transition: { duration: DURATION.standard, ease: EASE.emphasized }
 			}}
 			whileTap={TAP}
 			onClick={onClick}
@@ -203,7 +203,7 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 			className={`group relative w-full flex items-center gap-3 rounded-xl transition-all duration-[var(--ds-duration-slow)] border ${
 				isSelected
 					? 'bg-brand-50 dark:bg-brand-900/30 border-brand-200 dark:border-brand-800 shadow-lg'
-					: 'bg-white/80 dark:bg-slate-800/60 border-slate-200/50 dark:border-slate-700/40 hover:border-brand-200 dark:hover:border-brand-800/60 hover:shadow-xl'
+					: 'bg-white/80 dark:bg-slate-800/60 border-slate-200/50 dark:border-slate-700/40 hover:border-brand-200 dark:hover:border-brand-800/60 hover:shadow-[var(--ds-shadow-lg)]'
 			} ${isGrid ? 'flex-col text-center p-5 min-h-[180px] justify-start' : 'p-3.5'}`}
 		>
 			{/* Animated gradient overlay on hover (selected state) */}
@@ -212,7 +212,7 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 					className="absolute inset-0 rounded-xl bg-brand-500/5 dark:bg-brand-500/10"
 					initial={{ opacity: 0 }}
 					animate={{ opacity: 1 }}
-					transition={{ duration: 0.3 }}
+					transition={{ duration: DURATION.slow }}
 				/>
 			)}
 
@@ -230,7 +230,7 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 
 				{/* Personal Account Badge */}
 				{isPersonal && (
-					<div className="absolute -bottom-1 -right-1 ds-brand-solid text-[8px] font-bold px-1.5 py-0.5 rounded-md shadow-md">
+					<div className="absolute -bottom-1 -right-1 ds-brand-solid ds-text-micro font-bold px-1.5 py-0.5 rounded-md shadow-md">
 						YOU
 					</div>
 				)}
@@ -307,7 +307,7 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 					className="absolute right-3 top-1/2 -translate-y-1/2"
 					initial={{ scale: 0 }}
 					animate={{ scale: 1 }}
-					transition={{ duration: 0.2, ease: EASE.standard }}
+					transition={{ duration: DURATION.standard, ease: EASE.standard }}
 				>
 					<div className="relative">
 						<div className="w-2 h-2 rounded-full bg-brand-500" />

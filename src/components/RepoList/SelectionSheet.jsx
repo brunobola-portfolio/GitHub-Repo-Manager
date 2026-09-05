@@ -62,7 +62,7 @@ export function SelectionSheet({ isOpen, repos, onAction, onClose }) {
 									isDestructive
 										? 'text-rose-600 dark:text-rose-400 hover:bg-rose-500/10'
 										: 'text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
-								}`}
+								} ds-focus-ring`}
 							>
 								<Icon className="w-5 h-5 mt-0.5 flex-shrink-0" />
 								<div className="flex-1 min-w-0">

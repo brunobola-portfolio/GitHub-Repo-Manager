@@ -130,7 +130,7 @@ export default function TargetConfigStep({ source, onChange, orgs, importJobs: _
             className={`flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-3 text-sm font-medium rounded-xl border transition-colors
               ${source.makePrivate
                 ? 'border-brand-400 dark:border-brand-500 bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300'
-                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'} ds-focus-ring`}
           >
             <Lock className="w-4 h-4" />
             Private
@@ -141,7 +141,7 @@ export default function TargetConfigStep({ source, onChange, orgs, importJobs: _
             className={`flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-3 text-sm font-medium rounded-xl border transition-colors
               ${!source.makePrivate
                 ? 'border-brand-400 dark:border-brand-500 bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300'
-                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'} ds-focus-ring`}
           >
             <Globe className="w-4 h-4" />
             Public
@@ -168,7 +168,7 @@ export default function TargetConfigStep({ source, onChange, orgs, importJobs: _
         className={`w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium rounded-xl transition-all
           ${source.targetName?.trim()
             ? 'ds-brand-solid dark:hover:bg-[color:var(--ds-accent-brand)] shadow-md'
-            : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'}`}
+            : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed'} ds-focus-ring`}
       >
         Import Repository
       </button>

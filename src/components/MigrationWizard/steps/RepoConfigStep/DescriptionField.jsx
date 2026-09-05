@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Spinner } from '../../../ui/Spinner'
 import { Textarea } from '../../../ui/form'
 import { REPO_DESCRIPTION_MAX } from '../../../../utils/migrationDescription'
+import { DURATION } from '../../../ui/motion'
 
 /**
  * Per-repo description field for the migration wizard's RepoConfigStep.
@@ -41,7 +42,7 @@ export function DescriptionField({ repo, index, aiAvailable, isGenerating, mode,
         <div className="flex items-center gap-2 min-w-0">
           <label
             htmlFor={`repo-desc-${index}`}
-            className="ds-text-micro font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+            className="ds-eyebrow text-slate-500 dark:text-slate-400"
           >
             Description
           </label>
@@ -52,8 +53,8 @@ export function DescriptionField({ repo, index, aiAvailable, isGenerating, mode,
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.15 }}
-                className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 ds-text-micro font-semibold uppercase tracking-wide ${
+                transition={{ duration: DURATION.fast }}
+                className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 ds-eyebrow ${
                   mode === 'ai'
                     ? 'bg-brand-500/12 text-brand-600 dark:text-brand-300'
                     : 'bg-slate-200/70 text-slate-500 dark:bg-slate-700/60 dark:text-slate-400'

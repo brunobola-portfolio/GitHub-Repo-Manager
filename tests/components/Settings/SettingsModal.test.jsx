@@ -35,11 +35,23 @@ vi.mock('framer-motion', () => {
 // network work we don't care about here — we're testing the General tab's
 // "Clear Cache" button only. Stubbing fetch to always reject keeps the
 // unrelated tabs quiet.
+//
+// The General tab's digest-frequency control (G7) fetches its setting on
+// EVERY mount, before any test gets to click anything — so it must never
+// consume a queued mockResolvedValueOnce/mockRejectedValueOnce meant for the
+// Clear Cache call. It's intercepted here with a stable canned response;
+// `fetchMock` (what tests below queue against) only ever sees the calls
+// they're actually testing.
 let fetchMock
 
 beforeEach(() => {
     fetchMock = vi.fn()
-    vi.stubGlobal('fetch', fetchMock)
+    vi.stubGlobal('fetch', vi.fn((url, opts) => {
+        if (String(url).includes('/notifications/digest/settings')) {
+            return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ frequency: 'off' }) })
+        }
+        return fetchMock(url, opts)
+    }))
 })
 
 afterEach(() => {
@@ -89,6 +101,33 @@ describe('SettingsModal — cache clear toast', () => {
             expect(
                 screen.getAllByText(/failed to clear cache/i).length
             ).toBeGreaterThanOrEqual(1)
+        })
+    })
+})
+
+describe('SettingsModal — General tab digest-frequency control (G7)', () => {
+    it('loads the current frequency and PATCHes on change', async () => {
+        vi.stubGlobal('fetch', vi.fn((url, opts) => {
+            if (String(url).includes('/notifications/digest/settings') && (!opts || opts.method === undefined)) {
+                return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ frequency: 'off' }) })
+            }
+            if (String(url).includes('/notifications/digest/settings') && opts?.method === 'PATCH') {
+                return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ frequency: 'daily' }) })
+            }
+            return fetchMock(url, opts)
+        }))
+
+        renderModal()
+
+        const select = await screen.findByLabelText('Email digest frequency')
+        expect(select).toHaveTextContent(/off/i)
+
+        fireEvent.click(select)
+        const dailyOption = await screen.findByRole('option', { name: 'Daily' })
+        fireEvent.click(dailyOption)
+
+        await waitFor(() => {
+            expect(screen.getByLabelText('Email digest frequency')).toHaveTextContent(/daily/i)
         })
     })
 })

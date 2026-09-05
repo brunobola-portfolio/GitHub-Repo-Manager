@@ -133,7 +133,7 @@ export function OrgSidebar({ user, orgs, selectedOrg, stats, leftMode, onSelectO
         mode={leftMode}
         expandedWidth={280}
         slimContent={slimOrgContent}
-        className="rounded-3xl border border-slate-200/60 dark:border-slate-700/50 shadow-xl bg-white/70 dark:bg-slate-950/70 backdrop-blur-md"
+        className="rounded-3xl border border-slate-200/60 dark:border-slate-700/50 ds-elevation-lg bg-white/70 dark:bg-slate-950/70 backdrop-blur-md"
       >
         {renderOrgPanel(onSelectOrg)}
       </CollapsiblePanel>
@@ -153,7 +153,7 @@ export function OrgSidebar({ user, orgs, selectedOrg, stats, leftMode, onSelectO
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={SPRING.drawer}
-              className="fixed left-[60px] z-[var(--ds-z-floating)] w-[280px] rounded-3xl border border-slate-200/60 dark:border-slate-700/50 shadow-2xl bg-white dark:bg-slate-950 backdrop-blur-md overflow-y-auto"
+              className="fixed left-[60px] z-[var(--ds-z-floating)] w-[280px] rounded-3xl border border-slate-200/60 dark:border-slate-700/50 ds-elevation-overlay bg-white dark:bg-slate-950 backdrop-blur-md overflow-y-auto"
               style={{
                 top: 'calc(var(--header-height) + var(--layout-py))',
                 maxHeight: 'calc(100vh - var(--header-height) - 2 * var(--layout-py))',

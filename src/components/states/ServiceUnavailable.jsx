@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { EASE } from '../ui/motion'
+import { EASE, DURATION } from '../ui/motion'
 import { Plug, AlertTriangle, BookOpen, Mail, X } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
 
@@ -57,7 +57,7 @@ function CardService({ service, reason, docsHref, contactEmail, contactSubject, 
         <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: EASE.emphasized }}
+            transition={{ duration: DURATION.reveal, ease: EASE.emphasized }}
             role="status"
             aria-label={`${service} unavailable`}
             className={twMerge(
@@ -74,7 +74,7 @@ function CardService({ service, reason, docsHref, contactEmail, contactSubject, 
                 <motion.div
                     initial={{ scale: 0.7, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.08, duration: 0.4, ease: EASE.emphasized }}
+                    transition={{ delay: 0.08, duration: DURATION.reveal, ease: EASE.emphasized }}
                     className="mb-5 inline-flex items-center justify-center w-14 h-14 rounded-2xl
                                bg-amber-500
                                shadow-md ring-1 ring-amber-500/20"
@@ -83,7 +83,7 @@ function CardService({ service, reason, docsHref, contactEmail, contactSubject, 
                 </motion.div>
 
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 mb-3
-                                 ds-text-micro font-semibold uppercase tracking-[0.14em]
+                                 ds-eyebrow
                                  rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300
                                  border border-amber-500/20">
                     <AlertTriangle className="w-3 h-3" /> Not configured
@@ -139,7 +139,7 @@ function BannerService({ service, reason, docsHref, contactEmail, contactSubject
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.25 }}
+            transition={{ duration: DURATION.standard }}
             role="status"
             className={twMerge(
                 'relative overflow-hidden',

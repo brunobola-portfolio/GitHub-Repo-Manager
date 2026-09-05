@@ -314,14 +314,14 @@ export const DiffPanel = memo(function DiffPanel({
             <button
               onClick={handleCancelComment}
               disabled={submitting}
-              className="px-3 py-1.5 max-md:min-h-11 text-sm rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="px-3 py-1.5 max-md:min-h-11 text-sm rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ds-focus-ring"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmitComment}
               disabled={submitting || !commentBody.trim()}
-              className="px-3 py-1.5 max-md:min-h-11 text-sm font-semibold rounded-md ds-brand-solid shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1.5 max-md:min-h-11 text-sm font-semibold rounded-md ds-brand-solid shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors ds-focus-ring"
             >
               {submitting ? 'Adding…' : 'Add comment'}
             </button>

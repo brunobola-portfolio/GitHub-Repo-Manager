@@ -20,6 +20,7 @@ import { formatRelativeTime } from '../../utils/format'
 import { PRFilesTab } from './PRFilesTab'
 import { invalidatePRData } from '../../hooks/usePRData'
 import { prActions } from '../../actions/prActions'
+import { DURATION, EASE } from '../ui/motion'
 
 const REVIEW_STATES = {
     APPROVED: { label: 'Approved', color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20', icon: ShieldCheck },
@@ -175,7 +176,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 40 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
+            transition={{ duration: DURATION.standard, ease: EASE.emphasized }}
             className="space-y-4"
         >
             {/* Back button */}
@@ -272,7 +273,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                 href={current.html_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-2 text-slate-400 hover:text-brand-500 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                                className="p-2 text-slate-400 hover:text-brand-500 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 ds-focus-ring"
                                 title="View on GitHub"
                             >
                                 <ExternalLink className="w-4 h-4" />
@@ -336,7 +337,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                                     mergeMethod === method.id
                                                         ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 shadow-sm'
                                                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                                                }`}
+                                                } ds-focus-ring`}
                                             >
                                                 {method.label}
                                             </button>
@@ -564,7 +565,7 @@ function ReviewComposer({ api, prNumber, onSubmitted }) {
 
     return (
         <Card className="p-4 mt-4 space-y-3 border-2 border-dashed border-slate-200 dark:border-slate-700">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <h4 className="ds-eyebrow text-slate-500 dark:text-slate-400">
                 Submit review
             </h4>
             <Textarea

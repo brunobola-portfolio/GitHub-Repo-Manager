@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useMotionValue, useSpring, useReducedMotion } from 'framer-motion';
-import { EASE, SPRING } from './ui/motion'
+import { EASE, SPRING, DURATION } from './ui/motion'
 import {
     FileText, Users, Activity, CheckCircle,
     XCircle, AlertCircle, TrendingUp, RefreshCw, Heart, Sparkles, Bot
@@ -91,7 +91,7 @@ function HealthScoreRing({ score }) {
                     className={config.ringDarkClass}
                     initial={{ pathLength: reducedMotion ? normalizedScore : 0 }}
                     animate={{ pathLength: normalizedScore }}
-                    transition={reducedMotion ? { duration: 0 } : { duration: 1.2, ease: 'easeOut' }}
+                    transition={reducedMotion ? { duration: 0 } : { duration: DURATION.ambient, ease: EASE.emphasized }}
                 />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center rotate-0">
@@ -255,7 +255,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                 initial={{ opacity: 0, y: 12 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -12 }}
-                                transition={{ duration: 0.3 }}
+                                transition={{ duration: DURATION.slow }}
                                 className="space-y-6"
                             >
                                 {/* Health Score — always visible */}
@@ -263,7 +263,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                     <div className="flex flex-col sm:flex-row items-center gap-6">
                                         <HealthScoreRing score={health.score} />
                                         <div className="text-center sm:text-left space-y-1">
-                                            <div className="text-sm uppercase tracking-wide text-slate-500 dark:text-slate-400">Overall Health Score</div>
+                                            <div className="ds-eyebrow text-slate-500 dark:text-slate-400">Overall Health Score</div>
                                             <div className="text-4xl font-bold text-slate-900 dark:text-slate-100">{health.score}<span className="text-lg text-slate-400">%</span></div>
                                             <ScoreBadge score={health.score} />
                                         </div>
@@ -291,7 +291,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                                 initial={{ opacity: 0 }}
                                                 animate={{ opacity: 1 }}
                                                 exit={{ opacity: 0 }}
-                                                transition={{ duration: 0.15 }}
+                                                transition={{ duration: DURATION.fast }}
                                             >
                                                 {activeTab === 'files' && (
                                                     <div className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60">
@@ -344,7 +344,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                         <motion.div
                                             initial={{ opacity: 0, y: 12 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: 0.2, duration: 0.4 }}
+                                            transition={{ delay: 0.2, duration: DURATION.reveal }}
                                             className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60"
                                         >
                                             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
@@ -369,7 +369,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                         <motion.div
                                             initial={{ opacity: 0, y: 12 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: 0.6, duration: 0.4 }}
+                                            transition={{ delay: 0.6, duration: DURATION.reveal }}
                                             className="rounded-3xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60"
                                         >
                                             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
@@ -402,7 +402,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                transition={{ duration: 0.2 }}
+                                transition={{ duration: DURATION.standard }}
                             >
                                 <SkeletonState />
                             </motion.div>
@@ -441,7 +441,7 @@ function AgentRulesCard({ exists, onGenerate }) {
             className={`flex items-center justify-between p-3 rounded-xl min-h-[44px] bg-white/60 dark:bg-slate-900/60 border ${exists ? 'border-slate-200/40 dark:border-slate-800/40' : 'border-rose-300/40 dark:border-rose-500/20'} transition-all`}>
             <div className="flex items-center gap-3 min-w-0">
                 {exists ? (
-                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 0.2, ease: EASE.standard }}>
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: DURATION.standard, ease: EASE.standard }}>
                         <CheckCircle className="w-5 h-5 text-emerald-500" />
                     </motion.div>
                 ) : (<XCircle className="w-5 h-5 text-rose-400 dark:text-rose-500" />)}
@@ -452,7 +452,7 @@ function AgentRulesCard({ exists, onGenerate }) {
                     <button
                         type="button"
                         onClick={onGenerate}
-                        className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg bg-brand-500/10 hover:bg-brand-500/20 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] transition-colors"
+                        className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg bg-brand-500/10 hover:bg-brand-500/20 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] transition-colors ds-focus-ring"
                         aria-label={exists ? 'Refresh agent rules with AI' : 'Generate agent rules with AI'}
                     >
                         <Bot className="w-3.5 h-3.5" aria-hidden="true" />
@@ -471,7 +471,7 @@ function FileCheckItem({ file, exists, size, onFix }) {
             className={`flex items-center justify-between p-3 rounded-xl min-h-[44px] bg-white/60 dark:bg-slate-900/60 border ${exists ? 'border-slate-200/40 dark:border-slate-800/40' : 'border-rose-300/40 dark:border-rose-500/20'} transition-all`}>
             <div className="flex items-center gap-3 min-w-0">
                 {exists ? (
-                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 0.2, ease: EASE.standard }}>
+                    <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: DURATION.standard, ease: EASE.standard }}>
                         <CheckCircle className="w-5 h-5 text-emerald-500" />
                     </motion.div>
                 ) : (<XCircle className="w-5 h-5 text-rose-400 dark:text-rose-500" />)}
@@ -484,7 +484,7 @@ function FileCheckItem({ file, exists, size, onFix }) {
                         <button
                             type="button"
                             onClick={() => onFix(file)}
-                            className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg bg-brand-500/10 hover:bg-brand-500/20 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] transition-colors"
+                            className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg bg-brand-500/10 hover:bg-brand-500/20 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] transition-colors ds-focus-ring"
                             aria-label={`Fix ${file} with AI`}
                         >
                             <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
@@ -529,7 +529,7 @@ function MetricCard({ title, value, icon: Icon, color, index = 0 }) {
         <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 + index * 0.08, duration: 0.4 }}
+            transition={{ delay: 0.4 + index * 0.08, duration: DURATION.reveal }}
             className="rounded-2xl p-6 border border-slate-200/40 dark:border-slate-800/40 bg-white/60 dark:bg-slate-900/60"
         >
             <div className={`p-3 rounded-xl bg-gradient-to-br ${gradientColors[color]} w-fit mb-4`}>
@@ -607,8 +607,8 @@ function SkeletonState() {
                     <motion.p
                         key={messageIndex}
                         initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0, transition: { duration: 0.35 } }}
-                        exit={{ opacity: 0, y: -8, transition: { duration: 0.25 } }}
+                        animate={{ opacity: 1, y: 0, transition: { duration: DURATION.slow } }}
+                        exit={{ opacity: 0, y: -8, transition: { duration: DURATION.standard } }}
                         className="text-sm font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]"
                     >
                         {SKELETON_MESSAGES[messageIndex]}

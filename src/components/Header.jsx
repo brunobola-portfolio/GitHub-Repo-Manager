@@ -98,7 +98,7 @@ export function Header({
                     {user && (
                       <button
                         onClick={onToggleOrgDrawer}
-                        className="md:hidden p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+                        className="md:hidden p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors ds-focus-ring"
                         aria-label="Open organizations"
                       >
                         <Menu className="w-5 h-5 text-slate-600 dark:text-slate-300" />
@@ -116,7 +116,7 @@ export function Header({
                                 <h1>s on the same page broke Playwright's strict-mode locator
                                 in dashboard-hero.spec; <h2> keeps the heading role for
                                 consumers like findByRole('heading', { name: /repo manager/i }). */}
-                            <h2 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 leading-none ds-font-display truncate">
+                            <h2 className="ds-text-sm font-semibold text-slate-900 dark:text-slate-100 leading-none ds-font-display truncate">
                                 Repo Manager
                                 <LicenseBadge />
                             </h2>
@@ -131,7 +131,7 @@ export function Header({
                         type="button"
                         onClick={onOpenCommandPalette}
                         aria-label="Open command palette"
-                        className="hidden nav:inline-flex items-center gap-1.5 px-2 h-[28px] rounded-lg ds-text-meta font-medium text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/50 bg-white/40 dark:bg-slate-800/40 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-colors"
+                        className="hidden nav:inline-flex items-center gap-1.5 px-2 h-[28px] rounded-lg ds-text-meta font-medium text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/50 bg-white/40 dark:bg-slate-800/40 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-colors ds-focus-ring"
                     >
                         <Kbd modifier="mod">K</Kbd>
                     </button>
@@ -301,7 +301,7 @@ export function Header({
                                     onClick={onLogin}
                                     className="flex items-center gap-1.5 h-[34px] px-3 sm:px-3.5 rounded-[9px]
                                         bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-[color:var(--ds-accent-brand)]
-                                        text-white text-[13px] font-semibold
+                                        text-white ds-text-sm font-semibold
                                         shadow-sm
                                         hover:shadow-md
                                         transition-colors duration-200
@@ -488,7 +488,7 @@ function NavButton({ active, onClick, icon, label, badge }) {
                 onClick={onClick}
                 aria-current={active ? 'page' : undefined}
                 aria-label={label}
-                className={`relative flex items-center gap-1.5 px-2.5 lg:px-3.5 h-[34px] rounded-[9px] text-[13px] font-semibold transition-all duration-200 ds-focus-ring ds-font-display ${active
+                className={`relative flex items-center gap-1.5 px-2.5 lg:px-3.5 h-[34px] rounded-[9px] ds-text-sm font-semibold transition-all duration-200 ds-focus-ring ds-font-display ${active
                     ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 shadow-sm'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-600/40'
                     }`}
@@ -561,7 +561,7 @@ function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, o
 
             {/* Organizations */}
             <div className="p-2 border-b border-slate-100 dark:border-slate-700">
-                <div className="px-2 py-1 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <div className="ds-eyebrow px-2 py-1 text-slate-500 dark:text-slate-400">
                     Organizations ({orgs.length})
                 </div>
                 <div className="max-h-64 overflow-y-auto ds-scrollbar">
@@ -605,7 +605,7 @@ function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, o
                 </MenuButton>
                 {isAdmin && onOpenAdminDLQ && (
                     <div className="border-t border-slate-100 dark:border-slate-700 mt-2 pt-2">
-                        <div className="px-3 pb-1 ds-text-micro font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        <div className="ds-eyebrow px-3 pb-1 text-slate-500 dark:text-slate-400">
                             Admin
                         </div>
                         <MenuButton icon={ShieldAlert} onClick={() => { onOpenAdminDLQ?.(); onClose() }}>
@@ -670,7 +670,7 @@ function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen,
         >
             <div className="px-4 pt-3.5 pb-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <div className="min-w-0">
-                    <p className="ds-text-micro font-semibold uppercase tracking-[0.22em] text-[color:var(--ds-accent-brand)] dark:text-brand-300">
+                    <p className="ds-eyebrow text-[color:var(--ds-accent-brand)] dark:text-brand-300">
                         {sinceLabel ? `Since ${sinceLabel}` : 'Activity digest'}
                     </p>
                     <h3 className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100 ds-font-display">
@@ -732,7 +732,7 @@ function DigestCategory({ kind, count, items, onItemClick }) {
         <li>
             <div className="px-4 pt-3 pb-1.5 flex items-center gap-2">
                 <Icon className={`w-3.5 h-3.5 ${meta.accent}`} aria-hidden="true" />
-                <span className="ds-text-meta font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                <span className="ds-eyebrow text-slate-500 dark:text-slate-400">
                     {meta.label}
                 </span>
                 <span className={`ml-auto inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full ds-text-micro font-bold text-white ${meta.dot}`}>
@@ -864,7 +864,7 @@ function SystemHealthIndicator() {
                                             aria-hidden="true"
                                         />
                                         <div className="flex-1 min-w-0">
-                                            <span className="font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
+                                            <span className="ds-eyebrow text-slate-700 dark:text-slate-300">
                                                 {name}
                                             </span>
                                             <span className="text-slate-500 dark:text-slate-400">: {result}</span>

@@ -1,12 +1,12 @@
 import { motion } from 'framer-motion'
-import { EASE } from '../ui/motion'
+import { EASE, DURATION } from '../ui/motion'
 import { ArrowRight, ExternalLink } from 'lucide-react'
 import { Github } from '../icons/GithubIcon'
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 28 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.7, delay, ease: EASE.emphasized },
+  transition: { duration: DURATION.ambient, delay, ease: EASE.emphasized },
 })
 
 export function HeroSection({ onSignIn }) {
@@ -19,19 +19,19 @@ export function HeroSection({ onSignIn }) {
           className="absolute rounded-full blur-3xl bg-brand-500 opacity-15 dark:opacity-25"
           style={{ width: 480, height: 480, left: '-5%', top: '-10%' }}
           animate={{ y: [0, -30, 0], x: [0, 20, 0] }}
-          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 9, repeat: Infinity, ease: EASE.standard }}
         />
         <motion.div
           className="absolute rounded-full blur-3xl bg-brand-600 opacity-15 dark:opacity-25"
           style={{ width: 380, height: 380, right: '0%', top: '0%' }}
           animate={{ y: [0, 30, 0], x: [0, -20, 0] }}
-          transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 11, repeat: Infinity, ease: EASE.standard }}
         />
         <motion.div
           className="absolute rounded-full blur-3xl bg-brand-500 opacity-10 dark:opacity-20"
           style={{ width: 280, height: 280, left: '40%', bottom: '0%' }}
           animate={{ y: [0, -20, 0] }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 8, repeat: Infinity, ease: EASE.standard }}
         />
 
         {/* Subtle dot grid */}

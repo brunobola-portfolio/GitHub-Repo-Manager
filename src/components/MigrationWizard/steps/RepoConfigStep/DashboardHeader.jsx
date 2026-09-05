@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { Server, Building2, Lock, Globe } from 'lucide-react'
 import { Select } from '../../../ui/Select'
 import { formatSize } from './formatSize'
+import { DURATION } from '../../../ui/motion'
 
 /**
  * RepoConfigStep dashboard header — destination picker (GitHub org Select or
@@ -40,7 +41,7 @@ export function DashboardHeader({
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: DURATION.slow }}
       className="bg-brand-500/10 border border-brand-500/20 rounded-2xl p-5"
     >
       {/* Row 1: Destination + Bulk Actions */}
@@ -53,11 +54,11 @@ export function DashboardHeader({
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <span className="ds-text-micro font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+              <span className="ds-eyebrow text-slate-500 dark:text-slate-400">
                 {isAzureDevops ? 'Target project' : 'Importing to'}
               </span>
               {isAzureDevops && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-brand-50 border border-brand-200 text-[9px] font-bold uppercase tracking-wider text-brand-700 dark:bg-brand-500/15 dark:border-brand-500/30 dark:text-brand-300">
+                <span className="ds-eyebrow inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-brand-50 border border-brand-200 text-brand-700 dark:bg-brand-500/15 dark:border-brand-500/30 dark:text-brand-300">
                   in-place
                 </span>
               )}
@@ -119,7 +120,7 @@ export function DashboardHeader({
               onClick={onAllPrivate}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
                 bg-brand-500/15 text-brand-400 dark:text-brand-300 border border-brand-500/20
-                hover:bg-brand-500/25 transition-colors"
+                hover:bg-brand-500/25 transition-colors ds-focus-ring"
             >
               <Lock className="w-3.5 h-3.5" />
               All Private
@@ -129,7 +130,7 @@ export function DashboardHeader({
               onClick={onAllPublic}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg
                 bg-brand-500/15 text-brand-400 dark:text-brand-300 border border-brand-500/20
-                hover:bg-brand-500/25 transition-colors"
+                hover:bg-brand-500/25 transition-colors ds-focus-ring"
             >
               <Globe className="w-3.5 h-3.5" />
               All Public
@@ -142,34 +143,34 @@ export function DashboardHeader({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
           <div className="text-xl font-bold text-brand-400">{stats.count}</div>
-          <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">Repositories</div>
+          <div className="ds-eyebrow text-slate-500 mt-0.5">Repositories</div>
         </div>
         <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
           <div className="text-xl font-bold text-brand-400">{formatSize(stats.totalSize)}</div>
-          <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">Total Size</div>
+          <div className="ds-eyebrow text-slate-500 mt-0.5">Total Size</div>
         </div>
         {isAzureDevops ? (
           <>
             <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
               <div className="text-xl font-bold text-amber-400">{stats.tfvcCount}</div>
-              <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">TFVC paths</div>
+              <div className="ds-eyebrow text-slate-500 mt-0.5">TFVC paths</div>
             </div>
             <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
               <div className="text-xl font-bold text-slate-500 dark:text-slate-400">
                 {stats.existingInProject === null ? '—' : stats.existingInProject}
               </div>
-              <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">Existing in project</div>
+              <div className="ds-eyebrow text-slate-500 mt-0.5">Existing in project</div>
             </div>
           </>
         ) : (
           <>
             <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
               <div className="text-xl font-bold text-emerald-400">{stats.privateCount}</div>
-              <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">Private</div>
+              <div className="ds-eyebrow text-slate-500 mt-0.5">Private</div>
             </div>
             <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
               <div className="text-xl font-bold text-amber-400">{stats.publicCount}</div>
-              <div className="ds-text-micro font-medium uppercase tracking-wider text-slate-500 mt-0.5">Public</div>
+              <div className="ds-eyebrow text-slate-500 mt-0.5">Public</div>
             </div>
           </>
         )}

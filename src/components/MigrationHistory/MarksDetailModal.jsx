@@ -16,7 +16,7 @@ function statusClass(s) {
 function ScopeSection({ scope, marks }) {
   return (
     <div className="mb-4 last:mb-0">
-      <div className="ds-text-micro uppercase tracking-[0.2em] font-semibold text-slate-500 dark:text-slate-400 mb-1">{scope}</div>
+      <div className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-1">{scope}</div>
       {marks.length === 0
         ? <div className="text-sm text-slate-500 dark:text-slate-400 italic">— nothing written</div>
         : marks.map(m => (

@@ -103,7 +103,7 @@ function QuickActions({
                                 type="button"
                                 onClick={onImport}
                                 disabled={isPerforming}
-                                className="flex items-center gap-3 p-3 rounded-xl ds-brand-solid shadow-sm hover:opacity-90 transition-colors duration-150 group cursor-pointer"
+                                className="flex items-center gap-3 p-3 rounded-xl ds-brand-solid shadow-sm hover:opacity-90 transition-colors duration-150 group cursor-pointer ds-focus-ring"
                             >
                                 {/* Inherit from ds-brand-solid rather than
                                     restating a colour: the surface is the lime

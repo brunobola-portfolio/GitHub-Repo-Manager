@@ -5,6 +5,7 @@ import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { ONBOARDING_STEPS } from './onboardingSteps'
 import { Button } from '../ui/Button'
 import { ProviderKeyForm } from '../Settings/AIConfig/ProviderKeyForm'
+import { DURATION } from '../ui/motion'
 
 // Form fields (text/password inputs, selects) where Left/Right arrow keys
 // move the text cursor or a native picker, not the tour's steps. Without
@@ -85,7 +86,7 @@ export function OnboardingTour({ isOpen, onClose, onNeverShow }) {
                 ref={dialogRef}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25 }}
+                transition={{ duration: DURATION.standard }}
                 onClick={(e) => e.stopPropagation()}
                 className={`w-full p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-[var(--ds-shadow-overlay)] ${step.hasForm ? 'max-w-xl' : 'max-w-lg'}`}
             >
@@ -109,7 +110,7 @@ export function OnboardingTour({ isOpen, onClose, onNeverShow }) {
                         initial={{ opacity: 0, x: 12 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -12 }}
-                        transition={{ duration: 0.2 }}
+                        transition={{ duration: DURATION.standard }}
                         aria-live="polite"
                         className="text-center"
                     >

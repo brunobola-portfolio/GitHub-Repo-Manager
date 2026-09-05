@@ -99,7 +99,7 @@ export function ActionsTab({ repo }) {
       actions={
         <button
           onClick={handleSync}
-          className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 ds-hover-scale"
+          className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 ds-hover-scale ds-focus-ring"
           aria-label="Refresh"
         >
           <RefreshCw className="w-4 h-4" />
@@ -117,7 +117,7 @@ export function ActionsTab({ repo }) {
                 selected?.id === wf.id
                   ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/30'
                   : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900'
-              }`}
+              } ds-focus-ring`}
             >
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium truncate">{wf.name}</span>

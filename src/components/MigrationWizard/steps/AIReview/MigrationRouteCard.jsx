@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { EASE } from '../../../ui/motion'
+import { EASE, DURATION } from '../../../ui/motion'
 import { ArrowRight } from 'lucide-react'
 import { AzureIcon, GitHubIcon } from './PlatformIcons'
 
@@ -38,7 +38,7 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.5, ease: EASE.emphasized }}
+      transition={{ delay, duration: DURATION.gentle, ease: EASE.emphasized }}
       className="relative overflow-hidden rounded-xl border border-slate-200/80 dark:border-white/10 bg-gradient-to-br from-white via-white to-slate-50 dark:from-white/[0.04] dark:via-white/[0.02] dark:to-white/[0.01]"
     >
       {/* Top gradient accent */}
@@ -60,7 +60,7 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
                 }`} />
               </div>
               <div className="min-w-0">
-                <p className="ds-text-meta font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <p className="ds-eyebrow text-slate-500 dark:text-slate-400">
                   Source
                 </p>
                 <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
@@ -80,7 +80,7 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
             <motion.div
               className="w-9 h-9 rounded-full bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] flex items-center justify-center shadow-md"
               animate={{ x: [0, 2, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              transition={{ duration: 2, repeat: Infinity, ease: EASE.standard }}
             >
               <ArrowRight className="w-4 h-4 text-white" />
             </motion.div>
@@ -94,11 +94,11 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
             <div className="flex items-center gap-2.5 justify-end">
               <div className="min-w-0 text-right">
                 <div className="flex items-center justify-end gap-1.5">
-                  <p className="ds-text-meta font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  <p className="ds-eyebrow text-slate-500 dark:text-slate-400">
                     Destination
                   </p>
                   {isAzureDevopsTarget && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-brand-500/15 border border-brand-500/30 text-[9px] font-bold uppercase tracking-wider text-brand-600 dark:text-brand-300">
+                    <span className="ds-eyebrow inline-flex items-center px-1.5 py-0.5 rounded-md bg-brand-500/15 border border-brand-500/30 text-brand-600 dark:text-brand-300">
                       in-place
                     </span>
                   )}

@@ -27,7 +27,7 @@ export function MigratedPill({ fullName }) {
       icon={<span aria-hidden>✦</span>}
       title={`Migrated${date ? ` on ${date}` : ''}`}
       aria-label="repo migrated"
-      className="uppercase tracking-wider"
+      className="ds-eyebrow"
     >
       migrated
     </Badge>

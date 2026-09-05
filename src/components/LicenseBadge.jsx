@@ -77,7 +77,7 @@ export default function LicenseBadge() {
   return (
     <span
       data-testid="license-badge"
-      className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-semibold ml-1.5 flex-shrink-0 uppercase tracking-wider ${spec.classes} ${warningClass}`}
+      className={`ds-eyebrow inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full ml-1.5 flex-shrink-0 ${spec.classes} ${warningClass}`}
       title={`${spec.tooltip}${expiryTooltip}`}
       aria-label={`${spec.ariaLabel}${expiryTooltip}`}
       role="status"

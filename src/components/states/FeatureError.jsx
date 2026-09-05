@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { AlertTriangle, RefreshCw, Clock, Info, WifiOff } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
+import { DURATION } from '../ui/motion'
 
 const TONES = {
     error: {
@@ -112,7 +113,7 @@ export function FeatureError({
         <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: DURATION.slow }}
             role="alert"
             className={twMerge(
                 'relative overflow-hidden rounded-2xl border',

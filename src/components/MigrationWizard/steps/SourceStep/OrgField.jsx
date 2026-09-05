@@ -7,6 +7,7 @@ import { Spinner } from '../../../ui/Spinner'
 import { Select } from '../../../ui/Select'
 import { Field, Input } from '../../../ui/form'
 import { buildPatSettingsUrl } from '../../../../utils/azureProvider'
+import { DURATION } from '../../../ui/motion'
 
 /**
  * Org selector with two modes:
@@ -111,7 +112,7 @@ export default function OrgField({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            transition={{ duration: DURATION.fast }}
           >
             <Select
               value={source.org}
@@ -146,7 +147,7 @@ export default function OrgField({
                 <button
                   type="button"
                   onClick={() => setManualOrgMode(true)}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-t border-slate-200 dark:border-slate-700"
+                  className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-t border-slate-200 dark:border-slate-700 ds-focus-ring rounded"
                   aria-label="Enter organization manually"
                 >
                   <Keyboard className="w-4 h-4" />
@@ -162,7 +163,7 @@ export default function OrgField({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            transition={{ duration: DURATION.fast }}
           >
             <Input
               id="azure-org"
@@ -182,7 +183,7 @@ export default function OrgField({
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
+                      transition={{ duration: DURATION.standard }}
                       className="flex items-center gap-1.5"
                       aria-live="polite"
                     >
@@ -192,7 +193,7 @@ export default function OrgField({
                         <motion.span
                           initial={{ scale: 1 }}
                           animate={{ scale: [1, 1.3, 1] }}
-                          transition={{ duration: 0.3 }}
+                          transition={{ duration: DURATION.slow }}
                           className={`w-2 h-2 rounded-full ${orgStatusBadge.dot}`}
                         />
                       )}
@@ -225,7 +226,7 @@ export default function OrgField({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.25, delay: 0.5 }}
+            transition={{ duration: DURATION.standard, delay: 0.5 }}
             className="overflow-hidden"
             role="status"
           >
@@ -261,7 +262,7 @@ export default function OrgField({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: DURATION.standard }}
             className="overflow-hidden"
           >
             <div className="mt-2 px-3 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">

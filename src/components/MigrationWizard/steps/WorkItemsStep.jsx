@@ -173,7 +173,7 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
                       isChecked
                         ? 'border-brand-500/60 bg-brand-950/20'
                         : 'border-slate-200 dark:border-slate-700 hover:border-brand-400/50'
-                    }`}
+                    } ds-focus-ring`}
                   >
                     <div
                       className={`w-4 h-4 rounded flex items-center justify-center shrink-0 border-2 transition-colors ${
@@ -238,10 +238,10 @@ export default function WorkItemsStep({ workItems, onUpdate, source }) {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-slate-50 dark:bg-slate-800/50">
-                    <th className="text-left px-3 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    <th className="ds-eyebrow text-left px-3 py-2 text-slate-500 dark:text-slate-400">
                       ADO Type
                     </th>
-                    <th className="text-left px-3 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    <th className="ds-eyebrow text-left px-3 py-2 text-slate-500 dark:text-slate-400">
                       GitHub Label
                     </th>
                   </tr>

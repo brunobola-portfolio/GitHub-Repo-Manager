@@ -119,7 +119,7 @@ export const TooltipButton = memo(function TooltipButton({ icon: IconComp, label
 	return (
 		<button
 			onClick={onClick}
-			className={`p-2 rounded-full hover:bg-white/10 dark:hover:bg-slate-900/10 transition-colors ${className}`}
+			className={`p-2 rounded-full hover:bg-white/10 dark:hover:bg-slate-900/10 transition-colors ${className} ds-focus-ring`}
 			title={label}
 		>
 			<IconComp className="w-4 h-4" />

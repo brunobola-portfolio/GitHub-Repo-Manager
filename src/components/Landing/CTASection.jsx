@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { EASE } from '../ui/motion'
+import { EASE, DURATION } from '../ui/motion'
 import { ArrowRight, Terminal } from 'lucide-react'
 import { Github } from '../icons/GithubIcon'
 import { BACKDROP_WASH_COLOR } from '../ui/_variants'
@@ -26,13 +26,13 @@ export function CTASection({ onSignIn }) {
           className="absolute rounded-full blur-3xl bg-[color:var(--ds-accent-brand)] opacity-10 dark:opacity-20"
           style={{ width: 340, height: 340, left: '-8%', top: '10%' }}
           animate={{ y: [0, -24, 0], scale: [1, 1.1, 1] }}
-          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 9, repeat: Infinity, ease: EASE.standard }}
         />
         <motion.div
           className="absolute rounded-full blur-3xl bg-brand-600 opacity-10 dark:opacity-20"
           style={{ width: 300, height: 300, right: '-6%', bottom: '10%' }}
           animate={{ y: [0, 20, 0], scale: [1, 1.08, 1] }}
-          transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 11, repeat: Infinity, ease: EASE.standard }}
         />
       </div>
 
@@ -43,7 +43,7 @@ export function CTASection({ onSignIn }) {
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.7, ease: EASE.emphasized }}
+          transition={{ duration: DURATION.ambient, ease: EASE.emphasized }}
           className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-slate-900 dark:text-slate-100 ds-font-display mb-5"
         >
           Ready to level up your{' '}
@@ -55,7 +55,7 @@ export function CTASection({ onSignIn }) {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.6, delay: 0.1, ease: EASE.emphasized }}
+          transition={{ duration: DURATION.ambient, delay: 0.1, ease: EASE.emphasized }}
           className="text-lg text-slate-500 dark:text-slate-400 ds-font-display mb-10"
         >
           Join developers who use AI to manage, migrate, and master their GitHub repos.
@@ -66,7 +66,7 @@ export function CTASection({ onSignIn }) {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.6, delay: 0.2, ease: EASE.emphasized }}
+          transition={{ duration: DURATION.ambient, delay: 0.2, ease: EASE.emphasized }}
           className="flex flex-col sm:flex-row items-center justify-center gap-3"
         >
           <button
@@ -90,7 +90,7 @@ export function CTASection({ onSignIn }) {
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-60px' }}
-          transition={{ duration: 0.6, delay: 0.35, ease: EASE.emphasized }}
+          transition={{ duration: DURATION.ambient, delay: 0.35, ease: EASE.emphasized }}
           className="mt-10"
         >
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-3 ds-font-display">

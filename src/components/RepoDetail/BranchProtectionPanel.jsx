@@ -156,7 +156,7 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
         if (upgradeRequired) {
             return (
                 <a href="https://github.com/pricing" target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-medium bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/50 hover:underline">
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-medium bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/50 hover:underline ds-focus-ring">
                     ⚠ Pro to protect
                 </a>
             )

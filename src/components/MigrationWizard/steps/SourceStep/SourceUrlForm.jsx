@@ -3,6 +3,7 @@ import { Link2, FolderGit2, X, Building2, ChevronRight, Check } from 'lucide-rea
 import { parseAzureUrl } from '../../../../utils/azureUrlParser'
 import { Field, Input } from '../../../ui/form'
 import ProviderBadge from '../../ui/ProviderBadge'
+import { DURATION } from '../../../ui/motion'
 
 /**
  * Smart Azure DevOps URL paste field with rich preview.
@@ -49,7 +50,7 @@ export default function SourceUrlForm({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.18 }}
+            transition={{ duration: DURATION.standard }}
             className="overflow-hidden"
           >
             <div className="mt-2.5 rounded-2xl border border-brand-200 dark:border-brand-800 bg-brand-50/60 dark:bg-brand-900/15 overflow-hidden">
@@ -62,7 +63,7 @@ export default function SourceUrlForm({
                 <button
                   type="button"
                   onClick={onDismiss}
-                  className="ml-auto p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors"
+                  className="ml-auto p-1 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors ds-focus-ring"
                   aria-label="Dismiss preview"
                   title="Dismiss"
                 >
@@ -90,7 +91,7 @@ export default function SourceUrlForm({
                 <button
                   type="button"
                   onClick={onApply}
-                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg ds-brand-solid dark:hover:bg-brand-400 shadow-sm transition-colors"
+                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg ds-brand-solid dark:hover:bg-brand-400 shadow-sm transition-colors ds-focus-ring"
                 >
                   <Check className="w-3.5 h-3.5" />
                   Apply

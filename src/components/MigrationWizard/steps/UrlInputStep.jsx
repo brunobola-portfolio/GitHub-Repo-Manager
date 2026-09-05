@@ -91,7 +91,7 @@ export default function UrlInputStep({ source, onChange }) {
           <button
             type="button"
             onClick={() => onChange({ sourceType: 'azure' })}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-100 dark:bg-blue-800/40 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800/60 transition-colors shrink-0"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-100 dark:bg-blue-800/40 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800/60 transition-colors shrink-0 ds-focus-ring"
           >
             Switch <ArrowRight className="w-3 h-3" />
           </button>
@@ -113,7 +113,7 @@ export default function UrlInputStep({ source, onChange }) {
                 ${source.authType === a.value
                   ? 'border-brand-400 dark:border-brand-500 bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300'
                   : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                }`}
+                } ds-focus-ring`}
             >
               {a.label}
             </button>

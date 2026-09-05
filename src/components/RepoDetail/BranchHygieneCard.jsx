@@ -32,7 +32,7 @@ export function BranchHygieneCard({ branches, defaultBranch = 'main', className 
             <div className="rounded-2xl bg-white dark:bg-slate-900 p-4 space-y-4">
                 <div className="flex items-center gap-2">
                     <Sparkles className="w-3.5 h-3.5 text-brand-500" aria-hidden="true" />
-                    <h3 id="branch-hygiene-title" className="ds-text-micro font-semibold uppercase tracking-[0.18em] text-[color:var(--ds-accent-brand)] dark:text-brand-300">
+                    <h3 id="branch-hygiene-title" className="ds-eyebrow text-[color:var(--ds-accent-brand)] dark:text-brand-300">
                         Branch hygiene
                     </h3>
                 </div>
@@ -46,7 +46,7 @@ export function BranchHygieneCard({ branches, defaultBranch = 'main', className 
 
                 {insights.prefixes.length > 0 && (
                     <div>
-                        <div className="ds-text-micro font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-1.5">
+                        <div className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-1.5">
                             Largest prefix clusters
                         </div>
                         <div className="flex flex-wrap gap-1.5">
@@ -66,7 +66,7 @@ export function BranchHygieneCard({ branches, defaultBranch = 'main', className 
 
                 {insights.suspicious.length > 0 && (
                     <div>
-                        <div className="ds-text-micro font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400 mb-1.5">
+                        <div className="ds-eyebrow text-amber-700 dark:text-amber-400 mb-1.5">
                             Likely throwaway branches
                         </div>
                         <ul className="space-y-1 text-xs text-slate-700 dark:text-slate-200">
@@ -106,7 +106,7 @@ function Stat({ icon: Icon, label, value, hint, tone = 'slate' }) {
                 <Icon className="w-3.5 h-3.5 opacity-70" aria-hidden="true" />
                 <span className="text-base font-bold leading-none tabular-nums">{value}</span>
             </div>
-            <div className="mt-1 flex items-center justify-between ds-text-micro uppercase tracking-wide opacity-80">
+            <div className="ds-eyebrow mt-1 flex items-center justify-between opacity-80">
                 <span>{label}</span>
                 {hint && <span className="font-semibold tabular-nums">{hint}</span>}
             </div>

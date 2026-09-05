@@ -37,7 +37,7 @@ export function SearchAndSort({ query, onQuery, sortBy, onSort, viewMode, onView
           onClick={() => onViewMode('list')}
           aria-pressed={viewMode === 'list'}
           aria-label="List view"
-          className={`px-2 py-2 ${viewMode === 'list' ? 'bg-brand-500/20 text-brand-400' : 'bg-white dark:bg-slate-800 text-slate-500'}`}
+          className={`px-2 py-2 ${viewMode === 'list' ? 'bg-brand-500/20 text-brand-400' : 'bg-white dark:bg-slate-800 text-slate-500'} ds-focus-ring rounded`}
         >
           <LayoutList className="w-3.5 h-3.5" />
         </button>
@@ -46,7 +46,7 @@ export function SearchAndSort({ query, onQuery, sortBy, onSort, viewMode, onView
           onClick={() => onViewMode('compact')}
           aria-pressed={viewMode === 'compact'}
           aria-label="Compact view"
-          className={`px-2 py-2 ${viewMode === 'compact' ? 'bg-brand-500/20 text-brand-400' : 'bg-white dark:bg-slate-800 text-slate-500'}`}
+          className={`px-2 py-2 ${viewMode === 'compact' ? 'bg-brand-500/20 text-brand-400' : 'bg-white dark:bg-slate-800 text-slate-500'} ds-focus-ring rounded`}
         >
           <Rows className="w-3.5 h-3.5" />
         </button>

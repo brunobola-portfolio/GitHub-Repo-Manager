@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { EASE } from '../ui/motion'
+import { EASE, DURATION } from '../ui/motion'
 import { Spinner } from '../ui/Spinner'
 import { Badge } from '../ui/Badge'
 import {
@@ -100,7 +100,7 @@ function StepDisc({ status, index, icon: Icon }) {
           className="absolute inset-0 rounded-full bg-brand-500"
           initial={{ opacity: 0.35, scale: 1 }}
           animate={{ opacity: 0, scale: 1.6 }}
-          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: EASE.emphasized }}
         />
       </div>
     )
@@ -224,11 +224,11 @@ export function SidebarStepper({
       {/* Progress header — premium pill + slim bar */}
       <div className="px-4 pt-4 pb-3">
         <div className="flex items-center justify-between mb-2.5">
-          <span className="ds-text-micro font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+          <span className="ds-eyebrow text-slate-500 dark:text-slate-400">
             Progress
           </span>
           <div className="inline-flex items-baseline gap-0.5 px-2 py-0.5 rounded-md bg-brand-50 dark:bg-brand-500/10 text-[color:var(--ds-accent-brand)] dark:text-brand-300 font-bold tabular-nums">
-            <span className="text-[13px] leading-none">{effectiveCurrent}</span>
+            <span className="ds-text-sm leading-none">{effectiveCurrent}</span>
             <span className="ds-text-micro leading-none opacity-60">/</span>
             <span className="ds-text-meta leading-none opacity-70">{effectiveTotal}</span>
           </div>
@@ -238,7 +238,7 @@ export function SidebarStepper({
             className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-brand-500"
             initial={false}
             animate={{ width: `${fillPct}%` }}
-            transition={{ duration: 0.55, ease: EASE.emphasized }}
+            transition={{ duration: DURATION.ambient, ease: EASE.emphasized }}
           />
         </div>
       </div>
@@ -261,7 +261,7 @@ export function SidebarStepper({
                 ? `${((fillUpToIndex + 1) / steps.length) * 100}%`
                 : '0%',
             }}
-            transition={{ duration: 0.55, ease: EASE.emphasized }}
+            transition={{ duration: DURATION.ambient, ease: EASE.emphasized }}
           />
 
           {steps.map((step, index) => {
@@ -286,7 +286,7 @@ export function SidebarStepper({
                     w-full flex items-center gap-3 px-2 py-2 rounded-xl text-left transition-all duration-200 group relative
                     ${tone.row}
                     ${!isClickable ? 'cursor-default' : ''}
-                  `}
+                   ds-focus-ring`}
                 >
                   {/* Disc */}
                   <div className="relative z-10 shrink-0">
@@ -296,16 +296,16 @@ export function SidebarStepper({
                   {/* Label + hint */}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <span className={`text-[13px] font-semibold truncate leading-tight ${tone.label}`}>
+                      <span className={`ds-text-sm font-semibold truncate leading-tight ${tone.label}`}>
                         {label}
                       </span>
                       {tone.pill && (
-                        <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md leading-none ${tone.pill.cls}`}>
+                        <span className={`ds-eyebrow px-1.5 py-0.5 rounded-md leading-none ${tone.pill.cls}`}>
                           {tone.pill.label}
                         </span>
                       )}
                     </div>
-                    <div className={`text-[10.5px] truncate leading-snug mt-0.5 ${tone.hint}`}>
+                    <div className={`ds-text-micro truncate leading-snug mt-0.5 ${tone.hint}`}>
                       {status === 'current' && currentStepStatusDetail ? currentStepStatusDetail : hint}
                     </div>
                   </div>
@@ -390,7 +390,7 @@ export function MobileProgressBar({ steps, currentStepIndex }) {
           className="h-full bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] rounded-full"
           initial={false}
           animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.35, ease: 'easeOut' }}
+          transition={{ duration: DURATION.slow, ease: EASE.emphasized }}
         />
       </div>
       <p className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400 text-center">

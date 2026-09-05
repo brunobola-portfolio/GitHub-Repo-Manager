@@ -37,14 +37,14 @@ export default function RestartServerHint({ host }) {
             <strong>Fix:</strong> restart the backend to apply the change:
           </p>
           <div className="flex items-stretch gap-1">
-            <code className="flex-1 text-[12px] font-mono px-2.5 py-2 rounded-lg bg-slate-900 text-emerald-300 overflow-x-auto inline-flex items-center gap-1.5">
+            <code className="flex-1 text-xs font-mono px-2.5 py-2 rounded-lg bg-slate-900 text-emerald-300 overflow-x-auto inline-flex items-center gap-1.5">
               <Terminal className="w-3.5 h-3.5 opacity-60" />
               {cmd}
             </code>
             <button
               type="button"
               onClick={copy}
-              className="px-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-colors"
+              className="px-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-colors ds-focus-ring"
               aria-label="Copy command"
             >
               <AnimatedCopyIcon copied={copied} size="w-3.5 h-3.5" checkClassName="text-emerald-500" />

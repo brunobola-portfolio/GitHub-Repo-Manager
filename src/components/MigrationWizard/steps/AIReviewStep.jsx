@@ -235,17 +235,17 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
                   </div>
                   <div className="flex items-center gap-1">
                     {highRisks.length > 0 && (
-                      <Badge tone="danger" size="xs" className="uppercase tracking-wider font-bold">
+                      <Badge tone="danger" size="xs" className="ds-eyebrow">
                         {highRisks.length} high
                       </Badge>
                     )}
                     {mediumRisks.length > 0 && (
-                      <Badge tone="warning" size="xs" className="uppercase tracking-wider font-bold">
+                      <Badge tone="warning" size="xs" className="ds-eyebrow">
                         {mediumRisks.length} med
                       </Badge>
                     )}
                     {lowRisks.length > 0 && (
-                      <Badge tone="info" size="xs" className="uppercase tracking-wider font-bold">
+                      <Badge tone="info" size="xs" className="ds-eyebrow">
                         {lowRisks.length} low
                       </Badge>
                     )}
@@ -319,7 +319,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
               >
                 <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-amber-200/40 dark:border-amber-500/10">
                   <CircleAlert className="w-3.5 h-3.5 text-amber-500" />
-                  <span className="ds-text-meta font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                  <span className="ds-eyebrow text-amber-700 dark:text-amber-400">
                     Warnings ({aiPlan.warnings.length})
                   </span>
                 </div>

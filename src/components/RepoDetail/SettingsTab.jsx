@@ -288,7 +288,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
                             repo: { ...repoData, owner: repoData.owner || { login: owner } },
                             onApplied: (updated) => onUpdate?.((prev) => ({ ...prev, ...updated })),
                         })}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 transition-colors ds-focus-ring"
                     >
                         <Sparkles className="w-3.5 h-3.5" /> Suggest with AI
                     </button>
@@ -566,7 +566,7 @@ export function SettingsTab({ owner, repo, api, repoData, onUpdate, onDirtyChang
                                 type="button"
                                 onClick={() => handleRemoveTopic(topic)}
                                 disabled={topicsSaving || repoData.archived}
-                                className="rounded-full p-0.5 text-brand-400 hover:text-brand-700 dark:hover:text-brand-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="rounded-full p-0.5 text-brand-400 hover:text-brand-700 dark:hover:text-brand-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ds-focus-ring"
                                 title={`Remove "${topic}"`}
                                 aria-label={`Remove topic ${topic}`}
                             >

@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { Check, ChevronRight } from 'lucide-react'
 import { RepoMetaBadges } from '../../ui/repo/RepoMetaBadges'
 import { RiskBadge } from '../../ui/repo/RiskBadge'
+import { DURATION } from '../../../ui/motion'
 
 const ACCENT = {
   blocker: 'from-rose-500 to-rose-600',
@@ -29,7 +30,7 @@ export function RepoRow({ repo, isSelected, isActive, density = 'full', onToggle
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.15 }}
+      transition={{ duration: DURATION.fast }}
       className={`relative w-full rounded-xl border transition-all text-sm ${
         repo.isDisabled ? 'opacity-60' : ''
       } ${
@@ -75,7 +76,7 @@ export function RepoRow({ repo, isSelected, isActive, density = 'full', onToggle
                 </span>
               )}
               {repo.isDisabled && (
-                <span className="ds-text-micro px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-500 font-semibold uppercase tracking-wide">
+                <span className="ds-eyebrow px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-500">
                   Archived
                 </span>
               )}

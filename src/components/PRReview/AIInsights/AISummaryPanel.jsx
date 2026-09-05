@@ -1,4 +1,4 @@
-import { EASE } from '../../ui/motion'
+import { EASE, DURATION } from '../../ui/motion'
 import { ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react'
 import { Spinner } from '../../ui/Spinner'
 import { AIErrorState } from '../../ui/AIErrorState'
@@ -14,7 +14,7 @@ function RiskPill({ level }) {
   const normalized = normalizeRiskLevel(level)
   return (
     <span
-      className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold uppercase tracking-wide ${riskTintClass(normalized)} ${riskTextClass(normalized)} ${riskRingClass(normalized)}`}
+      className={`ds-eyebrow inline-flex items-center px-1.5 py-0.5 rounded ${riskTintClass(normalized)} ${riskTextClass(normalized)} ${riskRingClass(normalized)}`}
     >
       {level}
     </span>
@@ -55,7 +55,7 @@ export function AISummaryPanel({
       {/* Header */}
       <button
         onClick={onToggle}
-        className="w-full flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-left"
+        className="w-full flex items-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-left ds-focus-ring rounded"
         aria-expanded={!collapsed}
       >
         <ChevronIcon size={14} className="shrink-0 text-slate-500 dark:text-slate-400" aria-hidden="true" />
@@ -74,7 +74,7 @@ export function AISummaryPanel({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: EASE.standard }}
+            transition={{ duration: DURATION.standard, ease: EASE.standard }}
             style={{ overflow: 'hidden' }}
           >
             <div className="px-3 py-3 space-y-3 bg-white dark:bg-slate-900">
@@ -110,7 +110,7 @@ export function AISummaryPanel({
                   {/* Key changes */}
                   {Array.isArray(summary.keyChanges) && summary.keyChanges.length > 0 && (
                     <div>
-                      <h4 className="font-semibold text-slate-600 dark:text-slate-400 mb-1 text-xs uppercase tracking-wide">
+                      <h4 className="ds-eyebrow text-slate-600 dark:text-slate-400 mb-1">
                         Key Changes
                       </h4>
                       <ul className="space-y-0.5 list-disc list-inside text-slate-700 dark:text-slate-300">
@@ -124,7 +124,7 @@ export function AISummaryPanel({
                   {/* Top file risks */}
                   {topFileRisks.length > 0 && (
                     <div>
-                      <h4 className="font-semibold text-slate-600 dark:text-slate-400 mb-1 text-xs uppercase tracking-wide">
+                      <h4 className="ds-eyebrow text-slate-600 dark:text-slate-400 mb-1">
                         High-Risk Files
                       </h4>
                       <div className="space-y-1">
@@ -135,7 +135,7 @@ export function AISummaryPanel({
                             <button
                               key={i}
                               onClick={() => onFileClick?.(fname)}
-                              className={`w-full flex items-center gap-2 px-2 py-1 rounded text-left transition-colors ${riskTintClass(level)}`}
+                              className={`w-full flex items-center gap-2 px-2 py-1 rounded text-left transition-colors ${riskTintClass(level)} ds-focus-ring`}
                               title={fname}
                             >
                               <span className={`shrink-0 text-xs font-semibold uppercase ${riskTextClass(level)}`}>

@@ -35,7 +35,7 @@ function PillButton({ id, repos, onAction, label, Icon, danger = false }) {
 				danger
 					? 'text-rose-400 dark:text-rose-600 hover:bg-rose-500/20'
 					: 'text-white dark:text-slate-900 hover:bg-white/10 dark:hover:bg-slate-900/10'
-			}`}
+			} ds-focus-ring`}
 		>
 			<Icon className="w-4 h-4" />
 		</button>
@@ -67,7 +67,7 @@ export function SelectionBar({ repos, onAction, onClear, onSelectAll }) {
 			aria-label="Selection actions"
 			className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[var(--ds-z-popover)] max-w-[calc(100vw-3rem)] animate-in slide-in-from-bottom-4 fade-in duration-[var(--ds-duration-slow)]"
 		>
-			<div className="flex items-center gap-1 pl-4 pr-2 py-2 bg-slate-900/90 dark:bg-white/90 backdrop-blur-md text-white dark:text-slate-900 rounded-full shadow-2xl border border-white/10 dark:border-slate-200/20">
+			<div className="flex items-center gap-1 pl-4 pr-2 py-2 bg-slate-900/90 dark:bg-white/90 backdrop-blur-md text-white dark:text-slate-900 rounded-full ds-elevation-overlay border border-white/10 dark:border-slate-200/20">
 				<div className="flex items-center gap-2 text-sm font-medium pr-3 mr-1 border-r border-white/20 dark:border-slate-900/10">
 					<CheckSquare className="w-4 h-4" />
 					<span>{count}</span>

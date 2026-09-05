@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Plus, X, Download, Wand2, FolderPlus, Search, Sparkles } from 'lucide-react'
-import { TAP, EASE, SPRING } from './ui/motion'
+import { TAP, EASE, SPRING, DURATION } from './ui/motion'
 
 // Render order = visual order top→bottom; last entry sits closest to the
 // FAB trigger. Search / AI assistant are the highest-traffic touch
@@ -44,7 +44,7 @@ export function MobileQuickActionsFab(props) {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
+                        transition={{ duration: DURATION.standard }}
                         onClick={() => setOpen(false)}
                         className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[var(--ds-z-composer)]"
                         aria-hidden="true"
@@ -84,7 +84,7 @@ export function MobileQuickActionsFab(props) {
                                         hidden: { opacity: 0, y: 12, scale: 0.9 },
                                         visible: { opacity: 1, y: 0, scale: 1 },
                                     }}
-                                    transition={{ duration: 0.2, ease: EASE.emphasized }}
+                                    transition={{ duration: DURATION.standard, ease: EASE.emphasized }}
                                 >
                                     <button
                                         type="button"
@@ -114,7 +114,7 @@ export function MobileQuickActionsFab(props) {
                             // JS-driven, so the CSS prefers-reduced-motion clamp in
                             // design-system.css cannot stop it; a static halo instead.
                             animate={reducedMotion ? { scale: 1, opacity: 0.55 } : { scale: [1, 1.18, 1], opacity: [0.55, 0.85, 0.55] }}
-                            transition={reducedMotion ? { duration: 0 } : { duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
+                            transition={reducedMotion ? { duration: 0 } : { duration: 3.2, repeat: Infinity, ease: EASE.standard }}
                         />
                     )}
 

@@ -117,13 +117,13 @@ export function ConflictPanel({ conflict, repoName, onResolve, resolution }) {
             {/* Comparison table */}
             <div className="grid grid-cols-3 bg-slate-50 dark:bg-slate-800/50">
                 {/* Column headers */}
-                <div className="px-3 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                <div className="ds-eyebrow px-3 py-2 text-slate-500 dark:text-slate-400">
                     Field
                 </div>
-                <div className="px-3 py-2 text-xs font-semibold text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] uppercase tracking-wide">
+                <div className="ds-eyebrow px-3 py-2 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">
                     Source
                 </div>
-                <div className="px-3 py-2 text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
+                <div className="ds-eyebrow px-3 py-2 text-amber-700 dark:text-amber-400">
                     Target
                 </div>
 

@@ -70,7 +70,7 @@ function CopyButton({ value, label }) {
     const onClick = () => copy(value)
     return (
         <button type="button" onClick={onClick}
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-mono text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-mono text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors ds-focus-ring"
             aria-label={`Copy ${label}`}>
             <AnimatedCopyIcon copied={copied} size="w-3 h-3" checkClassName="text-emerald-500" />
             {value}

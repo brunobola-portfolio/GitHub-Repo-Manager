@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle2, XCircle, AlertTriangle, Circle, ChevronRight } from 'lucide-react'
 import { SpinnerIcon } from '../../ui/Spinner'
 import { classifyProvider, PROVIDERS } from '../../../utils/azureProvider'
+import { DURATION } from '../../ui/motion'
 
 /**
  * Step-by-step connection status. Replaces ad-hoc status messages with a
@@ -94,16 +95,16 @@ export default function ConnectionStatusPanel({
     <motion.div
       initial={{ opacity: 0, y: -4 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.18 }}
+      transition={{ duration: DURATION.standard }}
       className={`rounded-2xl border ${overall.bg} ${overall.border}`}
     >
       <div className={`flex items-center gap-2 px-4 py-2.5 border-b ${overall.border}`}>
         <div className="w-2 h-2 rounded-full bg-current opacity-70" />
-        <span className={`text-xs font-semibold uppercase tracking-wider ${overall.text}`}>
+        <span className={`ds-eyebrow ${overall.text}`}>
           {overall.label}
         </span>
         {provider.type === PROVIDERS.ON_PREM && (
-          <span className="ml-auto ds-text-micro uppercase tracking-wider text-brand-500 dark:text-brand-400">
+          <span className="ds-eyebrow ml-auto text-brand-500 dark:text-brand-400">
             on-premises
           </span>
         )}
@@ -137,7 +138,7 @@ function StepRow({ step, index }) {
             initial={{ opacity: 0, y: -2 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            transition={{ duration: DURATION.fast }}
             className={`text-xs mt-0.5 ${tone.detailText}`}
           >
             {step.detail}

@@ -111,7 +111,7 @@ function ShortcutGroup({ title, items }) {
     return (
         <div>
             {title && (
-                <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                <h3 className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-2">
                     {title}
                 </h3>
             )}

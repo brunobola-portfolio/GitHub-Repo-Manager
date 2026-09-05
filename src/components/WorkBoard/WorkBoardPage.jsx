@@ -56,6 +56,7 @@ import { SectionSpinner } from '../ui/Spinner'
 import { ManageReposButton } from './ManageReposButton'
 import { MOCK_MODE } from '../../config'
 import { emitAppEvent, onAppEvent, APP_EVENTS } from '../../utils/appEvents'
+import { DURATION, EASE } from '../ui/motion'
 
 // ---------------------------------------------------------------------------
 // Tab definitions
@@ -108,7 +109,7 @@ function WorkBoardEmptyState({ webhookConnected, onRefresh }) {
                 )}>
                     <span className={clsx('h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0',
                         webhookConnected ? 'border-emerald-400 bg-emerald-400' : 'border-slate-300 dark:border-slate-600')}>
-                        {webhookConnected && <span className="text-white text-[8px] font-bold">✓</span>}
+                        {webhookConnected && <span className="text-white ds-text-micro font-bold">✓</span>}
                     </span>
                     <span>
                         Connect GitHub webhook
@@ -279,9 +280,9 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
                             onClick={refreshAll}
                             disabled={refreshing}
                             aria-label="Refresh work board"
-                            className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-700/50 bg-white/70 dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-600 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                            className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-700/50 bg-white/70 dark:bg-slate-900/60 hover:border-slate-300 dark:hover:border-slate-600 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors ds-focus-ring"
                         >
-                            <motion.div animate={{ rotate: refreshing ? 360 : 0 }} transition={{ duration: 0.6, ease: 'easeInOut' }}>
+                            <motion.div animate={{ rotate: refreshing ? 360 : 0 }} transition={{ duration: DURATION.ambient, ease: EASE.standard }}>
                                 <RefreshCw className="w-4 h-4" />
                             </motion.div>
                         </button>
@@ -348,7 +349,7 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.18 }}
+                        transition={{ duration: DURATION.standard }}
                         className="min-h-[380px]"
                     >
                         <Suspense fallback={<SectionSpinner />}>

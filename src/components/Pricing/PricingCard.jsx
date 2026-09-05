@@ -146,7 +146,7 @@ export function PricingCard({
           {/* Tier name */}
           <div className="mb-5 pt-2">
             <span
-              className={`text-xs font-bold uppercase tracking-widest
+              className={`ds-eyebrow
                 ${highlighted
                   ? 'text-brand-400'
                   : enterprise

@@ -12,6 +12,7 @@ import TargetModePicker from './RepoConfigStep/TargetModePicker'
 import { DashboardHeader } from './RepoConfigStep/DashboardHeader'
 import { RepoCard } from './RepoConfigStep/RepoCard'
 import { ReplaceConfirmModal } from './RepoConfigStep/ReplaceConfirmModal'
+import { DURATION } from '../../ui/motion'
 
 /**
  * RepoConfigStep - Configure target settings for selected repos.
@@ -278,7 +279,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
             <button
               type="button"
               onClick={() => onGoToStep('azureConnect')}
-              className="shrink-0 rounded-md border border-amber-400 bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-200 dark:border-amber-600 dark:bg-amber-900/40 dark:text-amber-100 dark:hover:bg-amber-900/60"
+              className="shrink-0 rounded-md border border-amber-400 bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-200 dark:border-amber-600 dark:bg-amber-900/40 dark:text-amber-100 dark:hover:bg-amber-900/60 ds-focus-ring"
             >
               Go to Connect
             </button>
@@ -297,7 +298,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.18 }}
+            transition={{ duration: DURATION.standard }}
             role="status"
             className="flex items-start gap-3 rounded-xl border border-amber-300/60 bg-amber-50/80 px-3.5 py-2.5 text-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-900/20 dark:text-amber-100"
           >
@@ -310,7 +311,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
               type="button"
               onClick={() => setAiNotice('')}
               aria-label="Dispensar"
-              className="shrink-0 rounded-md p-1 text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900/40"
+              className="shrink-0 rounded-md p-1 text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900/40 ds-focus-ring"
             >
               <XCircle className="w-3.5 h-3.5" />
             </button>
@@ -380,7 +381,7 @@ export default function RepoConfigStep({ repos, onUpdateRepo, source, orgs = [],
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             role="status"
-            className="fixed bottom-6 right-6 z-[var(--ds-z-popover)] px-4 py-2.5 rounded-xl shadow-xl border border-amber-300/60
+            className="fixed bottom-6 right-6 z-[var(--ds-z-popover)] px-4 py-2.5 rounded-xl ds-elevation-overlay border border-amber-300/60
               bg-amber-50/95 dark:bg-amber-900/40 dark:border-amber-500/30 text-sm text-amber-900 dark:text-amber-100 backdrop-blur"
           >
             {quotaNotice}

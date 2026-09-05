@@ -89,7 +89,7 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
                 <button
                     type="button"
                     onClick={onClose}
-                    className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ds-focus-ring"
                     aria-label="Close AI planner"
                 >
                     <X className="w-4 h-4" />
@@ -189,7 +189,7 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
 
                     {plan.approach && (
                         <div>
-                            <p className="ds-text-meta font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">
+                            <p className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-1">
                                 Approach
                             </p>
                             <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
@@ -200,7 +200,7 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
 
                     {plan.files?.length > 0 && (
                         <div>
-                            <p className="ds-text-meta font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                            <p className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-2">
                                 Files to touch ({plan.files.length})
                             </p>
                             <div className="space-y-1.5">
@@ -237,7 +237,7 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
 
                     {plan.tests && (
                         <div>
-                            <p className="ds-text-meta font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1.5">
+                            <p className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1.5">
                                 <FlaskConical className="w-3 h-3" /> Tests
                             </p>
                             <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
@@ -248,7 +248,7 @@ export function AIIssuePlanner({ repoFullName, issueNumber, onClose }) {
 
                     {plan.risks && (
                         <div>
-                            <p className="ds-text-meta font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1.5">
+                            <p className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-1 flex items-center gap-1.5">
                                 <ShieldAlert className="w-3 h-3" /> Risks
                             </p>
                             <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">

@@ -4,6 +4,7 @@ import { GitPullRequest, AlertTriangle, CircleDot, Wrench } from 'lucide-react'
 import { ageLabel, dayLabel } from './shared/formatters'
 import { Skeleton } from '../ui/Skeleton'
 import { CountUp } from '../ui/CountUp'
+import { DURATION, EASE } from '../ui/motion'
 
 function computeDelta(history) {
     if (!Array.isArray(history) || history.length < 2) return null
@@ -42,7 +43,7 @@ function Sparkline({ history, accent }) {
                 strokeLinejoin="round"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.6, ease: 'easeOut' }}
+                transition={{ duration: DURATION.ambient, ease: EASE.emphasized }}
             />
         </svg>
     )
@@ -59,7 +60,7 @@ function DeltaBadge({ pct }) {
             className={clsx('ds-text-micro font-medium tabular-nums', color)}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.35, duration: 0.3 }}
+            transition={{ delay: 0.35, duration: DURATION.slow }}
         >
             {label}
         </motion.span>
@@ -116,7 +117,7 @@ function KpiTile({ icon: Icon, label, value, hint, loading, errored, accent = 'b
                     ? 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 shadow-sm'
                     : 'border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-600'
                 }
-            `}
+             ds-focus-ring`}
         >
             <div className="relative flex items-start justify-between gap-3">
                 <div className={`p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/50 ${a.text}`}>
@@ -147,7 +148,7 @@ function KpiTile({ icon: Icon, label, value, hint, loading, errored, accent = 'b
                         </div>
                     )}
                 </div>
-                <div className="mt-2 ds-text-meta font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <div className="ds-eyebrow mt-2 text-slate-500 dark:text-slate-400">
                     {label}
                 </div>
                 {showError ? (

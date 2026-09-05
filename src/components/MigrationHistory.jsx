@@ -235,7 +235,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                                     ${filter === f
                                         ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300'
                                         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
-                                    }`}>
+                                    } ds-focus-ring`}>
                                 {f}
                             </button>
                         ))}

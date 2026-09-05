@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { EASE } from '../ui/motion'
+import { EASE, DURATION } from '../ui/motion'
 import { Map } from 'lucide-react'
 import { RoadmapStage } from './RoadmapStage'
 import { Button } from '../ui/Button'
@@ -72,13 +72,13 @@ export function RoadmapPage({ onNavigatePricing } = {}) {
           className="absolute rounded-full blur-3xl bg-emerald-500 opacity-[0.07] dark:opacity-[0.10]"
           style={{ width: 500, height: 500, left: '-8%', top: '-5%' }}
           animate={{ y: [0, -25, 0], x: [0, 15, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 10, repeat: Infinity, ease: EASE.standard }}
         />
         <motion.div
           className="absolute rounded-full blur-3xl bg-blue-500 opacity-[0.07] dark:opacity-[0.10]"
           style={{ width: 400, height: 400, right: '-6%', top: '15%' }}
           animate={{ y: [0, 25, 0], x: [0, -15, 0] }}
-          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
+          transition={{ duration: 12, repeat: Infinity, ease: EASE.standard, delay: 3 }}
         />
         <div
           className="absolute inset-0 opacity-[0.02] dark:opacity-[0.04]"
@@ -96,7 +96,7 @@ export function RoadmapPage({ onNavigatePricing } = {}) {
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: DURATION.gentle }}
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-7
               bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20"
           >
@@ -109,7 +109,7 @@ export function RoadmapPage({ onNavigatePricing } = {}) {
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.65, delay: 0.1, ease: EASE.emphasized }}
+            transition={{ duration: DURATION.ambient, delay: 0.1, ease: EASE.emphasized }}
             className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight ds-font-display mb-5"
           >
             <span className="text-slate-800 dark:text-white">What we&apos;re</span>{' '}
@@ -119,7 +119,7 @@ export function RoadmapPage({ onNavigatePricing } = {}) {
           <motion.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2, ease: EASE.emphasized }}
+            transition={{ duration: DURATION.ambient, delay: 0.2, ease: EASE.emphasized }}
             className="text-slate-500 dark:text-slate-400 text-lg max-w-xl mx-auto leading-relaxed"
           >
             Our public roadmap. Everything here is planned — nothing is promised.
@@ -155,7 +155,7 @@ export function RoadmapPage({ onNavigatePricing } = {}) {
           initial={{ opacity: 0, y: 12 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: '-40px' }}
-          transition={{ duration: 0.5, ease: EASE.emphasized }}
+          transition={{ duration: DURATION.gentle, ease: EASE.emphasized }}
           className="text-center"
         >
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">

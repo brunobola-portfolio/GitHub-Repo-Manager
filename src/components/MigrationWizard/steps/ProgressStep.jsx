@@ -15,6 +15,7 @@ import { Tooltip } from '../../ui/Tooltip'
 import { ReplaceConfirmModal } from './RepoConfigStep/ReplaceConfirmModal'
 import { isReplaceableConflict, isOversizedFailure } from './conflictRecovery'
 import { emitAppEvent, APP_EVENTS } from '../../../utils/appEvents'
+import { DURATION } from '../../ui/motion'
 
 const STATUS_COLORS = {
   pending: 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400',
@@ -107,7 +108,7 @@ function TaskRow({ task, onRetry, onReplaceRetry, onLfsRetry }) {
               className="h-full bg-blue-500 rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${Math.min(task.progress, 100)}%` }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: DURATION.slow }}
             />
           </div>
         )}
@@ -440,7 +441,7 @@ export default function ProgressStep({ planId, onPause, onCancel, onRetryTask, o
             className="h-full bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] rounded-full"
             initial={{ width: 0 }}
             animate={{ width: `${overallProgress}%` }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: DURATION.gentle }}
           />
         </div>
       </div>

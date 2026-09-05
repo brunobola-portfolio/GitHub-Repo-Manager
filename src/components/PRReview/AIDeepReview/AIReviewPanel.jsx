@@ -164,7 +164,7 @@ export function AIReviewPanel({
                 </div>
                 {owner && repo && prNumber ? (
                     <div className="flex-1 min-h-0 overflow-y-auto">
-                        <div className="px-3 pt-3 text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">PR commands</div>
+                        <div className="ds-eyebrow px-3 pt-3 text-slate-500 dark:text-slate-400">PR commands</div>
                         <PRCommandsTab owner={owner} repo={repo} prNumber={prNumber} />
                     </div>
                 ) : null}
@@ -187,7 +187,7 @@ export function AIReviewPanel({
                     type="button"
                     onClick={() => setTab('walkthrough')}
                     aria-pressed={tab === 'walkthrough'}
-                    className={`px-3 py-2 ${tab === 'walkthrough' ? 'font-semibold border-b-2 border-blue-600' : 'text-slate-500 dark:text-slate-400'}`}
+                    className={`px-3 py-2 ${tab === 'walkthrough' ? 'font-semibold border-b-2 border-blue-600' : 'text-slate-500 dark:text-slate-400'} ds-focus-ring rounded`}
                 >
                     Walkthrough
                 </button>
@@ -195,7 +195,7 @@ export function AIReviewPanel({
                     type="button"
                     onClick={() => setTab('comments')}
                     aria-pressed={tab === 'comments'}
-                    className={`px-3 py-2 ${tab === 'comments' ? 'font-semibold border-b-2 border-blue-600' : 'text-slate-500 dark:text-slate-400'}`}
+                    className={`px-3 py-2 ${tab === 'comments' ? 'font-semibold border-b-2 border-blue-600' : 'text-slate-500 dark:text-slate-400'} ds-focus-ring rounded`}
                 >
                     Comments ({lineComments.length})
                 </button>
@@ -204,7 +204,7 @@ export function AIReviewPanel({
                         type="button"
                         onClick={() => setTab('commands')}
                         aria-pressed={tab === 'commands'}
-                        className={`px-3 py-2 ${tab === 'commands' ? 'font-semibold border-b-2 border-blue-600' : 'text-slate-500 dark:text-slate-400'}`}
+                        className={`px-3 py-2 ${tab === 'commands' ? 'font-semibold border-b-2 border-blue-600' : 'text-slate-500 dark:text-slate-400'} ds-focus-ring rounded`}
                     >
                         Commands
                     </button>
@@ -214,7 +214,7 @@ export function AIReviewPanel({
                         type="button"
                         onClick={() => setTab('chat')}
                         aria-pressed={tab === 'chat'}
-                        className={`px-3 py-2 ${tab === 'chat' ? 'font-semibold border-b-2 border-blue-600' : 'text-slate-500 dark:text-slate-400'}`}
+                        className={`px-3 py-2 ${tab === 'chat' ? 'font-semibold border-b-2 border-blue-600' : 'text-slate-500 dark:text-slate-400'} ds-focus-ring rounded`}
                     >
                         Chat
                     </button>
@@ -231,7 +231,7 @@ export function AIReviewPanel({
                         onClick={() => onGenerate(activePresetKey).catch(() => {})}
                         disabled={loading}
                         title="Re-run review"
-                        className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-50"
+                        className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-50 ds-focus-ring rounded"
                     >
                         {loading ? <Spinner size="xs" tone="primary" label="Re-running review" /> : '↻'}
                     </button>
@@ -268,7 +268,7 @@ export function AIReviewPanel({
                     disabled={publishing || isPublished || isPublishing || (lineComments.length === 0 && !draft?.walkthrough?.summary)}
                     /* --ds-cta, not emerald-600: white on emerald-600 is 3.67:1
                        in both themes (see --ds-cta-text in design-system.css). */
-                    className="w-full px-3 py-1.5 text-sm font-medium rounded bg-[color:var(--ds-cta)] dark:bg-[color:var(--ds-cta-dark)] text-[color:var(--ds-cta-text)] hover:bg-[color:var(--ds-cta-hover)] dark:hover:bg-[color:var(--ds-cta-hover-dark)] disabled:opacity-60"
+                    className="w-full px-3 py-1.5 text-sm font-medium rounded bg-[color:var(--ds-cta)] dark:bg-[color:var(--ds-cta-dark)] text-[color:var(--ds-cta-text)] hover:bg-[color:var(--ds-cta-hover)] dark:hover:bg-[color:var(--ds-cta-hover-dark)] disabled:opacity-60 ds-focus-ring"
                 >
                     {isPublished
                         ? 'Published ✓'

@@ -10,7 +10,7 @@ import ReactMarkdown from 'react-markdown'
 import { useModal } from '../hooks/useModal'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { motion, AnimatePresence } from 'framer-motion'
-import { EASE } from './ui/motion'
+import { EASE, DURATION } from './ui/motion'
 import { sanitizeActions, dispatchAction } from '../utils/aiActions'
 import { detectRepoUrl } from '../utils/repoUrlDetector'
 import { AIAssistantPasteCard } from './AIAssistantPasteCard'
@@ -54,7 +54,7 @@ function CodeBlock({ node, children }) {
                 type="button"
                 onClick={handleCopy}
                 aria-label="Copy code"
-                className="absolute top-1.5 right-1.5 inline-flex items-center gap-1 px-1.5 py-1 rounded-md text-[10px] font-medium bg-slate-700/80 text-slate-100 opacity-0 group-hover/code:opacity-100 focus-visible:opacity-100 transition-opacity ds-focus-ring"
+                className="absolute top-1.5 right-1.5 inline-flex items-center gap-1 px-1.5 py-1 rounded-md ds-text-micro font-medium bg-slate-700/80 text-slate-100 opacity-0 group-hover/code:opacity-100 focus-visible:opacity-100 transition-opacity ds-focus-ring"
             >
                 {copied ? <Check size={11} aria-hidden="true" /> : <Copy size={11} aria-hidden="true" />}
                 {copied ? 'Copied' : 'Copy'}
@@ -429,7 +429,7 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus, currentRe
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.8, opacity: 0 }}
-                        transition={{ duration: 0.2, ease: EASE.standard }}
+                        transition={{ duration: DURATION.standard, ease: EASE.standard }}
                         onClick={() => { setIsOpen(true); setIsIdle(false) }}
                         onMouseEnter={() => setIsIdle(false)}
                         /* Hidden on mobile (< md): the AI Assistant entry point
@@ -488,7 +488,7 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus, currentRe
                         initial={{ opacity: 0, y: 20, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                        transition={{ duration: 0.32, ease: EASE.standard }}
+                        transition={{ duration: DURATION.slow, ease: EASE.standard }}
                         // z-popover (not a raw value): this panel replaces the closed-state
                         // FAB above (mutually exclusive via isOpen), so it only needs to
                         // clear other composer-level FABs, never coexist/compete with them —
@@ -621,7 +621,7 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus, currentRe
                                                         initial={{ opacity: 0, height: 0 }}
                                                         animate={{ opacity: 1, height: 'auto' }}
                                                         exit={{ opacity: 0, height: 0 }}
-                                                        transition={{ duration: 0.2, ease: EASE.standard }}
+                                                        transition={{ duration: DURATION.standard, ease: EASE.standard }}
                                                         className="px-3 pt-2 overflow-hidden shrink-0"
                                                     >
                                                         <div className="flex items-center gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/40 px-2.5 py-1.5">
@@ -751,7 +751,7 @@ function MessageBubble({ message, onAction, onRetry, onOpenSettings }) {
                         <button
                             type="button"
                             onClick={() => onRetry(message.retryText)}
-                            className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-brand-400 hover:text-brand-600 dark:hover:text-brand-300 transition-colors"
+                            className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-brand-400 hover:text-brand-600 dark:hover:text-brand-300 transition-colors ds-focus-ring"
                         >
                             <RotateCw size={12} /> Retry
                         </button>
@@ -762,7 +762,7 @@ function MessageBubble({ message, onAction, onRetry, onOpenSettings }) {
                         <button
                             type="button"
                             onClick={onOpenSettings}
-                            className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full ds-brand-solid hover:bg-brand-500 transition-colors"
+                            className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full ds-brand-solid hover:bg-brand-500 transition-colors ds-focus-ring"
                         >
                             <Key size={12} /> Configure API key
                         </button>
@@ -779,7 +779,7 @@ function ActionChip({ action, onClick }) {
             type="button"
             onClick={onClick}
             data-action={action.type}
-            className="group inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ring-1 ring-slate-200 dark:ring-slate-700 transition-colors duration-150 hover:ring-brand-300 dark:hover:ring-brand-500/40 hover:bg-slate-50 dark:hover:bg-slate-700/60"
+            className="group inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ring-1 ring-slate-200 dark:ring-slate-700 transition-colors duration-150 hover:ring-brand-300 dark:hover:ring-brand-500/40 hover:bg-slate-50 dark:hover:bg-slate-700/60 ds-focus-ring"
         >
             <Sparkles size={11} className="relative text-brand-500 dark:text-brand-300 transition-transform group-hover:rotate-12" />
             <span className="relative truncate max-w-[180px]">{action.label}</span>

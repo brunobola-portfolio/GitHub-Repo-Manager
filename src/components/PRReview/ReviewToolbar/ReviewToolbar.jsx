@@ -14,6 +14,7 @@ import { PRRiskBadges } from '../../RepoDetail/PRRiskBadges'
 import { Button } from '../../ui/Button'
 import { Textarea } from '../../ui/form'
 import { Tooltip } from '../../ui/Tooltip'
+import { DURATION } from '../../ui/motion'
 
 const REVIEW_OPTIONS = [
   {
@@ -41,8 +42,8 @@ const REVIEW_OPTIONS = [
 
 const dropdownVariants = {
   hidden: { opacity: 0, y: -6, scale: 0.97 },
-  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.15 } },
-  exit: { opacity: 0, y: -4, scale: 0.97, transition: { duration: 0.1 } },
+  visible: { opacity: 1, y: 0, scale: 1, transition: { duration: DURATION.fast } },
+  exit: { opacity: 0, y: -4, scale: 0.97, transition: { duration: DURATION.fast } },
 }
 
 /**
@@ -213,7 +214,7 @@ export function ReviewToolbar({ pr, repoName, repoFullName, viewMode, onToggleVi
               exit="exit"
               role="menu"
               aria-label="Submit review options"
-              className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-1rem)] rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden z-[var(--ds-z-overlay)]"
+              className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-1rem)] rounded-lg ds-elevation-overlay border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden z-[var(--ds-z-overlay)]"
             >
               {/* Review body textarea */}
               <div className="px-4 pt-3 pb-2 border-b border-slate-100 dark:border-slate-800">

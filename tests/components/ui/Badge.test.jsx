@@ -89,11 +89,13 @@ describe('Badge — size prop', () => {
     expect(cls).toContain('text-xs')
   })
 
-  it('xs uses the compact px-1.5 text-[10px] scale', () => {
+  it('xs uses the compact px-1.5 ds-text-micro scale', () => {
+    // ds-text-micro (10px/14px) replaced the arbitrary text-[10px] value —
+    // same size, now a named token (2026-09-04 panel, F18).
     render(<Badge data-testid="b" size="xs">x</Badge>)
     const cls = screen.getByTestId('b').className
     expect(cls).toContain('px-1.5')
-    expect(cls).toContain('text-[10px]')
+    expect(cls).toContain('ds-text-micro')
     expect(cls).not.toContain('px-2.5')
   })
 })

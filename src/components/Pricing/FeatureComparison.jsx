@@ -1,6 +1,6 @@
 import React, { useRef } from 'react'
 import { motion } from 'framer-motion'
-import { EASE } from '../ui/motion'
+import { EASE, DURATION } from '../ui/motion'
 import { Check, X } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { STICKY_HEAD_SHADOW_CLASS } from '../ui/_variants'
@@ -244,7 +244,7 @@ function StackedComparison() {
         >
           <h3
             id={`cmp-${cat.name.replace(/\W+/g, '-')}`}
-            className="px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-white/[0.02] border-b border-slate-100 dark:border-white/[0.06]"
+            className="ds-eyebrow px-4 py-2.5 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-white/[0.02] border-b border-slate-100 dark:border-white/[0.06]"
           >
             {cat.name}
           </h3>
@@ -263,7 +263,7 @@ function StackedComparison() {
                         : 'bg-slate-50 dark:bg-white/[0.03]'
                       }`}
                     >
-                      <dt className="ds-text-micro font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      <dt className="ds-eyebrow text-slate-500 dark:text-slate-400">
                         {TIERS[colIdx]}
                       </dt>
                       <dd className="mt-1 leading-tight">
@@ -291,7 +291,7 @@ export function FeatureComparison() {
       initial={{ opacity: 0, y: 24 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-80px' }}
-      transition={{ duration: 0.6, ease: EASE.emphasized }}
+      transition={{ duration: DURATION.ambient, ease: EASE.emphasized }}
       className="w-full"
     >
       <div className="text-center mb-10">
@@ -348,7 +348,7 @@ export function FeatureComparison() {
                 <tr className="border-b border-slate-100 dark:border-white/[0.04]">
                   <td
                     colSpan={4}
-                    className="px-6 py-3 text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 bg-slate-50/70 dark:bg-white/[0.02]"
+                    className="ds-eyebrow px-6 py-3 text-slate-500 dark:text-slate-400 bg-slate-50/70 dark:bg-white/[0.02]"
                   >
                     {cat.name}
                   </td>

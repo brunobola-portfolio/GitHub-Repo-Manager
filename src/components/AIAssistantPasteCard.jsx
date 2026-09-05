@@ -51,7 +51,7 @@ export function AIAssistantPasteCard({ dialog, onAnswer, onConfirm, onCancel }) 
       <div className="flex items-start gap-2">
         <Wand2 className="w-4 h-4 text-brand-500 mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="ds-text-meta font-semibold uppercase tracking-wide text-[color:var(--ds-accent-brand)] dark:text-brand-300">
+          <p className="ds-eyebrow text-[color:var(--ds-accent-brand)] dark:text-brand-300">
             URL detected
           </p>
           <Preview dialog={dialog} />
@@ -61,7 +61,7 @@ export function AIAssistantPasteCard({ dialog, onAnswer, onConfirm, onCancel }) 
           type="button"
           onClick={onCancel}
           aria-label="Cancel"
-          className="p-1 rounded hover:bg-white/50 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+          className="p-1 rounded hover:bg-white/50 dark:hover:bg-white/10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 ds-focus-ring"
         >
           <X className="w-4 h-4" />
         </button>

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { EASE } from '../../../ui/motion'
+import { EASE, DURATION } from '../../../ui/motion'
 import { Route, ArrowRight, FolderGit2, Recycle } from 'lucide-react'
 import { GitHubIcon, AzureIcon } from './PlatformIcons'
 
@@ -29,7 +29,7 @@ export function ExecutionPipeline({ order, repos, source }) {
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.25, duration: 0.5 }}
+      transition={{ delay: 0.25, duration: DURATION.gentle }}
     >
       <div className="flex items-center gap-2 mb-3">
         <Route className="w-4 h-4 text-slate-500 dark:text-slate-400" />
@@ -61,7 +61,7 @@ export function ExecutionPipeline({ order, repos, source }) {
               key={name}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 + i * 0.06, duration: 0.4, ease: EASE.emphasized }}
+              transition={{ delay: 0.3 + i * 0.06, duration: DURATION.reveal, ease: EASE.emphasized }}
               className="flex items-center gap-2 px-3 py-2.5 rounded-xl
                 bg-white dark:bg-white/[0.03]
                 border border-slate-200/70 dark:border-white/8
@@ -77,7 +77,7 @@ export function ExecutionPipeline({ order, repos, source }) {
               {/* Source name */}
               <div className="flex items-center gap-1.5 min-w-0 flex-1">
                 <FolderGit2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className="text-[13px] font-medium text-slate-700 dark:text-slate-200 truncate ds-font-mono">
+                <span className="ds-text-sm font-medium text-slate-700 dark:text-slate-200 truncate ds-font-mono">
                   {name}
                 </span>
               </div>
@@ -88,7 +88,7 @@ export function ExecutionPipeline({ order, repos, source }) {
               {/* Target name */}
               <div className="flex items-center gap-1.5 min-w-0 flex-1">
                 <TargetIcon className={`w-3.5 h-3.5 shrink-0 ${targetIconClass}`} />
-                <span className="text-[13px] font-medium text-slate-700 dark:text-slate-200 truncate ds-font-mono" title={displayTarget}>
+                <span className="ds-text-sm font-medium text-slate-700 dark:text-slate-200 truncate ds-font-mono" title={displayTarget}>
                   {displayTarget}
                 </span>
               </div>
@@ -96,18 +96,18 @@ export function ExecutionPipeline({ order, repos, source }) {
               {/* Badges */}
               <div className="flex items-center gap-1 shrink-0">
                 {usesExisting && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400" title="Reusing an existing empty repo in the target project">
+                  <span className="ds-eyebrow inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400" title="Reusing an existing empty repo in the target project">
                     <Recycle className="w-2.5 h-2.5" />
                     Existing
                   </span>
                 )}
                 {isTfvc && (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-brand-100 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400">
+                  <span className="ds-eyebrow px-1.5 py-0.5 rounded bg-brand-100 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400">
                     TFVC
                   </span>
                 )}
                 {hasLfs && (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide bg-brand-100 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400">
+                  <span className="ds-eyebrow px-1.5 py-0.5 rounded bg-brand-100 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400">
                     LFS
                   </span>
                 )}

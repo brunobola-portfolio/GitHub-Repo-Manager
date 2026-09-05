@@ -111,12 +111,12 @@ export function FileTree({
     <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700">
       {/* Header */}
       <div className="flex items-center justify-between px-2 py-1.5 border-b border-slate-200 dark:border-slate-700 shrink-0">
-        <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+        <span className="ds-eyebrow text-slate-600 dark:text-slate-400">
           Files ({files.length})
         </span>
         <button
           onClick={() => onSortChange?.(nextSortMode)}
-          className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors px-1.5 py-0.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800"
+          className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors px-1.5 py-0.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 ds-focus-ring"
           title={`Sort by ${nextSortMode === 'risk' ? 'risk' : 'A–Z'}`}
           aria-label={`Currently sorted by ${sortMode === 'risk' ? 'risk' : 'A–Z'}. Click to sort by ${nextSortMode === 'risk' ? 'risk' : 'A–Z'}`}
         >

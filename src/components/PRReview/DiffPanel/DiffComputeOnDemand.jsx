@@ -45,7 +45,7 @@ export function DiffComputeOnDemand({ filename, additions = 0, deletions = 0, ch
                 <button
                     type="button"
                     onClick={() => setComputed(true)}
-                    className="inline-flex items-center gap-1 px-3 py-1.5 max-md:min-h-11 text-sm font-semibold rounded-lg bg-amber-600 text-white shadow-sm shadow-amber-600/30 hover:bg-amber-700 transition-colors"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 max-md:min-h-11 text-sm font-semibold rounded-lg bg-amber-600 text-white shadow-sm shadow-amber-600/30 hover:bg-amber-700 transition-colors ds-focus-ring"
                 >
                     <Cpu className="w-3.5 h-3.5" /> Compute diff
                 </button>

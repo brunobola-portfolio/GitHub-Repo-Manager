@@ -30,7 +30,7 @@ export default function TargetModePicker({ source, selectedRepos, onChange }) {
   return (
     <div className="rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-50/60 dark:bg-slate-900/40">
       <div className="px-4 py-2 bg-slate-100/60 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-700">
-        <div className="ds-text-micro font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+        <div className="ds-eyebrow text-slate-500 dark:text-slate-400">
           Where do you want to migrate?
         </div>
       </div>
@@ -76,7 +76,7 @@ function ModeCard({ active, onClick, icon: Icon, title, subtitle, tag, accentCla
       className={`text-left p-4 transition-all
         ${active
           ? 'bg-white dark:bg-slate-900/60 ring-2 ring-inset ring-brand-400 dark:ring-brand-500'
-          : 'bg-white/40 dark:bg-slate-900/30 hover:bg-white/70 dark:hover:bg-slate-900/50'}`}
+          : 'bg-white/40 dark:bg-slate-900/30 hover:bg-white/70 dark:hover:bg-slate-900/50'} ds-focus-ring rounded`}
     >
       <div className="flex items-start gap-3">
         <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center
@@ -89,14 +89,14 @@ function ModeCard({ active, onClick, icon: Icon, title, subtitle, tag, accentCla
               {title}
             </span>
             {active && (
-              <span className="inline-flex items-center gap-0.5 text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded-md bg-brand-500 text-white">
+              <span className="ds-eyebrow inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-brand-500 text-white">
                 <Check className="w-2.5 h-2.5" /> escolhido
               </span>
             )}
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{subtitle}</p>
           {tag && (
-            <p className="ds-text-micro text-slate-500 dark:text-slate-400 mt-1 font-mono uppercase tracking-wider">
+            <p className="ds-eyebrow text-slate-500 dark:text-slate-400 mt-1 font-mono">
               {tag}
             </p>
           )}

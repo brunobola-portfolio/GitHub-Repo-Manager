@@ -15,6 +15,7 @@ import { useResilientFetch } from '../../hooks/useResilientFetch'
 import { useFocusedRow } from '../../hooks/useFocusedRow'
 import { CommitDetailPanel } from './CommitDetailPanel'
 import { formatRelativeTime } from '../../utils/format'
+import { DURATION } from '../ui/motion'
 
 const PER_PAGE = 50
 const COMMIT_PARAM = 'commit'
@@ -172,7 +173,7 @@ export function CommitsTab({ repo }) {
                             ref={(node) => { rowRefs.current[idx] = node }}
                             initial={{ opacity: 0, y: 6 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.2, delay: Math.min(idx * 0.02, 0.3) }}
+                            transition={{ duration: DURATION.standard, delay: Math.min(idx * 0.02, 0.3) }}
                             className={`relative flex items-start gap-3 p-4 transition-colors group ${
                                 isFocused
                                     ? 'bg-brand-50 dark:bg-brand-900/20 ring-1 ring-inset ring-brand-300 dark:ring-brand-700/60'
@@ -220,7 +221,7 @@ export function CommitsTab({ repo }) {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     onClick={(e) => e.stopPropagation()}
-                                    className="relative z-10 text-slate-400 hover:text-brand-500 p-1 rounded transition-colors flex-shrink-0"
+                                    className="relative z-10 text-slate-400 hover:text-brand-500 p-1 rounded transition-colors flex-shrink-0 ds-focus-ring"
                                     aria-label="Open on GitHub"
                                     title="Open on GitHub"
                                 >

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useCopyToClipboard } from '../../../hooks/useCopyToClipboard'
 import { formatUserError } from '../../../utils/errors'
 import { motion, AnimatePresence } from 'framer-motion'
-import { EASE, SPRING } from '../../ui/motion'
+import { EASE, SPRING, DURATION } from '../../ui/motion'
 import {
   CheckCircle2, XCircle, Clock, Package, ClipboardList, BookOpen,
   Download, Plus, History, Loader2, AlertTriangle, ExternalLink, Ban,
@@ -124,7 +124,7 @@ function CircularProgress({ score, size = 100, strokeWidth = 7 }) {
           strokeLinecap="round"
           initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1.2, ease: EASE.emphasized }}
+          transition={{ duration: DURATION.ambient, ease: EASE.emphasized }}
           strokeDasharray={circumference}
         />
       </svg>
@@ -133,7 +133,7 @@ function CircularProgress({ score, size = 100, strokeWidth = 7 }) {
           className={`text-2xl font-bold tracking-tight ${ringColor}`}
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.6, duration: 0.4, ease: EASE.emphasized }}
+          transition={{ delay: 0.6, duration: DURATION.reveal, ease: EASE.emphasized }}
         >
           {score}%
         </motion.span>
@@ -184,7 +184,7 @@ function TaskResultRow({ task, index, maxIndex = 10, onFixLfsUpload }) {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: Math.min(index, maxIndex) * 0.06, duration: 0.35, ease: EASE.emphasized }}
+      transition={{ delay: Math.min(index, maxIndex) * 0.06, duration: DURATION.slow, ease: EASE.emphasized }}
       className={`group relative flex items-center gap-3 p-3.5 rounded-xl border transition-all duration-200
         ${statusConfig.bg} ${statusConfig.border}
         hover:shadow-sm`}
@@ -215,10 +215,10 @@ function TaskResultRow({ task, index, maxIndex = 10, onFixLfsUpload }) {
           )}
         </div>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          <Badge tone={statusConfig.tone} size="xs" className="uppercase tracking-wider">
+          <Badge tone={statusConfig.tone} size="xs" className="ds-eyebrow">
             {statusConfig.label}
           </Badge>
-          <Badge tone="neutral" size="xs" className="uppercase tracking-wider bg-transparent dark:bg-transparent text-slate-500 dark:text-slate-400">
+          <Badge tone="neutral" size="xs" className="ds-eyebrow bg-transparent dark:bg-transparent text-slate-500 dark:text-slate-400">
             {typeConfig.label}
           </Badge>
           {task.metadata?.reusedExistingRepo && (
@@ -282,7 +282,7 @@ function TaskResultRow({ task, index, maxIndex = 10, onFixLfsUpload }) {
             href={task.metadata.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-brand-500 hover:bg-brand-500/10 transition-all"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-brand-500 hover:bg-brand-500/10 transition-all ds-focus-ring"
             title="Open in browser"
           >
             <ExternalLink className="w-3.5 h-3.5" />
@@ -324,7 +324,7 @@ function ErrorCard({ error, index, onReplaceRetry, onLfsRetry }) {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.08, duration: 0.35, ease: EASE.emphasized }}
+      transition={{ delay: index * 0.08, duration: DURATION.slow, ease: EASE.emphasized }}
       className="rounded-xl border border-rose-500/20 dark:border-rose-500/15 bg-rose-500/5 dark:bg-rose-500/5 overflow-hidden"
     >
       {/* Header — always visible */}
@@ -333,7 +333,7 @@ function ErrorCard({ error, index, onReplaceRetry, onLfsRetry }) {
         onClick={() => setExpanded(!expanded)}
         aria-expanded={expanded}
         aria-label={`${expanded ? 'Collapse' : 'Expand'} error details for task ${error.taskId}`}
-        className="w-full flex items-center gap-3 p-3.5 text-left hover:bg-rose-500/5 transition-colors"
+        className="w-full flex items-center gap-3 p-3.5 text-left hover:bg-rose-500/5 transition-colors ds-focus-ring rounded"
       >
         <div className="shrink-0 w-8 h-8 rounded-lg bg-rose-500/10 dark:bg-rose-500/10 flex items-center justify-center">
           <XCircle className="w-4.5 h-4.5 text-rose-500" />
@@ -343,7 +343,7 @@ function ErrorCard({ error, index, onReplaceRetry, onLfsRetry }) {
             <span className="text-sm font-medium text-rose-700 dark:text-rose-300">
               Task #{error.taskId}
             </span>
-            <Badge tone="danger" size="xs" className="uppercase tracking-wider" icon={<TypeIcon className="w-3 h-3" />}>
+            <Badge tone="danger" size="xs" className="ds-eyebrow" icon={<TypeIcon className="w-3 h-3" />}>
               {error.type}
             </Badge>
           </div>
@@ -364,7 +364,7 @@ function ErrorCard({ error, index, onReplaceRetry, onLfsRetry }) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: EASE.emphasized }}
+            transition={{ duration: DURATION.standard, ease: EASE.emphasized }}
             className="overflow-hidden"
           >
             <div className="px-3.5 pb-3.5 space-y-2.5">
@@ -388,7 +388,7 @@ function ErrorCard({ error, index, onReplaceRetry, onLfsRetry }) {
                       type="button"
                       onClick={handleCopy}
                       aria-label="Copy error message"
-                      className="absolute top-2 right-2 p-1 rounded-md bg-rose-900/20 hover:bg-rose-900/40 text-rose-400 opacity-0 group-hover/err:opacity-100 focus:opacity-100 transition-all"
+                      className="absolute top-2 right-2 p-1 rounded-md bg-rose-900/20 hover:bg-rose-900/40 text-rose-400 opacity-0 group-hover/err:opacity-100 focus:opacity-100 transition-all ds-focus-ring"
                     >
                       <AnimatedCopyIcon copied={copied} size="w-3 h-3" />
                     </button>
@@ -506,7 +506,7 @@ function MigrationHealthCard({ tasks, onFixLfsUpload }) {
     <motion.div
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: EASE.emphasized }}
+      transition={{ duration: DURATION.slow, ease: EASE.emphasized }}
       className="rounded-xl border border-amber-500/20 dark:border-amber-500/15 bg-amber-500/5 dark:bg-amber-500/5 p-4"
     >
       <div className="flex items-center gap-2 mb-2">
@@ -651,7 +651,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
       <motion.div
         initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, ease: EASE.emphasized }}
+        transition={{ duration: DURATION.gentle, ease: EASE.emphasized }}
         className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-800/60 dark:to-slate-800/30 border border-slate-200/60 dark:border-white/10"
       >
         {/* Subtle gradient accent at top */}
@@ -714,7 +714,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
       {/* ── Task results ── */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          <h4 className="ds-eyebrow text-slate-500 dark:text-slate-400">
             Task Results
           </h4>
           <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
@@ -743,7 +743,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
         <div>
           <div className="flex items-center gap-2 mb-3">
             <Shield className="w-3.5 h-3.5 text-rose-500" />
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-rose-600 dark:text-rose-400">
+            <h4 className="ds-eyebrow text-rose-600 dark:text-rose-400">
               Error Details
             </h4>
             <span className="text-xs text-rose-600 dark:text-rose-400 tabular-nums">
@@ -770,7 +770,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
             border border-slate-200/60 dark:border-white/10
             hover:bg-slate-50 dark:hover:bg-white/10
             hover:border-slate-300 dark:hover:border-white/20
-            transition-all duration-200"
+            transition-all duration-200 ds-focus-ring"
         >
           <Download className="w-4 h-4" />
           Export Report
@@ -786,7 +786,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
               border border-slate-200/60 dark:border-white/10
               hover:bg-slate-50 dark:hover:bg-white/10
               hover:border-slate-300 dark:hover:border-white/20
-              transition-all duration-200"
+              transition-all duration-200 ds-focus-ring"
           >
             <History className="w-4 h-4" />
             View in Migration History
@@ -802,7 +802,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
               bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)]
               hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-brand-600
               shadow-md
-              transition-all duration-200 ml-auto"
+              transition-all duration-200 ml-auto ds-focus-ring"
           >
             <Plus className="w-4 h-4" />
             New Migration

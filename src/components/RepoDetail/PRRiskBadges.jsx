@@ -47,7 +47,7 @@ export function PRRiskBadges({ pr, compact = false, max = 4, className = '' }) {
                     <span
                         key={risk.id}
                         title={risk.hint}
-                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wide ${riskTintClass(level)} ${riskTextClass(level)} ${riskRingClass(level)}`}
+                        className={`ds-eyebrow inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full ${riskTintClass(level)} ${riskTextClass(level)} ${riskRingClass(level)}`}
                     >
                         {Icon && <Icon className="w-3 h-3" aria-hidden="true" />}
                         {risk.label}
