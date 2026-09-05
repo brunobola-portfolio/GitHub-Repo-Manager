@@ -247,6 +247,33 @@ the daily janitor).
 tests passed. Playwright full suite 136 passed, 59 skipped by design, 0
 failed.
 
+## Fourth pass (2026-09-05): structure and design quality
+
+**App.jsx** hands its boot sequence, repository-detail navigation and shell
+chrome to three hooks (`useAuthBootstrap`, `useRepoDetailNavigation`,
+`useShellChrome`), 1 053 → 785 lines with the same JSX tree and props; the
+App guard tests pass unchanged and each hook has its own test.
+
+**Design-quality walk** (dashboard, repositories, repo detail, Work Board and
+Health tab, Teams, audit, Prompt Studio, pricing, wizard; 1440 and 375, both
+themes): spacing rhythm, hierarchy, density, colour layering and motion were
+already consistent after the sweeps; one fix — the pricing page's capability
+strip stacked as ragged rows on phones and is three centred blocks now.
+
+**Found and fixed on the way.** A "Session expired" toast followed the user
+around the demo after the repository Settings tab: two GitHub-backed sections
+(collaborators, branch protection) reported a 401 as a toast that outlived the
+tab. Both render the shared sign-in state in place. The Actions routes had
+already stopped turning 401 into 500 in the validation pass.
+
+**Verification.** Lint clean. Unit suite 785 files, 7 631 tests passed.
+Visual walks: chords, j/k focus, presets, audit page and Escape behaviour hold
+in all four viewport/theme combinations; the only console entry is the
+expected 403 on the audit page for a non-Enterprise demo user, which the page
+renders as its upgrade state.
+
+- Playwright, full suite, two projects: 136 passed, 59 skipped by design, 0 failed.
+
 ## Still open
 
 1. **Packaging.** `shiki`, `@shikijs` and `@git-diff-view/shiki` ship zero
