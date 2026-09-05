@@ -9,7 +9,7 @@ export function SectionHeader({ step, title, description, meta }) {
             <div className="min-w-0">
                 <div className="flex items-center gap-2 ds-text-micro font-semibold uppercase tracking-[0.18em] text-[color:var(--ds-accent-brand)] dark:text-brand-300">
                     {step && (
-                        <span className="font-mono ds-text-micro text-brand-500/70 dark:text-brand-400/60">
+                        <span className="font-mono ds-text-micro text-[color:var(--ds-accent-brand)] dark:text-brand-300">
                             {String(step).padStart(2, '0')}
                         </span>
                     )}
