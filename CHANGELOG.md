@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.24.0] - 2026-09-05
+
 ### Added
 
 - **`npm run release`** cuts a release in one command: promotes the
@@ -3465,7 +3467,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.23.0...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.0...HEAD
+[4.24.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.23.2...v4.24.0
 [4.23.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.22.0...v4.23.0
 [4.22.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.21.0...v4.22.0
 [4.21.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.20.0...v4.21.0
