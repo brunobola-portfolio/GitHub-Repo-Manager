@@ -377,16 +377,17 @@ short label.
 
 1. **Sign the Windows installer** (Authenticode). Needs a code-signing
    certificate provisioned as a CI secret and a signing step in
-   . Effort M; the one item a buyer will notice.
-2. ** moderate advisory** — Dependabot #338 carries the Linux-generated
+   `windows-package.yml`. Effort M; the one item a buyer will notice.
+2. **`qs` moderate advisory** — Dependabot #338 carries the Linux-generated
    lockfile; merge it once its rebased checks are green. Never regenerate the
    lockfile on Windows.
-3. **Raw , the last 39** — documented exceptions; the AI client
-   () is the one worth a dedicated migration.    literals: 66 remain, ratcheted.
+3. **Raw `fetch()`, the last 39** — documented exceptions; the AI client
+   (`src/api/ai.js`) is the one worth a dedicated migration. `/api`
+   literals: 66 remain, ratcheted.
 4. **Larger refactors.** Four data-loading layers coexist (FE-08); 159
-    escapes on the hooks rules (FE-17). A dedicated
+   `eslint-disable` escapes on the hooks rules (FE-17). A dedicated
    webhook rate-limit bucket before org-scale traffic.
 5. **Not built, by choice.** A contribution heatmap (G11); PR stacking
    (GitHub ships it natively).
 6. **Environment.** Windows reserves ports 2906–3005 on the development
-   machine; everything here runs with .
+   machine; everything here runs with `PORT=3006`.
