@@ -10,10 +10,14 @@
 let inFlight = null
 
 export function fetchSessionInfo() {
-    if (inFlight) return inFlight
-    inFlight = fetch('/api/auth/session-info', { method: 'GET', credentials: 'include' })
-        .finally(() => { inFlight = null })
-    return inFlight
+    if (!inFlight) {
+        inFlight = fetch('/api/auth/session-info', { method: 'GET', credentials: 'include' })
+            .finally(() => { inFlight = null })
+    }
+    // Every caller gets its own clone: a Response body can be read once, and
+    // two hooks sharing the original meant the second .json() threw
+    // "body stream already read".
+    return inFlight.then((res) => res.clone())
 }
 
 export function _resetSessionInfoForTests() {

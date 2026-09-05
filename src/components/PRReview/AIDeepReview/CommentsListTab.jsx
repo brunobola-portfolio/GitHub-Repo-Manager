@@ -38,7 +38,12 @@ function CommentRow({ comment, onJumpToFile, onDismiss, onEdit }) {
                 {onEdit && !editing ? (
                     <button
                         type="button"
-                        onClick={() => setEditing(true)}
+                        // Re-seed the draft from the current comment.body rather than
+                        // the useState initializer's mount-time snapshot — if the
+                        // review regenerates this comment while the row isn't in
+                        // edit mode, opening the editor later must not resurrect
+                        // the stale text it had when this row first mounted.
+                        onClick={() => { setBody(comment.body || ''); setEditing(true); }}
                         className="ml-auto p-1 rounded text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 ds-focus-ring"
                         aria-label="Edit comment"
                     >

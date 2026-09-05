@@ -6,7 +6,8 @@ import {
   formatFileSize,
   formatRelativeTime,
   formatDurationSeconds,
-  formatTimestamp
+  formatTimestamp,
+  plural
 } from '@/utils/format'
 
 describe('formatNumber', () => {
@@ -301,5 +302,30 @@ describe('formatTimestamp', () => {
   it('falls back to the raw string when the value is unparseable', () => {
     expect(formatTimestamp('not-a-date')).toBe('not-a-date')
     expect(formatTimestamp({}, '-')).toBe('-')
+  })
+})
+
+describe('plural', () => {
+  it('uses the singular noun only at exactly 1', () => {
+    expect(plural(1, 'blocker')).toBe('1 blocker')
+    expect(plural(0, 'blocker')).toBe('0 blockers')
+    expect(plural(2, 'blocker')).toBe('2 blockers')
+    expect(plural(-1, 'blocker')).toBe('-1 blockers')
+  })
+
+  it('accepts an explicit irregular plural', () => {
+    expect(plural(3, 'repository', 'repositories')).toBe('3 repositories')
+    expect(plural(1, 'repository', 'repositories')).toBe('1 repository')
+  })
+
+  it('formats the count with thousand separators', () => {
+    expect(plural(1234, 'item')).toBe('1,234 items')
+  })
+
+  it('coerces a numeric string and falls back to 0 for non-numeric input', () => {
+    expect(plural('5', 'item')).toBe('5 items')
+    expect(plural('not-a-number', 'item')).toBe('0 items')
+    expect(plural(undefined, 'item')).toBe('0 items')
+    expect(plural(NaN, 'item')).toBe('0 items')
   })
 })

@@ -369,7 +369,7 @@ router.get('/:owner/:repo/actions/workflows', requireAuth, async (req, res) => {
         res.json(result.data.workflows || []);
     } catch (error) {
         req.log.error({ err: error }, 'List workflows failed');
-        res.status(500).json({ error: 'Failed to list workflows' });
+        res.status(error.status || 500).json({ error: safeError(error, 'Failed to list workflows'), code: error.status === 401 ? 'UNAUTHORIZED' : 'SERVER_ERROR' });
     }
 });
 
@@ -399,7 +399,7 @@ router.get('/:owner/:repo/actions/runs', requireAuth, async (req, res) => {
         res.json(result.data.workflow_runs || []);
     } catch (error) {
         req.log.error({ err: error }, 'List workflow runs failed');
-        res.status(500).json({ error: 'Failed to list workflow runs' });
+        res.status(error.status || 500).json({ error: safeError(error, 'Failed to list workflow runs'), code: error.status === 401 ? 'UNAUTHORIZED' : 'SERVER_ERROR' });
     }
 });
 

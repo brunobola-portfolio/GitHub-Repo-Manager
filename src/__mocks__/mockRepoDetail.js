@@ -201,6 +201,9 @@ export function generateMockIssues(repoName) {
         const user = pick(USERS, s + i + 1)
         const label = LABELS[(s + i * 2) % LABELS.length]
         return {
+            // The issues list keys rows by id; the fixture had none, so React
+            // warned on every render of the tab in the demo.
+            id: 700000 + s + i,
             number: 50 + i + (s % 30),
             title: ISSUE_TITLES[idx],
             state: 'open',

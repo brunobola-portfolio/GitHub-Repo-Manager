@@ -48,6 +48,20 @@ describe('CommentsListTab — editing a draft comment', () => {
         expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled()
     })
 
+    it('re-seeds the draft from the latest comment.body, not the row\'s mount-time snapshot', () => {
+        // comment.body can change out from under a closed row (e.g. the review
+        // regenerates this comment) — the useState initializer only runs once
+        // at mount, so the fix must reset `body` on the click that opens the
+        // editor rather than relying on that initializer.
+        const { rerender } = render(<CommentsListTab comments={comments} onEdit={vi.fn()} onDismiss={vi.fn()} />)
+
+        const updated = comments.map((c, i) => (i === 1 ? { ...c, body: 'Regenerated suggestion text' } : c))
+        rerender(<CommentsListTab comments={updated} onEdit={vi.fn()} onDismiss={vi.fn()} />)
+
+        fireEvent.click(screen.getAllByRole('button', { name: /edit comment/i })[1])
+        expect(screen.getByLabelText('Comment body')).toHaveValue('Regenerated suggestion text')
+    })
+
     it('hides the edit affordance when no onEdit is provided, dismiss still works', () => {
         const onDismiss = vi.fn()
         render(<CommentsListTab comments={comments} onDismiss={onDismiss} />)
