@@ -165,6 +165,49 @@ surfaces: see the line below.
   The 429s themselves were the demo's auth limiter tripped by the walk
   re-signing in on every navigation.
 
+## Validation panel (2026-09-05)
+
+Six Sonnet agents re-checked the two passes from the outside — visual walk,
+functional flows, backend review, frontend code review, accessibility and
+copy re-scan, documentation honesty — each with authority to fix its own
+area. What they found and closed:
+
+- **Backend.** `POST /migration/analyze` read `req.aiProvider` before
+  anything populated it after the lazy-provider change, so AI risk analysis
+  always took the deterministic fallback (regression test wires the real
+  middleware). `GET /ai/metadata` gained the `repo_ids` filter an earlier
+  commit message had claimed. A scan test keeps every `per_page` reader
+  clamped.
+- **Frontend review.** The shared session-info request handed both hooks
+  the same `Response`; the second `.json()` threw "body stream already
+  read" and the admin flag was lost on cold start. Callers get a clone now.
+  The comments list re-seeds its edit draft from the current body.
+  `plural()` gained tests. Ratchet counts verified against reality.
+- **Visual walk.** ~24 views and overlays × 3 widths × 2 themes: no visual
+  regression from the sweeps. It surfaced two console defects: the Actions
+  list routes turned a GitHub 401 into a 500, and the demo's issues fixture
+  had no ids, so the tab warned about keys. Both fixed.
+- **Flows.** All ten changed flows pass in the running demo (chords, j/k,
+  search-all-pages and URL round-trips, presets isolation, palette drill-in,
+  onboarding key step, audit page gate, digest setting, header menus,
+  confirmations and Escape, Work Board "open PR" toast).
+- **Accessibility and copy.** The palette dropped focus to body on every
+  close after the first (it mounts once behind an ever-opened gate); an
+  opener ref restores it. The presets popover wrapped a text input in
+  `role=menu`; it is a labelled group. The add-repo combobox's list is
+  always mounted so `aria-controls` never dangles. AI-configuration step
+  numbers at 70% opacity measured 2.6:1. Audit table headers carry
+  `scope`; two labels and four load-failure strings corrected.
+- **Docs.** README, API reference, architecture pages, operations runbook,
+  Work Board and Live Inbox guides, BRAND and CHANGELOG describe what
+  shipped; stale references to deleted components and the removed inbox
+  flag are gone; all honesty gates green.
+
+Final numbers after the panel: see the two lines below.
+
+- Unit suite: 782 files, 7 569 tests passed, 29 skipped; the two reds in that run were a CHANGELOG code-span that exposed a banned URL to the licence gate (fixed) and a timing flake in useBlockingDialogPresence under full load (passes in isolation).
+- Playwright, full suite, two projects, two workers alongside the unit run: 135 passed, 59 skipped by design, 0 failed.
+
 ## Still open
 
 What the two passes did not close, in priority order.
