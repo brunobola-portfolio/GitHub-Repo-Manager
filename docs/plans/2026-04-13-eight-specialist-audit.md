@@ -398,7 +398,7 @@ These are real, verified, and either **block production** or **expose legal risk
 
 #### **P3-3 — Sidebar quick-actions popover ARIA** [HIGH a11y]
 - **From:** Specialist #5
-- **Where:** [src/components/Sidebar.jsx:50-58](../../src/components/Sidebar.jsx#L50-L58)
+- **Where:** `src/components/Sidebar.jsx:50-58` (file since replaced)
 - **Fix:** add `role="dialog" aria-modal="true" aria-labelledby` linking trigger button.
 - **Effort:** S
 

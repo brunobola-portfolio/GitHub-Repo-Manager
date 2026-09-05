@@ -24,6 +24,7 @@ below links to the canonical page for that topic.
 | Know what a deployment stores and where it goes | [Privacy & data](privacy-and-data.md) — facts from the code, with the file each one is enforced in |
 | Replay a failed email / webhook | [Admin DLQ guide](guides/admin-dlq.md) |
 | Read release notes | [`CHANGELOG.md`](../CHANGELOG.md) |
+| See every view before installing | [Screenshot gallery](screenshots.md) — real captures, both themes |
 | See what's planned but not shipped | [`ROADMAP.md`](../ROADMAP.md) |
 
 ## Recent releases

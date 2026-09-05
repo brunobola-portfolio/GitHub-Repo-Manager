@@ -224,8 +224,7 @@ Full details in the [Community WOW feature guide](docs/features/community-wow.md
 
 ## Screenshots
 
-<details>
-<summary><strong>Expand the gallery</strong></summary>
+Every capture is the real app in mock mode at 1920×1080 — no mock-ups. The full set, with captions, is in [docs/screenshots.md](docs/screenshots.md).
 
 | | |
 |---|---|
@@ -234,8 +233,6 @@ Full details in the [Community WOW feature guide](docs/features/community-wow.md
 | **Repositories**<br>![Repositories grid](docs/images/06_repositories_dark_hd.png) | **Team Hub**<br>![Team collaboration hub](docs/images/07_teams_dark_hd.png) |
 | **AI Insights — quality**<br>![AI Insights quality tab](docs/images/40_ai_quality_tab_routed_hd.png) | **Agent Rules Generator**<br>![Agent Rules generator](docs/images/46_agent_rules_generator_hd.png) |
 | **Live Inbox — mobile**<br>![Live Inbox on a 375px viewport](docs/images/16_dashboard_live_inbox_mobile_hd.png) | **Migration Wizard**<br>![Azure DevOps migration wizard](docs/images/08_migration_wizard_hd.png) |
-
-</details>
 
 ---
 
@@ -296,6 +293,8 @@ See the [Free Tier Expansion spec](docs/specs/2026-04-15-free-tier-expansion.md)
 ## Azure DevOps Migration Suite
 
 A complete platform for moving from Azure DevOps to GitHub, driven by a guided wizard with AI risk analysis and safe, resumable execution.
+
+![Migration Wizard — source connection, repository selection with risk badges, and the dry-run step](docs/images/08_migration_wizard_hd.png)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/migration-flow.svg">
@@ -542,6 +541,7 @@ The README is the trailhead — the full map lives in **[docs/index.md](docs/ind
 - **Architecture** — [overview](docs/architecture/overview.md) · [backend](docs/architecture/backend.md) · [AI client contracts](docs/architecture/ai-client-contracts.md)
 - **Features** — [AI Deep Review](docs/features/ai-deep-review.md) · [Live Inbox](docs/features/dashboard-live-inbox.md) · [Community WOW](docs/features/community-wow.md)
 - **Guides** — [AI providers (BYOK)](docs/ai-providers.md) · [GitHub webhooks](docs/guides/github-webhook-setup.md) · [Stripe setup](docs/guides/stripe-setup.md) · [Operations runbook](docs/operations.md)
+- **See it** — [Screenshot gallery](docs/screenshots.md), every view in both themes
 - **Reference** — [API](docs/api/API.md) · [Work Board API](docs/api/WORK-BOARD-API.md) · [Billing & licensing](docs/billing-and-licensing.md) · [Privacy & data](docs/privacy-and-data.md)
 
 ---

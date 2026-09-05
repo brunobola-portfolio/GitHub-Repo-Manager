@@ -2166,7 +2166,7 @@ git commit -m "test(dashboard): verify reduced-motion duration override"
 - Modify: `src/components/Dashboard/Premium/InboxPanel.jsx`
 - Modify: `tests/components/Dashboard/Premium/InboxPanel.test.jsx`
 
-The spec calls for the top three items of the *active* section to be annotated with an AI narrative via the existing `/ai/attention-narrative` endpoint, gated by `useAIQuotaState`. Reuses the exact pattern already in [src/components/Dashboard/AttentionFeed.jsx](../../src/components/Dashboard/AttentionFeed.jsx).
+The spec calls for the top three items of the *active* section to be annotated with an AI narrative via the existing `/ai/attention-narrative` endpoint, gated by `useAIQuotaState`. Reuses the exact pattern already in `src/components/Dashboard/AttentionFeed.jsx` (removed in September 2026).
 
 - [ ] **Step 1: Write the failing test**
 

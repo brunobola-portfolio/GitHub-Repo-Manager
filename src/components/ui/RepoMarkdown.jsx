@@ -7,6 +7,7 @@ import { rehypeSlugInline } from './__rehype-slug-inline'
 import { copyToClipboard } from '../../utils/clipboard'
 import { AnimatedCopyIcon } from './AnimatedCopyIcon'
 import { parseAndSanitizeSvg } from '../../utils/sanitizeSvg'
+import { mermaidInitConfig } from '../../utils/mermaidConfig'
 
 // Sanitize schema: defaults + relax a handful of attributes that GitHub
 // READMEs habitually use. Tag/attribute lists are explicit-allow only.
@@ -231,7 +232,7 @@ function ReadmeMermaidBlock({ source }) {
             // htmlLabels:false emits SVG <text> labels instead of <foreignObject>
             // HTML — parseAndSanitizeSvg strips foreignObject as an XSS defence,
             // which would otherwise erase every flowchart node label.
-            mermaid.initialize({ startOnLoad: false, theme, securityLevel: 'strict', htmlLabels: false, flowchart: { htmlLabels: false, useMaxWidth: true } })
+            mermaid.initialize(mermaidInitConfig(theme))
             const id = `readme-mermaid-${Math.random().toString(36).slice(2)}`
             mermaid.render(id, src).then(({ svg }) => {
                 if (cancelled || !mermaidRef.current) return

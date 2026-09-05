@@ -78,6 +78,55 @@ export function resolveSpendCapCents(tier) {
     return SPEND_CAP_DISABLED;
 }
 
+// In-flight reservations. checkAISpendCap reads the ledger and the provider
+// call that follows takes seconds; every other request the same user fires in
+// that window reads the same ledger and clears the same check, so N parallel
+// calls could each pass a cap only one of them should have. Node is single-
+// threaded and SQLite means one process, so a synchronous reservation taken
+// inside the check is atomic with respect to every other request. Each
+// allowed check reserves one nominal cent; recordAISpend settles the oldest
+// reservation; one the caller never settles (the provider threw before the
+// tail ran) expires on its own so a leak can never lock a user out.
+const RESERVATION_MICRO_CENTS = MICRO_CENTS_PER_CENT;
+const RESERVATION_TTL_MS = 2 * 60 * 1000;
+const inFlight = new Map();
+
+function liveReservations(userId, now) {
+    const list = inFlight.get(userId);
+    if (!list) return [];
+    const live = list.filter((r) => now - r.at < RESERVATION_TTL_MS);
+    if (live.length) inFlight.set(userId, live);
+    else inFlight.delete(userId);
+    return live;
+}
+
+function reserveAISpend(userId, now) {
+    const live = liveReservations(userId, now);
+    live.push({ micro: RESERVATION_MICRO_CENTS, at: now });
+    inFlight.set(userId, live);
+}
+
+/** Drop the oldest in-flight reservation for a user — the compensating step
+ *  when a guarded call fails before recordAISpend would have settled it. */
+export function releaseAISpendReservation(userId) {
+    const live = liveReservations(userId, Date.now());
+    if (!live.length) return;
+    live.shift();
+    if (live.length) inFlight.set(userId, live);
+    else inFlight.delete(userId);
+}
+
+/** Cents currently reserved by calls that have passed the check but not yet
+ *  recorded their spend. Exposed for diagnostics and tests. */
+export function getAIPendingReservationCents(userId) {
+    const micro = liveReservations(userId, Date.now()).reduce((sum, r) => sum + r.micro, 0);
+    return Math.floor(micro / MICRO_CENTS_PER_CENT);
+}
+
+export function resetAISpendReservationsForTests() {
+    inFlight.clear();
+}
+
 /** Accumulate a call's cost into the user's running monthly spend. No-op for
  *  zero / unknown cost (e.g. a provider/model without pricing data).
  *
@@ -85,6 +134,7 @@ export function resolveSpendCapCents(tier) {
  *  every sub-half-cent call recorded 0, so thousands of flash-model calls
  *  summed to a recorded spend of zero and the cap never fired. */
 export function recordAISpend(userId, costUSD) {
+    releaseAISpendReservation(userId);
     const micro = usdToMicroCents(costUSD);
     if (micro <= 0) return;
     db.prepare(`
@@ -137,5 +187,11 @@ export function checkAISpendCap(userId, { billsOperator = true } = {}) {
         return { allowed: true, capCents, spentCents: 0 };
     }
     const spentCents = getAIMonthlySpend(userId);
-    return { allowed: spentCents < capCents, capCents, spentCents };
+    const now = Date.now();
+    const pendingCents = Math.floor(
+        liveReservations(userId, now).reduce((sum, r) => sum + r.micro, 0) / MICRO_CENTS_PER_CENT,
+    );
+    const allowed = spentCents + pendingCents < capCents;
+    if (allowed) reserveAISpend(userId, now);
+    return { allowed, capCents, spentCents };
 }

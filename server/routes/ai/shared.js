@@ -13,7 +13,7 @@ import { aiService } from '../../ai-service.js';
 import { AIError, AI_ERROR_CODE, toAIError, isServerKeyProvider } from '../../lib/ai-provider.js';
 import logger from '../../lib/logger.js';
 import { resolveMaxOutputTokens } from '../../lib/ai-output-budget.js';
-import { checkAISpendCap, recordAISpend } from '../../lib/ai-spend-cap.js';
+import { checkAISpendCap, recordAISpend, releaseAISpendReservation } from '../../lib/ai-spend-cap.js';
 import { buildAIAuditMeta } from '../../lib/ai-audit.js';
 import { auditLog } from '../../lib/audit.js';
 
@@ -228,7 +228,15 @@ export async function guardedGenerate(req, opts, { feature } = {}) {
         ? Math.min(requested, ceiling)
         : ceiling;
     const generationConfig = { ...(opts?.generationConfig || {}), maxOutputTokens };
-    const result = await providerGenerateWithRetry(req.aiProvider, { ...opts, generationConfig });
+    let result;
+    try {
+        result = await providerGenerateWithRetry(req.aiProvider, { ...opts, generationConfig });
+    } catch (err) {
+        // The check above reserved a cent against the cap; a provider that never
+        // answered cost nothing, so hand it back instead of waiting for expiry.
+        if (billsOperator) releaseAISpendReservation(userId);
+        throw err;
+    }
 
     if (billsOperator) recordAISpend(userId, result?.costUSD);
     auditLog(req, `ai.${feature || 'generate'}`, 'ai', null, buildAIAuditMeta({

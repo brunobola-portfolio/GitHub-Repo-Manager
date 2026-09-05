@@ -16,6 +16,7 @@ import { TRANSITION } from '../ui/motion'
 import { aiApi } from '../../api/ai'
 import { copyToClipboard } from '../../utils/clipboard'
 import { parseAndSanitizeSvg } from '../../utils/sanitizeSvg'
+import { mermaidInitConfig } from '../../utils/mermaidConfig'
 import { useToast } from '../../hooks/useToast'
 import { useResponsiveDiffMode } from '../../hooks/useResponsiveDiffMode'
 
@@ -180,7 +181,7 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
             // htmlLabels:false forces SVG <text> labels instead of <foreignObject>
             // HTML — parseAndSanitizeSvg strips foreignObject as an XSS defence,
             // which would otherwise erase every flowchart node label.
-            mermaid.initialize({ startOnLoad: false, theme, securityLevel: 'strict', htmlLabels: false, flowchart: { htmlLabels: false, useMaxWidth: true } })
+            mermaid.initialize(mermaidInitConfig(theme))
             const id = `diagram-${Math.random().toString(36).slice(2)}`
             mermaid.render(id, src).then(({ svg }) => {
                 if (cancelled || !mermaidRef.current) return

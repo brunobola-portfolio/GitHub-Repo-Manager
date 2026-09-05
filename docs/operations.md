@@ -252,21 +252,27 @@ dance to get right.
 
 ## Release flow
 
-Releases are cut from `main` as annotated tags. CI + Deploy workflows must be
-green before and after the tag.
+Releases are cut from `main` as annotated tags. CI must be green before the
+tag, and the Release, Docker and Windows-package workflows after it.
 
 1. Confirm `main` is green: `gh run list --branch main --limit 3 --workflow CI`.
-2. Update `CHANGELOG.md` with a new dated section under `[Unreleased]`
-   (Keep-a-Changelog format). Move the Unreleased compare-link anchor.
-3. Bump `package.json` `version` to match.
-4. If the "What's new in v..." link in `README.md` points to the previous
-   tag, refresh it.
-5. Commit as `chore(release): vX.Y.Z` (no `Co-Authored-By` lines per
-   [CLAUDE.md](../CLAUDE.md)).
-6. Tag: `git tag vX.Y.Z && git push origin main vX.Y.Z`.
-7. Watch CI: `gh run watch <id> --exit-status`.
-8. GitHub Release notes are generated from the tag — attach the relevant
-   `CHANGELOG.md` section.
+2. Make sure `CHANGELOG.md` `[Unreleased]` says what shipped — the script
+   refuses an empty section.
+3. Cut it: `npm run release -- minor --title "one line for the README" --push`
+   (`major` / `patch` / an explicit `X.Y.Z` also work; `--dry-run` prints
+   without writing). The script promotes `[Unreleased]` to a dated section,
+   rewrites the compare links, bumps `package.json` and the lockfile's
+   version fields (never regenerating the lockfile), refreshes the README
+   "What's new" link, commits `chore(release): X.Y.Z`, creates the annotated
+   tag and, with `--push`, pushes `main` and the tag together.
+4. Watch the tag's runs: `gh run list --limit 5` then `gh run watch <id>
+   --exit-status` — read the LATEST run yourself; a watch that exits green
+   may have watched a stale run.
+5. The GitHub Release is published by the workflow with the CHANGELOG
+   section as its notes; the production deploy runs on the self-hosted runner
+   when the `AUTO_DEPLOY` repository variable is `true`.
+6. Add the release to `docs/index.md` "Recent releases" in a follow-up docs
+   commit.
 
 **Do not force-push tags.** If a release is wrong, cut a `vX.Y.(Z+1)` patch.
 

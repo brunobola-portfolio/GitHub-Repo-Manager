@@ -7,7 +7,7 @@
 
 ## Why
 
-The current dashboard tells the user "Estás em dia. Nada precisa de ti agora." while their actual GitHub has live PRs, issues, CI failures, and Dependabot alerts waiting. Root cause: [src/components/Dashboard/AttentionFeed.jsx](../../src/components/Dashboard/AttentionFeed.jsx) is fed exclusively by [server/lib/attention-feed.js](../../server/lib/attention-feed.js), which only knows four local-DB signals (`failed_migration`, `stale_pinned`, `abandoned`, `hot`). It never reads the live aggregators (`event-aggregations.js`, `notifications-digest.js`, `work-board /stale-prs`, `repos-security`) that already exist on the backend.
+The current dashboard tells the user "Estás em dia. Nada precisa de ti agora." while their actual GitHub has live PRs, issues, CI failures, and Dependabot alerts waiting. Root cause: `src/components/Dashboard/AttentionFeed.jsx` (removed in September 2026 — it was no longer rendered) is fed exclusively by [server/lib/attention-feed.js](../../server/lib/attention-feed.js), which only knows four local-DB signals (`failed_migration`, `stale_pinned`, `abandoned`, `hot`). It never reads the live aggregators (`event-aggregations.js`, `notifications-digest.js`, `work-board /stale-prs`, `repos-security`) that already exist on the backend.
 
 The result is a dashboard that under-delivers on its own promise. A code review of `server/lib/` and `server/routes/` confirmed that ~95 % of the data needed to make this dashboard demonstrably better than github.com is already aggregated server-side — it is simply not stitched into the dashboard surface.
 
@@ -120,7 +120,7 @@ New components under `src/components/Dashboard/Premium/`:
 | `ScorecardRing.jsx` | SVG progress ring (5 segments) overlaid on existing repo tile icon. Color: green ≥ 4/5, amber 2–3/5, red ≤ 1/5 |
 | `ScorecardDrawer.jsx` | Right-side drawer (uses existing Modal primitive at z-modal) listing checks + Fix buttons. Fix gated by tier |
 
-The existing [src/components/Dashboard/AttentionFeed.jsx](../../src/components/Dashboard/AttentionFeed.jsx) is **not deleted**. It moves to a 1-column "Repo Health" panel on the right side of the dashboard hero, retaining its four local-DB signals which remain valuable for repo hygiene (failed migrations, stale-pinned, abandoned, hot).
+The existing `src/components/Dashboard/AttentionFeed.jsx` (removed in September 2026 — it was no longer rendered) is **not deleted**. It moves to a 1-column "Repo Health" panel on the right side of the dashboard hero, retaining its four local-DB signals which remain valuable for repo hygiene (failed migrations, stale-pinned, abandoned, hot).
 
 ### Wiring into existing surfaces
 

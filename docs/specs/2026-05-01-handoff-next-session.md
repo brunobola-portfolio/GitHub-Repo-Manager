@@ -50,7 +50,7 @@ These came up during slice 1 brainstorming and apply to all remaining work:
 | **Pure repo mutations** | [`src/utils/repoMutations.js`](../../src/utils/repoMutations.js) | Non-React callers needing `archiveRepos` / `deleteRepos` / `performAction` |
 | **Confirmation hook** | [`src/hooks/useDangerAction.js`](../../src/hooks/useDangerAction.js) | Outside the action registry: `useDangerAction({ title, message, variant, requiresInput, onConfirm }).run()` |
 | **Mobile FAB** | `src/components/ui/MobileFAB.jsx` | `<MobileFAB icon={…} label={…} onClick={…} shiftAboveBottomBar />` — renders only `< md` |
-| **Sticky modal** | [`src/components/ui/ModalSticky.jsx`](../../src/components/ui/ModalSticky.jsx) | Replace `<Modal>` when the modal has action buttons that should stay visible on mobile |
+| **Sticky modal** | ``src/components/ui/ModalSticky.jsx`` (file since removed) | Replace `<Modal>` when the modal has action buttons that should stay visible on mobile |
 | **Viewport-safe height** | [`src/hooks/useViewportSafeHeight.js`](../../src/hooks/useViewportSafeHeight.js) | iOS URL-bar-aware sizing (already used by `<ModalSticky>`) |
 | **Mobile drawer** | `src/components/MobileDrawer.jsx` | `<MobileDrawer isOpen onClose side="…">` (left / right / bottom) |
 | **Mobile breakpoint hook** | [`src/hooks/useMobileBreakpoint.jsx`](../../src/hooks/useMobileBreakpoint.jsx) | Returns boolean for `< md` (768 px) |

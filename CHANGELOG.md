@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`npm run release`** cuts a release in one command: promotes the
+  Unreleased section to a dated heading, rewrites the compare links, bumps
+  the version fields, refreshes the README link, commits and tags — and
+  refuses an empty section or a dirty tree.
+- **A screenshot gallery** (`docs/screenshots.md`, generated from
+  `docs/images`) with captions; the README gallery is open instead of
+  collapsed and the migration section shows the wizard.
 - **The audit log is a full page, not a Settings tab.** `#/audit` lists
   entries with an action filter fed by the server (so it can never drift
   from what is actually logged) and a **Verify chain** action that walks
@@ -88,6 +95,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Mermaid diagrams read from the brand palette** in the README reader, the
+  Deep Review walkthrough and the Diagram Generator, in both themes — one
+  shared configuration replaces three copies of Mermaid's stock lavender.
+- **The monthly AI spend cap is atomic across parallel calls.** Every allowed
+  check reserves a cent until the spend is recorded, released or expired,
+  so concurrent requests can no longer all clear a cap only one should have.
 - **A rate-limited response without a `Headers` instance no longer
   crashes `parseApiError`.** Every 429 the client saw with a non-standard
   response object surfaced as an unhandled rejection instead of the
