@@ -236,19 +236,51 @@ router.get('/ai/metadata/:repoId', requireAuth, (req, res) => {
     }
 });
 
+// Optional `?repo_ids=1,2,3` narrowing for GET /ai/metadata — mirrors
+// parseRepoIds in routes/work-board.js. Malformed/non-positive entries are
+// dropped rather than rejected: a caller building this list from a stale
+// client-side repo array (a repo removed mid-session) shouldn't 400 the
+// whole request over one bad id. An empty result narrows to "match nothing"
+// rather than falling back to "match everything" — an explicit empty
+// repo_ids= must not silently widen into the unfiltered case.
+function parseMetadataRepoIds(raw) {
+    if (raw === undefined) return undefined;
+    return String(raw)
+        .split(',')
+        .map((s) => Number.parseInt(s.trim(), 10))
+        .filter((n) => Number.isFinite(n) && n > 0);
+}
+
+// Defensive ceiling on the unfiltered path — a user's own indexed-repo count
+// is not attacker-controlled, but an unbounded SELECT with no LIMIT here was
+// the one un-paged query left in this router.
+const METADATA_INDEX_MAX_ROWS = 1000;
+
 // Get All Cached Metadata for the User
 //
 // Bulk fetch for surfaces that render many repos at once (RepoList grid,
 // Dashboard cards) — one network round-trip instead of N. Returns an array
 // of { repo_id, health_score, summary, topics, last_indexed } limited to
-// repos the user has indexed (no row = repo never indexed).
+// repos the user has indexed (no row = repo never indexed). An optional
+// `repo_ids` query param narrows the result to that set (e.g. the page's
+// currently-rendered repos) instead of the user's entire indexed history.
 router.get('/ai/metadata', requireAuth, (req, res) => {
     try {
-        const rows = db.prepare(`
-            SELECT repo_id, health_score, summary, topics, last_indexed
-            FROM repo_metadata
-            WHERE user_id = ?
-        `).all(req.session.userId);
+        const repoIds = parseMetadataRepoIds(req.query.repo_ids);
+        if (repoIds && repoIds.length === 0) return res.json([]);
+
+        const rows = repoIds
+            ? db.prepare(`
+                SELECT repo_id, health_score, summary, topics, last_indexed
+                FROM repo_metadata
+                WHERE user_id = ? AND repo_id IN (${repoIds.map(() => '?').join(',')})
+            `).all(req.session.userId, ...repoIds)
+            : db.prepare(`
+                SELECT repo_id, health_score, summary, topics, last_indexed
+                FROM repo_metadata
+                WHERE user_id = ?
+                LIMIT ${METADATA_INDEX_MAX_ROWS}
+            `).all(req.session.userId);
         res.json(rows);
     } catch (error) {
         res.status(500).json({ error: safeError(error, 'Failed to fetch metadata index') });

@@ -773,6 +773,15 @@ router.post('/analyze', requireAuth, requireScope('ai'), async (req, res) => {
     const userId = req.session.userId;
     let generate;
     let reservedAI = false;
+    // attachAIProvider() only populates req.aiProvider as a side effect of a
+    // prior req.getAIProvider('completion') call (see middleware/auth.js) —
+    // this route has no requireAI middleware to trigger that resolution, so
+    // without this explicit call req.aiProvider is always undefined and the
+    // AI-powered path below silently never runs, degrading to
+    // fallbackAnalysis() on every request regardless of provider config.
+    if (!req.aiProvider && typeof req.getAIProvider === 'function') {
+      req.aiProvider = await req.getAIProvider('completion').catch(() => null);
+    }
     if (req.aiProvider) {
       const check = reserveAIQuota(req, res, 'ai_migration_risk');
       if (!check.allowed) return res.status(429).json(quotaExceededResponse(check));
