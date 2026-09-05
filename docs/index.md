@@ -31,6 +31,13 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.24.0 (2026-09-05) — the polish release.** The audit log is a full
+  page with chain verification; saved views and URL sync reach the
+  Repositories filter bar; an opt-in digest e-mail; `g`-chord and `j`/`k`
+  navigation everywhere; one colour per meaning across the app; Mermaid
+  diagrams in the brand palette; the monthly AI spend cap is atomic across
+  parallel calls; `npm run release` cuts a release in one command; and a
+  screenshot gallery (`docs/screenshots.md`).
 - **v4.23.2 (2026-08-31) — the tooling survives PowerShell 5.1.** The
   Windows `.ps1` scripts shipped without a BOM, so real Windows PowerShell
   read them as ANSI and choked on the em dashes before running a single

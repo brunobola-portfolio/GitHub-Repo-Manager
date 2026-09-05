@@ -338,24 +338,55 @@ second path). "Coming soon" on SSO/SAML stays: it is honest and the
 pricing gate enforces it. "Repos" in the phone tab bar is a deliberate
 short label.
 
+## Sixth pass (2026-09-06): everything closed, released and deployed
+
+- **Mermaid on the brand palette.** Bruno spotted the README reader's flow
+  diagram in Mermaid's stock lavender. One shared configuration
+  (`src/utils/mermaidConfig.js`, base theme, slate and brand variables, both
+  themes) now drives the README reader, the Deep Review walkthrough and the
+  Diagram Generator; it loads with Mermaid itself so the eager chunk pays
+  nothing. Verified in the browser: brand-50 fills, brand-500 borders.
+- **Atomic AI spend cap.** Every allowed `checkAISpendCap` reserves a cent in
+  memory until `recordAISpend` settles it, `guardedGenerate` releases it on
+  a provider failure, or it expires after two minutes. Seven tests; removing
+  the reservation reddens four of them.
+- **One-command release.** `npm run release -- minor --title "…" --push`
+  promotes Unreleased, rewrites the compare links, bumps the version fields,
+  refreshes the README link, commits, tags and pushes. Seven unit tests on
+  the pure transforms; the runbook in `docs/operations.md` points at it.
+- **Images with more weight.** The README gallery is open instead of
+  collapsed, the migration section shows the wizard, and
+  `docs/screenshots.md` is generated from `docs/images` with captions.
+- **CI caught two things the local suite could not.** Four stale links in
+  old plans and specs (the link check gates CI), and the eager index chunk
+  at 62.3 KB gzipped against a 58 KB ceiling: the growth is app-shell code
+  from this week's features, nothing lazy was hoisted, so the ceiling was
+  re-baselined at 65 KB with the same 4% margin as before.
+- **v4.24.0 cut with the new script** and pushed; the tag ran Release,
+  Docker, the Windows package and the automatic deploy on the VPS.
+- **Site.** The `/repomanager` page on bolalabs.pt sells nine capabilities
+  on one accent (it sold six from v4.4 in a rainbow of tints), carries a
+  "What's next" strip of five roadmap items labelled as unshipped, and its
+  facts match the product (7,700+ tests; SQLite, Docker and the Windows
+  installer instead of Redis and BullMQ; no SLA the product does not
+  publish). SEO description and the Home card describe today's product in
+  four languages. Typecheck and build clean; checked at 1440 and 390 px in
+  both themes.
+
 ## Still open
 
 1. **Sign the Windows installer** (Authenticode). Needs a code-signing
    certificate provisioned as a CI secret and a signing step in
-   `windows-package.yml`. Effort M; the one item a buyer will notice.
-2. **Automate the release bump and changelog** (a changesets-style script)
-   so the manual steps in the runbook cannot be skipped. Effort S.
-3. **Atomic AI spend cap** — a `reserveSpend/settleSpend` pair mirroring
-   `guardedIncrement`, with a concurrency test. Effort S–M.
-4. **`qs` moderate advisory** — bump the parent package; the lockfile must
-   be regenerated inside node:22 on Linux (Docker), never on Windows.
-5. **Raw `fetch()`, the last 39** — documented exceptions; the AI client
-   (`src/api/ai.js`) is the one worth a dedicated migration. `/api`
-   literals: 66 remain, ratcheted.
-6. **Larger refactors.** Four data-loading layers coexist (FE-08); 159
-   `eslint-disable` escapes on the hooks rules (FE-17). A dedicated
+   . Effort M; the one item a buyer will notice.
+2. ** moderate advisory** — Dependabot #338 carries the Linux-generated
+   lockfile; merge it once its rebased checks are green. Never regenerate the
+   lockfile on Windows.
+3. **Raw , the last 39** — documented exceptions; the AI client
+   () is the one worth a dedicated migration.    literals: 66 remain, ratcheted.
+4. **Larger refactors.** Four data-loading layers coexist (FE-08); 159
+    escapes on the hooks rules (FE-17). A dedicated
    webhook rate-limit bucket before org-scale traffic.
-7. **Not built, by choice.** A contribution heatmap (G11); PR stacking
+5. **Not built, by choice.** A contribution heatmap (G11); PR stacking
    (GitHub ships it natively).
-8. **Environment.** Windows reserves ports 2906–3005 on the development
-   machine; everything here runs with `PORT=3006`.
+6. **Environment.** Windows reserves ports 2906–3005 on the development
+   machine; everything here runs with .
