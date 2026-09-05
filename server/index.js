@@ -203,6 +203,9 @@ app.use(helmet({
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
             imgSrc: ["'self'", "data:", "https://github.com", "https://avatars.githubusercontent.com", "https://*.githubusercontent.com"],
             connectSrc: ["'self'", config.frontendUrl],
+            // Helmet's defaults already supply this; spelled out so a future
+            // `useDefaults: false` cannot silently drop clickjacking protection.
+            frameAncestors: ["'self'"],
         }
     } : false,
     crossOriginEmbedderPolicy: false,
@@ -213,6 +216,14 @@ app.use(helmet({
     // is ever served from an apex.
     hsts: config.nodeEnv === 'production' ? { maxAge: 63072000, includeSubDomains: true } : false,
 }));
+// Helmet 8 dropped Permissions-Policy from its defaults (it's a separate
+// package upstream now), so nothing was sending it. This app doesn't use any
+// of these browser features anywhere, so deny them all outright rather than
+// leaving the header absent.
+app.use((req, res, next) => {
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
+    next();
+});
 app.use(cors({
     origin: config.nodeEnv === 'production' ? config.frontendUrl : true,
     credentials: true,

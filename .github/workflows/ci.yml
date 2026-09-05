@@ -187,12 +187,13 @@ jobs:
         run: npm ci --no-audit --no-fund
       - run: npm run build
       # Build-gated honesty checks: no mock/demo data leaked into the production
-      # bundle (build-honesty) and the eager bundle stays within budget
-      # (bundle-budget). Both scan dist/, so they must run AFTER the build, and
-      # they self-skip unless RUN_BUILD_TESTS=1 — which nothing set before, so
-      # they silently skipped on every CI run until now.
+      # bundle (build-honesty), the eager bundle stays within budget
+      # (bundle-budget), and postbuild precompression actually produces smaller
+      # .br siblings (precompress). All three scan dist/, so they must run
+      # AFTER the build, and they self-skip unless RUN_BUILD_TESTS=1 — which
+      # nothing set before, so they silently skipped on every CI run until now.
       - name: Build-gated honesty checks
-        run: RUN_BUILD_TESTS=1 npx vitest run tests/build/build-honesty.test.js tests/build/bundle-budget.test.js
+        run: RUN_BUILD_TESTS=1 npx vitest run tests/build/build-honesty.test.js tests/build/bundle-budget.test.js tests/build/precompress.test.js
 
   # package.json declares `engines: >=22.14 <25` — two LTS lines. Every other
   # job runs the upper one (24, the deployment target), which would leave the
