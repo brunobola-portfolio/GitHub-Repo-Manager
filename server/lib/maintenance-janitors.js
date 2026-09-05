@@ -32,6 +32,7 @@ import { purgeOldSucceeded as purgeGhOutbox } from './gh-outbox.js';
 import { cleanupExpired as cleanupUndoLog } from './work-board-undo-log.js';
 import { runDbBackupOnce } from './db-backup.js';
 import { runDigestPassOnce } from './digest-mailer.js';
+import { runHealthSnapshotCaptureOnce } from './work-board-health.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
@@ -119,7 +120,7 @@ export async function runDailyMaintenanceOnce() {
         return { retention: null, ghCachePurged: 0, eventsPurged: null, backup: null, skipped: true };
     }
     dailyRunning = true;
-    const summary = { retention: null, ghCachePurged: 0, eventsPurged: null, backup: null };
+    const summary = { retention: null, ghCachePurged: 0, eventsPurged: null, backup: null, healthSnapshots: null };
     try {
         try {
             summary.retention = await runRetentionPass({});
@@ -141,6 +142,15 @@ export async function runDailyMaintenanceOnce() {
             summary.backup = await runDbBackupOnce();
         } catch (err) {
             logger.warn({ err }, '[maintenance] db backup failed');
+        }
+        try {
+            // G9 portfolio health scorecard: turn each tracked repo's already-
+            // cached community-health score into a history point (bounded,
+            // skips anything captured in the last 24h — see work-board-health.js
+            // for why this never calls GitHub itself).
+            summary.healthSnapshots = runHealthSnapshotCaptureOnce();
+        } catch (err) {
+            logger.warn({ err }, '[maintenance] health snapshot capture failed');
         }
         logger.info(summary, '[maintenance] daily pass complete');
     } finally {

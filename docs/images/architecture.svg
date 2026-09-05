@@ -37,7 +37,7 @@
   <!-- Express API -->
   <rect class="card" x="270" y="254" width="380" height="84" rx="10" filter="url(#sh)"/>
   <text class="t" x="460" y="282" text-anchor="middle" font-size="15.5" font-weight="700">Express 5 API · :3001</text>
-  <text class="b" x="460" y="304" text-anchor="middle" font-size="12" font-weight="600">341 handlers · 77 route modules</text>
+  <text class="b" x="460" y="304" text-anchor="middle" font-size="12" font-weight="600">342 handlers · 77 route modules</text>
   <text class="m" x="460" y="323" text-anchor="middle" font-size="11">Helmet · Zod validation · rate-limit · session cookies (httpOnly)</text>
 
   <!-- AI BYOK side box -->

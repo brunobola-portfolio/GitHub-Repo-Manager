@@ -135,7 +135,7 @@ const ALLOWLIST = new Set([
     'server/routes/license.js:169',           // 'env_license_set'
     'server/routes/license.js:193',           // 'admin_required_multi_user'
     'server/routes/license.js:198',           // 'admin_only'
-    'server/routes/migration.js:229',         // 'upgrade_required'
+    'server/routes/migration.js:230',         // 'upgrade_required'
     'server/routes/user-ai-config.js:106',    // 'endpoint_not_allowed'
 ]);
 

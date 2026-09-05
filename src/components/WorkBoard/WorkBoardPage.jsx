@@ -8,13 +8,15 @@
  *   4. Review Load  — reviewer distribution (Free+)
  *   5. Tech Debt    — labelled issues + hotspots (Free+)
  *   6. DORA         — deploy freq + lead time (Free+, moved off Enterprise 2026-07-18)
+ *   7. Health       — portfolio health scorecard, ranked + trended (Free+, G9)
  */
 
 import { useState, useEffect, lazy, Suspense } from 'react'
+import { apiCall } from '../../utils/api'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     GitPullRequest, CircleDot, BarChart3,
-    AlertTriangle, Wrench, Users, RefreshCw,
+    AlertTriangle, Wrench, Users, RefreshCw, HeartPulse,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import {
@@ -52,9 +54,10 @@ const MyIssuesTab = lazy(() => import('./tabs/MyIssuesTab').then(m => ({ default
 const ReviewLoadTab = lazy(() => import('./tabs/ReviewLoadTab').then(m => ({ default: m.ReviewLoadTab })))
 const TechDebtTab = lazy(() => import('./tabs/TechDebtTab').then(m => ({ default: m.TechDebtTab })))
 const DORATab = lazy(() => import('./tabs/DORATab').then(m => ({ default: m.DORATab })))
+const HealthTab = lazy(() => import('./tabs/HealthTab').then(m => ({ default: m.HealthTab })))
 import { SectionSpinner } from '../ui/Spinner'
 import { ManageReposButton } from './ManageReposButton'
-import { MOCK_MODE } from '../../config'
+import { MOCK_MODE , API_BASE_URL } from '../../config'
 import { emitAppEvent, onAppEvent, APP_EVENTS } from '../../utils/appEvents'
 import { DURATION, EASE } from '../ui/motion'
 
@@ -69,6 +72,7 @@ const TABS = [
     { id: 'reviewload',  label: 'Review Load', icon: Users,          component: ReviewLoadTab, accent: 'brand' },
     { id: 'techdebt',    label: 'Tech Debt',   icon: Wrench,         component: TechDebtTab, accent: 'attention' },
     { id: 'dora',        label: 'DORA',        icon: BarChart3,      component: DORATab, accent: 'brand' },
+    { id: 'health',      label: 'Health',      icon: HeartPulse,     component: HealthTab, accent: 'brand' },
 ]
 
 // TabBar's per-tab `badge` slot renders any tier pill a tab carries (none
@@ -168,8 +172,7 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
     const [hasAI, setHasAI] = useState(false)
     useEffect(() => {
         if (MOCK_MODE) return
-        fetch('/api/user/ai-config', { credentials: 'include' })
-            .then(r => r.json())
+        apiCall(`${API_BASE_URL}/api/user/ai-config`)
             .then(d => setHasAI(!!(d.hasCompletionKey || d.serverFallbackAvailable)))
             .catch(() => {})
     }, [])
@@ -328,7 +331,7 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
                 />
             ) : (
             /* Main card */
-            <div className="relative rounded-3xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+            <div className="relative rounded-3xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 ds-elevation-sm overflow-hidden">
                 <HeroHalo palette="neutral" intensity="subtle" position="top" />
 
                 {/* Tab bar */}

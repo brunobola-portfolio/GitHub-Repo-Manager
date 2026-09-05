@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { EASE, SPRING, DURATION } from '../../ui/motion'
 import {
   CheckCircle2, XCircle, Clock, Package, ClipboardList, BookOpen,
-  Download, Plus, History, Loader2, AlertTriangle, ExternalLink, Ban,
+  Download, FileText, Plus, History, Loader2, AlertTriangle, ExternalLink, Ban,
   Sparkles, Trophy, ChevronDown, ChevronUp, Lightbulb,
   ArrowRight, Zap, Shield, ShieldCheck, BarChart3, Timer, RefreshCw, Activity,
 } from 'lucide-react'
 import { AnimatedCopyIcon } from '../../ui/AnimatedCopyIcon'
 import { migrationApi } from '../../../api/migration'
+import { API_ENDPOINTS } from '../../../config'
 import { SectionSpinner } from '../../ui/Spinner'
 import { RowIconBadge } from '../../ui/RowIconBadge'
 import { Badge } from '../../ui/Badge'
@@ -582,6 +583,38 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
     setTimeout(() => URL.revokeObjectURL(url), 100)
   }
 
+  const [downloadingMd, setDownloadingMd] = useState(false)
+
+  // Raw fetch (not apiCall/migrationApi) because the response is plain
+  // Markdown text, not JSON — apiCall always parses the body as JSON.
+  const handleDownloadMarkdown = async () => {
+    if (!planId) return
+    setDownloadingMd(true)
+    try {
+      const res = await fetch(`${API_ENDPOINTS.migrationPlans}/${planId}/report?format=md`, {
+        credentials: 'include',
+      })
+      if (!res.ok) throw new Error(`Report request failed (${res.status})`)
+      const markdown = await res.text()
+      const blob = new Blob([markdown], { type: 'text/markdown' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.style.display = 'none'
+      a.href = url
+      a.download = `migration-report-${planId}.md`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 100)
+    } catch {
+      // Best-effort: the JSON export button next to this one always works
+      // from the report already in memory, so a network hiccup here doesn't
+      // strand the user without any way to get a report out.
+    } finally {
+      setDownloadingMd(false)
+    }
+  }
+
   /* Loading state */
   if (loading) {
     return <SectionSpinner label="Loading migration report..." padding="p-16" />
@@ -773,7 +806,23 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
             transition-all duration-200 ds-focus-ring"
         >
           <Download className="w-4 h-4" />
-          Export Report
+          Export Report (JSON)
+        </button>
+
+        <button
+          type="button"
+          onClick={handleDownloadMarkdown}
+          disabled={downloadingMd}
+          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-xl
+            text-slate-600 dark:text-slate-300
+            bg-white/80 dark:bg-white/5
+            border border-slate-200/60 dark:border-white/10
+            hover:bg-slate-50 dark:hover:bg-white/10
+            hover:border-slate-300 dark:hover:border-white/20
+            transition-all duration-200 ds-focus-ring disabled:opacity-50"
+        >
+          {downloadingMd ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+          Download Report (Markdown)
         </button>
 
         {onViewHistory && (
@@ -801,7 +850,7 @@ export default function SummaryStep({ planId, onNewMigration, onViewHistory, onR
               text-white
               bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)]
               hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-brand-600
-              shadow-md
+              ds-elevation-md
               transition-all duration-200 ml-auto ds-focus-ring"
           >
             <Plus className="w-4 h-4" />

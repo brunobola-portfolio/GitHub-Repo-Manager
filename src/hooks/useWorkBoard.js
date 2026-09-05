@@ -11,6 +11,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { getCached, setCached } from './utils/swrCache'
 import { mark } from '../lib/observability'
+import { apiCall } from '../utils/api'
+import { API_BASE_URL } from '../config'
 
 // Mock data lives in src/__mocks__/mockWorkBoard.js. The MOCKS_ENABLED
 // check is inlined at each callsite so Vite's dead-code analysis can drop
@@ -23,15 +25,7 @@ export { getCached, setCached, invalidateCached, clearCache } from './utils/swrC
 // ---------------------------------------------------------------------------
 
 async function apiFetch(url) {
-    const res = await fetch(url, { credentials: 'include' })
-    if (!res.ok) {
-        const body = await res.json().catch(() => null)
-        const err = new Error(body?.message || body?.error || `API error: ${res.status}`)
-        err.status = res.status
-        err.body = body
-        throw err
-    }
-    return res.json()
+    return apiCall(url)
 }
 
 function useWorkBoardFetch(url, mockKey, { refreshIntervalMs = 60_000 } = {}) {
@@ -153,39 +147,47 @@ function useWorkBoardFetch(url, mockKey, { refreshIntervalMs = 60_000 } = {}) {
 // ---------------------------------------------------------------------------
 
 export function useMyPendingReviews(opts = {}) {
-    return useWorkBoardFetch('/api/v1/work-board/my-reviews', 'reviews', opts)
+    return useWorkBoardFetch(`${API_BASE_URL}/api/v1/work-board/my-reviews`, 'reviews', opts)
 }
 
 export function useStalePRs({ staleAfterDays = 7, ...opts } = {}) {
-    const url = `/api/v1/work-board/stale-prs?staleAfterDays=${staleAfterDays}`
+    const url = `${API_BASE_URL}/api/v1/work-board/stale-prs?staleAfterDays=${staleAfterDays}`
     return useWorkBoardFetch(url, 'stalePRs', opts)
 }
 
 export function useMyOpenIssues(opts = {}) {
-    return useWorkBoardFetch('/api/v1/work-board/my-issues', 'issues', opts)
+    return useWorkBoardFetch(`${API_BASE_URL}/api/v1/work-board/my-issues`, 'issues', opts)
 }
 
 export function useDORAMetrics({ environment = 'production', ...opts } = {}) {
-    const url = `/api/v1/work-board/deploy-freq?environment=${environment}`
+    const url = `${API_BASE_URL}/api/v1/work-board/deploy-freq?environment=${environment}`
     return useWorkBoardFetch(url, 'dora', opts)
 }
 
 export function useDORASummary({ environment = 'production', ...opts } = {}) {
-    const url = `/api/v1/work-board/dora?environment=${environment}`
+    const url = `${API_BASE_URL}/api/v1/work-board/dora?environment=${environment}`
     return useWorkBoardFetch(url, 'doraFull', opts)
 }
 
 export function useTechDebt({ repoIds, ...opts } = {}) {
     const qs = repoIds && repoIds.length > 0 ? `?repoIds=${repoIds.join(',')}` : ''
-    return useWorkBoardFetch(`/api/v1/work-board/tech-debt${qs}`, 'techDebt', opts)
+    return useWorkBoardFetch(`${API_BASE_URL}/api/v1/work-board/tech-debt${qs}`, 'techDebt', opts)
 }
 
 export function useReviewLoad({ repoIds, ...opts } = {}) {
     const qs = repoIds && repoIds.length > 0 ? `?repoIds=${repoIds.join(',')}` : ''
-    return useWorkBoardFetch(`/api/v1/work-board/review-load${qs}`, 'reviewLoad', opts)
+    return useWorkBoardFetch(`${API_BASE_URL}/api/v1/work-board/review-load${qs}`, 'reviewLoad', opts)
 }
 
 export function useKpiSnapshots({ days = 7 } = {}) {
-    const url = `/api/v1/work-board/kpi-snapshots?days=${days}`;
+    const url = `${API_BASE_URL}/api/v1/work-board/kpi-snapshots?days=${days}`;
     return useWorkBoardFetch(url, 'kpiSnapshots', { refreshIntervalMs: 5 * 60 * 1000 });
+}
+
+// G9 — portfolio health scorecard (HealthTab). A slower refresh interval
+// than the DORA/tech-debt tabs: the backend runs live on-demand GitHub
+// checks for stale repos on each request (bounded), so polling every 60s
+// like the other tabs would needlessly re-trigger those checks.
+export function useWorkBoardHealth(opts = {}) {
+    return useWorkBoardFetch(`${API_BASE_URL}/api/v1/work-board/health`, 'health', { refreshIntervalMs: 5 * 60 * 1000, ...opts });
 }

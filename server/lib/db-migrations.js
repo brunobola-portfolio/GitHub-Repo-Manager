@@ -648,6 +648,36 @@ export const MIGRATIONS = [
             addColumnIfMissing(db, 'users', 'digest_last_sent_at', 'TEXT');
         },
     },
+    {
+        version: 37,
+        name: 'work_board_health_snapshots: portfolio health scorecard history (G9)',
+        up(db) {
+            // Append-only history of community-health scores per (user, repo),
+            // distinct from `community_health_cache` (which only ever holds the
+            // LATEST score, overwritten on every re-check via its ON CONFLICT
+            // UPDATE). The Work Board's Health tab needs a week-over-week delta,
+            // which requires at least two points in time — hence a separate,
+            // insert-only table rather than reusing the cache.
+            //
+            // Written by two producers: the on-demand health check route
+            // (server/routes/work-board.js's GET /health) and the periodic KPI
+            // snapshot job (server/lib/maintenance-janitors.js), which skips a
+            // repo already captured in the last 24h so the two producers don't
+            // duplicate rows on a normal day.
+            db.exec(`
+                CREATE TABLE IF NOT EXISTS work_board_health_snapshots (
+                    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id         INTEGER NOT NULL,
+                    repo_full_name  TEXT NOT NULL,
+                    score           INTEGER NOT NULL,
+                    failing_checks  TEXT NOT NULL DEFAULT '[]',
+                    captured_at     TEXT NOT NULL DEFAULT (datetime('now')),
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                )
+            `);
+            db.exec('CREATE INDEX IF NOT EXISTS idx_wbhs_user_repo_time ON work_board_health_snapshots(user_id, repo_full_name, captured_at)');
+        },
+    },
 ];
 
 // The highest version this build of the app knows how to apply. Used to

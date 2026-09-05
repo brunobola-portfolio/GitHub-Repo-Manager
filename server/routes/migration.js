@@ -24,6 +24,7 @@ import { createGitTagWriter } from '../lib/tagging/git-tag-writer.js';
 import { createHttpShim } from '../lib/tagging/http-shim.js';
 import { createTaggingWorkdirResolver } from '../lib/tagging/tagging-workdir-resolver.js';
 import { assertReady } from '../lib/env/readiness.js';
+import { buildMigrationReportData, renderMigrationReportMarkdown } from '../lib/migration-report.js';
 
 /**
  * Map a migration job descriptor to the tool capabilities it requires and
@@ -250,67 +251,6 @@ const chargeMigrationQuotaTxn = db.transaction((userId, planId) => {
 });
 function chargeMigrationQuota(userId, planId) {
   chargeMigrationQuotaTxn(userId, planId);
-}
-
-/**
- * Generate a human-friendly suggestion for a migration error.
- *
- * Accepts the failed task's config so we can tailor the message — e.g. in-place
- * TFVC conversion needs Code (Read, Write & Manage) on the destination project,
- * which a "read-only" PAT does not provide.
- */
-function getSuggestionForError(errorMsg, type, config = null) {
-  if (!errorMsg) return '';
-  const msg = errorMsg.toLowerCase();
-  const cfg = (() => {
-    try { return typeof config === 'string' ? JSON.parse(config) : (config || {}); } catch { return {}; }
-  })();
-  const isInPlace = !!cfg.inPlace;
-  // Auth errors
-  if (msg.includes('authentication') || msg.includes('401') || msg.includes('403') || msg.includes('pat is required')) {
-    if (type === 'repo-tfvc' && isInPlace) {
-      return 'The Azure DevOps PAT was rejected. For TFVC → Git in-place conversion the PAT must (1) come from the SAME Azure DevOps / TFS server as the destination, (2) be valid and not expired, and (3) include the "Code (Read, Write & Manage)" scope — a read-only PAT is enough to list repos but cannot create the destination Git repo or trigger the Import API.';
-    }
-    if (type === 'repo-tfvc') {
-      return 'The Azure DevOps PAT was rejected. Verify it is not expired and includes "Code (Read, Write & Manage)" — the TFVC → Git flow creates a temporary Git repo in Azure before pushing.';
-    }
-    return 'Your access token may have expired or lacks the required permissions. Verify the token is valid and has the right scopes (Code: Read on the source; Code: Read, Write & Manage on the destination).';
-  }
-  // Not found
-  if (msg.includes('not found') || msg.includes('404'))
-    return 'The source repository could not be found. Verify the organization, project, and repository name are correct.';
-  // Git LFS not installed on the server (lfs-migrate path)
-  if (msg.includes('git lfs is not installed') || msg.includes('git-lfs'))
-    return 'Install git-lfs on the migration server (https://git-lfs.com) so files over 100 MB can be converted to LFS, then retry. Alternatively, exclude this repository.';
-  // Target already exists
-  if (msg.includes('already exists'))
-    return 'A repository with the same name already exists on the target. Rename the target or delete the existing repository first.';
-  // Invalid target repo name
-  if (msg.includes('invalid target repository name'))
-    return 'The target repository name is invalid. Names cannot start with _ or ., end with ., or contain special characters. Rename and try again.';
-  // URL/network issues
-  if (msg.includes('url rejected') || msg.includes('bad hostname'))
-    return 'The clone URL was rejected — this can happen with special characters in the project name. Try re-running the migration.';
-  if (msg.includes('private or internal network') || msg.includes('resolves to a private'))
-    return 'The repository URL was blocked because it resolved to a private or internal network address. Verify the source URL is a public Azure DevOps address.';
-  // Timeouts
-  if (msg.includes('timeout') || msg.includes('timed out'))
-    return 'The operation timed out. This can happen with very large repositories. Try again or consider migrating during off-peak hours.';
-  // TFVC conversion
-  if (msg.includes('tfvc conversion failed'))
-    return 'The TFVC-to-Git conversion failed on the Azure DevOps side. Verify the TFVC path exists and the project supports Git imports.';
-  // Rate limiting
-  if (msg.includes('rate limit'))
-    return 'A rate limit was hit. Wait a few minutes and retry the migration.';
-  // Wiki-specific
-  if (msg.includes('could not retrieve wiki clone url'))
-    return 'The wiki could not be found in Azure DevOps. Verify the wiki ID is correct and the project has an active wiki.';
-  // Type-specific fallbacks (must remain after more specific patterns above)
-  if (type === 'work-items')
-    return 'Work item migration encountered an error. Verify the Azure DevOps project has accessible work items and the token has work item read permissions.';
-  if (type === 'wiki')
-    return 'Wiki migration failed. Verify the wiki exists and is accessible with your current credentials.';
-  return '';
 }
 
 // POST /api/migration/plans — Create a new plan
@@ -801,33 +741,33 @@ router.post('/analyze', requireAuth, requireScope('ai'), async (req, res) => {
   }
 });
 
-// GET /api/migration/plans/:id/report — Export report
+// GET /api/migration/plans/:id/report?format=md|json — Export report
+//
+// Renders the same tenant-scoped plan data MigrationHistory already stores
+// (tasks with their config/metadata, plus provenance marks) as either the
+// legacy JSON shape (default, back-compat with existing consumers of
+// migrationApi.getReport) or a Markdown document a migration lead can
+// forward. No AI call is involved — purely a read + render of stored data.
 router.get('/plans/:id/report', requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const ownership = db.prepare('SELECT id FROM migration_plans WHERE id = ? AND user_id = ?').get(id, req.session.userId);
     if (!ownership) return res.status(404).json({ error: 'Plan not found' });
     const plan = engine.getPlanStatus(id);
-    const startedAt = plan.started_at;
-    const completedAt = plan.completed_at;
-    const durationSeconds = startedAt && completedAt
-      ? Math.round((new Date(completedAt) - new Date(startedAt)) / 1000) : 0;
-    const summary = plan.summary || { total: 0, success: 0, failed: 0, skipped: 0 };
-    const tasks = plan.tasks.map(t => ({
-      id: t.id, type: t.type, sourceRef: t.source_ref, targetRef: t.target_ref,
-      status: t.status,
-      durationSeconds: t.started_at && t.completed_at
-        ? Math.round((new Date(t.completed_at) - new Date(t.started_at)) / 1000) : 0,
-      metadata: t.metadata || {}
-    }));
-    const errors = plan.tasks.filter(t => t.status === 'failed').map(t => ({
-      taskId: t.id, type: t.type, targetRef: t.target_ref, error: t.error_message || 'Unknown error',
-      suggestion: getSuggestionForError(t.error_message, t.type, t.config),
-    }));
-    res.json({
-      plan: { id: plan.id, status: plan.status, isDryRun: !!plan.is_dry_run, startedAt, completedAt, durationSeconds },
-      summary, tasks, errors, generatedAt: new Date().toISOString()
-    });
+    // Marks are user-scoped via the owning plan (mirrors migration-marks.js's
+    // /plan/:id route) — the ownership check above already confirmed the
+    // plan belongs to this user, so a direct plan_id filter is safe here.
+    const marks = db.prepare('SELECT * FROM migration_marks WHERE plan_id = ? ORDER BY created_at').all(id);
+    const report = buildMigrationReportData(plan, marks);
+
+    const format = String(req.query.format || 'json').toLowerCase();
+    if (format === 'md' || format === 'markdown') {
+      const markdown = renderMigrationReportMarkdown(report);
+      res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="migration-report-${id}.md"`);
+      return res.send(markdown);
+    }
+    res.json(report);
   } catch (err) {
     res.status(500).json({ error: safeError(err, 'Operation failed') });
   }

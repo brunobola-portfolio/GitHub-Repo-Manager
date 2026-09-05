@@ -113,6 +113,9 @@ export const ERASURE_REGISTRY = [
     { table: 'work_board_snooze', action: 'erase', key: { column: 'user_id', source: 'userId' } },
     { table: 'work_board_presets', action: 'erase', key: { column: 'user_id', source: 'userId' } },
     { table: 'work_board_kpi_snapshots', action: 'erase', key: { column: 'user_id', source: 'userId' } },
+    // G9 portfolio health scorecard history (migration 37) — same erasure
+    // shape as the other work_board_* per-user tables above.
+    { table: 'work_board_health_snapshots', action: 'erase', key: { column: 'user_id', source: 'userId' } },
     { table: 'gh_cache', action: 'erase', key: { column: 'user_id', source: 'userId' } },
     { table: 'gh_outbox', action: 'erase', key: { column: 'user_id', source: 'userId' } },
 

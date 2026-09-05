@@ -95,6 +95,16 @@ function getDORAFull() {
   return _doraFull
 }
 
+const HEALTH = {
+  repos: [
+    { repoFullName: 'acme/backend', score: 91, failingChecks: [], lastCheckedAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString(), delta: 4 },
+    { repoFullName: 'acme/infra', score: 84, failingChecks: ['Add SECURITY.md'], lastCheckedAt: new Date(Date.now() - 6 * 3600 * 1000).toISOString(), delta: 0 },
+    { repoFullName: 'acme/frontend', score: 67, failingChecks: ['Add CONTRIBUTING.md', 'Increase commit frequency'], lastCheckedAt: new Date(Date.now() - 20 * 3600 * 1000).toISOString(), delta: -9 },
+    { repoFullName: 'acme/docs', score: 58, failingChecks: ['Add a LICENSE file', 'Add SECURITY.md for vulnerability reporting'], lastCheckedAt: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(), delta: -3 },
+    { repoFullName: 'acme/legacy-tools', score: null, failingChecks: [], lastCheckedAt: null, delta: null },
+  ],
+}
+
 const MOCKS = {
   reviews: () => REVIEWS,
   stalePRs: () => STALE_PRS,
@@ -104,6 +114,7 @@ const MOCKS = {
   kpiSnapshots: () => KPI_SNAPSHOTS,
   dora: getDORA,
   doraFull: getDORAFull,
+  health: () => HEALTH,
 }
 
 export function getMockWorkBoardData(key) {

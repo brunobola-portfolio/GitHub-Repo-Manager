@@ -48,7 +48,17 @@ import { applyTrackedFilter } from '../lib/work-board-filter.js';
 import { getSnapshots } from '../lib/work-board-kpi-snapshots.js';
 import { todayISO } from '../lib/dates.js';
 import db from '../db.js';
-import { getScopedRepoIds } from '../lib/work-board-tracking.js';
+import { getScopedRepoIds, getTrackedRepos } from '../lib/work-board-tracking.js';
+import { githubApi } from '../lib/github-api.js';
+import { communityHealthService } from '../community-health-service.js';
+import {
+    getLatestSnapshot,
+    isSnapshotFresh,
+    getWeekOverWeekDelta,
+    captureHealthSnapshot,
+    failingChecksFromRecommendations,
+} from '../lib/work-board-health.js';
+import logger from '../lib/logger.js';
 
 const router = express.Router();
 
@@ -515,6 +525,88 @@ router.get('/kpi-snapshots', requireAuth, (req, res) => {
         res.json({ data });
     } catch (e) {
         errorResponse(res, 500, safeError(e, 'Failed to fetch KPI snapshots'));
+    }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/v1/work-board/health  (Free — portfolio health scorecard, G9)
+//
+// Ranked, trended view over the existing per-repo community-health score
+// (server/community-health-service.js) for every tracked repository: last
+// known score, its failing checks, and the week-over-week delta computed
+// from server/lib/work-board-health.js's snapshot history. No new scoring
+// logic — this only aggregates and persists a score that already exists.
+//
+// Gated exactly like DORA (requireAuth only, no requireTier): read-only
+// aggregation over data already fetched under the user's own token, no
+// marginal cost to protect behind a paywall.
+//
+// Live GitHub checks are bounded per request (HEALTH_LIVE_CHECK_CAP): a
+// tracked repo with no snapshot yet, or a stale (>24h) one, gets a fresh
+// on-demand check — capped so a portfolio of hundreds of tracked repos can't
+// turn one page load into hundreds of GitHub API calls. Repos beyond the cap
+// simply report their last known score (possibly null) until the next visit
+// or the daily background capture (maintenance-janitors.js) catches up.
+// ---------------------------------------------------------------------------
+const HEALTH_LIVE_CHECK_CAP = 5;
+
+router.get('/health', requireAuth, async (req, res) => {
+    try {
+        const userId = req.session.userId;
+        const token = req.session?.accessToken;
+        const { items: tracked } = getTrackedRepos(userId, { limit: 500 });
+
+        if (tracked.length === 0) {
+            return res.json({ data: { repos: [] }, meta: { source: 'none', fetchedAt: new Date() } });
+        }
+
+        let liveChecksUsed = 0;
+        const repos = [];
+        for (const t of tracked) {
+            const repoFullName = t.repo_full_name;
+            let snapshot = getLatestSnapshot(userId, repoFullName);
+
+            if (!isSnapshotFresh(snapshot) && token && liveChecksUsed < HEALTH_LIVE_CHECK_CAP) {
+                const [owner, repo] = repoFullName.split('/');
+                if (owner && repo) {
+                    try {
+                        const { data: repoData } = await githubApi(`/repos/${owner}/${repo}`, token);
+                        const analysis = await communityHealthService.analyzeRepository(owner, repo, token);
+                        communityHealthService.cacheResults(repoData.id, analysis.metrics, analysis.recommendations, userId);
+                        const failingChecks = failingChecksFromRecommendations(analysis.recommendations);
+                        captureHealthSnapshot(userId, repoFullName, analysis.metrics.healthScore, failingChecks);
+                        snapshot = getLatestSnapshot(userId, repoFullName);
+                        liveChecksUsed++;
+                    } catch (err) {
+                        logger.warn({ err, repoFullName }, '[work-board-health] on-demand check failed');
+                    }
+                }
+            }
+
+            repos.push({
+                repoFullName,
+                score: snapshot ? snapshot.score : null,
+                failingChecks: snapshot ? (JSON.parse(snapshot.failing_checks || '[]')) : [],
+                lastCheckedAt: snapshot ? snapshot.captured_at : null,
+                delta: getWeekOverWeekDelta(userId, repoFullName),
+            });
+        }
+
+        // Ranked: highest score first; repos never checked yet (score: null)
+        // sink to the bottom rather than sorting as if score 0.
+        repos.sort((a, b) => {
+            if (a.score == null && b.score == null) return 0;
+            if (a.score == null) return 1;
+            if (b.score == null) return -1;
+            return b.score - a.score;
+        });
+
+        res.json({
+            data: { repos },
+            meta: { source: 'mixed', fetchedAt: new Date(), liveChecksUsed },
+        });
+    } catch (err) {
+        errorResponse(res, 500, safeError(err, 'Failed to fetch portfolio health'));
     }
 });
 

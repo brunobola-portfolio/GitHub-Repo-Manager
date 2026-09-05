@@ -13,6 +13,7 @@ import { TRANSITION } from './ui/motion'
 import { SectionSpinner, Spinner, SpinnerIcon } from './ui/Spinner'
 import { migrationApi } from '../api/migration'
 import { apiCall } from '../utils/api'
+import { API_ENDPOINTS } from '../config'
 import { formatDateTime, formatDurationSeconds, parseServerTimestamp } from '../utils/format'
 import { MarksBadge } from './MigrationHistory/MarksBadge.jsx'
 import { useToast } from '../hooks/useToast'
@@ -55,8 +56,8 @@ const STATUS_STYLES = {
     complete: { bg: 'bg-emerald-100 dark:bg-emerald-900/20', text: 'text-emerald-700 dark:text-emerald-400', icon: CheckCircle2 },
     completed: { bg: 'bg-emerald-100 dark:bg-emerald-900/20', text: 'text-emerald-700 dark:text-emerald-400', icon: CheckCircle2 },
     failed: { bg: 'bg-rose-100 dark:bg-rose-900/20', text: 'text-rose-700 dark:text-rose-400', icon: XCircle },
-    running: { bg: 'bg-blue-100 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-400', icon: SpinnerIcon },
-    executing: { bg: 'bg-blue-100 dark:bg-blue-900/20', text: 'text-blue-700 dark:text-blue-400', icon: SpinnerIcon },
+    running: { bg: 'bg-brand-100 dark:bg-brand-900/20', text: 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]', icon: SpinnerIcon },
+    executing: { bg: 'bg-brand-100 dark:bg-brand-900/20', text: 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]', icon: SpinnerIcon },
     pending: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-400', icon: Clock },
     draft: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-600 dark:text-slate-400', icon: Clock },
     paused: { bg: 'bg-amber-100 dark:bg-amber-900/20', text: 'text-amber-700 dark:text-amber-400', icon: Clock },
@@ -170,18 +171,25 @@ export function MigrationHistory({ isOpen, onClose }) {
         }
     }
 
+    // Downloads the Markdown report via a raw fetch (not apiCall) because the
+    // response body is plain text/markdown, not JSON — apiCall always parses
+    // JSON. `credentials: 'include'` mirrors apiCall's session-cookie behavior.
     const handleExportReport = async (plan) => {
         try {
-            const report = await migrationApi.getReport(plan.id)
-            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' })
+            const res = await fetch(`${API_ENDPOINTS.migrationPlans}/${plan.id}/report?format=md`, {
+                credentials: 'include',
+            })
+            if (!res.ok) throw new Error(`Report request failed (${res.status})`)
+            const markdown = await res.text()
+            const blob = new Blob([markdown], { type: 'text/markdown' })
             const url = URL.createObjectURL(blob)
             const a = document.createElement('a')
             a.href = url
-            a.download = `migration-report-${plan.id}.json`
+            a.download = `migration-report-${plan.id}.md`
             a.click()
             URL.revokeObjectURL(url)
         } catch (err) {
-            toast.errorFromException(err, { fallbackTitle: 'Failed to export migration report' })
+            toast.errorFromException(err, { fallbackTitle: 'Failed to download migration report' })
         }
     }
 
@@ -334,11 +342,11 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                     </Tooltip>
                                                 )}
                                                 {(plan.status === 'complete' || plan.status === 'completed') && (
-                                                    <Tooltip label="Export report">
+                                                    <Tooltip label="Download report (Markdown)">
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); handleExportReport(plan) }}
                                                             className="p-1.5 rounded-lg text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-colors ds-focus-ring"
-                                                            aria-label="Export report"
+                                                            aria-label="Download migration report"
                                                         >
                                                             <FileText className="w-4 h-4" />
                                                         </button>
@@ -429,7 +437,7 @@ export function MigrationHistory({ isOpen, onClose }) {
                                                 </div>
                                                 {job.status === 'running' && job.progressPct > 0 && (
                                                     <div className="mt-2 w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5">
-                                                        <div className="bg-blue-500 h-1.5 rounded-full transition-all" style={{ width: `${job.progressPct}%` }} />
+                                                        <div className="bg-brand-500 h-1.5 rounded-full transition-all" style={{ width: `${job.progressPct}%` }} />
                                                     </div>
                                                 )}
                                                 {job.errorMessage && (
