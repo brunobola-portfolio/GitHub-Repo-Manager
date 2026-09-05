@@ -301,7 +301,7 @@ describe('FeatureComparison.jsx ↔ feature-flags parity', () => {
         expect(comparisonFreeValue('DORA metrics (deploy frequency, lead time, change failure rate, MTTR)')).toBe('true')
     })
 
-    // White-glove migration services and Priority Support + SLA are manual,
+    // White-glove migration services and Priority support are manual,
     // service-based deliverables (support ticket + contract) — they have no
     // feature-flags.js key, unlike every other row in this suite. Exempted
     // from flag-backed parity by design (see design doc §4 "Keeping the
@@ -311,8 +311,8 @@ describe('FeatureComparison.jsx ↔ feature-flags parity', () => {
         expect(comparisonFreeValue('White-glove migration services')).toBe('false')
     })
 
-    it('Priority Support + SLA is Enterprise-only (no feature-flags key — manual service)', () => {
-        expect(comparisonFreeValue('Priority Support + SLA')).toBe('false')
+    it('Priority support is Enterprise-only (no feature-flags key — manual service)', () => {
+        expect(comparisonFreeValue('Priority support')).toBe('false')
     })
 })
 
@@ -450,7 +450,7 @@ describe('LicensePlanSection.jsx (Settings upsell) ↔ feature-flags parity', ()
 
     it('Pro upsell does not claim non-Pro deliverables (Priority support / Advanced analytics)', () => {
         const list = proUpsellArray()
-        // "Priority support" is an Enterprise deliverable (SLA); Pro is "Email support".
+        // "Priority support" is an Enterprise deliverable; Pro is "Email support".
         expect(list).not.toMatch(/Priority support/i)
         // "Advanced analytics" is a roadmap Enterprise item, not a Pro feature.
         expect(list).not.toMatch(/Advanced analytics/i)

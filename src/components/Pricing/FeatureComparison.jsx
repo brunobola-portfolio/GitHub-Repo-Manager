@@ -176,14 +176,16 @@ const CATEGORIES = [
     rows: [
       {
         feature: 'Support level',
-        values: ['Community', 'Email', 'Priority + SLA'],
+        values: ['Community', 'Email', 'Priority'],
       },
-      // Priority Support + SLA and White-glove migration services are manual,
+      // Priority support and White-glove migration services are manual,
       // service-based deliverables (support ticket + contract) — they have no
       // getFeatures() key to compare against, unlike every other row above.
       // See tests/pricing-feature-parity.test.js for the explicit exemption.
+      // Neither carries a response-time SLA — "Priority" means the ticket is
+      // triaged ahead of Community/Email queue, not a contracted time bound.
       {
-        feature: 'Priority Support + SLA',
+        feature: 'Priority support',
         values: [false, false, true],
       },
       {

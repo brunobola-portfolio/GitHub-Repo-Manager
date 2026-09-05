@@ -85,7 +85,7 @@ const TIERS_MONTHLY = [
       { label: 'SSO / SAML (coming soon)', included: false },
       { label: 'API keys', included: '100' },
       { label: 'White-glove migration services', included: true },
-      { label: 'Priority Support + SLA', included: true },
+      { label: 'Priority support', included: true },
     ],
   },
 ]

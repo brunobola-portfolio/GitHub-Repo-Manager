@@ -280,7 +280,7 @@ The hosted product is **free-first**: nearly every product feature — bulk ops,
 | Audit Logs                             | ✗               | ✗             | ✓          |
 | SSO / SAML _(roadmap)_                 | ✗               | ✗             | ✗          |
 | API keys                               | 25              | 50            | 100        |
-| Priority Support + SLA                 | ✗               | ✗             | ✓          |
+| Priority support                       | ✗               | ✗             | ✓          |
 | White-glove migration services         | ✗               | ✗             | ✓          |
 
 † **"Repo Advisor" names two surfaces, and only one of them is behind a flag.** The floating conversational assistant in this row is `POST /api/ai/chat` (`server/routes/ai/core.js`) — no deployment flag gates it, and it works out of the box on a self-hosted install with nothing but a BYOK key. The *Repo Advisor card inside the Work Board* — the 7-day trend summary, the suggestion chips, the preview-then-apply edits — is the gated one: `server/middleware/work-board-ai-gate.js` returns `404 AI_FEATURE_FLAG_OFF` unless `WORK_BOARD_AI_ENABLED=true` is set in the environment (`docker-compose.yml` forwards the variable), and each user must then opt in under `Settings → Work Board`. Both are tier-free — no plan unlocks either. No row in this matrix is gated by an environment flag.
@@ -542,7 +542,7 @@ The README is the trailhead — the full map lives in **[docs/index.md](docs/ind
 - **Architecture** — [overview](docs/architecture/overview.md) · [backend](docs/architecture/backend.md) · [AI client contracts](docs/architecture/ai-client-contracts.md)
 - **Features** — [AI Deep Review](docs/features/ai-deep-review.md) · [Live Inbox](docs/features/dashboard-live-inbox.md) · [Community WOW](docs/features/community-wow.md)
 - **Guides** — [AI providers (BYOK)](docs/ai-providers.md) · [GitHub webhooks](docs/guides/github-webhook-setup.md) · [Stripe setup](docs/guides/stripe-setup.md) · [Operations runbook](docs/operations.md)
-- **Reference** — [API](docs/api/API.md) · [Work Board API](docs/api/WORK-BOARD-API.md) · [Billing & licensing](docs/billing-and-licensing.md)
+- **Reference** — [API](docs/api/API.md) · [Work Board API](docs/api/WORK-BOARD-API.md) · [Billing & licensing](docs/billing-and-licensing.md) · [Privacy & data](docs/privacy-and-data.md)
 
 ---
 

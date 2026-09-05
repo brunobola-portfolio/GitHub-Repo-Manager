@@ -26,10 +26,10 @@ const plans = [
     name: 'Pro',
     price: '$19',
     period: 'per month',
-    // "Priority support" is Enterprise-only (SLA-backed) on the README matrix,
-    // PricingPage, FeatureComparison and the billing docs. Pro is email
-    // support. This is the first pricing surface a prospect sees, so it was
-    // also the first place the promise diverged.
+    // "Priority support" is Enterprise-only on the README matrix, PricingPage,
+    // FeatureComparison and the billing docs. Pro is email support. This is
+    // the first pricing surface a prospect sees, so it was also the first
+    // place the promise diverged.
     description: 'More AI headroom and email support for power users.',
     cta: 'Upgrade to Pro',
     ctaStyle: 'primary',
@@ -58,7 +58,7 @@ const plans = [
       'Unlimited team members',
       'Audit logs (SSO / SAML coming soon)',
       '100 API keys',
-      'White-glove migration + priority support & SLA',
+      'White-glove migration services + priority support',
     ],
   },
 ]

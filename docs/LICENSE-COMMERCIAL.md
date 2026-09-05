@@ -45,7 +45,7 @@ caps. What money buys is **headroom**, **more API keys**, and
 | Tier | What it adds over Free | Seats |
 |------|------------------------|-------|
 | **Pro** | AI queries: 10,000/month (Free: 1,000) · every per-feature AI cap lifted to unlimited (e.g. semantic search 375/month → unlimited, full migrations 5/month → unlimited) · API keys: 50 (Free: 25) · email support | As purchased |
-| **Enterprise** | Everything in Pro + AI queries unlimited · audit log with export (Enterprise-only; `auditLog`/`auditExport` are `false` on Free and Pro) · API keys: 100 · priority support with SLA · white-glove migration services | As purchased |
+| **Enterprise** | Everything in Pro + AI queries unlimited · audit log with export (Enterprise-only; `auditLog`/`auditExport` are `false` on Free and Pro) · API keys: 100 · priority support (e-mail, prioritised) · white-glove migration services | As purchased |
 
 > **Note.** The exact numbers above are a rendering of
 > [`server/lib/feature-flags.js`](../server/lib/feature-flags.js)
@@ -64,8 +64,10 @@ caps. What money buys is **headroom**, **more API keys**, and
 >   credits. You configure your own provider key (Anthropic, OpenAI, Gemini,
 >   OpenRouter, or a local model) and are billed by that provider directly;
 >   Bola Labs never proxies or resells inference.
-> - **Priority Support + SLA** and **white-glove migration services** are
->   manual, contracted deliverables — they are not gated by a feature flag.
+> - **Priority support** and **white-glove migration services** are manual,
+>   contracted deliverables — they are not gated by a feature flag. Priority
+>   support means the ticket is triaged ahead of the Community/Email queue;
+>   it is not a contracted response-time guarantee.
 
 ## 4. Subscription Key
 
@@ -114,7 +116,7 @@ software itself. Apache-2.0 permits that to anyone, subscriber or not.
 ## 7. Support
 
 - **Pro:** Email support (bruno@bolalabs.pt)
-- **Enterprise:** Priority support with SLA guarantees
+- **Enterprise:** Priority support (e-mail, prioritised) and white-glove migration services — no contracted response-time guarantees
 
 ## 8. Contact
 
