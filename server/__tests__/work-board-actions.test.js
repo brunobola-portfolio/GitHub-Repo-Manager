@@ -284,7 +284,12 @@ describe('Presets CRUD', () => {
         const res = await request(makeApp()).get('/api/v1/work-board/presets');
         expect(res.status).toBe(200);
         expect(res.body.data).toHaveLength(1);
-        expect(presetsLib.listPresets).toHaveBeenCalledWith(1);
+        expect(presetsLib.listPresets).toHaveBeenCalledWith(1, 'work-board');
+    });
+
+    it('GET /presets passes through an explicit scope (G5)', async () => {
+        await request(makeApp()).get('/api/v1/work-board/presets?scope=repos');
+        expect(presetsLib.listPresets).toHaveBeenCalledWith(1, 'repos');
     });
 
     it('POST /presets creates a preset and returns id', async () => {
@@ -292,7 +297,12 @@ describe('Presets CRUD', () => {
             .send({ name: 'My team', filters: { repos: ['a'] } });
         expect(res.status).toBe(200);
         expect(res.body.data.id).toBe(1);
-        expect(presetsLib.createPreset).toHaveBeenCalledWith({ userId: 1, name: 'My team', filters: { repos: ['a'] } });
+        expect(presetsLib.createPreset).toHaveBeenCalledWith({ userId: 1, name: 'My team', filters: { repos: ['a'] }, scope: 'work-board' });
+    });
+
+    it('POST /presets forwards an explicit scope (G5)', async () => {
+        await request(makeApp()).post('/api/v1/work-board/presets').send({ name: 'Repos view', filters: {}, scope: 'repos' });
+        expect(presetsLib.createPreset).toHaveBeenCalledWith({ userId: 1, name: 'Repos view', filters: {}, scope: 'repos' });
     });
 
     it('POST /presets returns 409 on duplicate name', async () => {
@@ -312,7 +322,7 @@ describe('Presets CRUD', () => {
         const res = await request(makeApp()).patch('/api/v1/work-board/presets/7').send({ name: 'B' });
         expect(res.status).toBe(200);
         expect(res.body.data.updated).toBe(1);
-        expect(presetsLib.updatePreset).toHaveBeenCalledWith({ userId: 1, id: 7, name: 'B', filters: undefined });
+        expect(presetsLib.updatePreset).toHaveBeenCalledWith({ userId: 1, id: 7, name: 'B', filters: undefined, scope: 'work-board' });
     });
 
     it('PATCH /presets/:id returns 404 when nothing updated', async () => {
@@ -325,6 +335,7 @@ describe('Presets CRUD', () => {
         const res = await request(makeApp()).delete('/api/v1/work-board/presets/7');
         expect(res.status).toBe(200);
         expect(res.body.data.removed).toBe(1);
+        expect(presetsLib.deletePreset).toHaveBeenCalledWith({ userId: 1, id: 7, scope: 'work-board' });
     });
 
     it('DELETE /presets/:id returns 404 when nothing removed', async () => {

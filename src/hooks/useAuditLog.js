@@ -1,6 +1,21 @@
 import { useState, useEffect, useCallback } from 'react'
 import { API_BASE_URL } from '../config'
 import { parseApiError } from '../components/states'
+import { fetchWithRetry } from '../utils/api'
+
+// fetchWithRetry throws an ApiError (status + parsed body on `.data`) instead
+// of returning a failed Response, but parseApiError's rich 401/403/503 +
+// upgrade-body handling only kicks in for a Response-shaped object (duck-typed
+// via 'status' in x && 'ok' in x). This adapts an ApiError back into that
+// shape so the audit page keeps its tier-upgrade messaging while routing
+// through the shared retry/CSRF/offline-queue transport instead of raw fetch.
+function asParsableError(err) {
+    if (err && typeof err === 'object' && 'status' in err && !('ok' in err)) {
+        const body = err.data ?? {}
+        return { status: err.status ?? 0, ok: false, clone() { return this }, json: async () => body }
+    }
+    return err
+}
 
 /**
  * useAuditLog — data + actions behind the audit log table, shared by the
@@ -34,18 +49,14 @@ export function useAuditLog({ limit = 20 } = {}) {
             if (dateFrom) params.set('from', dateFrom)
             if (dateTo) params.set('to', dateTo)
 
-            const res = await fetch(`${API_BASE_URL}/api/v1/audit?${params}`, { credentials: 'include' })
-            if (!res.ok) {
-                setError(await parseApiError(res, { service: 'Audit log' }))
-                setLogs([])
-                setTotal(0)
-                return
-            }
+            const res = await fetchWithRetry(`${API_BASE_URL}/api/v1/audit?${params}`, { credentials: 'include' }, { maxRetries: 0 })
             const data = await res.json()
             setLogs(data.entries || data.logs || data.items || [])
             setTotal(data.total || 0)
         } catch (err) {
-            setError(await parseApiError(err))
+            setError(await parseApiError(asParsableError(err), { service: 'Audit log' }))
+            setLogs([])
+            setTotal(0)
         } finally {
             setLoading(false)
         }
@@ -54,8 +65,7 @@ export function useAuditLog({ limit = 20 } = {}) {
     const fetchActions = useCallback(async () => {
         setActionsLoading(true)
         try {
-            const res = await fetch(`${API_BASE_URL}/api/v1/audit/actions`, { credentials: 'include' })
-            if (!res.ok) return
+            const res = await fetchWithRetry(`${API_BASE_URL}/api/v1/audit/actions`, { credentials: 'include' }, { maxRetries: 0 })
             const data = await res.json()
             setActionOptions(Array.isArray(data.actions) ? data.actions : [])
         } catch {
@@ -97,15 +107,11 @@ export function useAuditLog({ limit = 20 } = {}) {
         setVerifying(true)
         setVerifyResult(null)
         try {
-            const res = await fetch(`${API_BASE_URL}/api/v1/audit/verify`, { credentials: 'include' })
-            if (!res.ok) {
-                setVerifyResult({ ok: false, error: await parseApiError(res, { service: 'Audit chain verification' }) })
-                return
-            }
+            const res = await fetchWithRetry(`${API_BASE_URL}/api/v1/audit/verify`, { credentials: 'include' }, { maxRetries: 0 })
             const data = await res.json()
             setVerifyResult({ ok: data.ok, checked: data.checked, brokenAt: data.brokenAt ?? null })
         } catch (err) {
-            setVerifyResult({ ok: false, error: await parseApiError(err) })
+            setVerifyResult({ ok: false, error: await parseApiError(asParsableError(err), { service: 'Audit chain verification' }) })
         } finally {
             setVerifying(false)
         }

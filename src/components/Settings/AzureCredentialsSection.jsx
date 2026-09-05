@@ -40,7 +40,7 @@ export default function AzureCredentialsSection() {
       if (!data) throw new Error('Unexpected response from the server')
       setItems(data.items || [])
     } catch (e) {
-      setError(formatUserError(e, { fallbackTitle: 'Failed to load Azure credentials' }))
+      setError(formatUserError(e, { fallbackTitle: "Couldn't load Azure credentials" }))
     } finally {
       setLoading(false)
     }
@@ -56,7 +56,7 @@ export default function AzureCredentialsSection() {
       <Header onAdd={() => setShowForm(true)} />
 
       {error && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 text-sm text-rose-700 dark:text-rose-300">
           <XCircle className="w-4 h-4 shrink-0" /> {error.title}
         </div>
       )}
@@ -309,7 +309,7 @@ function CredentialRow({ cred, onDeleted, onTested }) {
                 onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); cancelConfirm() } }}
                 disabled={deleting}
                 aria-label={`Confirm removal of "${cred.label}"`}
-                className="px-2 py-1 text-xs font-semibold rounded-md bg-red-600 text-white hover:bg-red-700"
+                className="px-2 py-1 text-xs font-semibold rounded-md bg-rose-600 text-white hover:bg-rose-700"
               >
                 {deleting ? '…' : 'Confirm'}
               </button>
@@ -319,7 +319,7 @@ function CredentialRow({ cred, onDeleted, onTested }) {
               ref={deleteBtnRef}
               type="button"
               onClick={() => setConfirming(true)}
-              className="p-1.5 rounded-md text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-white dark:hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-md text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-white dark:hover:bg-slate-800 transition-colors"
               title="Remove from the local vault"
               aria-label={`Remove credential "${cred.label}"`}
             >
@@ -334,7 +334,7 @@ function CredentialRow({ cred, onDeleted, onTested }) {
           className={`px-4 py-2 text-xs border-t ${tone.border}
             ${testResult.valid
               ? 'bg-emerald-50/60 dark:bg-emerald-900/15 text-emerald-700 dark:text-emerald-300'
-              : 'bg-red-50/60 dark:bg-red-900/15 text-red-700 dark:text-red-300'}`}
+              : 'bg-rose-50/60 dark:bg-rose-900/15 text-rose-700 dark:text-rose-300'}`}
         >
           {testResult.valid
             ? <>✓ Token valid against {cred.host}{testResult.resolvedOrg ? ` (resolved org: ${testResult.resolvedOrg})` : ''}</>
@@ -554,7 +554,7 @@ function AddCredentialForm({ onClose, onCreated }) {
       )}
 
       {error && (
-        <div role="alert" className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1.5">
+        <div role="alert" className="text-xs text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
           <AlertCircle className="w-3.5 h-3.5" /> {error.title}
         </div>
       )}

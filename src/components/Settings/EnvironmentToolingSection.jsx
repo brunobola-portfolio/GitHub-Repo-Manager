@@ -13,7 +13,7 @@ import { PanelHeader } from '../ui/PanelHeader'
 const STATUS_META = {
   ok:        { Icon: CheckCircle2, accent: 'text-emerald-500', label: 'OK' },
   outdated:  { Icon: AlertTriangle, accent: 'text-amber-500',  label: 'Outdated' },
-  missing:   { Icon: XCircle,       accent: 'text-red-500',     label: 'Missing' },
+  missing:   { Icon: XCircle,       accent: 'text-rose-600 dark:text-rose-400',     label: 'Missing' },
   'n/a':     { Icon: MinusCircle,   accent: 'text-slate-400',   label: 'N/A' },
 }
 
@@ -65,7 +65,7 @@ export function EnvironmentToolingSection({ isAdmin = false }) {
               <div className="flex items-center gap-3">
                 <meta.Icon className={`w-4 h-4 ${meta.accent}`} aria-hidden="true" />
                 <span className="font-semibold">{t.label}</span>
-                {t.version && <span className="ds-text-meta text-slate-400 tabular-nums">{t.version}</span>}
+                {t.version && <span className="ds-text-meta text-slate-500 dark:text-slate-400 tabular-nums">{t.version}</span>}
               </div>
               <div className="flex items-center gap-2">
                 <span className={`ds-text-meta uppercase tracking-wide ${meta.accent}`}>{meta.label}</span>

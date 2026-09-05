@@ -348,7 +348,7 @@ export function AboutSection() {
                                     )}
                                 </div>
                                 {updatePhase === UPDATE_PHASE.ERROR && updateErrorMessage && (
-                                    <p role="alert" className="mt-1.5 text-xs font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5">
+                                    <p role="alert" className="mt-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
                                         <AlertCircle className="w-3 h-3 shrink-0" aria-hidden="true" />
                                         {updateErrorMessage}
                                     </p>

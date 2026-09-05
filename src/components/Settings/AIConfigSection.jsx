@@ -285,7 +285,7 @@ export function AIConfigSection() {
             // Detect rate-limit specifically so we can show the countdown UI.
             if (err?.type === 'RATE_LIMIT') {
                 startCountdown()
-                const message = err?.data?.error || 'Rate limited. Please wait.'
+                const message = err?.data?.error || 'Rate limited. Try again shortly.'
                 setTestResult({
                     ok: false,
                     code: 'RATE_LIMITED',
@@ -478,7 +478,7 @@ export function AIConfigSection() {
                                 className={`text-sm font-medium flex items-center gap-1.5 ${
                                     saveMessage.type === 'success'
                                         ? 'text-emerald-700 dark:text-emerald-400'
-                                        : 'text-red-600 dark:text-red-400'
+                                        : 'text-rose-600 dark:text-rose-400'
                                 }`}
                             >
                                 {saveMessage.type === 'success'

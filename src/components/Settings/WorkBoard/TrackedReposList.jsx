@@ -80,6 +80,7 @@ export function TrackedReposList({
                     icon={Search}
                     title={`No results for "${filters.search}"`}
                     description="Try a different search term or clear the filter."
+                    action={{ label: 'Clear search', onClick: () => onFilterChange({ ...filters, search: '' }) }}
                 />
             )}
 

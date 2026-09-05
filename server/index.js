@@ -56,7 +56,7 @@ import { startWorkBoardSweeper, stopWorkBoardSweeper, startKpiSnapshotJob, stopK
 import { startEmailRetryWorker, stopEmailRetryWorker } from './lib/email-retry-worker.js';
 import { startWebhookRetryWorker, stopWebhookRetryWorker } from './lib/webhook-retry-worker.js';
 import { startGhOutboxWorker, stopGhOutboxWorker } from './lib/gh-outbox.js';
-import { startMaintenanceJanitors, stopMaintenanceJanitors } from './lib/maintenance-janitors.js';
+import { startMaintenanceJanitors, stopMaintenanceJanitors, startDigestJob, stopDigestJob } from './lib/maintenance-janitors.js';
 import { createSessionTokenLookup } from './lib/session-token-lookup.js';
 import { registerShutdown, requestShutdown } from './lib/shutdown.js';
 import { isManaged, initManagedRuntime, clearManagedRuntime } from './lib/managed-runtime.js';
@@ -586,6 +586,11 @@ startGhOutboxWorker({ tokenLookup: createSessionTokenLookup(db) });
 // manual CLI ran them. See server/lib/maintenance-janitors.js.
 startMaintenanceJanitors();
 
+// Start the opt-in digest e-mail job (G7): hourly check, per-user
+// daily/weekly cadence enforced in digest-mailer.js, no-op entirely when
+// EMAIL_PROVIDER isn't configured for real delivery.
+startDigestJob();
+
 // Recover migration plans orphaned by a previous crash/restart: any plan left
 // 'running' in the DB has no live execution loop now, so reset its in-flight
 // tasks and auto-resume (when credentials are still available) or mark it
@@ -692,6 +697,12 @@ function gracefulShutdown(signal) {
             stopMaintenanceJanitors();
         } catch (e) {
             logger.warn({ err: e }, 'Could not stop maintenance janitors');
+        }
+
+        try {
+            stopDigestJob();
+        } catch (e) {
+            logger.warn({ err: e }, 'Could not stop digest job');
         }
 
         try {

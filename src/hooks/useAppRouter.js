@@ -15,6 +15,7 @@ const VIEW_TITLES = {
   roadmap: 'Roadmap',
   'pr-review': 'PR Review',
   'admin-dlq': 'Admin',
+  audit: 'Audit Log',
 }
 
 /**
@@ -61,6 +62,7 @@ export function useAppRouter({
     '#/repos':      'repos',
     '#/work':       'work-board',
     '#/teams':      'teams',
+    '#/audit':      'audit',
     '':             null, // dashboard - handled below
     '#':            null,
     '#/':           null,
@@ -139,6 +141,7 @@ export function useAppRouter({
     'repos':         '#/repos',
     'work-board':    '#/work',
     'teams':         '#/teams',
+    'audit':         '#/audit',
     'dashboard':     '', // home strips the hash entirely
   }), [])
 

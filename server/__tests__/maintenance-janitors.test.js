@@ -35,12 +35,18 @@ vi.mock('../lib/logger.js', () => ({
     default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
+const runDigestPassOnce = vi.fn(async () => ({ skipped: false, sent: 0, checked: 0 }));
+vi.mock('../lib/digest-mailer.js', () => ({ runDigestPassOnce }));
+
 const {
     startMaintenanceJanitors,
     stopMaintenanceJanitors,
     runDailyMaintenanceOnce,
     runHourlyMaintenanceOnce,
     purgeOldEvents,
+    runDigestJobOnce,
+    startDigestJob,
+    stopDigestJob,
 } = await import('../lib/maintenance-janitors.js');
 
 function clearEventTables() {
@@ -56,10 +62,12 @@ describe('maintenance-janitors', () => {
         purgeGhOutbox.mockClear();
         cleanupUndoLog.mockClear();
         runDbBackupOnce.mockClear();
+        runDigestPassOnce.mockClear();
+        runDigestPassOnce.mockResolvedValue({ skipped: false, sent: 0, checked: 0 });
         clearEventTables();
         delete process.env.EVENT_RETENTION_DAYS;
     });
-    afterEach(() => { stopMaintenanceJanitors(); });
+    afterEach(() => { stopMaintenanceJanitors(); stopDigestJob(); });
 
     it('runDailyMaintenanceOnce runs the retention pass, gh_cache purge, event purge and backup', async () => {
         const summary = await runDailyMaintenanceOnce();
@@ -143,6 +151,91 @@ describe('maintenance-janitors', () => {
         expect(second.skipped).toBe(true);
         release({ checked: 0 });
         await first;
+    });
+});
+
+describe('digest job (G7)', () => {
+    beforeEach(() => {
+        runDigestPassOnce.mockClear();
+        runDigestPassOnce.mockResolvedValue({ skipped: false, sent: 0, checked: 0 });
+    });
+    afterEach(() => { stopDigestJob(); });
+
+    it('runDigestJobOnce delegates to runDigestPassOnce', async () => {
+        runDigestPassOnce.mockResolvedValueOnce({ skipped: false, sent: 2, checked: 3 });
+        const summary = await runDigestJobOnce();
+        expect(runDigestPassOnce).toHaveBeenCalledOnce();
+        expect(summary).toEqual({ skipped: false, sent: 2, checked: 3 });
+    });
+
+    it('a failing pass resolves to a skipped summary rather than throwing', async () => {
+        runDigestPassOnce.mockRejectedValueOnce(new Error('boom'));
+        const summary = await runDigestJobOnce();
+        expect(summary.skipped).toBe(true);
+        expect(summary.reason).toBe('error');
+    });
+
+    it('the overlap guard skips a re-entrant digest pass', async () => {
+        let release;
+        runDigestPassOnce.mockImplementationOnce(() => new Promise((r) => { release = r; }));
+        const first = runDigestJobOnce();
+        const second = await runDigestJobOnce(); // should short-circuit
+        expect(second.skipped).toBe(true);
+        expect(second.reason).toBe('overlap');
+        release({ skipped: false, sent: 0, checked: 0 });
+        await first;
+    });
+
+    it('startDigestJob fires an initial pass immediately', async () => {
+        startDigestJob({ intervalMs: 1_000_000 });
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(runDigestPassOnce).toHaveBeenCalledOnce();
+    });
+
+    it('is idempotent — a second start without stop is a no-op', async () => {
+        startDigestJob({ intervalMs: 1_000_000 });
+        await Promise.resolve();
+        const count = runDigestPassOnce.mock.calls.length;
+        startDigestJob({ intervalMs: 1_000_000 });
+        await Promise.resolve();
+        expect(runDigestPassOnce.mock.calls.length).toBe(count);
+    });
+
+    it('schedules on the interval and stop clears it', async () => {
+        vi.useFakeTimers();
+        try {
+            startDigestJob({ intervalMs: 1000 });
+            await vi.advanceTimersByTimeAsync(3500);
+            expect(runDigestPassOnce.mock.calls.length).toBeGreaterThanOrEqual(3);
+            const countBeforeStop = runDigestPassOnce.mock.calls.length;
+            stopDigestJob();
+            await vi.advanceTimersByTimeAsync(5000);
+            expect(runDigestPassOnce.mock.calls.length).toBe(countBeforeStop);
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('unref()s its timer so it never keeps the process alive', () => {
+        const unrefs = [];
+        const realSetInterval = globalThis.setInterval;
+        vi.spyOn(globalThis, 'setInterval').mockImplementation((fn, ms) => {
+            const t = realSetInterval(fn, ms);
+            const originalUnref = t.unref?.bind(t);
+            const spy = vi.fn(() => originalUnref?.());
+            t.unref = spy;
+            unrefs.push(spy);
+            return t;
+        });
+        try {
+            startDigestJob({ intervalMs: 1_000_000 });
+            expect(unrefs.length).toBe(1);
+            expect(unrefs[0].mock.calls.length).toBe(1);
+        } finally {
+            globalThis.setInterval.mockRestore();
+            stopDigestJob();
+        }
     });
 });
 

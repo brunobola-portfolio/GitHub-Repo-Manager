@@ -3,7 +3,8 @@ import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireTier, getUserTier } from '../middleware/require-tier.js';
 import { getFeatures } from '../lib/feature-flags.js';
-import { auditLog } from '../lib/audit.js';
+import { auditLog, verifyAuditChain } from '../lib/audit.js';
+import { sendError } from '../lib/response-shapes.js';
 
 const router = Router();
 
@@ -103,6 +104,58 @@ router.get('/', requireAuth, requireTier('enterprise'), (req, res) => {
     } catch (err) {
         req.log?.error?.({ err }, 'Failed to fetch audit log');
         res.status(500).json({ error: 'Failed to fetch audit log' });
+    }
+});
+
+// Distinct action names the tenant has actually logged, for populating the
+// action filter dropdown without hardcoding a client-side list that drifts
+// from what auditLog() call sites actually emit. Gated the same as the list
+// route (auditLog flag) rather than auditExport — this is a read, not a
+// bulk-download deliverable.
+router.get('/actions', requireAuth, requireTier('enterprise'), (req, res) => {
+    const tier = getUserTier(req.session.userId);
+    if (!getFeatures(tier)?.auditLog) {
+        return sendError(res, 403, 'Tier required', {
+            code: 'TIER_REQUIRED_ENTERPRISE',
+            extra: { feature: 'auditLog', currentTier: tier, requiredTier: 'enterprise' },
+        });
+    }
+
+    try {
+        const rows = db.prepare(
+            'SELECT DISTINCT action FROM audit_log_v2 WHERE user_id = ? ORDER BY action ASC'
+        ).all(req.session.userId);
+        res.json({ actions: rows.map((r) => r.action) });
+    } catch (err) {
+        req.log?.error?.({ err }, 'Failed to list audit actions');
+        sendError(res, 500, 'Failed to list audit actions');
+    }
+});
+
+/**
+ * GET /verify — walk the append-only hash chain and report whether it is
+ * intact. The chain is a single global sequence (row_hash chains across
+ * every tenant's rows in insertion order — see server/lib/audit.js), so this
+ * intentionally does NOT scope to req.session.userId: a tenant verifying
+ * "their" log is really verifying that nobody has tampered with the shared
+ * ledger, which is the property that matters for a compliance claim.
+ */
+router.get('/verify', requireAuth, requireTier('enterprise'), (req, res) => {
+    const tier = getUserTier(req.session.userId);
+    if (!getFeatures(tier)?.auditLog) {
+        return sendError(res, 403, 'Tier required', {
+            code: 'TIER_REQUIRED_ENTERPRISE',
+            extra: { feature: 'auditLog', currentTier: tier, requiredTier: 'enterprise' },
+        });
+    }
+
+    try {
+        const result = verifyAuditChain();
+        auditLog(req, 'audit.verify', 'audit', null, { ok: result.valid, checked: result.totalChecked });
+        res.json({ ok: result.valid, checked: result.totalChecked, brokenAt: result.brokenAt ?? null, unhashedLegacy: result.unhashedLegacy });
+    } catch (err) {
+        req.log?.error?.({ err }, 'Failed to verify audit chain');
+        sendError(res, 500, 'Failed to verify audit chain');
     }
 });
 

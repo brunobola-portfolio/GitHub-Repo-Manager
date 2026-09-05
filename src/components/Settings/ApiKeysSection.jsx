@@ -306,11 +306,11 @@ function KeyRow({ apiKey, onRevoke }) {
             <div className="flex items-center gap-2 shrink-0">
                 {confirming ? (
                     <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-red-600 dark:text-red-400">Revoke key?</span>
+                        <span className="text-xs text-rose-600 dark:text-rose-400">Revoke key?</span>
                         <button
                             onClick={handleRevoke}
                             disabled={revoking}
-                            className="px-2.5 py-1 text-xs font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded-lg transition-colors"
+                            className="px-2.5 py-1 text-xs font-medium text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 rounded-lg transition-colors"
                         >
                             {revoking ? 'Revoking...' : 'Yes'}
                         </button>
@@ -325,7 +325,7 @@ function KeyRow({ apiKey, onRevoke }) {
                     <button
                         onClick={() => setConfirming(true)}
                         disabled={isRevoked}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 hover:bg-rose-100 dark:hover:bg-rose-900/30 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-colors"
                     >
                         <Trash2 className="w-3.5 h-3.5" />
                         Revoke
@@ -350,7 +350,7 @@ export function ApiKeysSection() {
         setError(null)
         try {
             const res = await fetch(`${API_BASE_URL}/api/v1/api-keys`, { credentials: 'include' })
-            if (!res.ok) throw new Error('Failed to load API keys')
+            if (!res.ok) throw new Error("Couldn't load API keys")
             const data = await res.json()
 
             // Support both old (flat array) and new ({ keys, limits }) response shapes
@@ -361,7 +361,7 @@ export function ApiKeysSection() {
                 if (data?.limits) setLimits(data.limits)
             }
         } catch (err) {
-            setError(formatUserError(err, { fallbackTitle: 'Failed to load API keys' }))
+            setError(formatUserError(err, { fallbackTitle: "Couldn't load API keys" }))
         } finally {
             setLoading(false)
         }
@@ -445,7 +445,7 @@ export function ApiKeysSection() {
                     ))}
                 </div>
             ) : error ? (
-                <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300 flex items-start gap-2">
+                <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 text-sm text-rose-700 dark:text-rose-300 flex items-start gap-2">
                     <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                     <span>
                         <span className="font-medium">{error.title}</span>
@@ -457,6 +457,7 @@ export function ApiKeysSection() {
                     icon={Key}
                     title="No API keys yet"
                     description="Create your first key to get started"
+                    action={atLimit ? undefined : { label: 'Create key', onClick: () => setShowForm(true) }}
                 />
             ) : (
                 <AnimatePresence>

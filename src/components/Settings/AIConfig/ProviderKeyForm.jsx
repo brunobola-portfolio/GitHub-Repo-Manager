@@ -217,7 +217,7 @@ export function ProviderKeyForm({ onVerified }) {
                         initial={{ opacity: 0, y: -4 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
-                        className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl text-sm border bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700/50 text-red-800 dark:text-red-200"
+                        className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl text-sm border bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-700/50 text-rose-800 dark:text-rose-200"
                     >
                         <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
                         <div className="min-w-0 flex-1 space-y-1">

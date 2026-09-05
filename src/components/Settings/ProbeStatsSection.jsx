@@ -12,7 +12,7 @@ import { PanelHeader } from '../ui/PanelHeader'
 
 const STATE_META = {
     ok:           { Icon: CheckCircle2,  accent: 'text-emerald-500', dot: 'bg-emerald-500',  label: 'Healthy' },
-    invalid:      { Icon: AlertTriangle, accent: 'text-red-500',     dot: 'bg-red-500',      label: 'Invalid key' },
+    invalid:      { Icon: AlertTriangle, accent: 'text-rose-600 dark:text-rose-400',     dot: 'bg-rose-500',      label: 'Invalid key' },
     unreachable:  { Icon: WifiOff,       accent: 'text-amber-500',   dot: 'bg-amber-500',    label: 'Unreachable' },
     unknown:      { Icon: HelpCircle,    accent: 'text-slate-500',   dot: 'bg-slate-400',    label: 'Unknown' },
 }

@@ -52,7 +52,7 @@ export function PerFeatureOverrideSection({
                         <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                             Per-feature model overrides
                         </span>
-                        <span className="text-xs font-normal text-slate-400">(optional)</span>
+                        <span className="text-xs font-normal text-slate-500 dark:text-slate-400">(optional)</span>
                         {activeOverrides > 0 && (
                             <Badge tone="brand" size="xs" className="uppercase tracking-wide font-semibold">
                                 {activeOverrides} set
@@ -112,7 +112,7 @@ export function PerFeatureOverrideSection({
                                                             delete next[key]
                                                             onChange('featureOverrides', next)
                                                         }}
-                                                        className="inline-flex items-center gap-1 ds-text-meta text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
+                                                        className="inline-flex items-center gap-1 ds-text-meta text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 transition-colors"
                                                         aria-label={`Reset ${FEATURE_KEY_LABELS[key]} to default`}
                                                     >
                                                         <RotateCcw className="w-3 h-3" aria-hidden="true" />

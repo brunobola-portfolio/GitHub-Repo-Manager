@@ -102,7 +102,7 @@ function PlanCard({ tier, status, renewalDate, onManage, onChangePlan, portalLoa
             {status === 'past_due' && (
                 <div className="mt-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
-                    Your payment is past due. Please update your billing information to avoid interruption.
+                    Your payment is past due. Update your billing information to avoid interruption.
                 </div>
             )}
         </Card>
@@ -325,14 +325,14 @@ export function LicensePlanSection() {
                 setBillingUnavailable(true)
                 return
             }
-            if (!res.ok) throw new Error('Failed to load subscription')
+            if (!res.ok) throw new Error("Couldn't load subscription")
             const data = await res.json()
             setSubscription(data)
         } catch (err) {
             if (err.message?.toLowerCase().includes('stripe') || err.message?.toLowerCase().includes('not configured')) {
                 setBillingUnavailable(true)
             } else {
-                setError(formatUserError(err, { fallbackTitle: 'Failed to load subscription' }))
+                setError(formatUserError(err, { fallbackTitle: "Couldn't load subscription" }))
             }
         } finally {
             setLoading(false)
@@ -420,7 +420,7 @@ export function LicensePlanSection() {
                     </p>
                 </Card>
             ) : error ? (
-                <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300 flex items-start gap-2">
+                <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 text-sm text-rose-700 dark:text-rose-300 flex items-start gap-2">
                     <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                     <span>
                         <span className="font-medium">{error.title}</span>
@@ -441,7 +441,7 @@ export function LicensePlanSection() {
                     />
 
                     {portalError && (
-                        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300 flex items-center gap-2">
+                        <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 text-sm text-rose-700 dark:text-rose-300 flex items-center gap-2">
                             <AlertTriangle className="w-4 h-4 shrink-0" />
                             {portalError}
                         </div>

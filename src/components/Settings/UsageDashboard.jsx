@@ -22,7 +22,7 @@ function UsageBar({ label, current, limit }) {
             aria-valuemin={0}
             aria-valuemax={limit}
             aria-label={`${label} usage`}
-            className={`h-full rounded-full transition-all ${pct > 80 ? 'bg-red-500' : pct > 60 ? 'bg-amber-500' : 'bg-brand-500'}`}
+            className={`h-full rounded-full transition-all ${pct > 80 ? 'bg-rose-500' : pct > 60 ? 'bg-amber-500' : 'bg-brand-500'}`}
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -80,7 +80,7 @@ export function UsageDashboard() {
   useEffect(() => {
     let cancelled = false
     fetch('/api/v1/usage', { credentials: 'include' })
-      .then(r => r.ok ? r.json() : Promise.reject(new Error('Failed to load usage')))
+      .then(r => r.ok ? r.json() : Promise.reject(new Error("Couldn't load usage")))
       .then(data => {
         if (!cancelled) {
           setUsage(data)
@@ -89,7 +89,7 @@ export function UsageDashboard() {
       })
       .catch(err => {
         if (!cancelled) {
-          setError(formatUserError(err, { fallbackTitle: 'Failed to load usage' }))
+          setError(formatUserError(err, { fallbackTitle: "Couldn't load usage" }))
           setLoading(false)
         }
       })
@@ -104,7 +104,7 @@ export function UsageDashboard() {
 
   if (error) {
     return (
-      <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-900 dark:text-red-300 text-sm">
+      <div className="p-4 rounded-lg bg-rose-50 dark:bg-rose-950/30 text-rose-900 dark:text-rose-300 text-sm">
         <p className="font-medium">{error.title}</p>
         {error.body ? <p className="text-xs opacity-80 mt-0.5">{error.body}</p> : null}
       </div>

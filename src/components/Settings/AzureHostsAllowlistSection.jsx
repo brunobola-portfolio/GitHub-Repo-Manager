@@ -31,10 +31,10 @@ export default function AzureHostsAllowlistSection() {
     try {
       const res = await fetch('/api/azure/host-allowlist', { credentials: 'include' })
       const json = await res.json()
-      if (!res.ok) throw new Error(json?.error || 'Failed to load allowlist')
+      if (!res.ok) throw new Error(json?.error || "Couldn't load allowlist")
       setData(json)
     } catch (e) {
-      setError(formatUserError(e, { fallbackTitle: 'Failed to load the host allowlist' }))
+      setError(formatUserError(e, { fallbackTitle: "Couldn't load the host allowlist" }))
     } finally {
       setLoading(false)
     }
@@ -57,7 +57,7 @@ export default function AzureHostsAllowlistSection() {
 
   if (!data) {
     return (
-      <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300">
+      <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 text-sm text-rose-700 dark:text-rose-300">
         <AlertCircle className="w-4 h-4 shrink-0" /> {error?.title || 'Error loading'}
       </div>
     )
@@ -268,7 +268,7 @@ function RowDb({ entry, canEdit, onDeleted }) {
                 onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); cancelConfirm() } }}
                 disabled={deleting}
                 aria-label={`Confirm removal of ${entry.pattern} from the allowlist`}
-                className="px-2 py-1 text-xs font-semibold rounded-md bg-red-600 text-white hover:bg-red-700"
+                className="px-2 py-1 text-xs font-semibold rounded-md bg-rose-600 text-white hover:bg-rose-700"
               >
                 {deleting ? <SpinnerIcon className="w-3 h-3" /> : 'Confirm'}
               </button>
@@ -278,7 +278,7 @@ function RowDb({ entry, canEdit, onDeleted }) {
               ref={deleteBtnRef}
               type="button"
               onClick={() => setConfirming(true)}
-              className="p-1.5 rounded-md text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-white dark:hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-md text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-white dark:hover:bg-slate-800 transition-colors"
               title="Remove from allowlist"
               aria-label={`Remove ${entry.pattern} from the allowlist`}
             >
@@ -372,7 +372,7 @@ function AddHostForm({ onAdded }) {
         Optional port: <code className="px-1 rounded bg-slate-200 dark:bg-slate-700">tfs.company.com:8080</code>.
       </p>
       {error && (
-        <div role="alert" className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1.5">
+        <div role="alert" className="text-xs text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
           <AlertCircle className="w-3.5 h-3.5" /> {error.title}
         </div>
       )}

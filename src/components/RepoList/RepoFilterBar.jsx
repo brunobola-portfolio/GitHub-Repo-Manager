@@ -9,6 +9,14 @@ import { Select } from '../ui/Select'
 import { Drawer } from '../ui/Drawer'
 import { Input } from '../ui/form'
 import { useMobileBreakpoint } from '../../hooks/useMobileBreakpoint'
+import { PresetDropdown } from '../WorkBoard/filters/PresetDropdown'
+
+// Projects the five URL-synced repo filters (see useRepoFiltering) down to
+// the plain shape a saved view stores/applies — G5's Repositories
+// counterpart to PresetDropdown's Work Board default.
+function repoFilterFields({ q = '', type = '', visibility = '', lang = '', sort = '' } = {}) {
+	return { q, type, visibility, lang, sort }
+}
 
 /**
  * Glassmorphic toolbar: bulk-selection menu, search (plain + AI), view
@@ -57,6 +65,8 @@ export function RepoFilterBar({
 	// sort
 	sortBy,
 	setSortBy,
+	// saved views (G5) — applyFilters comes from useRepoFiltering
+	onApplySavedView,
 }) {
 	const [showSelectionMenu, setShowSelectionMenu] = useState(false)
 	const [filterSheetOpen, setFilterSheetOpen] = useState(false)
@@ -142,7 +152,7 @@ export function RepoFilterBar({
 							className="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer transition-colors"
 							onClick={(e) => { e.stopPropagation(); handleSelectAll(); }}
 							onKeyDown={(e) => { if (e.key === ' ') { e.preventDefault(); e.stopPropagation(); handleSelectAll(); } }}
-							title={allFilteredSelected ? "Deselect All" : "Select All"}
+							title={allFilteredSelected ? "Deselect all" : "Select all"}
 						>
 							<div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${allFilteredSelected
 								? 'bg-[color:var(--ds-accent-brand)] border-[color:var(--ds-accent-brand)]'
@@ -180,14 +190,14 @@ export function RepoFilterBar({
 						>
 							<button role="menuitem" tabIndex={-1} onClick={handleSelectAll} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 ds-focus-ring">
 								<CheckSquare className="w-4 h-4" />
-								{allFilteredSelected ? 'Deselect All' : 'Select All'}
+								{allFilteredSelected ? 'Deselect all' : 'Select all'}
 							</button>
 							<button role="menuitem" tabIndex={-1} onClick={handleInvertSelection} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2 ds-focus-ring">
 								<ArrowRightLeft className="w-4 h-4" />
-								Invert Selection
+								Invert selection
 							</button>
 							<div className="my-1 border-t border-slate-100 dark:border-slate-700"></div>
-							<button role="menuitem" tabIndex={-1} onClick={() => { onClearSelection(); setShowSelectionMenu(false); }} className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 flex items-center gap-2 ds-focus-ring">
+							<button role="menuitem" tabIndex={-1} onClick={() => { onClearSelection(); setShowSelectionMenu(false); }} className="w-full text-left px-4 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/10 flex items-center gap-2 ds-focus-ring">
 								<X className="w-4 h-4" />
 								Clear Selection
 							</button>
@@ -212,8 +222,8 @@ export function RepoFilterBar({
 								type="button"
 								onClick={() => { setIsAISearch(!isAISearch); setSearchQuery('') }}
 								className={`p-2 -m-0.5 rounded-lg transition-all ${isAISearch ? 'text-brand-500 bg-brand-100 dark:bg-brand-900/30 shadow-sm' : 'text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20'}`}
-								title="Toggle AI Semantic Search"
-								aria-label="Toggle AI Semantic Search"
+								title="Toggle AI semantic search"
+								aria-label="Toggle AI semantic search"
 							>
 								<Sparkles className="w-4 h-4" />
 							</button>
@@ -223,7 +233,7 @@ export function RepoFilterBar({
 						<Spinner size="sm" />
 					)}
 					{aiSearchError && (
-						<p className="absolute -bottom-6 left-0 text-xs text-red-500 dark:text-red-400">{aiSearchError}</p>
+						<p className="absolute -bottom-6 left-0 text-xs text-rose-600 dark:text-rose-400">{aiSearchError}</p>
 					)}
 				</div>
 				<div className="flex flex-shrink-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl p-1 border border-slate-200/70 dark:border-slate-700/50 shadow-sm">
@@ -264,6 +274,14 @@ export function RepoFilterBar({
 							</span>
 						)}
 					</Button>
+					{onApplySavedView && (
+						<PresetDropdown
+							currentFilters={{ q: searchQuery, type: typeFilter, visibility: visibilityFilter, lang: languageFilter, sort: sortBy }}
+							onApply={onApplySavedView}
+							scope="repos"
+							serialize={repoFilterFields}
+						/>
+					)}
 					<Button
 						variant="ghost"
 						size="sm"
@@ -327,6 +345,15 @@ export function RepoFilterBar({
 						size="sm"
 						className="flex-1 min-w-[140px]"
 					/>
+
+					{onApplySavedView && (
+						<PresetDropdown
+							currentFilters={{ q: searchQuery, type: typeFilter, visibility: visibilityFilter, lang: languageFilter, sort: sortBy }}
+							onApply={onApplySavedView}
+							scope="repos"
+							serialize={repoFilterFields}
+						/>
+					)}
 
 					<div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden md:block flex-shrink-0"></div>
 

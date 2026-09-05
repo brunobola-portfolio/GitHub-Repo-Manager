@@ -1,20 +1,35 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, Bookmark, Trash2, Plus } from 'lucide-react'
-import { useWorkBoardPresets } from '../../../hooks/useWorkBoardPresets'
+import { useSavedViews } from '../../../hooks/useWorkBoardPresets'
 import { Input } from '../../ui/form'
 import { Button } from '../../ui/Button'
 import { EmptyState } from '../../ui/EmptyState'
 import { POPOVER_SURFACE_CLASS } from '../../ui/_variants'
 
-function serialisableFilters(filters) {
-    // Keep only the filter keys we actually use, drop anything else.
+function workBoardFilters(filters) {
+    // Keep only the filter keys the Work Board actually uses, drop anything else.
     const { repos = '', authors = '', labels = '', age = '', snoozed = '' } = filters || {}
     return { repos, authors, labels, age, snoozed }
 }
 
-export function PresetDropdown({ currentFilters, onApply }) {
-    const { presets, create, remove, loading, error } = useWorkBoardPresets()
+/**
+ * PresetDropdown — "save current filters as a named view, apply a saved one
+ * later". Originally Work Board-only; generalised for G5 so the
+ * Repositories filter bar can mount the same affordance against its own
+ * scope ('repos') and its own filter shape via `serialize`.
+ *
+ * @param {object} currentFilters - the caller's current filter state
+ * @param {(filters: object) => void} onApply - called with a saved view's
+ *   filters when the user picks it from the list
+ * @param {string} [scope] - saved-view scope (server + localStorage-under-
+ *   mock partition key); defaults to 'work-board' for the original caller
+ * @param {(filters: object) => object} [serialize] - projects `currentFilters`
+ *   down to the plain, storable shape saved with the view; defaults to the
+ *   Work Board's five filter keys
+ */
+export function PresetDropdown({ currentFilters, onApply, scope = 'work-board', serialize = workBoardFilters }) {
+    const { presets, create, remove, loading, error } = useSavedViews(scope)
     const [open, setOpen] = useState(false)
     const [name, setName] = useState('')
     const [saving, setSaving] = useState(false)
@@ -35,7 +50,7 @@ export function PresetDropdown({ currentFilters, onApply }) {
         setSaving(true)
         setSaveError(null)
         try {
-            await create({ name: trimmed, filters: serialisableFilters(currentFilters) })
+            await create({ name: trimmed, filters: serialize(currentFilters) })
             setName('')
         } catch (e) {
             setSaveError(e.code === 'preset_exists' ? 'A preset with that name already exists.' : e.message || 'Failed to save')
@@ -68,8 +83,8 @@ export function PresetDropdown({ currentFilters, onApply }) {
                         role="menu"
                     >
                         <div className="p-2 max-h-64 overflow-y-auto">
-                            {loading && <div className="p-2 text-xs text-slate-400">Loading…</div>}
-                            {error && <div className="p-2 text-xs text-rose-500">{error.message || 'Failed to load'}</div>}
+                            {loading && <div className="p-2 text-xs text-slate-500 dark:text-slate-400">Loading…</div>}
+                            {error && <div className="p-2 text-xs text-rose-500">{error.message || "Couldn't load"}</div>}
                             {!loading && !error && presets.length === 0 && (
                                 <EmptyState size="inline" title="No presets yet. Save the current filters below." />
                             )}
@@ -78,7 +93,7 @@ export function PresetDropdown({ currentFilters, onApply }) {
                                     <button
                                         type="button"
                                         className="flex-1 text-left text-sm text-slate-700 dark:text-slate-200 truncate"
-                                        onClick={() => { onApply(serialisableFilters(p.filters)); setOpen(false); }}
+                                        onClick={() => { onApply(serialize(p.filters)); setOpen(false); }}
                                     >
                                         {p.name}
                                     </button>

@@ -7,7 +7,7 @@ import { formatRelativeTime } from '../../../utils/format'
 
 const HEALTH_PILL = {
     ok:           { Icon: CheckCircle2,  cls: 'text-emerald-700 dark:text-emerald-400 bg-emerald-100/70 dark:bg-emerald-900/40 ring-emerald-200/70 dark:ring-emerald-800/60', label: 'OK' },
-    invalid:      { Icon: AlertTriangle, cls: 'text-red-600 dark:text-red-400 bg-red-100/70 dark:bg-red-900/40 ring-red-200/70 dark:ring-red-800/60',                    label: 'Invalid' },
+    invalid:      { Icon: AlertTriangle, cls: 'text-rose-600 dark:text-rose-400 bg-rose-100/70 dark:bg-rose-900/40 ring-rose-200/70 dark:ring-rose-800/60',                    label: 'Invalid' },
     unreachable:  { Icon: WifiOff,       cls: 'text-amber-700 dark:text-amber-400 bg-amber-100/70 dark:bg-amber-900/40 ring-amber-200/70 dark:ring-amber-800/60',          label: 'Down' },
     unknown:      { Icon: HelpCircle,    cls: 'text-slate-500 dark:text-slate-400 bg-slate-100/70 dark:bg-slate-800/60 ring-slate-200/70 dark:ring-slate-700/60',          label: '—' },
 }

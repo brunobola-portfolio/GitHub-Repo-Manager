@@ -9,11 +9,11 @@ import { Spinner } from '../../ui/Spinner'
 
 const ERROR_PALETTE = {
     container:
-        'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700/50 text-red-800 dark:text-red-200',
+        'bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-700/50 text-rose-800 dark:text-rose-200',
     chip:
-        'bg-red-100/80 dark:bg-red-900/40 text-red-700 dark:text-red-200 border-red-200/70 dark:border-red-700/40',
+        'bg-rose-100/80 dark:bg-rose-900/40 text-rose-700 dark:text-rose-200 border-rose-200/70 dark:border-rose-700/40',
     hint:
-        'bg-white/60 dark:bg-red-950/30 border-red-200/70 dark:border-red-800/40 text-red-900 dark:text-red-100',
+        'bg-white/60 dark:bg-rose-950/30 border-rose-200/70 dark:border-rose-800/40 text-rose-900 dark:text-rose-100',
 }
 
 function ErrorChip({ children }) {

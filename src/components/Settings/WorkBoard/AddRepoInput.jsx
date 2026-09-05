@@ -65,7 +65,7 @@ export function AddRepoInput({ onAdd }) {
                                     key={r.repo_full_name}
                                     value={r.repo_full_name}
                                     disabled
-                                    className="px-2 py-1.5 text-xs text-slate-400 flex items-center justify-between"
+                                    className="px-2 py-1.5 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between"
                                 >
                                     {r.repo_full_name}
                                     <span className="text-slate-500">already tracked</span>

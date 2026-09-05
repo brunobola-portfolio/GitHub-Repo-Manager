@@ -7,11 +7,12 @@ testDb.exec(`
     CREATE TABLE work_board_presets (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
+        scope TEXT NOT NULL DEFAULT 'work-board',
         name TEXT NOT NULL,
         filters TEXT NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE (user_id, name)
+        UNIQUE (user_id, scope, name)
     );
 `);
 vi.mock('../db.js', () => ({ default: testDb }));
@@ -83,5 +84,39 @@ describe('work-board-presets', () => {
         createPreset({ userId: 1, name: 'Alpha', filters: {} });
         const names = listPresets(1).map(p => p.name);
         expect(names).toEqual(['Alpha', 'Zed']);
+    });
+
+    describe('scope (G5 — saved views generalisation)', () => {
+        it('defaults to the work-board scope when omitted', () => {
+            createPreset({ userId: 1, name: 'Default scope', filters: {} });
+            const list = listPresets(1, 'work-board');
+            expect(list[0].scope).toBe('work-board');
+        });
+
+        it('allows the SAME name across different scopes for the same user', () => {
+            createPreset({ userId: 1, name: 'My view', filters: { repos: ['a'] }, scope: 'work-board' });
+            expect(() => createPreset({ userId: 1, name: 'My view', filters: { q: 'x' }, scope: 'repos' }))
+                .not.toThrow();
+        });
+
+        it('still rejects a duplicate name WITHIN the same scope', () => {
+            createPreset({ userId: 1, name: 'Dup', filters: {}, scope: 'repos' });
+            expect(() => createPreset({ userId: 1, name: 'Dup', filters: {}, scope: 'repos' }))
+                .toThrow(/unique|constraint/i);
+        });
+
+        it('listPresets scopes results — a repos-scope preset never appears in work-board', () => {
+            createPreset({ userId: 1, name: 'Repos view', filters: { q: 'x' }, scope: 'repos' });
+            createPreset({ userId: 1, name: 'Board view', filters: {}, scope: 'work-board' });
+            expect(listPresets(1, 'repos').map(p => p.name)).toEqual(['Repos view']);
+            expect(listPresets(1, 'work-board').map(p => p.name)).toEqual(['Board view']);
+        });
+
+        it('updatePreset and deletePreset are scoped too — cannot touch a preset from another scope', () => {
+            const p = createPreset({ userId: 1, name: 'Scoped', filters: {}, scope: 'repos' });
+            expect(updatePreset({ userId: 1, id: p.id, name: 'Renamed', scope: 'work-board' })).toBe(0);
+            expect(deletePreset({ userId: 1, id: p.id, scope: 'work-board' })).toBe(0);
+            expect(listPresets(1, 'repos')).toHaveLength(1);
+        });
     });
 });

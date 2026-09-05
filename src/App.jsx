@@ -87,6 +87,7 @@ const PRReviewView = lazy(() => import('./components/PRReview/PRReviewView').the
 const WorkBoardPage = lazy(() => import('./components/WorkBoard/WorkBoardPage').then(m => ({ default: m.WorkBoardPage })))
 const AdminDLQPage = lazy(() => import('./components/Admin/AdminDLQPage').then(m => ({ default: m.AdminDLQPage })))
 const PromptStudioPage = lazy(() => import('./components/AIPrompts/PromptStudioPage').then(m => ({ default: m.PromptStudioPage })))
+const AuditLogPage = lazy(() => import('./components/Audit/AuditLogPage').then(m => ({ default: m.AuditLogPage })))
 // Lazy-load the landing page: only rendered for unauthenticated visitors,
 // so its sub-components stay out of the authenticated main bundle.
 const LandingPage = lazy(() => import('./components/Landing/LandingPage').then(m => ({ default: m.LandingPage })))
@@ -449,13 +450,13 @@ function AppContent() {
     const code = params.get('error')
     if (!code || code === 'rate_limited') return // rate_limited handled above
     const AUTH_ERROR_COPY = {
-      auth_failed: ['error', 'GitHub sign-in failed. Please try again.'],
-      no_code: ['error', 'GitHub did not complete the sign-in. Please try again.'],
-      invalid_state: ['error', 'That sign-in link expired or was already used. Please try again.'],
-      session_error: ['error', 'Your session could not be saved. Please try signing in again.'],
+      auth_failed: ['error', 'GitHub sign-in failed. Try again.'],
+      no_code: ['error', 'GitHub did not complete the sign-in. Try again.'],
+      invalid_state: ['error', 'That sign-in link expired or was already used. Try again.'],
+      session_error: ['error', 'Your session could not be saved. Try signing in again.'],
       access_denied: ['info', 'GitHub sign-in was cancelled.'],
       redirect_uri_mismatch: ['error', 'GitHub rejected the sign-in: the OAuth App’s callback URL does not match this app. Update it on GitHub (Settings → Developer settings → OAuth Apps) to end in /api/auth/callback on this exact address.'],
-      bad_verification_code: ['error', 'The sign-in code expired before it could be used. Please try again.'],
+      bad_verification_code: ['error', 'The sign-in code expired before it could be used. Try again.'],
       incorrect_client_credentials: ['error', 'GitHub rejected the configured Client ID/Secret. Re-check the values in your configuration.'],
       application_suspended: ['error', 'The configured GitHub OAuth App is suspended. Check its status on GitHub.'],
     }
@@ -982,6 +983,12 @@ function AppContent() {
         {activeView === 'prompt-studio' && user && (
           <ViewShell name="Prompt Studio" onGoHome={() => setActiveView('dashboard')}>
             <PromptStudioPage />
+          </ViewShell>
+        )}
+
+        {activeView === 'audit' && user && (
+          <ViewShell name="Audit Log" onGoHome={() => setActiveView('dashboard')}>
+            <AuditLogPage />
           </ViewShell>
         )}
 

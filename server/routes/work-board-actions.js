@@ -7,7 +7,7 @@ import express from 'express';
 import { z } from 'zod';
 import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 import { requireAuth, errorResponse, safeError } from '../middleware/auth.js';
-import { validateBody, validateParams } from '../middleware/validate-request.js';
+import { validateBody, validateParams, validateQuery } from '../middleware/validate-request.js';
 import * as snoozeLib from '../lib/work-board-snooze.js';
 import * as presets from '../lib/work-board-presets.js';
 import { invalidate as invalidateCache, getCached as getCacheRow, putCached as putCacheRow } from '../lib/work-board-cache.js';
@@ -67,18 +67,29 @@ const reviewActionBodySchema = z.object({
     }
 });
 
+// `scope` generalises what were originally Work Board-only presets into
+// tenant-scoped "saved views" (G5) — e.g. 'work-board' (default, preserves
+// every pre-existing call site) or 'repos' for the Repositories filter bar.
+const scopeSchema = z.string().trim().min(1).max(50).optional().default('work-board');
+
 const presetCreateBodySchema = z.object({
     name: z.string().trim().min(1, 'name required').max(100, 'name must be at most 100 chars'),
     filters: z.record(z.string(), z.unknown()).optional().default({}),
+    scope: scopeSchema,
 });
 
 const presetUpdateBodySchema = z.object({
     name: z.string().trim().min(1, 'name required').max(100, 'name must be at most 100 chars').optional(),
     filters: z.record(z.string(), z.unknown()).optional(),
+    scope: scopeSchema,
 });
 
 const presetIdParamsSchema = z.object({
     id: z.coerce.number().int().positive(),
+});
+
+const presetScopeQuerySchema = z.object({
+    scope: scopeSchema,
 });
 
 const suggestActionBodySchema = z.object({
@@ -202,15 +213,15 @@ router.post('/review-action', requireAuth, validateBody(reviewActionBodySchema),
     }
 });
 
-router.get('/presets', requireAuth, (req, res) => {
-    try { res.json({ data: presets.listPresets(req.session.userId) }); }
+router.get('/presets', requireAuth, validateQuery(presetScopeQuerySchema), (req, res) => {
+    try { res.json({ data: presets.listPresets(req.session.userId, req.validatedQuery.scope) }); }
     catch (e) { errorResponse(res, 500, safeError(e, 'Failed to list presets')); }
 });
 
 router.post('/presets', requireAuth, validateBody(presetCreateBodySchema), (req, res) => {
     try {
-        const { name, filters } = req.validatedBody;
-        const result = presets.createPreset({ userId: req.session.userId, name, filters });
+        const { name, filters, scope } = req.validatedBody;
+        const result = presets.createPreset({ userId: req.session.userId, name, filters, scope });
         res.json({ data: result });
     } catch (e) {
         if (/UNIQUE|constraint/i.test(e.message)) return errorResponse(res, 409, 'Preset name already exists', 'preset_exists');
@@ -232,18 +243,18 @@ router.patch(
     (req, res) => {
         try {
             const { id } = req.validatedParams;
-            const { name, filters } = req.validatedBody;
-            const changed = presets.updatePreset({ userId: req.session.userId, id, name, filters });
+            const { name, filters, scope } = req.validatedBody;
+            const changed = presets.updatePreset({ userId: req.session.userId, id, name, filters, scope });
             if (!changed) return errorResponse(res, 404, 'preset not found');
             res.json({ data: { updated: changed } });
         } catch (e) { errorResponse(res, 400, e.message); }
     },
 );
 
-router.delete('/presets/:id', requireAuth, validateParams(presetIdParamsSchema), (req, res) => {
+router.delete('/presets/:id', requireAuth, validateParams(presetIdParamsSchema), validateQuery(presetScopeQuerySchema), (req, res) => {
     try {
         const { id } = req.validatedParams;
-        const removed = presets.deletePreset({ userId: req.session.userId, id });
+        const removed = presets.deletePreset({ userId: req.session.userId, id, scope: req.validatedQuery.scope });
         if (!removed) return errorResponse(res, 404, 'preset not found');
         res.json({ data: { removed } });
     } catch (e) { errorResponse(res, 500, safeError(e, 'Failed to delete preset')); }

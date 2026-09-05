@@ -590,6 +590,64 @@ export const MIGRATIONS = [
                      ON deployment_events(deployment_id, environment, id DESC)`);
         },
     },
+    {
+        version: 35,
+        name: 'work_board_presets: scope column for saved views beyond Work Board (G5)',
+        up(db) {
+            // Generalises "Work Board presets" into tenant-scoped "saved views" —
+            // the Repositories filter bar wants the same save/apply UX. SQLite
+            // can't ALTER a UNIQUE constraint in place, so this rebuilds the
+            // table (standard 12-step recipe) to widen UNIQUE(user_id, name) to
+            // UNIQUE(user_id, scope, name): without that widening, a user with a
+            // Work Board preset named "My review queue" could never save a
+            // Repositories view with the same name. Idempotent: skips the
+            // rebuild if `scope` already exists (re-run on an already-migrated
+            // DB, or a fixture that pre-seeds the new shape).
+            //
+            // No FK toggling needed: this codebase never turns PRAGMA
+            // foreign_keys on (server/db.js), and no other table references
+            // work_board_presets as a parent, so recreating it is safe as-is.
+            const cols = db.prepare('PRAGMA table_info(work_board_presets)').all();
+            if (cols.some((c) => c.name === 'scope')) return;
+
+            db.exec(`
+                CREATE TABLE work_board_presets_new (
+                    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id    INTEGER NOT NULL,
+                    scope      TEXT    NOT NULL DEFAULT 'work-board',
+                    name       TEXT    NOT NULL,
+                    filters    TEXT    NOT NULL,
+                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE (user_id, scope, name),
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                )
+            `);
+            db.exec(`
+                INSERT INTO work_board_presets_new (id, user_id, scope, name, filters, created_at, updated_at)
+                SELECT id, user_id, 'work-board', name, filters, created_at, updated_at FROM work_board_presets
+            `);
+            db.exec('DROP TABLE work_board_presets');
+            db.exec('ALTER TABLE work_board_presets_new RENAME TO work_board_presets');
+            db.exec('CREATE INDEX IF NOT EXISTS idx_wbp_user ON work_board_presets(user_id)');
+            db.exec('CREATE INDEX IF NOT EXISTS idx_wbp_user_scope ON work_board_presets(user_id, scope)');
+        },
+    },
+    {
+        version: 36,
+        name: 'users.digest_frequency + digest_last_sent_at (G7)',
+        up(db) {
+            // Per-user opt-in for the scheduled digest e-mail (server/lib/
+            // digest-mailer.js + maintenance-janitors.js's digest job).
+            // Default 'off' — this is opt-in, never opt-out; existing users
+            // get no new e-mail until they explicitly turn it on in Settings.
+            addColumnIfMissing(db, 'users', 'digest_frequency', "TEXT NOT NULL DEFAULT 'off'");
+            // NULL until the first digest is actually sent; the job treats
+            // NULL as "due" so a freshly opted-in user gets one on the next
+            // pass rather than waiting a full period.
+            addColumnIfMissing(db, 'users', 'digest_last_sent_at', 'TEXT');
+        },
+    },
 ];
 
 // The highest version this build of the app knows how to apply. Used to

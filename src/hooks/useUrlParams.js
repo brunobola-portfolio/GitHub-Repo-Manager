@@ -26,7 +26,14 @@ export function useUrlParams(keys) {
             else params.set(k, String(v));
         }
         const qs = params.toString();
-        const newUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+        // Preserve the hash (e.g. #/work, #/repos) — this hook only owns the
+        // query string. Dropping the hash here used to strip the view route
+        // itself: a bookmarked/reloaded `?q=...` with no hash falls through
+        // useAppRouter's hash->state sync straight to the dashboard, silently
+        // discarding both the intended view AND the very filters this hook
+        // exists to make bookmarkable.
+        const base = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+        const newUrl = base + window.location.hash;
         window.history.replaceState(null, '', newUrl);
         setState(read());
     }, [read]);

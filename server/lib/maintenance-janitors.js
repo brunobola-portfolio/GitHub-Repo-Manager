@@ -31,6 +31,7 @@ import { purgeOlderThan as purgeGhCache } from './gh-cache.js';
 import { purgeOldSucceeded as purgeGhOutbox } from './gh-outbox.js';
 import { cleanupExpired as cleanupUndoLog } from './work-board-undo-log.js';
 import { runDbBackupOnce } from './db-backup.js';
+import { runDigestPassOnce } from './digest-mailer.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
@@ -169,6 +170,72 @@ export function runHourlyMaintenanceOnce() {
         logger.debug(summary, '[maintenance] hourly pass');
     }
     return summary;
+}
+
+let digestTimer = null;
+// Guards a slow digest pass (many users, provider round-trips per e-mail)
+// overlapping the next tick — same purpose as dailyRunning above.
+let digestRunning = false;
+
+const DIGEST_CHECK_INTERVAL_MS = HOUR_MS;
+
+/**
+ * G7 digest job tick: send every user's due opt-in digest e-mail. Cadence is
+ * hourly regardless of a user's own daily/weekly frequency — hourly is the
+ * check interval, not the send interval; findDueDigestUsers() (in
+ * digest-mailer.js) is what actually enforces "once per period per user"
+ * against each row's digest_last_sent_at. A daily check would mean a user
+ * who opts in at 09:01 waits until the next day's run instead of getting
+ * their first digest within the hour.
+ *
+ * Mirrors startKpiSnapshotJob's cadence/guard/unref pattern (work-board-
+ * sweeper.js) rather than living there, since this job has nothing to do
+ * with Work Board state.
+ *
+ * @returns {Promise<{skipped: boolean, reason?: string, sent: number, checked: number}>}
+ */
+export async function runDigestJobOnce() {
+    if (digestRunning) {
+        logger.debug('[maintenance] digest pass already running; skipping overlap');
+        return { skipped: true, reason: 'overlap', sent: 0, checked: 0 };
+    }
+    digestRunning = true;
+    try {
+        const summary = await runDigestPassOnce();
+        if (!summary.skipped) {
+            logger.info(summary, '[maintenance] digest pass complete');
+        }
+        return summary;
+    } catch (err) {
+        logger.warn({ err }, '[maintenance] digest pass failed');
+        return { skipped: true, reason: 'error', sent: 0, checked: 0 };
+    } finally {
+        digestRunning = false;
+    }
+}
+
+/**
+ * Start the digest job's own timer. Idempotent — a second call without stop
+ * is a no-op. Started separately from startMaintenanceJanitors() so a
+ * deployment that wants the retention/purge janitors but not e-mail (or
+ * vice versa) can start them independently; server/index.js starts both.
+ * @param {object} [opts]
+ * @param {number} [opts.intervalMs]
+ */
+export function startDigestJob({ intervalMs = DIGEST_CHECK_INTERVAL_MS } = {}) {
+    if (digestTimer) return;
+    runDigestJobOnce().catch((err) => logger.warn({ err }, '[maintenance] initial digest pass failed'));
+    digestTimer = setInterval(() => {
+        runDigestJobOnce().catch((err) => logger.warn({ err }, '[maintenance] digest tick failed'));
+    }, intervalMs);
+    if (digestTimer.unref) digestTimer.unref();
+}
+
+/**
+ * Stop the digest job's timer. Safe to call when not running.
+ */
+export function stopDigestJob() {
+    if (digestTimer) { clearInterval(digestTimer); digestTimer = null; }
 }
 
 /**

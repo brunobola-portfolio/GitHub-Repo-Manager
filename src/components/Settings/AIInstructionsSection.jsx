@@ -268,7 +268,7 @@ function PromptEditor({ entry, onSaved, onReset }) {
                                 />
                             </Field>
                             <div className="flex items-center justify-between mt-2 gap-2 flex-wrap">
-                                <p className="ds-text-meta text-slate-400">
+                                <p className="ds-text-meta text-slate-500 dark:text-slate-400">
                                     {draft.length}/8000 chars
                                     {!entry.hasOverride && draft.length === 0 && ' · placeholder shows the default prompt'}
                                 </p>
@@ -295,7 +295,7 @@ function PromptEditor({ entry, onSaved, onReset }) {
                             <pre className={READONLY_CLASSES} style={{ maxHeight: 480 }}>
                                 {entry.defaultPrompt}
                             </pre>
-                            <p className="ds-text-meta text-slate-400 mt-1.5">
+                            <p className="ds-text-meta text-slate-500 dark:text-slate-400 mt-1.5">
                                 {(entry.defaultPrompt || '').length} chars · read-only reference
                             </p>
                         </div>
@@ -313,7 +313,7 @@ function PromptEditor({ entry, onSaved, onReset }) {
                             <pre className={READONLY_CLASSES} style={{ maxHeight: 480 }}>
                                 {previewText}
                             </pre>
-                            <p className="ds-text-meta text-slate-400 mt-1.5">
+                            <p className="ds-text-meta text-slate-500 dark:text-slate-400 mt-1.5">
                                 {entry.variables?.length
                                     ? `Sample values shown for ${entry.variables.map(v => `{${v}}`).join(', ')}.`
                                     : 'No variables for this prompt — preview matches the prompt verbatim.'}
@@ -322,7 +322,7 @@ function PromptEditor({ entry, onSaved, onReset }) {
                     )}
 
                     {trimmed.length > 8000 && (
-                        <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
+                        <div className="flex items-center gap-2 text-xs text-rose-600 dark:text-rose-400">
                             <AlertTriangle className="w-3.5 h-3.5" /> Prompt is too long — trim to 8000 characters or fewer.
                         </div>
                     )}
@@ -383,7 +383,7 @@ export function AIInstructionsSection() {
             setPrompts(Array.isArray(data?.prompts) ? data.prompts : [])
         } catch (err) {
             setError(err)
-            toast.errorFromException(err, { fallbackTitle: 'Failed to load prompts' })
+            toast.errorFromException(err, { fallbackTitle: "Couldn't load prompts" })
         } finally {
             setLoading(false)
         }
@@ -401,7 +401,7 @@ export function AIInstructionsSection() {
             } catch (err) {
                 if (cancelled) return
                 setError(err)
-                toast.errorFromException(err, { fallbackTitle: 'Failed to load prompts' })
+                toast.errorFromException(err, { fallbackTitle: "Couldn't load prompts" })
             } finally {
                 if (!cancelled) setLoading(false)
             }
@@ -483,11 +483,11 @@ export function AIInstructionsSection() {
             {loading ? (
                 <Card className="p-8"><div className="flex justify-center"><Spinner size="lg" /></div></Card>
             ) : error ? (
-                <Card className="p-5 border-red-200 dark:border-red-900/50">
-                    <div className="flex items-start gap-2 text-sm text-red-600 dark:text-red-400">
+                <Card className="p-5 border-rose-200 dark:border-rose-900/50">
+                    <div className="flex items-start gap-2 text-sm text-rose-600 dark:text-rose-400">
                         <AlertTriangle className="w-4 h-4 mt-0.5" />
                         <div className="flex-1">
-                            <p className="mb-2">Could not load prompt registry.</p>
+                            <p className="mb-2">Couldn't load prompt registry.</p>
                             <Button variant="ghost" size="sm" onClick={load}>Retry</Button>
                         </div>
                     </div>
