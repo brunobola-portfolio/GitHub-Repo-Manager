@@ -65,7 +65,7 @@ export function PresetDropdown({ currentFilters, onApply, scope = 'work-board', 
                 type="button"
                 onClick={() => setOpen(o => !o)}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium border-slate-200/60 dark:border-slate-700/50 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors ds-focus-ring"
-                aria-haspopup="menu"
+                aria-haspopup="true"
                 aria-expanded={open}
             >
                 <Bookmark className="w-3 h-3" aria-hidden="true" />
@@ -80,11 +80,12 @@ export function PresetDropdown({ currentFilters, onApply, scope = 'work-board', 
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
                         className={`absolute right-0 top-full mt-2 w-72 z-[var(--ds-z-popover)] overflow-hidden ${POPOVER_SURFACE_CLASS}`}
-                        role="menu"
+                        role="group"
+                        aria-label="Saved views"
                     >
                         <div className="p-2 max-h-64 overflow-y-auto">
                             {loading && <div className="p-2 text-xs text-slate-500 dark:text-slate-400">Loading…</div>}
-                            {error && <div className="p-2 text-xs text-rose-500">{error.message || "Couldn't load"}</div>}
+                            {error && <div className="p-2 text-xs text-rose-500">{error.message || "Couldn't load saved views."}</div>}
                             {!loading && !error && presets.length === 0 && (
                                 <EmptyState size="inline" title="No presets yet. Save the current filters below." />
                             )}

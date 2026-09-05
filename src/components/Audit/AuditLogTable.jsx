@@ -75,11 +75,11 @@ export function AuditLogTable({ logs, total, page, limit, totalPages, loading, e
                     <table className="w-full text-sm">
                         <thead className={`sticky top-0 z-10 transition-shadow${elevated ? ` ${STICKY_HEAD_SHADOW_CLASS}` : ''}`}>
                             <tr className="border-b border-slate-200/70 dark:border-slate-700/50 bg-slate-50/80 dark:bg-slate-800/80">
-                                <th className="px-4 py-3 text-left ds-eyebrow text-slate-500 dark:text-slate-400">Date</th>
-                                <th className="px-4 py-3 text-left ds-eyebrow text-slate-500 dark:text-slate-400">Action</th>
-                                <th className="px-4 py-3 text-left ds-eyebrow text-slate-500 dark:text-slate-400">Resource Type</th>
-                                <th className="px-4 py-3 text-left ds-eyebrow text-slate-500 dark:text-slate-400">Resource ID</th>
-                                <th className="px-4 py-3 text-left ds-eyebrow text-slate-500 dark:text-slate-400">IP Address</th>
+                                <th scope="col" className="px-4 py-3 text-left ds-eyebrow text-slate-500 dark:text-slate-400">Date</th>
+                                <th scope="col" className="px-4 py-3 text-left ds-eyebrow text-slate-500 dark:text-slate-400">Action</th>
+                                <th scope="col" className="px-4 py-3 text-left ds-eyebrow text-slate-500 dark:text-slate-400">Resource type</th>
+                                <th scope="col" className="px-4 py-3 text-left ds-eyebrow text-slate-500 dark:text-slate-400">Resource ID</th>
+                                <th scope="col" className="px-4 py-3 text-left ds-eyebrow text-slate-500 dark:text-slate-400">IP address</th>
                             </tr>
                         </thead>
                         <tbody>

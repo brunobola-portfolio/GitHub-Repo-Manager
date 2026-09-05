@@ -54,7 +54,7 @@ export function WalkthroughTab({ walkthrough }) {
             }).catch((err) => {
                 if (!cancelled) setMermaidError(err?.message || 'Failed to render diagram');
             });
-        }).catch((err) => setMermaidError(err?.message || "Couldn't load mermaid"));
+        }).catch((err) => setMermaidError(err?.message || "Couldn't load the diagram renderer"));
 
         return () => { cancelled = true; };
     }, [walkthrough?.mermaid, theme]);

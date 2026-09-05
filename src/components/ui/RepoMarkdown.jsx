@@ -246,7 +246,7 @@ function ReadmeMermaidBlock({ source }) {
                 if (!cancelled) setMermaidError(err?.message || 'Failed to render diagram')
             })
         }).catch((err) => {
-            if (!cancelled) setMermaidError(err?.message || "Couldn't load mermaid")
+            if (!cancelled) setMermaidError(err?.message || "Couldn't load the diagram renderer")
         })
 
         return () => { cancelled = true }

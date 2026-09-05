@@ -199,7 +199,7 @@ export function DiagramGenerator({ isOpen, onClose, repo }) {
                 handleRenderFailure(err?.message || 'Failed to render diagram', src)
             })
         }).catch((err) => {
-            if (!cancelled) setRenderError(err?.message || "Couldn't load mermaid")
+            if (!cancelled) setRenderError(err?.message || "Couldn't load the diagram renderer")
         })
 
         return () => { cancelled = true }

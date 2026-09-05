@@ -255,6 +255,22 @@ export function CommandPalette({
   onSignOut = null,
 }) {
   const [input, setInput] = useState('')
+  // Focus restoration on close (A4/panel-2026-09-04): this Dialog.Content
+  // sits behind a `paletteEverOpened &&` gate one level up in App.jsx —
+  // once true it stays mounted forever, so Radix's own FocusScope only
+  // ever activates on the FIRST open. Every close after that leaves focus
+  // on <body> instead of returning it to whatever was focused (the header
+  // trigger, a repo card, a command-palette-launching button) before open.
+  // Track that element ourselves and restore it explicitly.
+  const openerRef = useRef(null)
+  useEffect(() => {
+    if (isOpen) {
+      openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    } else if (openerRef.current) {
+      openerRef.current.focus()
+      openerRef.current = null
+    }
+  }, [isOpen])
   // Second-level "scoped" mode (G8): selecting a repo from the top-level
   // "Repo Actions" picker pushes this page — a full, uncapped action list
   // for that one repo. null = top-level. Escape still closes the whole
