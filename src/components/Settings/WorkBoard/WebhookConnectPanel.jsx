@@ -38,7 +38,7 @@ export function WebhookConnectPanel() {
                         type="button"
                         onClick={handleCopy}
                         aria-label="Copy webhook URL"
-                        className="p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700"
+                        className="p-1.5 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700 ds-focus-ring"
                     >
                         <AnimatedCopyIcon copied={copied} size="w-3.5 h-3.5" copyClassName="text-slate-500" checkClassName="text-emerald-500" />
                     </button>

@@ -136,7 +136,7 @@ export function AuditLogTable({ logs, total, page, limit, totalPages, loading, e
                         <button
                             onClick={onPrevPage}
                             disabled={page === 1 || loading}
-                            className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors ds-focus-ring"
                             aria-label="Previous page"
                         >
                             <ChevronLeft className="w-4 h-4" />
@@ -147,7 +147,7 @@ export function AuditLogTable({ logs, total, page, limit, totalPages, loading, e
                         <button
                             onClick={onNextPage}
                             disabled={page >= totalPages || loading}
-                            className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            className="p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors ds-focus-ring"
                             aria-label="Next page"
                         >
                             <ChevronRight className="w-4 h-4" />

@@ -89,7 +89,7 @@ export function ModelDropdown({
                 <button
                     type="button"
                     onClick={() => setShowLegacy(true)}
-                    className="w-full flex items-center justify-center gap-1 px-3 py-2 ds-text-meta text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/70 border-t border-slate-100 dark:border-slate-800"
+                    className="w-full flex items-center justify-center gap-1 px-3 py-2 ds-text-meta text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/70 border-t border-slate-100 dark:border-slate-800 ds-focus-ring rounded"
                 >
                     <ChevronDown className="w-3 h-3" aria-hidden="true" />
                     Show {legacyCount} legacy model{legacyCount === 1 ? '' : 's'}
@@ -101,7 +101,7 @@ export function ModelDropdown({
                     href={catalogueHref}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="sticky bottom-0 bg-slate-50 dark:bg-slate-900/90 backdrop-blur border-t border-slate-200 dark:border-slate-700 px-3 py-2 text-xs flex items-center justify-between text-[color:var(--ds-accent-brand)] dark:text-brand-300 hover:underline"
+                    className="sticky bottom-0 bg-slate-50 dark:bg-slate-900/90 backdrop-blur border-t border-slate-200 dark:border-slate-700 px-3 py-2 text-xs flex items-center justify-between text-[color:var(--ds-accent-brand)] dark:text-brand-300 hover:underline ds-focus-ring rounded"
                 >
                     <span>{catalogueLabel || 'Browse full catalogue'}</span>
                     <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />

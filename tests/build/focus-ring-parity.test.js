@@ -106,25 +106,8 @@ function findViolations(files) {
  * exact files. Revisit once that work lands.
  */
 const ALLOWLIST = [
-    { file: 'src/components/RepoList/RepoFilterBar.jsx', reason: 'owned by a concurrent edit pass (repo filter bar rework) at the time of the F02 remediation' },
-    { file: 'src/components/Audit/AuditLogTable.jsx', reason: 'owned by a concurrent edit pass (Audit) at the time of the F02 remediation' },
-    { file: 'src/components/Settings/WorkBoard/RepoRow.jsx', reason: 'owned by a concurrent edit pass (Settings/WorkBoard) at the time of the F02 remediation' },
-    { file: 'src/components/Settings/WorkBoard/SearchFilterBar.jsx', reason: 'owned by a concurrent edit pass (Settings/WorkBoard) at the time of the F02 remediation' },
-    { file: 'src/components/Settings/AIConfig/ModelCombobox.jsx', reason: 'owned by a concurrent edit pass (Settings/AIConfig) at the time of the F02 remediation' },
-    { file: 'src/components/Settings/AIConfig/ModelDropdown.jsx', reason: 'owned by a concurrent edit pass (Settings/AIConfig) at the time of the F02 remediation' },
-    { file: 'src/components/Settings/AIConfig/ModelRow.jsx', reason: 'owned by a concurrent edit pass (Settings/AIConfig) at the time of the F02 remediation' },
-    { file: 'src/components/Settings/AIInstructionsSection.jsx', reason: 'owned by a concurrent edit pass (Settings) at the time of the F02 remediation' },
-    { file: 'src/components/Settings/ApiKeysSection.jsx', reason: 'owned by a concurrent edit pass (Settings) at the time of the F02 remediation' },
-    { file: 'src/components/Settings/AzureCredentialsSection.jsx', reason: 'owned by a concurrent edit pass (Settings) at the time of the F02 remediation' },
-    { file: 'src/components/Settings/AzureHostsAllowlistSection.jsx', reason: 'owned by a concurrent edit pass (Settings) at the time of the F02 remediation' },
-    { file: 'src/components/Settings/LicensePlanSection.jsx', reason: 'owned by a concurrent edit pass (Settings) at the time of the F02 remediation' },
-    { file: 'src/components/Settings/WorkBoard/BulkActionsBar.jsx', reason: 'owned by a concurrent edit pass (Settings/WorkBoard) at the time of the F02 remediation' },
-    { file: 'src/components/Settings/WorkBoard/DangerZoneCard.jsx', reason: 'owned by a concurrent edit pass (Settings/WorkBoard) at the time of the F02 remediation' },
-    { file: 'src/components/Settings/WorkBoard/DiscoveryPanel.jsx', reason: 'owned by a concurrent edit pass (Settings/WorkBoard) at the time of the F02 remediation' },
-    { file: 'src/components/Settings/WorkBoard/WebhookConnectPanel.jsx', reason: 'owned by a concurrent edit pass (Settings/WorkBoard) at the time of the F02 remediation' },
-    { file: 'src/components/Settings/WorkBoard/ai/ConversationalEdit.jsx', reason: 'owned by a concurrent edit pass (Settings/WorkBoard) at the time of the F02 remediation' },
-    { file: 'src/components/Settings/WorkBoard/ai/WorkBoardCapReachedBanner.jsx', reason: 'owned by a concurrent edit pass (Settings/WorkBoard) at the time of the F02 remediation' },
-    { file: 'src/components/WorkBoard/filters/PresetDropdown.jsx', reason: 'owned by a concurrent edit pass (WorkBoard filters) at the time of the F02 remediation' },
+    // Empty since the concurrent feature pass finished and the codemod ran
+    // over the files it had reserved. Add an entry only with a reason.
 ]
 const ALLOWLISTED_FILES = new Set(ALLOWLIST.map((a) => a.file))
 

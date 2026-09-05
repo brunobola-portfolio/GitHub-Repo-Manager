@@ -257,7 +257,7 @@ function RowDb({ entry, canEdit, onDeleted }) {
                 type="button"
                 onClick={cancelConfirm}
                 onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); cancelConfirm() } }}
-                className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 ds-focus-ring rounded"
               >
                 Cancel
               </button>
@@ -268,7 +268,7 @@ function RowDb({ entry, canEdit, onDeleted }) {
                 onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); cancelConfirm() } }}
                 disabled={deleting}
                 aria-label={`Confirm removal of ${entry.pattern} from the allowlist`}
-                className="px-2 py-1 text-xs font-semibold rounded-md bg-rose-600 text-white hover:bg-rose-700"
+                className="px-2 py-1 text-xs font-semibold rounded-md bg-rose-600 text-white hover:bg-rose-700 ds-focus-ring"
               >
                 {deleting ? <SpinnerIcon className="w-3 h-3" /> : 'Confirm'}
               </button>
@@ -278,7 +278,7 @@ function RowDb({ entry, canEdit, onDeleted }) {
               ref={deleteBtnRef}
               type="button"
               onClick={() => setConfirming(true)}
-              className="p-1.5 rounded-md text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-white dark:hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-md text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-white dark:hover:bg-slate-800 transition-colors ds-focus-ring"
               title="Remove from allowlist"
               aria-label={`Remove ${entry.pattern} from the allowlist`}
             >
@@ -361,7 +361,7 @@ function AddHostForm({ onAdded }) {
         <button
           type="submit"
           disabled={!pattern.trim() || submitting}
-          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg ds-brand-solid disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors"
+          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg ds-brand-solid disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors ds-focus-ring"
         >
           {submitting ? <SpinnerIcon className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
           Add

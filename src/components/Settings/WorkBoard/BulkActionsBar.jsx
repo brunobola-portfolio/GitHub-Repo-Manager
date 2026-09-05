@@ -22,7 +22,7 @@ export function BulkActionsBar({ selectedCount, onAction, onClear }) {
                         <button
                             type="button"
                             onClick={onClear}
-                            className="px-2 py-1 text-xs text-white hover:text-white"
+                            className="px-2 py-1 text-xs text-white hover:text-white ds-focus-ring rounded"
                             aria-label="Clear selection"
                         >
                             Clear
@@ -41,8 +41,8 @@ function BarButton({ icon, label, onClick, destructive = false }) {
             onClick={onClick}
             className={
                 destructive
-                    ? 'flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-rose-600 hover:bg-rose-700 transition-colors'
-                    : 'flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white/20 hover:bg-white/30 transition-colors'
+                    ? 'flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg ds-focus-ring bg-rose-600 hover:bg-rose-700 transition-colors'
+                    : 'flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg ds-focus-ring bg-white/20 hover:bg-white/30 transition-colors'
             }
         >
             {icon}

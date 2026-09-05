@@ -72,7 +72,7 @@ export function useInbox({ sections = ALL_SECTIONS, onOpenItem } = {}) {
                         <button
                             type="button"
                             onClick={undo}
-                            className="shrink-0 px-2 py-0.5 text-xs font-semibold rounded-md bg-white/30 dark:bg-white/10 hover:bg-white/40 dark:hover:bg-white/20 transition-colors"
+                            className="shrink-0 px-2 py-0.5 text-xs font-semibold rounded-md bg-white/30 dark:bg-white/10 hover:bg-white/40 dark:hover:bg-white/20 transition-colors ds-focus-ring"
                         >
                             Undo
                         </button>

@@ -64,7 +64,7 @@ export function PresetDropdown({ currentFilters, onApply, scope = 'work-board', 
             <button
                 type="button"
                 onClick={() => setOpen(o => !o)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium border-slate-200/60 dark:border-slate-700/50 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium border-slate-200/60 dark:border-slate-700/50 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors ds-focus-ring"
                 aria-haspopup="menu"
                 aria-expanded={open}
             >

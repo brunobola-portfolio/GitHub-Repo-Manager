@@ -31,7 +31,7 @@ export function DangerZoneCard({ onResetDiscovery, onClearAll }) {
                         <button
                             type="button"
                             onClick={() => setConfirm('reset')}
-                            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors ds-focus-ring"
                         >
                             <RotateCcw className="w-4 h-4" />
                             Reset discovery
@@ -39,7 +39,7 @@ export function DangerZoneCard({ onResetDiscovery, onClearAll }) {
                         <button
                             type="button"
                             onClick={() => setConfirm('clear')}
-                            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors ds-focus-ring"
                         >
                             <Trash2 className="w-4 h-4" />
                             Clear all data

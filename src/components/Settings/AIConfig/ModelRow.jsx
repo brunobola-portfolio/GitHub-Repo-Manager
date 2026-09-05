@@ -46,7 +46,7 @@ export function ModelRow({ option, optionId, selected, highlighted, onPick, data
                 highlighted
                     ? 'bg-brand-50 dark:bg-brand-900/30'
                     : 'hover:bg-slate-50 dark:hover:bg-slate-800/70'
-            } ${selected ? 'ring-1 ring-inset ring-brand-300 dark:ring-brand-700' : ''}`}
+            } ${selected ? 'ring-1 ring-inset ring-brand-300 dark:ring-brand-700' : ''} ds-focus-ring rounded`}
         >
             <div className="flex-1 min-w-0">
                 {/* Line 1: name + badges */}

@@ -199,7 +199,7 @@ function LicenseCard({ license, onChangeLicenseKey }) {
                 </div>
                 <button
                     onClick={() => setExpanded((v) => !v)}
-                    className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition-colors shrink-0"
+                    className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl transition-colors shrink-0 ds-focus-ring"
                 >
                     <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
                     Manage License
@@ -258,7 +258,7 @@ function LicenseCard({ license, onChangeLicenseKey }) {
 
                     <button
                         onClick={onChangeLicenseKey}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] border border-brand-200 dark:border-brand-800 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-xl transition-colors"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] border border-brand-200 dark:border-brand-800 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-xl transition-colors ds-focus-ring"
                     >
                         <Key className="w-4 h-4" />
                         Change License Key
@@ -474,7 +474,7 @@ export function LicensePlanSection() {
             {/* Activate License Key */}
             <button
                 onClick={() => openModal('showLicenseActivation')}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] border border-brand-200 dark:border-brand-800 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-xl transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] border border-brand-200 dark:border-brand-800 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-xl transition-colors ds-focus-ring"
             >
                 <Key className="w-4 h-4" />
                 Activate License Key

@@ -30,7 +30,7 @@ export function DiscoveryPanel({
                     onClick={onRefresh}
                     disabled={isRefreshing}
                     aria-label="Refresh"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-900/30 hover:bg-brand-100 dark:hover:bg-brand-900/50 border border-brand-200 dark:border-brand-700/50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-900/30 hover:bg-brand-100 dark:hover:bg-brand-900/50 border border-brand-200 dark:border-brand-700/50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ds-focus-ring"
                 >
                     <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
                     Refresh

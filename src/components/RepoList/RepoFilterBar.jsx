@@ -221,7 +221,7 @@ export function RepoFilterBar({
 							<button
 								type="button"
 								onClick={() => { setIsAISearch(!isAISearch); setSearchQuery('') }}
-								className={`p-2 -m-0.5 rounded-lg transition-all ${isAISearch ? 'text-brand-500 bg-brand-100 dark:bg-brand-900/30 shadow-sm' : 'text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20'}`}
+								className={`p-2 -m-0.5 rounded-lg transition-all ${isAISearch ? 'text-brand-500 bg-brand-100 dark:bg-brand-900/30 shadow-sm' : 'text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20'} ds-focus-ring`}
 								title="Toggle AI semantic search"
 								aria-label="Toggle AI semantic search"
 							>
@@ -241,7 +241,7 @@ export function RepoFilterBar({
 						onClick={() => setViewMode('grid')}
 						aria-label="Grid view"
 						aria-pressed={viewMode === 'grid'}
-						className={`p-2 -m-0.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 shadow-sm text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+						className={`p-2 -m-0.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 shadow-sm text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'} ds-focus-ring`}
 					>
 						<LayoutGrid className="w-4 h-4" />
 					</button>
@@ -249,7 +249,7 @@ export function RepoFilterBar({
 						onClick={() => setViewMode('list')}
 						aria-label="List view"
 						aria-pressed={viewMode === 'list'}
-						className={`p-2 -m-0.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+						className={`p-2 -m-0.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'} ds-focus-ring`}
 					>
 						<ListIcon className="w-4 h-4" />
 					</button>
@@ -480,7 +480,7 @@ export function RepoFilterBar({
 						key={chip.key}
 						type="button"
 						onClick={chip.clear}
-						className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 border border-brand-200/70 dark:border-brand-700/50 hover:bg-brand-100 dark:hover:bg-brand-900/50 transition-colors"
+						className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 border border-brand-200/70 dark:border-brand-700/50 hover:bg-brand-100 dark:hover:bg-brand-900/50 transition-colors ds-focus-ring"
 						aria-label={`Remove filter: ${chip.label}`}
 					>
 						<span>{chip.label}</span>

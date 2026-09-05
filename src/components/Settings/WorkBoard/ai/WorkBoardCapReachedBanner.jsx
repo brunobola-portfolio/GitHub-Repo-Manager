@@ -82,7 +82,7 @@ export function WorkBoardCapReachedBanner({ spentCents, capCents, className = ''
                                 el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
                                 el?.querySelector('button')?.focus()
                             }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-rose-700 dark:text-rose-200 bg-rose-50 dark:bg-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 ring-1 ring-inset ring-rose-200 dark:ring-rose-800 rounded-lg transition-colors"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold text-rose-700 dark:text-rose-200 bg-rose-50 dark:bg-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 ring-1 ring-inset ring-rose-200 dark:ring-rose-800 rounded-lg transition-colors ds-focus-ring"
                         >
                             Adjust cap
                             <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />

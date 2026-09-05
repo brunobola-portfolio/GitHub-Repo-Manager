@@ -77,7 +77,7 @@ export function ConversationalEdit({ onInterpret, onApply }) {
                             <button
                                 type="button"
                                 onClick={() => setDiff(null)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors ds-focus-ring rounded"
                             >
                                 <Pencil className="w-3 h-3" /> Edit
                             </button>
