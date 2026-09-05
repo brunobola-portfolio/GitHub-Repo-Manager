@@ -1,7 +1,5 @@
 # Premium Dashboard — Live Inbox
 
-> **Feature flag:** `localStorage.setItem('dashboard_premium_v2_inbox', '1')` — reload the page after setting.
-
 ![Live Inbox — needs_review section](../images/10_dashboard_live_inbox_needs_review_hd.png)
 
 ## What it does
@@ -31,12 +29,14 @@ The top 3 items in the active section receive a Gemini-generated one-line summar
 
 | Key | Action |
 | --- | --- |
+| `j` / `k` | Move focus to the next / previous item |
+| `Enter` | Open the focused item |
 | `e` | Archive the first item of the active section |
 | `s` | Open the snooze modal for the first item of the active section |
 | Chevron click | Expand / collapse the row in-place |
 | Title click | Navigate to the PR or issue on GitHub |
 
-Shortcuts are suppressed when focus is inside an `<input>`, `<textarea>`, `<select>`, or contenteditable element.
+Shortcuts are suppressed when focus is inside an `<input>`, `<textarea>`, `<select>`, or contenteditable element. The full list is registry-driven — see [`src/config/keyboardShortcuts.js`](../../src/config/keyboardShortcuts.js) and the in-app shortcuts help dialog (`?`).
 
 ![Expanded inbox row](../images/12_dashboard_live_inbox_row_expanded_hd.png)
 
@@ -71,21 +71,11 @@ All inbox actions — view, archive, snooze, restore — are available on the **
 
 ## Enabling / disabling
 
-Enable:
-
-```js
-localStorage.setItem('dashboard_premium_v2_inbox', '1')
-// then reload
-```
-
-Disable:
-
-```js
-localStorage.removeItem('dashboard_premium_v2_inbox')
-// then reload
-```
-
-The flag controls a `React.lazy()` split; disabling it restores the legacy Attention Feed with no bundle cost.
+The Live Inbox is always on — there is no feature flag. It replaced the
+static "Attention Feed" outright; that component and the single-flag
+`featureFlags` module that gated it were deleted once the inbox shipped.
+`InboxPanel` is still `React.lazy()`-split so it doesn't inflate the
+dashboard's initial bundle, but the split is unconditional.
 
 ## What is NOT in Phase 1
 

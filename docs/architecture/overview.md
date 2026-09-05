@@ -15,7 +15,7 @@ providers. SQLite is the only store; PostgreSQL is intentionally unsupported
   route-level lazy splits (WorkBoard, PRReview, Admin) kept under explicit
   gzip budgets by the CI gate
   [`tests/build/bundle-budget.test.js`](../../tests/build/bundle-budget.test.js).
-- **Backend**: Express 5 with 325 route handlers across 74 route modules under
+- **Backend**: Express 5 with 341 route handlers across 77 route modules under
   `server/routes/`. CSRF double-submit, SSRF guard on import-from-URL,
   per-IP auth rate-limit, rolling session + 7-day absolute timeout.
 - **Auth**: GitHub OAuth App, session-based token storage, CSRF-protected
@@ -116,10 +116,11 @@ ones without rewriting per-page layouts:
   ~55% off the right edge until hover/focus/tap slides it in). The earlier
   standalone `<MobileFAB>` primitive was removed in v4.3.0 — the peek pattern
   it documented is now reproduced inline here and in `PRReviewView`.
-- [`<ModalSticky>`](../../src/components/ui/ModalSticky.jsx) — wraps `<Modal>`
-  with mobile-aware layout: full-height container, scrolling body, sticky
-  footer pushed to the bottom edge. Backwards-compatible with `<Modal>` at
-  `>= md` (renders the same DOM, no behaviour change).
+- Mobile-aware layout (full-height container, scrolling body, sticky footer)
+  is a `mobileVariant` prop on `<Modal>` itself now — the standalone
+  `<ModalSticky>` wrapper this section used to document was a permanent fork
+  of the same behaviour and was deleted in the 2026-09 sweep once every
+  caller adopted the prop.
 
 Breakpoint convention: `useMobileBreakpoint()` returns `true` for `< md`
 (768 px). Anything tighter (`< sm` = 640 px) is targeted directly via Tailwind
@@ -132,7 +133,7 @@ Phase 1 (this slice) ships the three primitives + toast clamp + Dashboard
 StatCard 1-wide stack + command palette FAB. The broader audit (Sidebar
 drawer, RepoFilterBar sheet, RepoDetail Settings sticky save bar, WorkBoard
 KPIs/tabs, SettingsModal section strip, MigrationWizard responsive sweep,
-existing-modal `<ModalSticky>` migration, Playwright mobile project) is
+existing-modal mobile-layout migration, Playwright mobile project) is
 queued for follow-up — see
 [`docs/plans/2026-05-01-mobile-parity-sweep.md`](../plans/2026-05-01-mobile-parity-sweep.md)
 Tasks 4–13.
@@ -171,13 +172,13 @@ Spec: [`docs/specs/2026-05-01-community-health-ai-autofix.md`](../specs/2026-05-
 
 ## Premium Dashboard — Live Inbox
 
-The Live Inbox replaces the static Attention Feed with a sectioned, actionable view of items waiting for the authenticated user: PRs needing review, the user's own open PRs, assigned/mentioned issues, and stale drafts. It is lazy-loaded and gated behind `localStorage.setItem('dashboard_premium_v2_inbox', '1')`.
+The Live Inbox replaced the static Attention Feed with a sectioned, actionable view of items waiting for the authenticated user: PRs needing review, the user's own open PRs, assigned/mentioned issues, and stale drafts. It is `React.lazy()`-split so it doesn't inflate the dashboard's initial bundle, but the split is unconditional — there is no feature flag. The old Attention Feed and the single-flag `featureFlags` module that gated the rollout were both deleted in the 2026-09 sweep once every caller moved onto the inbox.
 
 Data flows through `server/lib/dashboard-aggregator.js` (`composeInbox(userId, opts)`), which fans out to four existing helpers from `event-aggregations.js` and applies priority-based deduplication (an item appears in only the highest-priority section that claims it). Archive and snooze state is persisted per `(user_id, item_id)` in the `dashboard_inbox_state` SQLite table.
 
 The top 3 items in the active section receive Gemini-generated one-line narratives via `POST /api/ai/attention-narrative` (existing endpoint, reused). If the user's AI quota is exhausted the narrative fan-out halts cleanly and the inbox rows render without AI text — no cascading errors.
 
-Keyboard shortcuts in `InboxPanel`: `e` archives the first item of the active section; `s` opens the snooze modal for it. Clicking a row title navigates to the item (via `onSelect`); the chevron button expands the row in-place. Per-section empty states use friendly contextual copy.
+Keyboard shortcuts in `InboxPanel`: `j`/`k` move focus between items and `Enter` opens the focused one (via `useInbox`'s row-navigation, shared with the repository grid); `e` archives the first item of the active section; `s` opens the snooze modal for it. Clicking a row title navigates to the item (via `onSelect`); the chevron button expands the row in-place. Per-section empty states use friendly contextual copy.
 
 `dependabot_ready` and `failing_ci` section builders are intentional stubs that return `[]` in Phase 1 — they will be wired to `repos-security` and CI status aggregators in Phases 2 and 3 respectively. The DORA card and Scorecards widgets are also deferred (Phases 2 and 3).
 
@@ -190,7 +191,7 @@ Entry point: `server/index.js`
 - Loads configuration from environment variables (see `.env.example`).
 - Configures CORS, JSON parsing, `express-session` (backed by Redis when `REDIS_URL` is set), Helmet, and rate limiting.
 - Validates the presence of GitHub OAuth credentials at startup.
-- Uses a **modular route structure** with 74 route modules (325 route
+- Uses a **modular route structure** with 77 route modules (341 route
   handlers) under `server/routes/` (plus a `v1/` sub-router for versioned
   endpoints). Each domain area has its own route module:
   - **Auth** (`routes/auth.js`): login, callback, logout, user session,
@@ -288,6 +289,12 @@ Key services:
 - `server/migration-engine.js` — Plan-based migration with task types: `repo`, `repo-tfvc`, `work-items`, `wiki`.
 - `server/migration-planner.js` — AI-assisted (Gemini) or fallback risk analysis for migrations.
 
+Frontend-side, [`src/api/azure.js`](../../src/api/azure.js)'s `azurePost()`
+helper replaced 24 hand-rolled CSRF-injecting POST blocks scattered across
+twelve Migration Wizard files with one call built on the shared `apiCall`,
+so the CSRF-rotation retry (`csrf_invalid` → refetch token → retry once)
+applies uniformly instead of only where someone remembered to copy it.
+
 ## Database
 
 SQLite (`better-sqlite3`, WAL mode) is the only supported backend, via
@@ -298,7 +305,7 @@ instead of silently doing something unsupported — see
 [`docs/operations.md`](../operations.md) for backup/restore and scale
 guidance.
 
-Schema management has a single source of truth — **there are no loose `.sql` files** (the old drifting `server/migrations/00X-*.sql` copies were removed). `server/db.js` (`initDB()`) applies the idempotent base schema (`CREATE TABLE/INDEX IF NOT EXISTS`), then `server/lib/db-migrations.js` applies the ordered, versioned migrations (currently **v28**) recorded in a `schema_migrations(version, name, applied_at)` ledger. Every `up(db)` is intentionally idempotent (`addColumnIfMissing` + `IF NOT EXISTS`), so the runner can safely re-apply on a database that predates the ledger. Add a new schema change by appending an entry to `MIGRATIONS` with the next version number — never by adding a `.sql` file.
+Schema management has a single source of truth — **there are no loose `.sql` files** (the old drifting `server/migrations/00X-*.sql` copies were removed). `server/db.js` (`initDB()`) applies the idempotent base schema (`CREATE TABLE/INDEX IF NOT EXISTS`), then `server/lib/db-migrations.js` applies the ordered, versioned migrations (currently **v36**) recorded in a `schema_migrations(version, name, applied_at)` ledger. Every `up(db)` is intentionally idempotent (`addColumnIfMissing` + `IF NOT EXISTS`), so the runner can safely re-apply on a database that predates the ledger. Add a new schema change by appending an entry to `MIGRATIONS` with the next version number — never by adding a `.sql` file.
 
 Multi-tenancy: all per-user tables (`repo_metadata`, `repo_embeddings`, `community_health_cache`, `workflow_runs`, `workflows_meta`) carry a `user_id` column and use composite primary keys `(user_id, repo_id)` to isolate data between accounts.
 
@@ -420,9 +427,10 @@ keep a long-running instance healthy without operator babysitting:
 - **Request validation layer** — shared Zod schemas
   ([`server/lib/validators.js`](../../server/lib/validators.js)) applied via
   [`validateBody` / `validateQuery` / `validateParams`](../../server/middleware/validate-request.js),
-  returning a consistent `400 { error, code: 'validation_failed' }` on PR
-  write-backs, repo-content writes, issue labels/assignees, webhook updates,
-  workflow dispatch, and community-health endpoints.
+  returning a consistent `400 { error, code: 'VALIDATION_ERROR' }`
+  (`validation_failed` is aliased for one release) on PR write-backs,
+  repo-content writes, issue labels/assignees, webhook updates, workflow
+  dispatch, and community-health endpoints.
 - **Frontend event bus** ([`src/utils/appEvents.js`](../../src/utils/appEvents.js)) —
   a module-singleton emitter (`emitAppEvent` / `onAppEvent` / `APP_EVENTS`) that
   replaced all `window.dispatchEvent(new CustomEvent(...))` usage.
@@ -490,6 +498,6 @@ graph TB
     Import -->|"simple-git"| GH
 ```
 
-> **Note:** The Mermaid diagram above shows the high-level data flow. The full modular route structure (74 route modules / 325 route handlers under `server/routes/`, middleware stack, and infrastructure wiring) is documented in [`docs/architecture/backend.md`](backend.md).
+> **Note:** The Mermaid diagram above shows the high-level data flow. The full modular route structure (77 route modules / 341 route handlers under `server/routes/`, middleware stack, and infrastructure wiring) is documented in [`docs/architecture/backend.md`](backend.md).
 
 This document is a high-level guide; see inline comments and the README for more details.

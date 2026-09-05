@@ -120,6 +120,12 @@ Three rules come with the ramp, all test-enforced
 
 - **No retired accent utility.** `indigo-*`, `violet-*`, `purple-*`,
   `fuchsia-*`, `sky-*`, `cyan-*`, `pink-*`, `teal-*` are gone. Use `brand-*`.
+  The gate also retires `red-*`, `green-*`, `yellow-*` and `orange-*` — those
+  were a second, undocumented spelling of the status colours below
+  (`rose`/`emerald`/`amber`) rather than decoration, so they map onto the
+  status ramp, not onto `brand-*`. The check covers literal `rgb()`/`rgba()`
+  triples at the 400/500/600 step of every retired family too, not just the
+  Tailwind class names.
 - **White on a brand fill is never dimmed.** `text-white/90` measures 4.43:1 on
   `--ds-accent-brand`. It read as harmless softening under indigo, where the
   base was 6.29 and had headroom; the brand green's base is 5.06 and does not.

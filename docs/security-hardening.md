@@ -416,8 +416,9 @@ A shared Zod layer standardises input validation. Schemas live in
 wrappers `validateBody` / `validateQuery` / `validateParams` in
 [`server/middleware/validate-request.js`](../server/middleware/validate-request.js)
 `safeParse` the input and, on failure, emit a single consistent envelope —
-`400 { error, code: 'validation_failed' }` — with the first issue's path +
-message. Parsed data is attached at `req.validatedBody` / `req.validatedQuery`
+`400 { error, code: 'VALIDATION_ERROR' }` (`validation_failed` is aliased for
+one release) — with the first issue's path + message. Parsed data is attached
+at `req.validatedBody` / `req.validatedQuery`
 / `req.validatedParams` so handlers never mutate `req.body` in place. Coverage
 includes PR write-backs, repo-content writes, issue labels/assignees, webhook
 updates, workflow dispatch, community-health, AI (`/ai/*` bodies with

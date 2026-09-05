@@ -359,8 +359,10 @@ the Phase 2 `useTrackedRepos` context.
   with pin/mute/untrack. Not tracked → ghost `Track` button calling
   `hook.track()` directly.
 
-- **Dashboard "What needs you" row** (`src/components/Dashboard/DashboardHero.jsx`,
-  which replaced the former `YourWorkCard`) — KPI tiles for
+- **Dashboard "What needs you" row** (`src/components/Dashboard/WhatNeedsYouGrid.jsx`,
+  rendered from `TodayPanel.jsx`; the `DashboardHero.jsx` this used to
+  reference was a stale fork of `TodayPanel` and was deleted in the 2026-09
+  sweep, and `TodayPanel` itself earlier replaced `YourWorkCard`) — KPI tiles for
   `reviews waiting · stale PRs · issues` with an "Open Work Board →" link that
   routes to the Work Board page. Silently degrades to zeros when the
   aggregation endpoints are gated or unreachable.

@@ -4,7 +4,7 @@
 **Versioned alias:** Every route below is served under both `/api/*` (legacy) and `/api/v1/*`. The two prefixes hit the same handlers — `server/index.js` mounts the v1 aggregator at both (`app.use('/api/v1', v1Routes)` and `app.use('/api', v1Routes)`).
 **Authentication:** GitHub OAuth via session cookies, or an API key sent as `Authorization: Bearer grm_live_...`. Most endpoints require an authenticated session (`requireAuth` middleware). The server never exposes raw access tokens to the client.
 **CSRF:** All mutating `/api/*` requests (non-GET/HEAD/OPTIONS) require a valid `X-CSRF-Token` header. The OAuth flow and signature-verified webhooks are exempt.
-**Request validation:** Write endpoints validate their JSON body with Zod (`validateBody` middleware). An invalid body returns `400 { error, code: 'validation_failed' }` — see [Shared Response Envelopes](#shared-response-envelopes).
+**Request validation:** Write endpoints validate their JSON body with Zod (`validateBody` middleware). An invalid body returns `400 { error, code: 'VALIDATION_ERROR' }` — see [Shared Response Envelopes](#shared-response-envelopes).
 **Total Endpoints:** 350 route handlers (341 across `server/routes/**` — 77 route files, recounted via `grep -rEc "^\s*router\.(get|post|put|patch|delete)\(" server/routes` — plus 9 app-level routes mounted directly in `server/index.js`: webhooks, health, and the brand guide at `/brand`). This document gives full entries for the public-facing and recently-changed surface; lower-level internal routes are summarised under [Additional Endpoints](#additional-endpoints-grouped).
 
 ---
@@ -51,9 +51,15 @@ its Zod schema. The message names the offending field.
 ```json
 {
   "error": "title: String must contain at least 1 character(s)",
-  "code": "validation_failed"
+  "code": "VALIDATION_ERROR"
 }
 ```
+
+`validation_failed` — the pre-rename value — is aliased for one release for
+any caller still matching on it; new code should compare against
+`VALIDATION_ERROR`. A handful of older endpoints not yet migrated onto this
+shared helper (e.g. the git-ref and SVG/README path checks noted inline
+below) still emit `validation_failed` directly.
 
 ### Authentication required — `401`
 
@@ -619,7 +625,7 @@ Create a new branch.
 ```
 
 **Error Codes:**
-- `400 validation_failed` - Invalid git ref name, or an unknown body key was sent
+- `400 VALIDATION_ERROR` - Invalid git ref name, or an unknown body key was sent
 
 ---
 
@@ -2592,7 +2598,7 @@ requesting an arbitrary write location.
 **Response (200):** `{ "success": true, "target": "readme-mermaid", "readme": { ... } }`
 
 **Error Codes:**
-- `400 validation_failed` — `svg.path`/`readme.path` don't match the server-derived path
+- `400 VALIDATION_ERROR` — `svg.path`/`readme.path` don't match the server-derived path
 - `403 read_only_access` — caller lacks push access (PR-from-fork is not supported)
 - `422 invalid_svg` — SVG failed sanitizer re-validation at commit time
 
@@ -4643,7 +4649,7 @@ Get the current subscription status for the authenticated user.
 
 ## Audit Log (`/api/audit/*`)
 
-The audit router is mounted behind `requireTier('enterprise')`, so all audit endpoints require the **Enterprise** tier (a lower tier gets `403 TIER_REQUIRED_ENTERPRISE`).
+The audit router is mounted behind `requireTier('enterprise')`, so all audit endpoints require the **Enterprise** tier (a lower tier gets `403 TIER_REQUIRED_ENTERPRISE`). The frontend consumes this router from its own page (`#/audit`), not a tab inside the Settings modal — Settings now shows a summary that links to it.
 
 ### `GET /api/audit`
 
@@ -4673,6 +4679,39 @@ List audit log entries for the authenticated user (paginated). Supports filterin
   "total": 150,
   "page": 1,
   "limit": 50
+}
+```
+
+---
+
+### `GET /api/audit/actions`
+
+Distinct action values already present in the caller's audit log, for populating the `#/audit` page's action filter from real data instead of a hardcoded list.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Tier required | Enterprise |
+
+---
+
+### `GET /api/audit/verify`
+
+Walks the caller's append-only SHA-256 hash chain (`prev_hash` → `this_hash`) end to end and reports whether it is intact — the same check `npm run audit:verify` performs from the CLI, exposed for the page's **Verify chain** action.
+
+| Detail | Value |
+|---|---|
+| Auth required | Yes |
+| Tier required | Enterprise |
+
+**Response (200):**
+
+```json
+{
+  "ok": true,
+  "checked": 1204,
+  "brokenAt": null,
+  "unhashedLegacy": 0
 }
 ```
 
@@ -5251,6 +5290,9 @@ Self-hosted Pro/Enterprise license-key management.
 | --- | --- | --- | --- |
 | `GET` | `/api/notifications/digest` | Yes | Notification digest for the user |
 | `POST` | `/api/notifications/mark-seen` | Yes | Mark notifications as seen |
+| `GET` | `/api/notifications/digest/settings` | Yes | Current opt-in digest e-mail frequency (`{ frequency: 'off'\|'daily'\|'weekly' }`) |
+| `PATCH` | `/api/notifications/digest/settings` | Yes | Set the digest frequency. Body `{ frequency }`, one of `off`/`daily`/`weekly`; `400` on any other value |
+| `GET` | `/api/notifications/digest/unsubscribe?token=...` | No | One-click unsubscribe from a digest e-mail link — sets `frequency` to `off`. Not behind `requireAuth`: the signed token (`server/lib/digest-unsubscribe-token.js`) is the only proof of identity, and it can only ever turn the setting off. Renders a minimal standalone HTML confirmation page, not JSON. |
 | `GET` | `/api/outbox/pending` | Yes | Pending queued GitHub mutations (gh-outbox) for the user |
 
 ### Environment tooling (`/api/env/*`) — not under `/api/v1`

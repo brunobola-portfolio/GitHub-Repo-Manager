@@ -48,7 +48,7 @@ server/
 │   ├── require-tier.js           # Tier gating (free / pro / enterprise)
 │   ├── require-admin.js          # requireAdmin (users.is_admin flag)
 │   ├── csrf.js                   # CSRF double-submit token gate
-│   ├── validate-request.js       # validateBody/Query/Params → validation_failed
+│   ├── validate-request.js       # validateBody/Query/Params → VALIDATION_ERROR
 │   ├── tenant.js                 # Multi-tenancy (req.tenantId from session)
 │   └── tenant-rate-limit.js      # Per-tier rate limiting (Redis or in-memory)
 ├── lib/
@@ -58,7 +58,7 @@ server/
 │   ├── audit.js                  # Audit log writer (hash-chained)
 │   ├── credential-encryption.js  # AES-256-GCM credential vault
 │   ├── feature-flags.js          # Tier feature matrix (free / pro / enterprise)
-│   ├── db-migrations.js          # Versioned schema-migration ledger (v28)
+│   ├── db-migrations.js          # Versioned schema-migration ledger (v36)
 │   ├── db-backup.js              # WAL-safe scheduled SQLite backups
 │   ├── maintenance-janitors.js   # Daily/hourly retention + purge + backup timers
 │   ├── logger.js                 # Pino structured logging
@@ -141,7 +141,7 @@ The entry point is a compact orchestration file responsible for:
 ## Route Aggregation: `server/routes/v1/index.js`
 
 The route modules are mounted by the V1 aggregator (the table below is a
-representative subset — the full set spans 74 route modules (325 route handlers)
+representative subset — the full set spans 77 route modules (341 route handlers)
 under `server/routes/`, including several domain sub-routers). Some routes are
 tier-gated at mount time:
 
@@ -227,7 +227,7 @@ Tables include: `users`, `teams`, `team_members`, `repo_assignments`,
 
 **There are no `.sql` migration files.** The old drifting `server/migrations/00X-*.sql`
 copies were removed; the directory now holds only a README. Ordered, versioned
-migrations live in `lib/db-migrations.js` (`MIGRATIONS`, currently **v28**),
+migrations live in `lib/db-migrations.js` (`MIGRATIONS`, currently **v36**),
 recorded in a `schema_migrations(version, name, applied_at)` ledger. Every
 `up(db)` is idempotent (`addColumnIfMissing` + `IF NOT EXISTS`) so it re-applies
 safely on databases that predate the ledger. Add a schema change by appending
@@ -389,7 +389,9 @@ npx vitest
 - **HMAC-SHA256 webhook verification** with timing-safe comparison.
 - **Parameterised SQL queries** throughout (no string interpolation).
 - **Zod validation** on config (`config.js`) and request inputs — the shared
-  `validate-request.js` layer returns a consistent `validation_failed` envelope.
+  `validate-request.js` layer returns a consistent `VALIDATION_ERROR` envelope
+  (`validation_failed` is aliased for one release for any caller still
+  matching the old value).
 - **Helmet** for security headers with strict CSP in production.
 - **HSTS** with preload in production (2-year max-age).
 - **API key hashing** (SHA-256 before storage, never stored in plaintext).

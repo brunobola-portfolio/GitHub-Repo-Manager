@@ -173,18 +173,31 @@ Active filters are serialised to the URL so a page is shareable / bookmarkable:
 ### Presets
 
 Filter presets are stored server-side in the `work_board_presets` table
-(cross-device). `PresetDropdown` in the filter bar manages CRUD:
+(cross-device). `PresetDropdown` in the filter bar manages CRUD. Presets are
+no longer Work-Board-only: the table carries a `scope` column
+(`UNIQUE(user_id, scope, name)`, added in a schema migration) so the
+Repositories filter bar can save/apply its own named views through the same
+table and the same `useSavedViews(scope)` hook without colliding on preset
+names with the Work Board's. Every request now takes a `scope` query/body
+param (defaults to `'work-board'` for backward compatibility):
 
 | Method | Path |
 |--------|------|
-| GET | `/api/v1/work-board/presets` |
-| POST | `/api/v1/work-board/presets` |
-| PATCH | `/api/v1/work-board/presets/:id` |
-| DELETE | `/api/v1/work-board/presets/:id` |
+| GET | `/api/v1/work-board/presets?scope=<scope>` |
+| POST | `/api/v1/work-board/presets` (`scope` in body) |
+| PATCH | `/api/v1/work-board/presets/:id` (`scope` in body) |
+| DELETE | `/api/v1/work-board/presets/:id?scope=<scope>` |
 
-Creating a preset with an already-used name returns
+Creating a preset with an already-used name in the same scope returns
 `409 { code: 'preset_exists' }`; the UI surfaces this as a readable
 "A preset with that name already exists" message instead of a raw 409.
+
+The Repositories view additionally round-trips its filters (search, type,
+visibility, language, sort) through the URL, the same pattern the Work Board
+already used — a filtered Repositories view is bookmarkable and shareable by
+copy-pasting the link. This surfaced and fixed a `useUrlParams` bug that
+dropped the route hash, so reloading a bookmarked filtered URL used to land
+on the dashboard instead of the Repositories view.
 
 ## Snooze
 

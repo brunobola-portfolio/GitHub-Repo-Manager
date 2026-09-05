@@ -95,8 +95,9 @@ Open **[http://localhost:5173](http://localhost:5173)**. No `.env`, no OAuth app
   <img alt="Live Inbox grouped into Needs my review, My open PRs, Mentions, and Stale drafts, above the activity trend chart" src="docs/images/10_dashboard_live_inbox_needs_review_hd.png" width="820">
 </picture>
 
-- **DashboardHero** — time-of-day greeting, org-filter and time-range chips that round-trip through the URL, and a "What needs you" grid (reviews waiting / stale PRs / open issues) with week-over-week deltas and a celebratory empty state.
-- **Live Inbox** — a sectioned, actionable inbox (needs review · my open PRs · mentions · stale drafts). Archive with `e`, snooze with `s`; state persists per-user and both actions are free. AI one-liners on the top items (BYOK). See the [Live Inbox guide](docs/features/dashboard-live-inbox.md).
+- **TodayPanel** — time-of-day greeting, org-filter and time-range chips that round-trip through the URL, and a "What needs you" grid (reviews waiting / stale PRs / open issues) with week-over-week deltas and a celebratory empty state.
+- **Live Inbox** — a sectioned, actionable inbox (needs review · my open PRs · mentions · stale drafts). `j`/`k`/`Enter` to navigate rows, archive with `e`, snooze with `s`; state persists per-user and both actions are free. AI one-liners on the top items (BYOK). See the [Live Inbox guide](docs/features/dashboard-live-inbox.md).
+- **Notification digest** (opt-in, off by default) — a daily or weekly e-mail summary of what's waiting, sent through the same Resend pipeline as the rest of the app's mail, with a signed one-click unsubscribe link. Skips entirely when e-mail isn't configured. Turn it on per-user in Settings.
 - **Analytics** — real-time repo stats, 7/30/90-day activity trends, language distribution, and per-org insights.
 - **GitHub Actions** — success/failure rates, duration analysis, daily trends, workflow triggering, and CSV export.
 - **Community health** — a 0–100 score across documentation, standards, and activity, with priority-ranked recommendations.
@@ -105,7 +106,7 @@ Open **[http://localhost:5173](http://localhost:5173)**. No `.env`, no OAuth app
 
 ![Repository management — repositories grid with org sidebar, per-card language and star counts, and a Quick Actions rail](docs/images/06_repositories_dark_hd.png)
 
-- **Smart search & filters** — by name, language, visibility, type, or archived status.
+- **Smart search & filters** — by name, language, visibility, type, or archived status. Search covers every page you've loaded, not just the one on screen — the empty state names what it searched and offers to load the rest. Filters and saved views round-trip through the URL, so a filtered view is bookmarkable and shareable by copy-pasting the link.
 - **AI semantic search** — natural-language queries over your repos via real vector embeddings (cosine similarity).
 - **Bulk actions** — archive, delete, transfer, or change visibility across many repos, behind a dry-run + confirmation-token safety flow.
 - **Detailed repo view** — branches, PRs, issues, releases, Actions, and community health in one place.
@@ -129,8 +130,12 @@ A single cockpit across every repository — no context switching, no manual rep
 <details>
 <summary><strong>Keyboard navigation & Command Palette</strong></summary>
 
+- **Global navigation** — `g` then `d`/`r`/`w`/`t`/`p` jumps to Dashboard / Repositories / Work Board / Teams / Pricing from anywhere. `` ` `` opens the Dev Toolkit; `n` creates a repository, `i` opens the Migration Wizard, `/` focuses search, `?` opens the shortcuts help.
+- **Row navigation (`j`/`k`/`Enter`)** — works the same way on the repository grid/list, the Live Inbox, and the Work Board: `j`/`k` move focus between rows, `Enter` opens the focused one.
 - **Work Board keys** — `j`/`k`/`↑`/`↓` row nav, `Enter` open, `.` approve, `x` request changes, `s`/`Shift+S` snooze, `u` unsnooze, `r` re-request review, `/` focus filter, `?` help.
-- **Command Palette (`Ctrl/⌘ K`)** — keyboard-first navigation across the whole app: search repos, jump to any page, trigger bulk actions, and a conversational ask mode that converts natural language into GitHub search syntax (5-minute cache). Command groups adapt to your active view.
+- **Live Inbox** — `j`/`k`/`Enter` row nav, `e` archive, `s` snooze.
+- Every shortcut is registry-driven from [`src/config/keyboardShortcuts.js`](src/config/keyboardShortcuts.js) and rendered by one help dialog (`?`) instead of four separate overlays.
+- **Command Palette (`Ctrl/⌘ K`)** — keyboard-first navigation across the whole app: search repos, jump to any page, trigger bulk actions, and a conversational ask mode that converts natural language into GitHub search syntax (5-minute cache). Command groups adapt to your active view, and can drill into a specific repository for its own action list.
 
 ![Command Palette showing the Work Board command group](docs/images/35_work_board_command_palette_hd.png)
 
@@ -279,6 +284,8 @@ The hosted product is **free-first**: nearly every product feature — bulk ops,
 | White-glove migration services         | ✗               | ✗             | ✓          |
 
 † **"Repo Advisor" names two surfaces, and only one of them is behind a flag.** The floating conversational assistant in this row is `POST /api/ai/chat` (`server/routes/ai/core.js`) — no deployment flag gates it, and it works out of the box on a self-hosted install with nothing but a BYOK key. The *Repo Advisor card inside the Work Board* — the 7-day trend summary, the suggestion chips, the preview-then-apply edits — is the gated one: `server/middleware/work-board-ai-gate.js` returns `404 AI_FEATURE_FLAG_OFF` unless `WORK_BOARD_AI_ENABLED=true` is set in the environment (`docker-compose.yml` forwards the variable), and each user must then opt in under `Settings → Work Board`. Both are tier-free — no plan unlocks either. No row in this matrix is gated by an environment flag.
+
+**Audit Logs** is a full page (`#/audit`), not a tab buried in Settings — it filters by action (fed from the log itself, so the filter list never drifts from what's actually recorded) and includes a **Verify chain** action that walks the append-only SHA-256 hash chain end to end and reports the first broken link, if any; CSV/JSON export is unchanged. The Settings modal's Audit Log tab is now a summary that links through.
 
 Self-hosting is free forever under Apache-2.0 — see [LICENSE](LICENSE). The matrix above applies to self-hosted Pro/Enterprise licenses today (Stripe checkout → emailed license key — see [`docs/billing-and-licensing.md`](docs/billing-and-licensing.md)), and will apply equally to the hosted SaaS once it launches. "Advanced bulk" and "Mirror Sync apply" carry a tier-independent daily anti-abuse ceiling on top of the existing dry-run + confirmation-token safety flow, regardless of plan. Priority Support and White-glove migration are manual, service-based deliverables (support ticket + contract), not gated by a feature flag.
 
@@ -460,7 +467,7 @@ FRONTEND_URL=http://localhost:5173
 VITE_MOCK_MODE=false
 ```
 
-See [`.env.example`](.env.example) for the full list, including AI config (`GEMINI_API_KEY`, `AI_REQUIRE_USER_CONFIG`), email (`EMAIL_PROVIDER`, `RESEND_API_KEY`), Stripe (`STRIPE_SECRET_KEY`), license issuance (`LICENSE_SIGNING_PRIVATE_KEY_PEM`), data retention (`DATA_RETENTION_DAYS`), and observability (`LOG_LEVEL`, `SENTRY_DSN`).
+See [`.env.example`](.env.example) for the full list, including AI config (`GEMINI_API_KEY`, `AI_REQUIRE_USER_CONFIG`), email (`EMAIL_PROVIDER`, `RESEND_API_KEY`), Stripe (`STRIPE_SECRET_KEY`), license issuance (`LICENSE_SIGNING_PRIVATE_KEY_PEM`), data retention (`DATA_RETENTION_DAYS`), and observability (`LOG_LEVEL`, `SENTRY_DSN`). `VITE_SUPPORT_EMAIL` is a build-time frontend variable (Vite inlines it) shown in error fallbacks and on the pricing page — set it before `npm run build` so a self-hoster's users reach their own support desk instead of the upstream maintainer's.
 
 ### GitHub OAuth
 
@@ -524,7 +531,7 @@ See [`docs/ai-providers.md`](docs/ai-providers.md) for per-provider setup and fr
 | `read:org` | Display organizations and team memberships |
 | `admin:org` | Create teams and manage org settings |
 
-> **Security:** tokens live in encrypted server-side sessions (`httpOnly`, `sameSite: lax`, rolling with a 7-day absolute ceiling). The backend adds Helmet.js headers, tier-aware rate limiting, parameterized SQL throughout, and a shared Zod validation layer returning a consistent `400 { code: 'validation_failed' }`. Azure PATs and BYOK keys are encrypted at rest with AES-256-GCM + PBKDF2-HMAC-SHA256.
+> **Security:** tokens live in encrypted server-side sessions (`httpOnly`, `sameSite: lax`, rolling with a 7-day absolute ceiling). The backend adds Helmet.js headers, tier-aware rate limiting, parameterized SQL throughout, and a shared Zod validation layer returning a consistent `400 { code: 'VALIDATION_ERROR' }`. Azure PATs and BYOK keys are encrypted at rest with AES-256-GCM + PBKDF2-HMAC-SHA256.
 
 ---
 

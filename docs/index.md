@@ -89,7 +89,7 @@ The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](
   streaming PR Chat (all Free with monthly caps, unlimited on Pro),
   org-shared prompts, BYOK provider matrix, mock-mode behaviour,
   privacy & data handling.
-- [Premium Dashboard — Live Inbox](features/dashboard-live-inbox.md) — sectioned inbox, archive/snooze, AI narrative, keyboard shortcuts, feature flag, Phase 1 scope and stubs.
+- [Premium Dashboard — Live Inbox](features/dashboard-live-inbox.md) — sectioned inbox, archive/snooze, j/k row navigation, AI narrative, Phase 1 scope and stubs.
 - [Community WOW — README Studio, AI Diagrams, Agent Rules, Security Posture](features/community-wow.md) — four AI-grounded repo tools with deterministic zero-AI-cost fallbacks, metered on Free.
 - [AI Providers (BYOK)](ai-providers.md) — Anthropic, OpenAI, Gemini,
   OpenRouter, Ollama, LMStudio. Per-feature overrides + cost hints.

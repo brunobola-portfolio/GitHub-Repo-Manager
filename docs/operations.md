@@ -520,13 +520,19 @@ Without `RUN_BUILD_TESTS=1` it self-skips, so it never slows down a normal
 
 | Check | Budget (gzip) |
 | ----- | ------------- |
-| `index-*.js` entry chunk | 72 KB |
-| Sum of every chunk statically imported by the entry | 365 KB |
+| `index-*.js` entry chunk | 58 KB |
+| Sum of every chunk statically imported by the entry | 305 KB |
 | Any `esm-*.js` chunk eagerly imported by the entry | must not exceed 50 KB |
 
 Budgets track current actuals and are a ratchet: lowering them is always fine,
 raising them needs a deliberate, documented reason (the rationale for the
-current numbers is in the test's header comment).
+current numbers is in the test's header comment). The 2026-09-04/05 panel
+found the `vendor-diff` manual chunk had welded React's JSX runtime into the
+diff viewer, so `index.html` preloaded it (and 40 syntax-highlighting
+grammars) on every cold load; removing the chunk grouping dropped the
+transitive eager closure from 340.4 KB to 292.9 KB gzip (entry 55.7 KB) and
+the gate now walks static imports transitively to assert the diff viewer
+stays out of it.
 
 If it fails, run `npm run build:analyze` to open the
 `rollup-plugin-visualizer` treemap and identify the regression. Common
@@ -553,7 +559,13 @@ hash-chained event:
   `prev_hash` + `this_hash` linking the row to the previous one.
 - A chain break (mismatched `this_hash`) indicates tampering — chain
   integrity can be verified with `npm run audit:verify` (wraps
-  `server/scripts/verify-audit-chain.mjs`).
+  `server/scripts/verify-audit-chain.mjs`), or from the UI: the audit log is
+  its own page (`#/audit`, Enterprise tier) with a **Verify chain** action
+  that walks the same append-only SHA-256 chain and reports the first broken
+  link, if any. The action filter on that page is fed by the server
+  (`GET /api/audit/actions`) rather than a hardcoded list, so it never drifts
+  from what has actually been logged. The Settings modal's Audit Log tab is
+  now a summary that links through to the page; CSV/JSON export is unchanged.
 - Rows are append-only; there is no API surface that updates or deletes
   audit entries.
 

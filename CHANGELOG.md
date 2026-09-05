@@ -7,6 +7,113 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **The audit log is a full page, not a Settings tab.** `#/audit` lists
+  entries with an action filter fed by the server (so it can never drift
+  from what is actually logged) and a **Verify chain** action that walks
+  the append-only SHA-256 hash chain end to end and reports the first
+  broken link, if any — the same check `npm run audit:verify` runs from
+  the CLI. CSV/JSON export is unchanged. The Settings modal's Audit Log
+  tab is now a summary that links through to the page.
+- **Saved views, generalised beyond the Work Board.** Presets carry a
+  `scope` now, so the Repositories filter bar can save and apply its own
+  named views (search / type / visibility / language / sort) through the
+  same table and the same `useSavedViews(scope)` hook the Work Board
+  already used, without colliding on preset names between the two.
+  Repositories filters also round-trip through the URL, so a filtered
+  view is bookmarkable and shareable.
+- **An opt-in digest e-mail.** Users can turn on a daily or weekly summary
+  of what's waiting for them, sent through the existing Resend pipeline
+  with a signed one-click unsubscribe link. Off by default; skipped
+  entirely when e-mail isn't configured.
+- **`g`-chord navigation and `j`/`k` row navigation.** `g` then
+  `d`/`r`/`w`/`t`/`p` jumps to Dashboard / Repositories / Work Board /
+  Teams / Pricing from anywhere; the Dev Toolkit shortcut moved to the
+  backtick (`` ` ``) to make room. `j`/`k`/`Enter` row navigation, until
+  now Work-Board-only, works on the repository grid/list and the Live
+  Inbox too. The four separate keyboard-help overlays are one
+  registry-driven dialog now, rendered from `src/config/keyboardShortcuts.js`.
+- **Search covers every loaded page of repositories, not just the one on
+  screen.** The empty state names what it searched and offers to load
+  every page on request.
+- **A reviewer can edit a draft AI comment from the comments list**, not
+  only inline in the diff.
+- **Checkbox primitive.** One shared component (accent colour, focus
+  ring, indeterminate state, explicit label association) replaces the
+  native checkboxes across the app, several of which rendered
+  browser-blue instead of the brand accent.
+
+### Changed
+
+- **One colour per meaning.** `red`/`green`/`yellow`/`orange` utility
+  classes are retired alongside the earlier `indigo`/`violet`/etc. sweep —
+  they were a second, undocumented spelling of the `rose`/`emerald`/`amber`
+  status ramp. Focus rings, Framer Motion durations/easings, the uppercase
+  "eyebrow" label style, and arbitrary `text-[Npx]` sizes now read from
+  shared tokens across the app, each backed by a build gate against
+  regressions.
+- **One tooltip system, one tab bar.** Hand-rolled CSS hover bubbles and
+  native `title=` attributes on interactive controls are `Tooltip` now;
+  the Dev Toolkit and Work Board tab bars adopt the shared `TabBar`
+  (roving focus, trailing/badge slots) instead of re-implementing it.
+- **`azurePost` replaces 24 hand-rolled Azure POST call sites** across the
+  Migration Wizard, so the CSRF-rotation retry applies uniformly instead
+  of only where someone remembered to copy it.
+- **Validation errors converge on `VALIDATION_ERROR`.** The previous
+  `validation_failed` code is aliased for this release for any caller
+  still matching on it.
+- **Fourteen environment variables that were read directly from
+  `process.env` now go through the config schema**, with parity checks
+  against `.env.example` and `docs/operations.md` (including
+  `ALLOW_MOCK_AUTH`, documented at last).
+- **The landing page states what the product actually does**: BYOK on
+  every plan, Apache-2.0, Docker/IIS/Windows self-hosting, a review flow
+  that never publishes without you, and TFVC / Azure DevOps Server
+  migration. It no longer claims access-management features the product
+  doesn't implement.
+- **Build-time asset precompression.** Hashed, immutable JS/CSS assets are
+  compressed once at build time (brotli quality 11 + gzip) instead of on
+  every request, and served with matching `Content-Encoding` — better
+  ratios, no per-request CPU cost.
+- **The diff viewer no longer sits on the critical path.** A manual chunk
+  grouping had welded React's JSX runtime into it, so every cold load
+  preloaded the diff viewer and its syntax-highlighting grammars for zero
+  first-paint benefit; the bundle budget gate now asserts it stays out of
+  the eager set.
+- Terminology unified across the surfaces users read most: the AI
+  settings tab, session-expiry messaging, the Teams paywall claim (teams
+  are unlimited on every tier), the two features that both answered to
+  "AI Review," and pluralisation in bulk-action confirmations.
+
+### Fixed
+
+- **A rate-limited response without a `Headers` instance no longer
+  crashes `parseApiError`.** Every 429 the client saw with a non-standard
+  response object surfaced as an unhandled rejection instead of the
+  upgrade/quota UI.
+- **The bell and the user menu stopped contradicting the dashboard.** The
+  notifications digest short-circuited to empty in demo mode while the
+  dashboard's counters had real data; `useOrgs` skipped its first fetch
+  and never retried, so the org count in the menu could read zero beside
+  a nonzero dashboard.
+- **Pagination no longer drops the route hash.** Reloading a paginated,
+  filtered Repositories URL used to land on the dashboard instead of
+  Repositories.
+- **`Escape` closes every dialog that isn't protecting a running
+  operation.** `Modal` had coupled `Escape` to `closeOnBackdrop`, leaving
+  sixteen dialogs (including the shortcuts help itself) unresponsive to
+  the key.
+- Tab panels exist for the Work Board and Dev Toolkit tab bars, closing an
+  `aria-valid-attr-value` violation on both.
+- Several accessibility fixes surfaced by widening the automated a11y gate
+  to hover states, 375px layouts, and overlays it previously never opened
+  (repo/team card hover contrast, the quick-actions FAB's menu semantics
+  and reduced-motion halo, Prompt Studio chip sizing, the pricing table's
+  missing caption/scope, and others).
+- An interval leak in `MyReviewsTab` kept polling after the component
+  unmounted if a draft fetch resolved late.
+
 ## [4.23.2] - 2026-08-31
 
 ### Fixed
