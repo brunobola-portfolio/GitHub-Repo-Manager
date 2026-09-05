@@ -6,11 +6,9 @@ import { Spinner } from './components/ui/Spinner'
 import { useOnboarding } from './hooks/useOnboarding'
 import { useToast } from './hooks/useToast'
 import ErrorBoundary from './components/ErrorBoundary'
-import { AUTH_ENDPOINTS, MOCK_MODE , API_BASE_URL } from './config'
+import { AUTH_ENDPOINTS, MOCK_MODE, API_BASE_URL } from './config'
 import { listTeams } from './api/teams'
-import { getAuthSetupStatus } from './api/authSetup'
-import { onSessionExpired, onRateLimit, resetSessionExpired, fetchWithRetry, safeParseJson, apiCall } from './utils/api'
-import { trackBreadcrumb, mark } from './lib/observability'
+import { trackBreadcrumb } from './lib/observability'
 import { SelectionProvider } from './contexts/SelectionContext'
 import { ModalProvider } from './contexts/ModalContext'
 import { TrackedReposProvider } from './contexts/TrackedReposContext'
@@ -21,6 +19,9 @@ import { useSessionExpiry } from './hooks/useSessionExpiry'
 import { useIsAdmin } from './hooks/useIsAdmin'
 import { useLicense } from './hooks/useLicense'
 import { useCommandPalette } from './hooks/useCommandPalette'
+import { useAuthBootstrap } from './hooks/useAuthBootstrap'
+import { useRepoDetailNavigation } from './hooks/useRepoDetailNavigation'
+import { useShellChrome } from './hooks/useShellChrome'
 // Lazy: the palette (plus its cmdk dependency, ~11 KB gzip together) only
 // matters after Ctrl+K — keep it out of the critical entry chunk. The chunk
 // is warmed on first idle so the first open is still instant.
@@ -35,7 +36,6 @@ import { RateLimitNotice } from './components/ui/RateLimitNotice'
 // event, URL param). Lazy with a null fallback is visually identical to the
 // common no-banner case.
 const HeaderBanners = lazy(() => import('./components/HeaderBanners').then(m => ({ default: m.HeaderBanners })))
-import { onRetryQueueEvent } from './utils/retry-queue'
 import { LegalFooter } from './components/LegalFooter'
 import { DemoModeBanner } from './components/DemoModeBanner'
 import { RouteFallback } from './components/ui/RouteFallback'
@@ -88,8 +88,6 @@ const LoadingFallback = RouteFallback
 
 function AppContent() {
   const { toggleTheme } = useTheme()
-  const [_session, setSession] = useState(null)
-  const [appLoading, setAppLoading] = useState(true)
   const [activeView, _setActiveView] = useState('dashboard')
   // viewParams carries optional navigation metadata (e.g. { initialTab }) that
   // the target view can consume. Cleared on every view change so stale params
@@ -108,56 +106,17 @@ function AppContent() {
         const resolved = typeof next === 'function' ? next(prev) : next
         if (resolved !== prev) {
           trackBreadcrumb('nav', `view:${resolved}`)
-          mark(`nav:${resolved}`)
         }
         return resolved
       })
     })
   }, [])
   const [selectedTeam, setSelectedTeam] = useState(null)
-  const [systemInitialized, setSystemInitialized] = useState(null)
-  const [selectedRepoDetail, setSelectedRepoDetail] = useState(null)
-  const [repoDetailInitialTab, setRepoDetailInitialTab] = useState('overview')
-  // Current repo-detail tab, lifted from RepoDetail so the URL hash can reflect
-  // it. `repoDetailInitialTab` is the tab to OPEN at (set by nav / deep-link);
-  // `repoDetailActiveTab` is what's showing now (drives the hash).
-  const [repoDetailActiveTab, setRepoDetailActiveTab] = useState('overview')
-  // Lifted from RepoDetail tabs via window CustomEvents (`repo-detail:*-loaded`).
-  // The command palette consumes these to enumerate the PR / branch / issue
-  // action registries inside the active repo. Reset whenever the user leaves
-  // the repo-detail view so the palette doesn't surface stale targets.
-  const [repoDetailEntities, setRepoDetailEntities] = useState({ prs: [], branches: [], issues: [] })
-  const [reviewingPR, setReviewingPR] = useState(null)
-  const [syncStatus, setSyncStatus] = useState({ lastSync: null, hasUpdates: false })
-  const [orgDrawerOpen, setOrgDrawerOpen] = useState(false)
-  const [sessionExpired, setSessionExpired] = useState(false)
-  const [rateLimitBanner, setRateLimitBanner] = useState(null) // { retryAt: number } | null
-  // First-run GitHub OAuth setup: /api/auth/setup-status result (null until
-  // fetched) + whether the guided wizard modal is open. Only relevant while
-  // unauthenticated on an install without GITHUB_CLIENT_ID/SECRET.
-  const [authSetupStatus, setAuthSetupStatus] = useState(null)
-  const [showGitHubSetup, setShowGitHubSetup] = useState(false)
-  // Quota-exceeded modal: detail object emitted via the global
-  // 'app:show-quota-exceeded' event by toast.errorFromException's
-  // 'open-quota' action. Cleared when the modal is dismissed.
-  const [quotaModal, setQuotaModal] = useState(null)
 
-  // Onboarding tour: shown on first visit (after a brief delay so the
-  // dashboard renders first), throttled to once per 6h via useOnboarding.
-  // The 'app:show-onboarding' event lets Settings re-trigger it on demand.
+  // Onboarding tour flag (localStorage-backed) — also read directly by
+  // Settings and NotificationLayer, so it stays owned here rather than
+  // folded into useShellChrome.
   const onboarding = useOnboarding()
-  const [tourOpen, setTourOpen] = useState(false)
-  useEffect(() => {
-    if (!onboarding.shouldShow) return
-    // Mock mode (e2e + dev with VITE_MOCK_MODE=true) gets a fresh
-    // localStorage every load — the tour would otherwise auto-open and
-    // intercept pointer events on cards/buttons that subsequent tests
-    // want to click. Inline DCE guard so production builds still
-    // auto-open the tour for first-run users.
-    if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') return
-    const t = setTimeout(() => setTourOpen(true), 1500)
-    return () => clearTimeout(t)
-  }, [onboarding.shouldShow])
   const { toasts, toast, dismissToast } = useToast()
   const { modalStates, openModal, openModalWithData, closeModal, closeAllModals, getModalData } = useModal()
   // rightMode (from the same hook) drove the repos-view right rail, removed
@@ -221,6 +180,55 @@ function AppContent() {
   const { license } = useLicense()
   const currentTier = license?.tier ?? 'free'
 
+  // Session/auth boot sequence: system-initialized check, mock/real sign-in,
+  // GitHub OAuth setup-status probe, appLoading. See useAuthBootstrap.js.
+  const {
+    appLoading,
+    systemInitialized,
+    setSystemInitialized,
+    authSetupStatus,
+    showGitHubSetup,
+    setShowGitHubSetup,
+    sessionExpired,
+    setSessionExpired,
+    checkAuth,
+    handleLogin,
+    handleLogout,
+  } = useAuthBootstrap({ toast, fetchGitHubUser, user })
+
+  // repo-detail state + navigation (selectedRepoDetail, initial/active tab,
+  // reviewingPR, open/close). See useRepoDetailNavigation.js.
+  const {
+    selectedRepoDetail,
+    setSelectedRepoDetail,
+    repoDetailInitialTab,
+    setRepoDetailInitialTab,
+    repoDetailActiveTab,
+    setRepoDetailActiveTab,
+    repoDetailEntities,
+    setRepoDetailEntities,
+    reviewingPR,
+    setReviewingPR,
+    handleOpenRepo,
+    closeRepoDetail,
+    handleSelectedRepoMutated,
+  } = useRepoDetailNavigation({ setActiveView, patchRepoEverywhere, refresh })
+
+  // Ambient shell chrome: org drawer, sync status, rate-limit banner, quota
+  // modal, welcome tour. See useShellChrome.jsx.
+  const {
+    orgDrawerOpen,
+    setOrgDrawerOpen,
+    syncStatus,
+    setSyncStatus,
+    rateLimitBanner,
+    setRateLimitBanner,
+    quotaModal,
+    setQuotaModal,
+    tourOpen,
+    setTourOpen,
+  } = useShellChrome({ toast, dismissToast, onboarding })
+
   const { showHelp, setShowHelp, shortcuts } = useKeyboardShortcuts({
     onSearch: () => {
       // Focus the search input in RepoList if on repos view
@@ -255,40 +263,7 @@ function AppContent() {
     return () => clearTimeout(id)
   }, [])
 
-  const handleOpenRepo = useCallback((repo, { tab = 'overview' } = {}) => {
-    setSelectedRepoDetail(repo)
-    setRepoDetailInitialTab(tab)
-    setRepoDetailActiveTab(tab)
-    setActiveView('repo-detail')
-  }, [setActiveView])
-
-  // RepoDetail mutations land here. When the child has the new repo shape
-  // (description edits, archive, visibility, topics, …) we patch the matching
-  // entry in both the personal `repos` list and any loaded `orgRepos` list —
-  // instant, no refetch. We also keep `selectedRepoDetail` in sync so the
-  // header chips/title reflect changes the moment the user navigates back.
-  // When the child can only signal "something changed" (null), fall back to
-  // a full page refresh so the data isn't silently stale.
-  const handleSelectedRepoMutated = useCallback((updatedRepo) => {
-    if (updatedRepo) {
-      patchRepoEverywhere(updatedRepo)
-      setSelectedRepoDetail(prev => (prev ? { ...prev, ...updatedRepo } : prev))
-    } else {
-      refresh()
-    }
-  }, [patchRepoEverywhere, refresh])
-
   const loading = appLoading || githubLoading
-  const initCalled = useRef(false)
-
-  // Listen for session expiry from the API layer
-  useEffect(() => {
-    const unsubscribe = onSessionExpired(() => {
-      setSessionExpired(true)
-      toast.warning('Your session expired. Sign in again to continue.')
-    })
-    return unsubscribe
-  }, [toast])
 
   // A modal belongs to the view it was opened on. Repo Insights stayed
   // mounted (and kept body scroll-locked) across hash navigation and browser
@@ -359,223 +334,6 @@ function AppContent() {
     [activeView, repoDetailActiveTab],
   )
 
-  // Rate-limit toasts — one at a time, auto-dismisses after the countdown ends.
-  const rateLimitToastIdRef = useRef(null)
-  useEffect(() => {
-    const unsubscribe = onRateLimit(({ retryAfterSec }) => {
-      if (rateLimitToastIdRef.current !== null) return // dedupe
-      // Mock mode shares one Express rate-limit budget across the whole e2e
-      // suite; once a worker trips the global limiter the resulting toast
-      // (z-index 60, ~15min duration) blocks click targets in every later
-      // test. Inline DCE guard so prod still surfaces the warning.
-      if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') return
-      const retryAt = Date.now() + retryAfterSec * 1000
-      const id = toast.custom({
-        type: 'warning',
-        duration: (retryAfterSec + 1) * 1000,
-        content: (
-          <RateLimitNotice
-            retryAt={retryAt}
-            variant="toast"
-            onRetry={() => {
-              if (rateLimitToastIdRef.current !== null) {
-                dismissToast(rateLimitToastIdRef.current)
-                rateLimitToastIdRef.current = null
-              }
-            }}
-          />
-        ),
-      })
-      rateLimitToastIdRef.current = id
-      setTimeout(() => {
-        if (rateLimitToastIdRef.current === id) {
-          rateLimitToastIdRef.current = null
-        }
-      }, (retryAfterSec + 1) * 1000)
-    })
-    return unsubscribe
-  }, [toast, dismissToast])
-
-  // Offline retry-queue toasts — one "queued" per enqueue, one
-  // "retried successfully" per replay batch (not per request), and a
-  // regular error on final give-up.
-  useEffect(() => {
-    const unsubscribe = onRetryQueueEvent((event) => {
-      if (event.type === 'enqueued') {
-        toast.info('Queued — will retry when back online')
-      } else if (event.type === 'replay-success') {
-        toast.success(event.count > 1
-          ? `${event.count} requests retried successfully`
-          : 'Request retried successfully')
-      } else if (event.type === 'replay-failed') {
-        toast.error('A queued request failed to retry')
-      }
-    })
-    return unsubscribe
-  }, [toast])
-
-  // Direct-navigation rate-limit case — the backend redirected us here with
-  // ?error=rate_limited&retry=N when the /api/auth/* limiter tripped for a browser.
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('error') !== 'rate_limited') return
-    const retry = Number.parseInt(params.get('retry') || '60', 10)
-    const retryAt = Date.now() + (Number.isFinite(retry) ? retry : 60) * 1000
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot banner state from URL param, tracked in deferred cleanup pass
-    setRateLimitBanner({ retryAt })
-    // Strip the query params so a refresh doesn't re-show a stale banner.
-    params.delete('error')
-    params.delete('retry')
-    const cleanUrl = window.location.pathname + (params.toString() ? `?${params}` : '')
-    window.history.replaceState({}, '', cleanUrl)
-  }, [])
-
-  // OAuth-flow error redirects (?error=<code> from /api/auth/login|callback).
-  // Every code gets a human explanation instead of a silently-stripped param;
-  // oauth_not_configured opens the guided setup wizard directly.
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const code = params.get('error')
-    if (!code || code === 'rate_limited') return // rate_limited handled above
-    const AUTH_ERROR_COPY = {
-      auth_failed: ['error', 'GitHub sign-in failed. Try again.'],
-      no_code: ['error', 'GitHub did not complete the sign-in. Try again.'],
-      invalid_state: ['error', 'That sign-in link expired or was already used. Try again.'],
-      session_error: ['error', 'Your session could not be saved. Try signing in again.'],
-      access_denied: ['info', 'GitHub sign-in was cancelled.'],
-      redirect_uri_mismatch: ['error', 'GitHub rejected the sign-in: the OAuth App’s callback URL does not match this app. Update it on GitHub (Settings → Developer settings → OAuth Apps) to end in /api/auth/callback on this exact address.'],
-      bad_verification_code: ['error', 'The sign-in code expired before it could be used. Try again.'],
-      incorrect_client_credentials: ['error', 'GitHub rejected the configured Client ID/Secret. Re-check the values in your configuration.'],
-      application_suspended: ['error', 'The configured GitHub OAuth App is suspended. Check its status on GitHub.'],
-    }
-    if (code === 'oauth_not_configured') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot wizard-open from URL param, mirrors the rate-limit effect above
-      setShowGitHubSetup(true)
-    } else if (AUTH_ERROR_COPY[code]) {
-      const [tone, message] = AUTH_ERROR_COPY[code]
-      toast[tone](message)
-    } else {
-      return // unknown code — leave the URL untouched for other handlers
-    }
-    params.delete('error')
-    const cleanUrl = window.location.pathname + (params.toString() ? `?${params}` : '')
-    window.history.replaceState({}, '', cleanUrl)
-  }, [toast])
-
-  // Know whether "Sign in" can work BEFORE the user clicks it: on installs
-  // without GitHub OAuth configured the click opens the guided setup wizard
-  // instead of bouncing off a GitHub 404. One cheap GET, unauthenticated only.
-  const authSetupChecked = useRef(false)
-  useEffect(() => {
-    if (MOCK_MODE || user || authSetupChecked.current) return
-    if (systemInitialized === false) return // system setup screen is showing
-    authSetupChecked.current = true
-    let cancelled = false
-    getAuthSetupStatus()
-      .then((status) => {
-        if (!cancelled) setAuthSetupStatus(status)
-      })
-      .catch(() => { /* endpoint unavailable → handleLogin falls through to the server guard */ })
-    return () => { cancelled = true }
-  }, [user, systemInitialized])
-
-  useEffect(() => {
-    // Run system-status init exactly once per mount lifetime. No cleanup reset:
-    // resetting initCalled on cleanup defeated the guard under StrictMode (the
-    // dev mount/cleanup/remount would run checkSystemStatus twice).
-    if (initCalled.current) return
-    initCalled.current = true
-    mark('app:mount')
-    // eslint-disable-next-line react-hooks/immutability -- function hoisted below, rule mis-reports, tracked in deferred cleanup pass
-    checkSystemStatus()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  // Mark when authentication is confirmed — useful for measuring the
-  // user-perceived login → first-paint window.
-  useEffect(() => {
-    if (user) mark('app:authed')
-  }, [user])
-
-  const checkSystemStatus = async () => {
-    // Mock mode bypasses the first-run setup ceremony entirely. The setup
-    // screen is a visual-only step (the backend flag is idempotent), and
-    // keeping it in mock mode traps e2e tests at the "Launch Workspace"
-    // button with no way to advance.
-    if (MOCK_MODE) {
-      setSystemInitialized(true)
-      checkAuth()
-      return
-    }
-    try {
-      const res = await fetchWithRetry(`${API_BASE_URL}/api/system/status`, { credentials: 'include' })
-      const data = await safeParseJson(res)
-      // Boot-time corruption recovery happened (sqlite-adapter quarantined the
-      // damaged file). Tell the user — their data either came from the most
-      // recent backup or is a fresh start; silence would look like data loss.
-      if (data.dbRecovery) {
-        toast.warning(
-          data.dbRecovery.restoredFrom
-            ? 'Database corruption was detected at startup. Your data was automatically restored from the most recent backup — recent changes may be missing.'
-            : 'Database corruption was detected at startup and no healthy backup was found. A fresh database was started; the damaged file was preserved in the data folder for manual recovery.'
-        )
-      }
-      // Read-and-clear on the server side (system.js): this fires exactly once,
-      // on the first status check after a self-update restarted the process —
-      // the same boot-time reporting shape as dbRecovery above.
-      if (data.updateResult) {
-        const r = data.updateResult
-        if (r.status === 'success') {
-          toast.success(`Updated to v${r.to}`)
-        } else if (r.status === 'rolled-back') {
-          toast.warning(`Update to v${r.to} failed and was rolled back to v${r.from}. See the update log in your data folder.`)
-        } else if (r.status === 'failed') {
-          toast.warning(`Update to v${r.to} did not complete. See the update log in your data folder.`)
-        }
-      }
-      setSystemInitialized(data.initialized)
-      if (data.initialized) {
-        checkAuth()
-      } else {
-        setAppLoading(false)
-      }
-    } catch {
-      setSystemInitialized(false)
-      setAppLoading(false)
-    }
-  }
-
-  const checkAuth = async () => {
-    try {
-      setAppLoading(true)
-
-      if (MOCK_MODE) {
-        await fetch(`${API_BASE_URL}/api/auth/mock`, { method: 'POST' })
-        setSession({ userId: 999999, accessToken: 'mock_token' })
-        setAppLoading(false)
-        return
-      }
-
-      // Use raw fetch here — a 401 means "not logged in", NOT "session expired".
-      // fetchWithRetry would trigger notifySessionExpired on 401, showing the
-      // expiry banner even when the user simply hasn't logged in yet.
-      const res = await fetch(`${API_BASE_URL}/api/auth/session`, { credentials: 'include' })
-      if (res.ok) {
-        const data = await res.json().catch(() => null)
-        if (data) {
-          setSession(data)
-          if (data.authenticated) {
-            fetchGitHubUser()
-          }
-        }
-      }
-    } catch {
-      // Server unavailable — user sees login screen
-    } finally {
-      setAppLoading(false)
-    }
-  }
-
   const fetchTeams = useCallback(async () => {
     // Teams is Pro+ — skip the network call entirely on Free so the
     // browser doesn't log a 403 to the console. listTeams() already
@@ -603,7 +361,7 @@ function AppContent() {
     } catch {
       toast.error('Failed to sync organizations')
     }
-  }, [fetchOrgs, fetchStats, fetchTeams, toast])
+  }, [fetchOrgs, fetchStats, fetchTeams, toast, setSyncStatus])
 
   const handleReauthorize = useCallback(() => {
     window.location.href = AUTH_ENDPOINTS.login
@@ -622,29 +380,6 @@ function AppContent() {
 
   // Slice 1: handleQuickAction switch (~115 lines) deleted — RepoList now uses
   // runAction(actionId, target, ctx, repoActions) directly via useRepoActionContext.
-
-  const handleLogin = () => {
-    resetSessionExpired()
-    setSessionExpired(false)
-    // No OAuth credentials on this install → the redirect would dead-end on a
-    // GitHub 404. Open the guided setup wizard instead. When the status fetch
-    // failed (null), fall through — the server guard redirects back with
-    // ?error=oauth_not_configured, which also opens the wizard.
-    if (authSetupStatus && !authSetupStatus.oauthConfigured) {
-      setShowGitHubSetup(true)
-      return
-    }
-    window.location.href = AUTH_ENDPOINTS.login
-  }
-
-  const handleLogout = async () => {
-    try {
-      await apiCall(AUTH_ENDPOINTS.logout, { method: 'POST' })
-      window.location.reload()
-    } catch {
-      window.location.reload()
-    }
-  }
 
   const handleOrgSelect = async (orgLogin) => {
     setIsSwitchingOrg(true)
@@ -857,17 +592,14 @@ function AppContent() {
         )}
 
         {activeView === 'repo-detail' && user && selectedRepoDetail && (
-          <ViewShell name="Repository Detail" onGoHome={() => { setSelectedRepoDetail(null); setActiveView('dashboard') }}>
+          <ViewShell name="Repository Detail" onGoHome={() => closeRepoDetail('dashboard')}>
             <RepoDetail
               key={selectedRepoDetail.full_name || `${selectedRepoDetail.owner?.login}/${selectedRepoDetail.name}`}
               repo={selectedRepoDetail}
               initialTab={repoDetailInitialTab}
               onTabChange={setRepoDetailActiveTab}
               onRepoMutated={handleSelectedRepoMutated}
-              onBack={() => {
-                setSelectedRepoDetail(null)
-                setActiveView('repos')
-              }}
+              onBack={() => closeRepoDetail('repos')}
               onStartReview={(pr) => {
                 setReviewingPR(pr)
                 setActiveView('pr-review')
