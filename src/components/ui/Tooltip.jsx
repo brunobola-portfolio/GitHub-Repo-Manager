@@ -54,6 +54,7 @@ import {
 import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
 import { useComposedRefs } from '@radix-ui/react-compose-refs'
+import { DURATION, EASE } from './motion'
 
 // Local prefers-reduced-motion detection. Kept independent of framer-motion's
 // useReducedMotion so this widely-used primitive doesn't break in the many
@@ -254,14 +255,14 @@ export const Tooltip = forwardRef(function Tooltip(
             ? { opacity: 0, scale: 0.96, x: placeRight ? -2 : 2 }
             : { opacity: 0, scale: 0.96, y: placeBelow ? -2 : 2 })}
           animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
-          transition={{ duration: 0.12, ease: 'easeOut' }}
+          transition={{ duration: DURATION.fast, ease: EASE.emphasized }}
           style={{
             position: 'fixed',
             top: coords ? coords.top : 0,
             left: coords ? coords.left : -9999,
             visibility: coords ? 'visible' : 'hidden',
           }}
-          className="px-2 py-0.5 text-[12px] text-white bg-[color:var(--ds-surface-dark)] rounded-[var(--ds-radius-sm)] whitespace-nowrap pointer-events-none shadow-[var(--ds-shadow-overlay)] z-[var(--ds-z-ceiling)]"
+          className="px-2 py-0.5 text-xs text-white bg-[color:var(--ds-surface-dark)] rounded-[var(--ds-radius-sm)] whitespace-nowrap pointer-events-none shadow-[var(--ds-shadow-overlay)] z-[var(--ds-z-ceiling)]"
         >
           {label}
           {isHorizontal ? (

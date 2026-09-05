@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CloudOff, X } from 'lucide-react'
 import { API_BASE_URL } from '../../config'
+import { DURATION } from './motion'
 
 /**
  * PendingSyncBanner — sticky bottom banner that surfaces gh_outbox rows
@@ -73,7 +74,7 @@ export function PendingSyncBanner({ isAuthenticated }) {
                     initial={{ opacity: 0, y: 24 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 24 }}
-                    transition={{ duration: 0.25 }}
+                    transition={{ duration: DURATION.standard }}
                     role="status"
                     aria-live="polite"
                     className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[var(--ds-z-popover)] flex items-center gap-3 px-4 py-2.5 rounded-full bg-amber-500/95 dark:bg-amber-600/95 text-white shadow-lg backdrop-blur-md max-w-[90vw]"
@@ -90,7 +91,7 @@ export function PendingSyncBanner({ isAuthenticated }) {
                     <button
                         type="button"
                         onClick={() => setDismissed(true)}
-                        className="p-1 rounded-full hover:bg-white/15 transition-colors"
+                        className="p-1 rounded-full hover:bg-white/15 transition-colors ds-focus-ring"
                         aria-label="Dismiss banner"
                     >
                         <X className="w-3.5 h-3.5" />

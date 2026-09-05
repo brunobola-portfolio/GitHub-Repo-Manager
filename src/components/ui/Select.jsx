@@ -3,6 +3,7 @@ import { ChevronDown, Check, Search } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Skeleton } from './Skeleton'
 import { POPOVER_SURFACE_CLASS } from './_variants'
+import { DURATION } from './motion'
 
 /**
  * Custom Select Component with sections, badges, search, skeleton, and footer.
@@ -335,7 +336,7 @@ export function Select({
                         initial={{ opacity: 0, y: -10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.15 }}
+                        transition={{ duration: DURATION.fast }}
                         className={`absolute z-[var(--ds-z-popover)] w-full mt-2 overflow-hidden ${POPOVER_SURFACE_CLASS}`}
                     >
                         {/* Search input */}
@@ -389,7 +390,7 @@ export function Select({
                                 return (
                                     <div key={section.title || sIdx} role="group" aria-label={section.title || undefined}>
                                         {section.title && (
-                                            <div className="px-3 pt-3 pb-1 ds-text-meta font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                            <div className="ds-eyebrow px-3 pt-3 pb-1 text-slate-500 dark:text-slate-400">
                                                 {section.title}
                                             </div>
                                         )}

@@ -7,6 +7,7 @@ import { useAIPolish } from '../../hooks/useAIPolish'
 import { ContextPicker } from '../AI/ContextPicker'
 import { useContextPrefs } from '../../hooks/useContextPrefs'
 import { Input, Checkbox } from '../ui/form'
+import { DURATION } from '../ui/motion'
 
 /**
  * Batch table for post-migration AI polish.
@@ -72,7 +73,7 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
 
             {/* Table */}
             <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
-                <div className="grid grid-cols-[40px_1fr_2fr_120px] text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 px-3 py-2 border-b border-slate-200 dark:border-slate-700">
+                <div className="ds-eyebrow grid grid-cols-[40px_1fr_2fr_120px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60 px-3 py-2 border-b border-slate-200 dark:border-slate-700">
                     <span aria-hidden="true" />
                     <span>Repository</span>
                     <span>Description</span>
@@ -85,7 +86,7 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                             key={row.fullName}
                             initial={{ opacity: 0, y: 6 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.18, delay: Math.min(idx * 0.03, 0.3) }}
+                            transition={{ duration: DURATION.standard, delay: Math.min(idx * 0.03, 0.3) }}
                             className={`grid grid-cols-[40px_1fr_2fr_120px] items-center gap-2 px-3 py-3 border-b border-slate-100 dark:border-slate-800 last:border-b-0 ${row.include ? '' : 'opacity-50'}`}
                         >
                             {/* Include toggle */}
@@ -135,7 +136,7 @@ export function PolishReview({ repoFullNames, onAppliedRepo, onRequestClose, onA
                                         <button
                                             type="button"
                                             onClick={() => retryRow(row.fullName)}
-                                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/40"
+                                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/40 ds-focus-ring"
                                         >
                                             <RotateCcw className="w-3 h-3" /> Retry
                                         </button>

@@ -26,7 +26,7 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
                     aria-label={expanded ? `Collapse: ${item.title}` : `Expand: ${item.title}`}
                     aria-expanded={expanded}
                     onClick={() => setExpanded(v => !v)}
-                    className="shrink-0 text-slate-400 hover:text-brand-500 p-2 -m-2 rounded"
+                    className="shrink-0 text-slate-400 hover:text-brand-500 p-2 -m-2 rounded ds-focus-ring"
                     style={{
                         transition: `transform var(--ds-duration-row-expand) var(--ds-ease-row-expand)`,
                         transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
@@ -45,7 +45,7 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
                         <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
                             {item.title}
                         </span>
-                        <Badge tone="neutral" size="xs" className="uppercase tracking-wider">
+                        <Badge tone="neutral" size="xs" className="ds-eyebrow">
                             {KIND_LABEL[item.kind] ?? item.kind}
                         </Badge>
                     </div>

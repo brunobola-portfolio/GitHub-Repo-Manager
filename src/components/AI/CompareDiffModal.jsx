@@ -87,7 +87,7 @@ function FilePane({ label, loading, result }) {
     const truncated = lines.length > 200
     return (
         <div>
-            <div className="ds-text-micro uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1 flex items-center justify-between">
+            <div className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-1 flex items-center justify-between">
                 <span>{label}</span>
                 <span>
                     {lines.length} lines
@@ -159,7 +159,7 @@ export function CompareDiffModal({ isOpen, onClose, source, target, targetLabel 
                                 isActive
                                     ? 'bg-white dark:bg-slate-900 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] shadow-sm'
                                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                            }`}
+                            } ds-focus-ring`}
                         >
                             <Icon className="w-3.5 h-3.5" />
                             {f.label}

@@ -41,7 +41,7 @@ export function HeroTimeRangeChip({ value, onChange }) {
                                 value === r.value
                                     ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300 font-semibold'
                                     : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
-                            }`}
+                            } ds-focus-ring`}
                         >
                             <span>{r.label}</span>
                             {value === r.value && <Check size={14} strokeWidth={3} />}

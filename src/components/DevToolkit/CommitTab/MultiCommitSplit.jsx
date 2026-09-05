@@ -75,7 +75,7 @@ export function MultiCommitSplit({ commits = [], onDismiss, onUseAll }) {
                 ))}
             </div>
             <div className="flex justify-end gap-2 px-3 py-2 border-t border-amber-200 dark:border-amber-800/50">
-                <button type="button" onClick={onDismiss} className="px-3 py-1 text-xs rounded-md text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">Dismiss</button>
+                <button type="button" onClick={onDismiss} className="px-3 py-1 text-xs rounded-md text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 ds-focus-ring">Dismiss</button>
                 <Button type="button" variant="warning" size="xs" onClick={handleUseAll}>Use all</Button>
             </div>
         </motion.div>

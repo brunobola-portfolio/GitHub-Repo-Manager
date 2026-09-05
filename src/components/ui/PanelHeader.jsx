@@ -14,7 +14,7 @@
  *
  * Visual contract:
  *  - Thin vertical indigo accent on the left
- *  - 10px uppercase tracking-[0.22em] eyebrow with optional icon
+ *  - `.ds-eyebrow` (10px uppercase, 0.2em tracking) with optional icon
  *  - Bold display h2 (lg) below
  *  - Optional muted description, max-w-lg
  *
@@ -41,7 +41,7 @@ export function PanelHeader({
             />
             <div className="pl-3 flex-1 min-w-0">
                 {eyebrow && (
-                    <div className="flex items-center gap-2 ds-text-micro font-semibold uppercase tracking-[0.22em] text-[color:var(--ds-accent-brand)] dark:text-brand-300">
+                    <div className="ds-eyebrow flex items-center gap-2 text-[color:var(--ds-accent-brand)] dark:text-brand-300">
                         {EyebrowIcon && <EyebrowIcon className="w-3 h-3" aria-hidden="true" />}
                         <span>{eyebrow}</span>
                     </div>

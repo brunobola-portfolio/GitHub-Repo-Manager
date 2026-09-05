@@ -5,6 +5,7 @@ import { openAppSettings } from '../../utils/appEvents'
 import { formatTimeUntil } from '../../utils/format'
 import { QuotaUpgradeButton } from './QuotaUpgradeButton'
 import { POPOVER_SURFACE_CLASS } from './_variants'
+import { DURATION, EASE } from './motion'
 
 const TONE = {
     indigo: {
@@ -51,7 +52,7 @@ function ProgressRing({ percent, tone }) {
                 strokeDasharray={c}
                 initial={{ strokeDashoffset: c }}
                 animate={{ strokeDashoffset: offset }}
-                transition={reduceMotion ? { duration: 0 } : { duration: 0.6, ease: 'easeOut' }}
+                transition={reduceMotion ? { duration: 0 } : { duration: DURATION.ambient, ease: EASE.emphasized }}
                 transform="rotate(-90 12 12)"
             />
         </svg>
@@ -124,7 +125,7 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
                     "Unlimited" next to an empty inbox reads as if it describes
                     the inbox, not the AI-query allowance. */}
                 <span className="flex items-baseline gap-1">
-                    <span aria-hidden="true" className="ds-text-micro font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                    <span aria-hidden="true" className="ds-eyebrow text-slate-500 dark:text-slate-400">
                         AI
                     </span>
                     <span className={`ds-text-meta font-semibold tabular-nums ${tone.label}`}>
@@ -145,12 +146,12 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
                         initial={{ opacity: 0, y: -4 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
-                        transition={{ duration: 0.15 }}
+                        transition={{ duration: DURATION.fast }}
                         className={`absolute right-0 mt-2 z-[var(--ds-z-overlay)] w-72 p-4 ${POPOVER_SURFACE_CLASS}`}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex items-center justify-between gap-2 mb-2">
-                            <span className="ds-text-micro uppercase tracking-[0.2em] font-semibold text-slate-500 dark:text-slate-400">AI quota</span>
+                            <span className="ds-eyebrow text-slate-500 dark:text-slate-400">AI quota</span>
                             <span className="ds-text-micro uppercase font-semibold text-slate-500 dark:text-slate-400">{tier}</span>
                         </div>
                         {unlimited ? (
@@ -179,7 +180,7 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
                             <button
                                 type="button"
                                 onClick={() => { openAppSettings('usage'); setOpen(false) }}
-                                className="inline-flex items-center gap-1 text-[12px] text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-300"
+                                className="inline-flex items-center gap-1 text-xs text-slate-600 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-300"
                             >
                                 <Sparkles className="w-3 h-3" aria-hidden="true" />
                                 Manage usage

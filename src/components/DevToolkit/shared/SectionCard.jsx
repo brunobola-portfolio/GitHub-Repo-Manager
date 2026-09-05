@@ -22,7 +22,7 @@ export function SectionCard({ title, content, onContentChange, chips, onRefine, 
         <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}>
         <Card glass={false} shadow="none" className="rounded-xl">
             <div className="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700">
-                <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">{title}</span>
+                <span className="ds-eyebrow text-slate-600 dark:text-slate-300">{title}</span>
                 <div className="flex gap-1">
                     <Tooltip label={editing ? 'Done editing' : 'Edit'}>
                         <button

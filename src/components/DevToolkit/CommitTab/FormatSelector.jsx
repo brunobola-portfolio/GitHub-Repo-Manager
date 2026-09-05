@@ -18,7 +18,7 @@ export function FormatSelector({ selected, onSelect, repoStyleLoading }) {
                         selected === f.id
                             ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
                             : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-                    } disabled:opacity-40`}
+                    } disabled:opacity-40 ds-focus-ring`}
                 >
                     {f.label}
                 </button>

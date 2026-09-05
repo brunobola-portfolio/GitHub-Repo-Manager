@@ -27,7 +27,7 @@ import { twMerge } from 'tailwind-merge'
  *              default | secondary | success | warning | danger | info.
  *              `tone` wins when both are given.
  *   size     — 'sm' (default: px-2.5 py-0.5 text-xs — the historical Badge
- *              scale) or 'xs' (px-1.5 py-0.5 text-[10px] — the compact
+ *              scale) or 'xs' (px-1.5 py-0.5 ds-text-micro — the compact
  *              "micro" scale used across dense rows).
  *   ring     — when true, adds a tone-matched inset ring (ring-1 ring-inset).
  *   icon     — optional leading node (e.g. a lucide icon element).
@@ -83,7 +83,7 @@ const RINGS = {
 
 const SIZES = {
     sm: 'px-2.5 py-0.5 text-xs',
-    xs: 'px-1.5 py-0.5 text-[10px] leading-[14px]',
+    xs: 'px-1.5 py-0.5 ds-text-micro', // ds-text-micro already sets line-height:14px
 }
 
 function resolveKey(tone, variant) {

@@ -436,6 +436,21 @@
 .ds-font-display { font-family: var(--ds-font-display); letter-spacing: -0.01em; }
 .ds-font-mono    { font-family: var(--ds-font-mono); }
 
+/* ===== ELEVATION UTILITIES (token-backed) =====
+ * 229 raw Tailwind `shadow-*` utilities vs 22 uses of the --ds-shadow-*
+ * tokens above (2026-09-04 panel, F11) — light mode's default Tailwind
+ * shadow is slate-tinted and measures ~1.07:1 against the page (see
+ * Card.jsx's own doc comment), i.e. no visible elevation at all. These
+ * classes are the one-tweak-point form of the tokens, themed automatically
+ * via the same :root.dark overrides the tokens already carry — no `dark:`
+ * variant needed at a call site. Cover only 4 of the 6 raw shadow steps
+ * (sm/md/lg/overlay): `shadow-md` and `shadow-2xl` calls fold onto
+ * whichever of these sits closest, same as the DURATION scale in motion.js. */
+.ds-elevation-sm      { box-shadow: var(--ds-shadow-sm); }
+.ds-elevation-md      { box-shadow: var(--ds-shadow); }
+.ds-elevation-lg      { box-shadow: var(--ds-shadow-lg); }
+.ds-elevation-overlay { box-shadow: var(--ds-shadow-overlay); }
+
 /* ===== TYPOGRAPHY SIZES (token-backed) =====
  * 200+ callsites previously used arbitrary "text-[10px]" / "text-[11px]" /
  * "text-[13px]" Tailwind values for dense metadata labels. These utility
@@ -444,6 +459,25 @@
 .ds-text-micro   { font-size: 10px;  line-height: 14px; }
 .ds-text-meta    { font-size: 11px;  line-height: 16px; }
 .ds-text-body-sm { font-size: var(--ds-text-sm); line-height: 18px; }
+/* --ds-text-sm (13px) was a custom property only, with no matching utility
+ * class — the arbitrary `text-[13px]` sites this replaces had nothing else
+ * to land on (2026-09-04 panel, F18). */
+.ds-text-sm      { font-size: var(--ds-text-sm); line-height: 18px; }
+
+/* The uppercase micro-label ("eyebrow") recipe, unified. 222 call sites each
+ * hand-rolled their own size/weight/tracking, and nine different
+ * letter-spacings shipped for the one role (2026-09-04 panel, F17) —
+ * PageHeader and PanelHeader used 0.22em, SectionPanel and AIQuotaMeter used
+ * 0.2em, Steppers and WhatNeedsYouGrid used 0.18em, UpgradeRequired used
+ * 0.14em. This is the single recipe; a call site still supplies its own
+ * colour (and any layout classes) alongside it. */
+.ds-eyebrow {
+  font-size: 10px;
+  line-height: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
 
 /* ===== SEMANTIC COLOR UTILITIES (token-backed) =====
  * Replace the most-repeated slate combos with a single class. Lets future

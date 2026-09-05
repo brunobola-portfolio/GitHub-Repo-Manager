@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { EASE } from '../ui/motion'
+import { EASE, DURATION } from '../ui/motion'
 import { X, GitCommitHorizontal, GitPullRequest, Eye } from 'lucide-react'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock'
@@ -171,8 +171,8 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
                         initial={{ x: '100%' }}
                         animate={{ x: 0 }}
                         exit={{ x: '100%' }}
-                        transition={{ duration: 0.32, ease: EASE.standard }}
-                        className="fixed right-0 top-0 bottom-0 z-[var(--ds-z-modal)] flex flex-col bg-white/70 dark:bg-slate-900/95 backdrop-blur-md border-l border-slate-200/40 dark:border-slate-700/40 shadow-2xl"
+                        transition={{ duration: DURATION.slow, ease: EASE.standard }}
+                        className="fixed right-0 top-0 bottom-0 z-[var(--ds-z-modal)] flex flex-col bg-white/70 dark:bg-slate-900/95 backdrop-blur-md border-l border-slate-200/40 dark:border-slate-700/40 ds-elevation-overlay"
                         style={{ width: `min(${toolkit.panelWidth}px, 100vw)` }}
                         role="dialog"
                         aria-modal="true"
@@ -201,13 +201,13 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
                                 </div>
                                 <div className="flex items-center gap-2">
                                     {toolkit.autoDraftEnabled && (
-                                        <span className="px-2 py-0.5 ds-text-micro font-semibold uppercase tracking-wider rounded-full bg-white text-[color:var(--ds-accent-brand)]">
+                                        <span className="ds-eyebrow px-2 py-0.5 rounded-full bg-white text-[color:var(--ds-accent-brand)]">
                                             auto-draft
                                         </span>
                                     )}
                                     <button
                                         onClick={onClose}
-                                        className="p-1.5 rounded-lg hover:bg-white/20 transition-colors"
+                                        className="p-1.5 rounded-lg hover:bg-white/20 transition-colors ds-focus-ring"
                                         aria-label="Close panel"
                                     >
                                         <X className="w-4 h-4 text-white" />

@@ -175,7 +175,7 @@ export function DashboardShell({ anchors, onViewChange, children }) {
                     <div className="sticky top-6 space-y-5">
                         {safeAnchors.length > 0 && (
                             <div>
-                                <p className="px-2 mb-2 ds-text-micro font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                                <p className="ds-eyebrow px-2 mb-2 text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                                     <LayoutGrid className="w-3 h-3" aria-hidden="true" />
                                     On this page
                                 </p>
@@ -223,7 +223,7 @@ export function DashboardShell({ anchors, onViewChange, children }) {
 
                         {typeof onViewChange === 'function' && (
                             <div>
-                                <p className="px-2 mb-2 ds-text-micro font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                                <p className="ds-eyebrow px-2 mb-2 text-slate-500 dark:text-slate-400">
                                     Jump to
                                 </p>
                                 <ul className="space-y-1">

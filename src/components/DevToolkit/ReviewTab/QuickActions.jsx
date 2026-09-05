@@ -44,14 +44,14 @@ export function QuickActions({ owner, repo, pullNumber, onSubmitted }) {
                     />
                 </Field>
                 <div className="flex gap-2">
-                    <button type="button" onClick={() => { setAction(null); setError(null) }} className="px-3 py-1 text-xs text-slate-500">Cancel</button>
+                    <button type="button" onClick={() => { setAction(null); setError(null) }} className="px-3 py-1 text-xs text-slate-500 ds-focus-ring rounded">Cancel</button>
                     <button
                         type="button"
                         onClick={() => handleSubmit(action)}
                         disabled={loading || (action === 'COMMENT' && !comment.trim())}
                         className={`px-3 py-1 text-xs font-medium rounded-md text-white disabled:opacity-50 ${
                             action === 'APPROVE' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'
-                        }`}
+                        } ds-focus-ring`}
                     >
                         {loading ? 'Submitting...' : action === 'APPROVE' ? 'Approve' : 'Comment'}
                     </button>

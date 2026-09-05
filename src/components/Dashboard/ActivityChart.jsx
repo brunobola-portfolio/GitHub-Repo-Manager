@@ -6,6 +6,7 @@ import { Skeleton } from '../ui/Skeleton'
 import { EmptyState } from '../ui/EmptyState'
 import { motion } from 'framer-motion'
 import { useMeasuredSize } from '../../hooks/useMeasuredSize'
+import { DURATION } from '../ui/motion'
 
 /**
  * ActivityChart - Timeline chart showing commits, PRs, and issues
@@ -70,7 +71,7 @@ export function ActivityChart({ activity = [], timeRange, loading }) {
             className="h-full"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: DURATION.gentle }}
         >
             <Card
                 className="h-full p-4 sm:p-6 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm transition-all duration-[var(--ds-duration)]"

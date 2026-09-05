@@ -67,15 +67,15 @@ export function PromptLibrary({ presets, loading, onNew, onEdit, onDelete, onSet
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <span className="font-medium">{p.name}</span>
-                                    {p.builtin ? <span className="ds-text-micro uppercase tracking-wide text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">built-in</span> : null}
+                                    {p.builtin ? <span className="ds-eyebrow text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">built-in</span> : null}
                                     {isOrgShared ? (
-                                        <span className="ds-text-micro uppercase tracking-wide text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] px-1.5 py-0.5 rounded bg-brand-50 dark:bg-brand-950">
+                                        <span className="ds-eyebrow text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] px-1.5 py-0.5 rounded bg-brand-50 dark:bg-brand-950">
                                             shared · {p.scopeTarget}
                                         </span>
                                     ) : null}
-                                    {p.isDefault ? <span className="ds-text-micro uppercase tracking-wide text-emerald-700">default</span> : null}
+                                    {p.isDefault ? <span className="ds-eyebrow text-emerald-700">default</span> : null}
                                     {isOrgShared && p.ownedByUser === false ? (
-                                        <span className="ds-text-micro uppercase tracking-wide opacity-60">read-only</span>
+                                        <span className="ds-eyebrow opacity-60">read-only</span>
                                     ) : null}
                                 </div>
                                 <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
@@ -85,13 +85,13 @@ export function PromptLibrary({ presets, loading, onNew, onEdit, onDelete, onSet
                             </div>
                             {canManage ? (
                                 <div className="flex gap-1 text-xs">
-                                    <button type="button" onClick={() => onSetDefault(p.id)} className="px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
+                                    <button type="button" onClick={() => onSetDefault(p.id)} className="px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 ds-focus-ring">
                                         Set default
                                     </button>
-                                    <button type="button" onClick={() => onEdit(p.id)} className="px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800">
+                                    <button type="button" onClick={() => onEdit(p.id)} className="px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 ds-focus-ring">
                                         Edit
                                     </button>
-                                    <button type="button" onClick={() => onDelete(p.id)} className="px-2 py-1 rounded hover:bg-rose-50 text-rose-700 dark:hover:bg-rose-950 dark:text-rose-300">
+                                    <button type="button" onClick={() => onDelete(p.id)} className="px-2 py-1 rounded hover:bg-rose-50 text-rose-700 dark:hover:bg-rose-950 dark:text-rose-300 ds-focus-ring">
                                         Delete
                                     </button>
                                 </div>

@@ -31,7 +31,7 @@ function tryPrettyJson(raw) {
 function Field({ label, value, mono = false }) {
     return (
         <div className="grid grid-cols-[120px_1fr] gap-3 py-2 border-b border-slate-100 dark:border-slate-800 last:border-0">
-            <div className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <div className="ds-eyebrow text-slate-500 dark:text-slate-400">
                 {label}
             </div>
             <div className={`text-sm text-slate-700 dark:text-slate-300 break-all ${mono ? 'font-mono' : ''}`}>
@@ -46,7 +46,7 @@ function BodyBlock({ title, content, pretty = false }) {
     const rendered = pretty ? tryPrettyJson(content) : content
     return (
         <section className="mt-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+            <h3 className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-2">
                 {title}
             </h3>
             <pre className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-3 ds-text-meta leading-relaxed font-mono whitespace-pre-wrap break-all overflow-x-auto max-h-[300px]">
@@ -81,7 +81,7 @@ export function DLQDetailPanel({
                 <div className="space-y-4">
                     <Card glass={false} shadow="sm" className="rounded-xl p-4">
                         <div className="flex items-center justify-between mb-3">
-                            <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            <div className="ds-eyebrow text-slate-500 dark:text-slate-400">
                                 Metadata
                             </div>
                             {resolved

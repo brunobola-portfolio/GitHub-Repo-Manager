@@ -4,6 +4,7 @@ import { Copy, Check, Terminal, Square } from 'lucide-react'
 import { shellQuote } from '../../../utils/shellQuote'
 import { copyToClipboard } from '../../../utils/clipboard'
 import { Tooltip } from '../../ui/Tooltip'
+import { DURATION } from '../../ui/motion'
 
 export function StreamingOutput({ content, streamingText, isStreaming, onCancel, label = 'Generated Output', retryCount = 0 }) {
     const [copiedId, setCopiedId] = useState(null)
@@ -23,7 +24,7 @@ export function StreamingOutput({ content, streamingText, isStreaming, onCancel,
 
     return (
         <AnimatePresence>
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: DURATION.standard }}>
                 <div className="flex items-center justify-between mb-2">
                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</label>
                     <div className="flex items-center gap-2">
@@ -31,7 +32,7 @@ export function StreamingOutput({ content, streamingText, isStreaming, onCancel,
                             <span className="ds-text-micro text-amber-400 animate-pulse">Reconnecting ({retryCount}/3)...</span>
                         )}
                         {isStreaming && (
-                            <button type="button" onClick={onCancel} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs text-rose-400 hover:text-rose-300 rounded transition-colors">
+                            <button type="button" onClick={onCancel} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs text-rose-400 hover:text-rose-300 rounded transition-colors ds-focus-ring">
                                 <Square className="w-3 h-3" /> Stop
                             </button>
                         )}

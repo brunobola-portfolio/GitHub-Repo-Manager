@@ -1,6 +1,7 @@
 import { Children, cloneElement, isValidElement, useId } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { AlertCircle } from 'lucide-react'
+import { DURATION } from '../motion'
 
 /**
  * Field — composition wrapper for form controls.
@@ -57,7 +58,7 @@ export function Field({
             {label && (
                 <label
                     htmlFor={controlId}
-                    className="text-[13px] font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5"
+                    className="ds-text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5"
                 >
                     <span>{label}</span>
                     {required && (
@@ -84,7 +85,7 @@ export function Field({
                         initial={{ opacity: 0, y: -4 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
-                        transition={{ duration: 0.15 }}
+                        transition={{ duration: DURATION.fast }}
                         className="text-xs font-medium text-rose-600 dark:text-rose-400 flex items-center gap-1.5"
                     >
                         <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
@@ -98,7 +99,7 @@ export function Field({
                         initial={{ opacity: 0, y: -4 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
-                        transition={{ duration: 0.15 }}
+                        transition={{ duration: DURATION.fast }}
                         className="text-xs font-medium text-emerald-700 dark:text-emerald-400"
                     >
                         {success}
@@ -111,7 +112,7 @@ export function Field({
                         initial={{ opacity: 0, y: -4 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
-                        transition={{ duration: 0.15 }}
+                        transition={{ duration: DURATION.fast }}
                         className="text-xs text-slate-500 dark:text-slate-400"
                     >
                         {hint}

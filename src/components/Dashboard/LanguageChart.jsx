@@ -6,6 +6,7 @@ import { Skeleton } from '../ui/Skeleton'
 import { motion } from 'framer-motion'
 import { useMeasuredSize } from '../../hooks/useMeasuredSize'
 import { getLanguageColor } from '../../utils/languageColors'
+import { DURATION } from '../ui/motion'
 
 /**
  * LanguageChart - Pie chart showing language distribution
@@ -38,7 +39,7 @@ export function LanguageChart({ data = [], loading }) {
             className="h-full"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            transition={{ duration: DURATION.gentle, delay: 0.1 }}
         >
             <Card
                 className="h-full"

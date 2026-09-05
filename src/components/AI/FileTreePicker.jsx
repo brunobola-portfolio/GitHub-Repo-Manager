@@ -80,7 +80,7 @@ export function FileTreePicker({ isOpen, owner, repoName, branch, onPick, onClos
                             <button
                                 type="button"
                                 onClick={() => onPick({ path: e.path, size: e.size })}
-                                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                                className="w-full flex items-center gap-2 px-3 py-1.5 text-sm text-left hover:bg-slate-50 dark:hover:bg-slate-800/60 ds-focus-ring rounded"
                             >
                                 <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" aria-hidden="true" />
                                 <span className="flex-1 truncate">{e.path}</span>

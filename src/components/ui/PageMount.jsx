@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion'
+import { DURATION, EASE } from './motion'
 
 /**
  * PageMount — Canonical mount animation for page-level surfaces.
@@ -29,17 +30,17 @@ const VARIANTS_NORMAL = {
 
 const VARIANTS_REDUCED = {
     hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { duration: 0.1 } },
+    show: { opacity: 1, transition: { duration: DURATION.fast } },
 }
 
 const ITEM_NORMAL = {
     hidden: { opacity: 0, y: 8 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.2, ease: 'easeOut' } },
+    show: { opacity: 1, y: 0, transition: { duration: DURATION.standard, ease: EASE.emphasized } },
 }
 
 const ITEM_REDUCED = {
     hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { duration: 0.1 } },
+    show: { opacity: 1, transition: { duration: DURATION.fast } },
 }
 
 export function PageMount({ children, className = '', ...rest }) {

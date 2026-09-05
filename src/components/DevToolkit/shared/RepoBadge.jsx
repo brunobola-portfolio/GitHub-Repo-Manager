@@ -3,6 +3,7 @@ import { Pin, PinOff, ChevronDown, Search } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Input } from '../../ui/form'
 import { EmptyState } from '../../ui/EmptyState'
+import { DURATION } from '../../ui/motion'
 
 export function RepoBadge({ repos = [], selectedRepo, isPinned, onSelectRepo, onTogglePin }) {
     const [open, setOpen] = useState(false)
@@ -34,7 +35,7 @@ export function RepoBadge({ repos = [], selectedRepo, isPinned, onSelectRepo, on
                         isPinned
                             ? 'bg-brand-500/10 border-brand-500/30 text-brand-400 shadow-sm'
                             : 'bg-slate-100 dark:bg-slate-800/60 border-slate-200/60 dark:border-slate-700/60 text-slate-600 dark:text-slate-400'
-                    }`}
+                    } ds-focus-ring`}
                 >
                     {selectedRepo ? (
                         <span className="truncate max-w-[280px]">{selectedRepo.full_name}</span>
@@ -49,7 +50,7 @@ export function RepoBadge({ repos = [], selectedRepo, isPinned, onSelectRepo, on
                         onClick={onTogglePin}
                         className={`p-1.5 rounded-lg transition-colors ${
                             isPinned ? 'text-brand-400 hover:bg-brand-500/10' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                        }`}
+                        } ds-focus-ring`}
                         title={isPinned ? 'Unpin repo' : 'Pin repo'}
                         aria-label={isPinned ? 'Unpin repository' : 'Pin repository'}
                     >
@@ -64,8 +65,8 @@ export function RepoBadge({ repos = [], selectedRepo, isPinned, onSelectRepo, on
                         initial={{ opacity: 0, y: -4 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
-                        transition={{ duration: 0.15 }}
-                        className="absolute z-[var(--ds-z-popover)] mt-1 left-0 w-80 max-w-[calc(100vw-1rem)] max-h-60 overflow-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl"
+                        transition={{ duration: DURATION.fast }}
+                        className="absolute z-[var(--ds-z-popover)] mt-1 left-0 w-80 max-w-[calc(100vw-1rem)] max-h-60 overflow-auto rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 ds-elevation-overlay"
                     >
                         <div className="sticky top-0 bg-white dark:bg-slate-900 p-2 border-b border-slate-100 dark:border-slate-800">
                             <Input
@@ -88,7 +89,7 @@ export function RepoBadge({ repos = [], selectedRepo, isPinned, onSelectRepo, on
                                     onClick={() => { onSelectRepo(repo); setOpen(false); setQuery('') }}
                                     className={`w-full px-3 py-2 text-left text-sm hover:bg-brand-50 dark:hover:bg-brand-900/30 transition-colors ${
                                         selectedRepo?.id === repo.id ? 'bg-brand-50 dark:bg-brand-950/30 text-brand-700 dark:text-brand-300' : 'text-slate-700 dark:text-slate-300'
-                                    }`}
+                                    } ds-focus-ring rounded`}
                                 >
                                     {repo.full_name}
                                 </button>

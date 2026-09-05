@@ -63,7 +63,7 @@ export function DLQTable({
             >
             <table className="w-full text-sm">
                 <thead className={`sticky top-0 z-10 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700 transition-shadow${elevated ? ` ${STICKY_HEAD_SHADOW_CLASS}` : ''}`}>
-                    <tr className="text-left text-slate-500 dark:text-slate-400 uppercase ds-text-meta tracking-wider">
+                    <tr className="ds-eyebrow text-left text-slate-500 dark:text-slate-400">
                         <th className="px-4 py-3 font-semibold">ID</th>
                         {kind === 'email' ? (
                             <>

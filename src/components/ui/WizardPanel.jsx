@@ -7,7 +7,7 @@ import { useMobileKeyboardFix } from '../../hooks/useMobileKeyboardFix'
 import { CloseButton } from './CloseButton'
 import { VARIANT_ICON_STYLES, WIZARD_BACKDROP_CLASS } from './_variants'
 import { clampPanelSize } from './wizardPanelGeometry'
-import { SPRING } from './motion'
+import { SPRING, DURATION } from './motion'
 
 const PANEL_SIZES = {
   sm: 'w-[min(92vw,520px)]',
@@ -130,9 +130,9 @@ export function WizardPanel({
   // Reduced-motion users get a short fade so the entrance is calm but the
   // dialog still telegraphs the state change.
   const panelTransition = reduced
-    ? { duration: 0.15 }
+    ? { duration: DURATION.fast }
     : SPRING.panel
-  const backdropTransition = reduced ? { duration: 0 } : { duration: 0.18 }
+  const backdropTransition = reduced ? { duration: 0 } : { duration: DURATION.standard }
 
   // Floating mode drives x/y via drag, so its entrance must not also animate y
   // (the two would fight over the same motion value). Maximized mode keeps the
@@ -230,10 +230,10 @@ export function WizardPanel({
                       initial={{ opacity: 0, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.2 }}
+                      transition={{ duration: DURATION.standard }}
                       className="text-center"
                     >
-                      <p className="text-[13px] font-medium text-slate-700 dark:text-slate-300 truncate">{stepInfo.title}</p>
+                      <p className="ds-text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{stepInfo.title}</p>
                       {stepInfo.subtitle && (
                         <p className="ds-text-meta text-slate-500 dark:text-slate-400 truncate">{stepInfo.subtitle}</p>
                       )}
@@ -248,7 +248,7 @@ export function WizardPanel({
                   <button
                     type="button"
                     onClick={onToggleMaximize}
-                    className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                    className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors ds-focus-ring"
                     aria-label={isMaximized ? 'Restore wizard size' : 'Maximize wizard'}
                   >
                     {isMaximized
@@ -268,7 +268,7 @@ export function WizardPanel({
                 <motion.aside
                   initial={{ opacity: 0, x: -16 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: 0.08 }}
+                  transition={{ duration: DURATION.slow, delay: 0.08 }}
                   className="flex-shrink-0 w-60 bg-white dark:bg-[color:var(--ds-surface-subtle-dark)] border-r border-slate-200 dark:border-[color:var(--ds-border-dark)] overflow-hidden"
                 >
                   <div className="h-full overflow-y-auto ds-scrollbar">
@@ -308,7 +308,7 @@ export function WizardPanel({
                 onPointerDown={onResizePointerDown}
                 onPointerMove={onResizePointerMove}
                 onPointerUp={onResizePointerUp}
-                className="absolute bottom-0 right-0 z-20 flex items-end justify-end w-6 h-6 p-0.5 cursor-nwse-resize touch-none text-slate-400/70 dark:text-slate-500/70 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                className="absolute bottom-0 right-0 z-20 flex items-end justify-end w-6 h-6 p-0.5 cursor-nwse-resize touch-none text-slate-400/70 dark:text-slate-500/70 hover:text-slate-600 dark:hover:text-slate-300 transition-colors ds-focus-ring rounded"
               >
                 <GripHorizontal className="w-3.5 h-3.5 rotate-45" strokeWidth={2.25} aria-hidden="true" />
               </div>

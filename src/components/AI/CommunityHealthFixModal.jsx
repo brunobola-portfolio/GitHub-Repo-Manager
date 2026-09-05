@@ -211,7 +211,7 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 			<div className="flex flex-col gap-3">
 				{fileType === 'license' && (
 					<div className="flex items-center gap-2">
-						<span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">License:</span>
+						<span className="ds-eyebrow text-slate-500 dark:text-slate-400">License:</span>
 						<Select
 							label="License"
 							value={licenseId}

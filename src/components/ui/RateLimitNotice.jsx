@@ -7,7 +7,7 @@
  */
 
 import { motion } from 'framer-motion'
-import { EASE } from './motion'
+import { EASE, DURATION } from './motion'
 import { Hourglass, RotateCcw, X } from 'lucide-react'
 import { useCountdown } from '@/hooks/useCountdown'
 
@@ -59,7 +59,7 @@ export function RateLimitNotice({ retryAt, variant = 'toast', onRetry, onDismiss
             <motion.div
                 className="absolute inset-0 flex items-center justify-center"
                 animate={{ rotate: isReady ? 0 : [0, 180] }}
-                transition={{ repeat: isReady ? 0 : Infinity, duration: 2, ease: 'easeInOut' }}
+                transition={{ repeat: isReady ? 0 : Infinity, duration: 2, ease: EASE.standard }}
             >
                 <Hourglass className="w-4 h-4 text-amber-700 dark:text-amber-300" />
             </motion.div>
@@ -74,7 +74,7 @@ export function RateLimitNotice({ retryAt, variant = 'toast', onRetry, onDismiss
             key={secondsLeft}
             initial={{ scale: 1 }}
             animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: 0.35 }}
+            transition={{ duration: DURATION.slow }}
             className="text-lg font-semibold tabular-nums text-amber-700 dark:text-amber-300"
         >
             {secondsLeft}
@@ -106,7 +106,7 @@ export function RateLimitNotice({ retryAt, variant = 'toast', onRetry, onDismiss
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.35, ease: EASE.emphasized }}
+                transition={{ duration: DURATION.slow, ease: EASE.emphasized }}
                 role="status"
                 aria-live="polite"
                 className="relative z-[var(--ds-z-floating)]"

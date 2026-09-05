@@ -72,7 +72,7 @@ export function ReadmeToc({ containerRef, source }) {
                 onClick={() => setCollapsed((c) => !c)}
                 aria-expanded={!collapsed}
                 aria-controls="readme-toc-list"
-                className="flex items-center gap-1.5 w-full text-left ds-text-micro font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2 rounded ds-focus-ring"
+                className="ds-eyebrow flex items-center gap-1.5 w-full text-left text-slate-500 dark:text-slate-400 mb-2 rounded ds-focus-ring"
             >
                 <List className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
                 <span className="flex-1">On this page</span>

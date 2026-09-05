@@ -1,4 +1,4 @@
-import { EASE } from '../ui/motion'
+import { EASE, DURATION } from '../ui/motion'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, ArrowUpRight } from 'lucide-react'
@@ -51,7 +51,7 @@ export function CategorySection({
             id={id}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45 }}
+            transition={{ duration: DURATION.reveal }}
             className="relative scroll-mt-20 p-4 sm:p-6 lg:p-7 rounded-2xl sm:rounded-3xl bg-white/70 dark:bg-slate-900/55 backdrop-blur-sm border border-slate-200/60 dark:border-slate-800/70 shadow-sm transition-colors"
         >
             {/* Spine node — small dot centered on the shell's spine line,
@@ -81,7 +81,7 @@ export function CategorySection({
                     )}
                     <span className="min-w-0 flex-1">
                         {eyebrow && (
-                            <span className="block ds-text-micro font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+                            <span className="ds-eyebrow block text-slate-500 dark:text-slate-400">
                                 {eyebrow}
                             </span>
                         )}
@@ -103,7 +103,7 @@ export function CategorySection({
                     </span>
                     <motion.span
                         animate={{ rotate: isExpanded ? 180 : 0 }}
-                        transition={{ duration: 0.3 }}
+                        transition={{ duration: DURATION.slow }}
                         className="ml-auto inline-flex w-7 h-7 items-center justify-center rounded-lg text-slate-400 group-hover:text-brand-500 transition-colors"
                         aria-hidden="true"
                     >
@@ -142,7 +142,7 @@ export function CategorySection({
                         initial={{ opacity: 0, height: 0, overflow: 'hidden' }}
                         animate={{ opacity: 1, height: 'auto', overflow: 'visible', transitionEnd: { overflow: 'visible' } }}
                         exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
-                        transition={{ duration: 0.25, ease: EASE.standard }}
+                        transition={{ duration: DURATION.standard, ease: EASE.standard }}
                         className="pt-1 pb-1"
                     >
                         {children}

@@ -4,6 +4,7 @@ import { openAppSettings } from '../../utils/appEvents'
 import { formatTimeUntil } from '../../utils/format'
 import { TIER_LABEL } from './quotaShared'
 import { QuotaUpgradeButton } from './QuotaUpgradeButton'
+import { DURATION } from './motion'
 
 function formatResetAbsolute(iso) {
     if (!iso) return null
@@ -37,7 +38,7 @@ export function AIQuotaExhaustedCard({
             aria-live="polite"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: DURATION.slow }}
             className="mx-5 my-3 rounded-2xl border border-rose-200 dark:border-rose-900/50"
         >
             <div className="rounded-2xl bg-white dark:bg-slate-900 p-4 sm:p-5">
@@ -48,7 +49,7 @@ export function AIQuotaExhaustedCard({
                     <div className="min-w-0 flex-1">
                         <p className="text-sm font-bold text-slate-900 dark:text-slate-100">AI insights paused</p>
                         {typeof used === 'number' && typeof limit === 'number' && (
-                            <p className="mt-0.5 text-[12px] text-slate-600 dark:text-slate-300 tabular-nums">
+                            <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300 tabular-nums">
                                 <span className="font-semibold">{used} / {limit}</span> requests used this month
                                 {tierLabel ? <> on <span className="font-semibold">{tierLabel}</span></> : null}
                             </p>
@@ -60,7 +61,7 @@ export function AIQuotaExhaustedCard({
                                 {resetAbs}
                             </p>
                         )}
-                        <p className="mt-2 text-[12px] text-slate-600 dark:text-slate-400">
+                        <p className="mt-2 text-xs text-slate-600 dark:text-slate-400">
                             The signals below are still live — only the AI narrative is muted.
                         </p>
 
@@ -69,7 +70,7 @@ export function AIQuotaExhaustedCard({
                             <button
                                 type="button"
                                 onClick={() => openAppSettings('usage')}
-                                className="inline-flex items-center gap-1 text-[12px] text-[color:var(--ds-accent-brand)] dark:text-brand-300 hover:underline"
+                                className="inline-flex items-center gap-1 text-xs text-[color:var(--ds-accent-brand)] dark:text-brand-300 hover:underline"
                             >
                                 <Sparkles className="w-3 h-3" aria-hidden="true" />
                                 Manage usage

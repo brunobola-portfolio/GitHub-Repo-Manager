@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronRight } from 'lucide-react'
 import { calculateMenuPosition } from '@/lib/menuPositioning'
 import { POPOVER_SURFACE_CLASS } from './_variants'
+import { DURATION, EASE } from './motion'
 
 /**
  * ContextMenu - Reusable cascading context menu with keyboard navigation
@@ -283,7 +284,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 				initial={{ opacity: 0, scale: 0.95 }}
 				animate={{ opacity: 1, scale: 1 }}
 				exit={{ opacity: 0, scale: 0.95 }}
-				transition={{ duration: 0.12, ease: 'easeOut' }}
+				transition={{ duration: DURATION.fast, ease: EASE.emphasized }}
 				className={`fixed z-[var(--ds-z-ceiling)] min-w-[260px] max-w-[340px] overflow-visible p-1 outline-none ${POPOVER_SURFACE_CLASS}`}
 				style={{ top: position.top, left: position.left }}
 				onClick={(e) => e.stopPropagation()}
@@ -303,7 +304,7 @@ function ContextMenuInner({ items, x, y, onClose, isSubmenu = false, parentDirec
 						return (
 							<div
 								key={`hdr-${index}`}
-								className="text-[10.5px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-[0.08em] px-2.5 pt-1.5 pb-1 select-none"
+								className="ds-eyebrow text-slate-500 dark:text-slate-400 px-2.5 pt-1.5 pb-1 select-none"
 								role="presentation"
 							>
 								{item.label}

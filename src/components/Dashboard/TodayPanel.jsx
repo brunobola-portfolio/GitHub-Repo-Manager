@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { EASE as MOTION_EASE } from '../ui/motion'
+import { EASE as MOTION_EASE, DURATION } from '../ui/motion'
 import { HeroOrgChip } from './HeroOrgChip'
 import { HeroTimeRangeChip } from './HeroTimeRangeChip'
 import { HeroSyncChip } from './HeroSyncChip'
@@ -19,7 +19,7 @@ const EASE = MOTION_EASE.emphasized
 
 const childVariants = {
     hidden: { opacity: 0, y: 12 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE.emphasized } },
+    visible: { opacity: 1, y: 0, transition: { duration: DURATION.reveal, ease: EASE.emphasized } },
 }
 
 const containerVariants = {
@@ -98,7 +98,7 @@ export function TodayPanel({
                     <div className="min-w-0 space-y-2.5">
                         <motion.p
                             variants={childVariants}
-                            className="ds-text-micro font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400"
+                            className="ds-eyebrow text-slate-500 dark:text-slate-400"
                         >
                             {eyebrow}
                         </motion.p>

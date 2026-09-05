@@ -37,7 +37,7 @@ export function LabelPills({ labels = [], onRemove, onAdd }) {
                     className="w-24 h-6 text-xs rounded-full px-2 bg-transparent border-brand-300 dark:border-brand-700"
                 />
             ) : (
-                <button type="button" onClick={() => setAdding(true)} className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs text-slate-500 dark:text-slate-400 hover:text-brand-500 border border-dashed border-slate-300 dark:border-slate-700 hover:border-brand-400 transition-colors">
+                <button type="button" onClick={() => setAdding(true)} className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs text-slate-500 dark:text-slate-400 hover:text-brand-500 border border-dashed border-slate-300 dark:border-slate-700 hover:border-brand-400 transition-colors ds-focus-ring">
                     <Plus className="w-2.5 h-2.5" /> Add
                 </button>
             )}

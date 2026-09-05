@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { EASE } from '../ui/motion'
+import { EASE, DURATION } from '../ui/motion'
 import {
     Sparkles,
     Brain,
@@ -309,7 +309,7 @@ function CircularScore({ value, max = 100 }) {
                     strokeDasharray={circumference}
                     initial={{ strokeDashoffset: reducedMotion ? offset : circumference }}
                     animate={{ strokeDashoffset: offset }}
-                    transition={reducedMotion ? { duration: 0 } : { duration: 0.8, ease: EASE.emphasized, delay: 0.2 }}
+                    transition={reducedMotion ? { duration: 0 } : { duration: DURATION.ambient, ease: EASE.emphasized, delay: 0.2 }}
                 />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center" aria-hidden="true">
@@ -354,7 +354,7 @@ function OverviewGrid({ data }) {
         <div className="grid gap-4 lg:grid-cols-3">
             {/* Health Score */}
             <InsightCard tone="ai" className="lg:col-span-1 flex flex-col items-center justify-center text-center">
-                <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">
+                <div className="ds-eyebrow flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-4">
                     <Brain className="w-4 h-4" />
                     Health Score
                 </div>
@@ -366,7 +366,7 @@ function OverviewGrid({ data }) {
 
             {/* TL;DR */}
             <InsightCard className="lg:col-span-2">
-                <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                <h3 className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-2">
                     TL;DR Summary
                 </h3>
                 <div className="relative">
@@ -390,7 +390,7 @@ function OverviewGrid({ data }) {
             {/* Highlights */}
             {hasHighlights && (
                 <InsightCard tone="success" className="lg:col-span-3">
-                    <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
+                    <h3 className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-3">
                         Highlights
                     </h3>
                     <div className="grid sm:grid-cols-2 gap-2">
@@ -407,7 +407,7 @@ function OverviewGrid({ data }) {
             {/* Topics */}
             {hasTopics && (
                 <InsightCard tone="info" className="lg:col-span-3">
-                    <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
+                    <h3 className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-3">
                         Suggested Topics
                     </h3>
                     <div className="flex flex-wrap gap-2">
@@ -455,7 +455,7 @@ function QualityGrid({ data }) {
             {/* Quality Breakdown */}
             {hasBreakdown && (
                 <InsightCard className="lg:col-span-1">
-                    <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">
+                    <h3 className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-4">
                         Quality Breakdown
                     </h3>
                     <div className="space-y-3">
@@ -475,7 +475,7 @@ function QualityGrid({ data }) {
             {/* Detected Features */}
             {hasFeatures && (
                 <InsightCard className="lg:col-span-1">
-                    <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">
+                    <h3 className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-4">
                         Detected Features
                     </h3>
                     <div className="grid grid-cols-2 gap-x-3 gap-y-2 max-h-[240px] overflow-y-auto ds-scrollbar pr-1">
@@ -501,7 +501,7 @@ function QualityGrid({ data }) {
             {/* Recommendations */}
             {hasImprovements && (
                 <InsightCard tone="warning" className="lg:col-span-2">
-                    <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">
+                    <h3 className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-3">
                         Recommendations
                     </h3>
                     <div className="grid md:grid-cols-2 gap-2">
@@ -658,7 +658,7 @@ function SuggestionsGrid({ data, loading, error, onRetry }) {
                             <Wand2 className="w-5 h-5 text-brand-500 dark:text-brand-300" />
                         </div>
                         <div className="min-w-0">
-                            <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                            <h3 className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-1">
                                 AI Analysis
                             </h3>
                             <p className="text-slate-700 dark:text-slate-200 text-sm leading-relaxed break-words">
@@ -691,7 +691,7 @@ function SuggestionsGrid({ data, loading, error, onRetry }) {
                                                     {s.title}
                                                 </h4>
                                                 <span
-                                                    className={`ds-text-micro font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded ${style.badgeBg}`}
+                                                    className={`ds-eyebrow px-1.5 py-0.5 rounded ${style.badgeBg}`}
                                                 >
                                                     {label}
                                                 </span>

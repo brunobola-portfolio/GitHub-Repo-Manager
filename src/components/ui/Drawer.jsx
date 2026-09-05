@@ -78,7 +78,7 @@ export function Drawer({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={reduced ? REDUCED_TRANSITION : { duration: 0.12 }}
+                        transition={reduced ? REDUCED_TRANSITION : { duration: DURATION.fast }}
                         className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-[var(--ds-z-modal)] ${mobileOnly ? 'xl:hidden' : ''}`}
                         onClick={closeOnBackdrop ? onClose : undefined}
                         aria-hidden="true"

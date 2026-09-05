@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { EASE } from '../ui/motion'
+import { EASE, DURATION } from '../ui/motion'
 import { Sparkles, MessageCircle, ArrowRight, X } from 'lucide-react'
 import { useAIPromoVisibility } from '../../hooks/useAIPromoVisibility'
 import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
@@ -59,7 +59,7 @@ export function AIPromoStrip({ repos, licenseTier = 'free', onOpenInsights }) {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3, ease: EASE.emphasized }}
+                transition={{ duration: DURATION.slow, ease: EASE.emphasized }}
                 className="overflow-hidden"
             >
                 <div className="relative flex flex-col sm:flex-row sm:items-center gap-3 px-5 py-3 bg-brand-50 dark:bg-brand-950/20 border border-brand-200/60 dark:border-brand-800/40 rounded-2xl">
@@ -84,7 +84,7 @@ export function AIPromoStrip({ repos, licenseTier = 'free', onOpenInsights }) {
                         <button
                             type="button"
                             onClick={handleAssistant}
-                            className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:border-brand-300 dark:hover:border-brand-500/40 transition-colors whitespace-nowrap"
+                            className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold bg-white dark:bg-white/10 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-200 hover:border-brand-300 dark:hover:border-brand-500/40 transition-colors whitespace-nowrap ds-focus-ring"
                         >
                             <MessageCircle className="w-3.5 h-3.5" />
                             <span className="sm:hidden">Assistant</span>
@@ -93,7 +93,7 @@ export function AIPromoStrip({ repos, licenseTier = 'free', onOpenInsights }) {
                         <button
                             type="button"
                             onClick={handleInsights}
-                            className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold ds-brand-solid transition-colors whitespace-nowrap"
+                            className="inline-flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold ds-brand-solid transition-colors whitespace-nowrap ds-focus-ring"
                         >
                             <span className="sm:hidden">Insights</span>
                             <span className="hidden sm:inline">Get Insights</span>

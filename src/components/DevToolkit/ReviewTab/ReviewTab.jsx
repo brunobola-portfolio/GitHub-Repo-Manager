@@ -160,7 +160,7 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
 
                     {summary && (
                         <div className="space-y-3">
-                            <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Ask about this PR</h4>
+                            <h4 className="ds-eyebrow text-slate-500 dark:text-slate-400">Ask about this PR</h4>
                             {qaResponses.length > 0 && (
                                 <div className="max-h-48 overflow-y-auto ds-scrollbar space-y-2">
                                     {qaResponses.map((msg, i) => (

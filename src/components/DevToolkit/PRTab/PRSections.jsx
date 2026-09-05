@@ -61,7 +61,7 @@ export function PRSections({ sections, onSectionChange, onRefine, refiningSectio
             )}
 
             <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-2">
-                <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">Labels</span>
+                <span className="ds-eyebrow text-slate-600 dark:text-slate-300">Labels</span>
                 <LabelPills
                     labels={labels}
                     onRemove={(l) => onLabelsChange(labels.filter(x => x !== l))}
@@ -70,7 +70,7 @@ export function PRSections({ sections, onSectionChange, onRefine, refiningSectio
             </div>
 
             <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 space-y-2">
-                <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wide">Reviewers</span>
+                <span className="ds-eyebrow text-slate-600 dark:text-slate-300">Reviewers</span>
                 <ReviewerPills
                     reviewers={reviewers}
                     onRemove={(r) => onReviewersChange(reviewers.filter(x => x !== r))}

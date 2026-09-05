@@ -23,7 +23,7 @@ export function StaleDataBadge({ fetchedAt, onRetry, className = '' }) {
                 <button
                     type="button"
                     onClick={onRetry}
-                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
+                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors ds-focus-ring"
                     aria-label="Retry"
                 >
                     <RefreshCw className="w-3 h-3" />

@@ -9,7 +9,7 @@ import { Heading } from './Heading'
  * primitive consolidates them so every "page-level title" looks the same.
  *
  * Pattern:
- *   - Optional eyebrow (uppercase tracking-wide indigo) above the title for
+ *   - Optional eyebrow (`.ds-eyebrow`, brand colour) above the title for
  *     editorial framing — already used by AIConfigSection / WorkBoard.
  *   - H1 with display font + responsive size (2xl on mobile, 4xl on lg).
  *   - Optional description paragraph below.
@@ -34,7 +34,7 @@ export function PageHeader({
         <header className={`flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6 ${className}`.trim()}>
             <div className={`min-w-0 ${align === 'center' ? 'text-center mx-auto' : ''}`}>
                 {(eyebrow || Icon) && (
-                    <div className={`flex items-center gap-2 ds-text-micro font-semibold uppercase tracking-[0.22em] text-[color:var(--ds-accent-brand)] dark:text-brand-300 ${align === 'center' ? 'justify-center' : ''}`}>
+                    <div className={`ds-eyebrow flex items-center gap-2 text-[color:var(--ds-accent-brand)] dark:text-brand-300 ${align === 'center' ? 'justify-center' : ''}`}>
                         {Icon && <Icon className="w-3 h-3" aria-hidden="true" />}
                         {eyebrow && <span>{eyebrow}</span>}
                     </div>

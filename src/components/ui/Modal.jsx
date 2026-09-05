@@ -6,7 +6,7 @@ import { useMobileKeyboardFix } from '../../hooks/useMobileKeyboardFix'
 import { TabBar } from './TabBar'
 import { CloseButton } from './CloseButton'
 import { HEADER_CLASS, MODAL_BACKDROP_CLASS, resolveIconTileClass } from './_variants'
-import { SPRING } from './motion'
+import { SPRING, DURATION } from './motion'
 
 // Per non-LLM theme (docs/specs/2026-05-14-premium-non-llm-theme-design.md),
 // modal headers are GitHub-utilitarian: neutral surface, dark text, border-b.
@@ -138,7 +138,7 @@ export function Modal({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
+                        transition={{ duration: DURATION.standard }}
                         onClick={handleBackdropClick}
                         className={`${MODAL_BACKDROP_CLASS} flex justify-center md:items-center md:p-4 ${isSheet ? 'items-end p-0 short:items-center short:p-4' : 'items-center max-md:p-4'}`}
                     >
@@ -159,7 +159,7 @@ export function Modal({
                             initial={reducedMotion ? { opacity: 0 } : (isSheet ? { opacity: 0, y: '4%' } : { opacity: 0, scale: 0.98, y: 24 })}
                             animate={reducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
                             exit={reducedMotion ? { opacity: 0 } : (isSheet ? { opacity: 0, y: '4%' } : { opacity: 0, scale: 0.98, y: 24 })}
-                            transition={reducedMotion ? { duration: 0.15 } : SPRING.panel}
+                            transition={reducedMotion ? { duration: DURATION.fast } : SPRING.panel}
                             onClick={(e) => e.stopPropagation()}
                             className={`
                                 ${sizeClass}

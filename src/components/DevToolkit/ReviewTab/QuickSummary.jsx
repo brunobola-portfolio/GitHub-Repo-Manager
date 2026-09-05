@@ -48,7 +48,7 @@ export function QuickSummary({ summary, loading, error, onRetry }) {
 
             {summary.keyChanges?.length > 0 && (
                 <div>
-                    <h4 className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wide">Key Changes</h4>
+                    <h4 className="ds-eyebrow text-slate-600 dark:text-slate-400 mb-1.5">Key Changes</h4>
                     <ul className="space-y-1">
                         {summary.keyChanges.map((change, i) => (
                             <li key={i} className="text-xs text-slate-600 dark:text-slate-300 flex items-start gap-1.5">
@@ -62,7 +62,7 @@ export function QuickSummary({ summary, loading, error, onRetry }) {
 
             {summary.fileRisks?.length > 0 && (
                 <div>
-                    <h4 className="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wide">High-Risk Files</h4>
+                    <h4 className="ds-eyebrow text-slate-600 dark:text-slate-400 mb-1.5">High-Risk Files</h4>
                     <div className="space-y-1">
                         {summary.fileRisks.slice(0, 5).map((file, i) => (
                             <div key={i} className="flex items-center gap-2 text-xs">

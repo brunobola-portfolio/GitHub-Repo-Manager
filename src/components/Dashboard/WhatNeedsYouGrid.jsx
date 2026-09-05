@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { EASE } from '../ui/motion'
+import { EASE, DURATION } from '../ui/motion'
 import { GitPullRequest, Clock, CircleDot, Sparkles, ArrowRight, ArrowUp, ArrowDown, AlertCircle } from 'lucide-react'
 import { useYourWork } from '../../hooks/useYourWork'
 import { Skeleton } from '../ui/Skeleton'
@@ -81,7 +81,7 @@ function CategoryCard({ category, data, onClick }) {
             <div className={`w-8 h-8 rounded-lg ${tone.iconBg} flex items-center justify-center`}>
                 <Icon className={`w-4 h-4 ${tone.iconColor}`} />
             </div>
-            <div className="ds-text-micro font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+            <div className="ds-eyebrow text-slate-500 dark:text-slate-400">
                 {category.label}
             </div>
             <div className="flex items-end justify-between gap-2">
@@ -124,7 +124,7 @@ function EmptyState({ onOpenWorkBoard }) {
             role="status"
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4, ease: EASE.emphasized }}
+            transition={{ duration: DURATION.reveal, ease: EASE.emphasized }}
             className="col-span-2 sm:col-span-3 flex flex-col items-center text-center gap-2 py-5 px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl"
         >
             <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
@@ -153,7 +153,7 @@ function CouldNotCheck({ onRetry }) {
             role="status"
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4, ease: EASE.emphasized }}
+            transition={{ duration: DURATION.reveal, ease: EASE.emphasized }}
             className="col-span-2 sm:col-span-3 flex flex-col items-center text-center gap-2 py-5 px-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl"
         >
             <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">

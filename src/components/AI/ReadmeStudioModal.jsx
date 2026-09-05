@@ -279,7 +279,7 @@ export function ReadmeStudioModal({ isOpen, onClose, repo, onApplied }) {
 
                 {report.recommendations?.length > 0 && (
                     <div>
-                        <h4 className="ds-text-meta uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mb-2">
+                        <h4 className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-2">
                             Recommendations
                         </h4>
                         <ul className="space-y-1.5">
@@ -368,7 +368,7 @@ export function ReadmeStudioModal({ isOpen, onClose, repo, onApplied }) {
                 </div>
 
                 <div>
-                    <h4 className="ds-text-meta uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mb-2">
+                    <h4 className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-2">
                         Optional sections
                     </h4>
                     <div className="flex flex-wrap gap-2">

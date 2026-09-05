@@ -27,7 +27,7 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 import { Heading } from './Heading'
 import { CloseButton } from './CloseButton'
-import { SPRING } from './motion'
+import { SPRING, DURATION } from './motion'
 
 export function ViewErrorFallback({
   viewName = 'this view',
@@ -118,7 +118,7 @@ export function ViewErrorFallback({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.18 }}
+          transition={{ duration: DURATION.standard }}
           onClick={(e) => {
             if (e.target === e.currentTarget) handleGoHome()
           }}
@@ -131,7 +131,7 @@ export function ViewErrorFallback({
             initial={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 16 }}
             animate={reducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
             exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 16 }}
-            transition={reducedMotion ? { duration: 0.15 } : SPRING.panel}
+            transition={reducedMotion ? { duration: DURATION.fast } : SPRING.panel}
             onClick={(e) => e.stopPropagation()}
             className="relative max-w-md w-full bg-white dark:bg-slate-900 rounded-2xl shadow-lg ring-1 ring-slate-200/60 dark:ring-slate-700/60 p-7 overflow-hidden"
           >

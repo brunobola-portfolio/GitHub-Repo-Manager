@@ -35,6 +35,7 @@ import {
     retryWebhookEntry,
     resolveWebhookEntry,
 } from '../../api/admin-dlq'
+import { DURATION } from '../ui/motion'
 
 const TABS = [
     { id: 'email', label: 'Email DLQ', icon: Mail },
@@ -162,7 +163,7 @@ export function AdminDLQPage() {
         <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: DURATION.standard }}
             className="space-y-5"
         >
             <PageHeader

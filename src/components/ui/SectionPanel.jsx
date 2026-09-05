@@ -16,7 +16,7 @@ import { TRANSITION } from './motion'
  * the content region carries `id` + `role="region"`.
  *
  * Props:
- *  - eyebrow?: string         uppercase tracking-[0.2em] indigo label above title
+ *  - eyebrow?: string         `.ds-eyebrow` label above title, in brand colour
  *  - title:    string|node    section title (rendered as h3)
  *  - subtitle? string|node    one-liner under the title
  *  - icon?:    lucide icon    left-aligned 36px gradient tile
@@ -58,7 +58,7 @@ export function SectionPanel({
             ) : null}
             <div className="flex-1 min-w-0">
                 {eyebrow ? (
-                    <div className="ds-text-micro uppercase tracking-[0.2em] text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] font-semibold mb-0.5">
+                    <div className="ds-eyebrow text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] mb-0.5">
                         {eyebrow}
                     </div>
                 ) : null}

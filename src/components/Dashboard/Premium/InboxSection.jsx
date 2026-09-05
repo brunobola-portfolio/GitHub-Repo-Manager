@@ -9,6 +9,7 @@ export function InboxSection({ label, count = 0, active = false, onClick }) {
                 active
                     ? 'bg-brand-500/10 text-slate-900 dark:text-slate-50 font-medium'
                     : 'opacity-70 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900/40',
+                'ds-focus-ring',
             ].join(' ')}
         >
             <span className="truncate">{label}</span>

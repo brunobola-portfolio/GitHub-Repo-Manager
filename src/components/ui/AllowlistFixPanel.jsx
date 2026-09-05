@@ -88,7 +88,7 @@ export default function AllowlistFixPanel({
         <span className="text-sm font-semibold text-amber-800 dark:text-amber-200">
           Server not authorized by the backend
         </span>
-        <span className="ml-auto ds-text-micro uppercase tracking-wider text-amber-700 dark:text-amber-400 font-semibold">
+        <span className="ds-eyebrow ml-auto text-amber-700 dark:text-amber-400">
           {canEdit ? 'fixable in 1 click' : 'ask your admin'}
         </span>
       </div>
@@ -166,7 +166,7 @@ function AdminQuickFix({ host, adding, error, onAdd, envLine, patternsKnown, env
           type="button"
           onClick={onAdd}
           disabled={adding}
-          className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors shadow-sm"
+          className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors shadow-sm ds-focus-ring"
         >
           {adding
             ? <><SpinnerIcon className="w-3.5 h-3.5" /> Adding…</>
@@ -256,7 +256,7 @@ function EnvSnippet({ envLine, host, patternsKnown, envCopied, onEnvCopy }) {
         <button
           type="button"
           onClick={onEnvCopy}
-          className="px-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-colors"
+          className="px-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-colors ds-focus-ring"
           aria-label={patternsKnown ? 'Copy line' : 'Copy host'}
         >
           <AnimatedCopyIcon copied={envCopied} size="w-3.5 h-3.5" checkClassName="text-emerald-500" />

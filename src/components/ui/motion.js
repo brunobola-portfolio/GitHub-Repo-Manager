@@ -24,6 +24,13 @@ export const DURATION = {
   fast: 0.12, //    --ds-duration-fast
   standard: 0.2, //  --ds-duration (default for most micro-interactions)
   slow: 0.32, //    --ds-duration-slow
+  // The three below have no --ds-duration-* CSS counterpart (nothing in plain
+  // CSS transitions needed them) — added to consolidate 168 hardcoded Framer
+  // durations across 28 distinct values (2026-09-04 panel, F13). Each call
+  // site's original value maps onto whichever of these sits closest to it.
+  reveal: 0.4, //   single-element content reveal, slower than a state change
+  gentle: 0.5, //   medium multi-step reveal (between reveal and ambient)
+  ambient: 0.6, //  the slowest one-shot UI reveal (large panels, hero content)
 }
 
 // Easing curves — the two the codebase already standardized on, named once.

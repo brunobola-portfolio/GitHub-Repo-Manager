@@ -15,7 +15,7 @@ function OrgList({ orgs, selectedOrg, onSelect }) {
                     !selectedOrg
                         ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300'
                         : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
-                }`}
+                } ds-focus-ring`}
             >
                 <div className="w-8 h-8 rounded-lg bg-brand-100 dark:bg-brand-900/40 flex items-center justify-center text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">
                     <Building2 size={16} strokeWidth={2.5} />
@@ -33,7 +33,7 @@ function OrgList({ orgs, selectedOrg, onSelect }) {
                         selectedOrg === org.login
                             ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300'
                             : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300'
-                    }`}
+                    } ds-focus-ring`}
                 >
                     <img src={org.avatar_url} alt={org.login} loading="lazy" decoding="async" className="w-8 h-8 rounded-lg" />
                     <span className="font-semibold flex-1 truncate">{org.login}</span>

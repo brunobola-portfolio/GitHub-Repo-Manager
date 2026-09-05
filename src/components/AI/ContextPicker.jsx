@@ -47,7 +47,7 @@ export function ContextPicker({
             <button
                 type="button"
                 onClick={() => setOpen((v) => !v)}
-                className="w-full flex items-center justify-between gap-2 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200"
+                className="w-full flex items-center justify-between gap-2 px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 ds-focus-ring rounded"
                 aria-expanded={open}
             >
                 <span className="inline-flex items-center gap-1.5">

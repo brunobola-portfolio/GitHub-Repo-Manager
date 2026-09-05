@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { motion } from 'framer-motion'
-import { EASE } from '../ui/motion'
+import { EASE, DURATION } from '../ui/motion'
 import { ArrowUpRight } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Skeleton } from '../ui/Skeleton'
@@ -49,7 +49,7 @@ export const StatCard = memo(function StatCard({
 
     return (
         <motion.div
-            transition={{ duration: 0.2, ease: EASE.standard }}
+            transition={{ duration: DURATION.standard, ease: EASE.standard }}
             /* h-full both here and on the Card: the grid stretches this
                wrapper, but a Card that sizes to its own content leaves the
                shorter tiles floating with a gap under them. One card whose
@@ -66,12 +66,12 @@ export const StatCard = memo(function StatCard({
             <Card className="h-full flex flex-col p-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all duration-[var(--ds-duration)] border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 group">
                 <div className="flex flex-1 items-start justify-between">
                     <div className="flex-1">
-                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide ds-font-display">
+                        <p className="ds-eyebrow text-slate-500 dark:text-slate-400 ds-font-display">
                             {title}
                         </p>
                         <motion.h3
                             className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mt-2 ds-font-mono"
-                            transition={{ duration: 0.2, ease: EASE.standard }}
+                            transition={{ duration: DURATION.standard, ease: EASE.standard }}
                         >
                             {isNumeric ? (
                                 <CountUp value={value} format={formatFn} />

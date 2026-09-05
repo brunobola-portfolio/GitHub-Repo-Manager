@@ -18,7 +18,7 @@ function SourceBadge({ source }) {
     if (!source) return null
     const isAI = source === 'ai'
     return (
-        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-semibold uppercase tracking-wider ${
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-eyebrow ${
             isAI
                 ? 'bg-brand-500/20 text-[color:var(--ds-accent-brand)] dark:text-brand-300 border border-brand-500/30'
                 : 'bg-slate-500/15 text-slate-600 dark:text-slate-300 border border-slate-500/20'
@@ -75,7 +75,7 @@ function FieldCard({
         return (
             <InsightCard hover={false}>
                 <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{label}</h3>
+                    <h3 className="ds-eyebrow text-slate-500 dark:text-slate-400">{label}</h3>
                     <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
                         <Checkbox
                             checked={useField}
@@ -100,7 +100,7 @@ function FieldCard({
     return (
         <InsightCard hover={false}>
             <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{label}</h3>
+                <h3 className="ds-eyebrow text-slate-500 dark:text-slate-400">{label}</h3>
                 <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
                     <Checkbox
                         checked={useField}
@@ -112,14 +112,14 @@ function FieldCard({
             </div>
             <div className="grid sm:grid-cols-2 gap-3">
                 <div>
-                    <p className="ds-text-meta uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Current</p>
+                    <p className="ds-eyebrow text-slate-500 dark:text-slate-400 mb-1">Current</p>
                     <p className={`text-sm break-words ${emptyCurrent ? 'italic text-slate-400' : 'text-slate-700 dark:text-slate-200'}`}>
                         {emptyCurrent ? '(no description set)' : currentValue}
                     </p>
                 </div>
                 <div>
                     <div className="flex items-center justify-between mb-1">
-                        <p className="ds-text-meta uppercase tracking-wider text-brand-500">Proposed</p>
+                        <p className="ds-eyebrow text-brand-500">Proposed</p>
                         <button
                             type="button"
                             onClick={onRestore}

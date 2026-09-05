@@ -16,7 +16,7 @@ export function CreatePRConfirm({ action = 'create', onConfirm, onCancel, loadin
         >
             <span className="text-xs text-slate-600 dark:text-slate-300">{cfg.title}</span>
             <Button type="button" variant="ghost" size="xs" onClick={onCancel} disabled={loading}>Cancel</Button>
-            <button type="button" onClick={onConfirm} disabled={loading} className={`px-3 py-1 text-xs font-medium rounded-md text-white ${cfg.color} disabled:opacity-50`}>
+            <button type="button" onClick={onConfirm} disabled={loading} className={`px-3 py-1 text-xs font-medium rounded-md text-white ${cfg.color} disabled:opacity-50 ds-focus-ring`}>
                 {loading ? 'Working...' : cfg.btn}
             </button>
         </motion.div>

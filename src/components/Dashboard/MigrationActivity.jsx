@@ -144,7 +144,7 @@ export function MigrationActivity({ loading: parentLoading }) {
 
       {/* Recent migrations list */}
       <div className="space-y-2">
-        <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+        <h4 className="ds-eyebrow text-slate-500 dark:text-slate-400">
           Recent Activity
         </h4>
         <div className="space-y-1.5">
@@ -172,7 +172,7 @@ export function MigrationActivity({ loading: parentLoading }) {
                       {job.sourceName}
                     </span>
                     {isTfvc && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-900/20 text-amber-400 font-bold uppercase tracking-wider shrink-0">TFVC</span>
+                      <span className="ds-eyebrow px-1.5 py-0.5 rounded bg-amber-900/20 text-amber-400 shrink-0">TFVC</span>
                     )}
                   </div>
                   <div className="flex items-center gap-2 ds-text-meta text-slate-500 dark:text-slate-400 mt-0.5">

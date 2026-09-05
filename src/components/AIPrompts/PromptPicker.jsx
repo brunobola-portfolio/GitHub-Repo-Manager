@@ -73,7 +73,7 @@ export function PromptPicker({ presets, activeKey, onChange, disabled }) {
                 type="button"
                 onClick={() => setOpen((o) => !o)}
                 disabled={disabled}
-                className="px-2 py-1 rounded border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60"
+                className="px-2 py-1 rounded border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-60 ds-focus-ring"
                 aria-haspopup="listbox"
                 aria-expanded={open}
                 aria-controls={listboxId}
@@ -106,8 +106,8 @@ export function PromptPicker({ presets, activeKey, onChange, disabled }) {
                         >
                             <div className="flex items-center gap-2">
                                 <span className="flex-1 truncate">{p.name}</span>
-                                {p.builtin ? <span className="ds-text-micro uppercase tracking-wide opacity-50">built-in</span> : null}
-                                {p.isDefault ? <span className="ds-text-micro uppercase tracking-wide text-emerald-700">default</span> : null}
+                                {p.builtin ? <span className="ds-eyebrow opacity-50">built-in</span> : null}
+                                {p.isDefault ? <span className="ds-eyebrow text-emerald-700">default</span> : null}
                             </div>
                             {p.severityFloor ? (
                                 <div className="ds-text-micro opacity-60 mt-0.5">≥ {p.severityFloor}</div>

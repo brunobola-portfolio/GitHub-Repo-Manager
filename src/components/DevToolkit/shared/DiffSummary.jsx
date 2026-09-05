@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronRight, FileCode } from 'lucide-react'
+import { DURATION } from '../../ui/motion'
 
 export function DiffSummary({ files = [], summary, loading }) {
     const [expandedFile, setExpandedFile] = useState(null)
@@ -35,7 +36,7 @@ export function DiffSummary({ files = [], summary, loading }) {
                         <button
                             type="button"
                             onClick={() => setExpandedFile(expandedFile === file.filename ? null : file.filename)}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors ds-focus-ring rounded"
                         >
                             <ChevronRight className={`w-3 h-3 text-slate-400 transition-transform ${expandedFile === file.filename ? 'rotate-90' : ''}`} />
                             <FileCode className="w-3 h-3 text-slate-400 shrink-0" />
@@ -49,7 +50,7 @@ export function DiffSummary({ files = [], summary, loading }) {
                                     initial={{ height: 0, opacity: 0 }}
                                     animate={{ height: 'auto', opacity: 1 }}
                                     exit={{ height: 0, opacity: 0 }}
-                                    transition={{ duration: 0.2 }}
+                                    transition={{ duration: DURATION.standard }}
                                     className="overflow-hidden"
                                 >
                                     <pre className="px-4 py-2 ds-text-meta font-mono bg-slate-900 dark:bg-slate-950 text-slate-300 overflow-x-auto max-h-40">{file.patch}</pre>
