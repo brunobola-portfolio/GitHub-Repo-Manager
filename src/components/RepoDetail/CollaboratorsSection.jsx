@@ -7,6 +7,7 @@ import { Field, Input } from '../ui/form'
 import { Select } from '../ui/Select'
 import { reposApi } from '../../api/repos'
 import { useToast } from '../../hooks/useToast'
+import { TabLoadError } from './TabLoadError'
 import { Users, Trash2, Plus, ShieldCheck } from 'lucide-react'
 
 const PERMISSION_OPTIONS = [
@@ -40,15 +41,24 @@ export function CollaboratorsSection({ owner, repo, archived }) {
     const [adding, setAdding] = useState(false)
     const [removingId, setRemovingId] = useState(null)
     const [confirmRemove, setConfirmRemove] = useState(null)
+    // 401/403 on load renders inline (sign-in / permission), never a toast:
+    // the toast outlived the tab and read as "session expired" in the demo.
+    const [loadError, setLoadError] = useState(null)
 
     const load = async () => {
         setLoading(true)
+        setLoadError(null)
         try {
             const list = await reposApi.listCollaborators(owner, repo)
             setCollaborators(Array.isArray(list) ? list : [])
             setLoaded(true)
         } catch (err) {
-            toast.errorFromException(err, { fallbackTitle: "Couldn't load collaborators" })
+            if (err?.status === 401 || err?.status === 403) {
+                setLoadError(err)
+                setLoaded(true)
+            } else {
+                toast.errorFromException(err, { fallbackTitle: "Couldn't load collaborators" })
+            }
         } finally {
             setLoading(false)
         }
@@ -153,6 +163,8 @@ export function CollaboratorsSection({ owner, repo, archived }) {
 
             {loading && !loaded ? (
                 <div className="py-6 flex justify-center"><Spinner /></div>
+            ) : loadError ? (
+                <TabLoadError error={loadError} onRetry={load} resourceLabel="collaborators" />
             ) : collaborators.length === 0 ? (
                 <p className="text-sm text-slate-500 dark:text-slate-400 italic py-2">No direct collaborators. Org/team members may still have access via team assignments.</p>
             ) : (

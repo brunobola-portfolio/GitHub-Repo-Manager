@@ -5,6 +5,7 @@ import { Spinner } from '../ui/Spinner'
 import { ConfirmModal } from '../ui/ConfirmModal'
 import { Shield, ShieldOff, Save, Undo2, Sparkles, ExternalLink } from 'lucide-react'
 import { useToast } from '../../hooks/useToast'
+import { TabLoadError } from './TabLoadError'
 import { Input, Checkbox } from '../ui/form'
 
 // Reasonable defaults applied when the user enables protection from scratch.
@@ -74,12 +75,15 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
     // Renders a quiet "admin access required" affordance instead of a
     // generic error toast for what is an expected, structural state.
     const [permissionDenied, setPermissionDenied] = useState(false)
+    // 401/403 without a structured code: render inline, never toast.
+    const [authError, setAuthError] = useState(null)
 
     const load = async () => {
         if (!branch) return
         setLoading(true)
         setUpgradeRequired(false)
         setPermissionDenied(false)
+        setAuthError(null)
         try {
             const data = await api.fetchBranchProtection(branch)
             const initial = rulesFromProtection(data)
@@ -95,6 +99,10 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
             // serves the 403 without the structured code yet.
             if (err?.code === 'INSUFFICIENT_PERMISSIONS' || (err?.status === 403 && !err?.code)) {
                 setPermissionDenied(true)
+                return
+            }
+            if (err?.status === 401) {
+                setAuthError(err)
                 return
             }
             toast.errorFromException(err, { fallbackTitle: "Couldn't load branch protection" })
@@ -161,6 +169,13 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
                 </a>
             )
         }
+        if (authError) {
+            return (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-medium bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-800/50">
+                    Sign in to view
+                </span>
+            )
+        }
         if (permissionDenied) {
             return (
                 <span
@@ -202,6 +217,8 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
 
             {loading ? (
                 <div className="py-6 flex justify-center"><Spinner /></div>
+            ) : authError ? (
+                <TabLoadError error={authError} onRetry={load} resourceLabel="branch protection" />
             ) : upgradeRequired ? (
                 <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-5 text-center">
                     <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 ds-elevation-sm mb-3">
