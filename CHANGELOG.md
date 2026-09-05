@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`g`-chord navigation and `j`/`k` row navigation.** `g` then
   `d`/`r`/`w`/`t`/`p` jumps to Dashboard / Repositories / Work Board /
   Teams / Pricing from anywhere; the Dev Toolkit shortcut moved to the
-  backtick (`` ` ``) to make room. `j`/`k`/`Enter` row navigation, until
+  backtick key to make room. `j`/`k`/`Enter` row navigation, until
   now Work-Board-only, works on the repository grid/list and the Live
   Inbox too. The four separate keyboard-help overlays are one
   registry-driven dialog now, rendered from `src/config/keyboardShortcuts.js`.
