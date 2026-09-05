@@ -155,8 +155,15 @@ tests passed. Full Playwright suite including the widened axe gate (hover,
 375 px project, overlays): see the line below. Visual walk of the new
 surfaces: see the line below.
 
-- Playwright: (filled in after the run)
-- Visual walk: (filled in after the run)
+- Playwright, full suite incl. the widened axe gate (two projects, mock stack, backend on :3006): 134 passed, 59 skipped by design (each mobile/desktop body skips on the other project), 1 flake in bulk-actions under four workers that passes 7/7 alone.
+- Visual walk (32 screenshots, desktop + mobile, light + dark): `g w`,
+  `g r`, `g t` land on the right hash in all four; `j j` moves focus to the
+  second repository card; the Presets control is on the repositories filter
+  bar; the audit page renders its heading; the palette closes on Escape. One
+  real defect surfaced and was fixed with a test: `parseApiError` threw an
+  unhandled rejection on a 429 whose response carried no `Headers` instance.
+  The 429s themselves were the demo's auth limiter tripped by the walk
+  re-signing in on every navigation.
 
 ## Still open
 
