@@ -289,6 +289,55 @@ dev-only markers. Two gaps closed: helmet 8 no longer sets
 (added). The lockfile was regenerated inside node:22 on Linux after dropping
 the two shiki packages that shipped zero bytes; `npm ci` installs it.
 
+## Fifth pass (2026-09-05, evening): the cheap panel
+
+Six read-only lenses on the committed tree (copy, security, release,
+frontend rules, docs honesty, backend robustness — Haiku for the mechanical
+sweeps, Sonnet where judgement was needed), plus lint, the full unit suite
+and a walk of the mock app at 1440 and 375 px in both themes. Baseline:
+lint clean, 7631 tests green with no unhandled-rejection line, no console
+errors on any view except the intended 401 on collaborators in demo mode.
+
+**Security, docs and release lenses returned no blocker or major.** All
+eleven security invariants verified with the proving file (metering,
+scope parity, parameterised SQL, `commitOrOpenPR`, auth mounting, cookie
+flags and CSRF, no tracked secrets, CSP/CORS/trust-proxy, timing-safe
+webhook HMAC, traversal/SSRF guards); `npm audit --omit=dev` has one
+moderate transitive `qs` advisory and nothing above it. Version strings,
+workflows, Dockerfile, env parity, LICENSE and README commands all
+consistent. README pricing claims match `TIER_FEATURES` cell for cell.
+
+**What the walk found that the lenses did not.** Inline code in every
+README and AI answer rendered with literal backticks: Tailwind Typography
+adds them through `code::before` and `code::after` by default. Fixed with
+one scoped rule in `src/index.css`, verified in the browser. The README
+`code` renderer also spread react-markdown's `node` prop onto the DOM.
+
+**Fixed in this pass** (`src/`, `server/`, changelog):
+
+- `EmptyState` description and four Health-tab spans used the inverted
+  muted pair (2.56:1 on white); swapped to the AA-safe pair.
+- The two emoji left in UI copy are a `Lock` icon and a plain "Tip:".
+- The command-palette search field shows a focus state.
+- `GET /api/keys` carries a defensive `LIMIT 200` like the audit and
+  DLQ lists; an `uncaughtException` handler routes through the single-fire
+  shutdown path instead of Node's abrupt exit.
+- The Unreleased changelog gained the entries the last commits had not
+  written (Permissions-Policy, shiki removal, inline 401s, and today's).
+
+**Triaged, not fixed.** The monthly AI spend cap is check-then-record
+(`checkAISpendCap` before the provider call, `recordAISpend` after), so
+parallel requests from one user can overshoot the cap by a few calls. It
+only applies when the operator's key is billed, the AI limiter bounds the
+burst, and the quota counters already have the atomic `guardedIncrement`
+pattern to copy — worth a `reserveSpend/settleSpend` pair, not worth a
+same-day change without its own tests. Webhooks share the generic API
+limiter (signature-gated, fine until org-scale traffic). Missing GitHub
+OAuth credentials warn rather than fail in production (API-key auth is a
+second path). "Coming soon" on SSO/SAML stays: it is honest and the
+pricing gate enforces it. "Repos" in the phone tab bar is a deliberate
+short label.
+
 ## Still open
 
 1. **Sign the Windows installer** (Authenticode). Needs a code-signing
@@ -296,12 +345,17 @@ the two shiki packages that shipped zero bytes; `npm ci` installs it.
    `windows-package.yml`. Effort M; the one item a buyer will notice.
 2. **Automate the release bump and changelog** (a changesets-style script)
    so the manual steps in the runbook cannot be skipped. Effort S.
-3. **Raw `fetch()`, the last 39** — documented exceptions; the AI client
+3. **Atomic AI spend cap** — a `reserveSpend/settleSpend` pair mirroring
+   `guardedIncrement`, with a concurrency test. Effort S–M.
+4. **`qs` moderate advisory** — bump the parent package; the lockfile must
+   be regenerated inside node:22 on Linux (Docker), never on Windows.
+5. **Raw `fetch()`, the last 39** — documented exceptions; the AI client
    (`src/api/ai.js`) is the one worth a dedicated migration. `/api`
    literals: 66 remain, ratcheted.
-4. **Larger refactors.** Four data-loading layers coexist (FE-08); 159
-   `eslint-disable` escapes on the hooks rules (FE-17).
-5. **Not built, by choice.** A contribution heatmap (G11); PR stacking
+6. **Larger refactors.** Four data-loading layers coexist (FE-08); 159
+   `eslint-disable` escapes on the hooks rules (FE-17). A dedicated
+   webhook rate-limit bucket before org-scale traffic.
+7. **Not built, by choice.** A contribution heatmap (G11); PR stacking
    (GitHub ships it natively).
-6. **Environment.** Windows reserves ports 2906–3005 on the development
+8. **Environment.** Windows reserves ports 2906–3005 on the development
    machine; everything here runs with `PORT=3006`.

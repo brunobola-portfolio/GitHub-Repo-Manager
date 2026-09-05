@@ -303,3 +303,10 @@
 		padding-right: var(--safe-area-inset-right);
 	}
 }
+/* Tailwind Typography wraps inline code in literal backticks via
+ * `code::before`/`code::after`. GitHub does not, and the monospace slab is
+ * already the signal — so READMEs and AI answers were showing `like this`. */
+.prose :where(code):not(:where([class~="not-prose"], [class~="not-prose"] *))::before,
+.prose :where(code):not(:where([class~="not-prose"], [class~="not-prose"] *))::after {
+  content: none;
+}

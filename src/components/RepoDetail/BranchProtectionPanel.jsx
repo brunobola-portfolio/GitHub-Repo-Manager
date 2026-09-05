@@ -3,7 +3,7 @@ import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { Spinner } from '../ui/Spinner'
 import { ConfirmModal } from '../ui/ConfirmModal'
-import { Shield, ShieldOff, Save, Undo2, Sparkles, ExternalLink } from 'lucide-react'
+import { Shield, ShieldOff, Save, Undo2, Sparkles, ExternalLink, Lock } from 'lucide-react'
 import { useToast } from '../../hooks/useToast'
 import { TabLoadError } from './TabLoadError'
 import { Input, Checkbox } from '../ui/form'
@@ -181,7 +181,8 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
                 <span
                     title="You need admin access on this repository to view or change branch protection rules."
                     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ds-text-micro font-medium bg-slate-100 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/40">
-                    🔒 admin only
+                    <Lock className="w-3 h-3" aria-hidden="true" />
+                    admin only
                 </span>
             )
         }

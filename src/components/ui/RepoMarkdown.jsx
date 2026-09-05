@@ -271,7 +271,7 @@ const README_COMPONENTS = {
         // eslint-disable-next-line jsx-a11y/anchor-has-content -- children come from react-markdown
         <a {...props} target="_blank" rel="noopener noreferrer" />
     ),
-    code: ({ inline, className: codeClassName, children, ...rest }) => {
+    code: ({ node, inline, className: codeClassName, children, ...rest }) => {
         if (inline) return <code className={codeClassName} {...rest}>{children}</code>
         return <code className={codeClassName || ''} {...rest}>{children}</code>
     },

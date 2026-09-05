@@ -20,7 +20,7 @@ function deltaRiskLevel(delta) {
 
 function DeltaChip({ delta }) {
     if (delta == null) {
-        return <span className="ds-text-micro text-slate-400 dark:text-slate-500">—</span>
+        return <span className="ds-text-micro text-slate-500 dark:text-slate-400">—</span>
     }
     const level = deltaRiskLevel(delta)
     const Icon = delta > 0 ? TrendingUp : delta < 0 ? TrendingDown : Minus
@@ -34,7 +34,7 @@ function DeltaChip({ delta }) {
 
 function ScoreCell({ score }) {
     if (score == null) {
-        return <span className="ds-text-micro text-slate-400 dark:text-slate-500">Not yet scored</span>
+        return <span className="ds-text-micro text-slate-500 dark:text-slate-400">Not yet scored</span>
     }
     const level = score >= 80 ? 'low' : score >= 60 ? 'medium' : score >= 40 ? 'high' : 'critical'
     return (
@@ -147,7 +147,7 @@ export function HealthTab() {
                                         ) : r.score != null ? (
                                             <Badge tone="success" size="xs">All checks passing</Badge>
                                         ) : (
-                                            <span className="ds-text-micro text-slate-400 dark:text-slate-500">—</span>
+                                            <span className="ds-text-micro text-slate-500 dark:text-slate-400">—</span>
                                         )}
                                     </td>
                                     <td className="px-4 py-2.5 ds-text-micro text-slate-500 dark:text-slate-400 whitespace-nowrap">
@@ -160,7 +160,7 @@ export function HealthTab() {
                 </div>
             </Card>
             {MOCK_MODE && (
-                <p className="ds-text-micro text-slate-400 dark:text-slate-500 text-center">
+                <p className="ds-text-micro text-slate-500 dark:text-slate-400 text-center">
                     Demo data — connect a real account to score your own repositories.
                 </p>
             )}

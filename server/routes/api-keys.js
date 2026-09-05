@@ -21,7 +21,7 @@ router.get('/', requireAuth, (req, res) => {
     const flags = getFeatures(userTier);
 
     const keys = db.prepare(
-        'SELECT id, name, key_prefix, scopes, last_used_at, last_used_ip, expires_at, created_at, revoked_at FROM api_keys WHERE user_id = ? ORDER BY created_at DESC'
+        'SELECT id, name, key_prefix, scopes, last_used_at, last_used_ip, expires_at, created_at, revoked_at FROM api_keys WHERE user_id = ? ORDER BY created_at DESC LIMIT 200'
     ).all(userId);
 
     const activeCount = keys.filter(k => !k.revoked_at).length;

@@ -781,3 +781,13 @@ process.on('SIGINT', () => requestShutdown('SIGINT'));
 process.on('unhandledRejection', (reason) => {
     logger.error({ err: reason }, 'Unhandled promise rejection (backstopped — investigate)');
 });
+
+// A synchronous throw at the top of the event loop (a timer or immediate
+// outside Express's try/catch) would otherwise tear the process down through
+// Node's default handler, skipping gracefulShutdown: in-flight migration jobs
+// never get marked interrupted and the workers are never stopped. Route it
+// through the same single-fire shutdown path the signals use.
+process.on('uncaughtException', (err) => {
+    logger.fatal({ err }, 'Uncaught exception — shutting down');
+    requestShutdown('uncaughtException');
+});

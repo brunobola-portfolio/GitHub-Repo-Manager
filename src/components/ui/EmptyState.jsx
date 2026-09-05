@@ -44,7 +44,7 @@ export function EmptyState({
         )}
         <p className="ds-text-meta text-slate-500 dark:text-slate-400">{title}</p>
         {description && (
-          <p className="ds-text-meta text-slate-400 dark:text-slate-500 mt-0.5">{description}</p>
+          <p className="ds-text-meta text-slate-500 dark:text-slate-400 mt-0.5">{description}</p>
         )}
       </div>
     )

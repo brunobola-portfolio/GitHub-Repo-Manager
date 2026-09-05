@@ -48,7 +48,7 @@ export function SearchInput({ askMode, value, onValueChange, loading, breadcrumb
             ? 'Search actions… (Backspace to go back)'
             : 'Type a command or search PRs, issues, repos… (start with ? to ask)'}
         autoFocus
-        className={`w-full py-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 bg-transparent border-b outline-none ${
+        className={`w-full py-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 bg-transparent border-b outline-none focus-visible:border-brand-500 dark:focus-visible:border-brand-400 ${
           askMode
             ? 'pl-10 pr-4 border-brand-200 dark:border-brand-800 placeholder:italic placeholder:text-brand-400/80'
             : breadcrumb

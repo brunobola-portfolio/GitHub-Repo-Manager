@@ -113,6 +113,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   missing caption/scope, and others).
 - An interval leak in `MyReviewsTab` kept polling after the component
   unmounted if a draft fetch resolved late.
+- **Inline code in READMEs and AI answers no longer renders with literal
+  backticks.** Tailwind Typography adds them by default; GitHub does not,
+  and the monospace slab already marks the span as code.
+- **Muted text in the shared `EmptyState` description and the Work Board
+  Health tab uses the AA-safe pair** (it was the inverted pair, 2.56:1 on
+  white). The two emoji left in UI copy are an icon and a plain "Tip:"
+  now, and the command-palette search field shows its focus.
+- **A 401 on collaborators or branch protection renders inline** in the
+  panel it belongs to, never as a toast.
+- **`Permissions-Policy` is sent again** (helmet 8 dropped its default)
+  and `frame-ancestors` is explicit in the CSP; CI runs the precompress
+  build gate.
+- **`shiki` and `@git-diff-view/shiki` are gone from the dependency
+  tree** — they shipped zero bytes to the browser and cost 27 MB installed.
+- **The API-key list is capped at 200 rows** like the audit and DLQ lists,
+  and an uncaught exception now drains through the same shutdown path the
+  signals use instead of Node's abrupt exit.
 
 ## [4.23.2] - 2026-08-31
 

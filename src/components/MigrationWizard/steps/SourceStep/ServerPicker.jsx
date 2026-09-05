@@ -92,7 +92,7 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
           </button>
         </div>
         <p className="ds-text-meta text-slate-500 dark:text-slate-400">
-          💡 Tip: even faster — paste the full Azure DevOps / TFS URL in the field above and this server is detected automatically.
+          Tip: even faster — paste the full Azure DevOps / TFS URL in the field above and this server is detected automatically.
         </p>
       </div>
     )
