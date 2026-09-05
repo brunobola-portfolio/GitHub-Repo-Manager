@@ -274,26 +274,34 @@ renders as its upgrade state.
 
 - Playwright, full suite, two projects: 136 passed, 59 skipped by design, 0 failed.
 
+## Production readiness (2026-09-05)
+
+A senior-SRE style review with the Docker image built from the tree and
+probed live: boot fails fast on template secrets; helmet CSP, HSTS,
+frame-ancestors, referrer policy and request-id echo are present; hashed
+assets are immutable and served as `.br` (225.9 KB → 52.3 KB on the entry
+chunk); `index.html` is no-cache; unmatched `/api/*` is JSON; `/api/health`
+and `/api/health/ready` report the database and session store; the container
+reports healthy; SQLite runs in WAL mode with the maintenance pass at boot;
+logs are structured pino with redaction; the production bundle carries no
+dev-only markers. Two gaps closed: helmet 8 no longer sets
+`Permissions-Policy` (added), and the precompress build gate was not in CI
+(added). The lockfile was regenerated inside node:22 on Linux after dropping
+the two shiki packages that shipped zero bytes; `npm ci` installs it.
+
 ## Still open
 
-1. **Packaging.** `shiki`, `@shikijs` and `@git-diff-view/shiki` ship zero
-   bytes but cost ~27 MB installed. Removing them needs the lockfile
-   regenerated on Linux (`docker run … node:22 npm install
-   --package-lock-only`); Docker Desktop was not running on the development
-   machine when this was attempted, so the change was reverted rather than
-   shipped with a Windows-generated lockfile.
-2. **Raw `fetch()`, the last 39.** Each is a documented exception in the
-   ratchet header (AI client contract, bulk-confirmation protocol, SSE,
-   health probes, blob downloads, one cross-origin call). The AI client
-   (`src/api/ai.js`, 19 sites) is the one worth a dedicated migration.
-3. **`/api` literals.** 66 remain outside `src/config.js` and `src/api/**`,
-   ratcheted; they matter only for a split-origin deployment.
+1. **Sign the Windows installer** (Authenticode). Needs a code-signing
+   certificate provisioned as a CI secret and a signing step in
+   `windows-package.yml`. Effort M; the one item a buyer will notice.
+2. **Automate the release bump and changelog** (a changesets-style script)
+   so the manual steps in the runbook cannot be skipped. Effort S.
+3. **Raw `fetch()`, the last 39** — documented exceptions; the AI client
+   (`src/api/ai.js`) is the one worth a dedicated migration. `/api`
+   literals: 66 remain, ratcheted.
 4. **Larger refactors.** Four data-loading layers coexist (FE-08); 159
-   `eslint-disable` escapes on the hooks rules (FE-17). `App.jsx` is being
-   split into hooks in the current pass.
-5. **Not built, by choice.** A contribution heatmap (G11) is the most
-   decorative item on the market list; PR stacking should not be built —
-   GitHub ships it natively.
+   `eslint-disable` escapes on the hooks rules (FE-17).
+5. **Not built, by choice.** A contribution heatmap (G11); PR stacking
+   (GitHub ships it natively).
 6. **Environment.** Windows reserves ports 2906–3005 on the development
-   machine (Hyper-V); everything here runs with `PORT=3006`. Freeing the
-   range (`net stop winnat`/`net start winnat`) is an operator decision.
+   machine; everything here runs with `PORT=3006`.
