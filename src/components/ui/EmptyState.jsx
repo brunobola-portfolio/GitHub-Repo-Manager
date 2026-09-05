@@ -61,7 +61,7 @@ export function EmptyState({
       {/* Icon container */}
       <motion.div
         variants={listItem}
-        className="w-20 h-20 mb-6 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shadow-sm"
+        className="w-20 h-20 mb-6 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center ds-elevation-sm"
       >
         {Icon && <Icon className="w-10 h-10 text-slate-500 dark:text-slate-400" strokeWidth={2.5} />}
       </motion.div>
@@ -89,7 +89,7 @@ export function EmptyState({
             <a
               href={resolvedHref}
               aria-disabled={resolvedDisabled || undefined}
-              className={`inline-flex items-center justify-center min-h-[44px] min-w-[44px] px-4 py-2 text-sm gap-2 rounded-lg font-medium transition-colors duration-150 ds-brand-solid shadow-sm ds-focus-ring ${resolvedDisabled ?'opacity-50 pointer-events-none' : ''}`}
+              className={`inline-flex items-center justify-center min-h-[44px] min-w-[44px] px-4 py-2 text-sm gap-2 rounded-lg font-medium transition-colors duration-150 ds-brand-solid ds-elevation-sm ds-focus-ring ${resolvedDisabled ?'opacity-50 pointer-events-none' : ''}`}
             >
               {resolvedLabel}
             </a>

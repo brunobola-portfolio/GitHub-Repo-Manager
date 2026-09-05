@@ -14,7 +14,7 @@ test.describe('Wave 1 — Context menu items', () => {
     const firstCard = page.locator('[data-testid="repo-card"]').first()
     await firstCard.click({ button: 'right' })
     await page.getByRole('menuitem', { name: 'Migration', exact: true }).hover()
-    await page.locator('text=Dry-Run (Simulate)').click()
+    await page.locator('text=Dry-run (simulate)').click()
     await expect(page.locator('[data-testid="migration-wizard"]')).toBeVisible()
     await expect(page.locator('[data-testid="dry-run-pill"]')).toBeVisible()
     await expect(page.locator('[data-testid="dry-run-pill"]')).toHaveText(/dry.?run/i)
@@ -37,7 +37,7 @@ test.describe('Wave 1 — Context menu items', () => {
     await firstCard.click({ button: 'right' })
     await page.getByRole('menuitem', { name: 'Management', exact: true }).hover()
     const downloadPromise = page.waitForEvent('download')
-    await page.getByRole('menuitem', { name: 'Export Metadata (JSON)', exact: true }).click()
+    await page.getByRole('menuitem', { name: 'Export metadata (JSON)', exact: true }).click()
     const download = await downloadPromise
     expect(download.suggestedFilename()).toMatch(/-export-\d+\.json$/)
   })

@@ -18,7 +18,7 @@ const STYLES = {
 	error:
 		'bg-rose-50/90 dark:bg-rose-900/60 border-rose-300 dark:border-rose-500 text-rose-900 dark:text-rose-100 border-l-4 border-l-rose-500',
 	info:
-		'bg-blue-50/90 dark:bg-blue-900/60 border-blue-300 dark:border-blue-500 text-blue-900 dark:text-blue-100 border-l-4 border-l-blue-500',
+		'bg-brand-50/90 dark:bg-brand-900/60 border-brand-300 dark:border-brand-500 text-brand-900 dark:text-brand-100 border-l-4 border-l-brand-500',
 	warning:
 		'bg-amber-50/90 dark:bg-amber-900/60 border-amber-300 dark:border-amber-500 text-amber-900 dark:text-amber-100 border-l-4 border-l-amber-500'
 }
@@ -26,7 +26,7 @@ const STYLES = {
 const ICON_STYLES = {
     success: 'text-emerald-500 dark:text-emerald-400',
     error: 'text-rose-500 dark:text-rose-400',
-    info: 'text-blue-500 dark:text-blue-400',
+    info: 'text-brand-500 dark:text-brand-400',
     warning: 'text-amber-500 dark:text-amber-400'
 }
 
@@ -61,7 +61,7 @@ export function Toast({ id, type = 'info', message, content, onDismiss, duration
 			animate={{ opacity: 1, x: 0, scale: 1 }}
 			exit={{ opacity: 0, x: '110%' }}
 			transition={TRANSITION.entrance}
-			className={`flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg backdrop-blur-md pointer-events-auto w-full max-w-[calc(100vw-2rem)] sm:max-w-sm ${STYLES[type]}`}
+			className={`flex items-center gap-3 px-4 py-3 rounded-xl border ds-elevation-lg backdrop-blur-md pointer-events-auto w-full max-w-[calc(100vw-2rem)] sm:max-w-sm ${STYLES[type]}`}
 		>
             {type === 'success'
                 ? <AnimatedCheck size={20} color="currentColor" />

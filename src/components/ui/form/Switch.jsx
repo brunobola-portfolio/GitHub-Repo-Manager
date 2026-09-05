@@ -71,7 +71,7 @@ export function Switch({
             <motion.span
                 aria-hidden="true"
                 className={`
-                    inline-block rounded-full bg-white shadow-md
+                    inline-block rounded-full bg-white ds-elevation-md
                     ${knob}
                     ring-1 ring-black/5
                 `}

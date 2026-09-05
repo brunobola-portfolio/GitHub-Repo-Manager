@@ -91,7 +91,7 @@ export function RateLimitNotice({ retryAt, variant = 'toast', onRetry, onDismiss
                 transition-all duration-200
                 focus-visible:ring-2 focus-visible:ring-amber-500 focus:outline-none
                 ${isReady
-                    ? 'bg-amber-600 hover:bg-amber-500 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-slate-900 shadow-sm hover:shadow-md'
+                    ? 'bg-amber-600 hover:bg-amber-500 dark:bg-amber-500 dark:hover:bg-amber-400 text-white dark:text-slate-900 ds-elevation-sm hover:shadow-md'
                     : 'bg-amber-500/10 dark:bg-amber-400/10 text-amber-700/60 dark:text-amber-300/50 cursor-not-allowed'}
             `}
         >

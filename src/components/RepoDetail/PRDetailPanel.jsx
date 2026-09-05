@@ -25,7 +25,7 @@ import { DURATION, EASE } from '../ui/motion'
 const REVIEW_STATES = {
     APPROVED: { label: 'Approved', color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20', icon: ShieldCheck },
     CHANGES_REQUESTED: { label: 'Changes requested', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20', icon: ShieldAlert },
-    COMMENTED: { label: 'Commented', color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', icon: MessageCircle },
+    COMMENTED: { label: 'Commented', color: 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]', bg: 'bg-brand-50 dark:bg-brand-900/20', icon: MessageCircle },
     DISMISSED: { label: 'Dismissed', color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-50 dark:bg-slate-800', icon: Eye },
     PENDING: { label: 'Pending', color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20', icon: Eye },
 }
@@ -209,7 +209,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                         {/* Branch info */}
                         <div className="flex items-center gap-2 mt-2">
                             <GitBranch className="w-3.5 h-3.5 text-slate-400" />
-                            <span className="font-mono text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded">
+                            <span className="font-mono text-xs bg-brand-50 dark:bg-brand-900/30 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] px-2 py-0.5 rounded">
                                 {current.head?.ref || 'unknown'}
                             </span>
                             <span className="text-xs text-slate-500 dark:text-slate-400">→</span>
@@ -335,7 +335,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                                 onClick={() => setMergeMethod(method.id)}
                                                 className={`flex-1 py-1.5 px-3 rounded-md text-xs font-medium transition-all ${
                                                     mergeMethod === method.id
-                                                        ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 shadow-sm'
+                                                        ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 ds-elevation-sm'
                                                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                                                 } ds-focus-ring`}
                                             >

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { API_BASE_URL } from '../../../config'
 import { motion } from 'framer-motion'
 import { MessageSquare } from 'lucide-react'
 import * as Popover from '@radix-ui/react-popover'
@@ -6,7 +7,7 @@ import { clsx } from 'clsx'
 import { Spinner } from '../../ui/Spinner'
 import { Textarea } from '../../ui/form'
 import { POPOVER_SURFACE_CLASS } from '../../ui/_variants'
-import { getCsrfToken } from '../../../utils/api'
+import { apiCall } from '../../../utils/api'
 import { DURATION, EASE } from '../../ui/motion'
 
 // Module-level cache shared across every PingAuthorPopover instance
@@ -58,15 +59,11 @@ export function PingAuthorPopover({ cacheKey, requestPayload, onPing, disabled =
 
         setPingState('loading')
         try {
-            const csrf = await getCsrfToken()
-            const res = await fetch('/api/v1/work-board/suggest-action', {
+            const { suggestions } = await apiCall(`${API_BASE_URL}/api/v1/work-board/suggest-action`, {
                 method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestPayload),
             })
-            if (!res.ok) throw new Error('suggest-action failed')
-            const { suggestions } = await res.json()
             _suggestCache.set(cacheKey, { suggestions, expiresAt: Date.now() + TTL_MS })
             const ping = suggestions?.find(s => s.action === 'comment')
             setPingBody(ping?.body || '')

@@ -1,8 +1,10 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
+import { API_BASE_URL } from '../../../config'
 import { Eye } from 'lucide-react'
 import { Button } from '../../ui/Button'
 import { useStreaming } from '../../../hooks/useStreaming'
 import { isAbort } from '../../../utils/errorClassification'
+import { apiCall } from '../../../utils/api'
 import { ChatInput } from '../shared/ChatInput'
 import { PRSelector } from './PRSelector'
 import { QuickSummary } from './QuickSummary'
@@ -33,8 +35,7 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
 
         // eslint-disable-next-line react-hooks/set-state-in-effect -- loading flag for the fetch this effect kicks off
         setPullsLoading(true)
-        fetch(`/api/repos/${repoOwner}/${selectedRepo.name}/pulls?state=open`, { signal: controller.signal, credentials: 'include' })
-            .then(r => r.ok ? r.json() : [])
+        apiCall(`${API_BASE_URL}/api/repos/${repoOwner}/${selectedRepo.name}/pulls?state=open`, { signal: controller.signal })
             .then(setPulls)
             .catch((err) => {
                 if (!isAbort(err)) setPulls([])
@@ -74,11 +75,9 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
             const owner = repoOwner
             const repo = selectedRepo.name
 
-            const filesRes = await fetch(`/api/repos/${owner}/${repo}/pulls/${pr.number}/files`, { credentials: 'include' })
-            if (!filesRes.ok) throw new Error('Failed to fetch PR files')
-            const files = await filesRes.json()
+            const files = await apiCall(`${API_BASE_URL}/api/repos/${owner}/${repo}/pulls/${pr.number}/files`)
 
-            const result = await startStream('/api/ai/review-summary', {
+            const result = await startStream(`${API_BASE_URL}/api/ai/review-summary`, {
                 fileManifest: files.map(f => ({ filename: f.filename, additions: f.additions, deletions: f.deletions, status: f.status })),
                 topFilePatches: files.slice(0, 30).map(f => ({ filename: f.filename, patch: f.patch })),
                 prMetadata: { title: pr.title, additions: files.reduce((s, f) => s + f.additions, 0), deletions: files.reduce((s, f) => s + f.deletions, 0), fileCount: files.length },
@@ -112,11 +111,10 @@ export function ReviewTab({ toolkit, onStartReview, onClose }) {
         setQaResponses(prev => [...prev, { role: 'user', content: question }])
 
         try {
-            const filesRes = await fetch(`/api/repos/${owner}/${repo}/pulls/${selectedPR.number}/files`, { credentials: 'include' })
-            const files = filesRes.ok ? await filesRes.json() : []
+            const files = await apiCall(`${API_BASE_URL}/api/repos/${owner}/${repo}/pulls/${selectedPR.number}/files`).catch(() => [])
             const patches = files.slice(0, 20).map(f => `${f.filename}:\n${f.patch || ''}`).join('\n---\n')
 
-            const result = await startStream('/api/ai/chat-refine', {
+            const result = await startStream(`${API_BASE_URL}/api/ai/chat-refine`, {
                 message: question,
                 current_output: summary?.summary?.overview || '',
                 original_diff: patches,

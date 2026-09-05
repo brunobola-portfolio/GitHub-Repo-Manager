@@ -187,7 +187,7 @@ export function AIReviewPanel({
                     type="button"
                     onClick={() => setTab('walkthrough')}
                     aria-pressed={tab === 'walkthrough'}
-                    className={`px-3 py-2 ${tab === 'walkthrough' ? 'font-semibold border-b-2 border-blue-600' : 'text-slate-500 dark:text-slate-400'} ds-focus-ring rounded`}
+                    className={`px-3 py-2 ${tab === 'walkthrough' ? 'font-semibold border-b-2 border-brand-600' : 'text-slate-500 dark:text-slate-400'} ds-focus-ring rounded`}
                 >
                     Walkthrough
                 </button>
@@ -195,7 +195,7 @@ export function AIReviewPanel({
                     type="button"
                     onClick={() => setTab('comments')}
                     aria-pressed={tab === 'comments'}
-                    className={`px-3 py-2 ${tab === 'comments' ? 'font-semibold border-b-2 border-blue-600' : 'text-slate-500 dark:text-slate-400'} ds-focus-ring rounded`}
+                    className={`px-3 py-2 ${tab === 'comments' ? 'font-semibold border-b-2 border-brand-600' : 'text-slate-500 dark:text-slate-400'} ds-focus-ring rounded`}
                 >
                     Comments ({lineComments.length})
                 </button>
@@ -204,7 +204,7 @@ export function AIReviewPanel({
                         type="button"
                         onClick={() => setTab('commands')}
                         aria-pressed={tab === 'commands'}
-                        className={`px-3 py-2 ${tab === 'commands' ? 'font-semibold border-b-2 border-blue-600' : 'text-slate-500 dark:text-slate-400'} ds-focus-ring rounded`}
+                        className={`px-3 py-2 ${tab === 'commands' ? 'font-semibold border-b-2 border-brand-600' : 'text-slate-500 dark:text-slate-400'} ds-focus-ring rounded`}
                     >
                         Commands
                     </button>
@@ -214,7 +214,7 @@ export function AIReviewPanel({
                         type="button"
                         onClick={() => setTab('chat')}
                         aria-pressed={tab === 'chat'}
-                        className={`px-3 py-2 ${tab === 'chat' ? 'font-semibold border-b-2 border-blue-600' : 'text-slate-500 dark:text-slate-400'} ds-focus-ring rounded`}
+                        className={`px-3 py-2 ${tab === 'chat' ? 'font-semibold border-b-2 border-brand-600' : 'text-slate-500 dark:text-slate-400'} ds-focus-ring rounded`}
                     >
                         Chat
                     </button>

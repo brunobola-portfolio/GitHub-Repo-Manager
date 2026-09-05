@@ -22,7 +22,7 @@ const POLL_INTERVAL_MS = 2000
 
 const STATUS_BADGES = {
   pending: { icon: Clock, color: 'text-slate-500 dark:text-slate-400', bg: 'bg-slate-100 dark:bg-slate-800', label: 'Pending' },
-  running: { icon: SpinnerIcon, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', label: 'Running', spin: false },
+  running: { icon: SpinnerIcon, color: 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]', bg: 'bg-brand-50 dark:bg-brand-900/20', label: 'Running', spin: false },
   complete: { icon: CheckCircle2, color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20', label: 'Complete' },
   // Backend's canonical terminal-success spelling is 'completed' (see
   // server/__tests__/migration-status-vocabulary.test.js) — both keys map to
@@ -172,15 +172,9 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
 
     const tick = async () => {
       try {
-        const res = await fetch(`${API_BASE}/import/status/${importJobs.jobId}`, {
-          credentials: 'include',
+        const data = await apiCall(`${API_BASE}/import/status/${importJobs.jobId}`, {
           signal: controller.signal,
         })
-        if (!res.ok) {
-          setPollFailureCount((c) => c + 1)
-          return
-        }
-        const data = await res.json()
         setPollFailureCount(0)
         onUpdate({ jobStatus: data })
 
@@ -237,15 +231,9 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
 
       const tick = async () => {
         try {
-          const res = await fetch(`${API_BASE}/import/status/${job.jobId}`, {
-            credentials: 'include',
+          const data = await apiCall(`${API_BASE}/import/status/${job.jobId}`, {
             signal: abortControllers[job.jobId]?.signal,
           })
-          if (!res.ok) {
-            setPollFailureCount((c) => c + 1)
-            return
-          }
-          const data = await res.json()
           setPollFailureCount(0)
 
           onUpdate((prev) => ({

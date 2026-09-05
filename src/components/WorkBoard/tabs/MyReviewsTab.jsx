@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
+import { API_BASE_URL } from '../../../config'
 import { AnimatePresence, motion } from 'framer-motion'
 import { GitPullRequest, ExternalLink, Clock, Loader2, Sparkles, MessageSquare } from 'lucide-react'
 import { clsx } from 'clsx'
@@ -14,7 +15,7 @@ import { SkeletonList, UpsellCard, ErrorState } from '../shared/shared-ui'
 import { PingAuthorPopover, AnimatedChipStrip } from '../shared/PingAuthorPopover'
 import { RowIconBadge } from '../../ui/RowIconBadge'
 import { ageLabel } from '../shared/formatters'
-import { getCsrfToken } from '../../../utils/api'
+import { apiCall } from '../../../utils/api'
 import { isAbort } from '../../../utils/errorClassification'
 import { AIErrorState } from '../../ui/AIErrorState'
 import { WorkBoardRowMenu } from '../WorkBoardRowMenu'
@@ -164,21 +165,12 @@ function DraftCommentModal({ review, intent, onConfirm, onClose }) {
         // leaves a 25 ms interval calling setText forever.
         const run = async () => {
             try {
-                const csrf = await getCsrfToken()
-                const res = await fetch('/api/v1/work-board/draft-comment', {
+                const body = await apiCall(`${API_BASE_URL}/api/v1/work-board/draft-comment`, {
                     method: 'POST',
-                    credentials: 'include',
                     signal: controller.signal,
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ repoFullName: review.repoFullName, prNumber: review.prNumber, intent }),
                 })
-                const body = await res.json().catch(() => ({}))
-                if (!res.ok) {
-                    const err = new Error(body?.error || `status ${res.status}`)
-                    err.status = res.status
-                    err.code = body?.code
-                    throw err
-                }
                 if (controller.signal.aborted) return
                 fullTextRef.current = body?.draft || ''
                 let idx = 0

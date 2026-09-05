@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useHostAllowlist } from '@/hooks/useHostAllowlist'
 
-const okJson = (body) => ({ ok: true, status: 200, json: async () => body })
+const okJson = (body) => ({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => body })
 
 describe('useHostAllowlist', () => {
   beforeEach(() => {

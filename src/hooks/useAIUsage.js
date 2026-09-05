@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
+import { API_BASE_URL } from '../config'
 import { useAIQuotaState } from './useAIQuotaState'
+import { apiCall } from '../utils/api'
 
-const ENDPOINT = '/api/v1/usage'
+const ENDPOINT = `${API_BASE_URL}/api/v1/usage`
 
 // Module-level cache: at most one in-flight or recent (≤30s) fetch.
 let cachedPromise = null
@@ -14,11 +16,7 @@ async function fetchUsage(signal) {
         return cachedPromise
     }
     cachedAt = now
-    cachedPromise = fetch(ENDPOINT, { credentials: 'include', signal })
-        .then(async (res) => {
-            if (!res.ok) throw new Error(`HTTP ${res.status}`)
-            return res.json()
-        })
+    cachedPromise = apiCall(ENDPOINT, { signal })
         .catch((err) => {
             // Invalidate so the next caller retries.
             cachedPromise = null

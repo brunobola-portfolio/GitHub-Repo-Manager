@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef, useId } from 'react'
+import { API_BASE_URL } from '../../config'
 import {
   ShieldCheck, ShieldAlert, Plus, Trash2, Lock, Globe,
   Server as ServerIcon, AlertCircle, CheckCircle2, FileCode,
 } from 'lucide-react'
 import { SpinnerIcon } from '../ui/Spinner'
 import { Input } from '../ui/form'
-import { getCsrfToken } from '../../utils/api'
+import { apiCall } from '../../utils/api'
 import { formatUserError } from '../../utils/errors'
 import { useToast } from '../../hooks/useToast'
 import { formatDate } from '../../utils/format'
@@ -29,9 +30,7 @@ export default function AzureHostsAllowlistSection() {
   const load = useCallback(async () => {
     setLoading(true); setError(null)
     try {
-      const res = await fetch('/api/azure/host-allowlist', { credentials: 'include' })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json?.error || "Couldn't load allowlist")
+      const json = await apiCall(`${API_BASE_URL}/api/azure/host-allowlist`)
       setData(json)
     } catch (e) {
       setError(formatUserError(e, { fallbackTitle: "Couldn't load the host allowlist" }))
@@ -210,16 +209,9 @@ function RowDb({ entry, canEdit, onDeleted }) {
   const handleDelete = async () => {
     setDeleting(true)
     try {
-      const csrf = await getCsrfToken().catch(() => null)
-      const res = await fetch(`/api/azure/host-allowlist/${encodeURIComponent(entry.pattern)}`, {
+      await apiCall(`${API_BASE_URL}/api/azure/host-allowlist/${encodeURIComponent(entry.pattern)}`, {
         method: 'DELETE',
-        credentials: 'include',
-        headers: { ...(csrf ? { 'X-CSRF-Token': csrf } : {}) },
       })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data?.error || 'Failed')
-      }
       onDeleted?.()
     } catch (e) {
       toast.errorFromException(e, { fallbackTitle: 'Could not update the allowlist' })
@@ -304,15 +296,11 @@ function AddHostForm({ onAdded }) {
     if (!pattern.trim()) return
     setSubmitting(true); setError(null); setSuccess(false)
     try {
-      const csrf = await getCsrfToken().catch(() => null)
-      const res = await fetch('/api/azure/host-allowlist', {
+      await apiCall(`${API_BASE_URL}/api/azure/host-allowlist`, {
         method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRF-Token': csrf } : {}) },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pattern: pattern.trim(), notes: notes.trim() || null }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`)
       setPattern(''); setNotes(''); setSuccess(true)
       onAdded?.()
       setTimeout(() => setSuccess(false), 3000)

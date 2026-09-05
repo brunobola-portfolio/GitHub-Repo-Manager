@@ -57,7 +57,7 @@ export function HunkRiskRail({ filename, patch, containerRef }) {
             aria-label={label}
             aria-current={isActive ? 'true' : undefined}
             style={{ flexGrow: seg.weight, flexBasis: 0 }}
-            className={`w-full min-h-[3px] transition-opacity focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-blue-500 ${riskFillClass(level)} ${isActive ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
+            className={`w-full min-h-[3px] transition-opacity focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[color:var(--ds-accent-ring)] ${riskFillClass(level)} ${isActive ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
           />
         )
       })}

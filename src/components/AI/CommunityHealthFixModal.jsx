@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { API_BASE_URL } from '../../config'
 import { Sparkles, CheckCircle, ExternalLink, Settings as SettingsIcon } from 'lucide-react'
 import { Modal } from '../ui/Modal'
 import { Button } from '../ui/Button'
@@ -8,7 +9,7 @@ import { AIErrorState } from '../ui/AIErrorState'
 import { Input, Textarea } from '../ui/form'
 import { Select } from '../ui/Select'
 import { RowIconBadge } from '../ui/RowIconBadge'
-import { getCsrfToken } from '../../utils/api'
+import { apiCall } from '../../utils/api'
 import { commitCommunityHealthFix } from '../../api/repos'
 import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
@@ -59,35 +60,23 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 		setError(null)
 		setAiNotConfigured(false)
 		try {
-			const csrf = await getCsrfToken()
-			const res = await fetch(`/api/repos/${repo.owner.login}/${repo.name}/community-health/generate`, {
+			const json = await apiCall(`${API_BASE_URL}/api/repos/${repo.owner.login}/${repo.name}/community-health/generate`, {
 				method: 'POST',
-				credentials: 'include',
-				headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ fileType, overrides }),
 			})
-			const json = await res.json().catch(() => ({}))
 			if (isStale()) return
-			if (!res.ok) {
-				if (json.code === 'ai_not_configured') {
-					setAiNotConfigured(true)
-					setState('error')
-					return
-				}
-				const err = new Error(json.error || `status ${res.status}`)
-				err.status = res.status
-				err.code = json.code
-				err.data = json
-				setError(err)
-				setState('error')
-				return
-			}
 			setContent(json.content || '')
 			setFilePath(json.filePath || '')
 			setCommitMessage(json.suggestedCommitMessage || `chore: add ${fileType}`)
 			setState('preview')
 		} catch (e) {
 			if (isStale()) return
+			if (e?.code === 'ai_not_configured') {
+				setAiNotConfigured(true)
+				setState('error')
+				return
+			}
 			setError(e)
 			setState('error')
 		}

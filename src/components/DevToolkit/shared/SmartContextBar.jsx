@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 const TYPE_STYLES = {
     feature: { label: 'Feature', color: 'text-emerald-400' },
     bugfix: { label: 'Bugfix', color: 'text-amber-400' },
-    refactor: { label: 'Refactor', color: 'text-blue-400' },
+    refactor: { label: 'Refactor', color: 'text-brand-400' },
     breaking: { label: 'Breaking', color: 'text-rose-400' },
     chore: { label: 'Chore', color: 'text-slate-400' },
 }

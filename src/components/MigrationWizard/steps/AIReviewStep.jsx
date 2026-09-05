@@ -346,7 +346,7 @@ export default function AIReviewStep({ aiPlan, onUpdate, wizard }) {
                   size="lg"
                   type="button"
                   onClick={handleApprove}
-                  className="w-full shadow-lg"
+                  className="w-full ds-elevation-lg"
                 >
                   <CheckCircle2 className="w-4.5 h-4.5" />
                   Approve Migration Plan

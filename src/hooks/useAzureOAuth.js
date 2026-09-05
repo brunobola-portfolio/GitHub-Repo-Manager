@@ -1,5 +1,7 @@
+import { API_BASE_URL } from '../config'
 // src/hooks/useAzureOAuth.js
 import { useState, useRef, useCallback, useEffect } from 'react'
+import { apiCall } from '../utils/api'
 
 const POLL_INTERVAL_MS = 1000
 const POLL_TIMEOUT_MS = 120_000
@@ -13,7 +15,7 @@ const POLL_TIMEOUT_MS = 120_000
  * oauthStatus: 'idle' | 'pending' | 'success' | 'error' | 'timeout'
  *
  * IMPORTANT: startOAuth() does NOT open the browser tab.
- * The caller (SourceStep button handler) opens the tab via window.open('/api/azure/oauth/start', '_blank')
+ * The caller (SourceStep button handler) opens the tab via window.open(`${API_BASE_URL}/api/azure/oauth/start`, '_blank')
  * and then calls startOAuth() to begin state tracking and polling.
  */
 export function useAzureOAuth() {
@@ -28,8 +30,7 @@ export function useAzureOAuth() {
 
   const pollOnce = useCallback(async () => {
     try {
-      const res = await fetch('/api/azure/oauth/token', { credentials: 'include' })
-      const data = await res.json()
+      const data = await apiCall(`${API_BASE_URL}/api/azure/oauth/token`)
       if (data.error) {
         stopPolling()
         setOauthStatus('error')

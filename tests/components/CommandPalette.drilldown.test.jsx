@@ -103,8 +103,8 @@ describe('CommandPalette — repo actions drill-down (G8)', () => {
     // Scoped heading + a healthy number of per-repo actions (registry has
     // ~20 commandPalette-surfaced entries; well past the old reposLimit: 3).
     expect(screen.getByText('Actions — owner/repo-1')).toBeInTheDocument()
-    expect(screen.getByText(/Open Details — owner\/repo-1/)).toBeInTheDocument()
-    expect(screen.getByText(/Delete Repository — owner\/repo-1/)).toBeInTheDocument()
+    expect(screen.getByText(/Open details — owner\/repo-1/)).toBeInTheDocument()
+    expect(screen.getByText(/Delete repository — owner\/repo-1/)).toBeInTheDocument()
     expect(screen.getByText(/Copy HTTPS URL — owner\/repo-1/)).toBeInTheDocument()
 
     // Top-level content is gone while drilled in.
@@ -124,7 +124,7 @@ describe('CommandPalette — repo actions drill-down (G8)', () => {
   it('running a scoped action closes the palette', async () => {
     const { props } = renderPalette({ repos: makeRepos(3) })
     drillIntoRepo1()
-    fireEvent.click(screen.getByText(/Open Details — owner\/repo-1/))
+    fireEvent.click(screen.getByText(/Open details — owner\/repo-1/))
     // The item's onSelect is async (await item.run() then onClose()), so
     // onClose lands a microtask after the click event resolves.
     await waitFor(() => expect(props.onClose).toHaveBeenCalled())

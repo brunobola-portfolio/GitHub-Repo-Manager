@@ -18,6 +18,19 @@ import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
 
 import { FeatureState, parseApiError } from '../states'
 
+// fetchWithRetry throws an ApiError (status + parsed body on `.data`) instead
+// of returning a failed Response, but parseApiError's rich 401/403/503 +
+// upgrade-body handling only kicks in for a Response-shaped object (duck-typed
+// via 'status' in x && 'ok' in x). This adapts an ApiError back into that
+// shape so this panel keeps its tier-upgrade messaging.
+function asParsableError(err) {
+    if (err && typeof err === 'object' && 'status' in err && !('ok' in err)) {
+        const body = err.data ?? {}
+        return { status: err.status ?? 0, ok: false, clone() { return this }, json: async () => body }
+    }
+    return err
+}
+
 import { TEST_COOLDOWN_S, PROVIDERS_NEEDING_EMBEDDING_OVERRIDE } from './AIConfig/constants'
 import { ProviderSelect } from './AIConfig/ProviderSelect'
 import { ProviderFields } from './AIConfig/ProviderFields'
@@ -75,13 +88,7 @@ export function AIConfigSection() {
         setLoading(true)
         setLoadError(null)
         try {
-            const res = await fetch(`${API_BASE_URL}/api/user/ai-config`, {
-                credentials: 'include',
-            })
-            if (!res.ok) {
-                setLoadError(await parseApiError(res, { service: 'AI configuration' }))
-                return
-            }
+            const res = await fetchWithRetry(`${API_BASE_URL}/api/user/ai-config`)
             const data = await res.json()
 
             const loaded = {
@@ -102,7 +109,7 @@ export function AIConfigSection() {
             setForm(loaded)
             setSaved(loaded)
         } catch (err) {
-            setLoadError(await parseApiError(err))
+            setLoadError(await parseApiError(asParsableError(err), { service: 'AI configuration' }))
         } finally {
             setLoading(false)
         }

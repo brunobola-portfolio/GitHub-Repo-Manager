@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { API_BASE_URL } from '../config'
+import { apiCall } from '../utils/api'
 
 const ENDPOINTS = {
-    reviews: '/api/v1/work-board/my-reviews?limit=50',
-    stale:   '/api/v1/work-board/stale-prs?limit=50',
-    issues:  '/api/v1/work-board/my-issues?limit=50',
+    reviews: `${API_BASE_URL}/api/v1/work-board/my-reviews?limit=50`,
+    stale:   `${API_BASE_URL}/api/v1/work-board/stale-prs?limit=50`,
+    issues:  `${API_BASE_URL}/api/v1/work-board/my-issues?limit=50`,
 }
 
 const VISIBILITY_REFRESH_THRESHOLD_MS = 30_000
@@ -20,19 +22,17 @@ async function fetchCount(url) {
         return { count: key ? MOCK_COUNTS[key] : 0, hidden: false }
     }
     try {
-        const res = await fetch(url, { credentials: 'include' })
+        const body = await apiCall(url)
+        return { count: Array.isArray(body?.data) ? body.data.length : 0, hidden: false, failed: false }
+    } catch (e) {
         // 401/403/404 → endpoint is gated or not available for this user; suppress the widget.
-        if (res.status === 401 || res.status === 403 || res.status === 404) {
+        if (e?.status === 401 || e?.status === 403 || e?.status === 404) {
             return { count: 0, hidden: true, failed: false }
         }
         // `failed`, not a zero count. Collapsing a 500 into 0 is what let the
         // grid tell the user "You're all caught up" when nothing had actually
         // been checked — a false all-clear, which is worse than an error
         // because it invites them to stop looking.
-        if (!res.ok) return { count: 0, hidden: false, failed: true }
-        const body = await res.json()
-        return { count: Array.isArray(body?.data) ? body.data.length : 0, hidden: false, failed: false }
-    } catch {
         return { count: 0, hidden: false, failed: true }
     }
 }

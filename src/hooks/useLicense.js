@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { API_BASE_URL, MOCK_MODE } from '../config'
 import { onAppEvent, APP_EVENTS } from '../utils/appEvents'
 import { formatUserError } from '../utils/errors'
+import { apiCall } from '../utils/api'
 
 /**
  * useLicense — fetches the current license/plan from the backend.
@@ -38,8 +39,7 @@ export function useLicense() {
     useEffect(() => {
         if (MOCK_MODE) return undefined
         let cancelled = false
-        fetch(`${API_BASE_URL}/api/v1/usage`, { credentials: 'include' })
-            .then(r => r.ok ? r.json() : Promise.reject(new Error("Couldn't load license")))
+        apiCall(`${API_BASE_URL}/api/v1/usage`)
             .then(data => {
                 if (cancelled) return
                 setLicense({

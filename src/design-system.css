@@ -184,15 +184,17 @@
    *
    * The values are set by the hardest case in the product — the +N / -N diff
    * deltas, which are the most-read numbers here and land on SIX different
-   * backgrounds (file header, file-tree row, the blue SELECTED file row, and
-   * the diff's own add/remove row + word-level tints). White is not the
-   * limiting background; the selected row and the word tints are. Measured
-   * alpha-composited in-browser:
+   * backgrounds (file header, file-tree row, the brand-tinted SELECTED file
+   * row, and the diff's own add/remove row + word-level tints). White is not
+   * the limiting background; the selected row and the word tints are.
+   * Measured alpha-composited in-browser (the selected row was blue-100 before
+   * the 2026-09-05 blue-* sweep moved it to brand-100 — recomputed below, and
+   * still not the binding constraint):
    *
    *   background             add #146b36   del #b91c1c   (was green-600/red-600)
    *   white                  6.59          6.47          (3.22 / 4.77)
    *   slate-50   #f8fafc     6.30          6.18          (3.08 / 4.56)
-   *   blue-100   #dbeafe     5.40          5.30          (2.64 / 3.91)  <- selected row
+   *   brand-100  #e1ebd5     5.35          5.25          (2.68 / 3.92)  <- selected row
    *   added row  #dafbe1     5.92          5.81          (2.89 / 4.29)
    *   added word #aceebb     4.93          4.84          (2.41 / 3.57)
    *   removed row #ffebe9    5.75          5.64          (2.81 / 4.16)

@@ -204,7 +204,7 @@ export function BranchProtectionPanel({ api, branch, archived, variant = 'card' 
                 <div className="py-6 flex justify-center"><Spinner /></div>
             ) : upgradeRequired ? (
                 <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 p-5 text-center">
-                    <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 shadow-sm mb-3">
+                    <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 ds-elevation-sm mb-3">
                         <Sparkles className="w-5 h-5 text-white" />
                     </div>
                     <h4 className="text-sm font-semibold text-slate-800 dark:text-slate-100">

@@ -51,7 +51,7 @@ const TONES = {
     danger: 'bg-rose-100 dark:bg-rose-900/50 text-rose-800 dark:text-rose-300',
     rose: 'bg-rose-100 dark:bg-rose-900/50 text-rose-700 dark:text-rose-200',
     info: 'bg-brand-100 dark:bg-brand-900/50 text-brand-900 dark:text-brand-300',
-    blue: 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300',
+    blue: 'bg-brand-100 dark:bg-brand-900/50 text-brand-800 dark:text-brand-300',
     violet: 'bg-brand-100 dark:bg-brand-900/50 text-brand-800 dark:text-brand-300',
 }
 
@@ -77,7 +77,7 @@ const RINGS = {
     danger: 'ring-rose-200 dark:ring-rose-800',
     rose: 'ring-rose-200 dark:ring-rose-800',
     info: 'ring-brand-200 dark:ring-brand-800',
-    blue: 'ring-blue-200 dark:ring-blue-800',
+    blue: 'ring-brand-200 dark:ring-brand-800',
     violet: 'ring-brand-200 dark:ring-brand-800',
 }
 

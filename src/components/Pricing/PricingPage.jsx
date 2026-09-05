@@ -5,7 +5,7 @@ import { PricingCard } from './PricingCard'
 import { SUPPORT_EMAIL } from '../../utils/supportContact'
 import { FeatureComparison } from './FeatureComparison'
 import { API_BASE_URL } from '../../config'
-import { getCsrfToken } from '../../utils/api'
+import { apiCall } from '../../utils/api'
 import { ServiceUnavailable, FeatureError } from '../states'
 import { EASE, SPRING, DURATION } from '../ui/motion'
 
@@ -235,9 +235,7 @@ export function PricingPage({ onGetStarted } = {}) {
     let cancelled = false
     ;(async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/v1/billing/config`, { credentials: 'include' })
-        if (!res.ok) return
-        const data = await res.json()
+        const data = await apiCall(`${API_BASE_URL}/api/v1/billing/config`)
         if (cancelled) return
         setYearlyAvailable(!!data?.yearlyBillingAvailable)
         setStripePrices(data?.prices ?? null)
@@ -250,32 +248,24 @@ export function PricingPage({ onGetStarted } = {}) {
     setCheckoutLoading(tier)
     setCheckoutState(null)
     try {
-      const headers = { 'Content-Type': 'application/json' }
-      try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
-      const res = await fetch(`${API_BASE_URL}/api/v1/billing/checkout`, {
+      const data = await apiCall(`${API_BASE_URL}/api/v1/billing/checkout`, {
         method: 'POST',
-        credentials: 'include',
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tier, billingPeriod }),
       })
-      if (res.status === 503) {
-        setCheckoutState({ kind: 'unavailable' })
-        return
-      }
-      if (!res.ok) {
-        let msg = `Checkout failed (HTTP ${res.status}).`
-        try { const body = await res.json(); if (body?.error) msg = body.error } catch { /* keep default */ }
-        setCheckoutState({ kind: 'error', message: msg })
-        return
-      }
-      const data = await res.json()
       if (data?.url) {
         window.location.href = data.url
       } else {
         setCheckoutState({ kind: 'error', message: 'Checkout session did not return a redirect URL.' })
       }
-    } catch {
-      setCheckoutState({ kind: 'error', message: 'Network error — please try again.' })
+    } catch (err) {
+      if (err?.status === 503) {
+        setCheckoutState({ kind: 'unavailable' })
+      } else if (err?.status) {
+        setCheckoutState({ kind: 'error', message: err?.data?.error || `Checkout failed (HTTP ${err.status}).` })
+      } else {
+        setCheckoutState({ kind: 'error', message: 'Network error — please try again.' })
+      }
     } finally {
       setCheckoutLoading(null)
     }
@@ -417,7 +407,7 @@ export function PricingPage({ onGetStarted } = {}) {
             >
               <motion.span
                 layout
-                className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-md"
+                className="absolute top-0.5 w-5 h-5 rounded-full bg-white ds-elevation-md"
                 animate={{ left: isYearly ? 26 : 2 }}
                 transition={SPRING.knob}
               />
@@ -544,7 +534,7 @@ export function PricingPage({ onGetStarted } = {}) {
                   onClick={() => handleTierAction('Free')}
                   className="group px-8 py-3.5 rounded-xl font-semibold text-sm text-white
                     bg-[color:var(--ds-cta)] hover:bg-[color:var(--ds-cta-hover)]
-                    shadow-md transition-colors duration-200 ds-focus-ring"
+                    ds-elevation-md transition-colors duration-200 ds-focus-ring"
                 >
                   <span className="flex items-center gap-2">
                     Get started free
@@ -574,14 +564,15 @@ export function PricingPage({ onGetStarted } = {}) {
           transition={{ duration: DURATION.gentle, ease: EASE.emphasized }}
           className="mt-12 text-center"
         >
-          <button
-            type="button"
-            onClick={() => typeof onGetStarted === 'function' && onGetStarted('roadmap')}
+          <a
+            href="https://github.com/brunobola-portfolio/GitHub-Repo-Manager/blob/main/ROADMAP.md"
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-2 py-1 rounded text-sm font-medium text-brand-500 dark:text-[color:var(--ds-accent-brand-dark)] hover:text-brand-600 dark:hover:text-brand-300 transition-colors duration-200 ds-focus-ring"
           >
             See what&apos;s next on our Roadmap
             <ArrowRight className="w-4 h-4" />
-          </button>
+          </a>
         </motion.div>
 
       </div>

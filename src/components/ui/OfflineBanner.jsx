@@ -24,7 +24,7 @@ export function OfflineBanner() {
                     initial={{ y: -50, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: -50, opacity: 0 }}
-                    className="fixed top-0 left-0 right-0 z-[var(--ds-z-ceiling)] bg-amber-500 dark:bg-amber-600 text-white text-sm font-medium py-2 px-4 flex items-center justify-center gap-2 shadow-lg"
+                    className="fixed top-0 left-0 right-0 z-[var(--ds-z-ceiling)] bg-amber-500 dark:bg-amber-600 text-white text-sm font-medium py-2 px-4 flex items-center justify-center gap-2 ds-elevation-lg"
                     role="status"
                     aria-live="polite"
                     data-testid="offline-banner"

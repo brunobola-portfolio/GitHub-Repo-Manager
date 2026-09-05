@@ -13,7 +13,7 @@ export function ExecutionPipeline({ order, repos, source }) {
   const targetProject = source?.targetProject || source?.project || ''
   const TargetIcon = isAzureDevopsTarget ? AzureIcon : GitHubIcon
   const targetIconClass = isAzureDevopsTarget
-    ? 'text-blue-500 dark:text-blue-400'
+    ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
     : 'text-slate-400'
   const repoMap = useMemo(() => {
     const map = {}
@@ -70,7 +70,7 @@ export function ExecutionPipeline({ order, repos, source }) {
                 transition-all duration-200 group"
             >
               {/* Step number */}
-              <span className="shrink-0 w-6 h-6 rounded-md ds-brand-solid flex items-center justify-center ds-text-meta font-bold shadow-sm">
+              <span className="shrink-0 w-6 h-6 rounded-md ds-brand-solid flex items-center justify-center ds-text-meta font-bold ds-elevation-sm">
                 {i + 1}
               </span>
 

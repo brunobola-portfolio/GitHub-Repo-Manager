@@ -78,7 +78,7 @@ export function DescriptionField({ repo, index, aiAvailable, isGenerating, mode,
           className={`group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg ds-text-meta font-semibold shrink-0
             transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed ds-focus-ring
             ${aiAvailable
-              ? 'text-white bg-gradient-to-br from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 shadow-sm hover:shadow-md hover:shadow-brand-500/20'
+              ? 'text-white bg-gradient-to-br from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 ds-elevation-sm hover:shadow-md hover:shadow-brand-500/20'
               : 'text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600/60'
             }`}
         >

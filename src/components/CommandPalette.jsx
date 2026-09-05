@@ -3,7 +3,7 @@ import { copyToClipboard } from '../utils/clipboard'
 import { Command, useCommandState } from 'cmdk'
 import * as Dialog from '@radix-ui/react-dialog'
 import {
-  GitFork, LayoutDashboard, Users, Tag, Map, Wand2, History, Plus,
+  GitFork, LayoutDashboard, Users, Tag, Wand2, History, Plus,
   ArrowRightLeft, Settings, Kanban, GitPullRequest, CircleDot, Loader2,
   AlertTriangle, Wrench, BarChart3, Sparkles, Bookmark, ShieldAlert,
   Pin, PinOff, Bell, BellOff, X, RefreshCw, RotateCw, Eraser,
@@ -47,7 +47,6 @@ const NAVIGATE_ITEMS = [
   { id: 'nav-teams', label: 'Teams', view: 'teams', icon: Users },
   { id: 'nav-work-board', label: 'Work Board', view: 'work-board', icon: Kanban },
   { id: 'nav-pricing', label: 'Pricing', view: 'pricing', icon: Tag },
-  { id: 'nav-roadmap', label: 'Roadmap', view: 'roadmap', icon: Map },
 ]
 
 const ACTION_ITEMS = [

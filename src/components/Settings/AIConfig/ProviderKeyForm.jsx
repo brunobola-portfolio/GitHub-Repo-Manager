@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, AlertTriangle, Sparkles, Info } from 'lucide-react'
 import { API_BASE_URL, MOCK_MODE } from '../../../config'
-import { fetchWithRetry } from '../../../utils/api'
+import { fetchWithRetry, apiCall } from '../../../utils/api'
 import { useToast } from '../../../hooks/useToast'
 import { Button } from '../../ui/Button'
 import { Spinner } from '../../ui/Spinner'
@@ -53,8 +53,7 @@ export function ProviderKeyForm({ onVerified }) {
         // there is nothing to flip — just skip the fetch, there's no backend.
         if (MOCK_MODE) return undefined
         let cancelled = false
-        fetch(`${API_BASE_URL}/api/user/ai-config`, { credentials: 'include' })
-            .then((res) => (res.ok ? res.json() : null))
+        apiCall(`${API_BASE_URL}/api/user/ai-config`)
             .then((data) => {
                 if (cancelled || !data) return
                 setForm((prev) => ({

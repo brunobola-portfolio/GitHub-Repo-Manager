@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { FlaskConical, Crown, Gem, AlertTriangle } from 'lucide-react'
-import { MOCK_MODE } from '../config'
+import { MOCK_MODE , API_BASE_URL } from '../config'
 import { MS_PER_DAY } from '../utils/time'
 import { isAbort } from '../utils/errorClassification'
+import { apiCall } from '../utils/api'
 
 /**
  * LicenseBadge — visible evidence of the active license tier in the header.
  *
- * Fetches `/api/v1/license` once on mount and renders a small pill showing
+ * Fetches `${API_BASE_URL}/api/v1/license` once on mount and renders a small pill showing
  * the effective tier (Free / Pro / Enterprise). The backend endpoint returns
  * the license from the server-side `LICENSE_KEY` env cache, which is
  * independent of the frontend `MOCK_MODE` flag — so a real license shows
@@ -30,11 +31,7 @@ export default function LicenseBadge() {
 
   useEffect(() => {
     const controller = new AbortController()
-    fetch('/api/v1/license', { credentials: 'include', signal: controller.signal })
-      .then(async (r) => {
-        if (!r.ok) throw new Error(`status ${r.status}`)
-        return r.json()
-      })
+    apiCall(`${API_BASE_URL}/api/v1/license`, { signal: controller.signal })
       .then((data) => { if (!controller.signal.aborted) setInfo(data) })
       .catch((err) => {
         if (isAbort(err, controller.signal)) return

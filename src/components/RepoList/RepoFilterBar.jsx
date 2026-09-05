@@ -221,7 +221,7 @@ export function RepoFilterBar({
 							<button
 								type="button"
 								onClick={() => { setIsAISearch(!isAISearch); setSearchQuery('') }}
-								className={`p-2 -m-0.5 rounded-lg transition-all ${isAISearch ? 'text-brand-500 bg-brand-100 dark:bg-brand-900/30 shadow-sm' : 'text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20'} ds-focus-ring`}
+								className={`p-2 -m-0.5 rounded-lg transition-all ${isAISearch ? 'text-brand-500 bg-brand-100 dark:bg-brand-900/30 ds-elevation-sm' : 'text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20'} ds-focus-ring`}
 								title="Toggle AI semantic search"
 								aria-label="Toggle AI semantic search"
 							>
@@ -236,12 +236,12 @@ export function RepoFilterBar({
 						<p className="absolute -bottom-6 left-0 text-xs text-rose-600 dark:text-rose-400">{aiSearchError}</p>
 					)}
 				</div>
-				<div className="flex flex-shrink-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl p-1 border border-slate-200/70 dark:border-slate-700/50 shadow-sm">
+				<div className="flex flex-shrink-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl p-1 border border-slate-200/70 dark:border-slate-700/50 ds-elevation-sm">
 					<button
 						onClick={() => setViewMode('grid')}
 						aria-label="Grid view"
 						aria-pressed={viewMode === 'grid'}
-						className={`p-2 -m-0.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 shadow-sm text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'} ds-focus-ring`}
+						className={`p-2 -m-0.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-700 ds-elevation-sm text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'} ds-focus-ring`}
 					>
 						<LayoutGrid className="w-4 h-4" />
 					</button>
@@ -249,7 +249,7 @@ export function RepoFilterBar({
 						onClick={() => setViewMode('list')}
 						aria-label="List view"
 						aria-pressed={viewMode === 'list'}
-						className={`p-2 -m-0.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 shadow-sm text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'} ds-focus-ring`}
+						className={`p-2 -m-0.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-700 ds-elevation-sm text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'} ds-focus-ring`}
 					>
 						<ListIcon className="w-4 h-4" />
 					</button>

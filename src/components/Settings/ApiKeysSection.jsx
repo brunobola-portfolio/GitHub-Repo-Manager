@@ -145,7 +145,7 @@ function NewKeyForm({ onCreated, onCancel }) {
                                         aria-label={scope.label}
                                         className={`group flex items-start gap-2.5 p-3 rounded-xl border cursor-pointer transition-colors ${
                                             checked
-                                                ? 'bg-brand-50 dark:bg-brand-500/10 border-brand-300 dark:border-brand-500/40 shadow-sm'
+                                                ? 'bg-brand-50 dark:bg-brand-500/10 border-brand-300 dark:border-brand-500/40 ds-elevation-sm'
                                                 : 'bg-white dark:bg-slate-900/40 border-slate-200 dark:border-slate-700 hover:border-brand-300 dark:hover:border-brand-500/40'
                                         }`}
                                     >
@@ -193,7 +193,7 @@ function NewKeyForm({ onCreated, onCancel }) {
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="px-4 py-2 text-sm font-semibold ds-brand-solid disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm transition-colors ds-focus-ring"
+                            className="px-4 py-2 text-sm font-semibold ds-brand-solid disabled:opacity-50 disabled:cursor-not-allowed rounded-xl ds-elevation-sm transition-colors ds-focus-ring"
                         >
                             {submitting ? 'Creating…' : 'Create Key'}
                         </button>
@@ -349,9 +349,7 @@ export function ApiKeysSection() {
         setLoading(true)
         setError(null)
         try {
-            const res = await fetch(`${API_BASE_URL}/api/v1/api-keys`, { credentials: 'include' })
-            if (!res.ok) throw new Error("Couldn't load API keys")
-            const data = await res.json()
+            const data = await apiCall(`${API_BASE_URL}/api/v1/api-keys`)
 
             // Support both old (flat array) and new ({ keys, limits }) response shapes
             if (Array.isArray(data)) {
@@ -405,7 +403,7 @@ export function ApiKeysSection() {
                         <button
                             onClick={() => setShowForm(true)}
                             disabled={atLimit}
-                            className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium ds-brand-solid disabled:opacity-50 disabled:cursor-not-allowed rounded-xl shadow-sm transition-all ds-focus-ring"
+                            className="flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium ds-brand-solid disabled:opacity-50 disabled:cursor-not-allowed rounded-xl ds-elevation-sm transition-all ds-focus-ring"
                             title={atLimit ? `Limit reached (${limits.max}). Upgrade your plan.` : 'Create a new API key'}
                         >
                             <Plus className="w-4 h-4" />

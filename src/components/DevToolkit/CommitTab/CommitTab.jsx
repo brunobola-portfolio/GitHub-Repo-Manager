@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { API_BASE_URL } from '../../../config'
 import { RefreshCw, Wand2 } from 'lucide-react'
 import { Button } from '../../ui/Button'
 import { BranchSelector } from '../shared/BranchSelector'
@@ -61,9 +62,7 @@ export function CommitTab({ toolkit }) {
         if (!selectedRepo) return null
         setRepoStyleLoading(true)
         try {
-            const res = await fetch(`/api/repos/${repoOwner}/${selectedRepo.name}/commits/style`, { credentials: 'include' })
-            if (!res.ok) return null
-            const data = await res.json()
+            const data = await apiCall(`${API_BASE_URL}/api/repos/${repoOwner}/${selectedRepo.name}/commits/style`)
             setRepoStyle(data)
             return data
         } catch (err) {
@@ -85,7 +84,7 @@ export function CommitTab({ toolkit }) {
             style = await fetchRepoStyle()
         }
 
-        const result = await startStream('/api/ai/generate-commit', {
+        const result = await startStream(`${API_BASE_URL}/api/ai/generate-commit`, {
             diff,
             format,
             repo_style: format === 'repo-convention' ? style : undefined,
@@ -110,7 +109,7 @@ export function CommitTab({ toolkit }) {
         setLocalError(null)
         const diff = inputMode === 'auto' ? getDiffText() : manualDiff
 
-        const result = await startStream('/api/ai/refine', {
+        const result = await startStream(`${API_BASE_URL}/api/ai/refine`, {
             original_content: generated,
             original_diff: diff,
             instruction,
@@ -128,7 +127,7 @@ export function CommitTab({ toolkit }) {
     const handleChatRefine = useCallback(async (message) => {
         setLocalError(null)
         const diff = inputMode === 'auto' ? getDiffText() : manualDiff
-        const result = await startStream('/api/ai/chat-refine', {
+        const result = await startStream(`${API_BASE_URL}/api/ai/chat-refine`, {
             message,
             current_output: generated,
             original_diff: diff,
@@ -149,7 +148,7 @@ export function CommitTab({ toolkit }) {
         setSplitLoading(true)
         setLocalError(null)
         try {
-            const data = await apiCall('/api/ai/generate-commit', {
+            const data = await apiCall(`${API_BASE_URL}/api/ai/generate-commit`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -182,7 +181,7 @@ export function CommitTab({ toolkit }) {
                         onClick={() => setInputMode(m.id)}
                         className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
                             inputMode === m.id
-                                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+                                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 ds-elevation-sm'
                                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                         } ds-focus-ring`}
                     >

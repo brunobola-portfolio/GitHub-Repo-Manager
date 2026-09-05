@@ -13,7 +13,7 @@ import { RowIconBadge } from '../ui/RowIconBadge'
 import { useModal } from '../../hooks/useModal'
 import { UsageDashboard } from './UsageDashboard'
 import { formatDate as formatDateBase } from '../../utils/format'
-import { getCsrfToken } from '../../utils/api'
+import { apiCall } from '../../utils/api'
 import { onAppEvent, APP_EVENTS, navigateToPricing } from '../../utils/appEvents'
 
 const TIER_CONFIG = {
@@ -306,30 +306,23 @@ export function LicensePlanSection() {
         // 'license_key' (legacy alias) — all signal an active license,
         // distinct from a Stripe subscription.
         try {
-            const licRes = await fetch(`${API_BASE_URL}/api/v1/license`, { credentials: 'include' })
-            if (licRes.ok) {
-                const licData = await licRes.json()
-                if (licData.active && licData.source !== 'none') {
-                    setLicense(licData)
-                    setLoading(false)
-                    return
-                }
+            const licData = await apiCall(`${API_BASE_URL}/api/v1/license`)
+            if (licData.active && licData.source !== 'none') {
+                setLicense(licData)
+                setLoading(false)
+                return
             }
         } catch {
             // License endpoint not available, continue with Stripe
         }
 
         try {
-            const res = await fetch(`${API_BASE_URL}/api/v1/billing/subscription`, { credentials: 'include' })
-            if (res.status === 503 || res.status === 501) {
-                setBillingUnavailable(true)
-                return
-            }
-            if (!res.ok) throw new Error("Couldn't load subscription")
-            const data = await res.json()
+            const data = await apiCall(`${API_BASE_URL}/api/v1/billing/subscription`)
             setSubscription(data)
         } catch (err) {
-            if (err.message?.toLowerCase().includes('stripe') || err.message?.toLowerCase().includes('not configured')) {
+            if (err.status === 503 || err.status === 501) {
+                setBillingUnavailable(true)
+            } else if (err.message?.toLowerCase().includes('stripe') || err.message?.toLowerCase().includes('not configured')) {
                 setBillingUnavailable(true)
             } else {
                 setError(formatUserError(err, { fallbackTitle: "Couldn't load subscription" }))
@@ -357,15 +350,9 @@ export function LicensePlanSection() {
         setPortalLoading(true)
         setPortalError(null)
         try {
-            const headers = {}
-            try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
-            const res = await fetch(`${API_BASE_URL}/api/v1/billing/portal`, {
+            const data = await apiCall(`${API_BASE_URL}/api/v1/billing/portal`, {
                 method: 'POST',
-                credentials: 'include',
-                headers,
             })
-            if (!res.ok) throw new Error('Failed to open billing portal')
-            const data = await res.json()
             if (data.url) {
                 window.open(data.url, '_blank', 'noopener,noreferrer')
             }

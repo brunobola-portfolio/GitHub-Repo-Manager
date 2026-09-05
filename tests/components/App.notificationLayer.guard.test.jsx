@@ -95,7 +95,6 @@ const { ThemeProvider } = await import('@/hooks/useTheme')
 // Module-scope await is paid once and is not subject to testTimeout.
 await Promise.all([
     import('@/components/NotificationLayer'),
-    import('@/components/SlimSidebar'),
     import('@/components/HeaderBanners'),
 ])
 

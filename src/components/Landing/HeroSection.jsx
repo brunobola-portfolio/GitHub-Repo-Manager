@@ -93,7 +93,7 @@ export function HeroSection({ onSignIn }) {
           onClick={onSignIn}
           className="group relative px-8 py-3.5 rounded-2xl font-bold text-base text-white
             bg-[color:var(--ds-cta)] hover:bg-[color:var(--ds-cta-hover)]
-            shadow-md
+            ds-elevation-md
             transition-colors duration-200
             ds-focus-ring"
         >

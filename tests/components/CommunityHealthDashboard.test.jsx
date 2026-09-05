@@ -83,7 +83,7 @@ describe('CommunityHealthDashboard', () => {
     it('renders health data with score ring after loading', async () => {
         global.fetch.mockResolvedValueOnce({
             ok: true,
-            json: () => Promise.resolve(mockHealthData)
+            headers: { get: () => 'application/json' }, json: () => Promise.resolve(mockHealthData)
         });
         render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);
         await waitFor(() => {
@@ -100,7 +100,7 @@ describe('CommunityHealthDashboard', () => {
     it('shows rose border on missing files', async () => {
         global.fetch.mockResolvedValueOnce({
             ok: true,
-            json: () => Promise.resolve(mockHealthData)
+            headers: { get: () => 'application/json' }, json: () => Promise.resolve(mockHealthData)
         });
         render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);
         await waitFor(() => {
@@ -116,7 +116,7 @@ describe('CommunityHealthDashboard', () => {
     it('calls onClose when the modal close button is clicked', async () => {
         global.fetch.mockResolvedValueOnce({
             ok: true,
-            json: () => Promise.resolve(mockHealthData)
+            headers: { get: () => 'application/json' }, json: () => Promise.resolve(mockHealthData)
         });
         const user = userEvent.setup();
         render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);
@@ -129,7 +129,7 @@ describe('CommunityHealthDashboard', () => {
     it('displays score badge in header after data loads', async () => {
         global.fetch.mockResolvedValueOnce({
             ok: true,
-            json: () => Promise.resolve(mockHealthData)
+            headers: { get: () => 'application/json' }, json: () => Promise.resolve(mockHealthData)
         });
         render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);
         await waitFor(() => {
@@ -152,7 +152,7 @@ describe('CommunityHealthDashboard', () => {
         const lowScoreData = { ...mockHealthData, score: 30 };
         global.fetch.mockResolvedValueOnce({
             ok: true,
-            json: () => Promise.resolve(lowScoreData)
+            headers: { get: () => 'application/json' }, json: () => Promise.resolve(lowScoreData)
         });
         render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);
         await waitFor(() => {
@@ -173,7 +173,7 @@ describe('CommunityHealthDashboard', () => {
         // mockHealthData.score === 85 → "Excellent" tier.
         global.fetch.mockResolvedValueOnce({
             ok: true,
-            json: () => Promise.resolve(mockHealthData)
+            headers: { get: () => 'application/json' }, json: () => Promise.resolve(mockHealthData)
         });
         render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);
         await waitFor(() => {
@@ -186,7 +186,7 @@ describe('CommunityHealthDashboard', () => {
         const goodScoreData = { ...mockHealthData, score: 65 };
         global.fetch.mockResolvedValueOnce({
             ok: true,
-            json: () => Promise.resolve(goodScoreData)
+            headers: { get: () => 'application/json' }, json: () => Promise.resolve(goodScoreData)
         });
         render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);
         await waitFor(() => {
@@ -198,15 +198,17 @@ describe('CommunityHealthDashboard', () => {
         // a dark: stroke class override on the same circle.
         expect(ring).toHaveAttribute('stroke', 'var(--ds-accent-link)');
         expect(ring).toHaveClass('dark:stroke-[color:var(--ds-accent-link-dark)]');
-        // The sibling ScoreBadge for the same score stays in the blue family.
-        expect(screen.getAllByText('Good')[0].className).toContain('blue');
+        // The sibling ScoreBadge for the same score stays in the blue family —
+        // via the accent-link token, not a Tailwind blue-* utility (retired
+        // 2026-09-05, blue-* sweep).
+        expect(screen.getAllByText('Good')[0].className).toContain('accent-link');
     });
 
     it('"Fair" tier ring uses the attention chart-series token', async () => {
         const fairScoreData = { ...mockHealthData, score: 45 };
         global.fetch.mockResolvedValueOnce({
             ok: true,
-            json: () => Promise.resolve(fairScoreData)
+            headers: { get: () => 'application/json' }, json: () => Promise.resolve(fairScoreData)
         });
         render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);
         await waitFor(() => {
@@ -218,7 +220,7 @@ describe('CommunityHealthDashboard', () => {
     it('high priority recommendations have pulse animation class', async () => {
         global.fetch.mockResolvedValueOnce({
             ok: true,
-            json: () => Promise.resolve(mockHealthData)
+            headers: { get: () => 'application/json' }, json: () => Promise.resolve(mockHealthData)
         });
         render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);
         await waitFor(() => {
@@ -239,7 +241,7 @@ describe('CommunityHealthDashboard', () => {
 
         global.fetch.mockResolvedValueOnce({
             ok: true,
-            json: () => Promise.resolve(mockHealthData)
+            headers: { get: () => 'application/json' }, json: () => Promise.resolve(mockHealthData)
         });
 
         render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);
@@ -265,7 +267,7 @@ describe('CommunityHealthDashboard', () => {
 
         global.fetch.mockResolvedValueOnce({
             ok: true,
-            json: () => Promise.resolve(mockHealthData)
+            headers: { get: () => 'application/json' }, json: () => Promise.resolve(mockHealthData)
         });
 
         const user = userEvent.setup();
@@ -305,7 +307,7 @@ describe('CommunityHealthDashboard', () => {
 
         global.fetch.mockResolvedValueOnce({
             ok: true,
-            json: () => Promise.resolve(mockHealthData)
+            headers: { get: () => 'application/json' }, json: () => Promise.resolve(mockHealthData)
         });
 
         const user = userEvent.setup();
@@ -361,7 +363,7 @@ describe('CommunityHealthDashboard', () => {
 
         global.fetch.mockResolvedValueOnce({
             ok: true,
-            json: () => Promise.resolve(mockHealthData)
+            headers: { get: () => 'application/json' }, json: () => Promise.resolve(mockHealthData)
         });
 
         render(<CommunityHealthDashboard repo={mockRepo} onClose={onClose} />);

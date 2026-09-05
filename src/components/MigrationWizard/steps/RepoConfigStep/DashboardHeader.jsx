@@ -65,7 +65,7 @@ export function DashboardHeader({
             </div>
             {isAzureDevops ? (
               <div className="mt-1 flex items-center gap-2 flex-wrap min-w-0">
-                <div className="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 ring-1 ring-slate-200 dark:ring-slate-700 text-sm font-mono font-semibold text-slate-700 dark:text-slate-200 shadow-sm">
+                <div className="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 ring-1 ring-slate-200 dark:ring-slate-700 text-sm font-mono font-semibold text-slate-700 dark:text-slate-200 ds-elevation-sm">
                   {source.org}
                 </div>
                 <span className="text-slate-500 dark:text-slate-400 font-mono select-none">/</span>
@@ -80,7 +80,7 @@ export function DashboardHeader({
                     className="min-w-[220px]"
                   />
                 ) : (
-                  <div className="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 ring-1 ring-slate-200 dark:ring-slate-700 text-sm font-mono font-semibold text-slate-700 dark:text-slate-200 shadow-sm">
+                  <div className="inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 ring-1 ring-slate-200 dark:ring-slate-700 text-sm font-mono font-semibold text-slate-700 dark:text-slate-200 ds-elevation-sm">
                     {targetProject}
                   </div>
                 )}
@@ -106,7 +106,7 @@ export function DashboardHeader({
                 </span>
               </div>
             ) : (
-              <div className="mt-1 inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 ring-1 ring-slate-200 dark:ring-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-sm">
+              <div className="mt-1 inline-flex items-center px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800/80 ring-1 ring-slate-200 dark:ring-slate-700 text-sm font-semibold text-slate-700 dark:text-slate-200 ds-elevation-sm">
                 {source.targetOrg || source.org || 'Personal Account'}
               </div>
             )}

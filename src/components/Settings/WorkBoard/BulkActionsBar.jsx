@@ -10,7 +10,7 @@ export function BulkActionsBar({ selectedCount, onAction, onClear }) {
                     animate={{ y: 0, opacity: 1 }}
                     exit={{ y: 40, opacity: 0 }}
                     transition={{ duration: 0.15, ease: 'easeOut' }}
-                    className="sticky bottom-0 z-10 flex items-center justify-between gap-3 px-4 py-3 rounded-b-2xl bg-brand-500 text-white shadow-lg"
+                    className="sticky bottom-0 z-10 flex items-center justify-between gap-3 px-4 py-3 rounded-b-2xl bg-brand-500 text-white ds-elevation-lg"
                     role="region"
                     aria-label="Bulk actions"
                 >

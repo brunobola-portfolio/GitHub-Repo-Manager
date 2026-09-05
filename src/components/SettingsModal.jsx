@@ -25,7 +25,7 @@ import { SectionSpinner } from './ui/Spinner'
 const ProbeStatsSection = lazy(() => import('./Settings/ProbeStatsSection').then(m => ({ default: m.ProbeStatsSection })))
 const EnvironmentToolingSection = lazy(() => import('./Settings/EnvironmentToolingSection').then(m => ({ default: m.EnvironmentToolingSection })))
 const AboutSection = lazy(() => import('./Settings/AboutSection').then(m => ({ default: m.AboutSection })))
-import { getCsrfToken } from '../utils/api'
+import { apiCall } from '../utils/api'
 
 // SettingsIcon defined before TABS so it can be referenced in the array
 function SettingsIcon({ className }) {
@@ -109,21 +109,9 @@ export function SettingsModal({ isOpen, onClose, initialTab, isAdmin = false }) 
         setClearing(true)
         setCacheMessage(null)
         try {
-            const headers = {}
-            try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
-            const response = await fetch(`${API_BASE}/stats/clear-cache`, {
-                method: 'POST',
-                credentials: 'include',
-                headers,
-            })
-            if (response.ok) {
-                const data = await response.json()
-                setCacheMessage({ type: 'success', text: `Cache cleared! (${data.cleared} entries removed)` })
-                toast.success(`Cache cleared — ${data.cleared} entries removed`)
-            } else {
-                setCacheMessage({ type: 'error', text: 'Failed to clear cache. Try again.' })
-                toast.error('Failed to clear cache')
-            }
+            const data = await apiCall(`${API_BASE}/stats/clear-cache`, { method: 'POST' })
+            setCacheMessage({ type: 'success', text: `Cache cleared! (${data.cleared} entries removed)` })
+            toast.success(`Cache cleared — ${data.cleared} entries removed`)
         } catch {
             setCacheMessage({ type: 'error', text: 'Failed to clear cache. Try again.' })
             toast.error('Failed to clear cache')
@@ -191,7 +179,7 @@ export function SettingsModal({ isOpen, onClose, initialTab, isAdmin = false }) 
                                     onClose()
                                     window.location.hash = '#/ai/prompts'
                                 }}
-                                className="block rounded-md border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-600 p-3 mb-3 transition-colors ds-focus-ring"
+                                className="block rounded-md border border-slate-200 dark:border-slate-700 hover:border-brand-400 dark:hover:border-brand-600 p-3 mb-3 transition-colors ds-focus-ring"
                             >
                                 <div className="flex items-start gap-2">
                                     <div className="flex-1">
@@ -390,7 +378,7 @@ function VisibilityToggleButton({ active, onClick, children }) {
             aria-pressed={active}
             className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                 active
-                    ? 'bg-white dark:bg-slate-800 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] shadow-sm'
+                    ? 'bg-white dark:bg-slate-800 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ds-elevation-sm'
                     : 'text-slate-600 dark:text-slate-300'
             } ds-focus-ring`}
         >

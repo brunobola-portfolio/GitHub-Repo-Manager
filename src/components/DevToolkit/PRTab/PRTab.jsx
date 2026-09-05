@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
+import { API_BASE_URL } from '../../../config'
 import { useCopyToClipboard } from '../../../hooks/useCopyToClipboard'
 import { RefreshCw, GitPullRequest, Rocket, Info, CheckCircle2, FileText } from 'lucide-react'
 import { AnimatedCopyIcon } from '../../ui/AnimatedCopyIcon'
@@ -55,15 +56,12 @@ export function PRTab({ toolkit }) {
             let template = null
             if (selectedRepo) {
                 try {
-                    const tplRes = await fetch(`/api/repos/${repoOwner}/${selectedRepo.name}/pr-template`, { credentials: 'include' })
-                    if (tplRes.ok) {
-                        const tplData = await tplRes.json()
-                        if (tplData.found) {
-                            template = tplData.template
-                            setTemplateBadge('Using repo template')
-                        } else {
-                            setTemplateBadge('Using default template')
-                        }
+                    const tplData = await apiCall(`${API_BASE_URL}/api/repos/${repoOwner}/${selectedRepo.name}/pr-template`)
+                    if (tplData.found) {
+                        template = tplData.template
+                        setTemplateBadge('Using repo template')
+                    } else {
+                        setTemplateBadge('Using default template')
                     }
                 } catch {
                     setTemplateBadge('Using default template')
@@ -85,7 +83,7 @@ export function PRTab({ toolkit }) {
                 commit_context: generatedCommit?.message || undefined,
             }
 
-            const result = await startStream('/api/ai/generate-pr', body)
+            const result = await startStream(`${API_BASE_URL}/api/ai/generate-pr`, body)
             if (result) {
                 setSections(result)
                 setLabels(result.suggested_labels || [])
@@ -105,7 +103,7 @@ export function PRTab({ toolkit }) {
         setLocalError(null)
         const field = contentType === 'pr_summary' ? 'summary' : 'test_plan'
         try {
-            const result = await startStream('/api/ai/refine', {
+            const result = await startStream(`${API_BASE_URL}/api/ai/refine`, {
                 original_content: sections[field],
                 original_diff: getDiffText(),
                 instruction,
@@ -122,7 +120,7 @@ export function PRTab({ toolkit }) {
     const handleChatRefine = useCallback(async (message) => {
         if (!sections) return
         setLocalError(null)
-        const result = await startStream('/api/ai/chat-refine', {
+        const result = await startStream(`${API_BASE_URL}/api/ai/chat-refine`, {
             message,
             current_output: sections.summary,
             original_diff: getDiffText(),
@@ -159,7 +157,7 @@ export function PRTab({ toolkit }) {
             const body = buildBody()
 
             if (prContext?.number) {
-                await apiCall(`/api/repos/${owner}/${repo}/pulls/${prContext.number}`, {
+                await apiCall(`${API_BASE_URL}/api/repos/${owner}/${repo}/pulls/${prContext.number}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ title: sections.title, body }),
@@ -169,7 +167,7 @@ export function PRTab({ toolkit }) {
                 toolkit.setGeneratedPR?.({ number: prContext.number, url: prUrlValue, title: sections.title })
                 toast.success(`PR #${prContext.number} updated`)
             } else {
-                const data = await apiCall(`/api/repos/${owner}/${repo}/pulls`, {
+                const data = await apiCall(`${API_BASE_URL}/api/repos/${owner}/${repo}/pulls`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -209,10 +207,10 @@ export function PRTab({ toolkit }) {
             {selectedRepo && (
                 <div className="space-y-1.5">
                     {prContext?.number && (
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-400">
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-brand-500/10 border border-brand-500/20 text-xs text-brand-400">
                             <Info className="w-3.5 h-3.5 shrink-0" />
                             PR #{prContext.number} exists on this branch
-                            <span className="ml-auto px-1.5 py-0.5 rounded bg-blue-500/20 ds-text-micro font-medium">Update existing</span>
+                            <span className="ml-auto px-1.5 py-0.5 rounded bg-brand-500/20 ds-text-micro font-medium">Update existing</span>
                         </div>
                     )}
                     {generatedCommit && (

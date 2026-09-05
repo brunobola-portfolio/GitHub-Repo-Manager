@@ -135,7 +135,7 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
         {/* Collapse toggle */}
         <button
           onClick={() => setCollapsed(c => !c)}
-          className="shrink-0 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 rounded"
+          className="shrink-0 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--ds-accent-ring)] rounded"
           aria-label={collapsed ? 'Expand comment' : 'Collapse comment'}
           aria-expanded={!collapsed}
         >
@@ -186,7 +186,7 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
               {!showReply && (
                 <button
                   onClick={() => setShowReply(true)}
-                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 rounded"
+                  className="text-xs text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline focus:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--ds-accent-ring)] rounded"
                 >
                   Reply
                 </button>
@@ -195,7 +195,7 @@ export function InlineComment({ comment, replies = [], onReply, isPending = fals
               {!resolvedLocally && (
                 <button
                   onClick={handleResolve}
-                  className="ml-auto flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 rounded"
+                  className="ml-auto flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-emerald-700 dark:hover:text-emerald-400 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--ds-accent-ring)] rounded"
                 >
                   <CheckCircle size={13} />
                   Resolve

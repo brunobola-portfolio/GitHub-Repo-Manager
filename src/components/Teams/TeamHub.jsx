@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../config'
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Plus, ChevronRight, MoreVertical, Trash2, Edit2, AlertTriangle } from 'lucide-react';
 import { Github } from '../icons/GithubIcon';
@@ -12,7 +13,7 @@ import { Skeleton } from '../ui/Skeleton';
 import { Field, Input } from '../ui/form';
 import { EmptyState } from '../ui/EmptyState';
 import { listTeams } from '../../api/teams';
-import { getCsrfToken } from '../../utils/api';
+import { apiCall } from '../../utils/api';
 
 export function TeamHub({ onTeamSelect, onNavigatePricing }) {
     const [teams, setTeams] = useState([]);
@@ -58,29 +59,21 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
         if (!formData.name.trim()) return;
 
         try {
-            const url = isEditing ? `/api/teams/${activeTeamId}` : '/api/teams';
+            const url = isEditing ? `${API_BASE_URL}/api/teams/${activeTeamId}` : `${API_BASE_URL}/api/teams`;
             const method = isEditing ? 'PUT' : 'POST';
 
-            const headers = { 'Content-Type': 'application/json' };
-            try { headers['X-CSRF-Token'] = await getCsrfToken(); } catch { /* server will 403 */ }
-            const res = await fetch(url, {
+            await apiCall(url, {
                 method,
-                credentials: 'include',
-                headers,
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)
             });
-            const data = await res.json();
 
-            if (res.ok) {
-                toast.success(isEditing ? 'Team updated!' : 'Team created!');
-                setFormData({ name: '', description: '' });
-                setShowCreate(false);
-                setIsEditing(false);
-                setActiveTeamId(null);
-                fetchTeams();
-            } else {
-                toast.error(data.error || 'Operation failed');
-            }
+            toast.success(isEditing ? 'Team updated!' : 'Team created!');
+            setFormData({ name: '', description: '' });
+            setShowCreate(false);
+            setIsEditing(false);
+            setActiveTeamId(null);
+            fetchTeams();
         } catch (error) {
             toast.errorFromException(error, { fallbackTitle: isEditing ? 'Failed to update team' : 'Failed to create team' });
         }
@@ -94,20 +87,9 @@ export function TeamHub({ onTeamSelect, onNavigatePricing }) {
             confirmText: 'Delete',
             onConfirm: async () => {
                 try {
-                    const headers = {};
-                    try { headers['X-CSRF-Token'] = await getCsrfToken(); } catch { /* server will 403 */ }
-                    const res = await fetch(`/api/teams/${teamId}`, {
-                        method: 'DELETE',
-                        credentials: 'include',
-                        headers,
-                    });
-                    if (res.ok) {
-                        toast.success('Team deleted');
-                        fetchTeams();
-                    } else {
-                        const data = await res.json();
-                        toast.error(data.error || 'Failed to delete team');
-                    }
+                    await apiCall(`${API_BASE_URL}/api/teams/${teamId}`, { method: 'DELETE' });
+                    toast.success('Team deleted');
+                    fetchTeams();
                 } catch (error) {
                     toast.errorFromException(error, { fallbackTitle: 'Failed to delete team' });
                 }

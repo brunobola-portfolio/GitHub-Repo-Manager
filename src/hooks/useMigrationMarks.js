@@ -1,4 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
+import { API_BASE_URL } from '../config'
+import { apiCall } from '../utils/api'
 
 // Marks are decorative provenance badges fetched once per repo card/detail.
 // Without a backend session (frontend-only demo mode, expired auth) every
@@ -28,18 +30,15 @@ export function useMigrationMarksFor(targetFullName) {
   useEffect(() => {
     if (!targetFullName || marksUnauthorized || MOCK_MODE) return undefined
     let cancelled = false
-    const url = `/api/migration/marks?targetFullName=${encodeURIComponent(targetFullName)}`
-    fetch(url, { credentials: 'include' })
-      .then(r => {
-        if (r.status === 401) marksUnauthorized = true
-        return r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))
-      })
+    const url = `${API_BASE_URL}/api/migration/marks?targetFullName=${encodeURIComponent(targetFullName)}`
+    apiCall(url)
       .then(d => {
         if (cancelled) return
         setMarks(d.marks || [])
         setLoading(false)
       })
       .catch(e => {
+        if (e.status === 401) marksUnauthorized = true
         if (cancelled) return
         setError(e)
         setLoading(false)
@@ -64,11 +63,7 @@ export function useMarksForPlan(planId) {
   useEffect(() => {
     if (!planId || marksUnauthorized) return undefined
     let cancelled = false
-    fetch(`/api/migration/marks/plan/${planId}`, { credentials: 'include' })
-      .then(r => {
-        if (r.status === 401) marksUnauthorized = true
-        return r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))
-      })
+    apiCall(`${API_BASE_URL}/api/migration/marks/plan/${planId}`)
       .then(d => {
         if (cancelled) return
         setByScope(d.byScope || { source: [], destination: [], 'git-tag': [] })
@@ -76,6 +71,7 @@ export function useMarksForPlan(planId) {
         setLoading(false)
       })
       .catch(e => {
+        if (e.status === 401) marksUnauthorized = true
         if (cancelled) return
         setError(e)
         setLoading(false)

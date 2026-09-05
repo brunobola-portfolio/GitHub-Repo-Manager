@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
+import { API_BASE_URL } from '../../config'
 import { SectionSpinner } from '../ui/Spinner'
 import { formatUserError } from '../../utils/errors'
+import { apiCall } from '../../utils/api'
 
 function UsageBar({ label, current, limit }) {
   const isInf = limit === 'Infinity' || limit === Infinity || limit === null || limit === undefined
@@ -79,8 +81,7 @@ export function UsageDashboard() {
 
   useEffect(() => {
     let cancelled = false
-    fetch('/api/v1/usage', { credentials: 'include' })
-      .then(r => r.ok ? r.json() : Promise.reject(new Error("Couldn't load usage")))
+    apiCall(`${API_BASE_URL}/api/v1/usage`)
       .then(data => {
         if (!cancelled) {
           setUsage(data)

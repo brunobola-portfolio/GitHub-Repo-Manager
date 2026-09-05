@@ -114,7 +114,7 @@ function KpiTile({ icon: Icon, label, value, hint, loading, errored, accent = 'b
                 group relative text-left p-5 rounded-2xl border
                 transition-all duration-200 ds-hover-lift
                 ${active
-                    ? 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 shadow-sm'
+                    ? 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 ds-elevation-sm'
                     : 'border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-600'
                 }
              ds-focus-ring`}

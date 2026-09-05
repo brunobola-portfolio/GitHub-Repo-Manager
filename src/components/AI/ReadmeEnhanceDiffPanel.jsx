@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { API_BASE_URL } from '../../config'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import { DiffView } from '@git-diff-view/react'
 import '@git-diff-view/react/styles/diff-view.css'
@@ -8,6 +9,7 @@ import { Button } from '../ui/Button'
 import { SectionSpinner } from '../ui/Spinner'
 import { AIErrorState } from '../ui/AIErrorState'
 import { isAbort } from '../../utils/errorClassification'
+import { fetchWithRetry } from '../../utils/api'
 import { useTheme } from '../../hooks/useTheme'
 import { useResponsiveDiffMode } from '../../hooks/useResponsiveDiffMode'
 
@@ -40,12 +42,14 @@ export function ReadmeEnhanceDiffPanel({ repo }) {
     const controller = new AbortController()
 
     // Fetch current README and enhanced version in parallel
-    const readmeFetch = fetch(`/api/repos/${encodeURIComponent(repo.full_name)}/readme`, {
-      credentials: 'include',
+    // fetchWithRetry (not apiCall) — the response is raw README text, and
+    // apiCall's safeParseJson would misread the vnd.github.raw content-type
+    // and try to JSON-parse it.
+    const readmeFetch = fetchWithRetry(`${API_BASE_URL}/api/repos/${encodeURIComponent(repo.full_name)}/readme`, {
       headers: { Accept: 'application/vnd.github.raw' },
       signal: controller.signal,
     })
-      .then(r => r.ok ? r.text() : '')
+      .then(r => r.text())
       .catch(() => '')
 
     const enhanceFetch = aiApi.enhanceReadme(repo)

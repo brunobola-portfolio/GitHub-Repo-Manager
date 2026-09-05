@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../../config'
 import { motion, AnimatePresence } from 'framer-motion';
 import { Database, CheckCircle, Server, HardDrive, ShieldCheck, ArrowRight } from 'lucide-react';
 import { Spinner } from '../ui/Spinner';
 import { Button } from '../ui/Button';
 import { PageHeader } from '../ui/PageHeader';
-import { getCsrfToken } from '../../utils/api';
+import { apiCall } from '../../utils/api';
 
 export function SystemSetup({ onComplete }) {
     const [step, setStep] = useState(0);
@@ -21,14 +22,7 @@ export function SystemSetup({ onComplete }) {
         // Step 2: Request Backend Setup
         try {
             setError(null);
-            const headers = {};
-            try { headers['X-CSRF-Token'] = await getCsrfToken(); } catch { /* server will 403 */ }
-            const res = await fetch('/api/system/setup', {
-                method: 'POST',
-                credentials: 'include',
-                headers,
-            });
-            if (!res.ok) throw new Error('Setup failed');
+            await apiCall(`${API_BASE_URL}/api/system/setup`, { method: 'POST' });
 
             // Step 2 -> 3 (Simulate progress matching backend simulation)
             await wait(1000);
@@ -58,7 +52,7 @@ export function SystemSetup({ onComplete }) {
         <div className="fixed inset-0 bg-slate-950 flex items-center justify-center z-[var(--ds-z-popover)] text-white overflow-hidden">
             {/* Background Effects */}
             <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-brand-600/20 rounded-full blur-[120px]" />
-            <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px]" />
+            <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-brand-600/20 rounded-full blur-[120px]" />
 
             <div className="relative w-full max-w-lg p-8">
                 <motion.div
@@ -66,7 +60,7 @@ export function SystemSetup({ onComplete }) {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center mb-12"
                 >
-                    <div className="w-20 h-20 bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-xl">
+                    <div className="w-20 h-20 bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] rounded-3xl mx-auto mb-6 flex items-center justify-center ds-elevation-overlay">
                         <Database className="w-10 h-10 text-white" />
                     </div>
                     <PageHeader

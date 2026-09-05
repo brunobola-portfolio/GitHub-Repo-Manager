@@ -662,7 +662,7 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus, currentRe
                                                             <button
                                                                 type="button"
                                                                 onClick={handleStop}
-                                                                className="shrink-0 inline-flex items-center justify-center h-11 w-11 bg-slate-700 dark:bg-slate-600 text-white rounded-xl hover:opacity-90 transition-colors shadow-sm ds-focus-ring"
+                                                                className="shrink-0 inline-flex items-center justify-center h-11 w-11 bg-slate-700 dark:bg-slate-600 text-white rounded-xl hover:opacity-90 transition-colors ds-elevation-sm ds-focus-ring"
                                                                 aria-label="Stop generating"
                                                             >
                                                                 <Square size={14} fill="currentColor" />
@@ -672,7 +672,7 @@ export function AIAssistant({ askAI, askAIStream, user, checkAIStatus, currentRe
                                                         <button
                                                             type="submit"
                                                             disabled={isLoading || !input.trim()}
-                                                            className="shrink-0 inline-flex items-center justify-center h-11 w-11 ds-brand-solid rounded-xl hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-sm ds-focus-ring"
+                                                            className="shrink-0 inline-flex items-center justify-center h-11 w-11 ds-brand-solid rounded-xl hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors ds-elevation-sm ds-focus-ring"
                                                             aria-label="Send message"
                                                         >
                                                             {isLoading
@@ -701,7 +701,7 @@ function MessageBubble({ message, onAction, onRetry, onOpenSettings }) {
     return (
         <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
             {!isUser && (
-                <div className={`w-7 h-7 rounded-lg ${isError ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'ds-brand-solid'} flex items-center justify-center shrink-0 mt-0.5 mr-2 shadow-sm`}>
+                <div className={`w-7 h-7 rounded-lg ${isError ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400' : 'ds-brand-solid'} flex items-center justify-center shrink-0 mt-0.5 mr-2 ds-elevation-sm`}>
                     {isError
                         ? <AlertTriangle size={13} className="text-rose-600 dark:text-rose-400" />
                         : <Sparkles size={13} className="text-white" />}
@@ -709,9 +709,9 @@ function MessageBubble({ message, onAction, onRetry, onOpenSettings }) {
             )}
             <div className={`max-w-[82%] flex flex-col gap-2`}>
                 <div
-                    className={`px-3.5 py-2.5 text-sm leading-relaxed rounded-2xl shadow-sm ${
+                    className={`px-3.5 py-2.5 text-sm leading-relaxed rounded-2xl ds-elevation-sm ${
                         isUser
-                            ? 'ds-brand-solid rounded-br-sm shadow-sm'
+                            ? 'ds-brand-solid rounded-br-sm ds-elevation-sm'
                             : isError
                                 ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-900/50 rounded-bl-sm'
                                 : 'bg-white dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 rounded-bl-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-pre:my-2 prose-code:text-xs'
@@ -791,10 +791,10 @@ function ActionChip({ action, onClick }) {
 function TypingIndicator() {
     return (
         <div className="flex justify-start" aria-live="polite" aria-label="Assistant is typing">
-            <div className="w-7 h-7 rounded-lg bg-[color:var(--ds-accent-brand)] flex items-center justify-center shrink-0 mt-0.5 mr-2 shadow-sm">
+            <div className="w-7 h-7 rounded-lg bg-[color:var(--ds-accent-brand)] flex items-center justify-center shrink-0 mt-0.5 mr-2 ds-elevation-sm">
                 <Sparkles size={13} className="text-white" />
             </div>
-            <div className="bg-white dark:bg-slate-800/90 px-3.5 py-3 rounded-2xl rounded-bl-sm border border-slate-200/80 dark:border-slate-700/60 shadow-sm flex items-center">
+            <div className="bg-white dark:bg-slate-800/90 px-3.5 py-3 rounded-2xl rounded-bl-sm border border-slate-200/80 dark:border-slate-700/60 ds-elevation-sm flex items-center">
                 <Spinner size="sm" tone="muted" label="Typing" />
             </div>
         </div>

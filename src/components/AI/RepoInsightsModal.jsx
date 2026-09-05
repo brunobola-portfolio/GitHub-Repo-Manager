@@ -414,7 +414,7 @@ function OverviewGrid({ data }) {
                         {data.suggested_topics.map((topic) => (
                             <span
                                 key={topic}
-                                className="px-3 py-1 bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 rounded-full text-sm"
+                                className="px-3 py-1 bg-brand-500/10 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] border border-brand-500/20 rounded-full text-sm"
                             >
                                 #{topic}
                             </span>
@@ -560,7 +560,7 @@ function ReadmeGrid({ data, repo }) {
             <InsightCard tone="info">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div>
-                        <h3 className="text-blue-600 dark:text-blue-400 font-medium mb-1">
+                        <h3 className="text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] font-medium mb-1">
                             README Enhancement Suggestions
                         </h3>
                         <p className="text-slate-500 dark:text-slate-400 text-sm">
@@ -597,7 +597,7 @@ function ReadmeGrid({ data, repo }) {
 // ============================================================================
 // Tone mapping: `improvement` suggestions get the warm amber "recommendation"
 // look (matches the Quality tab's Recommendations card). `info` + anything
-// else defaults to the neutral indigo/blue palette so the surface reads as
+// else defaults to the neutral brand palette so the surface reads as
 // informational rather than as an action item.
 const SUGGESTION_TYPE_STYLES = {
     improvement: {
@@ -610,9 +610,9 @@ const SUGGESTION_TYPE_STYLES = {
     info: {
         icon: Info,
         wrapper:
-            'bg-blue-500/5 dark:bg-blue-500/10 border-blue-500/20 hover:border-blue-500/40',
-        iconColor: 'text-blue-500 dark:text-blue-400',
-        badgeBg: 'bg-blue-500/15 text-blue-600 dark:text-blue-300',
+            'bg-brand-500/5 dark:bg-brand-500/10 border-brand-500/20 hover:border-brand-500/40',
+        iconColor: 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]',
+        badgeBg: 'bg-brand-500/15 text-[color:var(--ds-accent-brand)] dark:text-brand-300',
     },
 }
 

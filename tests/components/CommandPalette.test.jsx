@@ -114,7 +114,9 @@ describe('CommandPalette', () => {
     expect(screen.getAllByText('Repositories').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Teams')).toBeInTheDocument()
     expect(screen.getByText('Pricing')).toBeInTheDocument()
-    expect(screen.getByText('Roadmap')).toBeInTheDocument()
+    // Roadmap left the palette 2026-09-05 with the in-app roadmap page — the
+    // roadmap now lives only in ROADMAP.md, linked from the Pricing page.
+    expect(screen.queryByText('Roadmap')).toBeNull()
   })
 
   it('renders Actions items', () => {

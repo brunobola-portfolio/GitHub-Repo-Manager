@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { API_BASE_URL } from '../config'
 import { useTier, isProOrAbove } from './useTier'
+import { apiCall } from '../utils/api'
 
 const CACHE_KEY = 'work_board_badge_count'
 const POLL_MS = 5 * 60 * 1000
@@ -30,9 +32,7 @@ async function fetchJsonCount(url) {
         return 0
     }
     try {
-        const res = await fetch(url, { credentials: 'include' })
-        if (!res.ok) return 0
-        const body = await res.json()
+        const body = await apiCall(url)
         return Array.isArray(body?.data) ? body.data.length : 0
     } catch {
         return 0
@@ -50,9 +50,9 @@ export function useWorkBoardBadgeCounts() {
         // Stale PRs is Pro+ — skip the call on Free to avoid a 403 in the
         // browser console (the JS already handles it, but the network log
         // can't be suppressed any other way).
-        const tasks = [fetchJsonCount('/api/v1/work-board/my-reviews?limit=50')]
+        const tasks = [fetchJsonCount(`${API_BASE_URL}/api/v1/work-board/my-reviews?limit=50`)]
         if (isProOrAbove(tier)) {
-            tasks.push(fetchJsonCount('/api/v1/work-board/stale-prs?limit=50'))
+            tasks.push(fetchJsonCount(`${API_BASE_URL}/api/v1/work-board/stale-prs?limit=50`))
         }
         const counts = await Promise.all(tasks)
         const total = counts.reduce((a, b) => a + b, 0)

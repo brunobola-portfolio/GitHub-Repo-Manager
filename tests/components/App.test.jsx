@@ -196,7 +196,7 @@ describe('App shell (authenticated, MOCK_MODE=true)', () => {
         errorSpy.mockRestore()
     })
 
-    it('shows all five top-level nav buttons once authenticated', async () => {
+    it('shows all four top-level nav buttons once authenticated', async () => {
         renderApp()
         // The app kicks off appLoading=true then flips to false after checkAuth
         // resolves (/api/auth/mock). Wait for the logo heading to appear as a
@@ -213,7 +213,10 @@ describe('App shell (authenticated, MOCK_MODE=true)', () => {
         expect(within(desktopNav).getByText('Repositories')).toBeInTheDocument()
         expect(within(desktopNav).getByText('Teams')).toBeInTheDocument()
         expect(within(desktopNav).getByText('Work Board')).toBeInTheDocument()
-        expect(within(desktopNav).getByText('Pricing')).toBeInTheDocument()
+        // Pricing left the primary nav 2026-09-05 (2026-09-04 panel, R1) — it
+        // stays reachable via the user menu ("Plans & billing") and the
+        // command palette, asserted below, just not as a nav peer.
+        expect(within(desktopNav).queryByText('Pricing')).toBeNull()
     })
 
     it('clicking Work Board switches the active view', { timeout: 30000 }, async () => {
@@ -312,6 +315,21 @@ describe('App hash routing (useAppRouter guard)', () => {
             { timeout: 8000 },
         )
 
+    // Pricing left the primary nav 2026-09-05 — it's reached via the user
+    // (avatar) menu's "Plans & billing" item instead of a nav button.
+    const gotoPricing = async () => {
+        fireEvent.click(screen.getByRole('button', { name: /open user menu/i }))
+        fireEvent.click(await screen.findByRole('menuitem', { name: /plans.*billing/i }))
+    }
+
+    // Pricing has no nav button anymore, so "active" is confirmed by its own
+    // page content instead of aria-current on a desktop-nav tab.
+    const expectPricingActive = () =>
+        waitFor(
+            () => expect(screen.getByText(/simple, transparent pricing/i)).toBeInTheDocument(),
+            { timeout: 8000 },
+        )
+
     it('deep-links straight to repo-detail when mounted at #/repo/:owner/:name', { timeout: 30000 }, async () => {
         window.location.hash = '#/repo/acme/demo'
         renderApp()
@@ -352,14 +370,14 @@ describe('App hash routing (useAppRouter guard)', () => {
     it('syncs the URL hash when navigating via the nav (view -> hash)', { timeout: 30000 }, async () => {
         renderApp()
         await settle()
-        fireEvent.click(within(desktopNav()).getByRole('button', { name: /pricing/i }))
+        await gotoPricing()
         await waitFor(() => expect(window.location.hash).toBe('#/pricing'), { timeout: 12000 })
     })
 
     it('strips the hash to home when navigating back to Dashboard', { timeout: 30000 }, async () => {
         renderApp()
         await settle()
-        fireEvent.click(within(desktopNav()).getByRole('button', { name: /pricing/i }))
+        await gotoPricing()
         await waitFor(() => expect(window.location.hash).toBe('#/pricing'), { timeout: 12000 })
         fireEvent.click(within(desktopNav()).getByRole('button', { name: /dashboard/i }))
         await waitFor(() => expect(window.location.hash).toBe(''), { timeout: 12000 })
@@ -372,7 +390,7 @@ describe('App hash routing (useAppRouter guard)', () => {
         // The state->hash effect skips its first run (didInitHashSyncRef), so the
         // deep-link survives mount instead of being stripped to ''.
         await waitFor(() => expect(window.location.hash).toBe('#/pricing'), { timeout: 12000 })
-        // ...and it actually routed to pricing (Pricing tab active, not dashboard).
-        await expectActiveTab(/pricing/i)
+        // ...and it actually routed to pricing (Pricing view rendered, not dashboard).
+        await expectPricingActive()
     })
 })

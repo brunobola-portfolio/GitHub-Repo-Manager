@@ -58,7 +58,7 @@ export function InlineActions({ onApprove, onRequestChanges, onSnooze, busy }) {
                                         initial={{ opacity: 0, y: -4 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: -4 }}
-                                        className="absolute right-0 top-full mt-1 z-20 rounded-xl border border-slate-200/60 dark:border-slate-700/50 bg-white dark:bg-slate-900 shadow-lg overflow-hidden text-xs"
+                                        className="absolute right-0 top-full mt-1 z-20 rounded-xl border border-slate-200/60 dark:border-slate-700/50 bg-white dark:bg-slate-900 ds-elevation-lg overflow-hidden text-xs"
                                         onMouseLeave={() => setSnoozeOpen(false)}
                                     >
                                         {[

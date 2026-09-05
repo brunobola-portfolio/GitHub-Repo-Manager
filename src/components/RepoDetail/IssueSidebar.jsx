@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 import { useState } from 'react'
+import { API_BASE_URL } from '../../config'
 import { Tag, Users, Milestone, Check } from 'lucide-react'
 import { Card } from '../ui/Card'
 import { Spinner } from '../ui/Spinner'
 import { useToast } from '../../hooks/useToast'
 import { issueLabelChipStyle } from '../../utils/issueLabelColors'
 import { formatDate, formatDateTime } from '../../utils/format'
+import { apiCall } from '../../utils/api'
 
 /**
  * IssueSidebar — labels, assignees, milestone editor for the right rail of
@@ -42,15 +44,10 @@ function LabelEditor({ owner, repo, issue, api, onMutate }) {
         if (available !== null) return
         setLoading(true)
         try {
-            // Use existing labels endpoint via direct fetch since useRepoDetail
+            // Use existing labels endpoint via direct apiCall since useRepoDetail
             // doesn't expose a fetchLabels method.
-            const res = await fetch(`/api/v1/repos/${owner}/${repo}/labels`, { credentials: 'include' })
-            if (res.ok) {
-                const data = await res.json()
-                setAvailable(Array.isArray(data) ? data : [])
-            } else {
-                setAvailable([])
-            }
+            const data = await apiCall(`${API_BASE_URL}/api/v1/repos/${owner}/${repo}/labels`)
+            setAvailable(Array.isArray(data) ? data : [])
         } catch {
             setAvailable([])
         } finally {

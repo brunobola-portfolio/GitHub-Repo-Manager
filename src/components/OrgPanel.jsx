@@ -1,4 +1,5 @@
 import { useState, memo } from 'react'
+import { API_BASE_URL } from '../config'
 import {
 	Building2, Plus, Search,
 	Settings, Shield,
@@ -12,6 +13,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { TAP, EASE, DURATION } from './ui/motion'
 import { useModal } from '../hooks/useModal'
 import { Input } from './ui/form'
+import { apiCall } from '../utils/api'
 
 export function OrgPanel({
 	orgs = [],
@@ -35,7 +37,7 @@ export function OrgPanel({
 			<div className="p-5 border-b border-slate-200/60 dark:border-slate-700/40">
 				<div className="flex items-center justify-between mb-4">
 					<h2 className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2.5">
-						<div className="p-2 rounded-xl ds-brand-solid shadow-md">
+						<div className="p-2 rounded-xl ds-brand-solid ds-elevation-md">
 							<Building2 className="w-4 h-4" />
 						</div>
 						Organizations
@@ -81,7 +83,7 @@ export function OrgPanel({
 							animate={{ opacity: 1, y: 0 }}
 							onClick={() => onSelectOrg('')}
 							className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all border ${!selectedOrg
-								? 'bg-brand-50 dark:bg-brand-900/20 border-brand-200 dark:border-brand-800 shadow-sm'
+								? 'bg-brand-50 dark:bg-brand-900/20 border-brand-200 dark:border-brand-800 ds-elevation-sm'
 								: 'bg-transparent border-transparent hover:bg-slate-100 dark:hover:bg-slate-800'
 								} ${viewMode === 'grid' ? 'flex-col text-center p-4' : ''}`}
 						>
@@ -167,7 +169,8 @@ export function OrgPanel({
 								<DropdownMenu.Item
 									className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 data-[highlighted]:bg-rose-50 dark:data-[highlighted]:bg-rose-900/20 data-[highlighted]:text-rose-800 dark:data-[highlighted]:text-rose-300 rounded-xl cursor-pointer outline-none transition-colors"
 									onSelect={() => {
-										fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+										apiCall(`${API_BASE_URL}/api/auth/logout`, { method: 'POST' })
+											.catch(() => { /* logging out regardless — see .finally below */ })
 											.finally(() => window.location.reload())
 									}}
 								>
@@ -202,7 +205,7 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 			title={org.description || org.login}
 			className={`group relative w-full flex items-center gap-3 rounded-xl transition-all duration-[var(--ds-duration-slow)] border ${
 				isSelected
-					? 'bg-brand-50 dark:bg-brand-900/30 border-brand-200 dark:border-brand-800 shadow-lg'
+					? 'bg-brand-50 dark:bg-brand-900/30 border-brand-200 dark:border-brand-800 ds-elevation-lg'
 					: 'bg-white/80 dark:bg-slate-800/60 border-slate-200/50 dark:border-slate-700/40 hover:border-brand-200 dark:hover:border-brand-800/60 hover:shadow-[var(--ds-shadow-lg)]'
 			} ${isGrid ? 'flex-col text-center p-5 min-h-[180px] justify-start' : 'p-3.5'}`}
 		>
@@ -223,14 +226,14 @@ const OrgItem = memo(function OrgItem({ org, isSelected, onClick, viewMode }) {
 					alt={org.login}
 					className={`rounded-xl object-cover ring-2 transition-all duration-[var(--ds-duration-slow)] ${
 						isSelected
-							? 'ring-brand-300 dark:ring-brand-600 shadow-lg'
+							? 'ring-brand-300 dark:ring-brand-600 ds-elevation-lg'
 							: 'ring-slate-200 dark:ring-slate-700 group-hover:ring-brand-300 dark:group-hover:ring-brand-700/60 group-hover:shadow-md'
 					} ${isGrid ? 'w-16 h-16 mb-3' : 'w-11 h-11'}`}
 				/>
 
 				{/* Personal Account Badge */}
 				{isPersonal && (
-					<div className="absolute -bottom-1 -right-1 ds-brand-solid ds-text-micro font-bold px-1.5 py-0.5 rounded-md shadow-md">
+					<div className="absolute -bottom-1 -right-1 ds-brand-solid ds-text-micro font-bold px-1.5 py-0.5 rounded-md ds-elevation-md">
 						YOU
 					</div>
 				)}

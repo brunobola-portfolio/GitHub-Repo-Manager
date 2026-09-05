@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useId } from 'react'
+import { API_BASE_URL } from '../../config'
 import {
   KeyRound, Plus, Trash2, Cloud, Server, Eye, EyeOff,
   CheckCircle2, XCircle, ExternalLink, Sparkles, AlertCircle,
@@ -7,7 +8,7 @@ import {
 import { SpinnerIcon } from '../ui/Spinner'
 import AllowlistFixPanel from '../ui/AllowlistFixPanel'
 import { Checkbox, Input } from '../ui/form'
-import { getCsrfToken } from '../../utils/api'
+import { apiCall } from '../../utils/api'
 import { formatUserError } from '../../utils/errors'
 import { useHostAllowlist } from '../../hooks/useHostAllowlist'
 import { useToast } from '../../hooks/useToast'
@@ -34,10 +35,7 @@ export default function AzureCredentialsSection() {
   const fetchItems = useCallback(async () => {
     setLoading(true); setError(null)
     try {
-      const res = await fetch('/api/azure/credentials', { credentials: 'include' })
-      const data = await res.json().catch(() => null)
-      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`)
-      if (!data) throw new Error('Unexpected response from the server')
+      const data = await apiCall(`${API_BASE_URL}/api/azure/credentials`)
       setItems(data.items || [])
     } catch (e) {
       setError(formatUserError(e, { fallbackTitle: "Couldn't load Azure credentials" }))
@@ -119,7 +117,7 @@ function Header({ onAdd }) {
       <button
         type="button"
         onClick={onAdd}
-        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg ds-brand-solid dark:hover:bg-brand-400 transition-colors shadow-sm ds-focus-ring"
+        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg ds-brand-solid dark:hover:bg-brand-400 transition-colors ds-elevation-sm ds-focus-ring"
       >
         <Plus className="w-4 h-4" />
         Add PAT
@@ -186,16 +184,7 @@ function CredentialRow({ cred, onDeleted, onTested }) {
   const handleDelete = async () => {
     setDeleting(true)
     try {
-      const csrf = await getCsrfToken().catch(() => null)
-      const res = await fetch(`/api/azure/credentials/${cred.id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { ...(csrf ? { 'X-CSRF-Token': csrf } : {}) },
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data?.error || 'Removal failed')
-      }
+      await apiCall(`${API_BASE_URL}/api/azure/credentials/${cred.id}`, { method: 'DELETE' })
       onDeleted(cred.id)
     } catch (e) {
       toast.errorFromException(e, { fallbackTitle: 'Could not save Azure credentials' })
@@ -208,21 +197,13 @@ function CredentialRow({ cred, onDeleted, onTested }) {
     setTesting(true); setTestResult(null); setAllowlistInfo(null)
     clearTimeout(dismissTimer.current)
     try {
-      const csrf = await getCsrfToken().catch(() => null)
-      const res = await fetch(`/api/azure/credentials/${cred.id}/test`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { ...(csrf ? { 'X-CSRF-Token': csrf } : {}) },
-      })
-      const data = await res.json().catch(() => null)
-      if (!data) throw new Error(`HTTP ${res.status}`)
+      const data = await apiCall(`${API_BASE_URL}/api/azure/credentials/${cred.id}/test`, { method: 'POST' })
       setTestResult(data)
       onTested?.(cred.id, data)
       if (isHostNotAllowed(data)) {
         // Pull allowlist context so the self-fix panel can offer the
         // 1-click add (admin) or "ask your admin" guidance (non-admin).
-        const info = await fetch(`/api/azure/host-allowlist?host=${encodeURIComponent(cred.host)}`, { credentials: 'include' })
-          .then((r) => (r.ok ? r.json() : null))
+        const info = await apiCall(`${API_BASE_URL}/api/azure/host-allowlist?host=${encodeURIComponent(cred.host)}`)
           .catch(() => null)
         // If the info fetch fails, still render the panel with conservative
         // defaults — the "ask your admin" + .env guidance is always valid.
@@ -385,21 +366,17 @@ function AddCredentialForm({ onClose, onCreated }) {
     if (!canSubmit) return
     setSubmitting(true); setError(null)
     try {
-      const csrf = await getCsrfToken().catch(() => null)
       const scopeList = Object.entries(scopes).filter(([, v]) => v).map(([k]) => ({
         code: 'Code (Read)',
         project: 'Project & Team (Read)',
         workItems: 'Work Items (Read)',
         wiki: 'Wiki (Read)',
       }[k]))
-      const res = await fetch('/api/azure/credentials', {
+      const data = await apiCall(`${API_BASE_URL}/api/azure/credentials`, {
         method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json', ...(csrf ? { 'X-CSRF-Token': csrf } : {}) },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ label: label.trim(), host: host.trim().toLowerCase(), org: org.trim() || null, pat, scopes: scopeList }),
       })
-      const data = await res.json().catch(() => null)
-      if (!res.ok || !data) throw new Error(data?.error || `HTTP ${res.status}`)
       onCreated(data)
     } catch (e) {
       setError(formatUserError(e, { fallbackTitle: 'Failed to save the credential' }))

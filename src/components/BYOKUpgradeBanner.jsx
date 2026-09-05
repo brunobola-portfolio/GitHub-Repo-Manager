@@ -4,6 +4,7 @@ import { EASE, DURATION } from './ui/motion'
 import { Sparkles, X, ArrowRight } from 'lucide-react'
 import { Tooltip } from './ui/Tooltip'
 import { API_BASE_URL, MOCK_MODE } from '../config'
+import { apiCall } from '../utils/api'
 
 const DISMISS_KEY = 'byok-banner-dismissed'
 
@@ -27,8 +28,7 @@ export function BYOKUpgradeBanner({ isAuthenticated, onOpenAISettings }) {
         if (localStorage.getItem(DISMISS_KEY) === '1') return
 
         let cancelled = false
-        fetch(`${API_BASE_URL}/api/user/ai-config`, { credentials: 'include' })
-            .then((res) => (res.ok ? res.json() : null))
+        apiCall(`${API_BASE_URL}/api/user/ai-config`)
             .then((data) => {
                 if (cancelled) return
                 if (data && data.completionProvider === null && data.hasCompletionKey === false) {

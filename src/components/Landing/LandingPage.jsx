@@ -106,7 +106,7 @@ export function LandingPage({ onSignIn }) {
             {/* The product mark, not GitHub's. RepoManager manages GitHub
                 and is not affiliated with it — borrowing the Octocat as our own
                 app icon is the one thing docs/BRAND.md forbids outright. */}
-            <AppLogo size={28} className="shadow-md" title="" />
+            <AppLogo size={28} className="ds-elevation-md" title="" />
             <span className="font-bold text-slate-800 dark:text-white text-sm ds-font-display">
               Repo Manager
             </span>
@@ -127,7 +127,7 @@ export function LandingPage({ onSignIn }) {
               onClick={onSignIn}
               className="px-4 py-2 rounded-xl text-sm font-semibold text-white
                 bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] hover:bg-[color:var(--ds-accent-brand-hover)] dark:hover:bg-[color:var(--ds-accent-brand)]
-                shadow-md
+                ds-elevation-md
                 transition-colors duration-200
                 ds-focus-ring
                 ds-font-display"

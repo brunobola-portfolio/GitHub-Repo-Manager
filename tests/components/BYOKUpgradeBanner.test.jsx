@@ -32,6 +32,7 @@ function mockResponse(body, { status = 200 } = {}) {
     return {
         ok: status >= 200 && status < 300,
         status,
+        headers: { get: () => 'application/json' },
         json: () => Promise.resolve(body),
     }
 }

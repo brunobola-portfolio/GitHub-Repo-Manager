@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { API_BASE_URL } from '../config'
+import { apiCall } from '../utils/api'
 
 const IDLE = { status: 'idle', allowed: null, patterns: [], usingDefault: true, canEdit: false }
 
@@ -25,9 +27,7 @@ export function useHostAllowlist(host, { debounceMs = 400 } = {}) {
     }
     setState((prev) => ({ ...prev, status: 'checking' }))
     try {
-      const res = await fetch(`/api/azure/host-allowlist?host=${encodeURIComponent(clean)}`, { credentials: 'include' })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json()
+      const data = await apiCall(`${API_BASE_URL}/api/azure/host-allowlist?host=${encodeURIComponent(clean)}`)
       if (seq !== requestSeq.current) return
       setState({
         status: data.allowed ? 'allowed' : 'blocked',

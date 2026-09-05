@@ -75,7 +75,7 @@ test.describe('AI Search & Features', () => {
     const repoCard = page.getByRole('button', { name: new RegExp(SAMPLE_PUBLIC_REPO, 'i') }).first()
     await repoCard.hover()
 
-    const healthButton = page.getByRole('button', { name: 'Community Health', exact: true }).first()
+    const healthButton = page.getByRole('button', { name: /Community Health/i }).first()
     await expect(healthButton).toBeVisible({ timeout: 5000 })
   })
 })

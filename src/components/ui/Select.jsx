@@ -308,7 +308,7 @@ export function Select({
                         ? 'opacity-50 cursor-not-allowed'
                         : 'hover:bg-white dark:hover:bg-slate-800 hover:border-brand-300 dark:hover:border-brand-500/50 hover:shadow-md cursor-pointer'
                     }
-                    ${isOpen ? 'border-brand-400 dark:border-brand-500 shadow-md ring-4 ring-brand-500/10' : ''}
+                    ${isOpen ? 'border-brand-400 dark:border-brand-500 ds-elevation-md ring-4 ring-brand-500/10' : ''}
                 `}
             >
                 <span className={`flex items-center gap-2 min-w-0 ${selectedOption ? '' : 'text-slate-500 dark:text-slate-400'}`}>

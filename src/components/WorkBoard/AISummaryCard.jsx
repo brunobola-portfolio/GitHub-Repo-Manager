@@ -173,7 +173,7 @@ export function AISummaryCard({ meta: metaProp } = {}) {
         <motion.div
             className={clsx(
                 'relative rounded-3xl border border-slate-200 dark:border-slate-700/60',
-                'bg-white dark:bg-slate-900 shadow-sm overflow-hidden',
+                'bg-white dark:bg-slate-900 ds-elevation-sm overflow-hidden',
                 'flex flex-col sm:flex-row gap-6 p-5',
                 isHigh && 'ring-2 ring-rose-500/40 dark:ring-rose-400/40',
             )}

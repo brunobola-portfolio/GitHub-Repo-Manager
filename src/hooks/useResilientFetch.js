@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { API_BASE_URL } from '../config'
 import { isAbort } from '../utils/errorClassification'
+import { fetchWithRetry } from '../utils/api'
 
 /**
  * useResilientFetch — fetch a JSON endpoint and surface stale-cache state.
@@ -14,7 +15,7 @@ import { isAbort } from '../utils/errorClassification'
  *
  * Usage:
  *   const { data, loading, error, stale, fetchedAt, reload } =
- *     useResilientFetch('/api/v1/repos/o/r/pulls?state=open')
+ *     useResilientFetch(`${API_BASE_URL}/api/v1/repos/o/r/pulls?state=open`)
  *
  *   if (stale) <StaleDataBadge fetchedAt={fetchedAt} onRetry={reload} />
  */
@@ -53,15 +54,13 @@ export function useResilientFetch(path, { skip = false } = {}) {
                 }
             }
 
-            const res = await fetch(url, {
+            // fetchWithRetry returns the raw Response (unlike apiCall) so the
+            // X-Cache staleness headers below remain readable, while still
+            // gaining the CSRF/timeout/retry machinery over a bare fetch.
+            const res = await fetchWithRetry(url, {
                 credentials: 'include',
                 signal: controller.signal,
             })
-            if (!res.ok) {
-                const err = new Error(`Request failed: ${res.status}`)
-                err.status = res.status
-                throw err
-            }
             const cacheState = res.headers.get('X-Cache')
             const fetchedAtHeader = res.headers.get('X-Cache-Fetched-At')
             const json = await res.json()

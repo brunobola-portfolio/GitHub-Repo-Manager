@@ -26,7 +26,7 @@ const VARIANT_BUTTON = {
 };
 
 const VARIANT_INDICATOR = {
-    pill: 'absolute inset-0 rounded-xl bg-white dark:bg-slate-700 shadow-sm',
+    pill: 'absolute inset-0 rounded-xl bg-white dark:bg-slate-700 ds-elevation-sm',
     underline: 'absolute bottom-0 left-0 right-0 h-0.5 bg-brand-500 rounded-full',
     segmented: null,
 };

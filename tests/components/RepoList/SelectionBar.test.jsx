@@ -49,4 +49,16 @@ describe('SelectionBar (desktop pill)', () => {
 		screen.getByRole('button', { name: /clear selection/i }).click()
 		expect(onClear).toHaveBeenCalled()
 	})
+
+	// U16 (2026-09-04 panel): the nine icons in this bar carried only a
+	// native title= — no visible text at any breakpoint. Every pill now
+	// renders a short static label (hidden below md, shown at md+ via CSS)
+	// alongside the icon, in addition to the full resolved copy already
+	// covered by the aria-label assertions above.
+	it('every pill carries a visible short-label span for md+', () => {
+		render(<SelectionBar repos={repos} onAction={() => { }} onClear={() => { }} />)
+		for (const short of ['Archive', 'Transfer', 'Migrate', 'Public', 'Private', 'Export', 'Delete', 'Clear']) {
+			expect(screen.getByText(short)).toBeInTheDocument()
+		}
+	})
 })

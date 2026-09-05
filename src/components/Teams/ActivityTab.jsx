@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { GitCommit, GitPullRequest, CircleDot, Activity, Clock, FileCode, Star, GitFork, Tag, Trash2, AlertTriangle } from 'lucide-react';
 
-import { MOCK_MODE } from '../../config';
+import { MOCK_MODE , API_BASE_URL } from '../../config';
 import { EmptyState } from '../ui/EmptyState';
 import { Card } from '../ui/Card';
 import { Skeleton } from '../ui/Skeleton';
 import { formatDate, parseServerTimestamp } from '../../utils/format';
+import { apiCall } from '../../utils/api';
 
 export function ActivityTab({ teamId }) {
     const [events, setEvents] = useState([]);
@@ -30,10 +31,7 @@ export function ActivityTab({ teamId }) {
             try {
                 setLoading(true);
                 setError(false);
-                const res = await fetch(`/api/teams/${teamId}/activity`);
-                if (!res.ok) throw new Error(`activity request failed: ${res.status}`);
-
-                const data = await res.json();
+                const data = await apiCall(`${API_BASE_URL}/api/teams/${teamId}/activity`);
                 if (cancelled) return;
                 // Backwards compatible: older shape was a bare array; current
                 // shape is { events, totalRepos, scannedRepos, truncated }.
@@ -130,7 +128,7 @@ function ActivityItem({ event }) {
             case 'PushEvent': return <GitCommit className="w-4 h-4 text-emerald-500" />;
             case 'PullRequestEvent': return <GitPullRequest className="w-4 h-4 text-brand-500" />;
             case 'IssuesEvent': return <CircleDot className="w-4 h-4 text-amber-500" />;
-            case 'CreateEvent': return <FileCode className="w-4 h-4 text-blue-500" />;
+            case 'CreateEvent': return <FileCode className="w-4 h-4 text-brand-500" />;
             case 'WatchEvent': return <Star className="w-4 h-4 text-amber-500" />;
             case 'ForkEvent': return <GitFork className="w-4 h-4 text-brand-500" />;
             case 'ReleaseEvent': return <Tag className="w-4 h-4 text-emerald-500" />;

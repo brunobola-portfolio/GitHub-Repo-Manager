@@ -6,7 +6,7 @@ import { ConfirmModal } from '../ui/ConfirmModal'
 import { Button } from '../ui/Button'
 import { API_BASE_URL, MOCK_MODE } from '../../config'
 import { useToast } from '../../hooks/useToast'
-import { getCsrfToken } from '../../utils/api'
+import { apiCall } from '../../utils/api'
 
 /**
  * Settings — Danger Zone section.
@@ -68,18 +68,11 @@ export function DangerZoneSection({ onErased }) {
         }
         setErasing(true)
         try {
-            const headers = { 'Content-Type': 'application/json' }
-            try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
-            const res = await fetch(`${API_BASE_URL}/api/v1/user/data`, {
+            await apiCall(`${API_BASE_URL}/api/v1/user/data`, {
                 method: 'DELETE',
-                credentials: 'include',
-                headers,
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ confirmString: 'ERASE MY DATA' }),
             })
-            if (!res.ok) {
-                const body = await res.json().catch(() => ({}))
-                throw new Error(body.error || `Erasure failed: HTTP ${res.status}`)
-            }
             setConfirmOpen(false)
             onErased?.()
             // Hard reload so the app re-bootstraps without the (now tombstoned)

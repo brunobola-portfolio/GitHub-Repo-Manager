@@ -91,7 +91,7 @@ export function MobileQuickActionsFab(props) {
                                         role="menuitem"
                                         onClick={handle(item.handlerKey)}
                                         aria-label={item.label}
-                                        className="flex items-center gap-2 pr-2 pl-3 h-12 rounded-full bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/50 shadow-lg text-sm font-semibold text-slate-700 dark:text-slate-200 hover:border-brand-300 dark:hover:border-brand-500/50 transition-colors"
+                                        className="flex items-center gap-2 pr-2 pl-3 h-12 rounded-full bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/50 ds-elevation-lg text-sm font-semibold text-slate-700 dark:text-slate-200 hover:border-brand-300 dark:hover:border-brand-500/50 transition-colors"
                                     >
                                         <span>{item.label}</span>
                                         <span className="w-9 h-9 rounded-full bg-brand-500/10 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] flex items-center justify-center">

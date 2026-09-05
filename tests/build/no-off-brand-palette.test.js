@@ -17,15 +17,21 @@
  * success), and `yellow`/`orange` next to `amber` for warning — two spellings
  * of one signal, picked per-component instead of per-meaning (2026-09-04
  * panel, finding FE-05). `red`, `green`, `yellow` and `orange` are retired in
- * favour of the survivors above. `blue` is not part of this pass — it still
- * has open, undecided uses (see the panel) — so it stays ungated for now.
+ * favour of the survivors above.
+ *
+ * `blue` was the last one standing (194 uses, 41 files, 2026-09-04 panel) —
+ * running/in-flight status, info banners and links were folded onto brand
+ * (`text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]`,
+ * `bg-brand-*` tints), decorative accents onto brand, and the "Good" health
+ * score tier stayed blue on purpose (see the ALLOWED-adjacent note below) —
+ * so it is retired here too (2026-09-05 panel follow-up).
  */
 import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
 /** Accent families that no longer have a job in this product. */
-const RETIRED = ['indigo', 'violet', 'purple', 'fuchsia', 'sky', 'cyan', 'pink', 'teal', 'red', 'green', 'yellow', 'orange']
+const RETIRED = ['indigo', 'violet', 'purple', 'fuchsia', 'sky', 'cyan', 'pink', 'teal', 'red', 'green', 'yellow', 'orange', 'blue']
 const UTILITY = new RegExp(`\\b(${RETIRED.join('|')})-(?:50|100|200|300|400|500|600|700|800|900|950)\\b`)
 
 /** Literal hexes from the retired identity — the logo's gradient stops. */
@@ -46,6 +52,7 @@ const RETIRED_RGB = [
     [34, 211, 238], [6, 182, 212], [8, 145, 178],        // cyan
     [244, 114, 182], [236, 72, 153], [219, 39, 119],     // pink
     [45, 212, 191], [20, 184, 166], [13, 148, 136],      // teal
+    [96, 165, 250], [59, 130, 246], [37, 99, 235],       // blue
 ]
 const RGB_TRIPLET = new RegExp(
     `rgba?\\(\\s*(?:${RETIRED_RGB.map(([r, g, b]) => `${r}\\s*[, ]\\s*${g}\\s*[, ]\\s*${b}`).join('|')})\\b`,
@@ -54,6 +61,12 @@ const RGB_TRIPLET = new RegExp(
 const ALLOWED = new Set([
     // Categorical data, not brand. Each language needs its own hue.
     'src/utils/languageColors.js',
+    // Same reason, one component at a time: a hand-rolled "Language Colors"
+    // legend (JS/TS/Python/Go/HTML/CSS dots) that predates the shared utility
+    // above. TypeScript's dot is the last literal blue-500 in the app —
+    // recolouring it to brand would make it identical to Go's and CSS's dots
+    // in the same legend (2026-09-05 panel, blue-* sweep).
+    'src/components/Teams/TeamDetails.jsx',
 ])
 
 function walk(dir, out = []) {

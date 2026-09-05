@@ -49,8 +49,8 @@ export function QuickActions({ owner, repo, pullNumber, onSubmitted }) {
                         type="button"
                         onClick={() => handleSubmit(action)}
                         disabled={loading || (action === 'COMMENT' && !comment.trim())}
-                        className={`px-3 py-1 text-xs font-medium rounded-md text-white disabled:opacity-50 ${
-                            action === 'APPROVE' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'
+                        className={`px-3 py-1 text-xs font-medium rounded-md disabled:opacity-50 ${
+                            action === 'APPROVE' ? 'text-white bg-emerald-600 hover:bg-emerald-700' : 'ds-brand-solid'
                         } ds-focus-ring`}
                     >
                         {loading ? 'Submitting...' : action === 'APPROVE' ? 'Approve' : 'Comment'}

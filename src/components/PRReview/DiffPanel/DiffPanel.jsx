@@ -212,7 +212,7 @@ export const DiffPanel = memo(function DiffPanel({
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
       {/* Sticky file header */}
-      <div className="sticky top-0 z-[var(--ds-z-surface)] flex items-center gap-3 px-4 py-2 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 shadow-sm">
+      <div className="sticky top-0 z-[var(--ds-z-surface)] flex items-center gap-3 px-4 py-2 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 ds-elevation-sm">
         <span className="flex-1 truncate text-sm font-mono text-slate-700 dark:text-slate-200" title={filename}>
           {filename}
         </span>
@@ -321,7 +321,7 @@ export const DiffPanel = memo(function DiffPanel({
             <button
               onClick={handleSubmitComment}
               disabled={submitting || !commentBody.trim()}
-              className="px-3 py-1.5 max-md:min-h-11 text-sm font-semibold rounded-md ds-brand-solid shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors ds-focus-ring"
+              className="px-3 py-1.5 max-md:min-h-11 text-sm font-semibold rounded-md ds-brand-solid ds-elevation-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors ds-focus-ring"
             >
               {submitting ? 'Adding…' : 'Add comment'}
             </button>

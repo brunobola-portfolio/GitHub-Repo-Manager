@@ -19,7 +19,7 @@ import { DURATION } from '../../ui/motion'
 
 const STATUS_COLORS = {
   pending: 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400',
-  running: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300',
+  running: 'bg-brand-100 dark:bg-brand-900/40 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]',
   complete: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300',
   failed: 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300',
   retrying: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300',
@@ -80,9 +80,9 @@ function TaskRow({ task, onRetry, onReplaceRetry, onLfsRetry }) {
       {/* Timeline dot */}
       <div className={`
         mt-1 shrink-0 w-8 h-8 rounded-full flex items-center justify-center
-        ${isFailed ? 'bg-rose-100 dark:bg-rose-900/30' : isRunning ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-slate-100 dark:bg-slate-800'}
+        ${isFailed ? 'bg-rose-100 dark:bg-rose-900/30' : isRunning ? 'bg-brand-100 dark:bg-brand-900/30' : 'bg-slate-100 dark:bg-slate-800'}
       `}>
-        <TypeIcon className={`w-4 h-4 ${isFailed ? 'text-rose-500' : isRunning ? 'text-blue-500' : 'text-slate-400 dark:text-slate-500'}`} />
+        <TypeIcon className={`w-4 h-4 ${isFailed ? 'text-rose-500' : isRunning ? 'text-brand-500' : 'text-slate-400 dark:text-slate-500'}`} />
       </div>
 
       {/* Task content */}
@@ -105,7 +105,7 @@ function TaskRow({ task, onRetry, onReplaceRetry, onLfsRetry }) {
         {isRunning && task.progress != null && (
           <div className="mt-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
             <motion.div
-              className="h-full bg-blue-500 rounded-full"
+              className="h-full bg-brand-500 rounded-full"
               initial={{ width: 0 }}
               animate={{ width: `${Math.min(task.progress, 100)}%` }}
               transition={{ duration: DURATION.slow }}

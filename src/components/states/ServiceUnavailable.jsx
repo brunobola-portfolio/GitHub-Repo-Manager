@@ -64,7 +64,7 @@ function CardService({ service, reason, docsHref, contactEmail, contactSubject, 
                 'relative isolate overflow-hidden',
                 'rounded-3xl border border-amber-200 dark:border-amber-500/30',
                 'bg-amber-50 dark:bg-amber-900/20',
-                'shadow-md',
+                'ds-elevation-md',
                 'px-6 py-10 sm:px-10 sm:py-12',
                 className
             )}
@@ -77,7 +77,7 @@ function CardService({ service, reason, docsHref, contactEmail, contactSubject, 
                     transition={{ delay: 0.08, duration: DURATION.reveal, ease: EASE.emphasized }}
                     className="mb-5 inline-flex items-center justify-center w-14 h-14 rounded-2xl
                                bg-amber-500
-                               shadow-md ring-1 ring-amber-500/20"
+                               ds-elevation-md ring-1 ring-amber-500/20"
                 >
                     <Plug className="w-6 h-6 text-white" strokeWidth={2.4} />
                 </motion.div>
@@ -106,7 +106,7 @@ function CardService({ service, reason, docsHref, contactEmail, contactSubject, 
                             target={docsHref.startsWith('http') ? '_blank' : undefined}
                             rel={docsHref.startsWith('http') ? 'noopener noreferrer' : undefined}
                             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold
-                                       bg-amber-700 text-white shadow-md
+                                       bg-amber-700 text-white ds-elevation-md
                                        hover:bg-amber-600 transition-colors ds-focus-ring"
                         >
                             <BookOpen className="w-3.5 h-3.5" /> Setup guide
@@ -151,7 +151,7 @@ function BannerService({ service, reason, docsHref, contactEmail, contactSubject
             )}
         >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg
-                             bg-amber-500 shadow-md">
+                             bg-amber-500 ds-elevation-md">
                 <Plug className="w-4 h-4 text-white" />
             </span>
 

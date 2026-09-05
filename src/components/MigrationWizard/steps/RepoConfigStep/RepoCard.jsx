@@ -84,7 +84,7 @@ export function RepoCard({
             <ArrowRight className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
             {isAzureDevops && repo.isTfvc && (
               <div
-                className="inline-flex rounded-lg overflow-hidden ring-1 ring-slate-200 dark:ring-slate-700 shadow-sm shrink-0"
+                className="inline-flex rounded-lg overflow-hidden ring-1 ring-slate-200 dark:ring-slate-700 ds-elevation-sm shrink-0"
                 role="group"
                 aria-label="Target type"
               >

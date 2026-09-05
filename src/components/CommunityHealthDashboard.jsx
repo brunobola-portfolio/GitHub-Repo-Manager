@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../config'
 import { motion, AnimatePresence, useMotionValue, useSpring, useReducedMotion } from 'framer-motion';
 import { EASE, SPRING, DURATION } from './ui/motion'
 import {
@@ -13,6 +14,7 @@ import { Tooltip } from './ui/Tooltip';
 import { CommunityHealthFixModal } from './AI/CommunityHealthFixModal';
 import { AgentRulesModal } from './AI/AgentRulesModal';
 import { formatFileSize, formatDateTime } from '../utils/format';
+import { apiCall } from '../utils/api';
 
 /**
  * Map between the file labels surfaced by the community-health analyser and
@@ -106,7 +108,12 @@ function ScoreBadge({ score, className = '' }) {
     const config = getScoreConfig(score);
     const badgeColors = {
         emerald: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
-        blue: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+        // "Good" is deliberately blue, not brand — it must stay in the same
+        // hue family as the ring's --ds-accent-link stroke (see
+        // getScoreConfig's 'blue' tailwind key and the CommunityHealthDashboard
+        // test asserting they match). Written as accent-link tokens rather
+        // than a Tailwind blue-* utility so it survives the retired-blue gate.
+        blue: 'bg-[color:var(--ds-accent-link)]/10 dark:bg-[color:var(--ds-accent-link-dark)]/15 text-[color:var(--ds-accent-link)] dark:text-[color:var(--ds-accent-link-dark)] border-[color:var(--ds-accent-link)]/30 dark:border-[color:var(--ds-accent-link-dark)]/40',
         amber: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800',
         red: 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800'
     };
@@ -155,9 +162,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
         let cancelled = false;
         (async () => {
             try {
-                const res = await fetch(`/api/repos/${owner}/${repoName}/tree`, { credentials: 'include' });
-                if (cancelled || !res?.ok) return;
-                const data = await res.json();
+                const data = await apiCall(`${API_BASE_URL}/api/repos/${owner}/${repoName}/tree`);
                 if (cancelled || !data) return;
                 const paths = new Set((data.entries || []).map((e) => e.path));
                 setAgentRulesFiles({ agentsExists: paths.has('AGENTS.md'), claudeExists: paths.has('CLAUDE.md') });
@@ -173,14 +178,9 @@ export function CommunityHealthDashboard({ repo, onClose }) {
             setLoading(true);
             setLoadError(false);
             const [owner, repoName] = repoFullName.split('/');
-            const res = await fetch(
-                `/api/repos/${owner}/${repoName}/community-health${refresh ? '?refresh=true' : ''}`,
-                { credentials: 'include' }
+            const data = await apiCall(
+                `${API_BASE_URL}/api/repos/${owner}/${repoName}/community-health${refresh ? '?refresh=true' : ''}`
             );
-
-            if (!res.ok) throw new Error('Failed to fetch health');
-
-            const data = await res.json();
             setHealth(data);
         } catch {
             setLoadError(true);
@@ -512,14 +512,14 @@ function AnimatedNumber({ value }) {
 
 function MetricCard({ title, value, icon: Icon, color, index = 0 }) {
     const gradientColors = {
-        blue: 'from-blue-500/20 to-blue-600/10 dark:from-blue-500/30 dark:to-blue-600/20',
+        blue: 'from-brand-500/20 to-brand-600/10 dark:from-brand-500/30 dark:to-brand-600/20',
         green: 'from-emerald-500/20 to-emerald-600/10 dark:from-emerald-500/30 dark:to-emerald-600/20',
         amber: 'from-amber-500/20 to-amber-600/10 dark:from-amber-500/30 dark:to-amber-600/20',
         emerald: 'from-emerald-500/20 to-emerald-600/10 dark:from-emerald-500/30 dark:to-emerald-600/20'
     };
 
     const iconColors = {
-        blue: 'text-blue-600 dark:text-blue-400',
+        blue: 'text-brand-600 dark:text-brand-400',
         green: 'text-emerald-700 dark:text-emerald-400',
         amber: 'text-amber-700 dark:text-amber-400',
         emerald: 'text-emerald-700 dark:text-emerald-400'
@@ -547,19 +547,19 @@ function RecommendationItem({ recommendation }) {
     const priorityColors = {
         high: 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800',
         medium: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800',
-        low: 'bg-blue-100/60 dark:bg-blue-900/20 text-blue-600 dark:text-blue-500 border-blue-200/60 dark:border-blue-800/40'
+        low: 'bg-brand-100/60 dark:bg-brand-900/20 text-brand-600 dark:text-brand-500 border-brand-200/60 dark:border-brand-800/40'
     };
 
     const iconGradients = {
         high: 'bg-rose-500/20 dark:bg-rose-500/30',
         medium: 'bg-amber-500/20 dark:bg-amber-500/30',
-        low: 'bg-blue-500/15 dark:bg-blue-500/20'
+        low: 'bg-brand-500/15 dark:bg-brand-500/20'
     };
 
     const iconColors = {
         high: 'text-rose-500',
         medium: 'text-amber-500',
-        low: 'text-blue-400 dark:text-blue-500'
+        low: 'text-brand-400 dark:text-brand-500'
     };
 
     return (

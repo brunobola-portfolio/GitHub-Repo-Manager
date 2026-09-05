@@ -17,7 +17,8 @@ describe('InsightCard', () => {
   it('applies info tone classes', () => {
     render(<InsightCard tone="info" data-testid="card">x</InsightCard>)
     const card = screen.getByTestId('card')
-    expect(card.className).toMatch(/ring-blue-500\/20/)
+    // brand ramp replaces blue for the "info" tone (2026-09-05 blue-* sweep)
+    expect(card.className).toMatch(/ring-brand-500\/20/)
   })
 
   it('applies success tone classes', () => {

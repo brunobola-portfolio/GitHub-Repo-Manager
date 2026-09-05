@@ -178,7 +178,6 @@ const { ThemeProvider } = await import('@/hooks/useTheme')
 // Module-scope await is paid once and is not subject to testTimeout.
 await Promise.all([
     import('@/components/NotificationLayer'),
-    import('@/components/SlimSidebar'),
     import('@/components/HeaderBanners'),
 ])
 
@@ -202,6 +201,15 @@ const desktopNav = () =>
 const expectActiveTab = (name) =>
     waitFor(
         () => expect(within(desktopNav()).getByRole('button', { name })).toHaveAttribute('aria-current', 'page'),
+        { timeout: 8000 },
+    )
+
+// Pricing left the primary nav 2026-09-05 — it has no desktop-nav button to
+// carry aria-current anymore, so "active" is confirmed by its own page
+// content instead.
+const expectPricingActive = () =>
+    waitFor(
+        () => expect(screen.getByText(/simple, transparent pricing/i)).toBeInTheDocument(),
         { timeout: 8000 },
     )
 
@@ -236,14 +244,14 @@ describe('App event bridge (useAppEventBridge guard) — navigation', () => {
         renderApp()
         await settle()
         await act(async () => { emitAppEvent(APP_EVENTS.NAVIGATE_PRICING) })
-        await expectActiveTab(/pricing/i)
+        await expectPricingActive()
     })
 
     it('OPEN_BILLING (alias) also routes to the pricing view', { timeout: 30000 }, async () => {
         renderApp()
         await settle()
         await act(async () => { emitAppEvent(APP_EVENTS.OPEN_BILLING) })
-        await expectActiveTab(/pricing/i)
+        await expectPricingActive()
     })
 
     it('NAVIGATE_DASHBOARD routes back to the dashboard', { timeout: 30000 }, async () => {
@@ -251,7 +259,7 @@ describe('App event bridge (useAppEventBridge guard) — navigation', () => {
         await settle()
         // Move off the dashboard first so the return is observable.
         await act(async () => { emitAppEvent(APP_EVENTS.NAVIGATE_PRICING) })
-        await expectActiveTab(/pricing/i)
+        await expectPricingActive()
         await act(async () => { emitAppEvent(APP_EVENTS.NAVIGATE_DASHBOARD) })
         await expectActiveTab(/dashboard/i)
     })

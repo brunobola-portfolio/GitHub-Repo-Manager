@@ -145,7 +145,7 @@ export function FileTree({
           aria-label="Changed files"
           aria-activedescendant={files[activeDescendantIndex] ? itemId(activeDescendantIndex) : undefined}
           onKeyDown={handleTreeKeyDown}
-          className="flex-1 overflow-y-auto overflow-x-hidden focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-blue-500"
+          className="flex-1 overflow-y-auto overflow-x-hidden focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[color:var(--ds-accent-ring)]"
         >
           <div
             role="presentation"

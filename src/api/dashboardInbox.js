@@ -63,12 +63,7 @@ function mockFetchInbox() {
 }
 
 async function jsonFetch(url, init = {}) {
-    const res = await fetch(url, { credentials: 'include', ...init });
-    if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body?.error || `Request failed (${res.status})`);
-    }
-    return res.json();
+    return apiCall(url, init);
 }
 
 export function fetchInbox({ sections, includeArchived = false, signal } = {}) {

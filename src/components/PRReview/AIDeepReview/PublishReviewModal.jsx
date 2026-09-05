@@ -4,10 +4,10 @@ import { Modal } from '../../ui/Modal';
 import { SafeMarkdown } from '../../AIPrompts/SafeMarkdown';
 
 const EVENTS = [
-    { key: 'COMMENT', label: 'Comment', tone: 'bg-blue-600 hover:bg-blue-700 ring-blue-200 dark:ring-blue-900' },
+    { key: 'COMMENT', label: 'Comment', tone: 'ds-brand-solid ring-brand-200 dark:ring-brand-900' },
     // --ds-cta, not emerald-600: white on emerald-600 is 3.67:1 (see --ds-cta-text).
-    { key: 'APPROVE', label: 'Approve', tone: 'bg-[color:var(--ds-cta)] dark:bg-[color:var(--ds-cta-dark)] hover:bg-[color:var(--ds-cta-hover)] dark:hover:bg-[color:var(--ds-cta-hover-dark)] ring-emerald-200 dark:ring-emerald-900' },
-    { key: 'REQUEST_CHANGES', label: 'Request changes', tone: 'bg-amber-600 hover:bg-amber-700 ring-amber-200 dark:ring-amber-900' },
+    { key: 'APPROVE', label: 'Approve', tone: 'text-white bg-[color:var(--ds-cta)] dark:bg-[color:var(--ds-cta-dark)] hover:bg-[color:var(--ds-cta-hover)] dark:hover:bg-[color:var(--ds-cta-hover-dark)] ring-emerald-200 dark:ring-emerald-900' },
+    { key: 'REQUEST_CHANGES', label: 'Request changes', tone: 'text-white bg-amber-600 hover:bg-amber-700 ring-amber-200 dark:ring-amber-900' },
 ];
 
 export function PublishReviewModal({ isOpen, onClose, draft, onPublish, publishing }) {
@@ -43,7 +43,7 @@ export function PublishReviewModal({ isOpen, onClose, draft, onPublish, publishi
                         type="button"
                         onClick={() => onPublish(event)}
                         disabled={publishing}
-                        className={`px-3 py-1.5 text-sm font-medium rounded text-white disabled:opacity-60 ${activeEvent?.tone} ds-focus-ring`}
+                        className={`px-3 py-1.5 text-sm font-medium rounded disabled:opacity-60 ${activeEvent?.tone} ds-focus-ring`}
                     >
                         {publishing ? 'Publishing…' : `Publish as ${activeEvent?.label}`}
                     </button>
@@ -81,7 +81,7 @@ export function PublishReviewModal({ isOpen, onClose, draft, onPublish, publishi
                         {EVENTS.map((e) => (
                             <label
                                 key={e.key}
-                                className={`flex-1 cursor-pointer rounded border p-2 text-center text-xs transition-all ${event === e.key ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-900 font-medium' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'}`}
+                                className={`flex-1 cursor-pointer rounded border p-2 text-center text-xs transition-all ${event === e.key ? 'border-brand-500 ring-2 ring-brand-200 dark:ring-brand-900 font-medium' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'}`}
                             >
                                 <input
                                     type="radio"

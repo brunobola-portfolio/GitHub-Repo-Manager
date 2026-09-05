@@ -14,7 +14,7 @@ const STATUS_ICONS = {
 const STATUS_COLORS = {
   added: 'text-emerald-500 dark:text-emerald-400',
   removed: 'text-rose-500 dark:text-rose-400',
-  renamed: 'text-blue-500 dark:text-blue-400',
+  renamed: 'text-brand-500 dark:text-brand-400',
   modified: 'text-amber-500 dark:text-amber-400',
   changed: 'text-amber-500 dark:text-amber-400',
 }
@@ -50,11 +50,11 @@ export function FileTreeItem({ file, id, isActive, isFocused, isReviewed, aiRisk
   const iconColor = STATUS_COLORS[status] ?? 'text-slate-400 dark:text-slate-500'
 
   const activeClass = isActive
-    ? 'bg-blue-100 dark:bg-blue-900/40'
+    ? 'bg-brand-100 dark:bg-brand-900/40'
     : 'hover:bg-slate-100 dark:hover:bg-slate-800'
   // Real focus stays on the tree container, so the active-descendant row shows
   // its own ring instead of relying on :focus-visible.
-  const focusClass = isFocused ? 'ring-1 ring-inset ring-blue-500' : ''
+  const focusClass = isFocused ? 'ring-1 ring-inset ring-[color:var(--ds-accent-ring)]' : ''
 
   // motion.button with `layout` so re-sorting (risk/A-Z toggle, viewed
   // reorder) animates rows to their new positions instead of jumping.
@@ -86,7 +86,7 @@ export function FileTreeItem({ file, id, isActive, isFocused, isReviewed, aiRisk
       </span>
 
       {/* Addition / deletion counts. ds-text-* (not text-emerald-700) because the
-          SELECTED row's blue tint is the darkest background these land on —
+          SELECTED row's brand tint is the darkest background these land on —
           emerald-600 measured 2.64:1 there. See --ds-fg-success. */}
       <span className="shrink-0 text-xs ds-text-success font-mono">
         +{additions}
@@ -106,7 +106,7 @@ export function FileTreeItem({ file, id, isActive, isFocused, isReviewed, aiRisk
         >
           <Check
             size={11}
-            className="text-blue-500 dark:text-blue-400"
+            className="text-brand-500 dark:text-brand-400"
             aria-label="Reviewed"
           />
         </motion.span>

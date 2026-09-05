@@ -114,7 +114,7 @@ export function PricingCard({
       {/* Badge — absolute on the outer wrapper (no overflow-hidden here) */}
       {highlighted && (
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-20">
-          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-[color:var(--ds-badge-brand-text)] bg-[color:var(--ds-badge-brand-fill)] shadow-md">
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-[color:var(--ds-badge-brand-text)] bg-[color:var(--ds-badge-brand-fill)] ds-elevation-md">
             <Zap className="w-3 h-3" />
             Most Popular
           </span>
@@ -123,7 +123,7 @@ export function PricingCard({
 
       {enterprise && (
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-20">
-          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-[color:var(--ds-badge-enterprise-text)] bg-[color:var(--ds-badge-enterprise-fill)] dark:bg-[color:var(--ds-badge-enterprise-fill-dark)] shadow-lg">
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold text-[color:var(--ds-badge-enterprise-text)] bg-[color:var(--ds-badge-enterprise-fill)] dark:bg-[color:var(--ds-badge-enterprise-fill-dark)] ds-elevation-lg">
             <Crown className="w-3 h-3" />
             Enterprise
           </span>
@@ -266,7 +266,7 @@ export function PricingCard({
               aria-label={`${ctaText} — ${tier} plan`}
               className="w-full py-3.5 rounded-xl font-bold text-sm text-white
                 bg-[color:var(--ds-cta)] hover:bg-[color:var(--ds-cta-hover)]
-                shadow-md transition-colors duration-200 ds-focus-ring"
+                ds-elevation-md transition-colors duration-200 ds-focus-ring"
             >
               {ctaText}
             </button>

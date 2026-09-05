@@ -45,7 +45,7 @@ export function RiskRail({ files = [], aiRiskMap = {}, heuristicMap = {}, active
             aria-label={`Jump to ${seg.filename} (${RISK_LABEL[seg.level]})`}
             aria-current={isActive ? 'true' : undefined}
             style={{ flexGrow: seg.weight, flexBasis: 0 }}
-            className={`w-full min-h-[3px] transition-opacity focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-blue-500 ${riskFillClass(seg.level)} ${isActive ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
+            className={`w-full min-h-[3px] transition-opacity focus:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[color:var(--ds-accent-ring)] ${riskFillClass(seg.level)} ${isActive ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
           />
         )
       })}

@@ -44,7 +44,7 @@ export const repoActions = {
 	// ───── Navigation ─────
 	open_detail: {
 		id: 'open_detail',
-		label: 'Open Details',
+		label: 'Open details',
 		description: 'Opens this repository in the in-app detail view.',
 		icon: Eye,
 		intent: 'navigation',
@@ -56,7 +56,7 @@ export const repoActions = {
 	},
 	open_repo_settings: {
 		id: 'open_repo_settings',
-		label: 'Open Settings',
+		label: 'Open settings',
 		description: 'Opens the in-app Settings tab for this repository.',
 		icon: Settings,
 		intent: 'navigation',
@@ -78,7 +78,7 @@ export const repoActions = {
 	},
 	migration_history: {
 		id: 'migration_history',
-		label: 'Migration History',
+		label: 'Migration history',
 		description: 'Shows past migration attempts and their outcomes.',
 		icon: History,
 		intent: 'navigation',
@@ -87,7 +87,7 @@ export const repoActions = {
 	},
 	community_health: {
 		id: 'community_health',
-		label: 'Community Health',
+		label: 'Community health',
 		description: 'Audits README, LICENSE, CONTRIBUTING, SECURITY, and templates.',
 		icon: Shield,
 		intent: 'navigation',
@@ -137,7 +137,7 @@ export const repoActions = {
 	// ───── Mutation: visibility ─────
 	visibility: {
 		id: 'visibility',
-		label: (repo) => repo.private ? 'Make Public' : 'Make Private',
+		label: (repo) => repo.private ? 'Make public' : 'Make private',
 		description: (repo) => repo.private
 			? 'Lets anyone on the internet view this repository and its contents.'
 			: 'Removes the repository from public listings. Existing public links will return 404.',
@@ -189,7 +189,7 @@ export const repoActions = {
 	// ───── Mutation: transfer ─────
 	transfer: {
 		id: 'transfer',
-		label: 'Transfer to Org',
+		label: 'Transfer to org',
 		description: 'Hands ownership of this repo to another user or organization. The new owner must accept.',
 		icon: ArrowRightLeft,
 		intent: 'mutation',
@@ -210,7 +210,7 @@ export const repoActions = {
 	/** @unconfirmed-by-design opens the transfer modal in mirror mode, which runs its own confirmation flow */
 	mirror: {
 		id: 'mirror',
-		label: 'Mirror / Fork',
+		label: 'Mirror / fork',
 		description: 'Creates a mirror copy of this repository under your account.',
 		icon: GitFork,
 		intent: 'mutation',
@@ -224,7 +224,7 @@ export const repoActions = {
 	// ───── Mutation: sync ─────
 	sync: {
 		id: 'sync',
-		label: 'Sync Repository',
+		label: 'Sync repository',
 		description: 'Fetches latest changes from the mirror source and force-pushes to the target. Only available for mirrored repos.',
 		icon: RefreshCw,
 		intent: 'mutation',
@@ -246,7 +246,7 @@ export const repoActions = {
 	// Read-only sync preview (free on every tier) -- no clone/push.
 	sync_preview: {
 		id: 'sync_preview',
-		label: 'Preview Sync',
+		label: 'Preview sync',
 		description: 'Shows the mirror source, target, and last sync — read-only, no changes. Available on every plan.',
 		icon: Eye,
 		intent: 'read-only',
@@ -269,7 +269,7 @@ export const repoActions = {
 	/** @unconfirmed-by-design opens a dedicated modal where the user reviews + confirms each suggestion */
 	ai_suggest_name_desc: {
 		id: 'ai_suggest_name_desc',
-		label: 'Suggest Name & Description',
+		label: 'Suggest name & description',
 		description: 'AI proposes a clearer name and description; you review before applying.',
 		icon: Lightbulb,
 		intent: 'mutation',
@@ -282,7 +282,7 @@ export const repoActions = {
 	/** @unconfirmed-by-design opens the Community Health modal where each missing file has its own preview/edit/commit confirmation flow */
 	fix_community_health: {
 		id: 'fix_community_health',
-		label: 'Fix Community Health',
+		label: 'Fix community health',
 		description: 'AI generates missing community files (LICENSE, CONTRIBUTING, etc.) for one-click commit.',
 		icon: Heart,
 		intent: 'mutation',
@@ -305,7 +305,7 @@ export const repoActions = {
 	},
 	dry_run: {
 		id: 'dry_run',
-		label: 'Dry-Run (Simulate)',
+		label: 'Dry-run (simulate)',
 		description: 'Simulates the migration without writing anything; reports what would happen.',
 		icon: FlaskConical,
 		intent: 'read-only',
@@ -314,7 +314,7 @@ export const repoActions = {
 	},
 	export_meta: {
 		id: 'export_meta',
-		label: 'Export Metadata (JSON)',
+		label: 'Export metadata (JSON)',
 		description: 'Downloads a JSON file with this repository’s settings and metadata.',
 		icon: Download,
 		intent: 'read-only',
@@ -328,7 +328,7 @@ export const repoActions = {
 	// ───── Read-only: AI ─────
 	ai_commit: {
 		id: 'ai_commit',
-		label: 'Generate Commit Message',
+		label: 'Generate commit message',
 		description: 'AI drafts a commit message from your staged diff.',
 		icon: Wand2,
 		intent: 'read-only',
@@ -337,7 +337,7 @@ export const repoActions = {
 	},
 	ai_pr: {
 		id: 'ai_pr',
-		label: 'Generate PR Description',
+		label: 'Generate PR description',
 		description: 'AI writes a PR description from the branch diff and recent commits.',
 		icon: GitPullRequest,
 		intent: 'read-only',
@@ -346,7 +346,7 @@ export const repoActions = {
 	},
 	ai_quality: {
 		id: 'ai_quality',
-		label: 'Quality Report',
+		label: 'Quality report',
 		description: 'AI scores README, CI, tests, and other quality signals.',
 		icon: BarChart3,
 		intent: 'read-only',
@@ -356,7 +356,7 @@ export const repoActions = {
 	},
 	ai_compare: {
 		id: 'ai_compare',
-		label: 'Compare with Existing',
+		label: 'Compare with existing',
 		description: 'AI flags repos in your account that overlap with this one.',
 		icon: GitCompare,
 		intent: 'read-only',
@@ -365,7 +365,7 @@ export const repoActions = {
 	},
 	ai_security: {
 		id: 'ai_security',
-		label: 'Security Posture',
+		label: 'Security posture',
 		description: 'Scans the repo for committed secrets and risky patterns.',
 		icon: ShieldAlert,
 		intent: 'read-only',
@@ -376,7 +376,7 @@ export const repoActions = {
 	// ───── Destructive ─────
 	delete: {
 		id: 'delete',
-		label: 'Delete Repository',
+		label: 'Delete repository',
 		description: 'Permanently deletes this repository on GitHub. This cannot be undone.',
 		icon: Trash2,
 		intent: 'destructive',
@@ -444,7 +444,7 @@ export const repoActions = {
 	},
 	dry_run_selected: {
 		id: 'dry_run_selected',
-		label: (repos) => `Dry-Run ${repos.length} repos`,
+		label: (repos) => `Dry-run ${repos.length} repos`,
 		description: 'Simulates migrating the selected repositories.',
 		icon: FlaskConical,
 		intent: 'read-only',
@@ -475,7 +475,7 @@ export const repoActions = {
 	},
 	ai_batch_index_selected: {
 		id: 'ai_batch_index_selected',
-		label: (repos) => `Batch Index ${repos.length} with AI`,
+		label: (repos) => `Batch index ${repos.length} with AI`,
 		description: 'Indexes the selected repositories so AI search can find them.',
 		icon: Sparkles,
 		intent: 'read-only',

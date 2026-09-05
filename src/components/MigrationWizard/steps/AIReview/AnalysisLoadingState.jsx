@@ -61,7 +61,7 @@ export function AnalysisLoadingState() {
       >
         <div className="relative">
           <motion.div
-            className="w-11 h-11 rounded-xl bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] flex items-center justify-center shadow-md"
+            className="w-11 h-11 rounded-xl bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] flex items-center justify-center ds-elevation-md"
             animate={{ rotate: [0, 5, -5, 0] }}
             transition={{ duration: 4, repeat: Infinity, ease: EASE.standard }}
           >

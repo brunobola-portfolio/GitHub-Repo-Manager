@@ -158,7 +158,10 @@ const VIEWS = [
     async setup(page) {
       await page.goto('/')
       await expect(page.getByAltText(MOCK_USER.login)).toBeVisible({ timeout: 15000 })
-      await page.getByRole('button', { name: 'Pricing' }).first().click()
+      // Pricing left the primary nav 2026-09-05 (2026-09-04 panel, R1) — it's
+      // reached from the user (avatar) menu's "Plans & billing" item now.
+      await page.getByLabel(/open user menu/i).click()
+      await page.getByRole('menuitem', { name: /plans.*billing/i }).click()
       await expect(page.getByRole('heading', { name: /pricing|plans/i }).first())
         .toBeVisible({ timeout: 15000 })
       await page.waitForLoadState('networkidle')

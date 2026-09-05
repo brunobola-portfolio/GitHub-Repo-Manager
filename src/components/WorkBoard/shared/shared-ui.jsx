@@ -5,9 +5,11 @@
  */
 
 import { useEffect, useState } from 'react'
+import { API_BASE_URL } from '../../../config'
 import { UpgradeRequired } from '../../states'
 import { Skeleton } from '../../ui/Skeleton'
 import { EmptyState as CanonicalEmptyState } from '../../ui/EmptyState'
+import { apiCall } from '../../../utils/api'
 
 // ---------------------------------------------------------------------------
 // Skeleton — composed from the canonical <Skeleton> primitive so every
@@ -87,8 +89,7 @@ export function WebhookHint() {
 
     useEffect(() => {
         let alive = true
-        fetch('/api/v1/webhooks/ingest-token', { credentials: 'include' })
-            .then((r) => (r.ok ? r.json() : null))
+        apiCall(`${API_BASE_URL}/api/v1/webhooks/ingest-token`)
             .then((body) => { if (alive && body?.exists) setState({ phase: 'have', url: body.url, secret: null }) })
             .catch(() => {})
         return () => { alive = false }
@@ -97,9 +98,7 @@ export function WebhookHint() {
     const generate = async () => {
         setState((s) => ({ ...s, phase: 'busy' }))
         try {
-            const r = await fetch('/api/v1/webhooks/ingest-token', { method: 'POST', credentials: 'include' })
-            if (!r.ok) throw new Error()
-            const body = await r.json()
+            const body = await apiCall(`${API_BASE_URL}/api/v1/webhooks/ingest-token`, { method: 'POST' })
             setState({ phase: 'have', url: body.url, secret: body.secret })
         } catch {
             setState({ phase: 'error', url: null, secret: null })

@@ -82,16 +82,16 @@ export default function UrlInputStep({ source, onChange }) {
 
       {/* Azure URL auto-detection banner */}
       {azureDetected && (
-        <div className="flex items-start gap-3 p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50">
-          <Info className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
-          <div className="flex-1 text-sm text-blue-700 dark:text-blue-300">
+        <div className="flex items-start gap-3 p-3 rounded-xl bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800/50">
+          <Info className="w-4 h-4 text-brand-500 shrink-0 mt-0.5" />
+          <div className="flex-1 text-sm text-[color:var(--ds-accent-brand)] dark:text-brand-300">
             This looks like an Azure DevOps URL. Switch to Azure DevOps import for full features
             (work items, wiki, AI review).
           </div>
           <button
             type="button"
             onClick={() => onChange({ sourceType: 'azure' })}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-100 dark:bg-blue-800/40 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800/60 transition-colors shrink-0 ds-focus-ring"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-brand-100 dark:bg-brand-800/40 text-[color:var(--ds-accent-brand)] dark:text-brand-300 hover:bg-brand-200 dark:hover:bg-brand-800/60 transition-colors shrink-0 ds-focus-ring"
           >
             Switch <ArrowRight className="w-3 h-3" />
           </button>

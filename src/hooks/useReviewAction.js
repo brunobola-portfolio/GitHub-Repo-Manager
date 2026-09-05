@@ -1,27 +1,14 @@
 import { useCallback } from 'react'
+import { API_BASE_URL } from '../config'
 import { useToast } from '@/hooks/useToast'
-import { getCsrfToken } from '@/utils/api'
-
-const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+import { apiCall } from '@/utils/api'
 
 async function call(url, { method = 'POST', body } = {}) {
-    const headers = body ? { 'Content-Type': 'application/json' } : {}
-    if (MUTATION_METHODS.has(method.toUpperCase())) {
-        try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
-    }
-    const res = await fetch(url, {
+    const json = await apiCall(url, {
         method,
-        credentials: 'include',
-        headers: Object.keys(headers).length ? headers : undefined,
+        headers: body ? { 'Content-Type': 'application/json' } : undefined,
         body: body ? JSON.stringify(body) : undefined,
     })
-    const json = await res.json().catch(() => ({}))
-    if (!res.ok) {
-        const err = new Error(json.error || `status ${res.status}`)
-        err.status = res.status
-        err.code = json.code
-        throw err
-    }
     return json.data
 }
 
@@ -39,7 +26,7 @@ export function useReviewAction({ onOptimistic, onRollback } = {}) {
     const runReview = useCallback(async (action, args, extraBody = {}) => {
         onOptimistic?.(action, args)
         try {
-            await call('/api/v1/work-board/review-action', {
+            await call(`${API_BASE_URL}/api/v1/work-board/review-action`, {
                 method: 'POST',
                 body: { repoFullName: args.repoFullName, prNumber: args.prNumber, action, ...extraBody },
             })
@@ -63,7 +50,7 @@ export function useReviewAction({ onOptimistic, onRollback } = {}) {
         try {
             const itemNumber = args.prNumber ?? args.issueNumber
             const itemType = args.itemType || (args.prNumber ? 'pr' : 'issue')
-            await call('/api/v1/work-board/snooze', {
+            await call(`${API_BASE_URL}/api/v1/work-board/snooze`, {
                 method: 'POST',
                 body: { repoFullName: args.repoFullName, itemType, itemNumber, hours: args.hours || 24 },
             })
@@ -79,7 +66,7 @@ export function useReviewAction({ onOptimistic, onRollback } = {}) {
         try {
             const itemNumber = args.prNumber ?? args.issueNumber
             const itemType = args.itemType || (args.prNumber ? 'pr' : 'issue')
-            await call('/api/v1/work-board/snooze', {
+            await call(`${API_BASE_URL}/api/v1/work-board/snooze`, {
                 method: 'DELETE',
                 body: { repoFullName: args.repoFullName, itemType, itemNumber },
             })

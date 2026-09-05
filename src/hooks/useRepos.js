@@ -11,6 +11,7 @@ import { isAbort } from '../utils/errorClassification'
 import {
     safeParseJson,
     fetchWithRetry,
+    apiCall,
     parseLinkHeaderTotal,
     isSessionExpired
 } from '../utils/api'
@@ -591,8 +592,7 @@ export function useRepos(user) {
             return { status: 'complete' }
         }
         try {
-            const r = await fetch(`${API_BASE}/import/status/${jobId}`, { credentials: 'include' })
-            return await safeParseJson(r)
+            return await apiCall(`${API_BASE}/import/status/${jobId}`)
         } catch (e) {
             return { status: 'error', message: e.message }
         }

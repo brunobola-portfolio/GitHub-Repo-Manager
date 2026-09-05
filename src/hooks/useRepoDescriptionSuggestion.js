@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
+import { API_BASE_URL } from '../config'
 import { defaultRepoDescription, sanitizeRepoDescription } from '../utils/migrationDescription'
-import { getCsrfToken } from '../utils/api'
+import { apiCall } from '../utils/api'
 import { isAIUnavailable, markAIFromResponse } from '../utils/aiAvailability'
 
 /**
@@ -54,19 +55,11 @@ export function useRepoDescriptionSuggestion({ aiAvailable } = {}) {
 
         setIsLoading(true)
         try {
-            const csrf = await getCsrfToken()
-            const res = await fetch('/api/ai/migration-description', {
+            const data = await apiCall(`${API_BASE_URL}/api/ai/migration-description`, {
                 method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(buildBody(repo, source)),
             })
-            if (res.status === 429) return { ...fallback(), quotaExceeded: true }
-            if (!res.ok) {
-                markAIFromResponse(res, 'migration-description')
-                return fallback()
-            }
-            const data = await res.json().catch(() => null)
             const text = data?.description
             if (typeof text !== 'string' || !text.trim()) return fallback()
             return {
@@ -74,7 +67,11 @@ export function useRepoDescriptionSuggestion({ aiAvailable } = {}) {
                 mode: 'ai',
                 quotaExceeded: false,
             }
-        } catch {
+        } catch (e) {
+            if (e?.status === 429) return { ...fallback(), quotaExceeded: true }
+            if (e?.status) {
+                markAIFromResponse({ ok: false, status: e.status }, 'migration-description')
+            }
             return fallback()
         } finally {
             setIsLoading(false)

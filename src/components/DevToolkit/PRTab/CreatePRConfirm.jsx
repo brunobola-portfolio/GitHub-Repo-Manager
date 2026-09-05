@@ -3,8 +3,8 @@ import { Button } from '../../ui/Button'
 
 export function CreatePRConfirm({ action = 'create', onConfirm, onCancel, loading }) {
     const labels = {
-        create: { title: 'Create Pull Request?', btn: 'Create PR', color: 'bg-emerald-600 hover:bg-emerald-700' },
-        update: { title: 'Update PR Description?', btn: 'Update PR', color: 'bg-blue-600 hover:bg-blue-700' },
+        create: { title: 'Create Pull Request?', btn: 'Create PR', color: 'text-white bg-emerald-600 hover:bg-emerald-700' },
+        update: { title: 'Update PR Description?', btn: 'Update PR', color: 'ds-brand-solid' },
     }
     const cfg = labels[action] || labels.create
 
@@ -16,7 +16,7 @@ export function CreatePRConfirm({ action = 'create', onConfirm, onCancel, loadin
         >
             <span className="text-xs text-slate-600 dark:text-slate-300">{cfg.title}</span>
             <Button type="button" variant="ghost" size="xs" onClick={onCancel} disabled={loading}>Cancel</Button>
-            <button type="button" onClick={onConfirm} disabled={loading} className={`px-3 py-1 text-xs font-medium rounded-md text-white ${cfg.color} disabled:opacity-50 ds-focus-ring`}>
+            <button type="button" onClick={onConfirm} disabled={loading} className={`px-3 py-1 text-xs font-medium rounded-md ${cfg.color} disabled:opacity-50 ds-focus-ring`}>
                 {loading ? 'Working...' : cfg.btn}
             </button>
         </motion.div>

@@ -15,7 +15,7 @@ vi.mock('@/hooks/useModal', () => ({ useModal: () => ({ openModal }) }))
 
 import { MigrationActivity } from '@/components/Dashboard/MigrationActivity'
 
-const okJson = (data) => ({ ok: true, json: async () => data })
+const okJson = (data) => ({ ok: true, headers: { get: () => 'application/json' }, json: async () => data })
 const emptyStats = { total: 0, completed: 0, running: 0, failed: 0, tfvc: 0, recent: [] }
 
 let originalFetch

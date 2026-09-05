@@ -8,7 +8,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import {
-    safeParseJson,
+    apiCall,
     ApiError,
     ErrorType,
     isSessionExpired
@@ -56,13 +56,8 @@ export function useOrgs(user) {
         }
         if (isSessionExpired()) return
         try {
-            const r = await fetch(`${API_BASE}/orgs`, { credentials: 'include' })
-            if (r.ok) {
-                const data = await safeParseJson(r)
-                setOrgs(Array.isArray(data) ? data : [])
-            } else if (r.status === 401) {
-                return
-            }
+            const data = await apiCall(`${API_BASE}/orgs`)
+            setOrgs(Array.isArray(data) ? data : [])
         } catch (e) {
             if (e instanceof ApiError && e.type === ErrorType.AUTHENTICATION) return
         }
@@ -80,14 +75,9 @@ export function useOrgs(user) {
         }
         if (isSessionExpired()) return
         try {
-            const r = await fetch(`${API_BASE}/orgs/${orgLogin}/repos?page=${pageNum}&per_page=100`, { credentials: 'include' })
-            if (r.ok) {
-                const data = await safeParseJson(r)
-                setOrgRepos(data.repos || [])
-                setSelectedOrg(orgLogin)
-            } else if (r.status === 401) {
-                return
-            }
+            const data = await apiCall(`${API_BASE}/orgs/${orgLogin}/repos?page=${pageNum}&per_page=100`)
+            setOrgRepos(data.repos || [])
+            setSelectedOrg(orgLogin)
         } catch (e) {
             if (e instanceof ApiError && e.type === ErrorType.AUTHENTICATION) return
             console.error('fetchOrgRepos error:', e)
@@ -137,15 +127,8 @@ export function useOrgs(user) {
                 'x-cache-ttl': cacheSettings.enabled ? cacheSettings.ttl.toString() : '0'
             }
 
-            const r = await fetch(url, { credentials: 'include', headers })
-            if (r.ok) {
-                const data = await safeParseJson(r)
-                setStats(data)
-            } else if (r.status === 401) {
-                return
-            } else {
-                // Non-OK status, ignore silently
-            }
+            const data = await apiCall(url, { headers })
+            setStats(data)
         } catch (e) {
             if (e instanceof ApiError && e.type === ErrorType.AUTHENTICATION) return
             console.error('fetchStats error:', e)
@@ -203,13 +186,8 @@ export function useOrgs(user) {
 
         if (isSessionExpired()) return
         try {
-            const r = await fetch(`${API_BASE}/activity?username=${username}`, { credentials: 'include' })
-            if (r.ok) {
-                const data = await safeParseJson(r)
-                setActivity(Array.isArray(data) ? data.slice(0, 20) : [])
-            } else if (r.status === 401) {
-                return
-            }
+            const data = await apiCall(`${API_BASE}/activity?username=${username}`)
+            setActivity(Array.isArray(data) ? data.slice(0, 20) : [])
         } catch (e) {
             if (e instanceof ApiError && e.type === ErrorType.AUTHENTICATION) return
             console.error('fetchActivity error:', e)

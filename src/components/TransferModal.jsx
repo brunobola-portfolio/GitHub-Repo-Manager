@@ -10,7 +10,7 @@ import { Checkbox } from './ui/form'
 import { ConflictPanel } from './ConflictPanel'
 import { useDebounce } from '../hooks/useDebounce'
 import { API_ENDPOINTS } from '../config'
-import { getCsrfToken } from '../utils/api'
+import { apiCall } from '../utils/api'
 import { getOrgRepoCount } from '../utils/orgRepoCount'
 
 export function TransferModal({
@@ -54,29 +54,24 @@ export function TransferModal({
 			setConflicts(null)
 			setResolutions({})
 			try {
-				const headers = { 'Content-Type': 'application/json' }
-				try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
 				if (cancelled) return
-				const resp = await fetch(API_ENDPOINTS.checkConflicts, {
+				const data = await apiCall(API_ENDPOINTS.checkConflicts, {
 					method: 'POST',
-					credentials: 'include',
-					headers,
+					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({
 						repos: repos.map(r => r.full_name),
 						targetOrg: debouncedTargetOrg
 					})
 				})
-				if (!cancelled && resp.ok) {
-					const data = await resp.json()
+				if (!cancelled) {
 					setConflicts(data.conflicts || {})
-				} else if (!cancelled) {
-					// Conflict check is best-effort — the transfer RPC will
-					// re-validate server-side on submit, so a failed probe
-					// just means we can't show pre-flight warnings here.
-					setConflicts({})
 				}
 			} catch {
-				// Silently fail — transfer will still catch conflicts at execution time
+				// Conflict check is best-effort — the transfer RPC will re-validate
+					// server-side on submit, so a failed probe just means we
+					// can't show pre-flight warnings here.
+					if (!cancelled) setConflicts({})
+					// (was: silently fail — transfer still catches conflicts at execution time)
 			} finally {
 				if (!cancelled) setCheckingConflicts(false)
 			}
@@ -183,7 +178,7 @@ export function TransferModal({
 							onClick={() => setAction('transfer')}
 							className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
 								action === 'transfer'
-									? 'bg-white dark:bg-slate-800 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] shadow-sm'
+									? 'bg-white dark:bg-slate-800 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ds-elevation-sm'
 									: 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
 							} ds-focus-ring`}
 						>
@@ -194,7 +189,7 @@ export function TransferModal({
 							onClick={() => setAction('mirror')}
 							className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md text-sm font-medium transition-all ${
 								action === 'mirror'
-									? 'bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 shadow-sm'
+									? 'bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 ds-elevation-sm'
 									: 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
 							} ds-focus-ring`}
 						>

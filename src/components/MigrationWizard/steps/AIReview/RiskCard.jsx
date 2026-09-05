@@ -37,7 +37,7 @@ const SEVERITY_CONFIG = {
     icon: Info,
     iconColor: 'text-brand-500',
     badge: 'bg-brand-500 text-white',
-    accentBar: 'from-brand-500 to-blue-500',
+    accentBar: 'from-brand-500 to-brand-300',
   },
 }
 
@@ -66,7 +66,7 @@ export function RiskCard({ risk, index }) {
               <span className="ds-text-sm font-semibold text-slate-900 dark:text-slate-100 leading-tight">
                 {risk.title}
               </span>
-              <span className={`ds-eyebrow px-1.5 py-0.5 rounded ${config.badge} shadow-sm`}>
+              <span className={`ds-eyebrow px-1.5 py-0.5 rounded ${config.badge} ds-elevation-sm`}>
                 {risk.severity}
               </span>
             </div>

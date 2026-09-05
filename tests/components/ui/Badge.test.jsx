@@ -44,7 +44,7 @@ describe('Badge — tone prop', () => {
     ['danger', 'bg-rose-100'], // danger merged onto rose (red retired, 2026-09-04 panel FE-05)
     ['rose', 'bg-rose-100'],
     ['info', 'bg-brand-100'],
-    ['blue', 'bg-blue-100'],
+    ['blue', 'bg-brand-100'], // blue retired onto brand, 2026-09-05 panel blue-* sweep
     ['violet', 'bg-brand-100'],
   ])('tone "%s" maps to its palette', (tone, expectedBg) => {
     render(<Badge data-testid="b" tone={tone}>x</Badge>)

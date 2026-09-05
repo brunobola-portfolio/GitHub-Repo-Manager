@@ -1,38 +1,19 @@
-import { getCsrfToken } from '../utils/api'
+import { apiCall } from '../utils/api'
 
 const BASE = '/api/v1/work-board'
 
-async function assertOk(res) {
-    if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        const detail = body.error ? ` – ${body.error}` : ''
-        const err = new Error(`Request failed: HTTP ${res.status}${detail}`)
-        err.status = res.status
-        err.body = body
-        throw err
-    }
-    return res
-}
-
+// apiCall's ApiError carries .status and .data (the parsed body) — the
+// same fields this used to hand-roll off the raw Response via assertOk().
 async function get(path) {
-    const res = await fetch(path, { method: 'GET', credentials: 'include' })
-    await assertOk(res)
-    return res.json()
+    return apiCall(path, { method: 'GET' })
 }
 
 async function mutate(path, method, body) {
-    const csrf = await getCsrfToken()
-    const res = await fetch(path, {
+    return apiCall(path, {
         method,
-        credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': csrf,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: body === undefined ? undefined : JSON.stringify(body),
     })
-    await assertOk(res)
-    return res.json()
 }
 
 function buildQuery(filters) {

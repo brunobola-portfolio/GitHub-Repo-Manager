@@ -129,7 +129,7 @@ export function PageSpinner({ label = 'Loading…' }) {
  * be plugged into status maps (e.g. `running: { icon: SpinnerIcon }`) as a
  * drop-in replacement for `Loader2`. Self-animating; the caller does NOT
  * need to add `animate-spin`. Size/colour come from Tailwind classes on
- * `className` (e.g. `"w-4 h-4 text-blue-500"`), matching the lucide contract.
+ * `className` (e.g. `"w-4 h-4 text-brand-500"`), matching the lucide contract.
  */
 export function SpinnerIcon({ className = '' }) {
     const gid = useId()

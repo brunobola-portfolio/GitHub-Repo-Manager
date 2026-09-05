@@ -23,6 +23,7 @@
  *    `teams` array is guaranteed to exist.
  */
 import { API_BASE, MOCK_MODE } from '../config'
+import { apiCall } from '../utils/api'
 
 // Seeded mock teams for demo mode. Matches the shape returned by
 // `server/routes/teams.js` — id, name, description, role, member_count,
@@ -70,27 +71,21 @@ export async function listTeams() {
     }
 
     try {
-        const res = await fetch(`${API_BASE}/teams`, {
-            credentials: 'include',
-        })
-
-        // Free-tier upgrade gate. Not treated as an error — callers should
-        // render an upgrade CTA instead of a failure toast.
-        if (res.status === 403) {
-            return { teams: [], upgradeRequired: true, error: null }
-        }
-
-        if (!res.ok) {
-            return { teams: [], upgradeRequired: false, error: `HTTP ${res.status}` }
-        }
-
-        const data = await res.json()
+        const data = await apiCall(`${API_BASE}/teams`)
         return {
             teams: Array.isArray(data) ? data : [],
             upgradeRequired: false,
             error: null,
         }
     } catch (e) {
+        // Free-tier upgrade gate. Not treated as an error — callers should
+        // render an upgrade CTA instead of a failure toast.
+        if (e?.status === 403) {
+            return { teams: [], upgradeRequired: true, error: null }
+        }
+        if (e?.status) {
+            return { teams: [], upgradeRequired: false, error: `HTTP ${e.status}` }
+        }
         return {
             teams: [],
             upgradeRequired: false,

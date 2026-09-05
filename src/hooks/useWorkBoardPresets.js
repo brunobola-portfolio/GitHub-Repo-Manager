@@ -1,30 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { getCsrfToken } from '../utils/api'
-import { MOCK_MODE } from '../config'
+import { apiCall } from '../utils/api'
+import { MOCK_MODE , API_BASE_URL } from '../config'
 
-const BASE = '/api/v1/work-board/presets'
+const BASE = `${API_BASE_URL}/api/v1/work-board/presets`
 const DEFAULT_SCOPE = 'work-board'
 
-const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
-
 async function call(url, options = {}) {
-    const method = (options.method || 'GET').toUpperCase()
-    let headers = options.headers
-    if (MUTATION_METHODS.has(method)) {
-        headers = { ...(headers || {}) }
-        if (!headers['X-CSRF-Token']) {
-            try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
-        }
-    }
-    const res = await fetch(url, { credentials: 'include', ...options, headers })
-    const json = await res.json().catch(() => ({}))
-    if (!res.ok) {
-        const err = new Error(json.error || `status ${res.status}`)
-        err.status = res.status
-        err.code = json.code
-        throw err
-    }
-    return json
+    return apiCall(url, options)
 }
 
 // Mock-mode persistence — MOCK_MODE has no backend to CRUD against, so saved

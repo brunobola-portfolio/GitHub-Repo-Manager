@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useId } from 'react';
+import { API_BASE_URL } from '../../config'
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, ArrowLeft, Plus, Trash2, Shield, UserPlus, BookCopy, Zap, Play, Clock, CheckCircle, XCircle, Loader2, Search, Activity, AlertTriangle } from 'lucide-react';
 import { Github } from '../icons/GithubIcon';
@@ -44,9 +45,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
         try {
             setLoading(true);
             setLoadError(false);
-            const res = await fetch(`/api/teams/${team.id}`);
-            if (!res.ok) throw new Error("Couldn't load team details");
-            const data = await res.json();
+            const data = await apiCall(`${API_BASE_URL}/api/teams/${team.id}`);
             setMembers(data.members);
             setAssignedRepos(data.repos);
             setCurrentUserRole(data.currentUserRole);
@@ -82,8 +81,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
         const ctrl = new AbortController();
         const timer = setTimeout(async () => {
             try {
-                const res = await fetch(`/api/search/users?q=${encodeURIComponent(inviteUsername)}`, { signal: ctrl.signal });
-                const data = await res.json();
+                const data = await apiCall(`${API_BASE_URL}/api/search/users?q=${encodeURIComponent(inviteUsername)}`, { signal: ctrl.signal });
                 setUserSearchResults(Array.isArray(data) ? data : []);
             } catch {
                 // User search failed/aborted — leave prior results
@@ -96,7 +94,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
 
     const handleInviteGivenUsername = async (usernameToInvite) => {
         try {
-            const data = await apiCall(`/api/teams/${team.id}/members`, {
+            const data = await apiCall(`${API_BASE_URL}/api/teams/${team.id}/members`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: usernameToInvite })
@@ -128,7 +126,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
 
     const handleAssignRepoDirectly = async (repo) => {
         try {
-            await apiCall(`/api/teams/${team.id}/repos`, {
+            await apiCall(`${API_BASE_URL}/api/teams/${team.id}/repos`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ repoFullName: repo.full_name, repoId: repo.id })
@@ -144,7 +142,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
 
     const handleUpdateRole = async (userId, newRole) => {
         try {
-            await apiCall(`/api/teams/${team.id}/members/${userId}`, {
+            await apiCall(`${API_BASE_URL}/api/teams/${team.id}/members/${userId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ role: newRole })
@@ -163,7 +161,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
             confirmText: 'Remove',
             onConfirm: async () => {
                 try {
-                    await apiCall(`/api/teams/${team.id}/members/${userId}`, {
+                    await apiCall(`${API_BASE_URL}/api/teams/${team.id}/members/${userId}`, {
                         method: 'DELETE',
                     });
                     toast.success('Member removed');
@@ -341,7 +339,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                         <div className="flex justify-end mb-4">
                             <button
                                 onClick={() => setShowAssign(!showAssign)}
-                                className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-colors shadow-md ds-focus-ring"
+                                className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-colors ds-elevation-md ds-focus-ring"
                             >
                                 <BookCopy className="w-4 h-4" />
                                 <span>Assign Repository</span>
@@ -383,7 +381,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                                                     onClick={() => handleAssignRepoDirectly(repo)}
                                                     className="flex items-center gap-3 p-3 text-left rounded-xl border border-slate-200 dark:border-slate-700 hover:border-brand-500 hover:ring-1 hover:ring-brand-500 transition-all group bg-slate-50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 ds-focus-ring"
                                                 >
-                                                    <div className="p-2 bg-white dark:bg-slate-700 rounded-lg group-hover:bg-brand-50 dark:group-hover:bg-brand-900/20 transition-colors shadow-sm">
+                                                    <div className="p-2 bg-white dark:bg-slate-700 rounded-lg group-hover:bg-brand-50 dark:group-hover:bg-brand-900/20 transition-colors ds-elevation-sm">
                                                         <Github className="w-4 h-4 text-slate-600 dark:text-slate-300 group-hover:text-brand-600 dark:group-hover:text-brand-400" />
                                                     </div>
                                                     <div className="min-w-0 flex-1">
@@ -541,16 +539,8 @@ function RepoCard({ repo, teamMembers }) {
         setCollabError(false);
         try {
             const [owner, repoName] = repo.repo_full_name.split('/');
-            const res = await fetch(`/api/repos/${owner}/${repoName}/collaborators`);
-            if (res.ok) {
-                const data = await res.json();
-                setCollaborators(data);
-            } else {
-                hasFetchedCollabsRef.current = false; // allow retry on failure
-                // Surface the failure instead of masquerading as "no
-                // collaborators found" — that empty copy hid real errors.
-                setCollabError(true);
-            }
+            const data = await apiCall(`${API_BASE_URL}/api/repos/${owner}/${repoName}/collaborators`);
+            setCollaborators(data);
         } catch {
             hasFetchedCollabsRef.current = false; // allow retry on failure
             setCollabError(true);
@@ -576,7 +566,7 @@ function RepoCard({ repo, teamMembers }) {
         setInviting(username);
         try {
             const [owner, repoName] = repo.repo_full_name.split('/');
-            await apiCall(`/api/repos/${owner}/${repoName}/collaborators/${username}`, {
+            await apiCall(`${API_BASE_URL}/api/repos/${owner}/${repoName}/collaborators/${username}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ permission: 'push' }) // Default to Write access
@@ -727,19 +717,19 @@ function ActionsTab({ assignedRepos, onShowStats }) {
         setActionsError(false);
         try {
             const [owner, repo] = repoFullName.split('/');
-            const [wfRes, runRes] = await Promise.all([
-                fetch(`/api/repos/${owner}/${repo}/actions/workflows`),
-                fetch(`/api/repos/${owner}/${repo}/actions/runs`)
+            const [wfResult, runResult] = await Promise.allSettled([
+                apiCall(`${API_BASE_URL}/api/repos/${owner}/${repo}/actions/workflows`),
+                apiCall(`${API_BASE_URL}/api/repos/${owner}/${repo}/actions/runs`)
             ]);
 
-            if (wfRes.ok) setWorkflows(await wfRes.json());
-            if (runRes.ok) setRuns(await runRes.json());
+            if (wfResult.status === 'fulfilled') setWorkflows(wfResult.value);
+            if (runResult.status === 'fulfilled') setRuns(runResult.value);
             // A non-ok workflows response previously fell through silently to a
             // "No workflows found" empty state — flag it as an error instead.
-            if (!wfRes.ok) {
+            if (wfResult.status === 'rejected') {
                 setActionsError(true);
                 toast.error("Couldn't load actions");
-            } else if (!runRes.ok) {
+            } else if (runResult.status === 'rejected') {
                 // Workflows loaded fine but runs didn't — a narrower failure
                 // than actionsError (which blanks the whole tab), so just
                 // toast it and leave the workflow list usable.
@@ -756,7 +746,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
     const handleRunWorkflow = async (workflowId, repoFullName) => {
         try {
             const [owner, repo] = repoFullName.split('/');
-            await apiCall(`/api/repos/${owner}/${repo}/actions/workflows/${workflowId}/dispatches`, {
+            await apiCall(`${API_BASE_URL}/api/repos/${owner}/${repo}/actions/workflows/${workflowId}/dispatches`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ref: 'main' })
@@ -796,7 +786,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                         key={repo.id}
                         onClick={() => setSelectedRepo(repo.repo_full_name)}
                         className={`w-full text-left p-3 rounded-xl transition-all ${selectedRepo === repo.repo_full_name
-                            ? 'ds-brand-solid shadow-md'
+                            ? 'ds-brand-solid ds-elevation-md'
                             : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
                             } ds-focus-ring`}
                     >

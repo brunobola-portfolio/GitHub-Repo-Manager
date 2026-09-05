@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { getCsrfToken } from '../utils/api'
+import { API_BASE_URL } from '../config'
+import { apiCall } from '../utils/api'
 import { isAbort } from '../utils/errorClassification'
 
 const MAX_CONCURRENT = 5
@@ -35,38 +36,27 @@ export function useAzureOrganizations() {
     const controller = new AbortController()
     abortRef.current = controller
 
-    // 10-second timeout
-    const timeoutId = setTimeout(() => controller.abort(), 10_000)
-
     setOrgsLoading(true)
     setOrgsError(null)
 
     try {
-      const res = await fetch('/api/azure/organizations', {
-        credentials: 'include',
-        signal: controller.signal,
-      })
-      clearTimeout(timeoutId)
+      // maxRetries: 0 — this hook already does its own single retry-on-401/
+      // timeout below; fetchWithRetry's own backoff retries would compound
+      // with it. timeout matches the previous manual 10s AbortController.
+      const data = await apiCall(
+        `${API_BASE_URL}/api/azure/organizations`,
+        { signal: controller.signal },
+        { maxRetries: 0, timeout: 10_000 },
+      )
 
-      if (res.status === 401) {
-        throw new Error('TOKEN_EXPIRED')
-      }
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data.error || `Failed to list organizations (${res.status})`)
-      }
-
-      const data = await res.json()
       const orgs = data.organizations || []
       cacheRef.current.orgs = orgs
       setOrganizations(orgs)
       setOrgsError(null)
       return orgs
     } catch (e) {
-      clearTimeout(timeoutId)
       if (!mountedRef.current) return []
-      if (isAbort(e)) {
+      if (isAbort(e, controller.signal) || e.type === 'TIMEOUT') {
         // Auto-retry once on timeout
         if (retryCount < 1 && mountedRef.current) {
           // eslint-disable-next-line react-hooks/immutability -- intentional self-recursion via useCallback (deps: [])
@@ -77,12 +67,12 @@ export function useAzureOrganizations() {
         return []
       }
       // Auto-retry once on 401 (token expired)
-      if (e.message === 'TOKEN_EXPIRED' && retryCount < 1 && mountedRef.current) {
-         
+      if (e.status === 401 && retryCount < 1 && mountedRef.current) {
+
         return fetchOrganizations(retryCount + 1)
       }
       if (!mountedRef.current) return []
-      setOrgsError(e.message)
+      setOrgsError(e.status === 401 ? 'TOKEN_EXPIRED' : (e.message || `Failed to list organizations (${e.status})`))
       setOrganizations([])
       return []
     } finally {
@@ -113,17 +103,14 @@ export function useAzureOrganizations() {
       while (queue.length > 0) {
         const orgName = queue.shift()
         try {
-          const csrfToken = await getCsrfToken()
-          const res = await fetch('/api/azure/projects', {
+          const data = await apiCall(`${API_BASE_URL}/api/azure/projects`, {
             method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               org: orgName,
               pat: pat || undefined,
             }),
           })
-          const data = await res.json()
           const count = (data.projects || []).length
           cacheRef.current.counts[orgName] = count
           setOrgProjectCounts((prev) => ({ ...prev, [orgName]: count }))

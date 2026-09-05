@@ -8,6 +8,20 @@ import { test, expect } from '@playwright/test'
 // (data-pricing-hover-layer="spotlight"|"border-glow"|"shimmer").
 
 /**
+ * Opens the user (avatar) menu and clicks "Plans & billing" when
+ * authenticated (mock mode) — Pricing left the primary nav 2026-09-05.
+ * Landing pages (unauthenticated) have no user menu, so this is a silent
+ * no-op there.
+ */
+async function gotoPricingIfAuthenticated(page) {
+	const userMenu = page.getByLabel(/open user menu/i).first()
+	if (await userMenu.isVisible({ timeout: 1000 }).catch(() => false)) {
+		await userMenu.click()
+		await page.getByRole('menuitem', { name: /plans.*billing/i }).click()
+	}
+}
+
+/**
  * Navigate the SPA to a view that renders pricing cards, handling both
  * authenticated (mock mode: click the Pricing nav button) and
  * unauthenticated (landing preview) cases. Then scroll the first pricing
@@ -17,13 +31,11 @@ import { test, expect } from '@playwright/test'
  * has none (caller should skip the test).
  */
 async function scrollToPricingCards(page) {
-	// If authenticated (mock mode), there's a Pricing nav button — click it to
-	// switch the SPA's activeView to 'pricing'. Landing pages don't have that
-	// button, so skip this step silently when it's missing.
-	const pricingNav = page.getByRole('button', { name: 'Pricing' }).first()
-	if (await pricingNav.isVisible({ timeout: 1000 }).catch(() => false)) {
-		await pricingNav.click()
-	}
+	// If authenticated (mock mode), Pricing is reached via the user (avatar)
+	// menu's "Plans & billing" item — it left the primary nav 2026-09-05.
+	// Landing pages don't have a user menu, so skip this step silently when
+	// it's missing.
+	await gotoPricingIfAuthenticated(page)
 
 	const first = page.locator('[data-pricing-hover-layer="spotlight"]').first()
 	const exists = await first.count().then((n) => n > 0)
@@ -103,11 +115,8 @@ test.describe('Pricing cards — hover layers', () => {
 		const page = await context.newPage()
 		await page.goto('/')
 		await page.waitForLoadState('networkidle')
-		const pricingNav = page.getByRole('button', { name: 'Pricing' }).first()
-		if (await pricingNav.isVisible({ timeout: 1000 }).catch(() => false)) {
-			await pricingNav.click()
-			await page.waitForLoadState('networkidle')
-		}
+		await gotoPricingIfAuthenticated(page)
+		await page.waitForLoadState('networkidle')
 
 		// With reduced motion, PricingCardHoverLayers returns null → no layers in DOM at all.
 		const spotlightCount = await page.locator('[data-pricing-hover-layer="spotlight"]').count()

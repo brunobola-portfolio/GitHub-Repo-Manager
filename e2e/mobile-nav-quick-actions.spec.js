@@ -19,11 +19,21 @@ test.describe('Mobile nav + quick actions', () => {
         await expect(nav.getByRole('button', { name: /more/i })).toBeVisible()
     })
 
-    test('More button opens a sheet with Pricing/Settings/Logout', async ({ page }) => {
+    test('More button opens a sheet with Settings/Logout', async ({ page }) => {
+        // Pricing left the More sheet 2026-09-05 (2026-09-04 panel, R1) — it's
+        // reached from the user (avatar) menu's "Plans & billing" instead,
+        // covered by the next test.
         await page.getByRole('button', { name: /more/i }).click()
-        await expect(page.getByRole('button', { name: /pricing/i })).toBeVisible()
         await expect(page.getByRole('button', { name: /settings/i })).toBeVisible()
         await expect(page.getByRole('button', { name: /logout/i })).toBeVisible()
+    })
+
+    test('Pricing is reachable from the user menu as "Plans & billing"', async ({ page }) => {
+        await page.getByLabel(/open user menu/i).click()
+        const item = page.getByRole('menuitem', { name: /plans.*billing/i })
+        await expect(item).toBeVisible()
+        await item.click()
+        await expect(page.getByRole('heading', { name: /pricing|plans/i }).first()).toBeVisible({ timeout: 10000 })
     })
 
     test('FAB expands and exposes Create/Import/Dev Toolkit', async ({ page }) => {

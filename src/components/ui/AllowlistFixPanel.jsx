@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
+import { API_BASE_URL } from '../../config'
 import { ShieldAlert, ShieldCheck, Terminal, Sparkles, Lock } from 'lucide-react'
 import { AnimatedCopyIcon } from './AnimatedCopyIcon'
 import { SpinnerIcon } from './Spinner'
-import { getCsrfToken } from '../../utils/api'
+import { apiCall } from '../../utils/api'
 import { copyToClipboard } from '../../utils/clipboard'
 
 /**
@@ -55,18 +56,11 @@ export default function AllowlistFixPanel({
   const addNow = async () => {
     setAdding(true); setError('')
     try {
-      const csrf = await getCsrfToken().catch(() => null)
-      const res = await fetch('/api/azure/host-allowlist', {
+      await apiCall(`${API_BASE_URL}/api/azure/host-allowlist`, {
         method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(csrf ? { 'X-CSRF-Token': csrf } : {}),
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pattern: host, notes }),
       })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`)
       setAdded(true)
       onAdded?.(host)
     } catch (e) {
@@ -166,7 +160,7 @@ function AdminQuickFix({ host, adding, error, onAdd, envLine, patternsKnown, env
           type="button"
           onClick={onAdd}
           disabled={adding}
-          className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors shadow-sm ds-focus-ring"
+          className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-400 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:cursor-not-allowed transition-colors ds-elevation-sm ds-focus-ring"
         >
           {adding
             ? <><SpinnerIcon className="w-3.5 h-3.5" /> Adding…</>

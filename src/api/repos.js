@@ -1,4 +1,4 @@
-import { apiCall, getCsrfToken } from '../utils/api';
+import { apiCall } from '../utils/api';
 import { MOCK_MODE } from '../config';
 
 /**
@@ -26,22 +26,13 @@ export async function commitCommunityHealthFix({ owner, repo, fileType, content,
       ...(mode === 'pr' ? { prUrl: `https://github.com/${owner}/${repo}/pull/1` } : {}),
     };
   }
-  const csrf = await getCsrfToken();
-  const res = await fetch(`/api/repos/${owner}/${repo}/community-health/commit-fix`, {
+  // apiCall's ApiError already carries .status, .code and .data (the parsed
+  // body) — the same fields this used to hand-roll off the raw Response.
+  return apiCall(`/api/repos/${owner}/${repo}/community-health/commit-fix`, {
     method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ fileType, content, commitMessage, mode }),
   });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const err = new Error(json.error || `status ${res.status}`);
-    err.status = res.status;
-    err.code = json.code;
-    err.data = json;
-    throw err;
-  }
-  return json;
 }
 
 export const reposApi = {
@@ -190,15 +181,6 @@ export const reposApi = {
 
   getTree: async (owner, name, branch) => {
     const qs = branch ? `?branch=${encodeURIComponent(branch)}` : '';
-    const res = await fetch(`/api/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/tree${qs}`, {
-      credentials: 'include',
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      const err = new Error(data?.error || "Couldn't load repo tree");
-      err.status = res.status;
-      throw err;
-    }
-    return res.json();
+    return apiCall(`/api/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}/tree${qs}`);
   },
 }

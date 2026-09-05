@@ -153,7 +153,7 @@ export default function SourceTypeStep({ source, onChange, onAdvance }) {
                 group relative w-full flex items-center gap-4 p-4 rounded-2xl text-left
                 transition-all duration-[var(--ds-duration-slow)] ease-out
                 ${selected
-                  ? `${accent.border} ${accent.bg} ring-2 ${accent.ring} shadow-lg ${accent.glow}`
+                  ? `${accent.border} ${accent.bg} ring-2 ${accent.ring} ds-elevation-lg ${accent.glow}`
                   : 'border border-slate-200/50 dark:border-slate-700/40 bg-white/60 dark:bg-slate-800/40 hover:bg-white/90 dark:hover:bg-slate-800/60 hover:border-slate-300/80 dark:hover:border-slate-600/60 hover:shadow-lg hover:shadow-slate-200/40 dark:hover:shadow-black/30'
                 }
                 ${!selected && hovered ? 'translate-y-[-2px]' : ''}
@@ -162,9 +162,9 @@ export default function SourceTypeStep({ source, onChange, onAdvance }) {
               {/* Icon */}
               <div className={`
                 relative p-3 rounded-xl ${accent.icon}
-                shadow-md transition-all duration-[var(--ds-duration-slow)]
+                ds-elevation-md transition-all duration-[var(--ds-duration-slow)]
                 ${selected ? `shadow-lg ${accent.glow}` : 'shadow-slate-200/60 dark:shadow-black/30'}
-                ${hovered && !selected ? `shadow-lg ${accent.glow}` : ''}
+                ${hovered && !selected ? `ds-elevation-lg ${accent.glow}` : ''}
               `}>
                 <Icon className={`w-5 h-5 ${accent.iconText}`} strokeWidth={2} />
               </div>
@@ -186,7 +186,7 @@ export default function SourceTypeStep({ source, onChange, onAdvance }) {
                       inline-flex items-center gap-1 ds-text-meta font-semibold
                       px-2 py-0.5 rounded-full
                       ${accent.badge} text-white
-                      shadow-sm
+                      ds-elevation-sm
                     `}>
                       <Star className="w-3 h-3" fill="currentColor" />
                       Recommended

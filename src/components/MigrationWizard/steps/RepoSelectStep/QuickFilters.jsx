@@ -58,12 +58,12 @@ function Chip({ icon: Icon, label, count, active, onClick, tone = 'slate' }) {
   // /15 opacity pattern (consistent with existing wizard badges) — reads well
   // in both light and dark modes, unlike the previous solid-fill actives.
   const activeCls = {
-    indigo:  'bg-brand-500/15 text-[color:var(--ds-accent-brand)] dark:text-brand-300 border-brand-500/40 shadow-sm',
-    red:     'bg-rose-500/15 text-rose-600 dark:text-rose-300 border-rose-500/40 shadow-sm',
-    amber:   'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40 shadow-sm',
-    emerald: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 shadow-sm',
-    violet:  'bg-brand-500/15 text-brand-600 dark:text-brand-300 border-brand-500/40 shadow-sm',
-    slate:   'bg-slate-500/15 text-slate-700 dark:text-slate-200 border-slate-500/40 shadow-sm',
+    indigo:  'bg-brand-500/15 text-[color:var(--ds-accent-brand)] dark:text-brand-300 border-brand-500/40 ds-elevation-sm',
+    red:     'bg-rose-500/15 text-rose-600 dark:text-rose-300 border-rose-500/40 ds-elevation-sm',
+    amber:   'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40 ds-elevation-sm',
+    emerald: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40 ds-elevation-sm',
+    violet:  'bg-brand-500/15 text-brand-600 dark:text-brand-300 border-brand-500/40 ds-elevation-sm',
+    slate:   'bg-slate-500/15 text-slate-700 dark:text-slate-200 border-slate-500/40 ds-elevation-sm',
   }[tone]
   const inactiveCls = 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
   return (

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CloudOff, X } from 'lucide-react'
 import { API_BASE_URL } from '../../config'
+import { apiCall } from '../../utils/api'
 import { DURATION } from './motion'
 
 /**
@@ -25,9 +26,8 @@ export function PendingSyncBanner({ isAuthenticated }) {
 
         const poll = async () => {
             try {
-                const res = await fetch(`${API_BASE_URL}/api/v1/outbox/pending`, { credentials: 'include' })
-                if (!res.ok || cancelled) return
-                const json = await res.json()
+                const json = await apiCall(`${API_BASE_URL}/api/v1/outbox/pending`)
+                if (cancelled) return
                 if (!cancelled) setCount(json.count || 0)
             } catch {
                 // silent — outbox endpoint failing shouldn't surface as a bug
@@ -77,7 +77,7 @@ export function PendingSyncBanner({ isAuthenticated }) {
                     transition={{ duration: DURATION.standard }}
                     role="status"
                     aria-live="polite"
-                    className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[var(--ds-z-popover)] flex items-center gap-3 px-4 py-2.5 rounded-full bg-amber-500/95 dark:bg-amber-600/95 text-white shadow-lg backdrop-blur-md max-w-[90vw]"
+                    className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[var(--ds-z-popover)] flex items-center gap-3 px-4 py-2.5 rounded-full bg-amber-500/95 dark:bg-amber-600/95 text-white ds-elevation-lg backdrop-blur-md max-w-[90vw]"
                 >
                     <CloudOff className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
                     <div className="text-sm font-medium">

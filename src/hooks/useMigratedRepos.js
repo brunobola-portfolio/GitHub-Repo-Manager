@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { MOCK_MODE } from '../config'
+import { MOCK_MODE , API_BASE_URL } from '../config'
+import { apiCall } from '../utils/api'
 
 const TTL_MS = 60_000
 
@@ -17,9 +18,7 @@ function notify() {
 async function fetchAll() {
     if (MOCK_MODE) return new Map()
     try {
-        const r = await fetch('/api/migration/marks/mine', { credentials: 'include' })
-        if (!r.ok) return new Map()
-        const d = await r.json()
+        const d = await apiCall(`${API_BASE_URL}/api/migration/marks/mine`)
         const map = new Map()
         for (const [repo, entry] of Object.entries(d.migrated || {})) {
             map.set(repo, entry)

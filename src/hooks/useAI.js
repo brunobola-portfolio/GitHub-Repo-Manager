@@ -7,7 +7,7 @@
  */
 
 import { useCallback } from 'react'
-import { safeParseJson, isSessionExpired, getCsrfToken } from '../utils/api'
+import { apiCall, safeParseJson, isSessionExpired, getCsrfToken } from '../utils/api'
 import { isAbort } from '../utils/errorClassification'
 import { MOCK_MODE, API_BASE } from '../config'
 
@@ -26,8 +26,7 @@ export function useAI() {
     const checkAIStatus = useCallback(async () => {
         if (MOCK_MODE) return { configured: true }
         try {
-            const r = await fetch(`${API_BASE}/config/ai-status`, { credentials: 'include' })
-            return await safeParseJson(r)
+            return await apiCall(`${API_BASE}/config/ai-status`)
         } catch (e) {
             return { configured: false }
         }

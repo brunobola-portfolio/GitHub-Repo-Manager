@@ -52,7 +52,7 @@ export function SectionPanel({
     const headerCommon = (
         <>
             {Icon ? (
-                <span className="shrink-0 w-9 h-9 rounded-xl ds-brand-solid flex items-center justify-center shadow-sm">
+                <span className="shrink-0 w-9 h-9 rounded-xl ds-brand-solid flex items-center justify-center ds-elevation-sm">
                     <Icon className="w-4 h-4" aria-hidden="true" />
                 </span>
             ) : null}
@@ -82,7 +82,7 @@ export function SectionPanel({
 
     return (
         <section
-            className={`rounded-3xl border border-slate-200 dark:border-slate-800 ${bg} shadow-sm overflow-hidden ${className}`.trim()}
+            className={`rounded-3xl border border-slate-200 dark:border-slate-800 ${bg} ds-elevation-sm overflow-hidden ${className}`.trim()}
             {...rest}
         >
             {hasHeader ? (

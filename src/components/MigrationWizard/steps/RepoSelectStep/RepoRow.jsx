@@ -35,7 +35,7 @@ export function RepoRow({ repo, isSelected, isActive, density = 'full', onToggle
         repo.isDisabled ? 'opacity-60' : ''
       } ${
         isSelected
-          ? 'border-brand-500/60 bg-brand-950/30 shadow-sm'
+          ? 'border-brand-500/60 bg-brand-950/30 ds-elevation-sm'
           : 'border-slate-200 dark:border-slate-700 hover:border-brand-400/50 hover:bg-slate-50 dark:hover:bg-slate-800/50'
       } ${isActive ? 'ring-2 ring-brand-500/40' : ''}`}
     >

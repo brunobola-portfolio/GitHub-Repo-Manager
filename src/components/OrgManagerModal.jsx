@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { API_BASE_URL } from '../config'
 import {
     Building2, Settings, Globe, Lock, Users, GitFork,
     ExternalLink, RefreshCw, Edit3, Check, AlertTriangle,
@@ -14,7 +15,7 @@ import { Spinner } from './ui/Spinner'
 import { Tooltip } from './ui/Tooltip'
 import { Field, Input, Textarea } from './ui/form'
 import { useToast } from '../hooks/useToast'
-import { getCsrfToken } from '../utils/api'
+import { apiCall } from '../utils/api'
 
 const ORG_TABS = [
     { id: 'overview', label: 'Overview' },
@@ -61,15 +62,13 @@ export function OrgManagerModal({
         setLoading(true)
         setError(null)
         try {
-            const [orgRes, membersRes] = await Promise.all([
-                fetch(`/api/orgs/${org.login}`, { credentials: 'include', signal }),
-                fetch(`/api/orgs/${org.login}/members`, { credentials: 'include', signal })
+            const [data, membersData] = await Promise.all([
+                apiCall(`${API_BASE_URL}/api/orgs/${org.login}`, { signal }).catch(() => null),
+                apiCall(`${API_BASE_URL}/api/orgs/${org.login}/members`, { signal }).catch(() => null)
             ])
             if (signal?.aborted) return
 
-            if (orgRes.ok) {
-                const data = await orgRes.json()
-                if (signal?.aborted) return
+            if (data) {
                 setOrgDetails(data)
                 setEditForm({
                     name: data.name || '',
@@ -80,10 +79,8 @@ export function OrgManagerModal({
                 })
             }
 
-            if (membersRes.ok) {
-                const data = await membersRes.json()
-                if (signal?.aborted) return
-                setMembers(Array.isArray(data) ? data : [])
+            if (membersData) {
+                setMembers(Array.isArray(membersData) ? membersData : [])
             }
         } catch (e) {
             if (isAbort(e, signal)) return
@@ -97,30 +94,19 @@ export function OrgManagerModal({
         setLoading(true)
         setError(null)
         try {
-            const headers = { 'Content-Type': 'application/json' }
-            try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* server will 403 */ }
-            const res = await fetch(`/api/orgs/${org.login}`, {
+            const updated = await apiCall(`${API_BASE_URL}/api/orgs/${org.login}`, {
                 method: 'PATCH',
-                credentials: 'include',
-                headers,
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(editForm)
             })
-
-            if (res.ok) {
-                const updated = await res.json()
-                setOrgDetails(updated)
-                setEditing(false)
-                onUpdateOrg?.(updated)
-                toast.success('Organization settings saved')
-            } else {
-                const body = await res.json().catch(() => ({}))
-                const msg = body?.error || body?.message || 'Failed to update organization'
-                setError(msg)
-                toast.error(msg)
-            }
+            setOrgDetails(updated)
+            setEditing(false)
+            onUpdateOrg?.(updated)
+            toast.success('Organization settings saved')
         } catch (e) {
-            setError(e?.message || 'Failed to update organization')
-            toast.error(`Failed to update organization — ${e?.message || 'try again'}`)
+            const msg = e?.data?.error || e?.data?.message || e?.message || 'Failed to update organization'
+            setError(msg)
+            toast.error(`Failed to update organization — ${msg}`)
         } finally {
             setLoading(false)
         }
@@ -450,7 +436,7 @@ function SettingsTab({ org }) {
 // Helper Components
 function StatCard({ icon: IconComp, label, value, color }) {
     const colors = {
-        blue: 'bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-200',
+        blue: 'bg-brand-50 text-brand-600 dark:bg-brand-900/40 dark:text-brand-200',
         purple: 'bg-brand-50 text-brand-600 dark:bg-brand-900/40 dark:text-brand-200',
         green: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200',
         orange: 'bg-amber-50 text-amber-600 dark:bg-amber-900/40 dark:text-amber-200'

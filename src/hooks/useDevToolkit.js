@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useRef } from 'react'
 import { API_BASE } from '../config'
-import { getCsrfToken } from '../utils/api'
+import { apiCall } from '../utils/api'
 import { isAbort } from '../utils/errorClassification'
 
 const TAB_STORAGE_KEY = 'devToolkit_activeTab'
@@ -51,9 +51,7 @@ export function useDevToolkit({ repos = [], initialTab, initialRepo, initialBran
         const ctrl = new AbortController()
         branchesAbortRef.current = ctrl
         try {
-            const res = await fetch(`${API_BASE}/repos/${owner}/${repo}/branches?per_page=100`, { signal: ctrl.signal, credentials: 'include' })
-            if (!res.ok) return
-            const data = await res.json()
+            const data = await apiCall(`${API_BASE}/repos/${owner}/${repo}/branches?per_page=100`, { signal: ctrl.signal })
             setBranches(data)
             const defaultBranch = data.find(b => b.name === 'main') || data.find(b => b.name === 'master') || data[0]
             if (defaultBranch) {
@@ -75,9 +73,7 @@ export function useDevToolkit({ repos = [], initialTab, initialRepo, initialBran
         abortRef.current = ctrl
         setCompareLoading(true)
         try {
-            const res = await fetch(`${API_BASE}/repos/${owner}/${repo}/compare/${encodeURIComponent(base)}...${encodeURIComponent(head)}`, { signal: ctrl.signal, credentials: 'include' })
-            if (!res.ok) throw new Error('Compare failed')
-            const data = await res.json()
+            const data = await apiCall(`${API_BASE}/repos/${owner}/${repo}/compare/${encodeURIComponent(base)}...${encodeURIComponent(head)}`, { signal: ctrl.signal })
             setCompareData({
                 ahead_by: data.ahead_by,
                 behind_by: data.behind_by,
@@ -116,11 +112,9 @@ export function useDevToolkit({ repos = [], initialTab, initialRepo, initialBran
     const fetchContextAnalysis = useCallback(async (owner, repo, diffSummary, commits, fileList) => {
         setContextAnalysisLoading(true)
         try {
-            const csrfToken = await getCsrfToken()
-            const res = await fetch(`${API_BASE}/ai/analyze-context`, {
+            const data = await apiCall(`${API_BASE}/ai/analyze-context`, {
                 method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     repo: `${owner}/${repo}`,
                     diff_summary: diffSummary,
@@ -128,8 +122,6 @@ export function useDevToolkit({ repos = [], initialTab, initialRepo, initialBran
                     file_list: fileList,
                 }),
             })
-            if (!res.ok) throw new Error('Context analysis failed')
-            const data = await res.json()
             setContextAnalysis(data)
         } catch {
             setContextAnalysis(null)

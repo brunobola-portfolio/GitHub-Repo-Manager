@@ -99,28 +99,14 @@ describe('ROADMAP does not sell shipped features as future work', () => {
     })
 })
 
-describe('the in-app Roadmap page agrees with ROADMAP.md', () => {
-    // ROADMAP.md was corrected first and the in-app page kept its old data, so
-    // the app still sold DORA and Azure DevOps Server as future Enterprise work
-    // and labelled now-free features (README Enhance, Batch Indexing, AI
-    // Issue-to-PR Planner) as Pro. A doc-only fix is not a fix.
-    const page = read('src/components/Roadmap/RoadmapPage.jsx')
-    const unshipped = page.slice(page.indexOf("id: 'next'"), page.indexOf("id: 'shipped'"))
-
-    it('carries no tier badge on unshipped work, except compliance deliverables', () => {
-        const tagged = unshipped
-            .split(/\r?\n/)
-            .filter((line) => /tier:\s*'/.test(line))
-            .filter((line) => !/SSO \/ SAML|SBOM Export/.test(line))
-        expect(tagged, `Unshipped roadmap items tagged with a tier:\n${tagged.join('\n')}`).toEqual([])
-    })
-
-    it('does not list already-shipped features as upcoming', () => {
-        for (const shipped of ['DORA', 'Azure DevOps Server']) {
-            expect(unshipped, `"${shipped}" shipped and is free — it cannot be upcoming work`).not.toContain(shipped)
-        }
-    })
-})
+// The in-app Roadmap page (src/components/Roadmap/RoadmapPage.jsx) was
+// removed 2026-09-05 — a wall of 18 unshipped promises inside a paid product
+// undercuts the premium feel, and one entry (SSO/SAML) already contradicted
+// `sso: false` on every tier. ROADMAP.md at the repo root is now the single
+// roadmap surface (linked from the Pricing page footer), so the two-way
+// agreement check this describe block used to run against the deleted page
+// no longer applies; the "ROADMAP does not sell shipped features as future
+// work" suite above still gates the one remaining source of truth.
 
 describe('the commercial licence describes the licence the issuer actually mints', () => {
     const commercial = GUARDED_DOCS['docs/LICENSE-COMMERCIAL.md']

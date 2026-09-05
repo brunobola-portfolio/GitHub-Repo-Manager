@@ -84,7 +84,7 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
                 'relative isolate overflow-hidden',
                 'rounded-3xl border border-slate-200 dark:border-slate-700/60',
                 'bg-white dark:bg-slate-900',
-                'shadow-lg',
+                'ds-elevation-lg',
                 'px-6 py-12 sm:px-10 sm:py-16',
                 className
             )}
@@ -100,7 +100,7 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
                         'relative mb-5 inline-flex items-center justify-center',
                         'w-16 h-16 rounded-2xl',
                         copy.bg,
-                        'shadow-md',
+                        'ds-elevation-md',
                         'ring-1', copy.ring
                     )}
                 >
@@ -158,7 +158,7 @@ function CardUpgrade({ tier, feature, benefits, copy, pricingHref, onPricingClic
                         'group inline-flex items-center justify-center gap-2',
                         'px-5 py-2.5 rounded-xl text-sm font-semibold text-white',
                         copy.bg,
-                        'shadow-md',
+                        'ds-elevation-md',
                         'hover:opacity-90 transition-opacity duration-200',
                         'ds-focus-ring'
                     )}
@@ -184,7 +184,7 @@ function InlineUpgrade({ tier, feature, copy, pricingHref, onPricingClick, class
             className
         )}>
             <span className={twMerge(
-                'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg shadow-md',
+                'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ds-elevation-md',
                 copy.bg
             )}>
                 <Lock className="w-4 h-4 text-white" />
@@ -233,7 +233,7 @@ function BannerUpgrade({ tier, feature, copy, pricingHref, onPricingClick, onDis
             )}
         >
             <span className={twMerge(
-                'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg shadow-md',
+                'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ds-elevation-md',
                 copy.bg
             )}>
                 <Sparkles className="w-4 h-4 text-white" />
@@ -251,7 +251,7 @@ function BannerUpgrade({ tier, feature, copy, pricingHref, onPricingClick, onDis
                     href={pricingHref}
                     onClick={onPricingClick}
                     className={twMerge(
-                        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white shadow-md',
+                        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white ds-elevation-md',
                         copy.bg,
                         'hover:opacity-90 transition-all ds-focus-ring'
                     )}

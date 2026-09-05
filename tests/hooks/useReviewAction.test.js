@@ -18,7 +18,7 @@ beforeEach(() => {
 
 const { useReviewAction } = await import('@/hooks/useReviewAction')
 
-function okJson(body) { return { ok: true, json: async () => ({ data: body }) } }
+function okJson(body) { return { ok: true, headers: { get: () => 'application/json' }, json: async () => ({ data: body }) } }
 function errJson(status, body = {}) { return { ok: false, status, json: async () => body } }
 
 describe('useReviewAction', () => {

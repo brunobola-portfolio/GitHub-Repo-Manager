@@ -65,7 +65,7 @@ export function ViewErrorFallback({
   const Card = (
     <>
       <div className="relative">
-        <div className="relative w-14 h-14 mx-auto mb-4 rounded-2xl bg-amber-500 shadow-md flex items-center justify-center ring-1 ring-white/40 dark:ring-white/10">
+        <div className="relative w-14 h-14 mx-auto mb-4 rounded-2xl bg-amber-500 ds-elevation-md flex items-center justify-center ring-1 ring-white/40 dark:ring-white/10">
           <AlertTriangle className="w-7 h-7 text-white" strokeWidth={2.25} aria-hidden="true" />
         </div>
       </div>
@@ -81,7 +81,7 @@ export function ViewErrorFallback({
         <button
           type="button"
           onClick={handleRetry}
-          className="inline-flex items-center gap-2 px-4 py-2 ds-brand-solid active:bg-brand-800 rounded-xl font-medium text-sm transition-colors ds-focus-ring shadow-sm"
+          className="inline-flex items-center gap-2 px-4 py-2 ds-brand-solid active:bg-brand-800 rounded-xl font-medium text-sm transition-colors ds-focus-ring ds-elevation-sm"
         >
           <RotateCcw className="w-4 h-4" aria-hidden="true" />
           Retry
@@ -133,7 +133,7 @@ export function ViewErrorFallback({
             exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: 16 }}
             transition={reducedMotion ? { duration: DURATION.fast } : SPRING.panel}
             onClick={(e) => e.stopPropagation()}
-            className="relative max-w-md w-full bg-white dark:bg-slate-900 rounded-2xl shadow-lg ring-1 ring-slate-200/60 dark:ring-slate-700/60 p-7 overflow-hidden"
+            className="relative max-w-md w-full bg-white dark:bg-slate-900 rounded-2xl ds-elevation-lg ring-1 ring-slate-200/60 dark:ring-slate-700/60 p-7 overflow-hidden"
           >
             <CloseButton
               onClick={handleGoHome}
@@ -157,7 +157,7 @@ export function ViewErrorFallback({
       aria-live="assertive"
       className="min-h-[320px] flex items-center justify-center bg-slate-50 dark:bg-slate-900/40 rounded-2xl p-6"
     >
-      <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl shadow-lg ring-1 ring-slate-200/60 dark:ring-slate-700/60 p-8">
+      <div className="max-w-md w-full bg-white dark:bg-slate-800 rounded-2xl ds-elevation-lg ring-1 ring-slate-200/60 dark:ring-slate-700/60 p-8">
         {Card}
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { API_BASE, MOCK_MODE } from '../config'
+import { apiCall } from '../utils/api'
 
 const TTL_MS = 60_000
 const DEFAULT_FEATURE = 'completion'
@@ -30,9 +31,7 @@ async function fetchStatus({ probe = false, feature = DEFAULT_FEATURE } = {}) {
         if (feature !== DEFAULT_FEATURE) params.set('feature', feature)
         const qs = params.toString()
         const url = `${API_BASE}/config/ai-status${qs ? `?${qs}` : ''}`
-        const res = await fetch(url, { credentials: 'include' })
-        if (!res.ok) return { configured: false, provider: null, keyHealth: 'unknown', lastCheckedAt: null }
-        return await res.json()
+        return await apiCall(url)
     } catch {
         return { configured: false, provider: null, keyHealth: 'unknown', lastCheckedAt: null }
     }

@@ -157,7 +157,7 @@ export function CompareDiffModal({ isOpen, onClose, source, target, targetLabel 
                             onClick={() => setActivePath(f.path)}
                             className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
                                 isActive
-                                    ? 'bg-white dark:bg-slate-900 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] shadow-sm'
+                                    ? 'bg-white dark:bg-slate-900 text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] ds-elevation-sm'
                                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                             } ds-focus-ring`}
                         >

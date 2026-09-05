@@ -192,7 +192,7 @@ export function AdminDLQPage() {
                             onClick={() => setFilter(f.id)}
                             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ds-focus-ring ${
                                 filter === f.id
-                                    ? 'ds-brand-solid shadow-sm'
+                                    ? 'ds-brand-solid ds-elevation-sm'
                                     : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                             }`}
                             aria-pressed={filter === f.id}

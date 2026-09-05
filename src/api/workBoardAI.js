@@ -1,35 +1,21 @@
-import { getCsrfToken } from '../utils/api'
+import { apiCall } from '../utils/api'
 
 const BASE = '/api/v1/work-board/ai'
 
-async function assertOk(res) {
-    if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        const err = new Error(body.error || `Request failed: HTTP ${res.status}`)
-        err.status = res.status
-        err.code = body.code
-        err.body = body
-        throw err
-    }
-    return res
-}
-
+// apiCall's ApiError already carries .status and .code (the server's
+// machine-readable code, from body.code or body.error) — matching the
+// shape consumers (useWorkBoardAI.js) previously read off a hand-rolled
+// assertOk() error.
 async function get(path) {
-    const res = await fetch(path, { method: 'GET', credentials: 'include' })
-    await assertOk(res)
-    return res.json()
+    return apiCall(path, { method: 'GET' })
 }
 
 async function post(path, body) {
-    const csrf = await getCsrfToken()
-    const res = await fetch(path, {
+    return apiCall(path, {
         method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+        headers: { 'Content-Type': 'application/json' },
         body: body === undefined ? undefined : JSON.stringify(body),
     })
-    await assertOk(res)
-    return res.json()
 }
 
 export function fetchStatus() {

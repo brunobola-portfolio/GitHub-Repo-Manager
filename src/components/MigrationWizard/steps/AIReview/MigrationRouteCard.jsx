@@ -28,10 +28,10 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
   const destSubLabel = isAzureDevopsTarget ? targetProject : 'github.com'
   const DestIcon = isAzureDevopsTarget ? AzureIcon : GitHubIcon
   const destIconClasses = isAzureDevopsTarget
-    ? 'bg-blue-100 dark:bg-blue-500/15'
+    ? 'bg-brand-100 dark:bg-brand-500/15'
     : 'bg-slate-100 dark:bg-white/10'
   const destIconColor = isAzureDevopsTarget
-    ? 'text-blue-600 dark:text-blue-400'
+    ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
     : 'text-slate-700 dark:text-slate-300'
 
   return (
@@ -52,11 +52,11 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
             <div className="flex items-center gap-2.5">
               <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${
                 sourceType === 'azure'
-                  ? 'bg-blue-100 dark:bg-blue-500/15'
+                  ? 'bg-brand-100 dark:bg-brand-500/15'
                   : 'bg-slate-100 dark:bg-white/10'
               }`}>
                 <SourceIcon className={`w-5 h-5 ${
-                  sourceType === 'azure' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'
+                  sourceType === 'azure' ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]' : 'text-slate-700 dark:text-slate-300'
                 }`} />
               </div>
               <div className="min-w-0">
@@ -78,7 +78,7 @@ export function MigrationRouteCard({ wizard, delay = 0 }) {
           {/* Arrow */}
           <div className="shrink-0 flex flex-col items-center gap-0.5 px-1">
             <motion.div
-              className="w-9 h-9 rounded-full bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] flex items-center justify-center shadow-md"
+              className="w-9 h-9 rounded-full bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-fill-dark)] flex items-center justify-center ds-elevation-md"
               animate={{ x: [0, 2, 0] }}
               transition={{ duration: 2, repeat: Infinity, ease: EASE.standard }}
             >
