@@ -58,7 +58,10 @@ async function parseFromResponse(res, context) {
     }
 
     if (status === 429) {
-        const headerRetry = parseInt(res.headers.get('Retry-After') ?? '', 10)
+        // Some callers hand in a response-shaped object with no Headers
+        // instance (mock layer, wrapped errors); reading `.get` off undefined
+        // was an unhandled rejection on every rate-limited request.
+        const headerRetry = parseInt(res.headers?.get?.('Retry-After') ?? '', 10)
         return {
             kind: 'rate-limited',
             retryAfterSec: Number.isFinite(headerRetry) ? headerRetry : null,
