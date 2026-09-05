@@ -455,8 +455,11 @@ export function PricingPage({ onGetStarted } = {}) {
             // exists, so we advertise the hardening measures, not a certification.
             { icon: Shield, text: 'Hardened stack — CSP, rate limiting, tamper-evident audit log' },
           ].map(({ icon: Icon, text }) => (
-            <div key={text} className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-              <Icon className="w-4 h-4 text-brand-500/60 dark:text-brand-400/50" />
+            <div
+              key={text}
+              className="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-2 text-sm text-slate-500 dark:text-slate-400 text-center sm:text-left max-w-[15rem] sm:max-w-none mx-auto sm:mx-0"
+            >
+              <Icon className="w-4 h-4 text-brand-500/60 dark:text-brand-400/50 shrink-0" />
               <span>{text}</span>
             </div>
           ))}
