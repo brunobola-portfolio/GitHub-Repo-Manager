@@ -51,8 +51,10 @@ export function AddRepoInput({ onAdd }) {
                 placeholder="owner/repo"
                 className="w-full px-3 py-2 text-sm bg-transparent outline-none"
             />
-            {(query || loading) && (
-                <Command.List className="max-h-48 overflow-auto p-1 border-t border-slate-200 dark:border-slate-700">
+            {/* Always mounted: Command.Input keeps aria-controls pointing at this
+                list, and a reference to an unmounted id is an axe critical. Hidden
+                while idle instead of conditional. */}
+            <Command.List hidden={!(query || loading)} className="max-h-48 overflow-auto p-1 border-t border-slate-200 dark:border-slate-700">
                     {loading && (
                         <div className="px-2 py-1.5 text-xs text-slate-500 flex items-center gap-1.5">
                             <Spinner size="xs" /> Searching…
@@ -87,7 +89,6 @@ export function AddRepoInput({ onAdd }) {
                         <EmptyState size="inline" title="Type owner/repo to add a new repository." />
                     )}
                 </Command.List>
-            )}
         </Command>
     )
 }
