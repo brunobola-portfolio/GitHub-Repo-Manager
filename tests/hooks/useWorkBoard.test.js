@@ -174,7 +174,9 @@ describe('useWorkBoard — stale-while-revalidate', () => {
 
         expect(result.current.data).toEqual([{ prNumber: 99 }]); // stale data preserved
         expect(result.current.error).toBeTruthy();
-        expect(result.current.error.message).toContain('boom');
+        // apiCall's ApiError carries the server's raw message on .data, not
+        // .message (which is now a typed, user-facing category string).
+        expect(result.current.error.data.error).toContain('boom');
         expect(result.current.validating).toBe(false);
         expect(result.current.loading).toBe(false);
     });

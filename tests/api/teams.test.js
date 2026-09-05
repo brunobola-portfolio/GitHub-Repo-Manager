@@ -121,7 +121,10 @@ describe('listTeams — real mode (free tier)', () => {
 
     expect(result.teams).toEqual([])
     expect(result.upgradeRequired).toBe(false)
-    expect(result.error).toBe('Network down')
+    // apiCall normalises unrecognised thrown errors into a typed ApiError
+    // with a canned user-facing message rather than surfacing the raw
+    // exception text — same behavior as every other apiCall consumer.
+    expect(result.error).toBe('An unexpected error occurred. Try again.')
   })
 
   it('coerces non-array JSON responses to an empty array', async () => {

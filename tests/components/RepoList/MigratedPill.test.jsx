@@ -9,7 +9,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { MigratedPill } from '@/components/RepoList/MigratedPill'
 import { invalidateMigratedRepos } from '@/hooks/useMigratedRepos'
 
-vi.mock('@/config', () => ({ MOCK_MODE: false }))
+vi.mock('@/config', async (importOriginal) => ({ ...(await importOriginal()), MOCK_MODE: false }))
 
 beforeEach(() => invalidateMigratedRepos())
 afterEach(() => { vi.restoreAllMocks(); invalidateMigratedRepos() })

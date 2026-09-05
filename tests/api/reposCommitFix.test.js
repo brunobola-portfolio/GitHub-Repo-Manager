@@ -33,15 +33,21 @@ describe('commitCommunityHealthFix', () => {
 
     it('posts to the community-health/commit-fix path with the CSRF header when not in mock mode', async () => {
         vi.stubEnv('VITE_MOCK_MODE', 'false')
-        const fetchSpy = vi.fn().mockResolvedValue({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ committed: true, mode: 'direct', branch: 'main' }) })
+        // apiCall injects CSRF itself (fetching /api/auth/csrf-token first) —
+        // the two-call shape (token probe, then the real POST) replaces the
+        // old single hand-rolled fetch this test used to assert on.
+        const fetchSpy = vi.fn()
+            .mockResolvedValueOnce({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ token: 'tok-123' }) })
+            .mockResolvedValueOnce({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ committed: true, mode: 'direct', branch: 'main' }) })
         vi.stubGlobal('fetch', fetchSpy)
-        vi.doMock('../../src/utils/api', () => ({ getCsrfToken: vi.fn().mockResolvedValue('tok-123') }))
+        const { _resetCsrfTokenForTests } = await import('../../src/utils/api')
+        _resetCsrfTokenForTests()
         const { commitCommunityHealthFix } = await import('../../src/api/repos')
 
         const res = await commitCommunityHealthFix({ owner: 'acme', repo: 'lib', fileType: 'readme_stub', content: '# x', commitMessage: 'docs: x', mode: 'direct' })
 
-        expect(fetchSpy).toHaveBeenCalledTimes(1)
-        const [url, opts] = fetchSpy.mock.calls[0]
+        expect(fetchSpy).toHaveBeenCalledTimes(2)
+        const [url, opts] = fetchSpy.mock.calls[1]
         expect(url).toBe('/api/repos/acme/lib/community-health/commit-fix')
         expect(opts.headers['X-CSRF-Token']).toBe('tok-123')
         expect(JSON.parse(opts.body)).toMatchObject({ fileType: 'readme_stub', mode: 'direct' })
@@ -50,8 +56,11 @@ describe('commitCommunityHealthFix', () => {
 
     it('throws an error carrying status/code when the write fails (non-mock)', async () => {
         vi.stubEnv('VITE_MOCK_MODE', 'false')
-        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 403, json: async () => ({ error: 'nope', code: 'FORBIDDEN' }) }))
-        vi.doMock('../../src/utils/api', () => ({ getCsrfToken: vi.fn().mockResolvedValue('tok') }))
+        vi.stubGlobal('fetch', vi.fn()
+            .mockResolvedValueOnce({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ token: 'tok' }) })
+            .mockResolvedValueOnce({ ok: false, status: 403, json: async () => ({ error: 'nope', code: 'FORBIDDEN' }) }))
+        const { _resetCsrfTokenForTests } = await import('../../src/utils/api')
+        _resetCsrfTokenForTests()
         const { commitCommunityHealthFix } = await import('../../src/api/repos')
 
         await expect(commitCommunityHealthFix({ owner: 'a', repo: 'b', fileType: 'readme_stub', content: 'x', commitMessage: 'x' }))

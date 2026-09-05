@@ -16,7 +16,10 @@ async function fetchUsage(signal) {
         return cachedPromise
     }
     cachedAt = now
-    cachedPromise = apiCall(ENDPOINT, { signal })
+    // maxRetries: 0 — this cache already re-tries on focus and on the next
+    // caller after a failure invalidates it; stacking backoff underneath
+    // would delay every one of those by several seconds.
+    cachedPromise = apiCall(ENDPOINT, { signal }, { maxRetries: 0 })
         .catch((err) => {
             // Invalidate so the next caller retries.
             cachedPromise = null

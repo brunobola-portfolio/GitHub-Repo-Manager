@@ -22,7 +22,11 @@ async function fetchCount(url) {
         return { count: key ? MOCK_COUNTS[key] : 0, hidden: false }
     }
     try {
-        const body = await apiCall(url)
+        // maxRetries: 0 — this widget already has its own explicit Retry
+        // affordance and a visibility-driven refresh; stacking automatic
+        // backoff under three parallel category fetches would make a single
+        // 5xx blip take several seconds to surface.
+        const body = await apiCall(url, {}, { maxRetries: 0 })
         return { count: Array.isArray(body?.data) ? body.data.length : 0, hidden: false, failed: false }
     } catch (e) {
         // 401/403/404 → endpoint is gated or not available for this user; suppress the widget.

@@ -1,11 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { TierContext } from '../../src/contexts/contexts'
+import { resetSessionExpired } from '../../src/utils/api'
 
 beforeEach(() => {
     vi.stubEnv('VITE_MOCK_MODE', '')
     global.fetch = vi.fn()
     localStorage.clear()
+    // apiCall's categorizeError flips a module-level "session expired" flag
+    // on any 401 — the 401 test below would otherwise leak into every test
+    // that follows it, short-circuiting their fetches too.
+    resetSessionExpired()
 })
 afterEach(() => {
     vi.useRealTimers()
@@ -65,7 +70,14 @@ describe('useWorkBoardBadgeCounts', () => {
         const { result } = renderHook(() => useWorkBoardBadgeCounts(), { wrapper: withTier('pro') })
         expect(result.current.count).toBe(7)
 
-        resolveFetch({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) })
+        // Settle the in-flight fetch before the test ends — an unresolved
+        // promise here would keep the hook's Promise.all pending, and it
+        // could resolve mid-way through a LATER test and write a stale
+        // count to localStorage out from under it.
+        await act(async () => {
+            resolveFetch({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({ data: [] }) })
+            await waitFor(() => expect(result.current.isLoading).toBe(false))
+        })
     })
 
     it('stops polling while the tab is hidden', async () => {

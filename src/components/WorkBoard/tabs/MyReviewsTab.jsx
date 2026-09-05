@@ -165,12 +165,16 @@ function DraftCommentModal({ review, intent, onConfirm, onClose }) {
         // leaves a 25 ms interval calling setText forever.
         const run = async () => {
             try {
+                // maxRetries: 0 — this is a one-shot draft request the user
+                // is actively watching; automatic backoff would leave the
+                // modal spinning for several extra seconds before the error
+                // vocabulary below ever gets a chance to render.
                 const body = await apiCall(`${API_BASE_URL}/api/v1/work-board/draft-comment`, {
                     method: 'POST',
                     signal: controller.signal,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ repoFullName: review.repoFullName, prNumber: review.prNumber, intent }),
-                })
+                }, { maxRetries: 0 })
                 if (controller.signal.aborted) return
                 fullTextRef.current = body?.draft || ''
                 let idx = 0

@@ -25,7 +25,10 @@ export { getCached, setCached, invalidateCached, clearCache } from './utils/swrC
 // ---------------------------------------------------------------------------
 
 async function apiFetch(url) {
-    return apiCall(url)
+    // maxRetries: 0 — this SWR-style hook already revalidates on its own
+    // refreshIntervalMs cadence and keeps stale data visible on error;
+    // automatic backoff underneath would just delay that error surfacing.
+    return apiCall(url, {}, { maxRetries: 0 })
 }
 
 function useWorkBoardFetch(url, mockKey, { refreshIntervalMs = 60_000 } = {}) {

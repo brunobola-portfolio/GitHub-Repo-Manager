@@ -32,7 +32,9 @@ async function fetchJsonCount(url) {
         return 0
     }
     try {
-        const body = await apiCall(url)
+        // maxRetries: 0 — this badge already polls on its own 5-minute
+        // interval; automatic backoff on top would just delay the count.
+        const body = await apiCall(url, {}, { maxRetries: 0 })
         return Array.isArray(body?.data) ? body.data.length : 0
     } catch {
         return 0

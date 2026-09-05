@@ -22,7 +22,12 @@ vi.mock('framer-motion', () => {
 })
 
 function mockResponse(body, { status = 200 } = {}) {
-    return { ok: status >= 200 && status < 300, status, json: () => Promise.resolve(body) }
+    return {
+        ok: status >= 200 && status < 300,
+        status,
+        headers: { get: () => 'application/json' },
+        json: () => Promise.resolve(body),
+    }
 }
 
 /**

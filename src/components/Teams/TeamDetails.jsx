@@ -45,7 +45,8 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
         try {
             setLoading(true);
             setLoadError(false);
-            const data = await apiCall(`${API_BASE_URL}/api/teams/${team.id}`);
+            // maxRetries: 0 — this view already has its own explicit Retry button.
+            const data = await apiCall(`${API_BASE_URL}/api/teams/${team.id}`, {}, { maxRetries: 0 });
             setMembers(data.members);
             setAssignedRepos(data.repos);
             setCurrentUserRole(data.currentUserRole);
@@ -539,7 +540,8 @@ function RepoCard({ repo, teamMembers }) {
         setCollabError(false);
         try {
             const [owner, repoName] = repo.repo_full_name.split('/');
-            const data = await apiCall(`${API_BASE_URL}/api/repos/${owner}/${repoName}/collaborators`);
+            // maxRetries: 0 — this section already has its own retry affordance.
+            const data = await apiCall(`${API_BASE_URL}/api/repos/${owner}/${repoName}/collaborators`, {}, { maxRetries: 0 });
             setCollaborators(data);
         } catch {
             hasFetchedCollabsRef.current = false; // allow retry on failure

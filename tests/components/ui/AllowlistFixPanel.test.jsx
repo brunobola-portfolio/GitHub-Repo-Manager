@@ -10,8 +10,13 @@ vi.mock('@/utils/api', async (importOriginal) => {
 })
 
 import AllowlistFixPanel from '@/components/ui/AllowlistFixPanel'
+import { _resetCsrfTokenForTests } from '@/utils/api'
 
 const HOST = 'tfs.contoso.local'
+
+// apiCall injects CSRF itself (fetching /api/auth/csrf-token first), so the
+// first call any test sees through fetchMock is this token probe.
+const CSRF_RESPONSE = { ok: true, status: 200, headers: { get: () => 'application/json' }, json: () => Promise.resolve({ token: 'csrf-test-token' }) }
 
 let fetchMock
 const writeTextMock = vi.fn().mockResolvedValue(undefined)
@@ -19,11 +24,17 @@ const writeTextMock = vi.fn().mockResolvedValue(undefined)
 beforeEach(() => {
     fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
+    _resetCsrfTokenForTests()
     // happy-dom may expose navigator.clipboard as a non-configurable getter,
     // so stub a fresh navigator-shaped object scoped to this test only.
+    // `onLine` must be set explicitly: it's a getter on the real Navigator
+    // prototype, not an own enumerable property, so the spread below drops
+    // it — leaving it `undefined` reads as "offline" to apiCall's transport,
+    // which queues mutations instead of sending them.
     writeTextMock.mockClear()
     vi.stubGlobal('navigator', {
         ...globalThis.navigator,
+        onLine: true,
         clipboard: { writeText: writeTextMock },
     })
 })
@@ -94,7 +105,9 @@ describe('AllowlistFixPanel — .env line merge logic', () => {
 
 describe('AllowlistFixPanel — admin add flow', () => {
     it('POSTs the host to /api/azure/host-allowlist, shows the success state, and calls onAdded', async () => {
-        fetchMock.mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: () => Promise.resolve({}) })
+        fetchMock
+            .mockResolvedValueOnce(CSRF_RESPONSE)
+            .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: () => Promise.resolve({}) })
         const onAdded = vi.fn()
 
         render(
@@ -109,12 +122,13 @@ describe('AllowlistFixPanel — admin add flow', () => {
         const addBtn = screen.getByRole('button', { name: new RegExp(`add ${HOST.replace(/\./g, '\\.')}`, 'i') })
         await act(async () => { fireEvent.click(addBtn) })
 
+
         await waitFor(() => {
             expect(screen.getByRole('status')).toHaveTextContent(`${HOST} was added to the allowlist`)
         })
 
-        expect(fetchMock).toHaveBeenCalledTimes(1)
-        const [url, options] = fetchMock.mock.calls[0]
+        expect(fetchMock).toHaveBeenCalledTimes(2)
+        const [url, options] = fetchMock.mock.calls[1]
         expect(url).toBe('/api/azure/host-allowlist')
         expect(options.method).toBe('POST')
         expect(JSON.parse(options.body)).toEqual({ pattern: HOST, notes: 'from the wizard' })
@@ -123,11 +137,13 @@ describe('AllowlistFixPanel — admin add flow', () => {
     })
 
     it('shows an inline role="alert" error and does not call onAdded when the POST fails', async () => {
-        fetchMock.mockResolvedValueOnce({
-            ok: false,
-            status: 400,
-            json: () => Promise.resolve({ error: 'boom' }),
-        })
+        fetchMock
+            .mockResolvedValueOnce(CSRF_RESPONSE)
+            .mockResolvedValueOnce({
+                ok: false,
+                status: 400,
+                json: () => Promise.resolve({ error: 'boom' }),
+            })
         const onAdded = vi.fn()
 
         render(<AllowlistFixPanel host={HOST} canEdit={true} onAdded={onAdded} />)

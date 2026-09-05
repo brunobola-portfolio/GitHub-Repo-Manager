@@ -64,7 +64,7 @@ export default function AllowlistFixPanel({
       setAdded(true)
       onAdded?.(host)
     } catch (e) {
-      setError(e.message || 'Failed')
+      setError(e?.data?.error || e.message || 'Failed')
     } finally {
       setAdding(false)
     }

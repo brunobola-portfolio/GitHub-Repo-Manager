@@ -68,11 +68,19 @@ function renderModal() {
 
 describe('SettingsModal — cache clear toast', () => {
     it('fires a success toast when cache clear succeeds', async () => {
-        fetchMock.mockResolvedValueOnce({
-            ok: true,
-            status: 200,
-            headers: { get: () => 'application/json' }, json: () => Promise.resolve({ cleared: 42 }),
-        })
+        // apiCall injects CSRF itself — the first call through fetchMock is
+        // the token probe, the second is the actual clear-cache POST.
+        fetchMock
+            .mockResolvedValueOnce({
+                ok: true,
+                status: 200,
+                headers: { get: () => 'application/json' }, json: () => Promise.resolve({ token: 'csrf-test-token' }),
+            })
+            .mockResolvedValueOnce({
+                ok: true,
+                status: 200,
+                headers: { get: () => 'application/json' }, json: () => Promise.resolve({ cleared: 42 }),
+            })
 
         renderModal()
 

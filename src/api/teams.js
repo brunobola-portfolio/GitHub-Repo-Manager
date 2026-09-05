@@ -71,7 +71,10 @@ export async function listTeams() {
     }
 
     try {
-        const data = await apiCall(`${API_BASE}/teams`)
+        // maxRetries: 0 — a transient 5xx here should surface immediately as
+        // "couldn't load teams" rather than retry with backoff; the caller
+        // already re-fetches teams freely (tab switches, team CRUD).
+        const data = await apiCall(`${API_BASE}/teams`, {}, { maxRetries: 0 })
         return {
             teams: Array.isArray(data) ? data : [],
             upgradeRequired: false,

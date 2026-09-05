@@ -31,7 +31,8 @@ export function ActivityTab({ teamId }) {
             try {
                 setLoading(true);
                 setError(false);
-                const data = await apiCall(`${API_BASE_URL}/api/teams/${teamId}/activity`);
+                // maxRetries: 0 — this tab already has its own Retry button.
+                const data = await apiCall(`${API_BASE_URL}/api/teams/${teamId}/activity`, {}, { maxRetries: 0 });
                 if (cancelled) return;
                 // Backwards compatible: older shape was a bare array; current
                 // shape is { events, totalRepos, scannedRepos, truncated }.

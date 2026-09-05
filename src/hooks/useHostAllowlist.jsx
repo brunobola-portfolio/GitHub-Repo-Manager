@@ -27,7 +27,9 @@ export function useHostAllowlist(host, { debounceMs = 400 } = {}) {
     }
     setState((prev) => ({ ...prev, status: 'checking' }))
     try {
-      const data = await apiCall(`${API_BASE_URL}/api/azure/host-allowlist?host=${encodeURIComponent(clean)}`)
+      // maxRetries: 0 — this is a debounced live-typing check; a stale
+      // in-flight retry would fight the request-sequence guard below.
+      const data = await apiCall(`${API_BASE_URL}/api/azure/host-allowlist?host=${encodeURIComponent(clean)}`, {}, { maxRetries: 0 })
       if (seq !== requestSeq.current) return
       setState({
         status: data.allowed ? 'allowed' : 'blocked',

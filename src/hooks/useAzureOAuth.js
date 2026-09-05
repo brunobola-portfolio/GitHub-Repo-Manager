@@ -30,7 +30,10 @@ export function useAzureOAuth() {
 
   const pollOnce = useCallback(async () => {
     try {
-      const data = await apiCall(`${API_BASE_URL}/api/azure/oauth/token`)
+      // maxRetries: 0 — this is a 1s-interval poller with its own 120s
+      // timeout; automatic backoff underneath would desync a tick from the
+      // interval and could still be "retrying" when the next tick fires.
+      const data = await apiCall(`${API_BASE_URL}/api/azure/oauth/token`, {}, { maxRetries: 0 })
       if (data.error) {
         stopPolling()
         setOauthStatus('error')

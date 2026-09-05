@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
 // Stub CSRF fetch so tests only need to mock the AI endpoint response.
-vi.mock('../../src/utils/api', () => ({
+vi.mock('../../src/utils/api', async (importOriginal) => ({
+    ...(await importOriginal()),
     getCsrfToken: vi.fn(async () => 'test-csrf-token'),
 }))
 
@@ -66,7 +67,12 @@ describe('useRepoDescriptionSuggestion', () => {
     })
 
     it('falls back to template with quotaExceeded=true on 429', async () => {
-        globalThis.fetch = vi.fn(() => Promise.resolve({ ok: false, status: 429 }))
+        globalThis.fetch = vi.fn(() => Promise.resolve({
+            ok: false,
+            status: 429,
+            headers: { get: () => null },
+            json: async () => ({}),
+        }))
         const { result } = renderHook(() => useRepoDescriptionSuggestion({ aiAvailable: true }))
 
         let outcome

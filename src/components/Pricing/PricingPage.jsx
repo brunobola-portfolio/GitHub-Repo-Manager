@@ -235,7 +235,9 @@ export function PricingPage({ onGetStarted } = {}) {
     let cancelled = false
     ;(async () => {
       try {
-        const data = await apiCall(`${API_BASE_URL}/api/v1/billing/config`)
+        // maxRetries: 0 — a probe, not a user action; failing fast just keeps
+        // the yearly toggle hidden instead of stacking backoff behind it.
+        const data = await apiCall(`${API_BASE_URL}/api/v1/billing/config`, {}, { maxRetries: 0 })
         if (cancelled) return
         setYearlyAvailable(!!data?.yearlyBillingAvailable)
         setStripePrices(data?.prices ?? null)

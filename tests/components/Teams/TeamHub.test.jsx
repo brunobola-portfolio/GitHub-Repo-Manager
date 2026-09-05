@@ -7,7 +7,8 @@
  * genuinely empty (successful) response shows the create CTA.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 
 vi.mock('@/api/teams', () => ({ listTeams: vi.fn() }))
 
@@ -29,6 +30,16 @@ vi.mock('framer-motion', async (importOriginal) => {
 
 const { TeamHub } = await import('@/components/Teams/TeamHub')
 const { listTeams } = await import('@/api/teams')
+const { _resetCsrfTokenForTests } = await import('@/utils/api')
+
+function csrfTokenResponse(token) {
+    return {
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ token }),
+    }
+}
 
 beforeEach(() => {
     vi.clearAllMocks()
@@ -72,5 +83,65 @@ describe('TeamHub — load error vs empty', () => {
         await screen.findByText(/no teams yet/i, {}, { timeout: 5000 })
         expect(container.firstChild.className).toContain('max-w-none')
         expect(container.firstChild.className).not.toMatch(/max-w-(3xl|4xl|5xl|6xl|7xl)\b/)
+    })
+})
+
+// ---------------------------------------------------------------------------
+// Team create — routed through apiCall/fetchWithRetry (FE-01/FE-02). A 403
+// csrf_invalid on the POST must invalidate the cached token, fetch a fresh
+// one, and retry the mutation exactly once — the whole point of migrating
+// this hand-rolled fetch off raw fetch().
+// ---------------------------------------------------------------------------
+describe('TeamHub — create team retries a rotated CSRF token', () => {
+    let fetchMock
+
+    beforeEach(() => {
+        listTeams.mockResolvedValue({ teams: [], upgradeRequired: false, error: null })
+        fetchMock = vi.fn()
+        vi.stubGlobal('fetch', fetchMock)
+        _resetCsrfTokenForTests()
+    })
+
+    it('retries the POST once after a csrf_invalid 403 and succeeds with the fresh token', async () => {
+        const user = userEvent.setup()
+        fetchMock
+            // 1. initial CSRF token fetch
+            .mockResolvedValueOnce(csrfTokenResponse('stale-token'))
+            // 2. POST /api/teams with the stale token — server rejects it
+            .mockResolvedValueOnce({
+                ok: false,
+                status: 403,
+                json: async () => ({ error: 'Invalid CSRF token', code: 'csrf_invalid' }),
+            })
+            // 3. fetchWithRetry invalidates the cache and re-fetches a fresh token
+            .mockResolvedValueOnce(csrfTokenResponse('fresh-token'))
+            // 4. POST retried with the fresh token — succeeds
+            .mockResolvedValueOnce({
+                ok: true,
+                status: 200,
+                headers: { get: () => 'application/json' },
+                json: async () => ({ id: 1, name: 'Platform', description: '' }),
+            })
+
+        render(<TeamHub onTeamSelect={() => {}} />)
+
+        fireEvent.click(await screen.findByRole('button', { name: 'Create team' }, { timeout: 5000 }))
+        await user.type(screen.getByLabelText(/team name/i), 'Platform')
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: 'Create Team' }))
+        })
+
+        await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(4))
+
+        const [staleCall, freshCall] = [fetchMock.mock.calls[1], fetchMock.mock.calls[3]]
+        expect(staleCall[0]).toBe('/api/teams')
+        expect(staleCall[1].headers['X-CSRF-Token']).toBe('stale-token')
+        expect(freshCall[0]).toBe('/api/teams')
+        expect(freshCall[1].headers['X-CSRF-Token']).toBe('fresh-token')
+
+        // The form closes and fetchTeams() re-runs on success — no leftover
+        // "Couldn't load teams" / raw-error state from the rejected first attempt.
+        expect(screen.queryByLabelText(/team name/i)).not.toBeInTheDocument()
     })
 })

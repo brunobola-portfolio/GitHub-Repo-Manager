@@ -2,11 +2,17 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { createElement } from 'react'
 import { TierContext } from '../../../src/contexts/contexts'
+import { resetSessionExpired } from '../../../src/utils/api'
 
 beforeEach(() => {
     vi.stubEnv('VITE_MOCK_MODE', '')
     global.fetch = vi.fn()
     sessionStorage.clear()
+    // apiCall's categorizeError flips a module-level "session expired" flag
+    // on any 401 (used to fire the app-wide expiry banner in production).
+    // Without resetting it, the 401 test below would leak into every test
+    // that runs after it in this file, short-circuiting their fetches too.
+    resetSessionExpired()
 })
 
 afterEach(() => {

@@ -13,11 +13,15 @@ vi.mock('@/utils/api', async (importOriginal) => {
     return { ...actual, getCsrfToken: vi.fn(async () => 'csrf-test-token') }
 })
 
-beforeEach(() => { global.fetch = vi.fn() })
+const { _resetCsrfTokenForTests } = await import('@/utils/api')
+
+beforeEach(() => { global.fetch = vi.fn(); _resetCsrfTokenForTests() })
 
 const { useSavedViews } = await import('@/hooks/useWorkBoardPresets')
 
 function ok(body) { return { ok: true, headers: { get: () => 'application/json' }, json: async () => ({ data: body }) } }
+// apiCall injects CSRF itself — every mutation's first real call is this token probe.
+const csrf = () => ({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ token: 'csrf-test-token' }) })
 
 describe('useSavedViews — non-default scope (G5)', () => {
     it('lists with a scope query param', async () => {
@@ -29,23 +33,25 @@ describe('useSavedViews — non-default scope (G5)', () => {
 
     it('creates with scope in the body', async () => {
         global.fetch.mockResolvedValueOnce(ok([]))
+        global.fetch.mockResolvedValueOnce(csrf())
         global.fetch.mockResolvedValueOnce(ok({ id: 1 }))
         global.fetch.mockResolvedValueOnce(ok([{ id: 1, name: 'My repos view', filters: {}, scope: 'repos' }]))
         const { result } = renderHook(() => useSavedViews('repos'))
         await waitFor(() => expect(result.current.loading).toBe(false))
         await act(async () => { await result.current.create({ name: 'My repos view', filters: { q: 'x' } }) })
-        const postCall = global.fetch.mock.calls[1]
+        const postCall = global.fetch.mock.calls[2]
         expect(JSON.parse(postCall[1].body)).toEqual({ name: 'My repos view', filters: { q: 'x' }, scope: 'repos' })
     })
 
     it('deletes with a scope query param', async () => {
         global.fetch.mockResolvedValueOnce(ok([{ id: 9, name: 'A', filters: {} }]))
+        global.fetch.mockResolvedValueOnce(csrf())
         global.fetch.mockResolvedValueOnce(ok({ removed: 1 }))
         global.fetch.mockResolvedValueOnce(ok([]))
         const { result } = renderHook(() => useSavedViews('repos'))
         await waitFor(() => expect(result.current.presets).toHaveLength(1))
         await act(async () => { await result.current.remove(9) })
-        expect(global.fetch.mock.calls[1][0]).toBe('/api/v1/work-board/presets/9?scope=repos')
+        expect(global.fetch.mock.calls[2][0]).toBe('/api/v1/work-board/presets/9?scope=repos')
     })
 })
 

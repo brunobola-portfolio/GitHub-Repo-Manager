@@ -7,12 +7,13 @@ vi.mock('@/config', () => ({
     API_BASE_URL: '',
 }))
 
-// getCsrfToken is only used on checkout; stub it so the POST path is exercisable.
-vi.mock('@/utils/api', () => ({
-    getCsrfToken: vi.fn(async () => 'csrf-test-token'),
-}))
 
 const { PricingPage } = await import('@/components/Pricing/PricingPage.jsx')
+const { _resetCsrfTokenForTests } = await import('@/utils/api')
+
+function mockCsrfToken() {
+    return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({ token: 'csrf-test-token' }) }
+}
 
 const TOGGLE_LABEL = 'Toggle yearly billing'
 
@@ -23,6 +24,7 @@ function mockConfigResponse(body) {
 describe('PricingPage — yearly billing toggle feature-detection', () => {
     beforeEach(() => {
         global.fetch = vi.fn()
+        _resetCsrfTokenForTests()
     })
     afterEach(() => {
         vi.restoreAllMocks()
@@ -67,9 +69,11 @@ describe('PricingPage — yearly billing toggle feature-detection', () => {
     })
 
     it('threads billingPeriod=yearly through the checkout request after toggling to yearly', async () => {
-        // 1st fetch: /billing/config → yearly available. 2nd: /billing/checkout.
+        // 1st fetch: /billing/config → yearly available. 2nd: CSRF token probe
+        // (apiCall injects it itself). 3rd: /billing/checkout.
         global.fetch
             .mockResolvedValueOnce(mockConfigResponse({ stripeEnabled: true, yearlyBillingAvailable: true }))
+            .mockResolvedValueOnce(mockCsrfToken())
             .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({}) }) // no url → no navigation
 
         render(<PricingPage />)
@@ -90,6 +94,7 @@ describe('PricingPage — yearly billing toggle feature-detection', () => {
     it('sends billingPeriod=monthly when the toggle is available but left on monthly', async () => {
         global.fetch
             .mockResolvedValueOnce(mockConfigResponse({ stripeEnabled: true, yearlyBillingAvailable: true }))
+            .mockResolvedValueOnce(mockCsrfToken())
             .mockResolvedValueOnce({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => ({}) })
 
         render(<PricingPage />)

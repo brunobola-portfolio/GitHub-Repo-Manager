@@ -46,7 +46,11 @@ export function MigrationActivity({ loading: parentLoading }) {
   const loadStats = useCallback(() => {
     setLoading(true)
     setError(false)
-    apiCall(`${API_BASE_URL}/api/migrations/stats`)
+    // maxRetries: 0 — this widget already has its own explicit Retry button;
+    // stacking fetchWithRetry's automatic backoff under that would make a
+    // single click wait through 3 more attempts before the error state (or
+    // the manual retry) can ever show.
+    apiCall(`${API_BASE_URL}/api/migrations/stats`, {}, { maxRetries: 0 })
       .then(data => { if (mountedRef.current) setStats(data) })
       .catch(() => {
         // Distinguish a genuine failure from an empty result so the UI can

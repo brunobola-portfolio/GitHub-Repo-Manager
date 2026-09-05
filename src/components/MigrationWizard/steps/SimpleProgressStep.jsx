@@ -172,9 +172,13 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
 
     const tick = async () => {
       try {
+        // maxRetries: 0 — this poll already has its own "connection lost"
+        // failure counter and 2s cadence; automatic backoff underneath would
+        // both slow a single tick and desync the failure count from what the
+        // pill displays.
         const data = await apiCall(`${API_BASE}/import/status/${importJobs.jobId}`, {
           signal: controller.signal,
-        })
+        }, { maxRetries: 0 })
         setPollFailureCount(0)
         onUpdate({ jobStatus: data })
 
@@ -231,9 +235,10 @@ export default function SimpleProgressStep({ importJobs, onUpdate, source: _sour
 
       const tick = async () => {
         try {
+          // maxRetries: 0 — see the single-import tick above.
           const data = await apiCall(`${API_BASE}/import/status/${job.jobId}`, {
             signal: abortControllers[job.jobId]?.signal,
-          })
+          }, { maxRetries: 0 })
           setPollFailureCount(0)
 
           onUpdate((prev) => ({
