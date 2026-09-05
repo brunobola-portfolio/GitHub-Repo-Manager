@@ -15,6 +15,7 @@
 const SOURCE_URL = 'https://github.com/brunobola-portfolio/GitHub-Repo-Manager'
 const SUBSCRIPTION_URL = `${SOURCE_URL}/blob/main/docs/LICENSE-COMMERCIAL.md`
 const PRIVACY_URL = `${SOURCE_URL}/blob/main/docs/privacy-and-data.md`
+const ROADMAP_URL = `${SOURCE_URL}/blob/main/ROADMAP.md`
 
 export function LegalFooter() {
   return (
@@ -63,6 +64,12 @@ export function LegalFooter() {
             className="underline hover:text-brand-600 dark:hover:text-brand-400 ds-focus-ring rounded"
           >
             Privacy &amp; data
+          </a>
+          <a
+            href={ROADMAP_URL}
+            className="underline hover:text-brand-600 dark:hover:text-brand-400 ds-focus-ring rounded"
+          >
+            Roadmap
           </a>
         </div>
       </div>
