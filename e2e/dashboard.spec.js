@@ -78,7 +78,7 @@ test.describe('Dashboard & Navigation', () => {
   })
 
   test('should open notifications panel', async ({ page }) => {
-    const notifButton = page.getByLabel(/show notifications|hide notifications/i)
+    const notifButton = page.getByRole('button', { name: /notifications/i })
     await expect(notifButton).toBeVisible()
     await notifButton.click()
 

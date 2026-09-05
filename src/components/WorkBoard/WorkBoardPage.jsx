@@ -346,6 +346,12 @@ export function WorkBoardPage({ repoCount = 0, onOpenSettings, initialTab }) {
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={activeTab}
+                        // TabBar points aria-controls at tabpanel-<layoutId>-<id>;
+                        // without this element the reference is dangling (axe:
+                        // aria-valid-attr-value, critical).
+                        role="tabpanel"
+                        id={`tabpanel-work-board-tab-indicator-${activeTab}`}
+                        aria-labelledby={`tab-work-board-tab-indicator-${activeTab}`}
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -6 }}

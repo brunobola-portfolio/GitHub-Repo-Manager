@@ -128,7 +128,7 @@ const VIEWS = [
       await page.goto('/')
       await expect(page.getByAltText(MOCK_USER.login)).toBeVisible({ timeout: 15000 })
       await page.getByLabel(/open user menu/i).click()
-      await page.getByRole('button', { name: 'Settings' }).click()
+      await page.getByRole('menuitem', { name: 'Settings' }).click()
       await expect(page.getByRole('dialog', { name: /^settings$/i })).toBeVisible({ timeout: 10000 })
       await page.waitForLoadState('networkidle')
     },
@@ -139,7 +139,7 @@ const VIEWS = [
       await page.goto('/')
       await expect(page.getByAltText(MOCK_USER.login)).toBeVisible({ timeout: 15000 })
       await page.getByLabel(/open user menu/i).click()
-      await page.getByRole('button', { name: 'Settings' }).click()
+      await page.getByRole('menuitem', { name: 'Settings' }).click()
       await expect(page.getByRole('dialog', { name: /^settings$/i })).toBeVisible({ timeout: 10000 })
       await page.getByRole('tab', { name: /about/i }).click()
       await page.waitForLoadState('networkidle')
@@ -187,10 +187,10 @@ const VIEWS = [
     async setup(page) {
       await page.goto('/')
       await expect(page.getByAltText(MOCK_USER.login)).toBeVisible({ timeout: 15000 })
-      // Keyboard shortcut `g` opens Dev Toolkit regardless of viewport width —
+      // Keyboard shortcut backtick opens Dev Toolkit regardless of viewport width —
       // the header trigger is `hidden nav:flex` (1340px breakpoint) and would
       // not be reachable at the desktop project's default 1280px viewport.
-      await page.keyboard.press('g')
+      await page.keyboard.press('`')
       await expect(page.getByRole('dialog', { name: /dev toolkit/i })).toBeVisible({ timeout: 10000 })
       await page.waitForLoadState('networkidle')
     },

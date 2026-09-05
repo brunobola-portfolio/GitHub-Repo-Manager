@@ -105,54 +105,92 @@ came from a backend started with `NODE_ENV=test`, where the mock sign-in route
 is disallowed. The rendering defects it exposed (no sign-in button, no retry)
 were real and are fixed; the 401s themselves were an environment artefact.
 
+## Second pass (2026-09-05): the sweeps and the features
+
+Seventeen Sonnet agents in three waves, each owning a disjoint file set, then
+verified and committed by the coordinator (four ran into the session limit
+near the end and were finished by hand).
+
+**Primitives and sweeps.** A `Checkbox` primitive replaces thirty native
+checkboxes (twenty rendered browser-blue). 180 styled raw buttons, links and
+`role=button` elements carry `ds-focus-ring`; a gate refuses new ones without
+a focus class. One colour per meaning: red→rose, green→emerald,
+yellow/orange→amber across 118 files, twenty-two text sites moved off the 500
+shade, 48 bare `text-slate-400` body-text sites gained their dark pair, and
+the palette gate retires the four ramps. Motion literals (178 sites), the
+uppercase eyebrow label (94 files, nine letter-spacings) and arbitrary
+`text-[Npx]` sizes (37) read tokens now, each with a gate. Five hand-rolled
+switches, two inline tab bars, three tooltip systems and 31 native `title=`
+attributes on interactive controls are gone; four dialog shells share a
+`CloseButton`; nineteen popovers share one surface recipe.
+
+**Flows.** `g` then `d`/`r`/`w`/`t`/`p` reaches every primary view; `j`/`k`
+and Enter work on the repository grid, list and Live Inbox; four keyboard
+help overlays are one registry-driven dialog. The bell and the user menu read
+the same data as the dashboard (the digest short-circuited to empty in demo
+mode; `useOrgs` skipped its first fetch and never retried). Archive confirms
+like Make Private. The onboarding step sets up the AI key inline with a
+probe. The command palette drills into a repository for an uncapped action
+list. The audit log is a page with server-fed filters and a chain-verify
+action. Saved views and URL sync on the repositories view (which exposed and
+fixed a `useUrlParams` bug that dropped the route hash). An opt-in daily or
+weekly digest e-mail with signed one-click unsubscribe.
+
+**Backend.** Validation envelopes converge on `VALIDATION_ERROR`; the
+fourteen direct `process.env` reads move into the config schema with parity
+gates against `.env.example` and the runbook; the tenant `ai` rate-limit
+bucket covers the four LLM routes outside the barrel; CSRF bypass narrowed to
+the OAuth paths; `azurePost` replaces 24 hand-rolled POST blocks and a
+ratchet holds the raw `fetch()` count at 128; assets are precompressed at
+build time (entry chunk 207 KB raw, 57.6 KB gz, 47.8 KB br).
+
+**Copy.** "Please" leaves 39 instructional strings, 63 load failures read
+"Couldn't load X.", system failures drop the first person, the five casing
+conflicts resolve to sentence case, five empty states gain the action their
+component already had, and the retention e-mail states what happens instead
+of citing a policy that is not published.
+
+**Verification, second pass.** Lint clean. Full unit suite: 774 files, 7 545
+tests passed. Full Playwright suite including the widened axe gate (hover,
+375 px project, overlays): see the line below. Visual walk of the new
+surfaces: see the line below.
+
+- Playwright: (filled in after the run)
+- Visual walk: (filled in after the run)
+
 ## Still open
 
-Decisions or larger sweeps, in the order the reports rank them.
+What the two passes did not close, in priority order.
 
-1. **Commercial claims.** "Priority Support + SLA" on three surfaces with no
-   SLA terms anywhere; the retention e-mail cites a data-retention policy and
-   the pricing FAQ makes handling commitments, but `docs/` has no privacy
-   policy, terms or retention policy and the footer links none. Either publish
-   them or narrow the wording (`docs/LICENSE-COMMERCIAL.md:117` says
-   "guarantees").
-2. **Checkbox primitive.** Twenty of thirty native checkboxes render in the
-   browser's blue: `@tailwindcss/forms` is not installed, so `text-*` on a
-   checkbox is dead CSS. Add `ui/form/Checkbox.jsx` and migrate the thirty.
-3. **Focus rings.** 227 of 329 styled raw `<button>`s never opt into
-   `ds-focus-ring`; the app shows two focus indicators. Sweep, then gate.
-4. **Contrast sweep.** 59 bare `text-slate-400` as body text with no `dark:`
-   pair (2.56:1 in light), none in the axe-gated views. Plus the `red`/`rose`
-   and `green`/`emerald` duplicate ramps (1 117 uses) the palette gate does
-   not cover — extend `RETIRED` once migrated.
-5. **Raw `fetch()`.** 166 sites bypass `fetchWithRetry` (73 mutations lose
-   CSRF rotation-retry and the offline queue); 24 copies of the Azure POST
-   block in the migration wizard want one `azurePost` helper. Migrate
-   mutations first; gate afterwards.
-6. **Keyboard parity.** No shortcut reaches the Work Board; `g` is spent on
-   the Dev Toolkit instead of a navigation chord; `j/k` row navigation stops
-   at the Work Board's edge. Four keyboard-help overlays each retype `<kbd>`.
-7. **Contradictions on one screen.** The bell says "You're all caught up"
-   beside "5 reviews waiting"; the user menu says "Organizations (0)" beside
-   the dashboard's "3". Feed both from the counters' source.
-8. **Premium patterns worth building next** (market lens, ranked): inline
-   BYOK setup in onboarding with a key probe; saved views and URL sync on the
-   repositories view; the audit log as a page with chain verification (it is
-   the only flag Enterprise buys); an opt-in digest e-mail (Resend and the
-   scheduler exist); palette drill-down instead of the three-repo cap; a
-   migration report at the end of the wizard. Do not build PR stacking:
-   GitHub shipped it natively in July.
-9. **Dilution to remove** (product call): Pricing in the primary nav, the
+1. **Commercial claims (decision).** "Priority Support + SLA" is sold on three
+   surfaces with no SLA terms anywhere, and `docs/LICENSE-COMMERCIAL.md:117`
+   says "guarantees"; `docs/` has no privacy policy, terms or retention
+   policy and the footer links none. Either publish them or narrow the
+   wording. The retention e-mail no longer cites a policy.
+2. **Dilution to remove (product call).** Pricing in the primary nav, the
    in-app roadmap of eighteen unshipped items, the AI promo strip, the
-   eight-tile KPI grid on the dashboard, the third navigation rail.
-10. **Gate coverage.** The axe suite never hovers, never runs at 375 px, and
-    never opens the command palette with a query, Dev Toolkit, Prompt Studio
-    or the shortcuts help — one hover pass, one mobile project and six
-    `setup()` entries would have caught most of the accessibility findings.
-11. **Packaging.** `shiki`, `@shikijs` and `@git-diff-view/shiki` ship zero
-    bytes but cost ~27 MB installed; removing them needs the Linux-generated
-    lockfile. Precompressing assets at build time saves a further 58 KB
-    brotli per cold load.
-12. **Environment.** Windows reserves ports 2906–3005 on the development
-    machine (Hyper-V); the backend cannot bind :3001 there. The Vite proxy now
-    follows `PORT`, but Playwright's `webServer` still expects :3001 — run it
-    with `PORT=3006` and an override config, or free the range.
+   eight-tile KPI grid on the dashboard, the third navigation rail on the
+   repositories view.
+3. **`blue-*` (194 uses, 41 files).** A mix of "running/info" status and
+   decoration; the palette gate leaves it ungated until the informational
+   uses get a token (brand or slate) and the decorative ones move to brand.
+4. **Elevation.** 199 raw `shadow-*` utilities remain after the bounded
+   pass; `ds-elevation-*` exists for the sweep.
+5. **Raw `fetch()`.** 128 sites remain (ratcheted); 185 hardcoded `/api/`
+   literals outside the files migrated to `API_BASE`.
+6. **Action labels.** The repository action registry
+   (`src/actions/repoActions.js`) is Title Case throughout (23 labels); the
+   rest of the product is sentence case. One decision, one sweep.
+7. **Market patterns not built.** A migration report at the end of the wizard
+   (G10), a portfolio health scorecard tab beside DORA (G9), a contribution
+   heatmap (G11). Do not build PR stacking.
+8. **Larger refactors.** `App.jsx` is ~1 000 lines with 21 state hooks
+   (FE-15); four data-loading layers coexist (FE-08); 159 `eslint-disable`
+   escapes on the hooks rules (FE-17).
+9. **Packaging.** `shiki`, `@shikijs` and `@git-diff-view/shiki` ship zero
+   bytes but cost ~27 MB installed; removing them needs the Linux-generated
+   lockfile (docker node:22).
+10. **Environment.** Windows reserves ports 2906–3005 on the development
+    machine (Hyper-V), so the backend cannot bind :3001 there. The Vite proxy
+    and Playwright's backend probe follow `PORT` now: run everything with
+    `PORT=3006`, or free the range.

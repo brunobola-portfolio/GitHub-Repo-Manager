@@ -70,7 +70,7 @@ async function openSettingsAITab(page) {
 
     // Open user dropdown -> Settings
     await page.getByLabel(/open user menu/i).click()
-    await page.getByRole('button', { name: 'Settings' }).click()
+    await page.getByRole('menuitem', { name: 'Settings' }).click()
 
     // Settings modal is a dialog titled "Settings"
     const dialog = page.getByRole('dialog', { name: /^settings$/i })

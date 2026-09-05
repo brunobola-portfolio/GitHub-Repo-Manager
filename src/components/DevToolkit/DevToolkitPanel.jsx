@@ -247,8 +247,13 @@ export function DevToolkitPanel({ isOpen, onClose, modalData, repos, onStartRevi
                             onDismissSuggestion={handleDismissSuggestion}
                         />
 
-                        {/* Tab content */}
-                        <div className="flex-1 overflow-y-auto ds-scrollbar">
+                        {/* Tab content — the element TabBar's aria-controls points at */}
+                        <div
+                            role="tabpanel"
+                            id={`tabpanel-dev-toolkit-panel-tabs-${toolkit.activeTab}`}
+                            aria-labelledby={`tab-dev-toolkit-panel-tabs-${toolkit.activeTab}`}
+                            className="flex-1 overflow-y-auto ds-scrollbar"
+                        >
                             {content}
                         </div>
                     </motion.aside>
