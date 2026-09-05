@@ -208,39 +208,65 @@ Final numbers after the panel: see the two lines below.
 - Unit suite: 782 files, 7 569 tests passed, 29 skipped; the two reds in that run were a CHANGELOG code-span that exposed a banned URL to the licence gate (fixed) and a timing flake in useBlockingDialogPresence under full load (passes in isolation).
 - Playwright, full suite, two projects, two workers alongside the unit run: 135 passed, 59 skipped by design, 0 failed.
 
+## Third pass (2026-09-05): the owner's decisions
+
+The open items went back to the owner with five answers: simplify or remove
+the commercial claims; remove the in-product marketing the way a premium
+product would; handle every remaining sweep; validate the UI as beautiful and
+excellent; and use judgement on the refactors. Five Sonnet agents, then the
+coordinator's validation.
+
+**Commercial honesty.** Enterprise sells priority support (e-mail,
+prioritised) and white-glove migration services — no SLA the product cannot
+define, no "guarantees". `docs/privacy-and-data.md` states what a deployment
+stores, what leaves it and to whom, retention, deletion and export, each fact
+with the file that enforces it; the footer links it, and the roadmap.
+
+**Less product-as-brochure.** Pricing left the primary navigation (user menu,
+palette and `g p` still reach it). The dashboard promo strip is gone. The KPI
+grid keeps the three tiles a professional acts on. The in-app roadmap page is
+gone; `ROADMAP.md` is canonical. The repositories view lost its right rail
+(duplicates of header and palette, an always-empty history); Recent Activity
+became a dashboard section. The bulk-selection bar labels every action and is
+the single bulk surface.
+
+**Last sweeps.** `blue-*` (193 uses) resolved to brand or slate by meaning and
+retired by the gate; 143 raw shadows read `ds-elevation-*` with a gate; the
+repository action registry reads in sentence case. 88 more raw `fetch()`
+calls go through `apiCall` (39 remain, each documented in the ratchet
+header: the AI client contract, the bulk-confirmation protocol, SSE, health
+probes, blob downloads); `/api` literals ratcheted from 159 to 66.
+
+**Two features from the market lens.** A Markdown migration report from data
+the wizard already stores, downloadable from the summary step and the
+history; a Health tab beside DORA ranking tracked repositories by a persisted
+community-health score with week-over-week delta (migration 37, captured by
+the daily janitor).
+
+**Verification after this pass.** Lint clean. Unit suite 782 files, 7 606
+tests passed. Playwright full suite 136 passed, 59 skipped by design, 0
+failed.
+
 ## Still open
 
-What the two passes did not close, in priority order.
-
-1. **Commercial claims (decision).** "Priority Support + SLA" is sold on three
-   surfaces with no SLA terms anywhere, and `docs/LICENSE-COMMERCIAL.md:117`
-   says "guarantees"; `docs/` has no privacy policy, terms or retention
-   policy and the footer links none. Either publish them or narrow the
-   wording. The retention e-mail no longer cites a policy.
-2. **Dilution to remove (product call).** Pricing in the primary nav, the
-   in-app roadmap of eighteen unshipped items, the AI promo strip, the
-   eight-tile KPI grid on the dashboard, the third navigation rail on the
-   repositories view.
-3. **`blue-*` (194 uses, 41 files).** A mix of "running/info" status and
-   decoration; the palette gate leaves it ungated until the informational
-   uses get a token (brand or slate) and the decorative ones move to brand.
-4. **Elevation.** 199 raw `shadow-*` utilities remain after the bounded
-   pass; `ds-elevation-*` exists for the sweep.
-5. **Raw `fetch()`.** 128 sites remain (ratcheted); 185 hardcoded `/api/`
-   literals outside the files migrated to `API_BASE`.
-6. **Action labels.** The repository action registry
-   (`src/actions/repoActions.js`) is Title Case throughout (23 labels); the
-   rest of the product is sentence case. One decision, one sweep.
-7. **Market patterns not built.** A migration report at the end of the wizard
-   (G10), a portfolio health scorecard tab beside DORA (G9), a contribution
-   heatmap (G11). Do not build PR stacking.
-8. **Larger refactors.** `App.jsx` is ~1 000 lines with 21 state hooks
-   (FE-15); four data-loading layers coexist (FE-08); 159 `eslint-disable`
-   escapes on the hooks rules (FE-17).
-9. **Packaging.** `shiki`, `@shikijs` and `@git-diff-view/shiki` ship zero
-   bytes but cost ~27 MB installed; removing them needs the Linux-generated
-   lockfile (docker node:22).
-10. **Environment.** Windows reserves ports 2906–3005 on the development
-    machine (Hyper-V), so the backend cannot bind :3001 there. The Vite proxy
-    and Playwright's backend probe follow `PORT` now: run everything with
-    `PORT=3006`, or free the range.
+1. **Packaging.** `shiki`, `@shikijs` and `@git-diff-view/shiki` ship zero
+   bytes but cost ~27 MB installed. Removing them needs the lockfile
+   regenerated on Linux (`docker run … node:22 npm install
+   --package-lock-only`); Docker Desktop was not running on the development
+   machine when this was attempted, so the change was reverted rather than
+   shipped with a Windows-generated lockfile.
+2. **Raw `fetch()`, the last 39.** Each is a documented exception in the
+   ratchet header (AI client contract, bulk-confirmation protocol, SSE,
+   health probes, blob downloads, one cross-origin call). The AI client
+   (`src/api/ai.js`, 19 sites) is the one worth a dedicated migration.
+3. **`/api` literals.** 66 remain outside `src/config.js` and `src/api/**`,
+   ratcheted; they matter only for a split-origin deployment.
+4. **Larger refactors.** Four data-loading layers coexist (FE-08); 159
+   `eslint-disable` escapes on the hooks rules (FE-17). `App.jsx` is being
+   split into hooks in the current pass.
+5. **Not built, by choice.** A contribution heatmap (G11) is the most
+   decorative item on the market list; PR stacking should not be built —
+   GitHub ships it natively.
+6. **Environment.** Windows reserves ports 2906–3005 on the development
+   machine (Hyper-V); everything here runs with `PORT=3006`. Freeing the
+   range (`net stop winnat`/`net start winnat`) is an operator decision.
