@@ -96,13 +96,45 @@ describe('useAuthBootstrap — real backend boot', () => {
         expect(result.current.appLoading).toBe(false)
     })
 
-    it('falls back to the login screen when the backend is unreachable', async () => {
+    it('reports the backend as unreachable — never as uninitialised — when the status call fails', async () => {
         h.mockMode = false
         fetchWithRetry.mockRejectedValue(new Error('network down'))
         const { result } = renderHook(() => useAuthBootstrap(mkProps()))
 
-        await waitFor(() => expect(result.current.systemInitialized).toBe(false))
+        await waitFor(() => expect(result.current.systemUnreachable).toBe(true))
+        expect(result.current.systemInitialized).toBeNull()
         expect(result.current.appLoading).toBe(false)
+    })
+
+    it('treats a non-JSON or non-OK status answer (a proxy 502 during a restart) as unreachable', async () => {
+        h.mockMode = false
+        fetchWithRetry.mockResolvedValue({ ok: false, status: 502, headers: { get: () => 'text/html' }, text: async () => '<html>Bad Gateway</html>' })
+        const { result } = renderHook(() => useAuthBootstrap(mkProps()))
+
+        await waitFor(() => expect(result.current.systemUnreachable).toBe(true))
+        expect(result.current.systemInitialized).toBeNull()
+    })
+
+    it('treats a 200 whose payload carries no boolean initialized as unreachable, not as a fresh install', async () => {
+        h.mockMode = false
+        fetchWithRetry.mockResolvedValue({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({}) })
+        const { result } = renderHook(() => useAuthBootstrap(mkProps()))
+
+        await waitFor(() => expect(result.current.systemUnreachable).toBe(true))
+        expect(result.current.systemInitialized).toBeNull()
+    })
+
+    it('recovers when a retry finally gets a real answer', async () => {
+        h.mockMode = false
+        fetchWithRetry.mockRejectedValueOnce(new Error('network down'))
+        const { result } = renderHook(() => useAuthBootstrap(mkProps()))
+        await waitFor(() => expect(result.current.systemUnreachable).toBe(true))
+
+        fetchWithRetry.mockResolvedValue({ ok: true, json: async () => ({ initialized: true }) })
+        global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 401, json: async () => ({}) })
+        await act(async () => { await result.current.retrySystemStatus() })
+        await waitFor(() => expect(result.current.systemUnreachable).toBe(false))
+        expect(result.current.systemInitialized).toBe(true)
     })
 })
 

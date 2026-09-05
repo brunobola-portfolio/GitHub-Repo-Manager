@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **A server that does not answer at boot is "unreachable", not "uninitialised".**
+  During the 4.24.0 deploy restart the proxy answered the system-status probe
+  with a 502, the shell read that as a fresh install and put the first-run
+  wizard in front of the owner, whose setup call then failed with a 403. The
+  shell now shows a retrying "can't reach the server" state and only a real
+  JSON answer decides between the app and the wizard.
+
 ## [4.24.0] - 2026-09-05
 
 ### Added

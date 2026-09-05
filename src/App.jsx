@@ -40,6 +40,7 @@ import { LegalFooter } from './components/LegalFooter'
 import { DemoModeBanner } from './components/DemoModeBanner'
 import { RouteFallback } from './components/ui/RouteFallback'
 import { ViewErrorFallback } from './components/ui/ViewErrorFallback'
+import { ServerUnreachable } from './components/ui/ServerUnreachable'
 import { ModalSurfaces } from './components/ModalSurfaces'
 // OrgSidebar (+ its OrgPanel dependency, ~23 KB gz together) is repos-view-only
 // chrome plus a closed-by-default mobile drawer — neither is needed for the
@@ -185,6 +186,8 @@ function AppContent() {
   const {
     appLoading,
     systemInitialized,
+    systemUnreachable,
+    retrySystemStatus,
     setSystemInitialized,
     authSetupStatus,
     showGitHubSetup,
@@ -394,6 +397,10 @@ function AppContent() {
     } finally {
       setIsSwitchingOrg(false)
     }
+  }
+
+  if (systemUnreachable) {
+    return <ServerUnreachable onRetry={retrySystemStatus} />
   }
 
   if (systemInitialized === false) {

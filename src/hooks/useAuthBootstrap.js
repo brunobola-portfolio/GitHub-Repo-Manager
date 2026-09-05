@@ -42,6 +42,9 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
     const [session, setSession] = useState(null)
     const [appLoading, setAppLoading] = useState(true)
     const [systemInitialized, setSystemInitialized] = useState(null)
+    // /api/system/status did not answer with a usable payload. Distinct from
+    // systemInitialized === false on purpose — see checkSystemStatus.
+    const [systemUnreachable, setSystemUnreachable] = useState(false)
     // First-run GitHub OAuth setup: /api/auth/setup-status result (null until
     // fetched) + whether the guided wizard modal is open. Only relevant while
     // unauthenticated on an install without GITHUB_CLIENT_ID/SECRET.
@@ -91,8 +94,16 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
             return
         }
         try {
+            setSystemUnreachable(false)
             const res = await fetchWithRetry(`${API_BASE_URL}/api/system/status`, { credentials: 'include' })
-            const data = await safeParseJson(res)
+            const data = res?.ok ? await safeParseJson(res) : null
+            // Only a real answer decides between the app and the first-run wizard.
+            // A 502 from the proxy during a deploy restart, an HTML error page or
+            // an empty body used to fall through to "not initialised" and put the
+            // setup ceremony in front of a production user.
+            if (typeof data?.initialized !== 'boolean') {
+                throw new Error(`system status unavailable (${res?.status ?? 'no response'})`)
+            }
             // Boot-time corruption recovery happened (sqlite-adapter quarantined the
             // damaged file). Tell the user — their data either came from the most
             // recent backup or is a fresh start; silence would look like data loss.
@@ -123,7 +134,9 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
                 setAppLoading(false)
             }
         } catch {
-            setSystemInitialized(false)
+            // Not "uninitialised": unknown. The shell shows a retrying
+            // "can't reach the server" state instead of the setup wizard.
+            setSystemUnreachable(true)
             setAppLoading(false)
         }
     }
@@ -221,6 +234,8 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
         appLoading,
         systemInitialized,
         setSystemInitialized,
+        systemUnreachable,
+        retrySystemStatus: checkSystemStatus,
         authSetupStatus,
         showGitHubSetup,
         setShowGitHubSetup,
