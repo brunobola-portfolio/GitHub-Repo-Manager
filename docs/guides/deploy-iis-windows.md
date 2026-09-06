@@ -287,7 +287,13 @@ server-level values win, and ARR ships with the two wrong ones for this app:
 | `preserveHostHeader` | **True** | Off, Node sees `Host: 127.0.0.1:3001` and builds the OAuth `redirect_uri` against it (4.24.3 falls back to `FRONTEND_URL` in that case, but the loopback gate in `server/lib/loopback.js` still needs the real host). |
 | `reverseRewriteHostInResponseHeaders` | **False** | On, ARR rewrites the `Location` header of the sign-in redirect from `github.com` to the public host, and the browser never reaches GitHub. |
 
-
+```powershell
+Import-Module WebAdministration
+Set-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' `
+    -Filter 'system.webServer/proxy' -Name 'preserveHostHeader' -Value $true
+Set-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' `
+    -Filter 'system.webServer/proxy' -Name 'reverseRewriteHostInResponseHeaders' -Value $false
+```
 
 With the self-hosted runner registered (§8), the **Ops — IIS proxy** workflow
 does this from GitHub: run it with `inspect` to see the current values and
