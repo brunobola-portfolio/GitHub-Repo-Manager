@@ -145,7 +145,7 @@ A single cockpit across every repository — no context switching, no manual rep
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/44_ai_overview_tab_hd.png">
-  <img alt="AI Insights — a 72/100 repository health-score ring with a TL;DR summary, highlights, and AI-suggested topic chips" src="docs/images/44_ai_overview_tab_hd.png" width="820">
+  <img alt="AI Insights — a 92/100 repository health-score ring with a TL;DR summary, highlights, and AI-suggested topic chips" src="docs/images/44_ai_overview_tab_hd.png" width="820">
 </picture>
 
 AI is integrated via **BYOK** and is **provider-neutral** (`AI_PROVIDER`) — configure Anthropic, OpenAI, Google Gemini, OpenRouter, or a local model in `Settings → AI Configuration`. It's production-hardened: a **monthly $ spend cap** and a **per-call output-token cap** (OWASP LLM10), **PII-safe audit metadata** on every call, **SSE streaming** that preserves partial text on disconnect, **BYOK hardening** (key rotation, model-id validation, DNS re-checks), and a **golden-eval suite gated in CI**. Repo Advisor answers are answer-first, grounded, and cited.

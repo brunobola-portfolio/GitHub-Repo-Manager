@@ -176,9 +176,9 @@ A repo-aware architecture diagram rendered as Mermaid, ready to embed.
 
 ### AI Insights — Overview
 
-![AI Insights — Overview — A 72/100 health-score ring with a TL;DR, highlights and topic chips.](images/44_ai_overview_tab_hd.png)
+![AI Insights — Overview — A 92/100 health-score ring with a TL;DR, highlights and topic chips.](images/44_ai_overview_tab_hd.png)
 
-A 72/100 health-score ring with a TL;DR, highlights and topic chips.
+A 92/100 health-score ring with a TL;DR, highlights and topic chips.
 
 ### AI Image Generator
 
