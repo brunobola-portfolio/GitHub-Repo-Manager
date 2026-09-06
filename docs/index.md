@@ -32,6 +32,8 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.24.8 (2026-09-06) — the exploratory walk, tidied.** Demo-mode copy on
+  a tab that is not simulated.
 - **v4.24.7 (2026-09-06) — the exploratory walk.** `npm run smoke:prod`; The
   "Sign in" button on an expired-session state pointed at a route that
  

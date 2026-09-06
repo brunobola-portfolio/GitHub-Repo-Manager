@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.24.8] - 2026-09-06
+
 ### Fixed
 
 - **Demo-mode copy on a tab that is not simulated** reads "Not simulated in
@@ -3575,7 +3577,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.7...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.8...HEAD
+[4.24.8]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.7...v4.24.8
 [4.24.7]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.6...v4.24.7
 [4.24.6]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.5...v4.24.6
 [4.24.5]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.4...v4.24.5
