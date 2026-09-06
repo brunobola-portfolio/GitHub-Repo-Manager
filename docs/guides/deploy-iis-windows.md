@@ -276,6 +276,25 @@ Set-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' `
     -Filter 'system.webServer/proxy' -Name 'enabled' -Value 'True'
 ```
 
+### 5.1b Two server-level proxy values sign-in depends on
+
+The `<proxy>` element in the shipped `web.config` is ignored when the section
+is locked at server level — which is the default on a fresh IIS. Then the
+server-level values win, and ARR ships with the two wrong ones for this app:
+
+| Value | Must be | Why |
+| ----- | ------- | --- |
+| `preserveHostHeader` | **True** | Off, Node sees `Host: 127.0.0.1:3001` and builds the OAuth `redirect_uri` against it (4.24.3 falls back to `FRONTEND_URL` in that case, but the loopback gate in `server/lib/loopback.js` still needs the real host). |
+| `reverseRewriteHostInResponseHeaders` | **False** | On, ARR rewrites the `Location` header of the sign-in redirect from `github.com` to the public host, and the browser never reaches GitHub. |
+
+
+
+With the self-hosted runner registered (§8), the **Ops — IIS proxy** workflow
+does this from GitHub: run it with `inspect` to see the current values and
+what `/api/auth/login` answers from the box, then with `apply`. The apply
+step fails loudly if the redirect still does not point at `github.com` with
+the public `redirect_uri`.
+
 ### 5.2 Allow the forwarded-proto server variable
 
 A rewrite rule may not set an arbitrary server variable until it is
