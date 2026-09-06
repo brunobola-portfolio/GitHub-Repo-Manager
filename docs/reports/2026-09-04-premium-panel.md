@@ -373,6 +373,49 @@ short label.
   four languages. Typecheck and build clean; checked at 1440 and 390 px in
   both themes.
 
+## Seventh pass (2026-09-06): what only production could show
+
+Three failures surfaced within an hour of the 4.24.0 deploy, none visible
+to the unit suite, the e2e suite or the mock-mode walk. Each got a root
+cause, a fix with a mutation-tested guard, and a patch release through the
+new script.
+
+1. **4.24.1 — the setup wizard on a live install.** During the deploy
+   restart the proxy answered `/api/system/status` with a 502; the boot hook
+   read any failure as "not initialised" and showed the first-run wizard.
+   Only a JSON answer with a boolean `initialized` decides now; anything
+   else is `ServerUnreachable`, which retries with backoff and offers a
+   reload after six misses.
+2. **4.24.2 — a reload loop for anonymous visitors.** The licence probe on
+   the landing page gets a 401 before sign-in; since 76543b9a it went
+   through the shared API layer, which treated every 401 as an expired
+   session and hard-reloaded to `/?error=session_expired` — which mounted
+   the landing page again. The loop ran until the rate limiter answered 429.
+   A 401 is expiry only after the app has seen a session
+   (`markSessionActive` / `markSessionEnded`), the redirector never targets
+   a URL already carrying the marker, and the landing page no longer probes
+   the licence at all. Mock mode disables the redirect by design, which is
+   exactly why no test could see this.
+3. **4.24.3 — sign-in pointed at the wrong host.** `/api/auth/login`
+   redirected to `repomanager.bolalabs.pt/login/oauth/authorize` with
+   `redirect_uri=https://127.0.0.1:3001`. Server-level ARR had
+   `preserveHostHeader=False` (Node saw its loopback address) and
+   `reverseRewriteHostInResponseHeaders=True` (ARR rewrote the Location
+   header away from github.com); the `<proxy>` element in the site's
+   `web.config` is ignored while the section is locked. The new **Ops — IIS
+   proxy** workflow (self-hosted runner, `inspect` / `apply`) set both
+   values and verified the redirect; `resolveCallbackOrigin` now trusts an
+   https `FRONTEND_URL` whenever the request names a loopback host, so a
+   future proxy regression cannot break the callback again. Guide §5.1b.
+
+Also in this pass: the release script writes the `docs/index.md` digest
+entry itself (a build gate requires the newest version there, and 4.24.1
+had tripped it), and the site followed the product to 4.24.3.
+
+**Lesson recorded.** After every production deploy, open the public origin
+in a real browser as an anonymous visitor and click Sign in: the mock-mode
+suites cannot see the session, proxy and rate-limit layers.
+
 ## Still open
 
 1. **Sign the Windows installer** (Authenticode). Needs a code-signing
