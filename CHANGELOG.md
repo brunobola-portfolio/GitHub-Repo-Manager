@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.24.3] - 2026-09-06
+
 ### Fixed
 
 - **Sign-in behind a proxy that drops the Host header.** With ARR's
@@ -3504,7 +3506,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.2...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.3...HEAD
+[4.24.3]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.2...v4.24.3
 [4.24.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.1...v4.24.2
 [4.24.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.0...v4.24.1
 [4.24.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.23.2...v4.24.0
