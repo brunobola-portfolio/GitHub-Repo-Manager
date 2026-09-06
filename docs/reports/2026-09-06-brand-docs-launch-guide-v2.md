@@ -102,6 +102,43 @@ names and a re-render reproduces the film bit for bit.
   closed by merging #339 after a rebase; #342 (sixteen dev-dependency
   minors) fails lint, tests and build on its own and stays open.
 
+### Shipped in the third pass (night)
+
+- **Site 1.3.12, live.** The product page shows every screen in the dark
+  theme (the light theme is stated once in the section intro) in a new
+  showcase: fifteen real captures as windows with a title bar; on hover
+  the card lifts, gains a lime halo and its caption slides up while the
+  capture pans slowly to its bottom; click opens the existing lightbox; on
+  phones it is a snap carousel with position dots and the caption under the
+  card. Six captures are new (quick-actions menu, bulk operations with
+  thirty selected, DORA, pull requests, AI Deep Review, AI insights) and two
+  light ones (Work Board, Live Inbox) were replaced by dark ones.
+  "Everything it does" is now a list-and-panel explorer (WAI-ARIA tabs,
+  arrow keys, chips on phones): one capability at a time with its real
+  screen, description and three facts, in four languages.
+- **Film v3, rendering.** Eight scenes, a minute long: quick actions
+  (a pointer right-clicks a card and the menu opens), bulk operations (tick,
+  thirty selected, the camera drops to the batch bar) and AI Deep Review
+  (click Review, the split diff with risk per file, the walkthrough and the
+  diagram) join the dashboard, DORA and migration. Score gains a strings
+  layer and a bass drop, the narration a presence chain and a short room;
+  clicks, pops and typing ticks on the sfx track. English and Portuguese
+  16:9, plus 1:1 and 9:16 English cuts, captions and cards from the same
+  pipeline. The site hero switches to v3 once it is approved.
+- **Docs.** `docs/tour.md` follows the new storyboard with the code behind
+  each claim; the IIS guide documents `SENTRY_DSN`, the `VITE_SENTRY_DSN`
+  repository variable and the Resend steps.
+- **Telemetry and e-mail, verified on the VPS** (new `env-check` action in
+  `ops-iis.yml`, names only, never values): `SENTRY_DSN` is set on the
+  server and the boot log shows no init failure, so server-side Sentry is
+  on; the browser bundle had no DSN at build time, so the release job now
+  bakes in `VITE_SENTRY_DSN` when that repository variable exists. E-mail
+  runs on `EMAIL_PROVIDER=console` with `ALLOW_CONSOLE_EMAIL=true` on a
+  hosted, multi-user install, which the guide says not to do: licence
+  e-mails, retention notices and digests are logged, not delivered, until
+  Resend is configured (domain verified, API key, `EMAIL_FROM` on
+  `bolalabs.pt`, remove the console override).
+
 ## 2. Brand plan — one anchor, then everything matches it
 
 The film is now the reference for how the brand moves and sounds. Every
