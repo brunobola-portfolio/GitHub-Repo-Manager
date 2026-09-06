@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.24.2] - 2026-09-06
+
 ### Fixed
 
 - **An anonymous visitor can no longer be sent into a reload loop.** The
@@ -3490,7 +3492,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.1...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.2...HEAD
+[4.24.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.1...v4.24.2
 [4.24.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.0...v4.24.1
 [4.24.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.23.2...v4.24.0
 [4.23.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.22.0...v4.23.0

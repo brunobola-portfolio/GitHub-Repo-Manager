@@ -31,6 +31,8 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.24.2 (2026-09-06) — the anonymous-visitor loop.** An anonymous
+  visitor can no longer be sent into a reload loop.
 - **v4.24.1 (2026-09-05) — the boot hotfix.** A server that does not answer
   at boot is "unreachable", not "uninitialised": the shell shows a retrying
   state instead of the first-run wizard, and only a real JSON answer decides
