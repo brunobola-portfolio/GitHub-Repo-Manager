@@ -23,7 +23,7 @@ import { apiCall } from '../utils/api'
  * to trigger a refetch here — LicenseActivationModal already does this on a
  * successful in-app activation so Pro-gated surfaces unlock without a refresh.
  */
-export function useLicense() {
+export function useLicense({ enabled = true } = {}) {
     const [license, setLicense] = useState(() => MOCK_MODE ? { tier: 'free' } : null)
     const [isLoading, setIsLoading] = useState(!MOCK_MODE)
     const [error, setError] = useState(null)
@@ -38,6 +38,10 @@ export function useLicense() {
 
     useEffect(() => {
         if (MOCK_MODE) return undefined
+        // The endpoint needs a session; probing it for an anonymous visitor only
+        // produces a 401 the API layer then has to interpret. The landing page
+        // renders without a tier.
+        if (!enabled) return undefined
         let cancelled = false
         apiCall(`${API_BASE_URL}/api/v1/usage`)
             .then(data => {
@@ -58,7 +62,7 @@ export function useLicense() {
                 setLicense({ tier: 'free' })
             })
         return () => { cancelled = true }
-    }, [tick])
+    }, [tick, enabled])
 
     useEffect(() => {
         if (MOCK_MODE) return undefined

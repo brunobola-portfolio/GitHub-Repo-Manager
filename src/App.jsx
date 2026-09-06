@@ -178,7 +178,7 @@ function AppContent() {
   // Current license tier — drives the Prompt Studio's free/pro gating UI.
   // Falls back to 'free' when the endpoint is unavailable (matches useLicense
   // behaviour) so the page always renders something safe.
-  const { license } = useLicense()
+  const { license } = useLicense({ enabled: !!user })
   const currentTier = license?.tier ?? 'free'
 
   // Session/auth boot sequence: system-initialized check, mock/real sign-in,

@@ -1,0 +1,91 @@
+name: Ops — IIS proxy
+
+# Operator tooling for the production VPS, run on the same self-hosted runner
+# the release deploy uses. Two actions:
+#
+#   inspect — print the server-level ARR proxy settings, the site's proxy
+#             element, and what /api/auth/login answers from the box itself.
+#             Read-only. Run this first.
+#   apply   — set the two ARR values the OAuth round-trip depends on:
+#             preserveHostHeader=true (Node must see the public Host, or it
+#             builds redirect_uri against 127.0.0.1:3001) and
+#             reverseRewriteHostInResponseHeaders=false (ARR must not rewrite
+#             the Location header that points the browser at github.com).
+#             Idempotent; prints the values before and after.
+#
+# Nothing here touches the app, its data directory or the service.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'inspect (read-only) or apply'
+        required: true
+        default: inspect
+        type: choice
+        options: [inspect, apply]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  iis:
+    runs-on: [self-hosted, Windows, bolalabs-vps]
+    steps:
+      - name: Server-level ARR proxy settings (before)
+        shell: pwsh
+        run: |
+          Import-Module WebAdministration
+          $p = Get-WebConfiguration -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter 'system.webServer/proxy'
+          "enabled=$($p.enabled) preserveHostHeader=$($p.preserveHostHeader) reverseRewriteHostInResponseHeaders=$($p.reverseRewriteHostInResponseHeaders) xForwardedForHeaderName=$($p.xForwardedForHeaderName)"
+
+      - name: Site proxy element and rewrite rules
+        shell: pwsh
+        run: |
+          $cfg = Get-ChildItem C:\inetpub -Recurse -Filter web.config -ErrorAction SilentlyContinue |
+            Where-Object { Select-String -Path $_.FullName -Pattern 'GRM reverse proxy' -Quiet }
+          foreach ($f in $cfg) {
+            "--- $($f.FullName)"
+            Select-String -Path $f.FullName -Pattern '<proxy|preserveHostHeader|<rule name|action type|X-Forwarded' | ForEach-Object { $_.Line.Trim() }
+          }
+          if (-not $cfg) { 'no site web.config with the GRM proxy rule found under C:\inetpub' }
+
+      - name: What the login route answers from the box
+        shell: pwsh
+        run: |
+          try {
+            $r = Invoke-WebRequest -Uri 'https://repomanager.bolalabs.pt/api/auth/login' -MaximumRedirection 0 -UseBasicParsing -ErrorAction Stop
+          } catch { $r = $_.Exception.Response }
+          $loc = $r.Headers['Location']
+          if ($loc -is [array]) { $loc = $loc[0] }
+          "status=$([int]$r.StatusCode)"
+          "location=" + ($loc -replace 'client_id=[^&]*', 'client_id=…')
+
+      - name: Apply the two ARR values
+        if: ${{ inputs.action == 'apply' }}
+        shell: pwsh
+        run: |
+          Import-Module WebAdministration
+          Set-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter 'system.webServer/proxy' -Name 'preserveHostHeader' -Value $true
+          Set-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter 'system.webServer/proxy' -Name 'reverseRewriteHostInResponseHeaders' -Value $false
+          $p = Get-WebConfiguration -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter 'system.webServer/proxy'
+          "after: preserveHostHeader=$($p.preserveHostHeader) reverseRewriteHostInResponseHeaders=$($p.reverseRewriteHostInResponseHeaders)"
+          if (-not $p.preserveHostHeader -or $p.reverseRewriteHostInResponseHeaders) { throw 'ARR values did not stick' }
+
+      - name: Login route after the change
+        if: ${{ inputs.action == 'apply' }}
+        shell: pwsh
+        run: |
+          Start-Sleep -Seconds 3
+          try {
+            $r = Invoke-WebRequest -Uri 'https://repomanager.bolalabs.pt/api/auth/login' -MaximumRedirection 0 -UseBasicParsing -ErrorAction Stop
+          } catch { $r = $_.Exception.Response }
+          $loc = $r.Headers['Location']
+          if ($loc -is [array]) { $loc = $loc[0] }
+          "location=" + ($loc -replace 'client_id=[^&]*', 'client_id=…')
+          if ($loc -notmatch '^https://github\.com/login/oauth/authorize') { throw "Location still does not point at github.com: $loc" }
+          if ($loc -notmatch 'redirect_uri=https%3A%2F%2Frepomanager\.bolalabs\.pt%2Fapi%2Fauth%2Fcallback') { throw "redirect_uri is not the public origin: $loc" }

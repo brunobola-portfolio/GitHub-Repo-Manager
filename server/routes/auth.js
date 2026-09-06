@@ -57,6 +57,13 @@ export function resolveCallbackOrigin(req) {
             // Only http(s). `new URL('foo://h').origin` is the literal string
             // "null", which would ship `null/api/auth/callback` to GitHub.
             if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new Error('scheme');
+            // A proxy that did not preserve the Host header hands Node its own
+            // loopback address (ARR with preserveHostHeader off: the production
+            // login built redirect_uri=https://127.0.0.1:3001). Nobody registers
+            // a loopback callback for an https origin, so when the operator has
+            // declared an https public origin and the request names loopback,
+            // the declaration is the only correct answer.
+            if (url.protocol === 'https:' && isLoopbackHost(host)) return url.origin;
             // Never downgrade: a stale http:// FRONTEND_URL must not turn a
             // genuinely-TLS request into an http:// redirect_uri.
             if (url.protocol === 'https:' || req.protocol !== 'https') {
@@ -68,6 +75,13 @@ export function resolveCallbackOrigin(req) {
         }
     }
     return `${req.protocol}://${host}`;
+}
+
+// 127.0.0.1, ::1 and localhost, with or without a port — the addresses a
+// reverse proxy on the same box uses to reach Node.
+function isLoopbackHost(hostHeader) {
+    const h = String(hostHeader).toLowerCase().replace(/:\d+$/, '').replace(/^\[|\]$/g, '');
+    return h === '127.0.0.1' || h === 'localhost' || h === '::1';
 }
 
 // Host comparison, normalised. `URL` lowercases the host and strips the

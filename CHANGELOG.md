@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Sign-in behind a proxy that drops the Host header.** With ARR's
+  `preserveHostHeader` off, Node saw `127.0.0.1:3001` and built the OAuth
+  `redirect_uri` against it. When `FRONTEND_URL` declares an https origin and
+  the request names a loopback host, the declaration wins. The new
+  **Ops — IIS proxy** workflow inspects and, on request, sets the two ARR
+  values the round-trip depends on, from the self-hosted runner.
+- **No licence probe before sign-in.** The landing page no longer asks
+  `/api/v1/usage` for an anonymous visitor, so the console is clean and the
+  API layer never sees a 401 it has to interpret.
+
 ## [4.24.2] - 2026-09-06
 
 ### Fixed
