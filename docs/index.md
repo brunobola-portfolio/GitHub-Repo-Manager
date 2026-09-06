@@ -32,6 +32,15 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.24.7 (2026-09-06) — the exploratory walk.** `npm run smoke:prod`; The
+  "Sign in" button on an expired-session state pointed at a route that
+ 
+  does not exist; A README's own section links and the table of contents no
+  longer rewrite
+  the route; An app route nobody defined goes home;
+  Repository names are validated before the request leaves the browser;
+  Dismissing the Work Board AI summary sticks for the day; The repository
+  header's stats row wraps on phones.
 - **v4.24.6 (2026-09-06) — the hero shots ship.** The landing hero shots
   ship.
 - **v4.24.5 (2026-09-06) — the landing shows the product.** The landing page

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.24.7] - 2026-09-06
+
 ### Added
 
 - **`npm run smoke:prod`** — forty read-only checks against a live
@@ -3567,7 +3569,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.6...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.7...HEAD
+[4.24.7]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.6...v4.24.7
 [4.24.6]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.5...v4.24.6
 [4.24.5]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.4...v4.24.5
 [4.24.4]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.3...v4.24.4
