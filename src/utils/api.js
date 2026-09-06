@@ -32,6 +32,35 @@ export const ErrorType = {
 const authListeners = new Set()
 let sessionExpired = false
 
+// A 401 only means "your session ended" once the app has actually seen a
+// session. Before that it is the ordinary answer an anonymous visitor gets
+// from every authenticated endpoint — the licence probe on the landing page,
+// for one. Treating that as expiry hard-reloaded to /?error=session_expired,
+// which mounted the landing page again, which probed again: a reload loop
+// that ran until the rate limiter answered 429 and the shell sat on
+// "can't reach the server". The boot hook flips this once /api/auth/session
+// says authenticated; logout flips it back.
+let sessionKnown = false
+
+export function markSessionActive() {
+    sessionKnown = true
+}
+
+export function markSessionEnded() {
+    sessionKnown = false
+}
+
+export function isSessionKnown() {
+    return sessionKnown
+}
+
+// The redirect target is the landing page. Landing there with the marker
+// already in the URL and redirecting again is the loop above in one line, so
+// the marker is the second guard: never redirect onto itself.
+export function shouldRedirectForExpiry(search = '') {
+    return !/(?:^|[?&])error=session_expired(?:&|$)/.test(search)
+}
+
 export function onSessionExpired(callback) {
     authListeners.add(callback)
     return () => authListeners.delete(callback)
@@ -65,7 +94,7 @@ function isAuthFlowUrl(url) {
 // uses window.location so production behaviour is unchanged.
 let sessionExpiredRedirector = () => {
     try {
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && shouldRedirectForExpiry(window.location.search)) {
             window.location.href = '/?error=session_expired'
         }
     } catch { /* jsdom/happy-dom sometimes throws on href assignment */ }
@@ -79,6 +108,7 @@ export function _setSessionExpiredRedirectorForTests(fn) {
 
 function notifySessionExpired({ url } = {}) {
     if (sessionExpired) return // already notified
+    if (!sessionKnown) return // anonymous: a 401 is "not logged in", not expiry
     // Mock mode runs e2e and dev with a fabricated dev-user; the backend has
     // no real session, so every authenticated /api/* call returns 401 on
     // mount-time fan-out (license, work-board, notifications, inbox).

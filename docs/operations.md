@@ -271,8 +271,10 @@ tag, and the Release, Docker and Windows-package workflows after it.
 5. The GitHub Release is published by the workflow with the CHANGELOG
    section as its notes; the production deploy runs on the self-hosted runner
    when the `AUTO_DEPLOY` repository variable is `true`.
-6. Add the release to `docs/index.md` "Recent releases" in a follow-up docs
-   commit.
+6. The script also prepends the release to `docs/index.md` "Recent
+   releases" (a build gate requires the digest to lead with the newest
+   version); polish that entry in a follow-up docs commit if the generated
+   summary reads poorly.
 
 **Do not force-push tags.** If a release is wrong, cut a `vX.Y.(Z+1)` patch.
 

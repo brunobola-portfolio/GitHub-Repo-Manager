@@ -5,6 +5,7 @@ import {
     promoteUnreleased,
     setPackageVersion,
     updateWhatsNew,
+    addRecentRelease,
 } from '../lib/release-lib.mjs'
 
 const REPO = 'https://github.com/o/r'
@@ -74,5 +75,27 @@ describe('updateWhatsNew', () => {
         const out = updateWhatsNew(readme, { version: '4.24.0', date: '2026-09-06', title: 'the polish release' })
         expect(out).toBe("[Docs](docs/index.md) · [What's new in v4.24 — the polish release](CHANGELOG.md#4240---2026-09-06)\n")
         expect(changelogAnchor('4.24.0', '2026-09-06')).toBe('4240---2026-09-06')
+    })
+})
+
+describe('addRecentRelease', () => {
+    const INDEX = '# Docs\n\n## Recent releases\n\nIntro line.\n\n- **v4.23.2 (2026-08-31) — old.** Body.\n- **v4.23.1 (2026-08-31) — older.** Body.\n'
+
+    it('prepends an entry built from the title and the bold leads of the section', () => {
+        const section = '\n### Fixed\n\n- **A server that does not answer is unreachable.** Long text.\n- **Second thing:** more.\n'
+        const out = addRecentRelease(INDEX, { version: '4.24.1', date: '2026-09-05', title: 'the boot hotfix', changelogSection: section })
+        const lines = out.split('\n')
+        const i = lines.findIndex((l) => l.startsWith('- **v4.24.1'))
+        expect(i).toBeGreaterThan(0)
+        expect(lines[i + (lines[i + 1].startsWith('  ') ? 1 : 0)]).toBeDefined()
+        expect(out).toContain('- **v4.24.1 (2026-09-05) — the boot hotfix.** A server that does not')
+        expect(out).toContain('unreachable; Second thing.')
+        expect(out.indexOf('v4.24.1')).toBeLessThan(out.indexOf('v4.23.2'))
+    })
+
+    it('is idempotent and tolerates a section without bold leads', () => {
+        const once = addRecentRelease(INDEX, { version: '4.24.1', date: '2026-09-05', title: '', changelogSection: '- plain bullet\n' })
+        expect(once).toContain('- **v4.24.1 (2026-09-05) — release.** See the changelog.')
+        expect(addRecentRelease(once, { version: '4.24.1', date: '2026-09-05', title: 'x' })).toBe(once)
     })
 })

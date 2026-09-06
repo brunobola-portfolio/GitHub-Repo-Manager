@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { AUTH_ENDPOINTS, API_BASE_URL, MOCK_MODE } from '../config'
 import { getAuthSetupStatus } from '../api/authSetup'
-import { onSessionExpired, resetSessionExpired, fetchWithRetry, safeParseJson, apiCall } from '../utils/api'
+import { onSessionExpired, resetSessionExpired, fetchWithRetry, safeParseJson, apiCall, markSessionActive, markSessionEnded } from '../utils/api'
 import { mark } from '../lib/observability'
 
 // Every code a redirect from /api/auth/login|callback can carry, mapped to a
@@ -72,6 +72,8 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
                 if (data) {
                     setSession(data)
                     if (data.authenticated) {
+                        // From here on a 401 really is an ended session.
+                        markSessionActive()
                         fetchGitHubUser()
                     }
                 }
@@ -156,6 +158,7 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
     }
 
     const handleLogout = async () => {
+        markSessionEnded()
         try {
             await apiCall(AUTH_ENDPOINTS.logout, { method: 'POST' })
             window.location.reload()

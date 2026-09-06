@@ -26,6 +26,7 @@ import {
     promoteUnreleased,
     setPackageVersion,
     updateWhatsNew,
+    addRecentRelease,
 } from './lib/release-lib.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -58,6 +59,7 @@ const pkgPath = join(ROOT, 'package.json')
 const lockPath = join(ROOT, 'package-lock.json')
 const changelogPath = join(ROOT, 'CHANGELOG.md')
 const readmePath = join(ROOT, 'README.md')
+const indexPath = join(ROOT, 'docs', 'index.md')
 
 const pkgText = readFileSync(pkgPath, 'utf8')
 const previous = JSON.parse(pkgText).version
@@ -70,10 +72,12 @@ const changelog = promoteUnreleased(readFileSync(changelogPath, 'utf8'), { versi
 const pkg = setPackageVersion(pkgText, version)
 const lock = setPackageVersion(readFileSync(lockPath, 'utf8'), version, { lockfile: true })
 const readme = updateWhatsNew(readFileSync(readmePath, 'utf8'), { version, date, title })
+const section = changelog.split(`## [${version}] - ${date}`)[1]?.split(/^## \[/m)[0] || ''
+const index = addRecentRelease(readFileSync(indexPath, 'utf8'), { version, date, title, changelogSection: section })
 
 console.log(`${previous} -> ${version} (${date})${dryRun ? '  [dry run]' : ''}`)
 if (dryRun) {
-    console.log('Would write CHANGELOG.md, package.json, package-lock.json, README.md; commit; tag v' + version + (push ? '; push' : ''))
+    console.log('Would write CHANGELOG.md, package.json, package-lock.json, README.md, docs/index.md; commit; tag v' + version + (push ? '; push' : ''))
     process.exit(0)
 }
 
@@ -81,8 +85,9 @@ writeFileSync(changelogPath, changelog)
 writeFileSync(pkgPath, pkg)
 writeFileSync(lockPath, lock)
 writeFileSync(readmePath, readme)
+writeFileSync(indexPath, index)
 
-git('add', 'CHANGELOG.md', 'package.json', 'package-lock.json', 'README.md')
+git('add', 'CHANGELOG.md', 'package.json', 'package-lock.json', 'README.md', 'docs/index.md')
 git('commit', '-m', `chore(release): ${version}`)
 git('tag', '-a', `v${version}`, '-m', `v${version}`)
 console.log(`Committed and tagged v${version}`)

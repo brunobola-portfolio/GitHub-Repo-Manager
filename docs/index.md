@@ -31,6 +31,10 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.24.1 (2026-09-05) — the boot hotfix.** A server that does not answer
+  at boot is "unreachable", not "uninitialised": the shell shows a retrying
+  state instead of the first-run wizard, and only a real JSON answer decides
+  between the app and the wizard.
 - **v4.24.0 (2026-09-05) — the polish release.** The audit log is a full
   page with chain verification; saved views and URL sync reach the
   Repositories filter bar; an opt-in digest e-mail; `g`-chord and `j`/`k`

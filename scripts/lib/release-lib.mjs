@@ -63,6 +63,47 @@ export function setPackageVersion(text, version, { lockfile = false } = {}) {
     return out
 }
 
+/**
+ * Prepend the release to the "Recent releases" digest in docs/index.md.
+ * tests/build/readme-honesty.test.js requires the digest to lead with the
+ * newest CHANGELOG version, so a release that skips this step fails CI on
+ * the very commit that cut it. The body is the title plus the bold lead of
+ * every bullet in the new CHANGELOG section, joined into one sentence.
+ */
+export function addRecentRelease(indexMd, { version, date, title, changelogSection = '' }) {
+    const lines = indexMd.split(/\r?\n/)
+    const heading = lines.findIndex((l) => /^## Recent releases/.test(l))
+    if (heading === -1) throw new Error('docs/index.md has no "## Recent releases" heading')
+    const first = lines.findIndex((l, i) => i > heading && /^- \*\*v\d+\.\d+\.\d+/.test(l))
+    if (first === -1) throw new Error('docs/index.md digest has no release entries to prepend to')
+    if (lines.some((l) => l.startsWith(`- **v${version} `))) return indexMd
+
+    const leads = [...changelogSection.matchAll(/^- \*\*([^*]+?)\*\*/gm)]
+        .map((m) => m[1].trim().replace(/[.:]$/, ''))
+    const body = leads.length ? leads.join('; ') + '.' : 'See the changelog.'
+    const label = title ? `${title}.` : 'release.'
+    const entry = wrap(`- **v${version} (${date}) — ${label}** ${body}`)
+    lines.splice(first, 0, ...entry)
+    return lines.join('\n')
+}
+
+function wrap(text, width = 76) {
+    const words = text.split(' ')
+    const out = []
+    let line = ''
+    for (const w of words) {
+        const candidate = line ? `${line} ${w}` : w
+        if (candidate.length > width && line) {
+            out.push(line)
+            line = `  ${w}`
+        } else {
+            line = candidate
+        }
+    }
+    if (line) out.push(line)
+    return out
+}
+
 /** Point the README's "What's new" link at the release just cut. */
 export function updateWhatsNew(readme, { version, date, title }) {
     const short = version.replace(/\.0$/, '')

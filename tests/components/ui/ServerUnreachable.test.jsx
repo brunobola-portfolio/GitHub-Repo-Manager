@@ -12,6 +12,7 @@ describe('ServerUnreachable', () => {
         expect(screen.getByRole('status')).toHaveTextContent(/can.t reach the server/i)
         expect(screen.getByRole('status')).toHaveTextContent(/restarting after an update/i)
         expect(screen.queryByText(/setup|initiali[sz]e|SQLite/i)).toBeNull()
+        expect(screen.queryByRole('button', { name: /reload the page/i })).toBeNull()
     })
 
     it('retries on click', () => {
@@ -21,15 +22,30 @@ describe('ServerUnreachable', () => {
         expect(onRetry).toHaveBeenCalledTimes(1)
     })
 
-    it('retries on its own on an interval and stops when unmounted', () => {
+    it('backs off between automatic retries and stops when unmounted', () => {
         vi.useFakeTimers()
         const onRetry = vi.fn()
-        const { unmount } = render(<ServerUnreachable onRetry={onRetry} retryEveryMs={1000} />)
-        act(() => { vi.advanceTimersByTime(2500) })
+        const schedule = [100, 200, 400]
+        const { unmount } = render(<ServerUnreachable onRetry={onRetry} backoffMs={schedule} />)
+        act(() => { vi.advanceTimersByTime(100) })
+        expect(onRetry).toHaveBeenCalledTimes(1)
+        act(() => { vi.advanceTimersByTime(150) })
+        expect(onRetry).toHaveBeenCalledTimes(1)
+        act(() => { vi.advanceTimersByTime(50) })
         expect(onRetry).toHaveBeenCalledTimes(2)
-        expect(screen.getByRole('status')).toHaveTextContent(/2 so far/)
+        act(() => { vi.advanceTimersByTime(400) })
+        expect(onRetry).toHaveBeenCalledTimes(3)
+        expect(screen.getByRole('status')).toHaveTextContent(/3 so far/)
         unmount()
         act(() => { vi.advanceTimersByTime(5000) })
-        expect(onRetry).toHaveBeenCalledTimes(2)
+        expect(onRetry).toHaveBeenCalledTimes(3)
+    })
+
+    it('offers a full reload once the failures stop looking like a blip', () => {
+        vi.useFakeTimers()
+        render(<ServerUnreachable onRetry={() => {}} backoffMs={[10]} />)
+        act(() => { vi.advanceTimersByTime(65) })
+        expect(screen.getByRole('status')).toHaveTextContent(/6 attempts/)
+        expect(screen.getByRole('button', { name: /reload the page/i })).toBeInTheDocument()
     })
 })

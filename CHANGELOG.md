@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **An anonymous visitor can no longer be sent into a reload loop.** The
+  licence probe on the landing page gets a 401 before anyone signs in; since
+  4.24.0 it went through the shared API layer, which read every 401 as an
+  expired session and hard-reloaded to `/?error=session_expired` — which
+  mounted the landing page again, which probed again, until the rate limiter
+  answered 429 and the shell sat on "can't reach the server". A 401 now only
+  means expiry after the app has seen a session, the redirect never targets
+  a URL that already carries the marker, and the unreachable state backs off
+  and offers a full reload after repeated failures.
+
 ## [4.24.1] - 2026-09-05
 
 ### Fixed

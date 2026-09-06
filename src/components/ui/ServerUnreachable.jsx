@@ -1,8 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { RefreshCw, ServerOff } from 'lucide-react'
 import { Button } from './Button'
 
-const RETRY_EVERY_MS = 5000
+// 5 s, 10 s, 20 s, then every 30 s: quick enough to catch the end of a deploy
+// restart, slow enough not to lean on a rate limiter that is already saying
+// no. After the sixth miss the page stops pretending it is a blip and offers
+// a full reload, which also clears any stale in-memory state.
+const BACKOFF_MS = [5000, 10000, 20000, 30000]
+const OFFER_RELOAD_AFTER = 6
+
+function delayFor(attempt) {
+    return BACKOFF_MS[Math.min(attempt, BACKOFF_MS.length - 1)]
+}
 
 /**
  * Shown when /api/system/status cannot be read at boot — a deploy restart, an
@@ -10,20 +19,27 @@ const RETRY_EVERY_MS = 5000
  * "the server did not answer" and "the system is not initialised" are
  * different facts, and treating the first as the second greeted the owner
  * of a freshly deployed 4.24.0 with "Creating SQLite Database" and a 403.
- *
- * Retries on its own so a restart window resolves without a click.
  */
-export function ServerUnreachable({ onRetry, retryEveryMs = RETRY_EVERY_MS }) {
+export function ServerUnreachable({ onRetry, backoffMs }) {
     const [attempt, setAttempt] = useState(0)
+    const schedule = backoffMs || BACKOFF_MS
+    const attemptRef = useRef(0)
 
     useEffect(() => {
         if (!onRetry) return undefined
-        const id = setInterval(() => {
-            setAttempt((n) => n + 1)
+        let id
+        const tick = () => {
+            attemptRef.current += 1
+            setAttempt(attemptRef.current)
             onRetry()
-        }, retryEveryMs)
-        return () => clearInterval(id)
-    }, [onRetry, retryEveryMs])
+            id = setTimeout(tick, schedule[Math.min(attemptRef.current, schedule.length - 1)])
+        }
+        id = setTimeout(tick, schedule[0])
+        return () => clearTimeout(id)
+    }, [onRetry, schedule])
+
+    const stubborn = attempt >= OFFER_RELOAD_AFTER
+    const nextIn = Math.round(delayFor(attempt) / 1000)
 
     return (
         <div
@@ -39,13 +55,21 @@ export function ServerUnreachable({ onRetry, retryEveryMs = RETRY_EVERY_MS }) {
                     Can&rsquo;t reach the server
                 </h1>
                 <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-                    It may be restarting after an update. This page retries on its own every few seconds
-                    {attempt > 0 ? ` (${attempt} so far)` : ''}.
+                    {stubborn
+                        ? `Still no answer after ${attempt} attempts. The service may be down or your connection may be blocked — reloading the page starts from a clean slate.`
+                        : `It may be restarting after an update. Retrying on its own${attempt > 0 ? ` (${attempt} so far, next in ${nextIn} s)` : ''}.`}
                 </p>
-                <Button variant="secondary" size="sm" onClick={onRetry} className="gap-2">
-                    <RefreshCw className="h-4 w-4" aria-hidden="true" />
-                    Retry now
-                </Button>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                    <Button variant="secondary" size="sm" onClick={onRetry} className="gap-2">
+                        <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                        Retry now
+                    </Button>
+                    {stubborn && (
+                        <Button variant="primary" size="sm" onClick={() => window.location.reload()}>
+                            Reload the page
+                        </Button>
+                    )}
+                </div>
             </div>
         </div>
     )
