@@ -4,6 +4,13 @@ Every capture is the real application running in mock mode at 1920×1080. Nothin
 
 The architecture diagrams that appear in the README (`*.svg` in this folder) are generated, not drawn.
 
+## Capture policy
+
+- Captured from the app in mock mode (`VITE_MOCK_MODE=true`), viewport 1920×1080, device scale 1, named `NN_description_hd.png`; the dark theme first for anything that appears in marketing, the light theme beside it where the view ships in both.
+- Only the current palette: one brand accent ramp on slate. A capture that shows the retired indigo/purple accent is stale and must be retaken, not cropped.
+- The promo film ([tour](tour.md)) reads its scenes from this folder. When a capture used in the film is refreshed, re-render the film in the same change so the two never disagree.
+- Refresh checklist after any palette, typography or layout change: dashboard (both themes), Work Board, AI overview, migration wizard Connect step, then the README and this page's captions.
+
 ## Dashboard & Live Inbox
 
 ### Dashboard (light)

@@ -7,6 +7,8 @@ below links to the canonical page for that topic.
 
 | I want to... | Read |
 | ------------ | ---- |
+| See the product in 38 seconds | [Tour](tour.md) — the film, its storyboard, and the guide behind each scene |
+| Go from sign-in to a migration dry run | [First five minutes](guides/first-five-minutes.md) |
 | Understand the system at a glance | [Architecture overview](architecture/overview.md) |
 | Run a production instance | [Operations runbook](operations.md) |
 | Call the API | [API reference](api/API.md) (353 route handlers — recounted via `grep`, see API.md header) |

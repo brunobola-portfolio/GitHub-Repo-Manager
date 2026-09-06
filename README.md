@@ -14,6 +14,8 @@
   <img alt="GitHub Repo Manager dashboard — time-of-day greeting, a 'What needs you' KPI row, the Live Inbox, and repository stats" src="docs/images/01_dashboard_light_hd.png" width="900">
 </picture>
 
+[**▶ Watch the 38-second tour**](https://bolalabs.pt/en/repomanager/) · [Storyboard and stills](docs/tour.md)
+
 <br>
 
 [![CI](https://img.shields.io/github/actions/workflow/status/brunobola-portfolio/GitHub-Repo-Manager/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI)](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/actions/workflows/ci.yml)

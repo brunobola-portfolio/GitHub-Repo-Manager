@@ -91,6 +91,17 @@ export const fadeRise = {
   exit: { opacity: 0, y: 6, transition: TRANSITION.fast },
 }
 
+// Hero-grade reveal — the promo film's arrival: a short rise out of a soft
+// blur. Reserved for the landing page's headline and feature cards; inside
+// the app `fadeRise` stays the entrance. `filter` is not a transform, so it
+// still eases under reduced motion — the 8 px blur is mild enough that it
+// reads as a fade there, which is the intent.
+export const reveal = (delay = 0) => ({
+  initial: { opacity: 0, y: 34, filter: 'blur(8px)' },
+  animate: { opacity: 1, y: 0, filter: 'blur(0px)' },
+  transition: { duration: DURATION.gentle, delay, ease: EASE.emphasized },
+})
+
 // List orchestration — a parent with `variants={listContainer}` staggers any
 // children that use `variants={listItem}` (children inherit the run state, so
 // they need no initial/animate of their own).

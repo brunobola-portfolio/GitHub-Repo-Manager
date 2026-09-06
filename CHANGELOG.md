@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Tour** — `docs/tour.md` carries the 38-second film's storyboard, a
+  still per scene, and the guide behind every claim the narration makes;
+  the README links to the film on the product page. `docs/guides/first-five-minutes.md`
+  goes from sign-in to a migration dry run in four steps.
+
+### Changed
+
+- **Landing hero arrives the way the film does** — `reveal` in the shared
+  motion vocabulary (a short rise out of a soft blur) replaces the hero's
+  private fade-up, so the landing reads as a still of the promo.
+- **Screenshot policy** written down in `docs/screenshots.md`: mock mode,
+  1920×1080, dark first for marketing, current palette only, and the film
+  re-renders whenever a capture it uses is refreshed.
+
 ## [4.24.8] - 2026-09-06
 
 ### Fixed

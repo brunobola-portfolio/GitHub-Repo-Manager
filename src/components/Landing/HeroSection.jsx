@@ -1,13 +1,10 @@
 import { motion } from 'framer-motion'
-import { EASE, DURATION, LOOP } from '../ui/motion'
+import { EASE, LOOP, reveal } from '../ui/motion'
 import { ArrowRight, ExternalLink } from 'lucide-react'
 import { Github } from '../icons/GithubIcon'
 
-const fadeUp = (delay = 0) => ({
-  initial: { opacity: 0, y: 28 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: DURATION.ambient, delay, ease: EASE.emphasized },
-})
+// The same arrival the promo film uses, so the landing reads as a still of it.
+const fadeUp = reveal
 
 // The dashboard in both themes, captured from the real app in mock mode at
 // 1440×900. The class-based theme (not prefers-color-scheme) picks which one
