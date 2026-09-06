@@ -49,6 +49,12 @@ jobs:
       - name: Build production bundle
         env:
           NODE_ENV: production
+          # Browser-side Sentry is baked in at build time. A DSN is not a
+          # secret (it is visible in every page that uses it), so it lives in
+          # a repository *variable*; unset means the client ships without
+          # telemetry, exactly like before. Only this deployed bundle gets it;
+          # the Windows package job stays telemetry-free for self-hosters.
+          VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
         run: npm run build
 
       - name: Package dist bundle

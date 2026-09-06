@@ -180,6 +180,16 @@ Now edit `$data\.env` and set at least:
 | `DATA_DIR` | `C:\ProgramData\GitHubRepoManager\data` |
 | `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | from step 3 |
 | `RESEND_API_KEY` | production boot **aborts** on `EMAIL_PROVIDER=console`, and on `resend` without this key. `EMAIL_FROM` is not validated at boot but is required for delivery |
+| `SENTRY_DSN` | optional. Server-side error telemetry; the boot log prints `Sentry monitoring initialized` with the DSN host, or a warning if the DSN is invalid. Browser-side telemetry is separate: set the repository **variable** `VITE_SENTRY_DSN` and the next release bakes it into the bundle |
+
+Wiring Resend, once you have an account: verify the sending domain in Resend
+(it gives you two DNS records, DKIM and a return-path CNAME, plus an SPF
+include for `bolalabs.pt`), create an API key, then in `$data\.env` set
+`EMAIL_PROVIDER=resend`, `RESEND_API_KEY=re_…`, `EMAIL_FROM=no-reply@bolalabs.pt`
+and remove `ALLOW_CONSOLE_EMAIL`. Restart the service and send yourself a
+digest from **Settings → Notifications** to confirm delivery; the
+`ops-iis.yml` workflow's `env-check` action shows SET/unset for these names
+without printing values.
 
 `HOST=127.0.0.1` and `PORT=3001` are already set in the template. Binding
 loopback is deliberate: the public surface is the IIS site, and binding all
