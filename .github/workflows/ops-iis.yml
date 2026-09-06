@@ -100,7 +100,7 @@ jobs:
           $dir = 'C:\ProgramData\GitHubRepoManager\data\logs'
           foreach ($name in 'service-err.log', 'service-out.log') {
             $f = Join-Path $dir $name
-            if (-not (Test-Path $f)) { "--- $name: not found"; continue }
+            if (-not (Test-Path $f)) { "--- ${name}: not found"; continue }
             "--- $name (last 400 lines, filtered)"
             Get-Content $f -Tail 400 | Where-Object {
               $_ -match '"level":(40|50|60)' -or $_ -match 'auth\.(login|callback|logout)|/api/auth/callback|oauth' -or $_ -match '(?i)error|unhandled'
