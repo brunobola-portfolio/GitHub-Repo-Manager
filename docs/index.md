@@ -34,6 +34,9 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.24.9 (2026-09-06) — the tour, the first five minutes, and the film's
+  arrival on the landing.** Tour; Landing hero arrives the way the film
+  does; Screenshot policy.
 - **v4.24.8 (2026-09-06) — the exploratory walk, tidied.** Demo-mode copy on
   a tab that is not simulated.
 - **v4.24.7 (2026-09-06) — the exploratory walk.** `npm run smoke:prod`; The
