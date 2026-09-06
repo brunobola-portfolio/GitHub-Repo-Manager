@@ -25,7 +25,7 @@ below links to the canonical page for that topic.
 | Replay a failed email / webhook | [Admin DLQ guide](guides/admin-dlq.md) |
 | Read release notes | [`CHANGELOG.md`](../CHANGELOG.md) |
 | See every view before installing | [Screenshot gallery](screenshots.md) — real captures, both themes |
-| Plan the brand, search and launch work | [Brand, SEO and social guide](reports/2026-09-06-brand-seo-social-guide.md) — what shipped on 2026-09-06 and what comes next, by priority |
+| Plan the brand, search and launch work | [Brand, docs and launch guide, second pass](reports/2026-09-06-brand-docs-launch-guide-v2.md) — the promo film, the brand and documentation plan around it, the four-week outreach roadmap; the [morning guide](reports/2026-09-06-brand-seo-social-guide.md) records what shipped that day |
 | See what's planned but not shipped | [`ROADMAP.md`](../ROADMAP.md) |
 
 ## Recent releases
