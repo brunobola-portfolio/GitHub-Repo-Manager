@@ -29,20 +29,20 @@ const features = [
     title: 'Smart Migration',
     description:
       'Move from Azure DevOps (Git & TFVC) to GitHub with AI-assisted risk analysis, history preservation, and LFS support.',
-    iconColor: 'text-amber-500 dark:text-amber-400',
+    iconColor: 'text-brand-500 dark:text-brand-400',
     glow: '',
-    iconBg: 'bg-amber-500/15 dark:bg-amber-500/25',
-    accent: 'bg-amber-500',
+    iconBg: 'bg-brand-500/15 dark:bg-brand-500/25',
+    accent: 'bg-brand-500',
   },
   {
     icon: Users,
     title: 'Team Collaboration',
     description:
       'Shared dashboards, activity feeds and per-team repository assignment. Teams live in your instance and never change GitHub permissions.',
-    iconColor: 'text-emerald-500 dark:text-emerald-400',
+    iconColor: 'text-brand-500 dark:text-brand-400',
     glow: '',
-    iconBg: 'bg-emerald-500/15 dark:bg-emerald-500/25',
-    accent: 'bg-emerald-500',
+    iconBg: 'bg-brand-500/15 dark:bg-brand-500/25',
+    accent: 'bg-brand-500',
   },
   {
     icon: FileText,
@@ -56,7 +56,7 @@ const features = [
   },
   {
     icon: LayoutDashboard,
-    title: 'Premium Dashboard',
+    title: 'One dashboard',
     description:
       // Counted, not estimated: seven multi-select actions in the repository
       // batch menu plus three on the Work Board bulk bar. A gate keeps this

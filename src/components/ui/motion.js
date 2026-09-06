@@ -34,6 +34,14 @@ export const DURATION = {
 }
 
 // Easing curves — the two the codebase already standardized on, named once.
+// Periods (seconds) for ambient, infinitely repeating drifts — the hero and
+// CTA background washes. Two neighbouring primes so the layers never phase-
+// lock into a visible beat. Never for UI state changes.
+export const LOOP = {
+  drift: 9,
+  driftLong: 11,
+}
+
 export const EASE = {
   standard: [0.2, 0, 0, 1], //      --ds-ease — state changes / micro moves
   emphasized: [0.16, 1, 0.3, 1], // decelerated — entrances & reveals

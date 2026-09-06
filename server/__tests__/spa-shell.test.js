@@ -52,7 +52,7 @@ describe('robots and sitemap', () => {
     it('list the landing page and the brand guide with a lastmod', () => {
         const xml = sitemapXml('https://repomanager.example.pt', '2026-09-06');
         expect(xml).toContain('<loc>https://repomanager.example.pt/</loc>');
-        expect(xml).toContain('<loc>https://repomanager.example.pt/brand</loc>');
+        expect(xml).toContain('<loc>https://repomanager.example.pt/brand/</loc>');
         expect(xml).toContain('<lastmod>2026-09-06</lastmod>');
         expect(xml.startsWith('<?xml')).toBe(true);
     });

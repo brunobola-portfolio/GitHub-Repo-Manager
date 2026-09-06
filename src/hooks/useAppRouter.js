@@ -4,7 +4,7 @@ import { parseRepoHash, buildRepoHash } from '../utils/repoDetailHash'
 // Per-view document.title. index.html ships a single static marketing title,
 // so browser tabs / history entries / bookmarks are otherwise indistinguishable.
 const APP_NAME = 'GitHub Repo Manager'
-const MARKETING_TITLE = 'GitHub Repo Manager — AI-Powered Repository Management'
+const MARKETING_TITLE = 'GitHub Repo Manager — repos, AI review and migration'
 const VIEW_TITLES = {
   dashboard: 'Dashboard',
   repos: 'Repositories',

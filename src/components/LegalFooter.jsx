@@ -32,7 +32,7 @@ export function LegalFooter() {
     >
       <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <span>
-          GitHub Repo Manager — © Bola Labs ·{' '}
+          GitHub Repo Manager — © BolaLabs ·{' '}
           <a
             href={SOURCE_URL}
             target="_blank"

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **The landing page shows the product.** A framed capture of the dashboard,
+  in both themes, sits under the hero; the headline says what the app does
+  (manage, migrate and review), the feature grid uses the one brand accent
+  instead of amber and emerald, the closing band carries the brand line, the
+  footer names BolaLabs and links the product page, and the ambient drifts
+  read their periods from the motion vocabulary. Title and description are
+  search-sized; the structured data lists both plans.
+
 ## [4.24.4] - 2026-09-06
 
 ### Added

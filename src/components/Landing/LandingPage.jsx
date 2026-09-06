@@ -35,7 +35,16 @@ function LandingFooter() {
     >
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
         <p className="text-sm text-slate-500 dark:text-slate-400 ds-font-display">
-          Built by{' '}
+          A{' '}
+          <a
+            href="https://bolalabs.pt/en/repomanager"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-slate-600 dark:text-slate-300 font-medium hover:text-brand-600 dark:hover:text-brand-400 transition-colors duration-200"
+          >
+            BolaLabs
+          </a>
+          {' '}product · built by{' '}
           <a
             href="https://www.linkedin.com/in/bolalabs/"
             target="_blank"
@@ -44,7 +53,6 @@ function LandingFooter() {
           >
             Bruno Marques
           </a>
-          {' '}· React 19 + Vite 8 + Tailwind CSS v4
         </p>
 
         <div className="flex items-center gap-5">

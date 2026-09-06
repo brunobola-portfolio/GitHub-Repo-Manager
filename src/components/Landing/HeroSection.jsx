@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { EASE, DURATION } from '../ui/motion'
+import { EASE, DURATION, LOOP } from '../ui/motion'
 import { ArrowRight, ExternalLink } from 'lucide-react'
 import { Github } from '../icons/GithubIcon'
 
@@ -9,32 +9,30 @@ const fadeUp = (delay = 0) => ({
   transition: { duration: DURATION.ambient, delay, ease: EASE.emphasized },
 })
 
+// The dashboard in both themes, captured from the real app in mock mode at
+// 1440×900. The class-based theme (not prefers-color-scheme) picks which one
+// shows, so both ship and only one paints.
+const SHOT = { width: 1440, height: 900 }
+
 export function HeroSection({ onSignIn }) {
   return (
-    <section className="relative flex flex-col items-center text-center overflow-hidden pt-24 pb-20 sm:pt-32 sm:pb-28 px-4">
+    <section className="relative flex flex-col items-center text-center overflow-hidden pt-24 pb-16 sm:pt-32 sm:pb-20 px-4">
 
-      {/* Background orbs */}
+      {/* Background: one soft brand wash and a dot grid — quiet, so the
+          product shot below is the loudest thing on the page. */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
         <motion.div
           className="absolute rounded-full blur-3xl bg-brand-500 opacity-15 dark:opacity-25"
           style={{ width: 480, height: 480, left: '-5%', top: '-10%' }}
           animate={{ y: [0, -30, 0], x: [0, 20, 0] }}
-          transition={{ duration: 9, repeat: Infinity, ease: EASE.standard }}
+          transition={{ duration: LOOP.drift, repeat: Infinity, ease: EASE.standard }}
         />
         <motion.div
           className="absolute rounded-full blur-3xl bg-brand-600 opacity-15 dark:opacity-25"
           style={{ width: 380, height: 380, right: '0%', top: '0%' }}
           animate={{ y: [0, 30, 0], x: [0, -20, 0] }}
-          transition={{ duration: 11, repeat: Infinity, ease: EASE.standard }}
+          transition={{ duration: LOOP.driftLong, repeat: Infinity, ease: EASE.standard }}
         />
-        <motion.div
-          className="absolute rounded-full blur-3xl bg-brand-500 opacity-10 dark:opacity-20"
-          style={{ width: 280, height: 280, left: '40%', bottom: '0%' }}
-          animate={{ y: [0, -20, 0] }}
-          transition={{ duration: 8, repeat: Infinity, ease: EASE.standard }}
-        />
-
-        {/* Subtle dot grid */}
         <div
           className="absolute inset-0 opacity-[0.025] dark:opacity-[0.05]"
           style={{
@@ -43,8 +41,6 @@ export function HeroSection({ onSignIn }) {
             backgroundSize: '40px 40px',
           }}
         />
-
-        {/* Top spotlight */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[450px] bg-brand-500/8 dark:bg-brand-500/12 blur-3xl" />
       </div>
 
@@ -56,22 +52,18 @@ export function HeroSection({ onSignIn }) {
           border border-brand-500/20 dark:border-brand-500/30
           mb-8"
       >
-        <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-        </span>
+        <span className="inline-flex rounded-full h-2 w-2 bg-brand-500" aria-hidden="true" />
         <span className="text-xs font-semibold text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] tracking-wide ds-font-display">
-          Open-source · AI-powered · v{import.meta.env.VITE_APP_VERSION}
+          Open source · Bring your own AI key · v{import.meta.env.VITE_APP_VERSION}
         </span>
       </motion.div>
 
       {/* Headline */}
       <motion.h1
         {...fadeUp(0.1)}
-        className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight leading-[1.08] mb-6 max-w-4xl ds-font-display"
+        className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight leading-[1.08] mb-6 max-w-4xl ds-font-display text-slate-900 dark:text-slate-100"
       >
-        <span className="text-slate-900 dark:text-slate-100">Manage your GitHub repos with </span>
-        <span className="text-slate-900 dark:text-slate-100 font-semibold">AI superpowers</span>
+        Manage, migrate and review every GitHub repository from one place
       </motion.h1>
 
       {/* Subtitle */}
@@ -79,9 +71,9 @@ export function HeroSection({ onSignIn }) {
         {...fadeUp(0.2)}
         className="text-lg sm:text-xl text-slate-500 dark:text-slate-400 max-w-2xl leading-relaxed mb-10 ds-font-display"
       >
-        Your repositories, your server, your AI keys. Migrate from Azure DevOps and TFVC, review
-        pull requests as drafts you publish yourself, and run it all under Apache-2.0 — on Docker,
-        IIS, or a Windows installer.
+        A cross-repo Work Board with DORA metrics, AI Deep Review you publish yourself, and
+        Azure DevOps and TFVC migration with a dry run first. Your server, your AI key,
+        Apache-2.0.
       </motion.p>
 
       {/* CTA Buttons */}
@@ -99,7 +91,7 @@ export function HeroSection({ onSignIn }) {
         >
           <span className="flex items-center gap-2.5">
             <Github className="w-5 h-5" />
-            Sign in with GitHub
+            Continue with GitHub
             <ArrowRight className="w-4 h-4 transition-transform duration-[var(--ds-duration)] group-hover:translate-x-1" />
           </span>
         </button>
@@ -131,6 +123,45 @@ export function HeroSection({ onSignIn }) {
       >
         Apache-2.0 · Bring your own AI key, on every plan · Self-host on Docker, IIS or Windows · No credit card
       </motion.p>
+
+      {/* The product itself. Eager and high priority: it is the largest thing
+          above the fold and the reason to keep reading. */}
+      <motion.figure
+        {...fadeUp(0.55)}
+        className="relative z-10 mt-14 w-full max-w-5xl rounded-2xl overflow-hidden
+          border border-slate-200/80 dark:border-white/10
+          bg-white dark:bg-slate-900
+          ds-elevation-lg"
+      >
+        <div
+          aria-hidden="true"
+          className="flex items-center gap-1.5 border-b border-slate-200/70 dark:border-white/10 bg-slate-50 dark:bg-slate-900/80 px-4 py-2.5"
+        >
+          <span className="h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-600" />
+          <span className="h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-600" />
+          <span className="h-2.5 w-2.5 rounded-full bg-slate-300 dark:bg-slate-600" />
+        </div>
+        <img
+          src="/landing/dashboard-light.jpg"
+          width={SHOT.width}
+          height={SHOT.height}
+          alt="The dashboard in the light theme: a greeting, the three numbers that need you today, and the live inbox of pull requests waiting for review."
+          className="block w-full h-auto dark:hidden"
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
+        />
+        <img
+          src="/landing/dashboard-dark.jpg"
+          width={SHOT.width}
+          height={SHOT.height}
+          alt="The dashboard in the dark theme: a greeting, the three numbers that need you today, and the live inbox of pull requests waiting for review."
+          className="hidden w-full h-auto dark:block"
+          loading="eager"
+          fetchPriority="high"
+          decoding="async"
+        />
+      </motion.figure>
     </section>
   )
 }

@@ -17,7 +17,7 @@
 <br>
 
 [![CI](https://img.shields.io/github/actions/workflow/status/brunobola-portfolio/GitHub-Repo-Manager/ci.yml?branch=main&style=for-the-badge&logo=githubactions&logoColor=white&label=CI)](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/actions/workflows/ci.yml)
-![Tests](https://img.shields.io/badge/Tests-7%2C000%2B_passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
+![Tests](https://img.shields.io/badge/Tests-7%2C700%2B_passing-brightgreen?style=for-the-badge&logo=vitest&logoColor=white)
 ![License](https://img.shields.io/badge/License-Apache_2.0-3f7d12?style=for-the-badge&logoColor=white)
 [![Release](https://img.shields.io/github/v/release/brunobola-portfolio/GitHub-Repo-Manager?style=for-the-badge&logo=github&logoColor=white)](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases)
 [![Windows](https://img.shields.io/badge/Windows-installer_%2B_portable_ZIP-0078D4?style=for-the-badge)](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest)
@@ -518,7 +518,7 @@ See [`docs/ai-providers.md`](docs/ai-providers.md) for per-provider setup and fr
 | **AI (BYOK)** | Provider-neutral `AI_PROVIDER` (Anthropic, OpenAI, Gemini, OpenRouter, local) · per-user keys encrypted at rest · opt-in monthly $ spend cap + always-on per-call output-token cap · PII-safe audit metadata · SSE streaming |
 | **APIs** | GitHub REST API (2022-11-28), Azure DevOps API v7.1, Stripe Billing |
 | **Logging** | Pino (structured JSON, credential redaction) + Sentry breadcrumbs |
-| **Testing** | Vitest (7,000+ unit tests) + Testing Library + Playwright, with a dual-theme axe accessibility gate |
+| **Testing** | Vitest (7,700+ unit tests) + Testing Library + Playwright, with a dual-theme axe accessibility gate |
 | **CI gates** | ESLint `--max-warnings 0`, build-honesty (no mock leaks), bundle budget, README-honesty guard, dual-theme axe a11y, AI golden-eval gate |
 
 ### GitHub permissions

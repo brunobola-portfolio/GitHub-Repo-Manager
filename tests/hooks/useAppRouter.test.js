@@ -234,7 +234,7 @@ describe('useAppRouter — document.title', () => {
     it('keeps the marketing title when logged out', () => {
         const p = mkProps({ activeView: 'dashboard', isAuthenticated: false })
         renderHook(() => useAppRouter(p))
-        expect(document.title).toBe('GitHub Repo Manager — AI-Powered Repository Management')
+        expect(document.title).toBe('GitHub Repo Manager — repos, AI review and migration')
     })
 
     it('updates the title when the view changes', () => {
