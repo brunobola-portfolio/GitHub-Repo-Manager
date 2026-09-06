@@ -32,6 +32,8 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.24.6 (2026-09-06) — the hero shots ship.** The landing hero shots
+  ship.
 - **v4.24.5 (2026-09-06) — the landing shows the product.** The landing page
   shows the product.
 - **v4.24.4 (2026-09-06) — search and social surfaces.** Search and social
