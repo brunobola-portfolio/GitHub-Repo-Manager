@@ -64,6 +64,21 @@ function copyBrandKit() {
   }
 }
 
+// index.html carries __PUBLIC_ORIGIN__ in its canonical/og/twitter tags; in
+// production server/lib/spa-shell.js fills it per deployment. The dev server
+// has no such step, so fill it here with the dev origin — only in serve mode,
+// the build must keep the placeholder for the server to replace.
+function publicOriginInDev() {
+  return {
+    name: 'grm-public-origin-in-dev',
+    apply: 'serve',
+    transformIndexHtml(html) {
+      const port = Number(process.env.VITE_PORT) || 5173
+      return html.replace(/__PUBLIC_ORIGIN__/g, `http://localhost:${port}`)
+    },
+  }
+}
+
 // Opt-in bundle analyzer — enabled via `npm run build:analyze`
 // (sets ANALYZE=true). Pure observer: does not alter chunk contents.
 const analyzePlugins = process.env.ANALYZE === 'true'
@@ -96,7 +111,7 @@ devLogger.error = (msg, options) => {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), ...analyzePlugins, copyBrandKit()],
+  plugins: [react(), ...analyzePlugins, copyBrandKit(), publicOriginInDev()],
   customLogger: devLogger,
   define: {
     'import.meta.env.VITE_APP_VERSION': JSON.stringify(pkg.version),

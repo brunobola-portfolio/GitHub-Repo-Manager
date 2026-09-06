@@ -9,7 +9,7 @@ below links to the canonical page for that topic.
 | ------------ | ---- |
 | Understand the system at a glance | [Architecture overview](architecture/overview.md) |
 | Run a production instance | [Operations runbook](operations.md) |
-| Call the API | [API reference](api/API.md) (351 route handlers — recounted via `grep`, see API.md header) |
+| Call the API | [API reference](api/API.md) (353 route handlers — recounted via `grep`, see API.md header) |
 | Configure an AI provider | [AI Providers (BYOK)](ai-providers.md) |
 | Run on Windows without Docker or Node.js | [Windows guide](windows.md) |
 | Publish on a public domain behind IIS | [IIS deployment guide](guides/deploy-iis-windows.md) |
@@ -154,7 +154,7 @@ The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](
 
 ## API reference
 
-- [API Reference](api/API.md) — 351 route handlers across 77 route
+- [API Reference](api/API.md) — 353 route handlers across 77 route
   modules (recounted via `grep`; see the API.md header for the exact
   command). Every endpoint documented with auth requirements,
   request/response shape, and error codes.

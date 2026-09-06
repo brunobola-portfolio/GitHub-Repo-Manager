@@ -6,7 +6,7 @@
   "engines": {
     "node": ">=22.14 <25"
   },
-  "description": "Modern GitHub repository management dashboard with AI-powered insights, team collaboration, and Azure DevOps migration",
+  "description": "One dashboard for GitHub repositories, teams and CI/CD: a cross-repo Work Board with DORA metrics, AI Deep Review and Azure DevOps/TFVC migration. Bring your own AI key. Apache-2.0.",
   "author": "Bruno Marques - Bola Labs, Inc.",
   "license": "Apache-2.0",
   "keywords": [
@@ -17,7 +17,7 @@
     "ai",
     "devops"
   ],
-  "homepage": "https://github.com/brunobola-portfolio/GitHub-Repo-Manager",
+  "homepage": "https://bolalabs.pt/en/repomanager",
   "repository": {
     "type": "git",
     "url": "https://github.com/brunobola-portfolio/GitHub-Repo-Manager.git"

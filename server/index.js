@@ -41,6 +41,7 @@ import { closeAllQueues } from './lib/queue.js';
 import { engine as migrationEngine } from './routes/migration.js';
 import { recoverInterruptedImportJobs } from './routes/import/_shared.js';
 import { config } from './config.js';
+import { resolvePublicOrigin, renderShell, robotsTxt, sitemapXml } from './lib/spa-shell.js';
 import { initMonitoring, getSentryErrorHandler } from './lib/monitoring.js';
 import db, { initDB, seedMockData } from './db.js';
 import { DBSchemaFromFutureError } from './lib/db-migrations.js';
@@ -506,6 +507,30 @@ if (config.nodeEnv === 'production') {
             });
         }
 
+        // Search and social surfaces a single-page app otherwise lacks. The
+        // origin comes from FRONTEND_URL (or the request), so every deployment
+        // advertises itself. Registered before the fallback, which would answer
+        // with the shell for these paths.
+        const shellPath = path.join(distPath, 'index.html');
+        let shellSource = null;
+        const readShell = () => {
+            // Cached after the first read: the file only changes with a deploy,
+            // which restarts the process.
+            if (shellSource === null) shellSource = fs.readFileSync(shellPath, 'utf8');
+            return shellSource;
+        };
+        const shellLastmod = (() => {
+            try { return fs.statSync(shellPath).mtime.toISOString().slice(0, 10); } catch { return new Date().toISOString().slice(0, 10); }
+        })();
+        app.get('/robots.txt', (req, res) => {
+            res.setHeader('Cache-Control', 'public, max-age=3600');
+            res.type('text/plain').send(robotsTxt(resolvePublicOrigin(req, config.frontendUrl)));
+        });
+        app.get('/sitemap.xml', (req, res) => {
+            res.setHeader('Cache-Control', 'public, max-age=3600');
+            res.type('application/xml').send(sitemapXml(resolvePublicOrigin(req, config.frontendUrl), shellLastmod));
+        });
+
         // SPA fallback. Express 5 / path-to-regexp v8 reject a bare '*' at
         // registration ("Missing parameter name") — the named splat form is
         // required, or the whole production process crashes before listen().
@@ -519,7 +544,10 @@ if (config.nodeEnv === 'production') {
             // Never cache the app shell — it must always pick up the latest
             // hashed asset references after a deploy.
             res.setHeader('Cache-Control', 'no-cache');
-            res.sendFile(path.join(distPath, 'index.html'));
+            res.type('html').send(renderShell(readShell(), {
+                origin: resolvePublicOrigin(req, config.frontendUrl),
+                version: pkg.version,
+            }));
         });
     }
 }

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Search and social surfaces for the app shell.** The landing page now
+  carries a canonical URL, `og:url`, `og:site_name` and a social card served
+  from its own origin, plus a SoftwareApplication JSON-LD block, `robots.txt`
+  and a sitemap — all filled per deployment from `FRONTEND_URL` (or the
+  request), so a self-hosted install advertises itself and never this
+  project's host. Titles and descriptions describe what ships today.
+
 ## [4.24.3] - 2026-09-06
 
 ### Fixed
