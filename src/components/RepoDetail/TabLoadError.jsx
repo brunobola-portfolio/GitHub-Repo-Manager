@@ -27,8 +27,8 @@ export function TabLoadError({ error, onRetry, resourceLabel, notFound = null })
         if (MOCK_MODE) {
             return (
                 <EmptyState
-                    title={`${resourceLabel[0].toUpperCase()}${resourceLabel.slice(1)} are not simulated in demo mode`}
-                    description="Connect a GitHub account to see the real thing."
+                    title="Not simulated in demo mode"
+                    description={`Connect a GitHub account to see ${resourceLabel}.`}
                 />
             )
         }

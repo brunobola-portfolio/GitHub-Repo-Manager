@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Demo-mode copy on a tab that is not simulated** reads "Not simulated in
+  demo mode" with the surface named in the description; 4.24.7 shipped an
+  ungrammatical title and a unit test that did not expect it.
+
 ## [4.24.7] - 2026-09-06
 
 ### Added
