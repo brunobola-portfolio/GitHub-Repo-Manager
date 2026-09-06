@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The landing hero shots ship.** 4.24.5 referenced two captures a blanket
+  `*.jpg` ignore rule had kept out of the commit, so production answered
+  them with the app shell. They are tracked now.
+
 ## [4.24.5] - 2026-09-06
 
 ### Changed
