@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.24.5] - 2026-09-06
+
 ### Changed
 
 - **The landing page shows the product.** A framed capture of the dashboard,
@@ -3527,7 +3529,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.4...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.5...HEAD
+[4.24.5]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.4...v4.24.5
 [4.24.4]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.3...v4.24.4
 [4.24.3]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.2...v4.24.3
 [4.24.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.1...v4.24.2
