@@ -74,6 +74,34 @@ names and a re-render reproduces the film bit for bit.
   (shell, headers, canonical, card image, JSON-LD, robots, sitemap, auth
   redirect, API shape). Runs after every release; 40/40 today.
 
+### Shipped in the evening pass
+
+- **Site 1.3.10, live.** The film plays in the `/repomanager` hero in all
+  four locales: muted loop in the capture frame, poster fallback,
+  `prefers-reduced-motion` honoured, one button that restarts it with sound
+  and English captions (`components/ui/HeroVideo.tsx`). The video markup is
+  emitted as literal HTML so `muted` survives prerendering (React drops it
+  on the server, which blocks autoplay before hydration) and memoised so a
+  parent update never recreates the element mid-play. IIS gained `.webm`,
+  `.mp4` and `.vtt` MIME maps; the deploy and dist verifiers know the
+  three extensions. Verified in production: the WebM answers
+  `video/webm`, the prerendered page carries the `<video>`.
+- **Product 4.24.9, in production.** `docs/tour.md` (storyboard, a still
+  per scene, the guide behind every claim), `docs/guides/first-five-minutes.md`,
+  the screenshot policy in `docs/screenshots.md`, the README link to the
+  film, and the landing hero's `reveal` motion variant (rise out of a soft
+  blur, the film's own arrival).
+- **Film variants.** Portuguese 16:9 (Duarte, 44 s, on its own cue table
+  because the lines run longer), 1:1 and 9:16 English cuts with the caption
+  under the shot, SRT and WebVTT subtitles for both languages, and fifteen
+  social cards cut from the frames (title, question, lockup × 1200×630,
+  1280×640, 1920×1080, 1200×1200, 1080×1920). Pipeline: `timeline.mjs`
+  holds the cues; `render.mjs`, `mix.mjs`, `subs.mjs` and `cards.mjs` take
+  `<format> <lang>`.
+- **Dependencies.** The high Dependabot alert (browserslist, dev-only)
+  closed by merging #339 after a rebase; #342 (sixteen dev-dependency
+  minors) fails lint, tests and build on its own and stays open.
+
 ## 2. Brand plan — one anchor, then everything matches it
 
 The film is now the reference for how the brand moves and sounds. Every
@@ -142,15 +170,16 @@ producing something new.
 | 3 | AI review and the BYOK stance | 9 s cut: scene 03, captioned | LinkedIn, X; Dev.to article with the still |
 | 4 | Migration | 9 s cut: scene 04 plus the close | r/azuredevops, LinkedIn; migration landing page goes live the same day |
 
-Cuts to make from the same pipeline (half a day):
+Cuts from the same pipeline, all produced in the evening pass:
 
-- 1:1 (1080×1080) and 9:16 (1080×1920) versions: same timeline, the shot
-  stacked over the caption. Feeds and Shorts autoplay these; the 16:9 file
-  gets letterboxed and loses the caption.
-- Subtitles: the six narration lines as an `.srt`, burned into the social
-  cuts and uploaded as a track on YouTube. Most feeds play muted.
-- Portuguese narration: the same six lines through `pt-PT-DuarteNeural`,
-  same timings within half a second. One command.
+- 1:1 (1080×1080) and 9:16 (1080×1920) English versions: same timeline,
+  the shot stacked over the caption. Feeds and Shorts autoplay these; the
+  16:9 file gets letterboxed and loses the caption.
+- Subtitles: SRT and WebVTT for English and Portuguese, timed from the
+  measured narration. Upload as a track on YouTube; burn into the social
+  cuts when a platform strips tracks. Most feeds play muted.
+- Portuguese narration (Duarte) as a 44-second 16:9 film; square and tall
+  Portuguese cuts are one render each when needed.
 
 Rules that stay from the morning plan: two posts a week, EN and PT, never
 per changelog entry; one framing per community, never the same text on
@@ -161,13 +190,11 @@ a weekly star count; retro at the end of week 4 before a second push.
 
 ## 5. Decisions only the owner can take
 
-1. **Approve the film** for the site hero (`<video autoplay muted loop
-   playsinline>` with WebM then MP4, poster fallback, `prefers-reduced-motion`
-   honoured, a "Watch the tour" link for browsers that block autoplay) and
-   for the launch posts. Files are in `.dev/promo/`; nothing is published.
-2. **Voice.** Andrew (en-US, multilingual) is the current narrator. The
-   alternatives are one command away: Brian or Christopher (warmer), Ava or
-   Emma (female); Portuguese via Duarte or Raquel.
+1. **The launch posts.** The film is live on the site; nothing has been
+   posted on any channel. Week 1 of §4 starts when you say so.
+2. **Voice.** Andrew (en-US) and Duarte (pt-PT) narrate the current cuts.
+   Alternatives are one command away: Brian or Christopher (warmer), Ava or
+   Emma (female); Raquel for Portuguese.
 3. **Product name form** (§2 item 4) and **typeface swap** (§2 item 2).
 4. **Default locale of the site** (root and `x-default` point at `/pt/`).
 5. **Testimonial policy**: none yet, never fabricated; say so in `AGENTS.md`.
