@@ -1,7 +1,7 @@
 {
   "name": "github-repo-manager",
   "private": false,
-  "version": "4.24.3",
+  "version": "4.24.4",
   "type": "module",
   "engines": {
     "node": ">=22.14 <25"

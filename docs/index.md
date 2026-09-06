@@ -31,6 +31,8 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.24.4 (2026-09-06) — search and social surfaces.** Search and social
+  surfaces for the app shell.
 - **v4.24.3 (2026-09-06) — sign-in behind ARR.** Sign-in behind a proxy that
   drops the Host header; No licence probe before sign-in.
 - **v4.24.2 (2026-09-06) — the anonymous-visitor loop.** An anonymous
