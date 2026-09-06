@@ -26,7 +26,7 @@ on:
         required: true
         default: inspect
         type: choice
-        options: [inspect, apply, app-log]
+        options: [inspect, apply, app-log, env-check]
 
 permissions:
   contents: read
@@ -92,6 +92,27 @@ jobs:
           "location=" + ($loc -replace 'client_id=[^&]*', 'client_id=…')
           if ($loc -notmatch '^https://github\.com/login/oauth/authorize') { throw "Location still does not point at github.com: $loc" }
           if ($loc -notmatch 'redirect_uri=https%3A%2F%2Frepomanager\.bolalabs\.pt%2Fapi%2Fauth%2Fcallback') { throw "redirect_uri is not the public origin: $loc" }
+
+      - name: Production .env — which optional integrations are configured (names only)
+        if: ${{ inputs.action == 'env-check' }}
+        shell: pwsh
+        run: |
+          # Answers "is Sentry / Resend / Stripe wired on this box?" without
+          # ever printing a value: each line is the variable name and SET or
+          # unset. The .env is the one the service reads (deploy.ps1 writes
+          # DATA_DIR there); values never leave the runner.
+          $env = 'C:\ProgramData\GitHubRepoManager\data\.env'
+          if (-not (Test-Path $env)) { throw ".env not found at $env" }
+          $map = @{}
+          foreach ($line in Get-Content $env) {
+            if ($line -match '^\s*([A-Z0-9_]+)\s*=\s*(.*)$') { $map[$matches[1]] = $matches[2].Trim().Trim('"').Trim("'") }
+          }
+          foreach ($k in 'NODE_ENV','FRONTEND_URL','EMAIL_PROVIDER','RESEND_API_KEY','EMAIL_FROM','ALLOW_CONSOLE_EMAIL','SENTRY_DSN','STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','WORK_BOARD_AI_ENABLED','AI_PROVIDER','GEMINI_API_KEY','DATA_RETENTION_DAYS') {
+            $v = $map[$k]
+            $state = if ([string]::IsNullOrWhiteSpace($v)) { 'unset' } else { 'SET' }
+            $shown = if ($k -in 'NODE_ENV','FRONTEND_URL','EMAIL_PROVIDER','EMAIL_FROM','ALLOW_CONSOLE_EMAIL','WORK_BOARD_AI_ENABLED','AI_PROVIDER','DATA_RETENTION_DAYS') { " = $v" } else { '' }
+            "{0,-24} {1}{2}" -f $k, $state, $shown
+          }
 
       - name: Service log — warnings, errors and auth events
         if: ${{ inputs.action == 'app-log' }}
