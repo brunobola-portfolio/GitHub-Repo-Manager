@@ -108,6 +108,19 @@ export function useAppRouter({
         setSelectedRepoDetail(null)
         setReviewingPR(null)
         setActiveView(next ?? 'dashboard')
+        return
+      }
+      // An app-shaped hash nobody defined (#/nope, a mistyped bookmark, a
+      // route from a newer build) used to be ignored, leaving whatever view
+      // was on screen under a URL that meant nothing. Go home and clean the
+      // URL. Plain in-page anchors (#readme-…) are not app routes and stay.
+      if (hash.startsWith('#/')) {
+        syncTargetViewRef.current = 'dashboard'
+        syncStaleViewRef.current = activeViewRef.current
+        setSelectedRepoDetail(null)
+        setReviewingPR(null)
+        setActiveView('dashboard')
+        try { window.history.replaceState(null, '', window.location.pathname + window.location.search) } catch { /* ignore */ }
       }
     }
     sync() // initial mount

@@ -1,3 +1,4 @@
+import { scrollToReadmeAnchor } from '../../utils/readmeAnchor'
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { List, ChevronDown } from 'lucide-react'
@@ -89,6 +90,11 @@ export function ReadmeToc({ containerRef, source }) {
                             <li key={item.id} style={{ paddingLeft: `${(item.level - 1) * 0.75}rem` }}>
                                 <a
                                     href={`#${item.id}`}
+                                    onClick={(e) => {
+                                        // Keep the route hash: the browser default would replace
+                                        // #/repo/... with #readme-... and a reload would lose the repo.
+                                        if (scrollToReadmeAnchor(item.id)) e.preventDefault()
+                                    }}
                                     aria-current={active ? 'location' : undefined}
                                     className="relative block truncate rounded-md px-2 py-1 ds-focus-ring"
                                 >

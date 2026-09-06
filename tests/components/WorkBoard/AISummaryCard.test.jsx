@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 
 vi.mock('framer-motion', async (importOriginal) => {
@@ -32,6 +32,9 @@ beforeEach(() => { fetchWithRetryMock.mockReset() })
 
 const mock2xx = (data) => fetchWithRetryMock.mockResolvedValue({ ok: true, json: async () => data })
 const mockNon2xx = ({ status, data }) => fetchWithRetryMock.mockRejectedValue(new MockApiError({ status, data }))
+
+// Dismissal now persists for the day; keep every test starting fresh.
+afterEach(() => localStorage.removeItem('grm.workBoard.aiSummaryDismissed'))
 
 describe('AISummaryCard', () => {
     it('renders nothing when endpoint returns 404 ai_not_configured', async () => {
@@ -174,5 +177,33 @@ describe('AISummaryCard', () => {
             expect(screen.getByText('Elevated').style.color).toBe('var(--ds-status-warning)')
             expect(screen.queryByText('Nominal')).not.toBeInTheDocument()
         })
+    })
+})
+
+describe('AISummaryCard dismissal persistence', () => {
+    it('stays dismissed for the rest of the day, and returns the next day', async () => {
+        localStorage.removeItem('grm.workBoard.aiSummaryDismissed')
+        mock2xx({
+            data: { headline: 'h', bullets: [{ text: 'b', severity: 'info' }], urgencyScore: 0.1 },
+            meta: {},
+        })
+        const first = render(<AISummaryCard />)
+        await waitFor(() => expect(screen.getByText('h')).toBeInTheDocument())
+        fireEvent.click(screen.getByRole('button', { name: /dismiss/i }))
+        await waitFor(() => expect(first.container.firstChild).toBeNull())
+        first.unmount()
+
+        const second = render(<AISummaryCard />)
+        expect(second.container.firstChild).toBeNull()
+        second.unmount()
+
+        localStorage.setItem('grm.workBoard.aiSummaryDismissed', '2000-01-01')
+        mock2xx({
+            data: { headline: 'h', bullets: [{ text: 'b', severity: 'info' }], urgencyScore: 0.1 },
+            meta: {},
+        })
+        render(<AISummaryCard />)
+        await waitFor(() => expect(screen.getByText('h')).toBeInTheDocument())
+        localStorage.removeItem('grm.workBoard.aiSummaryDismissed')
     })
 })

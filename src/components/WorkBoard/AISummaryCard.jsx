@@ -10,6 +10,19 @@ import { AIErrorState } from '../ui/AIErrorState'
 import { Skeleton } from '../ui/Skeleton'
 import { onAppEvent, APP_EVENTS } from '../../utils/appEvents'
 import { formatRelativeTime } from '../../utils/format'
+
+// The summary is a daily digest, so "dismiss" means "not today": it came back
+// on every reload before, which turned the X into a button nobody trusted.
+// localStorage can throw (private windows, storage disabled) — read and
+// write defensively and treat any failure as "not dismissed".
+const DISMISS_KEY = 'grm.workBoard.aiSummaryDismissed'
+const today = () => new Date().toISOString().slice(0, 10)
+function readDismissedToday() {
+    try { return window.localStorage.getItem(DISMISS_KEY) === today() } catch { return false }
+}
+function writeDismissedToday() {
+    try { window.localStorage.setItem(DISMISS_KEY, today()) } catch { /* nothing to persist into */ }
+}
 import { DURATION } from '../ui/motion'
 
 function bulletHref(link) {
@@ -54,7 +67,11 @@ function UrgencyGauge({ score }) {
 
 export function AISummaryCard({ meta: metaProp } = {}) {
     const [state, setState] = useState({ status: 'loading', data: null, error: null })
-    const [dismissed, setDismissed] = useState(false)
+    const [dismissed, setDismissedState] = useState(readDismissedToday)
+    const setDismissed = useCallback((value) => {
+        if (value) writeDismissedToday()
+        setDismissedState(value)
+    }, [])
 
     const fetchSummary = useCallback(async () => {
         // Demo mode: surface the card with an explained-empty placeholder

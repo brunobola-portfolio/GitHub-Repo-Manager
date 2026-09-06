@@ -1,6 +1,7 @@
 import { RefreshCw } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { EmptyState } from '../ui/EmptyState'
+import { AUTH_ENDPOINTS, MOCK_MODE } from '../../config'
 
 /**
  * Shared load-failure state for the RepoDetail tabs.
@@ -20,13 +21,24 @@ export function TabLoadError({ error, onRetry, resourceLabel, notFound = null })
     if (error.status === 404 && notFound) return notFound
 
     if (error.status === 401 || error.status === 403) {
+        // Demo mode has no session to renew and not every GitHub surface is
+        // simulated; telling a visitor to sign in again would send them to a
+        // real OAuth flow from a fake account.
+        if (MOCK_MODE) {
+            return (
+                <EmptyState
+                    title={`${resourceLabel[0].toUpperCase()}${resourceLabel.slice(1)} are not simulated in demo mode`}
+                    description="Connect a GitHub account to see the real thing."
+                />
+            )
+        }
         return (
             <div className="px-4 py-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl text-sm text-amber-700 dark:text-amber-400 flex items-center justify-between gap-3 flex-wrap">
                 <span>Sign in again to view {resourceLabel}.</span>
                 <Button
                     variant="secondary"
                     size="xs"
-                    onClick={() => { window.location.href = '/api/auth/github' }}
+                    onClick={() => { window.location.href = AUTH_ENDPOINTS.login }}
                 >
                     Sign in
                 </Button>

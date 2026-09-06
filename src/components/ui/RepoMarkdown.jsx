@@ -7,6 +7,7 @@ import { rehypeSlugInline } from './__rehype-slug-inline'
 import { copyToClipboard } from '../../utils/clipboard'
 import { AnimatedCopyIcon } from './AnimatedCopyIcon'
 import { parseAndSanitizeSvg } from '../../utils/sanitizeSvg'
+import { scrollToReadmeAnchor } from '../../utils/readmeAnchor'
 
 // Sanitize schema: defaults + relax a handful of attributes that GitHub
 // READMEs habitually use. Tag/attribute lists are explicit-allow only.
@@ -267,10 +268,22 @@ function ReadmeMermaidBlock({ source }) {
 // Stable across every render (module scope) — passed as-is to react-markdown
 // so component identity never churns, regardless of highlighter load state.
 const README_COMPONENTS = {
-    a: ({ node, ...props }) => (
+    a: ({ node, href, ...props }) => {
+        if (typeof href === 'string' && href.startsWith('#')) {
+            return (
+                // eslint-disable-next-line jsx-a11y/anchor-has-content -- children come from react-markdown
+                <a
+                    {...props}
+                    href={href}
+                    onClick={(e) => {
+                        if (scrollToReadmeAnchor(href.slice(1))) e.preventDefault()
+                    }}
+                />
+            )
+        }
         // eslint-disable-next-line jsx-a11y/anchor-has-content -- children come from react-markdown
-        <a {...props} target="_blank" rel="noopener noreferrer" />
-    ),
+        return <a {...props} href={href} target="_blank" rel="noopener noreferrer" />
+    },
     code: ({ node, inline, className: codeClassName, children, ...rest }) => {
         if (inline) return <code className={codeClassName} {...rest}>{children}</code>
         return <code className={codeClassName || ''} {...rest}>{children}</code>

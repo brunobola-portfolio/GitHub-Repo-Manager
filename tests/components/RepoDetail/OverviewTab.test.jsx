@@ -78,7 +78,10 @@ describe('OverviewTab — README error states', () => {
         })
         renderWithProviders(<OverviewTab api={makeApi()} repoData={REPO} onUpdate={() => {}} />)
 
-        expect(screen.getByText(/Sign in again to view this README/i)).toBeInTheDocument()
+        // .env.test pins VITE_MOCK_MODE=true, and in demo mode TabLoadError says the
+        // surface is not simulated instead of asking for a sign-in; both are the
+        // friendly message this test exists to assert, never the raw error.
+        expect(screen.getByText(/Sign in again to view this README|README is not simulated in demo mode/i)).toBeInTheDocument()
         expect(screen.queryByText('Session expired')).toBeNull()
     })
 })

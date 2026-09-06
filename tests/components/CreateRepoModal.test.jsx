@@ -130,3 +130,17 @@ describe('CreateRepoModal — duplicate-name check speaks the server contract', 
         expect(await screen.findByText(/available/i, {}, { timeout: 3000 })).toBeInTheDocument()
     })
 })
+
+describe('CreateRepoModal name validation', () => {
+    it('rejects a name GitHub would reject before the request leaves the browser', () => {
+        renderWithProviders(<CreateRepoModal isOpen onClose={() => {}} onCreate={vi.fn()} orgs={[]} isPerforming={false} />)
+        const input = screen.getByLabelText(/repository name/i)
+        fireEvent.change(input, { target: { value: 'bad name!!' } })
+        expect(input.value).toBe('bad-name!!')
+        expect(screen.getByText(/letters, numbers, dots, hyphens and underscores/i)).toBeInTheDocument()
+        const create = screen.getAllByRole('button', { name: /^create/i }).at(-1)
+        expect(create).toBeDisabled()
+        fireEvent.change(input, { target: { value: 'good.name_1' } })
+        expect(screen.getAllByRole('button', { name: /^create/i }).at(-1)).not.toBeDisabled()
+    })
+})

@@ -1,3 +1,4 @@
+import { AUTH_ENDPOINTS } from '../config'
 import { useState, useEffect, useCallback, useRef, useMemo, isValidElement } from 'react'
 import { ToastContext } from './contexts'
 import { trackBreadcrumb } from '../lib/observability'
@@ -11,7 +12,7 @@ function dispatchAction(action, ctx = {}) {
             ctx.onRetry?.()
             break
         case 'reauth':
-            window.location.href = '/api/auth/github'
+            window.location.href = AUTH_ENDPOINTS.login
             break
         case 'open-settings':
             emitAppEvent(APP_EVENTS.OPEN_SETTINGS, { tab: action.settingsTab })

@@ -73,7 +73,8 @@
     "doctor": "node scripts/doctor.mjs",
     "doctor:fix": "node scripts/doctor.mjs --fix",
     "docs:linkcheck": "node scripts/check-doc-links.mjs",
-    "release": "node scripts/release.mjs"
+    "release": "node scripts/release.mjs",
+    "smoke:prod": "node scripts/prod-smoke.mjs"
   },
   "dependencies": {
     "@git-diff-view/react": "^0.1.7",

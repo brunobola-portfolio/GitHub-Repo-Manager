@@ -14,6 +14,12 @@ import { Spinner } from './ui/Spinner'
 import { apiCall } from '../utils/api'
 import { API_BASE } from '../config'
 
+// GitHub accepts letters, digits, dots, hyphens and underscores; anything
+// else is rejected server-side with a message the user only sees after the
+// round trip. Spaces are already folded to hyphens on input.
+const REPO_NAME_RE = /^[A-Za-z0-9._-]+$/
+export const REPO_NAME_HINT = 'Use letters, numbers, dots, hyphens and underscores only.'
+
 export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming, askAI }) {
     const [name, setName] = useState('')
     const [description, setDescription] = useState('')
@@ -22,6 +28,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
     const [isGenerating, setIsGenerating] = useState(false)
     const [aiError, setAiError] = useState(null)
     const [nameStatus, setNameStatus] = useState(null)
+    const nameInvalid = name.length > 0 && !REPO_NAME_RE.test(name)
     const [isMaximized, setIsMaximized] = useState(false)
     const isMobile = useMobileBreakpoint()
     const { toast } = useToast()
@@ -101,7 +108,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
 
     const handleSubmit = async (e) => {
         if (e) e.preventDefault()
-        if (!name || isPerforming || nameStatus === 'taken') return
+        if (!name || nameInvalid || isPerforming || nameStatus === 'taken') return
         try {
             const result = await onCreate(name, {
                 description,
@@ -133,7 +140,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
                 size="md"
                 type="button"
                 onClick={handleSubmit}
-                disabled={!name || isPerforming || nameStatus === 'taken'}
+                disabled={!name || nameInvalid || isPerforming || nameStatus === 'taken'}
             >
                 {isPerforming && <Spinner size="sm" />}
                 {isPerforming ? 'Creating…' : 'Create Repository'}
@@ -208,7 +215,7 @@ export function CreateRepoModal({ isOpen, onClose, onCreate, orgs, isPerforming,
                         label="Repository Name"
                         required
                         htmlFor="create-repo-name"
-                        error={nameStatus === 'taken' ? 'This repository name is already taken' : undefined}
+                        error={nameInvalid ? REPO_NAME_HINT : nameStatus === 'taken' ? 'This repository name is already taken' : undefined}
                         success={nameStatus === 'available' ? 'Name is available' : undefined}
                     >
                         <Input

@@ -1,6 +1,6 @@
 import { useRef } from 'react'
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { ReadmeToc } from '../../../src/components/ui/ReadmeToc'
 
 // ReadmeToc walks the *rendered* DOM inside containerRef — render real
@@ -68,5 +68,20 @@ describe('ReadmeToc', () => {
 
         rerender(<Harness headingsHtml={TWO_HEADINGS} source="v2" />)
         expect(await screen.findByTestId('readme-toc')).toBeInTheDocument()
+    })
+})
+
+describe('ReadmeToc navigation', () => {
+    it('scrolls to the heading and keeps the route hash instead of letting the browser replace it', async () => {
+        window.location.hash = '#/repo/o/r'
+        render(<Harness headingsHtml="<h2 id='readme-intro'>Intro</h2><p>a</p><h2 id='readme-usage'>Usage</h2>" />)
+        const usage = await screen.findByRole('link', { name: 'Usage' })
+        const target = document.getElementById('readme-usage')
+        target.scrollIntoView = vi.fn()
+        const prevented = !fireEvent.click(usage)
+        expect(prevented).toBe(true)
+        expect(target.scrollIntoView).toHaveBeenCalled()
+        expect(window.location.hash).toBe('#/repo/o/r')
+        window.location.hash = ''
     })
 })

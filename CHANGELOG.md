@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`npm run smoke:prod`** — forty read-only checks against a live
+  deployment (health, boot signals, the sign-in redirect and its
+  `redirect_uri`, the shell's search and social tags, security headers,
+  images that must not be the shell, robots and sitemap, API 404/401
+  contracts, rate-limit headers, unsigned webhooks, HTTP→HTTPS). Exit code 1
+  on any failure, so it can gate a pipeline.
+
+### Fixed
+
+- **The "Sign in" button on an expired-session state pointed at a route that
+  does not exist** (`/api/auth/github`); it goes to the real login route in
+  both the tab error state and the toast action. In demo mode the tab state
+  says the surface is not simulated instead of asking for a sign-in.
+- **A README's own section links and the table of contents no longer rewrite
+  the route.** Following them replaced `#/repo/…` with `#readme-…` (a reload
+  then landed on the dashboard) and the README links opened the same page in
+  a new tab. They scroll and leave the URL alone.
+- **An app route nobody defined goes home.** `#/this-does-not-exist` used to
+  be ignored, leaving whatever was on screen under a meaningless URL; it now
+  renders the dashboard and cleans the hash. In-page anchors are untouched.
+- **Repository names are validated before the request leaves the browser:**
+  anything outside letters, digits, dots, hyphens and underscores shows the
+  rule and disables Create.
+- **Dismissing the Work Board AI summary sticks for the day** instead of
+  returning on every reload.
+- **The repository header's stats row wraps on phones**; it was the last
+  source of horizontal scroll at 390 px.
+
 ## [4.24.6] - 2026-09-06
 
 ### Fixed

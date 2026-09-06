@@ -309,3 +309,22 @@ describe('useAppRouter — mid-transition guard (view-transition async commit)',
         replaceSpy.mockRestore()
     })
 })
+
+describe('useAppRouter — unknown routes', () => {
+    it('sends an unknown app route home and cleans the hash', () => {
+        window.location.hash = '#/this-does-not-exist'
+        const p = mkProps()
+        renderHook(() => useAppRouter(p))
+        expect(p.setActiveView).toHaveBeenCalledWith('dashboard')
+        expect(window.location.hash).toBe('')
+    })
+
+    it('leaves an in-page anchor alone', () => {
+        window.location.hash = '#readme-usage'
+        const p = mkProps()
+        renderHook(() => useAppRouter(p))
+        expect(p.setActiveView).not.toHaveBeenCalledWith('dashboard')
+        expect(window.location.hash).toBe('#readme-usage')
+        window.location.hash = ''
+    })
+})
