@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Mock @sentry/react so we can flip between "not initialised" and
-// "active client" without wiring up a real Sentry project.
-vi.mock('@sentry/react', () => {
+// A stand-in for the lazily loaded SDK, so we can flip between "not
+// initialised" and "active client" without wiring up a real Sentry project.
+const Sentry = (() => {
     const addBreadcrumb = vi.fn();
     const state = { client: null };
     return {
@@ -11,10 +11,12 @@ vi.mock('@sentry/react', () => {
         __setClient: (c) => { state.client = c; },
         __addBreadcrumb: addBreadcrumb,
     };
-});
+})();
 
-import * as Sentry from '@sentry/react';
+import { setSentry } from '@/lib/sentry-client';
 import { trackBreadcrumb, mark, measure } from '@/lib/observability';
+
+setSentry(Sentry);
 
 describe('trackBreadcrumb', () => {
     beforeEach(() => {

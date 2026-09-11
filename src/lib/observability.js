@@ -12,24 +12,18 @@
  * Both helpers swallow errors — observability must never break the app.
  */
 
-// Sentry consumed via named imports so Vite/Rollup tree-shake the rest
-// of @sentry/react. Both `getClient` (active-init probe) and
-// `addBreadcrumb` (the actual API we use) are stable v8+ exports.
-// Self-hosted users without VITE_SENTRY_DSN still get a silent no-op
-// because main.jsx skips Sentry.init unless the DSN is present —
-// addBreadcrumb on an uninitialised SDK is itself a documented no-op.
-import { getClient, addBreadcrumb } from '@sentry/react';
+// The SDK arrives through sentry-client.js once main.jsx has loaded it (only
+// when the deployment configured a DSN) — never a static import here, which
+// would put the whole package in the entry chunk for every install.
+import { getSentry } from './sentry-client';
 
-/**
- * True when Sentry has been initialised (main.jsx wires this up behind
- * the VITE_SENTRY_DSN flag). The v8+ getClient() helper returns the
- * active client when init has run, undefined otherwise.
- */
-function isSentryActive() {
+/** True when the SDK has been loaded and has an active client. */
+function activeSentry() {
     try {
-        return Boolean(getClient());
+        const sentry = getSentry();
+        return sentry?.getClient?.() ? sentry : null;
     } catch {
-        return false;
+        return null;
     }
 }
 
@@ -42,9 +36,10 @@ function isSentryActive() {
  * @param {'info'|'warning'|'error'|'debug'} [level='info']
  */
 export function trackBreadcrumb(category, message, data, level = 'info') {
-    if (!isSentryActive()) return;
+    const sentry = activeSentry();
+    if (!sentry) return;
     try {
-        addBreadcrumb({
+        sentry.addBreadcrumb({
             category,
             message,
             data,

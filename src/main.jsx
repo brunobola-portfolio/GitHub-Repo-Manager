@@ -9,7 +9,6 @@
 import { StrictMode, lazy, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import { MotionConfig } from 'framer-motion'
-import { init as sentryInit, captureException as sentryCaptureException } from '@sentry/react'
 import './index.css'
 import './design-system.css'
 import App from './App.jsx'
@@ -18,6 +17,7 @@ import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { ToastProvider } from './contexts/ToastProvider.jsx'
 import { shouldIgnoreClientError } from './utils/errorClassification.js'
 import { emitAppEvent, APP_EVENTS } from './utils/appEvents'
+import { setSentry, getSentry } from './lib/sentry-client'
 
 // The public status page mounts at /status without any auth/app context.
 // Lazy-loaded so the tiny chunk is only fetched when needed and doesn't
@@ -35,8 +35,11 @@ const runtimeSentryDsn = typeof document !== 'undefined'
   : null
 const sentryDsn = runtimeSentryDsn || import.meta.env.VITE_SENTRY_DSN
 const SENTRY_FILTERED_QUERY = /([?&](?:code|state|token|access_token|key)=)[^&#]*/gi
+// The SDK is loaded only when a DSN exists: statically imported it would sit
+// in the entry chunk of every install, telemetry or not (≈22 KB gzipped).
 if (sentryDsn) {
-  sentryInit({
+  import('@sentry/react').then((Sentry) => {
+    Sentry.init({
     dsn: sentryDsn,
     tunnel: runtimeSentryDsn ? '/api/monitoring/tunnel' : undefined,
     environment: import.meta.env.MODE,
@@ -49,7 +52,9 @@ if (sentryDsn) {
       delete event.request?.cookies
       return event
     },
-  })
+    })
+    setSentry(Sentry)
+  }).catch(() => { /* telemetry must never break the app */ })
 }
 
 // Last-resort capture for unhandled promise rejections AND synchronous errors
@@ -69,9 +74,7 @@ if (typeof window !== 'undefined') {
     const reason = event.reason
     if (shouldIgnoreClientError(reason)) return
     console.error('[unhandledrejection]', reason)
-    if (sentryDsn && reason instanceof Error) {
-      sentryCaptureException(reason)
-    }
+    if (reason instanceof Error) getSentry()?.captureException(reason)
     broadcast(reason instanceof Error ? reason : new Error(String(reason)), 'unhandledrejection')
   })
 
@@ -82,9 +85,7 @@ if (typeof window !== 'undefined') {
     const error = event.error || event.message
     if (shouldIgnoreClientError(error, event.filename)) return
     console.error('[window.error]', error)
-    if (sentryDsn && error instanceof Error) {
-      sentryCaptureException(error)
-    }
+    if (error instanceof Error) getSentry()?.captureException(error)
     broadcast(error instanceof Error ? error : new Error(String(event.message || error)), 'error')
   })
 }
