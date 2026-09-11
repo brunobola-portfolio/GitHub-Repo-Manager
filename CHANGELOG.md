@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.25.1] - 2026-09-11
+
 ### Fixed
 
 - Dashboard inbox rows that are not selected were dimmed with opacity, which
@@ -3658,7 +3660,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.0...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.1...HEAD
+[4.25.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.0...v4.25.1
 [4.25.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.9...v4.25.0
 [4.24.9]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.8...v4.24.9
 [4.24.8]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.7...v4.24.8

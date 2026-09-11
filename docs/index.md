@@ -36,6 +36,8 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.25.1 (2026-09-11) — Inbox contrast, IIS hardening, faster cold
+  load.** See the changelog.
 - **v4.25.0 (2026-09-11) — DORA measured and explained; Sentry ready for
   SaaS.** Handled server errors reach Sentry; Browser errors could never
   have arrived; The DORA tab measured PR cycle time and called it lead time;
