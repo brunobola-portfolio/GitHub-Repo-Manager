@@ -66,8 +66,16 @@ import { describe, it, expect, beforeAll } from 'vitest'
 // hooks split out of App.jsx. All of it is app-shell code the first paint
 // needs; nothing lazy was hoisted (the module list in the sourcemap holds 99
 // src/ modules and no vendor chunk). ~4% margin again.
-const EAGER_INDEX_GZ_BUDGET = 65 * 1024
-const EAGER_TOTAL_GZ_BUDGET = 305 * 1024
+//
+// RE-BASELINED 2026-09-11 for vite 8.2.2 / rolldown 1.2.7, which folds the
+// small shared chunks the entry already imported statically (repoActions,
+// errors, Modal, aiFetch, the form primitives) into index-*.js. Nothing lazy
+// became eager: the closure went from 36 chunks to 24 and its total DROPPED
+// (~287 -> 284.8 KB). The index alone now measures 75.3 KB, so its budget
+// rises to 79 KB while the total — the number a cold load actually pays —
+// tightens from 305 to 297 KB. ~4% margin on both.
+const EAGER_INDEX_GZ_BUDGET = 79 * 1024
+const EAGER_TOTAL_GZ_BUDGET = 297 * 1024
 
 const RUN = process.env.RUN_BUILD_TESTS === '1'
 

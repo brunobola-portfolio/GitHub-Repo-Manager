@@ -6,7 +6,6 @@ import {
     FolderGit2,
     KanbanSquare,
     Users,
-    Download,
     ArrowUpRight,
 } from 'lucide-react'
 
@@ -249,6 +248,3 @@ export function DashboardShell({ anchors, onViewChange, children }) {
         </div>
     )
 }
-
-export { CROSS_LINKS as DASHBOARD_CROSS_LINKS }
-export { Download as MigrationsIcon }

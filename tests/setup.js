@@ -81,6 +81,21 @@ Object.defineProperty(window, 'matchMedia', {
   value: createMatchMediaStub,
 })
 
+// happy-dom 20.14 implements Web Animations, so framer-motion now drives
+// real Animation objects and cancels them whenever a value is interrupted.
+// The spec has cancel() reject the `finished` promise AND mark it handled
+// (Web Animations, "reset an animation's pending tasks"); browsers do both,
+// happy-dom only rejects — every interrupted animation then surfaced as an
+// unhandled AbortError and turned the run red with all tests passing.
+// Attaching a no-op handler before cancelling restores the spec behaviour.
+if (window.Animation?.prototype?.cancel) {
+  const cancel = window.Animation.prototype.cancel
+  window.Animation.prototype.cancel = function cancelMarkedHandled() {
+    this.finished?.catch?.(() => {})
+    return cancel.call(this)
+  }
+}
+
 // Mock IntersectionObserver for animation tests
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}
