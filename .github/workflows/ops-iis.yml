@@ -1,7 +1,7 @@
 name: Ops — IIS proxy
 
 # Operator tooling for the production VPS, run on the same self-hosted runner
-# the release deploy uses. Five actions:
+# the release deploy uses. Seven actions:
 #
 #   inspect — print the server-level ARR proxy settings, the site's proxy
 #             element, and what /api/auth/login answers from the box itself.
@@ -20,8 +20,16 @@ name: Ops — IIS proxy
 #             secret value. Read-only.
 #   sentry-test — send one tagged info event with the service's DSN, to
 #             prove delivery from this box. Writes nothing on the server.
+#   harden  — hide the ARR version header on the live site (backup, health
+#             check, restore on failure).
+#   configure-integrations — write Resend and browser-Sentry settings from
+#             GitHub (secret RESEND_API_KEY; variables EMAIL_FROM,
+#             SENTRY_BROWSER_DSN, SENTRY_ENVIRONMENT) into the service .env,
+#             refusing an unverified Resend domain; restarts, rolls back on
+#             failure. Never prints a value.
 #
-# Nothing here touches the app, its data directory or the service.
+# Only harden and configure-integrations write on the server, each with a
+# backup taken first and restored automatically if the health check fails.
 
 on:
   workflow_dispatch:
@@ -31,7 +39,7 @@ on:
         required: true
         default: inspect
         type: choice
-        options: [inspect, apply, app-log, env-check, sentry-test]
+        options: [inspect, apply, app-log, env-check, sentry-test, harden, configure-integrations]
 
 permissions:
   contents: read
@@ -121,6 +129,105 @@ jobs:
             if ($k -like 'SENTRY*DSN' -and $v) { try { $u = [Uri]$v; $shown = " (host $($u.Host), project $($u.AbsolutePath.Trim('/')))" } catch { $shown = ' (not a valid URL)' } }
             "{0,-24} {1}{2}" -f $k, $state, $shown
           }
+
+      - name: Harden — hide the ARR version header on the live site
+        if: ${{ inputs.action == 'harden' }}
+        shell: pwsh
+        run: |
+          # Adds the same outbound rule deploy/iis/web.config ships, to the
+          # web.config the RepoManager site actually serves. Backed up first,
+          # checked from the box, restored if the site stops answering.
+          $cfgPath = 'C:\inetpub\repomanager\web.config'
+          if (-not (Test-Path $cfgPath)) { throw "$cfgPath not found" }
+          $backup = "$cfgPath.bak-$(Get-Date -Format yyyyMMdd-HHmmss)"
+          Copy-Item $cfgPath $backup
+          [xml]$x = Get-Content $cfgPath -Raw
+          $ws = $x.configuration.'system.webServer'
+          $rewrite = $ws.SelectSingleNode('rewrite')
+          if (-not $rewrite) { throw 'no <rewrite> section — not the GRM proxy web.config' }
+          $outbound = $rewrite.SelectSingleNode('outboundRules')
+          if (-not $outbound) { $outbound = $x.CreateElement('outboundRules'); [void]$rewrite.AppendChild($outbound) }
+          if ($outbound.SelectSingleNode("rule[@name='GRM hide ARR version']")) {
+            'rule already present'
+          } else {
+            $rule = $x.CreateElement('rule'); $rule.SetAttribute('name', 'GRM hide ARR version')
+            $match = $x.CreateElement('match'); $match.SetAttribute('serverVariable', 'RESPONSE_X-Powered-By'); $match.SetAttribute('pattern', '.+')
+            $act = $x.CreateElement('action'); $act.SetAttribute('type', 'Rewrite'); $act.SetAttribute('value', '')
+            [void]$rule.AppendChild($match); [void]$rule.AppendChild($act); [void]$outbound.AppendChild($rule)
+            $x.Save($cfgPath)
+            'rule added'
+          }
+          Start-Sleep -Seconds 2
+          try {
+            $r = Invoke-WebRequest -Uri 'https://repomanager.bolalabs.pt/api/health' -UseBasicParsing -TimeoutSec 15
+          } catch { $r = $null }
+          if (-not $r -or $r.StatusCode -ne 200) {
+            Copy-Item $backup $cfgPath -Force
+            throw 'site stopped answering after the change — web.config restored'
+          }
+          "health $($r.StatusCode); X-Powered-By now: '$($r.Headers['X-Powered-By'])'"
+
+      - name: Configure integrations — Resend and browser Sentry from GitHub secrets/variables
+        if: ${{ inputs.action == 'configure-integrations' }}
+        shell: pwsh
+        env:
+          IN_RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          IN_EMAIL_FROM: ${{ vars.EMAIL_FROM }}
+          IN_SENTRY_BROWSER_DSN: ${{ vars.SENTRY_BROWSER_DSN }}
+          IN_SENTRY_ENVIRONMENT: ${{ vars.SENTRY_ENVIRONMENT }}
+        run: |
+          # Writes only what is set in GitHub (secret RESEND_API_KEY; variables
+          # EMAIL_FROM, SENTRY_BROWSER_DSN, SENTRY_ENVIRONMENT) into the
+          # service's .env, never prints a value, refuses a Resend key whose
+          # sending domain is not verified, restarts the service and puts the
+          # old .env back if the health check fails.
+          $envFile = 'C:\ProgramData\GitHubRepoManager\data\.env'
+          if (-not (Test-Path $envFile)) { throw ".env not found at $envFile" }
+          $lines = [System.Collections.Generic.List[string]](Get-Content $envFile)
+          $changed = @()
+          function Set-Line([string]$key, [string]$value) {
+            $i = $lines.FindIndex([Predicate[string]]{ param($l) $l -match "^\s*$key\s*=" })
+            if ($i -ge 0) { $lines[$i] = "$key=$value" } else { $lines.Add("$key=$value") }
+            $script:changed += $key
+          }
+          function Remove-Line([string]$key) {
+            $n = $lines.RemoveAll([Predicate[string]]{ param($l) $l -match "^\s*$key\s*=" })
+            if ($n -gt 0) { $script:changed += "-$key" }
+          }
+
+          if ($env:IN_RESEND_API_KEY) {
+            $from = if ($env:IN_EMAIL_FROM) { $env:IN_EMAIL_FROM } else { 'no-reply@bolalabs.pt' }
+            $domain = $from.Split('@')[-1]
+            $domains = Invoke-RestMethod -Uri 'https://api.resend.com/domains' -Headers @{ Authorization = "Bearer $($env:IN_RESEND_API_KEY)" } -TimeoutSec 20
+            $d = @($domains.data) | Where-Object { $_.name -eq $domain } | Select-Object -First 1
+            if (-not $d) { throw "Resend has no domain '$domain' — add it at resend.com/domains first" }
+            if ($d.status -ne 'verified') { throw "Resend domain '$domain' is '$($d.status)', not verified — finish the DNS records first" }
+            "Resend domain $domain verified"
+            Set-Line 'EMAIL_PROVIDER' 'resend'
+            Set-Line 'RESEND_API_KEY' $env:IN_RESEND_API_KEY
+            Set-Line 'EMAIL_FROM' $from
+            Remove-Line 'ALLOW_CONSOLE_EMAIL'
+          }
+          if ($env:IN_SENTRY_BROWSER_DSN) { Set-Line 'SENTRY_BROWSER_DSN' $env:IN_SENTRY_BROWSER_DSN }
+          if ($env:IN_SENTRY_ENVIRONMENT) { Set-Line 'SENTRY_ENVIRONMENT' $env:IN_SENTRY_ENVIRONMENT }
+          if ($changed.Count -eq 0) { 'nothing set in GitHub — add the secret/variables first'; exit 0 }
+
+          $backup = "$envFile.bak-$(Get-Date -Format yyyyMMdd-HHmmss)"
+          Copy-Item $envFile $backup
+          Set-Content -Path $envFile -Value $lines
+          "updated: $($changed -join ', ')"
+          Restart-Service GitHubRepoManager
+          $ok = $false
+          foreach ($i in 1..30) {
+            Start-Sleep -Seconds 2
+            try { $h = Invoke-RestMethod -Uri 'http://127.0.0.1:3001/api/health' -TimeoutSec 5; if ($h.status -eq 'ok') { $ok = $true; break } } catch { }
+          }
+          if (-not $ok) {
+            Copy-Item $backup $envFile -Force
+            Restart-Service GitHubRepoManager
+            throw 'service did not come back healthy — previous .env restored and service restarted'
+          }
+          "service healthy on $($h.version)"
 
       - name: Sentry — send one test event with the service's own DSN
         if: ${{ inputs.action == 'sentry-test' }}
