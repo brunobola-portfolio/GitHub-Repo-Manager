@@ -29,6 +29,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   nothing was deployed. MTTR is named what DORA calls it now — failed
   deployment recovery time.
 
+- **An unknown path answered 200.** The production shell is still served
+  for any path (the app sends the visitor home), but only `/`, `/status`,
+  `/settings` and `/pricing` answer 200 now; anything else is a 404, so
+  crawlers and mistyped links are no longer told the page exists.
+
 ### Added
 
 - **DORA is explained where it is used.** The tab says what DORA stands for

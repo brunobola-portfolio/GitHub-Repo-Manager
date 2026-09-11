@@ -74,6 +74,20 @@ export function renderShell(html, { origin, version, sentryDsn }) {
         : filled + block;
 }
 
+/**
+ * Paths a person can legitimately land on outside the hash router: the root,
+ * the public status page, and the two pathnames the server itself sends people
+ * to (Stripe's success/cancel/portal return URLs and the upgrade links).
+ * Everything else still gets the shell — the SPA sends it home — but with a
+ * 404, so a crawler or a mistyped link is not told the page exists.
+ */
+const SHELL_PATHS = new Set(['/', '/index.html', '/status', '/settings', '/pricing']);
+
+export function shellStatus(path) {
+    const normalised = String(path || '/').replace(/\/+$/, '') || '/';
+    return SHELL_PATHS.has(normalised) ? 200 : 404;
+}
+
 export function robotsTxt(origin) {
     return [
         'User-agent: *',

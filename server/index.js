@@ -41,7 +41,7 @@ import { closeAllQueues } from './lib/queue.js';
 import { engine as migrationEngine } from './routes/migration.js';
 import { recoverInterruptedImportJobs } from './routes/import/_shared.js';
 import { config } from './config.js';
-import { resolvePublicOrigin, renderShell, robotsTxt, sitemapXml } from './lib/spa-shell.js';
+import { resolvePublicOrigin, renderShell, robotsTxt, sitemapXml, shellStatus } from './lib/spa-shell.js';
 import { initMonitoring, getSentryErrorHandler, monitoringContext, sentryTunnelHandler, browserDsn } from './lib/monitoring.js';
 import db, { initDB, seedMockData } from './db.js';
 import { DBSchemaFromFutureError } from './lib/db-migrations.js';
@@ -553,7 +553,7 @@ if (config.nodeEnv === 'production') {
             // Never cache the app shell — it must always pick up the latest
             // hashed asset references after a deploy.
             res.setHeader('Cache-Control', 'no-cache');
-            res.type('html').send(renderShell(readShell(), {
+            res.status(shellStatus(req.path)).type('html').send(renderShell(readShell(), {
                 origin: resolvePublicOrigin(req, config.frontendUrl),
                 version: pkg.version,
                 sentryDsn: browserDsn()?.dsn,

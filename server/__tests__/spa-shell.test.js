@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { resolvePublicOrigin, renderShell, robotsTxt, sitemapXml, softwareApplicationJsonLd } from '../lib/spa-shell.js';
+import { resolvePublicOrigin, renderShell, robotsTxt, sitemapXml, softwareApplicationJsonLd, shellStatus } from '../lib/spa-shell.js';
 
 const req = (host, protocol = 'https') => ({ protocol, get: (h) => (h.toLowerCase() === 'host' ? host : undefined) });
 
@@ -55,5 +55,18 @@ describe('robots and sitemap', () => {
         expect(xml).toContain('<loc>https://repomanager.example.pt/brand/</loc>');
         expect(xml).toContain('<lastmod>2026-09-06</lastmod>');
         expect(xml.startsWith('<?xml')).toBe(true);
+    });
+});
+
+describe('shellStatus', () => {
+    it('answers 200 for the paths people really land on outside the hash router', () => {
+        for (const p of ['/', '/index.html', '/status', '/status/', '/settings', '/pricing/']) {
+            expect(shellStatus(p), p).toBe(200);
+        }
+    });
+    it('answers 404 for anything else, so a crawler is not told the page exists', () => {
+        for (const p of ['/wp-login.php', '/repos', '/settings/extra', '/definitely-not-a-page']) {
+            expect(shellStatus(p), p).toBe(404);
+        }
     });
 });

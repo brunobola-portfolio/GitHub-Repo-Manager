@@ -271,7 +271,7 @@ tag, and the Release, Docker and Windows-package workflows after it.
 5. The GitHub Release is published by the workflow with the CHANGELOG
    section as its notes; the production deploy runs on the self-hosted runner
    when the `AUTO_DEPLOY` repository variable is `true`.
-   When the deploy job is green, run `npm run smoke:prod` — forty read-only
+   When the deploy job is green, run `npm run smoke:prod` — its read-only
    checks against the public origin (boot signals, the sign-in redirect,
    head tags, headers, assets, API contracts). It exits 1 on any failure and
    is the only test that sees the session, proxy and rate-limit layers.

@@ -116,6 +116,11 @@ async function run() {
         check('brand guide answers 200', res.status === 200, String(res.status))
     }
 
+    {
+        const { res, text } = await get('/definitely-not-a-page')
+        check('unknown app path is a 404 that still carries the shell', res.status === 404 && /<div id="root"/.test(text), String(res.status))
+    }
+
     // 5. API contract for the unknown and the unauthenticated.
     {
         const { res, text } = await get('/api/definitely-not-a-route')
