@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Dashboard inbox rows that are not selected were dimmed with opacity, which
+  put their labels at 3.59:1 (light) and 3.97:1 (dark), below WCAG AA. They
+  now use the muted text colours, AA on both themes. Found by axe 4.13, which
+  counts opacity in the contrast check.
+
+### Changed
+
+- Production IIS template (`deploy/iis/web.config`) blanks the
+  `X-Powered-By: ARR/3.0` header with an outbound rule; `ops-iis.yml` gains
+  `harden` (applies it to a live site) and `configure-integrations` (writes
+  Resend and browser-Sentry settings from GitHub secrets and variables, with
+  backup and rollback).
+- Development tooling: vite 8.2.2 (rolldown 1.2.7), Playwright 1.63, axe-core
+  4.13, happy-dom 20.14 and ten smaller updates. Rolldown now folds the small
+  chunks the entry already loaded into it: a cold load makes 24 requests
+  instead of 36 and downloads slightly less.
+
 ## [4.25.0] - 2026-09-11
 
 ### Fixed
