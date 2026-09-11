@@ -109,11 +109,13 @@ to Home, RepoManager, Community Platform and AITOOL.
 | bolalabs.pt | hashed assets | `max-age=31536000` | `+ immutable` (1.5.1) |
 | bolalabs.pt | hero film | `no-cache` | one day (1.5.1) |
 | repomanager | unknown path | 200 with the shell (soft 404) | 404 with the shell; `/`, `/status`, `/settings`, `/pricing` stay 200 (4.25.0) |
+| repomanager | `X-Powered-By` | `ARR/3.0` | blank (`ops-iis.yml` → `harden`; the rule ships in `deploy/iis/web.config`) |
 | both | TLS 1.3, HTTP/2, HSTS, CSP, nosniff, Referrer/Permissions-Policy, robots, sitemap, www → apex | pass | pass |
 
-Still open, low priority: `X-Powered-By: ARR/3.0` on repomanager (an
-outbound rewrite rule in the site's `web.config` on the box), and gzip rather
-than Brotli on bolalabs.pt (IIS needs the Brotli module). Certificates renew
+Resend and the browser DSN are written by `ops-iis.yml` →
+`configure-integrations` from GitHub secrets and variables (backup, health
+check, rollback). Still open, low priority: gzip rather than Brotli on
+bolalabs.pt (IIS needs the Brotli module). Certificates renew
 automatically; the first renewal window opens 2026-10-06 — look at
 `renew.log` on 2026-10-07.
 
