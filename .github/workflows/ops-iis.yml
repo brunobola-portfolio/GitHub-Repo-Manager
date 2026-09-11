@@ -1,7 +1,7 @@
 name: Ops — IIS proxy
 
 # Operator tooling for the production VPS, run on the same self-hosted runner
-# the release deploy uses. Four actions:
+# the release deploy uses. Five actions:
 #
 #   inspect — print the server-level ARR proxy settings, the site's proxy
 #             element, and what /api/auth/login answers from the box itself.
@@ -18,6 +18,8 @@ name: Ops — IIS proxy
 #   env-check — which optional integrations the service's .env configures:
 #             SET/unset per name, the Sentry project's host and id, never a
 #             secret value. Read-only.
+#   sentry-test — send one tagged info event with the service's DSN, to
+#             prove delivery from this box. Writes nothing on the server.
 #
 # Nothing here touches the app, its data directory or the service.
 
@@ -29,7 +31,7 @@ on:
         required: true
         default: inspect
         type: choice
-        options: [inspect, apply, app-log, env-check]
+        options: [inspect, apply, app-log, env-check, sentry-test]
 
 permissions:
   contents: read
@@ -119,6 +121,24 @@ jobs:
             if ($k -like 'SENTRY*DSN' -and $v) { try { $u = [Uri]$v; $shown = " (host $($u.Host), project $($u.AbsolutePath.Trim('/')))" } catch { $shown = ' (not a valid URL)' } }
             "{0,-24} {1}{2}" -f $k, $state, $shown
           }
+
+      - name: Sentry — send one test event with the service's own DSN
+        if: ${{ inputs.action == 'sentry-test' }}
+        shell: pwsh
+        run: |
+          # Proves delivery end to end: the installed @sentry/node, the DSN the
+          # service reads, and the network path from this box to Sentry. The
+          # event is a plain message, tagged so it is easy to find and resolve.
+          $envFile = 'C:\ProgramData\GitHubRepoManager\data\.env'
+          $dsn = (Get-Content $envFile | Where-Object { $_ -match '^\s*SENTRY_DSN\s*=' } | Select-Object -First 1) -replace '^\s*SENTRY_DSN\s*=\s*', '' -replace '^["'']|["'']$', ''
+          if (-not $dsn) { throw 'SENTRY_DSN is not set in the service .env' }
+          $app = 'C:\apps\GitHubRepoManager'
+          if (-not (Test-Path (Join-Path $app 'node_modules\@sentry\node'))) { throw "@sentry/node not found under $app" }
+          $env:SENTRY_DSN = $dsn
+          Push-Location $app
+          try {
+            node --input-type=module -e "const S = await import('@sentry/node'); S.init({ dsn: process.env.SENTRY_DSN, environment: 'production', sendDefaultPii: false }); const id = S.captureMessage('GitHub Repo Manager: Sentry delivery test from the VPS', { level: 'info', tags: { source: 'ops-iis/sentry-test' } }); const ok = await S.flush(8000); console.log('event ' + id + (ok ? ' delivered' : ' NOT flushed within 8 s'));"
+          } finally { Pop-Location }
 
       - name: Service log — warnings, errors and auth events
         if: ${{ inputs.action == 'app-log' }}
