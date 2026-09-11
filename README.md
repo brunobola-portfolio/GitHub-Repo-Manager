@@ -14,7 +14,7 @@
   <img alt="GitHub Repo Manager dashboard — time-of-day greeting, a 'What needs you' KPI row, the Live Inbox, and repository stats" src="docs/images/01_dashboard_light_hd.png" width="900">
 </picture>
 
-[**▶ Watch the 38-second tour**](https://bolalabs.pt/en/repomanager/) · [Storyboard and stills](docs/tour.md)
+[**▶ Watch the one-minute tour**](https://bolalabs.pt/en/repomanager/) · [Storyboard and stills](docs/tour.md)
 
 <br>
 
@@ -125,7 +125,7 @@ A single cockpit across every repository — no context switching, no manual rep
 
 - **Tracked repos & discovery** — an explicit tracked set, auto-seeded from five signal collectors (review-requested, authored, assigned, owned, recently-committed). Pin / mute / untrack from anywhere; `Settings → Work Board` adds virtualised lists, bulk actions, and a "Discover now" panel.
 - **KPI tiles & trends** — count-up animations, 7-day sparklines, and delta badges; snapshots persist via a daily sweeper.
-- **Tabs** — My Reviews · My Issues · Stale PRs · Review Load · Tech Debt · **DORA Metrics** (deploy frequency, lead-time p50/p90, change failure rate, MTTR p50/p90, CSV export). Every tab is available on all tiers.
+- **Tabs** — My Reviews · My Issues · Stale PRs · Review Load · Tech Debt · **DORA Metrics** — DevOps Research and Assessment's delivery metrics, per deployment environment: deployment frequency, change lead time p50/p90 (PR opened → deployed), change fail rate, failed deployment recovery time p50/p90, CSV export ([what each one measures](docs/work-board.md#what-dora-measures)). Every tab is available on all tiers.
 - **Inline actions** — approve / request-changes / snooze a PR right on the row; auto-refresh every 60 s (pauses when hidden).
 - **Repo Advisor** (BYOK, monthly cap; needs `WORK_BOARD_AI_ENABLED=true` on the deployment *and* a per-user opt-in) — an AI summary card fed 7-day trend snapshots, suggestion chips (`ping` / `snooze` / `view`), and conversational edits with a preview-then-apply diff.
 

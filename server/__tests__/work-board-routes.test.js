@@ -45,6 +45,7 @@ vi.mock('../lib/event-aggregations.js', () => ({
     meanTimeToRecovery: (...a) => mockMeanTimeToRecovery(...a),
     listTechDebtIssues: (...a) => mockListTechDebtIssues(...a),
     techDebtHotspots: (...a) => mockTechDebtHotspots(...a),
+    deploymentEnvironments: () => [],
 }))
 
 vi.mock('../lib/work-board-cache.js', () => ({

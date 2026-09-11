@@ -180,7 +180,7 @@ Now edit `$data\.env` and set at least:
 | `DATA_DIR` | `C:\ProgramData\GitHubRepoManager\data` |
 | `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | from step 3 |
 | `RESEND_API_KEY` | production boot **aborts** on `EMAIL_PROVIDER=console`, and on `resend` without this key. `EMAIL_FROM` is not validated at boot but is required for delivery |
-| `SENTRY_DSN` | optional. Server-side error telemetry; the boot log prints `Sentry monitoring initialized` with the DSN host, or a warning if the DSN is invalid. Browser-side telemetry is separate: set the repository **variable** `VITE_SENTRY_DSN` and the next release bakes it into the bundle |
+| `SENTRY_DSN` / `SENTRY_BROWSER_DSN` | optional. Server-side and browser error reports. The boot log prints `Sentry monitoring initialized` with the DSN host and release, or a warning if the DSN is invalid. The browser DSN is delivered at runtime in a meta tag and its events are relayed through `/api/monitoring/tunnel`, so no rebuild and no CSP change are needed. Both strip credentials, cookies, bodies and OAuth codes and carry only a pseudonymous user id; handled 5xx errors from every route are reported, 4xx are not |
 
 Wiring Resend, once you have an account: verify the sending domain in Resend
 (it gives you two DNS records, DKIM and a return-path CNAME, plus an SPF

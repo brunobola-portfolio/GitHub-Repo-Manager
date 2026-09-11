@@ -69,6 +69,8 @@ services:
       - "WORK_BOARD_AI_ENABLED=${WORK_BOARD_AI_ENABLED:-}"
       # --- Optional integrations ---
       - "SENTRY_DSN=${SENTRY_DSN:-}"
+      - "SENTRY_BROWSER_DSN=${SENTRY_BROWSER_DSN:-}"
+      - "SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT:-}"
       - "STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}"
       - "STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}"
       # Price IDs. Missing here means checkout 400s AFTER the customer has

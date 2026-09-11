@@ -287,6 +287,35 @@ describe('leadTimeForChanges', () => {
         const sql = mockPrepare.mock.calls[0][0]
         expect(sql).toContain('IN (')
     })
+
+    it('measures to the first deploy after the merge when deployments exist (the DORA definition)', () => {
+        const t0 = Date.parse('2026-09-01T00:00:00Z')
+        const iso = (h) => new Date(t0 + h * 3600 * 1000).toISOString()
+        // Opened at 0h, merged at 4h, deployed at 10h → lead time 10h, PR cycle 4h.
+        // A second PR merged but never deployed only counts toward the PR cycle.
+        mockRows = [
+            { openedAt: iso(0), closedAt: iso(4), deployedAt: iso(10) },
+            { openedAt: iso(0), closedAt: iso(2), deployedAt: null },
+        ]
+        const result = leadTimeForChanges({ scopeRepoIds: ALL_REPOS })
+        expect(result.basis).toBe('deployed')
+        expect(result.sampleSize).toBe(1)
+        expect(result.p50).toBe(10)
+        expect(result.prCycle).toEqual({ sampleSize: 2, p50: 2, p90: 4 })
+    })
+
+    it('says it fell back to PR opened → merged when nothing was deployed', () => {
+        const now = Date.now()
+        mockRows = [{ openedAt: new Date(now - 6 * 3600 * 1000).toISOString(), closedAt: new Date(now).toISOString(), deployedAt: null }]
+        const result = leadTimeForChanges({ scopeRepoIds: ALL_REPOS })
+        expect(result.basis).toBe('merged')
+        expect(result.p50).toBeCloseTo(6, 0)
+    })
+
+    it('reports no basis when there are no merged PRs', () => {
+        mockRows = []
+        expect(leadTimeForChanges({ scopeRepoIds: ALL_REPOS }).basis).toBeNull()
+    })
 })
 
 // ---------------------------------------------------------------------------

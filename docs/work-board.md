@@ -15,11 +15,36 @@ every tracked repository.
 | **My Issues** | Free | Open issues that are assigned to your GitHub login |
 | **Review Load** | Free | Per-reviewer submitted vs pending counts over the last 30 days — stacked-bar view to spot imbalanced review queues |
 | **Tech Debt** | Free | Open issues labelled `tech-debt`, `technical-debt`, `technical debt` (with space), `debt`, `refactor`, `refactoring`, `code-smell`, or `cleanup`, grouped by repo with hotspot ranking |
-| **DORA** | Free | Four-metric dashboard: deploy frequency, lead-time p50/p90, change failure rate, MTTR p50/p90 — plus CSV export |
+| **DORA** | Free | Four DORA metrics per deployment environment: deployment frequency, change lead time p50/p90, change fail rate, failed deployment recovery time p50/p90 — plus CSV export. See [What DORA measures](#what-dora-measures) |
 
 > **Free-first since the 2026-07-18 rebalance.** Every Work Board tab — including
 > DORA metrics and CSV export — is available to all tiers behind `requireAuth`
 > only. There is no tier gate on any Work Board read endpoint.
+
+## What DORA measures
+
+**DORA** is DevOps Research and Assessment, the Google Cloud research
+programme behind the *State of DevOps* reports. Its metrics are the
+best-studied predictors of software delivery performance. The DORA tab
+computes four of them from GitHub pull requests and deployment statuses,
+for one deployment environment at a time (the picker lists every
+environment that deployed in the last 30 days).
+
+| Metric | DORA's definition ([dora.dev](https://dora.dev/guides/dora-metrics/)) | How it is measured here |
+| --- | --- | --- |
+| Deployment frequency | How often changes are deployed to production | Successful `deployment_status` events for the environment, per day |
+| Change lead time | Time for a change to go from committed to version control to deployed in production | Pull request opened → first successful deployment of that repository after the merge. A `pull_request` webhook carries no commit timestamps, so the PR opening is the earliest point observed. When no deployment followed any merge in the window, the tab shows **PR cycle time** (opened → merged) under that name instead |
+| Change fail rate | Share of deployments that require immediate intervention | Deployments whose final status is `failure` or `error`, over all deployments |
+| Failed deployment recovery time | Time to recover from a deployment that fails and requires immediate intervention (formerly MTTR) | Failed status → next successful deployment of the same repository and environment; failures not yet recovered are counted separately |
+
+Not computed: DORA's fifth metric, **deployment rework rate** (unplanned
+deployments caused by production incidents), because GitHub has no
+incident signal to tie a deployment to.
+
+All four need deployments reported through the GitHub Deployments API
+(Actions `environment:` jobs do this automatically) and the webhook in
+[GitHub webhook setup](guides/github-webhook-setup.md) subscribed to
+`deployment_status`.
 
 ## Pricing tier gating
 

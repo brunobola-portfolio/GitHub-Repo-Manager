@@ -33,6 +33,7 @@ import {
     reviewLoadByReviewer,
     changeFailureRate,
     meanTimeToRecovery,
+    deploymentEnvironments,
     listTechDebtIssues,
     techDebtHotspots,
 } from '../lib/event-aggregations.js';
@@ -335,7 +336,8 @@ router.get('/lead-time', requireAuth, (req, res) => {
         const since = req.query.since ? new Date(req.query.since) : undefined;
         // Server-derived tenant boundary — see repoIdsFilter.
         const scopeRepoIds = getScopedRepoIds(req.session?.userId);
-        const data = leadTimeForChanges({ since, repoIds, scopeRepoIds });
+        const environment = req.query.environment || 'production';
+        const data = leadTimeForChanges({ environment, since, repoIds, scopeRepoIds });
         res.json({ data });
     } catch (err) {
         errorResponse(res, 500, safeError(err, 'Failed to fetch lead time'));
@@ -388,7 +390,7 @@ router.get('/dora', requireAuth, (req, res) => {
         // Server-derived tenant boundary — see repoIdsFilter.
         const scopeRepoIds = getScopedRepoIds(req.session?.userId);
         const deploy = deployFrequency({ environment, since, repoIds, scopeRepoIds });
-        const lead = leadTimeForChanges({ since, repoIds, scopeRepoIds });
+        const lead = leadTimeForChanges({ environment, since, repoIds, scopeRepoIds });
         const cfr = changeFailureRate({ environment, since, repoIds, scopeRepoIds });
         const mttr = meanTimeToRecovery({ environment, since, repoIds, scopeRepoIds });
 
@@ -405,6 +407,7 @@ router.get('/dora', requireAuth, (req, res) => {
                 leadTime: lead,
                 changeFailureRate: cfr,
                 mttr,
+                environments: deploymentEnvironments({ since, repoIds, scopeRepoIds }),
             },
             meta: {
                 source: 'webhook',
@@ -436,7 +439,7 @@ router.get('/dora.csv', requireAuth, (req, res) => {
         // Server-derived tenant boundary — see repoIdsFilter.
         const scopeRepoIds = getScopedRepoIds(req.session?.userId);
         const deploy = deployFrequency({ environment, since, repoIds, scopeRepoIds });
-        const lead = leadTimeForChanges({ since, repoIds, scopeRepoIds });
+        const lead = leadTimeForChanges({ environment, since, repoIds, scopeRepoIds });
         const cfr = changeFailureRate({ environment, since, repoIds, scopeRepoIds });
         const mttr = meanTimeToRecovery({ environment, since, repoIds, scopeRepoIds });
 
@@ -447,13 +450,14 @@ router.get('/dora.csv', requireAuth, (req, res) => {
             ['lead_time_p50_hours', lead.p50],
             ['lead_time_p90_hours', lead.p90],
             ['lead_time_sample_size', lead.sampleSize],
+            ['lead_time_basis', lead.basis === 'deployed' ? 'pr_opened_to_first_successful_deploy' : lead.basis === 'merged' ? 'pr_opened_to_merged' : ''],
             ['change_failure_rate', cfr.rate],
             ['change_failures', cfr.failed],
             ['change_failure_total', cfr.total],
-            ['mttr_p50_hours', mttr.p50],
-            ['mttr_p90_hours', mttr.p90],
-            ['mttr_sample_size', mttr.sampleSize],
-            ['mttr_unresolved_failures', mttr.unresolved],
+            ['failed_deployment_recovery_p50_hours', mttr.p50],
+            ['failed_deployment_recovery_p90_hours', mttr.p90],
+            ['failed_deployment_recovery_sample_size', mttr.sampleSize],
+            ['failed_deployments_unrecovered', mttr.unresolved],
             [],
             ['date', 'successful_deployments'],
             ...deploy.perDay.map(p => [p.date, p.count]),

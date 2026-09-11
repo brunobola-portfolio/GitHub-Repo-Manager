@@ -144,7 +144,7 @@ const CATEGORIES = [
         values: ['Full + write-back', 'Full + write-back', 'Full + write-back'],
       },
       {
-        feature: 'DORA metrics (deploy frequency, lead time, change failure rate, MTTR)',
+        feature: 'DORA metrics (deployment frequency, change lead time, change fail rate, recovery time)',
         values: [true, true, true],
       },
     ],

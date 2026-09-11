@@ -298,7 +298,7 @@ describe('FeatureComparison.jsx ↔ feature-flags parity', () => {
         // DORA metrics have no feature-flags.js key (pure read-only git-history
         // aggregation with no AI/marginal cost) — the row is checked against
         // the literal table value, not a getFeatures() flag.
-        expect(comparisonFreeValue('DORA metrics (deploy frequency, lead time, change failure rate, MTTR)')).toBe('true')
+        expect(comparisonFreeValue('DORA metrics (deployment frequency, change lead time, change fail rate, recovery time)')).toBe('true')
     })
 
     // White-glove migration services and Priority support are manual,

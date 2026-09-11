@@ -13,6 +13,7 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import { config } from '../config.js';
 import { apiKeyAuth } from './api-key-auth.js';
+import { reportException } from '../lib/monitoring.js';
 
 /**
  * Validate GitHub username format.
@@ -100,6 +101,10 @@ export function verifyWebhookSignature(payload, signature, secretOverride) {
  * @returns {string}
  */
 export function safeError(error, fallbackMessage = 'An internal error occurred') {
+    // Every route turns its caught exception into a response through here, so
+    // this is the one place that sees them all: without it a handled 500 never
+    // reached the error tracker at all. reportException skips 4xx-class errors.
+    reportException(error, { extra: { responseMessage: fallbackMessage } });
     if (config.nodeEnv === 'production') {
         return fallbackMessage;
     }

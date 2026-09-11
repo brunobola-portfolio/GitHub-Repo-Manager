@@ -87,9 +87,10 @@ function getDORAFull() {
       environment: 'production',
       windowStart: new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString(),
       deployFrequency: { totalDeployments: base.totalDeployments, perDay: base.perDay },
-      leadTime: { sampleSize: base.sampleSize, medianHours: base.medianLeadTimeHours, p50: base.p50, p90: base.p90 },
+      leadTime: { sampleSize: base.sampleSize, medianHours: base.medianLeadTimeHours, p50: base.p50, p90: base.p90, basis: 'deployed' },
       changeFailureRate: { total: 42, failed: 5, successful: 37, rate: 0.119 },
       mttr: { sampleSize: 5, medianHours: 3.2, p50: 3.2, p90: 11.5, unresolved: 0 },
+      environments: [{ name: 'production', deployments: 42 }, { name: 'staging', deployments: 97 }, { name: 'preview', deployments: 212 }],
     }
   }
   return _doraFull

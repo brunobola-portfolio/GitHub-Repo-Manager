@@ -25,11 +25,30 @@ import { emitAppEvent, APP_EVENTS } from './utils/appEvents'
 // eslint-disable-next-line react-refresh/only-export-components
 const StatusPage = lazy(() => import('./components/PublicStatus/StatusPage.jsx'))
 
-if (import.meta.env.VITE_SENTRY_DSN) {
+// Browser telemetry is runtime configuration: the server puts the
+// deployment's public DSN in a meta tag (SENTRY_BROWSER_DSN) and relays the
+// events through its own origin, so the CSP stays connect-src 'self' and an
+// install without the variable ships no telemetry at all. A build-time
+// VITE_SENTRY_DSN still works for local development, sent directly.
+const runtimeSentryDsn = typeof document !== 'undefined'
+  ? document.querySelector('meta[name="grm-sentry-dsn"]')?.getAttribute('content')
+  : null
+const sentryDsn = runtimeSentryDsn || import.meta.env.VITE_SENTRY_DSN
+const SENTRY_FILTERED_QUERY = /([?&](?:code|state|token|access_token|key)=)[^&#]*/gi
+if (sentryDsn) {
   sentryInit({
-    dsn: import.meta.env.VITE_SENTRY_DSN,
+    dsn: sentryDsn,
+    tunnel: runtimeSentryDsn ? '/api/monitoring/tunnel' : undefined,
     environment: import.meta.env.MODE,
-    tracesSampleRate: import.meta.env.MODE === 'production' ? 0.1 : 1.0,
+    release: `github-repo-manager@${import.meta.env.VITE_APP_VERSION}`,
+    sendDefaultPii: false,
+    // OAuth callbacks carry ?code=&state= in the URL for a moment; nothing
+    // with a credential in it leaves the browser.
+    beforeSend(event) {
+      if (event.request?.url) event.request.url = event.request.url.replace(SENTRY_FILTERED_QUERY, '$1[Filtered]')
+      delete event.request?.cookies
+      return event
+    },
   })
 }
 
@@ -50,7 +69,7 @@ if (typeof window !== 'undefined') {
     const reason = event.reason
     if (shouldIgnoreClientError(reason)) return
     console.error('[unhandledrejection]', reason)
-    if (import.meta.env.VITE_SENTRY_DSN && reason instanceof Error) {
+    if (sentryDsn && reason instanceof Error) {
       sentryCaptureException(reason)
     }
     broadcast(reason instanceof Error ? reason : new Error(String(reason)), 'unhandledrejection')
@@ -63,7 +82,7 @@ if (typeof window !== 'undefined') {
     const error = event.error || event.message
     if (shouldIgnoreClientError(error, event.filename)) return
     console.error('[window.error]', error)
-    if (import.meta.env.VITE_SENTRY_DSN && error instanceof Error) {
+    if (sentryDsn && error instanceof Error) {
       sentryCaptureException(error)
     }
     broadcast(error instanceof Error ? error : new Error(String(event.message || error)), 'error')

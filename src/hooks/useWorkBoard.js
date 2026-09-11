@@ -163,12 +163,12 @@ export function useMyOpenIssues(opts = {}) {
 }
 
 export function useDORAMetrics({ environment = 'production', ...opts } = {}) {
-    const url = `${API_BASE_URL}/api/v1/work-board/deploy-freq?environment=${environment}`
+    const url = `${API_BASE_URL}/api/v1/work-board/deploy-freq?environment=${encodeURIComponent(environment)}`
     return useWorkBoardFetch(url, 'dora', opts)
 }
 
 export function useDORASummary({ environment = 'production', ...opts } = {}) {
-    const url = `${API_BASE_URL}/api/v1/work-board/dora?environment=${environment}`
+    const url = `${API_BASE_URL}/api/v1/work-board/dora?environment=${encodeURIComponent(environment)}`
     return useWorkBoardFetch(url, 'doraFull', opts)
 }
 

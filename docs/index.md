@@ -7,11 +7,11 @@ below links to the canonical page for that topic.
 
 | I want to... | Read |
 | ------------ | ---- |
-| See the product in 38 seconds | [Tour](tour.md) — the film, its storyboard, and the guide behind each scene |
+| See the product in a minute | [Tour](tour.md) — the film, its storyboard, and the guide behind each scene |
 | Go from sign-in to a migration dry run | [First five minutes](guides/first-five-minutes.md) |
 | Understand the system at a glance | [Architecture overview](architecture/overview.md) |
 | Run a production instance | [Operations runbook](operations.md) |
-| Call the API | [API reference](api/API.md) (353 route handlers — recounted via `grep`, see API.md header) |
+| Call the API | [API reference](api/API.md) (354 route handlers — recounted via `grep`, see API.md header) |
 | Configure an AI provider | [AI Providers (BYOK)](ai-providers.md) |
 | Run on Windows without Docker or Node.js | [Windows guide](windows.md) |
 | Publish on a public domain behind IIS | [IIS deployment guide](guides/deploy-iis-windows.md) |
@@ -41,10 +41,8 @@ The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](
   a tab that is not simulated.
 - **v4.24.7 (2026-09-06) — the exploratory walk.** `npm run smoke:prod`; The
   "Sign in" button on an expired-session state pointed at a route that
- 
   does not exist; A README's own section links and the table of contents no
-  longer rewrite
-  the route; An app route nobody defined goes home;
+  longer rewrite the route; An app route nobody defined goes home;
   Repository names are validated before the request leaves the browser;
   Dismissing the Work Board AI summary sticks for the day; The repository
   header's stats row wraps on phones.
@@ -177,7 +175,7 @@ The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](
 
 ## API reference
 
-- [API Reference](api/API.md) — 353 route handlers across 77 route
+- [API Reference](api/API.md) — 354 route handlers across 77 route
   modules (recounted via `grep`; see the API.md header for the exact
   command). Every endpoint documented with auth requirements,
   request/response shape, and error codes.

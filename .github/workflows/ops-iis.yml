@@ -1,7 +1,7 @@
 name: Ops — IIS proxy
 
 # Operator tooling for the production VPS, run on the same self-hosted runner
-# the release deploy uses. Two actions:
+# the release deploy uses. Four actions:
 #
 #   inspect — print the server-level ARR proxy settings, the site's proxy
 #             element, and what /api/auth/login answers from the box itself.
@@ -15,6 +15,9 @@ name: Ops — IIS proxy
 #   app-log — the last warnings and errors from the service log (pino level
 #             40 and above) plus every auth event, so a sign-in on the
 #             public origin can be checked without RDP. Read-only.
+#   env-check — which optional integrations the service's .env configures:
+#             SET/unset per name, the Sentry project's host and id, never a
+#             secret value. Read-only.
 #
 # Nothing here touches the app, its data directory or the service.
 
@@ -107,10 +110,13 @@ jobs:
           foreach ($line in Get-Content $env) {
             if ($line -match '^\s*([A-Z0-9_]+)\s*=\s*(.*)$') { $map[$matches[1]] = $matches[2].Trim().Trim('"').Trim("'") }
           }
-          foreach ($k in 'NODE_ENV','FRONTEND_URL','EMAIL_PROVIDER','RESEND_API_KEY','EMAIL_FROM','ALLOW_CONSOLE_EMAIL','SENTRY_DSN','STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','WORK_BOARD_AI_ENABLED','AI_PROVIDER','GEMINI_API_KEY','DATA_RETENTION_DAYS') {
+          foreach ($k in 'NODE_ENV','FRONTEND_URL','EMAIL_PROVIDER','RESEND_API_KEY','EMAIL_FROM','ALLOW_CONSOLE_EMAIL','SENTRY_DSN','SENTRY_BROWSER_DSN','SENTRY_ENVIRONMENT','STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','WORK_BOARD_AI_ENABLED','AI_PROVIDER','GEMINI_API_KEY','DATA_RETENTION_DAYS') {
             $v = $map[$k]
             $state = if ([string]::IsNullOrWhiteSpace($v)) { 'unset' } else { 'SET' }
-            $shown = if ($k -in 'NODE_ENV','FRONTEND_URL','EMAIL_PROVIDER','EMAIL_FROM','ALLOW_CONSOLE_EMAIL','WORK_BOARD_AI_ENABLED','AI_PROVIDER','DATA_RETENTION_DAYS') { " = $v" } else { '' }
+            $shown = if ($k -in 'NODE_ENV','FRONTEND_URL','EMAIL_PROVIDER','EMAIL_FROM','ALLOW_CONSOLE_EMAIL','WORK_BOARD_AI_ENABLED','AI_PROVIDER','DATA_RETENTION_DAYS','SENTRY_ENVIRONMENT') { " = $v" } else { '' }
+            # A DSN's host and project id say which Sentry organisation receives
+            # the events; the public key in front of the @ is left out.
+            if ($k -like 'SENTRY*DSN' -and $v) { try { $u = [Uri]$v; $shown = " (host $($u.Host), project $($u.AbsolutePath.Trim('/')))" } catch { $shown = ' (not a valid URL)' } }
             "{0,-24} {1}{2}" -f $k, $state, $shown
           }
 
@@ -124,6 +130,6 @@ jobs:
             if (-not (Test-Path $f)) { "--- ${name}: not found"; continue }
             "--- $name (last 400 lines, filtered)"
             Get-Content $f -Tail 400 | Where-Object {
-              $_ -match '"level":(40|50|60)' -or $_ -match 'auth\.(login|callback|logout)|/api/auth/callback|oauth' -or $_ -match '(?i)error|unhandled'
+              $_ -match '"level":(40|50|60)' -or $_ -match 'auth\.(login|callback|logout)|/api/auth/callback|oauth' -or $_ -match '(?i)error|unhandled|sentry'
             } | Select-Object -Last 60
           }

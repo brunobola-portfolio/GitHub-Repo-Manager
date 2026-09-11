@@ -25,6 +25,10 @@ const ROOT = 'server';
 // schema-able. Each entry names the file(s) it covers so a removed call site
 // can be pruned here too.
 const WHITELIST = {
+    // Read by server/lib/monitoring.js, which initialises before the config schema is loaded.
+    SENTRY_BROWSER_DSN: 'server/lib/monitoring.js — public browser DSN; parsed and validated in browserDsn(), unset means no browser telemetry',
+    SENTRY_ENVIRONMENT: 'server/lib/monitoring.js — event environment label, defaults to NODE_ENV',
+    SENTRY_TRACES_SAMPLE_RATE: 'server/lib/monitoring.js — tracing sample rate, 0 unless set',
     // Per-feature/provider tuning knobs — numerous, low-risk (a bad value at
     // worst mis-tunes a retry/backoff), and out of scope for this pass.
     AI_DIFF_SIGNING_KEY: 'server/lib/work-board-ai-tokens.js — HMAC key, optional, falls back to a SESSION_SECRET-derived key',

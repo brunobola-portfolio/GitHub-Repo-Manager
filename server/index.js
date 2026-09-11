@@ -42,7 +42,7 @@ import { engine as migrationEngine } from './routes/migration.js';
 import { recoverInterruptedImportJobs } from './routes/import/_shared.js';
 import { config } from './config.js';
 import { resolvePublicOrigin, renderShell, robotsTxt, sitemapXml } from './lib/spa-shell.js';
-import { initMonitoring, getSentryErrorHandler } from './lib/monitoring.js';
+import { initMonitoring, getSentryErrorHandler, monitoringContext, sentryTunnelHandler, browserDsn } from './lib/monitoring.js';
 import db, { initDB, seedMockData } from './db.js';
 import { DBSchemaFromFutureError } from './lib/db-migrations.js';
 import { aiService } from './ai-service.js';
@@ -260,6 +260,11 @@ import { githubEventsWebhookHandler } from './routes/github-events-webhook.js';
 app.post('/api/v1/webhooks/github/t/:tokenId', webhookLimiter, webhookRaw, githubEventsWebhookHandler);
 app.post('/api/v1/webhooks/github', webhookLimiter, webhookRaw, githubEventsWebhookHandler);
 app.post('/api/webhooks/github', webhookLimiter, webhookRaw, githubEventsWebhookHandler);
+// Browser error reports, forwarded to the configured Sentry project only
+// (see sentryTunnelHandler). Mounted before the session and CSRF layers: the
+// SDK posts without either, and the handler relays nothing but envelopes
+// addressed to our own project.
+app.post('/api/monitoring/tunnel', webhookLimiter, express.raw({ type: () => true, limit: '256kb' }), sentryTunnelHandler);
 
 // The global JSON cap stays tight (10kb) to keep the attack surface small.
 // AI review endpoints (PR review-summary, deep-review, pr-commands, pr-chat)
@@ -378,6 +383,10 @@ app.use('/api/', requireCsrfToken);
 
 // Attach user tier after session (for rate limiting and feature gating)
 app.use('/api/', attachTier);
+
+// Error reports made while a request is in flight carry its id, route and a
+// pseudonymous user id (per event, never on a shared scope — see monitoring.js).
+app.use('/api/', monitoringContext);
 
 // Attach BYOK AI provider (lazy) — makes req.getAIProvider(kind) available on
 // all /api/* requests and shims req.aiProvider / req.genAI for legacy call-sites.
@@ -547,6 +556,7 @@ if (config.nodeEnv === 'production') {
             res.type('html').send(renderShell(readShell(), {
                 origin: resolvePublicOrigin(req, config.frontendUrl),
                 version: pkg.version,
+                sentryDsn: browserDsn()?.dsn,
             }));
         });
     }

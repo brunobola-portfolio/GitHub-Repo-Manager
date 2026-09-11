@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Handled server errors reach Sentry.** Every route catches its exception
+  and answers 500 through `safeError()`, so before this nothing but the rare
+  unhandled throw was ever reported. `safeError()` now reports the exception
+  (5xx-class only; a GitHub 404 or a validation 400 is not a fault) with the
+  request id, route and a pseudonymous user id attached per event — never on
+  the shared Sentry scope, which in this in-process setup would have
+  attributed one tenant's error to the next request.
+- **Browser errors could never have arrived.** The production CSP allows
+  `connect-src 'self'` only, so a build-time `VITE_SENTRY_DSN` would have been
+  blocked on every send. The browser DSN is now runtime configuration
+  (`SENTRY_BROWSER_DSN`, delivered in a meta tag by the shell) and events go
+  through `/api/monitoring/tunnel` on the app's own origin, which forwards
+  only envelopes addressed to the configured project.
+- **The DORA tab measured PR cycle time and called it lead time.** DORA's
+  change lead time runs from version control to production; the tab now
+  measures pull request opened → first successful deployment of that
+  repository after the merge, and shows "PR cycle time" under that name when
+  nothing was deployed. MTTR is named what DORA calls it now — failed
+  deployment recovery time.
+
+### Added
+
+- **DORA is explained where it is used.** The tab says what DORA stands for
+  and what it measures before any number, each KPI has a definition control
+  with DORA's wording and how the figure is computed from GitHub, and
+  `docs/work-board.md` has a "What DORA measures" table (including the fifth
+  metric, rework rate, and why it is not computed).
+- **Environment picker on the DORA tab**, listing every environment that
+  deployed in the last 30 days — a team whose production environment is
+  called `prod` or `live` saw an empty tab under the hard-coded `production`.
+- **Sentry, SaaS-grade:** release and environment on every event,
+  credentials, cookies, bodies and OAuth codes stripped on both sides,
+  `deployment_mode` tag, tracing off unless `SENTRY_TRACES_SAMPLE_RATE` is
+  set. The `env-check` ops action shows which Sentry project a DSN points at.
+
 ## [4.24.9] - 2026-09-06
 
 ### Added

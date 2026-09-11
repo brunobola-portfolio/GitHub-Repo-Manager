@@ -288,23 +288,43 @@ export function deployFrequency({ environment = 'production', since, repoIds, sc
 // ---------------------------------------------------------------------------
 
 /**
- * DORA lead-time-for-changes — median time from PR 'opened' to 'closed' (with
- * merged=1).  Computed over merged PRs closed within the window.
+ * DORA change lead time — "the amount of time it takes for a change to go
+ * from committed to version control to deployed in production" (dora.dev).
+ *
+ * A pull_request webhook carries no commit timestamps, so the change starts
+ * at the earliest moment we observe it: the PR being opened. It ends at the
+ * first successful deployment to `environment` of the same repository at or
+ * after the merge — the deploy that shipped it.
+ *
+ * When no merged PR in the window was followed by a deployment (a repo that
+ * deploys outside GitHub Deployments, or none yet), the metric falls back to
+ * PR opened → merged and says so in `basis`, so the UI never presents a PR
+ * cycle time under the DORA name without a label.
  *
  * @param {object} opts
+ * @param {string} [opts.environment='production']
  * @param {Date}   [opts.since]
  * @param {number[]} [opts.repoIds]
- * @returns {{ sampleSize, medianHours, p50, p90 }}
+ * @returns {{ sampleSize, medianHours, p50, p90, basis: 'deployed'|'merged'|null, prCycle: { sampleSize, p50, p90 } }}
  */
-export function leadTimeForChanges({ since, repoIds, scopeRepoIds } = {}) {
+export function leadTimeForChanges({ environment = 'production', since, repoIds, scopeRepoIds } = {}) {
     const sinceDate = since instanceof Date ? since : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const { clause, bindings } = repoIdsFilter(repoIds, scopeRepoIds);
 
-    // Pairs: (opened_at, closed_at) for merged PRs closed in window
+    // One row per merged PR closed in the window: when it opened, when it
+    // merged, and the first successful deploy of that repo after the merge.
     const rows = db.prepare(`
         SELECT
             pe_open.created_at  AS openedAt,
-            pe_close.created_at AS closedAt
+            pe_close.created_at AS closedAt,
+            (
+                SELECT MIN(de.created_at)
+                FROM deployment_events de
+                WHERE de.repo_id     = pe_close.repo_id
+                  AND de.environment = ?
+                  AND de.state       = 'success'
+                  AND de.created_at >= pe_close.created_at
+            ) AS deployedAt
         FROM pr_events pe_close
         JOIN pr_events pe_open
           ON pe_open.repo_id    = pe_close.repo_id
@@ -314,28 +334,49 @@ export function leadTimeForChanges({ since, repoIds, scopeRepoIds } = {}) {
           AND pe_close.merged   = 1
           AND pe_close.created_at >= ?
           ${clause.replace(/AND repo_id/g, 'AND pe_close.repo_id')}
-    `).all(sinceDate.toISOString(), ...bindings);
+    `).all(environment, sinceDate.toISOString(), ...bindings);
 
-    if (rows.length === 0) {
-        return { sampleSize: 0, medianHours: null, p50: null, p90: null };
-    }
-
-    const hours = rows
-        .map(r => (new Date(r.closedAt) - new Date(r.openedAt)) / (1000 * 60 * 60))
-        .filter(h => h >= 0)
-        .sort((a, b) => a - b);
-
-    const p = (pct) => {
-        const idx = Math.ceil(pct * hours.length) - 1;
-        return Math.round(hours[Math.max(0, idx)] * 10) / 10;
+    const percentiles = (hours) => {
+        const sorted = hours.filter(h => h >= 0).sort((a, b) => a - b);
+        if (sorted.length === 0) return { sampleSize: 0, p50: null, p90: null };
+        const p = (pct) => Math.round(sorted[Math.max(0, Math.ceil(pct * sorted.length) - 1)] * 10) / 10;
+        return { sampleSize: sorted.length, p50: p(0.5), p90: p(0.9) };
     };
+    const HOUR = 1000 * 60 * 60;
+
+    const prCycle = percentiles(rows.map(r => (new Date(r.closedAt) - new Date(r.openedAt)) / HOUR));
+    const deployed = percentiles(rows.filter(r => r.deployedAt).map(r => (new Date(r.deployedAt) - new Date(r.openedAt)) / HOUR));
+    const chosen = deployed.sampleSize > 0 ? deployed : prCycle;
+    const basis = deployed.sampleSize > 0 ? 'deployed' : (prCycle.sampleSize > 0 ? 'merged' : null);
 
     return {
-        sampleSize: hours.length,
-        medianHours: p(0.5),
-        p50: p(0.5),
-        p90: p(0.9),
+        sampleSize: chosen.sampleSize,
+        medianHours: chosen.p50,
+        p50: chosen.p50,
+        p90: chosen.p90,
+        basis,
+        prCycle,
     };
+}
+
+/**
+ * Deployment environments seen in the window, busiest first — so a team whose
+ * production environment is called "prod" or "live" can pick it instead of
+ * seeing an empty DORA tab under a hard-coded "production".
+ */
+export function deploymentEnvironments({ since, repoIds, scopeRepoIds } = {}) {
+    const sinceDate = since instanceof Date ? since : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const { clause, bindings } = repoIdsFilter(repoIds, scopeRepoIds);
+    return db.prepare(`
+        SELECT environment AS name, COUNT(*) AS deployments
+        FROM deployment_events
+        WHERE environment IS NOT NULL
+          AND created_at >= ?
+          ${clause}
+        GROUP BY environment
+        ORDER BY deployments DESC, environment ASC
+        LIMIT 20
+    `).all(sinceDate.toISOString(), ...bindings);
 }
 
 // ---------------------------------------------------------------------------

@@ -476,9 +476,9 @@ all tiers (**Free-first since the 2026-07-18 rebalance**). There is no
 | `GET` | `/tech-debt` | Yes | Tech-debt signals across tracked repos |
 | `GET` | `/kpi-snapshots` | Yes | Stored KPI snapshots |
 | `GET` | `/deploy-freq` | Yes | DORA: deployment frequency |
-| `GET` | `/lead-time` | Yes | DORA: lead time for changes |
+| `GET` | `/lead-time` | Yes | DORA: change lead time — PR opened → first successful deploy after merge (`basis: "deployed"`), or PR opened → merged when no deploy followed (`basis: "merged"`) |
 | `GET` | `/change-failure-rate` | Yes | DORA: change-failure rate |
-| `GET` | `/mttr` | Yes | DORA: mean time to restore |
+| `GET` | `/mttr` | Yes | DORA: failed deployment recovery time (formerly MTTR) |
 | `GET` | `/dora` | Yes | Combined DORA metrics |
 | `GET` | `/dora.csv` | Yes | Combined DORA metrics as CSV |
 

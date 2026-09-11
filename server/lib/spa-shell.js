@@ -59,12 +59,16 @@ export function softwareApplicationJsonLd({ origin, version }) {
 }
 
 /** Fill the placeholders and add the structured-data block before </head>. */
-export function renderShell(html, { origin, version }) {
+export function renderShell(html, { origin, version, sentryDsn }) {
     const filled = html.replace(PLACEHOLDER, origin);
     // "<" inside the JSON could close the script element early; escape it as
     // JSON allows so the block stays inert data whatever the strings contain.
     const json = JSON.stringify(softwareApplicationJsonLd({ origin, version })).replace(/</g, '\\u003c');
-    const block = `<script type="application/ld+json">${json}</script>`;
+    // Browser telemetry is runtime configuration: the meta tag carries the
+    // deployment's public DSN (or is absent), so one build serves every
+    // install and the CSP needs no inline script to deliver it.
+    const meta = sentryDsn ? `<meta name="grm-sentry-dsn" content="${String(sentryDsn).replace(/[&"<>]/g, (c) => `&#${c.charCodeAt(0)};`)}">\n    ` : '';
+    const block = `${meta}<script type="application/ld+json">${json}</script>`;
     return filled.includes('</head>')
         ? filled.replace('</head>', `    ${block}\n  </head>`)
         : filled + block;
