@@ -34,6 +34,11 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.25.0 (2026-09-11) — DORA measured and explained; Sentry ready for
+  SaaS.** Handled server errors reach Sentry; Browser errors could never
+  have arrived; The DORA tab measured PR cycle time and called it lead time;
+  An unknown path answered 200; DORA is explained where it is used;
+  Environment picker on the DORA tab; Sentry, SaaS-grade.
 - **v4.24.9 (2026-09-06) — the tour, the first five minutes, and the film's
   arrival on the landing.** Tour; Landing hero arrives the way the film
   does; Screenshot policy.
