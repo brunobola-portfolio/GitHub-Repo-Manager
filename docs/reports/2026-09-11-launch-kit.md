@@ -311,17 +311,27 @@ Sentry issues opened. Retro at the end of week 4 before a second push.
 
 Resend, once for both products:
 
+The `RESEND_API_KEY` secret already in the repository answers **401
+Unauthorized** to `api.resend.com` — it exists but does not authenticate, so
+treat it as absent.
+
 1. resend.com → Domains → add `bolalabs.pt`; add the SPF, DKIM and MX
    records it shows at the DNS provider; wait for **Verified**.
 2. API Keys → create one with *Sending access* for `bolalabs.pt`.
 3. Repo Manager: GitHub → Settings → Secrets and variables → Actions →
    secret `RESEND_API_KEY`; variable `EMAIL_FROM` =
-   `Repo Manager <no-reply@bolalabs.pt>`. Then Actions → *Ops — IIS
-   proxy* → action `configure-integrations`. It refuses an unverified
-   domain, restarts the service, and rolls back if health fails.
-4. Site: `npx convex env set RESEND_API_KEY "re_..." --prod` in
+   `Repo Manager <no-reply@bolalabs.pt>`; optionally variable
+   `TEST_EMAIL_TO` = the inbox you want the test in. Then Actions →
+   *Ops — IIS proxy* → action `configure-integrations`. It refuses an
+   unverified domain, restarts the service, and rolls back if health fails.
+4. Prove it: run the `email-test` action. It sends one real message with the
+   service's own key and prints the provider's message id. Until a message
+   arrives, e-mail is not working — the console adapter answers ok for mail
+   nobody receives, which is exactly how this stayed broken.
+5. Site: `npx convex env set RESEND_API_KEY "re_..." --prod` in
    `bolalabs-platform`, then check `email:emailVerificationStatus`
-   answers `{"enabled":true}`.
+   answers `{"enabled":true}`. Send yourself a message through the contact
+   form and confirm it arrives.
 
 Sentry in the browser:
 
@@ -332,3 +342,42 @@ Sentry in the browser:
    `SENTRY_ENVIRONMENT` = `production`.
 3. Run `configure-integrations` again (it writes whichever are set), then
    `env-check` to see both marked SET.
+
+## Selling Pro (owner)
+
+Do e-mail first: a completed checkout mints a signed licence key and e-mails
+it, and the issuer now refuses to send through the console adapter rather than
+marking a key as delivered that nobody received.
+
+1. **Stripe → Product catalog**: create **Pro** with a $19/month price, and a
+   yearly price if you want the pricing page's yearly toggle to appear (it
+   stays hidden while `STRIPE_PRICE_PRO_YEARLY` is unset). Copy the **price**
+   ids (`price_…`), not the product ids. Leave Enterprise without prices —
+   every surface sends it to contact.
+2. **Stripe → Developers → Webhooks → Add endpoint**:
+   `https://repomanager.bolalabs.pt/api/v1/webhooks/stripe`, events
+   `checkout.session.completed`, `customer.subscription.updated`,
+   `customer.subscription.deleted`, `invoice.paid`,
+   `invoice.payment_failed`. Copy the signing secret (`whsec_…`).
+3. **GitHub → Settings → Secrets and variables → Actions**: secrets
+   `STRIPE_SECRET_KEY` (`sk_live_…`) and `STRIPE_WEBHOOK_SECRET`; variables
+   `STRIPE_PRICE_PRO_MONTHLY` and, if created, `STRIPE_PRICE_PRO_YEARLY`.
+4. Run **`configure-integrations`**. It writes all three or none, checks the
+   prefixes, says so loudly if the key is a test key, restarts the service and
+   rolls back on a failed health check. Then confirm
+   `https://repomanager.bolalabs.pt/api/v1/billing/config` answers
+   `"stripeEnabled": true`.
+5. **Buy it yourself once.** Sign in on the hosted app, open Pricing, upgrade,
+   pay with a real card (or a test key and `4242 4242 4242 4242` first), and
+   check three things: Settings → Billing shows Pro, the licence e-mail
+   arrives, and Stripe's webhook log shows the events delivered with 2xx.
+6. Flip the site's `REPOMANAGER_SELF_SERVE_PRO` to `true` in
+   `bolalabs-platform/src/site.ts` and cut a site release. That is what moves
+   the Pro card from "Request a demo" to a checkout button; while Stripe is
+   off it deliberately stays on the form, because a checkout page that says
+   "not available here" is worse than a form.
+7. Refund yourself in Stripe, and keep the invoice — it is the first
+   end-to-end proof that the billing path works.
+
+Full reference, including local testing with the Stripe CLI:
+[`docs/guides/stripe-setup.md`](../guides/stripe-setup.md).
