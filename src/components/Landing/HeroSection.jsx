@@ -116,10 +116,31 @@ export function HeroSection({ onSignIn }) {
         </a>
       </motion.div>
 
+      {/* What the consent screen will ask for, before it asks.
+          GitHub's authorisation page is the next thing a visitor sees after
+          that button, and it lists scopes without explaining them. Saying it
+          here — and linking the policy that says what is stored — is the
+          difference between an informed grant and a surprising one. */}
+      <motion.p
+        {...fadeUp(0.4)}
+        className="mt-5 max-w-xl text-xs leading-relaxed text-slate-500 dark:text-slate-400 ds-font-display"
+      >
+        Signing in asks GitHub for repository access and read-only organisation
+        membership — nothing else. Deleting a repository or changing an
+        organisation asks again, only when you do it.{' '}
+        <a
+          href="/privacy"
+          className="underline hover:text-slate-700 dark:hover:text-slate-200 ds-focus-ring rounded"
+        >
+          What we store
+        </a>
+        .
+      </motion.p>
+
       {/* Trust line */}
       <motion.p
         {...fadeUp(0.45)}
-        className="mt-6 text-xs text-slate-500 dark:text-slate-400 ds-font-display"
+        className="mt-4 text-xs text-slate-500 dark:text-slate-400 ds-font-display"
       >
         Apache-2.0 · Bring your own AI key, on every plan · Self-host on Docker, IIS or Windows · No credit card
       </motion.p>

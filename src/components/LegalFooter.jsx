@@ -14,7 +14,11 @@
  */
 const SOURCE_URL = 'https://github.com/brunobola-portfolio/GitHub-Repo-Manager'
 const SUBSCRIPTION_URL = `${SOURCE_URL}/blob/main/docs/LICENSE-COMMERCIAL.md`
-const PRIVACY_URL = `${SOURCE_URL}/blob/main/docs/privacy-and-data.md`
+// The deployment's own policy, not the repository document: that one is
+// written for whoever self-hosts and says outright that it is not a policy for
+// a specific company. A visitor on this instance needs to know who the
+// controller is and how to get their data out.
+const PRIVACY_URL = '/privacy'
 const ROADMAP_URL = `${SOURCE_URL}/blob/main/ROADMAP.md`
 
 export function LegalFooter() {

@@ -24,6 +24,11 @@ import { setSentry, getSentry } from './lib/sentry-client'
 // bloat the main bundle.
 // eslint-disable-next-line react-refresh/only-export-components
 const StatusPage = lazy(() => import('./components/PublicStatus/StatusPage.jsx'))
+// Same deal for the privacy policy: a visitor must be able to read it BEFORE
+// deciding to hand over GitHub access, which means it cannot live behind the
+// authenticated shell.
+// eslint-disable-next-line react-refresh/only-export-components
+const PrivacyPage = lazy(() => import('./components/PublicLegal/PrivacyPage.jsx'))
 
 // Browser telemetry is runtime configuration: the server puts the
 // deployment's public DSN in a meta tag (SENTRY_BROWSER_DSN) and relays the
@@ -90,7 +95,9 @@ if (typeof window !== 'undefined') {
   })
 }
 
-const isStatusRoute = typeof window !== 'undefined' && window.location.pathname === '/status'
+const path = typeof window !== 'undefined' ? window.location.pathname.replace(/\/+$/, '') || '/' : '/'
+const isStatusRoute = path === '/status'
+const isPrivacyRoute = path === '/privacy'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -98,7 +105,11 @@ createRoot(document.getElementById('root')).render(
       <ThemeProvider>
         <ToastProvider>
           <ErrorBoundary>
-            {isStatusRoute ? (
+            {isPrivacyRoute ? (
+              <Suspense fallback={null}>
+                <PrivacyPage />
+              </Suspense>
+            ) : isStatusRoute ? (
               <Suspense fallback={null}>
                 <StatusPage />
               </Suspense>

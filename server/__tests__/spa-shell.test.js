@@ -97,7 +97,10 @@ describe('securityTxt', () => {
 
 describe('shellStatus', () => {
     it('answers 200 for the paths people really land on outside the hash router', () => {
-        for (const p of ['/', '/index.html', '/status', '/status/', '/settings', '/pricing/']) {
+        // /privacy among them: a visitor deciding whether to grant GitHub
+        // access must be able to reach the policy without an account, and a
+        // crawler must not be told it does not exist.
+        for (const p of ['/', '/index.html', '/status', '/status/', '/privacy', '/privacy/', '/settings', '/pricing/']) {
             expect(shellStatus(p), p).toBe(200);
         }
     });
