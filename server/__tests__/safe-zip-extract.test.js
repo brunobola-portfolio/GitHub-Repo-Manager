@@ -40,7 +40,13 @@ const crc32 = (buf) => {
 const ATTR_FILE = 0x81a40000;
 const ATTR_SYMLINK = 0xa1ff0000;
 
-/** A stored (uncompressed) ZIP with exactly the names and attributes given. */
+/**
+ * A stored (uncompressed) ZIP with exactly the names and attributes given.
+ *
+ * `declaredSize` writes an uncompressed size that does not match the data —
+ * which is precisely what a zip bomb does, and the only way to exercise a
+ * multi-gigabyte ceiling without allocating one.
+ */
 function buildZip(entries) {
     const locals = [];
     const centrals = [];
@@ -51,12 +57,14 @@ function buildZip(entries) {
         const data = entry.data ?? Buffer.alloc(0);
         const crc = crc32(data);
 
+        const declaredSize = entry.declaredSize ?? data.length;
+
         const local = Buffer.alloc(30);
         local.writeUInt32LE(0x04034b50, 0);
         local.writeUInt16LE(20, 4);
         local.writeUInt32LE(crc, 14);
         local.writeUInt32LE(data.length, 18);
-        local.writeUInt32LE(data.length, 22);
+        local.writeUInt32LE(declaredSize, 22);
         local.writeUInt16LE(name.length, 26);
         const localBlock = Buffer.concat([local, name, data]);
 
@@ -66,7 +74,7 @@ function buildZip(entries) {
         central.writeUInt16LE(20, 6);
         central.writeUInt32LE(crc, 16);
         central.writeUInt32LE(data.length, 20);
-        central.writeUInt32LE(data.length, 24);
+        central.writeUInt32LE(declaredSize, 24);
         central.writeUInt16LE(name.length, 28);
         central.writeUInt32LE(entry.attr ?? ATTR_FILE, 38);
         central.writeUInt32LE(offset, 42);
@@ -170,13 +178,16 @@ describe('extractZipSafely — nothing lands outside the destination', () => {
     });
 
     it('refuses a backslash hop, which POSIX path handling reads as a filename', () => {
-        const zip = buildZip([{ name: '..\\..\\escaped-win.txt', data: Buffer.from('pwned') }]);
+        // One level up, so the assertion lands inside this test's own sandbox:
+        // asserting about the shared OS temp directory makes the test depend
+        // on whatever else has ever run there.
+        const zip = buildZip([{ name: '..\\escaped-win.txt', data: Buffer.from('pwned') }]);
 
         const { written, skipped } = extractZipSafely(zip, dest);
 
         expect(written).toBe(0);
         expect(skipped[0].reason).toBe('outside destination');
-        expect(existsSync(path.join(path.dirname(work), 'escaped-win.txt'))).toBe(false);
+        expect(existsSync(path.join(work, 'escaped-win.txt'))).toBe(false);
     });
 
     it('refuses an absolute entry name instead of joining it', () => {
@@ -235,7 +246,65 @@ describe('extractZipSafely — symlinks', () => {
     });
 });
 
-describe('the two helpers the extractor is built from', () => {
+describe('extractZipSafely — names Windows would not treat as files', () => {
+    it('refuses device names, with or without an extension', () => {
+        const zip = buildZip([
+            { name: 'CON', data: Buffer.from('x') },
+            { name: 'nul.txt', data: Buffer.from('x') },
+            { name: 'src/LPT1.js', data: Buffer.from('x') },
+        ]);
+
+        const { written, skipped } = extractZipSafely(zip, dest);
+
+        expect(written).toBe(0);
+        expect(skipped).toHaveLength(3);
+    });
+
+    it('refuses an alternate data stream, which hides content from every directory listing', () => {
+        const zip = buildZip([{ name: 'notes.txt:hidden', data: Buffer.from('x') }]);
+
+        const { written } = extractZipSafely(zip, dest);
+
+        expect(written).toBe(0);
+    });
+});
+
+describe('extractZipSafely — decompression ceilings', () => {
+    it('refuses an entry whose declared size is past the per-entry limit, before expanding it', () => {
+        const zip = buildZip([
+            { name: 'bomb.bin', data: Buffer.from('tiny'), declaredSize: 5 * 1024 * 1024 },
+            { name: 'ok.txt', data: Buffer.from('fine') },
+        ]);
+
+        const { written, skipped } = extractZipSafely(zip, dest, { maxEntryBytes: 1024 * 1024 });
+
+        expect(written).toBe(1);
+        expect(skipped).toEqual([{ name: 'bomb.bin', reason: 'entry too large' }]);
+        expect(existsSync(path.join(dest, 'bomb.bin'))).toBe(false);
+    });
+
+    it('aborts when the archive expands past the total limit', () => {
+        const zip = buildZip([
+            { name: 'a.bin', data: Buffer.from('x'), declaredSize: 600 * 1024 },
+            { name: 'b.bin', data: Buffer.from('x'), declaredSize: 600 * 1024 },
+        ]);
+
+        expect(() => extractZipSafely(zip, dest, { maxTotalBytes: 1024 * 1024 }))
+            .toThrow(/total limit/i);
+    });
+
+    it('aborts on an absurd entry count before touching the disk', () => {
+        const zip = buildZip([
+            { name: 'a.txt', data: Buffer.from('x') },
+            { name: 'b.txt', data: Buffer.from('x') },
+        ]);
+
+        expect(() => extractZipSafely(zip, dest, { maxEntries: 1 })).toThrow(/entries/i);
+        expect(existsSync(path.join(dest, 'a.txt'))).toBe(false);
+    });
+});
+
+describe('the helpers the extractor is built from', () => {
     it('reads the symlink bit from attr, not from adm-zip fileAttr', () => {
         // fileAttr masks with 0xfff and erases S_IFLNK, so a check written on
         // it would call this a regular file.

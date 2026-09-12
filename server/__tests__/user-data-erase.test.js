@@ -213,7 +213,8 @@ function buildDb() {
     db.exec(`CREATE TABLE user_subscriptions (
         user_id INTEGER PRIMARY KEY,
         tier TEXT NOT NULL DEFAULT 'free',
-        status TEXT NOT NULL DEFAULT 'active'
+        status TEXT NOT NULL DEFAULT 'active',
+        stripe_subscription_id TEXT
     )`);
 
     db.exec(`CREATE TABLE team_members (
@@ -274,10 +275,14 @@ function seedUser(id = 42, username = 'alice') {
     ).run(id, username, `${username}@example.com`);
 }
 
-function seedSubscription(userId = 42, status = 'active') {
+// `stripeSubscriptionId` defaults to a real-looking id because that is what
+// the erasure guard actually keys on: a row with a subscription id means
+// Stripe is still billing this person. Pass null for the other real case — a
+// row that exists only to hold the Stripe customer id.
+function seedSubscription(userId = 42, status = 'active', stripeSubscriptionId = 'sub_seeded') {
     _db.prepare(
-        `INSERT OR IGNORE INTO user_subscriptions (user_id, status) VALUES (?, ?)`
-    ).run(userId, status);
+        `INSERT OR IGNORE INTO user_subscriptions (user_id, status, stripe_subscription_id) VALUES (?, ?, ?)`
+    ).run(userId, status, stripeSubscriptionId);
 }
 
 // ---------------------------------------------------------------------------
@@ -334,6 +339,41 @@ describe('G3 — DELETE /api/v1/user/data', () => {
 
         expect(res.status).toBe(400);
         expect(res.body.error).toMatch(/cancel/i);
+    });
+
+    it.each(['past_due', 'incomplete', 'trialing', 'refunded', 'disputed'])(
+        'returns 400 for a %s subscription — Stripe is still billing it',
+        async (status) => {
+            // Only 'cancelled' ends the billing relationship. Erasure deletes
+            // user_subscriptions, so letting any of these through left the
+            // Stripe subscription charging a card with nothing in the database
+            // pointing at it — nobody to cancel it, no way to match a refund.
+            seedUser();
+            seedSubscription(42, status);
+            const app = buildApp();
+
+            const res = await request(app)
+                .delete('/api/v1/user/data')
+                .send({ confirmString: 'ERASE MY DATA' });
+
+            expect(res.status).toBe(400);
+        },
+    );
+
+    it('erases a user whose row only holds a Stripe customer id, with no subscription', async () => {
+        // Opening checkout once writes tier 'free', status 'active' just to
+        // keep the customer id (routes/billing.js). Those users never bought
+        // anything, and a status-only guard refused them a data-subject right.
+        seedUser(42, 'alice');
+        seedSubscription(42, 'active', null);
+        const app = buildApp(42);
+
+        const res = await request(app)
+            .delete('/api/v1/user/data')
+            .send({ confirmString: 'ERASE MY DATA' });
+
+        expect(res.status).toBe(200);
+        expect(res.body.tombstoned).toContain('user');
     });
 
     it('tombstones the user and wipes data on valid request', async () => {

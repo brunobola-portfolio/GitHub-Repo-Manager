@@ -97,7 +97,7 @@ Anything that writes to a user's repository goes preview-first through a single 
 ## Architecture at a glance
 
 - **Frontend** — React 19.2 + Vite 8 + Tailwind CSS 4.1, code-split under explicit gzip budgets enforced by a CI gate (the entry chunk was cut 11% this month and the budget lowered to lock it). Framer Motion drives animation from a shared motion vocabulary.
-- **Backend** — Express 5.2 with **325 route handlers across 74 route modules**, fronted by Helmet, tier-aware rate limiting, CSRF double-submit tokens, an SSRF + DNS-rebinding guard on import-from-URL, and rolling sessions with an absolute ceiling.
+- **Backend** — Express 5.2 with **342 route handlers across 77 route modules**, fronted by Helmet, tier-aware rate limiting, CSRF double-submit tokens, an SSRF + DNS-rebinding guard on import-from-URL, and rolling sessions with an absolute ceiling.
 - **Data** — better-sqlite3 (WAL), every per-user table keyed by `user_id`, WAL-safe scheduled backups, maintenance janitors.
 - **Integrations** — GitHub REST API, Azure DevOps API v7.1, Stripe billing, Resend email (with retry + dead-letter queue), BYOK AI providers, and a GitHub API circuit breaker.
 

@@ -194,8 +194,9 @@ export async function runRetentionPass({ now = new Date(), dryRun = false } = {}
         }
 
         if (!dryRun) {
+            let result
             try {
-                await sendEmail({
+                result = await sendEmail({
                     to: recipientEmail,
                     subject: `Action required: your AI credentials will be removed on ${purgeDate}`,
                     html: buildWarningHtml({ purgeDate }),
@@ -203,6 +204,19 @@ export async function runRetentionPass({ now = new Date(), dryRun = false } = {}
                 })
             } catch (err) {
                 logger.error({ err, userId: row.user_id }, 'retention: failed to send warning email')
+                stats.skipped++
+                continue
+            }
+
+            // sendEmail RESOLVES with { ok: false } for a 4xx (a rejected key,
+            // an unverified sender, a bad address) — it only throws on the
+            // unexpected. The catch above therefore never saw the most likely
+            // failure, and warning_sent_at was written anyway: 30 days later
+            // the credentials were purged having warned nobody. This is the
+            // one promise in the pass that must never be faked, so the row
+            // stays unwarned and the next pass tries again.
+            if (!result?.ok) {
+                logger.error({ userId: row.user_id, error: result?.error }, 'retention: warning email not accepted — leaving the row unwarned')
                 stats.skipped++
                 continue
             }

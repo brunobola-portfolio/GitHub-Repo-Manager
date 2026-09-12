@@ -59,6 +59,38 @@ describe('the API reference counts what actually ships', () => {
     })
 })
 
+/*
+ * The same numbers, in the three documents the gate above never read. They had
+ * drifted to "341 route handlers" (×4) and "325 across 74 route modules" while
+ * API.md, docs/index.md and the diagram were all correct — which is the exact
+ * failure mode this file exists to prevent, reproduced in the files it did not
+ * cover. Counted by pattern rather than by exact sentence, so a rewording does
+ * not silently drop the claim from the gate.
+ */
+describe('the architecture prose and the article count what actually ships', () => {
+    const PROSE = {
+        'docs/architecture/overview.md': readFileSync('docs/architecture/overview.md', 'utf8'),
+        'docs/architecture/backend.md': readFileSync('docs/architecture/backend.md', 'utf8'),
+        'docs/ARTICLE.md': readFileSync('docs/ARTICLE.md', 'utf8'),
+    }
+
+    for (const [file, text] of Object.entries(PROSE)) {
+        it(`${file} states the real handler count wherever it states one`, () => {
+            const claims = [...text.matchAll(/(\d[\d,]*) route handlers/g)]
+                .map((m) => Number(m[1].replace(/,/g, '')))
+            expect(claims.length, `${file} no longer states a handler count — re-point this gate`).toBeGreaterThan(0)
+            expect([...new Set(claims)], `${file} disagrees with the real count`).toEqual([routeHandlerCount])
+        })
+
+        it(`${file} states the real route-module count wherever it states one`, () => {
+            const claims = [...text.matchAll(/(\d[\d,]*) route modules/g)]
+                .map((m) => Number(m[1].replace(/,/g, '')))
+            expect(claims.length, `${file} no longer states a module count — re-point this gate`).toBeGreaterThan(0)
+            expect([...new Set(claims)], `${file} disagrees with the real module count`).toEqual([routeFileCount])
+        })
+    }
+})
+
 describe('the architecture diagram tells the truth', () => {
     it('states the real handler and module counts', () => {
         expect(architectureSvg).toContain(`${routeHandlerCount} handlers`)

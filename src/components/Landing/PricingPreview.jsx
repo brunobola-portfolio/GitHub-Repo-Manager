@@ -98,7 +98,7 @@ function PreviewCard({ plan, i, onSignIn, selfServe }) {
 			initial="hidden"
 			whileInView="visible"
 			viewport={{ once: true, margin: '-60px' }}
-			className={`relative ${plan.popular ? 'scale-[1.03] md:scale-[1.05]' : ''}`}
+			className={`relative h-full ${plan.popular ? 'scale-[1.03] md:scale-[1.05]' : ''}`}
 		>
 			{/* Badges — absolute on outer wrapper so they can float above the card body (overflow-visible here) */}
 			{plan.popular && (
@@ -177,9 +177,19 @@ function PreviewCard({ plan, i, onSignIn, selfServe }) {
 
 					{/* CTA */}
 					<button
+						type="button"
 						onClick={() => {
-							if (plan.enterprise) {
-								window.open(`mailto:${SALES_EMAIL}?subject=${encodeURIComponent('GitHub Repo Manager — Enterprise inquiry')}`, '_self')
+							// `blocked` belongs here, not only on the label. The button
+							// relabelled itself to "Contact us about Pro" and then still
+							// called onSignIn(), so a visitor asking to be contacted was
+							// handed GitHub's consent screen asking for their
+							// repositories — on a deployment that cannot take their money
+							// anyway. The label was fixed and the handler was not.
+							if (plan.enterprise || blocked) {
+								const subject = plan.enterprise
+									? 'GitHub Repo Manager — Enterprise inquiry'
+									: 'GitHub Repo Manager — Pro inquiry'
+								window.open(`mailto:${SALES_EMAIL}?subject=${encodeURIComponent(subject)}`, '_self')
 							} else if (onSignIn) {
 								onSignIn()
 							}
@@ -249,7 +259,7 @@ export function PricingPreview({ onSignIn }) {
         </motion.div>
 
         {/* Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start pt-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-5">
 					{plans.map((plan, i) => (
 						<PreviewCard key={plan.name} plan={plan} i={i} onSignIn={onSignIn} selfServe={selfServe} />
 					))}

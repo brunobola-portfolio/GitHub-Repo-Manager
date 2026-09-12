@@ -348,11 +348,27 @@ router.delete('/', requireAuth, (req, res) => {
             return res.status(404).json({ error: 'User already erased' });
         }
 
-        // Block erasure if subscription is still active.
+        // Block erasure while Stripe still has a live subscription for this
+        // user. Checking `status === 'active'` was wrong in both directions:
+        //
+        // - It let `past_due`, `incomplete`, `trialing`, `refunded` and
+        //   `disputed` through. Erasure deletes user_subscriptions, so the
+        //   Stripe subscription carried on billing with nothing in the
+        //   database pointing at it — nobody left to cancel it and no way to
+        //   match a refund to an account.
+        // - It refused users who have no subscription at all. Opening checkout
+        //   once writes a row with tier 'free' and status 'active' purely to
+        //   hold the Stripe customer id (routes/billing.js), so anyone who
+        //   looked at the pricing page and walked away was denied erasure —
+        //   a data-subject right, withheld by an implementation detail.
+        //
+        // The subscription id is what actually means "Stripe is billing this
+        // person", and 'cancelled' is the one terminal status the webhooks
+        // write (on customer.subscription.deleted).
         const sub = db.prepare(
-            `SELECT status FROM user_subscriptions WHERE user_id = ?`
+            `SELECT status, stripe_subscription_id FROM user_subscriptions WHERE user_id = ?`
         ).get(userId);
-        if (sub && sub.status === 'active') {
+        if (sub?.stripe_subscription_id && sub.status !== 'cancelled') {
             return res.status(400).json({
                 error: 'cancel active subscription first',
             });

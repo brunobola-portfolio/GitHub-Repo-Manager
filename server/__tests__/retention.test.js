@@ -138,6 +138,37 @@ describe('runRetentionPass', () => {
         expect(updateStmt.run).not.toHaveBeenCalled()
     })
 
+    it('warning email rejected (4xx) → row stays unwarned, so the next pass retries', async () => {
+        // sendEmail RESOLVES { ok: false } for a 4xx — a rejected key, an
+        // unverified sender, a bad address — and only throws on the
+        // unexpected. The old try/catch therefore missed the likeliest
+        // failure and wrote warning_sent_at anyway, so 30 days later the
+        // credentials were purged having warned nobody.
+        const date = new Date(NOW.getTime() - 340 * 24 * 60 * 60 * 1000).toISOString()
+        const row = makeRow({ updatedAt: date, warningSentAt: null })
+
+        const selectStmt = { all: vi.fn(() => [row]) }
+        const updateStmt = { run: vi.fn(), get: vi.fn(), all: vi.fn(() => []) }
+
+        mockPrepare.mockImplementation((sql) => {
+            if (/FROM user_ai_config/.test(sql)) return selectStmt
+            if (/UPDATE user_ai_config SET warning_sent_at/.test(sql)) return updateStmt
+            return { run: vi.fn(), get: vi.fn(() => undefined), all: vi.fn(() => []) }
+        })
+
+        vi.mocked(sendEmail).mockResolvedValue({ ok: false, error: 'Resend rejected the sender' })
+
+        const { runRetentionPass } = await import('../lib/retention.js')
+        const result = await runRetentionPass({ now: NOW })
+
+        expect(sendEmail).toHaveBeenCalledOnce()
+        expect(result.warned).toBe(0)
+        expect(result.skipped).toBe(1)
+        // The whole point: warning_sent_at must NOT be written, so the next
+        // pass sends the warning instead of purging in silence.
+        expect(updateStmt.run).not.toHaveBeenCalled()
+    })
+
     it('row within warning window + warning already sent → no action', async () => {
         const date = new Date(NOW.getTime() - 340 * 24 * 60 * 60 * 1000).toISOString()
         const row = makeRow({ updatedAt: date, warningSentAt: '2026-03-15T00:00:00.000Z' })

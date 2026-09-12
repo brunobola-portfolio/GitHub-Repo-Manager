@@ -230,6 +230,13 @@ export function PricingPage({ onGetStarted } = {}) {
   // "Save 20%" and then charge the monthly price at checkout. Defaults to
   // false (hidden) so an unavailable/failed probe errs on the honest side.
   const [yearlyAvailable, setYearlyAvailable] = useState(false)
+  // Whether this deployment can take money at all. `null` until the probe
+  // answers, so the Pro button keeps its label rather than flickering; only an
+  // explicit `false` turns it into a contact button. The landing page has read
+  // this field since 4.25.2 — this page asked the very same endpoint and
+  // ignored it, so a signed-in visitor clicked "Upgrade to Pro", waited for a
+  // 503, and learned from an error banner that the instance cannot sell it.
+  const [selfServe, setSelfServe] = useState(null)
   const [stripePrices, setStripePrices] = useState(null)
   const [checkoutLoading, setCheckoutLoading] = useState(null)
   // Stays on Pricing when checkout is unavailable so the user actually sees
@@ -250,6 +257,9 @@ export function PricingPage({ onGetStarted } = {}) {
         if (cancelled) return
         setYearlyAvailable(!!data?.yearlyBillingAvailable)
         setStripePrices(data?.prices ?? null)
+        // Only an answer that actually carries the field decides this: a
+        // malformed or truncated response must not read as "cannot sell".
+        if (data && 'stripeEnabled' in data) setSelfServe(Boolean(data.stripeEnabled))
       } catch { /* keep yearly hidden when we can't confirm it's configured */ }
     })()
     return () => { cancelled = true }
@@ -288,12 +298,19 @@ export function PricingPage({ onGetStarted } = {}) {
       return
     }
     if (tier === 'Pro') {
+      // This instance cannot charge: ask for an e-mail instead of sending the
+      // user through a checkout that answers 503 and an error banner they have
+      // to read to understand what happened.
+      if (selfServe === false) {
+        window.location.href = `mailto:${SALES_EMAIL}?subject=${encodeURIComponent('GitHub Repo Manager — Pro inquiry')}`
+        return
+      }
       handleCheckout('pro', isYearly ? 'yearly' : 'monthly')
       return
     }
     // Free tier — go to dashboard
     if (onGetStarted) onGetStarted('free')
-  }, [handleCheckout, onGetStarted, isYearly])
+  }, [handleCheckout, onGetStarted, isYearly, selfServe])
 
   const tiers = TIERS_MONTHLY
     .map(t => applyStripePrices(t, stripePrices))
@@ -479,14 +496,20 @@ export function PricingPage({ onGetStarted } = {}) {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: DURATION.ambient, delay: 0.4, ease: EASE.emphasized }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 mb-20 sm:mb-28 items-start pt-5"
+          className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 mb-20 sm:mb-28 pt-5"
         >
           {tiers.map((tier) => (
             <PricingCard
               key={tier.tier}
               {...tier}
               period={isYearly ? 'year' : 'month'}
-              ctaText={checkoutLoading === tier.tier.toLowerCase() ? 'Redirecting...' : tier.ctaText}
+              ctaText={
+                checkoutLoading === tier.tier.toLowerCase()
+                  ? 'Redirecting...'
+                  : tier.tier === 'Pro' && selfServe === false
+                    ? 'Contact us about Pro'
+                    : tier.ctaText
+              }
               ctaAction={() => handleTierAction(tier.tier)}
             />
           ))}

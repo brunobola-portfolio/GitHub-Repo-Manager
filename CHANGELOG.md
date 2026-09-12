@@ -7,7 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **The TFVC import can no longer be used to exhaust the server's memory.**
+  Extraction now refuses an entry whose declared uncompressed size is past a
+  ceiling — read from the central directory, so nothing is expanded first —
+  caps the archive's total expansion and its entry count, and rejects Windows
+  device names (`CON`, `nul.txt`) and alternate data streams (`a.txt:hidden`),
+  which are files on paper and something else entirely on disk. The
+  containment check also moved from a string prefix to `path.relative`: a
+  destination with a sibling sharing its prefix (`…/content-x` beside
+  `…/content`) satisfied `startsWith` and would have accepted writes outside
+  itself.
+- **A retention warning is only recorded once it is actually accepted.**
+  `sendEmail` resolves `{ ok: false }` for a 4xx — a rejected key, an
+  unverified sender, a bad address — and throws only on the unexpected, so the
+  handler's `try/catch` never saw the likeliest failure: `warning_sent_at` was
+  written regardless, and thirty days later the credentials were purged having
+  warned nobody. The row now stays unwarned so the next pass retries.
+- **Erasure is blocked by a live subscription, not by a status string.** The
+  guard tested `status === 'active'`, which let `past_due`, `incomplete`,
+  `trialing`, `refunded` and `disputed` through — and erasure deletes
+  `user_subscriptions`, so Stripe carried on charging a card with nothing left
+  in the database pointing at it. It also refused erasure to users who have no
+  subscription at all: opening checkout once writes a `free`/`active` row just
+  to hold the Stripe customer id, so anyone who looked at the pricing page and
+  walked away was denied a data-subject right. It now keys on the subscription
+  id and the one terminal status the webhooks write.
+
 ### Fixed
+
+- **The Pro button on the landing page does what its label says.** When this
+  deployment cannot take money the card relabels itself "Contact us about
+  Pro" — and then still called `onSignIn()`, so a visitor asking to be
+  contacted was handed GitHub's consent screen asking for their repositories.
+  The label was fixed in 4.25.2 and the handler was not; it now opens the same
+  mailto Enterprise uses, with its own subject.
+- The three pricing cards sit on one baseline again. The grid was
+  `items-start` and the motion wrapper had no `h-full`, so each card body's
+  own `h-full` resolved against an auto-height parent (measured 504 / 468 /
+  480 px) and the three buttons landed on three different lines.
+- The launch kit's account-specific half — product, price and webhook
+  identifiers, and the note that the webhook secret must be treated as
+  exposed — moved out of `docs/reports/` into the gitignored `.dev/`. That
+  file is public, and a launch post points strangers at this repository.
 
 - **One definition of "billing is configured", not two.** `isStripeEnabled()`
   asked only for `STRIPE_SECRET_KEY`, while the shell has always required the

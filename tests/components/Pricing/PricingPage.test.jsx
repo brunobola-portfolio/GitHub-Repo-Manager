@@ -21,6 +21,65 @@ function mockConfigResponse(body) {
     return { ok: true, status: 200, headers: { get: () => 'application/json' }, json: async () => body }
 }
 
+describe('PricingPage — the Pro button follows what this instance can charge', () => {
+    beforeEach(() => {
+        global.fetch = vi.fn()
+        _resetCsrfTokenForTests()
+    })
+    afterEach(() => {
+        vi.restoreAllMocks()
+    })
+
+    const checkoutCalls = () =>
+        global.fetch.mock.calls.filter(([url]) => String(url).includes('/billing/checkout'))
+
+    it('offers contact, not checkout, when the probe says Stripe is off', async () => {
+        // This page asked /billing/config and read only the yearly flag and the
+        // prices, ignoring stripeEnabled — so a signed-in visitor clicked
+        // "Upgrade to Pro", waited for a 503, and read an error banner to find
+        // out the instance cannot sell it. The landing page was fixed in
+        // 4.25.2; this one was not.
+        global.fetch.mockResolvedValue(
+            mockConfigResponse({ stripeEnabled: false, yearlyBillingAvailable: false, prices: {} }),
+        )
+
+        render(<PricingPage />)
+
+        const cta = await waitFor(() => screen.getByRole('button', { name: /contact us about pro/i }))
+        await act(async () => { fireEvent.click(cta) })
+
+        expect(checkoutCalls()).toHaveLength(0)
+    })
+
+    it('starts a checkout when the probe says Stripe is on', async () => {
+        global.fetch.mockImplementation(async (url) => {
+            if (String(url).includes('/billing/config')) {
+                return mockConfigResponse({ stripeEnabled: true, yearlyBillingAvailable: false, prices: {} })
+            }
+            if (String(url).includes('/csrf')) return mockCsrfToken()
+            return mockConfigResponse({ url: 'https://checkout.stripe.test/session' })
+        })
+
+        render(<PricingPage />)
+
+        const cta = await waitFor(() => screen.getByRole('button', { name: /upgrade to pro/i }))
+        await act(async () => { fireEvent.click(cta) })
+
+        await waitFor(() => expect(checkoutCalls().length).toBeGreaterThan(0))
+    })
+
+    it('keeps the Pro label while the probe has not answered, rather than flickering', async () => {
+        // `null`, not `false`: a page that renders "Contact us" for a moment
+        // and then switches to "Upgrade" reads as broken.
+        global.fetch.mockImplementation(() => new Promise(() => {}))
+
+        render(<PricingPage />)
+
+        expect(screen.getByRole('button', { name: /upgrade to pro/i })).toBeInTheDocument()
+        expect(screen.queryByRole('button', { name: /contact us about pro/i })).not.toBeInTheDocument()
+    })
+})
+
 describe('PricingPage — yearly billing toggle feature-detection', () => {
     beforeEach(() => {
         global.fetch = vi.fn()
@@ -181,8 +240,15 @@ describe('PricingPage — the checkout-unavailable banner names no deployment ty
     })
 
     async function renderBannerAfter503() {
+        // The probe must say Stripe IS enabled. Since the Pro button reads
+        // `stripeEnabled`, a `false` here means the button becomes a contact
+        // link and checkout is never called — so the banner this suite exists
+        // to test would be unreachable. Its real scenario is the mismatch:
+        // the probe answered yes and the checkout 503s anyway (a key removed
+        // mid-session, a mid-deploy change, a self-host whose operator unset
+        // it). That is why the banner stays.
         global.fetch
-            .mockResolvedValueOnce(mockConfigResponse({ stripeEnabled: false, yearlyBillingAvailable: false }))
+            .mockResolvedValueOnce(mockConfigResponse({ stripeEnabled: true, yearlyBillingAvailable: false }))
             .mockResolvedValueOnce(mockCsrfToken())
         // Every later attempt: Stripe missing. 503 is retryable, so apiCall
         // sleeps between four attempts — fake timers skip the backoff instead

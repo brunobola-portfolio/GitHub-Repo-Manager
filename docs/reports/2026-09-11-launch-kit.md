@@ -12,7 +12,7 @@ posted. The four-week plan it executes is §4 of
    login link depends on the same key. Steps in
    [the review](2026-09-11-dora-sentry-site-vps-review.md) and in the
    final section of this kit.
-2. **Sentry alert rule** on project 4512036544380928 ("a new issue" →
+2. **Sentry alert rule** on the project this deployment's DSN names ("a new issue" →
    e-mail), so a launch-day 500 reaches you before a comment does.
 3. **Open `https://repomanager.bolalabs.pt` in a private window**, sign in
    with GitHub, open the Work Board and the DORA tab. That exact path is
@@ -346,56 +346,56 @@ Sentry in the browser:
 ## Selling Pro (owner)
 
 Do e-mail first: a completed checkout mints a signed licence key and e-mails
-it, and the issuer now refuses to send through the console adapter rather than
-marking a key as delivered that nobody received.
+it, and the issuer refuses to send through the console adapter rather than
+marking a key as delivered that nobody received. E-mail is live as of
+2026-09-12, proven end to end.
 
-State on 2026-09-12, read from the live account (`acct_1SFhUz2KaWwZvTfa`,
-livemode, named "Buymeacoffee"): the two products already exist —
-**Pro** `prod_UH51UuUYyZxoGo` at **EUR 19,00/month**
-(`price_1TIWrQ2KaWwZvTfazlvTnnoC`, already set as the
-`STRIPE_PRICE_PRO_MONTHLY` variable) and **Enterprise** `prod_UH5KxrkunZmCMO`
-at EUR 49,00/month (`price_1TIX9x2KaWwZvTfaVmCWCyL1`, dormant — no surface
-offers it). Both descriptions were corrected to match the shipped tiers. The
-webhook endpoint `we_1UEtmD2KaWwZvTfaouC2luRx` was created for
-`https://repomanager.bolalabs.pt/api/v1/webhooks/stripe` with the five events
-below. No yearly price exists, so the pricing page's yearly toggle stays
-hidden — which is correct.
+The account-specific half of this section — product, price and webhook
+endpoint ids, the Sentry project, and the review notes tied to them — is
+deliberately **not** in this repository. This file is public and a launch post
+points strangers at it, so that detail lives in
+`.dev/launch/selling-pro-owner.md` next to the operator checklist.
 
-**Two decisions before selling.** The prices are in **euros** while every
-published surface says `$19`; either restate the copy in euros (one string in
-the site, one row in the README) or create USD prices. And Enterprise has a
-live self-serve price that no page offers: leave it dormant, or deactivate it
-so nobody reaches it with a direct link.
+In outline, in this order:
 
-1. **Roll the webhook signing secret.** Stripe returned it when the endpoint
-   was created, which means it passed through a chat transcript — treat it as
-   exposed. Stripe → Developers → Webhooks → the endpoint → **Roll secret**,
-   then copy the new `whsec_…`.
-2. Events on that endpoint (already set): `checkout.session.completed`,
-   `customer.subscription.updated`, `customer.subscription.deleted`,
-   `invoice.paid`, `invoice.payment_failed`.
-3. **GitHub → Settings → Secrets and variables → Actions**: secrets
+1. **Roll the webhook signing secret** and copy the new one.
+2. **Save a Customer portal configuration** (Settings → Billing → Customer
+   portal). There is none today, and without it the portal session call fails
+   in livemode: nobody can cancel a subscription or update an expiring card,
+   and the only lever a customer has left is a chargeback.
+3. **Add the refund and dispute events** to the webhook endpoint
+   (`charge.refunded`, `charge.dispute.created`, `charge.dispute.closed`).
+   Those handlers already exist and are never delivered without them, so a
+   refunded customer keeps Pro and a working licence key.
+4. **Check the account's default API version** before charging anyone. The
+   endpoint renders events at the account default, and a 2025-or-later default
+   moved two fields this code reads — first purchases work, renewals and
+   dunning silently do not.
+5. **Decide on VAT** before the first sale, not after: no registration and no
+   tax behaviour on the price means a flat €19 with no VAT line, out of which
+   Portuguese VAT still has to be remitted.
+6. **GitHub → Settings → Secrets and variables → Actions**: secrets
    `STRIPE_SECRET_KEY` (`sk_live_…`, from Developers → API keys) and
    `STRIPE_WEBHOOK_SECRET` (the rolled one). The price-id variable is already
    set; `LICENSE_PRIVATE_PEM` — which signs the licence a customer receives —
    is already a secret in this repository and `configure-integrations` writes
    it to the box for you.
-4. Run **`configure-integrations`**. It writes all three or none, checks the
+7. Run **`configure-integrations`**. It writes all of them or none, checks the
    prefixes, says so loudly if the key is a test key, restarts the service and
    rolls back on a failed health check. Then confirm
    `https://repomanager.bolalabs.pt/api/v1/billing/config` answers
    `"stripeEnabled": true`.
-5. **Buy it yourself once.** Sign in on the hosted app, open Pricing, upgrade,
-   pay with a real card (or a test key and `4242 4242 4242 4242` first), and
-   check three things: Settings → Billing shows Pro, the licence e-mail
-   arrives, and Stripe's webhook log shows the events delivered with 2xx.
-6. Flip the site's `REPOMANAGER_SELF_SERVE_PRO` to `true` in
+8. **Buy it yourself once.** Sign in on the hosted app, open Pricing, upgrade,
+   pay with a real card, and check four things: Settings → Billing shows Pro,
+   the licence e-mail arrives, Stripe's webhook log shows 2xx deliveries, and
+   the portal's Cancel button works.
+9. Flip the site's `REPOMANAGER_SELF_SERVE_PRO` to `true` in
    `bolalabs-platform/src/site.ts` and cut a site release. That is what moves
-   the Pro card from "Request a demo" to a checkout button; while Stripe is
+   the Pro card from the contact form to a checkout button; while Stripe is
    off it deliberately stays on the form, because a checkout page that says
    "not available here" is worse than a form.
-7. Refund yourself in Stripe, and keep the invoice — it is the first
-   end-to-end proof that the billing path works.
+10. Refund yourself in Stripe, keep the invoice, and confirm the refund
+    actually removed access — that is the end-to-end proof.
 
 Full reference, including local testing with the Stripe CLI:
 [`docs/guides/stripe-setup.md`](../guides/stripe-setup.md).

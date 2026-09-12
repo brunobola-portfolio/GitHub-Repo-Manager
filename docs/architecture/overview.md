@@ -15,7 +15,7 @@ providers. SQLite is the only store; PostgreSQL is intentionally unsupported
   route-level lazy splits (WorkBoard, PRReview, Admin) kept under explicit
   gzip budgets by the CI gate
   [`tests/build/bundle-budget.test.js`](../../tests/build/bundle-budget.test.js).
-- **Backend**: Express 5 with 341 route handlers across 77 route modules under
+- **Backend**: Express 5 with 342 route handlers across 77 route modules under
   `server/routes/`. CSRF double-submit, SSRF guard on import-from-URL,
   per-IP auth rate-limit, rolling session + 7-day absolute timeout.
 - **Auth**: GitHub OAuth App, session-based token storage, CSRF-protected
@@ -191,7 +191,7 @@ Entry point: `server/index.js`
 - Loads configuration from environment variables (see `.env.example`).
 - Configures CORS, JSON parsing, `express-session` (backed by Redis when `REDIS_URL` is set), Helmet, and rate limiting.
 - Validates the presence of GitHub OAuth credentials at startup.
-- Uses a **modular route structure** with 77 route modules (341 route
+- Uses a **modular route structure** with 77 route modules (342 route
   handlers) under `server/routes/` (plus a `v1/` sub-router for versioned
   endpoints). Each domain area has its own route module:
   - **Auth** (`routes/auth.js`): login, callback, logout, user session,
@@ -498,6 +498,6 @@ graph TB
     Import -->|"simple-git"| GH
 ```
 
-> **Note:** The Mermaid diagram above shows the high-level data flow. The full modular route structure (77 route modules / 341 route handlers under `server/routes/`, middleware stack, and infrastructure wiring) is documented in [`docs/architecture/backend.md`](backend.md).
+> **Note:** The Mermaid diagram above shows the high-level data flow. The full modular route structure (77 route modules / 342 route handlers under `server/routes/`, middleware stack, and infrastructure wiring) is documented in [`docs/architecture/backend.md`](backend.md).
 
 This document is a high-level guide; see inline comments and the README for more details.
