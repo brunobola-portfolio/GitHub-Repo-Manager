@@ -11,7 +11,7 @@ Create the **Pro** product in Stripe Dashboard > Product catalog:
 
 | Product | Price                                                                       |
 |---------|-----------------------------------------------------------------------------|
-| **Pro** | $19/month, or $180/year (the pricing page shows yearly as 20% off monthly)  |
+| **Pro** | €19/month, or €180/year (the pricing page states the real saving, computed from the yearly total you configure)  |
 
 Enterprise is **Contact Sales** on every pricing surface — it has no self-serve
 checkout button. Only create an Enterprise product if you intend to send

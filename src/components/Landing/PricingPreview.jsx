@@ -10,7 +10,9 @@ import { apiCall } from '../../utils/api'
 const plans = [
   {
     name: 'Free',
-    price: '$0',
+    // Euros, because that is what the Stripe prices actually charge — the
+    // published "$19" was a different currency from the one at the till.
+    price: '€0',
     period: 'forever',
     description: 'Full Repo Advisor, Deep Review, Prompt Studio, bulk ops, and mirror sync — no credit card required.',
     cta: 'Get started free',
@@ -27,7 +29,7 @@ const plans = [
   },
   {
     name: 'Pro',
-    price: '$19',
+    price: '€19',
     period: 'per month',
     // "Priority support" is Enterprise-only on the README matrix, PricingPage,
     // FeatureComparison and the billing docs. Pro is email support. This is
@@ -86,7 +88,7 @@ function PreviewCard({ plan, i, onSignIn, selfServe }) {
   // consent screen asking for their repositories, only to end at "self-serve
   // checkout isn't available here yet". Ask for an e-mail instead, and say so
   // on the button rather than after the OAuth round trip.
-  const isPaidSelfServe = !plan.enterprise && plan.price !== '$0'
+  const isPaidSelfServe = !plan.enterprise && plan.price !== '€0'
   const blocked = isPaidSelfServe && selfServe === false
   const ctaLabel = blocked ? 'Contact us about Pro' : plan.cta
 	return (

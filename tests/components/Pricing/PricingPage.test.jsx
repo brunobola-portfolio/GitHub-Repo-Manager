@@ -153,10 +153,13 @@ describe('PricingPage — advertises the operator real Stripe price', () => {
 
     it('keeps its built-in default when the server resolves no price', async () => {
         // Self-hosted with billing off: the number is decorative there, but it
-        // must not vanish or render as NaN.
+        // must not vanish or render as NaN. The default currency is EUR because
+        // that is what every published plan quotes and what the Stripe prices
+        // actually charge — a card rendering "$19" for a price that takes €19
+        // was the mismatch this default used to create.
         withPrices({})
         render(<PricingPage />)
-        await waitFor(() => expect(screen.getByText('$19')).toBeInTheDocument())
+        await waitFor(() => expect(screen.getByText('€19')).toBeInTheDocument())
     })
 })
 

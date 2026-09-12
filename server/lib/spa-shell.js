@@ -54,9 +54,9 @@ export function softwareApplicationJsonLd({ origin, version, stripeEnabled = fal
         // tests; "with your own key" belongs on the Free line for the same
         // reason — the AI quota is metered against the user's own provider.
         offers: [
-            { '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'USD', description: 'Every feature, metered AI with your own key, unlimited repositories and teams.' },
+            { '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'EUR', description: 'Every feature, metered AI with your own key, unlimited repositories and teams.' },
             ...(stripeEnabled
-                ? [{ '@type': 'Offer', name: 'Pro', price: '19', priceCurrency: 'USD', description: 'More AI headroom and more API keys, billed monthly.' }]
+                ? [{ '@type': 'Offer', name: 'Pro', price: '19', priceCurrency: 'EUR', description: 'More AI headroom and more API keys, billed monthly.' }]
                 : []),
         ],
         codeRepository: 'https://github.com/brunobola-portfolio/GitHub-Repo-Manager',

@@ -247,7 +247,7 @@ The hosted product is **free-first**: nearly every product feature — bulk ops,
   <img alt="Free-first tier gating: three sources of truth — feature-flags.js TIER_FEATURES, usage-meter.js METRIC_TO_FEATURE, and the require-tier middleware — feed one gating decision checking whether a feature is allowed and within its monthly cap, returning a 429 quota state on overflow" src="docs/images/tier-gating.svg" width="900">
 </picture>
 
-| Feature                                | Free            | Pro ($19/mo)  | Enterprise |
+| Feature                                | Free            | Pro (€19/mo)  | Enterprise |
 |----------------------------------------|-----------------|---------------|------------|
 | Repositories managed                   | Unlimited       | Unlimited     | Unlimited  |
 | Repo Advisor (conversational) †        | ✓               | ✓             | ✓          |

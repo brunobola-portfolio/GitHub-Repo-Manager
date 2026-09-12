@@ -53,7 +53,11 @@ function FeatureRow({ label, included, highlighted, enterprise }) {
 const CURRENCY_SYMBOLS = { usd: '$', eur: '€', gbp: '£' }
 
 function money(amount, currency) {
-  const code = (currency || 'usd').toLowerCase()
+  // Euros by default: the hosted instance's Stripe prices are in EUR, and a
+  // card that renders "$19" for a price that charges €19 is the mismatch this
+  // default used to create. An operator whose prices are in another currency
+  // still gets it right — the real code comes from their Stripe price.
+  const code = (currency || 'eur').toLowerCase()
   const symbol = CURRENCY_SYMBOLS[code]
   return symbol ? `${symbol}${amount}` : `${amount} ${code.toUpperCase()}`
 }
@@ -64,9 +68,9 @@ export function PricingCard({
   customPrice,
   originalPrice,
   period,
-  // Resolved from the operator's Stripe price. Defaults to USD so a
-  // self-hosted install with billing off renders exactly as it always did.
-  currency = 'usd',
+  // Resolved from the operator's Stripe price; EUR when billing is off, which
+  // is what the published plans quote.
+  currency = 'eur',
   // The real yearly total from Stripe, when there is one. Without it the card
   // falls back to price * 12, which is only correct for the fixed-discount
   // path.

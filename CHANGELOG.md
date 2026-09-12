@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Prices are quoted in **euros** everywhere, because euros are what the
+  configured Stripe prices actually charge: Pro is €19/month. Every surface
+  moved together — the README tier matrix, the landing pricing preview, the
+  in-app pricing card's default currency, the shell's structured-data offers
+  (`priceCurrency`), the Stripe setup guide, and on the site the four localised
+  FAQ answers and the plan cards. The card still prefers the currency of the
+  operator's own Stripe price; EUR is only the fallback for a deployment with
+  billing off.
+- The Enterprise self-serve price was archived in Stripe (the product is
+  deactivated there). Every surface sends Enterprise to "contact sales", and a
+  live price reachable only by a direct checkout link contradicted that. The
+  product object is kept, so re-enabling it is one click.
+
 ## [4.25.3] - 2026-09-12
 
 ### Security
