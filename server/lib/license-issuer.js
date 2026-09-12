@@ -2,7 +2,7 @@
 // Copyright 2025-2026 Bola Labs, Inc. Licensed under the Apache License 2.0.
 
 import { generateLicenseKey, addCalendarMonths } from './license.js'
-import { sendEmail } from './email.js'
+import { isEmailDeliveryConfigured, sendEmail } from './email.js'
 import db from '../db.js'
 import logger from './logger.js'
 
@@ -183,8 +183,22 @@ export async function issueLicenseForCheckout(opts) {
         return { licenseKey: null, emailDelivered: false }
     }
 
-    // Send the license email (best-effort)
+    // Send the license email (best-effort), but only when mail can actually
+    // leave the box. The console adapter returns ok for a message nobody
+    // receives — and deliberately does not log the body, because the body is a
+    // license key — so sending a paid key through it would mark this row
+    // email_delivered=1 for a key the customer never got, and no route hands an
+    // owner their key back. Leaving the row undelivered is the honest state:
+    // with EMAIL_PROVIDER=resend it goes out for real, and until then the log
+    // says a key is owed.
     let emailDelivered = false
+    if (!isEmailDeliveryConfigured()) {
+        logger.warn(
+            { stripeSessionId, userId, tier },
+            'license-issuer: email delivery not configured — license persisted, NOT sent, email_delivered=0; set EMAIL_PROVIDER=resend'
+        )
+        return { licenseKey, emailDelivered: false, emailConfigured: false }
+    }
     try {
         const result = await sendEmail({
             to: email,

@@ -34,7 +34,7 @@ vi.mock('../lib/email.js', () => ({
 // Import after mocks
 import logger from '../lib/logger.js'
 import { generateLicenseKey } from '../lib/license.js'
-import { sendEmail } from '../lib/email.js'
+import { isEmailDeliveryConfigured, sendEmail } from '../lib/email.js'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -79,6 +79,7 @@ describe('issueLicenseForCheckout', () => {
         mockPrepare.mockReset()
         vi.mocked(generateLicenseKey).mockReset()
         vi.mocked(sendEmail).mockReset()
+        vi.mocked(isEmailDeliveryConfigured).mockReturnValue(true)
         vi.mocked(logger.warn).mockClear()
         vi.mocked(logger.error).mockClear()
         vi.mocked(logger.fatal).mockClear()
@@ -122,6 +123,30 @@ describe('issueLicenseForCheckout', () => {
         expect(sendEmail.mock.calls[0][0].to).toBe(OPTS.email)
         expect(insertStmt.run).toHaveBeenCalledOnce()
         expect(updateStmt.run).toHaveBeenCalledOnce()
+    })
+
+    it('email delivery not configured → key persisted, nothing sent, row not marked delivered', async () => {
+        vi.mocked(generateLicenseKey).mockResolvedValue('grm_lic_unconfigured')
+        vi.mocked(isEmailDeliveryConfigured).mockReturnValue(false)
+
+        const insertStmt = makeStmt()
+        const updateStmt = makeStmt()
+        setupDb([
+            [/SELECT license_key/, makeStmt({ get: undefined })],
+            [/INSERT OR IGNORE INTO issued_licenses/, insertStmt],
+            [/UPDATE issued_licenses/, updateStmt],
+        ])
+
+        const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
+        const result = await issueLicenseForCheckout(OPTS)
+
+        expect(result.licenseKey).toBe('grm_lic_unconfigured')
+        expect(result.emailDelivered).toBe(false)
+        expect(result.emailConfigured).toBe(false)
+        expect(sendEmail).not.toHaveBeenCalled()
+        expect(insertStmt.run).toHaveBeenCalledOnce()
+        // The console adapter would have answered ok; the row must stay undelivered.
+        expect(updateStmt.run).not.toHaveBeenCalled()
     })
 
     it('duplicate stripe_session_id → idempotent return, no second email', async () => {

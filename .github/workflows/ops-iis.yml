@@ -22,11 +22,12 @@ name: Ops — IIS proxy
 #             prove delivery from this box. Writes nothing on the server.
 #   harden  — hide the ARR version header on the live site (backup, health
 #             check, restore on failure).
-#   configure-integrations — write Resend and browser-Sentry settings from
-#             GitHub (secret RESEND_API_KEY; variables EMAIL_FROM,
-#             SENTRY_BROWSER_DSN, SENTRY_ENVIRONMENT) into the service .env,
-#             refusing an unverified Resend domain; restarts, rolls back on
-#             failure. Never prints a value.
+#   configure-integrations — write Resend, browser-Sentry and deployment-mode
+#             settings from GitHub (secret RESEND_API_KEY; variables
+#             EMAIL_FROM, SENTRY_BROWSER_DSN, SENTRY_ENVIRONMENT,
+#             DEPLOYMENT_MODE) into the service .env, refusing an unverified
+#             Resend domain or a deployment mode that is not saas/self-host;
+#             restarts, rolls back on failure. Never prints a value.
 #
 # Only harden and configure-integrations write on the server, each with a
 # backup taken first and restored automatically if the health check fails.
@@ -175,6 +176,7 @@ jobs:
           IN_EMAIL_FROM: ${{ vars.EMAIL_FROM }}
           IN_SENTRY_BROWSER_DSN: ${{ vars.SENTRY_BROWSER_DSN }}
           IN_SENTRY_ENVIRONMENT: ${{ vars.SENTRY_ENVIRONMENT }}
+          IN_DEPLOYMENT_MODE: ${{ vars.DEPLOYMENT_MODE }}
         run: |
           # Writes only what is set in GitHub (secret RESEND_API_KEY; variables
           # EMAIL_FROM, SENTRY_BROWSER_DSN, SENTRY_ENVIRONMENT) into the
@@ -210,6 +212,15 @@ jobs:
           }
           if ($env:IN_SENTRY_BROWSER_DSN) { Set-Line 'SENTRY_BROWSER_DSN' $env:IN_SENTRY_BROWSER_DSN }
           if ($env:IN_SENTRY_ENVIRONMENT) { Set-Line 'SENTRY_ENVIRONMENT' $env:IN_SENTRY_ENVIRONMENT }
+          # DEPLOYMENT_MODE decides two things that matter the moment strangers
+          # can sign up: in 'saas' an installed instance licence no longer
+          # grants its tier to every account on the box, and the instance-wide
+          # webhook endpoint answers 410 instead of accepting one shared secret
+          # for all tenants. Only the two documented values are accepted.
+          if ($env:IN_DEPLOYMENT_MODE) {
+            if ($env:IN_DEPLOYMENT_MODE -notin @('saas', 'self-host')) { throw "DEPLOYMENT_MODE must be 'saas' or 'self-host', not '$($env:IN_DEPLOYMENT_MODE)'" }
+            Set-Line 'DEPLOYMENT_MODE' $env:IN_DEPLOYMENT_MODE
+          }
           if ($changed.Count -eq 0) { 'nothing set in GitHub — add the secret/variables first'; exit 0 }
 
           $backup = "$envFile.bak-$(Get-Date -Format yyyyMMdd-HHmmss)"

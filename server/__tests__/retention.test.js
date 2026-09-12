@@ -15,6 +15,7 @@ vi.mock('../lib/logger.js', () => ({
 
 vi.mock('../lib/email.js', () => ({
     sendEmail: vi.fn(),
+    isEmailDeliveryConfigured: vi.fn(() => true),
 }))
 
 vi.mock('../lib/audit.js', () => ({
@@ -22,7 +23,7 @@ vi.mock('../lib/audit.js', () => ({
 }))
 
 import { default as _db, __mockPrepare as mockPrepare } from '../db.js'
-import { sendEmail } from '../lib/email.js'
+import { isEmailDeliveryConfigured, sendEmail } from '../lib/email.js'
 import { auditLogDirect } from '../lib/audit.js'
 
 // Reference "now" for tests: 2026-04-18
@@ -60,6 +61,7 @@ describe('runRetentionPass', () => {
         vi.resetModules()
         mockPrepare.mockReset()
         vi.mocked(sendEmail).mockReset()
+        vi.mocked(isEmailDeliveryConfigured).mockReturnValue(true)
         vi.mocked(auditLogDirect).mockReset()
         delete process.env.DATA_RETENTION_DAYS
         delete process.env.DATA_RETENTION_WARNING_LEAD_DAYS
@@ -109,6 +111,31 @@ describe('runRetentionPass', () => {
         expect(sendEmail).toHaveBeenCalledOnce()
         expect(sendEmail.mock.calls[0][0].to).toBe('user@example.com')
         expect(updateStmt.run).toHaveBeenCalledOnce()
+    })
+
+    it('email delivery not configured → warning held, nothing marked as warned', async () => {
+        const date = new Date(NOW.getTime() - 340 * 24 * 60 * 60 * 1000).toISOString()
+        const row = makeRow({ updatedAt: date, warningSentAt: null })
+
+        const selectStmt = { all: vi.fn(() => [row]) }
+        const updateStmt = { run: vi.fn(), get: vi.fn(), all: vi.fn(() => []) }
+        mockPrepare.mockImplementation((sql) => {
+            if (/FROM user_ai_config/.test(sql)) return selectStmt
+            if (/UPDATE user_ai_config SET warning_sent_at/.test(sql)) return updateStmt
+            return { run: vi.fn(), get: vi.fn(() => undefined), all: vi.fn(() => []) }
+        })
+        vi.mocked(isEmailDeliveryConfigured).mockReturnValue(false)
+
+        const { runRetentionPass } = await import('../lib/retention.js')
+        const result = await runRetentionPass({ now: NOW })
+
+        expect(result.warned).toBe(0)
+        expect(result.skipped).toBe(1)
+        expect(sendEmail).not.toHaveBeenCalled()
+        // warning_sent_at must stay null: a warning marked as sent through the
+        // console adapter is a warning the user never gets, and the credentials
+        // are deleted 30 days later regardless.
+        expect(updateStmt.run).not.toHaveBeenCalled()
     })
 
     it('row within warning window + warning already sent → no action', async () => {

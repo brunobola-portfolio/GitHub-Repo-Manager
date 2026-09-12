@@ -1,6 +1,6 @@
 # Tour
 
-The product in a minute, then the guide behind each scene. The film plays
+The product in 81 seconds, then the guide behind each scene. The film plays
 on the [product page](https://bolalabs.pt/en/repomanager/) (muted loop in the
 hero; one button restarts it with sound and captions). It is generated from
 the captures in [`docs/images/`](screenshots.md), a synthesised score and a

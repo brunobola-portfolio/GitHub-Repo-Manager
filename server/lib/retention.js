@@ -3,7 +3,7 @@
 
 import db from '../db.js'
 import { auditLogDirect } from './audit.js'
-import { sendEmail } from './email.js'
+import { isEmailDeliveryConfigured, sendEmail } from './email.js'
 import logger from './logger.js'
 
 /**
@@ -128,6 +128,16 @@ export async function runRetentionPass({ now = new Date(), dryRun = false } = {}
 
     const stats = { checked: rows.length, warned: 0, purged: 0, skipped: 0, dryRun }
 
+    // A warning "sent" through the console adapter still sets warning_sent_at,
+    // and 30 days later the credentials are deleted for real — this is the one
+    // promise in the pass that must never be faked. When mail cannot leave the
+    // box, hold the warnings (the rows stay unwarned, so they are sent once
+    // EMAIL_PROVIDER is set) while still purging what is already past due.
+    const emailOff = !dryRun && !isEmailDeliveryConfigured()
+    if (emailOff && rows.length > 0) {
+        logger.warn({ rows: rows.length }, 'retention: email delivery not configured — warnings held, nothing marked as warned')
+    }
+
     for (const row of rows) {
         const updatedAt = new Date(row.updated_at)
         const isPastPurge = updatedAt <= purgeThreshold
@@ -177,6 +187,11 @@ export async function runRetentionPass({ now = new Date(), dryRun = false } = {}
             .toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
 
         logger.info({ userId: row.user_id, purgeDate, dryRun }, 'retention: sending warning email')
+
+        if (emailOff) {
+            stats.skipped++
+            continue
+        }
 
         if (!dryRun) {
             try {

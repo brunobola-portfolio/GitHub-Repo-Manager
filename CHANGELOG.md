@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A licence key was never delivered when `EMAIL_PROVIDER` is `console`, and the
+  row was still marked `email_delivered = 1` — the console adapter answers ok
+  for mail nobody receives, and no route hands an owner their key back. The
+  issuer now refuses to send through it: the licence is persisted, the row stays
+  undelivered, and the log says a key is owed.
+- The 365-day credential-deletion warning had the same hole: it was "sent" to
+  the console and the user was marked as warned, so the credentials were deleted
+  a month later with no notice. Warnings are now held while e-mail cannot leave
+  the box, and go out for real once a provider is configured. Purges still run.
+
+### Changed
+
+- `ops-iis.yml` → `configure-integrations` also writes `DEPLOYMENT_MODE` (from
+  a GitHub variable, `saas` or `self-host` only). On a public instance `saas`
+  stops an installed instance licence granting its tier to every account and
+  makes the instance-wide webhook endpoint answer 410.
+
 ## [4.25.1] - 2026-09-11
 
 ### Fixed

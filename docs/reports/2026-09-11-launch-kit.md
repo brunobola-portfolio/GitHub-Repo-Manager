@@ -104,7 +104,7 @@ Post it a day after the English one, with the Portuguese cut.
 
 1. One dashboard for every GitHub repository you own: cross-repo Work
    Board, DORA metrics, AI PR review with your own key, and Azure DevOps →
-   GitHub migration. Open source. 1 min, sound on ↓ [video]
+   GitHub migration. Open source. 81 seconds, sound on ↓ [video]
 2. DORA without a separate tool: lead time runs from PR opened to the
    first successful production deploy after merge — from the GitHub
    Deployments API, nothing to install. [still: DORA tab]
@@ -161,12 +161,145 @@ on the thread for the first three hours.
 
 Launch at 00:01 Pacific (08:01 Lisbon) so the whole day counts.
 
-## Weeks 2–4
+## Week 2 — Work Board and DORA
 
-Unchanged from the launch guide §4: Work Board and DORA (r/devops, with
-the DORA definition up front), AI review and BYOK (Dev.to article), then
-migration (r/azuredevops). One framing per community; never the same text
-on Reddit and HN.
+Film cut: scenes 5 and 6 (44.25 s to 63.75 s in the master), or the three
+stills `docs/images/33_work_board_dark_hd.png`, the DORA tab and the Deep
+Review capture as a LinkedIn carousel.
+
+**LinkedIn (EN)**
+
+> DORA is four numbers, and most teams buy a platform to see them.
+>
+> DevOps Research and Assessment — Google Cloud's research programme — found
+> four measures that predict delivery performance: change lead time,
+> deployment frequency, change fail rate, and how long it takes to recover
+> from a failed deployment.
+>
+> GitHub already holds the data. Pull requests, Actions runs, the Deployments
+> API. So the Work Board computes them from GitHub alone: lead time runs from
+> the moment a pull request opens to the first successful production deploy
+> after it merges.
+>
+> And when a repository has no deployment data, it says "PR cycle time"
+> instead of quietly measuring something else and calling it DORA. That
+> distinction is the whole reason to trust the number.
+>
+> Free, open source, self-hostable: [link]
+
+**LinkedIn (PT)**
+
+> DORA são quatro números, e a maioria das equipas compra uma plataforma para
+> os ver.
+>
+> O DevOps Research and Assessment — o programa de investigação da Google
+> Cloud — identificou quatro medidas que preveem o desempenho de entrega:
+> lead time da alteração, frequência de deploy, taxa de falha e tempo de
+> recuperação de um deploy falhado.
+>
+> O GitHub já tem os dados: pull requests, execuções do Actions, a API de
+> Deployments. O Work Board calcula-os só a partir daí: o lead time vai desde
+> a abertura da pull request até ao primeiro deploy de produção com sucesso
+> depois do merge.
+>
+> E quando um repositório não tem dados de deploy, mostra "tempo de ciclo de
+> PR" em vez de medir outra coisa e chamar-lhe DORA. É essa distinção que
+> torna o número confiável.
+>
+> Gratuito, open source, auto-hospedável: [link]
+
+**r/devops** — no link in the title, the definition up front, and the honest
+limit in the first paragraph:
+
+> I computed the four DORA metrics from the GitHub API alone — here's where it
+> breaks down
+>
+> Lead time needs a deployment signal. GitHub's Deployments API has one if you
+> use it; Actions alone doesn't tell you what reached production. So the tool
+> measures PR opened → first successful production deployment after merge when
+> deployments exist, and says "PR cycle time" when they don't. Rework rate I
+> don't compute at all — I couldn't find a signal in GitHub that isn't a guess.
+> Curious how others draw that line. [repo link in a comment]
+
+## Week 3 — AI review, and why BYOK is permanent
+
+Film cut: scene 7 (50.25 s to 63.75 s), captioned.
+
+**LinkedIn (EN)**
+
+> I will never resell you AI inference.
+>
+> Repo Manager's Deep Review reads a pull request's diff, ranks risk per file,
+> writes the walkthrough, draws the sequence diagram, and publishes one review
+> to GitHub. It runs on your key — Gemini, Anthropic, OpenAI, OpenRouter, or a
+> local model.
+>
+> That's a product decision, not a limitation. Paid plans sell headroom,
+> support and migration help, never the model. You see the provider's own bill,
+> every call is metered, and an optional monthly cap stops the spend where you
+> say.
+>
+> It also never commits for you. Everything that touches your repository goes
+> preview-first, through one code path, and opens a pull request.
+>
+> [link]
+
+**LinkedIn (PT)**
+
+> Nunca lhe vou revender inferência de IA.
+>
+> O Deep Review do Repo Manager lê o diff de uma pull request, classifica o
+> risco por ficheiro, escreve o walkthrough, desenha o diagrama de sequência e
+> publica uma só review no GitHub. Corre com a sua chave — Gemini, Anthropic,
+> OpenAI, OpenRouter ou um modelo local.
+>
+> É uma decisão de produto, não uma limitação. Os planos pagos vendem
+> capacidade, suporte e ajuda na migração, nunca o modelo. A fatura é a do
+> fornecedor, cada chamada é medida, e um limite mensal opcional trava o gasto
+> onde quiser.
+>
+> E nunca faz commit por si: tudo o que toca no repositório passa primeiro por
+> pré-visualização, num só caminho de código, e abre uma pull request.
+>
+> [link]
+
+**Dev.to article** — "Shipping an AI code reviewer that never auto-commits":
+the preview-first write primitive, the spend cap, and what the review looks
+like on GitHub. One still, one code block, the repo link at the end.
+
+## Week 4 — Migration
+
+Film cut: scene 8 plus the close (63.75 s to the end).
+
+**LinkedIn (EN)**
+
+> Leaving Azure DevOps is a project. It shouldn't also be a mystery.
+>
+> The migration wizard takes Git repositories, TFVC history, work items and
+> wikis from Azure DevOps — cloud or on-prem TFS from 2018 on — and moves them
+> to GitHub. Every run starts as a dry run: it validates and shows you the plan
+> before anything is created.
+>
+> [link]
+
+**LinkedIn (PT)**
+
+> Sair do Azure DevOps é um projeto. Não devia ser também um mistério.
+>
+> O assistente de migração leva repositórios Git, histórico TFVC, work items e
+> wikis do Azure DevOps — cloud ou TFS on-prem de 2018 em diante — para o
+> GitHub. Cada execução começa como ensaio: valida e mostra o plano antes de
+> criar o que seja.
+>
+> [link]
+
+**r/azuredevops** — ask, don't pitch: "What did your Azure DevOps → GitHub
+migration miss?" Describe what the wizard moves and what it does not, and ask
+what people hit. Link only in a comment.
+
+Rules that hold across all four weeks: one framing per community, never the
+same text on Reddit and HN; name the two honest limits (AI needs your own key;
+the native installer is Windows-only); answer every comment on the first day.
 
 ## Measuring
 
