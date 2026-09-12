@@ -349,19 +349,37 @@ Do e-mail first: a completed checkout mints a signed licence key and e-mails
 it, and the issuer now refuses to send through the console adapter rather than
 marking a key as delivered that nobody received.
 
-1. **Stripe → Product catalog**: create **Pro** with a $19/month price, and a
-   yearly price if you want the pricing page's yearly toggle to appear (it
-   stays hidden while `STRIPE_PRICE_PRO_YEARLY` is unset). Copy the **price**
-   ids (`price_…`), not the product ids. Leave Enterprise without prices —
-   every surface sends it to contact.
-2. **Stripe → Developers → Webhooks → Add endpoint**:
-   `https://repomanager.bolalabs.pt/api/v1/webhooks/stripe`, events
-   `checkout.session.completed`, `customer.subscription.updated`,
-   `customer.subscription.deleted`, `invoice.paid`,
-   `invoice.payment_failed`. Copy the signing secret (`whsec_…`).
+State on 2026-09-12, read from the live account (`acct_1SFhUz2KaWwZvTfa`,
+livemode, named "Buymeacoffee"): the two products already exist —
+**Pro** `prod_UH51UuUYyZxoGo` at **EUR 19,00/month**
+(`price_1TIWrQ2KaWwZvTfazlvTnnoC`, already set as the
+`STRIPE_PRICE_PRO_MONTHLY` variable) and **Enterprise** `prod_UH5KxrkunZmCMO`
+at EUR 49,00/month (`price_1TIX9x2KaWwZvTfaVmCWCyL1`, dormant — no surface
+offers it). Both descriptions were corrected to match the shipped tiers. The
+webhook endpoint `we_1UEtmD2KaWwZvTfaouC2luRx` was created for
+`https://repomanager.bolalabs.pt/api/v1/webhooks/stripe` with the five events
+below. No yearly price exists, so the pricing page's yearly toggle stays
+hidden — which is correct.
+
+**Two decisions before selling.** The prices are in **euros** while every
+published surface says `$19`; either restate the copy in euros (one string in
+the site, one row in the README) or create USD prices. And Enterprise has a
+live self-serve price that no page offers: leave it dormant, or deactivate it
+so nobody reaches it with a direct link.
+
+1. **Roll the webhook signing secret.** Stripe returned it when the endpoint
+   was created, which means it passed through a chat transcript — treat it as
+   exposed. Stripe → Developers → Webhooks → the endpoint → **Roll secret**,
+   then copy the new `whsec_…`.
+2. Events on that endpoint (already set): `checkout.session.completed`,
+   `customer.subscription.updated`, `customer.subscription.deleted`,
+   `invoice.paid`, `invoice.payment_failed`.
 3. **GitHub → Settings → Secrets and variables → Actions**: secrets
-   `STRIPE_SECRET_KEY` (`sk_live_…`) and `STRIPE_WEBHOOK_SECRET`; variables
-   `STRIPE_PRICE_PRO_MONTHLY` and, if created, `STRIPE_PRICE_PRO_YEARLY`.
+   `STRIPE_SECRET_KEY` (`sk_live_…`, from Developers → API keys) and
+   `STRIPE_WEBHOOK_SECRET` (the rolled one). The price-id variable is already
+   set; `LICENSE_PRIVATE_PEM` — which signs the licence a customer receives —
+   is already a secret in this repository and `configure-integrations` writes
+   it to the box for you.
 4. Run **`configure-integrations`**. It writes all three or none, checks the
    prefixes, says so loudly if the key is a test key, restarts the service and
    rolls back on a failed health check. Then confirm
