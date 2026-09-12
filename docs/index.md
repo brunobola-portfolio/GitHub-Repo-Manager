@@ -37,6 +37,10 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.25.5 (2026-09-12) — the hosted instance's privacy policy, and headers
+  that agree with each other.** A privacy policy for this hosted instance;
+  `X-Frame-Options: DENY`; `Cache-Control: no-store` on every `/api/`
+  response.
 - **v4.25.4 (2026-09-12) — Euros, because euros are what the checkout
   charges.** See the changelog.
 - **v4.25.3 (2026-09-12) — A public box is not a private one: the boot audit
