@@ -50,7 +50,10 @@ export function HeroSection({ onSignIn }) {
           mb-8"
       >
         <span className="inline-flex rounded-full h-2 w-2 bg-brand-500" aria-hidden="true" />
-        <span className="text-xs font-semibold text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] tracking-wide ds-font-display">
+        {/* The 10%-brand wash behind this pill darkens the background enough
+            that --ds-accent-brand lands at 4.27:1; the hover token is 6.79:1
+            on the same surface. */}
+        <span className="text-xs font-semibold text-[color:var(--ds-accent-brand-hover)] dark:text-[color:var(--ds-accent-brand-dark)] tracking-wide ds-font-display">
           Open source · Bring your own AI key · v{import.meta.env.VITE_APP_VERSION}
         </span>
       </motion.div>

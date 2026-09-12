@@ -34,7 +34,7 @@ export function resolvePublicOrigin(req, frontendUrl) {
     return `${protocol}://${host}`;
 }
 
-export function softwareApplicationJsonLd({ origin, version }) {
+export function softwareApplicationJsonLd({ origin, version, stripeEnabled = false }) {
     return {
         '@context': 'https://schema.org',
         '@type': 'SoftwareApplication',
@@ -48,9 +48,16 @@ export function softwareApplicationJsonLd({ origin, version }) {
         description: 'One dashboard for GitHub repositories, teams and CI/CD, a cross-repo Work Board with DORA metrics, AI Deep Review and Azure DevOps/TFVC migration. Bring your own AI key. Open source under Apache-2.0.',
         license: 'https://www.apache.org/licenses/LICENSE-2.0',
         isAccessibleForFree: true,
+        // The Pro offer is advertised only when this deployment can actually
+        // take the money. A priced Offer in structured data on an instance
+        // whose checkout answers 503 is a claim a crawler repeats and a visitor
+        // tests; "with your own key" belongs on the Free line for the same
+        // reason — the AI quota is metered against the user's own provider.
         offers: [
-            { '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'USD', description: 'Every feature, metered AI, unlimited repositories and teams.' },
-            { '@type': 'Offer', name: 'Pro', price: '19', priceCurrency: 'USD', description: 'More AI headroom and more API keys, billed monthly.' },
+            { '@type': 'Offer', name: 'Free', price: '0', priceCurrency: 'USD', description: 'Every feature, metered AI with your own key, unlimited repositories and teams.' },
+            ...(stripeEnabled
+                ? [{ '@type': 'Offer', name: 'Pro', price: '19', priceCurrency: 'USD', description: 'More AI headroom and more API keys, billed monthly.' }]
+                : []),
         ],
         codeRepository: 'https://github.com/brunobola-portfolio/GitHub-Repo-Manager',
         downloadUrl: 'https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest',
@@ -59,11 +66,11 @@ export function softwareApplicationJsonLd({ origin, version }) {
 }
 
 /** Fill the placeholders and add the structured-data block before </head>. */
-export function renderShell(html, { origin, version, sentryDsn }) {
+export function renderShell(html, { origin, version, sentryDsn, stripeEnabled = false }) {
     const filled = html.replace(PLACEHOLDER, origin);
     // "<" inside the JSON could close the script element early; escape it as
     // JSON allows so the block stays inert data whatever the strings contain.
-    const json = JSON.stringify(softwareApplicationJsonLd({ origin, version })).replace(/</g, '\\u003c');
+    const json = JSON.stringify(softwareApplicationJsonLd({ origin, version, stripeEnabled })).replace(/</g, '\\u003c');
     // Browser telemetry is runtime configuration: the meta tag carries the
     // deployment's public DSN (or is absent), so one build serves every
     // install and the CSP needs no inline script to deliver it.
@@ -99,6 +106,26 @@ export function robotsTxt(origin) {
     ].join('\n');
 }
 
+/**
+ * RFC 9116 contact file. An Apache-2.0 infrastructure tool on a public domain
+ * attracts vulnerability reports; without this, a finder's only options are a
+ * public issue or nothing. `Expires` is required by the RFC — a year out, and
+ * the deploy that renders this file is what refreshes it.
+ */
+export function securityTxt(origin, now = new Date()) {
+    const expires = new Date(now.getTime());
+    expires.setUTCFullYear(expires.getUTCFullYear() + 1);
+    return [
+        `Contact: ${origin}/security`,
+        'Contact: mailto:security@bolalabs.pt',
+        `Expires: ${expires.toISOString().replace(/\.\d{3}Z$/, 'Z')}`,
+        'Preferred-Languages: en, pt',
+        `Policy: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/blob/main/SECURITY.md`,
+        `Acknowledgments: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/blob/main/SECURITY.md`,
+        '',
+    ].join('\n');
+}
+
 export function sitemapXml(origin, lastmod) {
     return [
         '<?xml version="1.0" encoding="UTF-8"?>',
@@ -107,6 +134,14 @@ export function sitemapXml(origin, lastmod) {
         `    <loc>${origin}/</loc>`,
         `    <lastmod>${lastmod}</lastmod>`,
         '    <changefreq>weekly</changefreq>',
+        '  </url>',
+        // The status page is public, path-routed and answers 200 — a crawler
+        // that finds it is one search away from telling a visitor the instance
+        // is up. It was the one public page missing from this list.
+        '  <url>',
+        `    <loc>${origin}/status</loc>`,
+        `    <lastmod>${lastmod}</lastmod>`,
+        '    <changefreq>daily</changefreq>',
         '  </url>',
         '  <url>',
         `    <loc>${origin}/brand/</loc>`,

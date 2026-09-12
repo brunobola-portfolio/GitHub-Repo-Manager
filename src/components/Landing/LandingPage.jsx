@@ -65,7 +65,7 @@ function LandingFooter() {
             <Github className="w-4 h-4" />
             GitHub
           </a>
-          <span className="text-slate-200 dark:text-slate-700">·</span>
+          <span className="text-slate-200 dark:text-slate-700" aria-hidden="true">·</span>
           <a
             href="https://github.com/brunobola-portfolio/GitHub-Repo-Manager/blob/main/README.md"
             target="_blank"
@@ -74,7 +74,7 @@ function LandingFooter() {
           >
             Docs
           </a>
-          <span className="text-slate-200 dark:text-slate-700">·</span>
+          <span className="text-slate-200 dark:text-slate-700" aria-hidden="true">·</span>
           <a
             href="https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases"
             target="_blank"
@@ -83,7 +83,7 @@ function LandingFooter() {
           >
             Changelog
           </a>
-          <span className="text-slate-200 dark:text-slate-700">·</span>
+          <span className="text-slate-200 dark:text-slate-700" aria-hidden="true">·</span>
           <a
             href="https://github.com/brunobola-portfolio/GitHub-Repo-Manager/blob/main/LICENSE"
             target="_blank"
@@ -147,7 +147,10 @@ export function LandingPage({ onSignIn }) {
       </motion.nav>
 
       {/* Page sections */}
-      <main>
+      {/* The skip link in App.jsx's anonymous branch points here; without the
+          id it would be the broken second skip link this codebase already
+          deleted once. */}
+      <main id="main-content">
         <HeroSection onSignIn={onSignIn} />
 
         {/* Divider */}

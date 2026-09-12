@@ -108,11 +108,23 @@ router.get('/login', authRouteLimiter, (req, res) => {
     if (!GITHUB_CLIENT_ID || !GITHUB_CLIENT_SECRET) {
         return res.redirect(`${resolveFrontendUrl(req)}/?error=oauth_not_configured`);
     }
-    // Scopes needed:
-    // - repo: Full control of private repositories
-    // - delete_repo: Ability to delete repositories
-    // - read:org, admin:org: Manage organization memberships and repos
-    const scope = 'repo delete_repo read:org admin:org';
+    // Two grants, because the first one is a stranger's first impression. The
+    // consent screen used to ask for repo + delete_repo + read:org + admin:org
+    // before the visitor had seen anything work, which reads as "write to every
+    // private repository, delete any of them, and administer your orgs" forty
+    // seconds after meeting the site — the single most expensive moment of
+    // doubt on a public instance.
+    //
+    // BASE covers everything the app does by default: browse, read and write
+    // repositories, and read organisation membership. The extra two are only
+    // needed to DELETE a repository and to administer org settings and teams,
+    // so they are asked for on demand via ?elevated=1 — the in-app
+    // "re-authorize" action sends the user back through this route. GitHub adds
+    // scopes to an existing authorisation, so the second grant is additive and
+    // the user is asked only for what they just tried to do.
+    const BASE_SCOPE = 'repo read:org';
+    const ELEVATED_SCOPE = 'repo delete_repo read:org admin:org';
+    const scope = req.query.elevated === '1' ? ELEVATED_SCOPE : BASE_SCOPE;
     const redirectUri = `${resolveCallbackOrigin(req)}/api/auth/callback`;
     const state = randomUUID();
     req.session.oauthState = state;

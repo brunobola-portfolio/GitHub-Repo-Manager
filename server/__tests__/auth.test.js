@@ -34,6 +34,44 @@ import {
 } from '../middleware/auth.js'
 import authRouter from '../routes/auth.js'
 
+describe('GET /login requests the smallest useful grant', () => {
+    const app = () => {
+        const a = express()
+        a.use(session({ secret: 'test-secret', resave: false, saveUninitialized: true }))
+        a.use('/api/auth', authRouter)
+        return a
+    }
+    const scopeOf = (location) => decodeURIComponent(new URL(location).searchParams.get('scope'))
+
+    beforeEach(() => {
+        process.env.GITHUB_CLIENT_ID = 'Iv1.testclientid'
+        process.env.GITHUB_CLIENT_SECRET = 'test-secret-value'
+    })
+
+    it('asks only for repo + read:org on a first sign-in', async () => {
+        const res = await request(app()).get('/api/auth/login')
+        expect(res.status).toBe(302)
+        // The consent screen is a stranger's first impression: no deletion
+        // rights and no org administration until a feature actually needs them.
+        expect(scopeOf(res.headers.location)).toBe('repo read:org')
+        expect(res.headers.location).not.toContain('delete_repo')
+        expect(res.headers.location).not.toContain('admin%3Aorg')
+    })
+
+    it('asks for the deletion and org-admin scopes only when re-authorising', async () => {
+        const res = await request(app()).get('/api/auth/login?elevated=1')
+        expect(res.status).toBe(302)
+        expect(scopeOf(res.headers.location)).toBe('repo delete_repo read:org admin:org')
+    })
+
+    it('treats any other value of the flag as a normal sign-in', async () => {
+        for (const q of ['?elevated=true', '?elevated=0', '?elevated=1%20', '?elevated']) {
+            const res = await request(app()).get(`/api/auth/login${q}`)
+            expect(scopeOf(res.headers.location), q).toBe('repo read:org')
+        }
+    })
+})
+
 describe('isValidGitHubUsername', () => {
     it('accepts valid usernames', () => {
         expect(isValidGitHubUsername('octocat')).toBe(true)

@@ -111,7 +111,9 @@ export function FeaturesSection() {
           transition={{ duration: DURATION.ambient, ease: EASE.emphasized }}
           className="text-center mb-14 sm:mb-16"
         >
-          <p className="ds-eyebrow text-brand-500 dark:text-[color:var(--ds-accent-brand-dark)] mb-3 ds-font-display">
+          {/* The raw ramp step measures 4.32:1 on this surface; the token the
+              design system exposes for accent TEXT is 5.06:1. */}
+          <p className="ds-eyebrow text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] mb-3 ds-font-display">
             Features
           </p>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-slate-100 tracking-tight ds-font-display mb-4">

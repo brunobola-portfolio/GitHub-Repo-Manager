@@ -127,12 +127,16 @@ jobs:
           foreach ($line in Get-Content $env) {
             if ($line -match '^\s*([A-Z0-9_]+)\s*=\s*(.*)$') { $map[$matches[1]] = $matches[2].Trim().Trim('"').Trim("'") }
           }
-          foreach ($k in 'NODE_ENV','DEPLOYMENT_MODE','FRONTEND_URL','EMAIL_PROVIDER','RESEND_API_KEY','EMAIL_FROM','ALLOW_CONSOLE_EMAIL','SENTRY_DSN','SENTRY_BROWSER_DSN','SENTRY_ENVIRONMENT','STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','STRIPE_PRICE_PRO_MONTHLY','STRIPE_PRICE_PRO_YEARLY','WORK_BOARD_AI_ENABLED','AI_PROVIDER','GEMINI_API_KEY','DATA_RETENTION_DAYS') {
+          # AI_REQUIRE_USER_CONFIG and GEMINI_API_KEY are printed together on
+          # purpose: a server key without that flag means every free signup
+          # spends the operator's money, which is the one misconfiguration on
+          # this box that has no ceiling.
+          foreach ($k in 'NODE_ENV','DEPLOYMENT_MODE','FRONTEND_URL','EMAIL_PROVIDER','RESEND_API_KEY','EMAIL_FROM','ALLOW_CONSOLE_EMAIL','SENTRY_DSN','SENTRY_BROWSER_DSN','SENTRY_ENVIRONMENT','STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','STRIPE_PRICE_PRO_MONTHLY','STRIPE_PRICE_PRO_YEARLY','WORK_BOARD_AI_ENABLED','AI_PROVIDER','GEMINI_API_KEY','AI_REQUIRE_USER_CONFIG','GRM_DISABLE_WEB_SETUP','DATA_RETENTION_DAYS') {
             $v = $map[$k]
             $state = if ([string]::IsNullOrWhiteSpace($v)) { 'unset' } else { 'SET' }
             # DEPLOYMENT_MODE's value is the point of printing it — "SET" does
             # not tell an operator whether the box is multi-tenant.
-            $shown = if ($k -in 'NODE_ENV','DEPLOYMENT_MODE','FRONTEND_URL','EMAIL_PROVIDER','EMAIL_FROM','ALLOW_CONSOLE_EMAIL','WORK_BOARD_AI_ENABLED','AI_PROVIDER','DATA_RETENTION_DAYS','SENTRY_ENVIRONMENT') { " = $v" } else { '' }
+            $shown = if ($k -in 'NODE_ENV','DEPLOYMENT_MODE','FRONTEND_URL','EMAIL_PROVIDER','EMAIL_FROM','ALLOW_CONSOLE_EMAIL','WORK_BOARD_AI_ENABLED','AI_PROVIDER','AI_REQUIRE_USER_CONFIG','GRM_DISABLE_WEB_SETUP','DATA_RETENTION_DAYS','SENTRY_ENVIRONMENT') { " = $v" } else { '' }
             # A DSN's host and project id say which Sentry organisation receives
             # the events; the public key in front of the @ is left out.
             if ($k -like 'SENTRY*DSN' -and $v) { try { $u = [Uri]$v; $shown = " (host $($u.Host), project $($u.AbsolutePath.Trim('/')))" } catch { $shown = ' (not a valid URL)' } }
@@ -243,6 +247,17 @@ jobs:
           if ($env:IN_DEPLOYMENT_MODE) {
             if ($env:IN_DEPLOYMENT_MODE -notin @('saas', 'self-host')) { throw "DEPLOYMENT_MODE must be 'saas' or 'self-host', not '$($env:IN_DEPLOYMENT_MODE)'" }
             Set-Line 'DEPLOYMENT_MODE' $env:IN_DEPLOYMENT_MODE
+            # A public box must not lend its own AI key to strangers: with a
+            # server key present and this flag absent, every free account draws
+            # on the operator's provider bill with no ceiling (the per-tier
+            # spend cap ships at 0 = disabled). Writing it with the mode keeps
+            # the two decisions together, where forgetting one is expensive.
+            if ($env:IN_DEPLOYMENT_MODE -eq 'saas') {
+              Set-Line 'AI_REQUIRE_USER_CONFIG' 'true'
+              # The in-app OAuth setup wizard is for a self-hoster's first run,
+              # not for a multi-tenant instance that is already configured.
+              Set-Line 'GRM_DISABLE_WEB_SETUP' 'true'
+            }
           }
           # Stripe: all or nothing. A secret key without a webhook secret takes
           # the customer's money and never hears back from Stripe, so the

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { resolvePublicOrigin, renderShell, robotsTxt, sitemapXml, softwareApplicationJsonLd, shellStatus } from '../lib/spa-shell.js';
+import { resolvePublicOrigin, renderShell, robotsTxt, securityTxt, sitemapXml, softwareApplicationJsonLd, shellStatus } from '../lib/spa-shell.js';
 
 const req = (host, protocol = 'https') => ({ protocol, get: (h) => (h.toLowerCase() === 'host' ? host : undefined) });
 
@@ -55,6 +55,43 @@ describe('robots and sitemap', () => {
         expect(xml).toContain('<loc>https://repomanager.example.pt/brand/</loc>');
         expect(xml).toContain('<lastmod>2026-09-06</lastmod>');
         expect(xml.startsWith('<?xml')).toBe(true);
+    });
+});
+
+describe('the priced offer follows what the deployment can actually charge', () => {
+    const offerNames = (opts) => softwareApplicationJsonLd({ origin: 'https://x', version: '1', ...opts }).offers.map((o) => o.name);
+
+    it('advertises Free only when checkout is not configured', () => {
+        // A priced Offer on an instance whose /billing/checkout answers 503 is
+        // a claim a crawler repeats and a visitor tests.
+        expect(offerNames({})).toEqual(['Free']);
+        expect(offerNames({ stripeEnabled: false })).toEqual(['Free']);
+    });
+
+    it('adds Pro once Stripe is configured', () => {
+        expect(offerNames({ stripeEnabled: true })).toEqual(['Free', 'Pro']);
+    });
+
+    it('says the metered AI runs on the user\'s own key', () => {
+        const free = softwareApplicationJsonLd({ origin: 'https://x', version: '1' }).offers[0];
+        expect(free.description).toMatch(/your own key/i);
+    });
+
+    it('carries the flag through renderShell', () => {
+        const shell = (opts) => renderShell('<head></head>', { origin: 'https://x', version: '1', ...opts });
+        expect(shell({})).not.toContain('"name":"Pro"');
+        expect(shell({ stripeEnabled: true })).toContain('"name":"Pro"');
+    });
+});
+
+describe('securityTxt', () => {
+    it('names a contact, a policy and an expiry a year out', () => {
+        const txt = securityTxt('https://repomanager.example.pt', new Date('2026-09-12T00:00:00.000Z'));
+        expect(txt).toContain('Contact: https://repomanager.example.pt/security');
+        expect(txt).toContain('Contact: mailto:security@bolalabs.pt');
+        // RFC 9116 requires Expires; a stale file is treated as absent.
+        expect(txt).toContain('Expires: 2027-09-12T00:00:00Z');
+        expect(txt).toMatch(/^Policy: https:\/\/github\.com\//m);
     });
 });
 

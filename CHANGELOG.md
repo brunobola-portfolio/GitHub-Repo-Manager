@@ -7,7 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Sign-in asked for `repo delete_repo read:org admin:org` before a visitor had
+  seen anything work — write access to every private repository, the right to
+  delete them, and full organisation administration, forty seconds after
+  meeting the site. The first grant is now `repo read:org`; the two extra
+  scopes are requested only through the in-app re-authorise action
+  (`/api/auth/login?elevated=1`), which is what a user reaches for when GitHub
+  refuses a deletion or an org change. GitHub adds scopes to an existing
+  authorisation, so nobody is asked twice for what they already granted.
+- `configure-integrations` now writes `AI_REQUIRE_USER_CONFIG=true` and
+  `GRM_DISABLE_WEB_SETUP=true` whenever the deployment mode is `saas`. A public
+  box with a server-wide AI key and neither flag lends that key to every free
+  signup, and the per-tier spend cap ships disabled — there is no ceiling to
+  catch it.
+- The instance now publishes `/.well-known/security.txt` (RFC 9116). An
+  Apache-2.0 infrastructure tool on a public domain attracts vulnerability
+  reports, and the only alternative was a public issue.
+
 ### Fixed
+
+- The landing sold a $19 plan the deployment could not charge for: the button
+  walked the visitor through the GitHub consent screen to reach "self-serve
+  checkout isn't available here yet". It now reads the public
+  `/api/v1/billing/config` and asks for an e-mail instead, and the shell's
+  structured data omits the priced `Offer` until Stripe is configured.
+- Accessibility on the public landing, all measured: the Enterprise badge was
+  white on amber (2.13:1), the Pro card's text on the brand fill failed in dark
+  (2.72–3.65:1), the hero badge sat at 4.27:1 over its own wash, and the
+  section eyebrows used the raw ramp step (4.32:1) instead of the accent-text
+  token. An anonymous visitor also had no skip link — the authenticated shell
+  has one, and this branch returns before it.
+- `/status` was the one public page missing from `sitemap.xml`.
 
 - A licence key was never delivered when `EMAIL_PROVIDER` is `console`, and the
   row was still marked `email_delivered = 1` — the console adapter answers ok
@@ -29,6 +61,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   77 s in Portuguese; the site's hero copy no longer claims "one minute", and
   the poster in `docs/images/` is the new title frame. Measurements and the
   reasoning: [report](docs/reports/2026-09-12-film-v4-and-launch-blockers.md).
+- `ops-iis.yml` → `configure-integrations` also writes the Stripe values, all
+  three or none: a secret key without a webhook secret takes the customer's
+  money and never records the subscription, and a checkout without a price id
+  fails after the customer has committed to buying. Prefixes are validated and
+  a test key is reported loudly. The new `email-test` action sends one real
+  message through the configured provider and prints the provider's message id
+  — the only proof that mail leaves the box, since the console adapter answers
+  ok for mail nobody receives. `docs/guides/stripe-setup.md` gains the
+  production path and says to wire Resend first.
 - `ops-iis.yml` → `configure-integrations` also writes `DEPLOYMENT_MODE` (from
   a GitHub variable, `saas` or `self-host` only). On a public instance `saas`
   stops an installed instance licence granting its tier to every account and

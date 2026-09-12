@@ -1,8 +1,11 @@
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { EASE, DURATION } from '../ui/motion'
 import { Check, Zap, Crown } from 'lucide-react'
 import { SUPPORT_EMAIL } from '../../utils/supportContact'
 import { BACKDROP_WASH_COLOR } from '../ui/_variants'
+import { API_BASE_URL } from '../../config'
+import { apiCall } from '../../utils/api'
 
 const plans = [
   {
@@ -77,7 +80,15 @@ const cardVariants = {
 
 const SALES_EMAIL = SUPPORT_EMAIL
 
-function PreviewCard({ plan, i, onSignIn }) {
+function PreviewCard({ plan, i, onSignIn, selfServe }) {
+  // While this deployment cannot take money (`/api/v1/billing/config` answers
+  // stripeEnabled:false), "Upgrade to Pro" walked the visitor through a GitHub
+  // consent screen asking for their repositories, only to end at "self-serve
+  // checkout isn't available here yet". Ask for an e-mail instead, and say so
+  // on the button rather than after the OAuth round trip.
+  const isPaidSelfServe = !plan.enterprise && plan.price !== '$0'
+  const blocked = isPaidSelfServe && selfServe === false
+  const ctaLabel = blocked ? 'Contact us about Pro' : plan.cta
 	return (
 		<motion.div
 			custom={i}
@@ -100,8 +111,10 @@ function PreviewCard({ plan, i, onSignIn }) {
 			{plan.enterprise && (
 				<div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20">
 					<div className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-500 ds-elevation-lg">
-						<Crown className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
-						<span className="text-xs font-bold text-white tracking-wide">Enterprise</span>
+						<Crown className="w-3.5 h-3.5 text-amber-950" strokeWidth={2.5} />
+						{/* amber-950 on amber-500: white measured 2.13:1 here and failed AA
+								    badly. Same fill/text pair the in-app PricingCard uses. */}
+								<span className="text-xs font-bold text-amber-950 tracking-wide">Enterprise</span>
 					</div>
 				</div>
 			)}
@@ -120,7 +133,7 @@ function PreviewCard({ plan, i, onSignIn }) {
 				<div className="flex flex-col gap-6 h-full">
 					{/* Plan header */}
 					<div>
-						<p className={`text-sm font-semibold mb-1 ds-font-display ${plan.popular ? 'text-brand-200' : plan.enterprise ? 'text-amber-700 dark:text-amber-400' : 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'}`}>
+						<p className={`text-sm font-semibold mb-1 ds-font-display ${plan.popular ? 'text-white' : plan.enterprise ? 'text-amber-700 dark:text-amber-400' : 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'}`}>
 							{plan.name}
 						</p>
 						<div className="flex items-end gap-2 mb-2">
@@ -129,11 +142,11 @@ function PreviewCard({ plan, i, onSignIn }) {
 							>
 								{plan.price}
 							</span>
-							<span className={`text-sm pb-1.5 ds-font-display ${plan.popular ? 'text-brand-200/80' : 'text-slate-500 dark:text-slate-400'}`}>
+							<span className={`text-sm pb-1.5 ds-font-display ${plan.popular ? 'text-brand-50' : 'text-slate-500 dark:text-slate-400'}`}>
 								/{plan.period}
 							</span>
 						</div>
-						<p className={`text-sm leading-relaxed ds-font-display ${plan.popular ? 'text-brand-100/90' : 'text-slate-500 dark:text-slate-400'}`}>
+						<p className={`text-sm leading-relaxed ds-font-display ${plan.popular ? 'text-brand-50' : 'text-slate-500 dark:text-slate-400'}`}>
 							{plan.description}
 						</p>
 					</div>
@@ -177,7 +190,7 @@ function PreviewCard({ plan, i, onSignIn }) {
 									: 'bg-brand-500/10 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 hover:bg-brand-500/20 dark:hover:bg-brand-500/25 border border-brand-300/40 dark:border-brand-500/30 focus-visible:ring-brand-500 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950'
 							}`}
 					>
-						{plan.cta}
+						{ctaLabel}
 					</button>
 				</div>
 			</div>
@@ -186,6 +199,18 @@ function PreviewCard({ plan, i, onSignIn }) {
 }
 
 export function PricingPreview({ onSignIn }) {
+  // The same public capability probe the in-app pricing page reads: no auth,
+  // no CSRF, and it decides whether this deployment can take money at all.
+  // `null` means "not answered yet", so the buttons keep their labels instead
+  // of flickering; only an explicit `false` turns Pro into a contact button.
+  const [selfServe, setSelfServe] = useState(null)
+  useEffect(() => {
+    let cancelled = false
+    apiCall(`${API_BASE_URL}/api/v1/billing/config`, {}, { maxRetries: 0 })
+      .then((data) => { if (!cancelled && data) setSelfServe(Boolean(data.stripeEnabled)) })
+      .catch(() => { /* offline, blocked or 404 on an old build: leave the labels alone */ })
+    return () => { cancelled = true }
+  }, [])
   return (
     <section className="relative py-20 sm:py-28 px-4 overflow-hidden">
 
@@ -208,7 +233,8 @@ export function PricingPreview({ onSignIn }) {
           transition={{ duration: DURATION.ambient, ease: EASE.emphasized }}
           className="text-center mb-14 sm:mb-16"
         >
-          <p className="ds-eyebrow text-brand-500 dark:text-[color:var(--ds-accent-brand-dark)] mb-3 ds-font-display">
+          {/* 4.32:1 as the raw ramp step, 5.06:1 as the accent-text token. */}
+          <p className="ds-eyebrow text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] mb-3 ds-font-display">
             Pricing
           </p>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-slate-100 tracking-tight ds-font-display mb-4">
@@ -223,7 +249,7 @@ export function PricingPreview({ onSignIn }) {
         {/* Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start pt-5">
 					{plans.map((plan, i) => (
-						<PreviewCard key={plan.name} plan={plan} i={i} onSignIn={onSignIn} />
+						<PreviewCard key={plan.name} plan={plan} i={i} onSignIn={onSignIn} selfServe={selfServe} />
 					))}
         </div>
 

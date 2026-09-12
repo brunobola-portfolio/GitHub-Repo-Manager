@@ -41,7 +41,7 @@ import { closeAllQueues } from './lib/queue.js';
 import { engine as migrationEngine } from './routes/migration.js';
 import { recoverInterruptedImportJobs } from './routes/import/_shared.js';
 import { config } from './config.js';
-import { resolvePublicOrigin, renderShell, robotsTxt, sitemapXml, shellStatus } from './lib/spa-shell.js';
+import { resolvePublicOrigin, renderShell, robotsTxt, securityTxt, sitemapXml, shellStatus } from './lib/spa-shell.js';
 import { initMonitoring, getSentryErrorHandler, monitoringContext, sentryTunnelHandler, browserDsn } from './lib/monitoring.js';
 import db, { initDB, seedMockData } from './db.js';
 import { DBSchemaFromFutureError } from './lib/db-migrations.js';
@@ -539,6 +539,14 @@ if (config.nodeEnv === 'production') {
             res.setHeader('Cache-Control', 'public, max-age=3600');
             res.type('application/xml').send(sitemapXml(resolvePublicOrigin(req, config.frontendUrl), shellLastmod));
         });
+        // Both spellings: the RFC location and the legacy root path some
+        // scanners still try first.
+        for (const path of ['/.well-known/security.txt', '/security.txt']) {
+            app.get(path, (req, res) => {
+                res.setHeader('Cache-Control', 'public, max-age=86400');
+                res.type('text/plain').send(securityTxt(resolvePublicOrigin(req, config.frontendUrl)));
+            });
+        }
 
         // SPA fallback. Express 5 / path-to-regexp v8 reject a bare '*' at
         // registration ("Missing parameter name") — the named splat form is
@@ -557,6 +565,9 @@ if (config.nodeEnv === 'production') {
                 origin: resolvePublicOrigin(req, config.frontendUrl),
                 version: pkg.version,
                 sentryDsn: browserDsn()?.dsn,
+                // Only advertise a priced plan when this instance can take the
+                // money — the same pair the checkout route requires.
+                stripeEnabled: Boolean(config.stripeSecretKey && config.stripeWebhookSecret),
             }));
         });
     }

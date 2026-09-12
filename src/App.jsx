@@ -366,8 +366,12 @@ function AppContent() {
     }
   }, [fetchOrgs, fetchStats, fetchTeams, toast, setSyncStatus])
 
+  // Re-authorising is the only reason to ask for the two scopes the first
+  // grant deliberately leaves out (delete_repo, admin:org): sign-in requests
+  // the minimum, and this action is what a user reaches for when GitHub refuses
+  // a deletion or an org change. GitHub adds scopes to the existing grant.
   const handleReauthorize = useCallback(() => {
-    window.location.href = AUTH_ENDPOINTS.login
+    window.location.href = `${AUTH_ENDPOINTS.login}?elevated=1`
   }, [])
 
   const handleOpenOrgManager = useCallback((org) => {
@@ -433,6 +437,15 @@ function AppContent() {
   if (!user) {
     return (
       <>
+        {/* The authenticated shell has a skip link; this branch returns before
+            it, so an anonymous visitor had to tab the whole nav on every
+            visit. Same markup, same target id (LandingPage's <main>). */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-brand-600 focus:text-white focus:rounded-lg focus:shadow-lg ds-focus-ring"
+        >
+          Skip to main content
+        </a>
         <DemoModeBanner />
         {rateLimitBanner && (
           <RateLimitNotice

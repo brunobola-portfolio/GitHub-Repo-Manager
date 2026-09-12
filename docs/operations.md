@@ -65,9 +65,19 @@ docker run --env-file .env -p 3001:3001 \
 ```bash
 git clone https://github.com/brunobola-portfolio/GitHub-Repo-Manager.git
 cd GitHub-Repo-Manager
-cp .env.example .env      # edit your values
+cp .env.example .env
+node scripts/generate-secrets.mjs --append .env   # compose refuses to start without these
+# then edit .env: GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET,
+#                FRONTEND_URL=http://localhost:3001,
+#                ALLOW_CONSOLE_EMAIL=true (or EMAIL_PROVIDER=resend + RESEND_API_KEY)
 docker compose up -d      # app at http://localhost:3001
 ```
+
+`docker-compose.yml` pins `NODE_ENV=production`, so the boot audit
+(`server/lib/startup-secrets-check.js`) applies: the template's placeholder
+secrets and its `EMAIL_PROVIDER=console` default are both rejected by name.
+The three lines above are exactly what it asks for — the container exits with
+the list if any is missing.
 
 See [`docker-compose.yml`](../docker-compose.yml) for the full environment
 whitelist (required secrets use Compose's `${VAR:?message}` form and abort

@@ -418,9 +418,18 @@ The GHCR package is public — no login required. Multi-arch (amd64/arm64), with
 **Docker Compose (local build, alternative):**
 
 ```bash
-cp .env.example .env      # edit your values
+cp .env.example .env
+node scripts/generate-secrets.mjs --append .env   # the four secrets compose requires
+# then edit .env: GITHUB_CLIENT_ID / GITHUB_CLIENT_SECRET,
+#                FRONTEND_URL=http://localhost:3001,
+#                ALLOW_CONSOLE_EMAIL=true (or EMAIL_PROVIDER=resend + key)
 docker compose up -d      # app at http://localhost:3001
 ```
+
+Compose sets `NODE_ENV=production`, so the boot audit runs: without the
+generated secrets it refuses to start, and with the template's e-mail default
+it refuses too — that is deliberate, and the three lines above are what it
+wants.
 
 See [`docs/operations.md`](docs/operations.md#deployment) for the full
 deployment guide, including the `docker run` form for the prebuilt image.
