@@ -29,7 +29,8 @@ below links to the canonical page for that topic.
 | See every view before installing | [Screenshot gallery](screenshots.md) — real captures, both themes |
 | Plan the brand, search and launch work | [Brand, docs and launch guide, second pass](reports/2026-09-06-brand-docs-launch-guide-v2.md) — the promo film, the brand and documentation plan around it, the four-week outreach roadmap; the [morning guide](reports/2026-09-06-brand-seo-social-guide.md) records what shipped that day |
 | Check DORA, Sentry, the VPS and e-mail | [Review 2026-09-11](reports/2026-09-11-dora-sentry-site-vps-review.md) — what DORA measures here, Sentry for SaaS, the site's screens, the VPS audit, Resend in both products, and the artifact inventory |
-| Post the launch | [Launch kit](reports/2026-09-11-launch-kit.md) — week-1 posts in English and Portuguese, Show HN and Product Hunt copy, the asset map, UTM links, and the Resend and Sentry steps to do first |
+| Post the launch | [Launch kit](reports/2026-09-11-launch-kit.md) — posts for weeks 1–4 in English and Portuguese, Show HN and Product Hunt copy, the asset map, UTM links, and the Resend and Sentry steps to do first |
+| Understand the film, and what launch day would have hit | [Film v4 and launch blockers](reports/2026-09-12-film-v4-and-launch-blockers.md) — the score, narration and cut rebuilt with the measurements that justify each change, plus the product and site blockers found and fixed |
 | See what's planned but not shipped | [`ROADMAP.md`](../ROADMAP.md) |
 
 ## Recent releases

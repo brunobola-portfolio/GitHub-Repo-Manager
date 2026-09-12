@@ -21,6 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The tour film was re-scored, re-narrated and re-cut: 80 BPM with every cut on
+  a beat, a five-note motif instead of a texture, warm timbres (the score's
+  energy above 4 kHz fell from -42.8 to -65.2 dB), a 2.5 kHz pocket for the
+  narration, and a slower, lower read. The voice now sits 25 dB above the bed in
+  the 1-4 kHz speech band, where it used to sit *under* it. 81 s in English,
+  77 s in Portuguese; the site's hero copy no longer claims "one minute", and
+  the poster in `docs/images/` is the new title frame. Measurements and the
+  reasoning: [report](docs/reports/2026-09-12-film-v4-and-launch-blockers.md).
 - `ops-iis.yml` → `configure-integrations` also writes `DEPLOYMENT_MODE` (from
   a GitHub variable, `saas` or `self-host` only). On a public instance `saas`
   stops an installed instance licence granting its tier to every account and
