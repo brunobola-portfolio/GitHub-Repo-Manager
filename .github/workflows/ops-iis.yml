@@ -197,18 +197,29 @@ jobs:
             if ($n -gt 0) { $script:changed += "-$key" }
           }
 
+          # Each integration stands alone: a Resend key whose domain is not
+          # verified yet must not stop the deployment mode or the browser DSN
+          # from being written (the first run of this action failed exactly
+          # that way). Mail is only switched on when the domain is verified —
+          # EMAIL_PROVIDER=resend with an unverified sender delivers nothing
+          # and, unlike the console adapter, looks configured.
           if ($env:IN_RESEND_API_KEY) {
-            $from = if ($env:IN_EMAIL_FROM) { $env:IN_EMAIL_FROM } else { 'no-reply@bolalabs.pt' }
-            $domain = $from.Split('@')[-1]
-            $domains = Invoke-RestMethod -Uri 'https://api.resend.com/domains' -Headers @{ Authorization = "Bearer $($env:IN_RESEND_API_KEY)" } -TimeoutSec 20
-            $d = @($domains.data) | Where-Object { $_.name -eq $domain } | Select-Object -First 1
-            if (-not $d) { throw "Resend has no domain '$domain' — add it at resend.com/domains first" }
-            if ($d.status -ne 'verified') { throw "Resend domain '$domain' is '$($d.status)', not verified — finish the DNS records first" }
-            "Resend domain $domain verified"
-            Set-Line 'EMAIL_PROVIDER' 'resend'
-            Set-Line 'RESEND_API_KEY' $env:IN_RESEND_API_KEY
-            Set-Line 'EMAIL_FROM' $from
-            Remove-Line 'ALLOW_CONSOLE_EMAIL'
+            try {
+              $from = if ($env:IN_EMAIL_FROM) { $env:IN_EMAIL_FROM } else { 'no-reply@bolalabs.pt' }
+              $domain = ($from -replace '.*<|>.*', '').Split('@')[-1].Trim()
+              $domains = Invoke-RestMethod -Uri 'https://api.resend.com/domains' -Headers @{ Authorization = "Bearer $($env:IN_RESEND_API_KEY)" } -TimeoutSec 20
+              $d = @($domains.data) | Where-Object { $_.name -eq $domain } | Select-Object -First 1
+              if (-not $d) { throw "Resend has no domain '$domain' — add it at resend.com/domains first" }
+              if ($d.status -ne 'verified') { throw "Resend domain '$domain' is '$($d.status)', not verified — finish the DNS records first" }
+              "Resend domain $domain verified"
+              Set-Line 'EMAIL_PROVIDER' 'resend'
+              Set-Line 'RESEND_API_KEY' $env:IN_RESEND_API_KEY
+              Set-Line 'EMAIL_FROM' $from
+              Remove-Line 'ALLOW_CONSOLE_EMAIL'
+            } catch {
+              "Resend NOT configured: $($_.Exception.Message)"
+              "  e-mail stays as it is; re-run this action once the domain is verified"
+            }
           }
           if ($env:IN_SENTRY_BROWSER_DSN) { Set-Line 'SENTRY_BROWSER_DSN' $env:IN_SENTRY_BROWSER_DSN }
           if ($env:IN_SENTRY_ENVIRONMENT) { Set-Line 'SENTRY_ENVIRONMENT' $env:IN_SENTRY_ENVIRONMENT }
