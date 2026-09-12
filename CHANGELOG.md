@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **A privacy policy for this hosted instance**, at `/privacy`, reachable
+  without an account. The sign-in button asks a stranger for access to their
+  repositories, and the only policy that existed was the repository document
+  written for whoever self-hosts — which says outright that it is not a policy
+  for a specific company. The new page names the controller and a contact,
+  lists what is stored (including the audit log's IP and user-agent) and every
+  processor that receives it, states the retention windows the janitors
+  actually enforce, and points at Settings → Danger Zone for export and
+  erasure — with the two real limits spelled out rather than glossed: an active
+  subscription must be cancelled first, and the hash-chained audit log survives
+  erasure. The footer link now points here instead of at the repository file,
+  and the page is in the sitemap.
+- The landing hero says what the GitHub consent screen is about to ask for,
+  before it asks: repository access and read-only organisation membership, with
+  the elevated scopes requested only when you delete a repository or change an
+  organisation.
+
+### Security
+
+- **`X-Frame-Options: DENY`** (was helmet's `SAMEORIGIN` default) and
+  `frame-ancestors 'none'` (was `'self'`). The app never frames itself, so
+  same-origin framing bought nothing; and outside production, where the CSP is
+  switched off, the legacy header is the only framing defence there is.
+- **`Cache-Control: no-store` on every `/api/` response.** They are per-user by
+  definition — tier, session, quota, repository list — and carried no
+  `Cache-Control` at all, which leaves a CDN or a corporate proxy free to hold
+  a 200 keyed only by URL and hand one account's answer to another. Handlers
+  that set their own directive (the SSE streams) keep it.
+- Both of the above moved into `server/lib/http-hardening.js` and are now
+  tested against the real options object. They were untestable before:
+  `server/index.js` calls `app.listen()` at import time, so the header set it
+  declared inline could not be exercised by any test — which is how the
+  framing pair came to disagree with itself unnoticed.
+
 ## [4.25.4] - 2026-09-12
 
 ### Changed

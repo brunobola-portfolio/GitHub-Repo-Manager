@@ -26,6 +26,7 @@ import rateLimit from 'express-rate-limit';
 import { createTenantLimiters, globalLimiter, createWebhookLimiter } from './middleware/tenant-rate-limit.js';
 import { AI_BUCKET_EXTRA_EXPRESS_PATHS } from './middleware/ai-rate-limit-routes.js';
 import { noPathTraversal } from './middleware/no-path-traversal.js';
+import { buildHelmetOptions, permissionsPolicy, noStoreApi } from './lib/http-hardening.js';
 import { randomUUID } from 'crypto';
 import path from 'path';
 import fs from 'fs';
@@ -195,36 +196,14 @@ app.use(compression({
 }));
 
 // Middleware Setup
-app.use(helmet({
-    contentSecurityPolicy: config.nodeEnv === 'production' ? {
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com"],
-            imgSrc: ["'self'", "data:", "https://github.com", "https://avatars.githubusercontent.com", "https://*.githubusercontent.com"],
-            connectSrc: ["'self'", config.frontendUrl],
-            // Helmet's defaults already supply this; spelled out so a future
-            // `useDefaults: false` cannot silently drop clickjacking protection.
-            frameAncestors: ["'self'"],
-        }
-    } : false,
-    crossOriginEmbedderPolicy: false,
-    // No `preload`. The preload list only accepts apex domains, and this app is
-    // served from a subdomain whose apex sends a bare max-age — so the directive
-    // could never be honoured, and a header that asks for something impossible is
-    // just noise. includeSubDomains stays: it costs nothing and is correct if this
-    // is ever served from an apex.
-    hsts: config.nodeEnv === 'production' ? { maxAge: 63072000, includeSubDomains: true } : false,
-}));
-// Helmet 8 dropped Permissions-Policy from its defaults (it's a separate
-// package upstream now), so nothing was sending it. This app doesn't use any
-// of these browser features anywhere, so deny them all outright rather than
-// leaving the header absent.
-app.use((req, res, next) => {
-    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
-    next();
-});
+//
+// The response-header set lives in server/lib/http-hardening.js: this file
+// calls app.listen() at import time, so nothing declared inline here can be
+// reached by a test — and header behaviour that no test can see is how the
+// framing pair came to disagree with itself. The options object below is the
+// one the tests exercise.
+app.use(helmet(buildHelmetOptions({ nodeEnv: config.nodeEnv, frontendUrl: config.frontendUrl })));
+app.use(permissionsPolicy);
 app.use(cors({
     origin: config.nodeEnv === 'production' ? config.frontendUrl : true,
     credentials: true,
@@ -311,6 +290,9 @@ const isDev = config.nodeEnv !== 'production';
 const devSafetyNet = isDev
     ? rateLimit({ windowMs: 15 * 60 * 1000, max: 1000, standardHeaders: true, legacyHeaders: false })
     : globalLimiter;
+// Per-user by definition, so never cacheable — see noStoreApi.
+app.use('/api/', noStoreApi);
+
 app.use('/api/', devSafetyNet);
 
 // Before any handler can interpolate a route param into a GitHub API URL.
