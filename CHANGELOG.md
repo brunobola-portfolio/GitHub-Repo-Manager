@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.25.7] - 2026-09-12
+
 ### Added
 
 - **Terms of service for the hosted instance**, at `/terms`, reachable without
@@ -3923,7 +3925,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.6...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.7...HEAD
+[4.25.7]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.6...v4.25.7
 [4.25.6]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.5...v4.25.6
 [4.25.5]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.4...v4.25.5
 [4.25.4]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.3...v4.25.4

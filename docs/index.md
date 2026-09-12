@@ -37,6 +37,13 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.25.7 (2026-09-12) — terms of service, honest transfers, and the
+  findings that put money at risk.** Terms of service for the hosted
+  instance; The TFVC import can no longer be used to exhaust the server's
+  memory; A retention warning is only recorded once it is actually accepted;
+  Erasure is blocked by a live subscription, not by a status string; The Pro
+  button on the landing page does what its label says; One definition of
+  "billing is configured", not two.
 - **v4.25.6 (2026-09-12) — untrusted archives extracted safely, and public
   pages that name themselves.** The TFVC snapshot import no longer hands an
   untrusted archive to
