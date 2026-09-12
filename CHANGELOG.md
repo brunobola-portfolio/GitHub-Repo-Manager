@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.25.4] - 2026-09-12
+
 ### Changed
 
 - Prices are quoted in **euros** everywhere, because euros are what the
@@ -3770,7 +3772,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.3...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.4...HEAD
+[4.25.4]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.3...v4.25.4
 [4.25.3]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.2...v4.25.3
 [4.25.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.1...v4.25.2
 [4.25.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.0...v4.25.1
