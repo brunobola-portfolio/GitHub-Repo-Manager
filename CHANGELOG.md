@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Terms of service for the hosted instance**, at `/terms`, reachable without
+  an account and linked from the footer where "Subscription terms" used to
+  point at a repository document. That document describes what a subscription
+  adds and says in its own last paragraph that it stands in for a page that
+  does not exist; a consumer in the EU is owed the price, the billing period,
+  how to cancel, how to get a refund and the 14-day right of withdrawal, in
+  writing, before paying. Two deliberate choices: the withdrawal right is
+  granted outright rather than waived (waiving it means asking the buyer to
+  consent to immediate performance at checkout, and the checkout asks nothing
+  of the kind), and nothing on the page describes VAT mechanics, because no
+  country, address or VAT id is collected and no tax registration exists — a
+  sentence about how tax is calculated would describe something that does not
+  happen. Warranty, liability and governing-law wording is the one already
+  published on bolalabs.pt.
+- The privacy policy now **discloses international transfers** — every named
+  processor is US-established, relied on under the EU–US Data Privacy Framework
+  or standard contractual clauses — and has a section for the people who never
+  signed up here but whose GitHub logins arrive with a connected repository:
+  what is stored, on what basis, and how to object.
+
+### Changed
+
+- The privacy policy no longer promises automatic 365-day erasure of Azure
+  DevOps tokens. The retention pass covers AI provider credentials only; the
+  tokens are deleted when a user deletes them or erases their account. Saying
+  so is the honest half of the fix — extending the pass to cover them is
+  tracked separately rather than glossed over.
+
 ### Security
 
 - **The TFVC import can no longer be used to exhaust the server's memory.**
