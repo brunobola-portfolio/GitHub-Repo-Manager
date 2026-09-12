@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.25.2] - 2026-09-12
+
 ### Security
 
 - Sign-in asked for `repo delete_repo read:org admin:org` before a visitor had
@@ -3728,7 +3730,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.1...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.2...HEAD
+[4.25.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.1...v4.25.2
 [4.25.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.0...v4.25.1
 [4.25.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.9...v4.25.0
 [4.24.9]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.24.8...v4.24.9
