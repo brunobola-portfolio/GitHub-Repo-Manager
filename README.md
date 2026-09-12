@@ -14,7 +14,7 @@
   <img alt="GitHub Repo Manager dashboard — time-of-day greeting, a 'What needs you' KPI row, the Live Inbox, and repository stats" src="docs/images/01_dashboard_light_hd.png" width="900">
 </picture>
 
-[**▶ Watch the one-minute tour**](https://bolalabs.pt/en/repomanager/) · [Storyboard and stills](docs/tour.md)
+[**▶ Watch the tour**](https://bolalabs.pt/en/repomanager/) · [Storyboard and stills](docs/tour.md)
 
 <br>
 
@@ -665,7 +665,7 @@ Contributions are welcome — bug fixes, features, and documentation improvement
 3. **Commit** with [Conventional Commits](https://www.conventionalcommits.org/): `git commit -m 'feat: add amazing feature'`
 4. **Open a Pull Request**
 
-Before committing: `npm run lint` (zero warnings), `npm test` for touched files, and `npm run docs:linkcheck` for doc changes. `.jsx` only (no TypeScript), Tailwind utilities. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full guidelines.
+Before committing: `npm run lint` (zero warnings), `npx vitest run <paths>` for touched files, and `npm run docs:linkcheck` for doc changes. `.jsx` only (no TypeScript), Tailwind utilities. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the full guidelines.
 
 ---
 

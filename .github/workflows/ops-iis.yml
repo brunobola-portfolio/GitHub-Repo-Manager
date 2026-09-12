@@ -121,7 +121,7 @@ jobs:
           foreach ($line in Get-Content $env) {
             if ($line -match '^\s*([A-Z0-9_]+)\s*=\s*(.*)$') { $map[$matches[1]] = $matches[2].Trim().Trim('"').Trim("'") }
           }
-          foreach ($k in 'NODE_ENV','FRONTEND_URL','EMAIL_PROVIDER','RESEND_API_KEY','EMAIL_FROM','ALLOW_CONSOLE_EMAIL','SENTRY_DSN','SENTRY_BROWSER_DSN','SENTRY_ENVIRONMENT','STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','WORK_BOARD_AI_ENABLED','AI_PROVIDER','GEMINI_API_KEY','DATA_RETENTION_DAYS') {
+          foreach ($k in 'NODE_ENV','DEPLOYMENT_MODE','FRONTEND_URL','EMAIL_PROVIDER','RESEND_API_KEY','EMAIL_FROM','ALLOW_CONSOLE_EMAIL','SENTRY_DSN','SENTRY_BROWSER_DSN','SENTRY_ENVIRONMENT','STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','WORK_BOARD_AI_ENABLED','AI_PROVIDER','GEMINI_API_KEY','DATA_RETENTION_DAYS') {
             $v = $map[$k]
             $state = if ([string]::IsNullOrWhiteSpace($v)) { 'unset' } else { 'SET' }
             $shown = if ($k -in 'NODE_ENV','FRONTEND_URL','EMAIL_PROVIDER','EMAIL_FROM','ALLOW_CONSOLE_EMAIL','WORK_BOARD_AI_ENABLED','AI_PROVIDER','DATA_RETENTION_DAYS','SENTRY_ENVIRONMENT') { " = $v" } else { '' }

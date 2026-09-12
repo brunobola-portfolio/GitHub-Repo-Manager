@@ -100,7 +100,7 @@ Test files go in `tests/` (unit) or `e2e/` (Playwright) — never alongside sour
 
 ### Accessibility
 
-Automated a11y checks run via `e2e/a11y-smoke.spec.js` using axe-core. Add `await checkA11y(page)` at the end of any new e2e journey that lands on a new view. Known violations are listed with TODO comments in `e2e/a11y-smoke.spec.js`; address them rather than extending the allowlist when possible.
+Automated a11y checks run via `e2e/a11y-smoke.spec.js` using axe-core. Add `await checkA11y(page)` at the end of any new e2e journey that lands on a new view. `checkA11y` (`e2e/a11y-helpers.js`) hard-fails on `critical` and `serious` violations — including `color-contrast`, on both themes — while `moderate`/`minor` are logged as warnings. Fix the source rather than reaching for its `allowlist` or `warnOnly` escape hatches.
 
 ## Git Hooks
 

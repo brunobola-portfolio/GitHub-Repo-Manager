@@ -56,7 +56,10 @@ const plans = [
       'Everything in Pro',
       'Unlimited AI queries',
       'Unlimited team members',
-      'Audit logs (SSO / SAML coming soon)',
+      // "coming soon" reads as a dated commitment on a buy surface, and
+      // ROADMAP.md forbids tier badges on unshipped work. `sso` is false on
+      // every tier in feature-flags.js; README calls it roadmap, so do we.
+      'Audit logs (SSO / SAML — roadmap)',
       '100 API keys',
       'White-glove migration services + priority support',
     ],

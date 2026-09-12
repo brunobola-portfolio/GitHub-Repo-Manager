@@ -692,3 +692,43 @@ describe('PricingPage FAQ — the AI-query answer covers both Repo Advisor meter
         expect(aiQueryAnswer()).toMatch(/separately|own (spend )?cap/i)
     })
 })
+
+// ---------------------------------------------------------------------------
+// Unshipped compliance work is a roadmap item, never a dated promise.
+//
+// Three paid-tier surfaces said "SSO / SAML (coming soon)" while README's
+// matrix said "(roadmap)" and ROADMAP.md forbids tier badges on unshipped
+// work. "Coming soon" on a buy surface reads as a commitment to a date nobody
+// has set, and `sso` is false on every tier — so the two must agree.
+// ---------------------------------------------------------------------------
+describe('unshipped compliance work is marked roadmap, not "coming soon"', () => {
+    // A comment explaining why a phrase is gone must not read as the phrase
+    // being present — same rationale as the Enterprise-only suite above.
+    const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')
+
+    const SURFACES = [
+        ['PricingPage.jsx', pricingSource],
+        ['PricingPreview.jsx', previewSource],
+        ['LicensePlanSection.jsx', licenseSource],
+    ]
+
+    it('sso is false on every tier — the fact these surfaces have to match', () => {
+        for (const tier of ['free', 'pro', 'enterprise']) {
+            expect(getFeatures(tier).sso).toBe(false)
+        }
+    })
+
+    it('the README matrix calls it roadmap', () => {
+        expect(pricingMatrix).toMatch(/SSO \/ SAML[^|]*roadmap/i)
+    })
+
+    for (const [name, src] of SURFACES) {
+        it(`${name} promises no date for SSO / SAML`, () => {
+            const claims = stripComments(src)
+            expect(claims, `${name} still says "coming soon"`).not.toMatch(/coming soon/i)
+            if (/SSO/.test(claims)) {
+                expect(claims, `${name} mentions SSO without marking it roadmap`).toMatch(/roadmap/i)
+            }
+        })
+    }
+})

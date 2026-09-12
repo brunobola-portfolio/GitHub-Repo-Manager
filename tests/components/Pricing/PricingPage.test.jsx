@@ -159,3 +159,63 @@ describe('PricingPage — advertises the operator real Stripe price', () => {
         await waitFor(() => expect(screen.getByText('$19')).toBeInTheDocument())
     })
 })
+
+/*
+ * The Stripe-missing banner told every visitor "This self-hosted deployment
+ * doesn't have Stripe configured" — false on the hosted instance, which is a
+ * saas deployment. Nothing server-side tells the client which mode it is in
+ * (/api/v1/billing/config returns stripeEnabled / yearlyBillingAvailable /
+ * prices and nothing else), so the copy has to hold for both.
+ */
+describe('PricingPage — the checkout-unavailable banner names no deployment type', () => {
+    beforeEach(() => {
+        global.fetch = vi.fn()
+        _resetCsrfTokenForTests()
+    })
+    afterEach(() => {
+        vi.useRealTimers()
+        vi.restoreAllMocks()
+    })
+
+    async function renderBannerAfter503() {
+        global.fetch
+            .mockResolvedValueOnce(mockConfigResponse({ stripeEnabled: false, yearlyBillingAvailable: false }))
+            .mockResolvedValueOnce(mockCsrfToken())
+        // Every later attempt: Stripe missing. 503 is retryable, so apiCall
+        // sleeps between four attempts — fake timers skip the backoff instead
+        // of adding ~8s of real waiting to the suite.
+        global.fetch.mockResolvedValue({
+            ok: false,
+            status: 503,
+            headers: { get: () => 'application/json' },
+            json: async () => ({ error: 'Stripe is not configured' }),
+        })
+
+        render(<PricingPage />)
+        const proCta = await screen.findByRole('button', { name: /Upgrade to Pro/i })
+
+        vi.useFakeTimers()
+        await act(async () => { fireEvent.click(proCta) })
+        await act(async () => { await vi.advanceTimersByTimeAsync(30_000) })
+        vi.useRealTimers()
+    }
+
+    it('explains the block without claiming the deployment is self-hosted', async () => {
+        await renderBannerAfter503()
+
+        const reason = screen.getByText(/Continue on Free/)
+        expect(reason.textContent).not.toMatch(/self-host/i)
+        expect(reason.textContent).not.toMatch(/deployment/i)
+    })
+
+    it('points at the contact route the page already uses', async () => {
+        await renderBannerAfter503()
+
+        const contact = screen.getAllByRole('link').find((a) => {
+            const href = a.getAttribute('href') || ''
+            return href.startsWith('mailto:') && href.includes('subject=')
+        })
+        expect(contact, 'the banner offers no way to ask for Pro').toBeTruthy()
+        expect(contact.getAttribute('href')).toMatch(/Pro%20license%20inquiry/)
+    })
+})

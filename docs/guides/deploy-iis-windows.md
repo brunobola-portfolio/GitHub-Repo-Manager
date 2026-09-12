@@ -261,7 +261,7 @@ Verify before touching IIS:
 ```powershell
 Invoke-RestMethod http://127.0.0.1:3001/api/health
 # status : ok
-# version: 4.13.0
+# version: <the version you just installed>
 # database: connected
 ```
 
@@ -473,6 +473,25 @@ set `REDIS_URL` first if you ever need to.
 **Back up before you announce.** `CREDENTIAL_ENCRYPTION_KEY` and the database
 are only meaningful together, and only the database gets a daily backup. Copy
 the `.env` somewhere else, once, now.
+
+### 6b.1 One operator, or many? Set `DEPLOYMENT_MODE`
+
+`production.env.example` ships `DEPLOYMENT_MODE=self-host`, which is the safe
+default for a box where the operator and the user are the same person. A public
+instance that strangers can sign in to is **not** that box: set `saas` in the
+runtime `.env` before you open registration. Two things change, both
+server-side:
+
+| What changes | `self-host` (default) | `saas` |
+| --- | --- | --- |
+| `LICENSE_KEY` in the `.env` | Grants its tier to **every** signed-in account on this instance — the point of buying one for yourself | Grants nothing; a Stripe subscription becomes the only source of a paid tier |
+| The shared `POST /api/v1/webhooks/github`, verified against the instance-wide `WEBHOOK_SECRET` | Accepted | Answers **410** — one shared secret between tenants is a forgery kit, so each account generates its own ingest URL (`/api/v1/webhooks/github/t/<id>`) in the Work Board |
+
+Anonymous requests never receive a paid tier in either mode
+(`server/middleware/require-tier.js`). The value is read from the environment
+at request time, so it takes effect when you restart the service, and
+`server/config.js` rejects anything other than `self-host` or `saas` at boot.
+Reference table: [`docs/operations.md`](../operations.md).
 
 ---
 

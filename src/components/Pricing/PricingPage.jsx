@@ -82,7 +82,7 @@ const TIERS_MONTHLY = [
       { label: 'Unlimited AI queries', included: true },
       { label: 'Unlimited team members', included: true },
       { label: 'Audit Logs', included: true },
-      { label: 'SSO / SAML (coming soon)', included: false },
+      { label: 'SSO / SAML (roadmap)', included: false },
       { label: 'API keys', included: '100' },
       { label: 'White-glove migration services', included: true },
       { label: 'Priority support', included: true },
@@ -214,6 +214,15 @@ function FaqItem({ q, a, index }) {
 /* ─── Main page ─── */
 const SALES_EMAIL = SUPPORT_EMAIL
 
+// The client is never told which deployment mode it is running in:
+// /api/v1/billing/config answers with stripeEnabled / yearlyBillingAvailable /
+// prices and nothing else, and no other endpoint exposes DEPLOYMENT_MODE. So
+// this sentence has to be true on a hosted instance and on a self-host alike.
+// The previous copy asserted "this self-hosted deployment" to every visitor of
+// repomanager.bolalabs.pt, which is a saas deployment.
+const CHECKOUT_UNAVAILABLE_REASON =
+  "Self-serve checkout isn't available here yet. Continue on Free, or contact us about a Pro license."
+
 export function PricingPage({ onGetStarted } = {}) {
   const [isYearly, setIsYearly] = useState(false)
   // Feature-detect yearly billing. The toggle stays hidden until the server
@@ -333,7 +342,7 @@ export function PricingPage({ onGetStarted } = {}) {
               key="checkout-unavailable"
               variant="banner"
               service="Stripe checkout"
-              reason="This self-hosted deployment doesn't have Stripe configured. Continue on Free, or contact us for a Pro license key."
+              reason={CHECKOUT_UNAVAILABLE_REASON}
               contactEmail={SALES_EMAIL}
               contactSubject="GitHub Repo Manager — Pro license inquiry"
               onDismiss={() => setCheckoutState(null)}

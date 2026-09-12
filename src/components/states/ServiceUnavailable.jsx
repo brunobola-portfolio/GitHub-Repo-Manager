@@ -14,7 +14,7 @@ import { twMerge } from 'tailwind-merge'
  *   <ServiceUnavailable
  *     service="Stripe billing"
  *     reason="Self-hosted deployments need STRIPE_SECRET_KEY set."
- *     docsHref="https://docs.example.com/billing"
+ *     docsHref="https://github.com/brunobola-portfolio/GitHub-Repo-Manager/blob/main/docs/guides/stripe-setup.md"
  *     contactEmail="bruno@bolalabs.pt" />
  *
  * Variants: card (default) | banner | inline.
