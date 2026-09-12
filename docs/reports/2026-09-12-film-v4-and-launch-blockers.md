@@ -121,12 +121,19 @@ were fixed in this pass:
 
 ## 3. Still the owner's to do
 
-- **Resend.** A `RESEND_API_KEY` secret already exists in the repository, but it
-  answers **401 Unauthorized** to `api.resend.com/domains` — the key does not
-  authenticate. Until a valid key is set (and `bolalabs.pt` verified), licence
-  mail, retention warnings and the site's lead notifications all stay held.
-- **Convex production deploy** for the contact notification (`npm run
-  convex:deploy`).
+- **Resend — done on the product, 2026-09-12.** `EMAIL_PROVIDER=resend`,
+  `EMAIL_FROM=Repo Manager <no-reply@bolalabs.pt>`, `ALLOW_CONSOLE_EMAIL`
+  removed, and two test messages accepted by Resend (`email-test` action), so
+  licence keys, retention warnings and digests can now be delivered. One trap
+  worth recording: a key created with *Sending access* cannot read
+  `GET /domains` and answers 401 — the action used to refuse the correct key
+  for that reason, and no longer does.
+- **The site half of e-mail:** the contact-form notification is deployed to
+  Convex production but stays a no-op until the key is in Convex's own
+  environment — `npx convex env set RESEND_API_KEY "re_…" --prod` in
+  `bolalabs-platform`. `EMAIL_FROM` and `CONTACT_NOTIFY_TO` are already set
+  there. A session cannot do this step: the key is a GitHub secret and is
+  never readable back.
 - **Stripe** keys when Pro is to be sold; until then the site's Pro card points
   at the contact form and the app's banner says checkout is not available.
 - **Sentry**: data scrubbing and IP storage off, an alert rule, and
