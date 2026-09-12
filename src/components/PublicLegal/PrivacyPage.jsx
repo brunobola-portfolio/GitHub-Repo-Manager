@@ -144,6 +144,33 @@ export default function PrivacyPage() {
                             own hosted checkout requires. Card details never reach this service.
                         </li>
                     </ul>
+                    <p>
+                        <strong>Where this data goes.</strong> GitHub, Resend, Sentry, Stripe and
+                        every AI provider listed above are established in the United States, so using
+                        them means personal data leaves the EEA. Each is relied on under the
+                        EU–US Data Privacy Framework where it is certified, and under the European
+                        Commission&apos;s standard contractual clauses otherwise. Your own AI
+                        provider is your choice: if you configure a local model, nothing leaves your
+                        own infrastructure for inference at all.
+                    </p>
+                </Section>
+
+                <Section id="others" title="If you are not a user, but your work is">
+                    <p>
+                        When a customer connects a repository, this service stores the GitHub logins
+                        of the people who opened its pull requests, filed its issues, were asked to
+                        review, or belong to its teams — including people who never signed up here.
+                        That is the minimum needed to show a team its own review queue and delivery
+                        metrics, and it is processed on the basis of legitimate interest. It is
+                        limited to what GitHub already publishes to anyone with access to that
+                        repository: a username, and the events attached to it.
+                    </p>
+                    <p>
+                        No profile is built, nothing is inferred about you, and none of it is used to
+                        contact you. If your login appears here and you want it removed or you object
+                        to the processing, write to {CONTROLLER_EMAIL} — say which repository it is
+                        and you will get an answer within 30 days.
+                    </p>
                 </Section>
 
                 <Section id="retention" title="How long it is kept">
@@ -153,8 +180,16 @@ export default function PrivacyPage() {
                             it.
                         </li>
                         <li>
-                            Unused AI provider credentials and Azure tokens: erased automatically
-                            after 365 days without use, with a warning e-mail 30 days before.
+                            Unused AI provider credentials: erased automatically after 365 days
+                            without use, with a warning e-mail 30 days before — and the warning has
+                            to be accepted for delivery before the clock counts, so a rejected
+                            e-mail delays the deletion rather than skipping the notice.
+                        </li>
+                        <li>
+                            Azure DevOps tokens: kept until you delete them (Settings → Integrations),
+                            or until your account is erased. The automatic 365-day pass covers AI
+                            credentials only — this page said otherwise until 12 September 2026, and
+                            the pass is being extended to cover them.
                         </li>
                         <li>
                             Repository and pull-request event data used for dashboards and DORA

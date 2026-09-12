@@ -88,7 +88,7 @@ export function renderShell(html, { origin, version, sentryDsn, stripeEnabled = 
  * Everything else still gets the shell — the SPA sends it home — but with a
  * 404, so a crawler or a mistyped link is not told the page exists.
  */
-const SHELL_PATHS = new Set(['/', '/index.html', '/status', '/privacy', '/settings', '/pricing']);
+const SHELL_PATHS = new Set(['/', '/index.html', '/status', '/privacy', '/terms', '/settings', '/pricing']);
 
 export function shellStatus(path) {
     const normalised = String(path || '/').replace(/\/+$/, '') || '/';
@@ -145,9 +145,15 @@ export function sitemapXml(origin, lastmod) {
         '  </url>',
         // The privacy policy is the page a cautious visitor looks for before
         // signing in, and the one a regulator expects to find without an
-        // account.
+        // account. The terms are the other half of that: price, cancellation
+        // and the withdrawal right, readable before paying.
         '  <url>',
         `    <loc>${origin}/privacy</loc>`,
+        `    <lastmod>${lastmod}</lastmod>`,
+        '    <changefreq>yearly</changefreq>',
+        '  </url>',
+        '  <url>',
+        `    <loc>${origin}/terms</loc>`,
         `    <lastmod>${lastmod}</lastmod>`,
         '    <changefreq>yearly</changefreq>',
         '  </url>',

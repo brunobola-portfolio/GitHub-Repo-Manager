@@ -13,7 +13,12 @@
  * Kept deliberately minimal so it doesn't compete with the product UI.
  */
 const SOURCE_URL = 'https://github.com/brunobola-portfolio/GitHub-Repo-Manager'
-const SUBSCRIPTION_URL = `${SOURCE_URL}/blob/main/docs/LICENSE-COMMERCIAL.md`
+// The deployment's own terms, not the repository's licence summary: that one
+// describes what a subscription adds and says so itself ("there is no /license
+// page yet — until there is, this document is the terms"). A buyer needs the
+// price, the cancellation path and the 14-day withdrawal right, which is what
+// /terms carries.
+const SUBSCRIPTION_URL = '/terms'
 // The deployment's own policy, not the repository document: that one is
 // written for whoever self-hosts and says outright that it is not a policy for
 // a specific company. A visitor on this instance needs to know who the

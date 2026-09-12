@@ -53,6 +53,10 @@ describe('robots and sitemap', () => {
         const xml = sitemapXml('https://repomanager.example.pt', '2026-09-06');
         expect(xml).toContain('<loc>https://repomanager.example.pt/</loc>');
         expect(xml).toContain('<loc>https://repomanager.example.pt/brand/</loc>');
+        // Both legal pages: the ones a cautious buyer and a regulator look for
+        // without an account.
+        expect(xml).toContain('<loc>https://repomanager.example.pt/privacy</loc>');
+        expect(xml).toContain('<loc>https://repomanager.example.pt/terms</loc>');
         expect(xml).toContain('<lastmod>2026-09-06</lastmod>');
         expect(xml.startsWith('<?xml')).toBe(true);
     });
@@ -100,7 +104,7 @@ describe('shellStatus', () => {
         // /privacy among them: a visitor deciding whether to grant GitHub
         // access must be able to reach the policy without an account, and a
         // crawler must not be told it does not exist.
-        for (const p of ['/', '/index.html', '/status', '/status/', '/privacy', '/privacy/', '/settings', '/pricing/']) {
+        for (const p of ['/', '/index.html', '/status', '/status/', '/privacy', '/privacy/', '/terms', '/terms/', '/settings', '/pricing/']) {
             expect(shellStatus(p), p).toBe(200);
         }
     });

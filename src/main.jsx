@@ -29,6 +29,11 @@ const StatusPage = lazy(() => import('./components/PublicStatus/StatusPage.jsx')
 // authenticated shell.
 // eslint-disable-next-line react-refresh/only-export-components
 const PrivacyPage = lazy(() => import('./components/PublicLegal/PrivacyPage.jsx'))
+// Same reasoning for the terms: what you are agreeing to, and the 14-day
+// withdrawal right, have to be readable before anyone pays — which means
+// before anyone signs in.
+// eslint-disable-next-line react-refresh/only-export-components
+const TermsPage = lazy(() => import('./components/PublicLegal/TermsPage.jsx'))
 
 // Browser telemetry is runtime configuration: the server puts the
 // deployment's public DSN in a meta tag (SENTRY_BROWSER_DSN) and relays the
@@ -98,6 +103,7 @@ if (typeof window !== 'undefined') {
 const path = typeof window !== 'undefined' ? window.location.pathname.replace(/\/+$/, '') || '/' : '/'
 const isStatusRoute = path === '/status'
 const isPrivacyRoute = path === '/privacy'
+const isTermsRoute = path === '/terms'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -105,7 +111,11 @@ createRoot(document.getElementById('root')).render(
       <ThemeProvider>
         <ToastProvider>
           <ErrorBoundary>
-            {isPrivacyRoute ? (
+            {isTermsRoute ? (
+              <Suspense fallback={null}>
+                <TermsPage />
+              </Suspense>
+            ) : isPrivacyRoute ? (
               <Suspense fallback={null}>
                 <PrivacyPage />
               </Suspense>
