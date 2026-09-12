@@ -14,6 +14,8 @@
  * docs/privacy-and-data.md ("Where this is enforced"), not from a template.
  * If a behaviour changes, that document and this page move together.
  */
+import { useEffect } from 'react'
+
 const UPDATED = '12 September 2026'
 const CONTROLLER_EMAIL = 'bruno@bolalabs.pt'
 const SOURCE_URL = 'https://github.com/brunobola-portfolio/GitHub-Repo-Manager'
@@ -33,6 +35,15 @@ function Section({ id, title, children }) {
 }
 
 export default function PrivacyPage() {
+    // The shell's <title> names the application, which is right for the app and
+    // wrong for a standalone legal document: this is a page people bookmark,
+    // print and send to someone, and all three carry the title. Set from the
+    // page itself rather than at the route decision in main.jsx, so it is
+    // covered by this component's tests.
+    useEffect(() => {
+        document.title = 'Privacy policy — GitHub Repo Manager'
+    }, [])
+
     return (
         <main className="min-h-screen bg-slate-50 px-4 py-12 text-slate-900 dark:bg-slate-950 dark:text-slate-100 sm:px-6">
             <article className="mx-auto max-w-3xl">

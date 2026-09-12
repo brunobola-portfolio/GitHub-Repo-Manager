@@ -18,6 +18,16 @@ describe('StatusPage', () => {
         vi.restoreAllMocks()
     })
 
+    it('titles the document as itself, not as the application', () => {
+        // Reached by path and usually left open in a tab, so the shell's
+        // app-level title is the wrong thing for it to inherit.
+        global.fetch.mockImplementation(() => new Promise(() => {}))
+
+        render(<StatusPage />)
+
+        expect(document.title).toBe('System status — GitHub Repo Manager')
+    })
+
     it('renders the checking/unknown state on mount before fetch resolves', async () => {
         // Never-resolving promise so the first render captures the pre-fetch state.
         global.fetch.mockImplementation(() => new Promise(() => {}))

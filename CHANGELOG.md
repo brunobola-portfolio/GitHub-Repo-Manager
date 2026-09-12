@@ -25,6 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Node runtime ZIP after verifying its published SHA-256 and pulls two named
   entries out of it.
 
+### Changed
+
+- `/privacy` and `/status` set their own document title instead of inheriting
+  the shell's, which names the application. Both are standalone pages reached
+  by path — bookmarked, printed, left open in a tab, sent to someone — and all
+  of those carry the title.
+
 ## [4.25.5] - 2026-09-12
 
 ### Added

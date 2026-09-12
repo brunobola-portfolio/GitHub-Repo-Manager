@@ -42,6 +42,13 @@ describe('PrivacyPage — the hosted instance names a controller and real rights
         expect(screen.getByText(/audit log[\s\S]*survives/i)).toBeInTheDocument()
     })
 
+    it('titles the document as itself, not as the application', () => {
+        // A bookmark, a print-out and a shared tab all carry the title; the
+        // shell's own title names the app and says nothing about this page.
+        render(<PrivacyPage />)
+        expect(document.title).toBe('Privacy policy — GitHub Repo Manager')
+    })
+
     it('offers the export and erasure paths a user can actually reach', () => {
         render(<PrivacyPage />)
         expect(screen.getByText(/Export my data/i)).toBeInTheDocument()

@@ -86,6 +86,12 @@ export function StatusPage() {
         }
     }, [])
 
+    // Same reason as the privacy page: this is its own page, reached by path
+    // and often kept open in a tab, so it should not borrow the app's title.
+    useEffect(() => {
+        document.title = 'System status — GitHub Repo Manager'
+    }, [])
+
     useEffect(() => {
         mountedRef.current = true
         // Defer the first fetch one microtask so the effect doesn't trigger
