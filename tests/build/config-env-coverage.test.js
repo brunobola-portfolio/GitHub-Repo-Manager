@@ -35,6 +35,15 @@ const WHITELIST = {
     AI_MAX_OUTPUT_TOKENS: 'server/lib/ai-output-budget.js — per-call output-token cap, clamped in code',
     AI_RETRY_BASE_DELAY_MS: 'server/routes/ai/shared.js — provider retry backoff base delay',
     AI_SPEND_CAP_CENTS: 'server/lib/ai-spend-cap.js — legacy flat spend-cap override',
+    // The boot audit reads process.env directly on purpose — it is a second,
+    // independent pass over the same values (see the header of
+    // startup-secrets-check.js), which is why ALLOW_CONSOLE_EMAIL below is
+    // whitelisted for the same reason. These four exist only so that a saas
+    // deployment cannot start with a server-wide AI key and no ceiling.
+    AI_SPEND_CAP_CENTS_FREE: 'server/lib/startup-secrets-check.js — per-tier cap; its presence is what makes a server AI key acceptable on a saas box',
+    ANTHROPIC_API_KEY: 'server/lib/startup-secrets-check.js — server-wide provider key; detected to refuse a saas boot with no spend ceiling',
+    OPENAI_API_KEY: 'server/lib/startup-secrets-check.js — server-wide provider key; detected to refuse a saas boot with no spend ceiling',
+    OPENROUTER_API_KEY: 'server/lib/startup-secrets-check.js — server-wide provider key; detected to refuse a saas boot with no spend ceiling',
     AZURE_RETRY_BASE_MS: 'server/azure-service.js — Azure DevOps API retry backoff base delay',
     ALLOWED_AZURE_HOSTS: 'server/lib/azure-host-validator.js — comma-separated allowlist, parsed and validated in code',
     ALLOW_CONSOLE_EMAIL: 'server/lib/startup-secrets-check.js — downgrades a boot error to a warning; single-user/local installs only',
