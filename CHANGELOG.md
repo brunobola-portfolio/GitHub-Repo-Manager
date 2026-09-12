@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **One definition of "billing is configured", not two.** `isStripeEnabled()`
+  asked only for `STRIPE_SECRET_KEY`, while the shell has always required the
+  webhook signing secret as well before advertising a priced plan. The key
+  alone is enough to open a checkout and charge a card, but every event Stripe
+  sends back is then refused for want of a signing secret, so no licence is
+  issued and no e-mail is sent. In production the boot audit already refuses to
+  start in that state, so the live instance was never exposed; a self-hosted or
+  staging instance outside production was. The predicate now requires both, and
+  has its own test — every other Stripe test mocks it wholesale, which is why
+  it drifted unnoticed.
+
 ## [4.25.6] - 2026-09-12
 
 ### Security
