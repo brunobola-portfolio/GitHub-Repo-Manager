@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **The TFVC snapshot import no longer hands an untrusted archive to
+  `adm-zip`.** That path downloads a ZIP built by whichever Azure DevOps or TFS
+  host the caller named and called `extractAllTo` on it — and adm-zip 0.6.0,
+  the latest release, writes through symlinks already at the destination and
+  accepts entry names that climb out of it (the advisory behind Dependabot
+  alert #39, which has no patched version, so waiting for an upgrade was not a
+  plan). Extraction now runs entry by entry through
+  `server/lib/safe-zip-extract.js`: symlink entries, absolute names, parent-
+  directory hops (including the Windows `..\` spelling) and writes through an
+  existing link are each skipped and logged, and a snapshot that yields no
+  usable file fails loudly instead of pushing an empty repository. A TFVC
+  checkout has no legitimate use for any of them.
+  `scripts/package-windows.mjs` keeps using adm-zip: it opens the official
+  Node runtime ZIP after verifying its published SHA-256 and pulls two named
+  entries out of it.
+
 ## [4.25.5] - 2026-09-12
 
 ### Added

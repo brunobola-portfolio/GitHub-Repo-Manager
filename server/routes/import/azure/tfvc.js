@@ -9,6 +9,7 @@ import { requireAuth, safeError, errorResponse } from '../../../middleware/auth.
 import { validateBody } from '../../../middleware/validate-request.js';
 import { azureTfvcImportSchema, azureTfvcBatchSchema, azureTfvcInPlaceSchema } from '../../../lib/validators.js';
 import logger from '../../../lib/logger.js';
+import { extractZipSafely } from '../../../lib/safe-zip-extract.js';
 import { updateJobProgress } from '../_shared.js';
 
 const router = express.Router();
@@ -513,7 +514,18 @@ async function runSnapshotStrategy(ctx) {
         const zip = new AdmZip(zipPath);
         const extractDir = join(tmpDir, 'content');
         mkdirSync(extractDir, { recursive: true });
-        zip.extractAllTo(extractDir, true);
+        // Not zip.extractAllTo(): this archive was built by whatever Azure
+        // DevOps/TFS host the caller named, and adm-zip 0.6.0 (no patched
+        // release exists) writes through symlinks at the destination and
+        // accepts entry names that climb out of it.
+        const { written, skipped } = extractZipSafely(zip, extractDir);
+        if (skipped.length > 0) {
+            logger.warn({ count: skipped.length, entries: skipped.slice(0, 20) },
+                'tfvc-snapshot: refused unsafe zip entries');
+        }
+        if (written === 0) {
+            throw new Error('TFVC archive contained no files that could be safely extracted.');
+        }
 
         onProgress('running', 'Creating Git repository from TFVC snapshot...', 55);
         const git = simpleGit(extractDir);
