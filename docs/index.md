@@ -37,6 +37,10 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.25.6 (2026-09-12) — untrusted archives extracted safely, and public
+  pages that name themselves.** The TFVC snapshot import no longer hands an
+  untrusted archive to
+  `adm-zip`.
 - **v4.25.5 (2026-09-12) — the hosted instance's privacy policy, and headers
   that agree with each other.** A privacy policy for this hosted instance;
   `X-Frame-Options: DENY`; `Cache-Control: no-store` on every `/api/`
