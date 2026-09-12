@@ -301,10 +301,17 @@ jobs:
           # AFTER the customer has committed to buying. Prefixes are checked
           # because a test key on the live box silently sells nothing, and a
           # product id pasted where a price id belongs fails at checkout.
-          if ($env:IN_STRIPE_SECRET_KEY -or $env:IN_STRIPE_WEBHOOK_SECRET -or $env:IN_STRIPE_PRICE_PRO_MONTHLY) {
-            if (-not ($env:IN_STRIPE_SECRET_KEY -and $env:IN_STRIPE_WEBHOOK_SECRET -and $env:IN_STRIPE_PRICE_PRO_MONTHLY)) {
-              throw 'Stripe needs all three at once: secrets STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET, and variable STRIPE_PRICE_PRO_MONTHLY'
-            }
+          $stripeComplete = [bool]($env:IN_STRIPE_SECRET_KEY -and $env:IN_STRIPE_WEBHOOK_SECRET -and $env:IN_STRIPE_PRICE_PRO_MONTHLY)
+          if (($env:IN_STRIPE_SECRET_KEY -or $env:IN_STRIPE_WEBHOOK_SECRET -or $env:IN_STRIPE_PRICE_PRO_MONTHLY) -and -not $stripeComplete) {
+            # The same rule the Resend block already follows: a half-configured
+            # integration reports and steps aside. Throwing here aborted the
+            # whole action before anything was written, so one missing Stripe
+            # value silently stopped the deployment mode, the safety flags, the
+            # browser DSN and the e-mail settings from reaching the box.
+            'Stripe NOT configured: it needs all three at once — secrets STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET, plus variable STRIPE_PRICE_PRO_MONTHLY'
+            '  a price id on its own changes nothing: billing stays off, and everything else here is still written'
+          }
+          if ($stripeComplete) {
             if ($env:IN_STRIPE_SECRET_KEY -notmatch '^sk_(live|test)_') { throw 'STRIPE_SECRET_KEY does not start with sk_live_ or sk_test_' }
             if ($env:IN_STRIPE_WEBHOOK_SECRET -notmatch '^whsec_') { throw 'STRIPE_WEBHOOK_SECRET does not start with whsec_' }
             if ($env:IN_STRIPE_PRICE_PRO_MONTHLY -notmatch '^price_') { throw 'STRIPE_PRICE_PRO_MONTHLY must be a price id (price_...), not a product id' }
