@@ -486,6 +486,18 @@ server-side:
 | --- | --- | --- |
 | `LICENSE_KEY` in the `.env` | Grants its tier to **every** signed-in account on this instance — the point of buying one for yourself | Grants nothing; a Stripe subscription becomes the only source of a paid tier |
 | The shared `POST /api/v1/webhooks/github`, verified against the instance-wide `WEBHOOK_SECRET` | Accepted | Answers **410** — one shared secret between tenants is a forgery kit, so each account generates its own ingest URL (`/api/v1/webhooks/github/t/<id>`) in the Work Board |
+| `ALLOW_CONSOLE_EMAIL=true` (mail is logged, never sent) | Allowed — there is nobody else to e-mail, and the boot only warns | **Boot refuses to start.** A licence key someone paid for would be written to the log |
+| A server-wide AI key (`GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`) | Yours to spend as you like | **Boot refuses to start** unless `AI_REQUIRE_USER_CONFIG=true` or `AI_SPEND_CAP_CENTS_FREE` is set: the per-user quotas are counts, not money, so N throwaway accounts cost N × quota against your provider bill with no ceiling |
+| `GRM_DISABLE_WEB_SETUP` | Leave it open; the wizard is how you configure OAuth on first run | Set it to `true` — the instance is already configured, and boot warns while it is open |
+
+So the SaaS set, in one place: `DEPLOYMENT_MODE=saas`, `EMAIL_PROVIDER=resend`
+with `RESEND_API_KEY` and `EMAIL_FROM`, no `ALLOW_CONSOLE_EMAIL`,
+`AI_REQUIRE_USER_CONFIG=true` (or a spend cap), `GRM_DISABLE_WEB_SETUP=true`,
+and no `LICENSE_KEY`. On the public instance the `Ops — IIS proxy` workflow
+writes all of them for you: `configure-integrations` sets the mode and the two
+safety flags together, precisely because forgetting one of them is what costs
+money. Everything in that list is either unnecessary or actively wrong on a
+single-operator box — this is the one table where the two deployments diverge.
 
 Anonymous requests never receive a paid tier in either mode
 (`server/middleware/require-tier.js`). The value is read from the environment

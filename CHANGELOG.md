@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- The boot audit now knows the difference between a private box and a public
+  one. With `DEPLOYMENT_MODE=saas` it **refuses to start** when
+  `ALLOW_CONSOLE_EMAIL=true` (a paying customer's licence key would be written
+  to the log instead of delivered) or when a server-wide AI key is present with
+  neither `AI_REQUIRE_USER_CONFIG=true` nor `AI_SPEND_CAP_CENTS_FREE` — the
+  per-user quotas are counts, not money, so that combination has no ceiling at
+  all. It warns when the in-app OAuth setup wizard is left open, and when a
+  `LICENSE_KEY` lingers on an instance where it grants nothing. A self-host
+  deployment is untouched by all four: there, every one of them is legitimate.
+
+### Changed
+
+- `ops-iis.yml` → `configure-integrations` also writes the licence signing key
+  (from the `LICENSE_PRIVATE_PEM` secret, quoted with escaped newlines because
+  a PEM is multi-line and an `.env` line is not). Without it, enabling Stripe
+  makes the boot abort — a paid checkout could not issue a licence. It can also
+  turn browser error reporting on by reusing the server's Sentry DSN
+  (`SENTRY_BROWSER_FROM_SERVER=true`), since a DSN is public by design; and
+  `env-check` now reports the Stripe price ids, the licence key and the two
+  SaaS safety flags.
+
 ## [4.25.2] - 2026-09-12
 
 ### Security

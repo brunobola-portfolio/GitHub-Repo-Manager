@@ -131,7 +131,7 @@ jobs:
           # purpose: a server key without that flag means every free signup
           # spends the operator's money, which is the one misconfiguration on
           # this box that has no ceiling.
-          foreach ($k in 'NODE_ENV','DEPLOYMENT_MODE','FRONTEND_URL','EMAIL_PROVIDER','RESEND_API_KEY','EMAIL_FROM','ALLOW_CONSOLE_EMAIL','SENTRY_DSN','SENTRY_BROWSER_DSN','SENTRY_ENVIRONMENT','STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','STRIPE_PRICE_PRO_MONTHLY','STRIPE_PRICE_PRO_YEARLY','WORK_BOARD_AI_ENABLED','AI_PROVIDER','GEMINI_API_KEY','AI_REQUIRE_USER_CONFIG','GRM_DISABLE_WEB_SETUP','DATA_RETENTION_DAYS') {
+          foreach ($k in 'NODE_ENV','DEPLOYMENT_MODE','FRONTEND_URL','EMAIL_PROVIDER','RESEND_API_KEY','EMAIL_FROM','ALLOW_CONSOLE_EMAIL','SENTRY_DSN','SENTRY_BROWSER_DSN','SENTRY_ENVIRONMENT','STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','STRIPE_PRICE_PRO_MONTHLY','STRIPE_PRICE_PRO_YEARLY','LICENSE_SIGNING_PRIVATE_KEY_PEM','WORK_BOARD_AI_ENABLED','AI_PROVIDER','GEMINI_API_KEY','AI_REQUIRE_USER_CONFIG','GRM_DISABLE_WEB_SETUP','DATA_RETENTION_DAYS') {
             $v = $map[$k]
             $state = if ([string]::IsNullOrWhiteSpace($v)) { 'unset' } else { 'SET' }
             # DEPLOYMENT_MODE's value is the point of printing it — "SET" does
@@ -188,11 +188,13 @@ jobs:
           IN_EMAIL_FROM: ${{ vars.EMAIL_FROM }}
           IN_SENTRY_BROWSER_DSN: ${{ vars.SENTRY_BROWSER_DSN }}
           IN_SENTRY_ENVIRONMENT: ${{ vars.SENTRY_ENVIRONMENT }}
+          IN_SENTRY_BROWSER_FROM_SERVER: ${{ vars.SENTRY_BROWSER_FROM_SERVER }}
           IN_DEPLOYMENT_MODE: ${{ vars.DEPLOYMENT_MODE }}
           IN_STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           IN_STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
           IN_STRIPE_PRICE_PRO_MONTHLY: ${{ vars.STRIPE_PRICE_PRO_MONTHLY }}
           IN_STRIPE_PRICE_PRO_YEARLY: ${{ vars.STRIPE_PRICE_PRO_YEARLY }}
+          IN_LICENSE_PEM: ${{ secrets.LICENSE_PRIVATE_PEM }}
         run: |
           # Writes only what is set in GitHub (secret RESEND_API_KEY; variables
           # EMAIL_FROM, SENTRY_BROWSER_DSN, SENTRY_ENVIRONMENT) into the
@@ -255,7 +257,23 @@ jobs:
               Remove-Line 'ALLOW_CONSOLE_EMAIL'
             }
           }
-          if ($env:IN_SENTRY_BROWSER_DSN) { Set-Line 'SENTRY_BROWSER_DSN' $env:IN_SENTRY_BROWSER_DSN }
+          if ($env:IN_SENTRY_BROWSER_DSN) {
+            Set-Line 'SENTRY_BROWSER_DSN' $env:IN_SENTRY_BROWSER_DSN
+          } elseif ($env:IN_SENTRY_BROWSER_FROM_SERVER -eq 'true') {
+            # A Sentry DSN is public by design — every browser SDK ships it
+            # inside the page. Reusing the server's DSN turns browser reporting
+            # on without creating a second project, and the events stay
+            # separable by their runtime tags. Opt-in, because one project also
+            # means one shared quota.
+            $dsnLine = $lines | Where-Object { $_ -match '^\s*SENTRY_DSN\s*=' } | Select-Object -First 1
+            $dsn = ($dsnLine -replace '^\s*SENTRY_DSN\s*=\s*', '') -replace '^["'']|["'']$', ''
+            if ($dsn) {
+              Set-Line 'SENTRY_BROWSER_DSN' $dsn
+              'browser DSN set from the server DSN (same Sentry project)'
+            } else {
+              'SENTRY_BROWSER_FROM_SERVER=true but SENTRY_DSN is empty — nothing to copy'
+            }
+          }
           if ($env:IN_SENTRY_ENVIRONMENT) { Set-Line 'SENTRY_ENVIRONMENT' $env:IN_SENTRY_ENVIRONMENT }
           # DEPLOYMENT_MODE decides two things that matter the moment strangers
           # can sign up: in 'saas' an installed instance licence no longer
@@ -299,6 +317,19 @@ jobs:
               Set-Line 'STRIPE_PRICE_PRO_YEARLY' $env:IN_STRIPE_PRICE_PRO_YEARLY
             } else {
               'no yearly price set — the pricing page keeps its yearly toggle hidden'
+            }
+            # Boot ABORTS when STRIPE_SECRET_KEY is set without this key, and
+            # rightly so: it signs the licence a customer receives after paying.
+            # The repository secret is named LICENSE_PRIVATE_PEM; the service
+            # reads LICENSE_SIGNING_PRIVATE_KEY_PEM. A PEM is multi-line and an
+            # .env line is not, so it is written quoted with escaped newlines —
+            # the form dotenv turns back into real line breaks.
+            if ($env:IN_LICENSE_PEM) {
+              $pem = ($env:IN_LICENSE_PEM -replace "`r`n", "`n").Trim()
+              if ($pem -notmatch 'BEGIN (RSA |EC )?PRIVATE KEY') { throw 'LICENSE_PRIVATE_PEM does not look like a private key' }
+              Set-Line 'LICENSE_SIGNING_PRIVATE_KEY_PEM' ('"' + ($pem -replace "`n", '\n') + '"')
+            } else {
+              'WARNING: LICENSE_PRIVATE_PEM secret is empty — with Stripe enabled the boot will refuse to start, because a paid checkout could not issue a licence key'
             }
           }
           if ($changed.Count -eq 0) { 'nothing set in GitHub — add the secret/variables first'; exit 0 }

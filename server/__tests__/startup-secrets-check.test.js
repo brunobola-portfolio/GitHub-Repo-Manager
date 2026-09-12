@@ -27,6 +27,10 @@ const TRACKED_KEYS = [
     'DISABLE_HTTPS_ENFORCEMENT', 'STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET',
     'LICENSE_SIGNING_PRIVATE_KEY_PEM', 'EMAIL_PROVIDER', 'RESEND_API_KEY',
     'FRONTEND_URL', 'ALLOW_MOCK_AUTH', 'VITE_MOCK_MODE', 'ALLOW_CONSOLE_EMAIL',
+    // saas-mode axis: the checks that only exist once strangers can sign up.
+    'DEPLOYMENT_MODE', 'GRM_DISABLE_WEB_SETUP', 'AI_REQUIRE_USER_CONFIG',
+    'AI_SPEND_CAP_CENTS_FREE', 'LICENSE_KEY',
+    'GEMINI_API_KEY', 'ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'OPENROUTER_API_KEY',
 ];
 
 beforeEach(() => {
@@ -51,6 +55,61 @@ afterEach(() => {
 });
 
 describe('G4 — verifySecretsAtStartup', () => {
+    // -----------------------------------------------------------------------
+    // saas mode — the obligations a public instance has and a private one does not
+    // -----------------------------------------------------------------------
+
+    describe('DEPLOYMENT_MODE=saas', () => {
+        beforeEach(() => {
+            for (const k of ['SESSION_SECRET', 'WEBHOOK_SECRET', 'CREDENTIAL_ENCRYPTION_KEY', 'API_KEY_SECRET']) {
+                process.env[k] = STRONG;
+            }
+            process.env.DEPLOYMENT_MODE = 'saas';
+            process.env.GRM_DISABLE_WEB_SETUP = 'true';
+        });
+
+        it('refuses console e-mail — a paying customer would get a logged licence key', () => {
+            process.env.EMAIL_PROVIDER = 'console';
+            process.env.ALLOW_CONSOLE_EMAIL = 'true';
+            const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
+            expect(errors.join(' ')).toMatch(/ALLOW_CONSOLE_EMAIL=true is for single-user/);
+        });
+
+        it('refuses a server AI key with no ceiling at all', () => {
+            process.env.GEMINI_API_KEY = 'not-a-real-key';
+            const { errors } = verifySecretsAtStartup({ nodeEnv: 'production' });
+            expect(errors.join(' ')).toMatch(/no ceiling/);
+        });
+
+        it('accepts that key when BYOK is mandatory, and when a spend cap is set', () => {
+            process.env.GEMINI_API_KEY = 'not-a-real-key';
+            process.env.AI_REQUIRE_USER_CONFIG = 'true';
+            expect(verifySecretsAtStartup({ nodeEnv: 'production' }).errors).toEqual([]);
+
+            delete process.env.AI_REQUIRE_USER_CONFIG;
+            process.env.AI_SPEND_CAP_CENTS_FREE = '200';
+            expect(verifySecretsAtStartup({ nodeEnv: 'production' }).errors).toEqual([]);
+        });
+
+        it('warns about an open setup wizard and a leftover instance licence', () => {
+            delete process.env.GRM_DISABLE_WEB_SETUP;
+            process.env.LICENSE_KEY = 'grm_lic_leftover';
+            const { warnings } = verifySecretsAtStartup({ nodeEnv: 'production' });
+            expect(warnings.join(' ')).toMatch(/GRM_DISABLE_WEB_SETUP/);
+            expect(warnings.join(' ')).toMatch(/LICENSE_KEY is set on a saas deployment/);
+        });
+
+        it('says none of it on a self-host box, where every one of those is legitimate', () => {
+            process.env.DEPLOYMENT_MODE = 'self-host';
+            process.env.GEMINI_API_KEY = 'not-a-real-key';
+            delete process.env.GRM_DISABLE_WEB_SETUP;
+            process.env.LICENSE_KEY = 'grm_lic_bought_one';
+            const { errors, warnings } = verifySecretsAtStartup({ nodeEnv: 'production' });
+            expect(errors).toEqual([]);
+            expect(warnings.join(' ')).not.toMatch(/saas/);
+        });
+    });
+
     // -----------------------------------------------------------------------
     // Production — required key checks
     // -----------------------------------------------------------------------

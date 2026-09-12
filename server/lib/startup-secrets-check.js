@@ -102,6 +102,54 @@ export function verifySecretsAtStartup({ nodeEnv }) {
             );
         }
 
+        // A public, multi-tenant instance carries obligations a private one does
+        // not, and every one of them is invisible until it costs money or hands
+        // someone a tier they did not buy. DEPLOYMENT_MODE is the switch, so
+        // this is the right place to check what only matters once strangers can
+        // sign up. A self-host box is deliberately untouched by all of it.
+        if ((process.env.DEPLOYMENT_MODE || 'self-host') === 'saas') {
+            if (process.env.ALLOW_CONSOLE_EMAIL === 'true') {
+                errors.push(
+                    'ALLOW_CONSOLE_EMAIL=true is for single-user installs, and this is ' +
+                    'DEPLOYMENT_MODE=saas: licence keys and retention warnings would be ' +
+                    'written to the log instead of delivered — to customers who paid. ' +
+                    'Configure EMAIL_PROVIDER=resend + RESEND_API_KEY and remove it.'
+                );
+            }
+            // The per-user AI quotas are COUNTS, not money: N throwaway accounts
+            // cost N x quota against the operator's own provider key, and the
+            // spend cap ships at 0 (disabled). Without either a cap or
+            // BYOK-only there is no ceiling and no kill switch short of pulling
+            // the key.
+            const serverAiKey = process.env.GEMINI_API_KEY || process.env.ANTHROPIC_API_KEY
+                || process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY;
+            const byokOnly = process.env.AI_REQUIRE_USER_CONFIG === 'true';
+            const capped = Number(process.env.AI_SPEND_CAP_CENTS_FREE) > 0;
+            if (serverAiKey && !byokOnly && !capped) {
+                errors.push(
+                    'A server-wide AI key is set on a saas deployment with neither ' +
+                    'AI_REQUIRE_USER_CONFIG=true nor AI_SPEND_CAP_CENTS_FREE — every free ' +
+                    'signup would spend the operator\'s provider budget with no ceiling. ' +
+                    'Set one of the two.'
+                );
+            }
+            if (process.env.GRM_DISABLE_WEB_SETUP !== 'true') {
+                warnings.push(
+                    'GRM_DISABLE_WEB_SETUP is not true on a saas deployment — the in-app ' +
+                    'OAuth setup wizard exists for a self-hoster\'s first run and has ' +
+                    'nothing to do on an instance that is already configured.'
+                );
+            }
+            if (process.env.LICENSE_KEY) {
+                warnings.push(
+                    'LICENSE_KEY is set on a saas deployment, where an instance licence ' +
+                    'grants nothing — Stripe is the only source of a paid tier. It is ' +
+                    'probably a leftover from a self-host trial; remove it so nobody ' +
+                    'debugs a tier against a key that does nothing.'
+                );
+            }
+        }
+
         // Mock-auth escape hatch must never be reachable in production.
         // server/routes/auth.js mounts POST /api/auth/mock whenever
         // ALLOW_MOCK_AUTH==='true' regardless of NODE_ENV, minting a fully
