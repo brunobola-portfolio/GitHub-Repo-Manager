@@ -1,7 +1,7 @@
 name: Ops — IIS proxy
 
 # Operator tooling for the production VPS, run on the same self-hosted runner
-# the release deploy uses. Seven actions:
+# the release deploy uses. Eight actions:
 #
 #   inspect — print the server-level ARR proxy settings, the site's proxy
 #             element, and what /api/auth/login answers from the box itself.
@@ -20,14 +20,20 @@ name: Ops — IIS proxy
 #             secret value. Read-only.
 #   sentry-test — send one tagged info event with the service's DSN, to
 #             prove delivery from this box. Writes nothing on the server.
+#   email-test — send one real message through the configured provider and
+#             print the provider's message id, to prove e-mail leaves this
+#             box. Recipient: variable TEST_EMAIL_TO, else the EMAIL_FROM
+#             address. Read-only on the server.
 #   harden  — hide the ARR version header on the live site (backup, health
 #             check, restore on failure).
-#   configure-integrations — write Resend, browser-Sentry and deployment-mode
-#             settings from GitHub (secret RESEND_API_KEY; variables
-#             EMAIL_FROM, SENTRY_BROWSER_DSN, SENTRY_ENVIRONMENT,
-#             DEPLOYMENT_MODE) into the service .env, refusing an unverified
-#             Resend domain or a deployment mode that is not saas/self-host;
-#             restarts, rolls back on failure. Never prints a value.
+#   configure-integrations — write Resend, browser-Sentry, Stripe and
+#             deployment-mode settings from GitHub (secrets RESEND_API_KEY,
+#             STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET; variables EMAIL_FROM,
+#             SENTRY_BROWSER_DSN, SENTRY_ENVIRONMENT, DEPLOYMENT_MODE,
+#             STRIPE_PRICE_PRO_MONTHLY, STRIPE_PRICE_PRO_YEARLY) into the
+#             service .env, refusing an unverified Resend domain, a deployment
+#             mode that is not saas/self-host, or Stripe values whose prefixes
+#             are wrong; restarts, rolls back on failure. Never prints a value.
 #
 # Only harden and configure-integrations write on the server, each with a
 # backup taken first and restored automatically if the health check fails.
@@ -40,7 +46,7 @@ on:
         required: true
         default: inspect
         type: choice
-        options: [inspect, apply, app-log, env-check, sentry-test, harden, configure-integrations]
+        options: [inspect, apply, app-log, env-check, sentry-test, email-test, harden, configure-integrations]
 
 permissions:
   contents: read
@@ -121,10 +127,12 @@ jobs:
           foreach ($line in Get-Content $env) {
             if ($line -match '^\s*([A-Z0-9_]+)\s*=\s*(.*)$') { $map[$matches[1]] = $matches[2].Trim().Trim('"').Trim("'") }
           }
-          foreach ($k in 'NODE_ENV','DEPLOYMENT_MODE','FRONTEND_URL','EMAIL_PROVIDER','RESEND_API_KEY','EMAIL_FROM','ALLOW_CONSOLE_EMAIL','SENTRY_DSN','SENTRY_BROWSER_DSN','SENTRY_ENVIRONMENT','STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','WORK_BOARD_AI_ENABLED','AI_PROVIDER','GEMINI_API_KEY','DATA_RETENTION_DAYS') {
+          foreach ($k in 'NODE_ENV','DEPLOYMENT_MODE','FRONTEND_URL','EMAIL_PROVIDER','RESEND_API_KEY','EMAIL_FROM','ALLOW_CONSOLE_EMAIL','SENTRY_DSN','SENTRY_BROWSER_DSN','SENTRY_ENVIRONMENT','STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','STRIPE_PRICE_PRO_MONTHLY','STRIPE_PRICE_PRO_YEARLY','WORK_BOARD_AI_ENABLED','AI_PROVIDER','GEMINI_API_KEY','DATA_RETENTION_DAYS') {
             $v = $map[$k]
             $state = if ([string]::IsNullOrWhiteSpace($v)) { 'unset' } else { 'SET' }
-            $shown = if ($k -in 'NODE_ENV','FRONTEND_URL','EMAIL_PROVIDER','EMAIL_FROM','ALLOW_CONSOLE_EMAIL','WORK_BOARD_AI_ENABLED','AI_PROVIDER','DATA_RETENTION_DAYS','SENTRY_ENVIRONMENT') { " = $v" } else { '' }
+            # DEPLOYMENT_MODE's value is the point of printing it — "SET" does
+            # not tell an operator whether the box is multi-tenant.
+            $shown = if ($k -in 'NODE_ENV','DEPLOYMENT_MODE','FRONTEND_URL','EMAIL_PROVIDER','EMAIL_FROM','ALLOW_CONSOLE_EMAIL','WORK_BOARD_AI_ENABLED','AI_PROVIDER','DATA_RETENTION_DAYS','SENTRY_ENVIRONMENT') { " = $v" } else { '' }
             # A DSN's host and project id say which Sentry organisation receives
             # the events; the public key in front of the @ is left out.
             if ($k -like 'SENTRY*DSN' -and $v) { try { $u = [Uri]$v; $shown = " (host $($u.Host), project $($u.AbsolutePath.Trim('/')))" } catch { $shown = ' (not a valid URL)' } }
@@ -177,6 +185,10 @@ jobs:
           IN_SENTRY_BROWSER_DSN: ${{ vars.SENTRY_BROWSER_DSN }}
           IN_SENTRY_ENVIRONMENT: ${{ vars.SENTRY_ENVIRONMENT }}
           IN_DEPLOYMENT_MODE: ${{ vars.DEPLOYMENT_MODE }}
+          IN_STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          IN_STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+          IN_STRIPE_PRICE_PRO_MONTHLY: ${{ vars.STRIPE_PRICE_PRO_MONTHLY }}
+          IN_STRIPE_PRICE_PRO_YEARLY: ${{ vars.STRIPE_PRICE_PRO_YEARLY }}
         run: |
           # Writes only what is set in GitHub (secret RESEND_API_KEY; variables
           # EMAIL_FROM, SENTRY_BROWSER_DSN, SENTRY_ENVIRONMENT) into the
@@ -232,6 +244,30 @@ jobs:
             if ($env:IN_DEPLOYMENT_MODE -notin @('saas', 'self-host')) { throw "DEPLOYMENT_MODE must be 'saas' or 'self-host', not '$($env:IN_DEPLOYMENT_MODE)'" }
             Set-Line 'DEPLOYMENT_MODE' $env:IN_DEPLOYMENT_MODE
           }
+          # Stripe: all or nothing. A secret key without a webhook secret takes
+          # the customer's money and never hears back from Stripe, so the
+          # subscription is never recorded; a checkout without a price id fails
+          # AFTER the customer has committed to buying. Prefixes are checked
+          # because a test key on the live box silently sells nothing, and a
+          # product id pasted where a price id belongs fails at checkout.
+          if ($env:IN_STRIPE_SECRET_KEY -or $env:IN_STRIPE_WEBHOOK_SECRET -or $env:IN_STRIPE_PRICE_PRO_MONTHLY) {
+            if (-not ($env:IN_STRIPE_SECRET_KEY -and $env:IN_STRIPE_WEBHOOK_SECRET -and $env:IN_STRIPE_PRICE_PRO_MONTHLY)) {
+              throw 'Stripe needs all three at once: secrets STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET, and variable STRIPE_PRICE_PRO_MONTHLY'
+            }
+            if ($env:IN_STRIPE_SECRET_KEY -notmatch '^sk_(live|test)_') { throw 'STRIPE_SECRET_KEY does not start with sk_live_ or sk_test_' }
+            if ($env:IN_STRIPE_WEBHOOK_SECRET -notmatch '^whsec_') { throw 'STRIPE_WEBHOOK_SECRET does not start with whsec_' }
+            if ($env:IN_STRIPE_PRICE_PRO_MONTHLY -notmatch '^price_') { throw 'STRIPE_PRICE_PRO_MONTHLY must be a price id (price_...), not a product id' }
+            if ($env:IN_STRIPE_SECRET_KEY -match '^sk_test_') { 'WARNING: this is a TEST key — no real payment will be taken' }
+            Set-Line 'STRIPE_SECRET_KEY' $env:IN_STRIPE_SECRET_KEY
+            Set-Line 'STRIPE_WEBHOOK_SECRET' $env:IN_STRIPE_WEBHOOK_SECRET
+            Set-Line 'STRIPE_PRICE_PRO_MONTHLY' $env:IN_STRIPE_PRICE_PRO_MONTHLY
+            if ($env:IN_STRIPE_PRICE_PRO_YEARLY) {
+              if ($env:IN_STRIPE_PRICE_PRO_YEARLY -notmatch '^price_') { throw 'STRIPE_PRICE_PRO_YEARLY must be a price id (price_...)' }
+              Set-Line 'STRIPE_PRICE_PRO_YEARLY' $env:IN_STRIPE_PRICE_PRO_YEARLY
+            } else {
+              'no yearly price set — the pricing page keeps its yearly toggle hidden'
+            }
+          }
           if ($changed.Count -eq 0) { 'nothing set in GitHub — add the secret/variables first'; exit 0 }
 
           $backup = "$envFile.bak-$(Get-Date -Format yyyyMMdd-HHmmss)"
@@ -268,6 +304,46 @@ jobs:
           try {
             node --input-type=module -e "const S = await import('@sentry/node'); S.init({ dsn: process.env.SENTRY_DSN, environment: 'production', sendDefaultPii: false }); const id = S.captureMessage('GitHub Repo Manager: Sentry delivery test from the VPS', { level: 'info', tags: { source: 'ops-iis/sentry-test' } }); const ok = await S.flush(8000); console.log('event ' + id + (ok ? ' delivered' : ' NOT flushed within 8 s'));"
           } finally { Pop-Location }
+
+      - name: E-mail — send one real message through the configured provider
+        if: ${{ inputs.action == 'email-test' }}
+        shell: pwsh
+        env:
+          IN_TEST_EMAIL_TO: ${{ vars.TEST_EMAIL_TO }}
+        run: |
+          # The console adapter answers ok for mail nobody receives, so the only
+          # proof that e-mail works is a message that arrives. This sends one
+          # through the provider the SERVICE is configured with, using the
+          # service's own key, and prints the provider's message id — never the
+          # key, never the body.
+          $envFile = 'C:\ProgramData\GitHubRepoManager\data\.env'
+          if (-not (Test-Path $envFile)) { throw ".env not found at $envFile" }
+          $map = @{}
+          foreach ($line in Get-Content $envFile) {
+            if ($line -match '^\s*([A-Z0-9_]+)\s*=\s*(.*)$') { $map[$matches[1]] = $matches[2].Trim().Trim('"').Trim("'") }
+          }
+          $provider = $map['EMAIL_PROVIDER']
+          if ($provider -ne 'resend') {
+            "EMAIL_PROVIDER is '$provider' — nothing is delivered. Run configure-integrations with a valid RESEND_API_KEY first."
+            exit 0
+          }
+          $key = $map['RESEND_API_KEY']
+          if (-not $key) { throw 'EMAIL_PROVIDER=resend but RESEND_API_KEY is empty' }
+          $from = $map['EMAIL_FROM']
+          if (-not $from) { throw 'EMAIL_FROM is not set' }
+          $to = if ($env:IN_TEST_EMAIL_TO) { $env:IN_TEST_EMAIL_TO } else { ($from -replace '.*<|>.*', '').Trim() }
+          $body = @{
+            from    = $from
+            to      = @($to)
+            subject = 'GitHub Repo Manager: e-mail delivery test'
+            text    = "Sent from the production box by the ops workflow at $(Get-Date -Format o). If this arrived, licence keys, retention warnings and digests can be delivered."
+          } | ConvertTo-Json -Depth 4
+          try {
+            $r = Invoke-RestMethod -Uri 'https://api.resend.com/emails' -Method Post -Headers @{ Authorization = "Bearer $key"; 'Content-Type' = 'application/json' } -Body $body -TimeoutSec 25
+            "accepted by Resend, message id $($r.id) — check the inbox of $to"
+          } catch {
+            throw "Resend refused the send: $($_.Exception.Message). A 401 means the key is invalid; a 403 usually means the sending domain is not verified."
+          }
 
       - name: Service log — warnings, errors and auth events
         if: ${{ inputs.action == 'app-log' }}

@@ -71,6 +71,34 @@ STRIPE_PRICE_ENTERPRISE_YEARLY=price_...  # Optional
 > checkout return `Price not configured` after the customer has already
 > committed to buying.
 
+## Step 3b: On the production VPS, do not edit the file by hand
+
+The public instance reads `C:\ProgramData\GitHubRepoManager\data\.env`, and the
+GitHub Actions workflow `Ops — IIS proxy` writes it for you:
+
+1. Repository → Settings → Secrets and variables → Actions.
+   **Secrets:** `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`.
+   **Variables:** `STRIPE_PRICE_PRO_MONTHLY`, and `STRIPE_PRICE_PRO_YEARLY` if
+   you created a yearly price.
+2. Actions → *Ops — IIS proxy* → run `configure-integrations`.
+
+It refuses the write unless all three of secret key, webhook secret and monthly
+price are present — a secret key without a webhook secret takes the customer's
+money and never records the subscription, and a checkout without a price id
+fails after the customer has committed to buying. It also checks the prefixes
+(`sk_live_`/`sk_test_`, `whsec_`, `price_`), warns loudly on a test key, backs
+up the `.env`, restarts the service, and restores the backup if the health check
+fails. Then run `env-check` to see every Stripe name reported as SET or unset —
+it never prints a value.
+
+The webhook endpoint to register in Stripe for the public instance is
+`https://repomanager.bolalabs.pt/api/v1/webhooks/stripe`.
+
+**Do the e-mail first.** A completed checkout mints a signed licence key and
+e-mails it; with `EMAIL_PROVIDER=console` that mail is never delivered and the
+issuer now deliberately refuses to send, logging that a key is owed. Configure
+Resend, prove it with the `email-test` action, and only then sell.
+
 ## Step 4: Restart & Test
 
 1. Restart the server: `npm run dev:all`
