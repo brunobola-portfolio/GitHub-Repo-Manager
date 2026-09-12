@@ -220,21 +220,39 @@ jobs:
           # EMAIL_PROVIDER=resend with an unverified sender delivers nothing
           # and, unlike the console adapter, looks configured.
           if ($env:IN_RESEND_API_KEY) {
+            $from = if ($env:IN_EMAIL_FROM) { $env:IN_EMAIL_FROM } else { 'no-reply@bolalabs.pt' }
+            $domain = ($from -replace '.*<|>.*', '').Split('@')[-1].Trim()
+            # A Resend key created with "Sending access" CANNOT read /domains —
+            # it answers 401. That is not a bad key, just a narrow one, and
+            # narrow is the right shape for a production box. So 401/403 here
+            # means "this key cannot tell us about the domain", the config is
+            # written anyway, and the email-test action is the real proof. A key
+            # that CAN list domains is still held to the verified check, because
+            # then a missing or unverified domain is a knowable mistake.
+            $refuse = $false
             try {
-              $from = if ($env:IN_EMAIL_FROM) { $env:IN_EMAIL_FROM } else { 'no-reply@bolalabs.pt' }
-              $domain = ($from -replace '.*<|>.*', '').Split('@')[-1].Trim()
               $domains = Invoke-RestMethod -Uri 'https://api.resend.com/domains' -Headers @{ Authorization = "Bearer $($env:IN_RESEND_API_KEY)" } -TimeoutSec 20
               $d = @($domains.data) | Where-Object { $_.name -eq $domain } | Select-Object -First 1
               if (-not $d) { throw "Resend has no domain '$domain' — add it at resend.com/domains first" }
               if ($d.status -ne 'verified') { throw "Resend domain '$domain' is '$($d.status)', not verified — finish the DNS records first" }
               "Resend domain $domain verified"
+            } catch {
+              $code = 0
+              try { $code = [int]$_.Exception.Response.StatusCode } catch { }
+              if ($code -eq 401 -or $code -eq 403) {
+                "Resend: this key cannot list domains (HTTP $code) — normal for a sending-only key, so the domain is not checked from here"
+                "  writing the configuration anyway; run the email-test action to prove delivery"
+              } else {
+                "Resend NOT configured: $($_.Exception.Message)"
+                "  e-mail stays as it is; fix that and re-run this action"
+                $refuse = $true
+              }
+            }
+            if (-not $refuse) {
               Set-Line 'EMAIL_PROVIDER' 'resend'
               Set-Line 'RESEND_API_KEY' $env:IN_RESEND_API_KEY
               Set-Line 'EMAIL_FROM' $from
               Remove-Line 'ALLOW_CONSOLE_EMAIL'
-            } catch {
-              "Resend NOT configured: $($_.Exception.Message)"
-              "  e-mail stays as it is; re-run this action once the domain is verified"
             }
           }
           if ($env:IN_SENTRY_BROWSER_DSN) { Set-Line 'SENTRY_BROWSER_DSN' $env:IN_SENTRY_BROWSER_DSN }
