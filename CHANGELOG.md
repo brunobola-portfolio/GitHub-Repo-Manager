@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **CI is green again.** It had been red since 4.25.6 for two reasons, both
+  mine. A build gate that pins the HSTS header kept reading `server/index.js`
+  after the header set moved to `server/lib/http-hardening.js`, found no
+  `hsts:` and compared an empty string — it now reads the module, fails loudly
+  if the anchor moves again, and asserts `includeSubDomains: true` rather than
+  the token (which `includeSubDomains: false` also satisfied). And every e2e
+  `waitForLoadState` timed out because three fire-and-forget `fetch` calls
+  (mock sign-in, session refresh, client-error telemetry) never read their
+  response body: with `/api/*` now answering `Cache-Control: no-store` the
+  browser stops buffering an unread body into its cache, the request never
+  counts as finished, and the network never goes idle. The same leak held a
+  connection per page load in a real browser; the bodies are drained now.
+- Dependabot groups `vitest` with `@vitest/*` so the next major lands as one
+  pull request. Bumped one at a time, each half fails `npm ci` on the other's
+  peer range, which is how three separate red PRs appeared.
+
 ## [4.25.7] - 2026-09-12
 
 ### Added

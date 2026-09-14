@@ -109,9 +109,19 @@ describe('HSTS asks only for what can be honoured', () => {
     it('does not send preload from a subdomain', () => {
         // The preload list only accepts apex domains; the apex here sends a
         // bare max-age. A directive nothing can act on is noise.
-        const server = readFileSync('server/index.js', 'utf8')
-        const hsts = server.slice(server.indexOf('hsts:'), server.indexOf('hsts:') + 200)
+        // The header set moved out of server/index.js (which calls app.listen at
+        // import time and is therefore untestable) into its own module in
+        // 4.25.5. This gate kept reading the old file, found no `hsts:` and
+        // silently compared an empty string — the one way a string gate can
+        // pass while guarding nothing, and the reason CI went red for two
+        // releases. Guard the anchor itself so a future move fails loudly.
+        const hardening = readFileSync('server/lib/http-hardening.js', 'utf8')
+        const at = hardening.indexOf('hsts:')
+        expect(at, 'hsts config is no longer in server/lib/http-hardening.js — re-point this gate').toBeGreaterThan(-1)
+        const hsts = hardening.slice(at, at + 200)
         expect(hsts).not.toContain('preload')
-        expect(hsts).toContain('includeSubDomains')
+        // `toContain('includeSubDomains')` was satisfied by `includeSubDomains:
+        // false` — the token, not the setting. Assert the value.
+        expect(hsts).toMatch(/includeSubDomains:\s*true/)
     })
 })

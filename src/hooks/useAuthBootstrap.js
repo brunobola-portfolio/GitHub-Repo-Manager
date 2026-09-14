@@ -57,7 +57,15 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
             setAppLoading(true)
 
             if (MOCK_MODE) {
-                await fetch(`${API_BASE_URL}/api/auth/mock`, { method: 'POST' })
+                // Drain the body. A response nobody reads keeps its stream open,
+                // and since /api/* answers with Cache-Control: no-store the
+                // browser no longer buffers it into the HTTP cache on our behalf
+                // — so the request never counts as finished, the network never
+                // goes idle, and every e2e waitForLoadState timed out. Same
+                // leak in a real browser, just quieter: one held connection per
+                // page load until the collector gets to it.
+                const res = await fetch(`${API_BASE_URL}/api/auth/mock`, { method: 'POST' })
+                await res.text().catch(() => {})
                 setSession({ userId: 999999, accessToken: 'mock_token' })
                 setAppLoading(false)
                 return

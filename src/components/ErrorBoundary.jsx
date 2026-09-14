@@ -50,7 +50,9 @@ class ErrorBoundary extends Component {
       const headers = { 'Content-Type': 'application/json' }
       try { headers['X-CSRF-Token'] = await getCsrfToken() } catch { /* drop telemetry rather than block */ }
       try {
-        await fetch('/api/system/client-error', {
+        // Drained below: /api/* answers no-store, so an unread body keeps
+        // the request open instead of being buffered away by the browser.
+        const res = await fetch('/api/system/client-error', {
           method: 'POST',
           credentials: 'include',
           headers,
@@ -64,6 +66,7 @@ class ErrorBoundary extends Component {
             userAgent: navigator.userAgent?.slice(0, 500)
           })
         })
+        await res.text().catch(() => {})
       } catch {
         // Silently ignore reporting failures
       }

@@ -114,11 +114,15 @@ export function useSessionExpiry({ enabled = true } = {}) {
                     // Fire-and-forget — refresh-session bumps the rolling
                     // cookie but will NOT extend the 7-day absolute cap.
                     try {
-                        await fetch('/api/auth/refresh-session', {
+                        const res = await fetch('/api/auth/refresh-session', {
                             method: 'POST',
                             credentials: 'include',
                             headers: { 'Content-Type': 'application/json' },
                         })
+                        // Drain: /api/* answers no-store, so an unread body
+                        // keeps the request open instead of being buffered
+                        // away by the browser.
+                        await res.text().catch(() => {})
                     } catch {
                         /* swallow — best-effort */
                     }

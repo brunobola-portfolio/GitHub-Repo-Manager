@@ -28,6 +28,16 @@ updates:
       interval: "weekly"
     open-pull-requests-limit: 10
     groups:
+      # The one exception to "majors are not grouped", below: vitest and its
+      # @vitest/* companions pin each other to the exact same version, so a
+      # bump of one half always fails `npm ci` on the other half's peer range.
+      # Three separate red PRs (vitest 5, coverage-v8 5, ui 5) proved it. One
+      # lockstep group, listed first so it claims these names before the
+      # minor groups do; it is still one small, reviewable diff.
+      vitest-lockstep:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
       # Minor/patch bumps land as two batched PRs a week. Majors are
       # deliberately NOT grouped — each one gets its own PR and its own full
       # CI run, because a breaking bump buried in a 20-package diff is
