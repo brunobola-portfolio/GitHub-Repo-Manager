@@ -544,6 +544,7 @@ if (config.nodeEnv === 'production') {
             // hashed asset references after a deploy.
             res.setHeader('Cache-Control', 'no-cache');
             res.status(shellStatus(req.path)).type('html').send(renderShell(readShell(), {
+                path: req.path,
                 origin: resolvePublicOrigin(req, config.frontendUrl),
                 version: pkg.version,
                 sentryDsn: browserDsn()?.dsn,

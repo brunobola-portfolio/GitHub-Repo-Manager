@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Stripe webhooks read both payload shapes.** The endpoint pins no API
+  version, so events render at the account default; from `2025-03-31.basil`
+  onward the billing period moved from the subscription to its items and the
+  invoice→subscription pointer moved under `parent.subscription_details`. The
+  handlers read the older names, so on a basil-default account a first purchase
+  worked while renewals, dunning and delayed-payment completions silently did
+  nothing and subscription updates threw on `new Date(undefined)`. One
+  normalisation at the door fills the older names from the newer ones and
+  leaves a pre-basil payload untouched. Checking the account's API version is
+  no longer a step the operator has to take before charging anyone.
+- `/privacy`, `/terms` and `/status` are served with their own `<title>`,
+  description, canonical and Open Graph URL. Served with the homepage's head
+  they declared the homepage canonical — which asks a crawler to drop them from
+  the index while the sitemap submits them — and a shared link previewed the
+  product pitch instead of the page.
+
 ## [4.25.8] - 2026-09-14
 
 ### Fixed

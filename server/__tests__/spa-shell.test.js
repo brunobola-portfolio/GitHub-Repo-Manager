@@ -33,6 +33,31 @@ describe('renderShell', () => {
         expect(json.isAccessibleForFree).toBe(true);
     });
 
+    it('gives the pages served by path their own head instead of the homepage\'s', () => {
+        // Served verbatim, /privacy declared the homepage canonical — which
+        // asks a crawler to drop the policy from the index while the sitemap
+        // submits it, and a shared link previewed the product pitch.
+        const shell = '<head><title>App</title><meta name="description" content="app pitch" /><link rel="canonical" href="__PUBLIC_ORIGIN__/" /><meta property="og:title" content="App" /><meta property="og:description" content="app pitch" /><meta property="og:url" content="__PUBLIC_ORIGIN__/" /></head>';
+        const out = renderShell(shell, { origin: 'https://x', version: '1', path: '/privacy/' });
+        expect(out).toContain('<title>Privacy policy — GitHub Repo Manager</title>');
+        expect(out).toContain('<link rel="canonical" href="https://x/privacy" />');
+        expect(out).toContain('<meta property="og:url" content="https://x/privacy" />');
+        expect(out).toContain('<meta property="og:title" content="Privacy policy — GitHub Repo Manager" />');
+        expect(out).not.toContain('app pitch');
+        for (const p of ['/terms', '/status']) {
+            expect(renderShell(shell, { origin: 'https://x', version: '1', path: p })).toContain(`href="https://x${p}"`);
+        }
+    });
+
+    it('leaves the homepage and unknown paths with the shell\'s own head', () => {
+        const shell = '<head><title>App</title><link rel="canonical" href="__PUBLIC_ORIGIN__/" /></head>';
+        for (const p of ['/', '/settings', '/nope']) {
+            const out = renderShell(shell, { origin: 'https://x', version: '1', path: p });
+            expect(out).toContain('<title>App</title>');
+            expect(out).toContain('href="https://x/"');
+        }
+    });
+
     it('never lets a "<" survive inside the data block', () => {
         const json = JSON.stringify(softwareApplicationJsonLd({ origin: 'https://x', version: '1' }));
         expect(json).not.toContain('<');

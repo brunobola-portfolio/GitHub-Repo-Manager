@@ -66,8 +66,49 @@ export function softwareApplicationJsonLd({ origin, version, stripeEnabled = fal
 }
 
 /** Fill the placeholders and add the structured-data block before </head>. */
-export function renderShell(html, { origin, version, sentryDsn, stripeEnabled = false }) {
-    const filled = html.replace(PLACEHOLDER, origin);
+/**
+ * Head overrides for the pages served by path outside the hash router. The
+ * shell's own <head> describes the application; served verbatim on /privacy,
+ * /terms and /status it told crawlers those pages were the homepage (same
+ * canonical, same og:url) — which asks for them to be dropped from the index,
+ * while the sitemap submits them. Title and description here match what each
+ * page sets on itself once mounted.
+ */
+const ROUTE_HEAD = {
+    '/privacy': {
+        title: 'Privacy policy — GitHub Repo Manager',
+        description: 'Who controls the data on repomanager.bolalabs.pt, what is stored and why, which processors receive it, for how long, and how to export or erase it.',
+    },
+    '/terms': {
+        title: 'Terms of service — GitHub Repo Manager',
+        description: 'Price, billing, cancellation and the 14-day right of withdrawal for the hosted GitHub Repo Manager at repomanager.bolalabs.pt.',
+    },
+    '/status': {
+        title: 'System status — GitHub Repo Manager',
+        description: 'Live health of the hosted GitHub Repo Manager: database, session store and the last time each was checked.',
+    },
+};
+
+const escapeAttr = (s) => String(s).replace(/[&"<>]/g, (c) => `&#${c.charCodeAt(0)};`);
+
+function applyRouteHead(html, origin, path) {
+    const normalised = String(path || '/').replace(/\/+$/, '') || '/';
+    const head = ROUTE_HEAD[normalised];
+    if (!head) return html;
+    const url = `${origin}${normalised}`;
+    const title = escapeAttr(head.title);
+    const description = escapeAttr(head.description);
+    return html
+        .replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`)
+        .replace(/(<meta name="description" content=")[^"]*(")/, `$1${description}$2`)
+        .replace(/(<link rel="canonical" href=")[^"]*(")/, `$1${url}$2`)
+        .replace(/(<meta property="og:url" content=")[^"]*(")/, `$1${url}$2`)
+        .replace(/(<meta property="og:title" content=")[^"]*(")/, `$1${title}$2`)
+        .replace(/(<meta property="og:description" content=")[^"]*(")/, `$1${description}$2`);
+}
+
+export function renderShell(html, { origin, version, sentryDsn, stripeEnabled = false, path = '/' }) {
+    const filled = applyRouteHead(html.replace(PLACEHOLDER, origin), origin, path);
     // "<" inside the JSON could close the script element early; escape it as
     // JSON allows so the block stays inert data whatever the strings contain.
     const json = JSON.stringify(softwareApplicationJsonLd({ origin, version, stripeEnabled })).replace(/</g, '\\u003c');

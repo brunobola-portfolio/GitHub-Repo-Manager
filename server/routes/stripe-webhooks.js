@@ -41,6 +41,35 @@ async function reconcileTierFromPrice(stripe, sessionOrSub, metadataTier, sessio
     return VALID_TIERS.has(metadataTier) ? metadataTier : 'pro';
 }
 
+/**
+ * Read both shapes Stripe has sent since 2025-03-31.basil, once, at the door.
+ *
+ * The endpoint pins no API version, so events render at the account default.
+ * From basil onward `current_period_start/end` left the Subscription object
+ * for its items, and the invoice→subscription pointer moved from
+ * `invoice.subscription` to `invoice.parent.subscription_details.subscription`.
+ * Every handler below reads the older names; on a basil-default account a
+ * first purchase still works (it reads only session.*) while renewals,
+ * dunning and delayed-payment completions silently no-op and
+ * `customer.subscription.updated` throws on `new Date(undefined)`. Filling
+ * the older names from the newer ones here is smaller and safer than
+ * touching a dozen call sites, and it does nothing on a pre-basil payload.
+ */
+export function normaliseStripeEventShape(event) {
+    const obj = event?.data?.object;
+    if (!obj || typeof obj !== 'object') return event;
+    if (obj.object === 'invoice' && !obj.subscription) {
+        const viaParent = obj.parent?.subscription_details?.subscription;
+        if (viaParent) obj.subscription = typeof viaParent === 'string' ? viaParent : viaParent.id;
+    }
+    if (obj.object === 'subscription') {
+        const item = obj.items?.data?.[0];
+        if (obj.current_period_start == null && item?.current_period_start != null) obj.current_period_start = item.current_period_start;
+        if (obj.current_period_end == null && item?.current_period_end != null) obj.current_period_end = item.current_period_end;
+    }
+    return event;
+}
+
 export async function stripeWebhookHandler(req, res) {
     if (!isStripeEnabled() || !config.stripeWebhookSecret) {
         return res.status(503).json({ error: 'Stripe webhooks not configured' });
@@ -56,6 +85,7 @@ export async function stripeWebhookHandler(req, res) {
         logger.error({ err }, 'Stripe webhook signature verification failed');
         return res.status(400).json({ error: 'Invalid signature' });
     }
+    normaliseStripeEventShape(event);
 
     // Idempotency: Stripe retries up to 5 times. Use INSERT OR IGNORE so the
     // check-then-insert is one atomic statement (no race window between two

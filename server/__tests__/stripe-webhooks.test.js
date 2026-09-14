@@ -190,6 +190,44 @@ describe('stripeWebhookHandler', () => {
         expect(res.statusCode).toBe(503)
     })
 
+    // ------------------------------------------------------------------
+    // Payload shape since 2025-03-31.basil — the endpoint pins no version
+    // ------------------------------------------------------------------
+    describe('normaliseStripeEventShape', () => {
+        it('fills invoice.subscription from parent.subscription_details on a basil invoice', async () => {
+            const { normaliseStripeEventShape } = await import('../routes/stripe-webhooks.js')
+            const event = { type: 'invoice.paid', data: { object: { object: 'invoice', parent: { subscription_details: { subscription: 'sub_basil' } } } } }
+            normaliseStripeEventShape(event)
+            expect(event.data.object.subscription).toBe('sub_basil')
+        })
+
+        it('accepts an expanded subscription object under parent', async () => {
+            const { normaliseStripeEventShape } = await import('../routes/stripe-webhooks.js')
+            const event = { type: 'invoice.paid', data: { object: { object: 'invoice', parent: { subscription_details: { subscription: { id: 'sub_obj' } } } } } }
+            normaliseStripeEventShape(event)
+            expect(event.data.object.subscription).toBe('sub_obj')
+        })
+
+        it('lifts current_period_* from the first item when the subscription lacks them', async () => {
+            const { normaliseStripeEventShape } = await import('../routes/stripe-webhooks.js')
+            const event = { type: 'customer.subscription.updated', data: { object: { object: 'subscription', items: { data: [{ current_period_start: 1, current_period_end: 2 }] } } } }
+            normaliseStripeEventShape(event)
+            expect(event.data.object.current_period_start).toBe(1)
+            expect(event.data.object.current_period_end).toBe(2)
+        })
+
+        it('leaves a pre-basil payload untouched', async () => {
+            const { normaliseStripeEventShape } = await import('../routes/stripe-webhooks.js')
+            const object = { object: 'subscription', current_period_start: 5, current_period_end: 6, items: { data: [{ current_period_start: 1, current_period_end: 2 }] } }
+            normaliseStripeEventShape({ data: { object } })
+            expect(object.current_period_start).toBe(5)
+            expect(object.current_period_end).toBe(6)
+            const inv = { object: 'invoice', subscription: 'sub_old', parent: { subscription_details: { subscription: 'sub_new' } } }
+            normaliseStripeEventShape({ data: { object: inv } })
+            expect(inv.subscription).toBe('sub_old')
+        })
+    })
+
     it('returns 500 if the webhook ledger insert fails for a non-dedup reason', async () => {
         mockStripeInstance.webhooks.constructEvent.mockReturnValue({
             id: 'evt_err', type: 'invoice.paid', data: { object: { subscription: 'sub_x' } },
@@ -251,6 +289,44 @@ describe('stripeWebhookHandler', () => {
         expect(capturedUpdate.subId).toBe('sub_abc')
         expect(capturedUpdate.periodStart).toBe(new Date(periodStart * 1000).toISOString())
         expect(capturedUpdate.periodEnd).toBe(new Date(periodEnd * 1000).toISOString())
+    })
+
+    it('customer.subscription.updated — reads the period from items on a basil-shaped payload', async () => {
+        // Since 2025-03-31.basil the period lives on the subscription items,
+        // not the subscription. Unnormalised, this handler computed
+        // new Date(undefined * 1000) and threw — a 500, five Stripe retries,
+        // and a renewal that never updated the row.
+        const periodStart = 1_700_000_000
+        const periodEnd = 1_702_592_000
+        mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+            id: 'evt_sub_basil',
+            type: 'customer.subscription.updated',
+            data: {
+                object: {
+                    object: 'subscription',
+                    id: 'sub_basil',
+                    status: 'active',
+                    metadata: { tier: 'pro' },
+                    items: { data: [{ current_period_start: periodStart, current_period_end: periodEnd, price: { metadata: { tier: 'pro' } } }] },
+                },
+            },
+        })
+        let capturedUpdate = null
+        mockPrepare.mockImplementation((sql) => {
+            if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+            if (/UPDATE user_subscriptions SET\s+tier/i.test(sql)) {
+                return { run: vi.fn((...args) => { capturedUpdate = { periodStart: args[2], periodEnd: args[3], subId: args[4] }; return { changes: 1 } }) }
+            }
+            return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+        })
+        const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+        await stripeWebhookHandler(req, res)
+        expect(res.statusCode).toBe(200)
+        expect(capturedUpdate).toEqual({
+            periodStart: new Date(periodStart * 1000).toISOString(),
+            periodEnd: new Date(periodEnd * 1000).toISOString(),
+            subId: 'sub_basil',
+        })
     })
 
     it('customer.subscription.updated — transitions status from active to past_due when Stripe reports it', async () => {
