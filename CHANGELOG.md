@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.25.9] - 2026-09-14
+
 ### Fixed
 
 - **Stripe webhooks read both payload shapes.** The endpoint pins no API
@@ -3963,7 +3965,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.8...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.9...HEAD
+[4.25.9]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.8...v4.25.9
 [4.25.8]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.7...v4.25.8
 [4.25.7]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.6...v4.25.7
 [4.25.6]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.5...v4.25.6

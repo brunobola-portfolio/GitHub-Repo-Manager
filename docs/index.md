@@ -37,6 +37,9 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.25.9 (2026-09-14) — Stripe payloads in both shapes, and legal pages
+  that name themselves to crawlers.** Stripe webhooks read both payload
+  shapes.
 - **v4.25.8 (2026-09-14) — CI green again: drained responses and a gate that
   reads the right file.** CI is green again.
 - **v4.25.7 (2026-09-12) — terms of service, honest transfers, and the
