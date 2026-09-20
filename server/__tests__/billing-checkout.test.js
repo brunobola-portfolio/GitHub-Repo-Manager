@@ -83,6 +83,26 @@ beforeEach(() => {
     }))
 })
 
+describe('POST /billing/portal — names the configuration when one is set', () => {
+    // A configuration created through the API is never Stripe's "default",
+    // and a portal session created without naming one fails in live mode —
+    // the one button that lets a customer cancel would 500.
+    it('passes STRIPE_PORTAL_CONFIGURATION through to Stripe', async () => {
+        mockConfig.stripePortalConfiguration = 'bpc_test'
+        const res = await request(makeApp()).post('/api/v1/billing/portal')
+        expect(res.status).toBe(200)
+        expect(mockStripe.billingPortal.sessions.create.mock.calls.at(-1)[0]).toMatchObject({ configuration: 'bpc_test' })
+        delete mockConfig.stripePortalConfiguration
+    })
+
+    it('omits the field when none is configured, so a Dashboard default still applies', async () => {
+        delete mockConfig.stripePortalConfiguration
+        const res = await request(makeApp()).post('/api/v1/billing/portal')
+        expect(res.status).toBe(200)
+        expect(mockStripe.billingPortal.sessions.create.mock.calls.at(-1)[0]).not.toHaveProperty('configuration')
+    })
+})
+
 describe('GET /billing/config — yearly feature-detect', () => {
     it('advertises yearly when Stripe is enabled AND a Pro yearly price is configured', async () => {
         const res = await request(makeApp()).get('/api/v1/billing/config')

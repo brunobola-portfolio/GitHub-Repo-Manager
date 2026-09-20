@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `STRIPE_PORTAL_CONFIGURATION` (optional): the Customer portal configuration
+  the Manage button opens. A configuration created through Stripe's API is
+  never the account's "default" — only a Dashboard-saved one is — and a portal
+  session created without naming one fails in live mode, which turns the one
+  button that lets a customer cancel into a 500. Read by the server, forwarded
+  by Docker Compose, written to the box by `configure-integrations`, and
+  reported by `env-check`.
+
+### Changed
+
+- The live Stripe account was configured through its API on 2026-09-20: the
+  webhook endpoint now receives the three refund and dispute events its
+  handlers were already written for, the Pro price carries
+  `tax_behavior: exclusive` (editable only while `unspecified`, so no new price
+  was needed), and a Customer portal configuration exists — cancellation at the
+  end of the paid period, card and details updates including a VAT id, invoice
+  history, and links to `/privacy` and `/terms`.
+
 ## [4.25.9] - 2026-09-14
 
 ### Fixed

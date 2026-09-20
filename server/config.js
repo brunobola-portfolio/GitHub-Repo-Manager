@@ -69,6 +69,11 @@ const configSchema = z.object({
     stripeSecretKey: z.string().optional(),
     stripeWebhookSecret: z.string().optional(),
     stripePriceProMonthly: z.string().optional(),
+    // A billing-portal configuration id (bpc_…). Stripe only falls back to a
+    // "default" configuration when one was saved from the Dashboard; one
+    // created through the API is not default, and a portal session created
+    // without naming it fails in live mode — so nobody can cancel.
+    stripePortalConfiguration: z.string().optional(),
     stripePriceProYearly: z.string().optional(),
     stripePriceEnterpriseMonthly: z.string().optional(),
     stripePriceEnterpriseYearly: z.string().optional(),
@@ -169,6 +174,7 @@ function loadConfig() {
         stripeSecretKey: process.env.STRIPE_SECRET_KEY,
         stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
         stripePriceProMonthly: process.env.STRIPE_PRICE_PRO_MONTHLY,
+        stripePortalConfiguration: process.env.STRIPE_PORTAL_CONFIGURATION,
         stripePriceProYearly: process.env.STRIPE_PRICE_PRO_YEARLY,
         stripePriceEnterpriseMonthly: process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY,
         stripePriceEnterpriseYearly: process.env.STRIPE_PRICE_ENTERPRISE_YEARLY,

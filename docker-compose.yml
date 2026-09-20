@@ -79,6 +79,9 @@ services:
       - "STRIPE_PRICE_PRO_YEARLY=${STRIPE_PRICE_PRO_YEARLY:-}"
       - "STRIPE_PRICE_ENTERPRISE_MONTHLY=${STRIPE_PRICE_ENTERPRISE_MONTHLY:-}"
       - "STRIPE_PRICE_ENTERPRISE_YEARLY=${STRIPE_PRICE_ENTERPRISE_YEARLY:-}"
+      # Portal configuration id — without it a portal session fails in live
+      # mode when the configuration was created via the API (never default).
+      - "STRIPE_PORTAL_CONFIGURATION=${STRIPE_PORTAL_CONFIGURATION:-}"
       - "LICENSE_SIGNING_PRIVATE_KEY_PEM=${LICENSE_SIGNING_PRIVATE_KEY_PEM:-}"
       # Second key during credential-encryption key rotation; decrypt-only.
       - "CREDENTIAL_ENCRYPTION_KEY_PREVIOUS=${CREDENTIAL_ENCRYPTION_KEY_PREVIOUS:-}"

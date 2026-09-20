@@ -213,6 +213,11 @@ router.post('/portal', requireAuth, requireStripe, async (req, res) => {
         const session = await stripe.billingPortal.sessions.create({
             customer: sub.stripe_customer_id,
             return_url: `${config.frontendUrl}/settings`,
+            // Named explicitly when configured: a configuration created via
+            // the API is never Stripe's "default", and without a default the
+            // call fails in live mode — the one button that lets a customer
+            // cancel would 500.
+            ...(config.stripePortalConfiguration ? { configuration: config.stripePortalConfiguration } : {}),
         });
 
         res.json({ url: session.url });

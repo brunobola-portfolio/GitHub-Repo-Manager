@@ -131,7 +131,7 @@ jobs:
           # purpose: a server key without that flag means every free signup
           # spends the operator's money, which is the one misconfiguration on
           # this box that has no ceiling.
-          foreach ($k in 'NODE_ENV','DEPLOYMENT_MODE','FRONTEND_URL','EMAIL_PROVIDER','RESEND_API_KEY','EMAIL_FROM','ALLOW_CONSOLE_EMAIL','SENTRY_DSN','SENTRY_BROWSER_DSN','SENTRY_ENVIRONMENT','STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','STRIPE_PRICE_PRO_MONTHLY','STRIPE_PRICE_PRO_YEARLY','LICENSE_SIGNING_PRIVATE_KEY_PEM','WORK_BOARD_AI_ENABLED','AI_PROVIDER','GEMINI_API_KEY','AI_REQUIRE_USER_CONFIG','GRM_DISABLE_WEB_SETUP','DATA_RETENTION_DAYS') {
+          foreach ($k in 'NODE_ENV','DEPLOYMENT_MODE','FRONTEND_URL','EMAIL_PROVIDER','RESEND_API_KEY','EMAIL_FROM','ALLOW_CONSOLE_EMAIL','SENTRY_DSN','SENTRY_BROWSER_DSN','SENTRY_ENVIRONMENT','STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','STRIPE_PRICE_PRO_MONTHLY','STRIPE_PRICE_PRO_YEARLY','STRIPE_PORTAL_CONFIGURATION','LICENSE_SIGNING_PRIVATE_KEY_PEM','WORK_BOARD_AI_ENABLED','AI_PROVIDER','GEMINI_API_KEY','AI_REQUIRE_USER_CONFIG','GRM_DISABLE_WEB_SETUP','DATA_RETENTION_DAYS') {
             $v = $map[$k]
             $state = if ([string]::IsNullOrWhiteSpace($v)) { 'unset' } else { 'SET' }
             # DEPLOYMENT_MODE's value is the point of printing it — "SET" does
@@ -194,6 +194,7 @@ jobs:
           IN_STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
           IN_STRIPE_PRICE_PRO_MONTHLY: ${{ vars.STRIPE_PRICE_PRO_MONTHLY }}
           IN_STRIPE_PRICE_PRO_YEARLY: ${{ vars.STRIPE_PRICE_PRO_YEARLY }}
+          IN_STRIPE_PORTAL_CONFIGURATION: ${{ vars.STRIPE_PORTAL_CONFIGURATION }}
           IN_LICENSE_PEM: ${{ secrets.LICENSE_PRIVATE_PEM }}
         run: |
           # Writes only what is set in GitHub (secret RESEND_API_KEY; variables
@@ -319,6 +320,10 @@ jobs:
             Set-Line 'STRIPE_SECRET_KEY' $env:IN_STRIPE_SECRET_KEY
             Set-Line 'STRIPE_WEBHOOK_SECRET' $env:IN_STRIPE_WEBHOOK_SECRET
             Set-Line 'STRIPE_PRICE_PRO_MONTHLY' $env:IN_STRIPE_PRICE_PRO_MONTHLY
+            if ($env:IN_STRIPE_PORTAL_CONFIGURATION) {
+              if ($env:IN_STRIPE_PORTAL_CONFIGURATION -notmatch '^bpc_') { throw 'STRIPE_PORTAL_CONFIGURATION must be a portal configuration id (bpc_...)' }
+              Set-Line 'STRIPE_PORTAL_CONFIGURATION' $env:IN_STRIPE_PORTAL_CONFIGURATION
+            }
             if ($env:IN_STRIPE_PRICE_PRO_YEARLY) {
               if ($env:IN_STRIPE_PRICE_PRO_YEARLY -notmatch '^price_') { throw 'STRIPE_PRICE_PRO_YEARLY must be a price id (price_...)' }
               Set-Line 'STRIPE_PRICE_PRO_YEARLY' $env:IN_STRIPE_PRICE_PRO_YEARLY
