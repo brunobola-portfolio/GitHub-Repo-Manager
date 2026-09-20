@@ -83,6 +83,33 @@ beforeEach(() => {
     }))
 })
 
+describe('POST /billing/checkout — tax collection is opt-in per deployment', () => {
+    it('collects address and VAT id and enables automatic tax when STRIPE_AUTOMATIC_TAX is on', async () => {
+        mockConfig.stripeAutomaticTax = true
+        const res = await request(makeApp()).post('/api/v1/billing/checkout').send({ tier: 'pro' })
+        expect(res.status).toBe(200)
+        expect(mockSessionsCreate.mock.calls.at(-1)[0]).toMatchObject({
+            automatic_tax: { enabled: true },
+            billing_address_collection: 'required',
+            tax_id_collection: { enabled: true },
+            customer_update: { address: 'auto', name: 'auto' },
+        })
+        mockConfig.stripeAutomaticTax = false
+    })
+
+    it('sends none of it when off, so an account without Stripe Tax still checks out', async () => {
+        // automatic_tax makes Stripe refuse the session unless Tax is set up
+        // with a registration; a self-hosted operator must not inherit that.
+        mockConfig.stripeAutomaticTax = false
+        const res = await request(makeApp()).post('/api/v1/billing/checkout').send({ tier: 'pro' })
+        expect(res.status).toBe(200)
+        const params = mockSessionsCreate.mock.calls.at(-1)[0]
+        for (const k of ['automatic_tax', 'billing_address_collection', 'tax_id_collection', 'customer_update']) {
+            expect(params).not.toHaveProperty(k)
+        }
+    })
+})
+
 describe('POST /billing/portal — names the configuration when one is set', () => {
     // A configuration created through the API is never Stripe's "default",
     // and a portal session created without naming one fails in live mode —

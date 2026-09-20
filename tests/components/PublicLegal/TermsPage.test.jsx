@@ -40,12 +40,14 @@ describe('TermsPage — what a buyer must be told before paying', () => {
         expect(screen.getByText(/does not cut\s+off the period you already paid for/i)).toBeInTheDocument()
     })
 
-    it('makes no claim about how VAT is calculated, because nothing calculates it yet', () => {
-        // The checkout collects no country, address or VAT id and no tax
-        // registration is configured. Any sentence about tax mechanics would
-        // describe something that does not happen.
+    it('states that the price excludes VAT and how it is decided, now that checkout calculates it', () => {
+        // Until 20 September 2026 this page deliberately said nothing about
+        // VAT, because nothing calculated it. Stripe Tax is now registered
+        // (PT + OSS) and the checkout collects the billing address and VAT id,
+        // so the page states the rule the checkout applies.
         render(<TermsPage />)
-        expect(screen.queryByText(/VAT/i)).not.toBeInTheDocument()
+        expect(screen.getByText(/excluding\s+VAT/i)).toBeInTheDocument()
+        expect(screen.getByText(/reverse-charge/i)).toBeInTheDocument()
     })
 
     it('carries no uptime promise it cannot keep, and points at the status page', () => {

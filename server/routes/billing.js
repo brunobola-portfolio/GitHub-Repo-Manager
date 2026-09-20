@@ -187,6 +187,19 @@ router.post('/checkout', requireAuth, requireStripe, async (req, res) => {
         const priceId = resolvePriceId(tier, billingPeriod);
         if (!priceId) return res.status(400).json({ error: `Price not configured for ${tier} ${billingPeriod} plan` });
 
+        // Tax is opt-in per deployment: automatic_tax makes Stripe refuse the
+        // session unless Stripe Tax is set up on the account with at least one
+        // registration, so a self-hosted operator who never touched Tax must
+        // not have their checkout fail. Where it is on, the session collects
+        // what a compliant invoice needs — a billing address (which decides the
+        // VAT rate) and an optional VAT id (which triggers reverse charge for a
+        // business buyer) — and writes both onto the customer.
+        const tax = config.stripeAutomaticTax ? {
+            automatic_tax: { enabled: true },
+            billing_address_collection: 'required',
+            tax_id_collection: { enabled: true },
+            customer_update: { address: 'auto', name: 'auto' },
+        } : {};
         const session = await stripe.checkout.sessions.create({
             customer: customerId,
             mode: 'subscription',
@@ -194,6 +207,7 @@ router.post('/checkout', requireAuth, requireStripe, async (req, res) => {
             success_url: `${config.frontendUrl}/settings?billing=success`,
             cancel_url: `${config.frontendUrl}/pricing`,
             metadata: { userId: String(userId), tier, billingPeriod },
+            ...tax,
         });
 
         res.json({ url: session.url });

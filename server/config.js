@@ -74,6 +74,10 @@ const configSchema = z.object({
     // created through the API is not default, and a portal session created
     // without naming it fails in live mode — so nobody can cancel.
     stripePortalConfiguration: z.string().optional(),
+    // Opt-in: automatic_tax makes Stripe refuse a checkout session on an
+    // account without Stripe Tax and a registration, so it is never on by
+    // default for a self-hosted install.
+    stripeAutomaticTax: z.boolean().default(false),
     stripePriceProYearly: z.string().optional(),
     stripePriceEnterpriseMonthly: z.string().optional(),
     stripePriceEnterpriseYearly: z.string().optional(),
@@ -175,6 +179,7 @@ function loadConfig() {
         stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
         stripePriceProMonthly: process.env.STRIPE_PRICE_PRO_MONTHLY,
         stripePortalConfiguration: process.env.STRIPE_PORTAL_CONFIGURATION,
+        stripeAutomaticTax: process.env.STRIPE_AUTOMATIC_TAX === 'true',
         stripePriceProYearly: process.env.STRIPE_PRICE_PRO_YEARLY,
         stripePriceEnterpriseMonthly: process.env.STRIPE_PRICE_ENTERPRISE_MONTHLY,
         stripePriceEnterpriseYearly: process.env.STRIPE_PRICE_ENTERPRISE_YEARLY,

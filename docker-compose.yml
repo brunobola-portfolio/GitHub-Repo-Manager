@@ -82,6 +82,9 @@ services:
       # Portal configuration id — without it a portal session fails in live
       # mode when the configuration was created via the API (never default).
       - "STRIPE_PORTAL_CONFIGURATION=${STRIPE_PORTAL_CONFIGURATION:-}"
+      # Opt-in: automatic tax makes Stripe refuse checkout on an account
+      # without Stripe Tax and a registration.
+      - "STRIPE_AUTOMATIC_TAX=${STRIPE_AUTOMATIC_TAX:-false}"
       - "LICENSE_SIGNING_PRIVATE_KEY_PEM=${LICENSE_SIGNING_PRIVATE_KEY_PEM:-}"
       # Second key during credential-encryption key rotation; decrypt-only.
       - "CREDENTIAL_ENCRYPTION_KEY_PREVIOUS=${CREDENTIAL_ENCRYPTION_KEY_PREVIOUS:-}"

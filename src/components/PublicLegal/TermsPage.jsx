@@ -9,13 +9,12 @@
  * billing period, how to cancel, how to get a refund, and the 14-day right of
  * withdrawal — in writing, before paying.
  *
- * Two deliberate omissions, both honest:
+ * One deliberate choice, and one clause that arrived with the mechanism:
  *
- * - Nothing here describes VAT mechanics. The checkout does not collect a
- *   country, an address or a VAT id today, and no tax registration is
- *   configured, so any sentence about how tax is calculated would be a claim
- *   about something that does not happen. When Stripe Tax is configured this
- *   page gains that clause.
+ * - VAT is described only since 20 September 2026, when Stripe Tax gained a
+ *   PT registration plus OSS and the checkout began collecting the billing
+ *   address and VAT id (STRIPE_AUTOMATIC_TAX). Before that the page said
+ *   nothing about tax on purpose, because nothing calculated it.
  * - The 14-day withdrawal right is granted outright rather than waived. It can
  *   be waived for a digital service, but only if the buyer expressly consents
  *   to immediate performance and acknowledges losing the right — and the
@@ -123,9 +122,13 @@ export default function TermsPage() {
 
                 <Section id="price" title="Price, billing and renewal">
                     <p>
-                        Pro is <strong>€19 per month</strong>, charged in euros. The price shown at
-                        checkout is the price you pay, and Stripe — not this service — handles the
-                        payment and issues the receipt. Card details never reach our servers.
+                        Pro is <strong>€19 per month</strong>, charged in euros, <strong>excluding
+                        VAT</strong>. VAT is calculated at checkout from your billing address and
+                        shown before you pay: 23% in Portugal, your own country&apos;s rate elsewhere
+                        in the EU, and none outside it. A business in another EU country that enters
+                        a valid VAT number is invoiced without VAT under the reverse-charge rule.
+                        Stripe — not this service — handles the payment and issues the invoice.
+                        Card details never reach our servers.
                     </p>
                     <p>
                         A subscription renews automatically each month until you cancel. Each paid

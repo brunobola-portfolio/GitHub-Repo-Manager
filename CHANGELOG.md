@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **VAT at checkout.** `STRIPE_AUTOMATIC_TAX=true` makes the checkout session
+  collect the billing address and an optional VAT id, write both onto the
+  customer, and let Stripe Tax calculate the rate — 23% in Portugal, the
+  buyer's own rate elsewhere in the EU, reverse charge for a business with a
+  valid number, none outside. Off by default: Stripe refuses a session with
+  automatic tax on an account that has no registration, and a self-hosted
+  operator must not inherit that. The live account gained its Portuguese
+  registration and the EU One-Stop-Shop scheme the same day, both recorded
+  through the API as already registered with the tax authority.
+- The terms of service now say the price excludes VAT and how the rate is
+  decided. The page had deliberately said nothing about tax while nothing
+  calculated it.
+
 ## [4.25.10] - 2026-09-20
 
 ### Added
