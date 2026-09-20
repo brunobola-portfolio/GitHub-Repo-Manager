@@ -37,6 +37,8 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.25.10 (2026-09-20) — the Customer portal is wired, and the live
+  Stripe account is configured.** See the changelog.
 - **v4.25.9 (2026-09-14) — Stripe payloads in both shapes, and legal pages
   that name themselves to crawlers.** Stripe webhooks read both payload
   shapes.
