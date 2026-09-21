@@ -82,7 +82,7 @@ export function TechDebtTab() {
                                 itemUrl={issueUrl}
                                 ariaLabel={`Open tech-debt issue #${issue.issueNumber} ${issue.title ? `— ${issue.title}` : ''} in app`}
                             >
-                                <div className="flex items-start gap-4 p-5 group-hover:bg-slate-50 dark:group-hover:bg-slate-800/50 transition-colors bg-white/60 dark:bg-slate-900/40">
+                                <div className="flex flex-wrap items-start gap-x-4 gap-y-2 p-4 sm:p-5 group-hover:bg-slate-50 dark:group-hover:bg-slate-800/50 transition-colors bg-white/60 dark:bg-slate-900/40">
                                     <RowIconBadge icon={Wrench} tone="amber" size="md" className="mt-0.5" />
                                     <div className="flex-1 min-w-0">
                                         <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
@@ -103,7 +103,7 @@ export function TechDebtTab() {
                                             )}
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 font-medium whitespace-nowrap flex-shrink-0">
+                                    <div className="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 font-medium whitespace-nowrap flex-shrink-0 basis-full justify-end sm:basis-auto sm:justify-start">
                                         <Clock className="w-3 h-3" />
                                         {dayLabel(issue.ageDays)}
                                         <WorkBoardRowMenu

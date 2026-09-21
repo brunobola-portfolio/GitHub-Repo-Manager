@@ -28,7 +28,10 @@ export function PageHeader({
 }) {
     // Display-face + weight + tracking + colour now come from <Heading>; only
     // the page-header-specific size/margin/truncate stay here.
-    const titleClass = `mt-1 text-xl ${titleAccessory ? 'truncate' : ''}`.trim()
+    // Long repo names truncate beside their accessory chips from sm up; on a
+    // phone the row already wraps, so let the title break instead of eating
+    // half its characters.
+    const titleClass = `mt-1 text-xl ${titleAccessory ? 'break-words sm:truncate' : ''}`.trim()
 
     return (
         <header className={`flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-6 ${className}`.trim()}>

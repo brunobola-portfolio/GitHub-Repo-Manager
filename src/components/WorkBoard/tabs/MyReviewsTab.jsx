@@ -103,7 +103,7 @@ function ReviewRow({ review, isFocused, onFocus, hasAI, onApprove, onSnooze, onR
                 itemUrl={githubUrl}
                 ariaLabel={`Open PR #${review.prNumber} ${review.title ? `— ${review.title}` : ''} in app`}
             >
-                <div className="flex items-start gap-4 p-5 group-hover:bg-slate-50 dark:group-hover:bg-slate-800/50 transition-colors">
+                <div className="flex flex-wrap items-start gap-x-4 gap-y-2 p-4 sm:p-5 group-hover:bg-slate-50 dark:group-hover:bg-slate-800/50 transition-colors">
                     <RowIconBadge icon={GitPullRequest} tone="purple" size="md" className="mt-0.5" />
                     <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
@@ -115,6 +115,9 @@ function ReviewRow({ review, isFocused, onFocus, hasAI, onApprove, onSnooze, onR
                             {review.authorLogin && <> by <strong>{review.authorLogin}</strong></>}
                         </div>
                     </div>
+                    {/* Phones: age + actions form their own row under the title; beside it they
+                        left the title a couple of characters wide. */}
+                    <div className="flex items-center justify-between gap-2 basis-full sm:contents">
                     <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap flex-shrink-0">
                         <Clock className="w-3 h-3" />
                         {ageLabel(review.ageHours)}
@@ -130,6 +133,7 @@ function ReviewRow({ review, isFocused, onFocus, hasAI, onApprove, onSnooze, onR
                         itemType="pr"
                         itemNumber={review.prNumber}
                     />
+                    </div>
                 </div>
             </WorkBoardRowLink>
             <AnimatePresence>

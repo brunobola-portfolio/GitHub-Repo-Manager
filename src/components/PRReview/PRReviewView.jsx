@@ -17,6 +17,7 @@ import { ReviewStatusBar } from './ReviewToolbar/ReviewStatusBar'
 import { AISummaryPanel } from './AIInsights/AISummaryPanel'
 import { AIReviewPanel } from './AIDeepReview/AIReviewPanel'
 import { MobileAIPanelDrawer } from './MobileAIPanelDrawer'
+import { MobileFileTreeSheet } from '../diff/MobileFileTreeSheet'
 import { KeyboardHelpOverlay } from './KeyboardHelpOverlay'
 import { useAIDeepReview } from '../../hooks/useAIDeepReview'
 import { ConfirmModal } from '../ui/ConfirmModal'
@@ -76,6 +77,10 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
   // entirely below lg.
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false)
   const aiFabRef = useRef(null)  // restore focus to FAB when drawer closes
+  // Below md the left file-tree column is hidden; the toolbar's Files button
+  // opens the same tree as a bottom sheet (the CodeReviewSurface pattern).
+  const [fileSheetOpen, setFileSheetOpen] = useState(false)
+  const filesButtonRef = useRef(null)
   // Keyboard help overlay — toggled by `?`.
   const [helpOpen, setHelpOpen] = useState(false)
   // True while the floating composer in DiffPanel is open. We hide the
@@ -377,11 +382,25 @@ export function PRReviewView({ owner, repo, pullNumber, repoName, onBack }) {
         // the user could re-open the event menu and re-submit while the modal
         // is open, overwriting pendingSubmit's event/body pair.
         submitting={submitting || pendingSubmit !== null}
+        filesCount={displayFiles.length}
+        onOpenFiles={() => setFileSheetOpen(true)}
+        filesButtonRef={filesButtonRef}
+      />
+
+      <MobileFileTreeSheet
+        isOpen={fileSheetOpen}
+        onClose={() => setFileSheetOpen(false)}
+        files={displayFiles}
+        activeFile={state.activeFile}
+        reviewedFiles={state.reviewedFiles}
+        aiFileRisks={state.aiSummary?.fileRisks}
+        onFileSelect={(filename) => dispatch({ type: 'SET_ACTIVE_FILE', filename })}
+        restoreFocusRef={filesButtonRef}
       />
 
       <div className="flex flex-1 min-h-0">
         {!state.fileTreeCollapsed && (
-          <div className="w-64 shrink-0 border-r border-slate-200 dark:border-slate-700 overflow-y-auto">
+          <div data-testid="review-file-tree-column" className="hidden md:block w-64 shrink-0 border-r border-slate-200 dark:border-slate-700 overflow-y-auto">
             <FileTree
               files={displayFiles}
               activeFile={state.activeFile}

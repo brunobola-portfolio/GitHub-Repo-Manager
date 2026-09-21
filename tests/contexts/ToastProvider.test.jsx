@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { ToastProvider } from '@/contexts/ToastProvider'
 import { useToast } from '@/hooks/useToast'
 import { onAppEvent, APP_EVENTS } from '@/utils/appEvents'
@@ -46,5 +46,63 @@ describe('ToastProvider — open-pricing toast action', () => {
         expect(window.location.hash).not.toBe('#pricing')
 
         off()
+    })
+})
+
+/*
+ * Regression: toast.info(message, { description }) passed an OBJECT where the
+ * adder expected a duration in ms. `record.duration > 0` was false for an
+ * object, so the toast never scheduled its dismiss timer and stayed on screen
+ * across every view until the user closed it by hand (seen on mobile with
+ * "Pull request #16 is not in this list").
+ */
+describe('ToastProvider — options object as the second argument', () => {
+    function OptsHarness() {
+        const { toast, toasts } = useToast()
+        return (
+            <div>
+                <button onClick={() => toast.info('Not in this list', { description: 'It may be closed.' })}>
+                    fire-opts
+                </button>
+                {toasts.map((t) => <div key={t.id} data-testid="toast">{t.message}</div>)}
+            </div>
+        )
+    }
+
+    it('still auto-dismisses and folds the description into the message', () => {
+        vi.useFakeTimers()
+        try {
+            render(<ToastProvider><OptsHarness /></ToastProvider>)
+            fireEvent.click(screen.getByText('fire-opts'))
+            const card = screen.getByTestId('toast')
+            expect(card.textContent).toContain('Not in this list')
+            expect(card.textContent).toContain('It may be closed.')
+            act(() => { vi.advanceTimersByTime(5001) })
+            expect(screen.queryByTestId('toast')).toBeNull()
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
+    it('honours an explicit duration inside the options object', () => {
+        vi.useFakeTimers()
+        try {
+            function Short() {
+                const { toast, toasts } = useToast()
+                return (
+                    <div>
+                        <button onClick={() => toast.warning('Quick', { duration: 1000 })}>fire-short</button>
+                        {toasts.map((t) => <div key={t.id} data-testid="toast">{t.message}</div>)}
+                    </div>
+                )
+            }
+            render(<ToastProvider><Short /></ToastProvider>)
+            fireEvent.click(screen.getByText('fire-short'))
+            expect(screen.getByTestId('toast')).toBeInTheDocument()
+            act(() => { vi.advanceTimersByTime(1001) })
+            expect(screen.queryByTestId('toast')).toBeNull()
+        } finally {
+            vi.useRealTimers()
+        }
     })
 })

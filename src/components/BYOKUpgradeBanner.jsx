@@ -70,7 +70,8 @@ export function BYOKUpgradeBanner({ isAuthenticated, onOpenAISettings }) {
                                     <Sparkles className="w-4 h-4 text-white" strokeWidth={2} />
                                 </div>
                                 <p className="text-sm font-medium text-white truncate">
-                                    AI features now use your own provider key (BYOK).{' '}
+                                    <span className="sm:hidden">Add your AI key to unlock AI features.</span>
+                                    <span className="hidden sm:inline">AI features now use your own provider key (BYOK).</span>{' '}
                                     <span className="text-white hidden sm:inline">
                                         Configure it in Settings → AI Configuration. If a shared server key is
                                         configured, your AI features keep working without any setup.
@@ -89,7 +90,8 @@ export function BYOKUpgradeBanner({ isAuthenticated, onOpenAISettings }) {
                                         transition-colors duration-200
                                         focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1 focus-visible:ring-offset-brand-600 focus:outline-none"
                                 >
-                                    Configure now
+                                    <span className="sm:hidden">Configure</span>
+                                    <span className="hidden sm:inline">Configure now</span>
                                     <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
                                 </button>
                                 <Tooltip label="Dismiss">

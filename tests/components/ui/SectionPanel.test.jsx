@@ -95,3 +95,24 @@ describe('SectionPanel', () => {
         expect(screen.queryByRole('heading')).toBeNull()
     })
 })
+
+/*
+ * Mobile: the actions slot used to sit beside the title with shrink-0, so on a
+ * phone a filter group + two buttons squeezed the title column to a few
+ * characters per line ("Pull\nrequests" over a one-word-per-line subtitle).
+ * Below `sm` the actions drop to their own full-width row under the title.
+ */
+describe('SectionPanel — mobile header layout', () => {
+    it('lets the actions row wrap under the title below sm', () => {
+        render(
+            <SectionPanel title="Pull Requests" subtitle="Review, merge, and create" actions={<button>Refresh</button>}>
+                body
+            </SectionPanel>
+        )
+        const actions = screen.getByRole('button', { name: 'Refresh' }).parentElement
+        expect(actions.className).toMatch(/\bbasis-full\b/)
+        expect(actions.className).toMatch(/\bsm:basis-auto\b/)
+        const header = actions.parentElement
+        expect(header.className).toMatch(/\bflex-wrap\b/)
+    })
+})

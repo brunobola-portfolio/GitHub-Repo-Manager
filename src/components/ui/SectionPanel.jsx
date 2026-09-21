@@ -73,7 +73,11 @@ export function SectionPanel({
                     </p>
                 ) : null}
             </div>
-            {actions ? <div className="flex items-center gap-2 shrink-0">{actions}</div> : null}
+            {actions ? (
+                // Below sm the slot takes the full row under the title; beside
+                // it the title column collapsed to a few characters on phones.
+                <div className="flex items-center flex-wrap gap-2 shrink-0 basis-full sm:basis-auto">{actions}</div>
+            ) : null}
             {collapsible ? (
                 <ChevronDown className={`w-4 h-4 text-slate-500 dark:text-slate-400 shrink-0 transition-transform duration-[var(--ds-duration)] ${open ? '' : '-rotate-90'}`} aria-hidden="true" />
             ) : null}
@@ -94,12 +98,12 @@ export function SectionPanel({
                         aria-controls={contentId}
                         // The section clips to its rounded corners, so the ring
                         // is inset rather than outset to stay visible.
-                        className="w-full text-left flex items-start gap-3 px-5 py-4 ds-focus-ring ds-focus-ring-inset rounded-t-3xl"
+                        className="w-full text-left flex flex-wrap items-start gap-3 px-5 py-4 ds-focus-ring ds-focus-ring-inset rounded-t-3xl"
                     >
                         {headerCommon}
                     </button>
                 ) : (
-                    <div className="flex items-start gap-3 px-5 py-4">
+                    <div className="flex flex-wrap items-start gap-3 px-5 py-4">
                         {headerCommon}
                     </div>
                 )

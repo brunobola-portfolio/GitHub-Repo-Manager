@@ -101,3 +101,30 @@ describe('PullRequestsTab — toast feedback', () => {
         expect(await screen.findByText(/Merged PR #42/)).toBeInTheDocument()
     })
 })
+
+/*
+ * Regression: the tab hoisted its PR list to the app bus on every render of
+ * `pulls`, including the very first one where useTabData had not resolved yet
+ * (data === null → pulls === []). The cross-surface "open PR #N" bridge
+ * consumed that empty pre-load emission, concluded the PR was missing and
+ * toasted "Pull request #N is not in this list" even though #N was the first
+ * row on screen a moment later.
+ */
+describe('PullRequestsTab — REPO_DETAIL_PRS_LOADED contract', () => {
+    it('never emits an empty pre-load list; the first emission carries the fetched rows', async () => {
+        const { onAppEvent, APP_EVENTS } = await import('@/utils/appEvents')
+        const seen = []
+        const off = onAppEvent(APP_EVENTS.REPO_DETAIL_PRS_LOADED, (ev) => seen.push(ev.detail))
+        try {
+            const api = makeApi()
+            renderWithProviders(
+                <PullRequestsTab api={api} onStartReview={vi.fn()} onGenerateDescription={vi.fn()} />
+            )
+            await waitFor(() => expect(screen.getByText('Fix the thing')).toBeInTheDocument())
+            expect(seen.length).toBeGreaterThan(0)
+            expect(seen[0]).toEqual(samplePulls)
+        } finally {
+            off()
+        }
+    })
+})

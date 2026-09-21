@@ -158,8 +158,23 @@ export function ToastProvider({ children }) {
         return String(message)
     }
 
-    const addToast = useCallback((type, message, duration = 5000) => {
-        return addToastRecord({ type, message: coerceMessage(message), duration })
+    // The third argument is a duration in ms, but several call sites pass an
+    // options object ({ description, duration }). An object is not `> 0`, so
+    // those toasts never scheduled their dismiss timer and stayed pinned to
+    // the screen across every view. Accept both shapes here.
+    const addToast = useCallback((type, message, durationOrOpts = 5000) => {
+        let duration = 5000
+        let text = coerceMessage(message)
+        if (typeof durationOrOpts === 'number') {
+            duration = durationOrOpts
+        } else if (durationOrOpts && typeof durationOrOpts === 'object') {
+            if (typeof durationOrOpts.duration === 'number') duration = durationOrOpts.duration
+            const description = durationOrOpts.description
+            if (typeof description === 'string' && description.length > 0 && typeof text === 'string') {
+                text = text.length > 0 ? `${text} — ${description}` : description
+            }
+        }
+        return addToastRecord({ type, message: text, duration })
     }, [addToastRecord])
 
     const toast = useMemo(() => ({
