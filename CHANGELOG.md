@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Phones.** Testing on a handset surfaced a cluster of mobile defects, all
+  fixed at the root:
+  - A toast built with an options object (`{ description }`) never scheduled
+    its dismiss timer, so "Pull request #N is not in this list" stayed pinned
+    across every view. The adder accepts both a duration and an options
+    object now.
+  - The PR and issue tabs announced their list before the fetch resolved, so
+    opening an item from the Work Board could report it missing while it was
+    the first row on screen.
+  - PR, issue, comment and review bodies rendered through bare react-markdown:
+    tables printed their pipes and inline HTML (dependabot's `<details>`)
+    showed as escaped text. A shared `GitHubMarkdown` primitive renders GFM
+    plus sanitised inline HTML, with links opening in a new tab.
+  - Section, page and PR/issue detail headers wrap their action slots under
+    the title below `sm`; PR and issue rows do the same for Merge/Close, so a
+    title no longer collapses to a couple of characters per line.
+  - PR review: the file tree is desktop-only and reachable on phones through a
+    toolbar "Files (N)" button that opens the bottom sheet; the breadcrumb
+    collapses to a back control plus the PR; an unsaved diff preference
+    starts unified below `md`.
+  - Work Board rows move age, inline actions and the menu to a second row on
+    phones, and the inline actions no longer hide behind hover on touch
+    screens (they were invisible yet still taking the title's width).
+  - Repo detail stacks Back above the title on phones and lets long names
+    break instead of truncating; the BYOK banner uses short copy below `sm`.
+
 ## [4.25.11] - 2026-09-20
 
 ### Added
