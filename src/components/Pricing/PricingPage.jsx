@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, ArrowRight, Sparkles, GitBranch, Shield, Cpu } from 'lucide-react'
 import { PricingCard } from './PricingCard'
@@ -291,6 +291,23 @@ export function PricingPage({ onGetStarted } = {}) {
       setCheckoutLoading(null)
     }
   }, [])
+
+  // A buyer who clicked "Upgrade to Pro" before signing in comes back as
+  // /pricing?checkout=pro. Honour it once the probe has answered: start the
+  // checkout when this instance can charge, otherwise just clear the flag
+  // and leave the contact CTA on screen.
+  const resumedCheckoutRef = useRef(false)
+  useEffect(() => {
+    if (resumedCheckoutRef.current || selfServe === null) return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('checkout') !== 'pro') return
+    resumedCheckoutRef.current = true
+    params.delete('checkout')
+    const cleanUrl = window.location.pathname + (params.toString() ? `?${params}` : '') + window.location.hash
+    window.history.replaceState({}, '', cleanUrl)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot resume of a URL-carried intent, same shape as the ?error= handling in useAuthBootstrap
+    if (selfServe) handleCheckout('pro', 'monthly')
+  }, [selfServe, handleCheckout])
 
   const handleTierAction = useCallback((tier) => {
     if (tier === 'Enterprise') {

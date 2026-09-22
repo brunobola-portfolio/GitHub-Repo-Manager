@@ -70,7 +70,11 @@ export function SettingsModal({ isOpen, onClose, initialTab, isAdmin = false }) 
     const { theme, setTheme } = useTheme()
     const { toast } = useToast()
     const digestSettings = useDigestSettings()
-    const [activeTab, setActiveTab] = useState('general')
+    // Seeded from initialTab: the render-time reconciliation below only
+    // reacts to CHANGES, so a modal that mounts already open (the common
+    // case — it is lazily mounted on first open) kept landing on General
+    // whatever tab the opener asked for.
+    const [activeTab, setActiveTab] = useState(() => (isOpen && initialTab) || 'general')
 
     // Load cache settings from localStorage
     const [cacheSettings, setCacheSettings] = useState(() => {

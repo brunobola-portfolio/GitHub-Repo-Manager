@@ -328,3 +328,45 @@ describe('useAppRouter — unknown routes', () => {
         window.location.hash = ''
     })
 })
+
+/*
+ * Path aliases. The app routes by hash, but three real entry points arrive as
+ * PATHS: the site's Pro card (/pricing), Stripe's cancel_url (/pricing) and
+ * success_url (/settings?billing=success). The router ignored the path, so a
+ * signed-in buyer coming back from Stripe landed on the dashboard with no
+ * confirmation and the address bar still reading /settings.
+ */
+describe('useAppRouter — path aliases', () => {
+    it('translates /pricing?checkout=pro into #/pricing and keeps the query', () => {
+        window.history.replaceState(null, '', '/pricing?checkout=pro')
+        const p = mkProps()
+        renderHook(() => useAppRouter(p))
+        expect(p.setActiveView).toHaveBeenCalledWith('pricing')
+        expect(window.location.pathname).toBe('/')
+        expect(window.location.search).toBe('?checkout=pro')
+        expect(window.location.hash).toBe('#/pricing')
+    })
+
+    it('opens Settings on the plan tab for /settings?billing=success when signed in', async () => {
+        const { onAppEvent, APP_EVENTS } = await import('@/utils/appEvents')
+        const seen = []
+        const off = onAppEvent(APP_EVENTS.OPEN_SETTINGS, (ev) => seen.push(ev.detail))
+        try {
+            window.history.replaceState(null, '', '/settings?billing=success')
+            const p = mkProps({ isAuthenticated: true })
+            renderHook(() => useAppRouter(p))
+            expect(seen).toEqual([{ tab: 'license' }])
+            expect(window.location.pathname).toBe('/')
+            expect(window.location.search).toBe('?billing=success')
+        } finally {
+            off()
+        }
+    })
+
+    it('leaves an unknown path alone', () => {
+        window.history.replaceState(null, '', '/privacy')
+        const p = mkProps()
+        renderHook(() => useAppRouter(p))
+        expect(window.location.pathname).toBe('/privacy')
+    })
+})

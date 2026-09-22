@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import { PricingPreview } from '@/components/Landing/PricingPreview'
 
 // The billing probe decides whether this deployment can take money, and the
@@ -104,4 +104,18 @@ describe('PricingPreview — Pro claims match every other surface', () => {
     const entBlock = source.slice(source.indexOf("name: 'Enterprise'"))
     expect(entBlock).toMatch(/priority support/i)
   })
+})
+
+describe('PricingPreview — the Pro button carries its intent through sign-in', () => {
+    it('asks for a return to the pricing checkout after login', async () => {
+        global.fetch = vi.fn().mockResolvedValue({
+            ok: true, status: 200, headers: { get: () => 'application/json' },
+            json: async () => ({ stripeEnabled: true }),
+        })
+        const onSignIn = vi.fn()
+        render(<PricingPreview onSignIn={onSignIn} />)
+        const cta = await screen.findByRole('button', { name: /^upgrade to pro$/i })
+        fireEvent.click(cta)
+        expect(onSignIn).toHaveBeenCalledWith({ next: '/pricing?checkout=pro' })
+    })
 })

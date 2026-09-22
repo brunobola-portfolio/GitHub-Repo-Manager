@@ -191,7 +191,10 @@ function PreviewCard({ plan, i, onSignIn, selfServe }) {
 									: 'GitHub Repo Manager — Pro inquiry'
 								window.open(`mailto:${SALES_EMAIL}?subject=${encodeURIComponent(subject)}`, '_self')
 							} else if (onSignIn) {
-								onSignIn()
+								// Carry the intent through GitHub: the pricing page
+								// resumes the checkout from ?checkout=pro after login,
+								// instead of dropping the buyer on the dashboard.
+								onSignIn(plan.popular ? { next: '/pricing?checkout=pro' } : undefined)
 							}
 						}}
 						className={`w-full py-3 rounded-xl font-semibold text-sm transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2

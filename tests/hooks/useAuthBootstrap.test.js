@@ -208,3 +208,67 @@ describe('useAuthBootstrap — handleLogin / handleLogout', () => {
         expect(window.location.reload).toHaveBeenCalledTimes(1)
     })
 })
+
+/*
+ * Stripe sends the buyer back with ?billing=success|cancel. Nothing read the
+ * parameter, so a paying customer got the dashboard and silence.
+ */
+describe('useAuthBootstrap — return from Stripe checkout', () => {
+    beforeEach(async () => {
+        const { _resetPendingBillingForTests } = await import('@/hooks/useAuthBootstrap')
+        _resetPendingBillingForTests()
+    })
+    it('thanks the buyer on ?billing=success and strips the parameter', async () => {
+        window.history.replaceState(null, '', '/?billing=success')
+        const props = mkProps({ user: { login: 'buyer' }, toast: { warning: vi.fn(), success: vi.fn(), error: vi.fn(), info: vi.fn() } })
+        renderHook(() => useAuthBootstrap(props))
+        await waitFor(() => expect(props.toast.success).toHaveBeenCalledTimes(1))
+        expect(props.toast.success.mock.calls[0][0]).toMatch(/payment|pro/i)
+        expect(window.location.search).toBe('')
+    })
+
+    it('says nothing was charged on ?billing=cancel', async () => {
+        window.history.replaceState(null, '', '/?billing=cancel')
+        const props = mkProps({ user: { login: 'buyer' }, toast: { warning: vi.fn(), success: vi.fn(), error: vi.fn(), info: vi.fn() } })
+        renderHook(() => useAuthBootstrap(props))
+        await waitFor(() => expect(props.toast.info).toHaveBeenCalledTimes(1))
+        expect(props.toast.info.mock.calls[0][0]).toMatch(/not.*charged|nothing was charged/i)
+        expect(window.location.search).toBe('')
+    })
+
+    it('holds the acknowledgement until the session is confirmed', async () => {
+        window.history.replaceState(null, '', '/?billing=success')
+        const toast = { warning: vi.fn(), success: vi.fn(), error: vi.fn(), info: vi.fn() }
+        const { rerender } = renderHook((p) => useAuthBootstrap(p), { initialProps: mkProps({ toast, user: null }) })
+        expect(window.location.search).toBe('')
+        expect(toast.success).not.toHaveBeenCalled()
+        rerender(mkProps({ toast, user: { login: 'buyer' } }))
+        await waitFor(() => expect(toast.success).toHaveBeenCalledTimes(1))
+    })
+
+    it('survives the shell remounting between the loading screen and the signed-in app', async () => {
+        window.history.replaceState(null, '', '/?billing=success')
+        const toast = { warning: vi.fn(), success: vi.fn(), error: vi.fn(), info: vi.fn() }
+        const first = renderHook(() => useAuthBootstrap(mkProps({ toast, user: null })))
+        first.unmount()
+        renderHook(() => useAuthBootstrap(mkProps({ toast, user: { login: 'buyer' } })))
+        await waitFor(() => expect(toast.success).toHaveBeenCalledTimes(1))
+    })
+
+    it('carries a next destination into the login redirect', async () => {
+        const originalLocation = window.location
+        delete window.location
+        window.location = { ...originalLocation, href: '', reload: vi.fn(), search: '', pathname: '/' }
+        try {
+            h.mockMode = false
+            apiCall.mockResolvedValue({ oauthConfigured: true })
+            global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+            const { result } = renderHook(() => useAuthBootstrap(mkProps()))
+            await waitFor(() => expect(result.current.authSetupStatus).toEqual({ oauthConfigured: true }))
+            act(() => { result.current.handleLogin({ next: '/pricing?checkout=pro' }) })
+            expect(window.location.href).toBe('/api/auth/login?next=%2Fpricing%3Fcheckout%3Dpro')
+        } finally {
+            window.location = originalLocation
+        }
+    })
+})
