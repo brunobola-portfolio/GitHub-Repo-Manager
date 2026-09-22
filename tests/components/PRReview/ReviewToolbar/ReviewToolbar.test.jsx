@@ -58,3 +58,43 @@ describe('ReviewToolbar — promoted PR-level risk badges', () => {
     expect(screen.getByRole('banner')).toBeInTheDocument()
   })
 })
+
+/*
+ * Mobile: PRReviewView hides its left file-tree column below md and exposes
+ * the list through this toolbar button instead (bottom sheet), mirroring
+ * CodeReviewSurface. Without it a phone showed a 256px tree beside a diff
+ * column a few characters wide.
+ */
+describe('ReviewToolbar — mobile files button', () => {
+  it('renders a "Files (N)" trigger that opens the mobile sheet', () => {
+    const onOpenFiles = vi.fn()
+    render(
+      <ReviewToolbar
+        pr={{ number: 1, title: 'Clean PR', state: 'open' }}
+        viewMode="unified"
+        onToggleViewMode={vi.fn()}
+        onBack={vi.fn()}
+        onSubmitReview={vi.fn()}
+        filesCount={2}
+        onOpenFiles={onOpenFiles}
+      />,
+    )
+    const btn = screen.getByRole('button', { name: /open files list \(2\)/i })
+    expect(btn.className).toMatch(/\bmd:hidden\b/)
+    btn.click()
+    expect(onOpenFiles).toHaveBeenCalledTimes(1)
+  })
+
+  it('omits the trigger when no handler is supplied', () => {
+    render(
+      <ReviewToolbar
+        pr={{ number: 1, title: 'Clean PR', state: 'open' }}
+        viewMode="unified"
+        onToggleViewMode={vi.fn()}
+        onBack={vi.fn()}
+        onSubmitReview={vi.fn()}
+      />,
+    )
+    expect(screen.queryByRole('button', { name: /open files list/i })).toBeNull()
+  })
+})

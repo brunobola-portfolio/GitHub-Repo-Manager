@@ -286,3 +286,18 @@ describe('PRReviewView — staleness ConfirmModal flow', () => {
         expect(mockSubmitReview).not.toHaveBeenCalled()
     })
 })
+
+/*
+ * Mobile: the file-tree column is desktop-only (hidden below md) and the same
+ * list is reachable through a bottom sheet the toolbar opens. Before this the
+ * 256px tree stayed beside the diff on a phone, leaving the centre column a
+ * handful of characters wide.
+ */
+describe('PRReviewView — mobile file tree', () => {
+    it('hides the desktop tree column below md', async () => {
+        renderView()
+        const column = await screen.findByTestId('review-file-tree-column')
+        expect(column.className).toMatch(/\bhidden\b/)
+        expect(column.className).toMatch(/\bmd:block\b/)
+    })
+})

@@ -33,10 +33,13 @@ export function IssuesTab({ api, repoFullName }) {
 
     // Hoist the issue list to App.jsx via a window CustomEvent so the
     // command palette's "Issue actions" group can enumerate them.
+    // Only once the fetch has resolved: before that `data` is null and the
+    // memoised list is an empty placeholder. Emitting it made the cross-surface
+    // "open #N" bridge conclude the item was missing and toast about it.
     useEffect(() => {
-        if (!Array.isArray(issues)) return
+        if (!Array.isArray(data) || !Array.isArray(issues)) return
         emitAppEvent(APP_EVENTS.REPO_DETAIL_ISSUES_LOADED, issues)
-    }, [issues])
+    }, [data, issues])
 
     const [showCreate, setShowCreate] = useState(false)
     const [creating, setCreating] = useState(false)
@@ -212,7 +215,7 @@ export function IssuesTab({ api, repoFullName }) {
                                     <CircleDot className="w-4 h-4" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
                                         {/* Title is the row's primary control; its
                                             `after` overlay stretches over the whole
                                             Card so the entire row still opens on click,

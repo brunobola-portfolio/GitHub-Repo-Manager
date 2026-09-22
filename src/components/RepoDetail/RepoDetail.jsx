@@ -152,8 +152,8 @@ export function RepoDetail({ repo, onBack, onStartReview, onGenerateDescription,
                 </div>
             )}
             {/* Header */}
-            <div className="relative flex items-start gap-4">
-                <Button variant="ghost" size="sm" onClick={requestBack} className="mt-1 shrink-0">
+            <div className="relative flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
+                <Button variant="ghost" size="sm" onClick={requestBack} className="sm:mt-1 shrink-0 self-start -ml-2 sm:ml-0">
                     <ArrowLeft className="w-4 h-4 mr-1" /> Back
                 </Button>
 

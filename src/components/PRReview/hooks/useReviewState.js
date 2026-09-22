@@ -48,6 +48,11 @@ function cleanOldEntries() {
     }
 }
 
+function isNarrowViewport() {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false
+    try { return window.matchMedia('(max-width: 767px)').matches } catch { return false }
+}
+
 function buildInitialState(owner, repo, pullNumber) {
     const key = getStorageKey(owner, repo, pullNumber)
     const persisted = loadPersistedState(key)
@@ -59,7 +64,10 @@ function buildInitialState(owner, repo, pullNumber) {
         comments: {}, // { filename: [comment, ...] }
         activeFile: persisted?.lastActiveFile ?? null,
         reviewedFiles: persisted?.reviewedFiles ?? [], // array of filenames
-        viewMode: persisted?.viewMode ?? 'split', // 'split' | 'unified'
+        // Split view on a phone leaves each half a few characters wide, so an
+        // unsaved preference starts unified below md. The toggle still works
+        // and whatever the user picks is persisted per PR as before.
+        viewMode: persisted?.viewMode ?? (isNarrowViewport() ? 'unified' : 'split'), // 'split' | 'unified'
         fileTreeCollapsed: false,
         aiSummaryCollapsed: persisted?.aiSummaryCollapsed ?? false,
         pendingComments: persisted?.pendingComments ?? [],

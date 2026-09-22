@@ -34,10 +34,13 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
     // Hoist the current PR list to the App via a window CustomEvent so the
     // command palette's "Pull request actions" group can enumerate them.
     // Keeps the tab decoupled from App state — App.jsx listens once.
+    // Only once the fetch has resolved: before that `data` is null and the
+    // memoised list is an empty placeholder. Emitting it made the cross-surface
+    // "open #N" bridge conclude the item was missing and toast about it.
     useEffect(() => {
-        if (!Array.isArray(pulls)) return
+        if (!Array.isArray(data) || !Array.isArray(pulls)) return
         emitAppEvent(APP_EVENTS.REPO_DETAIL_PRS_LOADED, pulls)
-    }, [pulls])
+    }, [data, pulls])
 
     const [showCreate, setShowCreate] = useState(false)
     const [creating, setCreating] = useState(false)
@@ -285,7 +288,7 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                                     : 'hover:border-brand-300 dark:hover:border-brand-600'
                             }`}
                         >
-                            <div className="flex items-start gap-3">
+                            <div className="flex flex-wrap items-start gap-3">
                                 <div className="mt-0.5">{getPrIcon(pr)}</div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
@@ -306,8 +309,8 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                                         <span className="text-xs text-slate-500 dark:text-slate-400">#{pr.number}</span>
                                         <PRRiskBadges pr={pr} className="ml-1" />
                                     </div>
-                                    <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                        <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded text-slate-600 dark:text-slate-300">{pr.head?.ref}</span>
+                                    <div className="flex flex-wrap items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                        <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded text-slate-600 dark:text-slate-300 break-all">{pr.head?.ref}</span>
                                         <span>→</span>
                                         <span className="font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded text-slate-600 dark:text-slate-300">{pr.base?.ref}</span>
                                     </div>
@@ -324,7 +327,9 @@ export function PullRequestsTab({ api, onStartReview, onGenerateDescription }) {
                                     </div>
                                 </div>
                                 {pr.state === 'open' && (
-                                    <div role="presentation" className="relative z-10 flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                                    // Phones: the actions take their own row under the
+                                    // text; beside it they squeezed the title to 3 words/line.
+                                    <div role="presentation" className="relative z-10 flex gap-1 shrink-0 basis-full justify-end sm:basis-auto sm:justify-start" onClick={e => e.stopPropagation()}>
                                         <Button variant="ghost" size="sm" onClick={() => handleMerge(pr)}
                                             className="text-brand-600 dark:text-brand-400 text-xs">
                                             <GitMerge className="w-3.5 h-3.5 mr-1" /> Merge

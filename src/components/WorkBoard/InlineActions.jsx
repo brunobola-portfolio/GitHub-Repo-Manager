@@ -37,10 +37,11 @@ export function InlineActions({ onApprove, onRequestChanges, onSnooze, busy }) {
     return (
         // `relative z-10` lifts these controls above the WorkBoardRowLink
         // open-in-app overlay (absolute z-0) so they receive their own clicks
-        // instead of being intercepted by it.
+        // instead of being intercepted by it. Hover-reveal only from md up:
+        // touch screens have no hover, so below md the buttons stay visible.
         // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
         <div
-            className="relative z-10 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 md:opacity-0 sm:opacity-100 transition-opacity"
+            className="relative z-10 flex items-center gap-0.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity"
             onClick={e => e.stopPropagation()}
         >
             {busy ? (

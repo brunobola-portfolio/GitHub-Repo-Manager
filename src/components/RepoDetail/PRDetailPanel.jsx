@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import ReactMarkdown from 'react-markdown'
+import { GitHubMarkdown } from '../ui/GitHubMarkdown'
 import { motion } from 'framer-motion'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
@@ -190,7 +190,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
 
             {/* Header */}
             <Card className={`p-5 border-l-4 ${isMerged ? 'border-l-brand-500' : isOpen ? 'border-l-emerald-500' : 'border-l-rose-500'}`}>
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-wrap items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
                             <prState.Icon className={`w-5 h-5 flex-shrink-0 ${prState.iconColor}`} />
@@ -245,7 +245,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                             )}
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center flex-wrap gap-2 flex-shrink-0 basis-full sm:basis-auto">
                         {onGenerateDescription && (
                             <Button
                                 variant="secondary"
@@ -311,9 +311,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                             {/* Body */}
                             {current.body && (
                                 <Card className="p-5">
-                                    <div className="prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 [&_a]:text-brand-600 dark:[&_a]:text-brand-400 [&_code]:bg-slate-100 dark:[&_code]:bg-slate-800 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_pre]:bg-slate-100 dark:[&_pre]:bg-slate-800 [&_pre]:rounded-lg [&_pre]:p-4">
-                                        <ReactMarkdown>{current.body}</ReactMarkdown>
-                                    </div>
+                                    <GitHubMarkdown className="text-slate-700 dark:text-slate-300">{current.body}</GitHubMarkdown>
                                 </Card>
                             )}
 
@@ -392,9 +390,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                                 {formatRelativeTime(comment.created_at)}
                                             </span>
                                         </div>
-                                        <div className="prose prose-sm dark:prose-invert max-w-none text-slate-600 dark:text-slate-400 [&_a]:text-brand-600 dark:[&_a]:text-brand-400 [&_code]:bg-slate-100 dark:[&_code]:bg-slate-800 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm">
-                                            <ReactMarkdown>{comment.body}</ReactMarkdown>
-                                        </div>
+                                        <GitHubMarkdown className="text-slate-600 dark:text-slate-400">{comment.body}</GitHubMarkdown>
                                     </Card>
                                 ))}
                             </div>
@@ -483,9 +479,7 @@ export function PRDetailPanel({ pr, api, onClose, onUpdate, onStartReview, onGen
                                                     </span>
                                                 </div>
                                                 {review.body && (
-                                                    <div className="mt-2 prose prose-sm dark:prose-invert max-w-none text-slate-600 dark:text-slate-400 [&_code]:bg-slate-100 dark:[&_code]:bg-slate-800 [&_code]:px-1 [&_code]:rounded">
-                                                        <ReactMarkdown>{review.body}</ReactMarkdown>
-                                                    </div>
+                                                    <GitHubMarkdown className="mt-2 text-slate-600 dark:text-slate-400">{review.body}</GitHubMarkdown>
                                                 )}
                                             </div>
                                             <span className="text-xs text-slate-500 dark:text-slate-400 flex-shrink-0">

@@ -8,6 +8,7 @@ import {
   MessageSquare,
   CheckCircle,
   XCircle,
+  Files,
 } from 'lucide-react'
 import { TrackedChip } from '../../WorkBoard/TrackedChip'
 import { PRRiskBadges } from '../../RepoDetail/PRRiskBadges'
@@ -82,8 +83,11 @@ function Crumb({ label, onClick, isLast }) {
  * @param {Function} props.onSubmitReview      - Called with { event, body } where event is 'COMMENT' | 'APPROVE' | 'REQUEST_CHANGES'
  * @param {number}   [props.pendingCount]      - Number of pending (unsaved) comments
  * @param {boolean}  [props.submitting]        - True while a review is being submitted
+ * @param {number}   [props.filesCount]        - Changed-file count for the mobile "Files" trigger
+ * @param {Function} [props.onOpenFiles]       - Opens the mobile file sheet; the trigger renders only when supplied
+ * @param {object}   [props.filesButtonRef]    - Ref for the trigger so the sheet can restore focus to it
  */
-export function ReviewToolbar({ pr, repoName, repoFullName, viewMode, onToggleViewMode, onBack, onSubmitReview, pendingCount = 0, submitting = false }) {
+export function ReviewToolbar({ pr, repoName, repoFullName, viewMode, onToggleViewMode, onBack, onSubmitReview, pendingCount = 0, submitting = false, filesCount = 0, onOpenFiles, filesButtonRef }) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [reviewBody, setReviewBody] = useState('')
   const dropdownRef = useRef(null)
@@ -126,14 +130,39 @@ export function ReviewToolbar({ pr, repoName, repoFullName, viewMode, onToggleVi
   return (
     <header className="relative flex items-center gap-3 px-4 py-2.5 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 ds-elevation-sm z-[var(--ds-z-floating)]">
       {/* Breadcrumbs */}
+      {/* Below md the toolbar has room for one crumb: the PR itself, prefixed
+          by a back control. Three truncated crumbs read as "br… > F > #16 c…"
+          on a phone. */}
       <nav aria-label="Breadcrumb" className="flex items-center gap-1 flex-1 min-w-0 overflow-hidden">
-        <Crumb label={repoName ?? 'Repository'} onClick={onBack} />
-        <Crumb label="Pull requests" onClick={onBack} />
+        <button
+          type="button"
+          onClick={onBack}
+          className="md:hidden shrink-0 -ml-1 p-1.5 rounded-md text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 ds-focus-ring"
+          aria-label="Back to pull requests"
+        >
+          <ChevronRight size={16} className="rotate-180" aria-hidden="true" />
+        </button>
+        <span className="hidden md:contents">
+          <Crumb label={repoName ?? 'Repository'} onClick={onBack} />
+          <Crumb label="Pull requests" onClick={onBack} />
+        </span>
         <Crumb
           label={prNumber ? `${prNumber} ${prTitle}` : prTitle}
           isLast
         />
       </nav>
+
+      {onOpenFiles && (
+        <button
+          ref={filesButtonRef}
+          type="button"
+          onClick={onOpenFiles}
+          className="md:hidden shrink-0 inline-flex items-center gap-1 px-2.5 min-h-9 text-xs font-medium text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ds-focus-ring"
+          aria-label={`Open files list (${filesCount})`}
+        >
+          <Files className="w-4 h-4" aria-hidden="true" /> {filesCount}
+        </button>
+      )}
 
       {/* PR-level risk pills (stale, no reviewers, breaking-change keywords,
           ...) — free, instant heuristic signals surfaced here so reviewers
@@ -142,7 +171,11 @@ export function ReviewToolbar({ pr, repoName, repoFullName, viewMode, onToggleVi
       {pr && <PRRiskBadges pr={pr} max={3} className="hidden lg:inline-flex shrink-0" />}
 
       {/* Tracked chip */}
-      {repoFullName && <TrackedChip repoFullName={repoFullName} />}
+      {repoFullName && (
+        <span className="hidden sm:contents">
+          <TrackedChip repoFullName={repoFullName} />
+        </span>
+      )}
 
       {/* View mode toggle */}
       <div className="shrink-0 flex items-center gap-1 rounded-md border border-slate-200 dark:border-slate-700 p-0.5">
