@@ -709,3 +709,51 @@ describe('OAuth redirect_uri origin resolution', () => {
         expect(uri).toBe('http://repomanager.example.pt/api/auth/callback')
     })
 })
+
+/*
+ * ?next= lets a sign-in started from a specific place (the landing page's
+ * "Upgrade to Pro") land back there instead of on the dashboard. Only a
+ * same-origin path is honoured: an absolute URL or a protocol-relative
+ * `//host` would turn the callback into an open redirect.
+ */
+describe('sanitizeNextPath', () => {
+    it('keeps a same-origin path with its query', async () => {
+        const { sanitizeNextPath } = await import('../routes/auth.js')
+        expect(sanitizeNextPath('/pricing?checkout=pro')).toBe('/pricing?checkout=pro')
+        expect(sanitizeNextPath('/settings')).toBe('/settings')
+    })
+    it('rejects anything that could leave the origin or is malformed', async () => {
+        const { sanitizeNextPath } = await import('../routes/auth.js')
+        for (const bad of ['https://evil.example', '//evil.example/x', '/\\evil', 'pricing', '', undefined, 42, '/x'.repeat(300), '/a\nb', '/%2F%2Fevil']) {
+            expect(sanitizeNextPath(bad)).toBeNull()
+        }
+    })
+})
+
+describe('GET /login?next= remembers where to return', () => {
+    const app = () => {
+        const a = express()
+        a.use(session({ secret: 'test-secret', resave: false, saveUninitialized: true }))
+        a.use('/api/auth', authRouter)
+        a.get('/peek', (req, res) => res.json({ next: req.session.postLoginRedirect ?? null }))
+        return a
+    }
+    beforeEach(() => {
+        process.env.GITHUB_CLIENT_ID = 'Iv1.testclientid'
+        process.env.GITHUB_CLIENT_SECRET = 'test-secret-value'
+    })
+    it('stores a valid path in the session and still redirects to GitHub', async () => {
+        const agent = request.agent(app())
+        const res = await agent.get('/api/auth/login?next=%2Fpricing%3Fcheckout%3Dpro')
+        expect(res.status).toBe(302)
+        expect(res.headers.location).toMatch(/^https:\/\/github\.com\/login\/oauth\/authorize/)
+        const peek = await agent.get('/peek')
+        expect(peek.body.next).toBe('/pricing?checkout=pro')
+    })
+    it('ignores an off-origin destination', async () => {
+        const agent = request.agent(app())
+        await agent.get('/api/auth/login?next=https%3A%2F%2Fevil.example')
+        const peek = await agent.get('/peek')
+        expect(peek.body.next).toBeNull()
+    })
+})

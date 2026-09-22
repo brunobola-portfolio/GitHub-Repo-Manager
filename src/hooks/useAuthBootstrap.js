@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { emitAppEvent, APP_EVENTS } from '../utils/appEvents'
 import { AUTH_ENDPOINTS, API_BASE_URL, MOCK_MODE } from '../config'
 import { getAuthSetupStatus } from '../api/authSetup'
 import { onSessionExpired, resetSessionExpired, fetchWithRetry, safeParseJson, apiCall, markSessionActive, markSessionEnded } from '../utils/api'
@@ -38,6 +39,9 @@ const AUTH_ERROR_COPY = {
  * Behaviour is locked by tests/components/App.test.jsx (system-setup /
  * loading / landing-page branches) and tests/hooks/useAuthBootstrap.test.js.
  */
+let pendingBillingOutcome = null
+export function _resetPendingBillingForTests() { pendingBillingOutcome = null }
+
 export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
     const [session, setSession] = useState(null)
     const [appLoading, setAppLoading] = useState(true)
@@ -151,7 +155,11 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
         }
     }
 
-    const handleLogin = () => {
+    // `next` is a same-origin path to land on after GitHub (the landing
+    // page's "Upgrade to Pro" asks for /pricing?checkout=pro); the server
+    // validates it again before honouring it.
+    const handleLogin = (opts = {}) => {
+        const next = typeof opts?.next === 'string' && opts.next.startsWith('/') ? opts.next : null
         resetSessionExpired()
         setSessionExpired(false)
         // No OAuth credentials on this install → the redirect would dead-end on a
@@ -162,7 +170,7 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
             setShowGitHubSetup(true)
             return
         }
-        window.location.href = AUTH_ENDPOINTS.login
+        window.location.href = next ? `${AUTH_ENDPOINTS.login}?next=${encodeURIComponent(next)}` : AUTH_ENDPOINTS.login
     }
 
     const handleLogout = async () => {
@@ -218,6 +226,36 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
     useEffect(() => {
         if (user) mark('app:authed')
     }, [user])
+
+    // Return from Stripe Checkout (?billing=success|cancel on success_url /
+    // cancel_url). The subscription itself lands through the webhook, so
+    // "success" is an acknowledgement, not a grant; LicensePlanSection
+    // re-reads the plan on LICENSE_CHANGED.
+    // Read once at mount and strip the URL; speak only once the session is
+    // confirmed, so the toast lands on the authenticated shell rather than
+    // on the loading screen it would otherwise vanish behind. Module-level,
+    // not a ref: the shell that owns this hook remounts between the loading
+    // screen and the signed-in app, and a ref would forget the outcome.
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search)
+        const outcome = params.get('billing')
+        if (outcome !== 'success' && outcome !== 'cancel') return
+        pendingBillingOutcome = outcome
+        params.delete('billing')
+        const cleanUrl = window.location.pathname + (params.toString() ? `?${params}` : '') + window.location.hash
+        window.history.replaceState({}, '', cleanUrl)
+    }, [])
+    useEffect(() => {
+        if (!user || !pendingBillingOutcome) return
+        const outcome = pendingBillingOutcome
+        pendingBillingOutcome = null
+        if (outcome === 'success') {
+            toast.success('Payment received — your Pro plan activates as soon as Stripe confirms it, usually within seconds.')
+            emitAppEvent(APP_EVENTS.LICENSE_CHANGED)
+        } else {
+            toast.info?.('Checkout cancelled — nothing was charged.')
+        }
+    }, [user, toast])
 
     // OAuth-flow error redirects (?error=<code> from /api/auth/login|callback).
     // Every code gets a human explanation instead of a silently-stripped param;

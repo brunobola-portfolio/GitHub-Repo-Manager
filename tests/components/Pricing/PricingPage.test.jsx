@@ -288,3 +288,48 @@ describe('PricingPage — the checkout-unavailable banner names no deployment ty
         expect(contact.getAttribute('href')).toMatch(/Pro%20license%20inquiry/)
     })
 })
+
+/*
+ * A visitor who clicked "Upgrade to Pro" on the landing page signs in first
+ * and comes back to /pricing?checkout=pro. The page honours that intent once
+ * the probe confirms this instance can charge, so the buyer is not asked to
+ * find the button a second time.
+ */
+describe('PricingPage — resumes a checkout intent carried through sign-in', () => {
+    beforeEach(() => {
+        global.fetch = vi.fn()
+        _resetCsrfTokenForTests()
+    })
+    afterEach(() => {
+        vi.restoreAllMocks()
+        window.history.replaceState(null, '', '/')
+    })
+
+    const checkoutCalls = () =>
+        global.fetch.mock.calls.filter(([url]) => String(url).includes('/billing/checkout'))
+
+    it('starts the checkout once and strips the parameter when Stripe is on', async () => {
+        window.history.replaceState(null, '', '/?checkout=pro')
+        global.fetch.mockImplementation(async (url) => {
+            if (String(url).includes('/billing/config')) {
+                return mockConfigResponse({ stripeEnabled: true, yearlyBillingAvailable: false, prices: {} })
+            }
+            if (String(url).includes('/csrf')) return mockCsrfToken()
+            return mockConfigResponse({ url: 'https://checkout.stripe.test/session' })
+        })
+        render(<PricingPage />)
+        await waitFor(() => expect(checkoutCalls()).toHaveLength(1))
+        expect(window.location.search).toBe('')
+    })
+
+    it('does nothing with the parameter when the probe says Stripe is off', async () => {
+        window.history.replaceState(null, '', '/?checkout=pro')
+        global.fetch.mockResolvedValue(
+            mockConfigResponse({ stripeEnabled: false, yearlyBillingAvailable: false, prices: {} }),
+        )
+        render(<PricingPage />)
+        await waitFor(() => screen.getByRole('button', { name: /contact us about pro/i }))
+        expect(checkoutCalls()).toHaveLength(0)
+        expect(window.location.search).toBe('')
+    })
+})

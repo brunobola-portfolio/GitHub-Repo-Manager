@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Buying Pro from the landing page now ends at the checkout.** "Upgrade to
+  Pro" sent a visitor through GitHub sign-in and dropped them on the
+  dashboard; the pricing page had to be found again and the button clicked a
+  second time. The sign-in now carries a `?next=` destination (same-origin
+  paths only, validated on both ends), the pricing page resumes the checkout
+  from `?checkout=pro` once the billing probe confirms the instance can
+  charge, and a landing that cannot charge keeps the contact button.
+- **Coming back from Stripe means something.** The app routes by hash, so the
+  `/pricing` and `/settings?billing=success` URLs Stripe returned to were
+  ignored: a paying customer got the dashboard and silence. Path aliases now
+  map those entry points (and the site's Pro card link) onto their views,
+  `?billing=success` opens Settings on the plan tab with an acknowledgement
+  and refreshes the plan, and `?billing=cancel` says nothing was charged.
+- Settings opened on General whatever tab the opener asked for whenever it
+  was the first open of the session; the modal now seeds its tab from
+  `initialTab` on mount.
+
 ## [4.25.13] - 2026-09-22
 
 ### Security

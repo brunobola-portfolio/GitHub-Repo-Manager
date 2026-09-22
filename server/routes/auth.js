@@ -98,6 +98,23 @@ function sameHost(url, hostHeader) {
     return normalise(url.host) === normalise(hostHeader);
 }
 
+/**
+ * A sign-in started from a specific place (the landing page's "Upgrade to
+ * Pro", a deep link) can ask to land back there with ?next=. Only a
+ * same-origin path is honoured: anything absolute or protocol-relative would
+ * turn the OAuth callback into an open redirect, and the path itself is
+ * re-validated at the door so a poisoned session cannot smuggle one in.
+ */
+export function sanitizeNextPath(raw) {
+    if (typeof raw !== 'string') return null;
+    if (raw.length < 2 || raw.length > 512) return null;
+    if (!raw.startsWith('/') || raw.startsWith('//')) return null;
+    if (!/^[A-Za-z0-9/_.\-?=&#~]+$/.test(raw)) return null;
+    // Percent-encoding is refused outright: "/%2F%2Fhost" decodes to a
+    // protocol-relative URL in some browsers, and nothing we link to needs it.
+    return raw;
+}
+
 // Initiates the GitHub OAuth flow
 router.get('/login', authRouteLimiter, (req, res) => {
     const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } = process.env;
@@ -128,6 +145,9 @@ router.get('/login', authRouteLimiter, (req, res) => {
     const redirectUri = `${resolveCallbackOrigin(req)}/api/auth/callback`;
     const state = randomUUID();
     req.session.oauthState = state;
+    const next = sanitizeNextPath(req.query.next);
+    if (next) req.session.postLoginRedirect = next;
+    else delete req.session.postLoginRedirect;
     req.session.save(() => {
         const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}`;
         res.redirect(authUrl);
@@ -238,6 +258,7 @@ router.get('/callback', authRouteLimiter, async (req, res) => {
         // Regenerate session to prevent session fixation attacks
         const newUserId = req.session.userId;
         const newUserLogin = req.session.userLogin;
+        const postLoginRedirect = sanitizeNextPath(req.session.postLoginRedirect);
 
         req.session.regenerate((regenerateErr) => {
             if (regenerateErr) {
@@ -264,7 +285,7 @@ router.get('/callback', authRouteLimiter, async (req, res) => {
                     return res.redirect(`${FRONTEND_URL}?error=session_error`);
                 }
                 auditLog(req, 'auth.login', 'user', req.session.userId);
-                res.redirect(FRONTEND_URL);
+                res.redirect(postLoginRedirect ? `${FRONTEND_URL}${postLoginRedirect}` : FRONTEND_URL);
             });
         });
 

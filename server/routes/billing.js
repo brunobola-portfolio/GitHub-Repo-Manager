@@ -205,7 +205,9 @@ router.post('/checkout', requireAuth, requireStripe, async (req, res) => {
             mode: 'subscription',
             line_items: [{ price: priceId, quantity: 1 }],
             success_url: `${config.frontendUrl}/settings?billing=success`,
-            cancel_url: `${config.frontendUrl}/pricing`,
+            // The client reads ?billing= on return (useAuthBootstrap) and maps
+            // the path to its hash route (useAppRouter path aliases).
+            cancel_url: `${config.frontendUrl}/pricing?billing=cancel`,
             metadata: { userId: String(userId), tier, billingPeriod },
             ...tax,
         });

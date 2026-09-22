@@ -165,6 +165,20 @@ describe('SettingsModal — active tab tracks initialTab across open/reopen', ()
         expect(screen.getByRole('tab', { name: /^General$/i })).toHaveAttribute('aria-selected', 'false')
     })
 
+    it('lands on initialTab when it mounts already open (first open is lazy)', async () => {
+        // Every real opener hits this path: ModalSurfaces mounts the modal on
+        // the first open with isOpen=true and initialTab set in the same
+        // render, so "open Settings on the plan tab" showed General.
+        fetchMock.mockResolvedValue({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: () => Promise.resolve({}) })
+        renderWithProviders(
+            <ThemeProvider>
+                <SettingsModal isOpen={true} onClose={() => {}} initialTab="license" />
+            </ThemeProvider>
+        )
+        expect(await screen.findByRole('tab', { name: /License & Plan/i })).toHaveAttribute('aria-selected', 'true')
+        expect(screen.getByRole('tab', { name: /^General$/i })).toHaveAttribute('aria-selected', 'false')
+    })
+
     it('does not override a manual tab switch on a re-render with the same initialTab', async () => {
         fetchMock.mockResolvedValue({ ok: true, status: 200, headers: { get: () => 'application/json' }, json: () => Promise.resolve({}) })
 

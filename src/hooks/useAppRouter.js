@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
+import { emitAppEvent, APP_EVENTS } from '../utils/appEvents'
 import { parseRepoHash, buildRepoHash } from '../utils/repoDetailHash'
 
 // Per-view document.title. index.html ships a single static marketing title,
@@ -54,6 +55,17 @@ export function useAppRouter({
   // back/forward, paste-the-URL share) so we expose them via hash. On hash
   // clear (back to '' or '#') we route to the dashboard. Repo-detail / PR
   // review / wizard live in modal-ish state and stay out of the hash space.
+  const PATH_ALIASES = useMemo(() => ({
+    '/pricing':  { hash: '#/pricing' },
+    '/repos':    { hash: '#/repos' },
+    '/work':     { hash: '#/work' },
+    '/teams':    { hash: '#/teams' },
+    '/audit':    { hash: '#/audit' },
+    // Settings is a modal, not a view: land on home and open it on the plan
+    // tab, which is where a buyer coming back from Stripe expects to be.
+    '/settings': { hash: '', settingsTab: 'license' },
+  }), [])
+
   const HASH_ROUTES = useMemo(() => ({
     '#/ai/prompts': 'prompt-studio',
     '#/pricing':    'pricing',
@@ -73,6 +85,8 @@ export function useAppRouter({
   // effect below must NOT write the URL from that half-applied state (it
   // would replace the just-traversed repo entry with the lateral hash and
   // clobber Forward navigation).
+  const pendingSettingsTabRef = useRef(null)
+
   const syncTargetViewRef = useRef(null)
   const syncStaleViewRef = useRef(null)
   // Latest committed activeView, readable from the sync event handler (which
@@ -81,6 +95,20 @@ export function useAppRouter({
 
   useEffect(() => {
     const sync = () => {
+      // Three real entry points arrive as PATHS, not hashes: the site's Pro
+      // card (/pricing), Stripe's cancel_url (/pricing) and its success_url
+      // (/settings). Ignoring the path dropped a returning buyer on the
+      // dashboard with the address bar still reading /settings. Translate
+      // once, keep the query (?billing=, ?checkout= are read downstream).
+      const alias = PATH_ALIASES[window.location.pathname.replace(/\/+$/, '') || '/']
+      if (alias !== undefined) {
+        const target = `/${window.location.search}${alias.hash ?? window.location.hash}`
+        try { window.history.replaceState(null, '', target) } catch { /* ignore */ }
+        // The modal can only open once the authenticated shell (and the
+        // OPEN_SETTINGS listener) exists, which on a cold load is after the
+        // session check. Park the tab and let the effect below emit it.
+        if (alias.settingsTab) pendingSettingsTabRef.current = alias.settingsTab
+      }
       const hash = window.location.hash
       // Deep-linkable repo-detail: #/repo/:owner/:name(/:tab). On a cold load
       // we only have owner/name from the URL, so seed a minimal stub -
@@ -137,9 +165,18 @@ export function useAppRouter({
       window.removeEventListener('hashchange', sync)
       window.removeEventListener('popstate', sync)
     }
-    // HASH_ROUTES is memoised; the passed setters are stable.
+    // HASH_ROUTES / PATH_ALIASES are memoised; the passed setters are stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setActiveView])
+
+  // Declared after the sync effect on purpose: effects run in order, so on a
+  // cold load the alias above has parked the tab before this one looks.
+  useEffect(() => {
+    if (!isAuthenticated || !pendingSettingsTabRef.current) return
+    const tab = pendingSettingsTabRef.current
+    pendingSettingsTabRef.current = null
+    emitAppEvent(APP_EVENTS.OPEN_SETTINGS, { tab })
+  }, [isAuthenticated])
 
   // Bidirectional sync: when activeView changes from in-app nav (clicking
   // bottom-nav tabs, More -> Pricing, breadcrumb-back, etc.) update the URL

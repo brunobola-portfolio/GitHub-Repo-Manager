@@ -309,3 +309,18 @@ describe('GET /config — real prices from Stripe', () => {
         expect(res.body).toMatchObject({ stripeEnabled: true, yearlyBillingAvailable: true })
     })
 })
+
+/*
+ * The app routes by hash and reads ?billing= on return. A bare /pricing
+ * cancel_url dropped a signed-in buyer on the dashboard with no word about
+ * whether anything was charged.
+ */
+describe('POST /billing/checkout — return URLs the client can act on', () => {
+    it('sends the buyer back to pricing with billing=cancel, and to settings with billing=success', async () => {
+        const res = await request(makeApp()).post('/api/v1/billing/checkout').send({ tier: 'pro' })
+        expect(res.status).toBe(200)
+        const args = mockSessionsCreate.mock.calls.at(-1)[0]
+        expect(args.cancel_url).toBe('http://localhost:5173/pricing?billing=cancel')
+        expect(args.success_url).toBe('http://localhost:5173/settings?billing=success')
+    })
+})
