@@ -37,6 +37,8 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.25.13 (2026-09-22) — Dependency groups and the adm-zip advisory.**
+  See the changelog.
 - **v4.25.12 (2026-09-22) — Mobile UX pass: PR, issue, review and Work Board
   surfaces usable on phones.** Phones.
 - **v4.25.11 (2026-09-20) — VAT at checkout: Portugal and OSS registered,
