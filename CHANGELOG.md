@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.25.14] - 2026-09-22
+
 ### Fixed
 
 - **Buying Pro from the landing page now ends at the checkout.** "Upgrade to
@@ -4068,7 +4070,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.13...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.14...HEAD
+[4.25.14]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.13...v4.25.14
 [4.25.13]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.12...v4.25.13
 [4.25.12]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.11...v4.25.12
 [4.25.11]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.10...v4.25.11

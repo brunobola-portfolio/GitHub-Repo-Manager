@@ -37,6 +37,9 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.25.14 (2026-09-22) — Pro purchase journey: sign-in intent, Stripe
+  return, settings tab.** Buying Pro from the landing page now ends at the
+  checkout; Coming back from Stripe means something.
 - **v4.25.13 (2026-09-22) — Dependency groups and the adm-zip advisory.**
   See the changelog.
 - **v4.25.12 (2026-09-22) — Mobile UX pass: PR, issue, review and Work Board
