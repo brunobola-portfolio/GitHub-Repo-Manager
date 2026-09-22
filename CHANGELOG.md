@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- `adm-zip` 0.6.0 → 0.6.1 (GHSA high: uncontrolled memory allocation from the
+  declared uncompressed size). The TFVC importer already routes every archive
+  through `safe-zip-extract`, so the remaining medium advisory (symlink
+  following on extraction, no fix published) does not reach a code path here.
+
+### Changed
+
+- Dependency groups from Dependabot: React 19.3, Sentry 10.75, Stripe 22.6.2,
+  zod 4.6, lucide 1.47, tailwind-merge 3.7, jose 6.2.12, compression 1.8.2,
+  react-virtual 3.14.13, plus the development-minor group.
+
 ## [4.25.12] - 2026-09-22
 
 ### Fixed
