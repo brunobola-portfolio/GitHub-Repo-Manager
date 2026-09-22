@@ -37,6 +37,8 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.25.12 (2026-09-22) — Mobile UX pass: PR, issue, review and Work Board
+  surfaces usable on phones.** Phones.
 - **v4.25.11 (2026-09-20) — VAT at checkout: Portugal and OSS registered,
   address and VAT id collected.** VAT at checkout.
 - **v4.25.10 (2026-09-20) — the Customer portal is wired, and the live

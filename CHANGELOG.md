@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.25.12] - 2026-09-22
+
 ### Fixed
 
 - **Phones.** Testing on a handset surfaced a cluster of mobile defects, all
@@ -4032,7 +4034,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.11...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.12...HEAD
+[4.25.12]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.11...v4.25.12
 [4.25.11]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.10...v4.25.11
 [4.25.10]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.9...v4.25.10
 [4.25.9]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.8...v4.25.9
