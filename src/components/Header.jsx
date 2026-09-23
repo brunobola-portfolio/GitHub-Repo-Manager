@@ -652,11 +652,14 @@ function NotificationsDropdown({ digest, loading, error, totalCount, onMarkSeen,
     return (
         <div
             ref={trapRef}
+            // Below sm the bell is not the rightmost control, so right-0 on it
+            // pushed a 374px panel ~60px off the left edge of a 390px screen.
+            // Pin to the viewport there; anchor to the button from sm up.
             id="header-notifications-popover"
             role="dialog"
             aria-modal="false"
             aria-label="Notifications"
-            className="absolute right-0 top-full mt-2 w-96 max-w-[calc(100vw-1rem)] ds-surface-card rounded-2xl shadow-[var(--ds-shadow-overlay)] border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in"
+            className="max-sm:fixed max-sm:inset-x-2 max-sm:top-[calc(var(--header-height)+0.5rem)] sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:w-96 max-w-[calc(100vw-1rem)] ds-surface-card rounded-2xl shadow-[var(--ds-shadow-overlay)] border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in"
         >
             <div className="px-4 pt-3.5 pb-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <div className="min-w-0">
@@ -835,7 +838,7 @@ function SystemHealthIndicator() {
                     role="dialog"
                     aria-modal="false"
                     aria-label={tooltip}
-                    className="absolute right-0 top-full mt-2 w-72 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl shadow-[var(--ds-shadow-overlay)] border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in"
+                    className="max-sm:fixed max-sm:inset-x-2 max-sm:top-[calc(var(--header-height)+0.5rem)] sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:w-72 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl shadow-[var(--ds-shadow-overlay)] border border-slate-200/60 dark:border-slate-700/50 overflow-hidden z-[var(--ds-z-composer)] ds-animate-scale-in"
                 >
                     <div className="p-3 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
                         <AlertCircle className={`w-4 h-4 ${isDegraded ? 'text-amber-500 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'}`} />

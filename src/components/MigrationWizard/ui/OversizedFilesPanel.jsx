@@ -99,7 +99,7 @@ export function OversizedFilesPanel({ files, fallback }) {
       </div>
 
       {fallback && (
-        <p className="ds-text-meta text-slate-500 italic">{fallback}</p>
+        <p className="ds-text-meta text-slate-500 dark:text-slate-400 italic">{fallback}</p>
       )}
     </div>
   )

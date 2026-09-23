@@ -188,7 +188,7 @@ export function CommitsTab({ repo }) {
                                 />
                             ) : (
                                 <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
-                                    <GitCommit className="w-4 h-4 text-slate-500" />
+                                    <GitCommit className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                                 </div>
                             )}
                             <div className="flex-1 min-w-0">
@@ -221,7 +221,7 @@ export function CommitsTab({ repo }) {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     onClick={(e) => e.stopPropagation()}
-                                    className="relative z-10 text-slate-400 hover:text-brand-500 p-1 rounded transition-colors flex-shrink-0 ds-focus-ring"
+                                    className="relative z-10 text-slate-500 dark:text-slate-400 hover:text-brand-500 p-1 rounded transition-colors flex-shrink-0 ds-focus-ring"
                                     aria-label="Open on GitHub"
                                     title="Open on GitHub"
                                 >

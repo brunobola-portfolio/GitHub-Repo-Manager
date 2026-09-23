@@ -1,3 +1,4 @@
+import { EmptyState } from '../ui/EmptyState'
 import { useState, useMemo, lazy, Suspense } from 'react'
 import {
     BarChart3, TrendingUp, Activity, GitPullRequest,
@@ -251,10 +252,11 @@ export function DashboardPremium({
                     defaultExpanded={true}
                 >
                     {activity.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-10 text-slate-400">
-                            <Clock className="w-8 h-8 opacity-30 mb-2" />
-                            <span className="text-sm">No recent activity found</span>
-                        </div>
+                        <EmptyState
+                            icon={Clock}
+                            title="No recent activity"
+                            description="Pushes, pull requests and issues across your repositories show up here."
+                        />
                     ) : (
                         <div className="divide-y divide-slate-100 dark:divide-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                             {activity.slice(0, 8).map((event) => (

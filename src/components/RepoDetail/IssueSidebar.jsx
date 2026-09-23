@@ -244,7 +244,7 @@ function MilestoneInfo({ issue }) {
                 <div className="text-xs">
                     <div className="font-medium text-slate-700 dark:text-slate-300">{ms.title}</div>
                     {ms.due_on && (
-                        <div className="text-slate-500 mt-0.5">
+                        <div className="text-slate-500 dark:text-slate-400 mt-0.5">
                             due {formatDate(ms.due_on)}
                         </div>
                     )}

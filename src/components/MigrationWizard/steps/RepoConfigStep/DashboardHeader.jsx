@@ -142,35 +142,35 @@ export function DashboardHeader({
       {/* Row 2: Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
-          <div className="text-xl font-bold text-brand-400">{stats.count}</div>
-          <div className="ds-eyebrow text-slate-500 mt-0.5">Repositories</div>
+          <div className="text-xl font-bold text-brand-700 dark:text-brand-400">{stats.count}</div>
+          <div className="ds-eyebrow text-slate-500 dark:text-slate-400 mt-0.5">Repositories</div>
         </div>
         <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
-          <div className="text-xl font-bold text-brand-400">{formatSize(stats.totalSize)}</div>
-          <div className="ds-eyebrow text-slate-500 mt-0.5">Total Size</div>
+          <div className="text-xl font-bold text-brand-700 dark:text-brand-400">{formatSize(stats.totalSize)}</div>
+          <div className="ds-eyebrow text-slate-500 dark:text-slate-400 mt-0.5">Total Size</div>
         </div>
         {isAzureDevops ? (
           <>
             <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
-              <div className="text-xl font-bold text-amber-400">{stats.tfvcCount}</div>
-              <div className="ds-eyebrow text-slate-500 mt-0.5">TFVC paths</div>
+              <div className="text-xl font-bold text-amber-700 dark:text-amber-400">{stats.tfvcCount}</div>
+              <div className="ds-eyebrow text-slate-500 dark:text-slate-400 mt-0.5">TFVC paths</div>
             </div>
             <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
               <div className="text-xl font-bold text-slate-500 dark:text-slate-400">
                 {stats.existingInProject === null ? '—' : stats.existingInProject}
               </div>
-              <div className="ds-eyebrow text-slate-500 mt-0.5">Existing in project</div>
+              <div className="ds-eyebrow text-slate-500 dark:text-slate-400 mt-0.5">Existing in project</div>
             </div>
           </>
         ) : (
           <>
             <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
-              <div className="text-xl font-bold text-emerald-400">{stats.privateCount}</div>
-              <div className="ds-eyebrow text-slate-500 mt-0.5">Private</div>
+              <div className="text-xl font-bold text-emerald-700 dark:text-emerald-400">{stats.privateCount}</div>
+              <div className="ds-eyebrow text-slate-500 dark:text-slate-400 mt-0.5">Private</div>
             </div>
             <div className="bg-white/60 dark:bg-slate-900/50 rounded-xl px-4 py-3 text-center">
-              <div className="text-xl font-bold text-amber-400">{stats.publicCount}</div>
-              <div className="ds-eyebrow text-slate-500 mt-0.5">Public</div>
+              <div className="text-xl font-bold text-amber-700 dark:text-amber-400">{stats.publicCount}</div>
+              <div className="ds-eyebrow text-slate-500 dark:text-slate-400 mt-0.5">Public</div>
             </div>
           </>
         )}

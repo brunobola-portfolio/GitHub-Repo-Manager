@@ -265,7 +265,7 @@ function CredentialRow({ cred, onDeleted, onTested }) {
               href={patUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="p-1.5 rounded-md text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-colors ds-focus-ring"
+              className="p-1.5 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-colors ds-focus-ring"
               title="Open the PATs page on the server"
             >
               <ExternalLink className="w-3.5 h-3.5" />
@@ -279,7 +279,7 @@ function CredentialRow({ cred, onDeleted, onTested }) {
                 type="button"
                 onClick={cancelConfirm}
                 onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); cancelConfirm() } }}
-                className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 ds-focus-ring rounded"
+                className="px-2 py-1 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 ds-focus-ring rounded"
               >
                 Cancel
               </button>
@@ -300,7 +300,7 @@ function CredentialRow({ cred, onDeleted, onTested }) {
               ref={deleteBtnRef}
               type="button"
               onClick={() => setConfirming(true)}
-              className="p-1.5 rounded-md text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-white dark:hover:bg-slate-800 transition-colors ds-focus-ring"
+              className="p-1.5 rounded-md text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-white dark:hover:bg-slate-800 transition-colors ds-focus-ring"
               title="Remove from the local vault"
               aria-label={`Remove credential "${cred.label}"`}
             >
@@ -398,7 +398,7 @@ function AddCredentialForm({ onClose, onCreated }) {
         <button
           type="button"
           onClick={onClose}
-          className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+          className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
         >
           Cancel
         </button>
@@ -447,7 +447,7 @@ function AddCredentialForm({ onClose, onCreated }) {
             placeholder="e.g. Trigenius  or  tfs/DefaultCollection"
             className="font-mono"
           />
-          <p className="ds-text-micro text-slate-500 mt-1">Enables the "Test" button and auto-match in the wizard.</p>
+          <p className="ds-text-micro text-slate-500 dark:text-slate-400 mt-1">Enables the "Test" button and auto-match in the wizard.</p>
         </Field>
 
         <Field label="Scopes (informational)">

@@ -29,10 +29,10 @@ export function StreamingOutput({ content, streamingText, isStreaming, onCancel,
                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300">{label}</label>
                     <div className="flex items-center gap-2">
                         {retryCount > 0 && (
-                            <span className="ds-text-micro text-amber-400 animate-pulse">Reconnecting ({retryCount}/3)...</span>
+                            <span className="ds-text-micro text-amber-700 dark:text-amber-400 animate-pulse">Reconnecting ({retryCount}/3)...</span>
                         )}
                         {isStreaming && (
-                            <button type="button" onClick={onCancel} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs text-rose-400 hover:text-rose-300 rounded transition-colors ds-focus-ring">
+                            <button type="button" onClick={onCancel} className="inline-flex items-center gap-1 px-2 py-0.5 text-xs text-rose-700 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 rounded transition-colors ds-focus-ring">
                                 <Square className="w-3 h-3" /> Stop
                             </button>
                         )}
@@ -44,7 +44,7 @@ export function StreamingOutput({ content, streamingText, isStreaming, onCancel,
                         {isStreaming && <span className="inline-block w-2 h-5 ml-0.5 bg-emerald-400 animate-pulse align-text-bottom" />}
                     </div>
                     {!isStreaming && displayText && (
-                        <div className="absolute top-2.5 right-2.5 flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                        <div className="absolute top-2.5 right-2.5 flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">
                             <CopyBtn text={displayText} id="msg" copiedId={copiedId} onCopy={handleCopy} label="Copy message" />
                             <CopyBtn text={gitCommand} id="cmd" copiedId={copiedId} onCopy={handleCopy} label="Copy as git command" icon={Terminal} />
                         </div>

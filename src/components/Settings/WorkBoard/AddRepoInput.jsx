@@ -56,7 +56,7 @@ export function AddRepoInput({ onAdd }) {
                 while idle instead of conditional. */}
             <Command.List hidden={!(query || loading)} className="max-h-48 overflow-auto p-1 border-t border-slate-200 dark:border-slate-700">
                     {loading && (
-                        <div className="px-2 py-1.5 text-xs text-slate-500 flex items-center gap-1.5">
+                        <div className="px-2 py-1.5 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                             <Spinner size="xs" /> Searching…
                         </div>
                     )}
@@ -70,7 +70,7 @@ export function AddRepoInput({ onAdd }) {
                                     className="px-2 py-1.5 text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between"
                                 >
                                     {r.repo_full_name}
-                                    <span className="text-slate-500">already tracked</span>
+                                    <span className="text-slate-500 dark:text-slate-400">already tracked</span>
                                 </Command.Item>
                             ))}
                         </Command.Group>

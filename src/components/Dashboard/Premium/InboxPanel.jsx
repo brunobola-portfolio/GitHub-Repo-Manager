@@ -211,7 +211,7 @@ export function InboxPanel({ onSelectItem }) {
                         />
                     )}
                     {!loading && !error && active && active.items.length === 0 && (
-                        <p className="p-6 text-sm text-slate-500">
+                        <p className="p-6 text-sm text-slate-500 dark:text-slate-400">
                             {meta && meta.live === false
                                 ? "Your GitHub session isn't connected — sign in to load live pull requests and reviews."
                                 : (EMPTY_STATE_COPY[active.key] ?? 'Nothing here.')}

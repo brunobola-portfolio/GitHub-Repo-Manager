@@ -36,12 +36,12 @@ export function SmartContextBar({ analysis, diffSummary, loading, onSuggestionCl
             <div className="flex items-center gap-2 text-xs flex-wrap">
                 <Sparkles className="w-3.5 h-3.5 text-brand-400 shrink-0" />
                 <span className={`font-medium ${typeStyle.color}`}>{typeStyle.label}</span>
-                <span className="text-slate-500">&middot;</span>
+                <span className="text-slate-500 dark:text-slate-400">&middot;</span>
                 <span className="text-slate-400">{diffSummary.files_changed} files</span>
-                <span className="text-slate-500">&middot;</span>
+                <span className="text-slate-500 dark:text-slate-400">&middot;</span>
                 <span className="text-emerald-400">+{diffSummary.additions}</span>
                 <span className="text-rose-400">&minus;{diffSummary.deletions}</span>
-                <span className="text-slate-500">&middot;</span>
+                <span className="text-slate-500 dark:text-slate-400">&middot;</span>
                 <span className={complexityStyle}>{analysis.complexity}</span>
             </div>
 

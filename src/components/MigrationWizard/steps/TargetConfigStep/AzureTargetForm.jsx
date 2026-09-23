@@ -138,7 +138,7 @@ function ExistingProjectForm({ source, onChange }) {
     <div className="space-y-3 pt-2">
       <Field label="Target Azure DevOps project" htmlFor="azure-tgt-existing-project">
         {loading ? (
-          <div className="flex items-center gap-2 text-sm text-slate-500"><Spinner size="md" tone="muted" /> Loading projects…</div>
+          <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400"><Spinner size="md" tone="muted" /> Loading projects…</div>
         ) : (
           <Select
             label="Target Azure DevOps project"

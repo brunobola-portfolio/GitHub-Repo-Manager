@@ -79,7 +79,7 @@ export function ContextPicker({
                                     aria-label={SIGNAL_LABELS[kind]}
                                 />
                                 <span className="flex-1 text-slate-700 dark:text-slate-200">{SIGNAL_LABELS[kind]}</span>
-                                {checked && <span className="text-xs text-slate-500">{formatFileSize(expected, 1)}</span>}
+                                {checked && <span className="text-xs text-slate-500 dark:text-slate-400">{formatFileSize(expected, 1)}</span>}
                             </label>
                         )
                     })}
@@ -115,13 +115,13 @@ export function ContextPicker({
                     )}
 
                     <div className="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
                             {`Total: ${formatFileSize(totalBytes, 1)} / ${formatFileSize(TOTAL_CAP, 1)}`}
                         </span>
                         <button
                             type="button"
                             onClick={onReset}
-                            className="text-xs text-slate-500 hover:text-slate-700 inline-flex items-center gap-1"
+                            className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 inline-flex items-center gap-1"
                         >
                             <RotateCcw className="w-3 h-3" /> Reset
                         </button>

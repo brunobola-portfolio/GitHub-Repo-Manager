@@ -16,7 +16,7 @@ export function AIActivityCard({ activity }) {
         <InsightCard tone="default" hover={false}>
             <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4 text-slate-500" />
+                    <BarChart3 className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-300">AI activity</p>
                     <span className="ml-auto text-xs text-slate-500 dark:text-slate-400">{activity.month}</span>
                 </div>

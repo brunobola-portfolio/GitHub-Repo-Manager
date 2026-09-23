@@ -278,7 +278,7 @@ export function AISummaryCard({ meta: metaProp } = {}) {
                     </motion.ul>
                 </AnimatePresence>
                 {generatedAt && (
-                    <p className="mt-auto pt-2 ds-text-meta text-slate-500 text-right">
+                    <p className="mt-auto pt-2 ds-text-meta text-slate-500 dark:text-slate-400 text-right">
                         Generated {formatRelativeTime(generatedAt)}
                     </p>
                 )}

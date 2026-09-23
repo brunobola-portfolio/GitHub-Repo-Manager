@@ -77,7 +77,9 @@ export function PendingSyncBanner({ isAuthenticated }) {
                     transition={{ duration: DURATION.standard }}
                     role="status"
                     aria-live="polite"
-                    className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[var(--ds-z-popover)] flex items-center gap-3 px-4 py-2.5 rounded-full bg-amber-500/95 dark:bg-amber-600/95 text-white ds-elevation-lg backdrop-blur-md max-w-[90vw]"
+                    // Above the 56 px bottom nav on phones (it covered the Repos/Work
+                    // tabs), and amber-900 on amber-100: white on amber-500 was 2.15:1.
+                    className="fixed bottom-[calc(56px+1rem+var(--safe-area-inset-bottom,0px))] md:bottom-4 left-1/2 -translate-x-1/2 z-[var(--ds-z-popover)] flex items-center gap-3 px-4 py-2.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-100 border border-amber-300 dark:border-amber-800 ds-elevation-lg max-w-[90vw]"
                 >
                     <CloudOff className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
                     <div className="text-sm font-medium">
@@ -91,7 +93,7 @@ export function PendingSyncBanner({ isAuthenticated }) {
                     <button
                         type="button"
                         onClick={() => setDismissed(true)}
-                        className="p-1 rounded-full hover:bg-white/15 transition-colors ds-focus-ring"
+                        className="p-1.5 rounded-full hover:bg-amber-200/70 dark:hover:bg-amber-900 transition-colors ds-focus-ring"
                         aria-label="Dismiss banner"
                     >
                         <X className="w-3.5 h-3.5" />

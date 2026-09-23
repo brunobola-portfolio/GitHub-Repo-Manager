@@ -76,7 +76,7 @@ export function RepoRow({ repo, isSelected, isActive, density = 'full', onToggle
                 </span>
               )}
               {repo.isDisabled && (
-                <span className="ds-eyebrow px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-500">
+                <span className="ds-eyebrow px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
                   Archived
                 </span>
               )}
@@ -100,7 +100,7 @@ export function RepoRow({ repo, isSelected, isActive, density = 'full', onToggle
             type="button"
             onClick={() => onOpenDetail(repo.id)}
             aria-label={`View details for ${repo.name}`}
-            className="p-1 rounded text-slate-400 dark:text-slate-500 hover:text-brand-500 dark:hover:text-brand-400 hover:bg-slate-100 dark:hover:bg-slate-800 ds-focus-ring"
+            className="p-1 rounded text-slate-500 dark:text-slate-400 hover:text-brand-500 dark:hover:text-brand-400 hover:bg-slate-100 dark:hover:bg-slate-800 ds-focus-ring"
           >
             <ChevronRight className="w-4 h-4" aria-hidden="true" />
           </button>

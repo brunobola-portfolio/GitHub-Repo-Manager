@@ -25,7 +25,7 @@ export function FixPlanItem({ item, checked, conflictStatus, onToggle, onEdit })
       />
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <span className="truncate text-slate-500 line-through dark:text-slate-400">{item.from}</span>
-        <ArrowRight className="h-3 w-3 shrink-0 text-slate-500" />
+        <ArrowRight className="h-3 w-3 shrink-0 text-slate-500 dark:text-slate-400" />
         <div className="min-w-0 flex-1">
           <Input
             type="text"

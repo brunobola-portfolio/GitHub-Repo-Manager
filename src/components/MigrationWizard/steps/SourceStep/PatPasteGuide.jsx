@@ -341,7 +341,7 @@ function CliAlternative({ cmd }) {
         <button
           type="button"
           onClick={copy}
-          className="px-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition-colors ds-focus-ring"
+          className="px-2 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors ds-focus-ring"
           aria-label="Copy command"
         >
           <AnimatedCopyIcon copied={copied} size="w-3.5 h-3.5" checkClassName="text-emerald-500" />

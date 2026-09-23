@@ -87,7 +87,7 @@ function StalePRRow({ pr, idx, isFocused, onFocus, hasAI, onSnooze, onPing }) {
             onMouseLeave={handleMouseLeave}
         >
             {hasAI && showChips && (
-                <Sparkles className="absolute top-2 right-2 w-3 h-3 text-slate-500 pointer-events-none" />
+                <Sparkles className="absolute top-2 right-2 w-3 h-3 text-slate-500 dark:text-slate-400 pointer-events-none" />
             )}
             <motion.div
                 initial={{ opacity: 0, y: 4 }}

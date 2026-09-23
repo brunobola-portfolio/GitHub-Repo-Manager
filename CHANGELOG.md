@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — phones, tablets and accessibility
+
+- The notifications and system-health popovers open inside a phone's screen;
+  anchored to the bell, the notifications panel started 60 px off the left
+  edge.
+- Tablets and 1024–1280 px laptops can reach Create, Import and the Dev
+  Toolkit again: the quick-actions button now shows until the header's own
+  buttons appear, and the command palette has an "Open Dev Toolkit" entry.
+- The welcome tour scrolls on a phone; its Close and Next buttons were
+  pushed off the screen by the AI key step.
+- The "N selected" and "changes waiting to sync" pills sit above the bottom
+  navigation instead of covering it; the offline and sync notices use a
+  readable amber pair (white on amber was 2.15:1).
+- On a touch screen a tap on a repository card opens it; selecting uses the
+  checkbox, and once something is selected taps toggle as before.
+- Migration Wizard figures are readable in light mode (400-level colours were
+  1.7–3.0:1) and its stat tiles use two columns on a phone.
+- Controls that only appeared on hover (activity links, team repo actions,
+  Dev Toolkit copy buttons) are visible on touch screens.
+- Actions runs show every GitHub result — skipped, timed out, neutral,
+  action required, failed to start, stale — with a text label, instead of a
+  spinner forever.
+- Icon-only buttons that rested at a 2.56:1 grey, 66 muted texts without a
+  dark-mode variant, and two unnamed "View on GitHub" links are fixed.
+- The team actions menu is a real menu (roles, arrows, Escape, focus); team
+  cards line up in height; the branch delete button is gone where GitHub
+  would refuse it; the command palette stays above a phone keyboard; the AI
+  search toggle reports its state and its error no longer overlaps the
+  filters; the empty activity feed uses the standard empty state.
+
 ### Fixed — app behaviour
 
 - An Azure DevOps token or PAT that expires no longer signs you out of the

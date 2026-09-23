@@ -23,7 +23,7 @@ export function SelectionDashboard({ repos, aggregate, staleCount, onSmartSelect
         </>
       }
     >
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard icon={Package} label="Total" value={repos.length} tone="indigo" />
         <StatCard icon={AlertTriangle} label="At risk" value={aggregate.warnings} tone="amber" />
         <StatCard icon={AlertOctagon} label="Blockers" value={aggregate.blockers} tone="red" />

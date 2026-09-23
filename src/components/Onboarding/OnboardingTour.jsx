@@ -78,7 +78,10 @@ export function OnboardingTour({ isOpen, onClose, onNeverShow }) {
             role="dialog"
             aria-modal="true"
             aria-label="Welcome tour"
-            className="fixed inset-0 z-[var(--ds-z-ceiling)] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4"
+            // Scrollable: one step embeds the whole AI key form (~800 px),
+            // which pushed Close and Next off a phone screen with no way to
+            // reach them — the first thing a new user sees.
+            className="fixed inset-0 z-[var(--ds-z-ceiling)] flex items-start sm:items-center justify-center overflow-y-auto bg-slate-900/60 backdrop-blur-sm p-4"
             onClick={onClose}
             onKeyDown={(e) => { if (e.key === 'Escape') onClose?.() }}
         >
@@ -88,7 +91,7 @@ export function OnboardingTour({ isOpen, onClose, onNeverShow }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: DURATION.standard }}
                 onClick={(e) => e.stopPropagation()}
-                className={`w-full p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-[var(--ds-shadow-overlay)] ${step.hasForm ? 'max-w-xl' : 'max-w-lg'}`}
+                className={`w-full my-auto p-5 sm:p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-[var(--ds-shadow-overlay)] ${step.hasForm ? 'max-w-xl' : 'max-w-lg'}`}
             >
                 <div className="flex justify-between items-start mb-6">
                     <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -98,7 +101,7 @@ export function OnboardingTour({ isOpen, onClose, onNeverShow }) {
                         type="button"
                         onClick={onClose}
                         aria-label="Close tour"
-                        className="p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 ds-focus-ring"
+                        className="p-2 -m-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 ds-focus-ring"
                     >
                         <X className="w-4 h-4" />
                     </button>

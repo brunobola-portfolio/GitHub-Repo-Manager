@@ -143,3 +143,39 @@ describe('RepoCard — the description clamp pays for what it shows', () => {
             .toBeGreaterThanOrEqual(linesPaidFor)
     })
 })
+
+// On a touch screen a tap on a card opens it; selecting takes the checkbox.
+// Tapping used to select, raise the pill over the bottom nav, and opening
+// needed a tap on the truncated name.
+describe('RepoCard on a touch screen', () => {
+    const coarse = (matches) => {
+        window.matchMedia = vi.fn((q) => ({
+            matches: q === '(pointer: coarse)' ? matches : false,
+            media: q, addEventListener: vi.fn(), removeEventListener: vi.fn(),
+        }))
+    }
+    afterEach(() => { delete window.matchMedia })
+
+    it('opens the repo on a card tap and selects through the checkbox', async () => {
+        coarse(true)
+        const onRepoClick = vi.fn()
+        const onToggle = vi.fn()
+        renderCard({ onRepoClick, onToggle })
+        const user = userEvent.setup()
+        await user.click(screen.getByTestId('repo-card-select'))
+        expect(onRepoClick).toHaveBeenCalledOnce()
+        expect(onToggle).not.toHaveBeenCalled()
+        await user.click(screen.getByTestId('repo-card-touch-select'))
+        expect(onToggle).toHaveBeenCalledOnce()
+    })
+
+    it('keeps tap-to-toggle once a selection is in progress', async () => {
+        coarse(true)
+        const onRepoClick = vi.fn()
+        const onToggle = vi.fn()
+        renderCard({ onRepoClick, onToggle, selectionActive: true })
+        await userEvent.setup().click(screen.getByTestId('repo-card-select'))
+        expect(onToggle).toHaveBeenCalledOnce()
+        expect(onRepoClick).not.toHaveBeenCalled()
+    })
+})

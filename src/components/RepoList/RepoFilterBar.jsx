@@ -221,9 +221,10 @@ export function RepoFilterBar({
 							<button
 								type="button"
 								onClick={() => { setIsAISearch(!isAISearch); setSearchQuery('') }}
-								className={`p-2 -m-0.5 rounded-lg transition-all ${isAISearch ? 'text-brand-500 bg-brand-100 dark:bg-brand-900/30 ds-elevation-sm' : 'text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20'} ds-focus-ring`}
+								className={`p-2 -m-0.5 rounded-lg transition-all ${isAISearch ? 'text-brand-700 dark:text-brand-300 bg-brand-100 dark:bg-brand-900/30 ds-elevation-sm' : 'text-slate-500 dark:text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20'} ds-focus-ring`}
 								title="Toggle AI semantic search"
-								aria-label="Toggle AI semantic search"
+								aria-label="AI semantic search"
+								aria-pressed={isAISearch}
 							>
 								<Sparkles className="w-4 h-4" />
 							</button>
@@ -232,8 +233,10 @@ export function RepoFilterBar({
 					{isSearchingAI && (
 						<Spinner size="sm" />
 					)}
+					{/* In the flow, not absolute: when the bar wraps on a phone the
+					    error sat on top of the next row of controls. Announced. */}
 					{aiSearchError && (
-						<p className="absolute -bottom-6 left-0 text-xs text-rose-600 dark:text-rose-400">{aiSearchError}</p>
+						<p role="alert" className="basis-full text-xs text-rose-600 dark:text-rose-400">{aiSearchError}</p>
 					)}
 				</div>
 				<div className="flex flex-shrink-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-xl p-1 border border-slate-200/70 dark:border-slate-700/50 ds-elevation-sm">
