@@ -1,11 +1,15 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
     cosineSimilarity,
     embedText,
     semanticSearch,
     findSimilarById,
+    forgetParsedEmbedding,
+    _clearParsedEmbeddingCache,
 } from '../../lib/ai-features/semantic-search.js';
 import { AIError, AI_ERROR_CODE } from '../../lib/ai-provider.js';
+
+beforeEach(() => _clearParsedEmbeddingCache());
 
 function buildProvider(overrides = {}) {
     return {
@@ -291,3 +295,40 @@ describe('cosineSimilarity — mismatched vector widths', () => {
     });
 });
 
+describe('ai-features/semantic-search — parsed-vector cache', () => {
+    const row = (embedding, updated_at = '2026-09-23 10:00:00') =>
+        ({ repo_id: 7, user_id: 1, updated_at, embedding: JSON.stringify(embedding) });
+
+    it('parses an unchanged row once across searches', async () => {
+        const provider = buildProvider();
+        const db = buildDb({ all: [row([1, 0, 0])] });
+        const parse = vi.spyOn(JSON, 'parse');
+        try {
+            await semanticSearch({ provider, db }, 'q', 5, 1);
+            const afterFirst = parse.mock.calls.length;
+            await semanticSearch({ provider, db }, 'q', 5, 1);
+            expect(parse.mock.calls.length).toBe(afterFirst);
+        } finally {
+            parse.mockRestore();
+        }
+    });
+
+    it('re-reads a row whose updated_at moved', async () => {
+        const provider = buildProvider();
+        const rows = { all: [row([1, 0, 0])] };
+        const db = buildDb(rows);
+        expect((await semanticSearch({ provider, db }, 'q', 5, 1))[0].score).toBeCloseTo(1);
+        rows.all = [row([0, 1, 0], '2026-09-23 10:05:00')];
+        expect((await semanticSearch({ provider, db }, 'q', 5, 1))[0].score).toBeCloseTo(0);
+    });
+
+    it('re-reads a row the indexer rewrote inside the same second', async () => {
+        const provider = buildProvider();
+        const rows = { all: [row([1, 0, 0])] };
+        const db = buildDb(rows);
+        await semanticSearch({ provider, db }, 'q', 5, 1);
+        rows.all = [row([0, 1, 0])];
+        forgetParsedEmbedding(1, 7);
+        expect((await semanticSearch({ provider, db }, 'q', 5, 1))[0].score).toBeCloseTo(0);
+    });
+});

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import crypto from 'crypto'
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { encryptCredentials, decryptCredentials, isSchedulingEnabled } from '../lib/credential-encryption.js'
 
 // Secret the module resolves to in this suite (SESSION_SECRET fallback, set
@@ -167,5 +167,32 @@ describe('credential-encryption — CREDENTIAL_ENCRYPTION_KEY rotation', () => {
     process.env.CREDENTIAL_ENCRYPTION_KEY = NEW_KEY
     delete process.env.CREDENTIAL_ENCRYPTION_KEY_PREVIOUS
     expect(() => decryptCredentials(blob)).toThrow()
+  })
+})
+
+describe('credential-encryption — derived-key cache', () => {
+  beforeEach(() => {
+    process.env.SESSION_SECRET = TEST_SECRET
+    delete process.env.CREDENTIAL_ENCRYPTION_KEY
+    delete process.env.CREDENTIAL_ENCRYPTION_KEY_PREVIOUS
+  })
+
+  it('keeps a key in constant use while thousands of others churn through', () => {
+    // A fast stand-in for the 210k-iteration KDF, deterministic in its inputs
+    // so every blob still decrypts.
+    const spy = vi.spyOn(crypto, 'pbkdf2Sync').mockImplementation((material, salt) =>
+      crypto.createHash('sha256').update(material).update(salt).digest())
+    try {
+      const hot = encryptCredentials({ provider: 'anthropic' })
+      const hotSalt = spy.mock.calls[0][1]
+      for (let i = 0; i < 2500; i++) {
+        encryptCredentials({ i })
+        if (i % 50 === 0) expect(decryptCredentials(hot)).toEqual({ provider: 'anthropic' })
+      }
+      const hotDerivations = spy.mock.calls.filter(([, salt]) => Buffer.compare(salt, hotSalt) === 0)
+      expect(hotDerivations).toHaveLength(1)
+    } finally {
+      spy.mockRestore()
+    }
   })
 })
