@@ -67,9 +67,8 @@ export async function enhanceReadme(ctx, currentReadme, repoData, fileStructure)
     const { prompt, missingSections, patterns } = buildReadmeEnhancePrompt(currentReadme, repoData, fileStructure);
 
     try {
-        // Note: enhanceReadme returns raw markdown, so we use the raw text (not fence-stripped)
-        // from the provider. The provider strips fences from JSON-looking output but markdown
-        // is returned verbatim — for pure markdown we want the original text() anyway.
+        // Providers only remove a single fence wrapping the whole answer
+        // (stripOuterFence), so the README's own code blocks come back intact.
         const { text } = await provider.generate({ prompt });
         return {
             enhancement: text,

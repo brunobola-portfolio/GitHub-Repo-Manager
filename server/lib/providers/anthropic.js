@@ -9,11 +9,11 @@
  *    → Promise<{ text: string, parsed?: any }>
  *  embed(text)
  *    → Promise<number[]>  — THROWS: Anthropic has no embedding API
- *  generateStream({ prompt, generationConfig?, signal? })
+ *  generateStream({ prompt, systemPrompt?, generationConfig?, signal? })
  *    → AsyncGenerator<string>
  */
 
-import { AIError, AI_ERROR_CODE, toAIError, extractRetryAfterMs, throwIfCanceled } from '../ai-provider.js';
+import { AIError, AI_ERROR_CODE, toAIError, extractRetryAfterMs, throwIfCanceled, stripOuterFence } from '../ai-provider.js';
 import { computeCostUSD } from '../provider-pricing.js';
 
 // Ceiling for the blocking (non-streaming) POST. Long enough for a large
@@ -29,15 +29,6 @@ const DEFAULT_MAX_TOKENS = 4096;
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/**
- * Strip markdown code fences from AI text output.
- * @param {string} text
- * @returns {string}
- */
-function stripMarkdownFences(text) {
-    return text.replace(/```json/g, '').replace(/```/g, '').trim();
-}
 
 /**
  * Map Anthropic HTTP error status / error type to AIError.
@@ -273,7 +264,7 @@ export class AnthropicProvider {
         try {
             const data = await this._post('/v1/messages', body);
             const raw = data?.content?.[0]?.text || '';
-            const text = stripMarkdownFences(raw);
+            const text = stripOuterFence(raw);
 
             // Anthropic Messages API surfaces token usage on `data.usage` with
             // input_tokens/output_tokens (always present) plus optional
@@ -297,11 +288,17 @@ export class AnthropicProvider {
                     const parsed = JSON.parse(text);
                     return { text, parsed, usage, costUSD };
                 } catch (parseErr) {
-                    throw new AIError({
+                    const invalid = new AIError({
                         code: AI_ERROR_CODE.INVALID_RESPONSE,
                         message: `AI returned text that could not be parsed as JSON: ${text.slice(0, 200)}`,
                         cause: parseErr,
                     });
+                    // The provider was paid for this answer even though it is
+                    // unusable: carry the measured cost so callers still record
+                    // it against the spend cap.
+                    invalid.usage = usage;
+                    invalid.costUSD = costUSD;
+                    throw invalid;
                 }
             }
 
@@ -349,7 +346,7 @@ export class AnthropicProvider {
      * @param {string} [opts.modelOverride]
      * @returns {AsyncGenerator<string>}
      */
-    async *generateStream({ prompt, generationConfig, signal, modelOverride } = {}) {
+    async *generateStream({ prompt, systemPrompt, generationConfig, signal, modelOverride } = {}) {
         const model = modelOverride || this._modelName;
 
         const body = {
@@ -357,6 +354,10 @@ export class AnthropicProvider {
             max_tokens: DEFAULT_MAX_TOKENS,
             messages: [{ role: 'user', content: prompt || '' }],
         };
+        // PR Chat passes its grounding (PR title, body, files, "never invent a
+        // path") as the system prompt. This parameter used to be dropped, so
+        // every answer about "this PR" was ungrounded.
+        if (systemPrompt) body.system = systemPrompt;
 
         if (generationConfig) {
             if (generationConfig.maxOutputTokens != null) body.max_tokens = generationConfig.maxOutputTokens;
@@ -386,6 +387,11 @@ export class AnthropicProvider {
                 try {
                     ({ done, value } = await reader.read());
                 } catch (readErr) {
+                    // Aborted while a read was pending (the client hung up):
+                    // stop and fall through to the usage return below. Throwing
+                    // CANCELED here discarded the tokens already billed, so a
+                    // disconnect recorded $0 against the spend cap.
+                    if (signal?.aborted) break;
                     throwIfCanceled(readErr, signal);
                     throw readErr;
                 }

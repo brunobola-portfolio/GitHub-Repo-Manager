@@ -20,6 +20,8 @@ const PLACEHOLDER = /__PUBLIC_ORIGIN__/g;
  * The origin to advertise: the operator's FRONTEND_URL when it is a real
  * http(s) URL, otherwise the request's own scheme and host.
  */
+const VALID_HOST = /^(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*|\[[0-9A-Fa-f:.]+\])(?::\d{1,5})?$/;
+
 export function resolvePublicOrigin(req, frontendUrl) {
     if (frontendUrl) {
         try {
@@ -29,8 +31,13 @@ export function resolvePublicOrigin(req, frontendUrl) {
             // Malformed: fall through to the request origin.
         }
     }
-    const host = req?.get?.('host') || 'localhost';
-    const protocol = req?.protocol || 'http';
+    // Without FRONTEND_URL the origin comes from the Host header and lands in
+    // attributes of the served HTML (canonical, og:url, JSON-LD). Accept only
+    // what a real host can look like — a name or IP literal and a port — so a
+    // forged header cannot carry markup into the page.
+    const rawHost = String(req?.get?.('host') || '');
+    const host = VALID_HOST.test(rawHost) ? rawHost : 'localhost';
+    const protocol = req?.protocol === 'https' ? 'https' : 'http';
     return `${protocol}://${host}`;
 }
 
@@ -129,7 +136,10 @@ export function renderShell(html, { origin, version, sentryDsn, stripeEnabled = 
  * Everything else still gets the shell — the SPA sends it home — but with a
  * 404, so a crawler or a mistyped link is not told the page exists.
  */
-const SHELL_PATHS = new Set(['/', '/index.html', '/status', '/privacy', '/terms', '/settings', '/pricing']);
+// Every path the client router (useAppRouter PATH_ALIASES) turns into a view
+// answers 200: /pricing and /settings are Stripe's return URLs and the site's
+// Pro link, the rest are shareable view URLs. Keep the two lists in step.
+const SHELL_PATHS = new Set(['/', '/index.html', '/status', '/privacy', '/terms', '/settings', '/pricing', '/repos', '/work', '/teams', '/audit']);
 
 export function shellStatus(path) {
     const normalised = String(path || '/').replace(/\/+$/, '') || '/';

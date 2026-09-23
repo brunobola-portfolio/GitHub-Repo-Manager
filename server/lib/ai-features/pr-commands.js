@@ -15,6 +15,7 @@
  * lands as JSON ready to persist.
  */
 
+import { PR_CONTENT_IS_DATA } from './grounded-prompts.js';
 import { sanitizeForPrompt } from './sanitize.js';
 import { getResolvedPrompt } from '../ai-prompt-registry.js';
 import { AIError, AI_ERROR_CODE } from '../ai-provider.js';
@@ -164,6 +165,7 @@ ${sanitizeForPrompt(JSON.stringify(
     const parts = [
         { text: systemPrompt + '\n\n' + prContext },
         { text: 'Diff:\n```diff\n' + sanitizeForPrompt(diffPatch || '', MAX_DIFF_CHARS) + '\n```' },
+        { text: PR_CONTENT_IS_DATA },
     ];
 
     const { parsed, usage, costUSD } = await provider.generate({

@@ -255,6 +255,24 @@ export async function stripeWebhookHandler(req, res) {
                     'SELECT status FROM user_subscriptions WHERE stripe_subscription_id = ?'
                 ).get(sub.id);
 
+                // 'incomplete' is invoice.paid's only record that a delayed
+                // payment (SEPA, ACH, Boleto) still owes a licence. Stripe does
+                // not order subscription.updated against invoice.paid, so if
+                // this landed first it granted the tier before the money was
+                // confirmed and invoice.paid then found nothing to settle — no
+                // key was ever issued. Periods are safe to record; the tier and
+                // an 'active' status are invoice.paid's to grant. A failure
+                // status (past_due, incomplete_expired, …) still lands.
+                if (current?.status === 'incomplete') {
+                    const promotes = sub.status === 'active' || sub.status === 'trialing';
+                    db.prepare(`
+                        UPDATE user_subscriptions SET
+                            ${promotes ? '' : 'status = ?,'} current_period_start = ?, current_period_end = ?, updated_at = datetime('now')
+                        WHERE stripe_subscription_id = ?
+                    `).run(...(promotes ? [] : [sub.status]), periodStart, periodEnd, sub.id);
+                    break;
+                }
+
                 if (current && HOLD_STATUSES.has(current.status)) {
                     db.prepare(`
                         UPDATE user_subscriptions SET
@@ -311,9 +329,13 @@ export async function stripeWebhookHandler(req, res) {
 
                 let subscriptionId = null;
                 try {
-                    const charge = event.type === 'charge.refunded'
-                        ? object
-                        : await stripe.charges.retrieve(chargeId);
+                    // Always re-fetch through the SDK client, which is pinned to
+                    // an API version that still carries `charge.invoice`. The
+                    // event payload renders at the ACCOUNT default, and from
+                    // 2025-03-31.basil a charge has no `invoice` field: a full
+                    // refund then found no subscription and left the customer
+                    // on the paid tier.
+                    const charge = await stripe.charges.retrieve(chargeId);
                     if (charge?.invoice) {
                         const invoice = typeof charge.invoice === 'string'
                             ? await stripe.invoices.retrieve(charge.invoice)
@@ -387,7 +409,7 @@ export async function stripeWebhookHandler(req, res) {
                 if (invoice.subscription) {
                     db.prepare(`
                         UPDATE user_subscriptions SET status = 'past_due', updated_at = datetime('now')
-                        WHERE stripe_subscription_id = ?
+                        WHERE stripe_subscription_id = ? AND status NOT IN ('refunded', 'disputed')
                     `).run(invoice.subscription);
                 }
                 break;
@@ -435,9 +457,12 @@ export async function stripeWebhookHandler(req, res) {
                             WHERE stripe_subscription_id = ?
                         `).run(tier, invoice.subscription);
                     } else {
+                        // A renewal paying does not settle a refund or a
+                        // dispute on an earlier invoice: the hold stays until
+                        // charge.dispute.closed (won) or the operator lifts it.
                         db.prepare(`
                             UPDATE user_subscriptions SET status = 'active', updated_at = datetime('now')
-                            WHERE stripe_subscription_id = ?
+                            WHERE stripe_subscription_id = ? AND status NOT IN ('refunded', 'disputed')
                         `).run(invoice.subscription);
                     }
 
@@ -458,10 +483,17 @@ export async function stripeWebhookHandler(req, res) {
                     // checkout.session.completed handler above.
                     if (invoice.billing_reason === 'subscription_cycle') {
                         const subRow = db.prepare(
-                            'SELECT user_id, tier, billing_period FROM user_subscriptions WHERE stripe_subscription_id = ?'
+                            'SELECT user_id, tier, status, billing_period FROM user_subscriptions WHERE stripe_subscription_id = ?'
                         ).get(invoice.subscription);
 
-                        if (subRow?.user_id) {
+                        // A held row carries tier 'free': reissuing from it
+                        // emailed "thank you for subscribing to the Free plan"
+                        // with a Free key to a customer mid-dispute.
+                        const held = subRow && HOLD_STATUSES.has(subRow.status);
+                        if (held) {
+                            logger.warn({ subscriptionId: invoice.subscription, status: subRow.status }, 'stripe-webhook: renewal paid on a held subscription — no licence reissued');
+                        }
+                        if (subRow?.user_id && !held && subRow.tier !== 'free') {
                             const user = db.prepare('SELECT email FROM users WHERE id = ?').get(subRow.user_id);
                             const recipientEmail = invoice.customer_email || user?.email;
                             if (recipientEmail) {

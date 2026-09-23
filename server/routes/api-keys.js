@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
-import { generateApiKey } from '../middleware/api-key-auth.js';
+import { generateApiKey, requireBrowserSession } from '../middleware/api-key-auth.js';
 import { auditLog } from '../lib/audit.js';
 import { getFeatures } from '../lib/feature-flags.js';
 import { z } from 'zod';
@@ -33,7 +33,7 @@ router.get('/', requireAuth, (req, res) => {
 });
 
 // Generate new API key
-router.post('/', requireAuth, (req, res) => {
+router.post('/', requireAuth, requireBrowserSession, (req, res) => {
     const parsed = createKeySchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: 'That request was missing something the server needs.', code: 'VALIDATION_ERROR', details: parsed.error.format() });
 
@@ -64,7 +64,7 @@ router.post('/', requireAuth, (req, res) => {
 });
 
 // Revoke API key
-router.delete('/:id', requireAuth, (req, res) => {
+router.delete('/:id', requireAuth, requireBrowserSession, (req, res) => {
     const result = db.prepare(
         'UPDATE api_keys SET revoked_at = datetime(\'now\') WHERE id = ? AND user_id = ? AND revoked_at IS NULL'
     ).run(req.params.id, req.session.userId);

@@ -43,10 +43,10 @@ import {
 } from '../../lib/ai-prompt-store.js';
 import { BUILTIN_PRESETS, BUILTIN_KEYS, isBuiltinKey } from '../../lib/ai-features/builtin-prompts.js';
 import { resolvePromptForGenerate } from '../../lib/ai-features/prompt-registry.js';
-import { createProviderForUser } from '../../lib/ai-provider.js';
+import { createProviderForUser, AIError } from '../../lib/ai-provider.js';
 import { quotaExceededResponse } from '../../lib/usage-meter.js';
 import { getFeatures } from '../../lib/feature-flags.js';
-import { denyIfSpendCapReached, recordStreamCompletion } from './shared.js';
+import { denyIfSpendCapReached, recordStreamCompletion, handleAIError } from './shared.js';
 import { runDeepReview } from '../../lib/ai-features/pr-deep-review.js';
 import {
     isOrgMember,
@@ -333,7 +333,6 @@ router.post('/presets/:id/test', requireAuth, testRateLimit, async (req, res) =>
     if (!quota.allowed) {
         return res.status(429).json(quotaExceededResponse(quota));
     }
-    if (denyIfSpendCapReached(req, res)) return;
 
     let provider;
     try {
@@ -345,6 +344,8 @@ router.post('/presets/:id/test', requireAuth, testRateLimit, async (req, res) =>
     if (!provider) {
         return errorResponse(res, 404, 'No AI provider configured', 'NO_AI_PROVIDER');
     }
+    // After provider resolution: the cap applies only to the operator's key.
+    if (denyIfSpendCapReached(req, res, provider)) return;
 
     let resolved;
     try {
@@ -378,6 +379,10 @@ router.post('/presets/:id/test', requireAuth, testRateLimit, async (req, res) =>
         });
     } catch (err) {
         logger.warn({ err: err?.message, code: err?.code, userId, id }, 'runDeepReview failed in /test');
+        // Provider failures (a revoked BYOK key answers 401) go through the
+        // shared mapper: forwarding the raw 401 made the app treat it as the
+        // user's own session expiring and send them to sign in again.
+        if (err instanceof AIError) return handleAIError(res, err, 'Preset test failed');
         const status = err?.status || 500;
         const code = err?.code || 'TEST_FAILED';
         return errorResponse(res, status, err?.message || 'Preset test failed', code);
@@ -387,6 +392,7 @@ router.post('/presets/:id/test', requireAuth, testRateLimit, async (req, res) =>
 
     // Meter the query + record spend + write a PII-safe cost audit.
     recordStreamCompletion(req, {
+        provider,
         feature: 'prompt_test',
         action: 'ai.prompt_test',
         model: result.modelUsed,

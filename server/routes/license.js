@@ -96,14 +96,15 @@ router.get('/', (req, res) => {
     "SELECT COUNT(*) as count FROM users WHERE last_login > datetime('now', '-30 days')"
   ).get()
 
+  // Tier and validity are public (the landing page reads them before sign-in);
+  // who holds the licence is not. On an internet-facing self-host, `org`,
+  // `email` and seat usage went to anyone who asked.
+  const signedIn = Boolean(req.session?.userId)
   res.json({
     active: true,
     source: getLicenseSource() || 'license_key',
     tier: info.tier,
-    org: info.org,
-    email: info.email,
-    seats: info.seats,
-    seatsUsed: activeUsers?.count || 0,
+    ...(signedIn ? { org: info.org, email: info.email, seats: info.seats, seatsUsed: activeUsers?.count || 0 } : {}),
     expiresAt: info.exp ? new Date(info.exp * 1000).toISOString() : null,
     issuedAt: info.iat ? new Date(info.iat * 1000).toISOString() : null,
   })

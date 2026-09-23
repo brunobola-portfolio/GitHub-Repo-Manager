@@ -130,6 +130,23 @@ describe('renderMigrationReportMarkdown', () => {
     expect(md).toMatch(/^# Migration Report — Plan #7/)
   })
 
+  it('keeps a table row intact when a value carries a backslash, a pipe or a newline', () => {
+    // Escaping only the pipe turned `a\|b` into `a\\|b`: the added backslash
+    // escaped the original one and the pipe split the cell (CodeQL #104).
+    const hostile = buildMigrationReportData({
+      ...fixturePlan,
+      tasks: [{ ...fixturePlan.tasks[0], source_ref: 'a\\|b', target_ref: 'line1\nline2' }],
+    }, [])
+    const row = renderMigrationReportMarkdown(hostile)
+      .split('\n')
+      .find((l) => l.includes('a\\\\\\|b'))
+    expect(row).toBeDefined()
+    // An unescaped pipe is one not preceded by an odd run of backslashes.
+    const cells = row.split(/(?<!\\)(?:\\\\)*\|/).filter((c, i, a) => i > 0 && i < a.length - 1)
+    expect(cells).toHaveLength(5)
+    expect(row).toContain('line1 line2')
+  })
+
   it('states source and target', () => {
     expect(md).toMatch(/contoso\/Platform \(dev\.azure\.com\)/)
     expect(md).toMatch(/contoso-gh/)

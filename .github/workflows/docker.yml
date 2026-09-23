@@ -24,8 +24,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # One native build per architecture, then a manifest that joins them.
+  #
+  # Until 4.25.14 this was a single linux/amd64,linux/arm64 build with the arm64
+  # leg emulated under QEMU. `npm ci` under emulation hung intermittently and
+  # GitHub killed the job at its 6-hour ceiling: no image was published for
+  # 4.25.11, 4.25.12 or 4.25.14 while :latest sat on an older release. Native
+  # ubuntu-24.04-arm runners remove the emulator entirely, and each leg now
+  # boots its own image before anything is pushed.
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    # A native build takes ~5 minutes. A hang should fail in minutes, not
+    # burn six hours and leave the release without an image.
+    timeout-minutes: 40
     env:
       IMAGE_NAME: ghcr.io/${{ github.repository }}
     steps:
@@ -33,16 +52,13 @@ jobs:
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
 
-      # QEMU enables the linux/arm64 leg (Apple Silicon / AWS Graviton self-hosts).
-      # binfmt image pinned: the qemu bundled with setup-qemu-action@v4's
-      # default image SIGILLs ("Illegal instruction") during `npm ci` in the
-      # linux/arm64 leg (v4.7.0 build failed twice, rerun included; v4.6.1
-      # was green on v3's older qemu). qemu-v8.1.5 is the proven-good
-      # emulator for Node under aarch64 emulation — keep the pin until a
-      # newer image is verified against this exact build.
-      - uses: docker/setup-qemu-action@v4
-        with:
-          image: tonistiigi/binfmt:qemu-v8.1.5
+      - name: Prepare
+        run: |
+          set -euo pipefail
+          echo "IMAGE_LC=${IMAGE_NAME,,}" >> "$GITHUB_ENV"
+          PLATFORM="${{ matrix.platform }}"
+          echo "PLATFORM_PAIR=${PLATFORM//\//-}" >> "$GITHUB_ENV"
+
       - uses: docker/setup-buildx-action@v4
 
       - uses: docker/login-action@v4
@@ -51,40 +67,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Compute image tags
-        id: tags
-        run: |
-          set -euo pipefail
-          IMAGE_LC="${IMAGE_NAME,,}"
-          REF="${{ github.event.inputs.ref || github.ref_name }}"
-          # Docker tags forbid '/' and other ref chars — sanitize to '-'.
-          SAFE_REF="${REF//[^a-zA-Z0-9._-]/-}"
-          TAGS="${IMAGE_LC}:${SAFE_REF}"
-          # Only advance :latest for real semver version tags, never a branch build.
-          if [[ "$REF" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
-            TAGS+=$'\n'"${IMAGE_LC}:latest"
-          fi
-          {
-            echo "tags<<__EOF__"
-            echo "$TAGS"
-            echo "__EOF__"
-          } >> "$GITHUB_OUTPUT"
-
-      # Build the amd64 leg locally first and boot it once. The public.pem
+      # Build and boot the image once before pushing. The public.pem
       # regression (fixed in #227) shipped because build success was the only
-      # gate — the image had never been started in CI. This catches
-      # boot-aborts (missing bundled files, startup secret checks, native
-      # module mismatches) before anything is pushed.
-      - name: Build amd64 image for smoke test
+      # gate: the image had never been started in CI. This catches boot aborts
+      # (missing bundled files, startup secret checks, native module
+      # mismatches) on BOTH architectures now that each has a native runner.
+      - name: Build image for smoke test
         uses: docker/build-push-action@v7
         with:
           context: .
           push: false
           load: true
-          platforms: linux/amd64
+          platforms: ${{ matrix.platform }}
           tags: smoke-test:local
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ env.PLATFORM_PAIR }}
+          cache-to: type=gha,mode=max,scope=${{ env.PLATFORM_PAIR }}
 
       - name: Smoke test — boot the container and hit /api/health/live
         run: |
@@ -113,13 +110,73 @@ jobs:
           docker rm -f smoke
           exit 1
 
-      - uses: docker/build-push-action@v7
+      # Pushed by digest only: the human-readable tags are written once, by the
+      # merge job, after BOTH architectures have passed their smoke test.
+      - name: Push image by digest
+        id: push
+        uses: docker/build-push-action@v7
         with:
           context: .
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.tags.outputs.tags }}
+          platforms: ${{ matrix.platform }}
+          outputs: type=image,name=${{ env.IMAGE_LC }},push-by-digest=true,name-canonical=true,push=true
           provenance: mode=max
           sbom: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ env.PLATFORM_PAIR }}
+
+      - name: Export digest
+        run: |
+          set -euo pipefail
+          mkdir -p "${{ runner.temp }}/digests"
+          digest="${{ steps.push.outputs.digest }}"
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: digests-${{ env.PLATFORM_PAIR }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      IMAGE_NAME: ghcr.io/${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create the multi-arch manifest and tag it
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          set -euo pipefail
+          IMAGE_LC="${IMAGE_NAME,,}"
+          count=$(ls -1 | wc -l)
+          if [ "$count" -ne 2 ]; then
+            echo "::error::expected 2 platform digests, found $count"
+            exit 1
+          fi
+          REF="${{ github.event.inputs.ref || github.ref_name }}"
+          # Docker tags forbid '/' and other ref chars — sanitize to '-'.
+          SAFE_REF="${REF//[^a-zA-Z0-9._-]/-}"
+          TAG_ARGS=(-t "${IMAGE_LC}:${SAFE_REF}")
+          # Only advance :latest for real semver version tags, never a branch build.
+          if [[ "$REF" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            TAG_ARGS+=(-t "${IMAGE_LC}:latest")
+          fi
+          SOURCES=()
+          for d in *; do SOURCES+=("${IMAGE_LC}@sha256:${d}"); done
+          docker buildx imagetools create "${TAG_ARGS[@]}" "${SOURCES[@]}"
+          docker buildx imagetools inspect "${IMAGE_LC}:${SAFE_REF}"

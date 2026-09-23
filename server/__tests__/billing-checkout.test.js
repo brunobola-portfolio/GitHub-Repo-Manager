@@ -34,7 +34,7 @@ const mockPricesRetrieve = vi.fn(async (id) => ({
 }))
 const mockStripe = {
     customers: { create: vi.fn(async () => ({ id: 'cus_new' })) },
-    checkout: { sessions: { create: mockSessionsCreate } },
+    checkout: { sessions: { create: mockSessionsCreate, list: vi.fn(async () => ({ data: [] })), expire: vi.fn(async () => ({})) } },
     billingPortal: { sessions: { create: vi.fn(async () => ({ url: 'https://portal.test' })) } },
     prices: { retrieve: (...a) => mockPricesRetrieve(...a) },
 }
@@ -322,5 +322,26 @@ describe('POST /billing/checkout — return URLs the client can act on', () => {
         const args = mockSessionsCreate.mock.calls.at(-1)[0]
         expect(args.cancel_url).toBe('http://localhost:5173/pricing?billing=cancel')
         expect(args.success_url).toBe('http://localhost:5173/settings?billing=success')
+    })
+})
+
+
+describe('POST /billing/checkout — one open session, tier on the subscription', () => {
+    it('expires earlier open sessions before creating a new one', async () => {
+        // Two open sessions for one customer meant paying both created two
+        // subscriptions, and the webhook upsert orphaned the first.
+        mockStripe.checkout.sessions.list.mockResolvedValueOnce({ data: [{ id: 'cs_old1' }, { id: 'cs_old2' }] })
+        const res = await request(makeApp()).post('/api/v1/billing/checkout').send({ tier: 'pro' })
+        expect(res.status).toBe(200)
+        expect(mockStripe.checkout.sessions.expire.mock.calls.map((c) => c[0])).toEqual(['cs_old1', 'cs_old2'])
+        const expireOrder = mockStripe.checkout.sessions.expire.mock.invocationCallOrder.at(-1)
+        expect(expireOrder).toBeLessThan(mockSessionsCreate.mock.invocationCallOrder.at(-1))
+    })
+
+    it('copies the tier metadata onto the subscription', async () => {
+        await request(makeApp()).post('/api/v1/billing/checkout').send({ tier: 'enterprise' })
+        expect(mockSessionsCreate.mock.calls.at(-1)[0].subscription_data).toEqual({
+            metadata: expect.objectContaining({ tier: 'enterprise', billingPeriod: 'monthly' }),
+        })
     })
 })

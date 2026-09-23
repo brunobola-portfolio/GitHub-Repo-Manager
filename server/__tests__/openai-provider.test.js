@@ -318,7 +318,7 @@ describe('OpenAIProvider.generateStream() — abort handling (I6)', () => {
         expect(final.value.partial).toBe(true)
     })
 
-    it('throws AIError(CANCELED) when mid-stream AbortError is caught', async () => {
+    it('ends with partial usage (not a CANCELED throw) when the client aborts mid-read', async () => {
         const provider = new OpenAIProvider({ apiKey: 'sk-test12345678', model: 'gpt-4o' })
         const controller = new AbortController()
 
@@ -355,13 +355,30 @@ describe('OpenAIProvider.generateStream() — abort handling (I6)', () => {
         const gen = provider.generateStream({ prompt: 'x', signal: controller.signal })
 
         // Collect chunks until error
-        await expect(async () => {
-            for await (const chunk of gen) {
-                chunks.push(chunk)
-            }
-        }).rejects.toMatchObject({ code: AI_ERROR_CODE.CANCELED })
+        // A disconnect is not free: the tokens measured before it were billed.
+        // Throwing CANCELED here discarded them, so the route recorded $0.
+        let final
+        while (true) {
+            const step = await gen.next()
+            if (step.done) { final = step.value; break }
+            chunks.push(step.value)
+        }
+        expect(final?.partial).toBe(true)
 
         // We should have received 'a' and 'b' before the abort
         expect(chunks).toContain('a')
+    })
+})
+
+describe('OpenAIProvider.generateStream() — system prompt', () => {
+    it('sends systemPrompt as the leading system message', async () => {
+        const provider = new OpenAIProvider({ apiKey: 'sk-test1234567890', model: 'gpt-4o-mini' })
+        const reader = { read: vi.fn(async () => ({ done: true, value: undefined })), releaseLock: vi.fn() }
+        provider._postStream = vi.fn().mockResolvedValue({ ok: true, status: 200, body: { getReader: () => reader } })
+        const iter = provider.generateStream({ prompt: 'q', systemPrompt: 'You review PR #7.' })
+        await iter.next()
+        const { messages } = provider._postStream.mock.calls[0][1]
+        expect(messages[0]).toEqual({ role: 'system', content: 'You review PR #7.' })
+        expect(messages[1]).toEqual({ role: 'user', content: 'q' })
     })
 })

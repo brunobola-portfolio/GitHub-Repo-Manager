@@ -44,6 +44,7 @@
 
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
+import { requireBrowserSession } from '../middleware/api-key-auth.js';
 import { auditLog } from '../lib/audit.js';
 import db from '../db.js';
 import logger from '../lib/logger.js';
@@ -327,7 +328,7 @@ router.get('/export', requireAuth, (req, res) => {
     }
 });
 
-router.delete('/', requireAuth, (req, res) => {
+router.delete('/', requireAuth, requireBrowserSession, (req, res) => {
     try {
         const userId = req.session.userId;
 

@@ -197,6 +197,22 @@ describe('GeminiProvider', () => {
             expect(result.text).toBe('{"key": "value"}')
         })
 
+        it('keeps code blocks inside a Markdown answer', async () => {
+            // Every ``` used to be deleted from every response, flattening the
+            // code blocks of a generated README.
+            const md = '# Title\n\nInstall:\n\n```bash\nnpm install\n```\n\nDone.'
+            mockGenerateContent.mockResolvedValue({ response: { text: () => md } })
+            const result = await provider.generate({ prompt: 'readme' })
+            expect(result.text).toBe(md)
+        })
+
+        it('keeps an answer that starts and ends with two separate code blocks', async () => {
+            const md = '```js\na()\n```\n\ntext\n\n```js\nb()\n```'
+            mockGenerateContent.mockResolvedValue({ response: { text: () => md } })
+            const result = await provider.generate({ prompt: 'x' })
+            expect(result.text).toBe(md)
+        })
+
         it('strips bare ``` fences', async () => {
             mockGenerateContent.mockResolvedValue({
                 response: { text: () => '```\nsome text\n```' }

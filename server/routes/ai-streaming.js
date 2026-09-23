@@ -42,7 +42,19 @@ export function initSSE(res, req) {
         }
     };
 
-    let cleanup = () => {};
+    // The response itself is the reliable disconnect signal. Without `req`
+    // this used to rely on res.write throwing, which Node never does on a
+    // destroyed socket (it returns false and reports through the callback), so
+    // the provider kept generating — and billing — for a client that was gone.
+    // `req` 'close' is also unreliable once the request body has been read.
+    const onResClose = () => {
+        if (!closed && !res.writableFinished) {
+            closed = true;
+            controller.abort();
+        }
+    };
+    res.on('close', onResClose);
+    let cleanup = () => { res.removeListener('close', onResClose); };
     if (req) {
         const onClose = () => {
             if (!closed) {
@@ -53,6 +65,7 @@ export function initSSE(res, req) {
         req.on('close', onClose);
         req.on('aborted', onClose);
         cleanup = () => {
+            res.removeListener('close', onResClose);
             req.removeListener('close', onClose);
             req.removeListener('aborted', onClose);
         };

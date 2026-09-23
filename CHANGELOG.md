@@ -7,6 +7,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — AI
+
+- **PR Chat answers about the PR again.** Its system prompt (PR title, body,
+  file list, "never invent a path") was passed to the streaming call and
+  dropped by every provider, so the model saw only the chat transcript.
+  Anthropic, OpenAI-compatible and Gemini streams now take a system prompt.
+- **Bring-your-own-key users are no longer capped by the operator's budget**
+  on Deep Review, PR Chat, PR Commands, Prompt Studio tests, repo indexing
+  and semantic search. Those routes resolved their own provider after the
+  cap check, which then assumed the operator was paying.
+- Spend is recorded for answers that were paid for but unusable (a structured
+  reply that failed to parse, or `/ai/chat` returning no JSON), and for
+  streams the client abandoned: the tokens measured before a disconnect are
+  kept instead of discarded.
+- Streaming routes stop generating when the client disconnects. Node never
+  throws on a write to a closed socket, so the provider kept generating (and
+  billing) for a reader that was gone.
+- A spend reservation is handed back on every exit of a streaming route, and
+  after each semantic search; before, it held the user's headroom for two
+  minutes, so a few searches near the cap blocked every AI feature.
+- A revoked provider key on Deep Review, PR Commands or Prompt Studio no
+  longer reads as the user's own session expiring; PR Chat never shows the
+  provider's raw error text.
+- Generated Markdown (README enhance and every other free-text answer) keeps
+  its code blocks. Providers removed every code fence from every response;
+  only a single fence wrapping the whole answer is removed now.
+- Deep Review's overflow note says the extra findings were omitted, which is
+  what happens; it claimed they were folded into the summary. Deep Review
+  and PR Commands tell the model the PR content is material to review, not
+  instructions, and the Work Board's drafted comment redacts secrets in the
+  diff before it leaves for the provider.
+
+### Security
+
+- An API key could no longer be used to create or revoke API keys, or to
+  erase the account. A `write` key used to be able to mint a non-expiring
+  `admin` key that outlived its own revocation. Both routes now answer only
+  to the signed-in app.
+- A random `grm_live_…` bearer token skipped the per-IP rate limit and got a
+  fresh bucket on every request. Only a live key counts as an identity now.
+- API keys are gated and rate-budgeted at their owner's tier; they were all
+  treated as Free, so an Enterprise key got 403 on Enterprise routes.
+- `GET /api/v1/license` shows the licensee's e-mail, organisation and seat
+  usage only to a signed-in user; tier and validity stay public.
+
+### Fixed — billing
+
+- A full refund now suspends access on accounts whose Stripe API default is
+  2025-03-31.basil or later, where a Charge no longer carries `invoice`: the
+  handler re-fetches the charge through the version-pinned client.
+- A delayed payment (SEPA, ACH, Boleto) can no longer lose its licence when
+  Stripe delivers `subscription.updated` before `invoice.paid`.
+- A renewal paid, or a renewal failed, while a refund or dispute hold is in
+  place no longer lifts the hold, and no longer e-mails a "Free plan" key.
+- Starting a new checkout expires the customer's earlier open sessions, so
+  paying twice cannot create two subscriptions. The tier is copied onto the
+  subscription's metadata.
+
+### Fixed
+
+- **Docker images publish again.** The multi-arch build emulated arm64 under
+  QEMU, and `npm ci` there hung until GitHub killed the job at six hours: no
+  image reached GHCR for 4.25.11, 4.25.12 or 4.25.14. Each architecture now
+  builds and boots on its own native runner, pushes by digest, and a final
+  job joins them into the tagged manifest; a hang fails in 40 minutes.
+- `/repos`, `/work`, `/teams` and `/audit` answer 200 like the views they
+  open, instead of rendering the app under a 404 status.
+- Without `FRONTEND_URL`, the Host header was written unescaped into the
+  served page's canonical and Open Graph attributes. Only a valid host shape
+  is accepted now.
+- The migration report's Markdown table escapes backslashes and newlines, so
+  a ref containing `\|` or a line break no longer splits a row.
+- Zip extraction opens each file with `O_NOFOLLOW`, closing the window
+  between the symlink check and the write.
+
 ## [4.25.14] - 2026-09-22
 
 ### Fixed

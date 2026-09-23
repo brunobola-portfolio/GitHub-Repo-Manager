@@ -239,14 +239,26 @@ describe('POST /api/ai/pr-commands/:owner/:repo/:pr/:command', () => {
         expect(createProviderForUserMock).not.toHaveBeenCalled();
     });
 
-    it('returns 429 AI_SPEND_CAP_REACHED when over the monthly spend cap (provider not called)', async () => {
+    it('returns 429 AI_SPEND_CAP_REACHED when over the monthly spend cap (provider resolved, never called)', async () => {
         process.env.AI_SPEND_CAP_CENTS = '100';
         testDb.prepare('INSERT INTO ai_spend (user_id, month, cents) VALUES (?, ?, ?)').run(USER_ID, monthKey(), 150);
         const app = makeApp();
         const res = await request(app).post('/api/ai/pr-commands/acme/api/42/describe').send({});
         expect(res.status).toBe(429);
         expect(res.body.code).toBe('AI_SPEND_CAP_REACHED');
-        expect(createProviderForUserMock).not.toHaveBeenCalled();
+        // The provider is resolved first — the cap applies only to the operator's
+        // key, so the route must know whose key it is — but nothing is generated.
+        for (const fn of Object.values(mockProvider)) if (typeof fn === 'function' && fn.mock) expect(fn).not.toHaveBeenCalled();
+    });
+
+    it("does not apply the operator spend cap to a user's own key (BYOK)", async () => {
+        process.env.AI_SPEND_CAP_CENTS = '100';
+        testDb.prepare('INSERT INTO ai_spend (user_id, month, cents) VALUES (?, ?, ?)').run(USER_ID, monthKey(), 150);
+        createProviderForUserMock.mockResolvedValueOnce({ ...mockProvider, keySource: 'user' });
+        const app = makeApp();
+        const res = await request(app).post('/api/ai/pr-commands/acme/api/42/describe').send({});
+        expect(res.status).not.toBe(429);
+        expect(res.body?.code).not.toBe('AI_SPEND_CAP_REACHED');
     });
 
     it('Free tier can generate a /describe result (PR commands moved off the Pro paywall)', async () => {

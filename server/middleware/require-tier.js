@@ -11,6 +11,7 @@ import { config } from '../config.js'
 import { getStoredLicense } from '../lib/license-store.js'
 import logger from '../lib/logger.js'
 import { tierRequiredPayload } from '../lib/usage-meter.js'
+import { resolveBearerKeyOwner } from './api-key-auth.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -180,7 +181,10 @@ export function requireTier(minTier, feature = null) {
 }
 
 export function attachTier(req, res, next) {
-  req.userTier = getUserTier(req.session?.userId || req.tenantId)
+  // A bearer key is resolved here too: the rate limiter reads req.userTier
+  // before the route-level apiKeyAuth runs, and a paid key must not be
+  // budgeted (or gated) as Free.
+  req.userTier = getUserTier(req.session?.userId || req.tenantId || resolveBearerKeyOwner(req))
   next()
 }
 

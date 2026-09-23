@@ -44,12 +44,12 @@ import { AnthropicProvider } from '../../lib/providers/anthropic.js';
 
 function makeRes(onWrite) {
     const writes = [];
-    return {
+    return Object.assign(new EventEmitter(), {
         writes,
         writeHead: vi.fn(),
         write: vi.fn((data) => { writes.push(data); onWrite?.(writes.length); return true; }),
         end: vi.fn(),
-    };
+    });
 }
 
 function makeReq() {

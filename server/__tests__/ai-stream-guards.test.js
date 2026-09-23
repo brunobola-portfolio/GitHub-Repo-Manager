@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { EventEmitter } from 'events';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Keep shared.js's import chain light + deterministic.
@@ -11,21 +12,24 @@ const auditLog = vi.hoisted(() => vi.fn());
 vi.mock('../lib/audit.js', () => ({ auditLog }));
 
 const recordAISpend = vi.hoisted(() => vi.fn());
+const releaseAISpendReservation = vi.hoisted(() => vi.fn());
+const checkAISpendCap = vi.hoisted(() => vi.fn());
 const spend = vi.hoisted(() => ({ result: { allowed: true, capCents: 0, spentCents: 0 } }));
 vi.mock('../lib/ai-spend-cap.js', () => ({
-    checkAISpendCap: () => spend.result,
+    checkAISpendCap: (...a) => { checkAISpendCap(...a); return spend.result; },
     recordAISpend,
+    releaseAISpendReservation,
 }));
 
 import { denyIfSpendCapReached, recordStreamCompletion } from '../routes/ai/shared.js';
 
 function fakeRes() {
-    return {
+    return Object.assign(new EventEmitter(), {
         statusCode: null,
         body: null,
         status(code) { this.statusCode = code; return this; },
         json(payload) { this.body = payload; return this; },
-    };
+    });
 }
 
 beforeEach(() => {
@@ -68,7 +72,7 @@ describe('recordStreamCompletion', () => {
             extraMeta: { content_type: 'commit', streamed: true },
         });
 
-        expect(recordAISpend).toHaveBeenCalledWith(7, 0.003);
+        expect(recordAISpend).toHaveBeenCalledWith(7, 0.003, { releaseReservation: true });
         expect(auditLog).toHaveBeenCalledTimes(1);
         const [, action, resource, , meta] = auditLog.mock.calls[0];
         expect(action).toBe('ai.chat_refine');
@@ -105,9 +109,55 @@ describe('recordStreamCompletion', () => {
             usage: null,
             costUSD: null,
         });
-        expect(recordAISpend).toHaveBeenCalledWith(9, null);
+        expect(recordAISpend).toHaveBeenCalledWith(9, null, { releaseReservation: true });
         const [, , , , meta] = auditLog.mock.calls[0];
         expect(meta).toMatchObject({ feature: 'review_summary', model: 'claude-sonnet-4-6' });
         expect(meta).not.toHaveProperty('inputTokens');
+    });
+});
+
+
+describe('stream spend reservation — BYOK and every exit', () => {
+    beforeEach(() => {
+        recordAISpend.mockClear();
+        releaseAISpendReservation.mockClear();
+        checkAISpendCap.mockClear();
+        spend.result = { allowed: true, capCents: 100, spentCents: 0 };
+    });
+
+    it("does not bill the operator's cap for a user's own key", () => {
+        const req = { session: { userId: 3 } };
+        denyIfSpendCapReached(req, fakeRes(), { keySource: 'user' });
+        expect(checkAISpendCap).toHaveBeenCalledWith(3, { billsOperator: false });
+    });
+
+    it('releases the reservation when the response closes without recording spend', () => {
+        const req = { session: { userId: 4 } };
+        const res = fakeRes();
+        denyIfSpendCapReached(req, res, { keySource: 'server' });
+        res.emit('close');
+        expect(releaseAISpendReservation).toHaveBeenCalledWith(4);
+    });
+
+    it('records once and does not release again when the stream completed first', () => {
+        const req = { session: { userId: 5 } };
+        const res = fakeRes();
+        const provider = { keySource: 'server' };
+        denyIfSpendCapReached(req, res, provider);
+        recordStreamCompletion(req, { feature: 'pr_chat', costUSD: 0.01, provider });
+        res.emit('close');
+        expect(recordAISpend).toHaveBeenCalledWith(5, 0.01, { releaseReservation: true });
+        expect(releaseAISpendReservation).not.toHaveBeenCalled();
+    });
+
+    it('records without a second release when the response closed before the stream finished', () => {
+        const req = { session: { userId: 6 } };
+        const res = fakeRes();
+        const provider = { keySource: 'server' };
+        denyIfSpendCapReached(req, res, provider);
+        res.emit('close');
+        recordStreamCompletion(req, { feature: 'pr_chat', costUSD: 0.02, provider, partial: true });
+        expect(releaseAISpendReservation).toHaveBeenCalledOnce();
+        expect(recordAISpend).toHaveBeenCalledWith(6, 0.02, { releaseReservation: false });
     });
 });

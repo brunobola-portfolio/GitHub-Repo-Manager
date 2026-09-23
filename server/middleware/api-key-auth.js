@@ -1,6 +1,7 @@
 import { createHmac, randomBytes, randomUUID } from 'crypto';
 import db from '../db.js';
 import logger from '../lib/logger.js';
+import { sendError } from '../lib/response-shapes.js';
 
 /**
  * HMAC-SHA-256 with a server-side secret for defense-in-depth.
@@ -114,6 +115,47 @@ function isAiRoute(req) {
 // Note: API key authentication does not set req.session.accessToken.
 // GitHub proxy endpoints (repos, orgs, etc.) require OAuth session auth.
 // API keys are only valid for local-DB endpoints (audit, usage, teams, etc.)
+/**
+ * Resolve the owner of a `Bearer grm_live_*` key once per request, before any
+ * route runs. The tier and rate-limit middleware execute ahead of the
+ * route-level apiKeyAuth, so they used to see a bearer request as anonymous:
+ * every key was billed at the Free tier, and a RANDOM token was enough to skip
+ * the per-IP ceiling and get a fresh bucket per request. Returns the user id
+ * for a live key, or null for no/invalid/revoked/expired key. Memoised on req.
+ */
+export function resolveBearerKeyOwner(req) {
+    if (req._bearerKeyOwner !== undefined) return req._bearerKeyOwner;
+    let owner = null;
+    const authHeader = req.headers?.authorization;
+    if (typeof authHeader === 'string' && authHeader.startsWith('Bearer grm_live_')) {
+        try {
+            const row = db.prepare(
+                'SELECT user_id, expires_at, revoked_at FROM api_keys WHERE key_hash = ?'
+            ).get(hashKey(authHeader.slice(7)));
+            if (row && !row.revoked_at && !(row.expires_at && new Date(row.expires_at) < new Date())) {
+                owner = row.user_id;
+            }
+        } catch (err) {
+            logger.warn({ err }, 'API key owner lookup failed; treating the request as anonymous');
+        }
+    }
+    req._bearerKeyOwner = owner;
+    return owner;
+}
+
+/**
+ * Routes that manage credentials or erase the account answer only to the
+ * signed-in browser session. A `write` key could otherwise mint an `admin`
+ * key that outlives its own revocation, or wipe the account through an
+ * endpoint that then fails on a session object that is not a real session.
+ */
+export function requireBrowserSession(req, res, next) {
+    if (req.apiKeyId) {
+        return sendError(res, 403, 'This action is only available from the signed-in app, not with an API key.', { code: 'SESSION_REQUIRED' });
+    }
+    next();
+}
+
 export function apiKeyAuth(req, res, next) {
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer grm_live_')) return next();
@@ -168,6 +210,11 @@ export function apiKeyAuth(req, res, next) {
     req.session = { userId: row.user_id };
     req.tenantId = row.user_id;
     req.apiKeyId = row.id;
+    // If attachTier did not already resolve this key's owner (a mount that
+    // skips it, or a direct route test), its answer is about an anonymous
+    // request: drop it so requireTier resolves the key owner's tier.
+    if (req._bearerKeyOwner !== row.user_id) delete req.userTier;
+    req._bearerKeyOwner = row.user_id;
     try {
         req.scopes = JSON.parse(row.scopes);
     } catch {

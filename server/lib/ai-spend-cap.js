@@ -133,8 +133,11 @@ export function resetAISpendReservationsForTests() {
  *  Accumulates in micro-cents. Rounding each call to whole cents first meant
  *  every sub-half-cent call recorded 0, so thousands of flash-model calls
  *  summed to a recorded spend of zero and the cap never fired. */
-export function recordAISpend(userId, costUSD) {
-    releaseAISpendReservation(userId);
+export function recordAISpend(userId, costUSD, { releaseReservation = true } = {}) {
+    // releaseReservation=false when the caller's reservation was already handed
+    // back (a streaming route whose response closed first — see
+    // settleSpendReservationOnClose in routes/ai/shared.js).
+    if (releaseReservation) releaseAISpendReservation(userId);
     const micro = usdToMicroCents(costUSD);
     if (micro <= 0) return;
     db.prepare(`

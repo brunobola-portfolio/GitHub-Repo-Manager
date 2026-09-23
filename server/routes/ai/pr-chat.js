@@ -24,7 +24,7 @@ import { reserveAIQuota } from '../ai-quota.js';
 import { requireAuth, errorResponse } from '../../middleware/auth.js';
 import { githubApi } from '../../lib/github-api.js';
 import { readThrough } from '../../lib/gh-cache.js';
-import { createProviderForUser } from '../../lib/ai-provider.js';
+import { createProviderForUser, AI_ERROR_CODE } from '../../lib/ai-provider.js';
 import { quotaExceededResponse } from '../../lib/usage-meter.js';
 import { initSSE, streamToSSEWithUsage } from '../ai-streaming.js';
 import { denyIfSpendCapReached, recordStreamCompletion } from './shared.js';
@@ -165,7 +165,6 @@ router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res
     if (!quota.allowed) {
         return res.status(429).json(quotaExceededResponse(quota));
     }
-    if (denyIfSpendCapReached(req, res)) return;
 
     let provider;
     try {
@@ -182,6 +181,8 @@ router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res
             'NO_AI_PROVIDER',
         );
     }
+    // After provider resolution: the cap applies only to the operator's key.
+    if (denyIfSpendCapReached(req, res, provider)) return;
 
     // Fetch PR metadata + files (SWR via gh-cache).
     let prData;
@@ -275,7 +276,14 @@ router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res
     } catch (err) {
         logger.warn({ err: err?.message, code: err?.code, owner, repo, pr }, 'PR chat stream failed');
         if (!sse.isAborted) {
-            sse.sendError(err?.message || 'Chat stream failed.');
+            // Never the provider's raw message: it can carry upstream detail
+            // and says nothing the user can act on.
+            const message = err?.code === AI_ERROR_CODE.AUTH
+                ? 'Your AI provider rejected the key. Check it in Settings → AI Configuration.'
+                : err?.code === AI_ERROR_CODE.RATE_LIMITED
+                    ? 'Your AI provider is rate-limiting requests. Try again in a moment.'
+                    : 'The chat reply failed. Please try again.';
+            sse.sendError(message);
         }
         return;
     }
@@ -285,6 +293,7 @@ router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res
     // provider reported none — recordAISpend no-ops on null. A client that
     // disconnected mid-stream still bills for what it consumed, flagged partial.
     recordStreamCompletion(req, {
+        provider,
         feature: 'pr_chat',
         model: provider?._modelName ?? null,
         usage: streamUsage,

@@ -17,6 +17,13 @@ import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('../lib/logger.js', () => ({ default: { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() } }));
 
+const KEY_FOR_MOCK = 'grm_live_' + 'a'.repeat(32);
+// Only KEY is a live key. A forged grm_live_ token used to escape this net too.
+vi.mock('./../middleware/api-key-auth.js', async (io) => ({
+    ...(await io()),
+    resolveBearerKeyOwner: (req) => (req.headers?.authorization === `Bearer ${KEY_FOR_MOCK}` ? 7 : null),
+}));
+
 const { globalLimiter } = await import('../middleware/tenant-rate-limit.js');
 
 const KEY = 'grm_live_' + 'a'.repeat(32);
@@ -65,6 +72,11 @@ describe('the pre-session flood net', () => {
     it('lets an API key through to the per-tier limiter', async () => {
         const passed = await drive({ authorization: `Bearer ${KEY}` }, 260, '203.0.113.3');
         expect(passed).toBe(260);
+    });
+
+    it('keeps a forged grm_live_ token under the anonymous IP budget', async () => {
+        const passed = await drive({ authorization: 'Bearer grm_live_forged' }, 260, '203.0.113.6');
+        expect(passed).toBe(200);
     });
 
     it('does not treat an unrelated cookie as an identity claim', async () => {

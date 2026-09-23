@@ -36,9 +36,11 @@ vi.mock('../lib/usage-meter.js', () => ({
 
 const mockCheckAISpendCap = vi.fn()
 const mockRecordAISpend = vi.fn()
+const mockReleaseAISpendReservation = vi.fn()
 vi.mock('../lib/ai-spend-cap.js', () => ({
     checkAISpendCap: (...args) => mockCheckAISpendCap(...args),
     recordAISpend: (...args) => mockRecordAISpend(...args),
+    releaseAISpendReservation: (...args) => mockReleaseAISpendReservation(...args),
 }))
 
 vi.mock('../middleware/auth.js', () => ({
@@ -142,7 +144,7 @@ describe('POST /api/ai/index — monthly spend cap', () => {
 
         expect(res.status).toBe(200)
         expect(mockGuardedIncrementAIUsage).toHaveBeenCalledWith(42, 'ai_insights')
-        expect(mockCheckAISpendCap).toHaveBeenCalledWith(42)
+        expect(mockCheckAISpendCap).toHaveBeenCalledWith(42, { billsOperator: true })
         expect(mockRecordAISpend).toHaveBeenCalledWith(42, 0.02)
         // Reservation succeeded and the call succeeded — no release.
         expect(mockReleaseGuardedAIUsage).not.toHaveBeenCalled()
