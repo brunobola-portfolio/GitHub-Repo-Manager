@@ -241,7 +241,7 @@ describe('AnthropicProvider.generateStream() — abort handling (I6)', () => {
         expect(final.value).toEqual({ usage: null, costUSD: null, partial: false })
     })
 
-    it('throws AIError(CANCELED) when mid-stream AbortError is caught', async () => {
+    it('ends with partial usage (not a CANCELED throw) when the client aborts mid-read', async () => {
         const provider = new AnthropicProvider({ apiKey: 'sk-ant-test1234', model: 'claude-3-sonnet' })
         const controller = new AbortController()
 
@@ -279,12 +279,29 @@ describe('AnthropicProvider.generateStream() — abort handling (I6)', () => {
         const chunks = []
         const gen = provider.generateStream({ prompt: 'x', signal: controller.signal })
 
-        await expect(async () => {
-            for await (const chunk of gen) {
-                chunks.push(chunk)
-            }
-        }).rejects.toMatchObject({ code: AI_ERROR_CODE.CANCELED })
+        // A disconnect is not free: the tokens measured before it were billed.
+        // Throwing CANCELED here discarded them, so the route recorded $0.
+        let final
+        while (true) {
+            const step = await gen.next()
+            if (step.done) { final = step.value; break }
+            chunks.push(step.value)
+        }
+        expect(final?.partial).toBe(true)
 
         expect(chunks).toContain('a')
+    })
+})
+
+// PR Chat grounds the model through the system prompt (PR title, body, files,
+// "never invent a path"). generateStream used to drop the argument entirely.
+describe('AnthropicProvider.generateStream() — system prompt', () => {
+    it('sends systemPrompt as the request system field', async () => {
+        const provider = new AnthropicProvider({ apiKey: 'sk-ant-test1234', model: 'claude-3-sonnet' })
+        const reader = { read: vi.fn(async () => ({ done: true, value: undefined })), releaseLock: vi.fn() }
+        provider._postStream = vi.fn().mockResolvedValue({ ok: true, status: 200, body: { getReader: () => reader } })
+        const iter = provider.generateStream({ prompt: 'q', systemPrompt: 'You review PR #7.' })
+        await iter.next()
+        expect(provider._postStream.mock.calls[0][1].system).toBe('You review PR #7.')
     })
 })

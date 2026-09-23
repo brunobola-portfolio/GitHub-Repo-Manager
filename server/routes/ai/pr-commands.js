@@ -23,9 +23,9 @@ import { redactValues } from '../../lib/secret-redactor.js';
 import { githubApi } from '../../lib/github-api.js';
 import { readThrough } from '../../lib/gh-cache.js';
 import { executeViaOutbox } from '../../lib/outbox-helper.js';
-import { createProviderForUser } from '../../lib/ai-provider.js';
+import { createProviderForUser, AIError } from '../../lib/ai-provider.js';
 import { quotaExceededResponse } from '../../lib/usage-meter.js';
-import { denyIfSpendCapReached, recordStreamCompletion } from './shared.js';
+import { denyIfSpendCapReached, recordStreamCompletion, handleAIError } from './shared.js';
 import { runPRCommand, isSupportedCommand } from '../../lib/ai-features/pr-commands.js';
 import {
     saveResult,
@@ -179,7 +179,6 @@ router.post('/:owner/:repo/:pr/:command', requireAuth, generateRateLimit, async 
     if (!quota.allowed) {
         return res.status(429).json(quotaExceededResponse(quota));
     }
-    if (denyIfSpendCapReached(req, res)) return;
 
     let provider;
     try {
@@ -197,6 +196,8 @@ router.post('/:owner/:repo/:pr/:command', requireAuth, generateRateLimit, async 
             'NO_AI_PROVIDER',
         );
     }
+    // After provider resolution: the cap applies only to the operator's key.
+    if (denyIfSpendCapReached(req, res, provider)) return;
 
     let prData;
     let files;
@@ -241,6 +242,10 @@ router.post('/:owner/:repo/:pr/:command', requireAuth, generateRateLimit, async 
         });
     } catch (err) {
         logger.warn({ err: err?.message, code: err?.code, owner, repo, pr, command }, 'PR command engine failed');
+        // Provider failures (a revoked BYOK key answers 401) go through the
+        // shared mapper: forwarding the raw 401 made the app treat it as the
+        // user's own session expiring and send them to sign in again.
+        if (err instanceof AIError) return handleAIError(res, err, 'AI command generation failed.');
         const status = err?.status || 500;
         const code = err?.code || 'PR_COMMAND_FAILED';
         return errorResponse(res, status, err?.message || 'AI command generation failed.', code);
@@ -264,6 +269,7 @@ router.post('/:owner/:repo/:pr/:command', requireAuth, generateRateLimit, async 
 
     // Meter the query + record spend + write a PII-safe cost audit.
     recordStreamCompletion(req, {
+        provider,
         feature: 'pr_command',
         action: 'ai.pr_command',
         model: result.modelUsed,

@@ -42,7 +42,7 @@ import { buildSuggestPrompt, buildReadmePrompt } from '../../lib/ai-features/gro
 import { detectPatterns } from '../../lib/ai-features/quality-metrics.js';
 import { buildContext } from '../../lib/repo-context-builder.js';
 import { resolveMaxOutputTokens } from '../../lib/ai-output-budget.js';
-import { checkAISpendCap, recordAISpend } from '../../lib/ai-spend-cap.js';
+import { checkAISpendCap, recordAISpend, releaseAISpendReservation } from '../../lib/ai-spend-cap.js';
 import { isServerKeyProvider } from '../../lib/ai-provider.js';
 import { buildAIAuditMeta } from '../../lib/ai-audit.js';
 import { getKeyHealth, probeAndCache } from '../../lib/ai-health-probe.js';
@@ -272,6 +272,11 @@ router.post('/ai/chat', requireAuth, requireScope('ai'), validateBody(aiChatSche
         const parsed = parsedFromProvider || safeJsonParse(text);
         if (!parsed || typeof parsed.reply !== 'string') {
             req.log.warn({ text }, 'AI chat returned non-JSON or missing reply');
+            // The answer was generated and paid for even though it is
+            // unusable. Returning before this let a caller ask for "3000 words,
+            // no JSON" repeatedly without the cap or the query count moving.
+            incrementUsage(req.session.userId, 'ai_queries');
+            if (billsOperator) recordAISpend(req.session.userId, costUSD);
             return res.status(502).json({
                 error: 'AI returned an invalid response. Please retry.',
                 code: 'AI_PARSE_ERROR',
@@ -295,6 +300,12 @@ router.post('/ai/chat', requireAuth, requireScope('ai'), validateBody(aiChatSche
         });
     } catch (error) {
         req.log.error({ err: error }, 'AI chat failed');
+        // An unparseable structured answer (INVALID_RESPONSE) carries its
+        // measured cost; any other failure hands the reservation back.
+        if (isServerKeyProvider(req.aiProvider)) {
+            if (typeof error?.costUSD === 'number') recordAISpend(req.session.userId, error.costUSD);
+            else releaseAISpendReservation(req.session.userId);
+        }
         handleAIError(res, error);
     }
 });

@@ -235,11 +235,28 @@ describe('POST /api/ai/pr-chat/:owner/:repo/:pr', () => {
         expect(res.status).toBe(429);
         expect(res.body.code).toBe('AI_SPEND_CAP_REACHED');
         // The provider is never invoked and no turn is persisted.
-        expect(createProviderForUserMock).not.toHaveBeenCalled();
+        // The provider is resolved first — the cap applies only to the operator's
+        // key, so the route must know whose key it is — but nothing is generated.
+        for (const fn of Object.values(mockProvider)) if (typeof fn === 'function' && fn.mock) expect(fn).not.toHaveBeenCalled();
         const stored = testDb.prepare(
             'SELECT COUNT(*) AS n FROM ai_pr_chat_messages WHERE user_id = ?'
         ).get(USER_ID);
         expect(stored.n).toBe(0);
+    });
+
+    it("does not apply the operator spend cap to a user's own key (BYOK)", async () => {
+        process.env.AI_SPEND_CAP_CENTS = '100';
+        const month = new Date().toISOString().slice(0, 7);
+        testDb.prepare('INSERT INTO ai_spend (user_id, month, cents) VALUES (?, ?, ?)').run(USER_ID, month, 150);
+
+        createProviderForUserMock.mockResolvedValueOnce({ ...mockProvider, keySource: 'user' });
+        const app = makeApp();
+        const res = await request(app)
+            .post('/api/ai/pr-chat/acme/api/42')
+            .send({ message: 'What does this PR do?' });
+
+        expect(res.status).not.toBe(429);
+        expect(res.body?.code).not.toBe('AI_SPEND_CAP_REACHED');
     });
 
     it('meters the AI query (increments ai_queries) after a successful turn', async () => {

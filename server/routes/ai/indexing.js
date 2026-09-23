@@ -25,7 +25,8 @@ import {
     guardedIncrementAIUsage,
     releaseGuardedAIUsage,
 } from '../../lib/usage-meter.js';
-import { checkAISpendCap, recordAISpend } from '../../lib/ai-spend-cap.js';
+import { checkAISpendCap, recordAISpend, releaseAISpendReservation } from '../../lib/ai-spend-cap.js';
+import { isServerKeyProvider } from '../../lib/ai-provider.js';
 import { auditLog } from '../../lib/audit.js';
 import { requireAI, handleAIError } from './shared.js';
 
@@ -63,7 +64,10 @@ router.post('/ai/index', requireAuth, requireScope('ai'), validateBody(aiIndexSc
     // Monthly spend cap — this endpoint calls the provider twice (analyze +
     // embed) with no per-call count limit for Pro/Enterprise (their count
     // quotas resolve to Infinity), so the spend cap is the only cost guard.
-    const spend = checkAISpendCap(userId);
+    // requireAI resolved req.aiProvider; a user's own key costs the operator
+    // nothing, so the operator's cap must not apply to it (BYOK is permanent).
+    const billsOperator = isServerKeyProvider(req.aiProvider);
+    const spend = checkAISpendCap(userId, { billsOperator });
     if (!spend.allowed) {
         releaseGuardedAIUsage(userId, 'ai_insights');
         return res.status(429).json(spendCapDeniedResponse(spend));
@@ -146,7 +150,7 @@ router.post('/ai/index', requireAuth, requireScope('ai'), validateBody(aiIndexSc
         // embedText() has no cost/usage data to surface (Gemini's embed API
         // reports no usageMetadata) — analysis._costUSD (from the analyzeRepo
         // completion call) is the only spend this call can account for.
-        recordAISpend(userId, analysis._costUSD);
+        if (billsOperator) recordAISpend(userId, analysis._costUSD);
         // Usage was already reserved atomically above — no separate
         // incrementAIUsage() call (that would double-count this request).
         auditLog(req, 'ai.index', 'ai', repo.id, { repoName: repo.full_name });
@@ -156,6 +160,9 @@ router.post('/ai/index', requireAuth, requireScope('ai'), validateBody(aiIndexSc
         // The reservation succeeded but the guarded work failed — give the
         // unit back so a failed call doesn't permanently burn the user's quota.
         releaseGuardedAIUsage(userId, 'ai_insights');
+        // A failed call recorded no spend; hand the in-flight reservation back
+        // instead of letting it hold the user's headroom for two minutes.
+        if (billsOperator) releaseAISpendReservation(userId);
         req.log.error({ err: error }, 'AI indexing failed');
         handleAIError(res, error, 'Indexing failed');
     }
@@ -194,11 +201,20 @@ router.get('/ai/search', requireAuth, requireScope('ai'), requireAI, async (req,
         // Monthly spend cap — semanticSearch() calls embedText() under the
         // hood, an uncapped provider call for Pro/Enterprise. (embed() has no
         // cost/usage data to record post-call — the pre-check is the guard.)
-        const spend = checkAISpendCap(userId);
+        const billsOperator = isServerKeyProvider(req.aiProvider);
+        const spend = checkAISpendCap(userId, { billsOperator });
         if (!spend.allowed) return res.status(429).json(spendCapDeniedResponse(spend));
 
-        // Get generic results (repo_ids and scores) scoped by user
-        const results = await aiService.semanticSearch(q, 10, userId, req.aiProvider);
+        // Get generic results (repo_ids and scores) scoped by user. The embed
+        // call reports no cost, so nothing is recorded — but the reservation
+        // checkAISpendCap took must be handed back, or five searches in a row
+        // left a user near the cap locked out of every AI feature.
+        let results;
+        try {
+            results = await aiService.semanticSearch(q, 10, userId, req.aiProvider);
+        } finally {
+            if (billsOperator) releaseAISpendReservation(userId);
+        }
 
         if (results.length === 0) return res.json([]);
 
@@ -347,6 +363,7 @@ router.post('/ai/batch-index', requireAuth, requireScope('ai'), validateBody(aiB
     // Collect analyzed data for batch insert
     const analyzedRepos = [];
 
+    const batchBillsOperator = isServerKeyProvider(req.aiProvider);
     for (let i = 0; i < limit; i++) {
         const repo = repos[i];
 
@@ -356,7 +373,7 @@ router.post('/ai/batch-index', requireAuth, requireScope('ai'), validateBody(aiB
         // partway through a batch that started under cap. Stop processing
         // further repos this call; already-analyzed repos are still saved
         // below and count toward `processed`.
-        const spend = checkAISpendCap(userId);
+        const spend = checkAISpendCap(userId, { billsOperator: batchBillsOperator });
         if (!spend.allowed) {
             req.log.warn({ repo: repo.full_name }, 'Batch index stopped: monthly AI spend cap reached');
             break;
@@ -386,13 +403,14 @@ router.post('/ai/batch-index', requireAuth, requireScope('ai'), validateBody(aiB
 
             // Record this item's spend (embedText has no cost data to add —
             // see the /ai/index comment above).
-            recordAISpend(userId, analysis._costUSD);
+            if (batchBillsOperator) recordAISpend(userId, analysis._costUSD);
 
             // Store for batch insert
             analyzedRepos.push({ repo, analysis, embedding });
             results.push({ repo: repo.full_name, success: true, health_score: analysis.health_score });
 
         } catch (error) {
+            if (batchBillsOperator) releaseAISpendReservation(userId);
             req.log.error({ err: error, repo: repo.full_name }, 'Batch index failed for repo');
             results.push({ repo: repo.full_name, success: false, error: safeError(error, 'Analysis failed') });
         }

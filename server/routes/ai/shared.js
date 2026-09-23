@@ -232,9 +232,14 @@ export async function guardedGenerate(req, opts, { feature } = {}) {
     try {
         result = await providerGenerateWithRetry(req.aiProvider, { ...opts, generationConfig });
     } catch (err) {
-        // The check above reserved a cent against the cap; a provider that never
-        // answered cost nothing, so hand it back instead of waiting for expiry.
-        if (billsOperator) releaseAISpendReservation(userId);
+        // A provider that answered with unparseable output was still paid
+        // (the error carries the measured cost): record it, or a caller could
+        // repeat "no JSON please" requests without the cap ever moving. A call
+        // that never answered cost nothing: hand the reservation back.
+        if (billsOperator) {
+            if (typeof err?.costUSD === 'number') recordAISpend(userId, err.costUSD);
+            else releaseAISpendReservation(userId);
+        }
         throw err;
     }
 
@@ -262,11 +267,35 @@ export async function guardedGenerate(req, opts, { feature } = {}) {
  * @returns {boolean} true if the request was denied (a 429 was sent); the
  *                    caller must `return` without streaming.
  */
-export function denyIfSpendCapReached(req, res) {
-    const spend = checkAISpendCap(req.session?.userId, {
-        billsOperator: isServerKeyProvider(req.aiProvider),
+/**
+ * checkAISpendCap reserves headroom for a call in flight. A streaming route
+ * has many exits (provider lookup fails, GitHub fetch fails, the stream
+ * throws, the client hangs up) and only the happy path recorded spend, which
+ * is what releases the reservation — every other exit left it holding the
+ * user's headroom for two minutes. Release it when the response closes,
+ * unless recordStreamCompletion settled it first.
+ */
+function settleSpendReservationOnClose(req, res) {
+    const state = { settled: false };
+    req._spendReservation = state;
+    res.once('close', () => {
+        if (state.settled) return;
+        state.settled = true;
+        releaseAISpendReservation(req.session?.userId);
     });
-    if (spend.allowed) return false;
+}
+
+export function denyIfSpendCapReached(req, res, provider = req.aiProvider) {
+    // Pass the provider the route will actually call. Routes that resolve
+    // their own (Deep Review, PR Chat, PR Commands, Prompt Studio) left
+    // req.aiProvider unset, so isServerKeyProvider(undefined) → true and a
+    // user on their OWN key was capped against the operator's budget.
+    const billsOperator = isServerKeyProvider(provider);
+    const spend = checkAISpendCap(req.session?.userId, { billsOperator });
+    if (spend.allowed) {
+        if (billsOperator) settleSpendReservationOnClose(req, res);
+        return false;
+    }
     res.status(429).json({
         error: 'Monthly AI spend limit reached. Try again next month or raise the cap.',
         code: 'AI_SPEND_CAP_REACHED',
@@ -299,11 +328,17 @@ export function denyIfSpendCapReached(req, res) {
  * @param {boolean} [opts.partial]  — client disconnected mid-stream
  * @param {string} [opts.action]    — explicit audit action name
  * @param {object} [opts.extraMeta] — route-specific audit fields to merge
+ * @param {object} [opts.provider]  — the provider that ran; defaults to req.aiProvider
  */
-export function recordStreamCompletion(req, { feature, model, usage, costUSD, partial, action, extraMeta } = {}) {
+export function recordStreamCompletion(req, { feature, model, usage, costUSD, partial, action, extraMeta, provider } = {}) {
     // Only the operator's own key accumulates against the operator's cap —
     // see isServerKeyProvider. The audit entry is written either way.
-    if (isServerKeyProvider(req.aiProvider)) recordAISpend(req.session?.userId, costUSD);
+    if (isServerKeyProvider(provider ?? req.aiProvider)) {
+        const reservation = req._spendReservation;
+        const alreadyReleased = reservation?.settled === true;
+        if (reservation) reservation.settled = true;
+        recordAISpend(req.session?.userId, costUSD, { releaseReservation: !alreadyReleased });
+    }
     auditLog(req, action || `ai.${feature || 'stream'}`, 'ai', null, {
         ...(extraMeta || {}),
         ...buildAIAuditMeta({ feature, model, usage, costUSD, partial }),

@@ -13,7 +13,7 @@
  *    → Promise<{ text: string, parsed?: any }>
  *  embed(text)
  *    → Promise<number[]>
- *  generateStream({ prompt, generationConfig?, signal? })
+ *  generateStream({ prompt, systemPrompt?, generationConfig?, signal? })
  *    → AsyncIterable<string>   (yields text chunks only, no accumulation)
  *
  * Adding a future provider (e.g. Anthropic):
@@ -318,14 +318,23 @@ export function toAIError(err) {
 // ---------------------------------------------------------------------------
 
 /**
- * Strip markdown code fences from AI text output.
- * Handles ```json ... ``` and ``` ... ``` variants.
+ * Remove ONE fence that wraps the whole answer (```json … ```, ``` … ```,
+ * ```markdown … ```), which models add around structured output.
+ *
+ * It used to delete every ``` in every response. A README or any Markdown
+ * answer lost all of its code blocks, and the README enhancer's comment
+ * ("markdown is returned verbatim") described behaviour that did not exist.
+ * A fence inside the text, or a response that merely starts and ends with
+ * separate code blocks, is left alone.
  *
  * @param {string} text
  * @returns {string}
  */
-function stripMarkdownFences(text) {
-    return text.replace(/```json/g, '').replace(/```/g, '').trim();
+export function stripOuterFence(text) {
+    const trimmed = String(text ?? '').trim();
+    const m = /^```[A-Za-z0-9_-]*[ \t]*\r?\n([\s\S]*?)\r?\n?```$/.exec(trimmed);
+    if (!m || m[1].includes('```')) return trimmed;
+    return m[1].trim();
 }
 
 // ---------------------------------------------------------------------------
@@ -504,7 +513,7 @@ export class GeminiProvider {
         try {
             const result = await sdkModel.generateContent(request);
             const raw = result.response.text();
-            const text = stripMarkdownFences(raw);
+            const text = stripOuterFence(raw);
 
             // Surface usage + cost so callers can persist accurate spend.
             // Gemini's usageMetadata is available since @google/generative-ai 0.12+.
@@ -574,7 +583,7 @@ export class GeminiProvider {
      * @param {string} [opts.modelOverride]
      * @returns {AsyncGenerator<string>}
      */
-    async *generateStream({ prompt, parts, generationConfig, signal, modelOverride } = {}) {
+    async *generateStream({ prompt, parts, systemPrompt, generationConfig, signal, modelOverride } = {}) {
         const modelName = modelOverride || this._modelName;
         const sdkModel = modelOverride
             ? this.genAI.getGenerativeModel({ model: modelName })
@@ -588,9 +597,14 @@ export class GeminiProvider {
             });
         }
 
+        // Same convention as generate(): the system prompt is prepended to the
+        // text prompt, and ignored when raw parts are supplied.
+        const text = systemPrompt ? `${systemPrompt}
+
+${prompt || ''}` : (prompt || '');
         const contents = parts
             ? [{ role: 'user', parts }]
-            : [{ role: 'user', parts: [{ text: prompt || '' }] }];
+            : [{ role: 'user', parts: [{ text }] }];
 
         const normalizedConfig = normalizeGeminiGenerationConfig(generationConfig);
         const request = {

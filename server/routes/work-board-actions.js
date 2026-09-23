@@ -7,6 +7,7 @@ import express from 'express';
 import { z } from 'zod';
 import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 import { requireAuth, errorResponse, safeError } from '../middleware/auth.js';
+import { redactValues } from '../lib/secret-redactor.js';
 import { validateBody, validateParams, validateQuery } from '../middleware/validate-request.js';
 import * as snoozeLib from '../lib/work-board-snooze.js';
 import * as presets from '../lib/work-board-presets.js';
@@ -529,7 +530,9 @@ router.post('/draft-comment', requireAuth, draftCommentLimiter, validateBody(dra
             );
             if (Array.isArray(files)) {
                 const combined = files.map(f => f.patch || '').join('\n');
-                diffContext = combined.slice(0, 4096);
+                // Same redaction as Deep Review / PR Commands: a diff can carry
+                // a committed secret, and it is about to leave for the provider.
+                diffContext = redactValues(combined).content.slice(0, 4096);
             }
         } catch { /* degrade to no diff */ }
 

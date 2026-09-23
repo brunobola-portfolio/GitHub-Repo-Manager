@@ -9,11 +9,11 @@
  *    → Promise<{ text: string, parsed?: any }>
  *  embed(text)
  *    → Promise<number[]>
- *  generateStream({ prompt, generationConfig?, signal? })
+ *  generateStream({ prompt, systemPrompt?, generationConfig?, signal? })
  *    → AsyncGenerator<string>
  */
 
-import { AIError, AI_ERROR_CODE, toAIError, extractRetryAfterMs, throwIfCanceled } from '../ai-provider.js';
+import { AIError, AI_ERROR_CODE, toAIError, extractRetryAfterMs, throwIfCanceled, stripOuterFence } from '../ai-provider.js';
 import { computeCostUSD } from '../provider-pricing.js';
 
 // Ceiling for the blocking (non-streaming) POST. Long enough for a large
@@ -25,17 +25,6 @@ const BLOCKING_POST_TIMEOUT_MS = 120_000;
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/**
- * Strip markdown code fences from AI text output.
- * Handles ```json ... ``` and ``` ... ``` variants.
- *
- * @param {string} text
- * @returns {string}
- */
-function stripMarkdownFences(text) {
-    return text.replace(/```json/g, '').replace(/```/g, '').trim();
-}
 
 /**
  * Pull structured upstream context out of an OpenAI / OpenRouter error body.
@@ -320,7 +309,7 @@ export class OpenAIProvider {
         try {
             const data = await this._post('/chat/completions', body);
             const raw = data?.choices?.[0]?.message?.content || '';
-            const text = stripMarkdownFences(raw);
+            const text = stripOuterFence(raw);
 
             // OpenAI-compatible chat.completions response surfaces token usage
             // on `data.usage` with prompt_tokens / completion_tokens. Some
@@ -346,11 +335,17 @@ export class OpenAIProvider {
                     const parsed = JSON.parse(text);
                     return { text, parsed, usage, costUSD };
                 } catch (parseErr) {
-                    throw new AIError({
+                    const invalid = new AIError({
                         code: AI_ERROR_CODE.INVALID_RESPONSE,
                         message: `AI returned text that could not be parsed as JSON: ${text.slice(0, 200)}`,
                         cause: parseErr,
                     });
+                    // The provider was paid for this answer even though it is
+                    // unusable: carry the measured cost so callers still record
+                    // it against the spend cap.
+                    invalid.usage = usage;
+                    invalid.costUSD = costUSD;
+                    throw invalid;
                 }
             }
 
@@ -406,12 +401,15 @@ export class OpenAIProvider {
      * @param {string} [opts.modelOverride]
      * @returns {AsyncGenerator<string>}
      */
-    async *generateStream({ prompt, generationConfig, signal, modelOverride } = {}) {
+    async *generateStream({ prompt, systemPrompt, generationConfig, signal, modelOverride } = {}) {
         const model = modelOverride || this._modelName;
 
         const body = {
             model,
-            messages: [{ role: 'user', content: prompt || '' }],
+            messages: [
+                ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+                { role: 'user', content: prompt || '' },
+            ],
         };
 
         if (generationConfig) {
@@ -446,6 +444,11 @@ export class OpenAIProvider {
                 try {
                     ({ done, value } = await reader.read());
                 } catch (readErr) {
+                    // Aborted while a read was pending (the client hung up):
+                    // stop and fall through to the usage return below. Throwing
+                    // CANCELED here discarded the tokens already billed, so a
+                    // disconnect recorded $0 against the spend cap.
+                    if (signal?.aborted) break;
                     throwIfCanceled(readErr, signal);
                     throw readErr;
                 }

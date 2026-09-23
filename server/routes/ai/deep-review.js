@@ -25,9 +25,9 @@ import { createInMemoryRateLimiter } from '../../lib/in-memory-rate-limiter.js';
 import { githubApi } from '../../lib/github-api.js';
 import { readThrough } from '../../lib/gh-cache.js';
 import { executeViaOutbox } from '../../lib/outbox-helper.js';
-import { createProviderForUser } from '../../lib/ai-provider.js';
+import { createProviderForUser, AIError } from '../../lib/ai-provider.js';
 import { quotaExceededResponse } from '../../lib/usage-meter.js';
-import { denyIfSpendCapReached, recordStreamCompletion } from './shared.js';
+import { denyIfSpendCapReached, recordStreamCompletion, handleAIError } from './shared.js';
 import { runDeepReview } from '../../lib/ai-features/pr-deep-review.js';
 import { resolvePromptForGenerate } from '../../lib/ai-features/prompt-registry.js';
 import { buildGitHubReviewPayload } from '../../lib/ai-features/pr-deep-review-publish.js';
@@ -115,7 +115,6 @@ router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res
     if (!quota.allowed) {
         return res.status(429).json(quotaExceededResponse(quota));
     }
-    if (denyIfSpendCapReached(req, res)) return;
 
     let provider;
     try {
@@ -133,6 +132,8 @@ router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res
             'NO_AI_PROVIDER',
         );
     }
+    // After provider resolution: the cap applies only to the operator's key.
+    if (denyIfSpendCapReached(req, res, provider)) return;
 
     // PR metadata + files. Both go through gh-cache for the SWR + last-known-good
     // semantics so a flaky GitHub doesn't fail the whole review request.
@@ -229,6 +230,10 @@ router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res
         });
     } catch (err) {
         logger.warn({ err: err?.message, code: err?.code, owner, repo, pr }, 'Deep review engine failed');
+        // Provider failures (a revoked BYOK key answers 401) go through the
+        // shared mapper: forwarding the raw 401 made the app treat it as the
+        // user's own session expiring and send them to sign in again.
+        if (err instanceof AIError) return handleAIError(res, err, 'AI Deep Review generation failed.');
         const status = err?.status || 500;
         const code = err?.code || 'DEEP_REVIEW_FAILED';
         return errorResponse(res, status, err?.message || 'AI Deep Review generation failed.', code);
@@ -260,6 +265,7 @@ router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res
     // tokens are null when the provider can't surface usage — recordAISpend
     // no-ops on null cost and the audit still records feature + model.
     recordStreamCompletion(req, {
+        provider,
         feature: 'deep_review',
         action: 'ai.deep_review',
         model: result.modelUsed,

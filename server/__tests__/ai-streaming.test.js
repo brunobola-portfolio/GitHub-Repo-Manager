@@ -6,13 +6,13 @@ import { extractReplyText } from '../lib/ai-features/stream-json.js'
 
 function makeRes() {
     const writes = []
-    return {
+    return Object.assign(new EventEmitter(), {
         writes,
         ended: false,
         writeHead: vi.fn(),
         write: vi.fn((data) => { writes.push(data); return true }),
         end: vi.fn(function () { this.ended = true }),
-    }
+    })
 }
 
 function makeReq() {
@@ -207,3 +207,24 @@ describe('streamReplyDeltasToSSE', () => {
     })
 })
 
+
+
+// Node never throws from res.write on a destroyed socket, and req 'close' is
+// unreliable once the body was read: the response closing is the signal.
+describe('initSSE — disconnect detected from the response', () => {
+    it('aborts when the response closes before it finished, even without req', () => {
+        const res = makeRes()
+        const sse = initSSE(res)
+        res.writableFinished = false
+        res.emit('close')
+        expect(sse.isAborted).toBe(true)
+        expect(sse.signal.aborted).toBe(true)
+    })
+    it('does not treat a normal end as a disconnect', () => {
+        const res = makeRes()
+        const sse = initSSE(res)
+        res.writableFinished = true
+        res.emit('close')
+        expect(sse.signal.aborted).toBe(false)
+    })
+})

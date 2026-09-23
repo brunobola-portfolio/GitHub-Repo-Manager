@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — AI
+
+- **PR Chat answers about the PR again.** Its system prompt (PR title, body,
+  file list, "never invent a path") was passed to the streaming call and
+  dropped by every provider, so the model saw only the chat transcript.
+  Anthropic, OpenAI-compatible and Gemini streams now take a system prompt.
+- **Bring-your-own-key users are no longer capped by the operator's budget**
+  on Deep Review, PR Chat, PR Commands, Prompt Studio tests, repo indexing
+  and semantic search. Those routes resolved their own provider after the
+  cap check, which then assumed the operator was paying.
+- Spend is recorded for answers that were paid for but unusable (a structured
+  reply that failed to parse, or `/ai/chat` returning no JSON), and for
+  streams the client abandoned: the tokens measured before a disconnect are
+  kept instead of discarded.
+- Streaming routes stop generating when the client disconnects. Node never
+  throws on a write to a closed socket, so the provider kept generating (and
+  billing) for a reader that was gone.
+- A spend reservation is handed back on every exit of a streaming route, and
+  after each semantic search; before, it held the user's headroom for two
+  minutes, so a few searches near the cap blocked every AI feature.
+- A revoked provider key on Deep Review, PR Commands or Prompt Studio no
+  longer reads as the user's own session expiring; PR Chat never shows the
+  provider's raw error text.
+- Generated Markdown (README enhance and every other free-text answer) keeps
+  its code blocks. Providers removed every code fence from every response;
+  only a single fence wrapping the whole answer is removed now.
+- Deep Review's overflow note says the extra findings were omitted, which is
+  what happens; it claimed they were folded into the summary. Deep Review
+  and PR Commands tell the model the PR content is material to review, not
+  instructions, and the Work Board's drafted comment redacts secrets in the
+  diff before it leaves for the provider.
+
 ### Security
 
 - An API key could no longer be used to create or revoke API keys, or to

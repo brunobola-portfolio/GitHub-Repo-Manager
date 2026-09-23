@@ -1,3 +1,4 @@
+import { PR_CONTENT_IS_DATA } from './grounded-prompts.js';
 import { sanitizeForPrompt } from './sanitize.js';
 import { getResolvedPrompt } from '../ai-prompt-registry.js';
 import { AIError, AI_ERROR_CODE } from '../ai-provider.js';
@@ -115,6 +116,7 @@ ${sanitizeForPrompt(JSON.stringify(
     const parts = [
         { text: systemPrompt + '\n\n' + fullContext },
         { text: 'Diff:\n```diff\n' + sanitizeForPrompt(diffPatch || '', MAX_DIFF_CHARS) + '\n```' },
+        { text: PR_CONTENT_IS_DATA },
     ];
 
     const { parsed, usage, costUSD } = await provider.generate({
@@ -198,11 +200,14 @@ function postProcess(parsed, provider, meta = {}, severityFloor = null) {
         return c;
     });
 
-    // Cap at 25 — fold the rest into the walkthrough summary
+    // Cap at 25. The overflow is dropped and this note is published to GitHub
+    // under the reviewer's name, so it says exactly that: it used to claim the
+    // findings were "folded into this summary" (they never were) and to
+    // suggest raising a cap that is a constant, not a prompt setting.
     if (lineComments.length > MAX_LINE_COMMENTS) {
         const overflow = lineComments.length - MAX_LINE_COMMENTS;
         walkthrough.summary = (walkthrough.summary || '')
-            + `\n\n_${overflow} additional minor findings were folded into this summary to keep the review focused. Increase the line-comment cap in the prompt if you want them inline._`;
+            + `\n\n_${overflow} lower-priority ${overflow === 1 ? 'finding was' : 'findings were'} omitted to keep the review focused (limit ${MAX_LINE_COMMENTS} inline comments)._`;
         lineComments = lineComments.slice(0, MAX_LINE_COMMENTS);
     }
 
