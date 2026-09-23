@@ -50,11 +50,23 @@ import {
   useEffect,
   useLayoutEffect,
   forwardRef,
+  useCallback,
 } from 'react'
 import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
-import { useComposedRefs } from '@radix-ui/react-compose-refs'
 import { DURATION, EASE } from './motion'
+
+// Inlined instead of importing @radix-ui/react-compose-refs: that one
+// ten-line hook, used by this always-mounted primitive, pulled the whole
+// vendor-ui chunk (Dialog, Popover, DropdownMenu, floating-ui — 42 KB gz)
+// into the first page load.
+function setRef(ref, value) {
+  if (typeof ref === 'function') return ref(value)
+  if (ref != null) ref.current = value
+}
+function useComposedRefs(a, b, c) {
+  return useCallback((node) => { setRef(a, node); setRef(b, node); setRef(c, node) }, [a, b, c])
+}
 
 // Local prefers-reduced-motion detection. Kept independent of framer-motion's
 // useReducedMotion so this widely-used primitive doesn't break in the many

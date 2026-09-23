@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Performance
+
+- The first page load is about 30% lighter (≈298 KB → 210 KB of gzipped
+  JavaScript). The markdown chunk had absorbed React's JSX runtime, so every
+  cold start preloaded 34 KB of markdown code that rendered nothing, and one
+  ten-line ref helper in the tooltip pulled in all of Radix (42 KB). The
+  bundle budget is tightened to match, so a regression fails the build.
+- Opening a repository no longer downloads the diff viewer and its syntax
+  grammars (~87 KB gzipped): the README, diagram, image and agent-rules
+  dialogs load when they are opened.
+
 ### Fixed — phones, tablets and accessibility
 
 - The notifications and system-health popovers open inside a phone's screen;

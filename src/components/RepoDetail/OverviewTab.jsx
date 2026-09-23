@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { lazy, Suspense, useRef, useState } from 'react'
 import { Badge } from '../ui/Badge'
 import { EmptyState } from '../ui/EmptyState'
 import { TabLoadError } from './TabLoadError'
@@ -15,10 +15,14 @@ import { useToast } from '../../hooks/useToast'
 import { InlineEditField } from './InlineEditField'
 import { MigrationProvenanceCard } from './MigrationProvenanceCard'
 import { formatFileSize, formatDate } from '../../utils/format'
-import { ReadmeStudioModal } from '../AI/ReadmeStudioModal'
-import { DiagramGenerator } from '../AI/DiagramGenerator'
-import { AgentRulesModal } from '../AI/AgentRulesModal'
-import { ImageGeneratorModal } from '../AI/ImageGeneratorModal'
+// React.lazy, not static imports: each of these statically imports the diff
+// viewer, and rendering them only when open does not stop the MODULE from
+// loading — opening any repository fetched ~87 KB gz of diff viewer and
+// grammars that the Overview never shows.
+const ReadmeStudioModal = lazy(() => import('../AI/ReadmeStudioModal').then((m) => ({ default: m.ReadmeStudioModal })))
+const DiagramGenerator = lazy(() => import('../AI/DiagramGenerator').then((m) => ({ default: m.DiagramGenerator })))
+const AgentRulesModal = lazy(() => import('../AI/AgentRulesModal').then((m) => ({ default: m.AgentRulesModal })))
+const ImageGeneratorModal = lazy(() => import('../AI/ImageGeneratorModal').then((m) => ({ default: m.ImageGeneratorModal })))
 
 /**
  * Decode a GitHub contents-API README payload into a UTF-8 string.
@@ -114,9 +118,8 @@ export function OverviewTab({ api, repoData, onUpdate }) {
                 </Button>
             </div>
 
-            {/* Lazy-mounted: only instantiated once opened, so the theme/diff-view
-                (and, for the diagram generator, mermaid) dependencies they pull in
-                never load on a plain Overview visit. */}
+            {/* Lazy modules, mounted only once opened. */}
+            <Suspense fallback={null}>
             {readmeStudioOpen && (
                 <ReadmeStudioModal
                     isOpen={readmeStudioOpen}
@@ -147,6 +150,7 @@ export function OverviewTab({ api, repoData, onUpdate }) {
                     repo={repoData}
                 />
             )}
+            </Suspense>
 
             {/* README */}
             <div className="lg:col-span-2">
