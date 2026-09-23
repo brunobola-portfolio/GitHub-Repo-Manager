@@ -10,13 +10,9 @@ import {
   ExternalLink, Copy, FileText, GitBranch, Star, Clock, Archive, ArrowDownAZ,
   Check, ShieldCheck, MessageCircle, LogOut,
 } from 'lucide-react'
-import { isAbort } from '../utils/errorClassification'
 import { emitAppEvent, onAppEvent, APP_EVENTS } from '../utils/appEvents'
 import { Skeleton } from './ui/Skeleton'
 import { Kbd } from './ui/Kbd'
-import { searchApi } from '../api/search'
-import { translateSearch } from '../api/translateSearch'
-import { useDebounce } from '../hooks/useDebounce'
 import { MOCK_MODE } from '../config'
 import { useTrackedRepos } from '../hooks/useTrackedRepos'
 import { useToast } from '../hooks/useToast'
@@ -38,6 +34,7 @@ import { SearchInput } from './CommandPalette/SearchInput'
 import { GitHubResults } from './CommandPalette/GitHubResults'
 import { RecentGroup } from './CommandPalette/RecentGroup'
 import { AskModeBanner } from './CommandPalette/AskModeBanner'
+import { useDebouncedGitHubSearch, useDebouncedTranslateSearch, parseAskMode, useAskModeResults, ASK_MIN_LEN } from './CommandPalette/useRemoteSearch'
 import { CommandGroup } from './CommandPalette/CommandGroup'
 import { GROUP_HEADING_CLASSES, ITEM_CLASSES } from './CommandPalette/styles'
 
@@ -95,136 +92,6 @@ const CONTEXT_CMD_ICONS = {
     Clock, ArrowDownAZ, Check, ShieldCheck, MessageCircle,
 }
 
-
-const DEBOUNCE_MS = 300
-const MIN_QUERY_LEN = 2
-
-const EMPTY_SEARCH = { prs: [], issues: [], repos: [] }
-
-function useDebouncedGitHubSearch(query, enabled) {
-  const [result, setResult] = useState({ data: EMPTY_SEARCH, loading: false, error: null })
-  const controllerRef = useRef(null)
-  const trimmed = (query || '').trim()
-  const debouncedQuery = useDebounce(trimmed, DEBOUNCE_MS)
-  const shouldSearch = enabled && debouncedQuery.length >= MIN_QUERY_LEN
-
-  /* eslint-disable react-hooks/set-state-in-effect -- debounced query drives the search */
-  useEffect(() => {
-    if (!shouldSearch) {
-      controllerRef.current?.abort()
-      setResult({ data: EMPTY_SEARCH, loading: false, error: null })
-      return
-    }
-    controllerRef.current?.abort()
-    const controller = new AbortController()
-    controllerRef.current = controller
-    setResult((prev) => ({ ...prev, loading: true, error: null }))
-    searchApi
-      .github(debouncedQuery, { type: 'all', limit: 15, signal: controller.signal })
-      .then((res) => {
-        if (controller.signal.aborted) return
-        setResult({
-          data: { prs: res.prs || [], issues: res.issues || [], repos: res.repos || [] },
-          loading: false,
-          error: null,
-        })
-      })
-      .catch((err) => {
-        if (isAbort(err, controller.signal)) return
-        setResult((prev) => ({ ...prev, loading: false, error: err?.code || 'SEARCH_FAILED' }))
-      })
-    return () => controllerRef.current?.abort()
-  }, [shouldSearch, debouncedQuery])
-  /* eslint-enable react-hooks/set-state-in-effect */
-
-  return { data: result.data, loading: result.loading, error: result.error }
-}
-
-/**
- * Detects "ask mode" — query starts with a literal `?`. The leading char
- * is stripped before sending to the translator. Empty after strip → no fire.
- */
-function parseAskMode(rawInput) {
-    const trimmed = (rawInput || '').trimStart()
-    if (!trimmed.startsWith('?')) return { askMode: false, askQuery: '' }
-    return { askMode: true, askQuery: trimmed.slice(1).trim() }
-}
-
-const ASK_DEBOUNCE_MS = 450
-const ASK_MIN_LEN = 4
-
-function useDebouncedTranslateSearch(askQuery, enabled) {
-    const [state, setState] = useState({ data: null, loading: false, error: null })
-    const ctrlRef = useRef(null)
-    const debouncedAskQuery = useDebounce(askQuery, ASK_DEBOUNCE_MS)
-    const shouldFire = enabled && debouncedAskQuery.length >= ASK_MIN_LEN
-
-    /* eslint-disable react-hooks/set-state-in-effect -- debounced query drives translate */
-    useEffect(() => {
-        if (!shouldFire) {
-            ctrlRef.current?.abort()
-            setState({ data: null, loading: false, error: null })
-            return
-        }
-        ctrlRef.current?.abort()
-        const ctrl = new AbortController()
-        ctrlRef.current = ctrl
-        setState((prev) => ({ ...prev, loading: true, error: null }))
-        translateSearch({ q: debouncedAskQuery, signal: ctrl.signal }).then((data) => {
-            if (ctrl.signal.aborted) return
-            if (data) setState({ data, loading: false, error: null })
-            else setState({ data: null, loading: false, error: 'TRANSLATE_FAILED' })
-        })
-        return () => ctrlRef.current?.abort()
-    }, [shouldFire, debouncedAskQuery])
-    /* eslint-enable react-hooks/set-state-in-effect */
-
-    return state
-}
-
-/**
- * Once the translator returns queries, fire them in parallel against the
- * existing /search/github endpoint and accumulate results per type. We
- * only run when ask mode is active so non-ask palette use is unaffected.
- */
-function useAskModeResults(translatedQueries, enabled) {
-    const [results, setResults] = useState({ pr: [], issue: [], repo: [] })
-    const [loading, setLoading] = useState(false)
-    /* eslint-disable react-hooks/set-state-in-effect -- input changes drive AI search fan-out */
-    useEffect(() => {
-        if (!enabled || !translatedQueries || translatedQueries.length === 0) {
-            setResults({ pr: [], issue: [], repo: [] })
-            setLoading(false)
-            return undefined
-        }
-        const ctrl = new AbortController()
-        let cancelled = false
-        setLoading(true)
-        const promises = translatedQueries.map((q) =>
-            searchApi.github(q.ghQuery, { type: q.type, limit: 10, signal: ctrl.signal })
-                .then((res) => ({ type: q.type, res }))
-                .catch(() => ({ type: q.type, res: null }))
-        )
-        Promise.all(promises).then((parts) => {
-            if (cancelled) return
-            const merged = { pr: [], issue: [], repo: [] }
-            for (const { type, res } of parts) {
-                if (!res) continue
-                if (type === 'pr' && Array.isArray(res.prs)) merged.pr.push(...res.prs)
-                if (type === 'issue' && Array.isArray(res.issues)) merged.issue.push(...res.issues)
-                if (type === 'repo' && Array.isArray(res.repos)) merged.repo.push(...res.repos)
-            }
-            setResults(merged)
-            setLoading(false)
-        })
-        return () => {
-            cancelled = true
-            ctrl.abort()
-        }
-    }, [enabled, translatedQueries])
-    /* eslint-enable react-hooks/set-state-in-effect */
-    return { results, loading }
-}
 
 /** cmdk's list keeps role="listbox" even when nothing matches; hide it then. */
 function ResultsList({ children, className }) {
