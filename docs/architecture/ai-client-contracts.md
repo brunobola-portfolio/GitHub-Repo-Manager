@@ -99,6 +99,15 @@ flags, removing the "does this method throw or return a placeholder?" ambiguity
 while preserving graceful degradation. Tracked as a future cleanup; not
 scheduled.
 
+## Transport
+
+The failure contracts differ; the transport does not. Both modules, the
+PR-review JSON helper `src/utils/aiFetch.js` (`fetchJSON`) and the streaming
+hooks (`useAI`, `useStreaming`, `usePRChat`) send through `csrfFetch` in
+`src/utils/api.js`, which adds the CSRF token to same-origin mutations and
+retries once on a `403 csrf_invalid` (a token rotated by a re-login in another
+tab). New AI calls should do the same rather than calling `fetch` directly.
+
 ## References
 
 - `src/api/ai.js` — `withAIConfigured`, the `unconfigured*` placeholder

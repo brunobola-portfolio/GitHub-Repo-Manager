@@ -12,7 +12,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 vi.stubEnv('VITE_MOCK_MODE', 'false')
 
 vi.mock('../../src/config', () => ({ API_BASE: '', MOCK_MODE: false }))
-vi.mock('../../src/utils/api', () => ({
+vi.mock('../../src/utils/api', async (io) => ({
+    ...(await io()),
     getCsrfToken: vi.fn(async () => 'csrf-stub'),
 }))
 vi.mock('../../src/api/aiStatus', () => ({

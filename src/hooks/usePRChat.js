@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getCsrfToken } from '../utils/api';
+import { getCsrfToken, csrfFetch } from '../utils/api';
 import { isAbort } from '../utils/errorClassification';
 import { fetchJSON } from '../utils/aiFetch';
 // NOTE: Mock data is loaded via dynamic `await import()` inside the inlined
@@ -122,7 +122,7 @@ export function usePRChat(owner, repo, prNumber) {
         let acc = '';
         try {
             const csrf = await getCsrfToken();
-            const res = await fetch(`/api/ai/pr-chat/${owner}/${repo}/${prNumber}`, {
+            const res = await csrfFetch(`/api/ai/pr-chat/${owner}/${repo}/${prNumber}`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },

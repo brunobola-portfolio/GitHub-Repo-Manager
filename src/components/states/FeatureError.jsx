@@ -70,7 +70,7 @@ export function FeatureError({
 }) {
     const palette = TONES[tone] ?? TONES.error
     const Icon = palette.icon
-    const remaining = useCountdown(retryAfterSec)
+    const remaining = useSecondsCountdown(retryAfterSec)
 
     const canRetry = typeof onRetry === 'function' && (!remaining || remaining <= 0)
 
@@ -166,7 +166,11 @@ export function FeatureError({
     )
 }
 
-function useCountdown(initial) {
+// Counts down from a number of SECONDS, restarting when the prop changes. Not
+// hooks/useCountdown, which counts to an absolute timestamp: this component is
+// handed a Retry-After in seconds, and pinning it to a timestamp would need the
+// same reset-on-change state this already keeps.
+function useSecondsCountdown(initial) {
     const deadline = Number.isFinite(initial) && initial > 0
         ? Math.ceil(initial)
         : 0

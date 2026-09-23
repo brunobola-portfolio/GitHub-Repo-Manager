@@ -7,7 +7,7 @@
  */
 
 import { useCallback } from 'react'
-import { apiCall, safeParseJson, isSessionExpired, getCsrfToken } from '../utils/api'
+import { apiCall, safeParseJson, isSessionExpired, getCsrfToken, csrfFetch } from '../utils/api'
 import { isAbort } from '../utils/errorClassification'
 import { MOCK_MODE, API_BASE } from '../config'
 
@@ -78,7 +78,7 @@ export function useAI() {
         const timeoutId = setTimeout(() => controller.abort(), 60_000)
         let r
         try {
-            r = await fetch(`${API_BASE}/ai/chat`, {
+            r = await csrfFetch(`${API_BASE}/ai/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfHeader },
                 body: JSON.stringify({ message, context }),
@@ -176,7 +176,7 @@ export function useAI() {
 
         let r
         try {
-            r = await fetch(`${API_BASE}/ai/chat?stream=true`, {
+            r = await csrfFetch(`${API_BASE}/ai/chat?stream=true`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfHeader },
                 body: JSON.stringify({ message, context }),
