@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Docker images publish again.** The multi-arch build emulated arm64 under
+  QEMU, and `npm ci` there hung until GitHub killed the job at six hours: no
+  image reached GHCR for 4.25.11, 4.25.12 or 4.25.14. Each architecture now
+  builds and boots on its own native runner, pushes by digest, and a final
+  job joins them into the tagged manifest; a hang fails in 40 minutes.
+- `/repos`, `/work`, `/teams` and `/audit` answer 200 like the views they
+  open, instead of rendering the app under a 404 status.
+- Without `FRONTEND_URL`, the Host header was written unescaped into the
+  served page's canonical and Open Graph attributes. Only a valid host shape
+  is accepted now.
+- The migration report's Markdown table escapes backslashes and newlines, so
+  a ref containing `\|` or a line break no longer splits a row.
+- Zip extraction opens each file with `O_NOFOLLOW`, closing the window
+  between the symlink check and the write.
+
 ## [4.25.14] - 2026-09-22
 
 ### Fixed

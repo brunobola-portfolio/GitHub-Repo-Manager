@@ -226,8 +226,14 @@ function fmtDuration(seconds) {
   return s ? `${m}m ${s}s` : `${m}m`;
 }
 
+// Backslash first: escaping only the pipe turned `a\|b` into `a\\|b`, where
+// the added backslash escapes the original one and the pipe stays raw,
+// splitting the table cell. A newline would end the row, so it becomes a space.
 function mdEscape(value) {
-  return String(value ?? '').replace(/\|/g, '\\|');
+  return String(value ?? '')
+    .replace(/\\/g, '\\\\')
+    .replace(/\|/g, '\\|')
+    .replace(/\r?\n/g, ' ');
 }
 
 /**

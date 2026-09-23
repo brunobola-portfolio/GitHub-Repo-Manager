@@ -15,7 +15,7 @@
  * for a symlink, an absolute path or a parent-directory hop, so a skip here is
  * information about the source, not a loss for the user.
  */
-import { existsSync, lstatSync, mkdirSync, realpathSync, writeFileSync } from 'fs';
+import { closeSync, constants, existsSync, lstatSync, mkdirSync, openSync, realpathSync, writeSync } from 'fs';
 import path from 'path';
 
 // Unix mode bits live in the top 16 of the external attributes; 0xa000 is
@@ -173,7 +173,27 @@ function extractEntries(zip, destDir, { maxEntryBytes, maxTotalBytes, maxEntries
             continue;
         }
 
-        writeFileSync(target, entry.getData());
+        // The lstat above and the write below are two syscalls; something
+        // swapping the target for a symlink in between would be followed.
+        // O_NOFOLLOW makes the open itself refuse a symlink (POSIX; the flag
+        // is absent on Windows, where creating symlinks needs privileges).
+        let fd;
+        try {
+            fd = openSync(target, constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | (constants.O_NOFOLLOW ?? 0), 0o644);
+        } catch (err) {
+            if (err?.code === 'ELOOP') {
+                skipped.push({ name, reason: 'target is a symlink' });
+                continue;
+            }
+            throw err;
+        }
+        try {
+            const data = entry.getData();
+            let offset = 0;
+            while (offset < data.length) offset += writeSync(fd, data, offset, data.length - offset);
+        } finally {
+            closeSync(fd);
+        }
         written += 1;
     }
 

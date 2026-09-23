@@ -13,6 +13,19 @@ describe('resolvePublicOrigin', () => {
         expect(resolvePublicOrigin(req('grm.local', 'http'), 'not a url')).toBe('http://grm.local');
         expect(resolvePublicOrigin(req('grm.local'), 'ftp://x')).toBe('https://grm.local');
     });
+    it('accepts real host shapes: names, IPv4, bracketed IPv6, with ports', () => {
+        expect(resolvePublicOrigin(req('127.0.0.1:3001', 'http'), '')).toBe('http://127.0.0.1:3001');
+        expect(resolvePublicOrigin(req('[::1]:3001', 'http'), '')).toBe('http://[::1]:3001');
+        expect(resolvePublicOrigin(req('repo-manager.example.pt'), '')).toBe('https://repo-manager.example.pt');
+    });
+    it('never lets a forged Host header carry markup into the served page', () => {
+        // Without FRONTEND_URL the origin lands unescaped in the shell's
+        // canonical/og attributes (CodeQL js/reflected-xss #111).
+        for (const bad of ['evil.example"><script>alert(1)</script>', 'a b', 'x/y', '', 'host:port:extra']) {
+            expect(resolvePublicOrigin(req(bad), '')).toBe('https://localhost');
+        }
+        expect(resolvePublicOrigin({ protocol: 'javascript', get: () => 'grm.local' }, '')).toBe('http://grm.local');
+    });
 });
 
 describe('renderShell', () => {
@@ -129,12 +142,12 @@ describe('shellStatus', () => {
         // /privacy among them: a visitor deciding whether to grant GitHub
         // access must be able to reach the policy without an account, and a
         // crawler must not be told it does not exist.
-        for (const p of ['/', '/index.html', '/status', '/status/', '/privacy', '/privacy/', '/terms', '/terms/', '/settings', '/pricing/']) {
+        for (const p of ['/', '/index.html', '/status', '/status/', '/privacy', '/privacy/', '/terms', '/terms/', '/settings', '/pricing/', '/repos', '/work', '/teams', '/audit']) {
             expect(shellStatus(p), p).toBe(200);
         }
     });
     it('answers 404 for anything else, so a crawler is not told the page exists', () => {
-        for (const p of ['/wp-login.php', '/repos', '/settings/extra', '/definitely-not-a-page']) {
+        for (const p of ['/wp-login.php', '/repos/extra', '/settings/extra', '/definitely-not-a-page']) {
             expect(shellStatus(p), p).toBe(404);
         }
     });
