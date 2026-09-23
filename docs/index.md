@@ -37,6 +37,12 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.26.0 (2026-09-23) — Review panel closed: atomic AI quotas, lighter
+  first load, honest docs.** Repositories that use Git LFS now migrate their
+  LFS files; On-prem TFS works end to end; PR Chat answers about the PR
+  again; Bring-your-own-key users are no longer capped by the operator's
+  budget; AI quotas can no longer be overspent by parallel requests; Docker
+  images publish again.
 - **v4.25.14 (2026-09-22) — Pro purchase journey: sign-in intent, Stripe
   return, settings tab.** Buying Pro from the landing page now ends at the
   checkout; Coming back from Stripe means something.
