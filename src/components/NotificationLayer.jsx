@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { useFocusTrap } from '../hooks/useFocusTrap'
-import { ToastContainer } from './ui/Toast'
+import { ToastViewport } from './ui/Toast'
 import { PendingSyncBanner } from './ui/PendingSyncBanner'
 import { OnboardingTour } from './Onboarding/OnboardingTour'
 import { QuotaExceededState } from './ui/QuotaExceededState'
@@ -11,7 +11,8 @@ import { OfflineBanner } from './ui/OfflineBanner'
  * toasts, the pending-sync banner, the first-run welcome tour, the
  * quota-exceeded dialog, and the offline banner.
  *
- * Each surface is driven by App-owned state passed in as props (so the event
+ * Toasts come from the toast provider; every other surface is driven by
+ * App-owned state passed in as props (so the event
  * bridge can still flip `quotaModal` / `tourOpen`); the only logic that lives
  * here is the quota dialog's own chrome — the role=dialog wrapper, backdrop vs
  * inner-card click handling, and the focus trap that also closes it on Escape.
@@ -20,8 +21,6 @@ import { OfflineBanner } from './ui/OfflineBanner'
  * App-level App.notificationLayer.guard / App.eventBridge.guard suites.
  */
 export function NotificationLayer({
-  toasts,
-  onDismissToast,
   isAuthenticated,
   tourOpen,
   onCloseTour,
@@ -33,7 +32,7 @@ export function NotificationLayer({
 
   return (
     <>
-      <ToastContainer toasts={toasts} onDismiss={onDismissToast} />
+      <ToastViewport />
       <PendingSyncBanner isAuthenticated={isAuthenticated} />
       <OnboardingTour
         isOpen={tourOpen}

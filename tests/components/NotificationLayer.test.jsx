@@ -8,15 +8,9 @@
  * backdrop/inner click handling, and the useFocusTrap-driven Escape close).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent, cleanup } from '@testing-library/react'
-
-vi.mock('@/components/ui/Toast', () => ({
-    ToastContainer: ({ toasts, onDismiss }) => (
-        <div data-testid="toast-container" data-count={(toasts || []).length}>
-            <button onClick={() => onDismiss(toasts?.[0]?.id)}>dismiss-first</button>
-        </div>
-    ),
-}))
+import { render, screen, fireEvent, cleanup, act, waitFor } from '@testing-library/react'
+import { ToastProvider } from '@/contexts/ToastProvider'
+import { useToast } from '@/hooks/useToast'
 
 vi.mock('@/components/ui/PendingSyncBanner', () => ({
     PendingSyncBanner: ({ isAuthenticated }) => (
@@ -48,10 +42,14 @@ vi.mock('@/components/ui/QuotaExceededState', () => ({
 
 const { NotificationLayer } = await import('@/components/NotificationLayer')
 
+let fireToast = null
+function ToastHandle() {
+    fireToast = useToast().toast
+    return null
+}
+
 function renderLayer(props = {}) {
     const merged = {
-        toasts: [],
-        onDismissToast: vi.fn(),
         isAuthenticated: true,
         tourOpen: false,
         onCloseTour: vi.fn(),
@@ -60,7 +58,12 @@ function renderLayer(props = {}) {
         onCloseQuota: vi.fn(),
         ...props,
     }
-    return { ...render(<NotificationLayer {...merged} />), props: merged }
+    return {
+        ...render(<NotificationLayer {...merged} />, {
+            wrapper: ({ children }) => <ToastProvider><ToastHandle />{children}</ToastProvider>,
+        }),
+        props: merged,
+    }
 }
 
 beforeEach(() => {
@@ -69,18 +72,18 @@ beforeEach(() => {
 })
 
 describe('NotificationLayer', () => {
-    it('always renders the toast container, pending-sync and offline banners', () => {
+    it('always renders the pending-sync and offline banners', () => {
         renderLayer({ isAuthenticated: true })
-        expect(screen.getByTestId('toast-container')).toBeInTheDocument()
         expect(screen.getByTestId('pending-sync')).toHaveAttribute('data-auth', 'true')
         expect(screen.getByTestId('offline-banner')).toBeInTheDocument()
     })
 
-    it('passes toasts through and wires dismissal', () => {
-        const { props } = renderLayer({ toasts: [{ id: 7, type: 'info', message: 'hi' }] })
-        expect(screen.getByTestId('toast-container')).toHaveAttribute('data-count', '1')
-        fireEvent.click(screen.getByText('dismiss-first'))
-        expect(props.onDismissToast).toHaveBeenCalledWith(7)
+    it("draws the provider's toasts and dismisses them", async () => {
+        renderLayer()
+        act(() => { fireToast.info('Saved the preset') })
+        expect(screen.getByText('Saved the preset')).toBeInTheDocument()
+        fireEvent.click(screen.getByRole('button', { name: 'Dismiss notification' }))
+        await waitFor(() => expect(screen.queryByText('Saved the preset')).toBeNull())
     })
 
     it('renders the welcome tour only when open, and wires close / never-show', () => {
@@ -88,7 +91,7 @@ describe('NotificationLayer', () => {
         expect(screen.queryByTestId('onboarding-tour')).toBeNull()
         rerender(
             <NotificationLayer
-                toasts={[]} onDismissToast={vi.fn()} isAuthenticated
+                isAuthenticated
                 tourOpen onCloseTour={props.onCloseTour} onNeverShowTour={props.onNeverShowTour}
                 quotaModal={null} onCloseQuota={vi.fn()}
             />

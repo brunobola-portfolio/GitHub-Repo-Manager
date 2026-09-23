@@ -3,7 +3,7 @@ import { useGitHub } from './hooks/useGitHub'
 import { Header } from './components/Header'
 import { RepoList } from './components/RepoList'
 import { Spinner } from './components/ui/Spinner'
-import { ToastContainer } from './components/ui/Toast'
+import { ToastViewport } from './components/ui/Toast'
 import { ProfileLoadFailed } from './components/ui/ProfileLoadFailed'
 import { useOnboarding } from './hooks/useOnboarding'
 import { useToast } from './hooks/useToast'
@@ -120,7 +120,7 @@ function AppContent() {
   // Settings and NotificationLayer, so it stays owned here rather than
   // folded into useShellChrome.
   const onboarding = useOnboarding()
-  const { toasts, toast, dismissToast } = useToast()
+  const { toast, dismissToast } = useToast()
   const { modalStates, openModal, openModalWithData, closeModal, closeAllModals, getModalData } = useModal()
   // rightMode (from the same hook) drove the repos-view right rail, removed
   // 2026-09-05 — Quick Actions/Import duplicated header buttons and palette
@@ -448,7 +448,7 @@ function AppContent() {
     return (
       <>
         <ProfileLoadFailed message={error} onRetry={fetchGitHubUser} onSignOut={handleLogout} />
-        <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+        <ToastViewport />
       </>
     )
   }
@@ -493,7 +493,7 @@ function AppContent() {
         {/* The signed-in shell mounts toasts in NotificationLayer; this branch
             returns before it, so every sign-in error (?error=… from OAuth, a
             redirect_uri mismatch, a rate limit) was toasted to nobody. */}
-        <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+        <ToastViewport />
       </>
     )
   }
@@ -771,8 +771,6 @@ function AppContent() {
 
       <Suspense fallback={null}>
         <NotificationLayer
-          toasts={toasts}
-          onDismissToast={dismissToast}
           isAuthenticated={!!user}
           tourOpen={tourOpen}
           onCloseTour={() => { onboarding.markSeen(); setTourOpen(false) }}

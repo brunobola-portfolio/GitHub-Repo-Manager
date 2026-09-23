@@ -4,6 +4,7 @@ import { XCircle, Info, AlertTriangle, X } from 'lucide-react'
 import { AnimatedCheck } from './AnimatedCheck'
 import { Tooltip } from './Tooltip'
 import { TRANSITION } from './motion'
+import { useToast, useToastList } from '../../hooks/useToast'
 
 const ICONS = {
     success: null, // rendered directly as <AnimatedCheck> below
@@ -84,6 +85,16 @@ export function Toast({ id, type = 'info', message, content, onDismiss, duration
             </Tooltip>
         </motion.div>
     )
+}
+
+/**
+ * The provider's toasts, drawn. Reading the list here rather than in App keeps
+ * a toast from re-rendering the whole shell.
+ */
+export function ToastViewport() {
+	const toasts = useToastList()
+	const { dismissToast } = useToast()
+	return <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 }
 
 export function ToastContainer({ toasts, onDismiss }) {

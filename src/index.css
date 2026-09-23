@@ -1,4 +1,7 @@
-@import "tailwindcss";
+/* source("../src"): automatic detection scanned the whole repository, so
+ * classes named only in docs/plans (retired palettes included) shipped in the
+ * render-blocking stylesheet. index.html carries no classes. */
+@import "tailwindcss" source("../src");
 
 /* Typography plugin (Tailwind v4 loads plugins from CSS, not the JS config).
  * Powers the `prose` classes used to render GitHub READMEs, AI chat answers,

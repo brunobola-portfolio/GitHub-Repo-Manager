@@ -2,24 +2,18 @@
 import React from 'react'
 import { render } from '@testing-library/react'
 import { ToastProvider } from '@/contexts/ToastProvider'
-import { ToastContainer } from '@/components/ui/Toast'
-import { useToast } from '@/hooks/useToast'
+import { ToastViewport } from '@/components/ui/Toast'
 
 // Internal: pairs the provider with the container so tests can assert on
 // rendered toast text. Using this makes the test behave like the real app
-// (main.jsx wraps <ToastProvider> and App.jsx renders <ToastContainer>).
+// (main.jsx wraps <ToastProvider> and App.jsx renders <ToastViewport>).
 function ToastHarness({ children }) {
     return (
         <ToastProvider>
-            <ToastContainerShim />
+            <ToastViewport />
             {children}
         </ToastProvider>
     )
-}
-
-function ToastContainerShim() {
-    const { toasts, dismissToast } = useToast()
-    return <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 }
 
 /**

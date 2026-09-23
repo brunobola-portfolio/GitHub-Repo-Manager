@@ -1,5 +1,5 @@
 import { useContext } from 'react'
-import { ToastContext } from '../contexts/contexts'
+import { ToastContext, ToastListContext } from '../contexts/contexts'
 
 // Silent no-op fallback used when the hook is called outside a
 // <ToastProvider>. This is the right behaviour for tests that render a
@@ -18,13 +18,14 @@ const NOOP_TOAST = {
 }
 const FALLBACK_CTX = {
     toast: NOOP_TOAST,
-    toasts: [],
     dismissToast: NOOP,
 }
+const NO_TOASTS = []
 
 /**
- * useToast — read the shared toast context.
- * Returns: { toast, toasts, dismissToast }
+ * useToast — read the shared toast actions.
+ * Returns: { toast, dismissToast }, both stable for the provider's lifetime.
+ * The list itself is useToastList(), for the one component that draws it.
  *
  * When there is no <ToastProvider> above in the tree (typical for
  * component unit tests), returns a no-op fallback so mounting a
@@ -33,4 +34,8 @@ const FALLBACK_CTX = {
 export function useToast() {
     const ctx = useContext(ToastContext)
     return ctx || FALLBACK_CTX
+}
+
+export function useToastList() {
+    return useContext(ToastListContext) || NO_TOASTS
 }
