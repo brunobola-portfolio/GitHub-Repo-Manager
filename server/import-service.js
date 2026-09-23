@@ -11,6 +11,7 @@ import { randomUUID } from 'crypto';
 import logger from './lib/logger.js';
 import { detectTool } from './lib/env/detect.js';
 import { isInternalUrl, resolveAndValidateHost } from './lib/url-validator.js';
+import { isTrustedOnPremAzureUrl } from './lib/azure-host-validator.js';
 import { getDataDir } from './lib/data-dir.js';
 import {
     findOversizedBlobs,
@@ -45,15 +46,19 @@ async function checkGitInstalled() {
  * Validate a git URL is reachable (using ls-remote)
  */
 async function validateSourceUrl(url, credentials) {
-    // SSRF protection: block internal/private URLs
-    if (isInternalUrl(url)) {
-        return { valid: false, error: 'URL targets a private or internal network. Only public HTTPS and git:// URLs are allowed.' };
-    }
+    // An allowlisted on-prem TFS host is private by design; everything else
+    // gets the SSRF checks (see isTrustedOnPremAzureUrl).
+    if (!isTrustedOnPremAzureUrl(url)) {
+        // SSRF protection: block internal/private URLs
+        if (isInternalUrl(url)) {
+            return { valid: false, error: 'URL targets a private or internal network. Only public HTTPS and git:// URLs are allowed.' };
+        }
 
-    // DNS rebinding protection: resolve hostname and verify IP is not private
-    const dnsValid = await resolveAndValidateHost(url);
-    if (!dnsValid) {
-        return { valid: false, error: 'URL resolves to a private or internal network address.' };
+        // DNS rebinding protection: resolve hostname and verify IP is not private
+        const dnsValid = await resolveAndValidateHost(url);
+        if (!dnsValid) {
+            return { valid: false, error: 'URL resolves to a private or internal network address.' };
+        }
     }
 
     const authUrl = credentials ? embedCredentials(url, credentials) : url;
@@ -146,6 +151,41 @@ export function decideConflictResolution({ size, defaultBranch, onConflict }) {
  */
 export function lfsPushNeeded(hasLFS, sizeStrategy) {
     return !!hasLFS || sizeStrategy === 'lfs-migrate';
+}
+
+/**
+ * Does any branch or tag of a BARE clone track files with Git LFS?
+ *
+ * Detection used to read `info/attributes` inside the bare clone, a file
+ * `git clone --bare` never creates: `.gitattributes` lives in the tree. So
+ * `hasLFS` was always false, `git lfs fetch --all` never ran, and a repo whose
+ * binaries were in LFS migrated as "completed" with every LFS file a pointer
+ * to a missing object. This greps the `.gitattributes` of every ref (capped)
+ * for `filter=lfs`, which needs only git — not git-lfs — so the missing-tool
+ * case still gets detected and warned about downstream.
+ *
+ * @param {(args:string[])=>Promise<string>} runRaw - runs `git <args>` in the bare repo
+ * @returns {Promise<boolean>}
+ */
+export async function detectLfsInBareRepo(runRaw) {
+    let refs;
+    try {
+        refs = String(await runRaw(['for-each-ref', '--format=%(objectname)', 'refs/heads', 'refs/tags']))
+            .split('\n').map((s) => s.trim()).filter(Boolean);
+    } catch {
+        return false;
+    }
+    const unique = [...new Set(refs)].slice(0, 200);
+    for (let i = 0; i < unique.length; i += 25) {
+        const batch = unique.slice(i, i + 25);
+        try {
+            const out = await runRaw(['grep', '-l', '-I', '-e', 'filter=lfs', ...batch, '--', '.gitattributes', ':(glob)**/.gitattributes']);
+            if (String(out ?? '').trim()) return true;
+        } catch {
+            // git grep exits 1 when nothing matches in this batch.
+        }
+    }
+    return false;
 }
 
 /**
@@ -451,13 +491,18 @@ async function importRepository(params) {
 
         mkdirSync(workDir, { recursive: true });
         const git = simpleGit({ timeout: { block: DEFAULT_TIMEOUT_MS }, abort: abortController.signal });
-        await git.clone(authSourceUrl, workDir, ['--bare']);
+        // --progress: simple-git's `block` timeout fires after 5 minutes with no
+        // output, and a non-TTY clone prints nothing while it transfers — every
+        // repo that took longer than 5 minutes to download was killed with
+        // "block timeout reached". Progress on stderr keeps the timer honest:
+        // it still kills a clone that truly hangs.
+        await git.clone(authSourceUrl, workDir, ['--bare', '--progress']);
 
         // Step 4: Check for LFS
         throwIfCancelled(isCancelled);
         const gitattrsPath = join(workDir, 'info', 'attributes');
-        const hasLFS = existsSync(gitattrsPath) &&
-            readFileSync(gitattrsPath, 'utf-8').includes('filter=lfs');
+        const hasLFS = (existsSync(gitattrsPath) && readFileSync(gitattrsPath, 'utf-8').includes('filter=lfs'))
+            || await detectLfsInBareRepo((args) => simpleGit(workDir, { abort: abortController.signal }).raw(args));
 
         if (hasLFS) {
             onProgress('lfs', 'Fetching LFS objects...', 40);

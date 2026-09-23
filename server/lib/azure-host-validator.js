@@ -283,3 +283,27 @@ export function removeHostFromAllowlist(pattern) {
   invalidateAllowlistCache();
   return { removed: result.changes > 0 };
 }
+
+/**
+ * True when `url` points at an on-prem Azure DevOps / TFS host the operator
+ * put on the allowlist. Such a host lives on the corporate network by design,
+ * so the private-address SSRF checks that guard arbitrary URLs must not apply
+ * to it — validateAzureHost already exempts it for the REST calls, but the
+ * clone and wiki paths ran the generic check and failed every on-prem repo
+ * with "resolves to a private or internal network address". Cloud hosts
+ * (dev.azure.com, *.visualstudio.com) keep the full check.
+ *
+ * @param {string} url
+ * @returns {boolean}
+ */
+export function isTrustedOnPremAzureUrl(url) {
+  let host;
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+    host = u.host;
+  } catch {
+    return false;
+  }
+  return isAllowedHost(host) && !classifyAzureHost(host).isCloud;
+}

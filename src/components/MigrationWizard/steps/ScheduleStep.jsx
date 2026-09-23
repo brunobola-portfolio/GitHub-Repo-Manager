@@ -107,15 +107,20 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
         })
       }
 
-      // Add wiki tasks
+      // Add wiki tasks. The wiki lands in the first migrated repo (its GitHub
+      // wiki, or a docs/ folder), the same repo work items go to. targetRef
+      // used to be the literal destination ("wiki"/"docs"), which left the
+      // engine with no owner/repo and no wiki id to clone.
       if (wizard.wiki?.enabled) {
+        const firstRepo = selectedRepos[0]
+        const firstRepoTarget = firstRepo?.targetName || firstRepo?.name || source.project
         for (const w of wizard.wiki.wikis || []) {
           const destination = wizard.wiki.destinations?.[w.id] || 'wiki'
           tasks.push({
             type: 'wiki',
             sourceRef: w.name || w.id,
-            targetRef: destination,
-            config: { destination },
+            targetRef: targetOrg ? `${targetOrg}/${firstRepoTarget}` : firstRepoTarget,
+            config: { destination, wikiId: w.id },
           })
         }
       }
@@ -142,6 +147,10 @@ export default function ScheduleStep({ schedule, onUpdate, wizard }) {
             : {}),
         },
         ...(wizard.taggingPolicy ? { taggingPolicy: wizard.taggingPolicy } : {}),
+        // A scheduled plan runs later, without the user: the server must
+        // resolve a vault credential now and store it with the plan. Only the
+        // execute call sent this, so scheduled vault runs had no PAT at all.
+        ...(wizard.source?.savedCredentialId ? { savedCredentialId: wizard.source.savedCredentialId } : {}),
       }
 
       const { planId } = await migrationApi.createPlan(planData)

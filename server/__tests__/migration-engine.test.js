@@ -24,9 +24,17 @@ describe('buildAzureCloneUrl (host-aware source clone URL)', () => {
       .toBe('https://brunobola.visualstudio.com/proj/_git/repo')
   })
 
-  it('on-prem TFS routes through /tfs/DefaultCollection with the org', () => {
+  it('on-prem TFS uses the collection exactly as the REST calls do', () => {
+    // https://tfs.trigenius.com/Trigenius/... is a real collection at the root;
+    // the old builder prefixed /tfs/DefaultCollection and cloned a URL that
+    // does not exist.
     expect(buildAzureCloneUrl('tfs.corp.com', 'Trigenius', 'proj', 'repo'))
-      .toBe('https://tfs.corp.com/tfs/DefaultCollection/Trigenius/proj/_git/repo')
+      .toBe('https://tfs.corp.com/Trigenius/proj/_git/repo')
+  })
+
+  it('on-prem TFS keeps a /tfs/ collection path and escapes each segment', () => {
+    expect(buildAzureCloneUrl('tfs.corp.com', 'tfs/DefaultCollection', 'My Project', 'repo'))
+      .toBe('https://tfs.corp.com/tfs/DefaultCollection/My%20Project/_git/repo')
   })
 })
 
@@ -667,6 +675,69 @@ describe('MigrationEngine', () => {
     })
   })
 
+  describe('plan state transitions (review 2026-09-23)', () => {
+    const newPlan = () => engine.createPlan(1, { type: 'azure', org: 'o', project: 'p' },
+      [{ type: 'repo', sourceRef: 'o/p/r', targetRef: 'gh/r', config: {} }])
+
+    it('refuses to cancel a finished plan, so its history is not rewritten', () => {
+      const planId = newPlan()
+      db.prepare("UPDATE migration_plans SET status = 'completed' WHERE id = ?").run(planId)
+      expect(() => engine.cancelPlan(planId)).toThrow(/completed/)
+      expect(engine.getPlanStatus(planId).status).toBe('completed')
+    })
+
+    it('refuses to pause anything but a running plan', () => {
+      const planId = newPlan()
+      db.prepare("UPDATE migration_plans SET status = 'cancelled' WHERE id = ?").run(planId)
+      expect(() => engine.pausePlan(planId)).toThrow(/cancelled/)
+      expect(engine.getPlanStatus(planId).status).toBe('cancelled')
+    })
+
+    it('tells a timed-out task to stop, instead of letting it keep writing', async () => {
+      await expect(engine._withTimeout(new Promise(() => {}), 10, { id: 77, type: 'work-items' }))
+        .rejects.toThrow(/timed out/)
+      expect(engine._timedOutTasks.has(77)).toBe(true)
+    })
+
+    it('waits for the paused run to drain before starting the resumed one', async () => {
+      const planId = newPlan()
+      db.prepare("UPDATE migration_plans SET status = 'paused' WHERE id = ?").run(planId)
+      engine._pausedPlans.add(planId)
+      let drain
+      engine._activeRuns.set(planId, new Promise((r) => { drain = r }))
+      const order = []
+      engine.executePlan = vi.fn(async () => { order.push(engine._pausedPlans.has(planId) ? 'started-while-paused' : 'started') })
+      const resuming = engine.resumePlan(planId, null)
+      await new Promise((r) => setTimeout(r, 20))
+      expect(engine.executePlan).not.toHaveBeenCalled()
+      order.push('drained'); drain()
+      await resuming
+      expect(order).toEqual(['drained', 'started'])
+    })
+
+    it('requeues tasks left running under a plan that was paused when the server died', () => {
+      const planId = newPlan()
+      db.prepare("UPDATE migration_plans SET status = 'paused' WHERE id = ?").run(planId)
+      db.prepare("UPDATE migration_tasks SET status = 'running' WHERE plan_id = ?").run(planId)
+      engine.recoverInterruptedPlans()
+      const plan = engine.getPlanStatus(planId)
+      expect(plan.status).toBe('paused')
+      expect(plan.tasks[0].status).toBe('pending')
+    })
+
+    it('rejects a second resume while the first is still in flight', async () => {
+      const planId = newPlan()
+      db.prepare("UPDATE migration_plans SET status = 'paused' WHERE id = ?").run(planId)
+      let release
+      engine.executePlan = vi.fn(() => new Promise((r) => { release = r }))
+      const first = engine.resumePlan(planId, null)
+      await expect(engine.resumePlan(planId, null)).rejects.toMatchObject({ code: 'INVALID_PLAN_STATE' })
+      release()
+      await first
+      expect(engine.executePlan).toHaveBeenCalledOnce()
+    })
+  })
+
   describe('cancelPlan', () => {
     it('sets plan status to cancelled', () => {
       const planId = engine.createPlan(1,
@@ -1304,7 +1375,11 @@ describe('MigrationEngine', () => {
       expect(result.dryRun).toBe(true)
       expect(result.taskType).toBe('repo')
       expect(result.targetRef).toBe('github-org/destrepo')
-      expect(result.message).toMatch(/Simulated successfully/i)
+      // Says exactly what was checked, and what was not.
+      expect(result.message).toMatch(/no writes were made/i)
+      expect(result.checked).toEqual(['the target github-org/destrepo is free on GitHub'])
+      expect(result.message).toMatch(/PAT itself were not contacted/)
+      expect(result.message).not.toMatch(/credentials look valid/)
     })
 
     it('surfaces "Target already exists" when dry-run finds the target repo on GitHub', async () => {

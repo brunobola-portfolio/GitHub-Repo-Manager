@@ -326,7 +326,13 @@ async function runImportApiStrategy(ctx) {
     let tempRepoId = null;
     try {
         onProgress('running', 'Creating temporary Git repository in Azure DevOps...', 10);
-        const tempRepoName = `_tfvc-import-${targetName}-${Date.now()}`;
+        // Azure Repos names may not start with "_" or ".", may not contain
+        // /:~&%;@'"?<>|#$*[]\ and stop at 64 characters. The leading "_" made
+        // this strategy fail on every run, so the cascade fell through to
+        // git-tfs or a history-less snapshot. Same rules as the task runner.
+        const safeTarget = String(targetName || 'repo').replace(/[/:~&%;@'"?<>|#$*[\]\\]/g, '-');
+        const stamp = `-${Date.now()}`;
+        const tempRepoName = `tfvc-import-${safeTarget}`.slice(0, 64 - stamp.length) + stamp;
         const tempRepo = await azureService.createGitRepo(azureOrg, azureProject, tempRepoName, azurePat, azureHost);
         tempRepoId = tempRepo.id;
 
@@ -335,8 +341,10 @@ async function runImportApiStrategy(ctx) {
 
         let conversionComplete = false;
         let pollAttempts = 0;
-        const MAX_POLLS = 120;
+        // 44 minutes of polling, like the plan runner: 10 minutes failed every
+        // large conversion while Azure was still converting.
         const POLL_INTERVAL = 5000;
+        const MAX_POLLS = Math.floor((44 * 60_000) / POLL_INTERVAL);
 
         while (!conversionComplete && pollAttempts < MAX_POLLS) {
             await new Promise((r) => setTimeout(r, POLL_INTERVAL));
@@ -358,7 +366,7 @@ async function runImportApiStrategy(ctx) {
                 throw new Error(`Import API conversion failed: ${status.detailedStatus?.errorMessage || status.status}`);
             }
         }
-        if (!conversionComplete) throw new Error('Import API conversion timed out after 10 minutes');
+        if (!conversionComplete) throw new Error('Import API conversion timed out after 44 minutes');
 
         onProgress('running', 'Cloning converted repository...', 45);
         const repoDetails = await azureService.getRepoDetails(azureOrg, azureProject, tempRepoName, azurePat, azureHost);
@@ -371,7 +379,11 @@ async function runImportApiStrategy(ctx) {
             targetOwner, targetName, isPrivate, description, githubToken,
             onProgress: (status, message, pct) => {
                 const remappedPct = 45 + Math.floor((pct / 100) * 50);
-                onProgress(status === 'complete' ? 'running' : status, message, remappedPct);
+                // Neither the inner "complete" nor its "failed" is the job's
+                // verdict — the cascade decides after this strategy returns or
+                // throws. Relaying "failed" made the UI poller stop while the
+                // cascade went on to a strategy that could still succeed.
+                onProgress(status === 'complete' || status === 'failed' ? 'running' : status, message, remappedPct);
             }
         });
         if (!result.success) throw new Error(result.error || 'Import to GitHub failed');

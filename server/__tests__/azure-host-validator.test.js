@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   isAllowedHost, resolveAzureBaseUrl, invalidateAllowlistCache,
   addHostToAllowlist, removeHostFromAllowlist, validateAzureHost,
-  classifyAzureHost,
+  classifyAzureHost, isTrustedOnPremAzureUrl,
 } from '../lib/azure-host-validator.js';
 import db from '../db.js';
 
@@ -280,5 +280,34 @@ describe('azure-host-validator', () => {
       expect(isAllowedHost('env-host.com')).toBe(true);
       expect(isAllowedHost('db-host.com')).toBe(true);
     });
+  });
+});
+
+
+// On-prem TFS is private by design. The clone and wiki paths ran the generic
+// SSRF check and failed every repo on a corporate host with "resolves to a
+// private or internal network address".
+describe('isTrustedOnPremAzureUrl', () => {
+  const originalEnv = process.env.ALLOWED_AZURE_HOSTS;
+  beforeEach(() => { invalidateAllowlistCache(); });
+  afterEach(() => {
+    if (originalEnv === undefined) delete process.env.ALLOWED_AZURE_HOSTS;
+    else process.env.ALLOWED_AZURE_HOSTS = originalEnv;
+    invalidateAllowlistCache();
+  });
+
+  it('trusts an allowlisted on-prem host', () => {
+    process.env.ALLOWED_AZURE_HOSTS = 'dev.azure.com,tfs.corp.local';
+    invalidateAllowlistCache();
+    expect(isTrustedOnPremAzureUrl('https://tfs.corp.local/Trigenius/p/_git/r')).toBe(true);
+  });
+
+  it('never trusts a cloud host, an unlisted host, or a non-http scheme', () => {
+    process.env.ALLOWED_AZURE_HOSTS = 'dev.azure.com,tfs.corp.local';
+    invalidateAllowlistCache();
+    expect(isTrustedOnPremAzureUrl('https://dev.azure.com/o/p/_git/r')).toBe(false);
+    expect(isTrustedOnPremAzureUrl('https://10.0.0.5/o/p/_git/r')).toBe(false);
+    expect(isTrustedOnPremAzureUrl('file:///tfs.corp.local/x')).toBe(false);
+    expect(isTrustedOnPremAzureUrl('not a url')).toBe(false);
   });
 });

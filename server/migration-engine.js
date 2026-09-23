@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events'
-import { classifyAzureHost } from './lib/azure-host-validator.js'
+import { classifyAzureHost, resolveAzureBaseUrl, encodePathSegments } from './lib/azure-host-validator.js'
 import { isSchedulingEnabled } from './lib/credential-encryption.js'
 import { createMigrationCredentialManager } from './lib/migration-credential-manager.js'
 import { githubApi } from './lib/github-api.js'
@@ -14,16 +14,24 @@ import { runRepo, runTfvc, runWorkItems, runWiki } from './lib/migration/task-ru
  *   - dev.azure.com (cloud):       https://dev.azure.com/{org}/{project}/_git/{repo}
  *   - {acct}.visualstudio.com (VSTS): account is the subdomain, org NOT in path
  *                                  → https://acct.visualstudio.com/{project}/_git/{repo}
- *   - on-prem TFS:                 https://{host}/tfs/DefaultCollection/{org}/{project}/_git/{repo}
+ *   - on-prem TFS:                 https://{host}/{collection}/{project}/_git/{repo}
+ *                                  (collection may itself be "tfs/DefaultCollection")
  *
  * Exported for unit testing.
  */
 export function buildAzureCloneUrl(host, org, project, repo) {
-  const { kind, orgInPath } = classifyAzureHost(host)
-  const base = kind === 'on-prem' ? `https://${host}/tfs/DefaultCollection` : `https://${host}`
-  const orgSegment = orgInPath ? `/${org}` : ''
-  return `${base}${orgSegment}/${project}/_git/${repo}`
+  // Same shape as the REST base (azure-service.js orgBaseFor): the org IS the
+  // collection path on-prem ("Trigenius", or "tfs/DefaultCollection" on an
+  // older /tfs/ install). Hardcoding /tfs/DefaultCollection in front of it
+  // produced https://tfs.example/tfs/DefaultCollection/Trigenius/…, which no
+  // server answers, while the REST calls with the same org worked.
+  const { orgInPath } = classifyAzureHost(host)
+  const base = resolveAzureBaseUrl(host)
+  const orgSegment = orgInPath ? `/${encodePathSegments(org || '')}` : ''
+  return `${base}${orgSegment}/${encodeURIComponent(project)}/_git/${encodeURIComponent(repo)}`
 }
+
+const CANCELLABLE_STATUSES = new Set(['draft', 'scheduled', 'running', 'paused', 'interrupted'])
 
 export class MigrationEngine extends EventEmitter {
   constructor(db) {
@@ -31,6 +39,22 @@ export class MigrationEngine extends EventEmitter {
     this.db = db
     this._cancelledPlans = new Set()
     this._pausedPlans = new Set()
+    this._resumingPlans = new Set()
+    this._timedOutTasks = new Set()
+    // planId → promise of the executePlan run in progress. A pause breaks the
+    // dispatch loop but that run still waits for its in-flight tasks; a resume
+    // that started a second run meanwhile doubled the concurrency, and the
+    // first run — no longer paused — finalised the plan as completed while the
+    // second was still working. resumePlan waits for the previous run first.
+    this._activeRuns = new Map()
+    const rawExecutePlan = this.executePlan.bind(this)
+    this.executePlan = (planId, credentials) => {
+      const run = rawExecutePlan(planId, credentials)
+      const settled = run.then(() => {}, () => {})
+      this._activeRuns.set(planId, settled)
+      settled.then(() => { if (this._activeRuns.get(planId) === settled) this._activeRuns.delete(planId) })
+      return run
+    }
     this._lastProgressWrite = new Map() // taskId -> timestamp
     // Per-type ceilings (ms) for a single task — a safety net so a hung external
     // call (Azure/GitHub never responding) can't hold a concurrency slot forever.
@@ -284,6 +308,16 @@ export class MigrationEngine extends EventEmitter {
     // plan-complete subscriber) can resolve them via `engine.credentials.retrieve()`
     // — covers immediate execute, scheduled tick, and retry/resume flows
     // uniformly. The 48h grace period on the credential manager handles cleanup.
+    // A resume or retry started without a PAT in the request (the UI sends
+    // none) must not replace the PAT stored for this plan with null: that
+    // failed every Azure task with "Azure PAT is required", or silently fell
+    // back to the operator's AZURE_PAT.
+    if (credentials && !credentials.azurePat) {
+      try {
+        const stored = this.credentials.retrieve(planId)
+        if (stored?.azurePat) credentials = { ...credentials, azurePat: stored.azurePat }
+      } catch { /* nothing stored — the task-level checks report it */ }
+    }
     if (credentials) {
       try { this.credentials.store(planId, credentials) }
       catch (err) { logger.warn({ err, planId }, 'failed to stash credentials at execute; post-complete consumers may degrade') }
@@ -339,6 +373,8 @@ export class MigrationEngine extends EventEmitter {
         this.emit('task-status', { planId, taskId: task.id, status: 'running' })
 
         const timeoutMs = this._taskTimeoutMs[task.type] ?? this._defaultTaskTimeoutMs
+        // A retry of this task starts clean.
+        this._timedOutTasks.delete(task.id)
         const metadata = await this._withTimeout(this._executeTask(task, credentials), timeoutMs, task)
         // Cancellation raced the task to completion — this task type either
         // didn't get to check callbacks.isCancelled() in time or ran to success
@@ -491,6 +527,15 @@ export class MigrationEngine extends EventEmitter {
       throw new Error(`Plan ${planId} not found`)
     }
 
+    // A finished plan is history: cancelling it rewrote a 'completed' run as
+    // 'cancelled' (and made it undeletable). Only a plan that has not ended
+    // can be cancelled.
+    if (!CANCELLABLE_STATUSES.has(plan.status)) {
+      const err = new Error(`Cannot cancel a plan that is ${plan.status}`)
+      err.code = 'INVALID_PLAN_STATE'
+      throw err
+    }
+
     this._cancelledPlans.add(planId)
 
     this.db.prepare(
@@ -516,6 +561,15 @@ export class MigrationEngine extends EventEmitter {
       throw new Error(`Plan ${planId} not found`)
     }
 
+    // Only a running plan can pause. Pausing a cancelled plan and then
+    // resuming it left it 'running' forever: the cancelled set still held the
+    // id, so the loop exited at once without finalising.
+    if (plan.status !== 'running') {
+      const err = new Error(`Cannot pause a plan that is ${plan.status}`)
+      err.code = 'INVALID_PLAN_STATE'
+      throw err
+    }
+
     this._pausedPlans.add(planId)
 
     this.db.prepare(
@@ -536,14 +590,32 @@ export class MigrationEngine extends EventEmitter {
       throw new Error(`Plan ${planId} not found`)
     }
     if (plan.status !== 'paused' && plan.status !== 'interrupted') {
-      throw new Error(`Cannot resume plan with status '${plan.status}'`)
+      const err = new Error(`Cannot resume plan with status '${plan.status}'`)
+      err.code = 'INVALID_PLAN_STATE'
+      throw err
     }
+    // Two resume requests during the awaited preflight both passed the status
+    // check above and executed the same pending tasks twice.
+    if (this._resumingPlans.has(planId)) {
+      const err = new Error('This plan is already resuming')
+      err.code = 'INVALID_PLAN_STATE'
+      throw err
+    }
+    this._resumingPlans.add(planId)
 
-    this._pausedPlans.delete(planId)
+    try {
+      // Let the paused run drain its in-flight tasks and return (it sees the
+      // plan still paused and does not finalise) before this run starts.
+      const previous = this._activeRuns.get(planId)
+      if (previous) await previous
+      this._pausedPlans.delete(planId)
 
-    // DB has status 'paused'/'interrupted' — executePlan accepts both and
-    // transitions to 'running', then processes remaining pending tasks
-    await this.executePlan(planId, credentials)
+      // DB has status 'paused'/'interrupted' — executePlan accepts both and
+      // transitions to 'running', then processes remaining pending tasks
+      await this.executePlan(planId, credentials)
+    } finally {
+      this._resumingPlans.delete(planId)
+    }
   }
 
   /**
@@ -606,6 +678,20 @@ export class MigrationEngine extends EventEmitter {
     const resetTask = this.db.prepare(
       "UPDATE migration_tasks SET status = 'pending', progress_pct = 0, progress_message = NULL, started_at = NULL, retries = ? WHERE id = ?"
     )
+
+    // A crash while a plan was PAUSED leaves the tasks that were still in
+    // flight marked 'running' under a 'paused' plan. The scan above only
+    // looks at running plans, so those rows stayed 'running' forever and a
+    // resume (which only picks up 'pending') never ran them. Put them back in
+    // the queue; the plan stays paused for the user to resume.
+    const pausedOrphanTasks = this.db.prepare(
+      `SELECT id, retries FROM migration_tasks
+       WHERE status = 'running' AND plan_id IN (SELECT id FROM migration_plans WHERE status = 'paused')`
+    ).all()
+    for (const t of pausedOrphanTasks) {
+      try { resetTask.run(t.retries + 1, t.id); summary.recovered++ }
+      catch (err) { logger.error({ err, taskId: t.id }, 'migration-engine: failed to requeue a task orphaned under a paused plan') }
+    }
     const failTask = this.db.prepare(
       "UPDATE migration_tasks SET status = 'failed', error_message = ?, completed_at = datetime('now') WHERE id = ?"
     )
@@ -735,7 +821,15 @@ export class MigrationEngine extends EventEmitter {
     let timer
     const timeout = new Promise((_, reject) => {
       timer = setTimeout(
-        () => reject(new Error(`Task timed out after ${Math.round(ms / 60000)} min (${task.type})`)),
+        () => {
+          // Rejecting the race marks the task failed, but the runner itself
+          // kept going: a timed-out clone still pushed, a timed-out work-item
+          // run kept creating issues, and a retry then did it all again. The
+          // runners already stop when isCancelled() turns true, so a timeout
+          // now flips that for this task.
+          this._timedOutTasks.add(task.id)
+          reject(new Error(`Task timed out after ${Math.round(ms / 60000)} min (${task.type})`))
+        },
         ms,
       )
       if (timer && timer.unref) timer.unref()
@@ -756,13 +850,24 @@ export class MigrationEngine extends EventEmitter {
     const resolvedCredentials = { ...credentials, azurePat: resolvedAzurePat }
     const callbacks = {
       onProgress: (pct, msg) => this._updateTaskProgress(task.id, task.plan_id, pct, msg),
-      isCancelled: () => this._isCancelled(task.plan_id)
+      isCancelled: () => this._isCancelled(task.plan_id) || this._timedOutTasks.has(task.id)
     }
 
     // Parse target_ref to get owner/repo — "org/repo" or just "repo" (user account)
     const targetRefParts = (task.target_ref || '').split('/')
-    const targetOwner = targetRefParts.length > 1 ? targetRefParts[0] : ''
+    let targetOwner = targetRefParts.length > 1 ? targetRefParts[0] : ''
     const targetRepo = targetRefParts.length > 1 ? targetRefParts.slice(1).join('/') : targetRefParts[0]
+    // A personal-account target carries no owner. The repo importer creates
+    // under the token's user by itself, but the wiki and work-item runners
+    // build /repos/{owner}/{repo} URLs and pushed to github.com//repo.wiki.git.
+    if (!targetOwner && (task.type === 'wiki' || task.type === 'work-items') && credentials?.githubToken) {
+      try {
+        const { data: me } = await githubApi('/user', credentials.githubToken)
+        targetOwner = me?.login || ''
+      } catch (e) {
+        logger.warn({ err: e?.message, taskId: task.id }, 'Could not resolve the GitHub login for a personal-account target')
+      }
+    }
 
     // Validate target repo name before hitting external APIs
     if (!targetRepo || /^[_.]|[.]$|[/:~&%;@'"?<>|#$*\[\]\\]/.test(targetRepo) || targetRepo.length > 64) { // eslint-disable-line no-useless-escape
@@ -782,7 +887,11 @@ export class MigrationEngine extends EventEmitter {
       // real-world failure (target name collision, no write access) without
       // side effects. Read-only GET on the target.
       callbacks.onProgress(40, '[DRY-RUN] Checking target availability')
-      if ((task.type === 'repo' || task.type === 'repo-tfvc') && targetOwner && targetRepo) {
+      const checked = []
+      // In-place TFVC stays in Azure: its target_ref owner is the Azure org,
+      // so a GitHub probe would test the wrong system.
+      const probesGithub = (task.type === 'repo' || (task.type === 'repo-tfvc' && !config.inPlace)) && targetOwner && targetRepo
+      if (probesGithub) {
         try {
           await githubApi(`/repos/${targetOwner}/${targetRepo}`, resolvedCredentials.githubToken)
           throw new Error(`Target already exists: ${targetOwner}/${targetRepo} — rename or delete before real migration.`)
@@ -792,12 +901,14 @@ export class MigrationEngine extends EventEmitter {
           // Message-based pass-through for our own "Target already exists" error above.
           if (e.message && e.message.startsWith('Target already exists:')) throw e
         }
+        checked.push(`the target ${targetOwner}/${targetRepo} is free on GitHub`)
       }
 
       // For Azure-backed task types, surface missing credentials as a real failure.
       if ((task.type === 'work-items' || task.type === 'wiki' || task.type === 'repo-tfvc') && !resolvedCredentials.azurePat) {
         throw new Error(`Azure PAT is required for ${task.type} tasks but was not provided.`)
       }
+      if (resolvedCredentials.azurePat) checked.push('an Azure PAT is present')
 
       callbacks.onProgress(70, '[DRY-RUN] Simulating transfer')
       await new Promise(r => setTimeout(r, 120))
@@ -809,12 +920,20 @@ export class MigrationEngine extends EventEmitter {
         taskType: task.type,
         sourceRef: task.source_ref,
         targetRef: task.target_ref,
-        message: 'Simulated successfully — no writes were made. Target is available and credentials look valid.',
+        // Say exactly what was checked. This used to claim "credentials look
+        // valid" without contacting Azure at all, and "target is available"
+        // for personal-account and in-place tasks whose target was never probed.
+        checked,
+        message: `Simulated — no writes were made. Checked: ${checked.length ? checked.join('; ') : 'nothing beyond the plan shape'}. The source repository and the PAT itself were not contacted.`,
       }
     }
 
     const azureHost = resolvedCredentials.azureHost || 'dev.azure.com'
 
+    // The plan's own org/project let the runners split source_ref from a
+    // KNOWN prefix: an on-prem org can contain "/" (tfs/DefaultCollection),
+    // which a plain split('/') read as org=tfs, project=DefaultCollection.
+    const planSourceRow = this.db.prepare('SELECT source_org, source_project FROM migration_plans WHERE id = ?').get(task.plan_id)
     const ctx = {
       config,
       resolvedCredentials,
@@ -823,6 +942,7 @@ export class MigrationEngine extends EventEmitter {
       targetRepo,
       azureHost,
       buildAzureCloneUrl,
+      planSource: planSourceRow ? { org: planSourceRow.source_org, project: planSourceRow.source_project } : null,
     }
 
     switch (task.type) {

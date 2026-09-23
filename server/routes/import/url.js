@@ -166,10 +166,16 @@ router.post('/import/:id/cancel', requireAuth, async (req, res) => {
             return errorResponse(res, 400, 'Invalid job id', 'INVALID_ID');
         }
         const job = db.prepare(
-            'SELECT id, status FROM migration_jobs WHERE id = ? AND user_id = ?'
+            'SELECT id, status, source_type FROM migration_jobs WHERE id = ? AND user_id = ?'
         ).get(id, req.session.userId);
         if (!job) {
             return errorResponse(res, 404, 'Import job not found', 'NOT_FOUND');
+        }
+        // Only the URL importer checks the cancel flag. Answering "success"
+        // for an Azure or TFVC job told the user it had stopped while the
+        // import carried on; say so instead.
+        if (job.source_type !== 'url') {
+            return errorResponse(res, 409, 'This Azure DevOps import cannot be stopped once it has started. Let it finish, then delete the target repository if you do not want it.', 'NOT_CANCELLABLE');
         }
         if (job.status !== 'running' && job.status !== 'pending') {
             return errorResponse(res, 409, `Cannot cancel a job with status '${job.status}'`, 'NOT_CANCELLABLE');

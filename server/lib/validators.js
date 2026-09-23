@@ -779,6 +779,9 @@ export const createPlanSchema = z.object({
             targetRef: z.string().min(1),
             config: z.object({
                 destination: z.enum(['wiki', 'docs']),
+                // Which Azure wiki to clone; without it getWikiCloneUrl asked
+                // for wikis/undefined and every wiki task 404'd.
+                wikiId: z.string().max(200).optional(),
                 createPR: z.boolean().default(true),
                 branch: z.string().default('docs/wiki-migration')
             })
