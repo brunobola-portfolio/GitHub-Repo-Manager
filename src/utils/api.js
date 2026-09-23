@@ -50,9 +50,6 @@ export function markSessionEnded() {
     sessionKnown = false
 }
 
-export function isSessionKnown() {
-    return sessionKnown
-}
 
 // The redirect target is the landing page. Landing there with the marker
 // already in the URL and redirecting again is the loop above in one line, so
@@ -188,6 +185,46 @@ export async function getCsrfToken() {
  */
 export function invalidateCsrfToken() {
     csrfToken = null
+}
+
+/**
+ * fetch() for callers that handle the response themselves (streams, typed AI
+ * errors) but still need this app's CSRF handling. A same-origin /api/*
+ * mutation gets the X-CSRF-Token header when the caller did not set one, and
+ * a 403 `csrf_invalid` (the token rotated under a re-login in another tab) is
+ * sent once more with a fresh token. Without that retry the first AI action
+ * after a rotation failed with a 403 that no amount of pressing Retry could
+ * fix. Everything else is plain fetch.
+ *
+ * @param {string} url
+ * @param {RequestInit} [init]
+ * @returns {Promise<Response>}
+ */
+export async function csrfFetch(url, init = {}) {
+    if (!isMutation(init) || !isSameOriginApi(url)) return fetch(url, init)
+
+    const withToken = (token) => {
+        const headers = init.headers instanceof Headers
+            ? Object.fromEntries(init.headers.entries())
+            : { ...(init.headers || {}) }
+        if (token) headers['X-CSRF-Token'] = token
+        return { ...init, headers }
+    }
+    const callerToken = init.headers instanceof Headers
+        ? init.headers.get('X-CSRF-Token')
+        : init.headers?.['X-CSRF-Token']
+    const first = callerToken ? init : withToken(await getCsrfToken().catch(() => null))
+
+    const res = await fetch(url, first)
+    if (res.status !== 403 || typeof res.clone !== 'function') return res
+    const body = await res.clone().json().catch(() => null)
+    if (body?.code !== 'csrf_invalid') return res
+
+    // The first answer is discarded: read it off so the connection is released
+    // (an unread body under Cache-Control: no-store keeps it open).
+    await res.text().catch(() => {})
+    invalidateCsrfToken()
+    return fetch(url, withToken(await getCsrfToken().catch(() => null)))
 }
 
 function isMutation(options) {

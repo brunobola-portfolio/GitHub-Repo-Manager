@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { getCsrfToken } from '../utils/api'
+import { getCsrfToken, csrfFetch } from '../utils/api'
 import { isAbort } from '../utils/errorClassification'
 
 const DEFAULT_MAX_RETRIES = 3
@@ -36,7 +36,7 @@ export function useStreaming({ maxRetries = DEFAULT_MAX_RETRIES } = {}) {
             const streamUrl = `${url}${separator}stream=true`
 
             const csrfToken = await getCsrfToken()
-            const res = await fetch(streamUrl, {
+            const res = await csrfFetch(streamUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken },
                 credentials: 'include',

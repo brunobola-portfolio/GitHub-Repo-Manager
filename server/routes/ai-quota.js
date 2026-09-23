@@ -38,15 +38,42 @@ import { guardedIncrementAIUsage, releaseGuardedAIUsage } from '../lib/usage-met
  *          (`quotaExceededResponse(reserved)`) and returns.
  */
 export function reserveAIQuota(req, res, metric) {
+    return reserve(req, res, metric, (statusCode) => statusCode >= 400);
+}
+
+/**
+ * reserveAIQuota for handlers whose charge does not follow the status code:
+ * a stream has already answered 200 when it fails, and an answer that was
+ * generated but cannot be parsed is charged although it goes out as a 502.
+ * The unit goes back when the response ends unless the handler called
+ * `commit()` first.
+ *
+ * These handlers used a read-only check before the provider call and an
+ * increment after it, so a burst of parallel requests all passed the check
+ * and spent past the cap.
+ *
+ * @returns {{allowed: boolean, metric: string, current: number, limit: number, commit: () => void}}
+ */
+export function holdAIQuota(req, res, metric) {
+    let committed = false;
+    const reserved = reserve(req, res, metric, () => !committed);
+    return { ...reserved, commit() { committed = true; } };
+}
+
+function reserve(req, res, metric, shouldRelease) {
     const userId = req.session?.userId;
     const reserved = guardedIncrementAIUsage(userId, metric);
     if (!reserved.allowed) return reserved;
 
+    // 'close' as well as 'finish': a client that disconnects mid-stream ends
+    // the response without 'finish', and its unit must still be settled.
     let settled = false;
-    res.on('finish', () => {
+    const settle = () => {
         if (settled) return;
         settled = true;
-        if (res.statusCode >= 400) releaseGuardedAIUsage(userId, metric);
-    });
+        if (shouldRelease(res.statusCode)) releaseGuardedAIUsage(userId, metric);
+    };
+    res.on('finish', settle);
+    res.on('close', settle);
     return reserved;
 }

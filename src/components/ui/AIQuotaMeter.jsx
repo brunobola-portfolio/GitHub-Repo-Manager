@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
+import { useDismiss } from '../../hooks/useDismiss'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Sparkles, ExternalLink } from 'lucide-react'
 import { openAppSettings } from '../../utils/appEvents'
@@ -69,26 +70,14 @@ export function AIQuotaMeter({ current = 0, limit = Infinity, tier = 'free', res
     const containerRef = useRef(null)
     const triggerRef = useRef(null)
 
-    useEffect(() => {
-        if (!open) return undefined
-        const onKey = (e) => {
-            if (e.key === 'Escape') {
-                setOpen(false)
-                triggerRef.current?.focus()
-            }
-        }
-        const onMouseDown = (e) => {
-            if (containerRef.current && !containerRef.current.contains(e.target)) {
-                setOpen(false)
-            }
-        }
-        document.addEventListener('keydown', onKey)
-        document.addEventListener('mousedown', onMouseDown)
-        return () => {
-            document.removeEventListener('keydown', onKey)
-            document.removeEventListener('mousedown', onMouseDown)
-        }
-    }, [open])
+    useDismiss(containerRef, {
+        open,
+        onClose: (e) => {
+            setOpen(false)
+            // Escape returns focus to the pill; a press elsewhere leaves it where it went.
+            if (e?.key === 'Escape') triggerRef.current?.focus()
+        },
+    })
 
     const unlimited = !Number.isFinite(limit)
     const percent = unlimited ? 0 : current / Math.max(1, limit)

@@ -125,14 +125,14 @@ vi.mock('../lib/ai-spend-cap.js', () => ({
 // checkUsageLimit/incrementUsage are overridden per-test for deterministic
 // quota control; quotaExceededResponse stays real so tests pin the exact
 // envelope shape the frontend's <QuotaExceededState /> expects.
-const mockCheckUsageLimit = vi.fn(() => ({ allowed: true, current: 0, limit: 200, remaining: 200 }))
-const mockIncrementUsage = vi.fn()
+const mockReserveQueries = vi.fn(() => ({ allowed: true, current: 0, limit: 200, remaining: 200 }))
+const mockReleaseQueries = vi.fn()
 vi.mock('../lib/usage-meter.js', async (importOriginal) => {
     const actual = await importOriginal()
     return {
         ...actual,
-        checkUsageLimit: (...args) => mockCheckUsageLimit(...args),
-        incrementUsage: (...args) => mockIncrementUsage(...args),
+        guardedIncrementAIUsage: (...args) => ({ metric: args[1], ...mockReserveQueries(...args) }),
+        releaseGuardedAIUsage: (...args) => mockReleaseQueries(...args),
     }
 })
 
@@ -150,7 +150,7 @@ beforeEach(() => {
     vi.clearAllMocks()
     createProviderMock.mockResolvedValue({ generate: async () => ({ text: 'x' }) })
     commitOrOpenPRMock.mockResolvedValue({ commitSha: 'abc123', mode: 'direct' })
-    mockCheckUsageLimit.mockReturnValue({ allowed: true, current: 0, limit: 200, remaining: 200 })
+    mockReserveQueries.mockReturnValue({ allowed: true, current: 0, limit: 200, remaining: 200 })
     mockCheckAISpendCap.mockReturnValue({ allowed: true, capCents: 0, spentCents: 0 })
 })
 
@@ -166,7 +166,7 @@ describe('POST /repos/:owner/:repo/community-health/generate', () => {
         expect(createProviderMock).not.toHaveBeenCalled()
         // Deterministic generators never touch AI, so they must never consume
         // the ai_queries quota either.
-        expect(mockCheckUsageLimit).not.toHaveBeenCalled()
+        expect(mockReserveQueries).not.toHaveBeenCalled()
     })
 
     it('returns 400 invalid_file_type for an unknown fileType', async () => {
@@ -194,11 +194,12 @@ describe('POST /repos/:owner/:repo/community-health/generate', () => {
             .send({ fileType: 'contributing' })
 
         expect(res.status).toBe(200)
-        expect(mockIncrementUsage).toHaveBeenCalledWith(1, 'ai_queries')
+        expect(mockReserveQueries).toHaveBeenCalledWith(1, 'ai_queries')
+        expect(mockReleaseQueries).not.toHaveBeenCalled()
     })
 
     it('returns 429 QUOTA_EXCEEDED when the ai_queries quota is exhausted, without calling the provider', async () => {
-        mockCheckUsageLimit.mockReturnValue({ allowed: false, current: 200, limit: 200, remaining: 0 })
+        mockReserveQueries.mockReturnValue({ allowed: false, current: 200, limit: 200, remaining: 0 })
         const res = await request(makeApp())
             .post('/api/v1/repos/octocat/hello/community-health/generate')
             .send({ fileType: 'contributing' })

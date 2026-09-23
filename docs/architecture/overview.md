@@ -107,9 +107,6 @@ Spec: [`docs/specs/2026-05-01-intent-affordances-audit.md`](../specs/2026-05-01-
 Slice 5 ships three primitives that turn most desktop flows into usable mobile
 ones without rewriting per-page layouts:
 
-- [`useViewportSafeHeight`](../../src/hooks/useViewportSafeHeight.js) — returns
-  the visual viewport height, accounting for iOS Safari URL-bar collapse.
-  Falls back to `window.innerHeight` when `visualViewport` is unavailable.
 - [`MobileQuickActionsFab`](../../src/components/MobileQuickActionsFab.jsx) —
   the touch-device floating action button (Create / Import / Dev Toolkit),
   rendered only at `< md`. It uses the "peek-out" reveal pattern (translated
@@ -234,10 +231,9 @@ Entry point: `server/index.js`
 
 Key infrastructure:
 
-- **Redis** (`ioredis`): session storage (`connect-redis`), rate-limit counters
-  (`rate-limit-redis`), and BullMQ job queue streams.
-- **BullMQ**: background job queue for long-running Git imports and migration
-  plan execution.
+- **Redis** (`ioredis`, optional): session storage (`connect-redis`) and
+  rate-limit counters (`rate-limit-redis`). Long-running Git imports and
+  migration plans run in-process; there is no job queue.
 - **Stripe**: payment collection and subscription lifecycle via webhooks
   (signature-verified, sync-transaction idempotency).
 - **Sentry** (`@sentry/node`, `@sentry/react`): error tracking + breadcrumbs on
@@ -311,11 +307,10 @@ Multi-tenancy: all per-user tables (`repo_metadata`, `repo_embeddings`, `communi
 
 ## Redis
 
-Redis is used for three concerns, each with a dedicated `ioredis` client:
+Redis is used for two concerns, each with a dedicated `ioredis` client:
 
 - **Sessions**: `connect-redis` replaces the in-process session store for horizontal scaling and persistence across restarts.
 - **Rate limiting**: `rate-limit-redis` backs `express-rate-limit` so rate-limit counters survive server restarts and work across multiple instances.
-- **Job queues**: `bullmq` uses Redis streams to run background jobs (e.g. long-running Git imports, migration plan execution) outside the HTTP request lifecycle.
 
 Set `REDIS_URL` in the environment to enable Redis. When the variable is absent the application falls back to in-memory stores (development only).
 

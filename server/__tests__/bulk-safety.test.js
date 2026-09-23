@@ -81,7 +81,7 @@ function statementFor(sql) {
         }
     }
     if (/INSERT INTO usage_metrics/i.test(sql)) {
-        // Legacy plain incrementDailyUsage()'s INSERT ... ON CONFLICT DO UPDATE.
+        // A plain INSERT ... ON CONFLICT DO UPDATE on usage_metrics.
         return {
             run: (userId, metricType) => {
                 const key = `${userId}:${metricType}`
@@ -110,7 +110,7 @@ vi.mock('../lib/github-api.js', () => ({
 // requireTier mock: checks req.userTier. Default is 'pro' (authed tier).
 // Build helpers can set req.userTier = 'free' to test rejection.
 // getUserTier is also exported here — the daily anti-abuse ceiling
-// (usage-meter.js's checkDailyUsageLimit/incrementDailyUsage) resolves tier
+// (usage-meter.js's guardedDailyIncrement) resolves tier
 // internally via this function, independent of req.userTier. The limit is
 // tier-INDEPENDENT (bulkDestructiveDailyMax), so a fixed 'free' is fine.
 vi.mock('../middleware/require-tier.js', () => ({

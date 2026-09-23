@@ -10,11 +10,11 @@
  */
 
 import express from 'express';
+import { holdAIQuota } from '../ai-quota.js';
 import { z } from 'zod';
 import logger from '../../lib/logger.js';
 import { requireAuth, safeError } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate-request.js';
-import { checkUsageLimit, incrementUsage } from '../../lib/usage-meter.js';
 import { checkAISpendCap, recordAISpend } from '../../lib/ai-spend-cap.js';
 import { isServerKeyProvider } from '../../lib/ai-provider.js';
 import { auditLog } from '../../lib/audit.js';
@@ -112,7 +112,7 @@ router.post(
     validateBody(bodySchema),
     async (req, res) => {
         const userId = req.session.userId;
-        const quota = checkUsageLimit(userId, 'ai_queries');
+        const quota = holdAIQuota(req, res, 'ai_queries');
         if (!quota.allowed) {
             return res.status(429).json({
                 error: 'AI query limit exceeded',
@@ -236,7 +236,7 @@ router.post(
             }
         }
 
-        incrementUsage(userId, 'ai_queries');
+        quota.commit();
         const body = shapeResponse({
             source,
             current: { name, description: repo.description || '' },

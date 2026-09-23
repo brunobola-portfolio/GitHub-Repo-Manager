@@ -930,10 +930,6 @@ export const issueCommentSchema = z.object({
     body: z.string().min(1).max(65_536),
 }).strict();
 
-export const issueLabelsSchema = z.object({
-    labels: z.array(z.string().min(1).max(50)).min(1).max(100),
-}).strict();
-
 export const repoLabelCreateSchema = z.object({
     name: z.string().min(1).max(50),
     color: z.string().regex(/^[0-9a-fA-F]{6}$/, 'Color must be a 6-char hex without #').optional(),
@@ -1131,8 +1127,7 @@ export const contentsDeleteSchema = z.object({
 //
 // Replace-labels intentionally allows an EMPTY array — "clear all labels" is a
 // legitimate flow (IssueSidebar sends the full selected label set, which may be
-// empty). This is why we DON'T reuse `issueLabelsSchema` (which is `.min(1)`,
-// for the add-labels endpoint). Items are GitHub label names.
+// empty). Items are GitHub label names.
 export const issueLabelsReplaceSchema = z.object({
     labels: z.array(z.string().min(1).max(50)).max(100),
 }).strict();

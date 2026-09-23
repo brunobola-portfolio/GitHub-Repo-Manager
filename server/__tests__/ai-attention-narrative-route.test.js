@@ -29,16 +29,17 @@ vi.mock('../middleware/auth.js', async () => {
     }
 })
 
-const checkUsageLimit = vi.fn(() => ({ allowed: true, current: 0, limit: 100, remaining: 100 }))
-const incrementUsage = vi.fn()
+// The ai_queries unit is reserved atomically before the provider call and
+// handed back if the request fails.
+const guardedIncrementAIUsage = vi.fn(() => ({ allowed: true, metric: 'ai_queries', current: 1, limit: 100, remaining: 99 }))
+const releaseGuardedAIUsage = vi.fn()
 vi.mock('../lib/usage-meter.js', () => ({
     // Added with reserveAIQuota: a FULL module mock silently drops new
     // exports, and route handlers then call undefined and 500.
-    guardedIncrementAIUsage: vi.fn(() => ({ allowed: true, metric: 'ai', current: 0, limit: 100, remaining: 100 })),
-    releaseGuardedAIUsage: vi.fn(),
-
-    checkUsageLimit: (...a) => checkUsageLimit(...a),
-    incrementUsage: (...a) => incrementUsage(...a),
+    guardedIncrementAIUsage: (...a) => guardedIncrementAIUsage(...a),
+    releaseGuardedAIUsage: (...a) => releaseGuardedAIUsage(...a),
+    checkUsageLimit: vi.fn(() => ({ allowed: true })),
+    incrementUsage: vi.fn(),
     checkAIFeatureLimit: vi.fn(() => ({ allowed: true })),
     incrementAIUsage: vi.fn(),
     quotaExceededResponse: (check) => ({
@@ -78,7 +79,7 @@ describe('POST /api/ai/attention-narrative', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         clearNarrativeCache()
-        checkUsageLimit.mockImplementation(() => ({ allowed: true, current: 0, limit: 100, remaining: 100 }))
+        guardedIncrementAIUsage.mockImplementation(() => ({ allowed: true, metric: 'ai_queries', current: 1, limit: 100, remaining: 99 }))
     })
 
     it('returns the shaped narrative on first call (cached: false)', async () => {
@@ -93,7 +94,8 @@ describe('POST /api/ai/attention-narrative', () => {
         expect(res.body.cached).toBe(false)
         expect(res.body.narrative).toBe('Two stale PRs and a failing CI on main since Tuesday.')
         expect(res.body.model).toBe('gemini-test')
-        expect(incrementUsage).toHaveBeenCalledWith(1, 'ai_queries')
+        expect(guardedIncrementAIUsage).toHaveBeenCalledWith(1, 'ai_queries')
+        expect(releaseGuardedAIUsage).not.toHaveBeenCalled()
     })
 
     it('serves the cached narrative on the second identical call without billing', async () => {
@@ -107,7 +109,7 @@ describe('POST /api/ai/attention-narrative', () => {
         expect(res2.status).toBe(200)
         expect(res2.body.cached).toBe(true)
         expect(mockGenerate).toHaveBeenCalledTimes(1)
-        expect(incrementUsage).toHaveBeenCalledTimes(1)
+        expect(guardedIncrementAIUsage).toHaveBeenCalledTimes(1)
     })
 
     it('busts the cache when the signal payload changes', async () => {
@@ -156,7 +158,7 @@ describe('POST /api/ai/attention-narrative', () => {
     })
 
     it('returns 429 when the user is over the AI quota', async () => {
-        checkUsageLimit.mockImplementation(() => ({ allowed: false, current: 100, limit: 100, remaining: 0 }))
+        guardedIncrementAIUsage.mockImplementation(() => ({ allowed: false, metric: 'ai_queries', current: 100, limit: 100, remaining: 0 }))
         const app = await buildApp()
         const res = await request(app)
             .post('/api/ai/attention-narrative')

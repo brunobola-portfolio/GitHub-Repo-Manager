@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useId } from 'react'
+import { useDismiss } from '../../../hooks/useDismiss'
 import { ChevronDown } from 'lucide-react'
 import { ModelDropdown } from './ModelDropdown'
 import { useFilteredModels } from '../../../hooks/useFilteredModels'
@@ -40,14 +41,8 @@ export function ModelCombobox({
     // operates on the same ordered set the user sees on open.
     const { itemsInOrder } = useFilteredModels(options, { query: value, tier: null, showLegacy: false })
 
-    useEffect(() => {
-        if (!open) return
-        const onDown = (ev) => {
-            if (!rootRef.current?.contains(ev.target)) setOpen(false)
-        }
-        window.addEventListener('mousedown', onDown)
-        return () => window.removeEventListener('mousedown', onDown)
-    }, [open])
+    // The input's own key handler owns Escape.
+    useDismiss(rootRef, { open, onClose: () => setOpen(false), escape: false })
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect -- reset highlight when the dropdown closes

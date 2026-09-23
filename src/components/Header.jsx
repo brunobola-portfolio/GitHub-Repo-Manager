@@ -1,5 +1,6 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useDismiss } from '../hooks/useDismiss'
 import {
     LogOut, RefreshCw, LayoutDashboard, FolderGit2, Plus,
     Bell, Settings, User, ChevronDown, Building2, Shield, Users,
@@ -70,15 +71,9 @@ export function Header({
     const closeUserMenu = useCallback(() => setShowUserMenu(false), [])
     const closeNotifications = useCallback(() => setShowNotifications(false), [])
 
-    // Close menus on outside click
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            if (menuRef.current && !menuRef.current.contains(e.target)) setShowUserMenu(false)
-            if (notifRef.current && !notifRef.current.contains(e.target)) setShowNotifications(false)
-        }
-        document.addEventListener('mousedown', handleClickOutside)
-        return () => document.removeEventListener('mousedown', handleClickOutside)
-    }, [])
+    // Outside presses close the menus; each dropdown's focus trap owns Escape.
+    useDismiss(menuRef, { open: showUserMenu, onClose: closeUserMenu, escape: false })
+    useDismiss(notifRef, { open: showNotifications, onClose: closeNotifications, escape: false })
 
     const handleSync = async () => {
         setSyncing(true)
@@ -793,14 +788,7 @@ function SystemHealthIndicator() {
     const closePopover = useCallback(() => setOpen(false), [])
     const trapRef = useFocusTrap(open, closePopover)
 
-    useEffect(() => {
-        if (!open) return undefined
-        const onClick = (e) => {
-            if (popRef.current && !popRef.current.contains(e.target)) setOpen(false)
-        }
-        document.addEventListener('mousedown', onClick)
-        return () => document.removeEventListener('mousedown', onClick)
-    }, [open])
+    useDismiss(popRef, { open, onClose: closePopover, escape: false })
 
     // 'pending' = first probe still in flight — showing the grey "unknown"
     // dot during every app load would be noise, not signal.

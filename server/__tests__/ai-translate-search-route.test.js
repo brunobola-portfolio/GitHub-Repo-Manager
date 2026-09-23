@@ -29,16 +29,17 @@ vi.mock('../middleware/auth.js', async () => {
     }
 })
 
-const checkUsageLimit = vi.fn(() => ({ allowed: true, current: 0, limit: 100, remaining: 100 }))
-const incrementUsage = vi.fn()
+// The ai_queries unit is reserved atomically before the provider call and
+// handed back if the request fails.
+const guardedIncrementAIUsage = vi.fn(() => ({ allowed: true, metric: 'ai_queries', current: 1, limit: 100, remaining: 99 }))
+const releaseGuardedAIUsage = vi.fn()
 vi.mock('../lib/usage-meter.js', () => ({
     // Added with reserveAIQuota: a FULL module mock silently drops new
     // exports, and route handlers then call undefined and 500.
-    guardedIncrementAIUsage: vi.fn(() => ({ allowed: true, metric: 'ai', current: 0, limit: 100, remaining: 100 })),
-    releaseGuardedAIUsage: vi.fn(),
-
-    checkUsageLimit: (...a) => checkUsageLimit(...a),
-    incrementUsage: (...a) => incrementUsage(...a),
+    guardedIncrementAIUsage: (...a) => guardedIncrementAIUsage(...a),
+    releaseGuardedAIUsage: (...a) => releaseGuardedAIUsage(...a),
+    checkUsageLimit: vi.fn(() => ({ allowed: true })),
+    incrementUsage: vi.fn(),
     checkAIFeatureLimit: vi.fn(() => ({ allowed: true })),
     incrementAIUsage: vi.fn(),
     quotaExceededResponse: (check) => ({ error: 'usage_limit_exceeded', limit: check.limit, current: check.current }),
@@ -79,7 +80,7 @@ describe('POST /api/ai/translate-search', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         clearTranslateSearchCache()
-        checkUsageLimit.mockImplementation(() => ({ allowed: true, current: 0, limit: 100, remaining: 100 }))
+        guardedIncrementAIUsage.mockImplementation(() => ({ allowed: true, metric: 'ai_queries', current: 1, limit: 100, remaining: 99 }))
         checkAISpendCap.mockImplementation(() => ({ allowed: true, capCents: 0, spentCents: 0 }))
     })
 
@@ -97,7 +98,8 @@ describe('POST /api/ai/translate-search', () => {
         expect(res.body.cached).toBe(false)
         expect(res.body.queries).toHaveLength(1)
         expect(res.body.queries[0].ghQuery).toContain('review-requested:@me')
-        expect(incrementUsage).toHaveBeenCalledWith(1, 'ai_queries')
+        expect(guardedIncrementAIUsage).toHaveBeenCalledWith(1, 'ai_queries')
+        expect(releaseGuardedAIUsage).not.toHaveBeenCalled()
     })
 
     it('serves the cached translation on the second identical call', async () => {
@@ -109,7 +111,7 @@ describe('POST /api/ai/translate-search', () => {
         const r2 = await request(app).post('/api/ai/translate-search').send({ q: 'open PRs' })
         expect(r2.body.cached).toBe(true)
         expect(mockGenerate).toHaveBeenCalledTimes(1)
-        expect(incrementUsage).toHaveBeenCalledTimes(1)
+        expect(guardedIncrementAIUsage).toHaveBeenCalledTimes(1)
     })
 
     it('rejects empty q with 400', async () => {
@@ -135,7 +137,7 @@ describe('POST /api/ai/translate-search', () => {
     })
 
     it('returns 429 when the user is over the AI quota', async () => {
-        checkUsageLimit.mockImplementation(() => ({ allowed: false, current: 100, limit: 100, remaining: 0 }))
+        guardedIncrementAIUsage.mockImplementation(() => ({ allowed: false, metric: 'ai_queries', current: 100, limit: 100, remaining: 0 }))
         const res = await request(await buildApp())
             .post('/api/ai/translate-search')
             .send({ q: 'open PRs' })

@@ -3,27 +3,17 @@ import { ExternalLink, ChevronUp, ChevronDown, FileText, GitCommitHorizontal, Us
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
-import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
+import rehypeSanitize from 'rehype-sanitize'
+import { buildGitHubSchema } from '../../../../utils/githubMarkdownSchema'
 import { Drawer } from '../../../ui/Drawer'
 import { Tooltip } from '../../../ui/Tooltip'
 import { RepoMetaBadges } from '../../ui/repo/RepoMetaBadges'
 import { RepoRiskReport } from '../../ui/repo/RepoRiskReport'
 import { azurePost } from '../../../../api/azure'
 
-// Sanitize schema for README previews: defaults + the handful of layout
-// attributes GitHub/Azure READMEs habitually use (alignment, image sizing).
-// clobberPrefix namespaces any in-content ids so they can't collide with the
-// app shell. Explicit-allow only.
-const README_SCHEMA = {
-  ...defaultSchema,
-  clobberPrefix: 'repo-readme-',
-  attributes: {
-    ...defaultSchema.attributes,
-    div: [...(defaultSchema.attributes?.div || []), 'align'],
-    p: [...(defaultSchema.attributes?.p || []), 'align'],
-    img: [...(defaultSchema.attributes?.img || []), 'width', 'height', 'align'],
-  },
-}
+// Not RepoMarkdown: Azure READMEs resolve relative URLs differently (see
+// urlTransform below). The sanitize schema is the shared one.
+const README_SCHEMA = buildGitHubSchema('repo-readme-')
 
 // A repo with no bytes and no branches has no history to chart and no stats to
 // count — Azure 404s those endpoints. Detect it up front so we skip the calls

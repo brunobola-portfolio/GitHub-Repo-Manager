@@ -68,7 +68,7 @@ describe('PromptPicker', () => {
         );
         fireEvent.click(screen.getByRole('button', { name: /general/i }));
         expect(screen.getByRole('listbox')).toBeInTheDocument();
-        fireEvent.pointerDown(screen.getByTestId('outside'));
+        fireEvent.mouseDown(screen.getByTestId('outside'));
         expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
     });
 

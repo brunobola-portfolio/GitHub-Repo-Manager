@@ -15,6 +15,12 @@ vi.mock('../middleware/auth.js', () => ({
 vi.mock('../middleware/require-admin.js', () => ({ requireAdmin: (req, res, next) => (req.headers['x-admin'] ? next() : res.status(403).json({ error: 'Admin only' })) }));
 vi.mock('../lib/audit.js', () => ({ auditLog: vi.fn() }));
 vi.mock('../config.js', () => ({ config: { envToolingInstallEnabled: true } }));
+vi.mock('../lib/env/installer.js', () => ({
+  installTool: vi.fn(async (_id, { onProgress }) => {
+    onProgress({ phase: 'download', pct: 50 });
+    return { ok: true, version: '3.4.0' };
+  }),
+}));
 
 let router;
 let mockedConfig;
@@ -54,6 +60,14 @@ describe('POST /api/env/tooling/:id/install', () => {
     } finally {
       mockedConfig.envToolingInstallEnabled = true;
     }
+  });
+
+  it('streams progress and the result as server-sent events, then ends', async () => {
+    const res = await request(app()).post('/api/env/tooling/git-lfs/install').set('x-admin', '1');
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toMatch(/text\/event-stream/);
+    const frames = res.text.trim().split('\n\n').map((f) => JSON.parse(f.replace(/^data: /, '')));
+    expect(frames).toEqual([{ phase: 'download', pct: 50 }, { phase: 'result', ok: true, version: '3.4.0' }]);
   });
 
   it('returns 404 unknown_tool for an unrecognised tool id', async () => {

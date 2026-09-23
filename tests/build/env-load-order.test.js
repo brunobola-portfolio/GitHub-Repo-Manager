@@ -94,8 +94,8 @@ describe('dotenv is loaded before any module-load-time process.env read', () => 
     // yet?" at any given module's evaluation.
     //
     // This walks the whole of server/ — an earlier version checked three
-    // hardcoded files, so a dotenv.config() added to any other module (queue.js,
-    // say) passed silently.
+    // hardcoded files, so a dotenv.config() added to any other module (a service
+    // file, say) passed silently.
     const offenders = []
     const walk = (dir) => {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {

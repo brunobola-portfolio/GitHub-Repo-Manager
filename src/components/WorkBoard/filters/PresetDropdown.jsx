@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
+import { useDismiss } from '../../../hooks/useDismiss'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, Bookmark, Trash2, Plus } from 'lucide-react'
 import { useSavedViews } from '../../../hooks/useWorkBoardPresets'
@@ -36,13 +37,7 @@ export function PresetDropdown({ currentFilters, onApply, scope = 'work-board', 
     const [saveError, setSaveError] = useState(null)
     const rootRef = useRef(null)
 
-    useEffect(() => {
-        function onClickOutside(e) {
-            if (open && rootRef.current && !rootRef.current.contains(e.target)) setOpen(false)
-        }
-        document.addEventListener('mousedown', onClickOutside)
-        return () => document.removeEventListener('mousedown', onClickOutside)
-    }, [open])
+    useDismiss(rootRef, { open, onClose: () => setOpen(false) })
 
     const handleSave = async () => {
         const trimmed = name.trim()

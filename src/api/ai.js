@@ -8,13 +8,15 @@
 // inline WITHOUT a try/catch. Tier/quota errors (429/403) and hard-required
 // ops (e.g. planIssue) are the exceptions — they still throw.
 //
-// This is one of TWO intentional AI-client contracts. The other is
-// `src/api/aiFetch.js`, which THROWS typed errors and owns the quota gate; use
-// that for new, explicitly user-triggered AI actions. Full rationale + the
+// This is one of three AI clients. `src/api/aiFetch.js` THROWS typed errors
+// and owns the quota gate (use it for new, explicitly user-triggered AI
+// actions); `src/utils/aiFetch.js` is the JSON helper the PR-review hooks use.
+// All three send mutations through csrfFetch, so a rotated CSRF token is
+// retried the same way everywhere. Full rationale + the
 // (deferred) unification plan: docs/architecture/ai-client-contracts.md.
 // =============================================================================
 import { API_BASE } from '../config';
-import { getCsrfToken } from '../utils/api';
+import { getCsrfToken, csrfFetch } from '../utils/api';
 import { getAIStatus } from './aiStatus';
 import { recordAIQuotaExceeded } from './aiFetch';
 
@@ -45,7 +47,7 @@ async function mutationHeaders() {
 // Mirrors the inline fetch pattern ReadmeStudioModal already uses for its
 // commit-fix call.
 async function postJson(url, body) {
-    const res = await fetch(url, {
+    const res = await csrfFetch(url, {
         method: 'POST',
         headers: await mutationHeaders(),
         credentials: 'include',
@@ -176,7 +178,7 @@ export const aiApi = {
         const shortCircuit = await withAIConfigured(() => ({ success: true, analysis: unconfiguredAnalysis(repo) }));
         if (shortCircuit) return shortCircuit;
 
-        const res = await fetch(`${API_BASE}/ai/index`, {
+        const res = await csrfFetch(`${API_BASE}/ai/index`, {
             method: 'POST',
             headers: await mutationHeaders(),
             credentials: 'include',
@@ -214,7 +216,7 @@ export const aiApi = {
             return results
         }
 
-        const res = await fetch(`${API_BASE}/ai/search?q=${encodeURIComponent(query)}`, {
+        const res = await csrfFetch(`${API_BASE}/ai/search?q=${encodeURIComponent(query)}`, {
             headers: getHeaders(),
             credentials: 'include'
         });
@@ -240,7 +242,7 @@ export const aiApi = {
             return mockAnalysis(mockRepo);
         }
 
-        const res = await fetch(`${API_BASE}/ai/metadata/${repoId}`, {
+        const res = await csrfFetch(`${API_BASE}/ai/metadata/${repoId}`, {
             headers: getHeaders(),
             credentials: 'include'
         });
@@ -266,7 +268,7 @@ export const aiApi = {
         const shortCircuit = await withAIConfigured(unconfiguredSuggestions);
         if (shortCircuit) return shortCircuit;
 
-        const res = await fetch(`${API_BASE}/ai/suggest`, {
+        const res = await csrfFetch(`${API_BASE}/ai/suggest`, {
             method: 'POST',
             headers: await mutationHeaders(),
             credentials: 'include',
@@ -296,7 +298,7 @@ export const aiApi = {
         const body = { repoId };
         if (options.context) body.context = options.context;
 
-        const res = await fetch(`${API_BASE}/ai/suggest-name-description`, {
+        const res = await csrfFetch(`${API_BASE}/ai/suggest-name-description`, {
             method: 'POST',
             headers: await mutationHeaders(),
             credentials: 'include',
@@ -316,7 +318,7 @@ export const aiApi = {
         const shortCircuit = await withAIConfigured(() => ({ success: true, ...unconfiguredReadmeEnhancement() }));
         if (shortCircuit) return shortCircuit;
 
-        const res = await fetch(`${API_BASE}/ai/readme/enhance`, {
+        const res = await csrfFetch(`${API_BASE}/ai/readme/enhance`, {
             method: 'POST',
             headers: await mutationHeaders(),
             credentials: 'include',
@@ -346,7 +348,7 @@ export const aiApi = {
         const shortCircuit = await withAIConfigured(() => ({ success: true, report: unconfiguredQualityReport(repo), repo: repo.full_name }));
         if (shortCircuit) return shortCircuit;
 
-        const res = await fetch(`${API_BASE}/ai/quality-report`, {
+        const res = await csrfFetch(`${API_BASE}/ai/quality-report`, {
             method: 'POST',
             headers: await mutationHeaders(),
             credentials: 'include',
@@ -387,7 +389,7 @@ export const aiApi = {
         const shortCircuit = await withAIConfigured(buildPlaceholder);
         if (shortCircuit) return shortCircuit;
 
-        const res = await fetch(`${API_BASE}/ai/batch-index`, {
+        const res = await csrfFetch(`${API_BASE}/ai/batch-index`, {
             method: 'POST',
             headers: await mutationHeaders(),
             credentials: 'include',
@@ -407,7 +409,7 @@ export const aiApi = {
 
     // Find repos semantically similar to the given repo (by full_name)
     findSimilar: async (repoId) => {
-        const res = await fetch(`/api/ai/search?mode=similar-by-id&repoId=${encodeURIComponent(repoId)}`, {
+        const res = await csrfFetch(`${API_BASE}/ai/search?mode=similar-by-id&repoId=${encodeURIComponent(repoId)}`, {
             credentials: 'include'
         })
         if (res.status === 404) return { notIndexed: true }
@@ -431,7 +433,7 @@ export const aiApi = {
             throw err
         }
 
-        const res = await fetch(`${API_BASE}/ai/issue-to-plan`, {
+        const res = await csrfFetch(`${API_BASE}/ai/issue-to-plan`, {
             method: 'POST',
             headers: await mutationHeaders(),
             credentials: 'include',
@@ -460,7 +462,7 @@ export const aiApi = {
                 const { mockReadmeStudioScore } = await import('../__mocks__/mockAI.js');
                 return mockReadmeStudioScore(owner, repo);
             }
-            const res = await fetch(`${API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/readme-studio/score`, {
+            const res = await csrfFetch(`${API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/readme-studio/score`, {
                 headers: getHeaders(),
                 credentials: 'include',
             });
@@ -484,7 +486,7 @@ export const aiApi = {
             }));
             if (shortCircuit) return shortCircuit;
 
-            const res = await fetch(`${API_BASE}/ai/readme-studio/improve`, {
+            const res = await csrfFetch(`${API_BASE}/ai/readme-studio/improve`, {
                 method: 'POST',
                 headers: await mutationHeaders(),
                 credentials: 'include',
@@ -541,7 +543,7 @@ export const aiApi = {
             }));
             if (shortCircuit) return shortCircuit;
 
-            const res = await fetch(`${API_BASE}/ai/generate-diagram`, {
+            const res = await csrfFetch(`${API_BASE}/ai/generate-diagram`, {
                 method: 'POST',
                 headers: await mutationHeaders(),
                 credentials: 'include',
@@ -611,7 +613,7 @@ export const aiApi = {
                 const { mockAgentRulesGenerate } = await import('../__mocks__/mockAI.js');
                 return mockAgentRulesGenerate(owner, repo, config);
             }
-            const res = await fetch(`${API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/agent-rules/generate`, {
+            const res = await csrfFetch(`${API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/agent-rules/generate`, {
                 method: 'POST',
                 headers: await mutationHeaders(),
                 credentials: 'include',
@@ -643,7 +645,7 @@ export const aiApi = {
                 const { mockAgentRulesCommit } = await import('../__mocks__/mockAI.js');
                 return mockAgentRulesCommit(owner, repo, { mode });
             }
-            const res = await fetch(`${API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/agent-rules/commit`, {
+            const res = await csrfFetch(`${API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/agent-rules/commit`, {
                 method: 'POST',
                 headers: await mutationHeaders(),
                 credentials: 'include',
@@ -669,7 +671,7 @@ export const aiApi = {
                 const { mockImageCapability } = await import('../__mocks__/mockAI.js');
                 return mockImageCapability();
             }
-            const res = await fetch(`${API_BASE}/ai/generate-image/capability`, { credentials: 'include' });
+            const res = await csrfFetch(`${API_BASE}/ai/generate-image/capability`, { credentials: 'include' });
             if (!res.ok) throw new Error(`Image capability check failed: HTTP ${res.status}`);
             return res.json();
         },
@@ -678,7 +680,7 @@ export const aiApi = {
                 const { mockGenerateImage } = await import('../__mocks__/mockAI.js');
                 return mockGenerateImage(repo, config);
             }
-            const res = await fetch(`${API_BASE}/ai/generate-image`, {
+            const res = await csrfFetch(`${API_BASE}/ai/generate-image`, {
                 method: 'POST',
                 headers: await mutationHeaders(),
                 credentials: 'include',
@@ -738,7 +740,7 @@ export const aiApi = {
                 await new Promise(r => setTimeout(r, 1200))
                 return { success: true, ...mockReadmeEnhancement(repo) }
             }
-            const res = await fetch(`${API_BASE}/ai/readme`, {
+            const res = await csrfFetch(`${API_BASE}/ai/readme`, {
                 method: 'POST',
                 headers: await mutationHeaders(),
                 credentials: 'include',

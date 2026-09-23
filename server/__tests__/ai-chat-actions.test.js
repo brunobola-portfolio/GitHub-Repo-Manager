@@ -206,3 +206,40 @@ describe('POST /api/ai/chat (JSON mode with actions)', () => {
         expect(mockGenerateContent).toHaveBeenCalledTimes(2)
     })
 })
+
+describe('POST /api/ai/chat — the ai_queries unit', () => {
+    // Reserved atomically before the provider call. Kept on success and on a
+    // parse miss (the answer was generated and paid for); handed back when
+    // nothing was generated.
+    beforeEach(() => {
+        vi.clearAllMocks()
+        process.env.AI_RETRY_BASE_DELAY_MS = '1'
+    })
+    const meter = () => import('../lib/usage-meter.js')
+
+    it('is reserved up front and kept on success', async () => {
+        mockGenerateContent.mockResolvedValue({ response: { text: () => JSON.stringify({ reply: 'ok' }) } })
+        await request(await buildApp()).post('/api/ai/chat').send({ message: 'hi' })
+        const { guardedIncrementAIUsage, releaseGuardedAIUsage } = await meter()
+        expect(guardedIncrementAIUsage).toHaveBeenCalledWith(1, 'ai_queries')
+        expect(releaseGuardedAIUsage).not.toHaveBeenCalled()
+    })
+
+    it('is kept when the answer could not be parsed', async () => {
+        mockGenerateContent.mockResolvedValue({ response: { text: () => 'not json' } })
+        const res = await request(await buildApp()).post('/api/ai/chat').send({ message: 'hi' })
+        expect(res.status).toBe(502)
+        expect((await meter()).releaseGuardedAIUsage).not.toHaveBeenCalled()
+    })
+
+    it('is handed back when the message is rejected', async () => {
+        await request(await buildApp()).post('/api/ai/chat').send({ message: '   ' })
+        expect((await meter()).releaseGuardedAIUsage).toHaveBeenCalledWith(1, 'ai_queries')
+    })
+
+    it('is handed back when the provider never answers', async () => {
+        mockGenerateContent.mockRejectedValue(Object.assign(new Error('overload'), { status: 503 }))
+        await request(await buildApp()).post('/api/ai/chat').send({ message: 'hi' })
+        expect((await meter()).releaseGuardedAIUsage).toHaveBeenCalledTimes(1)
+    }, 15000)
+})

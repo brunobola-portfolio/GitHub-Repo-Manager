@@ -12,13 +12,13 @@
  */
 
 import express from 'express';
-import { reserveAIQuota } from '../ai-quota.js';
+import { reserveAIQuota, holdAIQuota } from '../ai-quota.js';
 import { redactValues } from '../../lib/secret-redactor.js';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, safeError, isValidGitHubFullName } from '../../middleware/auth.js';
 import { requireScope } from '../../middleware/api-key-auth.js';
 import { aiService, sanitizeForPrompt } from '../../ai-service.js';
-import { checkUsageLimit, incrementUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
 import { initSSE, streamToSSEWithUsage } from '../ai-streaming.js';
 import { requireAI, denyIfSpendCapReached, recordStreamCompletion, guardedGenerate, handleAIError, stripJsonFences } from './shared.js';
@@ -99,8 +99,7 @@ router.post('/ai/review-summary', requireAuth, requireScope('ai'), validateBody(
         });
     }
 
-    const userId = req.session.userId;
-    const check = checkUsageLimit(userId, 'ai_queries');
+    const check = holdAIQuota(req, res, 'ai_queries');
     if (!check.allowed) {
         // Use the canonical quota envelope so the client's <QuotaExceededState />
         // primitive (gated on `code === 'QUOTA_EXCEEDED'`) renders correctly.
@@ -166,7 +165,7 @@ File manifest: ${sanitizeForPrompt(JSON.stringify((fileManifest || []).map(f => 
                     estimatedReviewTime: parsed.estimatedReviewTime || '',
                 };
 
-                incrementUsage(userId, 'ai_queries');
+                check.commit();
                 recordStreamCompletion(req, {
                     feature: 'review_summary',
                     action: 'ai.review_summary',
@@ -195,7 +194,7 @@ File manifest: ${sanitizeForPrompt(JSON.stringify((fileManifest || []).map(f => 
             { feature: 'review_summary' },
         );
 
-        incrementUsage(userId, 'ai_queries');
+        check.commit();
         auditLog(req, 'ai.review_summary', 'ai', null, {
             repo: prMetadata?.repo,
             prNumber: prMetadata?.number,
@@ -331,8 +330,7 @@ router.post('/ai/generate-pr', requireAuth, requireScope('ai'), validateBody(aiG
     try {
         const { commits, diff_summary, top_patches, template, repo_context } = req.validatedBody;
 
-        const userId = req.session.userId;
-        const limit = checkUsageLimit(userId, 'ai_queries');
+        const limit = holdAIQuota(req, res, 'ai_queries');
         if (!limit.allowed) {
             // Canonical quota envelope so the frontend's <QuotaExceededState />
             // surfaces a real reset date instead of the previous "next month"
@@ -397,7 +395,7 @@ Rules:
                     parsed = { title: commits[0]?.message?.split('\n')[0] || 'Update', summary: raw, test_plan: '', breaking_changes: null, related_issues: [], suggested_labels: [], suggested_reviewers: [] };
                 }
 
-                incrementUsage(userId, 'ai_queries');
+                limit.commit();
                 recordStreamCompletion(req, {
                     feature: 'generate_pr',
                     action: 'ai_generate_pr',
@@ -437,7 +435,7 @@ Rules:
             };
         }
 
-        incrementUsage(userId, 'ai_queries');
+        limit.commit();
         auditLog(req, 'ai_generate_pr', 'ai', null, { commit_count: commits.length });
 
         res.json({
@@ -481,8 +479,7 @@ router.post('/ai/refine', requireAuth, requireScope('ai'), validateBody(aiRefine
     try {
         const { original_content, original_diff, instruction, content_type } = req.validatedBody;
 
-        const userId = req.session.userId;
-        const limit = checkUsageLimit(userId, 'ai_queries');
+        const limit = holdAIQuota(req, res, 'ai_queries');
         if (!limit.allowed) {
             return res.status(429).json(quotaExceededResponse({ ...limit, metric: 'ai_queries' }));
         }
@@ -518,7 +515,7 @@ Return ONLY the refined content, no explanation, no markdown fences.`;
                 });
                 const { text: raw, usage, costUSD, partial } = await streamToSSEWithUsage(iter, sse);
 
-                incrementUsage(userId, 'ai_queries');
+                limit.commit();
                 recordStreamCompletion(req, {
                     feature: 'refine',
                     action: 'ai_refine',
@@ -539,7 +536,7 @@ Return ONLY the refined content, no explanation, no markdown fences.`;
         const { text: rawRefined } = await guardedGenerate(req, { prompt: userMessage, systemPrompt }, { feature: 'refine' });
         const refined = rawRefined.trim();
 
-        incrementUsage(userId, 'ai_queries');
+        limit.commit();
         auditLog(req, 'ai_refine', 'ai', null, { instruction, content_type });
 
         res.json({ refined_content: refined });
@@ -571,7 +568,7 @@ router.post('/ai/analyze-context', requireAuth, requireScope('ai'), validateBody
             return res.json(cached);
         }
 
-        const limit = checkUsageLimit(userId, 'ai_queries');
+        const limit = holdAIQuota(req, res, 'ai_queries');
         if (!limit.allowed) {
             return res.status(429).json(quotaExceededResponse({ ...limit, metric: 'ai_queries' }));
         }
@@ -610,7 +607,7 @@ Stats: ${diff_summary.files} files, +${diff_summary.additions} -${diff_summary.d
             breakingChanges: parsed.breakingChanges || false,
         };
 
-        incrementUsage(userId, 'ai_queries');
+        limit.commit();
         contextCache.set(cacheKey, responseData);
 
         res.json(responseData);
@@ -630,8 +627,7 @@ router.post('/ai/chat-refine', requireAuth, requireScope('ai'), validateBody(aiC
     try {
         const { message, current_output, original_diff, content_type, history } = req.validatedBody;
 
-        const userId = req.session.userId;
-        const limit = checkUsageLimit(userId, 'ai_queries');
+        const limit = holdAIQuota(req, res, 'ai_queries');
         if (!limit.allowed) {
             return res.status(429).json(quotaExceededResponse({ ...limit, metric: 'ai_queries' }));
         }
@@ -688,7 +684,7 @@ router.post('/ai/chat-refine', requireAuth, requireScope('ai'), validateBody(aiC
             });
             const { text: raw, usage, costUSD, partial } = await streamToSSEWithUsage(iter, sse);
 
-            incrementUsage(userId, 'ai_queries');
+            limit.commit();
             recordStreamCompletion(req, {
                 feature: 'chat_refine',
                 action: 'ai_chat_refine',

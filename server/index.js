@@ -38,7 +38,6 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json');
 
-import { closeAllQueues } from './lib/queue.js';
 import { engine as migrationEngine } from './routes/migration.js';
 import { recoverInterruptedImportJobs } from './routes/import/_shared.js';
 import { config } from './config.js';
@@ -746,12 +745,6 @@ function gracefulShutdown(signal) {
             stopDigestJob();
         } catch (e) {
             logger.warn({ err: e }, 'Could not stop digest job');
-        }
-
-        try {
-            await closeAllQueues();
-        } catch (e) {
-            logger.warn({ err: e }, 'Could not close queues');
         }
 
         try {

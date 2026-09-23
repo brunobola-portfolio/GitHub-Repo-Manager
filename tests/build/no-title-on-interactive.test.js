@@ -53,7 +53,6 @@ const ALLOWED = new Set([
     'src/components/RepoDetail/PRDetailPanel.jsx',
     'src/components/RepoDetail/SettingsTab.jsx',
     'src/components/RepoList/RepoFilterBar.jsx',
-    'src/components/RepoList/RepoStates.jsx',
     'src/components/Settings/ApiKeysSection.jsx',
     'src/components/Settings/AzureCredentialsSection.jsx',
     'src/components/Settings/AzureHostsAllowlistSection.jsx',

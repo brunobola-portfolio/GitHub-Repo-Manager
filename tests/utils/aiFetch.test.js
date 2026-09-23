@@ -10,7 +10,7 @@ vi.mock('../../src/utils/api', async (importOriginal) => ({
 
 import { fetchJSON, fetchJSONWithTimeout } from '../../src/utils/aiFetch'
 import { getAIQuotaState, clearAIQuotaState } from '../../src/api/aiFetch'
-import { getCsrfToken, invalidateCsrfToken } from '../../src/utils/api'
+import { getCsrfToken, _resetCsrfTokenForTests } from '../../src/utils/api'
 
 function mockFetch(impl) {
   vi.stubGlobal('fetch', vi.fn(impl))
@@ -156,15 +156,24 @@ describe('fetchJSON — CSRF', () => {
   })
 
   it('retries once with a fresh token after 403 csrf_invalid', async () => {
-    // A re-login rotates the session token; the cached one goes stale.
-    const spy = vi.fn()
-      .mockResolvedValueOnce({ status: 403, ok: false, json: async () => ({ code: 'csrf_invalid' }) })
-      .mockResolvedValueOnce({ status: 200, ok: true, json: async () => ({ ok: true }) })
+    // A re-login rotates the session token; the cached one goes stale. The
+    // retry fetches a new token itself (utils/api's own cache, not the mock).
+    _resetCsrfTokenForTests()
+    let chatCalls = 0
+    const spy = vi.fn(async (url) => {
+      if (url === '/api/auth/csrf-token') return new Response(JSON.stringify({ token: 'fresh' }), { status: 200 })
+      chatCalls += 1
+      return chatCalls === 1
+        ? new Response(JSON.stringify({ code: 'csrf_invalid' }), { status: 403 })
+        : new Response(JSON.stringify({ ok: true }), { status: 200 })
+    })
     vi.stubGlobal('fetch', spy)
 
     await expect(fetchJSON('/api/v1/ai/chat', { method: 'POST' })).resolves.toEqual({ ok: true })
-    expect(spy).toHaveBeenCalledTimes(2)
-    expect(invalidateCsrfToken).toHaveBeenCalled()
+    const chat = spy.mock.calls.filter(([u]) => u === '/api/v1/ai/chat')
+    expect(chat).toHaveLength(2)
+    expect(chat[0][1].headers['X-CSRF-Token']).toBe('csrf-abc')
+    expect(chat[1][1].headers['X-CSRF-Token']).toBe('fresh')
   })
 
   it('does not retry a 403 that is not a CSRF failure', async () => {

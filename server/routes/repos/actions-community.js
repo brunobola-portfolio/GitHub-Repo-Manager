@@ -34,7 +34,7 @@
  */
 
 import express from 'express';
-import { reserveAIQuota } from '../ai-quota.js';
+import { reserveAIQuota, holdAIQuota } from '../ai-quota.js';
 import { releaseGuardedAIUsage } from '../../lib/usage-meter.js';
 import db from '../../db.js';
 import { githubApi } from '../../lib/github-api.js';
@@ -64,7 +64,7 @@ import {
 } from '../../lib/ai-features/agent-rules.js';
 import { createProviderForUser, isServerKeyProvider } from '../../lib/ai-provider.js';
 import { mapAIErrorToResponse } from '../../middleware/ai-error-mapper.js';
-import { checkUsageLimit, incrementUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { quotaExceededResponse } from '../../lib/usage-meter.js';
 import { checkAISpendCap, recordAISpend } from '../../lib/ai-spend-cap.js';
 import { applyOwnerRepoParamValidators } from './_shared.js';
 
@@ -542,7 +542,7 @@ router.post('/:owner/:repo/community-health/generate', requireAuth, validateBody
         // deterministic branch above never reaches here, so template-only
         // generations (license, gitignore) never consume the ai_queries quota.
         const userId = req.session.userId;
-        const quota = checkUsageLimit(userId, 'ai_queries');
+        const quota = holdAIQuota(req, res, 'ai_queries');
         if (!quota.allowed) {
             return res.status(429).json(quotaExceededResponse({ ...quota, metric: 'ai_queries' }));
         }
@@ -576,7 +576,7 @@ router.post('/:owner/:repo/community-health/generate', requireAuth, validateBody
             email: overrides.email || req.session.userEmail,
             provider,
         });
-        incrementUsage(userId, 'ai_queries');
+        quota.commit();
         if (billsOperator) recordAISpend(userId, costUSD);
         res.json(out);
     } catch (e) {

@@ -13,7 +13,7 @@
 // unification plan: docs/architecture/ai-client-contracts.md.
 // =============================================================================
 import { getAIStatus } from './aiStatus'
-import { getCsrfToken } from '../utils/api'
+import { getCsrfToken, csrfFetch } from '../utils/api'
 
 /**
  * Typed errors so callers can branch without parsing strings.
@@ -269,7 +269,7 @@ export async function aiFetch(path, { feature, ...init } = {}) {
         }
     }
 
-    const res = await fetch(path, {
+    const res = await csrfFetch(path, {
         credentials: 'include',
         ...init,
         headers,

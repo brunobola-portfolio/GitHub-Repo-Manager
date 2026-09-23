@@ -9,7 +9,7 @@
  */
 
 import express from 'express';
-import { reserveAIQuota } from '../ai-quota.js';
+import { reserveAIQuota, holdAIQuota } from '../ai-quota.js';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth, isValidGitHubFullName } from '../../middleware/auth.js';
 import { requireScope } from '../../middleware/api-key-auth.js';
@@ -19,7 +19,7 @@ import { REPO_DESCRIPTION_MAX } from '../../lib/repo-description.js';
 import { sanitizeForPrompt } from '../../ai-service.js';
 import { safeJsonParse } from '../../lib/utils.js';
 import { parseSizeStrategyResponse, parseDescriptionResponse } from '../../lib/migration-ai-parsers.js';
-import { checkUsageLimit, incrementUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
 import { requireAI, handleAIError, guardedGenerate } from './shared.js';
 
@@ -67,8 +67,7 @@ router.post(
     validateBody(aiIssueToPlanSchema),
     requireAI,
     async (req, res) => {
-        const userId = req.session.userId;
-        const usage = checkUsageLimit(userId, 'ai_queries');
+        const usage = holdAIQuota(req, res, 'ai_queries');
         if (!usage.allowed) {
             return res.status(429).json({
                 error: `You've used ${usage.current}/${usage.limit} AI queries this month`,
@@ -179,7 +178,7 @@ Keep "files" to at most 12 entries. If the issue is too vague to plan, return:
                 });
             }
 
-            incrementUsage(userId, 'ai_queries');
+            usage.commit();
             auditLog(req, 'ai.issue_to_plan', 'ai', null, {
                 repoFullName,
                 issueNumber,
