@@ -71,9 +71,19 @@ export function initSSE(res, req) {
         };
     }
 
+    const finish = () => {
+        closed = true;
+        cleanup();
+        try { res.end(); } catch { /* socket already gone */ }
+    };
+
     return {
         signal: controller.signal,
         get isAborted() { return closed; },
+        /** Any JSON payload, for streams that are not AI text (e.g. install progress). */
+        send(payload) { return safeWrite(payload); },
+        /** End the stream without a done/error frame. */
+        end() { if (!closed) finish(); },
         sendChunk(text) { safeWrite({ text }); },
         sendDone(full) {
             if (closed) return;

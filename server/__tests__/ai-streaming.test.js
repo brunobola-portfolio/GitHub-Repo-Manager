@@ -37,6 +37,26 @@ describe('initSSE', () => {
         expect(res.writes[0]).toBe(`data: ${JSON.stringify({ text: 'hello' })}\n\n`)
     })
 
+    it('send writes any JSON payload and end closes the stream once', () => {
+        const res = makeRes()
+        const sse = initSSE(res)
+        expect(sse.send({ phase: 'download', pct: 40 })).toBe(true)
+        expect(res.writes[0]).toBe(`data: ${JSON.stringify({ phase: 'download', pct: 40 })}\n\n`)
+        sse.end()
+        sse.end()
+        expect(res.end).toHaveBeenCalledTimes(1)
+        expect(sse.send({ phase: 'late' })).toBe(false)
+        expect(res.writes).toHaveLength(1)
+    })
+
+    it('send stops writing once the client has gone', () => {
+        const res = makeRes()
+        const sse = initSSE(res)
+        res.emit('close')
+        expect(sse.send({ phase: 'result' })).toBe(false)
+        expect(res.write).not.toHaveBeenCalled()
+    })
+
     it('sendDone writes the done envelope and ends the response', () => {
         const res = makeRes()
         const sse = initSSE(res)

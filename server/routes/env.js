@@ -9,6 +9,7 @@ import { installTool } from '../lib/env/installer.js';
 import { getTool } from '../lib/env/tool-registry.js';
 import { config } from '../config.js';
 import { auditLog } from '../lib/audit.js';
+import { initSSE } from './ai-streaming.js';
 
 const router = express.Router();
 
@@ -29,8 +30,11 @@ router.post('/tooling/:id/install', requireAuth, requireAdmin, async (req, res) 
   }
   if (!getTool(id)) return errorResponse(res, 404, 'Unknown tool', 'unknown_tool');
 
-  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
-  const send = (event) => res.write(`data: ${JSON.stringify(event)}\n\n`);
+  // initSSE stops writing once the client is gone; the install itself runs to
+  // completion either way, so an admin closing the tab never leaves a
+  // half-installed tool.
+  const sse = initSSE(res, req);
+  const send = (event) => sse.send(event);
 
   try {
     const result = await installTool(id, {
@@ -41,7 +45,7 @@ router.post('/tooling/:id/install', requireAuth, requireAdmin, async (req, res) 
   } catch (error) {
     send({ phase: 'error', message: safeError(error, 'Install failed') });
   } finally {
-    res.end();
+    sse.end();
   }
 });
 
