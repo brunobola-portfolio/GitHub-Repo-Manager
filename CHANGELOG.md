@@ -163,6 +163,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   paying twice cannot create two subscriptions. The tier is copied onto the
   subscription's metadata.
 
+### Documentation — claims now match the product
+
+- README Generator and README Studio share one 25-a-month allowance; the
+  pricing matrix listed two separate "25 / month" rows, which read as 50.
+- The Pro card says "every per-feature cap lifted" instead of "unlimited"
+  (the 10,000 monthly AI queries still apply), and the landing page's Pro
+  line counts AI queries across every feature, not the Repo Advisor alone.
+- The pricing FAQ said the Work Board's AI was metered apart from the
+  monthly total; its summary, suggestions and drafted comments count toward
+  it, and only conversational board edits have their own cap.
+- The README no longer says the Work Board's trend summary needs
+  `WORK_BOARD_AI_ENABLED`: a key is enough; the flag gates the suggestions and
+  edits. It also describes what happens without an AI key (the AI routes say
+  so; diagrams, agent rules, README scoring and migration planning stay
+  deterministic), says the hosted app is live, and drops a dead `/roadmap`
+  link.
+- The licence e-mail and the billing guide explain when a key needs
+  activating (self-hosted only), the reissue flow and support expectations;
+  the Stripe setup guide lists the three `charge.*` events and the portal and
+  tax variables.
+- The API reference documents `/api/auth/login?next=`, the checkout's two
+  409 answers and its return URLs, and the refund and dispute webhooks.
+
 ### Fixed
 
 - **Docker images publish again.** The multi-arch build emulated arm64 under

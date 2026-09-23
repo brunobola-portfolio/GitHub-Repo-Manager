@@ -26,8 +26,10 @@ const TIERS_MONTHLY = [
       { label: 'Migration Risk Analysis (AI)', included: '25 / month' },
       { label: 'Migration Assistant (AI)', included: '25 / month' },
       { label: 'Repo Insights / Quality Report', included: '75 / month' },
-      { label: 'README Generator (AI)', included: '25 / month' },
-      { label: 'README Studio (AI improve)', included: '25 / month' },
+      // One meter (readmeGenPerMonth) behind both: two "25 / month" rows
+      // read as 50 README generations a month.
+      { label: 'README Generator (AI)', included: '25 / month, shared with Studio' },
+      { label: 'README Studio (AI improve)', included: 'Shares the 25 / month above' },
       { label: 'Commit Generator (AI)', included: '250 / month' },
       { label: 'AI Deep Review (walkthrough + comments)', included: '10 / month' },
       { label: 'Prompt Studio (custom presets)', included: '10 presets · 30 tests / month' },
@@ -59,7 +61,7 @@ const TIERS_MONTHLY = [
     enterprise: false,
     ctaText: 'Upgrade to Pro',
     features: [
-      { label: 'Everything in Free, unlimited', included: true },
+      { label: 'Everything in Free, with every per-feature cap lifted', included: true },
       { label: 'AI queries / month', included: '10,000' },
       { label: 'Unlimited monthly caps on every AI feature', included: true },
       { label: 'Unlimited README / Commit / Insights / Deep Review / PR Chat', included: true },
@@ -148,7 +150,7 @@ const FAQS = [
   },
   {
     q: 'What counts as an AI query?',
-    a: 'Each call to the Repo Advisor assistant, Semantic Search, Migration Risk Analysis, Migration Assistant, README Generator, Commit Generator, Repo Insights, Deep Review, Prompt Studio, or PR Chat counts as one query against your monthly total. The Repo Advisor card inside the Work Board is metered separately, against its own spend cap under Settings → Work Board, and does not draw on this total. Free-tier users also get per-feature caps (e.g. 25 READMEs/month) so no single feature drains your whole budget. Cached responses and read-only dashboard views are free.',
+    a: 'Each call to the Repo Advisor assistant, Semantic Search, Migration Risk Analysis, Migration Assistant, README Generator, Commit Generator, Repo Insights, Deep Review, Prompt Studio, or PR Chat counts as one query against your monthly total. The Work Board summary card, suggested actions and drafted review comments count toward this total too; only its conversational board edits are metered separately, against their own cap under Settings → Work Board. Free-tier users also get per-feature caps (e.g. 25 READMEs/month) so no single feature drains your whole budget. Cached responses and read-only dashboard views are free.',
   },
   {
     q: 'Is my data secure?',

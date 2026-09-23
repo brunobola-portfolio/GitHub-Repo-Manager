@@ -146,6 +146,12 @@ Initiates the GitHub OAuth flow. Redirects the user to GitHub's authorization pa
 | Auth required | No |
 | OAuth scopes requested | `repo`, `delete_repo`, `read:org`, `admin:org` |
 
+**Query Parameters:**
+
+| Param | Type | Description |
+|---|---|---|
+| `next` | string | Optional same-origin path to land on after sign-in (e.g. `/pricing?checkout=pro`). Anything that is not a plain path (absolute URLs, `//host`, other characters) is ignored and the user lands on the app root |
+
 **Response:** `302` redirect to GitHub OAuth authorize URL.
 
 ---
@@ -165,7 +171,7 @@ Handles the OAuth callback from GitHub. Exchanges the temporary code for an acce
 | `code` | string | Temporary authorization code from GitHub |
 | `state` | string | CSRF protection state parameter |
 
-**Response:** `302` redirect to `FRONTEND_URL` on success, or with `?error=<code>` on failure.
+**Response:** `302` redirect to `FRONTEND_URL` on success (to `FRONTEND_URL` + the `next` path when `/api/auth/login` was given one), or with `?error=<code>` on failure.
 
 **Error Codes:**
 - `no_code` - No authorization code received
@@ -4601,8 +4607,12 @@ Create a Stripe Checkout session to subscribe to a paid tier.
 }
 ```
 
+Any checkout session the user left open earlier is expired first, so an abandoned tab cannot complete a second subscription. Stripe returns the user to `/settings?billing=success` after payment, or to `/pricing?billing=cancel` when they back out.
+
 **Error Codes:**
 - `400` - Invalid input, or price not configured for the requested `tier` + `billingPeriod`
+- `409` `subscription_exists` - The user already has an active subscription; plan changes go through `POST /api/billing/portal`
+- `409` `subscription_on_hold` - The subscription is held after a refund or dispute and is still open in Stripe; support restores it
 - `503` - Billing is not configured
 
 ---
@@ -4941,8 +4951,11 @@ Receive and process Stripe webhook events for subscription lifecycle management.
 | `checkout.session.completed` | Activates subscription for the user |
 | `customer.subscription.updated` | Updates tier, status, and billing period |
 | `customer.subscription.deleted` | Downgrades user to free tier |
-| `invoice.payment_failed` | Marks subscription as `past_due` |
-| `invoice.paid` | Re-activates subscription after successful payment |
+| `charge.refunded` | Full refund: drops the user to free and marks the row `refunded` |
+| `charge.dispute.created` | Drops the user to free and marks the row `disputed` |
+| `charge.dispute.closed` | A won dispute restores the paid tier; any other outcome keeps the hold |
+| `invoice.payment_failed` | Marks subscription as `past_due` (never overrides a refund or dispute hold) |
+| `invoice.paid` | Re-activates subscription after successful payment (never overrides a refund or dispute hold) |
 
 **Response (200):**
 

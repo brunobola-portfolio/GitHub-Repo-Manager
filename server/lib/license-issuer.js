@@ -48,12 +48,9 @@ function buildLicenseEmailHtml({ tier, licenseKey, months }) {
   <p>Thank you for subscribing to the <strong>${tierLabel}</strong> plan.</p>
   <p>Your license key is:</p>
   <pre style="background: #f4f4f4; border: 1px solid #ddd; border-radius: 4px; padding: 16px; font-family: monospace; font-size: 14px; word-break: break-all;">${licenseKey}</pre>
-  <h3>Activation</h3>
-  <ol>
-    <li>Open GitHub Repo Manager and go to <strong>Settings → License &amp; Plan → Activate</strong>.</li>
-    <li>Paste the key above and click <strong>Activate</strong>.</li>
-    <li>Your ${tierLabel} features will unlock immediately.</li>
-  </ol>
+  <h3>Do I need to activate it?</h3>
+  <p><strong>Using the hosted app?</strong> No. Your ${tierLabel} plan is already active on your account — there is nothing to paste.</p>
+  <p><strong>Running your own install?</strong> An administrator of that install opens <strong>Settings → License &amp; Plan → Activate</strong> and pastes the key. It applies to every account on the install.</p>
   <p>${describeLicenseValidity(months)}</p>
   <p>Keep this key safe and treat it like a password. Cancelling your subscription does not switch it off — it keeps working to the end of the period you paid for.</p>
   <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
@@ -85,11 +82,12 @@ Your license key is:
 
 ${licenseKey}
 
-Activation
-----------
-1. Open GitHub Repo Manager and go to Settings -> License & Plan -> Activate.
-2. Paste the key above and click Activate.
-3. Your ${tierLabel} features will unlock immediately.
+Do I need to activate it?
+------------------------
+Using the hosted app? No. Your ${tierLabel} plan is already active on your account.
+Running your own install? An administrator of that install opens
+Settings -> License & Plan -> Activate and pastes the key. It applies to
+every account on the install.
 
 ${describeLicenseValidity(months)}
 

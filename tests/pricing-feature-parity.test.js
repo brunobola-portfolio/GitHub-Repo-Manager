@@ -369,7 +369,10 @@ describe('Wave 6 features ↔ feature-flags parity', () => {
 
     it('PricingPage Free card advertises all five wave-6 rows', () => {
         const section = tierSection('Free')
-        expect(section).toMatch(/README Studio \(AI improve\)[^}]*included:\s*'25 \/ month'/)
+        // Studio shares the Generator's meter; the card must say so, not show
+        // a second independent "25 / month".
+        expect(section).toMatch(/README Studio \(AI improve\)[^}]*included:\s*'Shares the 25 \/ month above'/)
+        expect(section).toMatch(/README Generator \(AI\)[^}]*included:\s*'25 \/ month, shared with Studio'/)
         expect(section).toMatch(/AI Diagram Generator[^}]*included:\s*'15 \/ month'/)
         expect(section).toMatch(/Agent Rules Generator \(AGENTS\.md \/ CLAUDE\.md\)[^}]*included:\s*'20 \/ month'/)
         expect(section).toMatch(/Security Posture AI Summary[^}]*included:\s*'75 \/ month'/)

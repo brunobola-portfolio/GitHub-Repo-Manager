@@ -28,7 +28,7 @@ Pro and Enterprise no longer sell feature unlocks. Their value is:
 - **Enterprise** — compliance and service deliverables the owner has
   explicitly scoped: SSO/SAML (roadmap, not yet implemented — never
   advertised as delivered until real SAML exists), Audit Log with export,
-  Priority Support + SLA, and white-glove migration services. These are
+  priority support (triaged ahead of the queue, no contracted response time), and white-glove migration services. These are
   either genuinely enterprise-grade (compliance trail) or delivered
   out-of-band (support ticket + contract), never gated by a
   `feature-flags.js` key the way product features are.
@@ -126,11 +126,16 @@ stripeWebhookHandler (stripe-webhooks.js)
                 │
                 └─ sendEmail()  ← delivery via EMAIL_PROVIDER adapter
 
-Stripe invoice.paid (billing_reason=subscription_cycle, monthly sub only)
+Stripe invoice.paid (billing_reason=subscription_cycle, monthly and yearly)
         │
         ▼
-stripeWebhookHandler → issueLicenseForCheckout() again, months=1,
-stripeSessionId=invoice.id (one license per paid invoice)
+stripeWebhookHandler → issueLicenseForCheckout() again, months=1 or 12,
+stripeSessionId=invoice.id (one license per paid invoice; skipped while a
+refund/dispute hold is in place)
+
+Delayed payment (SEPA, ACH, Boleto): checkout.session.completed arrives with
+payment_status=unpaid → the row is parked as 'incomplete' and NO key is
+issued; the later invoice.paid issues the key and grants the tier.
 ```
 
 ### Idempotency
@@ -139,7 +144,10 @@ The `issued_licenses` table has a `UNIQUE (stripe_session_id)` constraint. If St
 
 ### Failure handling
 
-The license/email pipeline runs inside a `try/catch` in the webhook handler. Any failure is logged but does **not** cause the handler to return a non-200 status. Stripe must always receive 200 — a non-200 triggers retries and could cause duplicate subscription writes.
+E-mail delivery and signing-key problems are logged and the handler still
+answers 200. A failed subscription write, or an unexpected error while issuing
+the licence, answers **500** on purpose: the event's idempotency row is removed
+and Stripe's retry reprocesses it from scratch.
 
 If email delivery fails:
 - The license key is still persisted in `issued_licenses` with `email_delivered = 0`.
@@ -207,10 +215,13 @@ calibrated to real provider costs).
 
 ### Activating a license (user instructions)
 
-1. Open GitHub Repo Manager.
-2. Go to **Settings → License & Plan → Activate**.
-3. Paste the `grm_lic_...` key and click **Activate**.
-4. Pro/Enterprise features unlock immediately.
+- **Hosted app:** nothing to activate. Stripe sets the account's tier when the
+  payment settles; the e-mailed key is only for a self-hosted install.
+- **Self-hosted install:** an administrator opens **Settings → License & Plan
+  → Activate** and pastes the `grm_lic_...` key. It applies to every account
+  on the install (`POST /api/v1/license/install` is admin-only, except for the
+  very first user of a single-user install). On a `DEPLOYMENT_MODE=saas`
+  instance an instance licence grants nothing — tiers come from Stripe.
 
 ## See also
 

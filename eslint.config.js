@@ -41,7 +41,9 @@ const layoutAntiDriftRules = [
 ]
 
 export default defineConfig([
-  globalIgnores(['dist', '**/dist/**', '.claude/worktrees/**', '.dev/**', 'coverage/**']),
+  // dist-*: the build gates in tests/build/ write their own out dirs and leave
+  // them behind; linting a minified bundle buries real findings.
+  globalIgnores(['dist', '**/dist/**', 'dist-*/**', '.claude/worktrees/**', '.dev/**', 'coverage/**']),
   {
     files: ['**/*.{js,mjs,jsx}'],
     extends: [

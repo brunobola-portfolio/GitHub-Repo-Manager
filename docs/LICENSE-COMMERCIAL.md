@@ -24,7 +24,7 @@ accountability on top of a licence you already have.
 | Redistribute it | ✓ | ✓ |
 | Higher monthly AI and API ceilings | — | ✓ |
 | Hosted instance, run by us | — | ✓ |
-| Support with a response commitment | — | ✓ |
+| Priority support (no contracted response time) | — | ✓ |
 | Compliance and audit deliverables | — | ✓ |
 | Use of the RepoManager name and mark | — | by agreement — see [TRADEMARKS.md](../TRADEMARKS.md) |
 
