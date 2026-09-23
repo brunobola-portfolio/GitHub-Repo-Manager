@@ -37,7 +37,12 @@ export function MobileQuickActionsFab(props) {
     }
 
     return (
-        <div className="md:hidden">
+        // Visible until the header's own quick actions appear (nav: 1340 px).
+        // md:hidden left iPads and 1024–1280 px laptops with no visible way
+        // to create, import or open the Dev Toolkit. Above md there is no
+        // bottom nav; the FAB stacks just above the Repo Advisor launcher,
+        // which owns the bottom-right corner from md up.
+        <div className="nav:hidden">
             <AnimatePresence>
                 {open && (
                     <motion.div
@@ -59,7 +64,7 @@ export function MobileQuickActionsFab(props) {
                 called it the one floating control that looked broken. A full
                 FAB above the bottom nav is the shape every phone user already
                 knows; the breathing halo keeps it discoverable without tricks. */}
-            <div className="group fixed right-0 bottom-[calc(56px+1rem+var(--safe-area-inset-bottom,0px))] z-[var(--ds-z-popover)] flex flex-col items-end gap-3 pr-4">
+            <div className="group fixed right-0 bottom-[calc(56px+1rem+var(--safe-area-inset-bottom,0px))] md:bottom-[calc(var(--ds-fab-safe-bottom)+24px)] z-[var(--ds-z-popover)] flex flex-col items-end gap-3 pr-4">
                 {/* Bare conditional (not AnimatePresence): jsdom doesn't drive exit
                     animations, so the ESC-closes test wouldn't observe the unmount
                     otherwise. Trade-off: secondary buttons disappear without fade. */}

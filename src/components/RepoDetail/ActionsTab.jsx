@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Zap, Play, RefreshCw, Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react'
+import { Zap, Play, RefreshCw, Loader2, CheckCircle2, XCircle, Clock, MinusCircle } from 'lucide-react'
 import { Spinner } from '../ui/Spinner'
 import { repoActionsApi } from '../../api/repo-actions'
 import { EmptyState } from '../ui/EmptyState'
@@ -10,11 +10,34 @@ import { useTabData } from '../../hooks/useTabData'
 import { useToast } from '../../hooks/useToast'
 import { formatDateTime } from '../../utils/format'
 
-const STATUS_ICONS = {
-  success: <CheckCircle2 className="w-4 h-4 text-emerald-500" />,
-  failure: <XCircle className="w-4 h-4 text-rose-500" />,
-  in_progress: <Spinner size="sm" />,
-  cancelled: <Clock className="w-4 h-4 text-slate-400" />
+// Every GitHub conclusion, not just four. A finished run that ended as
+// skipped, timed_out, neutral, action_required, startup_failure or stale
+// fell back to the spinner and looked like it was still running forever.
+// The label is the text alternative: colour alone said pass/fail before.
+const DONE = <CheckCircle2 className="w-4 h-4 text-emerald-500" aria-hidden="true" />
+const FAILED = <XCircle className="w-4 h-4 text-rose-500" aria-hidden="true" />
+const STOPPED = <Clock className="w-4 h-4 text-slate-500 dark:text-slate-400" aria-hidden="true" />
+const NEUTRAL = <MinusCircle className="w-4 h-4 text-slate-500 dark:text-slate-400" aria-hidden="true" />
+const RUNNING = <Spinner size="sm" />
+const RUN_STATES = {
+  success: [DONE, 'Succeeded'],
+  failure: [FAILED, 'Failed'],
+  timed_out: [FAILED, 'Timed out'],
+  startup_failure: [FAILED, 'Failed to start'],
+  action_required: [STOPPED, 'Action required'],
+  cancelled: [STOPPED, 'Cancelled'],
+  stale: [STOPPED, 'Stale'],
+  skipped: [NEUTRAL, 'Skipped'],
+  neutral: [NEUTRAL, 'Neutral'],
+  in_progress: [RUNNING, 'In progress'],
+  queued: [RUNNING, 'Queued'],
+  waiting: [RUNNING, 'Waiting'],
+  requested: [RUNNING, 'Requested'],
+  pending: [RUNNING, 'Pending'],
+}
+function runState(run) {
+  if (run.status === 'completed') return RUN_STATES[run.conclusion] || [NEUTRAL, run.conclusion || 'Completed']
+  return RUN_STATES[run.status] || RUN_STATES.in_progress
 }
 
 export function ActionsTab({ repo }) {
@@ -124,7 +147,7 @@ export function ActionsTab({ repo }) {
                 <Play className="w-3 h-3 text-slate-400 shrink-0 ml-2" />
               </div>
               {wf.state && (
-                <p className="text-xs text-slate-500 mt-0.5">{wf.state}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{wf.state}</p>
               )}
             </button>
           ))}
@@ -147,13 +170,13 @@ export function ActionsTab({ repo }) {
                   className="p-3 rounded-lg border border-slate-200 dark:border-slate-800 flex items-center justify-between ds-hover-lift"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    {STATUS_ICONS[run.conclusion || run.status] || STATUS_ICONS.in_progress}
+                    {runState(run)[0]}
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">
                         {run.display_title || run.name || `Run #${run.run_number}`}
                       </p>
-                      <p className="text-xs text-slate-500">
-                        {run.head_branch} · {run.event} · {formatDateTime(run.created_at)}
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {runState(run)[1]} · {run.head_branch} · {run.event} · {formatDateTime(run.created_at)}
                       </p>
                     </div>
                   </div>

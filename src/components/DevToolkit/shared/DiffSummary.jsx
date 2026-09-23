@@ -24,7 +24,7 @@ export function DiffSummary({ files = [], summary, loading }) {
                 <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
                     {summary?.files_changed || files.length} files changed
                 </span>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-slate-500 dark:text-slate-400">
                     <span className="text-emerald-700 dark:text-emerald-400">+{summary?.additions || 0}</span>
                     {' '}
                     <span className="text-rose-600 dark:text-rose-400">−{summary?.deletions || 0}</span>

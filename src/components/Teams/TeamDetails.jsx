@@ -179,8 +179,10 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
         !assignedRepos.some(ar => ar.repo_id === r.id)
     );
 
+    // main already pads by --layout-px; a second p-6 on phones left ~246 px
+    // of content on a 390 px screen.
     return (
-        <div className="max-w-7xl mx-auto p-6">
+        <div className="max-w-7xl mx-auto sm:p-6">
             <button
                 onClick={onBack}
                 className="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white mb-6 transition-colors ds-focus-ring rounded"
@@ -189,7 +191,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                 <span>Back to Teams</span>
             </button>
 
-            <header className="mb-8 p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 ds-elevation-lg relative overflow-hidden">
+            <header className="mb-8 p-5 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 ds-elevation-lg relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl -mr-32 -mt-32" />
 
                 <div className="relative z-10">
@@ -290,7 +292,7 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                                                     <img src={u.avatar_url} alt={u.login} className="w-8 h-8 rounded-full" />
                                                     <div>
                                                         <div className="font-semibold text-slate-900 dark:text-slate-100">{u.login}</div>
-                                                        <div className="text-xs text-slate-500">GitHub User</div>
+                                                        <div className="text-xs text-slate-500 dark:text-slate-400">GitHub User</div>
                                                     </div>
                                                     <Plus className="w-4 h-4 ml-auto text-brand-500" />
                                                 </button>
@@ -395,13 +397,13 @@ export function TeamDetails({ team, onBack, userRepos = [], user, onShowActionsS
                                                                 </span>
                                                             )}
                                                         </div>
-                                                        <div className="text-xs text-slate-500 truncate">{repo.full_name}</div>
+                                                        <div className="text-xs text-slate-500 dark:text-slate-400 truncate">{repo.full_name}</div>
                                                     </div>
                                                 </button>
                                             );
                                         })}
                                     {availableRepos.length === 0 && (
-                                        <p className="col-span-full text-center text-slate-500 text-sm py-4">No available repositories to assign.</p>
+                                        <p className="col-span-full text-center text-slate-500 dark:text-slate-400 text-sm py-4">No available repositories to assign.</p>
                                     )}
                                 </div>
                             </Card>
@@ -608,7 +610,7 @@ function RepoCard({ repo, teamMembers }) {
                         href={`https://github.com/${repo.repo_full_name}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-brand-500 hover:text-brand-600 text-xs font-medium bg-brand-50 dark:bg-brand-900/30 px-2 py-1 rounded-md transition-all"
+                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 text-brand-700 dark:text-brand-300 hover:text-brand-800 dark:hover:text-brand-200 text-xs font-medium bg-brand-50 dark:bg-brand-900/30 px-2 py-1 rounded-md transition-all ds-focus-ring"
                     >
                         GitHub &rarr;
                     </a>
@@ -619,7 +621,7 @@ function RepoCard({ repo, teamMembers }) {
                 {repo.repo_full_name}
             </h4>
 
-            <div className="mt-auto pt-4 border-t border-slate-100 dark:border-slate-700 text-xs text-slate-500">
+            <div className="mt-auto pt-4 border-t border-slate-100 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400">
                 <span>Assigned {formatDate(repo.created_at)}</span>
             </div>
 
@@ -676,7 +678,7 @@ function RepoCard({ repo, teamMembers }) {
                                             <div key={m.username} className="flex items-center justify-between text-xs bg-slate-50 dark:bg-slate-700/30 p-1.5 rounded-lg border border-slate-100 dark:border-slate-700">
                                                 <div className="flex items-center gap-2">
                                                     <img src={m.avatar_url} alt={m.username} className="w-5 h-5 rounded-full" />
-                                                    <span className="truncate max-w-[80px]">{m.username}</span>
+                                                    <span className="min-w-0 flex-1 truncate">{m.username}</span>
                                                 </div>
                                                 <button
                                                     onClick={() => handleInvite(m.username)}
@@ -823,13 +825,13 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                             </h3>
                             <div className="grid gap-4">
                                 {workflows.length === 0 ? (
-                                    <p className="text-slate-500 italic">No workflows found.</p>
+                                    <p className="text-slate-500 dark:text-slate-400 italic">No workflows found.</p>
                                 ) : (
                                     workflows.map(wf => (
                                         <Card key={wf.id} glass={false} shadow="none" className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50">
                                             <div>
                                                 <div className="font-semibold text-slate-900 dark:text-slate-100">{wf.name}</div>
-                                                <div className="text-sm text-slate-500">{wf.path}</div>
+                                                <div className="text-sm text-slate-500 dark:text-slate-400">{wf.path}</div>
                                             </div>
                                             <Button variant="soft-primary" size="sm" onClick={() => handleRunWorkflow(wf.id, selectedRepo)}>
                                                 Run Workflow
@@ -843,7 +845,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                         {/* Recent Runs */}
                         <Card className="p-6">
                             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
-                                <Clock className="w-5 h-5 text-slate-500" />
+                                <Clock className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                                 Recent Runs
                             </h3>
                             <div className="space-y-3">
@@ -859,7 +861,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                                             )}
                                             <div>
                                                 <div className="font-medium text-slate-900 dark:text-slate-100">{run.name}</div>
-                                                <div className="text-xs text-slate-500">
+                                                <div className="text-xs text-slate-500 dark:text-slate-400">
                                                     {run.event} • {run.head_branch} • {formatDateTime(run.created_at)}
                                                 </div>
                                             </div>
@@ -869,7 +871,7 @@ function ActionsTab({ assignedRepos, onShowStats }) {
                                         </a>
                                     </div>
                                 ))}
-                                {runs.length === 0 && <p className="text-slate-500 italic">No recent runs.</p>}
+                                {runs.length === 0 && <p className="text-slate-500 dark:text-slate-400 italic">No recent runs.</p>}
                             </div>
                         </Card>
                     </div>

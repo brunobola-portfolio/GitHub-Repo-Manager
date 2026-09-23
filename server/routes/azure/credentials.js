@@ -1,6 +1,7 @@
 // Per-user encrypted Azure PAT vault CRUD + a live "test this PAT" probe.
 // PAT values are NEVER returned by list/get — only `prefix`. Extracted verbatim
 // from routes/azure.js.
+import { azureStatus } from './_shared.js';
 import express from 'express';
 import * as azureService from '../../azure-service.js';
 import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js';
@@ -18,7 +19,7 @@ router.get('/azure/credentials', requireAuth, (req, res) => {
         const items = credsVault.listForUser(req.session.userId, { host });
         res.json({ items });
     } catch (error) {
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to list credentials'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to list credentials'));
     }
 });
 
@@ -33,7 +34,7 @@ router.post('/azure/credentials', requireAuth, (req, res) => {
         });
         res.status(201).json(created);
     } catch (error) {
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to save credential'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to save credential'));
     }
 });
 
@@ -47,7 +48,7 @@ router.patch('/azure/credentials/:id', requireAuth, (req, res) => {
         auditLog(req, 'azure_credential.update', 'azure_credential', id, {});
         res.json(updated);
     } catch (error) {
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to update credential'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to update credential'));
     }
 });
 
@@ -64,7 +65,7 @@ router.delete('/azure/credentials/:id', requireAuth, (req, res) => {
         });
         res.json({ removed: true, id });
     } catch (error) {
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to delete credential'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to delete credential'));
     }
 });
 
@@ -93,7 +94,7 @@ router.post('/azure/credentials/:id/test', requireAuth, async (req, res) => {
         const result = await azureService.validatePat(cred.org, pat, cred.host);
         res.json(result);
     } catch (error) {
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to test credential'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to test credential'));
     }
 });
 

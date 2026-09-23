@@ -74,7 +74,7 @@ export function ManageReposButton({ onOpenSettings }) {
 
                 <div className="max-h-64 overflow-auto p-1">
                     {filtered.length === 0 ? (
-                        <div className="px-3 py-4 text-xs text-slate-500 text-center">
+                        <div className="px-3 py-4 text-xs text-slate-500 dark:text-slate-400 text-center">
                             {query ? 'No matches.' : 'No tracked repos yet.'}
                         </div>
                     ) : (

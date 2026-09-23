@@ -1,3 +1,4 @@
+import { writeQuery } from '../utils/urlQuery'
 import { useEffect, useRef, useState } from 'react'
 import { onRateLimit } from '../utils/api'
 import { onRetryQueueEvent } from '../utils/retry-queue'
@@ -54,8 +55,7 @@ export function useShellChrome({ toast, dismissToast, onboarding }) {
         // Strip the query params so a refresh doesn't re-show a stale banner.
         params.delete('error')
         params.delete('retry')
-        const cleanUrl = window.location.pathname + (params.toString() ? `?${params}` : '')
-        window.history.replaceState({}, '', cleanUrl)
+        writeQuery(params)
     }, [])
 
     // Rate-limit toasts — one at a time, auto-dismisses after the countdown ends.

@@ -67,11 +67,11 @@ const CATEGORIES = [
       },
       {
         feature: 'README Generator (AI)',
-        values: ['25 / month', 'Unlimited', 'Unlimited'],
+        values: ['25 / month, shared with Studio', 'Unlimited', 'Unlimited'],
       },
       {
         feature: 'README Studio (AI improve)',
-        values: ['25 / month', 'Unlimited', 'Unlimited'],
+        values: ['Shares the 25 / month above', 'Unlimited', 'Unlimited'],
       },
       {
         feature: 'Commit Generator (AI)',

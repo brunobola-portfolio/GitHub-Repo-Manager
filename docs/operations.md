@@ -558,7 +558,8 @@ stays out of it.
 
 If it fails, run `npm run build:analyze` to open the
 `rollup-plugin-visualizer` treemap and identify the regression. Common
-causes: importing a new icon pack eagerly instead of behind `vendor-icons`,
+causes: a `manualChunks` group that pulls lazy-only modules into the entry (it is why
+there are no icon, markdown or Radix groups), a new icon pack imported eagerly,
 inlining a markdown/shiki module that should be lazy-loaded, or a
 non-tree-shaken util dragging a big transitive dep.
 

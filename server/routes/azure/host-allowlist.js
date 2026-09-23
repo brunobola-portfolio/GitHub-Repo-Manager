@@ -1,5 +1,6 @@
 // Azure host-allowlist admin CRUD + the env-auth probe. Reads are requireAuth;
 // writes are requireAdmin and audited. Extracted verbatim from routes/azure.js.
+import { azureStatus } from './_shared.js';
 import express from 'express';
 import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js';
 import { requireAdmin } from '../../middleware/require-admin.js';
@@ -66,7 +67,7 @@ router.post('/azure/host-allowlist', requireAuth, requireAdmin, (req, res) => {
         });
         res.status(result.added ? 201 : 200).json(result);
     } catch (error) {
-        errorResponse(res, error.status || 400, safeError(error, 'Failed to add host to allowlist'));
+        errorResponse(res, azureStatus(error, 400), safeError(error, 'Failed to add host to allowlist'));
     }
 });
 
@@ -81,7 +82,7 @@ router.delete('/azure/host-allowlist/:pattern', requireAuth, requireAdmin, (req,
         auditLog(req, 'azure_host_allowlist.remove', 'azure_host', req.params.pattern, {});
         res.json(result);
     } catch (error) {
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to remove host from allowlist'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to remove host from allowlist'));
     }
 });
 

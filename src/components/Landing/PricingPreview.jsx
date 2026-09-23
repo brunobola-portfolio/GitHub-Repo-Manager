@@ -20,7 +20,7 @@ const plans = [
     popular: false,
     enterprise: false,
     features: [
-      'Repo Advisor — 1,000 queries / month',
+      '1,000 AI queries / month across every AI feature',
       'Semantic Search (375 / month)',
       'README, Commit, Insights & Deep Review AI',
       'Bulk ops (transfer, mirror, cross-org) + Mirror Sync',

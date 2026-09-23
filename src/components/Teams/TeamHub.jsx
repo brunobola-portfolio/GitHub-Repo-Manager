@@ -260,8 +260,8 @@ function TeamCard({ team, onClick, onEdit, onDelete }) {
     const [showMenu, setShowMenu] = useState(false);
 
     return (
-        <motion.div layoutId={`team-${team.id}`} className="group">
-        <Card hover className="relative p-6 hover:shadow-[var(--ds-shadow-overlay)] hover:border-brand-500/50">
+        <motion.div layoutId={`team-${team.id}`} className="group h-full">
+        <Card hover className="relative h-full p-6 hover:shadow-[var(--ds-shadow-overlay)] hover:border-brand-500/50">
             {/* The card used to be a <div onClick>: team detail was unreachable
                 by keyboard or screen reader. Same fix as RepoCard — a real,
                 stretched <button> as the background layer, with the actions
@@ -283,7 +283,7 @@ function TeamCard({ team, onClick, onEdit, onDelete }) {
                     <div className="relative z-10">
                         <button
                             onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-                            className="p-2 text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-lg transition-colors ds-focus-ring"
+                            className="p-2 text-slate-500 dark:text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-lg transition-colors ds-focus-ring"
                             aria-label="Team actions menu"
                             aria-expanded={showMenu}
                             aria-haspopup="menu"
@@ -291,19 +291,39 @@ function TeamCard({ team, onClick, onEdit, onDelete }) {
                             <MoreVertical className="w-5 h-5" />
                         </button>
 
+                        {/* A real menu: it declared aria-haspopup="menu" but had no
+                            menu roles, no Escape and no focus on open; Delete was
+                            rose-600 on slate-800 (3.1:1). */}
                         {showMenu && (
-                            <div className="absolute right-0 top-full mt-2 w-32 bg-white dark:bg-slate-800 rounded-xl ds-elevation-overlay border border-slate-100 dark:border-slate-700 z-10 overflow-hidden animate-in fade-in zoom-in-95">
+                            <div
+                                role="menu"
+                                tabIndex={-1}
+                                aria-label={`Actions for ${team.name}`}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Escape') { e.stopPropagation(); setShowMenu(false) }
+                                    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                                        e.preventDefault()
+                                        const items = [...e.currentTarget.querySelectorAll('[role="menuitem"]')]
+                                        const i = items.indexOf(document.activeElement)
+                                        items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length]?.focus()
+                                    }
+                                }}
+                                className="absolute right-0 top-full mt-2 w-36 bg-white dark:bg-slate-800 rounded-xl ds-elevation-overlay border border-slate-100 dark:border-slate-700 z-10 overflow-hidden animate-in fade-in zoom-in-95"
+                            >
                                 <button
+                                    role="menuitem"
+                                    ref={(el) => el?.focus()}
                                     onClick={onEdit}
-                                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-left ds-focus-ring rounded"
+                                    className="w-full flex items-center gap-2 px-4 min-h-11 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-left ds-focus-ring rounded"
                                 >
-                                    <Edit2 className="w-3 h-3" /> Edit
+                                    <Edit2 className="w-3 h-3" aria-hidden="true" /> Edit
                                 </button>
                                 <button
+                                    role="menuitem"
                                     onClick={onDelete}
-                                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-left ds-focus-ring rounded"
+                                    className="w-full flex items-center gap-2 px-4 min-h-11 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-left ds-focus-ring rounded"
                                 >
-                                    <Trash2 className="w-3 h-3" /> Delete
+                                    <Trash2 className="w-3 h-3" aria-hidden="true" /> Delete
                                 </button>
                             </div>
                         )}

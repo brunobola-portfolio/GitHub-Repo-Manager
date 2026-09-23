@@ -1,3 +1,4 @@
+import { useMediaQuery } from '../../hooks/useMediaQuery'
 import { memo, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import {
@@ -103,8 +104,15 @@ export const RepoCard = memo(function RepoCard({
 	onRepoClick,
 	index = 0,
 	skipEntranceAnimation = false,
+	selectionActive = false,
 }) {
 	const isGrid = viewMode === 'grid'
+	// On a touch screen the natural tap is "open". Tapping a card selected it,
+	// raised the selection pill over the bottom nav, and opening needed a tap
+	// on the (truncated) name. With a coarse pointer the card opens, the
+	// checkbox selects, and once anything is selected taps toggle as before.
+	const coarsePointer = useMediaQuery('(pointer: coarse)')
+	const tapOpens = coarsePointer && !selectionActive && !!onRepoClick
 	const selectRef = useRef(null)
 	useEffect(() => {
 		if (isFocused) selectRef.current?.focus()
@@ -186,18 +194,30 @@ export const RepoCard = memo(function RepoCard({
 			<button
 				ref={selectRef}
 				type="button"
-				onClick={() => onToggle(repo)}
-				aria-pressed={isSelected}
-				aria-label={`Select ${repo.name}${repo.private ? ' (private)' : ' (public)'}`}
+				onClick={() => (tapOpens ? onRepoClick(repo) : onToggle(repo))}
+				aria-pressed={tapOpens ? undefined : isSelected}
+				aria-label={`${tapOpens ? 'Open' : 'Select'} ${repo.name}${repo.private ? ' (private)' : ' (public)'}`}
 				data-testid="repo-card-select"
 				className={`absolute inset-0 z-0 focus:outline-none ds-focus-ring ${isGrid ? 'rounded-2xl' : 'rounded-xl'}`}
 			/>
+
+			{/* Touch: a real, 44 px select control, since the card itself opens. */}
+			{tapOpens && (
+				<button
+					type="button"
+					onClick={(e) => { e.stopPropagation(); onToggle(repo) }}
+					aria-pressed={isSelected}
+					aria-label={`Select ${repo.name}`}
+					data-testid="repo-card-touch-select"
+					className={`absolute z-20 w-11 h-11 flex items-center justify-center rounded-xl ds-focus-ring ${isGrid ? 'top-2 right-2' : 'top-1/2 -translate-y-1/2 left-1'}`}
+				/>
+			)}
 
 			{/* Selection Checkbox (visual indicator only — pointer-events pass
 			    through to the select control beneath) */}
 			{/* In Grid: Top Right. In List: Left side, static. */}
 			{isGrid ? (
-				<div className={`pointer-events-none absolute top-4 right-4 z-10 transition-opacity duration-200 ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'}`}>
+				<div className={`pointer-events-none absolute top-4 right-4 z-10 transition-opacity duration-200 ${isSelected || coarsePointer ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'}`}>
 					<div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${isSelected ? 'bg-brand-500 border-brand-500' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'}`}>
 						{isSelected && <CheckSquare className="w-3.5 h-3.5 text-white" />}
 					</div>

@@ -520,9 +520,13 @@ export function useRepos(user) {
                 return { success: false, error: data.error, message: msg }
             }
         } catch (e) {
-            const msg = 'Error: ' + e.message
+            // fetchWithRetry throws on any non-2xx, so the r.ok / data.error
+            // branch above never saw a GitHub rejection: "name already exists"
+            // arrived here and was shown as "Invalid request. Check your
+            // input." GitHub's own message travels on the error's data.
+            const msg = e?.data?.error || e?.data?.message || e.message || 'Failed to create repository'
             setMessage(msg)
-            return { success: false, error: e.message, message: msg }
+            return { success: false, error: msg, message: msg }
         } finally {
             setIsPerforming(false)
         }

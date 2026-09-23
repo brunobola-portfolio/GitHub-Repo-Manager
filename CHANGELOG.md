@@ -7,6 +7,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Performance
+
+- The first page load is about a quarter lighter (≈298 KB → 216 KB of
+  gzipped JavaScript). The markdown chunk had absorbed React's JSX runtime, so
+  every cold start preloaded 34 KB of markdown code that rendered nothing; one
+  ten-line ref helper in the tooltip pulled in all of Radix (42 KB); and every
+  icon used anywhere in the app shipped up front. The bundle budget is
+  tightened to match, so a regression fails the build.
+- Opening a repository no longer downloads the diff viewer and its syntax
+  grammars (~87 KB gzipped): the README, diagram, image and agent-rules
+  dialogs load when they are opened.
+
+### Fixed — phones, tablets and accessibility
+
+- The notifications and system-health popovers open inside a phone's screen;
+  anchored to the bell, the notifications panel started 60 px off the left
+  edge.
+- Tablets and 1024–1280 px laptops can reach Create, Import and the Dev
+  Toolkit again: the quick-actions button now shows until the header's own
+  buttons appear, and the command palette has an "Open Dev Toolkit" entry.
+- The welcome tour scrolls on a phone; its Close and Next buttons were
+  pushed off the screen by the AI key step.
+- The "N selected" and "changes waiting to sync" pills sit above the bottom
+  navigation instead of covering it; the offline and sync notices use a
+  readable amber pair (white on amber was 2.15:1).
+- On a touch screen a tap on a repository card opens it; selecting uses the
+  checkbox, and once something is selected taps toggle as before.
+- Migration Wizard figures are readable in light mode (400-level colours were
+  1.7–3.0:1) and its stat tiles use two columns on a phone.
+- Controls that only appeared on hover (activity links, team repo actions,
+  Dev Toolkit copy buttons) are visible on touch screens.
+- Actions runs show every GitHub result — skipped, timed out, neutral,
+  action required, failed to start, stale — with a text label, instead of a
+  spinner forever.
+- Icon-only buttons that rested at a 2.56:1 grey, 66 muted texts without a
+  dark-mode variant, and two unnamed "View on GitHub" links are fixed.
+- The team actions menu is a real menu (roles, arrows, Escape, focus); team
+  cards line up in height; the branch delete button is gone where GitHub
+  would refuse it; the command palette stays above a phone keyboard; the AI
+  search toggle reports its state and its error no longer overlaps the
+  filters; the empty activity feed uses the standard empty state.
+
+### Fixed — app behaviour
+
+- An Azure DevOps token or PAT that expires no longer signs you out of the
+  app. Azure's own 401s reached the browser as 401, which the client treats
+  as its session ending: the migration wizard was thrown away while the
+  GitHub session was fine. Azure auth failures now answer 422 with a code
+  the wizard understands.
+- Actions that change something (AI generation, checkout, creating things)
+  are no longer repeated automatically. A slow AI call timed out on the
+  client and was sent three more times — four metered generations for one
+  click. Reads still retry.
+- Sign-in errors, "your session expired" and other messages shown before
+  sign-in are visible again; the landing page had nowhere to show them.
+- The "can't reach the server" screen stays up while it retries and counts
+  its attempts, instead of flashing the landing page and starting over.
+- "Sync" reports a GitHub failure instead of always saying it succeeded;
+  switching to an organization GitHub refuses (SAML, OAuth restrictions)
+  clears the previous organization's repositories and says why; the newest
+  switch always wins over a slower earlier one.
+- Creating a repository shows GitHub's own reason when it fails ("name
+  already exists"), not "Invalid request".
+- After leaving a PR review with its Back button, the browser's Back works
+  again. A finished list refresh can no longer be overwritten by a slower,
+  older one. Closing a commit, clearing a sign-in error or a billing
+  message keeps you on the repository you were viewing.
+- A resumed Pro checkout says so when the billing check fails, instead of
+  waiting silently. "Configure AI" opens the AI tab. A signed-in user whose
+  GitHub profile fails to load sees a retry, not the sign-in page.
+
 ### Fixed — Azure DevOps / TFS migration
 
 - **Repositories that use Git LFS now migrate their LFS files.** Detection
@@ -92,6 +163,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Starting a new checkout expires the customer's earlier open sessions, so
   paying twice cannot create two subscriptions. The tier is copied onto the
   subscription's metadata.
+
+### Documentation — claims now match the product
+
+- README Generator and README Studio share one 25-a-month allowance; the
+  pricing matrix listed two separate "25 / month" rows, which read as 50.
+- The Pro card says "every per-feature cap lifted" instead of "unlimited"
+  (the 10,000 monthly AI queries still apply), and the landing page's Pro
+  line counts AI queries across every feature, not the Repo Advisor alone.
+- The pricing FAQ said the Work Board's AI was metered apart from the
+  monthly total; its summary, suggestions and drafted comments count toward
+  it, and only conversational board edits have their own cap.
+- The README no longer says the Work Board's trend summary needs
+  `WORK_BOARD_AI_ENABLED`: a key is enough; the flag gates the suggestions and
+  edits. It also describes what happens without an AI key (the AI routes say
+  so; diagrams, agent rules, README scoring and migration planning stay
+  deterministic), says the hosted app is live, and drops a dead `/roadmap`
+  link.
+- The licence e-mail and the billing guide explain when a key needs
+  activating (self-hosted only), the reissue flow and support expectations;
+  the Stripe setup guide lists the three `charge.*` events and the portal and
+  tax variables.
+- The API reference documents `/api/auth/login?next=`, the checkout's two
+  409 answers and its return URLs, and the refund and dispute webhooks.
 
 ### Fixed
 

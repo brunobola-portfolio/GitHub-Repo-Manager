@@ -164,13 +164,16 @@ export default defineConfig({
           // transitive deps against mermaid's (also d3-based) lazy diagram chunks —
           // see tests/build/bundle-budget.test.js for the eager-entry budget this fixes.
           if (/[\\/]node_modules[\\/](framer-motion|motion-dom|motion-utils)[\\/]/.test(id)) return 'vendor-motion'
-          // Split lucide-react into its own chunk so its gzipped footprint
-          // is measurable and it doesn't pollute vendor-ui. Rollup already
-          // tree-shakes the lucide barrel natively (sideEffects: false) so
-          // only icons actually imported under src/ land here.
-          if (/[\\/]node_modules[\\/]lucide-react[\\/]/.test(id)) return 'vendor-icons'
-          if (/[\\/]node_modules[\\/]@radix-ui[\\/]/.test(id)) return 'vendor-ui'
-          if (/[\\/]node_modules[\\/]react-markdown[\\/]/.test(id)) return 'vendor-markdown'
+          // No lucide-react group: it gathered every icon imported anywhere in
+          // src/ into one chunk the entry loads, so icons used only by lazy
+          // views cost every cold start (20 KB gz). Ungrouped, the entry
+          // carries the ones the shell draws and the rest follow their views.
+          // No @radix-ui or react-markdown groups either. The markdown group
+          // pulled React's jsx-runtime into itself, so every JSX call in the
+          // entry resolved through vendor-markdown (34 KB gz preloaded on every
+          // cold start, rendering nothing); the Radix group rode in on a single
+          // hook in Tooltip. Every consumer of both is lazy, so default
+          // per-consumer chunking keeps them off the first load.
           // @git-diff-view + lowlight + highlight.js are deliberately NOT
           // force-grouped either, for the same reason as recharts above: a
           // 'vendor-diff' group made rolldown place react/cjs/react.production.js

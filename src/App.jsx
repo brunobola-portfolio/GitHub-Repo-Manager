@@ -3,6 +3,8 @@ import { useGitHub } from './hooks/useGitHub'
 import { Header } from './components/Header'
 import { RepoList } from './components/RepoList'
 import { Spinner } from './components/ui/Spinner'
+import { ToastContainer } from './components/ui/Toast'
+import { ProfileLoadFailed } from './components/ui/ProfileLoadFailed'
 import { useOnboarding } from './hooks/useOnboarding'
 import { useToast } from './hooks/useToast'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -184,6 +186,7 @@ function AppContent() {
   // Session/auth boot sequence: system-initialized check, mock/real sign-in,
   // GitHub OAuth setup-status probe, appLoading. See useAuthBootstrap.js.
   const {
+    session,
     appLoading,
     systemInitialized,
     systemUnreachable,
@@ -358,7 +361,13 @@ function AppContent() {
 
   const handleRefreshOrgs = useCallback(async () => {
     try {
-      await Promise.all([fetchOrgs(), fetchStats(), fetchTeams()])
+      const [orgsOk, statsOk] = await Promise.all([fetchOrgs(), fetchStats(), fetchTeams()])
+      // fetchOrgs/fetchStats report failure instead of throwing; "synced
+      // successfully" after a GitHub 5xx left the user trusting stale data.
+      if (orgsOk === false || statsOk === false) {
+        toast.error("Couldn't sync everything from GitHub. Some data may be out of date — try again in a moment.")
+        return
+      }
       setSyncStatus({ lastSync: new Date().toISOString(), hasUpdates: false })
       toast.success('Organizations synced successfully')
     } catch {
@@ -433,6 +442,17 @@ function AppContent() {
     )
   }
 
+  // Signed in, but the GitHub profile failed to load: say so and offer a
+  // retry, rather than the landing page's "Sign in" to a signed-in user.
+  if (!user && session?.authenticated && !githubLoading && error) {
+    return (
+      <>
+        <ProfileLoadFailed message={error} onRetry={fetchGitHubUser} onSignOut={handleLogout} />
+        <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      </>
+    )
+  }
+
   // Show Landing Page for unauthenticated users
   if (!user) {
     return (
@@ -470,6 +490,10 @@ function AppContent() {
             />
           </Suspense>
         )}
+        {/* The signed-in shell mounts toasts in NotificationLayer; this branch
+            returns before it, so every sign-in error (?error=… from OAuth, a
+            redirect_uri mismatch, a rate limit) was toasted to nobody. */}
+        <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       </>
     )
   }

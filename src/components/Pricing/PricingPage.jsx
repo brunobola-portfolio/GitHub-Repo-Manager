@@ -26,8 +26,10 @@ const TIERS_MONTHLY = [
       { label: 'Migration Risk Analysis (AI)', included: '25 / month' },
       { label: 'Migration Assistant (AI)', included: '25 / month' },
       { label: 'Repo Insights / Quality Report', included: '75 / month' },
-      { label: 'README Generator (AI)', included: '25 / month' },
-      { label: 'README Studio (AI improve)', included: '25 / month' },
+      // One meter (readmeGenPerMonth) behind both: two "25 / month" rows
+      // read as 50 README generations a month.
+      { label: 'README Generator (AI)', included: '25 / month, shared with Studio' },
+      { label: 'README Studio (AI improve)', included: 'Shares the 25 / month above' },
       { label: 'Commit Generator (AI)', included: '250 / month' },
       { label: 'AI Deep Review (walkthrough + comments)', included: '10 / month' },
       { label: 'Prompt Studio (custom presets)', included: '10 presets · 30 tests / month' },
@@ -59,7 +61,7 @@ const TIERS_MONTHLY = [
     enterprise: false,
     ctaText: 'Upgrade to Pro',
     features: [
-      { label: 'Everything in Free, unlimited', included: true },
+      { label: 'Everything in Free, with every per-feature cap lifted', included: true },
       { label: 'AI queries / month', included: '10,000' },
       { label: 'Unlimited monthly caps on every AI feature', included: true },
       { label: 'Unlimited README / Commit / Insights / Deep Review / PR Chat', included: true },
@@ -148,7 +150,7 @@ const FAQS = [
   },
   {
     q: 'What counts as an AI query?',
-    a: 'Each call to the Repo Advisor assistant, Semantic Search, Migration Risk Analysis, Migration Assistant, README Generator, Commit Generator, Repo Insights, Deep Review, Prompt Studio, or PR Chat counts as one query against your monthly total. The Repo Advisor card inside the Work Board is metered separately, against its own spend cap under Settings → Work Board, and does not draw on this total. Free-tier users also get per-feature caps (e.g. 25 READMEs/month) so no single feature drains your whole budget. Cached responses and read-only dashboard views are free.',
+    a: 'Each call to the Repo Advisor assistant, Semantic Search, Migration Risk Analysis, Migration Assistant, README Generator, Commit Generator, Repo Insights, Deep Review, Prompt Studio, or PR Chat counts as one query against your monthly total. The Work Board summary card, suggested actions and drafted review comments count toward this total too; only its conversational board edits are metered separately, against their own cap under Settings → Work Board. Free-tier users also get per-feature caps (e.g. 25 READMEs/month) so no single feature drains your whole budget. Cached responses and read-only dashboard views are free.',
   },
   {
     q: 'Is my data secure?',
@@ -237,6 +239,7 @@ export function PricingPage({ onGetStarted } = {}) {
   // ignored it, so a signed-in visitor clicked "Upgrade to Pro", waited for a
   // 503, and learned from an error banner that the instance cannot sell it.
   const [selfServe, setSelfServe] = useState(null)
+  const [probeSettled, setProbeSettled] = useState(false)
   const [stripePrices, setStripePrices] = useState(null)
   const [checkoutLoading, setCheckoutLoading] = useState(null)
   // Stays on Pricing when checkout is unavailable so the user actually sees
@@ -261,6 +264,7 @@ export function PricingPage({ onGetStarted } = {}) {
         // malformed or truncated response must not read as "cannot sell".
         if (data && 'stripeEnabled' in data) setSelfServe(Boolean(data.stripeEnabled))
       } catch { /* keep yearly hidden when we can't confirm it's configured */ }
+      finally { if (!cancelled) setProbeSettled(true) }
     })()
     return () => { cancelled = true }
   }, [])
@@ -298,16 +302,22 @@ export function PricingPage({ onGetStarted } = {}) {
   // and leave the contact CTA on screen.
   const resumedCheckoutRef = useRef(false)
   useEffect(() => {
-    if (resumedCheckoutRef.current || selfServe === null) return
+    if (resumedCheckoutRef.current || !probeSettled) return
     const params = new URLSearchParams(window.location.search)
     if (params.get('checkout') !== 'pro') return
     resumedCheckoutRef.current = true
     params.delete('checkout')
     const cleanUrl = window.location.pathname + (params.toString() ? `?${params}` : '') + window.location.hash
     window.history.replaceState({}, '', cleanUrl)
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot resume of a URL-carried intent, same shape as the ?error= handling in useAuthBootstrap
+    // A probe that failed leaves selfServe null: say so instead of waiting
+    // silently forever with the flag still in the URL.
+    if (selfServe === null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot resume of a URL-carried intent
+      setCheckoutState({ kind: 'error', message: 'Could not confirm checkout is available right now. Click Upgrade to Pro to try again.' })
+      return
+    }
     if (selfServe) handleCheckout('pro', 'monthly')
-  }, [selfServe, handleCheckout])
+  }, [selfServe, probeSettled, handleCheckout])
 
   const handleTierAction = useCallback((tier) => {
     if (tier === 'Enterprise') {

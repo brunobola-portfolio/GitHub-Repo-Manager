@@ -53,7 +53,7 @@ export function OrgPanel({
 						</button>
 						<button
 							onClick={onCreateOrg}
-							className="p-2 text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-xl transition-colors duration-200 ds-focus-ring"
+							className="p-2 text-slate-500 dark:text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-xl transition-colors duration-200 ds-focus-ring"
 							title="Add Organization"
 							aria-label="Add Organization"
 						>
@@ -141,7 +141,7 @@ export function OrgPanel({
 							<button
 								type="button"
 								aria-label="Open user settings menu"
-								className="p-2.5 text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-xl transition-colors duration-200 ds-focus-ring"
+								className="p-2.5 text-slate-500 dark:text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-xl transition-colors duration-200 ds-focus-ring"
 							>
 								<Settings size={18} aria-hidden="true" />
 							</button>

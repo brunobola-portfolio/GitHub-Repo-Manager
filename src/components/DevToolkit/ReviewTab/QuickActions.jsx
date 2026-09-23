@@ -44,7 +44,7 @@ export function QuickActions({ owner, repo, pullNumber, onSubmitted }) {
                     />
                 </Field>
                 <div className="flex gap-2">
-                    <button type="button" onClick={() => { setAction(null); setError(null) }} className="px-3 py-1 text-xs text-slate-500 ds-focus-ring rounded">Cancel</button>
+                    <button type="button" onClick={() => { setAction(null); setError(null) }} className="px-3 py-1 text-xs text-slate-500 dark:text-slate-400 ds-focus-ring rounded">Cancel</button>
                     <button
                         type="button"
                         onClick={() => handleSubmit(action)}

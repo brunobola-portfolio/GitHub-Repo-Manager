@@ -231,7 +231,7 @@ export function AIReviewPanel({
                         onClick={() => onGenerate(activePresetKey).catch(() => {})}
                         disabled={loading}
                         title="Re-run review"
-                        className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-50 ds-focus-ring rounded"
+                        className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-50 ds-focus-ring rounded"
                     >
                         {loading ? <Spinner size="xs" tone="primary" label="Re-running review" /> : '↻'}
                     </button>

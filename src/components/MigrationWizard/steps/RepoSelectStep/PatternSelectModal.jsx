@@ -39,7 +39,7 @@ export function PatternSelectModal({ repos, onConfirm, onClose }) {
                 </ModalFooter>
             }
         >
-            <p className="text-xs text-slate-500 mb-2">Enter a regular expression. Case-insensitive match on repo name.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Enter a regular expression. Case-insensitive match on repo name.</p>
             <Field htmlFor="pattern-select-input" error={error || undefined}>
                 <Input
                     id="pattern-select-input"

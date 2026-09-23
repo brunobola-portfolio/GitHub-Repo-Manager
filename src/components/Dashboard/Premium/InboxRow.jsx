@@ -26,7 +26,7 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
                     aria-label={expanded ? `Collapse: ${item.title}` : `Expand: ${item.title}`}
                     aria-expanded={expanded}
                     onClick={() => setExpanded(v => !v)}
-                    className="shrink-0 text-slate-400 hover:text-brand-500 p-2 -m-2 rounded ds-focus-ring"
+                    className="shrink-0 text-slate-500 dark:text-slate-400 hover:text-brand-500 p-2 -m-2 rounded ds-focus-ring"
                     style={{
                         transition: `transform var(--ds-duration-row-expand) var(--ds-ease-row-expand)`,
                         transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
@@ -49,8 +49,8 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
                             {KIND_LABEL[item.kind] ?? item.kind}
                         </Badge>
                     </div>
-                    <div className="mt-0.5 flex items-center gap-3 ds-text-meta text-slate-500 dark:text-slate-400">
-                        <span className="ds-font-mono">{item.repoFullName}</span>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 min-w-0 ds-text-meta text-slate-500 dark:text-slate-400">
+                        <span className="ds-font-mono truncate min-w-0 max-w-full">{item.repoFullName}</span>
                         {item.authorLogin && <span>by {item.authorLogin}</span>}
                         {ago && <span>{ago}</span>}
                     </div>
@@ -61,7 +61,7 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
                         type="button"
                         aria-label="Snooze item"
                         onClick={() => onSnooze?.(item)}
-                        className="p-2.5 -m-1 rounded-md text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/30 focus-visible:opacity-100"
+                        className="p-2.5 -m-1 rounded-md text-slate-500 dark:text-slate-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/30 focus-visible:opacity-100"
                     >
                         <Clock className="w-3.5 h-3.5" />
                     </button>
@@ -69,7 +69,7 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
                         type="button"
                         aria-label="Archive item"
                         onClick={() => onArchive?.(item.id)}
-                        className="p-2.5 -m-1 rounded-md text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus-visible:opacity-100"
+                        className="p-2.5 -m-1 rounded-md text-slate-500 dark:text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 focus-visible:opacity-100"
                     >
                         <Archive className="w-3.5 h-3.5" />
                     </button>
@@ -82,7 +82,7 @@ export function InboxRow({ item, onArchive, onSnooze, onSelect, narrative = null
                         <p className="italic text-brand-700 dark:text-brand-300">{narrative.text}</p>
                     )}
                     {!narrative?.text && (
-                        <p className="text-slate-500">No AI summary available for this item.</p>
+                        <p className="text-slate-500 dark:text-slate-400">No AI summary available for this item.</p>
                     )}
                 </div>
             )}

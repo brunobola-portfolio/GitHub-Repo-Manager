@@ -119,6 +119,11 @@ export function BranchesTab({ api, repoData }) {
     // registry's confirm shape adds type-name verification (`requiresInput`)
     // for an extra guard against accidental destructive clicks; the run()
     // calls api.deleteBranch + ctx.refresh in one step.
+    const canDeleteBranch = (branch) => {
+        const action = branchActions.delete_branch
+        return !action?.isApplicable || action.isApplicable(branch)
+    }
+
     const handleDelete = (branch) => {
         const action = branchActions.delete_branch
         if (action.isApplicable && !action.isApplicable(branch)) return
@@ -271,11 +276,17 @@ export function BranchesTab({ api, repoData }) {
                                     <Shield className="w-3 h-3" /> Protected
                                 </span>
                             )}
-                            <Button variant="ghost" size="sm" onClick={() => handleDelete(b)}
-                                className="text-rose-500 hover:text-rose-700 dark:hover:text-rose-400 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
-                                title="Delete branch" aria-label={`Delete branch ${b.name}`}>
-                                <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
+                            {/* Not offered where it cannot work: handleDelete silently
+                                ignored protected branches, and GitHub refuses to
+                                delete the default branch — a destructive-looking
+                                button that did nothing, always visible on phones. */}
+                            {b.name !== repoData?.default_branch && canDeleteBranch(b) && (
+                                <Button variant="ghost" size="sm" onClick={() => handleDelete(b)}
+                                    className="text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+                                    title="Delete branch" aria-label={`Delete branch ${b.name}`}>
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                            )}
                         </Card>
                     </li>
                 ))}

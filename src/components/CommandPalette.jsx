@@ -55,6 +55,9 @@ const ACTION_ITEMS = [
   { id: 'action-create-repo', label: 'Create Repository', modal: 'showCreateRepo', icon: Plus },
   { id: 'action-transfer', label: 'Transfer Repository', modal: 'showTransfer', icon: ArrowRightLeft },
   { id: 'action-settings', label: 'Open Settings', modal: 'showSettings', icon: Settings },
+  // Dev Toolkit was reachable only by the backtick shortcut and a header
+  // button hidden below 1340 px — touch tablets had no way in at all.
+  { id: 'action-dev-toolkit', label: 'Open Dev Toolkit', modal: 'showDevToolkit', icon: Wrench, keywords: 'dev toolkit commit message pr description diagram' },
   { id: 'action-prompt-studio', label: 'Open AI Prompt Studio', hash: '#/ai/prompts', icon: Sparkles, keywords: 'prompt studio ai preset review' },
 ]
 
@@ -530,7 +533,9 @@ export function CommandPalette({
     <Dialog.Root open={isOpen} onOpenChange={(open) => { if (!open) onClose() }}>
     <Dialog.Portal>
     <Dialog.Overlay cmdk-overlay="" className="fixed inset-0 z-[var(--ds-z-modal)] bg-black/50 backdrop-blur-sm" />
-    <Dialog.Content aria-label="Command Palette" cmdk-dialog="" className="fixed left-1/2 top-[20%] z-[var(--ds-z-ceiling)] -translate-x-1/2 w-full max-w-[640px] px-4">
+    {/* dvh-bound: with a phone keyboard open, 20% down plus a 400 px list
+        put the bottom of the results behind the keyboard. */}
+    <Dialog.Content aria-label="Command Palette" cmdk-dialog="" className="fixed left-1/2 top-2 sm:top-[max(1rem,15dvh)] z-[var(--ds-z-ceiling)] -translate-x-1/2 w-full max-w-[640px] px-4">
     <Command
       key={paletteModeKey}
       label="Command Palette"
@@ -566,7 +571,7 @@ export function CommandPalette({
                 ? 'Your GitHub session expired — please sign in again.'
                 : 'No results.'}
         </Command.Empty>
-        <ResultsList className="max-h-[400px] overflow-y-auto p-2">
+        <ResultsList className="max-h-[min(400px,45dvh)] overflow-y-auto p-2">
           {MOCK_MODE && (
             <div
               data-testid="command-palette-demo-hint"

@@ -39,6 +39,11 @@ Copy each product's **Product ID** (starts with `prod_...`) — you'll need them
    - `customer.subscription.deleted`
    - `invoice.payment_failed`
    - `invoice.paid`
+   - `charge.refunded` — a full refund suspends the paid tier
+   - `charge.dispute.created` — a chargeback suspends it too
+   - `charge.dispute.closed` — a dispute won restores it
+   Without the three `charge.*` events a refunded or charged-back customer
+   keeps the paid tier indefinitely.
 4. Click **Add endpoint**
 5. Copy the **Signing secret** (`whsec_...`)
 
@@ -63,6 +68,11 @@ STRIPE_PRICE_PRO_MONTHLY=price_...        # Pro monthly price ID
 STRIPE_PRICE_PRO_YEARLY=price_...         # Pro yearly price ID (enables the yearly toggle)
 STRIPE_PRICE_ENTERPRISE_MONTHLY=price_... # Optional — Enterprise is Contact Sales
 STRIPE_PRICE_ENTERPRISE_YEARLY=price_...  # Optional
+STRIPE_PORTAL_CONFIGURATION=bpc_...       # Needed when the Customer portal configuration was
+                                          # created through the API: without it the Manage /
+                                          # cancel button fails in live mode
+STRIPE_AUTOMATIC_TAX=true                 # Optional — only once Stripe Tax has a registration;
+                                          # collects billing address + VAT id at checkout
 ```
 
 > **Running in Docker?** `docker-compose.yml` passes an explicit allowlist of

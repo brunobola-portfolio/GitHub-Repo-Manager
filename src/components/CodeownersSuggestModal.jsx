@@ -100,7 +100,7 @@ export function CodeownersSuggestModal({ isOpen, onClose, owner, repo }) {
         >
             {/* Tuning controls */}
             <div className="flex items-center gap-3 flex-wrap p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-700/40 mb-4">
-                <Settings2 className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                <Settings2 className="w-4 h-4 text-slate-500 dark:text-slate-400 flex-shrink-0" />
                 <label htmlFor="codeowners-commits" className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
                     Commits to analyse
                     <Input

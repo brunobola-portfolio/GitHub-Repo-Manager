@@ -25,7 +25,7 @@ import { join, sep } from 'node:path';
 // server/middleware, excluding __tests__). Lower this constant whenever a
 // router is converted to sendOk/sendError — never raise it to make a new
 // hand-rolled site pass.
-const CURRENT_COUNT = 376;
+const CURRENT_COUNT = 375;
 
 const HAND_ROLLED_ERROR_JSON = /\.json\(\s*\{\s*error\b/g;
 

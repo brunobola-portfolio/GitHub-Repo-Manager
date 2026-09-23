@@ -23,7 +23,7 @@ export function ActivityRow({ event }) {
                 </div>
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                        <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate hover:text-brand-500 cursor-pointer">
+                        <div className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">
                             {event.repo?.name || 'Unknown Repo'}
                         </div>
                         <span className="ds-text-micro text-slate-500 dark:text-slate-400 whitespace-nowrap">{timeAgo}</span>
@@ -31,7 +31,7 @@ export function ActivityRow({ event }) {
                     <div className="ds-text-meta text-slate-500 dark:text-slate-400 mt-0.5 leading-tight line-clamp-2">
                         {getEventDescription(event)}
                     </div>
-                    <div className="mt-1.5 flex items-center gap-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                    <div className="mt-1.5 flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">
                         <button
                             className="ds-text-micro font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline flex items-center gap-1"
                             aria-label="View activity details"

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import { writeQuery } from '../../utils/urlQuery'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { GitCommit, ExternalLink, Clock } from 'lucide-react'
@@ -41,7 +42,7 @@ export function CommitsTab({ repo }) {
         if (!sha) return
         const params = new URLSearchParams(window.location.search)
         params.set(COMMIT_PARAM, sha)
-        window.history.pushState({ commitSha: sha }, '', `${window.location.pathname}?${params}`)
+        writeQuery(params, { push: true, state: { commitSha: sha } })
         setSelectedSha(sha)
     }, [])
 
@@ -49,8 +50,7 @@ export function CommitsTab({ repo }) {
         const params = new URLSearchParams(window.location.search)
         if (params.has(COMMIT_PARAM)) {
             params.delete(COMMIT_PARAM)
-            const query = params.toString()
-            window.history.replaceState({}, '', window.location.pathname + (query ? `?${query}` : ''))
+            writeQuery(params)
         }
         setSelectedSha(null)
     }, [])
@@ -188,7 +188,7 @@ export function CommitsTab({ repo }) {
                                 />
                             ) : (
                                 <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
-                                    <GitCommit className="w-4 h-4 text-slate-500" />
+                                    <GitCommit className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                                 </div>
                             )}
                             <div className="flex-1 min-w-0">
@@ -221,7 +221,7 @@ export function CommitsTab({ repo }) {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     onClick={(e) => e.stopPropagation()}
-                                    className="relative z-10 text-slate-400 hover:text-brand-500 p-1 rounded transition-colors flex-shrink-0 ds-focus-ring"
+                                    className="relative z-10 text-slate-500 dark:text-slate-400 hover:text-brand-500 p-1 rounded transition-colors flex-shrink-0 ds-focus-ring"
                                     aria-label="Open on GitHub"
                                     title="Open on GitHub"
                                 >

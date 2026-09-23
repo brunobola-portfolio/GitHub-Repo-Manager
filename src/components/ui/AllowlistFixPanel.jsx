@@ -208,7 +208,7 @@ function NonAdminGuidance({ host, envLine, patternsKnown, envCopied, onEnvCopy }
             <button
               type="button"
               onClick={copyHost}
-              className="inline-flex items-center gap-1 ds-text-meta text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline"
+              className="inline-flex items-center gap-1 ds-text-meta text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 underline"
             >
               <AnimatedCopyIcon copied={hostCopied} size="w-3 h-3" checkClassName="text-emerald-500" />
               {hostCopied ? 'copied' : 'copy host'}
@@ -250,7 +250,7 @@ function EnvSnippet({ envLine, host, patternsKnown, envCopied, onEnvCopy }) {
         <button
           type="button"
           onClick={onEnvCopy}
-          className="px-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-colors ds-focus-ring"
+          className="px-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-white dark:hover:bg-slate-800 transition-colors ds-focus-ring"
           aria-label={patternsKnown ? 'Copy line' : 'Copy host'}
         >
           <AnimatedCopyIcon copied={envCopied} size="w-3.5 h-3.5" checkClassName="text-emerald-500" />

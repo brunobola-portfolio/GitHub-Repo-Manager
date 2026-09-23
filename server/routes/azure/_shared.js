@@ -67,7 +67,7 @@ export async function resolveAzureContext(req, res, { requireProject = true, req
     }
     const patResult = resolvePatFromRequest(req);
     if (!patResult.pat) {
-        errorResponse(res, 401, patResult.error, 'MISSING_PAT');
+        errorResponse(res, 422, patResult.error, 'MISSING_PAT');
         return null;
     }
     const host = await resolveHost(req, res);
@@ -93,3 +93,16 @@ export const enrichedRepoLimiter = rateLimit({
     legacyHeaders: false,
     message: { error: 'Too many repo enrichment requests — try again in a minute' },
 });
+
+/**
+ * HTTP status for an error that came back from Azure DevOps (or our Azure
+ * credential handling). A 401 from Azure means the Azure token or PAT is
+ * missing, expired or revoked — not that the user's session with THIS app
+ * ended. The client treats every 401 as its own session expiring and
+ * hard-redirects to sign-in, which threw away the migration wizard's state
+ * while the GitHub session was fine. Azure auth failures therefore answer 422.
+ */
+export function azureStatus(error, fallback = 500) {
+    const status = error?.status || fallback;
+    return status === 401 ? 422 : status;
+}

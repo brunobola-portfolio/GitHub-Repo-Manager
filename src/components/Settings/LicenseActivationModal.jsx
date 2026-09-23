@@ -129,14 +129,14 @@ export function LicenseActivationModal({ isOpen, onClose }) {
                 <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-300">License activated</p>
                 <p className="text-xs text-emerald-800/80 dark:text-emerald-300/80 mt-0.5">Your plan and Pro features are now live across the app.</p>
                 <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
-                  <div className="flex gap-2"><dt className="text-slate-500">Tier:</dt><dd className="font-medium capitalize">{result.tier}</dd></div>
-                  {result.org && <div className="flex gap-2"><dt className="text-slate-500">Organization:</dt><dd className="font-medium">{result.org}</dd></div>}
-                  {result.email && <div className="flex gap-2"><dt className="text-slate-500">Email:</dt><dd className="font-medium">{result.email}</dd></div>}
+                  <div className="flex gap-2"><dt className="text-slate-500 dark:text-slate-400">Tier:</dt><dd className="font-medium capitalize">{result.tier}</dd></div>
+                  {result.org && <div className="flex gap-2"><dt className="text-slate-500 dark:text-slate-400">Organization:</dt><dd className="font-medium">{result.org}</dd></div>}
+                  {result.email && <div className="flex gap-2"><dt className="text-slate-500 dark:text-slate-400">Email:</dt><dd className="font-medium">{result.email}</dd></div>}
                   {/* No Seats row: every Stripe licence is minted with seats: 1
                       (stripe-webhooks.js `parseInt(metadata?.seats) || 1`, and
                       billing.js never sets the key), nothing enforces it, and
                       every pricing surface promises unlimited team members. */}
-                  {formattedExpires && <div className="flex gap-2"><dt className="text-slate-500">Expires:</dt><dd className="font-medium">{formattedExpires}</dd></div>}
+                  {formattedExpires && <div className="flex gap-2"><dt className="text-slate-500 dark:text-slate-400">Expires:</dt><dd className="font-medium">{formattedExpires}</dd></div>}
                 </dl>
                 {result.bootstrap && (
                   <p

@@ -115,6 +115,7 @@ export function RepoGrid({
 			aiMeta={repoMetadata.get(repo.id) ?? null}
 			viewMode={viewMode}
 			isSelected={selectedIds.has(repo.id)}
+			selectionActive={selectedIds.size > 0}
 			isContextTarget={contextTargetId === repo.id}
 			isFocused={focusedIndex === i}
 			onToggle={handleToggle}

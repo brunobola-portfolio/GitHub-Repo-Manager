@@ -63,7 +63,7 @@ export function OrgSidebar({ user, orgs, selectedOrg, stats, leftMode, onSelectO
     <>
       <button
         onClick={() => setOrgOverlayOpen(true)}
-        className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+        className="w-10 h-10 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
         aria-label="Expand organization panel"
         aria-expanded={orgOverlayOpen}
       >

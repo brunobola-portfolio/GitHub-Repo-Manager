@@ -171,7 +171,8 @@ export function IssueDetailPanel({ issue, api, onClose, onUpdate, repoFullName }
                                     href={current.html_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="p-2 text-slate-400 hover:text-brand-500 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/60 ds-focus-ring"
+                                    aria-label="View on GitHub"
+                                    className="p-2 text-slate-500 dark:text-slate-400 hover:text-brand-500 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/60 ds-focus-ring"
                                 >
                                     <ExternalLink className="w-4 h-4" />
                                 </a>

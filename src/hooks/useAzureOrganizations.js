@@ -66,13 +66,17 @@ export function useAzureOrganizations() {
         setOrganizations([])
         return []
       }
-      // Auto-retry once on 401 (token expired)
-      if (e.status === 401 && retryCount < 1 && mountedRef.current) {
+      // The server answers an expired or missing Azure token with 422
+      // (AZURE_TOKEN_EXPIRED / AZURE_AUTH_REQUIRED), never 401: a 401 here
+      // would read as THIS app's session ending and sign the user out.
+      const azureAuthFailed = e.status === 422 && /^AZURE_(TOKEN_EXPIRED|AUTH_REQUIRED)$/.test(e.data?.code || '')
+      // Auto-retry once when the Azure token expired
+      if (azureAuthFailed && retryCount < 1 && mountedRef.current) {
 
         return fetchOrganizations(retryCount + 1)
       }
       if (!mountedRef.current) return []
-      setOrgsError(e.status === 401 ? 'TOKEN_EXPIRED' : (e.message || `Failed to list organizations (${e.status})`))
+      setOrgsError(azureAuthFailed ? 'TOKEN_EXPIRED' : (e.message || `Failed to list organizations (${e.status})`))
       setOrganizations([])
       return []
     } finally {

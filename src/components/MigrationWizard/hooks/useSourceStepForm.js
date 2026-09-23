@@ -282,8 +282,8 @@ export function useSourceStepForm({ source, onChange, oauthHook, orgsHook }) {
         // "pending".
         const msg = err.data?.error
           || err.data?.message
-          || (err.status === 401 || err.status === 403
-              ? 'Credentials rejected by the server (401/403)'
+          || (err.status === 401 || err.status === 403 || err.status === 422
+              ? 'Azure DevOps rejected these credentials'
               : `Validation failed (HTTP ${err.status})`)
         setValidationError(msg)
         return

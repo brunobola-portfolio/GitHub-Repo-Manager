@@ -94,7 +94,7 @@ function ReviewRow({ review, isFocused, onFocus, hasAI, onApprove, onSnooze, onR
             onMouseLeave={handleMouseLeave}
         >
             {hasAI && showChips && (
-                <Sparkles className="absolute top-2 right-2 w-3 h-3 text-slate-500 pointer-events-none" />
+                <Sparkles className="absolute top-2 right-2 w-3 h-3 text-slate-500 dark:text-slate-400 pointer-events-none" />
             )}
             <WorkBoardRowLink
                 repoFullName={review.repoFullName}
@@ -266,7 +266,7 @@ function DraftCommentModal({ review, intent, onConfirm, onClose }) {
                 </Field>
             </div>
             {!draftLoading && !draftError && (
-                <p className="mt-1 flex items-center gap-1 ds-text-meta text-slate-500">
+                <p className="mt-1 flex items-center gap-1 ds-text-meta text-slate-500 dark:text-slate-400">
                     <Sparkles className="w-3 h-3" /> AI draft — edit before sending
                 </p>
             )}

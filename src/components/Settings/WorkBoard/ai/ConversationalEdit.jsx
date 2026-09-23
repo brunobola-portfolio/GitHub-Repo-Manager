@@ -43,7 +43,7 @@ export function ConversationalEdit({ onInterpret, onApply }) {
         <InsightCard tone="default" hover={false}>
             <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-slate-500" />
+                    <MessageSquare className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                     <p className="text-sm font-medium text-slate-700 dark:text-slate-300">AI-assisted edit</p>
                 </div>
 

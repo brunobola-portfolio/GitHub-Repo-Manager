@@ -12,11 +12,12 @@ describe('StatCard', () => {
 
   it('applies tone color class to value', () => {
     render(<StatCard icon={Package} label="Warnings" value="3" tone="amber" />)
-    expect(screen.getByText('3')).toHaveClass('text-amber-400')
+    // 700 in light mode (AA on the near-white tile), 400 in dark.
+    expect(screen.getByText('3')).toHaveClass('text-amber-700', 'dark:text-amber-400')
   })
 
   it('falls back to indigo tone by default', () => {
     render(<StatCard icon={Package} label="Default" value="1" />)
-    expect(screen.getByText('1')).toHaveClass('text-brand-400')
+    expect(screen.getByText('1')).toHaveClass('text-brand-700', 'dark:text-brand-400')
   })
 })

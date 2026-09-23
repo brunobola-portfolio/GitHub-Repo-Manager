@@ -83,7 +83,7 @@ export function BatchIndexProgressModal({ isOpen, onClose, repos = [] }) {
           Processed {processed} of {repos.length} repositories
         </p>
         {running && (
-          <div className="flex items-center gap-2 text-xs text-slate-500">
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <Spinner size="md" tone="primary" />
             Indexing in progress…
           </div>

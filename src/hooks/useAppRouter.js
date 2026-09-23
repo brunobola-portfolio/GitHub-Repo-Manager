@@ -256,8 +256,19 @@ export function useAppRouter({
       activeView === 'repo-detail' && (prev?.view !== 'repo-detail' || prev?.repoKey !== repoKey)
     const enteringPrReview =
       activeView === 'pr-review' && prev?.view !== 'pr-review'
+    const leavingPrReview = prev?.view === 'pr-review' && activeView !== 'pr-review'
 
     prevNavRef.current = { view: activeView, repoKey }
+
+    // Leaving pr-review IN-APP (its Back button) back to its own repo: the
+    // entry pushed on the way in is still on the stack, so the next browser
+    // Back did nothing (same URL) — one dead press per review. Pop it instead.
+    // Browser Back already popped it (no marker left), and a jump to any
+    // other view falls through to the replace below, which overwrites it.
+    if (leavingPrReview && activeView === 'repo-detail' && window.history.state?.grmPrReview) {
+      window.history.back()
+      return
+    }
 
     // pr-review has no hash of its own (state overlay on top of a repo). Push a
     // DUPLICATE history entry carrying the current (repo) URL so browser Back
@@ -270,7 +281,7 @@ export function useAppRouter({
     if (activeView === 'pr-review') {
       if (enteringPrReview) {
         const here = window.location.pathname + window.location.search + window.location.hash
-        window.history.pushState(null, '', here)
+        window.history.pushState({ grmPrReview: true }, '', here)
       }
       return
     }

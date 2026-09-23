@@ -74,3 +74,19 @@ describe('useTabData', () => {
         expect(result.current.loading).toBe(true) // second call is still pending in the test setup
     })
 })
+
+describe('useTabData — a newer load always wins', () => {
+    it('ignores a slow initial load that finishes after a reload', async () => {
+        const { renderHook, act, waitFor } = await import('@testing-library/react')
+        let resolveSlow
+        const loader = vi.fn()
+            .mockImplementationOnce(() => new Promise((r) => { resolveSlow = r }))
+            .mockImplementationOnce(async () => ['fresh'])
+        const { result } = renderHook(() => useTabData(loader, []))
+        await act(async () => { await result.current.reload() })
+        expect(result.current.data).toEqual(['fresh'])
+        await act(async () => { resolveSlow(['stale']) })
+        await waitFor(() => expect(result.current.loading).toBe(false))
+        expect(result.current.data).toEqual(['fresh'])
+    })
+})

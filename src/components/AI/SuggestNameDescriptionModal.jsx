@@ -123,7 +123,7 @@ function FieldCard({
                         <button
                             type="button"
                             onClick={onRestore}
-                            className="ds-text-meta text-slate-500 hover:text-brand-500"
+                            className="ds-text-meta text-slate-500 dark:text-slate-400 hover:text-brand-500"
                             title="Restore original suggestion"
                         >
                             Restore

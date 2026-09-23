@@ -78,7 +78,7 @@ export function RepoRow({ repo, onAction, selected = false, onSelectionChange })
                             aria-label="More actions"
                             className="p-1.5 rounded-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors ds-focus-ring"
                         >
-                            <MoreHorizontal className="w-4 h-4 text-slate-500" />
+                            <MoreHorizontal className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                         </button>
                     </Tooltip>
                 </Popover.Trigger>

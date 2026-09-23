@@ -166,7 +166,7 @@ export default function ServerPicker({ host, onHostChange, locked = false, allow
               <button
                 type="button"
                 onClick={startCustomEdit}
-                className="ml-1 p-1.5 rounded-md text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ds-focus-ring"
+                className="ml-1 p-1.5 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ds-focus-ring"
                 aria-label="Edit server"
                 title="Edit manually"
               >

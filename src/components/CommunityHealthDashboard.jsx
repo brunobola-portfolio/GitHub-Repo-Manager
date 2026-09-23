@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { lazy, Suspense, useState, useEffect } from 'react';
 import { API_BASE_URL } from '../config'
 import { motion, AnimatePresence, useMotionValue, useSpring, useReducedMotion } from 'framer-motion';
 import { EASE, SPRING, DURATION } from './ui/motion'
@@ -12,7 +12,8 @@ import { Button } from './ui/Button';
 import { TabBar } from './ui/TabBar';
 import { Tooltip } from './ui/Tooltip';
 import { CommunityHealthFixModal } from './AI/CommunityHealthFixModal';
-import { AgentRulesModal } from './AI/AgentRulesModal';
+// Lazy: the modal statically imports the diff viewer (see OverviewTab).
+const AgentRulesModal = lazy(() => import('./AI/AgentRulesModal').then((m) => ({ default: m.AgentRulesModal })));
 import { formatFileSize, formatDateTime } from '../utils/format';
 import { apiCall } from '../utils/api';
 
@@ -419,6 +420,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                     />
                 )}
                 {repo && agentRulesOpen && (
+                    <Suspense fallback={null}>
                     <AgentRulesModal
                         isOpen={agentRulesOpen}
                         onClose={() => setAgentRulesOpen(false)}
@@ -430,6 +432,7 @@ export function CommunityHealthDashboard({ repo, onClose }) {
                             toast.success('Agent rules updated');
                         }}
                     />
+                    </Suspense>
                 )}
         </Modal>
     );

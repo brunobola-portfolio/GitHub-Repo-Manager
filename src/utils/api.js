@@ -365,7 +365,14 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 // Fetch with retry logic
 export async function fetchWithRetry(url, options = {}, retryOptions = {}) {
-    const { maxRetries, baseDelay, maxDelay, timeout } = { ...DEFAULT_RETRY_OPTIONS, ...retryOptions }
+    // A mutation is not safe to repeat by default. A 35-second AI generation
+    // hit the 30-second client timeout and was re-POSTed three more times —
+    // four metered generations on the user's key and quota, then a timeout
+    // anyway — and a checkout answering 503 took ~10 s of backoff to show
+    // "unavailable". Reads keep three retries; a caller that knows its POST is
+    // idempotent passes maxRetries explicitly.
+    const defaults = isMutation(options) ? { ...DEFAULT_RETRY_OPTIONS, maxRetries: 0 } : DEFAULT_RETRY_OPTIONS
+    const { maxRetries, baseDelay, maxDelay, timeout } = { ...defaults, ...retryOptions }
 
     // Short-circuit: if session is already known expired, skip the request
     if (sessionExpired) {

@@ -60,7 +60,7 @@ Managing a real GitHub estate means juggling several disconnected tools: dozens 
 **GitHub Repo Manager** puts it in one place:
 
 - **One dashboard** for repos, teams, Actions analytics, and community health — with a personalised "what needs you" inbox.
-- **Metered, grounded AI** you control — Bring Your Own Key (Anthropic · OpenAI · Gemini · OpenRouter · local), with per-feature monthly caps, an opt-in monthly $ spend cap, and answer-first, cited responses. No key? High-quality algorithmic fallbacks keep everything working.
+- **Metered, grounded AI** you control — Bring Your Own Key (Anthropic · OpenAI · Gemini · OpenRouter · local), with per-feature monthly caps, an opt-in monthly $ spend cap, and answer-first, cited responses. No key? AI routes say so and point to Settings; diagrams, agent rules, README scoring and migration planning still produce deterministic output.
 - **A cross-repo Work Board** that surfaces reviews waiting on you, stale PRs, and tech debt across every repository — no manual registration.
 - **AI Deep Review** that turns the in-app PR view into a tool you'd choose over github.com.
 - **An Azure DevOps migration suite** (Git, TFVC, Boards, Wikis) with risk analysis, dry-run, and conflict resolution.
@@ -127,7 +127,7 @@ A single cockpit across every repository — no context switching, no manual rep
 - **KPI tiles & trends** — count-up animations, 7-day sparklines, and delta badges; snapshots persist via a daily sweeper.
 - **Tabs** — My Reviews · My Issues · Stale PRs · Review Load · Tech Debt · **DORA Metrics** — DevOps Research and Assessment's delivery metrics, per deployment environment: deployment frequency, change lead time p50/p90 (PR opened → deployed), change fail rate, failed deployment recovery time p50/p90, CSV export ([what each one measures](docs/work-board.md#what-dora-measures)). Every tab is available on all tiers.
 - **Inline actions** — approve / request-changes / snooze a PR right on the row; auto-refresh every 60 s (pauses when hidden).
-- **Repo Advisor** (BYOK, monthly cap; needs `WORK_BOARD_AI_ENABLED=true` on the deployment *and* a per-user opt-in) — an AI summary card fed 7-day trend snapshots, suggestion chips (`ping` / `snooze` / `view`), and conversational edits with a preview-then-apply diff.
+- **Repo Advisor** (BYOK, monthly cap) — an AI summary card fed 7-day trend snapshots, which needs only a key; the suggestion chips (`ping` / `snooze` / `view`) and conversational edits with a preview-then-apply diff also need `WORK_BOARD_AI_ENABLED=true` on the deployment *and* a per-user opt-in.
 
 <details>
 <summary><strong>Keyboard navigation & Command Palette</strong></summary>
@@ -256,8 +256,8 @@ The hosted product is **free-first**: nearly every product feature — bulk ops,
 | Migration Risk Analysis (AI)           | 25 / month      | Unlimited     | Unlimited  |
 | Migration Assistant (AI)               | 25 / month      | Unlimited     | Unlimited  |
 | Repo Insights / Quality Report         | 75 / month      | Unlimited     | Unlimited  |
-| README Generator (AI)                  | 25 / month      | Unlimited     | Unlimited  |
-| README Studio (AI improve)             | 25 / month      | Unlimited     | Unlimited  |
+| README Generator (AI)                  | 25 / month, shared with Studio | Unlimited | Unlimited |
+| README Studio (AI improve)             | Shares the 25 / month above | Unlimited | Unlimited |
 | Commit Generator (AI)                  | 250 / month     | Unlimited     | Unlimited  |
 | PR Review Experience (read + browse)   | ✓               | ✓             | ✓          |
 | Manual PR review write-back            | ✓               | ✓             | ✓          |
@@ -282,11 +282,11 @@ The hosted product is **free-first**: nearly every product feature — bulk ops,
 | Priority support                       | ✗               | ✗             | ✓          |
 | White-glove migration services         | ✗               | ✗             | ✓          |
 
-† **"Repo Advisor" names two surfaces, and only one of them is behind a flag.** The floating conversational assistant in this row is `POST /api/ai/chat` (`server/routes/ai/core.js`) — no deployment flag gates it, and it works out of the box on a self-hosted install with nothing but a BYOK key. The *Repo Advisor card inside the Work Board* — the 7-day trend summary, the suggestion chips, the preview-then-apply edits — is the gated one: `server/middleware/work-board-ai-gate.js` returns `404 AI_FEATURE_FLAG_OFF` unless `WORK_BOARD_AI_ENABLED=true` is set in the environment (`docker-compose.yml` forwards the variable), and each user must then opt in under `Settings → Work Board`. Both are tier-free — no plan unlocks either. No row in this matrix is gated by an environment flag.
+† **"Repo Advisor" names two surfaces, and only one of them is behind a flag.** The floating conversational assistant in this row is `POST /api/ai/chat` (`server/routes/ai/core.js`) — no deployment flag gates it, and it works out of the box on a self-hosted install with nothing but a BYOK key. Inside the Work Board, the 7-day trend summary card needs only a BYOK key; the suggestion chips and the preview-then-apply edits are the gated part: `server/middleware/work-board-ai-gate.js` returns `404 AI_FEATURE_FLAG_OFF` unless `WORK_BOARD_AI_ENABLED=true` is set in the environment (`docker-compose.yml` forwards the variable), and each user must then opt in under `Settings → Work Board`. Both are tier-free — no plan unlocks either. No row in this matrix is gated by an environment flag.
 
 **Audit Logs** is a full page (`#/audit`), not a tab buried in Settings — it filters by action (fed from the log itself, so the filter list never drifts from what's actually recorded) and includes a **Verify chain** action that walks the append-only SHA-256 hash chain end to end and reports the first broken link, if any; CSV/JSON export is unchanged. The Settings modal's Audit Log tab is now a summary that links through.
 
-Self-hosting is free forever under Apache-2.0 — see [LICENSE](LICENSE). The matrix above applies to self-hosted Pro/Enterprise licenses today (Stripe checkout → emailed license key — see [`docs/billing-and-licensing.md`](docs/billing-and-licensing.md)), and will apply equally to the hosted SaaS once it launches. "Advanced bulk" and "Mirror Sync apply" carry a tier-independent daily anti-abuse ceiling on top of the existing dry-run + confirmation-token safety flow, regardless of plan. Priority Support and White-glove migration are manual, service-based deliverables (support ticket + contract), not gated by a feature flag.
+Self-hosting is free forever under Apache-2.0 — see [LICENSE](LICENSE). The matrix above applies to self-hosted Pro/Enterprise licenses today (Stripe checkout → emailed license key — see [`docs/billing-and-licensing.md`](docs/billing-and-licensing.md)), and to the hosted app at repomanager.bolalabs.pt, where Stripe sets the account's tier directly. Bulk transfer and bulk delete carry a tier-independent daily anti-abuse ceiling on top of the dry-run + confirmation-token safety flow, regardless of plan. Priority Support and White-glove migration are manual, service-based deliverables (support ticket + contract), not gated by a feature flag.
 
 See the [Free Tier Expansion spec](docs/specs/2026-04-15-free-tier-expansion.md) for the design rationale and enforcement details.
 
@@ -506,7 +506,7 @@ Each user configures their own provider key in `Settings → AI Configuration` �
 
 See [`docs/ai-providers.md`](docs/ai-providers.md) for per-provider setup and free-tier limits.
 
-> **Single-tenant self-hosts** may set `GEMINI_API_KEY` in `.env` as a shared server-wide fallback; set `AI_REQUIRE_USER_CONFIG=true` to disable it in multi-tenant deployments. Without any key configured, AI features return high-quality mock responses automatically.
+> **Single-tenant self-hosts** may set `GEMINI_API_KEY` in `.env` as a shared server-wide fallback; set `AI_REQUIRE_USER_CONFIG=true` to disable it in multi-tenant deployments. Without any key configured, AI routes answer with a configure-a-key prompt (mock responses exist only in demo mode); diagrams, agent rules, README Studio scoring and migration planning fall back to deterministic output.
 
 ---
 
@@ -594,7 +594,7 @@ npm rebuild better-sqlite3   # or manual rebuild
 
 - **OAuth callback** — the app's callback URL must match exactly (`http://localhost:3001/api/auth/callback` in dev).
 - **Session lost** — ensure `SESSION_SECRET` is set and the backend is running.
-- **AI 503** — verify your provider key in `Settings → AI Configuration`; without a key, mock responses are returned automatically.
+- **AI 503 / "AI not configured"** — add or verify your provider key in `Settings → AI Configuration`.
 
 </details>
 
@@ -618,7 +618,7 @@ npm rebuild better-sqlite3   # or manual rebuild
 <details>
 <summary><strong>AI & migration</strong></summary>
 
-**Do I have to pay for AI?** No — several providers have free tiers, and everything works with local models or algorithmic fallbacks. See [`docs/ai-providers.md`](docs/ai-providers.md).
+**Do I have to pay for AI?** No — several providers have free tiers and local models work. Without any key the AI features ask you to add one; diagrams, agent rules, README scoring and migration planning still work deterministically. See [`docs/ai-providers.md`](docs/ai-providers.md).
 
 **What data is sent to the AI provider?** Depends on the feature — three groups, and nothing from unrelated repos or your session ever goes along. BYOK sends everything straight to your own provider, never ours.
 
@@ -642,7 +642,7 @@ Full Deep Review breakdown, including what is stored and logged: [Privacy & data
 
 Version history lives in **[CHANGELOG.md](CHANGELOG.md)** and [GitHub Releases](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases). Every tagged release has a changelog entry. The reverse is not quite true: **`[4.5.0]` was never tagged or released** — that work merged to `main` and first reached users inside v4.6.0. Its entry is kept (and labelled) for history rather than deleted.
 
-What's next is tracked in **[ROADMAP.md](ROADMAP.md)** and the in-app `/roadmap` page, scoped as **Next** and **Later** — the "Shipping Now" stage was removed, so anything still listed there is genuinely unshipped. Every feature on the Pricing table works today; SSO/SAML and GitHub Enterprise Server are roadmap items, clearly marked as such.
+What's next is tracked in **[ROADMAP.md](ROADMAP.md)**, scoped as **Next** and **Later** — the "Shipping Now" stage was removed, so anything still listed there is genuinely unshipped. Every feature on the Pricing table works today; SSO/SAML and GitHub Enterprise Server are roadmap items, clearly marked as such.
 
 ---
 
@@ -687,8 +687,8 @@ permission needed, no fee.
 The **name and the mark are reserved** — that is Apache-2.0 §6, spelled out in
 [`TRADEMARKS.md`](TRADEMARKS.md). Fork freely; rename the fork.
 
-A **commercial subscription** buys capacity, a hosted instance, support with a
-response commitment and compliance deliverables — never permission, which the
+A **commercial subscription** buys capacity, a hosted instance, priority
+support and compliance deliverables — never permission, which the
 licence above already gave you. See
 [`docs/LICENSE-COMMERCIAL.md`](docs/LICENSE-COMMERCIAL.md) or contact
 [bruno@bolalabs.pt](mailto:bruno@bolalabs.pt).

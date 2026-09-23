@@ -201,7 +201,7 @@ function SourceSection({ title, source }) {
         return (
             <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                 <p className="text-sm font-medium">{title}</p>
-                <p className="text-xs text-slate-500 mt-1">{source.reason}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{source.reason}</p>
             </div>
         )
     }
