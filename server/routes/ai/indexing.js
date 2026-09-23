@@ -19,8 +19,6 @@ import { validateBody } from '../../middleware/validate-request.js';
 import { aiService } from '../../ai-service.js';
 import {
     checkUsageLimit,
-    
-    incrementAIUsage,
     quotaExceededResponse,
     guardedIncrementAIUsage,
     releaseGuardedAIUsage,
@@ -312,7 +310,7 @@ router.post('/ai/batch-index', requireAuth, requireScope('ai'), validateBody(aiB
     const userId = req.session.userId;
     const requested = Math.min(repos.length, 10);
 
-    // Quota: each repo consumes one ai_insights + one ai_queries (incrementAIUsage
+    // Quota: each repo consumes one ai_insights + one ai_queries (its reservation
     // bumps both). A single up-front check let a near-cap user process the whole
     // batch; instead cap the batch to the user's *binding* remaining allowance so
     // N embeds can never exceed the quota the check approved.
@@ -382,6 +380,11 @@ router.post('/ai/batch-index', requireAuth, requireScope('ai'), validateBody(aiB
             break;
         }
 
+        // One ai_insights + ai_queries unit per repo, reserved atomically before
+        // its work. The remaining-allowance check above sizes the batch, but on
+        // its own it let parallel batch calls each process that many repos.
+        if (!guardedIncrementAIUsage(userId, 'ai_insights').allowed) break;
+
         try {
             // Fetch README
             let readmeContent = '';
@@ -413,6 +416,7 @@ router.post('/ai/batch-index', requireAuth, requireScope('ai'), validateBody(aiB
             results.push({ repo: repo.full_name, success: true, health_score: analysis.health_score });
 
         } catch (error) {
+            releaseGuardedAIUsage(userId, 'ai_insights');
             if (batchBillsOperator) releaseAISpendReservation(userId);
             req.log.error({ err: error, repo: repo.full_name }, 'Batch index failed for repo');
             results.push({ repo: repo.full_name, success: false, error: safeError(error, 'Analysis failed') });
@@ -426,12 +430,9 @@ router.post('/ai/batch-index', requireAuth, requireScope('ai'), validateBody(aiB
         }
     } catch (error) {
         req.log.error({ err: error }, 'Batch insert failed');
+        // Nothing was saved, so none of the reserved units were used.
+        for (let i = 0; i < analyzedRepos.length; i++) releaseGuardedAIUsage(userId, 'ai_insights');
         return res.status(500).json({ error: 'Failed to save indexed data' });
-    }
-
-    // Increment usage by number of repos actually processed (not just requested)
-    for (let i = 0; i < analyzedRepos.length; i++) {
-        incrementAIUsage(userId, 'ai_insights');
     }
     auditLog(req, 'ai.batch_index', 'ai', null, { repoCount: analyzedRepos.length });
 

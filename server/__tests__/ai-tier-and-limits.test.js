@@ -274,8 +274,30 @@ describe('POST /api/ai/batch-index — quota caps the batch to remaining allowan
         expect(res.status).toBe(200)
         expect(res.body.processed).toBe(2)
         expect(aiService.analyzeRepo).toHaveBeenCalledTimes(2);
-        expect(mockIncrementAIUsage).toHaveBeenCalledTimes(2)
+        // One atomic reservation per processed repo (guardedIncrementAIUsage).
+        expect(mockCheckAIFeatureLimit).toHaveBeenCalledTimes(2)
+        expect(mockIncrementAIUsage).not.toHaveBeenCalled()
         expect(res.body.skipped).toBe(3)
+    })
+
+    it('stops when a reservation is refused mid-batch (a parallel call took the last units)', async () => {
+        // The up-front check sees 5 left, but a concurrent batch drains them:
+        // the second per-repo reservation is refused, so only one repo runs.
+        mockCheckUsageLimit.mockImplementation((_uid, metric) => ({ allowed: true, current: 0, limit: 10, remaining: 5, metric }))
+        mockCheckAIFeatureLimit
+            .mockReturnValueOnce({ allowed: true, metric: 'ai_insights', current: 9, limit: 10, remaining: 1 })
+            .mockReturnValue({ allowed: false, metric: 'ai_insights', current: 10, limit: 10, remaining: 0 })
+
+        const { aiService } = await import('../ai-service.js')
+        aiService.analyzeRepo = vi.fn(async () => ({ summary: 's', suggested_topics: [], health_score: 80 }))
+        aiService.embedText = vi.fn(async () => [0.1, 0.2, 0.3])
+
+        const repos = Array.from({ length: 5 }, (_, i) => ({ id: i + 1, full_name: `o/r${i}`, name: `r${i}` }))
+        const res = await request(app).post('/api/ai/batch-index').send({ repos })
+
+        expect(res.status).toBe(200)
+        expect(res.body.processed).toBe(1)
+        expect(aiService.analyzeRepo).toHaveBeenCalledTimes(1)
     })
 
     it('returns 429 when no quota remains, without doing any AI work', async () => {

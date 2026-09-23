@@ -412,36 +412,12 @@ export function getCurrentDayPeriod(now = new Date()) {
     return { start, end };
 }
 
-export function incrementDailyUsage(userId, metricType) {
-    const { start, end } = getCurrentDayPeriod();
-    db.prepare(`
-        INSERT INTO usage_metrics (user_id, metric_type, count, period_start, period_end)
-        VALUES (?, ?, 1, ?, ?)
-        ON CONFLICT(user_id, metric_type, period_start) DO UPDATE SET
-            count = count + 1, updated_at = datetime('now')
-    `).run(userId, metricType, start, end);
-}
-
 export function getCurrentDailyUsage(userId, metricType) {
     const { start } = getCurrentDayPeriod();
     const row = db.prepare(
         'SELECT count FROM usage_metrics WHERE user_id = ? AND metric_type = ? AND period_start = ?'
     ).get(userId, metricType, start);
     return row?.count || 0;
-}
-
-export function checkDailyUsageLimit(userId, metricType) {
-    const tier = getUserTier(userId);
-    const features = getFeatures(tier);
-    const featureKey = METRIC_TO_FEATURE[metricType] || metricType;
-    const limit = features[featureKey] ?? Infinity;
-    const current = getCurrentDailyUsage(userId, metricType);
-    return {
-        allowed: current < limit,
-        current,
-        limit,
-        remaining: Math.max(0, limit - current),
-    };
 }
 
 const guardedDailyIncrementTxn = db.transaction(guardedBump);

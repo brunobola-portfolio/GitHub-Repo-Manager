@@ -9,8 +9,8 @@ import request from 'supertest'
 
 const mockGithubApi = vi.fn()
 const mockAiProviderGenerate = vi.fn()
-const mockCheckUsageLimit = vi.fn(() => ({ allowed: true, current: 0, limit: 100, remaining: 100 }))
-const mockIncrementUsage = vi.fn()
+const mockReserveQueries = vi.fn(() => ({ allowed: true, current: 0, limit: 100, remaining: 100 }))
+const mockReleaseQueries = vi.fn()
 const mockAuditLog = vi.fn()
 
 vi.mock('../lib/github-api.js', () => ({
@@ -64,11 +64,11 @@ vi.mock('../lib/validators.js', async () => {
 vi.mock('../lib/usage-meter.js', () => ({
     // Added with reserveAIQuota: a FULL module mock silently drops new
     // exports, and route handlers then call undefined and 500.
-    guardedIncrementAIUsage: vi.fn(() => ({ allowed: true, metric: 'ai', current: 0, limit: 100, remaining: 100 })),
-    releaseGuardedAIUsage: vi.fn(),
+    guardedIncrementAIUsage: (...a) => ({ metric: a[1], ...mockReserveQueries(...a) }),
+    releaseGuardedAIUsage: (...a) => mockReleaseQueries(...a),
 
-    checkUsageLimit: (...a) => mockCheckUsageLimit(...a),
-    incrementUsage: (...a) => mockIncrementUsage(...a),
+    checkUsageLimit: vi.fn(),
+    incrementUsage: vi.fn(),
     checkAIFeatureLimit: () => ({ allowed: true }),
     incrementAIUsage: vi.fn(),
     quotaExceededResponse: () => ({ error: 'quota' }),
@@ -113,8 +113,8 @@ function makeApp() {
 beforeEach(() => {
     mockGithubApi.mockReset()
     mockAiProviderGenerate.mockReset()
-    mockCheckUsageLimit.mockReset().mockReturnValue({ allowed: true, current: 0, limit: 100, remaining: 100 })
-    mockIncrementUsage.mockReset()
+    mockReserveQueries.mockReset().mockReturnValue({ allowed: true, current: 0, limit: 100, remaining: 100 })
+    mockReleaseQueries.mockReset()
     mockAuditLog.mockReset()
 })
 
@@ -164,7 +164,8 @@ describe('POST /api/ai/issue-to-plan', () => {
         expect(res.body.plan.files).toHaveLength(2)
         expect(res.body.plan.estimatedHours).toBe(6)
         expect(res.body.issue.number).toBe(5)
-        expect(mockIncrementUsage).toHaveBeenCalledWith(42, 'ai_queries')
+        expect(mockReserveQueries).toHaveBeenCalledWith(42, 'ai_queries')
+        expect(mockReleaseQueries).not.toHaveBeenCalled()
         expect(mockAuditLog).toHaveBeenCalled()
     })
 
@@ -179,7 +180,7 @@ describe('POST /api/ai/issue-to-plan', () => {
 
 
     it('returns 429 when usage quota is hit', async () => {
-        mockCheckUsageLimit.mockReturnValue({ allowed: false, current: 100, limit: 100, remaining: 0 })
+        mockReserveQueries.mockReturnValue({ allowed: false, current: 100, limit: 100, remaining: 0 })
         const app = makeApp()
         const res = await request(app)
             .post('/api/ai/issue-to-plan')

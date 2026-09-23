@@ -5,8 +5,8 @@ import request from 'supertest';
 // Hoisted mocks — must be declared before the route module is imported.
 const mockGithubApi = vi.hoisted(() => vi.fn());
 const mockProviderGenerate = vi.hoisted(() => vi.fn());
-const mockCheckUsageLimit = vi.hoisted(() => vi.fn());
-const mockIncrementUsage = vi.hoisted(() => vi.fn());
+const mockReserveQueries = vi.hoisted(() => vi.fn());
+const mockReleaseQueries = vi.hoisted(() => vi.fn());
 const mockAuditLog = vi.hoisted(() => vi.fn());
 const mockDbGet = vi.hoisted(() => vi.fn());
 
@@ -16,11 +16,11 @@ vi.mock('../lib/github-api.js', () => ({
 vi.mock('../lib/usage-meter.js', () => ({
     // Added with reserveAIQuota: a FULL module mock silently drops new
     // exports, and route handlers then call undefined and 500.
-    guardedIncrementAIUsage: vi.fn(() => ({ allowed: true, metric: 'ai', current: 0, limit: 100, remaining: 100 })),
-    releaseGuardedAIUsage: vi.fn(),
+    guardedIncrementAIUsage: (...a) => ({ metric: a[1], ...mockReserveQueries(...a) }),
+    releaseGuardedAIUsage: (...a) => mockReleaseQueries(...a),
 
-    checkUsageLimit: mockCheckUsageLimit,
-    incrementUsage: mockIncrementUsage,
+    checkUsageLimit: vi.fn(),
+    incrementUsage: vi.fn(),
 }));
 vi.mock('../lib/audit.js', () => ({
     auditLog: mockAuditLog,
@@ -82,13 +82,13 @@ const REPO_PAYLOAD = {
 beforeEach(() => {
     mockGithubApi.mockReset();
     mockProviderGenerate.mockReset();
-    mockCheckUsageLimit.mockReset();
-    mockIncrementUsage.mockReset();
+    mockReserveQueries.mockReset();
+    mockReleaseQueries.mockReset();
     mockAuditLog.mockReset();
     mockDbGet.mockReset();
     mockCheckAISpendCap.mockReset();
     mockRecordAISpend.mockReset();
-    mockCheckUsageLimit.mockReturnValue({ allowed: true, current: 0, limit: 100 });
+    mockReserveQueries.mockReturnValue({ allowed: true, current: 0, limit: 100 });
     mockCheckAISpendCap.mockReturnValue({ allowed: true, capCents: 0, spentCents: 0 });
     mockDbGet.mockReturnValue(null);   // default: repo not indexed
     provideAIProviderInTest.enabled = true;  // default: AI provider available
@@ -127,7 +127,8 @@ describe('POST /ai/suggest-name-description', () => {
         expect(res.body.proposed.description).toBe('POS system for restaurant ordering.');
         expect(res.body.current.description).toBe('Imported from https://example.com');
         expect(res.body.noChange).toEqual({ name: false, description: false });
-        expect(mockIncrementUsage).toHaveBeenCalledWith(1, 'ai_queries');
+        expect(mockReserveQueries).toHaveBeenCalledWith(1, 'ai_queries');
+        expect(mockReleaseQueries).not.toHaveBeenCalled();
         expect(mockAuditLog).toHaveBeenCalled();
     });
 
@@ -180,7 +181,8 @@ describe('POST /ai/suggest-name-description', () => {
         // The provider should never have been invoked.
         expect(mockProviderGenerate).not.toHaveBeenCalled();
         // Quota is still incremented — usage is metered for both paths.
-        expect(mockIncrementUsage).toHaveBeenCalledWith(1, 'ai_queries');
+        expect(mockReserveQueries).toHaveBeenCalledWith(1, 'ai_queries');
+        expect(mockReleaseQueries).not.toHaveBeenCalled();
     });
 
     it('uses indexed AI metadata summary when available', async () => {
@@ -202,7 +204,7 @@ describe('POST /ai/suggest-name-description', () => {
     });
 
     it('returns 429 when quota exceeded', async () => {
-        mockCheckUsageLimit.mockReturnValue({ allowed: false, current: 100, limit: 100 });
+        mockReserveQueries.mockReturnValue({ allowed: false, current: 100, limit: 100 });
 
         const res = await request(makeApp())
             .post('/ai/suggest-name-description')
@@ -246,7 +248,8 @@ describe('POST /ai/suggest-name-description', () => {
             expect(res.body.source).toBe('deterministic');
             expect(mockProviderGenerate).not.toHaveBeenCalled();
             // The route still meters usage for the deterministic path.
-            expect(mockIncrementUsage).toHaveBeenCalledWith(1, 'ai_queries');
+            expect(mockReserveQueries).toHaveBeenCalledWith(1, 'ai_queries');
+            expect(mockReleaseQueries).not.toHaveBeenCalled();
         });
 
         it('records spend after a successful AI call', async () => {

@@ -28,7 +28,6 @@ const {
     getCurrentUsage,
     checkUsageLimit,
     incrementAIUsage,
-    checkDailyUsageLimit,
     guardedDailyIncrement,
     releaseGuardedDailyIncrement,
     getCurrentDailyUsage,
@@ -108,10 +107,8 @@ describe('usage-meter integration — counter + cap agreement', () => {
 });
 
 describe('usage-meter integration — daily-window metering (bulk_destructive_daily)', () => {
-    it('checkDailyUsageLimit resolves against bulkDestructiveDailyMax and agrees with getCurrentDailyUsage', () => {
-        expect(checkDailyUsageLimit(FREE, 'bulk_destructive_daily')).toMatchObject({ allowed: true, current: 0, limit: 200 });
-
-        expect(guardedDailyIncrement(FREE, 'bulk_destructive_daily').allowed).toBe(true);
+    it('guardedDailyIncrement resolves against bulkDestructiveDailyMax and agrees with getCurrentDailyUsage', () => {
+        expect(guardedDailyIncrement(FREE, 'bulk_destructive_daily')).toMatchObject({ allowed: true, limit: 200 });
         expect(getCurrentDailyUsage(FREE, 'bulk_destructive_daily')).toBe(1);
     });
 
@@ -124,7 +121,6 @@ describe('usage-meter integration — daily-window metering (bulk_destructive_da
         }
         expect(getCurrentDailyUsage(FREE, 'bulk_destructive_daily')).toBe(200);
         expect(guardedDailyIncrement(FREE, 'bulk_destructive_daily').allowed).toBe(false);
-        expect(checkDailyUsageLimit(FREE, 'bulk_destructive_daily').allowed).toBe(false);
 
         // New UTC day → fresh bucket.
         vi.setSystemTime(new Date('2026-03-11T00:00:00Z'));
@@ -142,8 +138,8 @@ describe('usage-meter integration — daily-window metering (bulk_destructive_da
     });
 
     it('the daily ceiling is identical across tiers (tier-independent anti-abuse guard)', () => {
-        expect(checkDailyUsageLimit(FREE, 'bulk_destructive_daily').limit).toBe(200);
-        expect(checkDailyUsageLimit(PRO, 'bulk_destructive_daily').limit).toBe(200);
+        expect(guardedDailyIncrement(FREE, 'bulk_destructive_daily').limit).toBe(200);
+        expect(guardedDailyIncrement(PRO, 'bulk_destructive_daily').limit).toBe(200);
     });
 });
 
