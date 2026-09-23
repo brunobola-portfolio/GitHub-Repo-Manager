@@ -180,6 +180,17 @@ describe('POST /api/import/:id/cancel', () => {
     expect(isJobCancelled(id)).toBe(true)
   })
 
+  it('409s for an Azure or TFVC job instead of pretending it stopped', async () => {
+    // Only the URL importer checks the cancel flag; "success" here used to
+    // tell the user an Azure import had stopped while it carried on.
+    for (const source_type of ['azure', 'azure-tfvc']) {
+      const id = insertJob('running', { source_type })
+      const res = await request(makeApp()).post(`/api/import/${id}/cancel`)
+      expect(res.status).toBe(409)
+      expect(isJobCancelled(id)).toBe(false)
+    }
+  })
+
   it('accepts cancelling a pending job', async () => {
     const id = insertJob('pending')
     const res = await request(makeApp()).post(`/api/import/${id}/cancel`)

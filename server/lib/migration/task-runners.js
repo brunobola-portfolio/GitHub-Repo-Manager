@@ -16,14 +16,37 @@ import { migrateWiki } from '../../wiki-service.js'
 import * as azureService from '../../azure-service.js'
 import logger from '../logger.js'
 
+// The repo-tfvc task ceiling is 45 minutes (migration-engine.js). Polling
+// stopped after 120 × 5 s = 10 minutes, so any large TFVC conversion failed
+// with "timed out" while Azure was still converting — and, in-place, left the
+// half-imported repo behind so a retry hit "name already exists". Poll to just
+// under the task ceiling; the engine's own timeout still bounds the task.
+const TFVC_POLL_INTERVAL_MS = 5000
+const TFVC_POLL_ATTEMPTS = Math.floor((44 * 60_000) / TFVC_POLL_INTERVAL_MS)
+
+/**
+ * Split a task's source_ref ("org/project/rest") into its parts. The org of an
+ * on-prem collection can itself contain "/" ("tfs/DefaultCollection"), so the
+ * plan's own org/project are used as a known prefix when available; without
+ * them (old rows, tests) it falls back to the first two segments.
+ */
+export function splitSourceRef(sourceRef, planSource) {
+  const ref = String(sourceRef || '')
+  const org = planSource?.org
+  const project = planSource?.project
+  if (org && project) {
+    const prefix = `${org}/${project}`
+    if (ref === prefix) return { org, project, rest: '' }
+    if (ref.startsWith(`${prefix}/`)) return { org, project, rest: ref.slice(prefix.length + 1) }
+  }
+  const parts = ref.split('/')
+  return { org: parts[0], project: parts[1], rest: parts.slice(2).join('/') }
+}
+
 /** case 'repo' — Azure Git → GitHub import. */
 export async function runRepo(task, ctx) {
-  const { config, resolvedCredentials, callbacks, targetOwner, targetRepo, azureHost, buildAzureCloneUrl } = ctx
-  // Parse source_ref: "org/project/repoName"
-  const parts = task.source_ref.split('/')
-  const azureOrg = parts[0]
-  const azureProject = parts[1]
-  const azureRepo = parts.slice(2).join('/')
+  const { config, resolvedCredentials, callbacks, targetOwner, targetRepo, azureHost, buildAzureCloneUrl, planSource } = ctx
+  const { org: azureOrg, project: azureProject, rest: azureRepo } = splitSourceRef(task.source_ref, planSource)
 
   const result = await importRepository({
     sourceUrl: buildAzureCloneUrl(azureHost, azureOrg, azureProject, azureRepo),
@@ -54,11 +77,8 @@ export async function runRepo(task, ctx) {
 
 /** case 'repo-tfvc' — TFVC → Git, in-place (stay in Azure) or via temp + push to GitHub. */
 export async function runTfvc(task, ctx) {
-  const { config, resolvedCredentials, callbacks, targetOwner, targetRepo, azureHost } = ctx
-  const tfvcParts = task.source_ref.split('/')
-  const tfvcOrg = tfvcParts[0]
-  const tfvcProject = tfvcParts[1]
-  const tfvcFolder = tfvcParts.slice(2).join('/')
+  const { config, resolvedCredentials, callbacks, targetOwner, targetRepo, azureHost, planSource } = ctx
+  const { org: tfvcOrg, project: tfvcProject, rest: tfvcFolder } = splitSourceRef(task.source_ref, planSource)
   const tfvcPath = `$/${tfvcProject}/${tfvcFolder}`
   const azurePat = resolvedCredentials.azurePat
   const inPlace = !!config.inPlace
@@ -96,11 +116,11 @@ export async function runTfvc(task, ctx) {
     callbacks.onProgress(10, 'Starting TFVC → Git conversion (Import API)...')
     const importReq = await azureService.importTfvcToGit(tfvcOrg, destProject, finalRepo.id, tfvcPath, azurePat, true, azureHost)
     let done = false
-    for (let i = 0; i < 120 && !done; i++) {
+    for (let i = 0; i < TFVC_POLL_ATTEMPTS && !done; i++) {
       if (callbacks.isCancelled()) throw new Error('Migration cancelled')
-      await new Promise(r => setTimeout(r, 5000))
+      await new Promise(r => setTimeout(r, TFVC_POLL_INTERVAL_MS))
       const status = await azureService.getImportStatus(tfvcOrg, destProject, finalRepo.id, importReq.importRequestId, azurePat, azureHost)
-      callbacks.onProgress(10 + Math.floor((i / 120) * 85), `Converting TFVC to Git... (${status.status})`)
+      callbacks.onProgress(10 + Math.floor((i / TFVC_POLL_ATTEMPTS) * 85), `Converting TFVC to Git... (${status.status})`)
       if (status.status === 'completed') done = true
       else if (status.status === 'failed' || status.status === 'abandoned') {
         throw new Error(`TFVC conversion failed: ${status.detailedStatus?.errorMessage || status.status}`)
@@ -130,11 +150,11 @@ export async function runTfvc(task, ctx) {
 
     // Poll for completion
     let done = false
-    for (let i = 0; i < 120 && !done; i++) {
+    for (let i = 0; i < TFVC_POLL_ATTEMPTS && !done; i++) {
       if (callbacks.isCancelled()) throw new Error('Migration cancelled')
-      await new Promise(r => setTimeout(r, 5000))
+      await new Promise(r => setTimeout(r, TFVC_POLL_INTERVAL_MS))
       const status = await azureService.getImportStatus(tfvcOrg, tfvcProject, tempRepo.id, importReq.importRequestId, azurePat, azureHost)
-      callbacks.onProgress(10 + Math.floor((i / 120) * 30), `Converting TFVC to Git... (${status.status})`)
+      callbacks.onProgress(10 + Math.floor((i / TFVC_POLL_ATTEMPTS) * 30), `Converting TFVC to Git... (${status.status})`)
       if (status.status === 'completed') done = true
       else if (status.status === 'failed' || status.status === 'abandoned') {
         throw new Error(`TFVC conversion failed: ${status.detailedStatus?.errorMessage || status.status}`)
@@ -196,7 +216,9 @@ export async function runWorkItems(task, ctx) {
 export async function runWiki(task, ctx) {
   const { config, resolvedCredentials, callbacks, targetOwner, targetRepo, azureHost } = ctx
   return await migrateWiki(
-    { ...config, host: azureHost, org: resolvedCredentials.azureOrg, project: resolvedCredentials.azureProject },
+    // source_ref is the wiki's name or id, which Azure's wikis/{identifier}
+    // accepts: it covers plans created before the wizard sent config.wikiId.
+    { ...config, wikiId: config.wikiId || task.source_ref, host: azureHost, org: resolvedCredentials.azureOrg, project: resolvedCredentials.azureProject },
     { pat: resolvedCredentials.azurePat },
     resolvedCredentials.githubToken,
     targetOwner,

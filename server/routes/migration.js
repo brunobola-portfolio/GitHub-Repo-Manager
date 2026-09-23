@@ -1,3 +1,4 @@
+import { sendError } from '../lib/response-shapes.js';
 import express from 'express';
 import { reserveAIQuota } from './ai-quota.js';
 import logger from '../lib/logger.js';
@@ -287,6 +288,16 @@ router.post('/plans', requireAuth, async (req, res) => {
         return res.status(400).json({ error: `Source host rejected: ${hostCheck.reason}`, code: 'invalid_host' });
       }
     }
+    // A scheduled run has no request to resolve a vault credential from, so a
+    // saved credential is decrypted now and stored with the plan. Resolved
+    // BEFORE createPlan: an unusable credential fails the request instead of
+    // leaving a plan that can never authenticate.
+    let scheduledPat = source.pat || null;
+    if (schedule?.mode === 'scheduled' && !scheduledPat && req.body?.savedCredentialId) {
+      const resolved = resolvePlanExecutionPat(req, res);
+      if (resolved.abort) return;
+      scheduledPat = resolved.pat;
+    }
     const isDryRun = !!schedule?.isDryRun;
     const planId = engine.createPlan(req.session.userId, source, tasks, { targetOrg, isDryRun });
     if (taggingPolicy) {
@@ -298,9 +309,12 @@ router.post('/plans', requireAuth, async (req, res) => {
       }
     }
     if (schedule?.mode === 'scheduled' && schedule?.scheduledAt) {
+      // Resolve a vault credential now: the scheduled run has no request to
+      // resolve it from. An unusable saved credential fails the create loudly
+      // instead of producing a plan that can never authenticate.
       const credentials = {
         githubToken: req.session.accessToken,
-        azurePat: source.pat || null,
+        azurePat: scheduledPat,
         azureHost: source.host || 'dev.azure.com',
         azureOrg: source.org,
         azureProject: source.project
@@ -482,6 +496,7 @@ router.post('/plans/:id/cancel', requireAuth, async (req, res) => {
     engine.cancelPlan(id);
     res.json({ success: true });
   } catch (err) {
+    if (err?.code === 'INVALID_PLAN_STATE') return sendError(res, 409, err.message, { code: err.code });
     res.status(500).json({ error: safeError(err, 'Operation failed') });
   }
 });
@@ -495,6 +510,7 @@ router.post('/plans/:id/pause', requireAuth, async (req, res) => {
     engine.pausePlan(id);
     res.json({ success: true });
   } catch (err) {
+    if (err?.code === 'INVALID_PLAN_STATE') return sendError(res, 409, err.message, { code: err.code });
     res.status(500).json({ error: safeError(err, 'Operation failed') });
   }
 });
@@ -514,6 +530,9 @@ router.post('/plans/:id/resume', requireAuth, requireMigrationQuota, async (req,
       azureOrg: plan.source_org,
       azureProject: plan.source_project
     };
+    if (plan.status !== 'paused' && plan.status !== 'interrupted') {
+      return sendError(res, 409, `Cannot resume a plan that is ${plan.status}`, { code: 'INVALID_PLAN_STATE' });
+    }
     auditLog(req, 'migration.plan.resume', 'migration_plan', id, { status: plan.status });
     engine.resumePlan(id, resumeCredentials).catch(err => {
       logger.error({ err, planId: req.params.id }, 'Plan resume error');

@@ -10,6 +10,7 @@ import { join, relative, dirname, basename, extname } from 'path';
 import { randomUUID } from 'crypto';
 import { getWikiCloneUrl, buildAuthenticatedCloneUrl, orgBaseFor } from './azure-service.js';
 import { isInternalUrl, resolveAndValidateHost } from './lib/url-validator.js';
+import { isTrustedOnPremAzureUrl } from './lib/azure-host-validator.js';
 import { getDataDir } from './lib/data-dir.js';
 import logger from './lib/logger.js';
 
@@ -179,13 +180,16 @@ async function migrateWiki(config, azureCreds, githubToken, targetOwner, targetR
             throw new Error('Could not retrieve wiki clone URL from Azure DevOps');
         }
 
-        // SSRF protection
-        if (isInternalUrl(wikiRemoteUrl)) {
-            throw new Error('Wiki URL targets a private or internal network. Only public HTTPS URLs are allowed.');
-        }
-        const dnsValid = await resolveAndValidateHost(wikiRemoteUrl);
-        if (!dnsValid) {
-            throw new Error('Wiki URL resolves to a private or internal network address.');
+        // SSRF protection, except for an allowlisted on-prem TFS host, which is
+        // private by design (see isTrustedOnPremAzureUrl).
+        if (!isTrustedOnPremAzureUrl(wikiRemoteUrl)) {
+            if (isInternalUrl(wikiRemoteUrl)) {
+                throw new Error('Wiki URL targets a private or internal network. Only public HTTPS URLs are allowed.');
+            }
+            const dnsValid = await resolveAndValidateHost(wikiRemoteUrl);
+            if (!dnsValid) {
+                throw new Error('Wiki URL resolves to a private or internal network address.');
+            }
         }
 
         if (isCancelled()) return { pagesConverted: 0, destination, cancelled: true };
@@ -197,7 +201,9 @@ async function migrateWiki(config, azureCreds, githubToken, targetOwner, targetR
 
         const authCloneUrl = buildAuthenticatedCloneUrl(wikiRemoteUrl, pat);
         const git = simpleGit({ timeout: { block: DEFAULT_TIMEOUT_MS } });
-        await git.clone(authCloneUrl, workDir);
+        // --progress keeps simple-git's no-output block timeout from killing a
+        // large wiki mid-transfer (see import-service.js).
+        await git.clone(authCloneUrl, workDir, ['--progress']);
 
         if (isCancelled()) return { pagesConverted: 0, destination, cancelled: true };
 
@@ -290,7 +296,7 @@ async function migrateWiki(config, azureCreds, githubToken, targetOwner, targetR
             try {
                 const repoPushUrl = `https://x-access-token:${githubToken}@github.com/${targetOwner}/${targetRepo}.git`;
                 const repoGit = simpleGit({ timeout: { block: DEFAULT_TIMEOUT_MS } });
-                await repoGit.clone(repoPushUrl, repoDir, ['--depth', '1']);
+                await repoGit.clone(repoPushUrl, repoDir, ['--depth', '1', '--progress']);
 
                 // Copy converted files into docs/
                 const docsDir = join(repoDir, 'docs');

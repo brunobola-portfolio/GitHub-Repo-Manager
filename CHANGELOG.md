@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — Azure DevOps / TFS migration
+
+- **Repositories that use Git LFS now migrate their LFS files.** Detection
+  read a file a bare clone never has, so LFS was never fetched or pushed and
+  the target held pointers to missing objects. The attributes of every
+  branch and tag are checked now.
+- **On-prem TFS works end to end.** The clone and wiki steps ran the generic
+  private-network check and rejected every allowlisted on-prem server; the
+  clone URL put `/tfs/DefaultCollection` in front of a collection that was
+  already there (`tfs.example/Trigenius/…` became an address no server
+  answers); and a collection containing `/` was split into the wrong org and
+  project.
+- Wiki tasks carry the wiki to clone and a real owner/repo target (they could
+  never succeed), and a personal-account target is resolved to the user's
+  login for wiki and work-item tasks.
+- Clones no longer die after five minutes without output; TFVC conversions
+  are polled for up to 44 minutes instead of 10; the standalone TFVC import
+  builds a temporary repo name Azure accepts.
+- A task that hits its time limit is told to stop instead of carrying on in
+  the background. Resume keeps the plan's stored PAT, waits for a paused
+  run's in-flight tasks, and cannot run twice at once; cancel and pause
+  refuse plans that have already finished or are not running; a crash while
+  paused no longer strands tasks as running. Scheduled plans resolve a
+  saved vault credential when they are created.
+- Dry-run says exactly what it checked. Cancelling an Azure or TFVC import
+  job answers that it cannot be stopped, instead of reporting success while
+  it carried on.
+
 ### Fixed — AI
 
 - **PR Chat answers about the PR again.** Its system prompt (PR title, body,
