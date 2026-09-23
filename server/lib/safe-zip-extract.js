@@ -15,7 +15,7 @@
  * for a symlink, an absolute path or a parent-directory hop, so a skip here is
  * information about the source, not a loss for the user.
  */
-import { closeSync, constants, existsSync, lstatSync, mkdirSync, openSync, realpathSync, writeSync } from 'fs';
+import { closeSync, constants, existsSync, ftruncateSync, mkdirSync, openSync, realpathSync, writeSync } from 'fs';
 import path from 'path';
 
 // Unix mode bits live in the top 16 of the external attributes; 0xa000 is
@@ -168,18 +168,15 @@ function extractEntries(zip, destDir, { maxEntryBytes, maxTotalBytes, maxEntries
             skipped.push({ name, reason: 'parent escapes destination' });
             continue;
         }
-        if (existsSync(target) && lstatSync(target).isSymbolicLink()) {
-            skipped.push({ name, reason: 'target is a symlink' });
-            continue;
-        }
-
-        // The lstat above and the write below are two syscalls; something
-        // swapping the target for a symlink in between would be followed.
-        // O_NOFOLLOW makes the open itself refuse a symlink (POSIX; the flag
-        // is absent on Windows, where creating symlinks needs privileges).
+        // No path-based "is it a symlink?" check before the open: that is two
+        // syscalls, and a link swapped in between would be followed (CodeQL
+        // js/file-system-race). O_NOFOLLOW makes the open itself refuse a
+        // symlink on POSIX. Windows has no such flag, so there the path the
+        // open resolved to is checked against the destination before anything
+        // is truncated or written (the open itself does not truncate).
         let fd;
         try {
-            fd = openSync(target, constants.O_WRONLY | constants.O_CREAT | constants.O_TRUNC | (constants.O_NOFOLLOW ?? 0), 0o644);
+            fd = openSync(target, constants.O_WRONLY | constants.O_CREAT | (constants.O_NOFOLLOW ?? 0), 0o644);
         } catch (err) {
             if (err?.code === 'ELOOP') {
                 skipped.push({ name, reason: 'target is a symlink' });
@@ -187,7 +184,16 @@ function extractEntries(zip, destDir, { maxEntryBytes, maxTotalBytes, maxEntries
             }
             throw err;
         }
+        if (constants.O_NOFOLLOW === undefined) {
+            const real = realpathSync(target);
+            if (real !== realRoot && !real.startsWith(realRoot + path.sep)) {
+                closeSync(fd);
+                skipped.push({ name, reason: 'target is a symlink' });
+                continue;
+            }
+        }
         try {
+            ftruncateSync(fd, 0);
             const data = entry.getData();
             let offset = 0;
             while (offset < data.length) offset += writeSync(fd, data, offset, data.length - offset);
