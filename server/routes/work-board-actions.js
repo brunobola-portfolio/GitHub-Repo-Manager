@@ -11,7 +11,7 @@ import { redactValues } from '../lib/secret-redactor.js';
 import { validateBody, validateParams, validateQuery } from '../middleware/validate-request.js';
 import * as snoozeLib from '../lib/work-board-snooze.js';
 import * as presets from '../lib/work-board-presets.js';
-import { invalidate as invalidateCache, getCached as getCacheRow, putCached as putCacheRow } from '../lib/work-board-cache.js';
+import { invalidate as invalidateCache, getCached as getCacheRow, getLatestCached as getLatestCacheRow, putCached as putCacheRow } from '../lib/work-board-cache.js';
 import { githubApi } from '../lib/github-api.js';
 import { generateSummary, resolveSummaryProvider } from '../lib/work-board-summary.js';
 import { isServerKeyProvider as isServerKeyProviderTop } from '../lib/ai-provider.js';
@@ -286,7 +286,7 @@ function loadDataSources(userId, userLogin) {
     // AI summary still renders something useful instead of 500ing.
     const pluck = (type, fallbackFn, emptyPayload = []) => {
         let row = null;
-        try { row = getCacheRow(userId, type); } catch (e) {
+        try { row = getLatestCacheRow(userId, type); } catch (e) {
             logger.warn({ err: e, userId, cacheType: type }, '[ai-summary] cache read failed');
         }
         if (row?.isFresh) return row.payload;

@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { _resetSharedGetsForTests } from '../../src/utils/sharedGet'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createElement } from 'react'
 import { TierContext } from '../../src/contexts/contexts'
 import { resetSessionExpired } from '../../src/utils/api'
 
 beforeEach(() => {
+    _resetSharedGetsForTests()
     vi.stubEnv('VITE_MOCK_MODE', '')
     global.fetch = vi.fn()
     sessionStorage.clear()

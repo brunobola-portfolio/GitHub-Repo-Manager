@@ -206,27 +206,37 @@ router.get('/:owner/:repo/pulls/:pull_number/reviews', requireAuth, async (req, 
     }
 });
 
-// List PR files changed (with auto-pagination for large PRs)
+// GitHub lists at most 3,000 files for a pull request: 30 pages of 100.
+const PR_FILES_MAX_PAGES = 30;
+const PR_FILES_CONCURRENCY = 4;
+
+// List PR files changed (with auto-pagination for large PRs). Page 1's Link
+// header names the last page, so the rest are fetched a few at a time; one
+// after another, a 3,000-file PR was 30 serial round trips.
 router.get('/:owner/:repo/pulls/:pull_number/files', requireAuth, async (req, res) => {
     try {
         const { owner, repo, pull_number } = req.params;
-        let allFiles = [];
-        let page = 1;
-        const perPage = 100;
+        const fetchPage = (page) => githubApi(
+            `/repos/${owner}/${repo}/pulls/${pull_number}/files?per_page=100&page=${page}`,
+            req.session.accessToken
+        );
 
-        while (true) {
-            const { data, headers } = await githubApi(
-                `/repos/${owner}/${repo}/pulls/${pull_number}/files?per_page=${perPage}&page=${page}`,
-                req.session.accessToken
-            );
-            allFiles = allFiles.concat(data);
-            const linkHeader = headers?.get('link') || '';
-            if (!linkHeader.includes('rel="next"')) break;
-            page++;
-            if (allFiles.length >= 3000) break;
-        }
+        const first = await fetchPage(1);
+        const linkHeader = first.headers?.get('link') || '';
+        const lastMatch = linkHeader.match(/[?&]page=(\d+)[^>]*>; rel="last"/);
+        const last = Math.min(lastMatch ? Number(lastMatch[1]) : 1, PR_FILES_MAX_PAGES);
 
-        res.json(allFiles);
+        const rest = new Array(Math.max(0, last - 1));
+        let next = 2;
+        const worker = async () => {
+            while (next <= last) {
+                const page = next++;
+                rest[page - 2] = (await fetchPage(page)).data;
+            }
+        };
+        await Promise.all(Array.from({ length: Math.min(PR_FILES_CONCURRENCY, rest.length) }, worker));
+
+        res.json([first.data, ...rest].flat());
     } catch (error) {
         req.log.error({ err: error }, 'List PR files failed');
         res.status(error.status || 500).json({ error: safeError(error, 'Request failed') });

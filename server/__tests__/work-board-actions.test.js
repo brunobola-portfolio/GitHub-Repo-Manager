@@ -22,6 +22,7 @@ vi.mock('../lib/work-board-snooze.js', () => ({
 vi.mock('../lib/work-board-cache.js', () => ({
     invalidate: vi.fn(),
     getCached: vi.fn(),
+    getLatestCached: vi.fn(),
     putCached: vi.fn(),
     purgeExpired: vi.fn(),
 }));
@@ -494,7 +495,7 @@ describe('POST /api/v1/work-board/ai-summary', () => {
 
     it('pulls data sources from cache when fresh, falling back to aggregations on miss', async () => {
         // my_reviews fresh-cached, others miss:
-        cacheLib.getCached.mockImplementation((userId, type) => {
+        cacheLib.getLatestCached.mockImplementation((userId, type) => {
             if (type === 'my_reviews') return { isFresh: true, payload: [{ prNumber: 1 }], etag: null, fetchedAt: new Date(), expiresAt: new Date(Date.now() + 60000) };
             if (type === 'ai_summary') return null;
             return null;

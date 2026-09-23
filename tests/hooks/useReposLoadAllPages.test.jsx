@@ -58,6 +58,27 @@ describe('useRepos.loadAllPages', () => {
         expect(result.current.allPagesLoaded).toBe(true)
     })
 
+    it('fetches the remaining pages together, and keeps page order when they land out of order', async () => {
+        let inFlight = 0
+        let peak = 0
+        fetchWithRetry.mockImplementation(async (url) => {
+            const p = Number(new URL(url, 'http://x').searchParams.get('page'))
+            inFlight += 1
+            peak = Math.max(peak, inFlight)
+            // Later pages answer first.
+            await new Promise((r) => setTimeout(r, p === 1 ? 0 : 30 - p * 3))
+            inFlight -= 1
+            return page([{ id: p, name: `repo-${p}` }], 6)
+        })
+
+        const { result } = renderHook(() => useRepos(null))
+        await act(async () => { await result.current.loadAllPages() })
+
+        expect(peak).toBe(4)
+        expect(result.current.repos.map((r) => r.name)).toEqual(
+            ['repo-1', 'repo-2', 'repo-3', 'repo-4', 'repo-5', 'repo-6'])
+    })
+
     it('a later paged fetch turns allPagesLoaded back off', async () => {
         fetchWithRetry.mockResolvedValue(page([{ id: 1, name: 'a' }], 1))
         // A signed-in user: refresh() only fetches when there is one. Stable

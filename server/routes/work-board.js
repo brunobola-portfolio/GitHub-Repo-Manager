@@ -126,9 +126,33 @@ function isWebhookConnected() {
 //     error via meta.liveFetchError (do not surface raw error to clients in
 //     prod — fetcher messages are already safe as they come from our code).
 // ---------------------------------------------------------------------------
-async function resolveTabData({ userId, queryType, token, webhookData, fetcher, fetchArgs, liveSkipReason }) {
+// The cache key carries every parameter that shapes the result. Keyed on the
+// type alone, a tech-debt request filtered to two repos could be answered with
+// the unfiltered list cached a minute earlier, and limit=200 with a 50-row one.
+function tabCacheKey(queryType, params = {}) {
+    const parts = Object.keys(params).sort()
+        .filter((k) => params[k] !== undefined && params[k] !== null)
+        .map((k) => `${k}=${Array.isArray(params[k]) ? params[k].join(',') : params[k]}`);
+    return parts.length ? `${queryType}|${parts.join('&')}` : queryType;
+}
+
+// Concurrent misses for the same user and key share one live fetch. The
+// Header badge and the dashboard grid ask for the same lists at mount, and
+// GitHub's Search API allows 30 requests a minute.
+const liveInFlight = new Map();
+
+async function resolveTabData({ userId, queryType, cacheParams, token, webhookData, fetcher, fetchArgs, liveSkipReason }) {
+    const cacheKey = tabCacheKey(queryType, cacheParams);
+    // Webhook aggregation is a SQL scan; run it only on the paths that use it,
+    // never on a cache hit.
+    let webhookMemo;
+    const loadWebhook = () => {
+        if (webhookMemo === undefined) webhookMemo = typeof webhookData === 'function' ? webhookData() : webhookData;
+        return webhookMemo;
+    };
+
     if (userId) {
-        const cached = getCached(userId, queryType);
+        const cached = getCached(userId, cacheKey);
         if (cached?.isFresh) {
             return {
                 data: cached.payload,
@@ -143,28 +167,37 @@ async function resolveTabData({ userId, queryType, token, webhookData, fetcher, 
 
     if (liveSkipReason) {
         return {
-            data: webhookData,
+            data: loadWebhook(),
             meta: { source: 'webhook', fetchedAt: new Date(), liveSkipReason },
         };
     }
 
     if (!token) {
         return {
-            data: webhookData,
+            data: loadWebhook(),
             meta: { source: 'webhook', fetchedAt: new Date() },
         };
     }
 
     try {
-        const live = await fetcher({ token, ...(fetchArgs || {}) });
-        const liveItems = Array.isArray(live?.items) ? live.items : [];
-        const webhookIsEmpty = !Array.isArray(webhookData) || webhookData.length === 0;
-        const effective = webhookIsEmpty ? liveItems : webhookData;
-        const source = webhookIsEmpty ? 'live' : 'merged';
-
-        if (userId) {
-            putCached(userId, queryType, effective, null, CACHE_TTL_SECONDS);
+        const flightKey = userId ? `${userId}:${cacheKey}` : null;
+        let flight = flightKey ? liveInFlight.get(flightKey) : undefined;
+        if (!flight) {
+            flight = (async () => {
+                const live = await fetcher({ token, ...(fetchArgs || {}) });
+                const liveItems = Array.isArray(live?.items) ? live.items : [];
+                const webhookItems = loadWebhook();
+                const webhookIsEmpty = !Array.isArray(webhookItems) || webhookItems.length === 0;
+                const effective = webhookIsEmpty ? liveItems : webhookItems;
+                if (userId) putCached(userId, cacheKey, effective, null, CACHE_TTL_SECONDS);
+                return { effective, source: webhookIsEmpty ? 'live' : 'merged' };
+            })();
+            if (flightKey) {
+                liveInFlight.set(flightKey, flight);
+                flight.then(() => liveInFlight.delete(flightKey), () => liveInFlight.delete(flightKey));
+            }
         }
+        const { effective, source } = await flight;
 
         return {
             data: effective,
@@ -176,7 +209,7 @@ async function resolveTabData({ userId, queryType, token, webhookData, fetcher, 
         };
     } catch (err) {
         return {
-            data: webhookData,
+            data: loadWebhook(),
             meta: {
                 source: 'webhook',
                 fetchedAt: new Date(),
@@ -196,12 +229,12 @@ router.get('/my-reviews', requireAuth, async (req, res) => {
             return errorResponse(res, 400, 'GitHub login not found in session');
         }
         const limit = clampLimit(req.query.limit, 100, 200);
-        const webhookData = listMyPendingReviews({ reviewerLogin, limit });
         const { data, meta } = await resolveTabData({
             userId: req.session?.userId,
             queryType: 'my_reviews',
+            cacheParams: { limit },
             token: req.session?.accessToken,
-            webhookData,
+            webhookData: () => listMyPendingReviews({ reviewerLogin, limit }),
             fetcher: fetchMyPendingReviews,
             fetchArgs: { login: reviewerLogin, limit },
         });
@@ -226,12 +259,12 @@ router.get('/my-issues', requireAuth, async (req, res) => {
             return errorResponse(res, 400, 'GitHub login not found in session');
         }
         const limit = clampLimit(req.query.limit, 100, 200);
-        const webhookData = listMyOpenIssues({ assigneeLogin, limit });
         const { data, meta } = await resolveTabData({
             userId: req.session?.userId,
             queryType: 'my_issues',
+            cacheParams: { limit },
             token: req.session?.accessToken,
-            webhookData,
+            webhookData: () => listMyOpenIssues({ assigneeLogin, limit }),
             fetcher: fetchMyOpenIssues,
             fetchArgs: { login: assigneeLogin, limit },
         });
@@ -259,7 +292,6 @@ router.get('/stale-prs', requireAuth, async (req, res) => {
         const limit = clampLimit(req.query.limit, 50, 200);
         // Server-derived tenant boundary — see repoIdsFilter.
         const scopeRepoIds = getScopedRepoIds(req.session?.userId);
-        const webhookData = listStalePRs({ staleAfterDays, repoIds, limit, scopeRepoIds });
 
         // Live search uses author:<login>; it can't replicate per-repo filtering
         // so we only invoke it when no repoIds filter was supplied.
@@ -268,8 +300,9 @@ router.get('/stale-prs', requireAuth, async (req, res) => {
         const { data, meta } = await resolveTabData({
             userId: req.session?.userId,
             queryType: 'stale_prs',
+            cacheParams: { limit, staleAfterDays, repoIds },
             token: reviewerLogin ? req.session?.accessToken : null,
-            webhookData,
+            webhookData: () => listStalePRs({ staleAfterDays, repoIds, limit, scopeRepoIds }),
             fetcher: fetchStalePRs,
             fetchArgs: { login: reviewerLogin, staleAfterDays, limit },
             liveSkipReason: repoIds ? 'repo_ids_filter' : undefined,
@@ -489,7 +522,6 @@ router.get('/tech-debt', requireAuth, async (req, res) => {
             : undefined;
         // Server-derived tenant boundary — see repoIdsFilter.
         const scopeRepoIds = getScopedRepoIds(req.session?.userId);
-        const webhookItems = listTechDebtIssues({ labels, repoIds, limit, scopeRepoIds });
         const hotspots = techDebtHotspots({ labels, repoIds, scopeRepoIds });
 
         // Only use live fallback when no per-repo filtering is requested —
@@ -497,8 +529,9 @@ router.get('/tech-debt', requireAuth, async (req, res) => {
         const { data: items, meta } = await resolveTabData({
             userId: req.session?.userId,
             queryType: 'tech_debt',
+            cacheParams: { limit, labels, repoIds },
             token: req.session?.accessToken,
-            webhookData: webhookItems,
+            webhookData: () => listTechDebtIssues({ labels, repoIds, limit, scopeRepoIds }),
             fetcher: fetchTechDebtIssues,
             fetchArgs: { labels, limit },
             liveSkipReason: repoIds ? 'repo_ids_filter' : undefined,

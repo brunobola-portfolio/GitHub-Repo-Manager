@@ -12,6 +12,7 @@
  * Only a genuine "we could not find out" counts.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { _resetSharedGetsForTests } from '../../src/utils/sharedGet'
 import { renderHook, waitFor } from '@testing-library/react'
 
 vi.stubEnv('VITE_MOCK_MODE', 'false')
@@ -23,6 +24,7 @@ const boom = () => ({ ok: false, status: 500, json: async () => ({}) })
 const gated = () => ({ ok: false, status: 403, json: async () => ({}) })
 
 beforeEach(() => {
+    _resetSharedGetsForTests()
     sessionStorage.clear()
     vi.restoreAllMocks()
 })

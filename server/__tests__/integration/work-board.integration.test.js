@@ -99,7 +99,7 @@ describe('GET /api/v1/work-board/my-reviews (integration)', () => {
         expect(res.body.meta.source).toBe('live');
         // Cache row should have been written
         const cached = testDb.prepare('SELECT * FROM work_board_cache WHERE user_id=? AND query_type=?')
-            .get(1, 'my_reviews');
+            .get(1, 'my_reviews|limit=100');
         expect(cached).toBeDefined();
     });
 
