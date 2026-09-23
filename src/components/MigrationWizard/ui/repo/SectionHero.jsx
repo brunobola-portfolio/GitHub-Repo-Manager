@@ -1,13 +1,12 @@
 import { motion } from 'framer-motion'
-import { WIZARD_EASE } from '../motion'
-import { DURATION } from '../../../ui/motion'
+import { DURATION, EASE } from '../../../ui/motion'
 
 export function SectionHero({ icon: Icon, title, subtitle, actions, children }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: DURATION.slow, ease: WIZARD_EASE }}
+      transition={{ duration: DURATION.slow, ease: EASE.emphasized }}
       className="bg-brand-500/10 border border-brand-500/20 rounded-2xl p-5"
     >
       <div className="flex items-center justify-between gap-4 mb-4">

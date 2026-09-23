@@ -63,7 +63,6 @@ server/
 │   ├── maintenance-janitors.js   # Daily/hourly retention + purge + backup timers
 │   ├── logger.js                 # Pino structured logging
 │   ├── monitoring.js             # Sentry error tracking initialisation
-│   ├── queue.js                  # BullMQ queues (falls back to in-memory)
 │   ├── session-store.js          # SQLite-backed session store
 │   ├── session-store-redis.js    # Redis-backed session store
 │   ├── stripe.js                 # Stripe SDK helpers
@@ -80,9 +79,6 @@ server/
 │   │                             # routes/repos/* route)
 │   └── adapters/
 │       └── sqlite-adapter.js     # better-sqlite3 wrapper
-├── workers/
-│   ├── migration-worker.js       # BullMQ processor for migration plans
-│   └── ai-worker.js              # BullMQ processor for repo indexing
 ├── migrations/                   # NO .sql files — see lib/db-migrations.js (README only)
 ├── __tests__/                    # Backend unit tests (many files; part of the 5,200+ suite)
 ├── ai-service.js                 # Google Gemini AI analysis and embeddings
@@ -242,7 +238,7 @@ startup. The schema covers:
 - **Session**: `SESSION_SECRET` (enforced in production)
 - **GitHub OAuth**: `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`
 - **Database**: `DATABASE_URL` (optional; SQLite if absent)
-- **Redis**: `REDIS_URL` (optional; enables distributed sessions and BullMQ)
+- **Redis**: `REDIS_URL` (optional; enables distributed sessions and rate-limit counters)
 - **AI**: provider-neutral `AI_PROVIDER` (default `gemini`), `GEMINI_API_KEY`,
   `GEMINI_MODEL` (default `gemini-2.5-flash`), `GEMINI_EMBEDDING_MODEL`
   (default `gemini-embedding-001`), `AI_MAX_OUTPUT_TOKENS` (per-call cap),
@@ -280,11 +276,6 @@ rejects requests below the required tier with a structured
 `upgrade_required` response. `attachTier` populates `req.userTier` for
 downstream use.
 
-### Multi-Tenancy (`middleware/tenant.js`)
-
-`requireTenant` attaches `req.tenantId` from the authenticated session,
-ensuring all database queries are scoped to the current user.
-
 ### Rate Limiting (`middleware/tenant-rate-limit.js`)
 
 Two layers:
@@ -295,15 +286,13 @@ Two layers:
    separate ceilings for the `api` and `auth` namespaces. Uses Redis when
    `REDIS_URL` is configured; falls back to in-process MemoryStore otherwise.
 
-## Background Workers
+## Background Work
 
-Workers use BullMQ when Redis is available. Without Redis, `lib/queue.js`
-provides an in-memory queue that executes jobs immediately in-process.
-
-| Worker | Queue | Purpose |
-| --- | --- | --- |
-| `migration-worker.js` | migration | Executes migration plans asynchronously via `migrationEngine.executePlan()` |
-| `ai-worker.js` | ai | Indexes repositories (`index-repo`) and runs batch indexing (`batch-index`) with progress reporting |
+There is no job queue. Migration plans run in-process in `migration-engine.js`
+(recovered on boot), repository indexing runs inside its request, and the
+periodic passes are timers: `maintenance-janitors.js` (retention, purges,
+backups), `work-board-sweeper.js`, and the email, webhook and gh-outbox retry
+workers started in `index.js`.
 
 ## Utility Libraries (`server/lib/`)
 
@@ -315,7 +304,6 @@ provides an in-memory queue that executes jobs immediately in-process.
 | `feature-flags.js` | Tier feature matrix: repo limits, AI quotas, teams, SSO, audit log |
 | `logger.js` | Pino structured logger (JSON in production, human-readable in dev) |
 | `monitoring.js` | Sentry initialisation and error handler factory |
-| `queue.js` | BullMQ queue/worker factory with in-memory fallback |
 | `session-store.js` | SQLite-backed Express session store |
 | `session-store-redis.js` | Redis-backed Express session store |
 | `stripe.js` | Stripe SDK helpers |

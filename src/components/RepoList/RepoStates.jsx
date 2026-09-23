@@ -1,4 +1,3 @@
-import { memo } from 'react'
 import { AlertCircle, Archive, Lock, Search, Plus, Download } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { Spinner } from '../ui/Spinner'
@@ -114,15 +113,3 @@ export function EmptyState({ hasRepos, onCreateRepo, onImport, onClearFilters, p
 		/>
 	)
 }
-
-export const TooltipButton = memo(function TooltipButton({ icon: IconComp, label, onClick, className = "" }) {
-	return (
-		<button
-			onClick={onClick}
-			className={`p-2 rounded-full hover:bg-white/10 dark:hover:bg-slate-900/10 transition-colors ${className} ds-focus-ring`}
-			title={label}
-		>
-			<IconComp className="w-4 h-4" />
-		</button>
-	)
-})

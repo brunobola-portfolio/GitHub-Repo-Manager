@@ -75,7 +75,7 @@ value to ensure idempotency — GitHub retries are harmless.
   install time forward; historical data can be seeded via the GitHub REST API
   in a future task.
 - **Queue / retry layer** — handlers run synchronously inside the webhook
-  process. BullMQ can be added if write latency becomes an issue at scale.
+  process. A job queue can be added if write latency becomes an issue at scale.
 
 ## Handler architecture
 

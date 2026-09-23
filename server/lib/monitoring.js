@@ -151,11 +151,6 @@ export function reportException(error, context = {}) {
     });
 }
 
-export function captureError(error, context = {}) {
-    reportException(error, context);
-    logger.error({ err: error, ...context }, error.message);
-}
-
 /**
  * Record a non-error operational event. Used for things like AI key health
  * probe outcomes — we want a breadcrumb trail to debug 'why is the bell

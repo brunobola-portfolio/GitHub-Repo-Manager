@@ -50,9 +50,6 @@ export function markSessionEnded() {
     sessionKnown = false
 }
 
-export function isSessionKnown() {
-    return sessionKnown
-}
 
 // The redirect target is the landing page. Landing there with the marker
 // already in the URL and redirecting again is the loop above in one line, so
