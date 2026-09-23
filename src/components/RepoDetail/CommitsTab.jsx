@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import { writeQuery } from '../../utils/urlQuery'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { GitCommit, ExternalLink, Clock } from 'lucide-react'
@@ -41,7 +42,7 @@ export function CommitsTab({ repo }) {
         if (!sha) return
         const params = new URLSearchParams(window.location.search)
         params.set(COMMIT_PARAM, sha)
-        window.history.pushState({ commitSha: sha }, '', `${window.location.pathname}?${params}`)
+        writeQuery(params, { push: true, state: { commitSha: sha } })
         setSelectedSha(sha)
     }, [])
 
@@ -49,8 +50,7 @@ export function CommitsTab({ repo }) {
         const params = new URLSearchParams(window.location.search)
         if (params.has(COMMIT_PARAM)) {
             params.delete(COMMIT_PARAM)
-            const query = params.toString()
-            window.history.replaceState({}, '', window.location.pathname + (query ? `?${query}` : ''))
+            writeQuery(params)
         }
         setSelectedSha(null)
     }, [])

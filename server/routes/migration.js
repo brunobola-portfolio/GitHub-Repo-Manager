@@ -81,7 +81,9 @@ export function migrationJobFromPlan(plan, tasks = []) {
 function resolvePlanExecutionPat(req, res) {
   const result = resolveAzurePat(req, { patField: 'azurePat' });
   if (req.body?.savedCredentialId && !result.pat) {
-    res.status(401).json({ error: result.error });
+    // 422, not 401: an unusable saved Azure credential is not the user's
+    // session with this app ending (the client signs a 401 out).
+    sendError(res, 422, result.error, { code: 'AZURE_CREDENTIAL_UNUSABLE' });
     return { abort: true, pat: null };
   }
   return { abort: false, pat: result.pat };

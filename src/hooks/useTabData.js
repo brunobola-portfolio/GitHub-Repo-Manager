@@ -35,8 +35,20 @@ export function useTabData(loader, deps) {
 
     // reload returns a Promise so callers can `await reload()` after a mutation
     // (e.g. createBranch) before re-rendering UI that depends on the new data.
-    const reload = useCallback(async () => {
+    // One controller for whichever load is current. reload() used to create a
+    // private controller and return its abort wrapped in the promise, where
+    // nothing called it: a slow initial load finishing after a reload (after
+    // "create branch", say) replaced the fresh list with the stale one.
+    const controllerRef = useRef(null)
+    const startLoad = () => {
+        controllerRef.current?.abort()
         const controller = new AbortController()
+        controllerRef.current = controller
+        return controller
+    }
+
+    const reload = useCallback(async () => {
+        const controller = startLoad()
         setLoading(true)
         setError(null)
         try {
@@ -48,12 +60,11 @@ export function useTabData(loader, deps) {
         } finally {
             if (!controller.signal.aborted) setLoading(false)
         }
-        return () => controller.abort()
     // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo -- deps array is the caller's contract; we cannot inline it as a literal here
     }, deps)
 
     useEffect(() => {
-        const controller = new AbortController()
+        const controller = startLoad()
         ;(async () => {
             setLoading(true)
             setError(null)

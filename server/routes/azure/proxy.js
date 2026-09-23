@@ -6,7 +6,7 @@ import * as azureService from '../../azure-service.js';
 import { requireAuth, safeError, errorResponse, isValidGitHubUsername } from '../../middleware/auth.js';
 import {
     DEFAULT_AZURE_HOST, MAX_BATCH_REPOS, FOLDER_SIZE_CONCURRENCY,
-    resolveHost, resolvePatFromRequest, resolveAzureContext, enrichedRepoLimiter,
+    resolveHost, resolvePatFromRequest, resolveAzureContext, enrichedRepoLimiter, azureStatus,
 } from './_shared.js';
 
 const router = express.Router();
@@ -56,7 +56,7 @@ router.post('/azure/projects', requireAuth, async (req, res) => {
         const projects = await azureService.listProjects(org, patResult.pat, validatedHost);
         res.json({ projects });
     } catch (error) {
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to list Azure projects'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to list Azure projects'));
     }
 });
 
@@ -109,7 +109,7 @@ router.post('/azure/projects/create', requireAuth, async (req, res) => {
             repo: createdRepo
         });
     } catch (error) {
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to create Azure project'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to create Azure project'));
     }
 });
 
@@ -125,7 +125,7 @@ router.post('/azure/repos', requireAuth, async (req, res) => {
         }
         const patResult = resolvePatFromRequest(req);
         if (!patResult.pat) {
-            return errorResponse(res, 401, patResult.error, 'MISSING_PAT');
+            return errorResponse(res, 422, patResult.error, 'MISSING_PAT');
         }
         const validatedHost = await resolveHost(req, res);
         if (!validatedHost) return;
@@ -143,7 +143,7 @@ router.post('/azure/repos', requireAuth, async (req, res) => {
         }));
         res.json({ repos: annotated, versionControlType });
     } catch (error) {
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to list Azure repos'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to list Azure repos'));
     }
 });
 
@@ -154,7 +154,7 @@ router.post('/azure/wikis', requireAuth, async (req, res) => {
         const wikis = await azureService.listWikis(ctx.org, ctx.project, ctx.pat, ctx.host);
         res.json({ wikis });
     } catch (error) {
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to list Azure wikis'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to list Azure wikis'));
     }
 });
 
@@ -165,7 +165,7 @@ router.post('/azure/work-items/counts', requireAuth, async (req, res) => {
         const counts = await azureService.getWorkItemCounts(ctx.org, ctx.project, ctx.pat, ctx.host);
         res.json({ counts });
     } catch (error) {
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to get work item counts'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to get work item counts'));
     }
 });
 
@@ -176,7 +176,7 @@ router.post('/azure/work-items/preview', requireAuth, async (req, res) => {
         const items = await azureService.previewWorkItems(ctx.org, ctx.project, ctx.pat, req.body?.types || [], ctx.host);
         res.json({ items });
     } catch (error) {
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to preview work items'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to preview work items'));
     }
 });
 
@@ -187,7 +187,7 @@ router.post('/azure/project-info', requireAuth, async (req, res) => {
         const info = await azureService.getProjectInfo(ctx.org, ctx.project, ctx.pat, ctx.host);
         res.json(info);
     } catch (error) {
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to get project info'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to get project info'));
     }
 });
 
@@ -200,7 +200,7 @@ router.post('/azure/branches', requireAuth, async (req, res) => {
         const branches = await azureService.listBranches(ctx.org, ctx.project, repoId, ctx.pat, ctx.host);
         res.json({ branches });
     } catch (error) {
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to list branches'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to list branches'));
     }
 });
 
@@ -219,7 +219,7 @@ router.post('/azure/pat-permissions', requireAuth, async (req, res) => {
 
         res.json({ permissions: { code, workItems, wiki } });
     } catch (error) {
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to check PAT permissions'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to check PAT permissions'));
     }
 });
 
@@ -235,7 +235,7 @@ router.post('/azure/repos/activity', requireAuth, enrichedRepoLimiter, async (re
         const result = await azureService.listRepoActivity(ctx.org, ctx.project, repos, ctx.pat, ctx.host);
         res.json({ activity: result });
     } catch (error) {
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to fetch repo activity'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to fetch repo activity'));
     }
 });
 
@@ -251,7 +251,7 @@ router.post('/azure/repos/lfs-check', requireAuth, enrichedRepoLimiter, async (r
         const result = await azureService.checkLfsMarkers(ctx.org, ctx.project, repos, ctx.pat, ctx.host);
         res.json({ lfs: result });
     } catch (error) {
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to check LFS markers'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to check LFS markers'));
     }
 });
 
@@ -264,7 +264,7 @@ router.post('/azure/repos/commit-activity', requireAuth, enrichedRepoLimiter, as
         const activity = await azureService.getCommitActivity(ctx.org, ctx.project, repoId, defaultBranch, ctx.pat, months || 12, ctx.host);
         res.json({ activity });
     } catch (error) {
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to fetch commit activity'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to fetch commit activity'));
     }
 });
 
@@ -277,7 +277,7 @@ router.post('/azure/repos/readme', requireAuth, enrichedRepoLimiter, async (req,
         const readme = await azureService.getRepoReadme(ctx.org, ctx.project, repoId, ctx.pat, ref, ctx.host);
         res.json(readme);
     } catch (error) {
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to fetch README'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to fetch README'));
     }
 });
 
@@ -290,7 +290,7 @@ router.post('/azure/repos/full-stats', requireAuth, enrichedRepoLimiter, async (
         const stats = await azureService.getRepoFullStats(ctx.org, ctx.project, repoId, defaultBranch, ctx.pat, ctx.host);
         res.json(stats);
     } catch (error) {
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to fetch full stats'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to fetch full stats'));
     }
 });
 
@@ -318,7 +318,7 @@ router.post('/azure/tfvc/items', requireAuth, async (req, res) => {
         }
         res.json({ items: enriched });
     } catch (error) {
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to list TFVC items'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to list TFVC items'));
     }
 });
 

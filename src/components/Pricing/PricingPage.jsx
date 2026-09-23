@@ -237,6 +237,7 @@ export function PricingPage({ onGetStarted } = {}) {
   // ignored it, so a signed-in visitor clicked "Upgrade to Pro", waited for a
   // 503, and learned from an error banner that the instance cannot sell it.
   const [selfServe, setSelfServe] = useState(null)
+  const [probeSettled, setProbeSettled] = useState(false)
   const [stripePrices, setStripePrices] = useState(null)
   const [checkoutLoading, setCheckoutLoading] = useState(null)
   // Stays on Pricing when checkout is unavailable so the user actually sees
@@ -261,6 +262,7 @@ export function PricingPage({ onGetStarted } = {}) {
         // malformed or truncated response must not read as "cannot sell".
         if (data && 'stripeEnabled' in data) setSelfServe(Boolean(data.stripeEnabled))
       } catch { /* keep yearly hidden when we can't confirm it's configured */ }
+      finally { if (!cancelled) setProbeSettled(true) }
     })()
     return () => { cancelled = true }
   }, [])
@@ -298,16 +300,22 @@ export function PricingPage({ onGetStarted } = {}) {
   // and leave the contact CTA on screen.
   const resumedCheckoutRef = useRef(false)
   useEffect(() => {
-    if (resumedCheckoutRef.current || selfServe === null) return
+    if (resumedCheckoutRef.current || !probeSettled) return
     const params = new URLSearchParams(window.location.search)
     if (params.get('checkout') !== 'pro') return
     resumedCheckoutRef.current = true
     params.delete('checkout')
     const cleanUrl = window.location.pathname + (params.toString() ? `?${params}` : '') + window.location.hash
     window.history.replaceState({}, '', cleanUrl)
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot resume of a URL-carried intent, same shape as the ?error= handling in useAuthBootstrap
+    // A probe that failed leaves selfServe null: say so instead of waiting
+    // silently forever with the flag still in the URL.
+    if (selfServe === null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot resume of a URL-carried intent
+      setCheckoutState({ kind: 'error', message: 'Could not confirm checkout is available right now. Click Upgrade to Pro to try again.' })
+      return
+    }
     if (selfServe) handleCheckout('pro', 'monthly')
-  }, [selfServe, handleCheckout])
+  }, [selfServe, probeSettled, handleCheckout])
 
   const handleTierAction = useCallback((tier) => {
     if (tier === 'Enterprise') {

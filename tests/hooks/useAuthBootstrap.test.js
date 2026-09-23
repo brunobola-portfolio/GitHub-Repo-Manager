@@ -272,3 +272,14 @@ describe('useAuthBootstrap — return from Stripe checkout', () => {
         }
     })
 })
+
+
+describe('useAuthBootstrap — ?error=session_expired', () => {
+    it('explains why the user is back on the sign-in page', async () => {
+        window.history.replaceState(null, '', '/?error=session_expired')
+        const toast = { warning: vi.fn(), success: vi.fn(), error: vi.fn(), info: vi.fn() }
+        renderHook(() => useAuthBootstrap(mkProps({ toast })))
+        await waitFor(() => expect(toast.info).toHaveBeenCalledWith(expect.stringMatching(/session expired/i)))
+        expect(window.location.search).toBe('')
+    })
+})

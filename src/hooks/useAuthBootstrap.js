@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { emitAppEvent, APP_EVENTS } from '../utils/appEvents'
+import { writeQuery } from '../utils/urlQuery'
 import { AUTH_ENDPOINTS, API_BASE_URL, MOCK_MODE } from '../config'
 import { getAuthSetupStatus } from '../api/authSetup'
 import { onSessionExpired, resetSessionExpired, fetchWithRetry, safeParseJson, apiCall, markSessionActive, markSessionEnded } from '../utils/api'
@@ -19,6 +20,9 @@ const AUTH_ERROR_COPY = {
     bad_verification_code: ['error', 'The sign-in code expired before it could be used. Try again.'],
     incorrect_client_credentials: ['error', 'GitHub rejected the configured Client ID/Secret. Re-check the values in your configuration.'],
     application_suspended: ['error', 'The configured GitHub OAuth App is suspended. Check its status on GitHub.'],
+    // api.js redirects here when an authenticated call gets a 401; nothing read
+    // it, so the user landed on the sign-in page with no word as to why.
+    session_expired: ['info', 'Your session expired. Sign in again to continue.'],
 }
 
 /**
@@ -97,7 +101,7 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
         }
     }
 
-    const checkSystemStatus = async () => {
+    const checkSystemStatus = async ({ fromRetry = false } = {}) => {
         // Mock mode bypasses the first-run setup ceremony entirely. The setup
         // screen is a visual-only step (the backend flag is idempotent), and
         // keeping it in mock mode traps e2e tests at the "Launch Workspace"
@@ -108,8 +112,17 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
             return
         }
         try {
-            setSystemUnreachable(false)
-            const res = await fetchWithRetry(`${API_BASE_URL}/api/system/status`, { credentials: 'include' })
+            // The "can't reach the server" screen stays up while it retries:
+            // clearing the flag first unmounted it (showing the landing page)
+            // for the whole retry, and remounting reset its backoff counter,
+            // so the "reload the page" offer after six attempts never came.
+            // A retry from that screen is one quick attempt; its own backoff
+            // spaces them out.
+            const res = await fetchWithRetry(
+                `${API_BASE_URL}/api/system/status`,
+                { credentials: 'include' },
+                fromRetry ? { maxRetries: 0 } : undefined,
+            )
             const data = res?.ok ? await safeParseJson(res) : null
             // Only a real answer decides between the app and the first-run wizard.
             // A 502 from the proxy during a deploy restart, an HTML error page or
@@ -141,6 +154,7 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
                     toast.warning(`Update to v${r.to} did not complete. See the update log in your data folder.`)
                 }
             }
+            setSystemUnreachable(false)
             setSystemInitialized(data.initialized)
             if (data.initialized) {
                 checkAuth()
@@ -209,6 +223,13 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
         return () => { cancelled = true }
     }, [user, systemInitialized])
 
+    // Stable across renders: ServerUnreachable restarts its timer whenever
+    // this identity changes, and a new function every render meant it did.
+    const checkSystemStatusRef = useRef(checkSystemStatus)
+    // eslint-disable-next-line react-hooks/refs -- pin the latest closure so the stable retry below always runs the current one
+    checkSystemStatusRef.current = checkSystemStatus
+    const retrySystemStatus = useCallback(() => checkSystemStatusRef.current({ fromRetry: true }), [])
+
     const initCalled = useRef(false)
     useEffect(() => {
         // Run system-status init exactly once per mount lifetime. No cleanup reset:
@@ -242,8 +263,7 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
         if (outcome !== 'success' && outcome !== 'cancel') return
         pendingBillingOutcome = outcome
         params.delete('billing')
-        const cleanUrl = window.location.pathname + (params.toString() ? `?${params}` : '') + window.location.hash
-        window.history.replaceState({}, '', cleanUrl)
+        writeQuery(params)
     }, [])
     useEffect(() => {
         if (!user || !pendingBillingOutcome) return
@@ -274,8 +294,7 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
             return // unknown code — leave the URL untouched for other handlers
         }
         params.delete('error')
-        const cleanUrl = window.location.pathname + (params.toString() ? `?${params}` : '')
-        window.history.replaceState({}, '', cleanUrl)
+        writeQuery(params)
     }, [toast])
 
     return {
@@ -284,7 +303,7 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
         systemInitialized,
         setSystemInitialized,
         systemUnreachable,
-        retrySystemStatus: checkSystemStatus,
+        retrySystemStatus,
         authSetupStatus,
         showGitHubSetup,
         setShowGitHubSetup,

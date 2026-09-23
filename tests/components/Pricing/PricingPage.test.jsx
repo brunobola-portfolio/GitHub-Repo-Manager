@@ -322,6 +322,15 @@ describe('PricingPage — resumes a checkout intent carried through sign-in', ()
         expect(window.location.search).toBe('')
     })
 
+    it('clears the parameter and says so when the probe itself fails', async () => {
+        window.history.replaceState(null, '', '/?checkout=pro')
+        global.fetch.mockRejectedValue(new TypeError('Failed to fetch'))
+        render(<PricingPage />)
+        await waitFor(() => expect(window.location.search).toBe(''))
+        expect(checkoutCalls()).toHaveLength(0)
+        expect(await screen.findByText(/could not confirm checkout/i)).toBeInTheDocument()
+    })
+
     it('does nothing with the parameter when the probe says Stripe is off', async () => {
         window.history.replaceState(null, '', '/?checkout=pro')
         global.fetch.mockResolvedValue(

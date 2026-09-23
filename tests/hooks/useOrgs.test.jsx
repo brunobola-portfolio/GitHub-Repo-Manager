@@ -73,3 +73,27 @@ describe('useOrgs — consolidated login / org-switch stats effect', () => {
         expect(calls.length).toBe(0)
     })
 })
+
+describe('useOrgs — failures are reported, and the newest org switch wins', () => {
+    const json = (body, status = 200) => Promise.resolve({ ok: status < 400, status, headers: { get: () => 'application/json' }, json: async () => body })
+
+    it('fetchOrgs reports a GitHub failure instead of swallowing it', async () => {
+        global.fetch = vi.fn(() => json({ error: 'GitHub down' }, 502))
+        const { result } = renderHook(() => useOrgs(null))
+        let ok
+        await act(async () => { ok = await result.current.fetchOrgs() })
+        expect(ok).toBe(false)
+        expect(result.current.error).toMatch(/organizations/i)
+    })
+
+    it('a failed org switch clears the previous org repos instead of showing them under the new name', async () => {
+        global.fetch = vi.fn((url) => String(url).includes('/orgs/good/')
+            ? json({ repos: [{ id: 1, name: 'a' }] })
+            : json({ message: 'SAML enforcement' }, 403))
+        const { result } = renderHook(() => useOrgs(null))
+        await act(async () => { await result.current.fetchOrgRepos('good') })
+        expect(result.current.orgRepos).toHaveLength(1)
+        await act(async () => { await result.current.fetchOrgRepos('saml') })
+        expect(result.current.orgRepos).toEqual([])
+    })
+})

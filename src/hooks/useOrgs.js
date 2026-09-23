@@ -54,14 +54,20 @@ export function useOrgs(user) {
             setOrgs(generateMockOrgs())
             return
         }
-        if (isSessionExpired()) return
+        if (isSessionExpired()) return false
+        // Returns whether the fetch succeeded. Every non-auth error used to be
+        // swallowed without a word, so "Sync" always reported success while
+        // the organisation list stayed stale.
         try {
             const data = await apiCall(`${API_BASE}/orgs`)
             setOrgs(Array.isArray(data) ? data : [])
+            return true
         } catch (e) {
-            if (e instanceof ApiError && e.type === ErrorType.AUTHENTICATION) return
+            if (e instanceof ApiError && e.type === ErrorType.AUTHENTICATION) return false
+            setTimedError("Couldn't load your organizations")
+            return false
         }
-    }, [])
+    }, [setTimedError])
 
     /**
      * Fetch repos for a specific organization
@@ -74,14 +80,23 @@ export function useOrgs(user) {
             return
         }
         if (isSessionExpired()) return
+        // Latest request wins: switching A → B and back quickly let whichever
+        // response arrived last decide the list, and a failed fetch left the
+        // PREVIOUS org's repos on screen under the new org's name.
+        const requestId = ++orgReposRequestRef.current
         try {
             const data = await apiCall(`${API_BASE}/orgs/${orgLogin}/repos?page=${pageNum}&per_page=100`)
+            if (requestId !== orgReposRequestRef.current) return
             setOrgRepos(data.repos || [])
             setSelectedOrg(orgLogin)
         } catch (e) {
+            if (requestId !== orgReposRequestRef.current) return
             if (e instanceof ApiError && e.type === ErrorType.AUTHENTICATION) return
             console.error('fetchOrgRepos error:', e)
-            setTimedError("Couldn't load organization repositories")
+            setOrgRepos([])
+            setTimedError(e?.status === 403
+                ? `GitHub refused access to ${orgLogin}'s repositories (the organization may require SAML sign-in or restrict OAuth apps).`
+                : "Couldn't load organization repositories")
         }
     }
 
@@ -103,6 +118,8 @@ export function useOrgs(user) {
     /**
      * Fetch dashboard statistics
      */
+    const orgReposRequestRef = useRef(0)
+
     const fetchStats = useCallback(async (org = '') => {
         if (import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true') {
             const { generateMockStats } = await import('../__mocks__/mockOrgs.js')
@@ -129,10 +146,12 @@ export function useOrgs(user) {
 
             const data = await apiCall(url, { headers })
             setStats(data)
+            return true
         } catch (e) {
-            if (e instanceof ApiError && e.type === ErrorType.AUTHENTICATION) return
+            if (e instanceof ApiError && e.type === ErrorType.AUTHENTICATION) return false
             console.error('fetchStats error:', e)
             setTimedError("Couldn't load dashboard statistics")
+            return false
         }
     }, [setTimedError])
 

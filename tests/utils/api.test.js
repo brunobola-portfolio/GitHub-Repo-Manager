@@ -131,6 +131,23 @@ describe('fetchWithRetry', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1)
   })
 
+  it('does not repeat a mutation by default, but still retries a read', async () => {
+    // A slow AI generation timed out on the client and was re-POSTed three
+    // more times: four metered generations for one click.
+    const serverError = { ok: false, status: 500, headers: { get: () => null }, json: vi.fn().mockResolvedValue({}) }
+    global.fetch.mockResolvedValue(serverError)
+    const post = fetchWithRetry('https://api.example.com/generate', { method: 'POST' }).catch((e) => e)
+    await vi.runAllTimersAsync()
+    await post
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+
+    global.fetch.mockClear()
+    const get = fetchWithRetry('https://api.example.com/list', {}, { baseDelay: 1 }).catch((e) => e)
+    await vi.runAllTimersAsync()
+    await get
+    expect(global.fetch).toHaveBeenCalledTimes(4)
+  })
+
   it('retries on network errors', async () => {
     const networkError = new TypeError('Failed to fetch')
     global.fetch

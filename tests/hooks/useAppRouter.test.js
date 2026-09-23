@@ -174,6 +174,18 @@ describe('useAppRouter — history push vs replace', () => {
         push.mockRestore(); replace.mockRestore()
     })
 
+    it('pops its own entry when pr-review is left in-app, so browser Back is not dead', () => {
+        window.location.hash = '#/repo/acme/demo'
+        const p = mkProps({ activeView: 'repo-detail', selectedRepoDetail: repo })
+        const { rerender } = renderHook((props) => useAppRouter(props), { initialProps: p })
+        act(() => { rerender({ ...p, activeView: 'pr-review', selectedRepoDetail: repo }) })
+        expect(window.history.state).toEqual({ grmPrReview: true })
+        const back = vi.spyOn(window.history, 'back').mockImplementation(() => {})
+        act(() => { rerender({ ...p, activeView: 'repo-detail', selectedRepoDetail: repo }) })
+        expect(back).toHaveBeenCalledOnce()
+        back.mockRestore()
+    })
+
     it('does not push a second entry while staying in pr-review', () => {
         const p = mkProps({ activeView: 'pr-review', selectedRepoDetail: repo })
         const { rerender } = renderHook((props) => useAppRouter(props), { initialProps: p })

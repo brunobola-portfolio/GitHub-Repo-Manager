@@ -6,7 +6,7 @@ import express from 'express';
 import * as azureService from '../../azure-service.js';
 import { requireAuth, safeError, errorResponse } from '../../middleware/auth.js';
 import { encryptCredentials, decryptCredentials } from '../../lib/credential-encryption.js';
-import { orgListLimiter } from './_shared.js';
+import { orgListLimiter, azureStatus } from './_shared.js';
 
 const router = express.Router();
 
@@ -15,16 +15,16 @@ router.get('/azure/organizations', requireAuth, orgListLimiter, async (req, res)
     try {
         const encryptedToken = req.session?.azureToken;
         if (!encryptedToken) {
-            return errorResponse(res, 401, 'OAuth session required — authenticate via OAuth first');
+            return errorResponse(res, 422, 'Azure sign-in required — connect Azure DevOps first.', 'AZURE_AUTH_REQUIRED');
         }
         const { token } = decryptCredentials(encryptedToken);
         const organizations = await azureService.listOrganizations(token);
         res.json({ organizations });
     } catch (error) {
         if (error.status === 401) {
-            return errorResponse(res, 401, 'Token expired or invalid — please re-authenticate');
+            return errorResponse(res, 422, 'Your Azure DevOps sign-in expired — connect Azure DevOps again.', 'AZURE_TOKEN_EXPIRED');
         }
-        errorResponse(res, error.status || 500, safeError(error, 'Failed to list organizations'));
+        errorResponse(res, azureStatus(error, 500), safeError(error, 'Failed to list organizations'));
     }
 });
 

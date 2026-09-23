@@ -11,7 +11,7 @@ import { Select } from '../ui/Select'
 import { RowIconBadge } from '../ui/RowIconBadge'
 import { apiCall } from '../../utils/api'
 import { commitCommunityHealthFix } from '../../api/repos'
-import { emitAppEvent, APP_EVENTS } from '../../utils/appEvents'
+import { openAISettings } from '../../utils/appEvents'
 
 /**
  * State machine: idle | generating | preview | committing | committed | error
@@ -143,7 +143,8 @@ export function CommunityHealthFixModal({ isOpen, onClose, repo, fileType, onCom
 						onClick={(e) => {
 							e.preventDefault()
 							onClose?.()
-							emitAppEvent(APP_EVENTS.OPEN_SETTINGS, { section: 'ai' })
+							// The bridge reads `tab`; `{ section }` opened General.
+							openAISettings()
 						}}
 					>
 						<SettingsIcon className="w-4 h-4" /> Configure AI

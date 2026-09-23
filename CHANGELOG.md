@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — app behaviour
+
+- An Azure DevOps token or PAT that expires no longer signs you out of the
+  app. Azure's own 401s reached the browser as 401, which the client treats
+  as its session ending: the migration wizard was thrown away while the
+  GitHub session was fine. Azure auth failures now answer 422 with a code
+  the wizard understands.
+- Actions that change something (AI generation, checkout, creating things)
+  are no longer repeated automatically. A slow AI call timed out on the
+  client and was sent three more times — four metered generations for one
+  click. Reads still retry.
+- Sign-in errors, "your session expired" and other messages shown before
+  sign-in are visible again; the landing page had nowhere to show them.
+- The "can't reach the server" screen stays up while it retries and counts
+  its attempts, instead of flashing the landing page and starting over.
+- "Sync" reports a GitHub failure instead of always saying it succeeded;
+  switching to an organization GitHub refuses (SAML, OAuth restrictions)
+  clears the previous organization's repositories and says why; the newest
+  switch always wins over a slower earlier one.
+- Creating a repository shows GitHub's own reason when it fails ("name
+  already exists"), not "Invalid request".
+- After leaving a PR review with its Back button, the browser's Back works
+  again. A finished list refresh can no longer be overwritten by a slower,
+  older one. Closing a commit, clearing a sign-in error or a billing
+  message keeps you on the repository you were viewing.
+- A resumed Pro checkout says so when the billing check fails, instead of
+  waiting silently. "Configure AI" opens the AI tab. A signed-in user whose
+  GitHub profile fails to load sees a retry, not the sign-in page.
+
 ### Fixed — Azure DevOps / TFS migration
 
 - **Repositories that use Git LFS now migrate their LFS files.** Detection

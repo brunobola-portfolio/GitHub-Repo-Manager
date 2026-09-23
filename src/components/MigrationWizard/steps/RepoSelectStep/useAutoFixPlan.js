@@ -88,7 +88,9 @@ export function useAutoFixPlan({ repos, allRepos, targetOrg, azureProject, confl
         .catch((e) => {
           if (isAbort(e)) return
           // Fix 2: priority-aware auth error
-          if (e.status === 401) {
+          // Azure auth failures arrive as 422 with an AZURE_* code (a 401
+          // is reserved for this app's own session).
+          if (e.status === 401 || (e.status === 422 && /^(AZURE_|MISSING_PAT)/.test(e.data?.code || ''))) {
             setError((prev) => worseError(prev, { type: 'auth', message: 'Azure DevOps token expired — please reconnect.' }))
             return
           }
