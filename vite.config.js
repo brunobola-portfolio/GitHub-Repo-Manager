@@ -164,11 +164,10 @@ export default defineConfig({
           // transitive deps against mermaid's (also d3-based) lazy diagram chunks —
           // see tests/build/bundle-budget.test.js for the eager-entry budget this fixes.
           if (/[\\/]node_modules[\\/](framer-motion|motion-dom|motion-utils)[\\/]/.test(id)) return 'vendor-motion'
-          // Split lucide-react into its own chunk so its gzipped footprint
-          // is measurable and it doesn't pollute other chunks. Rollup already
-          // tree-shakes the lucide barrel natively (sideEffects: false) so
-          // only icons actually imported under src/ land here.
-          if (/[\\/]node_modules[\\/]lucide-react[\\/]/.test(id)) return 'vendor-icons'
+          // No lucide-react group: it gathered every icon imported anywhere in
+          // src/ into one chunk the entry loads, so icons used only by lazy
+          // views cost every cold start (20 KB gz). Ungrouped, the entry
+          // carries the ones the shell draws and the rest follow their views.
           // No @radix-ui or react-markdown groups either. The markdown group
           // pulled React's jsx-runtime into itself, so every JSX call in the
           // entry resolved through vendor-markdown (34 KB gz preloaded on every

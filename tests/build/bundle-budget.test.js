@@ -80,8 +80,15 @@ import { describe, it, expect, beforeAll } from 'vitest'
 // Tooltip) left the first load. The total fell from ~298 KB to ~210 KB, so
 // the budget drops to 220 KB: ~4% margin, and a regression back to a
 // force-grouped vendor chunk fails here instead of shipping.
-const EAGER_INDEX_GZ_BUDGET = 79 * 1024
-const EAGER_TOTAL_GZ_BUDGET = 220 * 1024
+//
+// RE-BASELINED 2026-09-23 (same day): the ~210 KB above was measured on a
+// stale node_modules. With the lockfile's React 19.3 and lucide 1.47 the
+// closure measured 222.9 KB on CI — vendor-react alone grew 8 KB. Dropping the
+// vendor-icons group then took icons used only by lazy views off the first
+// load: total 216.2 KB, while the entry grows to 85.6 KB because it now holds
+// the icons the shell draws. ~4% margin on both.
+const EAGER_INDEX_GZ_BUDGET = 89 * 1024
+const EAGER_TOTAL_GZ_BUDGET = 225 * 1024
 
 const RUN = process.env.RUN_BUILD_TESTS === '1'
 
