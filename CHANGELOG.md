@@ -181,6 +181,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   paying twice cannot create two subscriptions. The tier is copied onto the
   subscription's metadata.
 
+### Removed
+
+- The BullMQ job-queue layer, which nothing used: no queue was ever
+  created, the two workers were never loaded, and `bullmq` is no longer a
+  dependency. `REDIS_URL` still backs sessions and rate limits.
+
 ### Documentation — claims now match the product
 
 - README Generator and README Studio share one 25-a-month allowance; the
@@ -206,6 +212,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **AI quotas can no longer be overspent by parallel requests.** Chat,
+  suggestions, the attention narrative, search translation, the Dev
+  Toolkit helpers, migration descriptions, repository name suggestions,
+  community-health generation and batch indexing read the quota before the
+  provider call and counted it after, so a burst of requests all passed the
+  check. Each now reserves its unit atomically up front and hands it back
+  when nothing was generated.
+- The first AI action after signing in again in another tab failed with a
+  403 that Retry could not fix: most AI clients did not retry with a fresh
+  CSRF token. All of them now do.
+- Repo Advisor renders tables and other GitHub-flavoured Markdown in its
+  answers.
+- Popovers close the same way everywhere: a press outside or Escape. The
+  repository picker and saved-view menu ignored Escape.
+- An admin who closed the tab during a tool install left the server
+  writing progress to a closed connection.
 - Every "too many requests" answer was titled "AI provider is rate-limited",
   including this server's own limits and GitHub's. The title names the AI
   provider only when the provider is the one throttling.
