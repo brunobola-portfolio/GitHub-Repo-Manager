@@ -7,6 +7,7 @@ import { Card } from './ui/Card'
 import { Input } from './ui/form'
 import { Tooltip } from './ui/Tooltip'
 import ReactMarkdown from 'react-markdown'
+import { safeMarkdownProps } from './AIPrompts/markdownConfig'
 import { useModal } from '../hooks/useModal'
 import { useFocusTrap } from '../hooks/useFocusTrap'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -721,7 +722,7 @@ function MessageBubble({ message, onAction, onRetry, onOpenSettings }) {
                         ? message.text
                         : (
                             <>
-                                <ReactMarkdown components={MARKDOWN_COMPONENTS}>{message.text}</ReactMarkdown>
+                                <ReactMarkdown remarkPlugins={safeMarkdownProps.remarkPlugins} rehypePlugins={safeMarkdownProps.rehypePlugins} components={MARKDOWN_COMPONENTS}>{message.text}</ReactMarkdown>
                                 {message.streaming && (
                                     <span
                                         className="inline-block w-1.5 h-3.5 -mb-0.5 ml-0.5 align-baseline rounded-[1px] bg-[color:var(--ds-accent-brand)] dark:bg-[color:var(--ds-accent-brand-dark)] animate-pulse motion-reduce:animate-none"

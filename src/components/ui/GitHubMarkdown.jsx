@@ -2,7 +2,8 @@ import { memo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
-import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
+import rehypeSanitize from 'rehype-sanitize'
+import { buildGitHubSchema } from '../../utils/githubMarkdownSchema'
 
 /**
  * GitHubMarkdown — renders a PR / issue / comment body the way GitHub does.
@@ -12,22 +13,8 @@ import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
  * align>`); bare react-markdown printed the pipes and the escaped tags as
  * text. This is the README pipeline (`RepoMarkdown`) minus the relative-URL
  * rewriting, which needs an owner/repo/branch a comment does not carry.
- *
- * The sanitize schema is the explicit-allow default plus the handful of
- * attributes GitHub itself permits; ids are namespaced so a body can never
- * collide with an app-shell id.
  */
-const SCHEMA = {
-    ...defaultSchema,
-    clobberPrefix: 'user-content-',
-    attributes: {
-        ...defaultSchema.attributes,
-        div: [...(defaultSchema.attributes?.div || []), 'align'],
-        p: [...(defaultSchema.attributes?.p || []), 'align'],
-        img: [...(defaultSchema.attributes?.img || []), 'width', 'height', 'align'],
-        details: [...(defaultSchema.attributes?.details || []), 'open'],
-    },
-}
+const SCHEMA = buildGitHubSchema('user-content-')
 
 const REMARK_PLUGINS = [remarkGfm]
 const REHYPE_PLUGINS = [rehypeRaw, [rehypeSanitize, SCHEMA]]

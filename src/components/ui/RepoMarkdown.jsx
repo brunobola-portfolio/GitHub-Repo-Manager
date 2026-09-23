@@ -2,33 +2,17 @@ import { cloneElement, createContext, createElement, memo, useCallback, useConte
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
-import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
+import rehypeSanitize from 'rehype-sanitize'
+import { buildGitHubSchema } from '../../utils/githubMarkdownSchema'
 import { rehypeSlugInline } from './__rehype-slug-inline'
 import { copyToClipboard } from '../../utils/clipboard'
 import { AnimatedCopyIcon } from './AnimatedCopyIcon'
 import { parseAndSanitizeSvg } from '../../utils/sanitizeSvg'
 import { scrollToReadmeAnchor } from '../../utils/readmeAnchor'
 
-// Sanitize schema: defaults + relax a handful of attributes that GitHub
-// READMEs habitually use. Tag/attribute lists are explicit-allow only.
-// clobberPrefix: 'readme-' namespaces ALL ids and fragment hrefs so README
-// content can never collide with app-shell ids (e.g. id="root").
-const SCHEMA = {
-    ...defaultSchema,
-    clobberPrefix: 'readme-',
-    attributes: {
-        ...defaultSchema.attributes,
-        div: [...(defaultSchema.attributes?.div || []), 'align'],
-        p: [...(defaultSchema.attributes?.p || []), 'align'],
-        img: [...(defaultSchema.attributes?.img || []), 'width', 'height', 'align'],
-        h1: [...(defaultSchema.attributes?.h1 || []), 'id'],
-        h2: [...(defaultSchema.attributes?.h2 || []), 'id'],
-        h3: [...(defaultSchema.attributes?.h3 || []), 'id'],
-        h4: [...(defaultSchema.attributes?.h4 || []), 'id'],
-        h5: [...(defaultSchema.attributes?.h5 || []), 'id'],
-        h6: [...(defaultSchema.attributes?.h6 || []), 'id'],
-    },
-}
+// 'readme-' namespaces every README id and fragment href (scrollToReadmeAnchor
+// resolves anchors under this prefix).
+const SCHEMA = buildGitHubSchema('readme-')
 
 // Module scope for the same reason as README_COMPONENTS below: react-markdown
 // re-runs the FULL remark -> rehype -> sanitize pipeline whenever the plugin
