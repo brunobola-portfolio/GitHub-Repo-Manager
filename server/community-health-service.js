@@ -7,10 +7,14 @@ class CommunityHealthService {
      * Analyze repository community health
      */
     async analyzeRepository(owner, repo, token) {
-        const repoData = await this.fetchRepoData(owner, repo, token);
-        const files = await this.checkCommunityFiles(owner, repo, token);
-        const activity = await this.getActivityMetrics(owner, repo, token);
-        
+        // Three independent reads; run one after another they were three
+        // GitHub round trips deep for every repo scored.
+        const [repoData, files, activity] = await Promise.all([
+            this.fetchRepoData(owner, repo, token),
+            this.checkCommunityFiles(owner, repo, token),
+            this.getActivityMetrics(owner, repo, token),
+        ]);
+
         const metrics = {
             files,
             activity,
@@ -19,7 +23,7 @@ class CommunityHealthService {
         
         const recommendations = this.generateRecommendations(files, activity);
         
-        return { metrics, recommendations, analyzedAt: new Date().toISOString() };
+        return { metrics, recommendations, repoId: repoData.id, analyzedAt: new Date().toISOString() };
     }
 
     async fetchRepoData(owner, repo, token) {

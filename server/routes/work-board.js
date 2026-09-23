@@ -50,7 +50,6 @@ import { getSnapshots } from '../lib/work-board-kpi-snapshots.js';
 import { todayISO } from '../lib/dates.js';
 import db from '../db.js';
 import { getScopedRepoIds, getTrackedRepos } from '../lib/work-board-tracking.js';
-import { githubApi } from '../lib/github-api.js';
 import { communityHealthService } from '../community-health-service.js';
 import {
     getLatestSnapshot,
@@ -564,28 +563,37 @@ router.get('/health', requireAuth, async (req, res) => {
             return res.json({ data: { repos: [] }, meta: { source: 'none', fetchedAt: new Date() } });
         }
 
-        let liveChecksUsed = 0;
+        // The cap bounds ATTEMPTS, not successes: counting only successes let
+        // a run of failing repos (revoked access, renamed) walk the whole
+        // tracked list, one GitHub call chain each. The capped checks run
+        // together; one after another they were ~20 round trips deep.
+        const due = [];
+        if (token) {
+            for (const t of tracked) {
+                if (due.length >= HEALTH_LIVE_CHECK_CAP) break;
+                const [owner, repo] = t.repo_full_name.split('/');
+                if (owner && repo && !isSnapshotFresh(getLatestSnapshot(userId, t.repo_full_name))) {
+                    due.push({ repoFullName: t.repo_full_name, owner, repo });
+                }
+            }
+        }
+        const outcomes = await Promise.all(due.map(async ({ repoFullName, owner, repo }) => {
+            try {
+                const analysis = await communityHealthService.analyzeRepository(owner, repo, token);
+                communityHealthService.cacheResults(analysis.repoId, analysis.metrics, analysis.recommendations, userId);
+                captureHealthSnapshot(userId, repoFullName, analysis.metrics.healthScore, failingChecksFromRecommendations(analysis.recommendations));
+                return true;
+            } catch (err) {
+                logger.warn({ err, repoFullName }, '[work-board-health] on-demand check failed');
+                return false;
+            }
+        }));
+        const liveChecksUsed = outcomes.filter(Boolean).length;
+
         const repos = [];
         for (const t of tracked) {
             const repoFullName = t.repo_full_name;
-            let snapshot = getLatestSnapshot(userId, repoFullName);
-
-            if (!isSnapshotFresh(snapshot) && token && liveChecksUsed < HEALTH_LIVE_CHECK_CAP) {
-                const [owner, repo] = repoFullName.split('/');
-                if (owner && repo) {
-                    try {
-                        const { data: repoData } = await githubApi(`/repos/${owner}/${repo}`, token);
-                        const analysis = await communityHealthService.analyzeRepository(owner, repo, token);
-                        communityHealthService.cacheResults(repoData.id, analysis.metrics, analysis.recommendations, userId);
-                        const failingChecks = failingChecksFromRecommendations(analysis.recommendations);
-                        captureHealthSnapshot(userId, repoFullName, analysis.metrics.healthScore, failingChecks);
-                        snapshot = getLatestSnapshot(userId, repoFullName);
-                        liveChecksUsed++;
-                    } catch (err) {
-                        logger.warn({ err, repoFullName }, '[work-board-health] on-demand check failed');
-                    }
-                }
-            }
+            const snapshot = getLatestSnapshot(userId, repoFullName);
 
             repos.push({
                 repoFullName,

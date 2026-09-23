@@ -80,18 +80,35 @@ export function captureHealthSnapshot(userId, repoFullName, score, failingChecks
  * @param {{ database?: object, now?: number }} [opts]
  * @returns {number|null}
  */
+// Three single-row reads instead of the repo's whole history: /health runs
+// this once per tracked repo (up to 500) on a five-minute poll, and the table
+// gains a row per repo per day. julianday() reads both the stored
+// 'YYYY-MM-DD HH:MM:SS' (UTC) and ISO-8601 forms; new Date() read the stored
+// form as LOCAL time, shifting the 7-day boundary by the server's offset.
+const deltaStatements = new WeakMap();
+function deltaStmts(database) {
+    let s = deltaStatements.get(database);
+    if (!s) {
+        const base = 'SELECT id, score FROM work_board_health_snapshots WHERE user_id = ? AND repo_full_name = ?';
+        s = {
+            latest: database.prepare(`${base} ORDER BY captured_at DESC, id DESC LIMIT 1`),
+            atOrBefore: database.prepare(`${base} AND julianday(captured_at) <= julianday(?) ORDER BY captured_at DESC, id DESC LIMIT 1`),
+            oldest: database.prepare(`${base} ORDER BY captured_at ASC, id ASC LIMIT 1`),
+        };
+        deltaStatements.set(database, s);
+    }
+    return s;
+}
+
 export function getWeekOverWeekDelta(userId, repoFullName, { database = db, now = Date.now() } = {}) {
-    const rows = database.prepare(
-        `SELECT score, captured_at FROM work_board_health_snapshots
-         WHERE user_id = ? AND repo_full_name = ?
-         ORDER BY captured_at DESC, id DESC`
-    ).all(userId, repoFullName);
-    if (rows.length < 2) return null;
-    const latest = rows[0];
-    const targetTime = now - DELTA_LOOKBACK_MS;
-    let baseline = rows.find((r) => new Date(r.captured_at).getTime() <= targetTime);
-    if (!baseline) baseline = rows[rows.length - 1]; // oldest available, still < 7 days old
-    if (baseline === latest) return null;
+    const stmts = deltaStmts(database);
+    const latest = stmts.latest.get(userId, repoFullName);
+    if (!latest) return null;
+    const target = new Date(now - DELTA_LOOKBACK_MS).toISOString();
+    // Oldest available when the whole history is younger than 7 days.
+    const baseline = stmts.atOrBefore.get(userId, repoFullName, target)
+        ?? stmts.oldest.get(userId, repoFullName);
+    if (!baseline || baseline.id === latest.id) return null;
     return latest.score - baseline.score;
 }
 

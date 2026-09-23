@@ -87,6 +87,15 @@ describe('getWeekOverWeekDelta', () => {
         expect(getWeekOverWeekDelta(1, 'acme/backend', { database: db, now })).toBe(15)
     })
 
+    it("reads SQLite's own datetime('now') format as UTC at the 7-day boundary", () => {
+        const now = Date.parse('2026-09-05T00:00:00Z')
+        const ins = db.prepare(`INSERT INTO work_board_health_snapshots (user_id, repo_full_name, score, captured_at) VALUES (1, 'acme/backend', ?, ?)`)
+        ins.run(70, '2026-08-28 23:30:00') // 7 days and 30 minutes ago — the baseline
+        ins.run(75, '2026-08-29 00:30:00') // 30 minutes inside the window
+        ins.run(85, '2026-09-05 00:00:00')
+        expect(getWeekOverWeekDelta(1, 'acme/backend', { database: db, now })).toBe(15)
+    })
+
     it('falls back to the oldest snapshot when history is younger than 7 days', () => {
         const now = Date.parse('2026-09-05T00:00:00Z')
         const ins = db.prepare(`INSERT INTO work_board_health_snapshots (user_id, repo_full_name, score, captured_at) VALUES (1, 'acme/backend', ?, ?)`)

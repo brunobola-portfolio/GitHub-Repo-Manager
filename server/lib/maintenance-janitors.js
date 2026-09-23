@@ -47,6 +47,9 @@ const EVENT_TABLES = [
     { table: 'deployment_events', column: 'created_at' },
     { table: 'review_assignments', column: 'requested_at' },
     { table: 'workflow_runs', column: 'created_at' },
+    // One row per tracked repo per day; the scorecard only reads the last
+    // week, and a year keeps the trend.
+    { table: 'work_board_health_snapshots', column: 'captured_at' },
 ];
 
 const DEFAULT_EVENT_RETENTION_DAYS = 365;
