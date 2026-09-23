@@ -177,7 +177,7 @@ const KNOWN_ERRORS = {
         action: { label: 'Dismiss', kind: 'dismiss', type: 'dismiss' },
     },
     RATE_LIMITED: {
-        title: 'AI provider is rate-limited',
+        title: 'Too many requests',
         body: 'Too many requests in a short window. Try again shortly.',
         action: { label: 'Retry', kind: 'retry', type: 'retry' },
     },
@@ -503,6 +503,22 @@ function warnUnmappedOnce(err) {
     console.warn('[formatUserError] unmapped error:', err)
 }
 
+// RATE_LIMITED comes from the AI routes when the provider throttles, and also
+// from this server's own limiters and its GitHub client. Every one of them was
+// titled "AI provider is rate-limited", so the dashboard blamed the AI
+// provider for the app's own per-IP limit. Only the AI routes' message names
+// the provider, and only then does the title.
+function rateLimitedError(err, retryAfterSec) {
+    const fromAIProvider = /\bAI provider\b/i.test(pickRawMessage(err))
+    return {
+        ...KNOWN_ERRORS.RATE_LIMITED,
+        ...(fromAIProvider ? { title: 'AI provider is rate-limited' } : {}),
+        ...(retryAfterSec ? { body: `Too many requests in a short window. Retry in ${retryAfterSec}s.` } : {}),
+        code: 'RATE_LIMITED',
+        raw: null,
+    }
+}
+
 export function formatUserError(err, ctx = {}) {
     if (!err) return { ...FALLBACK, code: null, raw: null }
 
@@ -515,14 +531,7 @@ export function formatUserError(err, ctx = {}) {
         // Rate-limit envelopes carry a server-supplied retry hint — surface it
         // in the body so the user sees a concrete countdown instead of the
         // generic "try again shortly" copy.
-        if (code === 'RATE_LIMITED' && retryAfterSec) {
-            return {
-                ...base,
-                body: `Too many requests in a short window. Retry in ${retryAfterSec}s.`,
-                code,
-                raw: null,
-            }
-        }
+        if (code === 'RATE_LIMITED') return rateLimitedError(err, retryAfterSec)
         return { ...base, code, raw: null }
     }
 
@@ -543,11 +552,7 @@ export function formatUserError(err, ctx = {}) {
         return { ...KNOWN_ERRORS.QUOTA_EXCEEDED, code: 'QUOTA_EXCEEDED', raw: null }
     }
     if (status === 429 || /rate.?limit/i.test(raw)) {
-        const base = KNOWN_ERRORS.RATE_LIMITED
-        if (retryAfterSec) {
-            return { ...base, body: `Too many requests in a short window. Retry in ${retryAfterSec}s.`, code: 'RATE_LIMITED', raw: null }
-        }
-        return { ...base, code: 'RATE_LIMITED', raw: null }
+        return rateLimitedError(err, retryAfterSec)
     }
     if (status === 413 || /entity too large|payload too large/i.test(raw)) {
         return { ...KNOWN_ERRORS.PAYLOAD_TOO_LARGE, code: 'PAYLOAD_TOO_LARGE', raw: null }
