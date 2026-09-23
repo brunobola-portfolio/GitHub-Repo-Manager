@@ -12,7 +12,7 @@
  */
 
 import express from 'express';
-import { reserveAIQuota } from '../ai-quota.js';
+import { reserveAIQuota, holdAIQuota } from '../ai-quota.js';
 import { githubApi } from '../../lib/github-api.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { requireScope } from '../../middleware/api-key-auth.js';
@@ -30,7 +30,7 @@ import { isValidGitHubFullName } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { aiService, sanitizeForPrompt } from '../../ai-service.js';
 import { safeJsonParse } from '../../lib/utils.js';
-import { checkUsageLimit, incrementUsage, quotaExceededResponse } from '../../lib/usage-meter.js';
+import { quotaExceededResponse } from '../../lib/usage-meter.js';
 import { auditLog } from '../../lib/audit.js';
 import { requireAI, handleAIError, providerGenerateWithRetry, guardedGenerate, recordStreamCompletion, stripJsonFences } from './shared.js';
 import { initSSE, streamReplyDeltasToSSE } from '../ai-streaming.js';
@@ -154,9 +154,10 @@ router.post('/ai/chat', requireAuth, requireScope('ai'), validateBody(aiChatSche
         // Check usage limits — use the canonical quota response so the
         // frontend's <QuotaExceededState /> primitive can render a uniform
         // upgrade CTA (code: 'QUOTA_EXCEEDED' + structured fields).
-        const usage = checkUsageLimit(req.session.userId, 'ai_queries');
-        if (!usage.allowed) {
-            return res.status(429).json(quotaExceededResponse({ ...usage, metric: 'ai_queries' }));
+        // Reserved atomically; kept only where the handler commits below.
+        const quota = holdAIQuota(req, res, 'ai_queries');
+        if (!quota.allowed) {
+            return res.status(429).json(quotaExceededResponse(quota));
         }
 
         // Monthly spend cap — a cost-based denial-of-wallet guard (OWASP LLM10)
@@ -226,7 +227,7 @@ router.post('/ai/chat', requireAuth, requireScope('ai'), validateBody(aiChatSche
             const reply = parsed && typeof parsed.reply === 'string' ? parsed.reply : result.reply;
             const actions = parsed && Array.isArray(parsed.actions) ? parsed.actions : [];
 
-            incrementUsage(req.session.userId, 'ai_queries');
+            quota.commit();
             recordStreamCompletion(req, {
                 feature: 'chat',
                 action: 'ai.chat',
@@ -275,7 +276,7 @@ router.post('/ai/chat', requireAuth, requireScope('ai'), validateBody(aiChatSche
             // The answer was generated and paid for even though it is
             // unusable. Returning before this let a caller ask for "3000 words,
             // no JSON" repeatedly without the cap or the query count moving.
-            incrementUsage(req.session.userId, 'ai_queries');
+            quota.commit();
             if (billsOperator) recordAISpend(req.session.userId, costUSD);
             return res.status(502).json({
                 error: 'AI returned an invalid response. Please retry.',
@@ -283,7 +284,7 @@ router.post('/ai/chat', requireAuth, requireScope('ai'), validateBody(aiChatSche
             });
         }
 
-        incrementUsage(req.session.userId, 'ai_queries');
+        quota.commit();
         if (billsOperator) recordAISpend(req.session.userId, costUSD);
         // PII-safe audit trail: counts/model/cost only, never prompt/reply content.
         auditLog(req, 'ai.chat', 'ai', null, buildAIAuditMeta({
@@ -327,7 +328,7 @@ router.post('/ai/attention-narrative', requireAuth, requireScope('ai'), validate
 
     // Quota gate — same bucket as ai_queries so the cap-reached banner stays
     // accurate. The narrative is small (~80 output tokens) but still counted.
-    const usage = checkUsageLimit(userId, 'ai_queries');
+    const usage = reserveAIQuota(req, res, 'ai_queries');
     if (!usage.allowed) {
         return res.status(429).json(quotaExceededResponse(usage));
     }
@@ -351,7 +352,6 @@ router.post('/ai/attention-narrative', requireAuth, requireScope('ai'), validate
 
         const model = req.aiProvider?.modelId || 'unknown';
         writeCachedNarrative({ userId, repo, kind, signal }, { narrative, model });
-        incrementUsage(userId, 'ai_queries');
         auditLog(req, 'ai.attention_narrative', 'ai', null, { repo, kind });
 
         res.json({ narrative, cached: false, model });
@@ -394,7 +394,7 @@ router.post('/ai/translate-search', requireAuth, requireScope('ai'), validateBod
         return res.json({ ...cached, cached: true });
     }
 
-    const usage = checkUsageLimit(userId, 'ai_queries');
+    const usage = reserveAIQuota(req, res, 'ai_queries');
     if (!usage.allowed) {
         return res.status(429).json(quotaExceededResponse(usage));
     }
@@ -411,7 +411,6 @@ router.post('/ai/translate-search', requireAuth, requireScope('ai'), validateBod
         const shaped = shapeTranslation(payload);
 
         writeCachedTranslation({ userId, q }, shaped);
-        incrementUsage(userId, 'ai_queries');
         auditLog(req, 'ai.translate_search', 'ai', null, { qLength: q.length, queryCount: shaped.queries.length });
 
         res.json({ ...shaped, cached: false });
@@ -426,10 +425,9 @@ router.post('/ai/translate-search', requireAuth, requireScope('ai'), validateBod
 // ------------------------------------------------------------------
 
 router.post('/ai/suggest', requireAuth, requireScope('ai'), validateBody(aiSuggestSchema), requireAI, async (req, res) => {
-    const userId = req.session.userId;
-    const check = checkUsageLimit(userId, 'ai_queries');
+    const check = reserveAIQuota(req, res, 'ai_queries');
     if (!check.allowed) {
-        return res.status(429).json(quotaExceededResponse({ ...check, metric: 'ai_queries' }));
+        return res.status(429).json(quotaExceededResponse(check));
     }
     try {
         const { repo } = req.validatedBody;
@@ -458,7 +456,6 @@ router.post('/ai/suggest', requireAuth, requireScope('ai'), validateBody(aiSugge
         if (!parsed) {
             return res.status(502).json({ error: 'AI returned an invalid response. Please retry.', code: 'AI_PARSE_ERROR' });
         }
-        incrementUsage(userId, 'ai_queries');
         auditLog(req, 'ai.suggest', 'ai', null, { repoName: repo?.name });
         res.json(parsed);
     } catch (error) {

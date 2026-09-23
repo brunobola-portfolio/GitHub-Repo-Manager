@@ -196,8 +196,8 @@ describe('POST /api/ai/suggest — 429 when limit exceeded', () => {
         app = express2
     })
 
-    it('returns 429 with upgradeUrl when checkUsageLimit returns allowed: false', async () => {
-        mockCheckUsageLimit.mockReturnValue({ allowed: false, current: 5000, limit: 5000, remaining: 0 })
+    it('returns 429 with upgradeUrl when the ai_queries reservation is refused', async () => {
+        mockCheckAIFeatureLimit.mockReturnValue({ allowed: false, metric: 'ai_queries', current: 5000, limit: 5000, remaining: 0 })
         const res = await request(app)
             .post('/api/ai/suggest')
             .send({ repo: { name: 'test', id: 1 } })
@@ -207,8 +207,8 @@ describe('POST /api/ai/suggest — 429 when limit exceeded', () => {
         expect(res.body.limit).toBe(5000)
     })
 
-    it('allows request when checkUsageLimit returns allowed: true', async () => {
-        mockCheckUsageLimit.mockReturnValue({ allowed: true, current: 0, limit: 5000, remaining: 5000 })
+    it('allows the request when the ai_queries reservation is granted', async () => {
+        mockCheckAIFeatureLimit.mockReturnValue({ allowed: true, metric: 'ai_queries', current: 1, limit: 5000, remaining: 4999 })
         const { aiService } = await import('../ai-service.js')
         // aiService.model.generateContent — mock it
         aiService.model = {

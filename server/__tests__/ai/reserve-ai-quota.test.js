@@ -37,7 +37,7 @@ vi.mock('../../lib/usage-meter.js', async (io) => ({
     releaseGuardedAIUsage,
 }));
 
-const { reserveAIQuota } = await import('../../routes/ai-quota.js');
+const { reserveAIQuota, holdAIQuota } = await import('../../routes/ai-quota.js');
 
 function appWith(handler) {
     const app = express();
@@ -114,6 +114,36 @@ describe('reserveAIQuota', () => {
 
         expect(reserved.allowed).toBe(false);
         // Nothing was taken, so nothing may be handed back.
+        expect(releaseGuardedAIUsage).not.toHaveBeenCalled();
+    });
+});
+
+describe('holdAIQuota', () => {
+    it('keeps the unit only when the handler commits', async () => {
+        await request(appWith((req, res) => {
+            const hold = holdAIQuota(req, res, 'ai_queries');
+            hold.commit();
+            res.status(502).json({ code: 'AI_PARSE_ERROR' });
+        })).post('/x');
+        expect(releaseGuardedAIUsage).not.toHaveBeenCalled();
+    });
+
+    it('hands the unit back from a 200 that never committed (a stream that failed)', async () => {
+        await request(appWith((req, res) => {
+            holdAIQuota(req, res, 'ai_queries');
+            res.status(200).end('data: {"error":true}\n\n');
+        })).post('/x');
+        expect(releaseGuardedAIUsage).toHaveBeenCalledWith(7, 'ai_queries');
+        expect(releaseGuardedAIUsage).toHaveBeenCalledTimes(1);
+    });
+
+    it('takes nothing, and offers a harmless commit, when the cap is hit', async () => {
+        guarded.allowed = false;
+        await request(appWith((req, res) => {
+            const hold = holdAIQuota(req, res, 'ai_queries');
+            hold.commit();
+            res.status(429).json({ denied: !hold.allowed });
+        })).post('/x');
         expect(releaseGuardedAIUsage).not.toHaveBeenCalled();
     });
 });
