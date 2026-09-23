@@ -163,20 +163,43 @@ export function useRepos(user) {
         setLoading(true)
         setError(null)
         setErrorInfo(null)
+        // Page 1 reports the total; once it is known the rest is fetched a few
+        // at a time instead of one after another (20 pages were 20 serial
+        // round trips). Without a total, each full page implies one more.
+        const LOAD_ALL_CONCURRENCY = 4
+        const fetchPage = async (p) => {
+            const r = await fetchWithRetry(`${API_ENDPOINTS.repos}?page=${p}&per_page=100`, { credentials: 'include', signal })
+            const parsed = await safeParseJson(r)
+            const slice = parsed && Array.isArray(parsed.repos) ? parsed.repos : Array.isArray(parsed) ? parsed : []
+            let total = null
+            if (parsed && Array.isArray(parsed.repos) && parsed.totalPages) {
+                total = parsed.totalPages
+            } else {
+                const link = r.headers?.get('link')
+                total = link ? parseLinkHeaderTotal(link) : null
+            }
+            return { slice, total }
+        }
         try {
-            const all = []
-            let pages = 1
-            for (let p = 1; p <= pages && p <= MAX_ALL_PAGES; p++) {
-                const r = await fetchWithRetry(`${API_ENDPOINTS.repos}?page=${p}&per_page=100`, { credentials: 'include', signal })
-                const parsed = await safeParseJson(r)
-                const slice = parsed && Array.isArray(parsed.repos) ? parsed.repos : Array.isArray(parsed) ? parsed : []
-                all.push(...slice)
-                if (parsed && Array.isArray(parsed.repos) && parsed.totalPages) {
-                    pages = parsed.totalPages
-                } else {
-                    const link = r.headers?.get('link')
-                    const parsedTotal = link ? parseLinkHeaderTotal(link) : null
-                    pages = parsedTotal || (slice.length === 100 ? p + 1 : p)
+            const first = await fetchPage(1)
+            const all = [...first.slice]
+            if (first.total) {
+                const last = Math.min(first.total, MAX_ALL_PAGES)
+                const rest = new Array(Math.max(0, last - 1))
+                let next = 2
+                const worker = async () => {
+                    while (next <= last) {
+                        const p = next++
+                        rest[p - 2] = (await fetchPage(p)).slice
+                    }
+                }
+                await Promise.all(Array.from({ length: Math.min(LOAD_ALL_CONCURRENCY, rest.length) }, worker))
+                for (const slice of rest) all.push(...slice)
+            } else {
+                let slice = first.slice
+                for (let p = 2; slice.length === 100 && p <= MAX_ALL_PAGES; p++) {
+                    slice = (await fetchPage(p)).slice
+                    all.push(...slice)
                 }
             }
             // Flag first: the setPage/setPerPage below re-run the paged effect.

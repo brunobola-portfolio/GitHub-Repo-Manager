@@ -71,10 +71,10 @@ function makeApp({ userId = 1, accessToken = 'ghp_mock' } = {}) {
 beforeEach(() => {
     vi.clearAllMocks()
     mockGetTrackedRepos.mockReturnValue({ items: [], total: 0, countsBySignal: {} })
-    mockGithubApi.mockResolvedValue({ data: { id: 42 } })
     mockAnalyzeRepository.mockResolvedValue({
         metrics: { healthScore: 88 },
         recommendations: [{ priority: 'high', action: 'Add SECURITY.md' }],
+        repoId: 42,
     })
     mockGetLatestSnapshot.mockReturnValue(null)
     mockIsSnapshotFresh.mockReturnValue(false)
@@ -144,10 +144,38 @@ describe('GET /api/v1/work-board/health', () => {
         expect(unscored.length).toBe(2)
     })
 
+    it('counts failed checks against the cap, so a run of broken repos cannot walk the whole list', async () => {
+        const items = Array.from({ length: 9 }, (_, i) => ({ repo_full_name: `acme/gone-${i}` }))
+        mockGetTrackedRepos.mockReturnValue({ items, total: items.length, countsBySignal: {} })
+        mockAnalyzeRepository.mockRejectedValue(new Error('GitHub 404'))
+
+        const res = await request(makeApp()).get('/api/v1/work-board/health')
+        expect(res.status).toBe(200)
+        expect(mockAnalyzeRepository).toHaveBeenCalledTimes(5)
+        expect(res.body.meta.liveChecksUsed).toBe(0)
+    })
+
+    it('starts the capped checks together rather than one after another', async () => {
+        const items = Array.from({ length: 3 }, (_, i) => ({ repo_full_name: `acme/r-${i}` }))
+        mockGetTrackedRepos.mockReturnValue({ items, total: items.length, countsBySignal: {} })
+        let inFlight = 0
+        let peak = 0
+        mockAnalyzeRepository.mockImplementation(async () => {
+            inFlight += 1
+            peak = Math.max(peak, inFlight)
+            await new Promise((r) => setTimeout(r, 5))
+            inFlight -= 1
+            return { metrics: { healthScore: 60 }, recommendations: [], repoId: 1 }
+        })
+
+        await request(makeApp()).get('/api/v1/work-board/health')
+        expect(peak).toBe(3)
+    })
+
     it('never fails the whole request when one repo\'s live check throws', async () => {
         mockGetTrackedRepos.mockReturnValue({ items: [{ repo_full_name: 'acme/broken' }], total: 1, countsBySignal: {} })
         mockGetLatestSnapshot.mockReturnValue(null)
-        mockGithubApi.mockRejectedValueOnce(new Error('GitHub 404'))
+        mockAnalyzeRepository.mockRejectedValueOnce(new Error('GitHub 404'))
 
         const res = await request(makeApp()).get('/api/v1/work-board/health')
         expect(res.status).toBe(200)

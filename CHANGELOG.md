@@ -15,6 +15,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ten-line ref helper in the tooltip pulled in all of Radix (42 KB); and every
   icon used anywhere in the app shipped up front. The bundle budget is
   tightened to match, so a regression fails the build.
+- The render-blocking stylesheet is 20% smaller (49 → 39 KB gzipped):
+  Tailwind scanned the whole repository and shipped classes named only in
+  planning documents.
+- A toast no longer re-renders the whole app and the ~55 components that
+  only fire toasts; the list has its own context.
+- "Load all" fetches repository pages four at a time once the first page
+  names the total, and a large pull request's file list does the same with
+  GitHub's pages.
+- The Header badge and the dashboard share their Work Board requests, and
+  the server shares one live GitHub search between simultaneous requests,
+  sparing the 30-a-minute Search API budget.
+- The portfolio health card runs its live checks together, fetches each
+  repository once, and reads a week of history per repository instead of
+  all of it; the history is pruned with the other event tables.
+- Semantic search keeps parsed embeddings between searches, and saved AI
+  keys stay in an LRU cache instead of one emptied whole when full, so busy
+  servers stop re-running the key derivation on every AI request.
 - Opening a repository no longer downloads the diff viewer and its syntax
   grammars (~87 KB gzipped): the README, diagram, image and agent-rules
   dialogs load when they are opened.
@@ -189,6 +206,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Every "too many requests" answer was titled "AI provider is rate-limited",
+  including this server's own limits and GitHub's. The title names the AI
+  provider only when the provider is the one throttling.
+- A Work Board list filtered to some repositories, or asked for more rows,
+  could be answered from the cache of a different request made in the last
+  five minutes. Cached answers are now keyed on their filters and limit.
+- The portfolio health card counted only successful live checks against
+  its per-request cap, so repositories the user lost access to were each
+  tried on every load. Failed checks count now.
 - **Docker images publish again.** The multi-arch build emulated arm64 under
   QEMU, and `npm ci` there hung until GitHub killed the job at six hours: no
   image reached GHCR for 4.25.11, 4.25.12 or 4.25.14. Each architecture now

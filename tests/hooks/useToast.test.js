@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import React from 'react'
-import { useToast } from '@/hooks/useToast'
+import { useToast, useToastList } from '@/hooks/useToast'
 import { ToastProvider } from '@/contexts/ToastProvider'
 
 const wrapper = ({ children }) => React.createElement(ToastProvider, null, children)
@@ -19,13 +19,13 @@ describe('useToast', () => {
   })
 
   it('initializes with empty toasts array', () => {
-    const { result } = renderHook(() => useToast(), { wrapper })
+    const { result } = renderHook(() => ({ ...useToast(), toasts: useToastList() }), { wrapper })
 
     expect(result.current.toasts).toEqual([])
   })
 
   it('adds success toast', () => {
-    const { result } = renderHook(() => useToast(), { wrapper })
+    const { result } = renderHook(() => ({ ...useToast(), toasts: useToastList() }), { wrapper })
 
     act(() => {
       result.current.toast.success('Operation successful')
@@ -41,7 +41,7 @@ describe('useToast', () => {
   })
 
   it('adds error toast', () => {
-    const { result } = renderHook(() => useToast(), { wrapper })
+    const { result } = renderHook(() => ({ ...useToast(), toasts: useToastList() }), { wrapper })
 
     act(() => {
       result.current.toast.error('Something went wrong')
@@ -56,7 +56,7 @@ describe('useToast', () => {
   })
 
   it('adds info toast', () => {
-    const { result } = renderHook(() => useToast(), { wrapper })
+    const { result } = renderHook(() => ({ ...useToast(), toasts: useToastList() }), { wrapper })
 
     act(() => {
       result.current.toast.info('Information message')
@@ -71,7 +71,7 @@ describe('useToast', () => {
   })
 
   it('adds warning toast', () => {
-    const { result } = renderHook(() => useToast(), { wrapper })
+    const { result } = renderHook(() => ({ ...useToast(), toasts: useToastList() }), { wrapper })
 
     act(() => {
       result.current.toast.warning('Warning message')
@@ -86,7 +86,7 @@ describe('useToast', () => {
   })
 
   it('adds toast with custom duration', () => {
-    const { result } = renderHook(() => useToast(), { wrapper })
+    const { result } = renderHook(() => ({ ...useToast(), toasts: useToastList() }), { wrapper })
 
     act(() => {
       result.current.toast.success('Quick message', 2000)
@@ -96,7 +96,7 @@ describe('useToast', () => {
   })
 
   it('adds multiple toasts', () => {
-    const { result } = renderHook(() => useToast(), { wrapper })
+    const { result } = renderHook(() => ({ ...useToast(), toasts: useToastList() }), { wrapper })
 
     act(() => {
       result.current.toast.success('First toast')
@@ -117,7 +117,7 @@ describe('useToast', () => {
   })
 
   it('dismisses toast by ID', () => {
-    const { result } = renderHook(() => useToast(), { wrapper })
+    const { result } = renderHook(() => ({ ...useToast(), toasts: useToastList() }), { wrapper })
 
     let toastId
 
@@ -135,7 +135,7 @@ describe('useToast', () => {
   })
 
   it('dismisses specific toast among multiple', () => {
-    const { result } = renderHook(() => useToast(), { wrapper })
+    const { result } = renderHook(() => ({ ...useToast(), toasts: useToastList() }), { wrapper })
 
     let firstId, secondId, thirdId
 
@@ -158,7 +158,7 @@ describe('useToast', () => {
   })
 
   it('generates unique IDs for each toast', () => {
-    const { result } = renderHook(() => useToast(), { wrapper })
+    const { result } = renderHook(() => ({ ...useToast(), toasts: useToastList() }), { wrapper })
 
     const ids = []
 
@@ -173,7 +173,7 @@ describe('useToast', () => {
   })
 
   it('handles dismissing non-existent toast gracefully', () => {
-    const { result } = renderHook(() => useToast(), { wrapper })
+    const { result } = renderHook(() => ({ ...useToast(), toasts: useToastList() }), { wrapper })
 
     act(() => {
       result.current.toast.success('Test toast')
@@ -189,7 +189,7 @@ describe('useToast', () => {
   })
 
   it('returns toast ID when adding toast', () => {
-    const { result } = renderHook(() => useToast(), { wrapper })
+    const { result } = renderHook(() => ({ ...useToast(), toasts: useToastList() }), { wrapper })
 
     let toastId
 
@@ -204,7 +204,7 @@ describe('useToast', () => {
 
 describe('useToast — dedupe', () => {
     it('skips duplicate string-message toasts of the same type', () => {
-        const { result } = renderHook(() => useToast(), { wrapper })
+        const { result } = renderHook(() => ({ ...useToast(), toasts: useToastList() }), { wrapper })
 
         act(() => { result.current.toast.warning('Session expired') })
         act(() => { result.current.toast.warning('Session expired') })
@@ -214,7 +214,7 @@ describe('useToast — dedupe', () => {
     })
 
     it('does not dedupe across types', () => {
-        const { result } = renderHook(() => useToast(), { wrapper })
+        const { result } = renderHook(() => ({ ...useToast(), toasts: useToastList() }), { wrapper })
 
         act(() => { result.current.toast.warning('Same text') })
         act(() => { result.current.toast.error('Same text') })
@@ -223,7 +223,7 @@ describe('useToast — dedupe', () => {
     })
 
     it('dedupe returns null for the rejected toast', () => {
-        const { result } = renderHook(() => useToast(), { wrapper })
+        const { result } = renderHook(() => ({ ...useToast(), toasts: useToastList() }), { wrapper })
         let firstId, secondId
         act(() => { firstId = result.current.toast.success('Hello') })
         act(() => { secondId = result.current.toast.success('Hello') })
@@ -235,7 +235,7 @@ describe('useToast — dedupe', () => {
 
 describe('useToast — custom content', () => {
     it('toast.custom stores a ReactNode content and skips message', () => {
-        const { result } = renderHook(() => useToast(), { wrapper })
+        const { result } = renderHook(() => ({ ...useToast(), toasts: useToastList() }), { wrapper })
         const node = { type: 'div', props: { children: 'hi' } } // shape-only stand-in
         act(() => {
             result.current.toast.custom({ type: 'warning', content: node, duration: 0 })
@@ -252,7 +252,7 @@ describe('useToast — custom content', () => {
 
     it('toast.custom with duration 0 does not auto-dismiss', () => {
         vi.useFakeTimers()
-        const { result } = renderHook(() => useToast(), { wrapper })
+        const { result } = renderHook(() => ({ ...useToast(), toasts: useToastList() }), { wrapper })
         act(() => {
             result.current.toast.custom({ type: 'warning', content: 'x', duration: 0 })
         })

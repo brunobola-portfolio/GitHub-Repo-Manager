@@ -100,6 +100,18 @@ describe('formatUserError', () => {
     expect(out.action.type).toBe('retry')
   })
 
+  it("names the AI provider only when the AI routes' message does", () => {
+    const ai = formatUserError({ status: 429, data: { error: 'AI provider rate limit hit. Please try again in a moment.', code: 'RATE_LIMITED' } })
+    expect(ai.title).toBe('AI provider is rate-limited')
+
+    const ownLimiter = formatUserError({ status: 429, message: 'Too many requests, please try again later.' })
+    expect(ownLimiter.code).toBe('RATE_LIMITED')
+    expect(ownLimiter.title).toBe('Too many requests')
+
+    const github = formatUserError({ code: 'RATE_LIMITED', message: 'GitHub API rate limit exceeded' })
+    expect(github.title).toBe('Too many requests')
+  })
+
   it('maps a 413 status to PAYLOAD_TOO_LARGE', () => {
     const out = formatUserError({ status: 413 })
     expect(out.code).toBe('PAYLOAD_TOO_LARGE')

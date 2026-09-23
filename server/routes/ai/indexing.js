@@ -27,6 +27,7 @@ import {
 } from '../../lib/usage-meter.js';
 import { checkAISpendCap, recordAISpend, releaseAISpendReservation } from '../../lib/ai-spend-cap.js';
 import { isServerKeyProvider } from '../../lib/ai-provider.js';
+import { forgetParsedEmbedding } from '../../lib/ai-features/semantic-search.js';
 import { auditLog } from '../../lib/audit.js';
 import { requireAI, handleAIError } from './shared.js';
 
@@ -145,6 +146,7 @@ router.post('/ai/index', requireAuth, requireScope('ai'), validateBody(aiIndexSc
         db.transaction(() => {
             stmtMeta.run(repo.id, userId, analysis.summary, JSON.stringify(analysis.suggested_topics), analysis.health_score);
             stmtEmbed.run(repo.id, userId, JSON.stringify(embedding));
+            forgetParsedEmbedding(userId, repo.id);
         })();
 
         // embedText() has no cost/usage data to surface (Gemini's embed API
@@ -357,6 +359,7 @@ router.post('/ai/batch-index', requireAuth, requireScope('ai'), validateBody(aiB
                 userId,
                 JSON.stringify(repoData.embedding)
             );
+            forgetParsedEmbedding(userId, repoData.repo.id);
         }
     });
 

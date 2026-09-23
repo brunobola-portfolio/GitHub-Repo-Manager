@@ -18,9 +18,12 @@ const KDF = {
 
 // Derived-key cache: the KDF is the expensive part (~100ms+) and the same
 // salt recurs on every decrypt of a given credential — e.g. each migration
-// request that uses a saved PAT. Keyed by version+salt; bounded.
+// request that uses a saved PAT. Keyed by version+salt; bounded LRU. It was
+// cleared whole when full, so past ~128 active BYOK users every AI request
+// paid the 210k-iteration KDF on the event loop again. A key is 32 bytes, so
+// the larger bound costs nothing.
 const keyCache = new Map()
-const KEY_CACHE_MAX = 256
+const KEY_CACHE_MAX = 2048
 
 // Track whether we've already logged the fallback warning so we don't spam the
 // log on every encryption/decryption call.
@@ -81,13 +84,17 @@ function deriveKey(salt, version, secret) {
   const fingerprint = crypto.createHash('sha256').update(secret).digest('hex').slice(0, 16)
   const cacheKey = `${version}:${salt.toString('hex')}:${fingerprint}`
   const hit = keyCache.get(cacheKey)
-  if (hit) return hit
+  if (hit) {
+    keyCache.delete(cacheKey)
+    keyCache.set(cacheKey, hit)
+    return hit
+  }
   // Keep the v1 KDF context string for both versions — the version byte
   // lives in the blob prefix, not the context.
   const context = Buffer.from('grm-credential-v1')
   const material = Buffer.concat([context, Buffer.from(secret)])
   const key = crypto.pbkdf2Sync(material, salt, iterations, KEY_LENGTH, digest)
-  if (keyCache.size >= KEY_CACHE_MAX) keyCache.clear()
+  if (keyCache.size >= KEY_CACHE_MAX) keyCache.delete(keyCache.keys().next().value)
   keyCache.set(cacheKey, key)
   return key
 }
@@ -173,8 +180,8 @@ const sessionEncryptMemo = new Map()
 const sessionDecryptMemo = new Map()
 
 function rememberSessionField(plaintext, blob) {
-  // Clear-on-full (same bounded-cache idiom as keyCache above): an LRU would
-  // buy nothing here because every entry is equally likely to be re-read.
+  // Clear-on-full: an LRU would buy nothing here because every entry is
+  // equally likely to be re-read.
   if (sessionEncryptMemo.size >= SESSION_FIELD_MEMO_MAX) sessionEncryptMemo.clear()
   if (sessionDecryptMemo.size >= SESSION_FIELD_MEMO_MAX) sessionDecryptMemo.clear()
   sessionEncryptMemo.set(plaintext, blob)

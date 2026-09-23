@@ -3,8 +3,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { createElement } from 'react'
 import { TierContext } from '../../../src/contexts/contexts'
 import { resetSessionExpired } from '../../../src/utils/api'
+import { _resetSharedGetsForTests } from '../../../src/utils/sharedGet'
 
 beforeEach(() => {
+    _resetSharedGetsForTests()
     vi.stubEnv('VITE_MOCK_MODE', '')
     global.fetch = vi.fn()
     sessionStorage.clear()

@@ -383,7 +383,7 @@ maintenance pass and log per-table counts.
 | Data | Env var | Default | Notes |
 | ---- | ------- | ------- | ----- |
 | AI credential auto-deletion (G2) | `DATA_RETENTION_DAYS` | `365` | The 365-day promise users are emailed about. |
-| GitHub event tables | `EVENT_RETENTION_DAYS` | `365` | `pr_events`, `issue_events`, `deployment_events`, `review_assignments`, `workflow_runs`. Deleted by creation timestamp, batched to avoid long write locks. `0`/empty disables. |
+| GitHub event tables | `EVENT_RETENTION_DAYS` | `365` | `pr_events`, `issue_events`, `deployment_events`, `review_assignments`, `workflow_runs`, and the Work Board health history (`work_board_health_snapshots`). Deleted by creation timestamp, batched to avoid long write locks. `0`/empty disables. |
 | `gh_cache` | `GH_CACHE_MAX_AGE_DAYS` | `30` | Cached GitHub responses. |
 
 If you rely on `workflow_runs` / event history for long-horizon DORA stats,

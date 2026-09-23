@@ -23,6 +23,54 @@ function parseEmbedding(json, repoId) {
     }
 }
 
+// Parsed vectors, keyed per tenant and repo. Every search and "similar" call
+// ranks against ALL of a user's rows, and each is a JSON array of 1536-3072
+// floats: parsing them per request was ~30 MB of JSON.parse for 1,000 repos,
+// on the event loop. An entry is reused only while the row's updated_at and
+// text length both match, and the indexer drops it on every write, so a
+// re-index inside the same second cannot serve the old vector.
+const PARSED_CACHE_MAX = 5000;
+const parsedCache = new Map();
+
+function cacheKey(userId, repoId) {
+    return `${userId ?? ''}:${repoId}`;
+}
+
+/**
+ * The parsed embedding for a row read with (repo_id, user_id, updated_at,
+ * embedding), from the cache when the row has not changed.
+ */
+function embeddingFor(row) {
+    const key = cacheKey(row.user_id, row.repo_id);
+    const stamp = `${row.updated_at ?? ''}|${row.embedding?.length ?? 0}`;
+    const hit = parsedCache.get(key);
+    if (hit && hit.stamp === stamp) {
+        parsedCache.delete(key);
+        parsedCache.set(key, hit);
+        return hit.vec;
+    }
+    const vec = parseEmbedding(row.embedding, row.repo_id);
+    if (vec) {
+        if (parsedCache.size >= PARSED_CACHE_MAX) parsedCache.delete(parsedCache.keys().next().value);
+        parsedCache.set(key, { stamp, vec });
+    }
+    return vec;
+}
+
+/**
+ * Drop a repo's parsed vector. Called by every writer of repo_embeddings.
+ * @param {number} userId
+ * @param {number|string} repoId
+ */
+export function forgetParsedEmbedding(userId, repoId) {
+    parsedCache.delete(cacheKey(userId, repoId));
+}
+
+/** Tests only: start from an empty cache. */
+export function _clearParsedEmbeddingCache() {
+    parsedCache.clear();
+}
+
 /**
  * Euclidean norm of a vector.
  * @param {Array<number>} vec
@@ -121,13 +169,13 @@ export async function findSimilarById(ctx, repoId, { topK = 5, excludeSelf = tru
 
     let row;
     if (userId !== undefined && userId !== null) {
-        row = db.prepare('SELECT embedding FROM repo_embeddings WHERE repo_id = ? AND user_id = ?').get(repoId, userId);
+        row = db.prepare('SELECT repo_id, user_id, updated_at, embedding FROM repo_embeddings WHERE repo_id = ? AND user_id = ?').get(repoId, userId);
     } else {
-        row = db.prepare('SELECT embedding FROM repo_embeddings WHERE repo_id = ?').get(repoId);
+        row = db.prepare('SELECT repo_id, user_id, updated_at, embedding FROM repo_embeddings WHERE repo_id = ?').get(repoId);
     }
     if (!row) return null;
 
-    const targetVec = parseEmbedding(row.embedding, repoId);
+    const targetVec = embeddingFor(row);
     if (!targetVec) return null;
 
     // The ranking scan pulls one row per indexed repo and only ever needs the
@@ -137,17 +185,17 @@ export async function findSimilarById(ctx, repoId, { topK = 5, excludeSelf = tru
     let others;
     if (userId !== undefined && userId !== null) {
         others = excludeSelf
-            ? db.prepare('SELECT repo_id, embedding FROM repo_embeddings WHERE user_id = ? AND repo_id != ?').all(userId, repoId)
-            : db.prepare('SELECT repo_id, embedding FROM repo_embeddings WHERE user_id = ?').all(userId);
+            ? db.prepare('SELECT repo_id, user_id, updated_at, embedding FROM repo_embeddings WHERE user_id = ? AND repo_id != ?').all(userId, repoId)
+            : db.prepare('SELECT repo_id, user_id, updated_at, embedding FROM repo_embeddings WHERE user_id = ?').all(userId);
     } else {
         others = excludeSelf
-            ? db.prepare('SELECT repo_id, embedding FROM repo_embeddings WHERE repo_id != ?').all(repoId)
-            : db.prepare('SELECT repo_id, embedding FROM repo_embeddings').all();
+            ? db.prepare('SELECT repo_id, user_id, updated_at, embedding FROM repo_embeddings WHERE repo_id != ?').all(repoId)
+            : db.prepare('SELECT repo_id, user_id, updated_at, embedding FROM repo_embeddings').all();
     }
 
     const score = makeCosineScorer(targetVec);
     const scored = others.flatMap(o => {
-        const vec = parseEmbedding(o.embedding, o.repo_id);
+        const vec = embeddingFor(o);
         if (!vec) return [];
         return [{ repoId: o.repo_id, score: score(vec) }];
     });
@@ -208,15 +256,15 @@ export async function semanticSearch(ctx, query, limit = 5, userId) {
     // Note: For large datasets, this is inefficient. optimize with FAISS or vector DB.
     let rows;
     if (userId !== undefined && userId !== null) {
-        rows = db.prepare('SELECT repo_id, embedding FROM repo_embeddings WHERE user_id = ?').all(userId);
+        rows = db.prepare('SELECT repo_id, user_id, updated_at, embedding FROM repo_embeddings WHERE user_id = ?').all(userId);
     } else {
-        rows = db.prepare('SELECT repo_id, embedding FROM repo_embeddings').all();
+        rows = db.prepare('SELECT repo_id, user_id, updated_at, embedding FROM repo_embeddings').all();
     }
 
     // 3. Rank by similarity (skip rows whose embedding column is corrupted)
     const score = makeCosineScorer(queryEmbedding);
     const results = rows.flatMap(row => {
-        const embedding = parseEmbedding(row.embedding, row.repo_id);
+        const embedding = embeddingFor(row);
         if (!embedding) return [];
         return [{ repo_id: row.repo_id, score: score(embedding) }];
     });

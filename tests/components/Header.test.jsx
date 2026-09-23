@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { _resetSharedGetsForTests } from '../../src/utils/sharedGet'
 import { render, screen, fireEvent, within } from '@testing-library/react'
 
 // ---------------------------------------------------------------------------
@@ -81,6 +82,7 @@ function renderHeader(props = {}) {
 }
 
 beforeEach(() => {
+    _resetSharedGetsForTests()
     vi.clearAllMocks()
     systemHealthMock.mockReturnValue({
         status: 'ready',

@@ -23,6 +23,7 @@ testDb.exec(`
     CREATE TABLE deployment_events (id INTEGER PRIMARY KEY, created_at DATETIME);
     CREATE TABLE review_assignments (id INTEGER PRIMARY KEY, requested_at DATETIME);
     CREATE TABLE workflow_runs (id INTEGER PRIMARY KEY, created_at DATETIME);
+    CREATE TABLE work_board_health_snapshots (id INTEGER PRIMARY KEY, captured_at TEXT);
 `);
 
 vi.mock('../lib/retention.js', () => ({ runRetentionPass }));
@@ -50,7 +51,7 @@ const {
 } = await import('../lib/maintenance-janitors.js');
 
 function clearEventTables() {
-    for (const t of ['pr_events', 'issue_events', 'deployment_events', 'review_assignments', 'workflow_runs']) {
+    for (const t of ['pr_events', 'issue_events', 'deployment_events', 'review_assignments', 'workflow_runs', 'work_board_health_snapshots']) {
         testDb.exec(`DELETE FROM ${t}`);
     }
 }
@@ -253,6 +254,7 @@ describe('purgeOldEvents', () => {
             { table: 'deployment_events', col: 'created_at' },
             { table: 'review_assignments', col: 'requested_at' },
             { table: 'workflow_runs', col: 'created_at' },
+            { table: 'work_board_health_snapshots', col: 'captured_at' },
         ]) {
             testDb.prepare(`INSERT INTO ${table} (${col}) VALUES (datetime('now', '-400 days'))`).run();
             testDb.prepare(`INSERT INTO ${table} (${col}) VALUES (datetime('now', '-10 days'))`).run();
@@ -267,7 +269,7 @@ describe('purgeOldEvents', () => {
 
         expect(result.skipped).toBe(false);
         expect(result.retentionDays).toBe(365);
-        for (const t of ['pr_events', 'issue_events', 'deployment_events', 'review_assignments', 'workflow_runs']) {
+        for (const t of ['pr_events', 'issue_events', 'deployment_events', 'review_assignments', 'workflow_runs', 'work_board_health_snapshots']) {
             expect(count(t)).toBe(1);              // only the recent row survives
             expect(result.perTable[t]).toBe(1);    // exactly one old row purged
         }

@@ -1,14 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { ToastProvider } from '@/contexts/ToastProvider'
-import { useToast } from '@/hooks/useToast'
+import { useToast, useToastList } from '@/hooks/useToast'
 import { onAppEvent, APP_EVENTS } from '@/utils/appEvents'
 
 // Renders the toast content produced by toast.errorFromException so the
 // action button (ErrorToastContent) is actually in the DOM and clickable —
 // exercising the same path ToastContainer/<Toast> uses in the real app.
 function Harness() {
-    const { toast, toasts } = useToast()
+    const { toast } = useToast()
+    const toasts = useToastList()
     return (
         <div>
             <button onClick={() => toast.errorFromException({ code: 'TIER_REQUIRED_PRO' })}>
@@ -58,7 +59,8 @@ describe('ToastProvider — open-pricing toast action', () => {
  */
 describe('ToastProvider — options object as the second argument', () => {
     function OptsHarness() {
-        const { toast, toasts } = useToast()
+        const { toast } = useToast()
+        const toasts = useToastList()
         return (
             <div>
                 <button onClick={() => toast.info('Not in this list', { description: 'It may be closed.' })}>
@@ -88,7 +90,8 @@ describe('ToastProvider — options object as the second argument', () => {
         vi.useFakeTimers()
         try {
             function Short() {
-                const { toast, toasts } = useToast()
+                const { toast } = useToast()
+                const toasts = useToastList()
                 return (
                     <div>
                         <button onClick={() => toast.warning('Quick', { duration: 1000 })}>fire-short</button>
@@ -104,5 +107,23 @@ describe('ToastProvider — options object as the second argument', () => {
         } finally {
             vi.useRealTimers()
         }
+    })
+
+    it('does not re-render components that only fire toasts', () => {
+        const onRender = vi.fn()
+        function Firer() {
+            onRender(useToast().toast)
+            return null
+        }
+        function List() {
+            return useToastList().map((t) => <div key={t.id} data-testid="toast">{t.message}</div>)
+        }
+        render(<ToastProvider><Firer /><List /></ToastProvider>)
+        const before = onRender.mock.calls.length
+        const fire = onRender.mock.calls.at(-1)[0]
+        act(() => { fire.info('one') })
+        act(() => { fire.error('two') })
+        expect(screen.getAllByTestId('toast')).toHaveLength(2)
+        expect(onRender).toHaveBeenCalledTimes(before)
     })
 })

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { API_BASE_URL } from '../config'
 import { useTier, isProOrAbove } from './useTier'
-import { apiCall } from '../utils/api'
+import { sharedApiGet } from '../utils/sharedGet'
 
 const CACHE_KEY = 'work_board_badge_count'
 const POLL_MS = 5 * 60 * 1000
@@ -34,7 +34,7 @@ async function fetchJsonCount(url) {
     try {
         // maxRetries: 0 — this badge already polls on its own 5-minute
         // interval; automatic backoff on top would just delay the count.
-        const body = await apiCall(url, {}, { maxRetries: 0 })
+        const body = await sharedApiGet(url)
         return Array.isArray(body?.data) ? body.data.length : 0
     } catch {
         return 0

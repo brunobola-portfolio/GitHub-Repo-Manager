@@ -502,6 +502,31 @@ describe('live fallback (/my-reviews)', () => {
         expect(res.body.meta.source).toBe('cache')
         expect(mockFetchMyPendingReviews).not.toHaveBeenCalled()
         expect(mockPutCached).not.toHaveBeenCalled()
+        // The webhook aggregation is a SQL scan the cached answer never uses.
+        expect(mockListMyPendingReviews).not.toHaveBeenCalled()
+    })
+
+    it('keys the cache on the parameters that shape the result', async () => {
+        await request(makeApp('free')).get('/api/v1/work-board/tech-debt?repoIds=5,9&labels=debt')
+        await request(makeApp('free')).get('/api/v1/work-board/tech-debt')
+        const keys = mockGetCached.mock.calls.map(([, key]) => key)
+        expect(keys[0]).toBe('tech_debt|labels=debt&limit=100&repoIds=5,9')
+        expect(keys[1]).toBe('tech_debt|limit=100')
+    })
+
+    it('shares one live fetch between concurrent misses for the same list', async () => {
+        const pending = []
+        mockFetchMyPendingReviews.mockImplementation(() => new Promise((r) => { pending.push(r) }))
+        const app = makeApp('free')
+        const a = request(app).get('/api/v1/work-board/my-reviews?limit=50').then((r) => r)
+        const b = request(app).get('/api/v1/work-board/my-reviews?limit=50').then((r) => r)
+        await vi.waitFor(() => expect(mockFetchMyPendingReviews).toHaveBeenCalled())
+        await new Promise((r) => setTimeout(r, 20))
+        for (const r of pending) r({ items: [], totalCount: 0 })
+        const [ra, rb] = await Promise.all([a, b])
+        expect(ra.status).toBe(200)
+        expect(rb.status).toBe(200)
+        expect(mockFetchMyPendingReviews).toHaveBeenCalledTimes(1)
     })
 
     it('cache miss + empty webhook → calls live fetcher and caches result', async () => {
@@ -519,7 +544,7 @@ describe('live fallback (/my-reviews)', () => {
         expect(mockPutCached).toHaveBeenCalledTimes(1)
         // First positional: userId=1 (from makeApp session)
         expect(mockPutCached.mock.calls[0][0]).toBe(1)
-        expect(mockPutCached.mock.calls[0][1]).toBe('my_reviews')
+        expect(mockPutCached.mock.calls[0][1]).toBe('my_reviews|limit=100')
     })
 
     it('cache miss + non-empty webhook → returns webhook data with source=merged', async () => {

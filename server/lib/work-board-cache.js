@@ -29,6 +29,23 @@ export function getCached(userId, queryType) {
     };
 }
 
+/**
+ * The freshest entry for a query type across every parameter set it was cached
+ * under ('my_reviews', 'my_reviews|limit=50', ...). For readers that want "what
+ * the user last saw" rather than one exact request shape.
+ * @param {number} userId
+ * @param {string} queryType
+ */
+export function getLatestCached(userId, queryType) {
+    const prefix = `${queryType}|`;
+    const row = db.prepare(`
+        SELECT query_type FROM work_board_cache
+        WHERE user_id = ? AND (query_type = ? OR substr(query_type, 1, ?) = ?)
+        ORDER BY fetched_at DESC LIMIT 1
+    `).get(userId, queryType, prefix.length, prefix);
+    return row ? getCached(userId, row.query_type) : null;
+}
+
 export function putCached(userId, queryType, payload, etag, ttlSeconds = 300) {
     if (payload === undefined) throw new TypeError('putCached: payload must not be undefined');
     const now = new Date();
@@ -44,9 +61,13 @@ export function putCached(userId, queryType, payload, etag, ttlSeconds = 300) {
     `).run(userId, queryType, JSON.stringify(payload), etag || null, now.toISOString(), expires.toISOString());
 }
 
+// A query type is cached once per parameter set, keyed '<type>|<params>', so
+// invalidating a type drops every variant of it.
 export function invalidate(userId, queryType) {
     if (queryType !== undefined && queryType !== null) {
-        db.prepare('DELETE FROM work_board_cache WHERE user_id = ? AND query_type = ?').run(userId, queryType);
+        const prefix = `${queryType}|`;
+        db.prepare('DELETE FROM work_board_cache WHERE user_id = ? AND (query_type = ? OR substr(query_type, 1, ?) = ?)')
+            .run(userId, queryType, prefix.length, prefix);
     } else {
         db.prepare('DELETE FROM work_board_cache WHERE user_id = ?').run(userId);
     }

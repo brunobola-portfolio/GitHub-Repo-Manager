@@ -1,6 +1,6 @@
 import { AUTH_ENDPOINTS } from '../config'
 import { useState, useEffect, useCallback, useRef, useMemo, isValidElement } from 'react'
-import { ToastContext } from './contexts'
+import { ToastContext, ToastListContext } from './contexts'
 import { trackBreadcrumb } from '../lib/observability'
 import { formatUserError } from '../utils/errors'
 import { emitAppEvent, onAppEvent, APP_EVENTS, navigateToPricing } from '../utils/appEvents'
@@ -72,7 +72,7 @@ const MAX_TOASTS = 5
 /**
  * ToastProvider — owns the single shared toasts array.
  * Wrap the entire app so every component can fire toasts that reach
- * the one <ToastContainer> rendered in App.jsx.
+ * the one <ToastViewport> the app shell renders.
  */
 export function ToastProvider({ children }) {
     const [toasts, setToasts] = useState([])
@@ -253,11 +253,12 @@ export function ToastProvider({ children }) {
         return onAppEvent(APP_EVENTS.UNHANDLED_ERROR, handler)
     }, [addToastRecord])
 
-    const value = useMemo(
-        () => ({ toasts, toast, dismissToast }),
-        [toasts, toast, dismissToast]
-    )
+    const actions = useMemo(() => ({ toast, dismissToast }), [toast, dismissToast])
 
-    return <ToastContext.Provider value={value}>{children}</ToastContext.Provider>
+    return (
+        <ToastContext.Provider value={actions}>
+            <ToastListContext.Provider value={toasts}>{children}</ToastListContext.Provider>
+        </ToastContext.Provider>
+    )
 }
 
