@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useMemo } from 'react'
+import { useDismiss } from '../../../hooks/useDismiss'
 import { Pin, PinOff, ChevronDown, Search } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Input } from '../../ui/form'
@@ -10,14 +11,7 @@ export function RepoBadge({ repos = [], selectedRepo, isPinned, onSelectRepo, on
     const [query, setQuery] = useState('')
     const containerRef = useRef(null)
 
-    useEffect(() => {
-        if (!open) return
-        const handler = (e) => {
-            if (containerRef.current && !containerRef.current.contains(e.target)) setOpen(false)
-        }
-        document.addEventListener('mousedown', handler)
-        return () => document.removeEventListener('mousedown', handler)
-    }, [open])
+    useDismiss(containerRef, { open, onClose: () => setOpen(false) })
 
     const filtered = useMemo(() => {
         if (!query) return repos.slice(0, 30)

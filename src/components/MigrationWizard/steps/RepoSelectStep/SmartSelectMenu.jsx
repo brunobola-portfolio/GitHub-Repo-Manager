@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useDismiss } from '../../../../hooks/useDismiss'
 import { Sparkles, ChevronDown, Zap, Clock, XCircle, Archive, AlertOctagon, Pencil } from 'lucide-react'
 import { PatternSelectModal } from './PatternSelectModal'
 import { Button } from '../../../ui/Button'
@@ -22,12 +23,8 @@ export function SmartSelectMenu({ repos, onSelect }) {
   const menuRef = useRef(null)
   const triggerRef = useRef(null)
 
-  // Outside click closes menu.
-  useEffect(() => {
-    function handle(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
-    if (open) document.addEventListener('mousedown', handle)
-    return () => document.removeEventListener('mousedown', handle)
-  }, [open])
+  // Escape (with focus return) and arrow keys are handled below.
+  useDismiss(ref, { open, onClose: () => setOpen(false), escape: false })
 
   // Keyboard: Esc closes, ArrowUp/Down navigate between menuitems.
   useEffect(() => {

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useId } from 'react';
+import { useDismiss } from '../../hooks/useDismiss';
 
 /**
  * Small dropdown that lets the user pick a preset before generating an AI review.
@@ -17,24 +18,7 @@ export function PromptPicker({ presets, activeKey, onChange, disabled }) {
     const listboxId = useId();
     const active = (presets || []).find((p) => String(p.id) === String(activeKey)) ?? presets?.[0];
 
-    // Click-outside + Escape dismiss
-    useEffect(() => {
-        if (!open) return undefined;
-        const handlePointerDown = (e) => {
-            if (containerRef.current && !containerRef.current.contains(e.target)) {
-                setOpen(false);
-            }
-        };
-        const handleKey = (e) => {
-            if (e.key === 'Escape') setOpen(false);
-        };
-        document.addEventListener('pointerdown', handlePointerDown);
-        document.addEventListener('keydown', handleKey);
-        return () => {
-            document.removeEventListener('pointerdown', handlePointerDown);
-            document.removeEventListener('keydown', handleKey);
-        };
-    }, [open]);
+    useDismiss(containerRef, { open, onClose: () => setOpen(false) });
 
     // When opening, focus the active option (or first)
     useEffect(() => {

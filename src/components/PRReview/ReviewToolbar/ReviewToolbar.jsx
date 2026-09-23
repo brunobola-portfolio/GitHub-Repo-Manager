@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useCallback } from 'react'
+import { useDismiss } from '../../../hooks/useDismiss'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ChevronRight,
@@ -93,30 +94,9 @@ export function ReviewToolbar({ pr, repoName, repoFullName, viewMode, onToggleVi
   const dropdownRef = useRef(null)
   const buttonRef = useRef(null)
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    if (!dropdownOpen) return
-    function handleClick(e) {
-      if (
-        dropdownRef.current && !dropdownRef.current.contains(e.target) &&
-        buttonRef.current && !buttonRef.current.contains(e.target)
-      ) {
-        setDropdownOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [dropdownOpen])
-
-  // Close on Escape
-  useEffect(() => {
-    if (!dropdownOpen) return
-    function handleKey(e) {
-      if (e.key === 'Escape') setDropdownOpen(false)
-    }
-    document.addEventListener('keydown', handleKey)
-    return () => document.removeEventListener('keydown', handleKey)
-  }, [dropdownOpen])
+  // The toggle button counts as inside, so pressing it toggles rather than
+  // closing and immediately reopening.
+  useDismiss([dropdownRef, buttonRef], { open: dropdownOpen, onClose: () => setDropdownOpen(false) })
 
   const handleSubmit = useCallback((event) => {
     onSubmitReview?.({ event, body: reviewBody.trim() })
