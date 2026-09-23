@@ -276,3 +276,26 @@ describe('DELETE /api/v1/license/install', () => {
         expect(getRes.body.active).toBe(false)
     })
 })
+
+
+// The landing page reads the licence before sign-in, so tier and validity stay
+// public. Who holds the licence (email, org, seat usage) does not: on an
+// internet-facing self-host it went to anyone who asked.
+describe('GET /api/v1/license — licensee identity', () => {
+    it('shows email, org and seats to a signed-in user and hides them from anonymous callers', async () => {
+        await request(makeApp({ userId: 1, isAdmin: true })).post('/api/v1/license/install').send({ key: validKey }).expect(200)
+
+        const signedIn = await request(makeApp({ userId: 1, isAdmin: true })).get('/api/v1/license')
+        expect(signedIn.body.active).toBe(true)
+        expect(signedIn.body).toHaveProperty('email')
+        expect(signedIn.body).toHaveProperty('seatsUsed')
+
+        const anon = express()
+        anon.use((req, _res, next) => { req.session = {}; next() })
+        anon.use('/api/v1/license', licenseRouter)
+        const res = await request(anon).get('/api/v1/license')
+        expect(res.body.active).toBe(true)
+        expect(res.body.tier).toBe('pro')
+        for (const k of ['email', 'org', 'seats', 'seatsUsed']) expect(res.body).not.toHaveProperty(k)
+    })
+})

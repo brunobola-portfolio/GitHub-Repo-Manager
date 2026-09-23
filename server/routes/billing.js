@@ -200,15 +200,35 @@ router.post('/checkout', requireAuth, requireStripe, async (req, res) => {
             tax_id_collection: { enabled: true },
             customer_update: { address: 'auto', name: 'auto' },
         } : {};
+        // A checkout session stays open for 24 h. A second tab, or Back and
+        // Upgrade again, used to leave two open sessions for one customer:
+        // paying both created two subscriptions, and the webhook's upsert
+        // orphaned the first, which kept billing with nothing pointing at it.
+        // Only the newest session may be completed.
+        try {
+            const open = await stripe.checkout.sessions.list({ customer: customerId, status: 'open', limit: 10 });
+            for (const stale of open?.data || []) {
+                await stripe.checkout.sessions.expire(stale.id);
+            }
+        } catch (err) {
+            logger.warn({ err, userId }, 'Could not expire earlier open checkout sessions');
+        }
+
+        const metadata = { userId: String(userId), tier, billingPeriod };
         const session = await stripe.checkout.sessions.create({
             customer: customerId,
             mode: 'subscription',
             line_items: [{ price: priceId, quantity: 1 }],
+            // Copied onto the Subscription so later subscription.* events know
+            // the tier without depending on price metadata; without it an
+            // Enterprise subscription whose price lacked `metadata.tier` fell
+            // back to 'pro' on its first update.
+            subscription_data: { metadata },
             success_url: `${config.frontendUrl}/settings?billing=success`,
             // The client reads ?billing= on return (useAuthBootstrap) and maps
             // the path to its hash route (useAppRouter path aliases).
             cancel_url: `${config.frontendUrl}/pricing?billing=cancel`,
-            metadata: { userId: String(userId), tier, billingPeriod },
+            metadata,
             ...tax,
         });
 

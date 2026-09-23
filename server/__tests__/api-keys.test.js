@@ -22,7 +22,8 @@ vi.mock('../middleware/auth.js', () => ({
     },
 }))
 
-vi.mock('../middleware/api-key-auth.js', () => ({
+vi.mock('../middleware/api-key-auth.js', async (io) => ({
+    ...(await io()),
     generateApiKey: vi.fn(() => ({
         id: 'generated-uuid-1',
         key: 'grm_live_mock_generated_key_abcdef',
@@ -324,5 +325,22 @@ describe('DELETE /api/api-keys/:id', () => {
         await request(app).delete('/api/api-keys/missing')
 
         expect(auditLog).not.toHaveBeenCalled()
+    })
+})
+
+
+// Key management is a browser-session action: a `write` key used to be able to
+// mint an `admin` key that outlived its own revocation.
+describe('API key management refuses API-key callers', () => {
+    it('403s key creation and revocation when the request authenticated with an API key', async () => {
+        const { requireBrowserSession } = await vi.importActual('../middleware/api-key-auth.js')
+        const res = { status: vi.fn(() => res), json: vi.fn(() => res) }
+        const next = vi.fn()
+        requireBrowserSession({ apiKeyId: 'k1' }, res, next)
+        expect(res.status).toHaveBeenCalledWith(403)
+        expect(res.json.mock.calls[0][0].code).toBe('SESSION_REQUIRED')
+        expect(next).not.toHaveBeenCalled()
+        requireBrowserSession({}, res, next)
+        expect(next).toHaveBeenCalledOnce()
     })
 })

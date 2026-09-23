@@ -725,8 +725,8 @@ describe('stripeWebhookHandler', () => {
             mockPrepare.mockImplementation((sql) => {
                 if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
                 if (/UPDATE user_subscriptions SET status = 'active'/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
-                if (/SELECT user_id, tier, billing_period FROM user_subscriptions/.test(sql)) {
-                    return { get: vi.fn(() => ({ user_id: 77, tier: 'pro', billing_period: 'monthly' })) }
+                if (/SELECT user_id, tier, status, billing_period FROM user_subscriptions/.test(sql)) {
+                    return { get: vi.fn(() => ({ user_id: 77, tier: 'pro', status: 'active', billing_period: 'monthly' })) }
                 }
                 if (/SELECT email FROM users/.test(sql)) return { get: vi.fn(() => ({ email: 'renew@example.com' })) }
                 return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
@@ -763,7 +763,7 @@ describe('stripeWebhookHandler', () => {
             mockPrepare.mockImplementation((sql) => {
                 if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
                 if (/UPDATE user_subscriptions SET status = 'active'/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
-                if (/SELECT user_id, tier, billing_period FROM user_subscriptions/.test(sql)) {
+                if (/SELECT user_id, tier, status, billing_period FROM user_subscriptions/.test(sql)) {
                     return { get: vi.fn(() => ({ user_id: 78, tier: 'pro', billing_period: 'yearly' })) }
                 }
                 if (/SELECT email FROM users/.test(sql)) return { get: vi.fn(() => ({ email: 'yearly-renew@example.com' })) }
@@ -824,7 +824,7 @@ describe('stripeWebhookHandler', () => {
             mockPrepare.mockImplementation((sql) => {
                 if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
                 if (/UPDATE user_subscriptions SET status = 'active'/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
-                if (/SELECT user_id, tier, billing_period FROM user_subscriptions/.test(sql)) return { get: vi.fn(() => undefined) }
+                if (/SELECT user_id, tier, status, billing_period FROM user_subscriptions/.test(sql)) return { get: vi.fn(() => undefined) }
                 return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
             })
 
@@ -957,6 +957,83 @@ describe('stripeWebhookHandler', () => {
 
             expect(res.statusCode).toBe(200)
             expect(restoreTier).not.toHaveBeenCalled()
+        })
+
+        it('downgrades on a FULL refund whose payload is basil-shaped (no charge.invoice)', async () => {
+            // From 2025-03-31.basil a Charge carries no `invoice`. The endpoint
+            // pins no API version, so the event renders at the account default;
+            // reading the payload found no subscription and left the customer
+            // paid. The handler must re-fetch through the version-pinned client.
+            mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+                id: 'evt_basil_refund',
+                type: 'charge.refunded',
+                data: { object: { id: 'ch_basil', amount: 1900, amount_refunded: 1900, refunded: true } },
+            })
+            wireChargeChain({ subscriptionId: 'sub_basil' })
+            const downgrade = vi.fn(() => ({ changes: 1 }))
+            mockPrepare.mockImplementation((sql) => {
+                if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+                if (/SET tier = 'free', status = \?/.test(sql)) return { run: downgrade }
+                return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+            })
+            const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+            await stripeWebhookHandler(req, res)
+            expect(res.statusCode).toBe(200)
+            expect(mockStripeInstance.charges.retrieve).toHaveBeenCalledWith('ch_basil')
+            expect(downgrade).toHaveBeenCalledWith('refunded', 'sub_basil')
+        })
+
+        it('does not let invoice.payment_failed or a paid renewal lift a hold, and reissues no key', async () => {
+            const statusWrites = []
+            const issued = vi.fn()
+            mockPrepare.mockImplementation((sql) => {
+                if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+                if (/UPDATE user_subscriptions SET status = /.test(sql)) {
+                    statusWrites.push(sql)
+                    return { run: vi.fn(() => ({ changes: 0 })) }
+                }
+                if (/status = 'incomplete'/.test(sql)) return { get: vi.fn(() => undefined) }
+                if (/SELECT user_id, tier, status, billing_period/.test(sql)) {
+                    return { get: vi.fn(() => ({ user_id: 5, tier: 'free', status: 'disputed', billing_period: 'monthly' })) }
+                }
+                if (/SELECT email FROM users/.test(sql)) { issued(); return { get: vi.fn(() => ({ email: 'x@example.com' })) } }
+                return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+            })
+            for (const [id, type] of [['evt_pf', 'invoice.payment_failed'], ['evt_renew', 'invoice.paid']]) {
+                mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+                    id, type,
+                    data: { object: { id: 'in_2', subscription: 'sub_held', billing_reason: 'subscription_cycle', customer_email: 'x@example.com' } },
+                })
+                const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+                await stripeWebhookHandler(req, res)
+                expect(res.statusCode).toBe(200)
+            }
+            expect(statusWrites).toHaveLength(2)
+            for (const sql of statusWrites) expect(sql).toMatch(/status NOT IN \('refunded', 'disputed'\)/)
+            expect(issued).not.toHaveBeenCalled()
+        })
+
+        it('does not let subscription.updated promote a row still waiting on a delayed payment', async () => {
+            // 'incomplete' is invoice.paid's only record that a licence is owed.
+            mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+                id: 'evt_upd_incomplete',
+                type: 'customer.subscription.updated',
+                data: { object: { id: 'sub_sepa', status: 'active', metadata: { tier: 'pro' }, current_period_start: 1750000000, current_period_end: 1752000000 } },
+            })
+            const promote = vi.fn(() => ({ changes: 1 }))
+            const periodsOnly = vi.fn(() => ({ changes: 1 }))
+            mockPrepare.mockImplementation((sql) => {
+                if (/INSERT OR IGNORE INTO webhook_events/.test(sql)) return { run: vi.fn(() => ({ changes: 1 })) }
+                if (/SELECT status FROM user_subscriptions/.test(sql)) return { get: vi.fn(() => ({ status: 'incomplete' })) }
+                if (/SET\s+tier = \?, status = \?/.test(sql)) return { run: promote }
+                if (/SET\s+current_period_start/.test(sql)) return { run: periodsOnly }
+                return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+            })
+            const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+            await stripeWebhookHandler(req, res)
+            expect(res.statusCode).toBe(200)
+            expect(promote).not.toHaveBeenCalled()
+            expect(periodsOnly).toHaveBeenCalledOnce()
         })
 
         it('restores access when a dispute closes as won', async () => {

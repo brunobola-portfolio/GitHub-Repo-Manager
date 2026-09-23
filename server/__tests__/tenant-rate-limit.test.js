@@ -1,8 +1,21 @@
 // @vitest-environment node
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import express from 'express'
 import request from 'supertest'
-import { createTenantLimiters } from '../middleware/tenant-rate-limit.js'
+
+// Only these tokens are "live" keys. Per-token buckets are reserved for keys
+// that exist: a forged grm_live_ value used to mint a fresh bucket per request.
+const LIVE_KEYS = new Map([
+    ['Bearer grm_live_tokenAAAAAAAA', 1],
+    ['Bearer grm_live_tokenBBBBBBBB', 2],
+    ['Bearer grm_live_tokenCCCCCCCC', 3],
+])
+vi.mock('../middleware/api-key-auth.js', async (io) => ({
+    ...(await io()),
+    resolveBearerKeyOwner: (req) => LIVE_KEYS.get(req.headers?.authorization) ?? null,
+}))
+
+const { createTenantLimiters } = await import('../middleware/tenant-rate-limit.js')
 
 function buildApp(limiter, routePath = '/api/auth') {
     const app = express()
@@ -158,6 +171,19 @@ describe('createTenantLimiters — API-key bearer keying', () => {
             .get('/api/ai/login')
             .set('Authorization', 'Bearer grm_live_tokenCCCCCCCC')
         expect(bearer.status).toBe(200)
+    })
+
+    it('puts forged grm_live_ tokens in the per-IP bucket instead of a fresh one each', async () => {
+        const limiter = await createTenantLimiters('ai')
+        const app = buildApp(limiter, '/api/ai')
+        for (let i = 0; i < 30; i++) {
+            await request(app).get('/api/ai/login').set('Authorization', `Bearer grm_live_forged${i}`)
+        }
+        const overflow = await request(app).get('/api/ai/login').set('Authorization', 'Bearer grm_live_forged-next')
+        expect(overflow.status).toBe(429)
+        // A real key from the same IP is unaffected.
+        const live = await request(app).get('/api/ai/login').set('Authorization', 'Bearer grm_live_tokenAAAAAAAA')
+        expect(live.status).toBe(200)
     })
 
     it('ignores non-grm_live_ bearer schemes (falls back to IP keying)', async () => {

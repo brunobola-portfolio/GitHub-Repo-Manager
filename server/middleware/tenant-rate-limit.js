@@ -1,6 +1,7 @@
 import { createHash } from 'crypto';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import logger from '../lib/logger.js';
+import { resolveBearerKeyOwner } from './api-key-auth.js';
 
 const isDev = () => process.env.NODE_ENV !== 'production';
 
@@ -100,11 +101,13 @@ export async function createTenantLimiters(type = 'api', options = {}) {
             // separation, not credential storage — the hash only keeps the
             // raw token out of store keys/logs, and stays deterministic
             // across instances sharing a Redis store without needing
-            // API_KEY_SECRET. Forged-token bucket rotation is bounded by the
-            // pre-session globalLimiter (200 req/15min/IP in prod).
+            // API_KEY_SECRET. Forged tokens never get their own bucket: see
+            // resolveBearerKeyOwner below.
             if (type === 'api' || type === 'ai') {
                 const bearer = bearerApiKey(req);
-                if (bearer) {
+                // Per-token buckets only for a key that exists; a forged
+                // token falls through to the per-IP bucket below.
+                if (bearer && resolveBearerKeyOwner(req) !== null) {
                     const tokenHash = createHash('sha256').update(bearer).digest('hex').slice(0, 32);
                     return `rl:key:${tokenHash}:${type}`;
                 }
@@ -149,7 +152,9 @@ export async function createTenantLimiters(type = 'api', options = {}) {
  * request, or should the per-tier limiter be?".
  */
 function claimsAnIdentity(req) {
-    if (bearerApiKey(req)) return true;
+    // Only a LIVE key counts. Any string starting with grm_live_ used to, so
+    // rotating random tokens skipped this per-IP ceiling entirely.
+    if (bearerApiKey(req)) return resolveBearerKeyOwner(req) !== null;
     const cookie = req.headers?.cookie;
     // express-session's default cookie name — no `name:` is set in index.js.
     return typeof cookie === 'string' && cookie.includes('connect.sid=');

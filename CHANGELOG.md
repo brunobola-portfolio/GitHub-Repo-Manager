@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- An API key could no longer be used to create or revoke API keys, or to
+  erase the account. A `write` key used to be able to mint a non-expiring
+  `admin` key that outlived its own revocation. Both routes now answer only
+  to the signed-in app.
+- A random `grm_live_…` bearer token skipped the per-IP rate limit and got a
+  fresh bucket on every request. Only a live key counts as an identity now.
+- API keys are gated and rate-budgeted at their owner's tier; they were all
+  treated as Free, so an Enterprise key got 403 on Enterprise routes.
+- `GET /api/v1/license` shows the licensee's e-mail, organisation and seat
+  usage only to a signed-in user; tier and validity stay public.
+
+### Fixed — billing
+
+- A full refund now suspends access on accounts whose Stripe API default is
+  2025-03-31.basil or later, where a Charge no longer carries `invoice`: the
+  handler re-fetches the charge through the version-pinned client.
+- A delayed payment (SEPA, ACH, Boleto) can no longer lose its licence when
+  Stripe delivers `subscription.updated` before `invoice.paid`.
+- A renewal paid, or a renewal failed, while a refund or dispute hold is in
+  place no longer lifts the hold, and no longer e-mails a "Free plan" key.
+- Starting a new checkout expires the customer's earlier open sessions, so
+  paying twice cannot create two subscriptions. The tier is copied onto the
+  subscription's metadata.
+
 ### Fixed
 
 - **Docker images publish again.** The multi-arch build emulated arm64 under
