@@ -126,8 +126,8 @@
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",
     "@vitejs/plugin-react": "^6.1.1",
-    "@vitest/coverage-v8": "^4.1.10",
-    "@vitest/ui": "^4.0.18",
+    "@vitest/coverage-v8": "^5.0.1",
+    "@vitest/ui": "^5.0.1",
     "concurrently": "^10.0.5",
     "cross-env": "^10.1.0",
     "eslint": "^9.39.4",
@@ -147,7 +147,7 @@
     "supertest": "^7.2.2",
     "tailwindcss": "^4.1.17",
     "vite": "^8.3.0",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.1"
   },
   "overrides": {
     "ip-address": "^10.1.1",
