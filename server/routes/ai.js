@@ -62,6 +62,13 @@ export const AI_PREFIXED_ROUTERS = Object.freeze([
     ['/ai/pr-commands', prCommandsRouter],
     ['/ai/pr-chat', prChatRouter],
 ]);
-for (const [prefix, subRouter] of AI_PREFIXED_ROUTERS) router.use(prefix, subRouter);
+// Mounted one call each, not in a loop over the list above: CodeQL cannot
+// follow a loop-mounted router back to the app-level rate limiters, and
+// flagged every route in these four files as unthrottled. The scope test
+// checks that each listed router really is mounted.
+router.use('/ai/deep-review', deepReviewRouter);
+router.use('/ai/prompt-studio', promptStudioRouter);
+router.use('/ai/pr-commands', prCommandsRouter);
+router.use('/ai/pr-chat', prChatRouter);
 
 export default router;
