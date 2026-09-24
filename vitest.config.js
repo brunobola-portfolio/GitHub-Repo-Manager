@@ -29,14 +29,31 @@ export default defineConfig({
     // Safe: this only affects how deps are loaded, not worker isolation — the
     // `forks` pool stays (threads segfault here because happy-dom + native
     // better-sqlite3 can't tear down cleanly in worker threads).
-    deps: { optimizer: { web: { enabled: true }, ssr: { enabled: true } } },
+    deps: { optimizer: { client: { enabled: true }, ssr: { enabled: true } } },
     setupFiles: ['./tests/setup.js'],
-    include: ['tests/**/*.test.{js,jsx}', 'server/__tests__/**/*.test.js', 'scripts/__tests__/**/*.test.js'],
     exclude: ['node_modules', 'dist', 'e2e'],
-    environmentMatchGlobs: [
-      ['server/**/*.test.js', 'node'],
-      ['scripts/**/*.test.js', 'node'],
-      ['tests/styles/**/*.test.js', 'node'],
+    // Two projects, because environmentMatchGlobs is gone: vitest 4 stopped
+    // reading it without a warning, and from then on every server test that
+    // lacked a `@vitest-environment node` comment (118 files) ran inside
+    // happy-dom. A backend test must run in the runtime the backend runs in.
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'dom',
+          environment: 'happy-dom',
+          include: ['tests/**/*.test.{js,jsx}'],
+          exclude: ['node_modules', 'dist', 'e2e', 'tests/styles/**'],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'node',
+          environment: 'node',
+          include: ['server/__tests__/**/*.test.js', 'scripts/__tests__/**/*.test.js', 'tests/styles/**/*.test.js'],
+        },
+      },
     ],
     css: true,
     coverage: {
@@ -97,12 +114,12 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@/components': path.resolve(__dirname, './src/components'),
-      '@/contexts': path.resolve(__dirname, './src/contexts'),
-      '@/hooks': path.resolve(__dirname, './src/hooks'),
-      '@/utils': path.resolve(__dirname, './src/utils'),
-      '@/api': path.resolve(__dirname, './src/api')
+      '@': path.resolve(import.meta.dirname, './src'),
+      '@/components': path.resolve(import.meta.dirname, './src/components'),
+      '@/contexts': path.resolve(import.meta.dirname, './src/contexts'),
+      '@/hooks': path.resolve(import.meta.dirname, './src/hooks'),
+      '@/utils': path.resolve(import.meta.dirname, './src/utils'),
+      '@/api': path.resolve(import.meta.dirname, './src/api')
     }
   }
 })

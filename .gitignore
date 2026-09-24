@@ -129,3 +129,7 @@ nul
 # Eval harness — local baseline files (per-dev, not committed)
 server/evals/baseline.local.json
 /dados.txt
+
+# vitest blob reports (CI shard merge) and vitest 5 cache
+.vitest-reports/
+.vitest/
