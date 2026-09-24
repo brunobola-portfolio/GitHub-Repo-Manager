@@ -23,15 +23,20 @@
       1. Package validated (zip opens; contains server\, dist\ and a
          package.json whose version matches the file name).
       2. Enough free disk for the backup plus the new content.
-      3. Backup of the current install, with the item count checked.
+      3. New version unpacked next to the install (same volume) and checked,
+         WHILE THE OLD ONE KEEPS SERVING.
       4. Service stopped (releases the file handles, and stops traffic
          reaching a half-swapped tree).
-      5. Content swapped, retrying files that are briefly locked.
+      5. Swap by two directory renames: the running install becomes the
+         backup, the unpacked one becomes the install. Seconds, not the ten
+         minutes that copying ~37,000 files with the service down took. If a
+         rename is refused (something still holds a handle), it falls back to
+         a verified multi-threaded copy.
       6. Service started.
       7. Health verified over HTTP: /api/health reports the version we just
          installed, and /api/health/ready reports every dependency ok.
-      8. If verification fails: automatic rollback to the step-3 backup, and
-         the service restarted from it.
+      8. If verification fails: automatic rollback to the step-5 backup (the
+         previous install, renamed back), and the service restarted from it.
 
     WHAT IS NEVER TOUCHED. DATA_DIR lives outside the install tree precisely
     so an upgrade cannot reach it — the database, the .env and the logs are
@@ -142,8 +147,12 @@ function Get-Backups {
     param([string] $Root)
     $b = Get-BackupRoot -Root $Root
     if (-not (Test-Path $b.Parent)) { return @() }
+    # Newest first by the stamp in the name (yyyyMMdd-HHmmss sorts as text).
+    # Not CreationTime: a backup made by renaming the live install keeps the
+    # install's original creation date, and pruning by it would delete the
+    # backup just taken.
     Get-ChildItem -Path $b.Parent -Directory -Filter $b.Pattern -ErrorAction SilentlyContinue |
-        Sort-Object CreationTime -Descending
+        Sort-Object Name -Descending
 }
 
 # ------------------------------------------------------------ validation ----
@@ -269,20 +278,57 @@ function Start-App {
     Write-Ok 'Service running'
 }
 
-function Copy-TreeWithRetry {
-    param([string] $From, [string] $To, [int] $Retries = 5)
-    for ($i = 1; $i -le $Retries; $i++) {
+function Copy-TreeFast {
+    # robocopy, multi-threaded: the fallback when a rename is refused. /MIR
+    # makes $To an exact copy of $From (extra files removed). Exit codes 0-7
+    # are success variants; 8 and above mean something was not copied.
+    param([string] $From, [string] $To)
+    New-Item -ItemType Directory -Path $To -Force | Out-Null
+    & robocopy $From $To /MIR /MT:16 /R:5 /W:2 /NFL /NDL /NJH /NJS /NP | Out-Null
+    if ($LASTEXITCODE -ge 8) { throw "robocopy $From -> $To failed with exit code $LASTEXITCODE" }
+    $global:LASTEXITCODE = 0
+}
+
+function Get-FileCount {
+    param([string] $Path)
+    (Get-ChildItem $Path -Recurse -File -Force -ErrorAction SilentlyContinue | Measure-Object).Count
+}
+
+function Invoke-Swap {
+    # Make $Incoming the install and keep the current install as $Keep, by two
+    # renames. Both directories are siblings of $Root, so a rename is a
+    # metadata change on one volume. Returns 'rename' or 'copy'.
+    param([string] $Root, [string] $Incoming, [string] $Keep)
+    # Directory.Move, not Rename-Item: the unpacked tree can sit one level
+    # down (a zip with a top-level folder), and Rename-Item only renames in
+    # place. On one volume Directory.Move is still a rename, never a copy.
+    try {
+        [System.IO.Directory]::Move($Root, $Keep)
+    } catch {
+        Write-WarnLn "Could not rename the install ($($_.Exception.Message.Split([char]10)[0])) — copying instead"
+        Copy-TreeFast -From $Root -To $Keep
+        $before = Get-FileCount $Root; $saved = Get-FileCount $Keep
+        if ($saved -lt $before) { throw "Backup incomplete ($saved of $before files) — refusing to continue without a way back." }
         try {
-            Copy-Item -Path (Join-Path $From '*') -Destination $To -Recurse -Force -ErrorAction Stop
-            return
+            Copy-TreeFast -From $Incoming -To $Root
         } catch {
-            if ($i -eq $Retries) { throw }
-            # A stopped service can still be releasing handles; antivirus and
-            # the indexer hold files briefly too. Back off rather than fail.
-            Write-WarnLn "Copy attempt $i failed ($($_.Exception.Message.Split([char]10)[0])) — retrying"
-            Start-Sleep -Seconds ($i * 2)
+            # A file locked against writing stops the copy halfway, which would
+            # leave two versions mixed in one tree. Mirror the backup back.
+            $reason = $_.Exception.Message
+            Copy-TreeFast -From $Keep -To $Root
+            throw "Could not copy the new version in ($reason); the previous install was restored."
         }
+        return 'copy'
     }
+    try {
+        [System.IO.Directory]::Move($Incoming, $Root)
+    } catch {
+        $reason = $_.Exception.Message
+        # Put the old install back where the service expects it before failing.
+        [System.IO.Directory]::Move($Keep, $Root)
+        throw "Could not move the new version into place: $reason"
+    }
+    return 'rename'
 }
 
 function Test-Health {
@@ -346,8 +392,8 @@ if ($Rollback) {
 
     Write-Section '2. Restoring'
     [void](Stop-App -Name $ServiceName)
-    Get-ChildItem -Path $AppRoot -Force | Remove-Item -Recurse -Force
-    Copy-TreeWithRetry -From $chosen.FullName -To $AppRoot
+    # A copy, not a rename: the chosen backup stays available after this.
+    Copy-TreeFast -From $chosen.FullName -To $AppRoot
     Write-Ok 'Content restored'
     Start-App -Name $ServiceName
 
@@ -401,35 +447,47 @@ if ($DryRun) {
 # stops a service, so the elevation check belongs exactly here.
 Assert-Admin
 
-Write-Section '3. Backup'
+Write-Section '3. Unpacking next to the install (still serving)'
 $stamp      = Get-Date -Format 'yyyyMMdd-HHmmss'
 $backupPath = "$AppRoot.backup-$stamp"
-$sourceCount = (Get-ChildItem $AppRoot -Recurse -File -ErrorAction SilentlyContinue | Measure-Object).Count
-New-Item -ItemType Directory -Path $backupPath -Force | Out-Null
-Copy-TreeWithRetry -From $AppRoot -To $backupPath
-$backupCount = (Get-ChildItem $backupPath -Recurse -File -ErrorAction SilentlyContinue | Measure-Object).Count
-if ($backupCount -lt $sourceCount) {
-    Remove-Item $backupPath -Recurse -Force -ErrorAction SilentlyContinue
-    throw "Backup incomplete ($backupCount of $sourceCount files) — refusing to continue without a way back."
+# A sibling of AppRoot, so it is on the same volume and the swap can be a
+# rename. Never %TEMP%, which may be another drive.
+$staging    = "$AppRoot.next-$stamp"
+# An interrupted earlier run can leave its unpacked tree behind.
+Get-ChildItem -Path (Split-Path -Parent $AppRoot) -Directory -Filter "$(Split-Path -Leaf $AppRoot).next-*" -ErrorAction SilentlyContinue |
+    ForEach-Object { Remove-Item $_.FullName -Recurse -Force -ErrorAction SilentlyContinue }
+Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction SilentlyContinue
+[System.IO.Compression.ZipFile]::ExtractToDirectory($ZipPath, $staging)
+$newRoot = if ($pkg.Prefix) { Join-Path $staging ($pkg.Prefix.TrimEnd('/')) } else { $staging }
+$stagedVersion = (Get-Content (Join-Path $newRoot 'package.json') -Raw | ConvertFrom-Json).version
+if ($stagedVersion -ne $pkg.Version) {
+    Remove-Item $staging -Recurse -Force -ErrorAction SilentlyContinue
+    throw "Unpacked tree reports v$stagedVersion, expected v$($pkg.Version)."
 }
-Write-Ok "Backed up $backupCount files" $backupPath
+# Carry over any permission an operator granted on the install directory;
+# a renamed-in directory would otherwise only inherit from its parent.
+Set-Acl -LiteralPath $newRoot -AclObject (Get-Acl -LiteralPath $AppRoot)
+Write-Ok "v$($pkg.Version) unpacked ($(Get-FileCount $newRoot) files)" $newRoot
 
 Write-Section '4. Stopping the service'
+$downSince = Get-Date
 [void](Stop-App -Name $ServiceName)
 
-Write-Section '5. Swapping content'
-$staging = Join-Path ([System.IO.Path]::GetTempPath()) "grm-deploy-$stamp"
-New-Item -ItemType Directory -Path $staging -Force | Out-Null
+Write-Section '5. Swapping'
 try {
-    Expand-Archive -Path $ZipPath -DestinationPath $staging -Force
-    $newRoot = if ($pkg.Prefix) { Join-Path $staging ($pkg.Prefix.TrimEnd('/')) } else { $staging }
-
-    Get-ChildItem -Path $AppRoot -Force | Remove-Item -Recurse -Force
-    Copy-TreeWithRetry -From $newRoot -To $AppRoot
-    Write-Ok "v$($pkg.Version) in place"
+    $mode = Invoke-Swap -Root $AppRoot -Incoming $newRoot -Keep $backupPath
+} catch {
+    # Invoke-Swap only throws with the previous install back in place; bring
+    # the site back up on it rather than leave the service stopped.
+    Write-Fail "Swap failed: $($_.Exception.Message)"
+    Start-App -Name $ServiceName
+    $after = Test-Health -Url $HealthUrl -ExpectVersion $null -TimeoutSeconds $HealthTimeoutSeconds
+    if ($after.Ok) { Write-Ok "Still serving v$($after.Version)" } else { Write-Fail "The previous install did not come back healthy: $($after.Error)" }
+    exit 1
 } finally {
-    Remove-Item $staging -Recurse -Force -ErrorAction SilentlyContinue
+    if (Test-Path $staging) { Remove-Item $staging -Recurse -Force -ErrorAction SilentlyContinue }
 }
+Write-Ok "v$($pkg.Version) in place by $mode; the previous install is the backup" $backupPath
 
 Write-Section '6. Starting the service'
 Start-App -Name $ServiceName
@@ -439,6 +497,7 @@ $verdict = Test-Health -Url $HealthUrl -ExpectVersion $pkg.Version -TimeoutSecon
 
 if ($verdict.Ok) {
     Write-Ok "Healthy on v$($verdict.Version)" ($verdict.Checks | ConvertTo-Json -Compress)
+    Write-Ok "Service was down for $([math]::Round(((Get-Date) - $downSince).TotalSeconds)) s"
 
     Write-Section '8. Pruning old backups'
     $stale = Get-Backups -Root $AppRoot | Select-Object -Skip $KeepBackups
@@ -447,6 +506,10 @@ if ($verdict.Ok) {
         Write-Step "Removed $($old.Name)"
     }
     Write-Ok "Keeping the $KeepBackups most recent"
+    # Versions set aside by an automatic rollback: keep the latest for its logs.
+    Get-ChildItem -Path (Split-Path -Parent $AppRoot) -Directory -Filter "$(Split-Path -Leaf $AppRoot).failed-*" -ErrorAction SilentlyContinue |
+        Sort-Object Name -Descending | Select-Object -Skip 1 |
+        ForEach-Object { Remove-Item $_.FullName -Recurse -Force -ErrorAction SilentlyContinue; Write-Step "Removed $($_.Name)" }
 
     Write-Host ''
     Write-Host "Deployed v$($pkg.Version)." -ForegroundColor Green
@@ -458,8 +521,10 @@ if ($verdict.Ok) {
 Write-Fail "Verification failed: $($verdict.Error)"
 Write-Section '8. Rolling back'
 [void](Stop-App -Name $ServiceName)
-Get-ChildItem -Path $AppRoot -Force | Remove-Item -Recurse -Force
-Copy-TreeWithRetry -From $backupPath -To $AppRoot
+# The failed version moves aside (kept for its logs and for inspection, not
+# counted as a backup) and the previous install renames back.
+$failedPath = "$AppRoot.failed-$stamp"
+[void](Invoke-Swap -Root $AppRoot -Incoming $backupPath -Keep $failedPath)
 Start-App -Name $ServiceName
 
 $after = Test-Health -Url $HealthUrl -ExpectVersion $null -TimeoutSeconds $HealthTimeoutSeconds
@@ -472,6 +537,6 @@ if ($after.Ok) {
 }
 
 Write-Fail 'Rollback restored the files but the app is still not healthy.'
-Write-Host "Backup kept at: $backupPath" -ForegroundColor Yellow
+Write-Host "The previous install is back in $AppRoot; the failed version is at $failedPath" -ForegroundColor Yellow
 Write-Host 'This is a .env / database / port problem, not a package problem — service-err.log will say which.' -ForegroundColor Yellow
 exit 2

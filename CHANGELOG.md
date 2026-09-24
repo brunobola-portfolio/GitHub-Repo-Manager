@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Deploys no longer take the site down for ten minutes.** The Windows
+  deploy script copied the ~37,000-file install with the service stopped;
+  4.26.1 was unreachable from 08:07 to 08:17. It now unpacks the new version
+  beside the install while the old one serves, and swaps them with two
+  directory renames, so the service is down for seconds. A refused rename
+  falls back to a verified multi-threaded copy, and a copy that cannot
+  complete restores the previous install and restarts it instead of leaving
+  a mixed tree with the service stopped.
+- mermaid's parser (chevrotain) pinned lodash-es 4.17.23, which carries a
+  high-severity code-injection advisory; it now shares the patched 4.18.1.
+
 ## [4.26.1] - 2026-09-24
 
 ### Changed
