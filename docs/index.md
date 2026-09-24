@@ -37,6 +37,8 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.26.1 (2026-09-24) — Current majors, ai scope on every generation
+  route, resumable work items.** See the changelog.
 - **v4.26.0 (2026-09-23) — Review panel closed: atomic AI quotas, lighter
   first load, honest docs.** Repositories that use Git LFS now migrate their
   LFS files; On-prem TFS works end to end; PR Chat answers about the PR

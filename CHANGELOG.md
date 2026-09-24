@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.26.1] - 2026-09-24
+
 ### Changed
 
 - Dependencies on their current majors: mermaid 12, framer-motion 13 and
@@ -4346,7 +4348,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.26.0...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.26.1...HEAD
+[4.26.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.26.0...v4.26.1
 [4.26.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.14...v4.26.0
 [4.25.14]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.13...v4.25.14
 [4.25.13]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.12...v4.25.13
