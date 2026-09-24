@@ -97,7 +97,10 @@ jobs:
         # which is a debuggability regression from the sharding change. Adding
         # `default` prints the failing test and its assertion in the shard that
         # actually went red, where anyone looking at the checks list starts.
-        run: npx vitest run --shard=${{ matrix.shard }}/3 --reporter=blob --reporter=default --coverage
+        # The blob path is explicit: vitest 5 moved the default from
+        # .vitest-reports/ to .vitest/blob/, and the upload and the merge below
+        # both name this directory.
+        run: npx vitest run --shard=${{ matrix.shard }}/3 --reporter=blob --reporter=default --outputFile.blob=.vitest-reports/blob-${{ matrix.shard }}.json --coverage
       # Blob carries this shard's results AND its raw coverage, so the merge
       # job below can reconstruct both without re-running anything.
       - if: always()
@@ -148,7 +151,7 @@ jobs:
       # so a failure in any shard fails here too and the thresholds see the
       # union of all three coverage maps.
       - name: Merge shards, report, and enforce coverage floors
-        run: npx vitest run --mergeReports --coverage
+        run: npx vitest run --mergeReports=.vitest-reports --coverage
       # Replaying blobs only catches shards that RAN and failed. A shard that
       # died before uploading — lost runner, npm ci failure — leaves its blob
       # missing, and with `if: always()` the merge would happily green-light
