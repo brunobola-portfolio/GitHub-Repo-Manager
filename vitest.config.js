@@ -114,12 +114,12 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@/components': path.resolve(__dirname, './src/components'),
-      '@/contexts': path.resolve(__dirname, './src/contexts'),
-      '@/hooks': path.resolve(__dirname, './src/hooks'),
-      '@/utils': path.resolve(__dirname, './src/utils'),
-      '@/api': path.resolve(__dirname, './src/api')
+      '@': path.resolve(import.meta.dirname, './src'),
+      '@/components': path.resolve(import.meta.dirname, './src/components'),
+      '@/contexts': path.resolve(import.meta.dirname, './src/contexts'),
+      '@/hooks': path.resolve(import.meta.dirname, './src/hooks'),
+      '@/utils': path.resolve(import.meta.dirname, './src/utils'),
+      '@/api': path.resolve(import.meta.dirname, './src/api')
     }
   }
 })
