@@ -500,7 +500,7 @@ async function runSnapshotStrategy(ctx) {
     } = ctx;
 
     const { simpleGit } = await import('simple-git');
-    const { mkdirSync, existsSync, rmSync, writeFileSync } = await import('node:fs');
+    const { mkdirSync, existsSync, rmSync } = await import('node:fs');
     const { join } = await import('node:path');
     const tmpDir = join(importService.TMP_DIR, `tfvc-snapshot-${Date.now()}`);
 
@@ -508,19 +508,18 @@ async function runSnapshotStrategy(ctx) {
 
     try {
         onProgress('running', 'Downloading TFVC files...', 35);
-        const zipBuffer = await azureService.downloadTfvcItems(azureOrg, azureProject, tfvcPath, azurePat, azureHost);
-
-        if (zipBuffer.length === 0) {
+        mkdirSync(tmpDir, { recursive: true });
+        const zipPath = join(tmpDir, 'tfvc-content.zip');
+        // Streamed to disk under the cap: the archive is never held in memory.
+        const zipBytes = await azureService.downloadTfvcItems(
+            azureOrg, azureProject, tfvcPath, azurePat, azureHost,
+            { destPath: zipPath, maxBytes: MAX_ZIP_SIZE },
+        );
+        if (zipBytes === 0) {
             throw new Error('TFVC path contains no files to migrate.');
-        }
-        if (zipBuffer.length > MAX_ZIP_SIZE) {
-            throw new Error(`TFVC content exceeds 1 GB limit (${(zipBuffer.length / 1024 / 1024).toFixed(0)} MB).`);
         }
 
         onProgress('running', 'Extracting files...', 45);
-        mkdirSync(tmpDir, { recursive: true });
-        const zipPath = join(tmpDir, 'tfvc-content.zip');
-        writeFileSync(zipPath, zipBuffer);
 
         const AdmZip = (await import('adm-zip')).default;
         const zip = new AdmZip(zipPath);

@@ -25,6 +25,25 @@ describe('mermaidInitConfig', () => {
         expect(dark.themeVariables.background).toBe('#0f172a')
     })
 
+    it('sets the variables mermaid 11+ reads for ER rows and gitGraph lanes', () => {
+        const dark = mermaidInitConfig('dark').themeVariables
+        const light = mermaidInitConfig('default').themeVariables
+        // Dark ER rows must be dark, or the light attribute text is unreadable.
+        expect(dark.rowOdd).toBe('#1e293b')
+        expect(dark.rowEven).toBe('#111a2e')
+        expect(light.rowOdd).toBe('#ffffff')
+        // Every lane is defined and none is the canvas colour it would vanish into.
+        for (const [vars, canvas] of [[dark, '#0f172a'], [light, '#ffffff']]) {
+            for (let i = 0; i < 8; i++) {
+                expect(vars[`git${i}`]).toMatch(/^#[0-9a-f]{6}$/)
+                expect(vars[`git${i}`]).not.toBe(canvas)
+                expect(vars[`gitBranchLabel${i}`]).toMatch(/^#[0-9a-f]{6}$/)
+            }
+        }
+        expect(dark.git0).toBe('#6ba522')
+        expect(light.git0).toBe('#55831b')
+    })
+
     it('never carries a retired palette hue', () => {
         const hex = JSON.stringify(mermaidInitConfig('dark')) + JSON.stringify(mermaidInitConfig('default'))
         // Mermaid's defaults: #ECECFF node fill, #9370DB border, #333 lines.

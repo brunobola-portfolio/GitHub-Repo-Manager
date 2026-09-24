@@ -120,6 +120,10 @@ function buildLabels(type, state, priority, labelMapping) {
 function buildIssueBody(item, hierarchyLinks) {
   const lines = []
 
+  // Machine-readable origin, invisible when rendered: a resumed or retried
+  // migration finds the issues it already created by this marker.
+  lines.push(`<!-- ado-work-item:${item.id} -->`)
+
   // Description (HTML → Markdown)
   const description = htmlToMarkdown(item.description)
   if (description) {
@@ -353,6 +357,48 @@ async function createGitHubIssue({ title, body, labels, githubToken, owner, repo
   return { number: data.number, url: data.html_url }
 }
 
+const ADO_MARKER_RE = /<!-- ado-work-item:(\d+) -->/
+// Issues created before the marker existed carry only the metadata table.
+const ADO_TABLE_RE = /\| \*\*Source\*\* \| Azure DevOps \|[\s\S]*?\| \*\*Original ID\*\* \| (\d+) \|/
+const EXISTING_ISSUE_PAGES = 100 // 10,000 issues
+
+/**
+ * Map of Azure DevOps work item id → GitHub issue number for the issues a
+ * previous run of this migration already created in the target repository.
+ *
+ * Issue creation is not idempotent, so a retried or resumed work-items task
+ * re-created every issue. GitHub is the record of what exists, which also
+ * covers a run that died before it could save any progress of its own.
+ *
+ * @returns {Promise<Map<number, number>>}
+ */
+async function fetchMigratedIssueMap(githubToken, owner, repo) {
+  const map = new Map()
+  for (let page = 1; page <= EXISTING_ISSUE_PAGES; page++) {
+    const res = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/issues?state=all&per_page=100&page=${page}`,
+      { headers: { 'Authorization': `token ${githubToken}`, 'Accept': 'application/vnd.github.v3+json' } }
+    )
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => null)
+      throw new Error(errBody?.message || `Listing existing issues failed: ${res.status}`)
+    }
+    const issues = await res.json()
+    if (!Array.isArray(issues) || issues.length === 0) break
+    for (const issue of issues) {
+      if (issue.pull_request) continue
+      const m = ADO_MARKER_RE.exec(issue.body || '') || ADO_TABLE_RE.exec(issue.body || '')
+      if (m) {
+        const adoId = parseInt(m[1], 10)
+        // The oldest issue wins if a past run already duplicated one.
+        if (!map.has(adoId) || issue.number < map.get(adoId)) map.set(adoId, issue.number)
+      }
+    }
+    if (issues.length < 100) break
+  }
+  return map
+}
+
 /**
  * Normalizes a raw ADO work item (from the API) into a flat object for processing.
  * @param {object} raw - Raw work item from Azure DevOps API
@@ -437,6 +483,7 @@ async function migrateWorkItems(config, azureCreds, githubToken, targetOwner, ta
   const isCancelled = callbacks?.isCancelled || (() => false)
 
   let issuesCreated = 0
+  let issuesSkipped = 0
   let labelsCreated = 0
 
   onProgress(0, 'Querying work items from Azure DevOps...')
@@ -500,8 +547,9 @@ async function migrateWorkItems(config, azureCreds, githubToken, targetOwner, ta
 
   if (isCancelled()) return { issuesCreated, labelsCreated }
 
-  // Step 5: Create issues in dependency order
-  const adoIdToGithubIssue = new Map() // ADO work item ID → GitHub issue number
+  // Step 5: Create issues in dependency order, skipping any a previous run of
+  // this migration already created (they seed the parent/child links too).
+  const adoIdToGithubIssue = await fetchMigratedIssueMap(githubToken, targetOwner, targetRepo)
   const total = orderedItems.length
 
   for (let i = 0; i < total; i++) {
@@ -509,6 +557,11 @@ async function migrateWorkItems(config, azureCreds, githubToken, targetOwner, ta
 
     const item = orderedItems[i]
     const pct = 20 + Math.round((i / total) * 75)
+    if (adoIdToGithubIssue.has(item.id)) {
+      issuesSkipped++
+      onProgress(pct, `Already migrated ${i + 1}/${total}: ${item.title} (#${adoIdToGithubIssue.get(item.id)})`)
+      continue
+    }
     onProgress(pct, `Creating issue ${i + 1}/${total}: ${item.title}`)
 
     // Build labels for this item
@@ -565,9 +618,11 @@ async function migrateWorkItems(config, azureCreds, githubToken, targetOwner, ta
     issuesCreated++
   }
 
-  onProgress(100, `Migration complete: ${issuesCreated} issues created`)
+  onProgress(100, issuesSkipped
+    ? `Migration complete: ${issuesCreated} issues created, ${issuesSkipped} already migrated`
+    : `Migration complete: ${issuesCreated} issues created`)
 
-  return { issuesCreated, labelsCreated }
+  return { issuesCreated, issuesSkipped, labelsCreated }
 }
 
 export {
@@ -581,5 +636,6 @@ export {
   ensureLabel,
   createGitHubIssue,
   fetchExistingLabels,
+  fetchMigratedIssueMap,
   generateLabelColor
 }

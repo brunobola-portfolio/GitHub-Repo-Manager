@@ -20,6 +20,7 @@ import express from 'express';
 import { reserveAIQuota } from '../ai-quota.js';
 
 import { requireAuth, errorResponse } from '../../middleware/auth.js';
+import { requireScope } from '../../middleware/api-key-auth.js';
 import { redactValues } from '../../lib/secret-redactor.js';
 import { createInMemoryRateLimiter } from '../../lib/in-memory-rate-limiter.js';
 import { githubApi } from '../../lib/github-api.js';
@@ -103,7 +104,7 @@ router.param('commentIdx', (req, res, next, val) => {
 // POST — generate (or refresh) a draft for a PR
 // ---------------------------------------------------------------------------
 
-router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res) => {
+router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, requireScope('ai'), async (req, res) => {
     const { owner, repo, pr } = req.params;
     const userId = req.session.userId;
 

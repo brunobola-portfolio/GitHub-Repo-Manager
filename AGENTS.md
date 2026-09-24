@@ -123,7 +123,8 @@ changes; the README is for humans, this file is for you.
   `commitOrOpenPR()` — never auto-commit, never invent a new write primitive.
   Server-side derive/validate file paths; never trust client-echoed paths.
 - New `requireScope('ai')` routes must be added to `AI_GENERATION_ROUTE_PATHS`
-  in `server/middleware/api-key-auth.js` (a parity gate enforces this).
+  (exact paths) or `AI_GENERATION_ROUTE_PATTERNS` (parameterised, with their
+  method) in `server/middleware/api-key-auth.js` (parity gates enforce both).
 - Session cookies: `httpOnly`, `sameSite: 'lax'`, `secure` in production.
 
 ## Working discipline

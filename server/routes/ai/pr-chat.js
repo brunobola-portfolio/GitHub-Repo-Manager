@@ -22,6 +22,7 @@ import express from 'express';
 import { reserveAIQuota } from '../ai-quota.js';
 
 import { requireAuth, errorResponse } from '../../middleware/auth.js';
+import { requireScope } from '../../middleware/api-key-auth.js';
 import { githubApi } from '../../lib/github-api.js';
 import { readThrough } from '../../lib/gh-cache.js';
 import { createProviderForUser, AI_ERROR_CODE } from '../../lib/ai-provider.js';
@@ -144,7 +145,7 @@ router.delete('/:owner/:repo/:pr', requireAuth, (req, res) => {
 // POST — SSE stream a new turn.
 // ---------------------------------------------------------------------------
 
-router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, async (req, res) => {
+router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, requireScope('ai'), async (req, res) => {
     const { owner, repo, pr } = req.params;
     const userId = req.session.userId;
 
