@@ -145,7 +145,7 @@ router.delete('/:owner/:repo/:pr', requireAuth, (req, res) => {
 // POST — SSE stream a new turn.
 // ---------------------------------------------------------------------------
 
-router.post('/:owner/:repo/:pr', requireAuth, requireScope('ai'), generateRateLimit, async (req, res) => {
+router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, requireScope('ai'), async (req, res) => {
     const { owner, repo, pr } = req.params;
     const userId = req.session.userId;
 

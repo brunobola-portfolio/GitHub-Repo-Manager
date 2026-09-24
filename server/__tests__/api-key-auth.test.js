@@ -473,10 +473,22 @@ describe('apiKeyAuth middleware', () => {
     // deep-review comment or run a PR slash command), well beyond the AI
     // generation endpoints this carve-out is meant for. The carve-out must
     // be an exact allowlist of the actual requireScope('ai')-gated paths.
-    it('403s an ai-only key on a non-gated /api/ai/* endpoint (e.g. deep-review)', () => {
+    it('lets an ai-only key reach a parameterised generation route (Deep Review POST)', () => {
         req.method = 'POST'
         req.headers.authorization = 'Bearer grm_live_ai_only_deep_review'
         req.originalUrl = '/api/ai/deep-review/acme/widgets/42'
+        seedKey(['ai'])
+
+        apiKeyAuth(req, res, next)
+
+        expect(res.status).not.toHaveBeenCalled()
+        expect(next).toHaveBeenCalled()
+    })
+
+    it('403s an ai-only key on a same-shape non-generation route (Deep Review comment PATCH)', () => {
+        req.method = 'PATCH'
+        req.headers.authorization = 'Bearer grm_live_ai_only_deep_review'
+        req.originalUrl = '/api/ai/deep-review/12/comments/3'
         const mockRun = seedKey(['ai'])
 
         apiKeyAuth(req, res, next)
@@ -490,10 +502,10 @@ describe('apiKeyAuth middleware', () => {
         expect(mockRun).not.toHaveBeenCalled()
     })
 
-    it('403s an ai-only key on a non-gated /api/ai/* endpoint (e.g. pr-commands)', () => {
+    it('403s an ai-only key on a PR write that is not a generation (describe/publish)', () => {
         req.method = 'POST'
         req.headers.authorization = 'Bearer grm_live_ai_only_pr_commands'
-        req.originalUrl = '/api/v1/ai/pr-commands/acme/widgets/42/describe'
+        req.originalUrl = '/api/v1/ai/pr-commands/acme/widgets/42/describe/publish'
         const mockRun = seedKey(['ai'])
 
         apiKeyAuth(req, res, next)

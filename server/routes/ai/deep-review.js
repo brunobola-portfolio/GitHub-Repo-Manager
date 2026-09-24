@@ -104,7 +104,7 @@ router.param('commentIdx', (req, res, next, val) => {
 // POST — generate (or refresh) a draft for a PR
 // ---------------------------------------------------------------------------
 
-router.post('/:owner/:repo/:pr', requireAuth, requireScope('ai'), generateRateLimit, async (req, res) => {
+router.post('/:owner/:repo/:pr', requireAuth, generateRateLimit, requireScope('ai'), async (req, res) => {
     const { owner, repo, pr } = req.params;
     const userId = req.session.userId;
 

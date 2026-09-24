@@ -162,7 +162,7 @@ async function fetchPRContext(req, owner, repo, pr) {
 // POST — generate (or refresh) a cached result
 // ---------------------------------------------------------------------------
 
-router.post('/:owner/:repo/:pr/:command', requireAuth, requireScope('ai'), generateRateLimit, async (req, res) => {
+router.post('/:owner/:repo/:pr/:command', requireAuth, generateRateLimit, requireScope('ai'), async (req, res) => {
     const { owner, repo, pr, command } = req.params;
     const userId = req.session.userId;
 
