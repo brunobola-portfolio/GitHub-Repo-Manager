@@ -12,6 +12,45 @@
 
 const FONT = 'var(--ds-font-sans, ui-sans-serif, system-ui, sans-serif)'
 
+// Entity attribute rows. Mermaid 11+ reads rowOdd/rowEven, not the older
+// attributeBackgroundColor* pair, so without these the dark theme drew light
+// rows under light text: the attribute names were unreadable.
+const ER_ROWS = {
+    light: { rowOdd: '#ffffff', rowEven: '#f8fafc' },
+    dark: { rowOdd: '#1e293b', rowEven: '#111a2e' },
+}
+
+// gitGraph branch lanes. The base theme derives git0..git7 from the primary
+// fill, which in the dark theme is the canvas colour: branch lines vanished
+// into the background. Brand first, then the status hues the design system
+// already uses (slate, amber, emerald, rose); each label reads on its lane.
+const GIT_LANES = {
+    light: ['#55831b', '#64748b', '#b45309', '#047857', '#be123c', '#334155', '#6ba522', '#94a3b8'],
+    dark: ['#6ba522', '#94a3b8', '#f59e0b', '#10b981', '#fb7185', '#cbd5e1', '#a3d65c', '#64748b'],
+}
+const gitVars = (lanes, labelOn) => Object.fromEntries(lanes.flatMap((hex, i) => [
+    [`git${i}`, hex],
+    [`gitBranchLabel${i}`, labelOn(i)],
+]))
+const GIT = {
+    light: {
+        ...gitVars(GIT_LANES.light, (i) => (i === 7 ? '#0f172a' : '#ffffff')),
+        commitLabelColor: '#0f172a',
+        commitLabelBackground: '#f1f5f9',
+        tagLabelColor: '#0f172a',
+        tagLabelBackground: '#eff5e8',
+        tagLabelBorder: '#55831b',
+    },
+    dark: {
+        ...gitVars(GIT_LANES.dark, (i) => (i === 7 ? '#f1f5f9' : '#0f172a')),
+        commitLabelColor: '#f1f5f9',
+        commitLabelBackground: '#334155',
+        tagLabelColor: '#f1f5f9',
+        tagLabelBackground: '#304a0f',
+        tagLabelBorder: '#6ba522',
+    },
+}
+
 const LIGHT = {
     fontFamily: FONT,
     background: '#ffffff',
@@ -54,6 +93,8 @@ const LIGHT = {
     errorTextColor: '#9f1239',
     attributeBackgroundColorOdd: '#ffffff',
     attributeBackgroundColorEven: '#f8fafc',
+    ...ER_ROWS.light,
+    ...GIT.light,
 }
 
 const DARK = {
@@ -98,6 +139,8 @@ const DARK = {
     errorTextColor: '#fecdd3',
     attributeBackgroundColorOdd: '#1e293b',
     attributeBackgroundColorEven: '#0f172a',
+    ...ER_ROWS.dark,
+    ...GIT.dark,
 }
 
 /**
