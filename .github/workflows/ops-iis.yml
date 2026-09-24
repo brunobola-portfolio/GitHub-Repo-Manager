@@ -1,7 +1,7 @@
 name: Ops — IIS proxy
 
 # Operator tooling for the production VPS, run on the same self-hosted runner
-# the release deploy uses. Eight actions:
+# the release deploy uses. Nine actions:
 #
 #   inspect — print the server-level ARR proxy settings, the site's proxy
 #             element, and what /api/auth/login answers from the box itself.
@@ -34,9 +34,15 @@ name: Ops — IIS proxy
 #             service .env, refusing an unverified Resend domain, a deployment
 #             mode that is not saas/self-host, or Stripe values whose prefixes
 #             are wrong; restarts, rolls back on failure. Never prints a value.
+#   redeploy — install the version that is already running again, from its
+#             published release, with the deploy.ps1 now on the server. A
+#             repair, and the way to put a deploy.ps1 change to work without
+#             cutting a release: the server only picks up a new deploy.ps1 at
+#             the END of a deploy. Never rebuilds the artifact.
 #
-# Only harden and configure-integrations write on the server, each with a
-# backup taken first and restored automatically if the health check fails.
+# Only harden, configure-integrations and redeploy write on the server, each
+# with a backup taken first and restored automatically if the health check
+# fails.
 
 on:
   workflow_dispatch:
@@ -46,7 +52,7 @@ on:
         required: true
         default: inspect
         type: choice
-        options: [inspect, apply, app-log, env-check, sentry-test, email-test, harden, configure-integrations]
+        options: [inspect, apply, app-log, env-check, sentry-test, email-test, harden, configure-integrations, redeploy]
 
 permissions:
   contents: read
@@ -425,6 +431,19 @@ jobs:
           } catch {
             throw "Resend refused the send: $($_.Exception.Message). A 401 means the key is invalid; a 403 usually means the sending domain is not verified."
           }
+
+      - name: Redeploy — the running version again, with the current deploy.ps1
+        if: ${{ inputs.action == 'redeploy' }}
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          $installed = (Get-Content C:\apps\GitHubRepoManager\package.json -Raw | ConvertFrom-Json).version
+          if ($installed -notmatch '^\d+\.\d+\.\d+$') { throw "Installed version is unreadable: '$installed'" }
+          "Redeploying v${installed}: the same published artifact, installed by the deploy.ps1 now on the server"
+          Set-Location C:\deploy\repomanager
+          .\deploy.ps1 -FromRelease "v$installed" -AppRoot C:\apps\GitHubRepoManager
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Service log — warnings, errors and auth events
         if: ${{ inputs.action == 'app-log' }}
