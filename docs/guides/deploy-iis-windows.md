@@ -547,13 +547,17 @@ network, and a build that happens twice can differ twice.
 | Step | What must hold before the next one runs |
 |------|------------------------------------------|
 | 1 | Package opens, carries `server/` + `dist/`, version matches its file name |
-| 2 | Free disk covers the backup **and** the new content |
-| 3 | Backup taken, file count verified against the source |
+| 2 | Free disk covers the new content next to the install |
+| 3 | New version unpacked beside the install (same volume) and its version checked — **while the old one keeps serving** |
 | 4 | Service stopped — releases file handles, and stops traffic hitting a half-swapped tree |
-| 5 | Content swapped, retrying files that are briefly locked |
+| 5 | Swap by two directory renames: the running install becomes the backup, the unpacked one becomes the install. If a rename is refused, a verified multi-threaded copy; if even that is blocked, the previous install is restored and the service restarted on it |
 | 6 | Service started |
 | 7 | `/api/health` reports **the version just installed**, `/api/health/ready` reports every dependency ok |
-| 8 | If step 7 fails: automatic rollback to the step-3 backup, service restarted from it |
+| 8 | If step 7 fails: automatic rollback — the previous install renames back, the failed one is kept as `.failed-<stamp>` for its logs |
+
+The service is down only for step 5 and the restart: seconds. Copying the
+~37,000-file tree with the service stopped, as earlier versions of the script
+did, kept the site down for about ten minutes per release.
 
 Step 7 is the one that matters most. A health check that only asks "are you
 alive?" passes when the old build is still running — healthy, and not what you

@@ -26,11 +26,41 @@ describe('the IIS deploy script', () => {
 
     const src = existsSync(SCRIPT) ? readFileSync(SCRIPT, 'utf8') : ''
 
-    it('takes a backup before it stops anything', () => {
-        const backup = src.indexOf("Write-Section '3. Backup'")
+    it('unpacks and checks the new version before it stops anything', () => {
+        // Everything slow happens while the old build still serves; the
+        // service is down only for the swap itself.
+        const unpack = src.indexOf("Write-Section '3. Unpacking next to the install (still serving)'")
+        const verify = src.indexOf('Unpacked tree reports v')
         const stop = src.indexOf("Write-Section '4. Stopping the service'")
-        expect(backup).toBeGreaterThan(-1)
-        expect(stop).toBeGreaterThan(backup)
+        expect(unpack).toBeGreaterThan(-1)
+        expect(verify).toBeGreaterThan(unpack)
+        expect(stop).toBeGreaterThan(verify)
+    })
+
+    it('stages beside the install, never in %TEMP% (a rename needs the same volume)', () => {
+        expect(src).toContain('$staging    = "$AppRoot.next-$stamp"')
+        expect(src).not.toMatch(/GetTempPath\(\)\)\s*"grm-deploy/)
+    })
+
+    it('keeps the previous install as the backup before it places the new one', () => {
+        const fn = src.slice(src.indexOf('function Invoke-Swap'), src.indexOf('function Test-Health'))
+        const keep = fn.indexOf('[System.IO.Directory]::Move($Root, $Keep)')
+        const place = fn.indexOf('[System.IO.Directory]::Move($Incoming, $Root)')
+        expect(keep).toBeGreaterThan(-1)
+        expect(place).toBeGreaterThan(keep)
+    })
+
+    it('never deletes the install tree to make room', () => {
+        // The old swap emptied AppRoot and copied into it: a failure halfway
+        // left a mixed tree with the service stopped.
+        expect(src).not.toMatch(/Get-ChildItem -Path \$AppRoot -Force \| Remove-Item/)
+    })
+
+    it('restores the previous install and restarts it when the swap cannot complete', () => {
+        expect(src).toContain('the previous install was restored')
+        const swapFail = src.slice(src.indexOf('Write-Fail "Swap failed'))
+        expect(swapFail.indexOf('Start-App -Name $ServiceName')).toBeGreaterThan(-1)
+        expect(swapFail.indexOf('exit 1')).toBeGreaterThan(swapFail.indexOf('Start-App -Name $ServiceName'))
     })
 
     it('refuses a backup it could not complete', () => {
