@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Dependencies on their current majors: mermaid 12, framer-motion 13 and
+  ioredis 6 (checked against a real Redis for sessions, rate limits and the
+  readiness probe; every diagram type rendered in both themes; the animated
+  surfaces driven in the app), and vitest 5 for the test suite.
+- Backend tests run in Node again. Vitest 4 had stopped reading the setting
+  that assigned them, without a warning, so 118 server test files were
+  running inside a simulated browser.
+
 ### Security
 
 - Deep Review, PR chat, PR commands and Prompt Studio preset tests now
