@@ -298,6 +298,22 @@ describe('parameterised generation patterns / requireScope("ai") parity', () => 
         return out.sort()
     }
 
+    it('every listed prefixed router is mounted on the barrel, at its prefix', async () => {
+        const mounted = aiRouter.stack.filter((l) => l.name === 'router').map((l) => l.handle)
+        for (const [prefix, sub] of AI_PREFIXED_ROUTERS) {
+            expect(mounted).toContain(sub)
+            // And at the prefix the patterns assume: a route of that router
+            // answers under it (401 from requireAuth, not a 404).
+            const app = express()
+            app.use('/api', aiRouter)
+            const route = sub.stack.find((l) => l.route)
+            const path = `/api${prefix}${route.route.path.replace(/:[^/]+/g, 'x')}`
+            const method = Object.keys(route.route.methods)[0]
+            const res = await request(app)[method](path)
+            expect(res.status).not.toBe(404)
+        }
+    })
+
     it('gated prefixed routes === AI_GENERATION_ROUTE_PATTERNS', () => {
         const patterns = AI_GENERATION_ROUTE_PATTERNS.map(({ method, path }) => `${method} ${path}`).sort()
         expect(gatedPrefixedRoutes()).toEqual(patterns)
