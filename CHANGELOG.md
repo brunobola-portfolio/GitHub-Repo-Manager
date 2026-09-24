@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Deep Review, PR chat, PR commands and Prompt Studio preset tests now
+  require an API key's `ai` scope. A write-only key could run a full Deep
+  Review through a preset test while an ai-only key was refused. The
+  ai-only allowance matches these routes by method and path, so an ai-only
+  key still cannot edit or publish a review.
+
+### Fixed
+
+- A work-items migration that was retried or resumed no longer creates
+  every GitHub issue again: issues carry a hidden Azure DevOps id marker,
+  and the task skips work items that already have an issue (including ones
+  from older runs, found by their metadata table).
+- The TFVC snapshot fallback streams its ZIP to disk under the 1 GB cap
+  instead of holding the whole archive in memory first.
+- Diagrams in dark mode: entity attributes are readable and git branch
+  lanes no longer vanish into the background.
+
 ## [4.26.0] - 2026-09-23
 
 ### Performance
