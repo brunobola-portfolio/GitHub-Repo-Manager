@@ -62,9 +62,9 @@ vi.mock('../lib/utils.js', () => ({
 // Real middleware/auth.js, real middleware/api-key-auth.js, real routes/ai.js
 // — none of these are mocked, so the actual requireAuth -> apiKeyAuth ->
 // requireScope('ai') chain runs.
-const { default: aiRouter } = await import('../routes/ai.js')
+const { default: aiRouter, AI_PREFIXED_ROUTERS } = await import('../routes/ai.js')
 const { requireAuth } = await import('../middleware/auth.js')
-const { AI_GENERATION_ROUTE_PATHS } = await import('../middleware/api-key-auth.js')
+const { AI_GENERATION_ROUTE_PATHS, AI_GENERATION_ROUTE_PATTERNS } = await import('../middleware/api-key-auth.js')
 
 function makeApp() {
     const app = express()
@@ -149,25 +149,35 @@ describe('AI API-key scope enforcement (end-to-end)', () => {
         })
     })
 
-    it('ai-only key gets 403 on a sibling /api/ai/* endpoint not gated by requireScope("ai") (deep-review)', async () => {
-        // Regression guard: deep-review, prompt-studio, pr-commands, and
-        // pr-chat also live under /api/ai/* but are Pro-tier features, not
-        // "AI generation" endpoints in the requireAI sense, and are NOT
-        // gated by requireScope('ai'). The `ai`-scope carve-out in
-        // apiKeyAuth must be an exact allowlist, not a blanket /api/ai/
-        // prefix match, or an ai-only key would gain write access here too.
+    it('ai-only key gets 403 on a same-shape sibling of a parameterised generation route (deep-review comment PATCH)', async () => {
+        // POST /ai/deep-review/:owner/:repo/:pr is a generation route an
+        // ai-only key may call. PATCH /ai/deep-review/:draftId/comments/:idx has
+        // the same three segments; the carve-out patterns carry their method so
+        // that edit still needs `write`.
         seedApiKey(['ai'])
 
         const res = await request(makeApp())
-            .post('/api/ai/deep-review/acme/widgets/42')
+            .patch('/api/ai/deep-review/12/comments/3')
             .set('Authorization', 'Bearer grm_live_ai_only_deep_review')
-            .send({})
+            .send({ action: 'dismiss' })
 
         expect(res.status).toBe(403)
         expect(res.body).toEqual({
             error: 'This API key lacks the required "write" scope',
             required: 'write',
         })
+    })
+
+    it('write-only key gets 403 on the Prompt Studio test run (it generates, so it needs `ai`)', async () => {
+        seedApiKey(['write'])
+
+        const res = await request(makeApp())
+            .post('/api/ai/prompt-studio/presets/1/test')
+            .set('Authorization', 'Bearer grm_live_write_only_prompt_test')
+            .send({})
+
+        expect(res.status).toBe(403)
+        expect(res.body).toEqual({ error: 'Insufficient permissions', required: 'ai' })
     })
 
     it('admin-scoped key gets 200 on an AI generation POST endpoint', async () => {
@@ -219,8 +229,10 @@ describe('carve-out allowlist / requireScope("ai") parity', () => {
     // generation sub-routers are mounted at '/', so their route paths are
     // already the '/ai/...' strings the allowlist uses; the prefixed Pro
     // sub-routers contribute only param-style paths that never collide).
+    const PREFIXED = new Set(AI_PREFIXED_ROUTERS.map(([, r]) => r))
     function collectRoutes(router, out = []) {
         for (const layer of router.stack) {
+            if (PREFIXED.has(layer.handle)) continue
             if (layer.route) {
                 const hasAiScope = layer.route.stack.some(
                     (l) => l.handle?.requiredScope === 'ai'
@@ -265,6 +277,30 @@ describe('carve-out allowlist / requireScope("ai") parity', () => {
         // allowlist (fail-closed — an ai-only key silently 403s on a route
         // that was meant to accept it).
         expect(gated).toEqual(expected)
+    })
+})
+
+describe('parameterised generation patterns / requireScope("ai") parity', () => {
+    // Every (method, prefixed path) that carries requireScope('ai') in the
+    // prefixed sub-routers must be one of AI_GENERATION_ROUTE_PATTERNS and vice
+    // versa — the same both-directions guarantee as the exact list above.
+    function gatedPrefixedRoutes() {
+        const out = []
+        for (const [prefix, sub] of AI_PREFIXED_ROUTERS) {
+            for (const layer of sub.stack) {
+                if (!layer.route) continue
+                if (!layer.route.stack.some((l) => l.handle?.requiredScope === 'ai')) continue
+                for (const method of Object.keys(layer.route.methods)) {
+                    for (const p of [].concat(layer.route.path)) out.push(`${method.toUpperCase()} ${prefix}${p}`)
+                }
+            }
+        }
+        return out.sort()
+    }
+
+    it('gated prefixed routes === AI_GENERATION_ROUTE_PATTERNS', () => {
+        const patterns = AI_GENERATION_ROUTE_PATTERNS.map(({ method, path }) => `${method} ${path}`).sort()
+        expect(gatedPrefixedRoutes()).toEqual(patterns)
     })
 })
 

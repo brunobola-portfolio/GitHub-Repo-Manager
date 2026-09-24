@@ -28,6 +28,7 @@ import express from 'express';
 import { reserveAIQuota } from '../ai-quota.js';
 import db from '../../db.js';
 import { requireAuth, errorResponse } from '../../middleware/auth.js';
+import { requireScope } from '../../middleware/api-key-auth.js';
 import { createCooldownLimiter } from '../../lib/in-memory-rate-limiter.js';
 import { validateBody } from '../../middleware/validate-request.js';
 import { promptPresetCreateSchema, promptPresetUpdateSchema } from '../../lib/validators.js';
@@ -321,7 +322,7 @@ const SAMPLE_DIFF = `--- src/sample.js
 const SAMPLE_FILE = { filename: 'src/sample.js', status: 'modified', additions: 1, deletions: 1, changes: 2 };
 const SAMPLE_PR = { title: 'Use strict equality', author: 'tester', body: 'Sample PR', additions: 1, deletions: 1 };
 
-router.post('/presets/:id/test', requireAuth, testRateLimit, async (req, res) => {
+router.post('/presets/:id/test', requireAuth, requireScope('ai'), testRateLimit, async (req, res) => {
     const id = req.params.id;
     const userId = req.session.userId;
 

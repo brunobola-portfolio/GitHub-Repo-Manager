@@ -19,6 +19,7 @@ import { reserveAIQuota } from '../ai-quota.js';
 import { createHash } from 'crypto';
 
 import { requireAuth, errorResponse } from '../../middleware/auth.js';
+import { requireScope } from '../../middleware/api-key-auth.js';
 import { redactValues } from '../../lib/secret-redactor.js';
 import { githubApi } from '../../lib/github-api.js';
 import { readThrough } from '../../lib/gh-cache.js';
@@ -161,7 +162,7 @@ async function fetchPRContext(req, owner, repo, pr) {
 // POST — generate (or refresh) a cached result
 // ---------------------------------------------------------------------------
 
-router.post('/:owner/:repo/:pr/:command', requireAuth, generateRateLimit, async (req, res) => {
+router.post('/:owner/:repo/:pr/:command', requireAuth, requireScope('ai'), generateRateLimit, async (req, res) => {
     const { owner, repo, pr, command } = req.params;
     const userId = req.session.userId;
 

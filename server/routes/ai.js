@@ -49,19 +49,19 @@ router.use(suggestNameDescriptionRouter);
 router.use(promptsRouter);
 router.use(diagramsRouter);
 router.use(imagesRouter);
-// Deep Review: full draft lifecycle (generate / get / patch / publish / delete).
-// Mounted under /api/ai/deep-review/* — keeps the engine + store + publish
-// builder behind a single namespace the frontend can hit.
-router.use('/ai/deep-review', deepReviewRouter);
-// Prompt Studio (slice 1b): preset library + sandbox /test for the Deep
-// Review system prompt. GETs are free; mutations + /test are Pro-gated.
-router.use('/ai/prompt-studio', promptStudioRouter);
-// PR slash commands (slice 3 — Pro): /describe, /test_plan, /improve.
-// Generates structured PR-context artifacts and (for /describe) PATCHes the
-// PR body via GitHub. All endpoints are Pro-gated.
-router.use('/ai/pr-commands', prCommandsRouter);
-// PR chat (slice 2 — Pro): streaming Q&A about a PR with persisted history.
-// Uses SSE on POST and JSON on GET / DELETE. Pro-gated.
-router.use('/ai/pr-chat', prChatRouter);
+// Prefixed sub-routers. Exported so the scope parity gate
+// (ai-key-scope-enforcement.test.js) can see their routes WITH the prefix and
+// hold their requireScope('ai') mounts against AI_GENERATION_ROUTE_PATTERNS.
+//   deep-review   — draft lifecycle (generate / get / patch / publish / delete)
+//   prompt-studio — preset library + sandbox /test for the Deep Review prompt
+//   pr-commands   — /describe, /test_plan, /improve (describe can PATCH the PR)
+//   pr-chat       — streaming Q&A about a PR with persisted history
+export const AI_PREFIXED_ROUTERS = Object.freeze([
+    ['/ai/deep-review', deepReviewRouter],
+    ['/ai/prompt-studio', promptStudioRouter],
+    ['/ai/pr-commands', prCommandsRouter],
+    ['/ai/pr-chat', prChatRouter],
+]);
+for (const [prefix, subRouter] of AI_PREFIXED_ROUTERS) router.use(prefix, subRouter);
 
 export default router;

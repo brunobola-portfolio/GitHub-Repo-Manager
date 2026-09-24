@@ -102,6 +102,23 @@ const AI_GENERATION_ROUTES = new Set(
     AI_GENERATION_ROUTE_PATHS.flatMap((p) => [`/api${p}`, `/api/v1${p}`])
 );
 
+// Generation routes with path parameters. Unlike the exact list above these
+// carry their METHOD: a parameterised path can match a sibling route of the
+// same shape (POST /ai/deep-review/:owner/:repo/:pr has the same three
+// segments as PATCH /ai/deep-review/:draftId/comments/:idx), and the carve-out
+// must never hand an ai-only key a write that is not a generation.
+export const AI_GENERATION_ROUTE_PATTERNS = Object.freeze([
+    { method: 'POST', path: '/ai/deep-review/:owner/:repo/:pr' },
+    { method: 'POST', path: '/ai/pr-chat/:owner/:repo/:pr' },
+    { method: 'POST', path: '/ai/pr-commands/:owner/:repo/:pr/:command' },
+    { method: 'POST', path: '/ai/prompt-studio/presets/:id/test' },
+]);
+const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const AI_GENERATION_MATCHERS = AI_GENERATION_ROUTE_PATTERNS.map(({ method, path }) => {
+    const body = path.split('/').map((seg) => (seg.startsWith(':') ? '[^/]+' : escapeRegExp(seg))).join('/');
+    return { method, re: new RegExp(`^/api(?:/v1)?${body}$`) };
+});
+
 // req.originalUrl is used (never req.path) because this function runs deep
 // inside nested routers (via requireAuth called at the individual-route
 // level) where req.path/req.url have already been rebased relative to the
@@ -109,7 +126,8 @@ const AI_GENERATION_ROUTES = new Set(
 function isAiRoute(req) {
     const url = req.originalUrl || '';
     const path = url.split('?')[0];
-    return AI_GENERATION_ROUTES.has(path);
+    if (AI_GENERATION_ROUTES.has(path)) return true;
+    return AI_GENERATION_MATCHERS.some((m) => m.method === req.method && m.re.test(path));
 }
 
 // Note: API key authentication does not set req.session.accessToken.
