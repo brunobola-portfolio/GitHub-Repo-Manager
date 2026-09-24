@@ -13,6 +13,9 @@
 import { decryptCredentials } from './lib/credential-encryption.js';
 import { resolveAzureBaseUrl, encodePathSegments, classifyAzureHost } from './lib/azure-host-validator.js';
 import { basicAuthHeader } from './lib/basic-auth-header.js';
+import { createWriteStream } from 'node:fs';
+import { Readable, Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 
 const DEFAULT_HOST = 'dev.azure.com';
 const API_VERSION = '7.1';
@@ -637,9 +640,17 @@ async function deleteGitRepo(org, project, repoId, pat, host = DEFAULT_HOST) {
 }
 
 /**
- * Download TFVC items as ZIP (fallback for snapshot migration without history)
+ * Stream TFVC items as a ZIP to `destPath` (snapshot migration without
+ * history), refusing more than `maxBytes`.
+ *
+ * It used to buffer the whole archive in memory and only then compare it with
+ * the 1 GB limit, so the snapshot step — which every TFVC migration reaches by
+ * default when the history import fails — could take the server down with one
+ * large project. The cap is now enforced while the bytes arrive.
+ *
+ * @returns {Promise<number>} bytes written
  */
-async function downloadTfvcItems(org, project, scopePath, pat, host = DEFAULT_HOST) {
+async function downloadTfvcItems(org, project, scopePath, pat, host = DEFAULT_HOST, { destPath, maxBytes }) {
     const path = scopePath || `$/${project}`;
     const url = `${orgBaseFor(host, org)}/${encodeURIComponent(project)}/_apis/tfvc/items?scopePath=${encodeURIComponent(path)}&recursionLevel=Full&download=true&api-version=${API_VERSION}`;
     // Snapshot ZIPs can be large; allow a much longer ceiling than the default
@@ -654,7 +665,22 @@ async function downloadTfvcItems(org, project, scopePath, pat, host = DEFAULT_HO
         const body = await res.json().catch(() => null);
         throw new Error(body?.message || `Failed to download TFVC items: ${res.status}`);
     }
-    return Buffer.from(await res.arrayBuffer());
+    const tooLarge = (bytes) => new Error(`TFVC content exceeds the ${Math.round(maxBytes / 1024 / 1024)} MB snapshot limit (${Math.round(bytes / 1024 / 1024)} MB so far).`);
+    const declared = Number(res.headers.get('content-length'));
+    if (Number.isFinite(declared) && declared > maxBytes) {
+        await res.body?.cancel().catch(() => {});
+        throw tooLarge(declared);
+    }
+    let written = 0;
+    const cap = new Transform({
+        transform(chunk, _enc, done) {
+            written += chunk.length;
+            if (written > maxBytes) return done(tooLarge(written));
+            done(null, chunk);
+        },
+    });
+    await pipeline(Readable.fromWeb(res.body), cap, createWriteStream(destPath));
+    return written;
 }
 
 /**
