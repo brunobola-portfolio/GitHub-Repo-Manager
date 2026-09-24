@@ -37,6 +37,8 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.26.2 (2026-09-24) — Deploys in seconds; lodash-es advisory closed.**
+  Deploys no longer take the site down for ten minutes.
 - **v4.26.1 (2026-09-24) — Current majors, ai scope on every generation
   route, resumable work items.** See the changelog.
 - **v4.26.0 (2026-09-23) — Review panel closed: atomic AI quotas, lighter
