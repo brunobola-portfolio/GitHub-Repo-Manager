@@ -144,7 +144,7 @@
     "rehype-parse": "^9.0.1",
     "rehype-stringify": "^10.0.1",
     "rollup-plugin-visualizer": "^7.1.1",
-    "supertest": "^7.2.2",
+    "supertest": "^7.3.0",
     "tailwindcss": "^4.1.17",
     "vite": "^8.3.0",
     "vitest": "^5.0.1"
