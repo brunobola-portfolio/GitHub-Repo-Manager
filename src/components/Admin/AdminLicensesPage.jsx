@@ -13,6 +13,7 @@
  *            here receive the replacement automatically.
  */
 import { useState, useEffect, useCallback, useId } from 'react'
+import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
 import { KeyRound, RefreshCw, ShieldAlert, ShieldCheck, ChevronDown, Ban, RotateCcw, Undo2 } from 'lucide-react'
 import { SectionSpinner } from '../ui/Spinner'
@@ -33,6 +34,14 @@ const LEVEL = {
 }
 
 const muted = 'text-slate-500 dark:text-slate-400'
+
+// These routes answer every refusal with a sentence meant for the operator
+// ("This instance does not hold the licence signing key.") plus a `code`;
+// the generic formatter would replace it with "something failed, retry".
+function reportError(toast, err, title) {
+    if (err?.code && err.message) toast.error(`${title}: ${err.message}`)
+    else toast.errorFromException(err, { fallbackTitle: title })
+}
 
 function when(iso) {
     if (!iso) return 'never'
@@ -139,7 +148,7 @@ function LicenseRow({ license, onChanged }) {
         try {
             setInstalls(await listInstalls(license.subRef))
         } catch (err) {
-            toast.errorFromException(err, { fallbackTitle: "Couldn't load installations" })
+            reportError(toast, err, "Couldn't load installations")
             setInstalls([])
         }
     }, [license.subRef, toast])
@@ -210,17 +219,21 @@ function LicenseRow({ license, onChanged }) {
                 </div>
             )}
 
-            {action?.kind === 'block' || action?.kind === 'unblock' ? (
+            {/* Portalled: inside the view the dialogs share its stacking
+                context, and the mobile quick-actions button painted over them. */}
+            {(action?.kind === 'block' || action?.kind === 'unblock') && createPortal(
                 <BlockDialog
                     license={license}
                     install={action.install}
                     unblock={action.kind === 'unblock'}
                     onClose={() => setAction(null)}
                     onDone={afterAction}
-                />
-            ) : null}
-            {action?.kind === 'rotate' && (
-                <RotateDialog license={license} installs={installs ?? []} onClose={() => setAction(null)} onDone={afterAction} />
+                />,
+                document.body,
+            )}
+            {action?.kind === 'rotate' && createPortal(
+                <RotateDialog license={license} installs={installs ?? []} onClose={() => setAction(null)} onDone={afterAction} />,
+                document.body,
             )}
         </li>
     )
@@ -306,7 +319,7 @@ function BlockDialog({ license, install, unblock, onClose, onDone }) {
                 ? `Installation #${install.seq} can renew again.`
                 : `Installation #${install.seq} gets no more renewals${n > 1 ? ` (nor ${n - 1} more on its machine)` : ''}.`)
         } catch (err) {
-            toast.errorFromException(err, { fallbackTitle: unblock ? "Couldn't unblock" : "Couldn't block" })
+            reportError(toast, err, unblock ? "Couldn't unblock" : "Couldn't block")
         } finally {
             setBusy(false)
         }
@@ -359,9 +372,9 @@ function RotateDialog({ license, installs, onClose, onDone }) {
         setBusy(true)
         try {
             const res = await rotateLicense(license.subRef, [...keep], reason.trim())
-            await onDone(`Key rotated: ${res.revoked} revoked, ${res.blocked} installation${res.blocked === 1 ? '' : 's'} blocked. ${res.emailDelivered ? 'The customer was emailed the new key.' : 'The email was not sent; send the key from the issued licences record.'}`)
+            await onDone(`Key rotated: ${res.revoked} revoked, ${res.blocked} installation${res.blocked === 1 ? '' : 's'} blocked. ${res.emailDelivered ? 'The customer was emailed the new key.' : 'The customer was NOT emailed (no e-mail delivery here, or no address on file); the new key is stored with the subscription in issued_licenses.'}`)
         } catch (err) {
-            toast.errorFromException(err, { fallbackTitle: "Couldn't rotate the key" })
+            reportError(toast, err, "Couldn't rotate the key")
         } finally {
             setBusy(false)
         }
