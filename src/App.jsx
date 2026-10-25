@@ -76,6 +76,7 @@ const AIAssistant = lazy(() => import('./components/AIAssistant').then(m => ({ d
 const PRReviewView = lazy(() => import('./components/PRReview/PRReviewView').then(m => ({ default: m.PRReviewView })))
 const WorkBoardPage = lazy(() => import('./components/WorkBoard/WorkBoardPage').then(m => ({ default: m.WorkBoardPage })))
 const AdminDLQPage = lazy(() => import('./components/Admin/AdminDLQPage').then(m => ({ default: m.AdminDLQPage })))
+const AdminLicensesPage = lazy(() => import('./components/Admin/AdminLicensesPage').then(m => ({ default: m.AdminLicensesPage })))
 const PromptStudioPage = lazy(() => import('./components/AIPrompts/PromptStudioPage').then(m => ({ default: m.PromptStudioPage })))
 const AuditLogPage = lazy(() => import('./components/Audit/AuditLogPage').then(m => ({ default: m.AuditLogPage })))
 // Lazy-load the landing page: only rendered for unauthenticated visitors,
@@ -535,6 +536,7 @@ function AppContent() {
         onToggleOrgDrawer={() => setOrgDrawerOpen(true)}
         isAdmin={isAdmin}
         onOpenAdminDLQ={() => setActiveView('admin-dlq')}
+        onOpenAdminLicenses={() => setActiveView('admin-licenses')}
         onOpenCommandPalette={commandPalette.open}
       />
 
@@ -719,6 +721,12 @@ function AppContent() {
         {activeView === 'admin-dlq' && user && (
           <ViewShell name="DLQ Admin" onGoHome={() => setActiveView('dashboard')}>
             <AdminDLQPage />
+          </ViewShell>
+        )}
+
+        {activeView === 'admin-licenses' && user && (
+          <ViewShell name="Licences" onGoHome={() => setActiveView('dashboard')}>
+            <AdminLicensesPage />
           </ViewShell>
         )}
       </main>

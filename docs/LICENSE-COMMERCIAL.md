@@ -76,8 +76,8 @@ the tier, the organisation and the expiry (a seat count is recorded for
 reference and not enforced). Validation is offline: the key is checked
 locally, so an installation with no network keeps working until the key's end
 date. An installation with network access checks in once a day to fetch
-renewed keys and revocations and to be counted against the installations its
-plan covers; `LICENSE_AUTO_RENEW=false` turns that off.
+renewed keys and revocations and to be counted against the machines its plan
+covers; `LICENSE_AUTO_RENEW=false` turns that off.
 
 The key is an **entitlement**, not a permission: it tells your instance which
 ceilings to apply. It is not what makes your use of the software lawful; the
@@ -117,10 +117,17 @@ software itself. Apache-2.0 permits that to anyone, subscriber or not.
   installation that checks in receives the revocation of a refunded or
   charged-back key at its next daily check-in. See
   [`billing-and-licensing.md`](billing-and-licensing.md) for the full policy.
-- **Installations.** A Pro key covers one installation plus one more
-  (staging, a rebuilt server); Enterprise covers ten. Installations that check
-  in are counted, and going over is shown in Settings and to BolaLabs. It is
-  never blocked.
+- **Installations.** A Pro key covers one machine plus one more (staging, a
+  rebuilt server); Enterprise covers ten. Installations that check in are
+  counted by machine (a reinstall on the same machine is not a second one),
+  each gets an installation number, and going over is shown in Settings and to
+  BolaLabs. Going over is never blocked.
+- **A key that is shared beyond your organisation.** BolaLabs may stop
+  renewals for a specific installation it does not recognise, or replace your
+  key: you receive the new key by e-mail, the installations you confirm keep
+  working without any action, and the old key is revoked. Your own
+  installations keep working throughout; nothing is switched off before the
+  end date of the key it holds.
 - Upon expiration the ceilings revert to the free tier. The software keeps
   working and stays yours to run — Apache-2.0 does not expire
 - No data is lost upon expiration

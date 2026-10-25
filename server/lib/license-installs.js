@@ -3,13 +3,22 @@
 
 /**
  * The issuer's side of the licence check-in: which installations use a
- * subscription's keys, the newest key an installation should run, and which
- * of the subscription's keys were revoked.
+ * subscription's keys, the newest key an installation should run, which of
+ * the subscription's keys were revoked, and what the operator did about an
+ * installation (blocked it from renewals).
  *
- * A licence covers one installation plus a spare (staging, a migration, a
- * rebuilt server). Going over is recorded and shown, never blocked: a key
- * that stopped working because a server was rebuilt would hurt the people
- * the limit exists to protect.
+ * A licence covers a number of MACHINES: one plus a spare on Pro (staging, a
+ * migration, a rebuilt server). An installation is identified by its own
+ * random install id; the machine by a salted hash of the OS machine id when
+ * the installation can read one (Docker without the host's id cannot, and
+ * then each installation counts as its own machine). A reinstall on the same
+ * machine is therefore not a second machine.
+ *
+ * Going over is recorded and shown, never refused: a key that stopped working
+ * because a server was rebuilt would hurt the people the limit exists to
+ * protect. Far over the limit is audited once as suspected sharing, and the
+ * operator answers it with the two tools below: block an installation from
+ * renewals, or rotate the key and keep only the installations they trust.
  */
 
 import { createHash } from 'node:crypto'
@@ -18,16 +27,28 @@ import db from '../db.js'
 /** Installations seen in this many days count as active. */
 export const ACTIVE_DAYS = 30
 
+/** Machine hashes as the installation sends them: sha256 hex. */
+export const MACHINE_HASH = /^[0-9a-f]{64}$/
+
 function envInt(name, fallback) {
     const n = Number.parseInt(process.env[name] ?? '', 10)
     return Number.isFinite(n) && n >= 1 ? n : fallback
 }
 
-/** How many active installations a key of this tier covers. */
+/** How many active machines a key of this tier covers. */
 export function installLimit(tier) {
     if (tier === 'enterprise') return envInt('LICENSE_INSTALLS_ENTERPRISE', 10)
     if (tier === 'pro') return envInt('LICENSE_INSTALLS_PRO', 2)
     return 1
+}
+
+/**
+ * ok: within the plan. over: above it, which a spare machine or a migration
+ * explains. suspected: more than twice the plan, which they do not.
+ */
+export function sharingLevel(active, limit) {
+    if (active <= limit) return 'ok'
+    return active > limit * 2 ? 'suspected' : 'over'
 }
 
 /**
@@ -53,38 +74,198 @@ export function subscriptionRefFor(lid) {
     return row?.stripe_subscription_id || `lid:${lid}`
 }
 
+const ACTIVE = "julianday(last_seen) >= julianday('now') - @days"
+
 /**
- * Record one check-in and return the active count.
+ * Record one check-in.
  *
- * @param {{ subRef: string, lid: string, installId: string, name?: string|null, ip?: string, version?: string|null }} c
- * @returns {{ active: number }}
+ * A new installation on a machine the operator blocked starts blocked: a
+ * wiped data volume must not be a way around a block. The opposite is NOT
+ * inherited: the machine hash is sent by the client (LICENSE_MACHINE_ID can
+ * set it), so it may narrow what an installation gets but never widen it. A
+ * new install id after a rotation receives the replacement only once the
+ * operator vouches for it (unblockInstall).
+ *
+ * @param {{ subRef: string, lid: string, tier?: string|null, installId: string, machine?: string|null, platform?: string|null, name?: string|null, ip?: string, version?: string|null }} c
+ * @returns {{ seq: number, blocked: boolean, keptAt: string|null, active: number }}
  */
-export function recordCheckin({ subRef, lid, installId, name = null, ip, version = null }) {
+export function recordCheckin({ subRef, lid, tier = null, installId, machine = null, platform = null, name = null, ip, version = null }) {
     const installHash = createHash('sha256').update(String(installId)).digest('hex')
-    db.prepare(`
-        INSERT INTO license_installs (sub_ref, lid, install_hash, name, ip_prefix, app_version)
-        VALUES (@subRef, @lid, @installHash, @name, @ipPrefix, @version)
-        ON CONFLICT(sub_ref, install_hash) DO UPDATE SET
-            lid = excluded.lid, name = excluded.name, ip_prefix = excluded.ip_prefix,
-            app_version = excluded.app_version, last_seen = datetime('now')
-    `).run({ subRef, lid, installHash, name, ipPrefix: ipPrefix(ip), version })
-    return { active: countActive(subRef) }
+    const machineHash = machine && MACHINE_HASH.test(machine) ? machine : null
+    const row = db.transaction(() => {
+        const inheritedBlock = machineHash
+            ? db.prepare(`
+                SELECT blocked_at, blocked_reason FROM license_installs
+                WHERE sub_ref = ? AND machine_hash = ? AND blocked_at IS NOT NULL
+                ORDER BY blocked_at DESC LIMIT 1
+            `).get(subRef, machineHash)
+            : null
+        db.prepare(`
+            INSERT INTO license_installs
+                (sub_ref, lid, tier, install_hash, machine_hash, platform, name, ip_prefix, app_version, seq,
+                 blocked_at, blocked_reason)
+            VALUES (@subRef, @lid, @tier, @installHash, @machineHash, @platform, @name, @ipPrefix, @version,
+                (SELECT COALESCE(MAX(seq), 0) + 1 FROM license_installs WHERE sub_ref = @subRef),
+                @blockedAt, @blockedReason)
+            ON CONFLICT(sub_ref, install_hash) DO UPDATE SET
+                lid = excluded.lid, tier = excluded.tier, machine_hash = COALESCE(excluded.machine_hash, license_installs.machine_hash),
+                platform = excluded.platform, name = excluded.name, ip_prefix = excluded.ip_prefix,
+                app_version = excluded.app_version, last_seen = datetime('now')
+        `).run({
+            subRef, lid, tier, installHash, machineHash, platform, name, ipPrefix: ipPrefix(ip), version,
+            blockedAt: inheritedBlock?.blocked_at ?? null,
+            blockedReason: inheritedBlock?.blocked_reason ?? null,
+        })
+        return db.prepare('SELECT seq, blocked_at, rotation_kept_at FROM license_installs WHERE sub_ref = ? AND install_hash = ?')
+            .get(subRef, installHash)
+    })()
+    return { seq: row.seq, blocked: Boolean(row.blocked_at), keptAt: row.rotation_kept_at ?? null, active: countActive(subRef) }
 }
 
+/** Mark installations as kept through a rotation that happens now. */
+export function markKeptForRotation(subRef, seqs) {
+    const mark = db.prepare("UPDATE license_installs SET rotation_kept_at = datetime('now') WHERE sub_ref = ? AND seq = ? AND blocked_at IS NULL")
+    let n = 0
+    for (const seq of seqs) n += mark.run(subRef, seq).changes
+    return n
+}
+
+/**
+ * Active MACHINES of a subscription. A blocked installation does not count:
+ * the operator has already dealt with it.
+ */
 export function countActive(subRef) {
     return db.prepare(`
-        SELECT COUNT(*) AS n FROM license_installs
-        WHERE sub_ref = ? AND julianday(last_seen) >= julianday('now') - ?
-    `).get(subRef, ACTIVE_DAYS).n
+        SELECT COUNT(DISTINCT COALESCE(machine_hash, install_hash)) AS n FROM license_installs
+        WHERE sub_ref = @subRef AND blocked_at IS NULL AND ${ACTIVE}
+    `).get({ subRef, days: ACTIVE_DAYS }).n
 }
 
-/** Installations of a subscription, newest first, for the operator. */
+/**
+ * Store the subscription's sharing level and say whether it just rose to
+ * `suspected`, so the caller audits an escalation once, not daily.
+ */
+export function noteSharingLevel(subRef, level) {
+    const prev = db.prepare('SELECT level FROM license_alerts WHERE sub_ref = ?').get(subRef)?.level ?? 'ok'
+    if (prev === level) return false
+    db.prepare(`
+        INSERT INTO license_alerts (sub_ref, level, changed_at) VALUES (?, ?, datetime('now'))
+        ON CONFLICT(sub_ref) DO UPDATE SET level = excluded.level, changed_at = excluded.changed_at
+    `).run(subRef, level)
+    return level === 'suspected'
+}
+
+/**
+ * Installations of a subscription, newest first, for the operator.
+ * `awaitingTrust`: it last presented a key revoked by a rotation and was not
+ * kept through it, so it gets no replacement until the operator vouches.
+ */
 export function listInstalls(subRef) {
     return db.prepare(`
-        SELECT name, ip_prefix, app_version, first_seen, last_seen,
-               julianday(last_seen) >= julianday('now') - ? AS active
-        FROM license_installs WHERE sub_ref = ? ORDER BY last_seen DESC
-    `).all(ACTIVE_DAYS, subRef)
+        SELECT li.seq, li.name, li.platform, li.ip_prefix AS network, li.app_version AS version, li.lid,
+               substr(li.machine_hash, 1, 12) AS machine, li.first_seen, li.last_seen,
+               li.blocked_at, li.blocked_reason,
+               julianday(li.last_seen) >= julianday('now') - @days AS active,
+               (i.revoke_reason = 'rotated' AND (li.rotation_kept_at IS NULL OR li.rotation_kept_at < i.revoked_at)) AS awaiting_trust
+        FROM license_installs li LEFT JOIN issued_licenses i ON i.lid = li.lid
+        WHERE li.sub_ref = @subRef ORDER BY li.last_seen DESC
+    `).all({ subRef, days: ACTIVE_DAYS }).map(({ awaiting_trust: awaiting, ...r }) => ({
+        ...r,
+        active: Boolean(r.active),
+        awaitingTrust: Boolean(awaiting) && !r.blocked_at,
+    }))
+}
+
+/**
+ * Every subscription that has issued keys or check-ins, with what the
+ * operator needs to spot a shared key: holder, plan, active machines against
+ * the plan, distinct networks, and the sharing level.
+ */
+export function listLicenses() {
+    const subs = db.prepare(`
+        SELECT i.stripe_subscription_id AS sub_ref, i.tier, i.org, i.expires_at, i.lid, u.email, u.username
+        FROM issued_licenses i
+        LEFT JOIN users u ON u.id = i.user_id
+        WHERE i.id = (
+            SELECT id FROM issued_licenses j WHERE j.stripe_subscription_id = i.stripe_subscription_id
+            ORDER BY (j.revoked_at IS NULL) DESC, julianday(j.expires_at) DESC, j.id DESC LIMIT 1
+        )
+    `).all()
+    // Keys minted outside Stripe check in under 'lid:<id>' and have no issued row.
+    const standalone = db.prepare(`
+        SELECT sub_ref, MAX(tier) AS tier, MAX(lid) AS lid FROM license_installs
+        WHERE sub_ref LIKE 'lid:%' GROUP BY sub_ref
+    `).all().map((r) => ({ ...r, org: null, expires_at: null, email: null, username: null }))
+    const stats = db.prepare(`
+        SELECT COUNT(DISTINCT CASE WHEN blocked_at IS NULL AND ${ACTIVE} THEN COALESCE(machine_hash, install_hash) END) AS machines,
+               COUNT(DISTINCT CASE WHEN ${ACTIVE} THEN ip_prefix END) AS networks,
+               SUM(CASE WHEN blocked_at IS NOT NULL THEN 1 ELSE 0 END) AS blocked,
+               COUNT(*) AS installations, MAX(last_seen) AS last_seen
+        FROM license_installs WHERE sub_ref = @subRef
+    `)
+    return [...subs, ...standalone].map((s) => {
+        const st = stats.get({ subRef: s.sub_ref, days: ACTIVE_DAYS })
+        const limit = installLimit(s.tier)
+        return {
+            subRef: s.sub_ref,
+            tier: s.tier,
+            org: s.org,
+            holder: s.email || s.username || null,
+            expiresAt: s.expires_at,
+            lid: s.lid,
+            machines: st.machines,
+            limit,
+            level: sharingLevel(st.machines, limit),
+            networks: st.networks,
+            installations: st.installations,
+            blocked: st.blocked ?? 0,
+            lastSeen: st.last_seen,
+        }
+    }).sort((a, b) => (LEVEL_ORDER[b.level] - LEVEL_ORDER[a.level]) || String(b.lastSeen ?? '').localeCompare(String(a.lastSeen ?? '')))
+}
+
+const LEVEL_ORDER = { ok: 0, over: 1, suspected: 2 }
+
+/**
+ * Block an installation from renewals, and every other installation of the
+ * same machine with it. The key it holds keeps working until its own end date
+ * (at most the paid period plus grace); it simply never gets the next one.
+ *
+ * @returns {number} installations blocked
+ */
+export function blockInstall(subRef, seq, reason) {
+    const target = db.prepare('SELECT machine_hash FROM license_installs WHERE sub_ref = ? AND seq = ?').get(subRef, seq)
+    if (!target) return 0
+    const info = target.machine_hash
+        ? db.prepare(`
+            UPDATE license_installs SET blocked_at = datetime('now'), blocked_reason = ?
+            WHERE sub_ref = ? AND (seq = ? OR machine_hash = ?) AND blocked_at IS NULL
+        `).run(reason, subRef, seq, target.machine_hash)
+        : db.prepare(`
+            UPDATE license_installs SET blocked_at = datetime('now'), blocked_reason = ?
+            WHERE sub_ref = ? AND seq = ? AND blocked_at IS NULL
+        `).run(reason, subRef, seq)
+    return info.changes
+}
+
+/**
+ * The operator vouches for an installation: any block on it is lifted and it
+ * counts as kept, so after a rotation it receives the replacement key at its
+ * next check-in. Only the numbered installation is vouched for; a block on
+ * the rest of its machine stays, because the machine hash is the client's
+ * word.
+ */
+export function unblockInstall(subRef, seq) {
+    return db.prepare(`
+        UPDATE license_installs SET blocked_at = NULL, blocked_reason = NULL, rotation_kept_at = datetime('now')
+        WHERE sub_ref = ? AND seq = ?
+    `).run(subRef, seq).changes
+}
+
+/** Active installations of a subscription, for "which do you keep?". */
+export function activeInstallSeqs(subRef) {
+    return db.prepare(`SELECT seq FROM license_installs WHERE sub_ref = @subRef AND blocked_at IS NULL AND ${ACTIVE}`)
+        .all({ subRef, days: ACTIVE_DAYS }).map((r) => r.seq)
 }
 
 /**
@@ -102,6 +283,21 @@ export function newerKeyFor(subRef, presentedLid) {
     `).get(subRef)
     if (!row || row.lid === presentedLid) return null
     return { key: row.license_key, lid: row.lid }
+}
+
+/** Why and when an issued key was revoked, or null when it was not. */
+export function revocationOf(lid) {
+    const row = db.prepare('SELECT revoke_reason, revoked_at FROM issued_licenses WHERE lid = ? AND revoked_at IS NOT NULL').get(lid)
+    return row ? { reason: row.revoke_reason, at: row.revoked_at } : null
+}
+
+/**
+ * Whether an installation presenting a rotated key gets its replacement: only
+ * when the operator kept it through that rotation (or vouched for it later).
+ * Both timestamps come from SQLite's datetime('now'), so they compare as text.
+ */
+export function keptThroughRotation(revocation, keptAt) {
+    return revocation?.reason === 'rotated' && Boolean(keptAt) && keptAt >= revocation.at
 }
 
 /** Revoked key ids of the subscription (or of the standalone key). */

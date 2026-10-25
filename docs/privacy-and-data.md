@@ -77,6 +77,16 @@ lives in the database, and API responses expose only a `hasCompletionKey`
 - **Stripe** (hosted billing only) receives what a checkout requires —
   handled by Stripe's own hosted flow, not proxied through this app's
   database beyond the subscription status webhook.
+- **The BolaLabs licence service** (self-hosted installs with a licence key
+  only) receives a daily check-in: the key, a random install id, a salted
+  hash of the machine's OS id (never the id), the install's name, platform
+  and version. It answers with renewed keys and revocations; it keeps the
+  hashes, name, platform, version, an IPv4 /24 or IPv6 /48 and first/last
+  seen. `LICENSE_AUTO_RENEW=false` turns it off. Details: "Licence check-in"
+  in [billing-and-licensing.md](billing-and-licensing.md).
+- **GitHub's public releases API** receives one unauthenticated request a
+  day at most, when Settings → About checks for updates (no query parameters, no
+  identifying data).
 
 Nothing else leaves the server. There is no analytics pixel, no
 third-party ad or tracking script, and no aggregation of your usage data

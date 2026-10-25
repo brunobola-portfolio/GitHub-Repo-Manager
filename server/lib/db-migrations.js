@@ -722,6 +722,45 @@ export const MIGRATIONS = [
             db.exec('CREATE INDEX IF NOT EXISTS idx_license_installs_sub_seen ON license_installs(sub_ref, last_seen)');
         },
     },
+    {
+        version: 40,
+        name: 'license_installs: machine, number, blocking; license_alerts',
+        up(db) {
+            // `machine_hash` is a salted sha256 of the OS machine id, sent by
+            // the installation: a reinstall on the same machine (a wiped data
+            // volume, a new install id) is still one machine, and a block
+            // follows the machine rather than the throwaway install id. `seq`
+            // is the installation's number within its subscription, shown to
+            // the customer and the operator; it is assigned once and never
+            // reused. Rows that predate this are numbered in arrival order.
+            addColumnIfMissing(db, 'license_installs', 'machine_hash', 'TEXT');
+            addColumnIfMissing(db, 'license_installs', 'platform', 'TEXT');
+            addColumnIfMissing(db, 'license_installs', 'tier', 'TEXT');
+            addColumnIfMissing(db, 'license_installs', 'seq', 'INTEGER');
+            addColumnIfMissing(db, 'license_installs', 'blocked_at', 'TEXT');
+            addColumnIfMissing(db, 'license_installs', 'blocked_reason', 'TEXT');
+            // When the operator kept this installation through a key rotation.
+            // Only a kept installation is handed the replacement for a rotated
+            // key; a new install id presenting the leaked key gets nothing.
+            addColumnIfMissing(db, 'license_installs', 'rotation_kept_at', 'TEXT');
+            db.exec(`
+                UPDATE license_installs SET seq = (
+                    SELECT COUNT(*) FROM license_installs AS o
+                    WHERE o.sub_ref = license_installs.sub_ref AND o.id <= license_installs.id
+                ) WHERE seq IS NULL
+            `);
+            db.exec('CREATE INDEX IF NOT EXISTS idx_license_installs_machine ON license_installs(sub_ref, machine_hash)');
+            // The last sharing level raised per subscription, so an escalation
+            // is audited once rather than on every daily check-in.
+            db.exec(`
+                CREATE TABLE IF NOT EXISTS license_alerts (
+                    sub_ref     TEXT PRIMARY KEY,
+                    level       TEXT NOT NULL,
+                    changed_at  TEXT NOT NULL DEFAULT (datetime('now'))
+                )
+            `);
+        },
+    },
 ];
 
 // The highest version this build of the app knows how to apply. Used to

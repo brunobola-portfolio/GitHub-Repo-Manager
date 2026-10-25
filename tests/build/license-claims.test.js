@@ -112,6 +112,18 @@ describe('surfaces do not contradict the shipped capability', () => {
     expect(readFileSync('server/lib/license-checkin.js', 'utf8')).toMatch(/LICENSE_AUTO_RENEW/)
   })
 
+  it('every privacy surface states the machine hash the check-in actually sends', () => {
+    // The check-in sends a hash of the OS machine id. A privacy page listing
+    // what the issuer keeps without it would understate what leaves the box.
+    const client = readFileSync('server/lib/license-checkin.js', 'utf8')
+    expect(client).toMatch(/machine: machineOnce\(\)/)
+    expect(readFileSync('src/components/PublicLegal/PrivacyPage.jsx', 'utf8')).toMatch(/hash of\s+the machine/)
+    const inventory = readFileSync('docs/privacy-and-data.md', 'utf8')
+    expect(inventory).toMatch(/BolaLabs licence service/)
+    expect(inventory).toMatch(/hash of the machine's OS id/)
+    expect(readFileSync('docs/billing-and-licensing.md', 'utf8')).toMatch(/never\s+widen/)
+  })
+
   it('no doc points operators at a licence-revocation CLI, because none exists', () => {
     // `npm run admin:revoke` runs admin-grant.mjs --revoke, which clears a
     // USER's admin flag (UPDATE users SET is_admin = 0). Two docs named it as

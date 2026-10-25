@@ -20,6 +20,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   date, and `LICENSE_AUTO_RENEW=false` turns the check-in off. The issuer keeps
   the installation name, a hash of a random install id, the version and an
   IPv4 /24, as the privacy policy now states.
+- **Licences are counted by machine, and a shared key can be stopped without
+  touching the customer.** The check-in also sends a salted hash of the
+  machine's OS id (never the id itself) and its platform, so a reinstall on the
+  same machine is not counted twice; each installation gets a number the
+  customer sees in Settings and can quote to support. Inside Docker the
+  image's id is ignored; `LICENSE_MACHINE_ID` passes the host's. A key running
+  on more than twice the machines its plan covers is audited as suspected
+  sharing. The issuing instance has a new **Admin → Licences** page listing
+  every subscription's machines, networks and installations, with two
+  actions: block renewals for an installation (its key runs to its end date
+  and is never replaced; a reinstall on that machine stays blocked), or rotate
+  the key, which emails the customer a replacement, revokes the old one, and
+  hands the new key only to the installations kept. A copy of the old key
+  appearing afterwards gets nothing until the operator vouches for it.
 
 ### Changed
 

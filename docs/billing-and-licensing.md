@@ -147,25 +147,67 @@ A self-hosted install with a key calls `POST /api/v1/license/checkin` on the
 issuer (`LICENSE_RENEWAL_URL`, default `https://repomanager.bolalabs.pt`) right
 after activation and once a day (`server/lib/license-checkin.js`).
 
-- **Sends:** the key, a random install id it generated for itself (never a
-  hardware fingerprint), a name (`LICENSE_INSTALL_NAME`, default the hostname)
-  and the app version.
+- **Sends:** the key, a random install id it generated for itself, a machine
+  id hash, a name (`LICENSE_INSTALL_NAME`, default the hostname), its platform
+  (e.g. `linux-x64`) and the app version.
+- **Machine id hash:** sha256 over a product salt and the OS machine id
+  (`/etc/machine-id` on Linux, `MachineGuid` on Windows, `IOPlatformUUID` on
+  macOS). The id itself never leaves the machine. Inside a container the
+  image's id is shared by every container, so it is not used; the operator
+  can pass the host's with `LICENSE_MACHINE_ID` (a value, or the path of a
+  mounted file such as `/host/machine-id`). Without one, each installation
+  counts as its own machine.
 - **Receives:** the newest valid key of the subscription, which it verifies
   locally and installs (automatic renewal; an env-pinned `LICENSE_KEY` is
   reported as "renewal pending" instead), the subscription's revoked key ids,
-  which it adds to its own list, and `{ active, limit, over }`.
-- **Issuer stores** (`license_installs`, migration 39): subscription, key id,
-  sha256 of the install id, the name, the caller's IPv4 /24 or IPv6 /48, the
-  version, first and last seen. An installation stops counting after 30 days
-  without a check-in.
-- **Limits:** `LICENSE_INSTALLS_PRO` (default 2: one installation plus a
-  spare) and `LICENSE_INSTALLS_ENTERPRISE` (default 10). Over the limit is
-  logged and shown in Settings → License & Plan; nothing is refused.
+  which it adds to its own list, and `{ number, active, limit, over, level }`:
+  its installation number and the subscription's active machines against the
+  plan.
+- **Issuer stores** (`license_installs`, migrations 39-40): subscription, key
+  id, plan, sha256 of the install id, the machine id hash, the name, the
+  platform, the caller's IPv4 /24 or IPv6 /48, the version, first and last
+  seen, the installation number, and any block. An installation stops
+  counting after 30 days without a check-in.
+- **Counting:** active MACHINES, so a reinstall on the same machine (a wiped
+  data volume, a new install id) is a new installation number but not a
+  second machine. A blocked installation does not count.
+- **Limits:** `LICENSE_INSTALLS_PRO` (default 2: one machine plus a spare) and
+  `LICENSE_INSTALLS_ENTERPRISE` (default 10). Above the limit is `over`; above
+  twice the limit is `suspected` and is written to the audit log once
+  (`license.sharing_suspected`). Both are shown in Settings → License & Plan
+  and on the operator's Licences page; nothing is refused.
 - **Off:** `LICENSE_AUTO_RENEW=false`. The hosted service, an instance holding
   the signing key, and test runs never check in.
 - The endpoint takes no session (CSRF-exempt, the signed key is the
   credential), accepts an expired key so a lapsed install can fetch its
   renewal, and is limited to 60 requests per hour per address.
+
+### A shared or leaked key
+
+The operator of the issuing instance answers it from **Admin → Licences**
+(`/api/v1/admin/licenses`, admin only). Each subscription shows its active
+machines against the plan, the distinct networks they call from, and its
+level; each installation shows its number, name, platform, network, version
+and the first characters of its machine hash. Every action asks for a reason
+and is audited.
+
+1. **Block renewals** for one installation (`license.install.block`). It gets
+   no new key at its check-ins, so its current key stops at its own end date
+   (at most the paid period plus grace). Other installations of the same
+   machine are blocked with it, and a reinstall on that machine starts
+   blocked. The customer's other installations are untouched.
+2. **Rotate the key** (`license.rotate`) when the current key itself is out.
+   A new key with the same holder, plan and end date is minted and emailed;
+   every other key of the subscription is revoked (`rotated`); every active
+   installation not kept is blocked. The installations kept receive the new
+   key at their next check-in. Anything else presenting the old key gets
+   nothing, including a fresh install id: an installation that appears after
+   the rotation waits until the operator vouches for it ("Trust and send new
+   key", which is also what Unblock does).
+
+The machine hash is the client's word (`LICENSE_MACHINE_ID` can set it), so it
+can narrow what an installation gets (a block follows the machine) but never
+widen it (a keep does not).
 
 ### Flow overview
 

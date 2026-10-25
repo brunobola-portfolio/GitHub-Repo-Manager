@@ -94,6 +94,8 @@ services:
       - "LICENSE_AUTO_RENEW=${LICENSE_AUTO_RENEW:-}"
       - "LICENSE_RENEWAL_URL=${LICENSE_RENEWAL_URL:-}"
       - "LICENSE_INSTALL_NAME=${LICENSE_INSTALL_NAME:-}"
+      # Host machine id for licence counting; see .env.example (needs the volume below uncommented).
+      - "LICENSE_MACHINE_ID=${LICENSE_MACHINE_ID:-}"
       - "LICENSE_INSTALLS_PRO=${LICENSE_INSTALLS_PRO:-}"
       - "LICENSE_INSTALLS_ENTERPRISE=${LICENSE_INSTALLS_ENTERPRISE:-}"
       # Second key during credential-encryption key rotation; decrypt-only.
@@ -155,6 +157,8 @@ services:
     volumes:
       - app-data:/app/server/data
       - app-backups:/app/server/data-backups
+      # Linux hosts: lets licence counting recognise this machine across rebuilds.
+      # - /etc/machine-id:/host/machine-id:ro
     depends_on:
       redis:
         condition: service_healthy

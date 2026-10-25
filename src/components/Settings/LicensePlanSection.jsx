@@ -192,15 +192,21 @@ export function CheckinStatus({ checkin, expiresAt }) {
         return <p className={line}>The last check-in ({formatDate(last.at)}) could not reach the licence service. Nothing changes: this key keeps working until {formatDate(expiresAt)}.</p>
     }
     const installs = last.installs
+    const machines = (n) => `${n} ${n === 1 ? 'machine' : 'machines'}`
     return (
         <div className="space-y-2">
-            {installs?.over ? (
+            {last.status === 'blocked' ? (
                 <p className={warn}>
-                    This key is active on {installs.active} installations and your plan covers {installs.limit}. Stop the ones you no longer use (they stop counting after 30 days without a check-in), or contact us to cover more.
+                    The licence service stopped renewals for this installation. This key keeps working until {formatDate(expiresAt)} and will not be replaced. If this installation is yours, contact support and quote installation #{installs?.number ?? '?'}.
+                </p>
+            ) : installs?.over ? (
+                <p className={warn}>
+                    This key is active on {machines(installs.active)} and your plan covers {installs.limit}. Stop the ones you no longer use (they stop counting after 30 days without a check-in), or contact us to cover more.
                 </p>
             ) : installs ? (
-                <p className={line}>Used on {installs.active} of the {installs.limit} installations your plan covers. Last check-in {formatDate(last.at)}.</p>
+                <p className={line}>Used on {installs.active} of the {machines(installs.limit)} your plan covers. Last check-in {formatDate(last.at)}.</p>
             ) : null}
+            {installs?.number && <p className={line}>This is installation #{installs.number} of this licence; quote it when you contact support.</p>}
             {last.renewedTo && <p className={line}>Renewed automatically: the key is now valid until {formatDate(last.renewedTo)}.</p>}
             {last.renewalPending && (
                 <p className={warn}>A renewed key is ready, but this installation reads its key from <code>LICENSE_KEY</code>. Update that variable with the key from your latest licence e-mail and restart.</p>

@@ -5,7 +5,7 @@ import * as Dialog from '@radix-ui/react-dialog'
 import {
   GitFork, LayoutDashboard, Users, Tag, Wand2, History, Plus,
   ArrowRightLeft, Settings, Kanban, GitPullRequest, CircleDot, Loader2,
-  AlertTriangle, Wrench, BarChart3, Sparkles, Bookmark, ShieldAlert,
+  AlertTriangle, Wrench, BarChart3, Sparkles, Bookmark, ShieldAlert, KeyRound,
   Pin, PinOff, Bell, BellOff, X, RefreshCw, RotateCw, Eraser,
   ExternalLink, Copy, FileText, GitBranch, Star, Clock, Archive, ArrowDownAZ,
   Check, ShieldCheck, MessageCircle, LogOut,
@@ -68,6 +68,7 @@ const ACTION_ITEMS = [
 // AdminDLQPage itself renders the bootstrap instructions.
 const ADMIN_ITEMS = [
   { id: 'admin-dlq', label: 'Open DLQ Admin', view: 'admin-dlq', icon: ShieldAlert },
+  { id: 'admin-licenses', label: 'Open Licences', view: 'admin-licenses', icon: KeyRound },
 ]
 
 const WORK_BOARD_ITEMS = [

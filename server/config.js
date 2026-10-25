@@ -105,6 +105,7 @@ const configSchema = z.object({
     licenseAutoRenew: z.string().optional(),
     licenseRenewalUrl: z.string().optional(),
     licenseInstallName: z.string().optional(),
+    licenseMachineId: z.string().optional(),
     licenseInstallsPro: z.string().optional(),
     licenseInstallsEnterprise: z.string().optional(),
 
@@ -205,6 +206,7 @@ function loadConfig() {
         licenseAutoRenew: process.env.LICENSE_AUTO_RENEW,
         licenseRenewalUrl: process.env.LICENSE_RENEWAL_URL,
         licenseInstallName: process.env.LICENSE_INSTALL_NAME,
+        licenseMachineId: process.env.LICENSE_MACHINE_ID,
         licenseInstallsPro: process.env.LICENSE_INSTALLS_PRO,
         licenseInstallsEnterprise: process.env.LICENSE_INSTALLS_ENTERPRISE,
         dataRetentionDays: process.env.DATA_RETENTION_DAYS,
