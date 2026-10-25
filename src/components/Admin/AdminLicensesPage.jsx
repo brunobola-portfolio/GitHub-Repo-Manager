@@ -14,7 +14,7 @@
  */
 import { useState, useEffect, useCallback, useId } from 'react'
 import { motion } from 'framer-motion'
-import { KeyRound, RefreshCw, ShieldAlert, ChevronDown, Ban, RotateCcw, Undo2 } from 'lucide-react'
+import { KeyRound, RefreshCw, ShieldAlert, ShieldCheck, ChevronDown, Ban, RotateCcw, Undo2 } from 'lucide-react'
 import { SectionSpinner } from '../ui/Spinner'
 import { Button } from '../ui/Button'
 import { Badge } from '../ui/Badge'
@@ -236,6 +236,8 @@ function InstallItem({ install, onBlock, onUnblock }) {
                     <span className="font-medium text-slate-900 dark:text-slate-100 break-all">{install.name || 'Unnamed installation'}</span>
                     {blocked ? (
                         <Badge tone="danger" size="xs">Blocked</Badge>
+                    ) : install.awaitingTrust ? (
+                        <Badge tone="warning" size="xs">Holds a rotated key</Badge>
                     ) : install.active ? (
                         <Badge tone="success" size="xs">Active</Badge>
                     ) : (
@@ -255,6 +257,17 @@ function InstallItem({ install, onBlock, onUnblock }) {
                     <Undo2 className="w-4 h-4" />
                     Unblock
                 </Button>
+            ) : install.awaitingTrust ? (
+                <div className="flex flex-wrap gap-2">
+                    <Button variant="soft-primary" size="sm" onClick={onUnblock}>
+                        <ShieldCheck className="w-4 h-4" />
+                        Trust and send new key
+                    </Button>
+                    <Button variant="soft-danger" size="sm" onClick={onBlock}>
+                        <Ban className="w-4 h-4" />
+                        Block
+                    </Button>
+                </div>
             ) : (
                 <Button variant="soft-danger" size="sm" onClick={onBlock}>
                     <Ban className="w-4 h-4" />
@@ -279,6 +292,7 @@ function BlockDialog({ license, install, unblock, onClose, onDone }) {
     const [reason, setReason] = useState('')
     const [busy, setBusy] = useState(false)
     const { toast } = useToast()
+    const trust = unblock && !install.blocked_at
     const submit = async () => {
         setBusy(true)
         try {
@@ -286,8 +300,10 @@ function BlockDialog({ license, install, unblock, onClose, onDone }) {
                 ? await unblockInstall(license.subRef, install.seq, reason.trim())
                 : await blockInstall(license.subRef, install.seq, reason.trim())
             const n = res.blocked ?? res.unblocked ?? 1
-            await onDone(unblock
-                ? `Installation #${install.seq} can renew again${n > 1 ? ` (with ${n - 1} more on its machine)` : ''}.`
+            await onDone(trust
+                ? `Installation #${install.seq} receives the new key at its next check-in.`
+                : unblock
+                ? `Installation #${install.seq} can renew again.`
                 : `Installation #${install.seq} gets no more renewals${n > 1 ? ` (nor ${n - 1} more on its machine)` : ''}.`)
         } catch (err) {
             toast.errorFromException(err, { fallbackTitle: unblock ? "Couldn't unblock" : "Couldn't block" })
@@ -301,22 +317,24 @@ function BlockDialog({ license, install, unblock, onClose, onDone }) {
             onClose={onClose}
             size="md"
             variant={unblock ? 'default' : 'danger'}
-            icon={unblock ? Undo2 : Ban}
-            title={unblock ? `Unblock installation #${install.seq}` : `Block renewals for installation #${install.seq}`}
+            icon={trust ? ShieldCheck : unblock ? Undo2 : Ban}
+            title={trust ? `Trust installation #${install.seq}` : unblock ? `Unblock installation #${install.seq}` : `Block renewals for installation #${install.seq}`}
             subtitle={install.name || undefined}
             footer={
                 <div className="flex justify-end gap-2">
                     <Button variant="secondary" onClick={onClose}>Cancel</Button>
                     <Button variant={unblock ? 'primary' : 'danger'} onClick={submit} disabled={busy || !reason.trim()}>
-                        {unblock ? 'Unblock' : 'Block renewals'}
+                        {trust ? 'Trust and send new key' : unblock ? 'Unblock' : 'Block renewals'}
                     </Button>
                 </div>
             }
         >
             <div className="space-y-4">
                 <p className="text-sm text-slate-600 dark:text-slate-300">
-                    {unblock
-                        ? 'It receives the newest key again at its next daily check-in.'
+                    {trust
+                        ? 'It presented a key that was rotated away and was not kept. Trust it only if the customer confirms it is theirs: it then receives the replacement key at its next daily check-in.'
+                        : unblock
+                        ? 'It receives the newest key again at its next daily check-in. Other installations on the same machine stay blocked until you unblock them too.'
                         : 'Its current key keeps working until its end date and is never replaced. Other installations on the same machine are blocked with it, and so is a reinstall there.'}
                 </p>
                 <ReasonField value={reason} onChange={setReason} placeholder={unblock ? 'Customer confirmed this is their staging server' : 'Key posted on a public forum'} />

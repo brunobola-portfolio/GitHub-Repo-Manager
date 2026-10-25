@@ -113,7 +113,7 @@ describe('admin licences API', () => {
         expect(blocked).toEqual([1, 2]);
         expect((await request(app).post('/api/v1/admin/licenses/sub_blk/installs/1/block').send({ reason: 'again' })).status).toBe(404);
         const lifted = await request(app).post('/api/v1/admin/licenses/sub_blk/installs/2/unblock').send({ reason: 'Customer confirmed it is theirs' });
-        expect(lifted.body.data.unblocked).toBe(2);
+        expect(lifted.body.data.unblocked).toBe(1);
     });
 
     it('rotates a leaked key: same holder, plan and end date, old keys revoked, unkept installs blocked, customer emailed', async () => {

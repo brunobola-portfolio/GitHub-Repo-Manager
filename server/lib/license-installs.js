@@ -79,10 +79,12 @@ const ACTIVE = "julianday(last_seen) >= julianday('now') - @days"
 /**
  * Record one check-in.
  *
- * A new installation inherits what the operator decided about its machine:
- * on a blocked machine it starts blocked (a wiped data volume must not be a
- * way around a block), and on a machine kept through a rotation it starts
- * kept (a reinstall there still receives the replacement key).
+ * A new installation on a machine the operator blocked starts blocked: a
+ * wiped data volume must not be a way around a block. The opposite is NOT
+ * inherited: the machine hash is sent by the client (LICENSE_MACHINE_ID can
+ * set it), so it may narrow what an installation gets but never widen it. A
+ * new install id after a rotation receives the replacement only once the
+ * operator vouches for it (unblockInstall).
  *
  * @param {{ subRef: string, lid: string, tier?: string|null, installId: string, machine?: string|null, platform?: string|null, name?: string|null, ip?: string, version?: string|null }} c
  * @returns {{ seq: number, blocked: boolean, keptAt: string|null, active: number }}
@@ -98,19 +100,13 @@ export function recordCheckin({ subRef, lid, tier = null, installId, machine = n
                 ORDER BY blocked_at DESC LIMIT 1
             `).get(subRef, machineHash)
             : null
-        const inheritedKeep = machineHash && !inheritedBlock
-            ? db.prepare(`
-                SELECT MAX(rotation_kept_at) AS kept FROM license_installs
-                WHERE sub_ref = ? AND machine_hash = ? AND blocked_at IS NULL
-            `).get(subRef, machineHash)?.kept ?? null
-            : null
         db.prepare(`
             INSERT INTO license_installs
                 (sub_ref, lid, tier, install_hash, machine_hash, platform, name, ip_prefix, app_version, seq,
-                 blocked_at, blocked_reason, rotation_kept_at)
+                 blocked_at, blocked_reason)
             VALUES (@subRef, @lid, @tier, @installHash, @machineHash, @platform, @name, @ipPrefix, @version,
                 (SELECT COALESCE(MAX(seq), 0) + 1 FROM license_installs WHERE sub_ref = @subRef),
-                @blockedAt, @blockedReason, @keptAt)
+                @blockedAt, @blockedReason)
             ON CONFLICT(sub_ref, install_hash) DO UPDATE SET
                 lid = excluded.lid, tier = excluded.tier, machine_hash = COALESCE(excluded.machine_hash, license_installs.machine_hash),
                 platform = excluded.platform, name = excluded.name, ip_prefix = excluded.ip_prefix,
@@ -119,7 +115,6 @@ export function recordCheckin({ subRef, lid, tier = null, installId, machine = n
             subRef, lid, tier, installHash, machineHash, platform, name, ipPrefix: ipPrefix(ip), version,
             blockedAt: inheritedBlock?.blocked_at ?? null,
             blockedReason: inheritedBlock?.blocked_reason ?? null,
-            keptAt: inheritedKeep,
         })
         return db.prepare('SELECT seq, blocked_at, rotation_kept_at FROM license_installs WHERE sub_ref = ? AND install_hash = ?')
             .get(subRef, installHash)
@@ -160,14 +155,25 @@ export function noteSharingLevel(subRef, level) {
     return level === 'suspected'
 }
 
-/** Installations of a subscription, newest first, for the operator. */
+/**
+ * Installations of a subscription, newest first, for the operator.
+ * `awaitingTrust`: it last presented a key revoked by a rotation and was not
+ * kept through it, so it gets no replacement until the operator vouches.
+ */
 export function listInstalls(subRef) {
     return db.prepare(`
-        SELECT seq, name, platform, ip_prefix AS network, app_version AS version, lid,
-               substr(machine_hash, 1, 12) AS machine, first_seen, last_seen,
-               blocked_at, blocked_reason, ${ACTIVE} AS active
-        FROM license_installs WHERE sub_ref = @subRef ORDER BY last_seen DESC
-    `).all({ subRef, days: ACTIVE_DAYS }).map((r) => ({ ...r, active: Boolean(r.active) }))
+        SELECT li.seq, li.name, li.platform, li.ip_prefix AS network, li.app_version AS version, li.lid,
+               substr(li.machine_hash, 1, 12) AS machine, li.first_seen, li.last_seen,
+               li.blocked_at, li.blocked_reason,
+               julianday(li.last_seen) >= julianday('now') - @days AS active,
+               (i.revoke_reason = 'rotated' AND (li.rotation_kept_at IS NULL OR li.rotation_kept_at < i.revoked_at)) AS awaiting_trust
+        FROM license_installs li LEFT JOIN issued_licenses i ON i.lid = li.lid
+        WHERE li.sub_ref = @subRef ORDER BY li.last_seen DESC
+    `).all({ subRef, days: ACTIVE_DAYS }).map(({ awaiting_trust: awaiting, ...r }) => ({
+        ...r,
+        active: Boolean(r.active),
+        awaitingTrust: Boolean(awaiting) && !r.blocked_at,
+    }))
 }
 
 /**
@@ -243,23 +249,17 @@ export function blockInstall(subRef, seq, reason) {
 }
 
 /**
- * Lift a block, for the installation and the rest of its machine. Lifting it
- * is the operator vouching for the installation, so it also counts as kept:
- * after a rotation it then receives the replacement key.
+ * The operator vouches for an installation: any block on it is lifted and it
+ * counts as kept, so after a rotation it receives the replacement key at its
+ * next check-in. Only the numbered installation is vouched for; a block on
+ * the rest of its machine stays, because the machine hash is the client's
+ * word.
  */
 export function unblockInstall(subRef, seq) {
-    const target = db.prepare('SELECT machine_hash FROM license_installs WHERE sub_ref = ? AND seq = ?').get(subRef, seq)
-    if (!target) return 0
-    const info = target.machine_hash
-        ? db.prepare(`
-            UPDATE license_installs SET blocked_at = NULL, blocked_reason = NULL, rotation_kept_at = datetime('now')
-            WHERE sub_ref = ? AND (seq = ? OR machine_hash = ?)
-        `).run(subRef, seq, target.machine_hash)
-        : db.prepare(`
-            UPDATE license_installs SET blocked_at = NULL, blocked_reason = NULL, rotation_kept_at = datetime('now')
-            WHERE sub_ref = ? AND seq = ?
-        `).run(subRef, seq)
-    return info.changes
+    return db.prepare(`
+        UPDATE license_installs SET blocked_at = NULL, blocked_reason = NULL, rotation_kept_at = datetime('now')
+        WHERE sub_ref = ? AND seq = ?
+    `).run(subRef, seq).changes
 }
 
 /** Active installations of a subscription, for "which do you keep?". */

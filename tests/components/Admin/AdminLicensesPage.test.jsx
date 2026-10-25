@@ -82,6 +82,20 @@ describe('AdminLicensesPage', () => {
         expect(mockToast.success).toHaveBeenCalledWith(expect.stringMatching(/emailed the new key/))
     })
 
+    it('an installation holding a rotated key can be trusted, which sends it the new key', async () => {
+        mockApi.listInstalls.mockResolvedValue([{ ...INSTALLS[1], awaitingTrust: true }])
+        mockApi.unblockInstall.mockResolvedValue({ unblocked: 1 })
+        await openShared()
+        expect(screen.getByText('Holds a rotated key')).toBeInTheDocument()
+        fireEvent.click(screen.getByRole('button', { name: /Trust and send new key/ }))
+        const dialog = await screen.findByRole('dialog')
+        expect(within(dialog).getByText(/only if the customer confirms/)).toBeInTheDocument()
+        fireEvent.change(within(dialog).getByLabelText(/Reason/), { target: { value: 'Customer rebuilt the server' } })
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Trust and send new key' }))
+        await waitFor(() => expect(mockApi.unblockInstall).toHaveBeenCalledWith('sub_shared', 4, 'Customer rebuilt the server'))
+        expect(mockToast.success).toHaveBeenCalledWith(expect.stringMatching(/receives the new key/))
+    })
+
     it('says plainly when the account is not an admin', async () => {
         mockApi.listLicenses.mockRejectedValue(Object.assign(new Error('Admin access required'), { status: 403 }))
         render(<AdminLicensesPage />)

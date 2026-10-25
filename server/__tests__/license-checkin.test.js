@@ -145,9 +145,20 @@ describe('POST /api/v1/license/checkin (issuer)', () => {
         expect(res.body.data.status).toBe('ok')
         expect(res.body.data.latestKey).toMatch(/^grm_lic_r2\|/)
         expect(res.body.data.revoked).toEqual(['r1'])
-        // A reinstall on the kept machine is still the customer's.
-        const reinstall = await checkin({ key: fakeKey('r1'), installId: OTHER, machine: MACHINE })
-        expect(reinstall.body.data.latestKey).toMatch(/^grm_lic_r2\|/)
+    })
+
+    it('a reinstall on a kept machine waits for the operator: the machine hash is the client\'s word', async () => {
+        const { unblockInstall, listInstalls } = await import('../lib/license-installs.js')
+        issue('v1', 'sub_v')
+        await checkin({ key: fakeKey('v1'), installId: INSTALL, machine: MACHINE })
+        rotate('v1', 'v2', 'sub_v', [1])
+        const reinstall = await checkin({ key: fakeKey('v1'), installId: OTHER, machine: MACHINE })
+        expect(reinstall.body.data.latestKey).toBeNull()
+        expect(listInstalls('sub_v').find((i) => i.seq === 2).awaitingTrust).toBe(true)
+        expect(unblockInstall('sub_v', 2)).toBe(1)
+        expect(listInstalls('sub_v').find((i) => i.seq === 2).awaitingTrust).toBe(false)
+        const vouched = await checkin({ key: fakeKey('v1'), installId: OTHER, machine: MACHINE })
+        expect(vouched.body.data.latestKey).toMatch(/^grm_lic_v2\|/)
     })
 
     it('a new install id presenting a rotated key gets nothing: the leaked copy cannot fetch the replacement', async () => {
