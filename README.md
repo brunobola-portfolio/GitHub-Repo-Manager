@@ -231,10 +231,10 @@ Every capture is the real app in mock mode at 1920×1080 — no mock-ups. The fu
 | | |
 |---|---|
 | **Dashboard (dark)**<br>![Dashboard dark mode](docs/images/01_dashboard_dark_hd.png) | **Dashboard (light)**<br>![Dashboard light mode](docs/images/01_dashboard_light_hd.png) |
-| **Work Board (dark)**<br>![Work Board dark](docs/images/33_work_board_dark_hd.png) | **Work Board — filters applied**<br>![Work Board with filters active](docs/images/37_work_board_filters_active_hd.png) |
-| **Repositories**<br>![Repositories grid](docs/images/06_repositories_dark_hd.png) | **Team Hub**<br>![Team collaboration hub](docs/images/07_teams_dark_hd.png) |
+| **Work Board (dark)**<br>![Work Board dark](docs/images/33_work_board_dark_hd.png) | **Repositories**<br>![Repositories grid](docs/images/06_repositories_dark_hd.png) |
+| **Team Hub**<br>![Team collaboration hub](docs/images/07_teams_dark_hd.png) | **Migration Wizard**<br>![Azure DevOps migration wizard](docs/images/08_migration_wizard_hd.png) |
 | **AI Insights — quality**<br>![AI Insights quality tab](docs/images/40_ai_quality_tab_routed_hd.png) | **Agent Rules Generator**<br>![Agent Rules generator](docs/images/46_agent_rules_generator_hd.png) |
-| **Live Inbox — mobile**<br>![Live Inbox on a 375px viewport](docs/images/16_dashboard_live_inbox_mobile_hd.png) | **Migration Wizard**<br>![Azure DevOps migration wizard](docs/images/08_migration_wizard_hd.png) |
+| **Live Inbox — mobile**<br>![Live Inbox on a 375px viewport](docs/images/16_dashboard_live_inbox_mobile_hd.png) | |
 
 ---
 
@@ -247,7 +247,7 @@ The hosted product is **free-first**: nearly every product feature — bulk ops,
   <img alt="Free-first tier gating: three sources of truth — feature-flags.js TIER_FEATURES, usage-meter.js METRIC_TO_FEATURE, and the require-tier middleware — feed one gating decision checking whether a feature is allowed and within its monthly cap, returning a 429 quota state on overflow" src="docs/images/tier-gating.svg" width="900">
 </picture>
 
-| Feature                                | Free            | Pro (€19/mo)  | Enterprise |
+| Feature                                | Free            | Pro (€19/mo + VAT) | Enterprise |
 |----------------------------------------|-----------------|---------------|------------|
 | Repositories managed                   | Unlimited       | Unlimited     | Unlimited  |
 | Repo Advisor (conversational) †        | ✓               | ✓             | ✓          |
@@ -286,7 +286,9 @@ The hosted product is **free-first**: nearly every product feature — bulk ops,
 
 **Audit Logs** is a full page (`#/audit`), not a tab buried in Settings — it filters by action (fed from the log itself, so the filter list never drifts from what's actually recorded) and includes a **Verify chain** action that walks the append-only SHA-256 hash chain end to end and reports the first broken link, if any; CSV/JSON export is unchanged. The Settings modal's Audit Log tab is now a summary that links through.
 
-Self-hosting is free forever under Apache-2.0 — see [LICENSE](LICENSE). The matrix above applies to self-hosted Pro/Enterprise licenses today (Stripe checkout → emailed license key — see [`docs/billing-and-licensing.md`](docs/billing-and-licensing.md)), and to the hosted app at repomanager.bolalabs.pt, where Stripe sets the account's tier directly. Bulk transfer and bulk delete carry a tier-independent daily anti-abuse ceiling on top of the dry-run + confirmation-token safety flow, regardless of plan. Priority Support and White-glove migration are manual, service-based deliverables (support ticket + contract), not gated by a feature flag.
+Self-hosting is free forever under Apache-2.0 — see [LICENSE](LICENSE). The matrix above applies to the hosted app at repomanager.bolalabs.pt, where Stripe sets the account's tier directly, and to self-hosted installs running a licence key.
+
+**Buying a licence for your own install.** Subscribe on the hosted app at <https://repomanager.bolalabs.pt/pricing>; the key is e-mailed from `licencas@bolalabs.pt`. An administrator of your install opens **Settings → License & Plan → Activate** and pastes it — it applies to every account on that install and is checked offline, with no phone-home. Each paid renewal e-mails the next key before the current one stops. Prices exclude VAT. Support: the [BolaLabs support desk](https://bolalabs.pt/en/dashboard?view=support&new=1&product=repomanager) or `suporte@bolalabs.pt`. Details: [`docs/billing-and-licensing.md`](docs/billing-and-licensing.md). Bulk transfer and bulk delete carry a tier-independent daily anti-abuse ceiling on top of the dry-run + confirmation-token safety flow, regardless of plan. Priority Support and White-glove migration are manual, service-based deliverables (support ticket + contract), not gated by a feature flag.
 
 See the [Free Tier Expansion spec](docs/specs/2026-04-15-free-tier-expansion.md) for the design rationale and enforcement details.
 
@@ -687,11 +689,11 @@ permission needed, no fee.
 The **name and the mark are reserved** — that is Apache-2.0 §6, spelled out in
 [`TRADEMARKS.md`](TRADEMARKS.md). Fork freely; rename the fork.
 
-A **commercial subscription** buys capacity, a hosted instance, priority
-support and compliance deliverables — never permission, which the
-licence above already gave you. See
-[`docs/LICENSE-COMMERCIAL.md`](docs/LICENSE-COMMERCIAL.md) or contact
-[bruno@bolalabs.pt](mailto:bruno@bolalabs.pt).
+A **commercial subscription** buys capacity (higher AI and API ceilings)
+and, on Enterprise, priority support, audit export and white-glove
+migration — never permission, which the licence above already gave you.
+See [`docs/LICENSE-COMMERCIAL.md`](docs/LICENSE-COMMERCIAL.md) or open a
+request at the [BolaLabs support desk](https://bolalabs.pt/en/dashboard?view=support&new=1&product=repomanager).
 
 <details>
 <summary><strong>Was this AGPL?</strong></summary>
@@ -719,7 +721,7 @@ something untrue.
 
 <div align="center">
 
-**Bruno Silva Marques** · [Bola Labs](https://github.com/brunobola-portfolio)
+**Bruno Silva Marques** · [BolaLabs](https://bolalabs.pt)
 
 [![GitHub](https://img.shields.io/badge/GitHub-brunobola--portfolio-181717?style=flat-square&logo=github)](https://github.com/brunobola-portfolio)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/bolalabs/)

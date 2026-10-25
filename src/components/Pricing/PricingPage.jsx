@@ -82,7 +82,6 @@ const TIERS_MONTHLY = [
     features: [
       { label: 'Everything in Pro, unlimited', included: true },
       { label: 'Unlimited AI queries', included: true },
-      { label: 'Unlimited team members', included: true },
       { label: 'Audit Logs', included: true },
       { label: 'SSO / SAML (roadmap)', included: false },
       { label: 'API keys', included: '100' },
@@ -146,7 +145,7 @@ function applyYearly(tier, isYearly) {
 const FAQS = [
   {
     q: 'Can I switch plans later?',
-    a: "Yes — you can upgrade or downgrade at any time. When upgrading, you'll be charged a prorated amount for the remainder of your billing period. Downgrades take effect at the next renewal.",
+    a: 'Yes. Cancel Pro at any time from Settings → License & Plan → Manage; it stays active to the end of the period you paid for, then reverts to Free. Enterprise is arranged by e-mail.',
   },
   {
     q: 'What counts as an AI query?',
@@ -158,7 +157,7 @@ const FAQS = [
   },
   {
     q: 'Do you offer a free trial for Pro or Enterprise?',
-    a: 'The Free plan is generous enough to evaluate the product with no credit card, and Pro is month-to-month — cancel anytime. Enterprise plans include a guided proof-of-concept period. Contact sales for details.',
+    a: 'The Free plan is generous enough to evaluate the product with no credit card, and Pro is month-to-month — cancel anytime. For Enterprise, contact sales.',
   },
 ]
 

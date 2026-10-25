@@ -98,7 +98,7 @@ HTTP routes and nothing else: `POST /api/license/revocations`,
 
 The list lives in **that instance's own database**. There is no phone-home, so
 revoking on the hosted deployment does not reach a customer's self-hosted
-install, and Bola Labs cannot remotely disable a key already in someone else's
+install, and BolaLabs cannot remotely disable a key already in someone else's
 hands. Revocation is therefore an operator control (fraud, chargeback, leaked
 key on an instance you run) rather than a DRM mechanism, and it is not
 advertised as one. A checked-online denylist would be the design that changes

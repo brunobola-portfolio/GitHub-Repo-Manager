@@ -30,7 +30,7 @@ const plans = [
   {
     name: 'Pro',
     price: '€19',
-    period: 'per month',
+    period: 'per month + VAT',
     // "Priority support" is Enterprise-only on the README matrix, PricingPage,
     // FeatureComparison and the billing docs. Pro is email support. This is
     // the first pricing surface a prospect sees, so it was also the first
@@ -60,7 +60,6 @@ const plans = [
     features: [
       'Everything in Pro',
       'Unlimited AI queries',
-      'Unlimited team members',
       // "coming soon" reads as a dated commitment on a buy surface, and
       // ROADMAP.md forbids tier badges on unshipped work. `sso` is false on
       // every tier in feature-flags.js; README calls it roadmap, so do we.

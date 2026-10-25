@@ -139,7 +139,7 @@ export default function TermsPage() {
 
                 <Section id="cancelling" title="Cancelling, and what happens next">
                     <p>
-                        You can cancel at any time from <strong>Settings → Billing</strong>, which
+                        You can cancel at any time from <strong>Settings → License &amp; Plan → Manage</strong>, which
                         opens Stripe's own portal. Cancelling stops the next renewal; it does not cut
                         off the period you already paid for.
                     </p>
