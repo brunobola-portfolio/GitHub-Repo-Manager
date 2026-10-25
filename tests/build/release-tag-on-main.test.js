@@ -24,6 +24,17 @@ describe('release.yml only ships commits that are on main', () => {
         expect(guard).toBeLessThan(releaseJob.indexOf('run: npm run build'))
     })
 
+    it('later jobs use the commit and tag the gate verified, never a fresh resolution of the tag', () => {
+        expect(releaseJob).toMatch(/outputs:\n\s+sha: \$\{\{ steps\.onmain\.outputs\.sha \}\}/)
+        expect(releaseJob).toMatch(/echo "sha=\$\(git rev-parse HEAD\)" >> "\$GITHUB_OUTPUT"/)
+        const windowsJob = wf.slice(wf.indexOf('\n  windows:'), wf.indexOf('\n  deploy:'))
+        const deployJob = wf.slice(wf.indexOf('\n  deploy:'))
+        expect(windowsJob).toMatch(/ref: \$\{\{ needs\.release\.outputs\.sha \}\}/)
+        expect(windowsJob).not.toMatch(/github\.ref_name|inputs\.tag/)
+        expect(deployJob).toMatch(/-FromRelease \$env:RELEASE_TAG/)
+        expect(deployJob).not.toMatch(/GITHUB_REF_NAME/)
+    })
+
     it('the deploy and windows jobs depend on the release job', () => {
         expect(wf).toMatch(/\n {2}windows:[\s\S]*?needs: release/)
         expect(wf).toMatch(/\n {2}deploy:\n {4}needs: \[release, windows\]/)
