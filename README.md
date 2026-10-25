@@ -176,18 +176,16 @@ The full AI surface ships on **every tier including Free**, each capability with
   <img alt="Conversational action dispatch: a natural-language request goes through the BYOK AI, which returns an action validated against a five-entry allow-list (Migration Wizard, Create Repo, Transfer, History, Settings); any unknown action type is dropped" src="docs/images/action-dispatch.svg" width="820">
 </picture>
 
-| Capability | What it does |
-|---|---|
-| **Repo Advisor** | Conversational assistant that answers questions *and* dispatches real app actions (open the Migration Wizard, Create Repo, Transfer, …) from natural-language intent. Works out of the box on a self-hosted install — a BYOK key is all it needs. Not to be confused with the Repo Advisor *card inside the Work Board*, which is the surface behind a deployment flag — see the † note under [Plans & Pricing](#plans--pricing) |
-| **Repository insights** | Quality scoring 0–100 across documentation, community, engineering, and polish, with pattern detection and fixes |
-| **Semantic search** | Natural-language repo search over real vector embeddings |
-| **AI Deep Review** | Walkthrough + line comments with one-click suggestions, PR slash commands, and streaming PR chat — batched into one GitHub review ([guide](docs/features/ai-deep-review.md)) |
-| **README Studio** | Generate a professional README, or improve an existing one section-by-section |
-| **AI Diagram Generator** | Repo-aware Mermaid architecture / flow diagrams |
-| **Agent Rules Generator** | Draft `AGENTS.md` / `CLAUDE.md` from your repo conventions |
-| **Security Posture summary** | Plain-language security posture with prioritized actions |
-| **AI Image Generation** | Social preview / hero / logo images, capability-gated with honest cost pills |
-| **Commit Generator** | Conventional commit messages from a diff |
+- **Repo Advisor** — Conversational assistant that answers questions *and* dispatches real app actions (open the Migration Wizard, Create Repo, Transfer, …) from natural-language intent. Works out of the box on a self-hosted install — a BYOK key is all it needs. Not to be confused with the Repo Advisor *card inside the Work Board*, which is the surface behind a deployment flag — see the † note under [Plans & Pricing](#plans--pricing)
+- **Repository insights** — Quality scoring 0–100 across documentation, community, engineering, and polish, with pattern detection and fixes
+- **Semantic search** — Natural-language repo search over real vector embeddings
+- **AI Deep Review** — Walkthrough + line comments with one-click suggestions, PR slash commands, and streaming PR chat — batched into one GitHub review ([guide](docs/features/ai-deep-review.md))
+- **README Studio** — Generate a professional README, or improve an existing one section-by-section
+- **AI Diagram Generator** — Repo-aware Mermaid architecture / flow diagrams
+- **Agent Rules Generator** — Draft `AGENTS.md` / `CLAUDE.md` from your repo conventions
+- **Security Posture summary** — Plain-language security posture with prioritized actions
+- **AI Image Generation** — Social preview / hero / logo images, capability-gated with honest cost pills
+- **Commit Generator** — Conventional commit messages from a diff
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/ai-deep-review.svg">
@@ -247,6 +245,17 @@ The hosted product is **free-first**: nearly every product feature — bulk ops,
   <img alt="Free-first tier gating: three sources of truth — feature-flags.js TIER_FEATURES, usage-meter.js METRIC_TO_FEATURE, and the require-tier middleware — feed one gating decision checking whether a feature is allowed and within its monthly cap, returning a 429 quota state on overflow" src="docs/images/tier-gating.svg" width="900">
 </picture>
 
+**Free** — everything below with a monthly cap on each AI feature: 1,000 AI queries a month in total, 25 API keys, unlimited repositories and teams, bulk operations, migrations (5 Azure DevOps cloud migrations a month) and community support.
+
+**Pro — €19 a month + VAT** — every per-feature cap lifted, 10,000 AI queries a month, 50 API keys and email support.
+
+**Enterprise — by agreement** — unlimited AI queries, 100 API keys, the audit log with export, priority support and white-glove migration services.
+
+Every plan is bring-your-own-key: no plan includes AI inference.
+
+<details>
+<summary><strong>Full comparison, feature by feature</strong></summary>
+
 | Feature                                | Free            | Pro (€19/mo + VAT) | Enterprise |
 |----------------------------------------|-----------------|---------------|------------|
 | Repositories managed                   | Unlimited       | Unlimited     | Unlimited  |
@@ -282,6 +291,8 @@ The hosted product is **free-first**: nearly every product feature — bulk ops,
 | Priority support                       | ✗               | ✗             | ✓          |
 | White-glove migration services         | ✗               | ✗             | ✓          |
 
+</details>
+
 † **"Repo Advisor" names two surfaces, and only one of them is behind a flag.** The floating conversational assistant in this row is `POST /api/ai/chat` (`server/routes/ai/core.js`) — no deployment flag gates it, and it works out of the box on a self-hosted install with nothing but a BYOK key. Inside the Work Board, the 7-day trend summary card needs only a BYOK key; the suggestion chips and the preview-then-apply edits are the gated part: `server/middleware/work-board-ai-gate.js` returns `404 AI_FEATURE_FLAG_OFF` unless `WORK_BOARD_AI_ENABLED=true` is set in the environment (`docker-compose.yml` forwards the variable), and each user must then opt in under `Settings → Work Board`. Both are tier-free — no plan unlocks either. No row in this matrix is gated by an environment flag.
 
 **Audit Logs** is a full page (`#/audit`), not a tab buried in Settings — it filters by action (fed from the log itself, so the filter list never drifts from what's actually recorded) and includes a **Verify chain** action that walks the append-only SHA-256 hash chain end to end and reports the first broken link, if any; CSV/JSON export is unchanged. The Settings modal's Audit Log tab is now a summary that links through.
@@ -307,12 +318,10 @@ A complete platform for moving from Azure DevOps to GitHub, driven by a guided w
 
 ### What you can migrate
 
-| Source | What | How |
-|--------|------|-----|
-| **Git repos** | Complete history, branches, tags | Direct clone with full preservation (`clone --bare` / `push --mirror`) |
-| **TFVC repos** | Up to 180 days of history | Automatic TFVC-to-Git conversion via the Azure Import API |
-| **Work items** | Types, states, comments, attachments | Azure Boards → GitHub Issues with field mapping |
-| **Wikis** | All pages and content | Git-based clone with markdown conversion |
+- **Git repos** — Complete history, branches, tags. Direct clone with full preservation (`clone --bare` / `push --mirror`).
+- **TFVC repos** — Up to 180 days of history. Automatic TFVC-to-Git conversion via the Azure Import API.
+- **Work items** — Types, states, comments, attachments. Azure Boards → GitHub Issues with field mapping.
+- **Wikis** — All pages and content. Git-based clone with markdown conversion.
 
 ### Migration features
 
@@ -444,13 +453,8 @@ deployment guide, including the `docker run` form for the prebuilt image.
 
 ### Mock Mode vs. Real Mode
 
-| Feature | Demo mode (`npm run demo`) | Real mode (`npm run dev:all`) |
-|---------|--------------------|-----------|
-| **Setup** | Zero config — no `.env` | GitHub OAuth + `.env` |
-| **Repositories** | 87 mock repos | Your real repos |
-| **AI features** | Mock responses | AI-powered (BYOK) |
-| **Migration** | UI only | Fully functional |
-| **Best for** | Demos, UI testing | Production use |
+- **Demo mode** (`npm run demo`) — no configuration and no `.env`: 87 sample repositories, simulated AI answers and a migration wizard you can click through without moving anything. Use it to try the product or test the UI.
+- **Real mode** (`npm run dev:all`) — GitHub OAuth and a `.env`: your own repositories, AI on your own key, and migrations that run for real. Use it in production.
 
 ### Environment variables
 
