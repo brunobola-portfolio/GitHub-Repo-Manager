@@ -5308,7 +5308,7 @@ Self-hosted Pro/Enterprise license-key management.
 | --- | --- | --- | --- |
 | `GET` | `/api/license` | No | Current license status |
 | `POST` | `/api/license/validate` | No | Validate a license key (rate-limited) |
-| `POST` | `/api/v1/license/checkin` | Signed key in the body | Self-hosted check-in: `{ key, installId (UUID v4), name?, version? }` → `{ status, latestKey, revoked[], installs: { active, limit, over } }`. Accepts an expired key (renewal); CSRF-exempt; 60/h per address. See "Licence check-in" in billing-and-licensing.md |
+| `POST` | `/api/v1/license/checkin` | Signed key in the body | Self-hosted check-in: `{ key, installId (UUID v4), machine? (sha256 hex), platform?, name?, version? }` → `{ status (ok / revoked / blocked), latestKey, revoked[], installs: { number, active, limit, over, level } }`. Accepts an expired key (renewal); CSRF-exempt; 60/h per address. See "Licence check-in" in billing-and-licensing.md |
 | `POST` | `/api/license/install` | Yes | Install a license key (rate-limited) |
 | `DELETE` | `/api/license/install` | Admin | Uninstall the active license |
 
@@ -5353,6 +5353,18 @@ Operator API, gated with `requireAuth` + `requireAdmin`. A full refund or an ope
 | --- | --- | --- | --- |
 | `GET` | `/api/admin/billing/holds` | Admin | Accounts on a billing hold |
 | `POST` | `/api/admin/billing/holds/:userId/clear` | Admin | Lift a hold; body `{ reason }` (required, ≤ 500 chars). `404 no_hold`, `503 stripe_disabled`, `502 stripe_error` (hold unchanged) |
+
+### Admin — licences (`/api/admin/licenses/*`)
+
+Operator API of the issuing instance, gated with `requireAuth` + `requireAdmin`, behind Admin → Licences. `:subRef` is a Stripe subscription id (`sub_…`) or `lid:<uuid>` for a key minted outside Stripe. Every write needs `{ reason }` (≤ 500 chars) and is audited. See "A shared or leaked key" in billing-and-licensing.md.
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/admin/licenses` | Admin | Every subscription: holder, plan, `machines` against `limit`, `networks`, `level` (`ok` / `over` / `suspected`), worst first |
+| `GET` | `/api/admin/licenses/:subRef/installs` | Admin | Its installations: number, name, platform, network, version, machine hash prefix, first/last seen, block, `awaitingTrust` |
+| `POST` | `/api/admin/licenses/:subRef/installs/:seq/block` | Admin | Stop renewals for the installation and the rest of its machine (`license.install.block`) |
+| `POST` | `/api/admin/licenses/:subRef/installs/:seq/unblock` | Admin | Vouch for one installation: lift its block and, after a rotation, send it the new key (`license.install.unblock`) |
+| `POST` | `/api/admin/licenses/:subRef/rotate` | Admin | Body `{ keep: [seq…], reason }`. New key (same holder, plan, end date) emailed; other keys revoked; unkept installations blocked → `{ lid, revoked, blocked, emailDelivered }`. `404 no_live_key`, `503 not_an_issuer`, `400 not_a_subscription` |
 
 ### Admin — AI probe stats (`/api/admin/ai/*`)
 

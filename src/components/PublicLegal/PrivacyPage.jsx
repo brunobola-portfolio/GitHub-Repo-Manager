@@ -257,10 +257,14 @@ export default function PrivacyPage() {
                         A self-hosted installation with a licence key checks in with this service
                         once a day to receive renewed keys and revocations. For that we keep, per
                         subscription: the installation&apos;s name (its hostname unless the operator
-                        sets another), a one-way hash of a random installation id, the version, the
-                        first three parts of its IP address (a /24), and when it was first and last
-                        seen. It is used only to deliver renewals and to count installations against
-                        the plan. An operator can turn it off with <code>LICENSE_AUTO_RENEW=false</code>.
+                        sets another), a one-way hash of a random installation id, a one-way hash of
+                        the machine&apos;s operating-system id (never the id itself), its platform
+                        (for example linux-x64), the version, the first three parts of its IP
+                        address (a /24), its installation number, and when it was first and last
+                        seen. It is used only to deliver renewals, to count machines against the
+                        plan and to stop renewals for a copy of the key used outside the
+                        customer&apos;s organisation. An operator can turn it off with{' '}
+                        <code>LICENSE_AUTO_RENEW=false</code>.
                     </p>
                 </Section>
 
