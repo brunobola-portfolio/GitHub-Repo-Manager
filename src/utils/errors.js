@@ -7,7 +7,7 @@
  */
 
 import { ApiError, ErrorType } from './api'
-import { SUPPORT_EMAIL } from './supportContact'
+import { supportLabel } from './supportContact'
 
 /**
  * Map server-returned `reason` values from bulk confirmation errors to
@@ -316,7 +316,7 @@ const KNOWN_ERRORS = {
     // --- Status-ladder entries -------------------------------------------
     // Reached when a response carries a status we understand but a code we
     // don't. Before these existed, every 400/403/404/409 rendered FALLBACK —
-    // "Something went wrong… contact bruno@bolalabs.pt" with a Retry button —
+    // "Something went wrong… contact <support address>" with a Retry button —
     // which for a deterministic 4xx is both wrong about the cause and offers
     // an action that cannot possibly work.
     BAD_REQUEST: {
@@ -359,7 +359,14 @@ const KNOWN_ERRORS = {
 
 const FALLBACK = {
     title: 'Something went wrong',
-    body: `Try again. If the problem persists, contact ${SUPPORT_EMAIL}.`,
+    // A getter: the contact comes from the shell, and a self-hosted install
+    // with none must not name the maintainer's inbox.
+    get body() {
+        const contact = supportLabel()
+        return contact
+            ? `Try again. If the problem persists, contact ${contact}.`
+            : 'Try again. If the problem persists, tell whoever runs this instance.'
+    },
     action: { label: 'Retry', kind: 'retry', type: 'retry' },
 }
 

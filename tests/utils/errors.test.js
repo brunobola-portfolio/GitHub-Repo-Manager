@@ -6,6 +6,18 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { formatUserError } from '../../src/utils/errors.js'
+import { resetSupportCache } from '../../src/utils/supportContact.js'
+
+function withSupportMeta(support) {
+  document.head.querySelectorAll('meta[name="grm-support"]').forEach((m) => m.remove())
+  if (support) {
+    const meta = document.createElement('meta')
+    meta.setAttribute('name', 'grm-support')
+    meta.setAttribute('content', JSON.stringify(support))
+    document.head.appendChild(meta)
+  }
+  resetSupportCache()
+}
 
 describe('formatUserError', () => {
   beforeEach(() => {
@@ -39,7 +51,22 @@ describe('formatUserError', () => {
   it('returns fallback for unknown error', () => {
     const out = formatUserError(new Error('weird internal thing'))
     expect(out.title).toBe('Something went wrong')
-    expect(out.body).toContain('bruno@bolalabs.pt')
+    expect(out.body).toMatch(/^Try again/)
+  })
+
+  it('names no upstream address when this install configured no contact', () => {
+    withSupportMeta(null)
+    const out = formatUserError(new Error('weird'))
+    expect(out.body).not.toMatch(/@bolalabs.pt/)
+    expect(out.body).toContain('whoever runs this instance')
+  })
+
+  it('names the contact the server put in the shell', () => {
+    withSupportMeta({ email: 'help@acme.example', salesUrl: 'https://bolalabs.pt/en/repomanager' })
+    expect(formatUserError(new Error('weird')).body).toContain('help@acme.example')
+    withSupportMeta({ url: 'https://desk.acme.example/new' })
+    expect(formatUserError(new Error('weird')).body).toContain('desk.acme.example')
+    withSupportMeta(null)
   })
 
   it('never includes the original error message in the returned object', () => {
@@ -70,7 +97,7 @@ describe('formatUserError', () => {
   it('honors fallbackTitle when error is unmapped', () => {
     const out = formatUserError(new Error('weird'), { fallbackTitle: 'Mirror failed' })
     expect(out.title).toBe('Mirror failed')
-    expect(out.body).toContain('bruno@bolalabs.pt')
+    expect(out.body).toMatch(/^Try again/)
   })
 
   it('ignores fallbackTitle when error has a known code', () => {

@@ -114,7 +114,9 @@ function applyRouteHead(html, origin, path) {
         .replace(/(<meta property="og:description" content=")[^"]*(")/, `$1${description}$2`);
 }
 
-export function renderShell(html, { origin, version, sentryDsn, stripeEnabled = false, path = '/' }) {
+const attr = (value) => String(value).replace(/[&"<>]/g, (c) => `&#${c.charCodeAt(0)};`);
+
+export function renderShell(html, { origin, version, sentryDsn, stripeEnabled = false, path = '/', support = null }) {
     const filled = applyRouteHead(html.replace(PLACEHOLDER, origin), origin, path);
     // "<" inside the JSON could close the script element early; escape it as
     // JSON allows so the block stays inert data whatever the strings contain.
@@ -122,7 +124,12 @@ export function renderShell(html, { origin, version, sentryDsn, stripeEnabled = 
     // Browser telemetry is runtime configuration: the meta tag carries the
     // deployment's public DSN (or is absent), so one build serves every
     // install and the CSP needs no inline script to deliver it.
-    const meta = sentryDsn ? `<meta name="grm-sentry-dsn" content="${String(sentryDsn).replace(/[&"<>]/g, (c) => `&#${c.charCodeAt(0)};`)}">\n    ` : '';
+    // Runtime contacts (email-identity.js publicSupport), so one build serves
+    // the hosted app and every self-hosted install with the right desk.
+    const supportMeta = support && Object.keys(support).length
+        ? `<meta name="grm-support" content="${attr(JSON.stringify(support))}">\n    `
+        : '';
+    const meta = (sentryDsn ? `<meta name="grm-sentry-dsn" content="${attr(sentryDsn)}">\n    ` : '') + supportMeta;
     const block = `${meta}<script type="application/ld+json">${json}</script>`;
     return filled.includes('</head>')
         ? filled.replace('</head>', `    ${block}\n  </head>`)

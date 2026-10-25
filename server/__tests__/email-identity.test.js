@@ -7,6 +7,8 @@ import {
     headerSafe,
     escapeHtml,
     parseMailbox,
+    publicSupport,
+    PUBLISHER_LICENCE_URL,
 } from '../lib/email-identity.js'
 
 const VARS = ['EMAIL_FROM', 'EMAIL_FROM_LICENCES', 'EMAIL_REPLY_TO', 'EMAIL_SUPPORT_URL']
@@ -114,6 +116,28 @@ describe('email identity', () => {
 
     it('escapeHtml neutralises markup', () => {
         expect(escapeHtml('<a href="x">t</a> & \'q\'')).toBe('&lt;a href=&quot;x&quot;&gt;t&lt;/a&gt; &amp; &#39;q&#39;')
+    })
+
+    it('publicSupport on the house domain: the BolaLabs desk tagged with the product, suporte@ and the sales form', () => {
+        process.env.EMAIL_FROM = 'no-reply@bolalabs.pt'
+        expect(publicSupport()).toEqual({
+            url: 'https://bolalabs.pt/en/dashboard?view=support&new=1&product=repomanager',
+            email: 'suporte@bolalabs.pt',
+            salesUrl: 'https://bolalabs.pt/en/contact?topic=repomanager',
+        })
+    })
+
+    it('publicSupport elsewhere: no BolaLabs desk or mailbox, only what the operator set, and the publisher licence page', () => {
+        process.env.EMAIL_FROM = 'no-reply@acme.example'
+        expect(publicSupport()).toEqual({ salesUrl: PUBLISHER_LICENCE_URL })
+        process.env.EMAIL_SUPPORT_URL = 'https://desk.acme.example/new'
+        process.env.EMAIL_REPLY_TO = 'help@acme.example'
+        expect(publicSupport()).toEqual({ url: 'https://desk.acme.example/new', email: 'help@acme.example', salesUrl: PUBLISHER_LICENCE_URL })
+        expect(JSON.stringify(publicSupport())).not.toMatch(/suporte@|dashboard?view=support/)
+    })
+
+    it('publicSupport without any sender configured shows no contact', () => {
+        expect(publicSupport()).toEqual({ salesUrl: PUBLISHER_LICENCE_URL })
     })
 
     it('parseMailbox reads both forms', () => {

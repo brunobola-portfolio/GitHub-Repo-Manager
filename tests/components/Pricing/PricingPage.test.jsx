@@ -282,10 +282,11 @@ describe('PricingPage — the checkout-unavailable banner names no deployment ty
 
         const contact = screen.getAllByRole('link').find((a) => {
             const href = a.getAttribute('href') || ''
-            return href.startsWith('mailto:') && href.includes('subject=')
+            return href.startsWith('https://bolalabs.pt/')
         })
         expect(contact, 'the banner offers no way to ask for Pro').toBeTruthy()
-        expect(contact.getAttribute('href')).toMatch(/Pro%20license%20inquiry/)
+        expect(contact.getAttribute('target')).toBe('_blank')
+        expect(contact.getAttribute('href')).not.toMatch(/^mailto:/)
     })
 })
 

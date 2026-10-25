@@ -47,7 +47,7 @@ describe('PricingPreview — the Pro button does what its label says', () => {
         mockApiCall.mockResolvedValue({ stripeEnabled: true })
     })
 
-    it('asks for an e-mail, and never for GitHub access, when checkout is unavailable', async () => {
+    it('opens the publisher licence page, and never asks for GitHub access, when checkout is unavailable', async () => {
         // The button relabelled itself to "Contact us about Pro" and then still
         // called onSignIn(), so a visitor asking to be contacted was handed
         // GitHub's consent screen asking for their repositories — on an
@@ -64,8 +64,9 @@ describe('PricingPreview — the Pro button does what its label says', () => {
 
         expect(onSignIn).not.toHaveBeenCalled()
         expect(open).toHaveBeenCalledOnce()
-        expect(open.mock.calls[0][0]).toMatch(/^mailto:/)
-        expect(open.mock.calls[0][0]).toMatch(/Pro%20inquiry/)
+        // Licences come from the publisher: its page, in a new tab, never a mailbox.
+        expect(open.mock.calls[0][0].startsWith('https://bolalabs.pt/')).toBe(true)
+        expect(open.mock.calls[0][1]).toBe('_blank')
     })
 
     it('signs the visitor in when checkout IS available', async () => {

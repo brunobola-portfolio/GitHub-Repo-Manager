@@ -31,6 +31,18 @@ describe('resolvePublicOrigin', () => {
 describe('renderShell', () => {
     const html = '<html><head><link rel="canonical" href="__PUBLIC_ORIGIN__/"><meta property="og:image" content="__PUBLIC_ORIGIN__/og-1200x630.png"></head><body></body></html>';
 
+    it('hands the browser its support contacts in an escaped meta, and none when there are none', () => {
+        const support = { url: 'https://desk.example/new?a=1&b="x"', email: 'h@acme.example', salesUrl: 'https://bolalabs.pt/en/repomanager' };
+        const out = renderShell(html, { origin: 'https://x.example', version: '1.0.0', support });
+        const content = /<meta name="grm-support" content="([^"]*)">/.exec(out)?.[1];
+        expect(content, 'meta missing').toBeTruthy();
+        expect(content).not.toMatch(/["<>]/);
+        const decoded = content.replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)));
+        expect(JSON.parse(decoded)).toEqual(support);
+        expect(renderShell(html, { origin: 'https://x.example', version: '1.0.0', support: {} })).not.toContain('grm-support');
+        expect(renderShell(html, { origin: 'https://x.example', version: '1.0.0' })).not.toContain('grm-support');
+    });
+
     it('fills every placeholder with the origin and adds one JSON-LD block inside <head>', () => {
         const out = renderShell(html, { origin: 'https://repomanager.example.pt', version: '4.24.4' });
         expect(out).not.toContain('__PUBLIC_ORIGIN__');

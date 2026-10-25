@@ -139,6 +139,36 @@ export function supportContact() {
     return { ...(url ? { url } : {}), ...(sender?.replyTo ? { email: sender.replyTo } : {}) }
 }
 
+/**
+ * Licences are sold only by the publisher, whoever hosts the instance, so
+ * "buy a licence" may point upstream from any install. Support may not.
+ */
+export const PUBLISHER_LICENCE_URL = `https://${HOUSE_DOMAIN}/en/repomanager`
+const HOUSE_SALES_URL = `https://${HOUSE_DOMAIN}/en/contact?topic=repomanager`
+
+/**
+ * Contacts the web app may show, sent to the browser in the shell (see
+ * spa-shell.js renderShell). Same rule as the email footer: the BolaLabs
+ * desk only on the house domain, otherwise only what the operator set
+ * (EMAIL_SUPPORT_URL / EMAIL_REPLY_TO). Self-hosted builds used to bake
+ * the maintainer's personal address into every "contact support" link.
+ *
+ * @returns {{ url?: string, email?: string, salesUrl: string }}
+ */
+export function publicSupport() {
+    const sender = resolveSender('system')
+    const house = sender ? domainOf(sender.address) === HOUSE_DOMAIN : false
+    const { url, email } = supportContact()
+    const deskUrl = url && house && url === HOUSE_DEFAULTS.supportUrl
+        ? `${url}&product=repomanager`
+        : url
+    return {
+        ...(deskUrl ? { url: deskUrl } : {}),
+        ...(email ? { email } : {}),
+        salesUrl: house ? HOUSE_SALES_URL : PUBLISHER_LICENCE_URL,
+    }
+}
+
 /** Headers every automated message carries (RFC 3834): auto-responders must not answer it. */
 export const AUTOMATED_HEADERS = Object.freeze({ 'Auto-Submitted': 'auto-generated' })
 
