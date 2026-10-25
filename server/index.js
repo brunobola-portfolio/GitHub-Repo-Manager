@@ -42,6 +42,7 @@ import { engine as migrationEngine } from './routes/migration.js';
 import { recoverInterruptedImportJobs } from './routes/import/_shared.js';
 import { config } from './config.js';
 import { resolvePublicOrigin, renderShell, robotsTxt, securityTxt, sitemapXml, shellStatus } from './lib/spa-shell.js';
+import { publicSupport } from './lib/email-identity.js';
 import { initMonitoring, getSentryErrorHandler, monitoringContext, sentryTunnelHandler, browserDsn } from './lib/monitoring.js';
 import db, { initDB, seedMockData } from './db.js';
 import { DBSchemaFromFutureError } from './lib/db-migrations.js';
@@ -545,6 +546,7 @@ if (config.nodeEnv === 'production') {
                 origin: resolvePublicOrigin(req, config.frontendUrl),
                 version: pkg.version,
                 sentryDsn: browserDsn()?.dsn,
+                support: publicSupport(),
                 // Only advertise a priced plan when this instance can take the
                 // money — the same pair the checkout route requires.
                 stripeEnabled: Boolean(config.stripeSecretKey && config.stripeWebhookSecret),

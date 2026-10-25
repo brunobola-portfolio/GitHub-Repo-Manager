@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, ArrowRight, Sparkles, GitBranch, Shield, Cpu } from 'lucide-react'
 import { PricingCard } from './PricingCard'
-import { SUPPORT_EMAIL } from '../../utils/supportContact'
+import { salesHref, supportHref } from '../../utils/supportContact'
 import { FeatureComparison } from './FeatureComparison'
 import { API_BASE_URL } from '../../config'
 import { apiCall } from '../../utils/api'
@@ -214,7 +214,8 @@ function FaqItem({ q, a, index }) {
 }
 
 /* ─── Main page ─── */
-const SALES_EMAIL = SUPPORT_EMAIL
+// Licences are sold by the publisher; sales opens its contact page in a new tab.
+const openSales = () => window.open(salesHref(), '_blank', 'noopener,noreferrer')
 
 // The client is never told which deployment mode it is running in:
 // /api/v1/billing/config answers with stripeEnabled / yearlyBillingAvailable /
@@ -321,7 +322,7 @@ export function PricingPage({ onGetStarted } = {}) {
 
   const handleTierAction = useCallback((tier) => {
     if (tier === 'Enterprise') {
-      window.location.href = `mailto:${SALES_EMAIL}?subject=${encodeURIComponent('GitHub Repo Manager — Enterprise inquiry')}&body=${encodeURIComponent('Hello,\n\nI\'m interested in the Enterprise plan for GitHub Repo Manager.\n\nOrganization: \nTeam size: \nUse case: \n')}`
+      openSales()
       return
     }
     if (tier === 'Pro') {
@@ -329,7 +330,7 @@ export function PricingPage({ onGetStarted } = {}) {
       // user through a checkout that answers 503 and an error banner they have
       // to read to understand what happened.
       if (selfServe === false) {
-        window.location.href = `mailto:${SALES_EMAIL}?subject=${encodeURIComponent('GitHub Repo Manager — Pro inquiry')}`
+        openSales()
         return
       }
       handleCheckout('pro', isYearly ? 'yearly' : 'monthly')
@@ -387,8 +388,7 @@ export function PricingPage({ onGetStarted } = {}) {
               variant="banner"
               service="Stripe checkout"
               reason={CHECKOUT_UNAVAILABLE_REASON}
-              contactEmail={SALES_EMAIL}
-              contactSubject="GitHub Repo Manager — Pro license inquiry"
+              contactHref={salesHref()}
               onDismiss={() => setCheckoutState(null)}
               className="mb-8"
             />
@@ -560,9 +560,9 @@ export function PricingPage({ onGetStarted } = {}) {
               Frequently asked <span className="text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">questions</span>
             </h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base max-w-lg mx-auto">
-              Can't find the answer? Reach us at{' '}
-              <a href={`mailto:${SALES_EMAIL}`} className="text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline">
-                {SALES_EMAIL}
+              Can't find the answer?{' '}
+              <a href={supportHref({ category: 'question' }) || salesHref()} target="_blank" rel="noopener noreferrer" className="text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline">
+                Ask us
               </a>
             </p>
           </motion.div>

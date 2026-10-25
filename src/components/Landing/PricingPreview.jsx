@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { EASE, DURATION } from '../ui/motion'
 import { Check, Zap, Crown } from 'lucide-react'
-import { SUPPORT_EMAIL } from '../../utils/supportContact'
+import { salesHref } from '../../utils/supportContact'
 import { BACKDROP_WASH_COLOR } from '../ui/_variants'
 import { API_BASE_URL } from '../../config'
 import { apiCall } from '../../utils/api'
@@ -80,7 +80,6 @@ const cardVariants = {
   }),
 }
 
-const SALES_EMAIL = SUPPORT_EMAIL
 
 function PreviewCard({ plan, i, onSignIn, selfServe }) {
   // While this deployment cannot take money (`/api/v1/billing/config` answers
@@ -186,10 +185,7 @@ function PreviewCard({ plan, i, onSignIn, selfServe }) {
 							// repositories — on a deployment that cannot take their money
 							// anyway. The label was fixed and the handler was not.
 							if (plan.enterprise || blocked) {
-								const subject = plan.enterprise
-									? 'GitHub Repo Manager — Enterprise inquiry'
-									: 'GitHub Repo Manager — Pro inquiry'
-								window.open(`mailto:${SALES_EMAIL}?subject=${encodeURIComponent(subject)}`, '_self')
+								window.open(salesHref(), '_blank', 'noopener,noreferrer')
 							} else if (onSignIn) {
 								// Carry the intent through GitHub: the pricing page
 								// resumes the checkout from ?checkout=pro after login,
