@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **A full refund now cancels the Stripe subscription**, so a refunded customer
+  is never charged again (it used to stay active and keep billing an account
+  that had been put on Free). An open dispute pauses collection instead, and
+  collection resumes if the dispute is won; a lost dispute cancels. Operators
+  can list and lift billing holds (`/api/admin/billing/holds`), with a reason
+  that goes to the audit log.
+
 ## [4.27.2] - 2026-10-25
 
 ### Security

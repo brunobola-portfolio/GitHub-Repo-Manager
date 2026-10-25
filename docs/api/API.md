@@ -5,7 +5,7 @@
 **Authentication:** GitHub OAuth via session cookies, or an API key sent as `Authorization: Bearer grm_live_...`. Most endpoints require an authenticated session (`requireAuth` middleware). The server never exposes raw access tokens to the client.
 **CSRF:** All mutating `/api/*` requests (non-GET/HEAD/OPTIONS) require a valid `X-CSRF-Token` header. The OAuth flow and signature-verified webhooks are exempt.
 **Request validation:** Write endpoints validate their JSON body with Zod (`validateBody` middleware). An invalid body returns `400 { error, code: 'VALIDATION_ERROR' }` — see [Shared Response Envelopes](#shared-response-envelopes).
-**Total Endpoints:** 355 route handlers (342 across `server/routes/**` — 77 route files, recounted via `grep -rEc "^\s*router\.(get|post|put|patch|delete)\(" server/routes` — plus 13 app-level routes mounted directly in `server/index.js`: webhooks, health, the browser error-report tunnel `/api/monitoring/tunnel`, `/robots.txt`, `/sitemap.xml`, the RFC 9116 contact file at `/.well-known/security.txt` (and its legacy root spelling), and the brand guide at `/brand`). This document gives full entries for the public-facing and recently-changed surface; lower-level internal routes are summarised under [Additional Endpoints](#additional-endpoints-grouped).
+**Total Endpoints:** 357 route handlers (344 across `server/routes/**` — 78 route files, recounted via `grep -rEc "^\s*router\.(get|post|put|patch|delete)\(" server/routes` — plus 13 app-level routes mounted directly in `server/index.js`: webhooks, health, the browser error-report tunnel `/api/monitoring/tunnel`, `/robots.txt`, `/sitemap.xml`, the RFC 9116 contact file at `/.well-known/security.txt` (and its legacy root spelling), and the brand guide at `/brand`). This document gives full entries for the public-facing and recently-changed surface; lower-level internal routes are summarised under [Additional Endpoints](#additional-endpoints-grouped).
 
 ---
 
@@ -5343,6 +5343,15 @@ Operator API, gated internally with `requireAuth` + `requireTier('enterprise')` 
 | `GET` | `/api/admin/dlq/webhook/:id` | Admin | Get one dead-lettered webhook |
 | `POST` | `/api/admin/dlq/webhook/:id/retry` | Admin | Retry a dead-lettered webhook |
 | `DELETE` | `/api/admin/dlq/webhook/:id` | Admin | Delete a dead-lettered webhook (also `POST .../webhook/:id/delete`) |
+
+### Admin — billing holds (`/api/admin/billing/*`)
+
+Operator API, gated with `requireAuth` + `requireAdmin`. A full refund or an open dispute puts a subscription on hold (`refunded` / `disputed`, tier `free`); these routes list the holds and lift one. Lifting reads the subscription from Stripe (resuming collection that a dispute paused) and is audited as `billing.hold.clear` with the reason.
+
+| Method | Path | Auth | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/admin/billing/holds` | Admin | Accounts on a billing hold |
+| `POST` | `/api/admin/billing/holds/:userId/clear` | Admin | Lift a hold; body `{ reason }` (required, ≤ 500 chars). `404 no_hold`, `503 stripe_disabled`, `502 stripe_error` (hold unchanged) |
 
 ### Admin — AI probe stats (`/api/admin/ai/*`)
 
