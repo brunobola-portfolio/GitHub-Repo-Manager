@@ -139,6 +139,17 @@ describe('admin licences API', () => {
         expect(mail.context).toMatchObject({ replacement: true, stripeSessionId: `rotation:${fresh.lid}` });
         expect(JSON.stringify(mail.context)).not.toContain('grm_lic_');
         expect(refreshLicenseCache).toHaveBeenCalled();
+
+        // Then, at check-in: the kept installation is handed the new key; the
+        // unkept one and a fresh install id presenting the old key are not.
+        const { recordCheckin: again, revocationOf, keptThroughRotation, newerKeyFor } = await import('../lib/license-installs.js');
+        const handed = (installId, machine) => {
+            const r = again({ subRef: 'sub_rot', lid: old.lid, installId, machine });
+            return !r.blocked && keptThroughRotation(revocationOf(old.lid), r.keptAt) ? newerKeyFor('sub_rot', old.lid)?.lid : null;
+        };
+        expect(handed(uuid(1), MACHINE_A)).toBe(fresh.lid);
+        expect(handed(uuid(2), MACHINE_B)).toBeNull();
+        expect(handed(uuid(9), 'c'.repeat(64))).toBeNull();
     });
 
     it('refuses to rotate without a live key or for a standalone key', async () => {

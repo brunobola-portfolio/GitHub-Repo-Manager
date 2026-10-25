@@ -79,11 +79,13 @@ const ACTIVE = "julianday(last_seen) >= julianday('now') - @days"
 /**
  * Record one check-in.
  *
- * A new installation on a machine the operator blocked starts blocked: a
- * wiped data volume must not be a way around a block.
+ * A new installation inherits what the operator decided about its machine:
+ * on a blocked machine it starts blocked (a wiped data volume must not be a
+ * way around a block), and on a machine kept through a rotation it starts
+ * kept (a reinstall there still receives the replacement key).
  *
  * @param {{ subRef: string, lid: string, tier?: string|null, installId: string, machine?: string|null, platform?: string|null, name?: string|null, ip?: string, version?: string|null }} c
- * @returns {{ seq: number, blocked: boolean, active: number }}
+ * @returns {{ seq: number, blocked: boolean, keptAt: string|null, active: number }}
  */
 export function recordCheckin({ subRef, lid, tier = null, installId, machine = null, platform = null, name = null, ip, version = null }) {
     const installHash = createHash('sha256').update(String(installId)).digest('hex')
@@ -96,12 +98,19 @@ export function recordCheckin({ subRef, lid, tier = null, installId, machine = n
                 ORDER BY blocked_at DESC LIMIT 1
             `).get(subRef, machineHash)
             : null
+        const inheritedKeep = machineHash && !inheritedBlock
+            ? db.prepare(`
+                SELECT MAX(rotation_kept_at) AS kept FROM license_installs
+                WHERE sub_ref = ? AND machine_hash = ? AND blocked_at IS NULL
+            `).get(subRef, machineHash)?.kept ?? null
+            : null
         db.prepare(`
             INSERT INTO license_installs
-                (sub_ref, lid, tier, install_hash, machine_hash, platform, name, ip_prefix, app_version, seq, blocked_at, blocked_reason)
+                (sub_ref, lid, tier, install_hash, machine_hash, platform, name, ip_prefix, app_version, seq,
+                 blocked_at, blocked_reason, rotation_kept_at)
             VALUES (@subRef, @lid, @tier, @installHash, @machineHash, @platform, @name, @ipPrefix, @version,
                 (SELECT COALESCE(MAX(seq), 0) + 1 FROM license_installs WHERE sub_ref = @subRef),
-                @blockedAt, @blockedReason)
+                @blockedAt, @blockedReason, @keptAt)
             ON CONFLICT(sub_ref, install_hash) DO UPDATE SET
                 lid = excluded.lid, tier = excluded.tier, machine_hash = COALESCE(excluded.machine_hash, license_installs.machine_hash),
                 platform = excluded.platform, name = excluded.name, ip_prefix = excluded.ip_prefix,
@@ -110,11 +119,20 @@ export function recordCheckin({ subRef, lid, tier = null, installId, machine = n
             subRef, lid, tier, installHash, machineHash, platform, name, ipPrefix: ipPrefix(ip), version,
             blockedAt: inheritedBlock?.blocked_at ?? null,
             blockedReason: inheritedBlock?.blocked_reason ?? null,
+            keptAt: inheritedKeep,
         })
-        return db.prepare('SELECT seq, blocked_at FROM license_installs WHERE sub_ref = ? AND install_hash = ?')
+        return db.prepare('SELECT seq, blocked_at, rotation_kept_at FROM license_installs WHERE sub_ref = ? AND install_hash = ?')
             .get(subRef, installHash)
     })()
-    return { seq: row.seq, blocked: Boolean(row.blocked_at), active: countActive(subRef) }
+    return { seq: row.seq, blocked: Boolean(row.blocked_at), keptAt: row.rotation_kept_at ?? null, active: countActive(subRef) }
+}
+
+/** Mark installations as kept through a rotation that happens now. */
+export function markKeptForRotation(subRef, seqs) {
+    const mark = db.prepare("UPDATE license_installs SET rotation_kept_at = datetime('now') WHERE sub_ref = ? AND seq = ? AND blocked_at IS NULL")
+    let n = 0
+    for (const seq of seqs) n += mark.run(subRef, seq).changes
+    return n
 }
 
 /**
@@ -224,17 +242,23 @@ export function blockInstall(subRef, seq, reason) {
     return info.changes
 }
 
-/** Lift a block, for the installation and the rest of its machine. */
+/**
+ * Lift a block, for the installation and the rest of its machine. Lifting it
+ * is the operator vouching for the installation, so it also counts as kept:
+ * after a rotation it then receives the replacement key.
+ */
 export function unblockInstall(subRef, seq) {
     const target = db.prepare('SELECT machine_hash FROM license_installs WHERE sub_ref = ? AND seq = ?').get(subRef, seq)
     if (!target) return 0
     const info = target.machine_hash
         ? db.prepare(`
-            UPDATE license_installs SET blocked_at = NULL, blocked_reason = NULL
+            UPDATE license_installs SET blocked_at = NULL, blocked_reason = NULL, rotation_kept_at = datetime('now')
             WHERE sub_ref = ? AND (seq = ? OR machine_hash = ?)
         `).run(subRef, seq, target.machine_hash)
-        : db.prepare('UPDATE license_installs SET blocked_at = NULL, blocked_reason = NULL WHERE sub_ref = ? AND seq = ?')
-            .run(subRef, seq)
+        : db.prepare(`
+            UPDATE license_installs SET blocked_at = NULL, blocked_reason = NULL, rotation_kept_at = datetime('now')
+            WHERE sub_ref = ? AND seq = ?
+        `).run(subRef, seq)
     return info.changes
 }
 
@@ -261,9 +285,19 @@ export function newerKeyFor(subRef, presentedLid) {
     return { key: row.license_key, lid: row.lid }
 }
 
-/** Why a key of this subscription was revoked, or null when it was not. */
-export function revokeReasonOf(lid) {
-    return db.prepare('SELECT revoke_reason FROM issued_licenses WHERE lid = ? AND revoked_at IS NOT NULL').get(lid)?.revoke_reason ?? null
+/** Why and when an issued key was revoked, or null when it was not. */
+export function revocationOf(lid) {
+    const row = db.prepare('SELECT revoke_reason, revoked_at FROM issued_licenses WHERE lid = ? AND revoked_at IS NOT NULL').get(lid)
+    return row ? { reason: row.revoke_reason, at: row.revoked_at } : null
+}
+
+/**
+ * Whether an installation presenting a rotated key gets its replacement: only
+ * when the operator kept it through that rotation (or vouched for it later).
+ * Both timestamps come from SQLite's datetime('now'), so they compare as text.
+ */
+export function keptThroughRotation(revocation, keptAt) {
+    return revocation?.reason === 'rotated' && Boolean(keptAt) && keptAt >= revocation.at
 }
 
 /** Revoked key ids of the subscription (or of the standalone key). */

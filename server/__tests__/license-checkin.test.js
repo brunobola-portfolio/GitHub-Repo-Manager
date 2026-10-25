@@ -130,15 +130,43 @@ describe('POST /api/v1/license/checkin (issuer)', () => {
         expect(wiped.body.data.installs).toMatchObject({ number: 2, active: 0 })
     })
 
+    function rotate(oldLid, newLid, sub, keepSeqs) {
+        testDb.prepare("UPDATE issued_licenses SET revoked_at = datetime('now'), revoke_reason = 'rotated' WHERE lid = ?").run(oldLid)
+        testDb.prepare("INSERT INTO revoked_licenses (lid, reason) VALUES (?, 'rotated: leak')").run(oldLid)
+        issue(newLid, sub)
+        for (const seq of keepSeqs) testDb.prepare("UPDATE license_installs SET rotation_kept_at = datetime('now') WHERE sub_ref = ? AND seq = ?").run(sub, seq)
+    }
+
     it('after a rotation a kept installation presenting the old key gets the replacement', async () => {
         issue('r1', 'sub_r')
-        testDb.prepare("UPDATE issued_licenses SET revoked_at = datetime('now'), revoke_reason = 'rotated' WHERE lid = 'r1'").run()
-        testDb.prepare("INSERT INTO revoked_licenses (lid, reason) VALUES ('r1', 'rotated: leak')").run()
-        issue('r2', 'sub_r')
-        const res = await checkin({ key: fakeKey('r1'), installId: INSTALL })
+        await checkin({ key: fakeKey('r1'), installId: INSTALL, machine: MACHINE })
+        rotate('r1', 'r2', 'sub_r', [1])
+        const res = await checkin({ key: fakeKey('r1'), installId: INSTALL, machine: MACHINE })
         expect(res.body.data.status).toBe('ok')
         expect(res.body.data.latestKey).toMatch(/^grm_lic_r2\|/)
         expect(res.body.data.revoked).toEqual(['r1'])
+        // A reinstall on the kept machine is still the customer's.
+        const reinstall = await checkin({ key: fakeKey('r1'), installId: OTHER, machine: MACHINE })
+        expect(reinstall.body.data.latestKey).toMatch(/^grm_lic_r2\|/)
+    })
+
+    it('a new install id presenting a rotated key gets nothing: the leaked copy cannot fetch the replacement', async () => {
+        issue('x1', 'sub_x')
+        await checkin({ key: fakeKey('x1'), installId: INSTALL, machine: MACHINE })
+        rotate('x1', 'x2', 'sub_x', [1])
+        const leaker = await checkin({ key: fakeKey('x1'), installId: OTHER, machine: 'c'.repeat(64) })
+        expect(leaker.body.data).toMatchObject({ status: 'revoked', latestKey: null })
+        const noMachine = await checkin({ key: fakeKey('x1'), installId: '77777777-2222-4333-8444-555555555555' })
+        expect(noMachine.body.data.latestKey).toBeNull()
+    })
+
+    it('an installation kept in an earlier rotation is not kept through a later one', async () => {
+        issue('y1', 'sub_y')
+        await checkin({ key: fakeKey('y1'), installId: INSTALL })
+        testDb.prepare("UPDATE license_installs SET rotation_kept_at = datetime('now', '-1 day') WHERE sub_ref = 'sub_y'").run()
+        rotate('y1', 'y2', 'sub_y', [])
+        const res = await checkin({ key: fakeKey('y1'), installId: INSTALL })
+        expect(res.body.data.latestKey).toBeNull()
     })
 
     it('audits suspected sharing once, when the level first rises past twice the plan', async () => {

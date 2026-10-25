@@ -22,9 +22,10 @@ import {
 import {
   installLimit,
   newerKeyFor,
+  keptThroughRotation,
   noteSharingLevel,
   recordCheckin,
-  revokeReasonOf,
+  revocationOf,
   revokedLidsFor,
   sharingLevel,
   subscriptionRefFor,
@@ -148,7 +149,8 @@ router.get('/', (req, res) => {
  * renewal), the subscription's revoked key ids, and the installation's number
  * and the machine count against the plan. Over the limit is reported, never
  * refused. An installation the operator blocked gets no new key; one that
- * presents a key revoked by a rotation, and was kept, gets the replacement.
+ * presents a key revoked by a rotation gets the replacement only when the
+ * operator kept it through that rotation.
  */
 router.post('/checkin', checkinLimiter, async (req, res) => {
   const { key, installId, machine, platform, name, version } = req.body || {}
@@ -165,7 +167,7 @@ router.post('/checkin', checkinLimiter, async (req, res) => {
 
   try {
     const subRef = subscriptionRefFor(payload.lid)
-    const { seq, blocked, active } = recordCheckin({
+    const { seq, blocked, keptAt, active } = recordCheckin({
       subRef,
       lid: payload.lid,
       tier: typeof payload.tier === 'string' ? payload.tier : null,
@@ -178,7 +180,9 @@ router.post('/checkin', checkinLimiter, async (req, res) => {
     })
     const revoked = revokedLidsFor(subRef, payload.lid)
     const presentedRevoked = revoked.includes(payload.lid)
-    const rotatedAway = presentedRevoked && revokeReasonOf(payload.lid) === 'rotated'
+    // A rotated key is replaced only for installations kept through that
+    // rotation; a new install id presenting the leaked key gets nothing.
+    const rotatedAway = presentedRevoked && keptThroughRotation(revocationOf(payload.lid), keptAt)
     const newer = blocked || (presentedRevoked && !rotatedAway) ? null : newerKeyFor(subRef, payload.lid)
     const limit = installLimit(payload.tier)
     const level = sharingLevel(active, limit)

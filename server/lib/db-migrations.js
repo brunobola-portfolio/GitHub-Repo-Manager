@@ -739,6 +739,10 @@ export const MIGRATIONS = [
             addColumnIfMissing(db, 'license_installs', 'seq', 'INTEGER');
             addColumnIfMissing(db, 'license_installs', 'blocked_at', 'TEXT');
             addColumnIfMissing(db, 'license_installs', 'blocked_reason', 'TEXT');
+            // When the operator kept this installation through a key rotation.
+            // Only a kept installation is handed the replacement for a rotated
+            // key; a new install id presenting the leaked key gets nothing.
+            addColumnIfMissing(db, 'license_installs', 'rotation_kept_at', 'TEXT');
             db.exec(`
                 UPDATE license_installs SET seq = (
                     SELECT COUNT(*) FROM license_installs AS o

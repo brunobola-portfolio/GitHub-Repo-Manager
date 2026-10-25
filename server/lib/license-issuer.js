@@ -5,7 +5,7 @@ import { decodeJwt } from 'jose'
 import { generateLicenseKey, addCalendarMonths, revokeLicense, LICENSE_PREFIX } from './license.js'
 import { isEmailDeliveryConfigured, sendEmail } from './email.js'
 import { renderEmail } from './email-layout.js'
-import { activeInstallSeqs, blockInstall } from './license-installs.js'
+import { activeInstallSeqs, blockInstall, markKeptForRotation } from './license-installs.js'
 import db from '../db.js'
 import logger from './logger.js'
 
@@ -367,10 +367,11 @@ export class LicenseRotationError extends Error {
  * the subscription is revoked with reason 'rotated'; every active
  * installation the operator did not keep is blocked from renewals.
  *
- * The kept installations still hold the old key, which is now revoked. At
- * their next check-in the issuer sees an installation that is not blocked
- * presenting a key revoked for rotation, and hands it the new key, so a
- * rotation costs the customer nothing on the machines they actually run.
+ * The kept installations still hold the old key, which is now revoked. They
+ * are marked as kept, and at their next check-in the issuer hands them the new
+ * key, so a rotation costs the customer nothing on the machines they actually
+ * run. Anything else presenting the old key, including a fresh install id,
+ * gets nothing.
  *
  * @param {{ subscriptionId: string, keep?: number[], note?: string|null, actorId?: number|null }} opts
  * @returns {Promise<{ lid: string, revoked: number, blocked: number, emailDelivered: boolean }>}
@@ -423,7 +424,11 @@ export async function rotateSubscriptionLicense({ subscriptionId, keep = [], not
             mark.run(row.lid)
             revoked++
         }
-        for (const seq of activeInstallSeqs(subscriptionId)) {
+        // After the revocations, so the kept mark is never older than the
+        // revocation it answers (the check-in compares the two).
+        const active = activeInstallSeqs(subscriptionId)
+        markKeptForRotation(subscriptionId, active.filter((seq) => kept.has(seq)))
+        for (const seq of active) {
             if (!kept.has(seq)) blocked += blockInstall(subscriptionId, seq, 'Not kept when the key was rotated')
         }
     })()
