@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- simple-git 4.0.2, which pins `@simple-git/argv-parser` 2.0.1. 4.0.1 pinned
+  the vulnerable 2.0.0 exactly, so the critical advisory stayed open after
+  the upgrade in 4.27.1.
+
 ## [4.27.1] - 2026-10-25
 
 ### Security
