@@ -170,12 +170,26 @@ export function robotsTxt(origin) {
  * public issue or nothing. `Expires` is required by the RFC — a year out, and
  * the deploy that renders this file is what refreshes it.
  */
-export function securityTxt(origin, now = new Date()) {
+const UPSTREAM_SECURITY_CONTACT = 'mailto:bruno@bolalabs.pt';
+
+/**
+ * SECURITY_CONTACT lets an operator receive reports for their own install
+ * (a mailto: or https: URI). Without it, reports reach the maintainer named
+ * in SECURITY.md. Both previous contacts were dead: `${origin}/security` was
+ * not a route (the SPA answered 404) and security@bolalabs.pt was never a
+ * mailbox, so every report bounced.
+ */
+export function securityContact(raw = process.env.SECURITY_CONTACT) {
+    const value = raw?.trim();
+    if (value && /^(mailto:[^\s@]+@[^\s@]+\.[^\s@]+|https:\/\/[^\s"<>]+)$/.test(value)) return value;
+    return UPSTREAM_SECURITY_CONTACT;
+}
+
+export function securityTxt(origin, now = new Date(), contact = securityContact()) {
     const expires = new Date(now.getTime());
     expires.setUTCFullYear(expires.getUTCFullYear() + 1);
     return [
-        `Contact: ${origin}/security`,
-        'Contact: mailto:security@bolalabs.pt',
+        `Contact: ${contact}`,
         `Expires: ${expires.toISOString().replace(/\.\d{3}Z$/, 'Z')}`,
         'Preferred-Languages: en, pt',
         `Policy: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/blob/main/SECURITY.md`,
