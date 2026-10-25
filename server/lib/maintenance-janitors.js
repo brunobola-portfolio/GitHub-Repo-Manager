@@ -19,7 +19,8 @@
  *   - an overlap guard prevents a slow async retention pass from re-entering
  *
  * Cadence:
- *   - daily : retention pass + gh_cache purge (heavier, low-churn)
+ *   - daily : retention pass + gh_cache purge + resolved email-DLQ purge
+ *             (heavier, low-churn)
  *   - hourly: gh_outbox succeeded-row purge + undo-log expiry (cheap, churny)
  */
 
@@ -104,6 +105,30 @@ export function purgeOldEvents({ database = db, retentionDays, batchSize = EVENT
     return { skipped: false, retentionDays: days, perTable };
 }
 
+const EMAIL_DLQ_RESOLVED_RETENTION_DAYS = 30;
+
+/**
+ * Hard-delete email dead-letter rows resolved more than 30 days ago. A
+ * resolved row has done its job; kept forever it is a copy of every message
+ * that once failed — recipients, subjects, and for rows queued before bodies
+ * were made rebuildable, the bodies themselves. Unresolved rows are never
+ * touched: they are still owed. Same rule as `npm run admin:dlq:sweep`, now
+ * on a schedule instead of a manual CLI.
+ *
+ * @param {object} [opts]
+ * @param {object} [opts.database]
+ * @param {number} [opts.days]
+ * @returns {number} rows deleted
+ */
+export function purgeResolvedEmailDeadLetters({ database = db, days = EMAIL_DLQ_RESOLVED_RETENTION_DAYS } = {}) {
+    const info = database.prepare(
+        `DELETE FROM email_dead_letter
+         WHERE resolved_at IS NOT NULL
+           AND resolved_at < datetime('now', ?)`
+    ).run(`-${days} days`);
+    return info.changes;
+}
+
 let dailyTimer = null;
 let hourlyTimer = null;
 
@@ -123,7 +148,7 @@ export async function runDailyMaintenanceOnce() {
         return { retention: null, ghCachePurged: 0, eventsPurged: null, backup: null, skipped: true };
     }
     dailyRunning = true;
-    const summary = { retention: null, ghCachePurged: 0, eventsPurged: null, backup: null, healthSnapshots: null };
+    const summary = { retention: null, ghCachePurged: 0, eventsPurged: null, emailDlqPurged: 0, backup: null, healthSnapshots: null };
     try {
         try {
             summary.retention = await runRetentionPass({});
@@ -140,6 +165,11 @@ export async function runDailyMaintenanceOnce() {
             summary.eventsPurged = purgeOldEvents();
         } catch (err) {
             logger.warn({ err }, '[maintenance] event purge failed');
+        }
+        try {
+            summary.emailDlqPurged = purgeResolvedEmailDeadLetters();
+        } catch (err) {
+            logger.warn({ err }, '[maintenance] email DLQ purge failed');
         }
         try {
             summary.backup = await runDbBackupOnce();

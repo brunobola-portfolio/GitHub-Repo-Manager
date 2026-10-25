@@ -189,7 +189,120 @@ describe('email retry + dead-letter', () => {
         expect(row.last_error).toBeTruthy()
         expect(row.resolved_at).toBeNull()
         expect(row.next_retry_at).toBeTruthy()
-        expect(JSON.parse(row.context_json)).toEqual({ license_id: 42 })
+        expect(JSON.parse(row.context_json)).toEqual({
+            license_id: 42,
+            stream: 'system',
+            idempotencyKey: expect.any(String),
+        })
+        // The default mode keeps the body so a plain notice can be re-sent as is.
+        expect(row.body_html).toBe('<p>key</p>')
+    })
+
+    it('uses one Idempotency-Key for every attempt of a message and keeps it for the worker', async () => {
+        const mockFetch = vi.fn().mockResolvedValue({
+            ok: false, status: 503, statusText: 'Unavailable', json: async () => ({ message: 'down' }),
+        })
+        vi.stubGlobal('fetch', mockFetch)
+
+        const { sendEmail } = await import('../lib/email.js')
+        const result = await sendEmail({ to: 'user@example.com', subject: 'S', html: '<p>x</p>' })
+
+        const keys = mockFetch.mock.calls.map(([, init]) => init.headers['Idempotency-Key'])
+        expect(keys).toHaveLength(3)
+        expect(new Set(keys).size).toBe(1)
+        const row = memDb.prepare('SELECT context_json FROM email_dead_letter WHERE id = ?').get(result.dlqId)
+        expect(JSON.parse(row.context_json).idempotencyKey).toBe(keys[0])
+    })
+
+    it("deadLetter: 'rebuild' queues the reference, never the body", async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+            ok: false, status: 500, statusText: 'ISE', json: async () => ({ message: 'upstream' }),
+        }))
+
+        const { sendEmail } = await import('../lib/email.js')
+        const result = await sendEmail({
+            to: 'buyer@example.com',
+            subject: 'Your licence',
+            html: '<pre>grm_lic_SECRET</pre>',
+            text: 'grm_lic_SECRET',
+            deadLetter: 'rebuild',
+            context: { kind: 'license_key', stripeSessionId: 'cs_1', tier: 'pro', months: 1 },
+        })
+
+        const row = memDb.prepare('SELECT * FROM email_dead_letter WHERE id = ?').get(result.dlqId)
+        expect(row.body_html).toBeNull()
+        expect(row.body_text).toBeNull()
+        expect(JSON.stringify(row)).not.toContain('grm_lic_SECRET')
+    })
+
+    it("deadLetter: 'skip' never queues", async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+            ok: false, status: 500, statusText: 'ISE', json: async () => ({ message: 'upstream' }),
+        }))
+
+        const { sendEmail } = await import('../lib/email.js')
+        const result = await sendEmail({ to: 'u@example.com', subject: 'Digest', html: '<p>token</p>', deadLetter: 'skip' })
+
+        expect(result.ok).toBe(false)
+        expect(result.dlqId).toBeUndefined()
+        expect(memDb.prepare('SELECT COUNT(*) AS n FROM email_dead_letter').get().n).toBe(0)
+    })
+
+    it('worker rebuilds a licence email from issued_licenses and marks it delivered', async () => {
+        memDb.exec(`
+            CREATE TABLE issued_licenses (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, stripe_subscription_id TEXT,
+                stripe_session_id TEXT UNIQUE, tier TEXT, license_key TEXT, expires_at TEXT,
+                email_delivered INTEGER DEFAULT 0, email_delivered_at DATETIME
+            )
+        `)
+        memDb.prepare(`INSERT INTO issued_licenses (user_id, stripe_session_id, tier, license_key) VALUES (1, 'cs_42', 'pro', 'grm_lic_REBUILT')`).run()
+        const toSqlite = (d) => d.toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')
+        memDb.prepare(`
+            INSERT INTO email_dead_letter (to_address, subject, body_html, body_text, context_json, attempts, last_error, next_retry_at)
+            VALUES (?, ?, NULL, NULL, ?, 3, 'timeout', ?)
+        `).run('buyer@example.com', 'Your licence', JSON.stringify({
+            kind: 'license_key', stripeSessionId: 'cs_42', tier: 'pro', months: 1,
+            stream: 'licences', idempotencyKey: 'license-cs_42',
+        }), toSqlite(new Date(Date.now() - 60_000)))
+
+        const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: 'ok' }) })
+        vi.stubGlobal('fetch', mockFetch)
+
+        const { runEmailRetryOnce } = await import('../lib/email-retry-worker.js')
+        const summary = await runEmailRetryOnce()
+
+        expect(summary.resolved).toBe(1)
+        const [, init] = mockFetch.mock.calls[0]
+        const body = JSON.parse(init.body)
+        expect(body.text).toContain('grm_lic_REBUILT')
+        expect(body.from).toBe('"BolaLabs Licences" <licencas@bolalabs.pt>')
+        expect(init.headers['Idempotency-Key']).toBe('license-cs_42')
+
+        const lic = memDb.prepare(`SELECT email_delivered, email_delivered_at FROM issued_licenses WHERE stripe_session_id = 'cs_42'`).get()
+        expect(lic.email_delivered).toBe(1)
+        expect(lic.email_delivered_at).toBeTruthy()
+    })
+
+    it('worker closes a bodiless row whose source record is gone instead of sending nothing', async () => {
+        memDb.exec(`CREATE TABLE issued_licenses (stripe_session_id TEXT, tier TEXT, license_key TEXT, email_delivered INTEGER DEFAULT 0, email_delivered_at DATETIME)`)
+        const toSqlite = (d) => d.toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')
+        memDb.prepare(`
+            INSERT INTO email_dead_letter (to_address, subject, context_json, attempts, next_retry_at)
+            VALUES ('x@example.com', 'Your licence', ?, 3, ?)
+        `).run(JSON.stringify({ kind: 'license_key', stripeSessionId: 'cs_gone' }), toSqlite(new Date(Date.now() - 60_000)))
+
+        const mockFetch = vi.fn()
+        vi.stubGlobal('fetch', mockFetch)
+
+        const { runEmailRetryOnce } = await import('../lib/email-retry-worker.js')
+        const summary = await runEmailRetryOnce()
+
+        expect(mockFetch).not.toHaveBeenCalled()
+        expect(summary.givenUp).toBe(1)
+        const row = memDb.prepare('SELECT resolved_at, last_error FROM email_dead_letter').get()
+        expect(row.resolved_at).toBeTruthy()
+        expect(row.last_error).toMatch(/Not re-renderable/)
     })
 
     // -------------------------------------------------------------------------

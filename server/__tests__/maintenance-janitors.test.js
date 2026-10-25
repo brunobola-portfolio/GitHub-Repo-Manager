@@ -24,6 +24,11 @@ testDb.exec(`
     CREATE TABLE review_assignments (id INTEGER PRIMARY KEY, requested_at DATETIME);
     CREATE TABLE workflow_runs (id INTEGER PRIMARY KEY, created_at DATETIME);
     CREATE TABLE work_board_health_snapshots (id INTEGER PRIMARY KEY, captured_at TEXT);
+    CREATE TABLE email_dead_letter (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, to_address TEXT NOT NULL, subject TEXT NOT NULL,
+        body_html TEXT, body_text TEXT, context_json TEXT, attempts INTEGER NOT NULL DEFAULT 1,
+        last_error TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, next_retry_at DATETIME, resolved_at DATETIME
+    );
 `);
 
 vi.mock('../lib/retention.js', () => ({ runRetentionPass }));
@@ -45,6 +50,7 @@ const {
     runDailyMaintenanceOnce,
     runHourlyMaintenanceOnce,
     purgeOldEvents,
+    purgeResolvedEmailDeadLetters,
     runDigestJobOnce,
     startDigestJob,
     stopDigestJob,
@@ -314,5 +320,37 @@ describe('purgeOldEvents', () => {
         const result = purgeOldEvents({ database: testDb, retentionDays: 365, batchSize: 5 });
         expect(result.perTable.pr_events).toBe(12); // all purged across batches
         expect(count('pr_events')).toBe(0);
+    });
+});
+
+describe('purgeResolvedEmailDeadLetters', () => {
+    beforeEach(() => testDb.exec('DELETE FROM email_dead_letter'));
+
+    function seed(resolvedOffsetDays) {
+        const resolvedAt = resolvedOffsetDays === null
+            ? null
+            : testDb.prepare(`SELECT datetime('now', ?) AS t`).get(`-${resolvedOffsetDays} days`).t;
+        testDb.prepare(
+            `INSERT INTO email_dead_letter (to_address, subject, body_text, resolved_at) VALUES ('a@b.co', 's', 'body', ?)`
+        ).run(resolvedAt);
+    }
+
+    it('deletes rows resolved over 30 days ago and keeps recent and unresolved ones', () => {
+        seed(45);      // resolved long ago -> purged
+        seed(31);      // just past the window -> purged
+        seed(5);       // recently resolved -> kept for incident review
+        seed(null);    // still owed -> never touched, however old
+        testDb.prepare(`UPDATE email_dead_letter SET created_at = datetime('now', '-400 days') WHERE resolved_at IS NULL`).run();
+
+        expect(purgeResolvedEmailDeadLetters({ database: testDb })).toBe(2);
+        const left = testDb.prepare('SELECT resolved_at FROM email_dead_letter').all();
+        expect(left).toHaveLength(2);
+        expect(left.some((r) => r.resolved_at === null)).toBe(true);
+    });
+
+    it('runs as part of the daily pass', async () => {
+        seed(60);
+        const summary = await runDailyMaintenanceOnce();
+        expect(summary.emailDlqPurged).toBe(1);
     });
 });

@@ -243,4 +243,55 @@ describe('issueLicenseForCheckout', () => {
         expect(subject).toMatch(/enterprise/i)
         expect(subject).toMatch(/license/i)
     })
+
+    it('sends on the licences stream and queues a reference, never the key', async () => {
+        vi.mocked(generateLicenseKey).mockResolvedValue('grm_lic_key')
+        vi.mocked(sendEmail).mockResolvedValue({ ok: true, id: 'eid' })
+
+        setupDb([
+            [/SELECT license_key/, makeStmt({ get: undefined })],
+            [/INSERT OR IGNORE INTO issued_licenses/, makeStmt()],
+            [/UPDATE issued_licenses/, makeStmt()],
+        ])
+
+        const { issueLicenseForCheckout, LICENSE_EMAIL_KIND } = await import('../lib/license-issuer.js')
+        await issueLicenseForCheckout({ ...OPTS, months: 12 })
+
+        const [args] = sendEmail.mock.calls[0]
+        expect(args.stream).toBe('licences')
+        expect(args.deadLetter).toBe('rebuild')
+        expect(args.idempotencyKey).toBe(`license-${OPTS.stripeSessionId}`)
+        expect(args.context).toEqual({
+            kind: LICENSE_EMAIL_KIND,
+            stripeSessionId: OPTS.stripeSessionId,
+            tier: OPTS.tier,
+            months: 12,
+        })
+        expect(JSON.stringify(args.context)).not.toContain('grm_lic_key')
+        expect(args.text).not.toContain('bruno@bolalabs.pt')
+    })
+
+    it('dead-letter handler rebuilds the email from issued_licenses and records delivery', async () => {
+        const updateStmt = makeStmt()
+        setupDb([
+            [/SELECT license_key, tier FROM issued_licenses/, makeStmt({ get: { license_key: 'grm_lic_stored', tier: 'pro' } })],
+            [/UPDATE issued_licenses/, updateStmt],
+        ])
+
+        const { licenseEmailDeadLetterHandler } = await import('../lib/license-issuer.js')
+        const rebuilt = licenseEmailDeadLetterHandler.rebuild({ stripeSessionId: 'cs_9', tier: 'pro', months: 1 })
+        expect(rebuilt.text).toContain('grm_lic_stored')
+        expect(rebuilt.html).toContain('grm_lic_stored')
+        expect(rebuilt.subject).toMatch(/pro plan/)
+
+        licenseEmailDeadLetterHandler.onDelivered({ stripeSessionId: 'cs_9' })
+        expect(updateStmt.run).toHaveBeenCalledWith('cs_9')
+    })
+
+    it('dead-letter handler returns null when the licence row is gone', async () => {
+        setupDb([[/SELECT license_key, tier FROM issued_licenses/, makeStmt({ get: undefined })]])
+        const { licenseEmailDeadLetterHandler } = await import('../lib/license-issuer.js')
+        expect(licenseEmailDeadLetterHandler.rebuild({ stripeSessionId: 'cs_missing' })).toBeNull()
+        expect(licenseEmailDeadLetterHandler.rebuild({})).toBeNull()
+    })
 })

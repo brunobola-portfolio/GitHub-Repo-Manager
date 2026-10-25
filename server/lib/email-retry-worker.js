@@ -11,11 +11,30 @@
  * After 10 total attempts (3 initial + 7 worker retries) the row is left
  * in place but stops being retried — operators can revive it by updating
  * `next_retry_at` manually.
+ *
+ * Rows queued with `deadLetter: 'rebuild'` carry no body: the handler for
+ * their `context.kind` re-renders it from the source record at send time, and
+ * may act on delivery (a licence row flips `issued_licenses.email_delivered`).
  */
 
 import db from '../db.js'
 import logger from './logger.js'
 import { attemptSendOnce, toSqliteDatetime } from './email.js'
+import { LICENSE_EMAIL_KIND, licenseEmailDeadLetterHandler } from './license-issuer.js'
+
+const REBUILD_HANDLERS = {
+    [LICENSE_EMAIL_KIND]: licenseEmailDeadLetterHandler,
+}
+
+function parseContext(json) {
+    if (!json) return null
+    try {
+        const value = JSON.parse(json)
+        return value && typeof value === 'object' ? value : null
+    } catch {
+        return null
+    }
+}
 
 const DEFAULT_INTERVAL_MS = 5 * 60 * 1000
 const MAX_ATTEMPTS = 10
@@ -77,13 +96,46 @@ export async function runEmailRetryOnce() {
     let givenUp = 0
 
     for (const row of rows) {
+        const context = parseContext(row.context_json)
+        const handler = context?.kind ? REBUILD_HANDLERS[context.kind] : undefined
+        let message = { subject: row.subject, html: row.body_html, text: row.body_text }
+
+        if (row.body_html == null && row.body_text == null) {
+            let rebuilt = null
+            try {
+                rebuilt = handler ? handler.rebuild(context) : null
+            } catch (err) {
+                logger.warn({ err, id: row.id }, '[email-retry] rebuild threw')
+            }
+            if (!rebuilt) {
+                // Nothing to send: the source record is gone (or the kind is
+                // unknown). Closing the row is the honest outcome — retrying an
+                // empty message ten times is not.
+                try {
+                    db.prepare(`
+                        UPDATE email_dead_letter
+                        SET resolved_at = datetime('now'), last_error = ?, next_retry_at = NULL
+                        WHERE id = ?
+                    `).run('Not re-renderable: source record missing', row.id)
+                } catch (err) {
+                    logger.warn({ err, id: row.id }, '[email-retry] failed to close unrenderable row')
+                }
+                givenUp++
+                logger.error({ id: row.id, kind: context?.kind ?? null }, '[email-retry] row has no body and cannot be rebuilt — closed')
+                continue
+            }
+            message = { subject: rebuilt.subject ?? row.subject, html: rebuilt.html, text: rebuilt.text }
+        }
+
         let result
         try {
             result = await attemptSendOnce({
                 to: row.to_address,
-                subject: row.subject,
-                html: row.body_html,
-                text: row.body_text,
+                subject: message.subject,
+                html: message.html,
+                text: message.text,
+                stream: context?.stream,
+                idempotencyKey: context?.idempotencyKey,
             })
         } catch (err) {
             result = { ok: false, error: err?.message ?? 'worker exception', retryable: true }
@@ -103,6 +155,11 @@ export async function runEmailRetryOnce() {
                 )
             } catch (err) {
                 logger.warn({ err, id: row.id }, '[email-retry] failed to mark row resolved')
+            }
+            try {
+                handler?.onDelivered?.(context)
+            } catch (err) {
+                logger.warn({ err, id: row.id }, '[email-retry] post-delivery hook failed')
             }
             continue
         }

@@ -177,6 +177,13 @@ If email delivery fails:
 | `EMAIL_PROVIDER` | `resend` for live delivery; `console` (default) for dev logging. |
 | `RESEND_API_KEY` | Required when `EMAIL_PROVIDER=resend`. |
 | `EMAIL_FROM` | Verified sender address for Resend. |
+| `EMAIL_FROM_LICENCES` | Optional sender for the licence email (same domain as `EMAIL_FROM`); `licencas@bolalabs.pt` by default on bolalabs.pt. |
+| `EMAIL_REPLY_TO` | Optional Reply-To; `suporte@bolalabs.pt` by default on bolalabs.pt. |
+
+If the licence email fails after its three immediate attempts, the dead-letter
+row stores only `{ kind, stripeSessionId, tier, months }` — never the key. The
+retry worker re-renders the message from `issued_licenses` and, once Resend
+accepts it, sets `email_delivered = 1` there exactly like a first-try success.
 
 If `LICENSE_SIGNING_PRIVATE_KEY_PEM` is absent:
 - **Development**: logs a warning and skips license generation. The webhook still returns 200.

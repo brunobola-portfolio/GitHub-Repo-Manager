@@ -167,6 +167,10 @@ export async function sendDigestEmail(user, { now = new Date() } = {}) {
         html: buildDigestEmailHtml(digest, { username: user.username, unsubscribeUrl }),
         text: buildDigestEmailText(digest, { username: user.username, unsubscribeUrl }),
         context: { kind: 'notifications_digest', userId: user.id },
+        // The body carries a live unsubscribe token, and a failed digest is
+        // already re-sent by the next pass (digest_last_sent_at only moves on
+        // success) — queuing it too would store the token and mail it twice.
+        deadLetter: 'skip',
     });
 
     if (result.ok) {
