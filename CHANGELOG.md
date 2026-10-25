@@ -24,6 +24,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The rate-limit notice no longer runs off the right edge of the screen on
   phones and wide desktops; its dismiss button has a readable icon in both
   themes.
+- **Licence keys run to the end of the paid period, plus 7 days.** A key used
+  to expire one month after it was minted, which is about an hour before
+  Stripe charged the renewal, so every monthly self-hosted install dropped
+  to Free once a month. `LICENSE_GRACE_DAYS` (0–30) tunes the overlap.
+- **A full refund or a lost chargeback revokes the keys it paid for**, at
+  once on the hosted service; an offline install keeps a key only until its
+  own end date. An open dispute still only holds the account.
+- A key that fails to sign or save now makes Stripe retry the webhook instead
+  of silently answering 200 for a key that does not exist.
+- `/.well-known/security.txt` named a page that did not exist and a mailbox
+  that bounced. It now names a working address, or `SECURITY_CONTACT` when an
+  operator sets one.
+- The in-app pricing FAQ promised a prorated upgrade and an Enterprise
+  proof-of-concept period that do not exist; the Terms pointed to a
+  "Settings → Billing" tab that does not exist (it is License & Plan →
+  Manage); "Unlimited team members" was listed as an Enterprise extra although
+  every plan has it.
+
+### Changed
+
+- **Help goes where it can be answered.** The hosted app's "contact support"
+  links open the BolaLabs support desk with Repo Manager preselected, and
+  "contact sales" opens the BolaLabs contact form. A self-hosted install
+  shows only the contacts its operator configured (`EMAIL_SUPPORT_URL`,
+  `EMAIL_REPLY_TO`) — it no longer sends its users to the maintainer's
+  personal inbox — and links licence questions to the public product page.
+- **Compare plans reads by what changes.** The 40-row comparison table on the
+  pricing page is now a list of what every plan includes plus a plan switcher
+  that shows only the differences, with search.
+- Prices are shown as €19 a month **+ VAT**, matching the Terms.
+- Licence keys carry the buyer's organisation (business name, else customer
+  name, else company e-mail domain; never a tax id), and the licence e-mail
+  states the key's real end date, has a renewal version, and no longer tells
+  self-hosters "no action needed".
+- E-mail now comes from a sender per purpose: licence keys from
+  `licencas@bolalabs.pt`, everything else from the system sender, with
+  replies going to the support desk; automated mail carries
+  `Auto-Submitted` and an idempotency key.
+- The landing page footer links Privacy and Terms. The README explains how to
+  buy and activate a licence for your own install.
+
+### Security
+
+- Team and inviter names are escaped in team-notification e-mails, and
+  subjects are kept to one line.
+- The failed-e-mail queue no longer stores licence keys: a retry reads the key
+  back from the licence table, and resolved rows are deleted after 30 days.
+- body-parser 2.4.0 (request-body denial of service), dompurify 3.4.17,
+  ip-address 10.7.5, and the production minor group (express/proxy-addr,
+  zod, katex among them).
 
 ## [4.26.2] - 2026-09-24
 
