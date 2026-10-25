@@ -37,6 +37,7 @@ import workBoardTrackingRoutes from '../work-board-tracking.js';
 import workBoardAIRoutes from '../work-board-ai.js';
 import searchRoutes from '../search.js';
 import adminDlqRoutes from '../admin-dlq.js';
+import adminBillingRoutes from '../admin-billing.js';
 import adminAiRoutes from '../admin-ai.js';
 import notificationsRoutes from '../notifications.js';
 import outboxRoutes from '../outbox.js';
@@ -88,6 +89,7 @@ router.use('/work-board/ai', workBoardAIRoutes);
 router.use('/search', searchRoutes);
 // Admin DLQ operator API — gated internally with requireAuth + requireTier('enterprise') + requireAdmin
 router.use('/admin/dlq', adminDlqRoutes);
+router.use('/admin/billing', adminBillingRoutes);
 router.use('/admin/ai', adminAiRoutes);
 router.use('/notifications', notificationsRoutes);
 router.use('/outbox', outboxRoutes);

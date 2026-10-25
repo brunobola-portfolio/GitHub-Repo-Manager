@@ -115,6 +115,24 @@ open dispute only holds the subscription; it may still be won. Keys minted
 before `issued_licenses.lid` existed (migration 38) cannot be revoked this
 way and simply expire.
 
+**What happens to the Stripe subscription** (`applySubscriptionAction` in
+`server/routes/stripe-webhooks.js`; each step reads the subscription first, so
+a retried webhook is harmless, and a Stripe error answers 5xx so Stripe
+retries):
+
+| Event | Access | Stripe subscription | Keys |
+|---|---|---|---|
+| Partial refund | unchanged | unchanged | unchanged |
+| Full refund | Free (`refunded` hold) | cancelled at once, no proration | revoked |
+| Dispute opened | Free (`disputed` hold) | collection paused (`pause_collection: void`) | kept |
+| Dispute won | restored from Stripe | collection resumed | kept |
+| Dispute lost | stays on hold | cancelled | revoked |
+
+An operator lifts a hold with `POST /api/admin/billing/holds/:userId/clear`
+(reason required, audited as `billing.hold.clear`); `GET
+/api/admin/billing/holds` lists them. Lifting reads the subscription from
+Stripe: a cancelled one ends on Free, never back on a paid tier.
+
 The list lives in **that instance's own database**. There is no phone-home, so
 revoking on the hosted deployment does not reach a customer's self-hosted
 install, and BolaLabs cannot remotely disable a key already in someone else's
