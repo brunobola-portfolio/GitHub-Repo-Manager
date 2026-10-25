@@ -4,6 +4,7 @@
 import db from '../db.js'
 import { auditLogDirect } from './audit.js'
 import { isEmailDeliveryConfigured, sendEmail } from './email.js'
+import { supportFooter } from './email-identity.js'
 import logger from './logger.js'
 
 /**
@@ -14,6 +15,7 @@ import logger from './logger.js'
  * @returns {string}
  */
 function buildWarningHtml({ purgeDate }) {
+    const help = supportFooter('Questions?').html
     return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
@@ -42,12 +44,9 @@ function buildWarningHtml({ purgeDate }) {
       You can re-add them at any time via Settings → AI &amp; Keys.
     </li>
   </ul>
-  <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
-  <p style="font-size: 13px; color: #666;">
-    Questions? Contact us at
-    <a href="mailto:bruno@bolalabs.pt">bruno@bolalabs.pt</a>.
-  </p>
-</body>
+${help ? `  <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+  <p style="font-size: 13px; color: #666;">${help}</p>
+` : ''}</body>
 </html>`
 }
 
@@ -59,6 +58,7 @@ function buildWarningHtml({ purgeDate }) {
  * @returns {string}
  */
 function buildWarningText({ purgeDate }) {
+    const help = supportFooter('Questions?').text
     return `Your AI credentials will be removed on ${purgeDate}
 ===========================================================
 
@@ -76,9 +76,9 @@ What can you do?
   Manager before the purge date. Activity resets the retention clock.
 - Let them expire: If you no longer use the app, no action is needed. Your
   credentials will be permanently deleted on the purge date. You can re-add
-  them at any time via Settings -> AI & Keys.
+  them at any time via Settings -> AI & Keys.${help ? `
 
-Questions? Contact us at bruno@bolalabs.pt`
+${help}` : ''}`
 }
 
 /**

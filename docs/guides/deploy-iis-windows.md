@@ -185,8 +185,12 @@ Now edit `$data\.env` and set at least:
 Wiring Resend, once you have an account: verify the sending domain in Resend
 (it gives you two DNS records, DKIM and a return-path CNAME, plus an SPF
 include for `bolalabs.pt`), create an API key, then in `$data\.env` set
-`EMAIL_PROVIDER=resend`, `RESEND_API_KEY=re_…`, `EMAIL_FROM=no-reply@bolalabs.pt`
-and remove `ALLOW_CONSOLE_EMAIL`. Restart the service and send yourself a
+`EMAIL_PROVIDER=resend`, `RESEND_API_KEY=re_…`,
+`EMAIL_FROM=BolaLabs RepoManager <no-reply@bolalabs.pt>` and remove
+`ALLOW_CONSOLE_EMAIL`. On `bolalabs.pt` licence mail then leaves from
+`licencas@`, replies go to `suporte@` and the footer links the BolaLabs
+support desk (override with `EMAIL_FROM_LICENCES`, `EMAIL_REPLY_TO`,
+`EMAIL_SUPPORT_URL` — see [`docs/security-hardening.md`](../security-hardening.md#configuring-resend)). Restart the service and send yourself a
 digest from **Settings → Notifications** to confirm delivery; the
 `ops-iis.yml` workflow's `env-check` action shows SET/unset for these names
 without printing values.

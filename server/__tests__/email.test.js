@@ -86,7 +86,10 @@ describe('email service', () => {
         expect(init.headers['Content-Type']).toBe('application/json')
 
         const body = JSON.parse(init.body)
-        expect(body.from).toBe('noreply@bolalabs.pt')
+        expect(body.from).toBe('"BolaLabs RepoManager" <noreply@bolalabs.pt>')
+        expect(body.reply_to).toBe('suporte@bolalabs.pt')
+        expect(body.headers).toEqual({ 'Auto-Submitted': 'auto-generated' })
+        expect(init.headers['Idempotency-Key']).toEqual(expect.any(String))
         expect(body.to).toBe('customer@example.com')
         expect(body.subject).toBe('Your license')
         expect(body.html).toBe('<p>Here is your key</p>')
@@ -155,6 +158,33 @@ describe('email service', () => {
         expect(result.error).toBeTruthy()
 
         delete process.env.EMAIL_RETRY_BASE_DELAY_MS
+    })
+
+    it('resend adapter: flattens CR/LF in the subject before it reaches a header', async () => {
+        process.env.EMAIL_PROVIDER = 'resend'
+        process.env.RESEND_API_KEY = 'key'
+        process.env.EMAIL_FROM = 'no-reply@bolalabs.pt'
+        const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: 'x' }) })
+        vi.stubGlobal('fetch', mockFetch)
+
+        const { sendEmail } = await import('../lib/email.js')
+        await sendEmail({ to: 'a@b.com', subject: 'Added to Ops\r\nBcc: victim@example.com', html: '<p>x</p>' })
+        const body = JSON.parse(mockFetch.mock.calls[0][1].body)
+        expect(body.subject).toBe('Added to Ops Bcc: victim@example.com')
+    })
+
+    it('resend adapter: the licences stream sends from licencas@ under the caller key', async () => {
+        process.env.EMAIL_PROVIDER = 'resend'
+        process.env.RESEND_API_KEY = 'key'
+        process.env.EMAIL_FROM = 'no-reply@bolalabs.pt'
+        const mockFetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: 'x' }) })
+        vi.stubGlobal('fetch', mockFetch)
+
+        const { sendEmail } = await import('../lib/email.js')
+        await sendEmail({ to: 'a@b.com', subject: 'Key', html: '<p>x</p>', stream: 'licences', idempotencyKey: 'license-cs_1' })
+        const [, init] = mockFetch.mock.calls[0]
+        expect(JSON.parse(init.body).from).toBe('"BolaLabs Licences" <licencas@bolalabs.pt>')
+        expect(init.headers['Idempotency-Key']).toBe('license-cs_1')
     })
 
     // -------------------------------------------------------------------------
