@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import simpleGit from 'simple-git'
+import { simpleGit } from 'simple-git'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { rm, mkdtemp } from 'fs/promises'

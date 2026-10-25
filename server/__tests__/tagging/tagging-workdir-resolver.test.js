@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, writeFileSync, existsSync, readdirSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import simpleGit from 'simple-git'
+import { simpleGit } from 'simple-git'
 import { createTaggingWorkdirResolver } from '../../lib/tagging/tagging-workdir-resolver.js'
 
 // Local bare repo serves as the "remote destination" the resolver clones from.

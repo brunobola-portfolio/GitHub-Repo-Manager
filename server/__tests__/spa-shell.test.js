@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { resolvePublicOrigin, renderShell, robotsTxt, securityTxt, sitemapXml, softwareApplicationJsonLd, shellStatus } from '../lib/spa-shell.js';
+import { resolvePublicOrigin, renderShell, robotsTxt, securityTxt, securityContact, sitemapXml, softwareApplicationJsonLd, shellStatus } from '../lib/spa-shell.js';
 
 const req = (host, protocol = 'https') => ({ protocol, get: (h) => (h.toLowerCase() === 'host' ? host : undefined) });
 
@@ -128,12 +128,32 @@ describe('the priced offer follows what the deployment can actually charge', () 
 
 describe('securityTxt', () => {
     it('names a contact, a policy and an expiry a year out', () => {
-        const txt = securityTxt('https://repomanager.example.pt', new Date('2026-09-12T00:00:00.000Z'));
-        expect(txt).toContain('Contact: https://repomanager.example.pt/security');
-        expect(txt).toContain('Contact: mailto:security@bolalabs.pt');
+        const txt = securityTxt('https://repomanager.example.pt', new Date('2026-09-12T00:00:00.000Z'), 'mailto:bruno@bolalabs.pt');
+        expect(txt).toContain('Contact: mailto:bruno@bolalabs.pt');
         // RFC 9116 requires Expires; a stale file is treated as absent.
         expect(txt).toContain('Expires: 2027-09-12T00:00:00Z');
         expect(txt).toMatch(/^Policy: https:\/\/github\.com\//m);
+    });
+
+    it('every Contact reaches someone: no SPA path that 404s, no address outside the real mailboxes', () => {
+        // The mailboxes bolalabs.pt actually forwards (550 for anything else).
+        const LIVE = new Set(['bruno', 'suporte', 'licencas', 'licenses', 'site', 'no-reply', 'noreply'].map((u) => `${u}@bolalabs.pt`));
+        const origin = 'https://repomanager.example.pt';
+        const contacts = securityTxt(origin, new Date(), securityContact(undefined))
+            .split('\n').filter((l) => l.startsWith('Contact: ')).map((l) => l.slice(9));
+        expect(contacts.length).toBeGreaterThan(0);
+        for (const c of contacts) {
+            if (c.startsWith(origin)) expect(shellStatus(new URL(c).pathname), c).toBe(200);
+            if (c.startsWith('mailto:') && c.endsWith('@bolalabs.pt')) expect(LIVE.has(c.slice(7)), c).toBe(true);
+        }
+    });
+
+    it('an operator can point reports at their own team, and junk is ignored', () => {
+        expect(securityContact('mailto:sec@acme.example')).toBe('mailto:sec@acme.example');
+        expect(securityContact('https://acme.example/security')).toBe('https://acme.example/security');
+        expect(securityContact('sec@acme.example')).toBe('mailto:bruno@bolalabs.pt');
+        expect(securityContact('http://acme.example')).toBe('mailto:bruno@bolalabs.pt');
+        expect(securityContact('  ')).toBe('mailto:bruno@bolalabs.pt');
     });
 });
 

@@ -1,7 +1,7 @@
 // Annotated git tag writer. Uses simple-git to create the tag (force-mode for
 // idempotency) and pushes to provided remotes. Per-remote push failures are
 // captured in the payload but do not throw — the local tag still succeeded.
-import simpleGit from 'simple-git'
+import { simpleGit } from 'simple-git'
 import { STATUS } from '../migration-tagging-constants.js'
 
 export function createGitTagWriter() {

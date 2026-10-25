@@ -3,7 +3,7 @@ import request from 'supertest'
 import express from 'express'
 
 vi.mock('simple-git', () => ({
-  default: vi.fn(() => ({
+  simpleGit: vi.fn(() => ({
     clone: vi.fn().mockResolvedValue(undefined),
     push: vi.fn().mockResolvedValue(undefined)
   }))
@@ -126,7 +126,7 @@ describe('POST /api/v1/repos/:owner/:repo/sync', () => {
   // --- Read-only sync preview (Free) ---------------------------------------
 
   it('GET /sync/preview returns the tracked-mirror manifest, read-only (no clone/push)', async () => {
-    const { default: simpleGit } = await import('simple-git')
+    const { simpleGit } = await import('simple-git')
     mockDbGet.mockReturnValue({
       source_url: 'https://dev.azure.com/org/proj/_git/repo',
       source_name: 'proj/repo',
@@ -173,7 +173,7 @@ describe('POST /api/v1/repos/:owner/:repo/sync', () => {
   })
 
   it('returns 429 QUOTA_EXCEEDED once the Free monthly sync-apply cap is reached (no clone/push)', async () => {
-    const { default: simpleGit } = await import('simple-git')
+    const { simpleGit } = await import('simple-git')
     mockDbGet.mockReturnValue({ source_url: 'https://github.com/other/repo.git' })
     usageCounts.set('1:sync_apply_executions', 10) // Free cap is 10/mo
 
