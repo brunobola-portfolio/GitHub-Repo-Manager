@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { EASE, DURATION } from '../ui/motion'
 import { Check, Zap, Crown } from 'lucide-react'
 import { salesHref } from '../../utils/supportContact'
+import { taxSuffix, taxNote } from '../../utils/priceTax'
 import { BACKDROP_WASH_COLOR } from '../ui/_variants'
 import { API_BASE_URL } from '../../config'
 import { apiCall } from '../../utils/api'
@@ -30,7 +31,8 @@ const plans = [
   {
     name: 'Pro',
     price: '€19',
-    period: 'per month + VAT',
+    period: 'per month',
+    paid: true,
     // "Priority support" is Enterprise-only on the README matrix, PricingPage,
     // FeatureComparison and the billing docs. Pro is email support. This is
     // the first pricing surface a prospect sees, so it was also the first
@@ -80,7 +82,7 @@ const cardVariants = {
 }
 
 
-function PreviewCard({ plan, i, onSignIn, selfServe }) {
+function PreviewCard({ plan, i, onSignIn, selfServe, tax = '+ VAT' }) {
   // While this deployment cannot take money (`/api/v1/billing/config` answers
   // stripeEnabled:false), "Upgrade to Pro" walked the visitor through a GitHub
   // consent screen asking for their repositories, only to end at "self-serve
@@ -143,7 +145,7 @@ function PreviewCard({ plan, i, onSignIn, selfServe }) {
 								{plan.price}
 							</span>
 							<span className={`text-sm pb-1.5 ds-font-display ${plan.popular ? 'text-brand-50' : 'text-slate-500 dark:text-slate-400'}`}>
-								/{plan.period}
+								/{plan.period}{plan.paid && tax ? ` ${tax}` : ''}
 							</span>
 						</div>
 						<p className={`text-sm leading-relaxed ds-font-display ${plan.popular ? 'text-brand-50' : 'text-slate-500 dark:text-slate-400'}`}>
@@ -214,10 +216,11 @@ export function PricingPreview({ onSignIn }) {
   // `null` means "not answered yet", so the buttons keep their labels instead
   // of flickering; only an explicit `false` turns Pro into a contact button.
   const [selfServe, setSelfServe] = useState(null)
+  const [billing, setBilling] = useState(null)
   useEffect(() => {
     let cancelled = false
     apiCall(`${API_BASE_URL}/api/v1/billing/config`, {}, { maxRetries: 0 })
-      .then((data) => { if (!cancelled && data) setSelfServe(Boolean(data.stripeEnabled)) })
+      .then((data) => { if (!cancelled && data) { setSelfServe(Boolean(data.stripeEnabled)); setBilling(data) } })
       .catch(() => { /* offline, blocked or 404 on an old build: leave the labels alone */ })
     return () => { cancelled = true }
   }, [])
@@ -259,7 +262,7 @@ export function PricingPreview({ onSignIn }) {
         {/* Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-5">
 					{plans.map((plan, i) => (
-						<PreviewCard key={plan.name} plan={plan} i={i} onSignIn={onSignIn} selfServe={selfServe} />
+						<PreviewCard key={plan.name} plan={plan} i={i} onSignIn={onSignIn} selfServe={selfServe} tax={taxSuffix(billing)} />
 					))}
         </div>
 
@@ -273,6 +276,9 @@ export function PricingPreview({ onSignIn }) {
         >
           Prefer to self-host? The full app is free and open-source on GitHub — forever.
         </motion.p>
+        {taxNote(billing) && (
+          <p className="text-center mt-3 text-xs text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">{taxNote(billing)}</p>
+        )}
       </div>
     </section>
   )

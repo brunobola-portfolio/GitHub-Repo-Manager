@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, ArrowRight, Sparkles, GitBranch, Shield, Cpu } from 'lucide-react'
 import { PricingCard } from './PricingCard'
 import { salesHref, supportHref } from '../../utils/supportContact'
+import { taxSuffix, taxNote } from '../../utils/priceTax'
 import { FeatureComparison } from './FeatureComparison'
 import { API_BASE_URL } from '../../config'
 import { apiCall } from '../../utils/api'
@@ -241,6 +242,8 @@ export function PricingPage({ onGetStarted } = {}) {
   const [selfServe, setSelfServe] = useState(null)
   const [probeSettled, setProbeSettled] = useState(false)
   const [stripePrices, setStripePrices] = useState(null)
+  // The whole /billing/config answer: VAT wording follows what checkout charges.
+  const [billing, setBilling] = useState(null)
   const [checkoutLoading, setCheckoutLoading] = useState(null)
   // Stays on Pricing when checkout is unavailable so the user actually sees
   // the explanation (previously we navigated home and the banner never showed).
@@ -260,6 +263,7 @@ export function PricingPage({ onGetStarted } = {}) {
         if (cancelled) return
         setYearlyAvailable(!!data?.yearlyBillingAvailable)
         setStripePrices(data?.prices ?? null)
+        setBilling(data ?? null)
         // Only an answer that actually carries the field decides this: a
         // malformed or truncated response must not read as "cannot sell".
         if (data && 'stripeEnabled' in data) setSelfServe(Boolean(data.stripeEnabled))
@@ -529,6 +533,7 @@ export function PricingPage({ onGetStarted } = {}) {
               key={tier.tier}
               {...tier}
               period={isYearly ? 'year' : 'month'}
+              taxSuffix={taxSuffix(billing)}
               ctaText={
                 checkoutLoading === tier.tier.toLowerCase()
                   ? 'Redirecting...'
@@ -540,6 +545,12 @@ export function PricingPage({ onGetStarted } = {}) {
             />
           ))}
         </motion.div>
+
+        {taxNote(billing) && (
+          <p className="-mt-14 sm:-mt-20 mb-20 sm:mb-28 text-center text-xs text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
+            {taxNote(billing)}
+          </p>
+        )}
 
         {/* ── Feature comparison table ── */}
         <div className="mb-20 sm:mb-28">
