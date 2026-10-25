@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- simple-git 4.0.1 closes a critical advisory in the library the server uses
+  to clone repositories from user-supplied URLs (import, mirror sync, wiki,
+  tagging). The code moved to the named `simpleGit` export in 4.27.0, so the
+  major upgrade needed no further change.
+- shell-quote updated through concurrently (development tooling only).
+
 ## [4.27.0] - 2026-10-25
 
 ### Fixed
