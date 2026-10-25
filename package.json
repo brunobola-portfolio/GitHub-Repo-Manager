@@ -114,7 +114,7 @@
     "simple-git": "^3.36.0",
     "stripe": "^22.6.2",
     "tailwind-merge": "^3.7.0",
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
