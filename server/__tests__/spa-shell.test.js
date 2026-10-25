@@ -143,8 +143,9 @@ describe('securityTxt', () => {
             .split('\n').filter((l) => l.startsWith('Contact: ')).map((l) => l.slice(9));
         expect(contacts.length).toBeGreaterThan(0);
         for (const c of contacts) {
-            if (c.startsWith(origin)) expect(shellStatus(new URL(c).pathname), c).toBe(200);
-            if (c.startsWith('mailto:') && c.endsWith('@bolalabs.pt')) expect(LIVE.has(c.slice(7)), c).toBe(true);
+            const url = new URL(c);
+            if (url.origin === origin) expect(shellStatus(url.pathname), c).toBe(200);
+            if (url.protocol === 'mailto:' && url.pathname.endsWith('@bolalabs.pt')) expect(LIVE.has(url.pathname), c).toBe(true);
         }
     });
 
