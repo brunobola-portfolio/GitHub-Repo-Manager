@@ -225,3 +225,97 @@ describe('createTenantLimiters — API-key bearer keying', () => {
         expect(overflow.status).toBe(429)
     })
 })
+
+describe('signed-out boot reads', () => {
+    const originalNodeEnv = process.env.NODE_ENV
+    beforeEach(() => { process.env.NODE_ENV = 'production' })
+    afterEach(() => {
+        if (originalNodeEnv === undefined) delete process.env.NODE_ENV
+        else process.env.NODE_ENV = originalNodeEnv
+    })
+
+    // Mounted the way server/index.js mounts them: api on /api, auth on /api/auth.
+    async function buildBootApp() {
+        const { isPublicBootRead, createPublicReadLimiter } = await import('../middleware/tenant-rate-limit.js')
+        const app = express()
+        app.use('/api/', createPublicReadLimiter())
+        app.use('/api/', await createTenantLimiters('api', { skip: isPublicBootRead }))
+        app.use('/api/auth/', await createTenantLimiters('auth', { skip: isPublicBootRead }))
+        const ok = (_req, res) => res.json({ ok: true })
+        for (const p of ['/api/system/status', '/api/auth/session', '/api/auth/session-info', '/api/auth/setup-status', '/api/v1/billing/config', '/api/auth/login', '/api/repos']) {
+            app.get(p, ok)
+        }
+        app.post('/api/auth/session-info', ok)
+        return app
+    }
+
+    it('a visitor can load the landing 50 times and still sign in', async () => {
+        const app = await buildBootApp()
+        for (let i = 0; i < 50; i++) {
+            for (const p of ['/api/system/status', '/api/auth/session', '/api/auth/session-info', '/api/auth/setup-status', '/api/v1/billing/config']) {
+                const r = await request(app).get(p).set('Accept', 'application/json')
+                expect(r.status, `${p} on load ${i + 1}`).toBe(200)
+            }
+        }
+        const login = await request(app).get('/api/auth/login').set('Accept', 'application/json')
+        expect(login.status).toBe(200)
+    })
+
+    it('boot reads do not spend the api bucket that real API calls use', async () => {
+        const app = await buildBootApp()
+        for (let i = 0; i < 120; i++) await request(app).get('/api/system/status')
+        const api = await request(app).get('/api/repos').set('Accept', 'application/json')
+        expect(api.status).toBe(200)
+    })
+
+    it('the exemption is GET-only and path-exact: a POST to the same path is still auth-limited', async () => {
+        const app = await buildBootApp()
+        for (let i = 0; i < 10; i++) await request(app).post('/api/auth/session-info').set('Accept', 'application/json')
+        const res = await request(app).post('/api/auth/session-info').set('Accept', 'application/json')
+        expect(res.status).toBe(429)
+    })
+
+    it('boot reads keep their own per-IP ceiling', async () => {
+        const app = await buildBootApp()
+        let last
+        for (let i = 0; i < 601; i++) last = await request(app).get('/api/system/status').set('Accept', 'application/json')
+        expect(last.status).toBe(429)
+    })
+})
+
+describe('Retry-After', () => {
+    it('reports the time left in the window, not the whole window', async () => {
+        const { secondsUntilReset } = await import('../middleware/tenant-rate-limit.js')
+        const req = { rateLimit: { resetTime: new Date(Date.now() + 61_000) } }
+        const secs = secondsUntilReset(req, 15 * 60 * 1000)
+        expect(secs).toBeGreaterThanOrEqual(60)
+        expect(secs).toBeLessThanOrEqual(62)
+    })
+
+    it('falls back to the window when the store gives no reset time', async () => {
+        const { secondsUntilReset } = await import('../middleware/tenant-rate-limit.js')
+        expect(secondsUntilReset({}, 15 * 60 * 1000)).toBe(900)
+        expect(secondsUntilReset({ rateLimit: { resetTime: new Date(Date.now() - 5000) } }, 60_000)).toBe(60)
+    })
+
+    it('the 429 response header carries the remaining seconds', async () => {
+        const originalNodeEnv = process.env.NODE_ENV
+        process.env.NODE_ENV = 'production'
+        try {
+            const limiter = await createTenantLimiters('auth')
+            const app = buildApp(limiter)
+            vi.useFakeTimers({ toFake: ['Date'] })
+            for (let i = 0; i < 10; i++) await request(app).get('/api/auth/login').set('Accept', 'application/json')
+            // Five minutes into the window, ten are left; the old code said fifteen.
+            vi.setSystemTime(Date.now() + 5 * 60 * 1000)
+            const res = await request(app).get('/api/auth/login').set('Accept', 'application/json')
+            expect(res.status).toBe(429)
+            const retry = Number(res.headers['retry-after'])
+            expect(retry).toBeGreaterThan(590)
+            expect(retry).toBeLessThanOrEqual(601)
+        } finally {
+            vi.useRealTimers()
+            process.env.NODE_ENV = originalNodeEnv
+        }
+    })
+})

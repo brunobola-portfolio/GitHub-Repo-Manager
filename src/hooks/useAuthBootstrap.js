@@ -129,7 +129,7 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
             // an empty body used to fall through to "not initialised" and put the
             // setup ceremony in front of a production user.
             if (typeof data?.initialized !== 'boolean') {
-                throw new Error(`system status unavailable (${res?.status ?? 'no response'})`)
+                throw Object.assign(new Error(`system status unavailable (${res?.status ?? 'no response'})`), { status: res?.status })
             }
             // Boot-time corruption recovery happened (sqlite-adapter quarantined the
             // damaged file). Tell the user — their data either came from the most
@@ -161,7 +161,17 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
             } else {
                 setAppLoading(false)
             }
-        } catch {
+        } catch (err) {
+            // A 429 means the server answered: it is throttling this client,
+            // not down. Calling that "can't reach the server" contradicted
+            // /status for every visitor behind a busy NAT. fetchWithRetry has
+            // already raised the rate-limit countdown; render the signed-out
+            // shell underneath it.
+            if (err?.status === 429) {
+                setSystemUnreachable(false)
+                setAppLoading(false)
+                return
+            }
             // Not "uninitialised": unknown. The shell shows a retrying
             // "can't reach the server" state instead of the setup wizard.
             setSystemUnreachable(true)

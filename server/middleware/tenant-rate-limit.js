@@ -125,7 +125,7 @@ export async function createTenantLimiters(type = 'api', options = {}) {
         skip,
         message: { error: 'Rate limit exceeded. Please try again later.' },
         handler: (req, res, _next, opts) => {
-            const retryAfterSec = Math.ceil(opts.windowMs / 1000);
+            const retryAfterSec = secondsUntilReset(req, opts.windowMs);
             res.set('Retry-After', String(retryAfterSec));
             if (req.accepts(['json', 'html']) === 'html') {
                 // Strip trailing slashes to avoid "https://app.example.com//?..."
@@ -136,6 +136,57 @@ export async function createTenantLimiters(type = 'api', options = {}) {
             }
             res.status(opts.statusCode).json(opts.message);
         },
+    });
+}
+
+/**
+ * Seconds left in the caller's window. The full window length was sent
+ * instead, so a visitor one minute from reset was told to wait fifteen.
+ */
+export function secondsUntilReset(req, windowMs) {
+    const reset = req.rateLimit?.resetTime;
+    const left = reset instanceof Date ? Math.ceil((reset.getTime() - Date.now()) / 1000) : NaN;
+    return Number.isFinite(left) && left > 0 ? left : Math.ceil(windowMs / 1000);
+}
+
+/**
+ * The reads every signed-out page load makes before anything else: is the
+ * server up, is there a session, is OAuth configured, what does billing
+ * offer. Paths are relative to the `/api` mount.
+ *
+ * They used to draw on the same buckets as everything else, which made
+ * ordinary browsing self-defeating in production: three reads per load
+ * against the free `api` budget (100/15 min per IP) turned the landing into
+ * "Can't reach the server" after ~33 loads, and two of them sat under the
+ * `auth` brute-force budget (10/15 min), so five visits refused the next
+ * "Continue with GitHub". They are idempotent and cheap, and they get their
+ * own per-IP ceiling (createPublicReadLimiter) so they stay bounded even for
+ * a client carrying a session cookie, which skips the global net.
+ */
+const PUBLIC_BOOT_READS = new Set([
+    '/system/status',
+    '/auth/session',
+    '/auth/session-info',
+    '/auth/setup-status',
+    '/auth/csrf-token',
+    '/v1/billing/config',
+]);
+
+/** @param {import('express').Request} req a request under the `/api` mount */
+export function isPublicBootRead(req) {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return false;
+    return PUBLIC_BOOT_READS.has(`${req.baseUrl.replace(/^\/api/, '')}${req.path}`);
+}
+
+export function createPublicReadLimiter() {
+    return rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: isDev() ? 10000 : 600,
+        keyGenerator: (req) => `rl:bootread:${ipKeyGenerator(req.ip)}`,
+        skip: (req) => !isPublicBootRead(req),
+        standardHeaders: true,
+        legacyHeaders: false,
+        message: { error: 'Too many requests, please try again later.' },
     });
 }
 
@@ -235,7 +286,7 @@ export function createAuthRouteLimiter() {
         legacyHeaders: false,
         message: { error: 'Too many authentication attempts. Please try again later.' },
         handler: (req, res, _next, opts) => {
-            const retryAfterSec = Math.ceil(opts.windowMs / 1000);
+            const retryAfterSec = secondsUntilReset(req, opts.windowMs);
             res.set('Retry-After', String(retryAfterSec));
             if (req.accepts(['json', 'html']) === 'html') {
                 const frontend = (process.env.FRONTEND_URL || '').replace(/\/+$/, '');

@@ -109,7 +109,7 @@ export function RateLimitNotice({ retryAt, variant = 'toast', onRetry, onDismiss
                 transition={{ duration: DURATION.slow, ease: EASE.emphasized }}
                 role="status"
                 aria-live="polite"
-                className="relative z-[var(--ds-z-floating)]"
+                className="relative w-full z-[var(--ds-z-floating)]"
             >
                 <div className="bg-amber-50/90 dark:bg-amber-900/60 border-b border-amber-300 dark:border-amber-500 backdrop-blur-md">
                     {/* Aligned to the shared shell token (this banner previously
@@ -117,7 +117,7 @@ export function RateLimitNotice({ retryAt, variant = 'toast', onRetry, onDismiss
                     <div className="max-w-[var(--layout-max-w)] mx-auto px-[var(--layout-px)] py-2.5 flex items-center justify-between gap-3 sm:gap-4">
                         <div className="flex items-center gap-3 min-w-0">
                             {Ring}
-                            <p className="text-sm font-medium text-amber-800 dark:text-amber-200/90 truncate">
+                            <p className="text-sm font-medium text-amber-800 dark:text-amber-200/90 line-clamp-2 sm:truncate">
                                 {message}
                             </p>
                         </div>
@@ -127,7 +127,7 @@ export function RateLimitNotice({ retryAt, variant = 'toast', onRetry, onDismiss
                             {onDismiss && (
                                 <button
                                     onClick={onDismiss}
-                                    className="p-1.5 rounded-md text-amber-500/60 dark:text-amber-400/40 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-500/10 dark:hover:bg-amber-400/10 transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-amber-500 focus:outline-none"
+                                    className="p-1.5 rounded-md text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 hover:bg-amber-500/10 dark:hover:bg-amber-400/10 transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-amber-500 focus:outline-none"
                                     aria-label="Dismiss notice"
                                 >
                                     <X className="w-4 h-4" />
