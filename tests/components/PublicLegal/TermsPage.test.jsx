@@ -36,7 +36,7 @@ describe('TermsPage — what a buyer must be told before paying', () => {
 
     it('says how to cancel, and that cancelling does not cut the paid period short', () => {
         render(<TermsPage />)
-        expect(screen.getByText(/Settings → Billing/)).toBeInTheDocument()
+        expect(screen.getByText(/Settings → License & Plan → Manage/)).toBeInTheDocument()
         expect(screen.getByText(/does not cut\s+off the period you already paid for/i)).toBeInTheDocument()
     })
 
