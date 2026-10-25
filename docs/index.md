@@ -37,6 +37,14 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.28.0 (2026-10-25) — Licences per machine, leak control, premium
+  e-mail.** Licence check-in: renewals arrive by themselves, and
+  installations are
+  counted; Licences are counted by machine, and a shared
+  key can be stopped without
+  touching the customer; Every e-mail the app
+  sends has one designed layout; A full refund now cancels the Stripe
+  subscription.
 - **v4.27.2 (2026-10-25) — simple-git 4.0.2: the last critical advisory
   closed.** See the changelog.
 - **v4.27.1 (2026-10-25) — simple-git 4: the critical clone advisory
