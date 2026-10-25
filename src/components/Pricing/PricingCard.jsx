@@ -79,6 +79,8 @@ export function PricingCard({
   highlighted = false,
   enterprise = false,
   ctaText = 'Get started',
+  // "+ VAT" / "incl. VAT" / "" from utils/priceTax.js, following what checkout will charge.
+  taxSuffix = '+ VAT',
   ctaAction,
 }) {
   const [expanded, setExpanded] = useState(false)
@@ -186,7 +188,7 @@ export function PricingCard({
                  $15/year for a $180/year plan — a 12x understatement, on the
                  largest element of the page, contradicting its own caption. */
               <span className={`text-sm font-medium mb-1 ${highlighted ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400'}`}>
-                /month + VAT
+                /month{taxSuffix ? ` ${taxSuffix}` : ''}
               </span>
             )}
           </div>

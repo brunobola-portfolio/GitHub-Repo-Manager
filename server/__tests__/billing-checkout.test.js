@@ -134,7 +134,7 @@ describe('GET /billing/config — yearly feature-detect', () => {
     it('advertises yearly when Stripe is enabled AND a Pro yearly price is configured', async () => {
         const res = await request(makeApp()).get('/api/v1/billing/config')
         expect(res.status).toBe(200)
-        expect(res.body).toEqual({ stripeEnabled: true, yearlyBillingAvailable: true, prices: expect.any(Object) })
+        expect(res.body).toEqual({ stripeEnabled: true, automaticTax: false, yearlyBillingAvailable: true, prices: expect.any(Object) })
     })
 
     it('hides yearly when the Pro yearly price is NOT configured', async () => {
@@ -149,7 +149,7 @@ describe('GET /billing/config — yearly feature-detect', () => {
         stripeEnabled = false
         const res = await request(makeApp()).get('/api/v1/billing/config')
         expect(res.status).toBe(200)
-        expect(res.body).toEqual({ stripeEnabled: false, yearlyBillingAvailable: false, prices: {} })
+        expect(res.body).toEqual({ stripeEnabled: false, automaticTax: false, yearlyBillingAvailable: false, prices: {} })
     })
 })
 
@@ -277,6 +277,27 @@ describe('GET /config — real prices from Stripe', () => {
         expect(res.status).toBe(200)
         expect(res.body.prices.pro.monthly).toMatchObject({ amount: 2900, currency: 'eur' })
         expect(res.body.prices.pro.yearly).toMatchObject({ amount: 19000, currency: 'eur' })
+    })
+
+    it('says whether checkout charges VAT and how each price treats it, so the pages word it right', async () => {
+        mockPricesRetrieve.mockImplementation(async (id) => ({
+            id, unit_amount: 1900, currency: 'eur', recurring: { interval: 'month' },
+            tax_behavior: id === 'price_pro_monthly' ? 'exclusive' : undefined,
+        }))
+        mockConfig.stripeAutomaticTax = true
+        let res = await request(makeApp()).get('/api/v1/billing/config')
+        expect(res.body.automaticTax).toBe(true)
+        expect(res.body.prices.pro.monthly.taxBehavior).toBe('exclusive')
+        expect(res.body.prices.enterprise.monthly.taxBehavior).toBe('unspecified')
+
+        mockConfig.stripeAutomaticTax = false
+        res = await request(makeApp()).get('/api/v1/billing/config')
+        expect(res.body.automaticTax).toBe(false)
+        mockPricesRetrieve.mockReset()
+        mockPricesRetrieve.mockImplementation(async (id) => ({
+            id, unit_amount: id === 'price_pro_yearly' ? 19000 : 2900, currency: 'eur',
+            recurring: { interval: id.endsWith('yearly') ? 'year' : 'month' },
+        }))
     })
 
     it('resolves each configured tier', async () => {

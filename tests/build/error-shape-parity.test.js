@@ -129,8 +129,8 @@ function scan() {
 // list when a site is fixed; never add to it for a NEW site (fix the new
 // site instead — put the slug in `code`, the sentence in `error`).
 const ALLOWLIST = new Set([
-    'server/routes/billing.js:160',           // 'subscription_exists'
-    'server/routes/billing.js:167',           // 'subscription_on_hold'
+    'server/routes/billing.js:165',           // 'subscription_exists'
+    'server/routes/billing.js:172',           // 'subscription_on_hold'
     'server/routes/license.js:75',            // 'license_revoked'
     'server/routes/license.js:170',           // 'env_license_set'
     'server/routes/license.js:194',           // 'admin_required_multi_user'
