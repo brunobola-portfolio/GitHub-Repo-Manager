@@ -115,7 +115,7 @@ describe('the Docker build context', () => {
 
     it('still excludes the things it is meant to', () => {
         // Guards the negation above from being widened into "ship everything".
-        for (const excluded of ['CHANGELOG.md', 'AGENTS.md', 'CLAUDE.md', 'docs/index.md', 'tests/build/dockerfile-context.test.js']) {
+        for (const excluded of ['CHANGELOG.md', 'AGENTS.md', 'CLAUDE.md', 'server/AGENTS.md', 'server/CLAUDE.md', 'src/AGENTS.md', 'docs/index.md', 'tests/build/dockerfile-context.test.js']) {
             expect(reachesContext(excluded), `${excluded} now reaches the image`).toBe(false)
         }
         for (const kept of ['README.md', 'LICENSE', 'NOTICE', 'TRADEMARKS.md']) {
