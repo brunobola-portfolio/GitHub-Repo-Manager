@@ -38,7 +38,7 @@ what that means in practice, so you never have to guess.
 - **Suggesting endorsement, affiliation or partnership** that does not exist —
   including "official", "certified" or "in partnership with".
 
-Ask at **bruno@bolalabs.pt**. We are not difficult about this; we just want to
+Ask at **suporte@bolalabs.pt**. We are not difficult about this; we just want to
 know.
 
 ## The reverse case

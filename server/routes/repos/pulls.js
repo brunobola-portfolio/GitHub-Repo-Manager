@@ -19,7 +19,7 @@
  * tiers including Free — it acts on the user's own GitHub via their token and
  * has no marginal cost (commodity workflow).
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  */
 
 import express from 'express';

@@ -7,7 +7,7 @@
  * - Safe error sanitization for client responses
  * - Express middleware: requireAuth, requireAI (via factory)
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  */
 
 import { createHmac, timingSafeEqual } from 'crypto';

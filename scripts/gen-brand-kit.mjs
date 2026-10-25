@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2025-2026 Bola Labs, Inc. Licensed under the Apache License 2.0.
+// Copyright 2025-2026 BolaLabs Licensed under the Apache License 2.0.
 /*
  * Packs brand/ into a single downloadable archive.
  *
@@ -70,7 +70,7 @@ TRADEMARK
          endorsed by, or sponsored by GitHub, Inc. Do not use GitHub's marks,
          wordmark or palette alongside these assets.
 
-         RepoManager and the RepoManager mark are assets of Bola Labs, Inc.
+         RepoManager and the RepoManager mark are assets of BolaLabs
          Use them to refer to the product. Do not modify, recolour or
          reconstruct the mark, and do not use it to imply a partnership that
          does not exist.

@@ -140,8 +140,8 @@ describe('the priced offer follows what the deployment can actually charge', () 
 
 describe('securityTxt', () => {
     it('names a contact, a policy and an expiry a year out', () => {
-        const txt = securityTxt('https://repomanager.example.pt', new Date('2026-09-12T00:00:00.000Z'), 'mailto:bruno@bolalabs.pt');
-        expect(txt).toContain('Contact: mailto:bruno@bolalabs.pt');
+        const txt = securityTxt('https://repomanager.example.pt', new Date('2026-09-12T00:00:00.000Z'), 'mailto:suporte@bolalabs.pt');
+        expect(txt).toContain('Contact: mailto:suporte@bolalabs.pt');
         // RFC 9116 requires Expires; a stale file is treated as absent.
         expect(txt).toContain('Expires: 2027-09-12T00:00:00Z');
         expect(txt).toMatch(/^Policy: https:\/\/github\.com\//m);
@@ -164,9 +164,9 @@ describe('securityTxt', () => {
     it('an operator can point reports at their own team, and junk is ignored', () => {
         expect(securityContact('mailto:sec@acme.example')).toBe('mailto:sec@acme.example');
         expect(securityContact('https://acme.example/security')).toBe('https://acme.example/security');
-        expect(securityContact('sec@acme.example')).toBe('mailto:bruno@bolalabs.pt');
-        expect(securityContact('http://acme.example')).toBe('mailto:bruno@bolalabs.pt');
-        expect(securityContact('  ')).toBe('mailto:bruno@bolalabs.pt');
+        expect(securityContact('sec@acme.example')).toBe('mailto:suporte@bolalabs.pt');
+        expect(securityContact('http://acme.example')).toBe('mailto:suporte@bolalabs.pt');
+        expect(securityContact('  ')).toBe('mailto:suporte@bolalabs.pt');
     });
 });
 

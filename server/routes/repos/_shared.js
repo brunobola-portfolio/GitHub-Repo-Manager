@@ -8,7 +8,7 @@
  * sub-router calls `applyOwnerRepoParamValidators(router)` after creating
  * its router.
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  */
 
 import { errorResponse } from '../../middleware/auth.js';

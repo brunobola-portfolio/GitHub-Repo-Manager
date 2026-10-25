@@ -170,7 +170,7 @@ export function robotsTxt(origin) {
  * public issue or nothing. `Expires` is required by the RFC — a year out, and
  * the deploy that renders this file is what refreshes it.
  */
-const UPSTREAM_SECURITY_CONTACT = 'mailto:bruno@bolalabs.pt';
+const UPSTREAM_SECURITY_CONTACT = 'mailto:suporte@bolalabs.pt';
 
 /**
  * SECURITY_CONTACT lets an operator receive reports for their own install

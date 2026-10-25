@@ -12,7 +12,7 @@
  * returns 5xx — the response carries `X-Cache: stale` so the client can
  * surface a "showing cached data" badge.
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  */
 
 import express from 'express';

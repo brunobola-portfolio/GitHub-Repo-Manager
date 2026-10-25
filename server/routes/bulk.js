@@ -28,7 +28,7 @@
  * Read-only endpoints (/transfer/check-conflicts, /community-health/compare)
  * require no confirmation token.
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  */
 
 import express from 'express';

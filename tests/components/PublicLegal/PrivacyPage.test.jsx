@@ -16,8 +16,8 @@ describe('PrivacyPage — the hosted instance names a controller and real rights
         render(<PrivacyPage />)
         expect(screen.getByRole('heading', { level: 1, name: /privacy policy/i })).toBeInTheDocument()
         expect(screen.getByText(/data controller for this/i)).toBeInTheDocument()
-        const contact = screen.getByRole('link', { name: /bruno@bolalabs\.pt/i })
-        expect(contact).toHaveAttribute('href', 'mailto:bruno@bolalabs.pt')
+        const contact = screen.getByRole('link', { name: /suporte@bolalabs\.pt/i })
+        expect(contact).toHaveAttribute('href', 'mailto:suporte@bolalabs.pt')
     })
 
     it('says what is stored, including the audit log that records IP and user-agent', () => {

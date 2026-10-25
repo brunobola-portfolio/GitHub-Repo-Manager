@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2025-2026 Bola Labs, Inc. Licensed under the Apache License 2.0.
+// Copyright 2025-2026 BolaLabs Licensed under the Apache License 2.0.
 /*
  * The Contents routes build a GitHub API path out of a user-supplied string and
  * call it with the caller's OAuth token — a token whose scopes include
