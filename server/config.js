@@ -93,6 +93,8 @@ const configSchema = z.object({
     emailProvider: z.enum(['console', 'resend']).default('console'),
     resendApiKey: z.string().optional(),
     emailFrom: z.string().optional(),
+    // security.txt Contact (spa-shell.js securityContact); validated there.
+    securityContact: z.string().optional(),
 
     // License issuance — Ed25519 PEM key. Required in prod when Stripe is enabled.
     licenseSigningPrivateKeyPem: z.string().optional(),
@@ -188,6 +190,7 @@ function loadConfig() {
         emailProvider: process.env.EMAIL_PROVIDER,
         resendApiKey: process.env.RESEND_API_KEY,
         emailFrom: process.env.EMAIL_FROM,
+        securityContact: process.env.SECURITY_CONTACT,
         licenseSigningPrivateKeyPem: process.env.LICENSE_SIGNING_PRIVATE_KEY_PEM,
         dataRetentionDays: process.env.DATA_RETENTION_DAYS,
         dataRetentionWarningLeadDays: process.env.DATA_RETENTION_WARNING_LEAD_DAYS,
