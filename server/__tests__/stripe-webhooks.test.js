@@ -50,9 +50,13 @@ vi.mock('../lib/stripe.js', () => ({
 
 // B2: allow individual tests to override issueLicenseForCheckout behaviour
 // (including forcing it to throw) so we can verify idempotency rollback.
-vi.mock('../lib/license-issuer.js', () => ({
+vi.mock('../lib/license-issuer.js', async (io) => ({
+    ...(await io()),
     issueLicenseForCheckout: vi.fn(async () => ({ licenseKey: 'lic_fake', emailDelivered: true })),
+    revokeSubscriptionLicenses: vi.fn(() => 0),
 }))
+
+vi.mock('../middleware/require-tier.js', () => ({ refreshLicenseCache: vi.fn(async () => null) }))
 
 import { default as _db, __mockPrepare as mockPrepare } from '../db.js'
 import { stripeWebhookHandler } from '../routes/stripe-webhooks.js'
@@ -629,6 +633,63 @@ describe('stripeWebhookHandler', () => {
             expect(capturedUpsertArgs).toContain('monthly')
         })
 
+        it('the first key runs to the subscription period end and carries the buyer\'s business name', async () => {
+            const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
+            issueLicenseForCheckout.mockReset()
+            issueLicenseForCheckout.mockResolvedValueOnce({ licenseKey: 'lic_org', emailDelivered: true })
+            mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+                id: 'evt_org',
+                type: 'checkout.session.completed',
+                data: {
+                    object: {
+                        id: 'cs_org',
+                        metadata: { userId: '56', tier: 'pro', billingPeriod: 'monthly' },
+                        customer: 'cus_org',
+                        subscription: 'sub_org',
+                        customer_details: { business_name: 'Acme, Lda', name: 'Joana' },
+                    },
+                },
+            })
+            mockStripeInstance.checkout.sessions.listLineItems.mockResolvedValue({ data: [{ price: { metadata: { tier: 'pro' } } }] })
+            mockStripeInstance.customers.retrieve.mockResolvedValueOnce({ email: 'joana@acme.pt', name: 'Joana Silva' })
+            // basil shape: the period lives on the item.
+            mockStripeInstance.subscriptions.retrieve.mockResolvedValueOnce({ id: 'sub_org', items: { data: [{ current_period_end: 1802592000 }] } })
+            mockPrepare.mockImplementation(() => ({ get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }))
+
+            const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+            await stripeWebhookHandler(req, res)
+
+            expect(res.statusCode).toBe(200)
+            expect(issueLicenseForCheckout).toHaveBeenCalledWith(expect.objectContaining({
+                periodEnd: 1802592000,
+                org: 'Acme, Lda',
+                billingPeriod: 'monthly',
+            }))
+        })
+
+        it('a key that fails to mint answers 5xx so Stripe retries', async () => {
+            const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
+            issueLicenseForCheckout.mockReset()
+            issueLicenseForCheckout.mockRejectedValueOnce(new Error('License persistence failed'))
+            mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+                id: 'evt_mintfail',
+                type: 'checkout.session.completed',
+                data: { object: { id: 'cs_fail', metadata: { userId: '57', tier: 'pro' }, customer: 'cus_f', subscription: 'sub_f' } },
+            })
+            mockStripeInstance.checkout.sessions.listLineItems.mockResolvedValue({ data: [{ price: { metadata: { tier: 'pro' } } }] })
+            const forget = vi.fn(() => ({ changes: 1 }))
+            mockPrepare.mockImplementation((sql) => {
+                if (/DELETE FROM webhook_events/.test(sql)) return { run: forget }
+                return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+            })
+
+            const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+            await stripeWebhookHandler(req, res)
+
+            expect(res.statusCode).toBe(500)
+            expect(forget).toHaveBeenCalledWith('evt_mintfail', 'stripe')
+        })
+
         it('yearly checkout issues a 12-month license and persists billing_period=yearly', async () => {
             const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
             issueLicenseForCheckout.mockReset()
@@ -746,6 +807,44 @@ describe('stripeWebhookHandler', () => {
                     stripeSessionId: 'in_renew_1',
                 })
             )
+        })
+
+        it('a renewal key runs to the paid period end (plus the issuer\'s grace), names the org and says it is a renewal', async () => {
+            const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
+            issueLicenseForCheckout.mockReset()
+            issueLicenseForCheckout.mockResolvedValueOnce({ licenseKey: 'lic_renew_p', emailDelivered: true })
+
+            mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+                id: 'evt_renew_period',
+                type: 'invoice.paid',
+                data: {
+                    object: {
+                        id: 'in_renew_p',
+                        subscription: 'sub_renew',
+                        billing_reason: 'subscription_cycle',
+                        customer_name: 'Acme, Lda',
+                        lines: { data: [{ period: { start: 1800000000, end: 1802592000 } }] },
+                    },
+                },
+            })
+            mockPrepare.mockImplementation((sql) => {
+                if (/SELECT user_id, tier, status, billing_period FROM user_subscriptions/.test(sql)) {
+                    return { get: vi.fn(() => ({ user_id: 77, tier: 'pro', status: 'active', billing_period: 'monthly' })) }
+                }
+                if (/SELECT email FROM users/.test(sql)) return { get: vi.fn(() => ({ email: 'renew@acme.pt' })) }
+                return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+            })
+
+            const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+            await stripeWebhookHandler(req, res)
+
+            expect(res.statusCode).toBe(200)
+            expect(issueLicenseForCheckout).toHaveBeenCalledWith(expect.objectContaining({
+                periodEnd: 1802592000,
+                billingPeriod: 'monthly',
+                org: 'Acme, Lda',
+                renewal: true,
+            }))
         })
 
         it('reissues a fresh 12-month license on a yearly subscription_cycle renewal (year-2 customer must get a new key)', async () => {
@@ -925,6 +1024,69 @@ describe('stripeWebhookHandler', () => {
 
             expect(res.statusCode).toBe(200)
             expect(downgrade).toHaveBeenCalledWith('refunded', 'sub_ref')
+        })
+
+        it('a FULL refund revokes the keys the money paid for', async () => {
+            const { revokeSubscriptionLicenses } = await import('../lib/license-issuer.js')
+            revokeSubscriptionLicenses.mockClear().mockReturnValueOnce(2)
+            const { refreshLicenseCache } = await import('../middleware/require-tier.js')
+            refreshLicenseCache.mockClear()
+            mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+                id: 'evt_full_revoke',
+                type: 'charge.refunded',
+                data: { object: { id: 'ch_full', invoice: 'in_1', amount: 1900, amount_refunded: 1900, refunded: true } },
+            })
+            wireChargeChain()
+            mockPrepare.mockImplementation(() => ({ get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }))
+
+            const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+            await stripeWebhookHandler(req, res)
+
+            expect(res.statusCode).toBe(200)
+            expect(revokeSubscriptionLicenses).toHaveBeenCalledWith('sub_ref', 'refund')
+            // The hosted instance must stop honouring them now, not at next boot.
+            expect(refreshLicenseCache).toHaveBeenCalledOnce()
+        })
+
+        it('an open dispute holds but does not revoke (it may still be won)', async () => {
+            const { revokeSubscriptionLicenses } = await import('../lib/license-issuer.js')
+            revokeSubscriptionLicenses.mockClear()
+            mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+                id: 'evt_dispute_open',
+                type: 'charge.dispute.created',
+                data: { object: { id: 'dp_1', charge: 'ch_full' } },
+            })
+            wireChargeChain()
+            mockPrepare.mockImplementation(() => ({ get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }))
+
+            const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+            await stripeWebhookHandler(req, res)
+
+            expect(res.statusCode).toBe(200)
+            expect(revokeSubscriptionLicenses).not.toHaveBeenCalled()
+        })
+
+        it('a lost dispute revokes the keys and leaves the hold', async () => {
+            const { revokeSubscriptionLicenses } = await import('../lib/license-issuer.js')
+            revokeSubscriptionLicenses.mockClear()
+            mockStripeInstance.webhooks.constructEvent.mockReturnValue({
+                id: 'evt_dispute_lost',
+                type: 'charge.dispute.closed',
+                data: { object: { id: 'dp_2', charge: 'ch_full', status: 'lost' } },
+            })
+            wireChargeChain()
+            const restore = vi.fn(() => ({ changes: 1 }))
+            mockPrepare.mockImplementation((sql) => {
+                if (/AND status = 'disputed'/.test(sql)) return { run: restore }
+                return { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }
+            })
+
+            const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+            await stripeWebhookHandler(req, res)
+
+            expect(res.statusCode).toBe(200)
+            expect(revokeSubscriptionLicenses).toHaveBeenCalledWith('sub_ref', 'dispute')
+            expect(restore).not.toHaveBeenCalled()
         })
 
         it('does not let customer.subscription.updated lift a refund hold', async () => {

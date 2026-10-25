@@ -1,85 +1,121 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2025-2026 Bola Labs, Inc. Licensed under the Apache License 2.0.
 
-import { generateLicenseKey, addCalendarMonths } from './license.js'
+import { decodeJwt } from 'jose'
+import { generateLicenseKey, addCalendarMonths, revokeLicense, LICENSE_PREFIX } from './license.js'
 import { isEmailDeliveryConfigured, sendEmail } from './email.js'
-import { supportFooter } from './email-identity.js'
+import { supportFooter, escapeHtml } from './email-identity.js'
 import db from '../db.js'
 import logger from './logger.js'
 
 /** Dead-letter `context.kind` of a licence email; see licenseEmailDeadLetterHandler. */
 export const LICENSE_EMAIL_KIND = 'license_key'
 
+const DAY = 24 * 60 * 60
+
 /**
- * Describe a license's actual validity window in plain language, matching
- * whatever `months` was really signed into the JWT (see generateLicenseKey).
- * Both monthly and yearly subs get a fresh key reissued automatically on
- * each paid renewal invoice (stripe-webhooks.js `invoice.paid` /
- * billing_reason=subscription_cycle) — monthly gets a 1-month key, yearly a
- * 12-month key. Never say "cannot be reissued" — that used to be true for
- * every plan when this always said 12 months regardless of what was
- * actually paid for; it no longer is for either billing period.
- *
- * @param {number} months
- * @returns {string}
+ * Days a Stripe key outlives the period it was paid for. The renewal key is
+ * minted when the next invoice is paid, which Stripe does about an hour after
+ * the period ends and, under dunning, days later. A key that ended with the
+ * period put every monthly self-hosted install on Free for that gap.
  */
-function describeLicenseValidity(months) {
-    if (months >= 12) {
-        return `This key is valid for ${months} months, matching your annual billing cycle. Renewing next year issues a fresh key automatically.`
-    }
-    if (months === 1) {
-        return `This key is valid for 1 month, matching your monthly billing cycle. While your subscription stays active, we email you a fresh key automatically at the start of every billing period — no action needed.`
-    }
-    return `This key is valid for ${months} month${months === 1 ? '' : 's'}.`
+export function licenseGraceDays(raw = process.env.LICENSE_GRACE_DAYS) {
+    const n = Number.parseInt(raw ?? '', 10)
+    return Number.isFinite(n) && n >= 0 && n <= 30 ? n : 7
 }
 
 /**
- * Build the HTML email body for a license delivery.
- *
- * @param {object} opts
- * @param {string} opts.tier
- * @param {string} opts.licenseKey
- * @param {number} opts.months
- * @returns {string} HTML
+ * Unix seconds the key should stop at: the paid period's end plus grace, or a
+ * calendar-month count from now when Stripe gave no period end.
  */
-function buildLicenseEmailHtml({ tier, licenseKey, months }) {
-    const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1)
+export function licenseExpiry({ periodEnd, months, now = Math.floor(Date.now() / 1000) }) {
+    if (Number.isFinite(periodEnd) && periodEnd > now) return Math.floor(periodEnd) + licenseGraceDays() * DAY
+    return addCalendarMonths(now, months > 0 ? months : 1)
+}
+
+const FREE_MAIL = new Set([
+    'gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'live.com', 'msn.com',
+    'yahoo.com', 'icloud.com', 'me.com', 'proton.me', 'protonmail.com', 'gmx.com',
+    'gmx.net', 'aol.com', 'mail.com', 'sapo.pt', 'zoho.com', 'yandex.com', 'hey.com',
+])
+
+/**
+ * The `org` claim: who the key is for, as the buyer gave it. Business name
+ * first, then the Stripe customer name, then a company email domain. The key
+ * is pasted into third-party machines and support tickets, so the tax id
+ * never goes in it.
+ *
+ * @param {{ businessName?: string|null, customerName?: string|null, email?: string|null }} src
+ * @returns {string|null}
+ */
+export function resolveLicenseOrg({ businessName, customerName, email } = {}) {
+    for (const candidate of [businessName, customerName]) {
+        const clean = String(candidate ?? '').replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim()
+        if (clean) return clean.slice(0, 120)
+    }
+    const domain = String(email ?? '').split('@')[1]?.toLowerCase().trim()
+    if (domain && !FREE_MAIL.has(domain)) return domain
+    return email ? String(email).trim().slice(0, 120) : null
+}
+
+function formatDate(unixSeconds) {
+    return new Date(unixSeconds * 1000).toISOString().slice(0, 10)
+}
+
+/**
+ * What the customer must do, in plain language. The key's real end date is
+ * printed, because "valid for 1 month" said nothing about when to act, and
+ * the old monthly line told self-hosters nothing was required while they had
+ * to paste a new key every month.
+ */
+function describeLicenseValidity({ expiresAt, billingPeriod }) {
+    const until = expiresAt ? `This key is valid until ${formatDate(expiresAt)}.` : ''
+    const renew = billingPeriod === 'yearly'
+        ? 'Each yearly renewal emails you a new key.'
+        : 'Each monthly renewal emails you a new key a few days before this one stops.'
+    return `${until} ${renew} On the hosted app nothing changes; on your own install, paste each new key under Settings → License & Plan.`.trim()
+}
+
+function tierLabelOf(tier) {
+    return tier.charAt(0).toUpperCase() + tier.slice(1)
+}
+
+function buildLicenseEmailHtml({ tier, licenseKey, expiresAt, billingPeriod, renewal }) {
+    const tierLabel = escapeHtml(tierLabelOf(tier))
     const help = supportFooter().html
+    const intro = renewal
+        ? `Your <strong>${tierLabel}</strong> plan renewed. Here is the key for the new period.`
+        : `Thank you for subscribing to the <strong>${tierLabel}</strong> plan.`
     return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
 <body style="font-family: sans-serif; line-height: 1.6; color: #222; max-width: 600px; margin: 0 auto; padding: 24px;">
-  <h2>Your GitHub Repo Manager license key</h2>
-  <p>Thank you for subscribing to the <strong>${tierLabel}</strong> plan.</p>
+  <h2>${renewal ? 'Your renewed' : 'Your'} GitHub Repo Manager license key</h2>
+  <p>${intro}</p>
   <p>Your license key is:</p>
-  <pre style="background: #f4f4f4; border: 1px solid #ddd; border-radius: 4px; padding: 16px; font-family: monospace; font-size: 14px; word-break: break-all;">${licenseKey}</pre>
+  <pre style="background: #f4f4f4; border: 1px solid #ddd; border-radius: 4px; padding: 16px; font-family: monospace; font-size: 14px; word-break: break-all;">${escapeHtml(licenseKey)}</pre>
   <h3>Do I need to activate it?</h3>
   <p><strong>Using the hosted app?</strong> No. Your ${tierLabel} plan is already active on your account — there is nothing to paste.</p>
   <p><strong>Running your own install?</strong> An administrator of that install opens <strong>Settings → License &amp; Plan → Activate</strong> and pastes the key. It applies to every account on the install.</p>
-  <p>${describeLicenseValidity(months)}</p>
-  <p>Keep this key safe and treat it like a password. Cancelling your subscription does not switch it off — it keeps working to the end of the period you paid for.</p>
+  <p>${escapeHtml(describeLicenseValidity({ expiresAt, billingPeriod }))}</p>
+  <p>Keep this key safe and treat it like a password. Cancelling your subscription does not switch it off — it keeps working to the end of the period you paid for. A refunded payment revokes it.</p>
 ${help ? `  <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
   <p style="font-size: 13px; color: #666;">${help}</p>
 ` : ''}</body>
 </html>`
 }
 
-/**
- * Build the plain-text fallback for a license delivery email.
- *
- * @param {object} opts
- * @param {string} opts.tier
- * @param {string} opts.licenseKey
- * @param {number} opts.months
- * @returns {string}
- */
-function buildLicenseEmailText({ tier, licenseKey, months }) {
-    const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1)
+function buildLicenseEmailText({ tier, licenseKey, expiresAt, billingPeriod, renewal }) {
+    const tierLabel = tierLabelOf(tier)
     const help = supportFooter().text
-    return `Your GitHub Repo Manager license key
-======================================
+    const title = `${renewal ? 'Your renewed' : 'Your'} GitHub Repo Manager license key`
+    const intro = renewal
+        ? `Your ${tierLabel} plan renewed. Here is the key for the new period.`
+        : `Thank you for subscribing to the ${tierLabel} plan.`
+    return `${title}
+${'='.repeat(title.length)}
 
-Thank you for subscribing to the ${tierLabel} plan.
+${intro}
 
 Your license key is:
 
@@ -92,37 +128,52 @@ Running your own install? An administrator of that install opens
 Settings -> License & Plan -> Activate and pastes the key. It applies to
 every account on the install.
 
-${describeLicenseValidity(months)}
+${describeLicenseValidity({ expiresAt, billingPeriod })}
 
 Keep this key safe and treat it like a password. Cancelling your subscription
-does not switch it off — it keeps working to the end of the period you paid for.${help ? `
+does not switch it off — it keeps working to the end of the period you paid for.
+A refunded payment revokes it.${help ? `
 
 ${help}` : ''}`
 }
 
-function licenseSubject(tier) {
-    return `Your GitHub Repo Manager license — ${tier} plan`
+function licenseSubject(tier, renewal = false) {
+    return renewal
+        ? `Your renewed GitHub Repo Manager license — ${tier} plan`
+        : `Your GitHub Repo Manager license — ${tier} plan`
+}
+
+function unixOf(iso) {
+    const t = iso ? Date.parse(iso) : NaN
+    return Number.isFinite(t) ? Math.floor(t / 1000) : null
 }
 
 /**
  * Dead-letter handler for licence emails. The queue row holds only
- * `{ kind, stripeSessionId, tier, months }`; the key is read back from
- * `issued_licenses` — the one place it is meant to live — when the worker
- * sends, and a delivered retry records itself there like a first-try success.
+ * `{ kind, stripeSessionId, tier, months, renewal }`; the key is read back
+ * from `issued_licenses` — the one place it is meant to live — when the
+ * worker sends, and a delivered retry records itself there like a first-try
+ * success.
  */
 export const licenseEmailDeadLetterHandler = {
     rebuild(context) {
         if (!context?.stripeSessionId) return null
         const row = db.prepare(
-            'SELECT license_key, tier FROM issued_licenses WHERE stripe_session_id = ?'
+            'SELECT license_key, tier, expires_at, billing_period FROM issued_licenses WHERE stripe_session_id = ?'
         ).get(context.stripeSessionId)
         if (!row?.license_key) return null
         const tier = row.tier || context.tier
-        const months = Number.isFinite(context.months) ? context.months : 1
+        const view = {
+            tier,
+            licenseKey: row.license_key,
+            expiresAt: unixOf(row.expires_at),
+            billingPeriod: row.billing_period || (context.months >= 12 ? 'yearly' : 'monthly'),
+            renewal: context.renewal === true,
+        }
         return {
-            subject: licenseSubject(tier),
-            html: buildLicenseEmailHtml({ tier, licenseKey: row.license_key, months }),
-            text: buildLicenseEmailText({ tier, licenseKey: row.license_key, months }),
+            subject: licenseSubject(tier, view.renewal),
+            html: buildLicenseEmailHtml(view),
+            text: buildLicenseEmailText(view),
         }
     },
     onDelivered(context) {
@@ -139,22 +190,39 @@ function markEmailDelivered(stripeSessionId) {
     `).run(stripeSessionId)
 }
 
+function lidOf(licenseKey) {
+    try {
+        const lid = decodeJwt(licenseKey.slice(LICENSE_PREFIX.length)).lid
+        return typeof lid === 'string' ? lid : null
+    } catch {
+        return null
+    }
+}
+
 /**
- * Issue a license key on behalf of a checkout session AND email it to
- * the recipient. Called from the Stripe webhook.
+ * Issue a license key on behalf of a checkout session or paid renewal invoice
+ * AND email it to the recipient. Called from the Stripe webhook.
  *
  * Idempotent per stripe_session_id: if a row already exists for this
  * session, the existing license key is returned without sending another email.
+ *
+ * Throws when signing or persisting fails, so the webhook answers 5xx and
+ * Stripe retries: returning null used to answer 200 for a paid key that did
+ * not exist. A missing signing key still returns null — production refuses
+ * to boot without it when Stripe is on (startup-secrets-check.js).
  *
  * @param {object} opts
  * @param {number} opts.userId
  * @param {string} opts.email
  * @param {string} opts.tier           — 'pro' | 'enterprise'
  * @param {number} [opts.seats=1]
- * @param {number} [opts.months=1] — 1 for a monthly billing period, 12 for
- *   yearly (see stripe-webhooks.js checkout.session.completed / invoice.paid).
+ * @param {number} [opts.months=1]     — fallback validity when no period end is known
+ * @param {number|null} [opts.periodEnd] — unix seconds the paid period ends
+ * @param {'monthly'|'yearly'} [opts.billingPeriod]
+ * @param {string|null} [opts.org]
+ * @param {boolean} [opts.renewal=false]
  * @param {string} opts.stripeSubscriptionId
- * @param {string} opts.stripeSessionId
+ * @param {string} opts.stripeSessionId — checkout session id, or invoice id for a renewal
  * @returns {Promise<{ licenseKey: string|null, emailDelivered: boolean }>}
  */
 export async function issueLicenseForCheckout(opts) {
@@ -164,9 +232,13 @@ export async function issueLicenseForCheckout(opts) {
         tier,
         seats = 1,
         months = 1,
+        periodEnd = null,
+        org = null,
+        renewal = false,
         stripeSubscriptionId,
         stripeSessionId,
     } = opts
+    const billingPeriod = opts.billingPeriod || (months >= 12 ? 'yearly' : 'monthly')
 
     // Idempotency: return existing record for this session without re-emailing.
     const existing = db.prepare(
@@ -192,35 +264,35 @@ export async function issueLicenseForCheckout(opts) {
         return { licenseKey: null, emailDelivered: false }
     }
 
-    // Generate the signed license key
+    const expiresAtUnix = licenseExpiry({ periodEnd, months })
+
     let licenseKey
     try {
         licenseKey = await generateLicenseKey(
-            { email, tier, seats, months },
+            { org: org || undefined, email, tier, seats, months, expiresAt: expiresAtUnix },
             privateKeyPem
         )
     } catch (err) {
         logger.error({ err, stripeSessionId }, 'license-issuer: key generation failed')
-        return { licenseKey: null, emailDelivered: false }
+        throw new Error('License key generation failed', { cause: err })
     }
 
-    // Compute expiry date for storage using the same calendar-month
-    // arithmetic as the signed JWT's `exp` (license.js) — otherwise this
-    // stored record would drift from what the key actually enforces.
-    const expiresAt = months > 0
-        ? new Date(addCalendarMonths(Math.floor(Date.now() / 1000), months) * 1000).toISOString()
-        : null
+    // Stored with the same value signed into `exp`, so the record cannot
+    // drift from what the key enforces.
+    const expiresAt = new Date(expiresAtUnix * 1000).toISOString()
+    const periodEndIso = Number.isFinite(periodEnd) ? new Date(periodEnd * 1000).toISOString() : null
 
-    // Persist first (so a partial failure still has the record)
     try {
         db.prepare(`
             INSERT OR IGNORE INTO issued_licenses
-                (user_id, stripe_subscription_id, stripe_session_id, tier, license_key, expires_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-        `).run(userId, stripeSubscriptionId, stripeSessionId, tier, licenseKey, expiresAt)
+                (user_id, stripe_subscription_id, stripe_session_id, tier, license_key, expires_at,
+                 lid, org, billing_period, period_end)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(userId, stripeSubscriptionId, stripeSessionId, tier, licenseKey, expiresAt,
+            lidOf(licenseKey), org, billingPeriod, periodEndIso)
     } catch (err) {
         logger.error({ err, stripeSessionId }, 'license-issuer: failed to persist issued license')
-        return { licenseKey: null, emailDelivered: false }
+        throw new Error('License persistence failed', { cause: err })
     }
 
     // Send the license email (best-effort), but only when mail can actually
@@ -239,16 +311,17 @@ export async function issueLicenseForCheckout(opts) {
         )
         return { licenseKey, emailDelivered: false, emailConfigured: false }
     }
+    const view = { tier, licenseKey, expiresAt: expiresAtUnix, billingPeriod, renewal }
     try {
         const result = await sendEmail({
             to: email,
-            subject: licenseSubject(tier),
-            html: buildLicenseEmailHtml({ tier, licenseKey, months }),
-            text: buildLicenseEmailText({ tier, licenseKey, months }),
+            subject: licenseSubject(tier, renewal),
+            html: buildLicenseEmailHtml(view),
+            text: buildLicenseEmailText(view),
             stream: 'licences',
             // The body is the key: queue the reference, never the secret.
             deadLetter: 'rebuild',
-            context: { kind: LICENSE_EMAIL_KIND, stripeSessionId, tier, months },
+            context: { kind: LICENSE_EMAIL_KIND, stripeSessionId, tier, months, renewal },
             // One logical message per checkout session, so a webhook redelivery
             // racing a timed-out first send cannot mail the key twice.
             idempotencyKey: `license-${stripeSessionId}`,
@@ -265,4 +338,35 @@ export async function issueLicenseForCheckout(opts) {
     }
 
     return { licenseKey, emailDelivered }
+}
+
+/** Keys of a subscription that still work: signed with a lid, not revoked, not expired. */
+export const LIVE_SUBSCRIPTION_KEYS_SQL = `
+    SELECT lid, org, tier, expires_at FROM issued_licenses
+    WHERE stripe_subscription_id = ? AND lid IS NOT NULL AND revoked_at IS NULL
+      AND (expires_at IS NULL OR julianday(expires_at) > julianday('now'))`
+
+/**
+ * Revoke every live key of a subscription: a full refund or a lost dispute
+ * means the money that paid for them is gone. The hosted instance stops
+ * honouring them at once (revoked_licenses + cache refresh by the caller);
+ * an offline install keeps one until its `exp`, which is the period end plus
+ * grace, not a year.
+ *
+ * @param {string} stripeSubscriptionId
+ * @param {'refund'|'dispute'} reason
+ * @returns {number} keys revoked
+ */
+export function revokeSubscriptionLicenses(stripeSubscriptionId, reason) {
+    const rows = db.prepare(LIVE_SUBSCRIPTION_KEYS_SQL).all(stripeSubscriptionId)
+    const mark = db.prepare(`
+        UPDATE issued_licenses SET revoked_at = datetime('now'), revoke_reason = ? WHERE lid = ?
+    `)
+    db.transaction(() => {
+        for (const row of rows) {
+            revokeLicense(db, { lid: row.lid, reason, org: row.org, tier: row.tier, expiresAt: row.expires_at })
+            mark.run(reason, row.lid)
+        }
+    })()
+    return rows.length
 }
