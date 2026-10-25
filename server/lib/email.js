@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2025-2026 Bola Labs, Inc. Licensed under the Apache License 2.0.
 
+import { randomUUID } from 'node:crypto'
 import logger from './logger.js'
 import { stripUntilStable } from './strip-until-stable.js'
+import { AUTOMATED_HEADERS, headerSafe, resolveSender } from './email-identity.js'
 import db from '../db.js'
 import { config } from '../config.js'
 
@@ -10,7 +12,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 // Retry policy for the initial send: up to 3 attempts with exponential
 // backoff (1 s, 3 s, 9 s + up to 250 ms jitter). Only 5xx and network errors
-// are retried; 4xx is treated as un-retryable (bad input).
+// are retried; a 4xx is un-retryable (bad input) and is not dead-lettered.
 const INITIAL_ATTEMPTS = 3
 // Tests override the base delay (and re-import this module via
 // vi.resetModules(), which re-evaluates config.js against the mutated
@@ -84,18 +86,34 @@ async function sendConsole({ to, subject, html }) {
  * Returns `{ ok, id? }` on success. On failure returns
  * `{ ok: false, error, retryable }` — `retryable=true` for 5xx + network,
  * `false` for 4xx and config errors.
+ *
+ * `idempotencyKey` is sent as Resend's Idempotency-Key, and callers keep it
+ * stable across every attempt of one logical message: a timeout after Resend
+ * accepted the request would otherwise turn the retry into a second copy —
+ * for a licence email, the key delivered twice.
  */
-async function sendResend({ to, subject, html, text }) {
+async function sendResend({ to, subject, html, text, stream = 'system', idempotencyKey }) {
     const apiKey = process.env.RESEND_API_KEY
-    const from = process.env.EMAIL_FROM
+    const sender = resolveSender(stream)
 
     if (!apiKey) {
         logger.error('[email:resend] RESEND_API_KEY is not set')
         return { ok: false, error: 'RESEND_API_KEY not configured', retryable: false }
     }
-    if (!from) {
-        logger.error('[email:resend] EMAIL_FROM is not set')
+    if (!sender) {
+        logger.error('[email:resend] EMAIL_FROM is not set (or is not an email address)')
         return { ok: false, error: 'EMAIL_FROM not configured', retryable: false }
+    }
+    if (sender.warning) logger.warn({ stream }, `[email:resend] ${sender.warning}`)
+
+    const payload = {
+        from: sender.from,
+        to,
+        subject: headerSafe(subject),
+        html,
+        text,
+        headers: { ...AUTOMATED_HEADERS },
+        ...(sender.replyTo ? { reply_to: sender.replyTo } : {}),
     }
 
     let response
@@ -108,8 +126,9 @@ async function sendResend({ to, subject, html, text }) {
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
+                ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}),
             },
-            body: JSON.stringify({ from, to, subject, html, text }),
+            body: JSON.stringify(payload),
         })
     } catch (err) {
         logger.error({ err }, '[email:resend] network error')
@@ -155,17 +174,23 @@ export function resolveProvider() {
  * Run a single send attempt against the configured provider.
  * Shared between `sendEmail` and the retry worker.
  */
-export async function attemptSendOnce({ to, subject, html, text }) {
+export async function attemptSendOnce({ to, subject, html, text, stream, idempotencyKey }) {
     const providerFn = resolveProvider()
-    return providerFn({ to, subject, html, text })
+    return providerFn({ to, subject, html, text, stream, idempotencyKey })
 }
 
 /**
  * Insert a failed email into the dead-letter queue.
  *
+ * With `storeBody: false` the row keeps only the subject and the context —
+ * the retry worker re-renders the body from that context (see
+ * email-retry-worker.js). That is how a licence email waits in the queue
+ * without the key sitting in a second table, readable from the admin DLQ
+ * panel and the database backups, for as long as the row lives.
+ *
  * @returns {number|null} the new row id, or null if the insert failed.
  */
-function insertDeadLetter({ to, subject, html, text, context, attempts, lastError, nextRetryAt }) {
+function insertDeadLetter({ to, subject, html, text, context, storeBody, attempts, lastError, nextRetryAt }) {
     try {
         const info = db.prepare(`
             INSERT INTO email_dead_letter
@@ -174,8 +199,8 @@ function insertDeadLetter({ to, subject, html, text, context, attempts, lastErro
         `).run(
             to,
             subject,
-            html ?? null,
-            text ?? null,
+            storeBody ? (html ?? null) : null,
+            storeBody ? (text ?? null) : null,
             context ? JSON.stringify(context) : null,
             attempts,
             lastError ?? null,
@@ -193,37 +218,52 @@ function insertDeadLetter({ to, subject, html, text, context, attempts, lastErro
  * retry and dead-letter fallback.
  *
  * Retry policy: up to 3 attempts with delays 1 s → 3 s → 9 s (+ jitter).
- * Only 5xx and network errors retry; 4xx fails fast.
+ * Only 5xx and network errors retry. A 4xx fails fast and is NOT queued —
+ * the provider rejected the message itself (bad sender, bad recipient), and
+ * sending the same request again cannot succeed; the caller gets the error.
  *
- * On final failure after all 3 attempts, inserts into `email_dead_letter`
- * so a background worker can keep trying; returns `{ ok: false, dlqId, error }`.
+ * On final failure after all 3 retryable attempts, the message goes to
+ * `email_dead_letter` for the background worker, per `deadLetter`:
+ *   - 'store'   (default) — subject + bodies + context.
+ *   - 'rebuild' — subject + context only; the body holds a secret and the
+ *                 worker re-renders it from `context.kind` (registered in
+ *                 email-retry-worker.js).
+ *   - 'skip'    — not queued; the caller retries on its own schedule (the
+ *                 digest re-sends on its next pass).
  *
  * @param {object} opts
  * @param {string} opts.to         — recipient email
- * @param {string} opts.subject
+ * @param {string} opts.subject    — CR/LF are flattened before sending
  * @param {string} opts.html       — HTML body
  * @param {string} [opts.text]     — plain-text fallback; auto-derived from html if omitted
- * @param {object} [opts.context]  — opaque metadata persisted in DLQ (license_id, user_id, etc.)
+ * @param {object} [opts.context]  — non-secret metadata persisted in the DLQ (kind, ids)
+ * @param {'system'|'licences'} [opts.stream='system'] — sender identity (email-identity.js)
+ * @param {'store'|'rebuild'|'skip'} [opts.deadLetter='store']
+ * @param {string} [opts.idempotencyKey] — stable per logical message; generated when omitted
  * @returns {Promise<{ ok: boolean, id?: string, error?: string, dlqId?: number }>}
  */
-export async function sendEmail({ to, subject, html, text, context } = {}) {
+export async function sendEmail({
+    to, subject, html, text, context, stream = 'system', deadLetter = 'store', idempotencyKey,
+} = {}) {
     // Validate recipient
     if (!to || !EMAIL_REGEX.test(to)) {
         logger.warn({ to }, '[email] invalid recipient address')
         return { ok: false, error: 'invalid recipient' }
     }
 
+    const safeSubject = headerSafe(subject)
     const plainText = text ?? htmlToText(html ?? '')
     const provider = process.env.EMAIL_PROVIDER ?? 'console'
 
     // The console adapter never "fails" — short-circuit the retry machinery.
     if (provider !== 'resend') {
-        return sendConsole({ to, subject, html })
+        return sendConsole({ to, subject: safeSubject, html })
     }
 
+    const key = idempotencyKey || randomUUID()
     let lastResult = null
     for (let attempt = 1; attempt <= INITIAL_ATTEMPTS; attempt++) {
-        lastResult = await sendResend({ to, subject, html, text: plainText })
+        lastResult = await sendResend({ to, subject: safeSubject, html, text: plainText, stream, idempotencyKey: key })
 
         if (lastResult.ok) {
             return { ok: true, id: lastResult.id }
@@ -239,28 +279,39 @@ export async function sendEmail({ to, subject, html, text, context } = {}) {
             const backoff = BASE_DELAY_MS * Math.pow(3, attempt - 1)
             const jitter = Math.floor(Math.random() * 250)
             logger.warn(
-                { to, subject, attempt, nextDelayMs: backoff + jitter, error: lastResult.error },
+                { to, subject: safeSubject, attempt, nextDelayMs: backoff + jitter, error: lastResult.error },
                 '[email] transient failure — retrying'
             )
             await delay(backoff + jitter)
         }
     }
 
-    // All 3 attempts exhausted with retryable errors — push into DLQ.
+    if (deadLetter === 'skip') {
+        logger.error(
+            { to, subject: safeSubject, attempts: INITIAL_ATTEMPTS, error: lastResult?.error },
+            '[email] giving up after initial retries — not queued (caller retries)'
+        )
+        return { ok: false, error: lastResult?.error ?? 'send failed' }
+    }
+
+    // All 3 attempts exhausted with retryable errors — push into DLQ. The
+    // stream and idempotency key travel with the row so the worker sends from
+    // the same identity under the same key.
     const nextRetryAt = toSqliteDatetime(new Date(Date.now() + 5 * 60 * 1000))
     const dlqId = insertDeadLetter({
         to,
-        subject,
+        subject: safeSubject,
         html,
         text: plainText,
-        context,
+        context: { ...(context ?? {}), stream, idempotencyKey: key },
+        storeBody: deadLetter !== 'rebuild',
         attempts: INITIAL_ATTEMPTS,
         lastError: lastResult?.error ?? 'unknown',
         nextRetryAt,
     })
 
     logger.error(
-        { to, subject, attempts: INITIAL_ATTEMPTS, dlqId, error: lastResult?.error },
+        { to, subject: safeSubject, attempts: INITIAL_ATTEMPTS, dlqId, error: lastResult?.error },
         '[email] giving up after initial retries — inserted into dead-letter queue'
     )
 

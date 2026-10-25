@@ -104,7 +104,9 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           LICENSE_LOG_PAT: ${{ secrets.LICENSE_LOG_PAT }}
           AUDIT_REPO: ${{ vars.AUDIT_REPO }}
-          FROM_EMAIL: licenses@bolalabs.pt
+          # licenses@ never existed (550 No Such User); the licence box is licencas@.
+          FROM_EMAIL: BolaLabs Licences <licencas@bolalabs.pt>
+          REPLY_TO: suporte@bolalabs.pt
           KID: ${{ vars.LICENSE_KID || 'k-default' }}
           TIER: ${{ inputs.tier || github.event.client_payload.tier }}
           ORG: ${{ inputs.org || github.event.client_payload.org }}
@@ -119,6 +121,7 @@ jobs:
         if: failure()
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          FROM_EMAIL: BolaLabs Licences <licencas@bolalabs.pt>
         run: |
           node scripts/mint-failure-notify.js \
             --run-id "${{ github.run_id }}" \

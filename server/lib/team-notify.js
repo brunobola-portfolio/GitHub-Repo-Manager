@@ -2,6 +2,7 @@
 // Copyright 2025-2026 Bola Labs, Inc. Licensed under the Apache License 2.0.
 
 import { sendEmail } from './email.js'
+import { escapeHtml, headerSafe, supportFooter } from './email-identity.js'
 import logger from './logger.js'
 
 /**
@@ -13,9 +14,14 @@ import logger from './logger.js'
  * @returns {string} HTML
  */
 function buildAddedToTeamEmailHtml({ teamName, addedByUsername }) {
+    // Both names are typed by users and this mail goes out under the sending
+    // domain's DKIM signature — unescaped, a team called `<a href=…>` is a
+    // phishing link we signed.
+    const team = escapeHtml(teamName)
     const addedByLine = addedByUsername
-        ? `<p><strong>${addedByUsername}</strong> added you to the <strong>${teamName}</strong> team.</p>`
-        : `<p>You were added to the <strong>${teamName}</strong> team.</p>`
+        ? `<p><strong>${escapeHtml(addedByUsername)}</strong> added you to the <strong>${team}</strong> team.</p>`
+        : `<p>You were added to the <strong>${team}</strong> team.</p>`
+    const help = supportFooter('Need help?').html
     return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
@@ -23,11 +29,10 @@ function buildAddedToTeamEmailHtml({ teamName, addedByUsername }) {
   <h2>You've been added to a team</h2>
   ${addedByLine}
   <p>You can now see the repositories assigned to this team in GitHub Repo Manager.</p>
-  <p>Open the app and go to <strong>Teams → ${teamName}</strong> to get started.</p>
+  <p>Open the app and go to <strong>Teams → ${team}</strong> to get started.</p>
   <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
   <p style="font-size: 13px; color: #666;">
-    Didn't expect this? Contact whoever manages your organization's GitHub Repo Manager account, or
-    <a href="mailto:bruno@bolalabs.pt">bruno@bolalabs.pt</a>.
+    Didn't expect this? Contact whoever manages your organization's GitHub Repo Manager account.${help ? ` ${help}` : ''}
   </p>
 </body>
 </html>`
@@ -45,6 +50,7 @@ function buildAddedToTeamEmailText({ teamName, addedByUsername }) {
     const addedByLine = addedByUsername
         ? `${addedByUsername} added you to the ${teamName} team.`
         : `You were added to the ${teamName} team.`
+    const help = supportFooter('Need help?').text
     return `You've been added to a team
 ============================
 
@@ -54,7 +60,8 @@ You can now see the repositories assigned to this team in GitHub Repo Manager.
 
 Open the app and go to Teams -> ${teamName} to get started.
 
-Didn't expect this? Contact whoever manages your organization's GitHub Repo Manager account, or bruno@bolalabs.pt`
+Didn't expect this? Contact whoever manages your organization's GitHub Repo Manager account.${help ? `
+${help}` : ''}`
 }
 
 /**
@@ -83,7 +90,7 @@ export async function notifyMemberAdded({ email, username, teamName, addedByUser
     try {
         const result = await sendEmail({
             to: email,
-            subject: `You've been added to ${teamName}`,
+            subject: `You've been added to ${headerSafe(teamName, 120)}`,
             html: buildAddedToTeamEmailHtml({ teamName, addedByUsername }),
             text: buildAddedToTeamEmailText({ teamName, addedByUsername }),
             context: { kind: 'team_member_added', teamName },

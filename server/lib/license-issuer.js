@@ -3,8 +3,12 @@
 
 import { generateLicenseKey, addCalendarMonths } from './license.js'
 import { isEmailDeliveryConfigured, sendEmail } from './email.js'
+import { supportFooter } from './email-identity.js'
 import db from '../db.js'
 import logger from './logger.js'
+
+/** Dead-letter `context.kind` of a licence email; see licenseEmailDeadLetterHandler. */
+export const LICENSE_EMAIL_KIND = 'license_key'
 
 /**
  * Describe a license's actual validity window in plain language, matching
@@ -40,6 +44,7 @@ function describeLicenseValidity(months) {
  */
 function buildLicenseEmailHtml({ tier, licenseKey, months }) {
     const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1)
+    const help = supportFooter().html
     return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
@@ -53,12 +58,9 @@ function buildLicenseEmailHtml({ tier, licenseKey, months }) {
   <p><strong>Running your own install?</strong> An administrator of that install opens <strong>Settings → License &amp; Plan → Activate</strong> and pastes the key. It applies to every account on the install.</p>
   <p>${describeLicenseValidity(months)}</p>
   <p>Keep this key safe and treat it like a password. Cancelling your subscription does not switch it off — it keeps working to the end of the period you paid for.</p>
-  <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
-  <p style="font-size: 13px; color: #666;">
-    Need help? Contact us at
-    <a href="mailto:bruno@bolalabs.pt">bruno@bolalabs.pt</a>.
-  </p>
-</body>
+${help ? `  <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
+  <p style="font-size: 13px; color: #666;">${help}</p>
+` : ''}</body>
 </html>`
 }
 
@@ -73,6 +75,7 @@ function buildLicenseEmailHtml({ tier, licenseKey, months }) {
  */
 function buildLicenseEmailText({ tier, licenseKey, months }) {
     const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1)
+    const help = supportFooter().text
     return `Your GitHub Repo Manager license key
 ======================================
 
@@ -92,9 +95,48 @@ every account on the install.
 ${describeLicenseValidity(months)}
 
 Keep this key safe and treat it like a password. Cancelling your subscription
-does not switch it off — it keeps working to the end of the period you paid for.
+does not switch it off — it keeps working to the end of the period you paid for.${help ? `
 
-Need help? Contact us at bruno@bolalabs.pt`
+${help}` : ''}`
+}
+
+function licenseSubject(tier) {
+    return `Your GitHub Repo Manager license — ${tier} plan`
+}
+
+/**
+ * Dead-letter handler for licence emails. The queue row holds only
+ * `{ kind, stripeSessionId, tier, months }`; the key is read back from
+ * `issued_licenses` — the one place it is meant to live — when the worker
+ * sends, and a delivered retry records itself there like a first-try success.
+ */
+export const licenseEmailDeadLetterHandler = {
+    rebuild(context) {
+        if (!context?.stripeSessionId) return null
+        const row = db.prepare(
+            'SELECT license_key, tier FROM issued_licenses WHERE stripe_session_id = ?'
+        ).get(context.stripeSessionId)
+        if (!row?.license_key) return null
+        const tier = row.tier || context.tier
+        const months = Number.isFinite(context.months) ? context.months : 1
+        return {
+            subject: licenseSubject(tier),
+            html: buildLicenseEmailHtml({ tier, licenseKey: row.license_key, months }),
+            text: buildLicenseEmailText({ tier, licenseKey: row.license_key, months }),
+        }
+    },
+    onDelivered(context) {
+        if (!context?.stripeSessionId) return
+        markEmailDelivered(context.stripeSessionId)
+    },
+}
+
+function markEmailDelivered(stripeSessionId) {
+    db.prepare(`
+        UPDATE issued_licenses
+        SET email_delivered = 1, email_delivered_at = datetime('now')
+        WHERE stripe_session_id = ? AND email_delivered = 0
+    `).run(stripeSessionId)
 }
 
 /**
@@ -200,18 +242,21 @@ export async function issueLicenseForCheckout(opts) {
     try {
         const result = await sendEmail({
             to: email,
-            subject: `Your GitHub Repo Manager license — ${tier} plan`,
+            subject: licenseSubject(tier),
             html: buildLicenseEmailHtml({ tier, licenseKey, months }),
             text: buildLicenseEmailText({ tier, licenseKey, months }),
+            stream: 'licences',
+            // The body is the key: queue the reference, never the secret.
+            deadLetter: 'rebuild',
+            context: { kind: LICENSE_EMAIL_KIND, stripeSessionId, tier, months },
+            // One logical message per checkout session, so a webhook redelivery
+            // racing a timed-out first send cannot mail the key twice.
+            idempotencyKey: `license-${stripeSessionId}`,
         })
 
         if (result.ok) {
             emailDelivered = true
-            db.prepare(`
-                UPDATE issued_licenses
-                SET email_delivered = 1, email_delivered_at = datetime('now')
-                WHERE stripe_session_id = ?
-            `).run(stripeSessionId)
+            markEmailDelivered(stripeSessionId)
         } else {
             logger.warn({ stripeSessionId, error: result.error }, 'license-issuer: email delivery failed; license persisted with email_delivered=0')
         }

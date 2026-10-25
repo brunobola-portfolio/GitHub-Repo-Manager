@@ -306,12 +306,25 @@ Set the following environment variables to enable live email delivery:
 |---|---|
 | `EMAIL_PROVIDER` | Set to `resend` to use the Resend adapter. Defaults to `console`. |
 | `RESEND_API_KEY` | Your Resend API key (from resend.com dashboard). Required when `EMAIL_PROVIDER=resend`. |
-| `EMAIL_FROM` | The verified sender address (e.g. `noreply@bolalabs.pt`). Required when `EMAIL_PROVIDER=resend`. |
+| `EMAIL_FROM` | The verified sender, optionally with a display name (e.g. `BolaLabs RepoManager <no-reply@bolalabs.pt>`). Required when `EMAIL_PROVIDER=resend`. |
+| `EMAIL_FROM_LICENCES` | Optional sender for licence-key mail. Must be on `EMAIL_FROM`'s domain, otherwise it is ignored (DMARC alignment) and the warning is logged. |
+| `EMAIL_REPLY_TO` | Optional Reply-To for every automated email (`none` disables it). Automated senders are no-reply boxes, so without it a reply bounces or goes nowhere. |
+| `EMAIL_SUPPORT_URL` | Optional `https` link printed as "Open a support request at …" in every email footer. |
+
+Every message carries `Auto-Submitted: auto-generated` (RFC 3834) and a
+Resend `Idempotency-Key` that stays the same across all retries of that
+message — including dead-letter retries — so a timeout after Resend accepted a
+request cannot produce a second copy. Subjects are flattened to one line.
+
+On the `bolalabs.pt` domain the three optional variables default to
+`BolaLabs Licences <licencas@bolalabs.pt>`, `suporte@bolalabs.pt` and the
+BolaLabs support desk; on any other domain they are unset unless configured,
+so a self-hosted install never routes its users to the upstream vendor.
 
 ```bash
 EMAIL_PROVIDER=resend
 RESEND_API_KEY=re_xxxxxxxxxxxxx
-EMAIL_FROM=noreply@bolalabs.pt
+EMAIL_FROM=no-reply@yourdomain.example
 ```
 
 ### Console adapter (development / fallback)

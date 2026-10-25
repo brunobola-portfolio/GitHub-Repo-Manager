@@ -11,9 +11,12 @@ this page is the deep dive.
 
 Populated by `server/lib/email.js` when:
 
-- Resend returns a non-retriable 4xx (malformed address, blocked recipient).
-- The retry budget is exhausted (default 4 attempts with exponential backoff).
-- Resend is reachable but returns a persistent 5xx on every retry.
+- The three immediate attempts (1 s / 3 s / 9 s backoff) all fail with a
+  retryable error: a 5xx or a network failure.
+
+A 4xx (malformed address, blocked recipient, rate limit) is **not** queued —
+the request itself was rejected, so it is returned to the caller and logged.
+The digest email is never queued either; its next hourly pass re-sends it.
 
 Row shape:
 
@@ -21,11 +24,12 @@ Row shape:
 | ------ | ------- |
 | `id` | Auto-increment PK. |
 | `to_address` | Original recipient. |
-| `template_name` | e.g. `license-issued`, `payment-failed`. |
-| `payload_json` | Template variables, resolved subject/body. |
-| `last_error` | The terminal error string returned by Resend. |
-| `attempts` | Retry count before giving up. |
-| `created_at`, `resolved_at` | Soft-delete via `resolved_at IS NOT NULL`. |
+| `subject` | One-line subject (CR/LF flattened). |
+| `body_html`, `body_text` | The message, for plain notices. `NULL` for licence emails: the worker re-renders those from `issued_licenses`, so the key is never stored here. |
+| `context_json` | `kind` and ids (e.g. `{ kind: "license_key", stripeSessionId, tier, months }`), plus the sender `stream` and the Resend `idempotencyKey` reused on every retry. |
+| `last_error` | The last error string returned by Resend. |
+| `attempts` | Attempts so far; the worker stops at 10. |
+| `created_at`, `next_retry_at`, `resolved_at` | Soft-delete via `resolved_at IS NOT NULL`; resolved rows older than 30 days are hard-deleted by the daily maintenance pass. |
 
 ### Webhook DLQ — `webhook_events_dead_letter`
 

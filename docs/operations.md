@@ -117,6 +117,9 @@ fails startup instead of silently taking the wrong default.
 | `CREDENTIAL_ENCRYPTION_KEY_PREVIOUS` | unset | Old key during a `CREDENTIAL_ENCRYPTION_KEY` rotation — see the comment above. Drop once all stored credentials have been re-saved. |
 | `WORK_BOARD_SNAPSHOT_RETENTION_DAYS` | `90` | How many days of Work Board KPI snapshots the daily sweeper keeps (backs the 7-day sparklines and delta badges). |
 | `EMAIL_RETRY_BASE_DELAY_MS` | `1000` | Base delay for exponential backoff on failed outbound email sends before a message lands in the dead-letter queue. |
+| `EMAIL_FROM_LICENCES` | unset (`licencas@bolalabs.pt` on bolalabs.pt) | Sender for licence-key mail. Must be on `EMAIL_FROM`'s domain; anything else is ignored and logged, and the mail leaves from `EMAIL_FROM`. |
+| `EMAIL_REPLY_TO` | unset (`suporte@bolalabs.pt` on bolalabs.pt) | Reply-To on every automated email. `none` disables it. |
+| `EMAIL_SUPPORT_URL` | unset (BolaLabs support desk on bolalabs.pt) | `https` link in the "Need help?" footer of every email. With neither this nor a Reply-To, the footer is omitted. |
 | `SQLITE_VERBOSE` | unset (`false`) | Logs every SQLite statement at debug level, including bound parameters. Debugging only — never on a production instance. |
 | `ENV_TOOLING_INSTALL_ENABLED` | unset (`true`) | Set to `false` to disable the admin-gated `POST /api/env/tooling/:id/install` endpoint, which runs installer commands on the host. Recommended on shared/hosted deployments. |
 
@@ -397,8 +400,15 @@ purge is the only thing bounding those tables.
 Two sources of failed async work land in DLQs — both replayable.
 
 - **Email DLQ** (`email_dead_letter` table). Populated by `server/lib/email.js`
-  when Resend rejects terminally (4xx that isn't rate-limit) or the retry
-  budget is exhausted. Each row carries the full payload and the last error.
+  only when the three immediate attempts all failed with a retryable error
+  (5xx or network). A 4xx is **not** queued: the provider rejected the message
+  itself (bad sender, bad recipient, 429 included), the caller gets the error
+  and it is logged. Rows carry subject, context and last error; plain notices
+  also keep their body, while licence emails keep only a reference
+  (`context.kind = license_key`) that the worker re-renders from
+  `issued_licenses`, so the key never sits in this table. The digest is never
+  queued (its next pass re-sends it). Rows resolved more than 30 days ago are
+  hard-deleted by the daily maintenance pass.
 - **Webhook DLQ** (`webhook_events_dead_letter` table). Populated by the
   signature-verified ingest path when handler logic throws after the event
   is already committed to the inbox.

@@ -86,3 +86,46 @@ describe('notifyMemberAdded', () => {
         expect(result).toEqual({ notified: false, reason: 'error' })
     })
 })
+
+describe('notifyMemberAdded — user input in the message', () => {
+    beforeEach(() => {
+        mockSendEmail.mockReset()
+        mockSendEmail.mockResolvedValue({ ok: true })
+    })
+
+    it('escapes team and inviter names in the HTML body', async () => {
+        await notifyMemberAdded({
+            email: 'bob@example.com',
+            username: 'bob',
+            teamName: '<a href="https://evil.example">Reset your password</a>',
+            addedByUsername: '<img src=x onerror=alert(1)>',
+        })
+
+        const { html, text } = mockSendEmail.mock.calls[0][0]
+        expect(html).not.toContain('<a href="https://evil.example">')
+        expect(html).not.toContain('<img')
+        expect(html).toContain('&lt;a href=&quot;https://evil.example&quot;&gt;')
+        expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;')
+        // The plain-text part is not HTML; it keeps the name as typed.
+        expect(text).toContain('<img src=x onerror=alert(1)>')
+    })
+
+    it('keeps the subject on one line whatever the team is called', async () => {
+        await notifyMemberAdded({
+            email: 'bob@example.com',
+            username: 'bob',
+            teamName: 'Ops\r\nBcc: victim@example.com',
+        })
+
+        const { subject } = mockSendEmail.mock.calls[0][0]
+        expect(subject).not.toMatch(/[\r\n]/)
+        expect(subject).toBe("You've been added to Ops Bcc: victim@example.com")
+    })
+
+    it('no longer points recipients at a personal inbox', async () => {
+        await notifyMemberAdded({ email: 'bob@example.com', username: 'bob', teamName: 'Platform' })
+        const { html, text } = mockSendEmail.mock.calls[0][0]
+        expect(html).not.toContain('bruno@bolalabs.pt')
+        expect(text).not.toContain('bruno@bolalabs.pt')
+    })
+})
