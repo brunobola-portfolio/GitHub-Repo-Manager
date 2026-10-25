@@ -393,7 +393,8 @@ describe('issuing with a period end', () => {
         const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
         await issueLicenseForCheckout({ ...OPTS, months: 1, periodEnd, billingPeriod: 'monthly' })
         const [mail] = sendEmail.mock.calls[0]
-        expect(mail.text).toContain('valid until 2031-01-17')
+        expect(mail.text).toContain('Valid until: 2031-01-17')
+        expect(mail.html).toMatch(/>Valid until<\/td>.*2031-01-17/s)
         expect(mail.text).toMatch(/picks each new key up at its daily check-in/)
         expect(mail.text).toMatch(/pastes it under Settings/)
         expect(mail.text.toLowerCase()).not.toContain('no action needed')

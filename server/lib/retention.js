@@ -4,81 +4,32 @@
 import db from '../db.js'
 import { auditLogDirect } from './audit.js'
 import { isEmailDeliveryConfigured, sendEmail } from './email.js'
-import { supportFooter } from './email-identity.js'
+import { renderEmail } from './email-layout.js'
 import logger from './logger.js'
 
 /**
- * Build the HTML warning email body.
+ * The 30-day warning before unused AI credentials are erased.
  *
- * @param {object} opts
- * @param {string} opts.purgeDate  — ISO date string YYYY-MM-DD
- * @returns {string}
+ * @param {{ purgeDate: string, retentionDays?: number }} opts  purgeDate is a date a person reads, e.g. "12 March 2027"
+ * @returns {{ html: string, text: string }}
  */
-function buildWarningHtml({ purgeDate }) {
-    const help = supportFooter('Questions?').html
-    return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="font-family: sans-serif; line-height: 1.6; color: #222; max-width: 600px; margin: 0 auto; padding: 24px;">
-  <h2>Your AI credentials will be removed on ${purgeDate}</h2>
-  <p>
-    GitHub Repo Manager stores your AI API credentials (Bring-Your-Own-Key)
-    to power features such as AI chat, code review suggestions, and smart search.
-  </p>
-  <p>
-    Credentials that go unused for <strong>365 days</strong> are erased
-    automatically, so a key you have stopped using cannot sit here indefinitely.
-  </p>
-  <p>
-    <strong>Your credentials are scheduled to be erased on ${purgeDate}.</strong>
-  </p>
-  <h3>What can you do?</h3>
-  <ul>
-    <li>
-      <strong>Keep your credentials</strong>: Simply use any AI-powered feature in
-      GitHub Repo Manager before the purge date. Activity resets the retention clock.
-    </li>
-    <li>
-      <strong>Let them expire</strong>: If you no longer use the app, no action
-      is needed. Your credentials will be permanently deleted on the purge date.
-      You can re-add them at any time via Settings → AI &amp; Keys.
-    </li>
-  </ul>
-${help ? `  <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
-  <p style="font-size: 13px; color: #666;">${help}</p>
-` : ''}</body>
-</html>`
-}
-
-/**
- * Build the plain-text fallback for the retention warning.
- *
- * @param {object} opts
- * @param {string} opts.purgeDate
- * @returns {string}
- */
-function buildWarningText({ purgeDate }) {
-    const help = supportFooter('Questions?').text
-    return `Your AI credentials will be removed on ${purgeDate}
-===========================================================
-
-GitHub Repo Manager stores your AI API credentials (Bring-Your-Own-Key)
-to power features such as AI chat, code review suggestions, and smart search.
-
-Credentials that go unused for 365 days are erased automatically, so a key you
-have stopped using cannot sit here indefinitely.
-
-Your credentials are scheduled to be erased on ${purgeDate}.
-
-What can you do?
-----------------
-- Keep your credentials: Simply use any AI-powered feature in GitHub Repo
-  Manager before the purge date. Activity resets the retention clock.
-- Let them expire: If you no longer use the app, no action is needed. Your
-  credentials will be permanently deleted on the purge date. You can re-add
-  them at any time via Settings -> AI & Keys.${help ? `
-
-${help}` : ''}`
+export function buildWarningEmail({ purgeDate, retentionDays = 365 }) {
+    return renderEmail({
+        subject: `Action required: your AI credentials will be removed on ${purgeDate}`,
+        preheader: `Use any AI feature before ${purgeDate} to keep them.`,
+        eyebrow: 'Data retention',
+        heading: `Your AI credentials will be removed on ${purgeDate}`,
+        blocks: [
+            { p: 'GitHub Repo Manager stores the AI API credentials you added (Bring-Your-Own-Key) to power features such as AI chat, code review suggestions and smart search.' },
+            { p: ['Credentials that go unused for ', { strong: `${retentionDays} days` }, ' are erased automatically, so a key you have stopped using cannot sit here indefinitely.'] },
+            { facts: [{ label: 'Erased on', value: { strong: purgeDate } }] },
+            { h: 'What can you do?' },
+            { p: [{ strong: 'Keep them:' }, ' use any AI feature in GitHub Repo Manager before that date. Activity resets the clock.'] },
+            { p: [{ strong: 'Let them go:' }, ' if you no longer use the app, do nothing. They are deleted permanently on that date, and you can add them again at any time under Settings → AI & Keys.'] },
+        ],
+        why: 'You are getting this because AI credentials saved on your account have not been used for a long time.',
+        help: 'Questions?',
+    })
 }
 
 /**
@@ -199,8 +150,7 @@ export async function runRetentionPass({ now = new Date(), dryRun = false } = {}
                 result = await sendEmail({
                     to: recipientEmail,
                     subject: `Action required: your AI credentials will be removed on ${purgeDate}`,
-                    html: buildWarningHtml({ purgeDate }),
-                    text: buildWarningText({ purgeDate }),
+                    ...buildWarningEmail({ purgeDate, retentionDays }),
                 })
             } catch (err) {
                 logger.error({ err, userId: row.user_id }, 'retention: failed to send warning email')
