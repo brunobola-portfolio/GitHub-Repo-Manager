@@ -375,7 +375,7 @@ function RotateDialog({ license, installs, onClose, onDone }) {
                             <Checkbox
                                 key={i.seq}
                                 checked={keep.has(i.seq)}
-                                onChange={(on) => flip(i.seq, on)}
+                                onChange={(e) => flip(i.seq, e.target.checked)}
                                 label={`#${i.seq} ${i.name || 'Unnamed installation'}`}
                                 description={[i.platform, i.network, i.machine && `machine ${i.machine}`].filter(Boolean).join(' · ')}
                             />

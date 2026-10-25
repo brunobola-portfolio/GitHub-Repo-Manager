@@ -10,11 +10,13 @@ import { twMerge } from 'tailwind-merge'
  * is not installed, so `text-*` on a checkbox is dead CSS). Colour comes
  * from `accent-*`, which the UA honours natively.
  *
- *   <Checkbox checked={draft} onChange={setDraft} label="Create as draft" />
+ * `onChange` is the native input's: it receives the event, not a boolean.
+ *
+ *   <Checkbox checked={draft} onChange={(e) => setDraft(e.target.checked)} label="Create as draft" />
  *
  *   <Checkbox
  *     checked={rules.requirePR}
- *     onChange={(checked) => setRules(r => ({ ...r, requirePR: checked }))}
+ *     onChange={(e) => setRules(r => ({ ...r, requirePR: e.target.checked }))}
  *     label="Require pull request reviews before merging"
  *   />
  */

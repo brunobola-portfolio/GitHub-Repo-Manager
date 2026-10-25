@@ -5,7 +5,7 @@ import {
     LogOut, RefreshCw, LayoutDashboard, FolderGit2, Plus,
     Bell, Settings, User, ChevronDown, Building2, Shield, Users,
     AlertCircle, Sparkles, Moon, Sun, Wand2, Download, History, Menu, CreditCard,
-    Kanban, ShieldAlert, GitPullRequest, CircleDot, AlertTriangle, Pin, ExternalLink, Check
+    Kanban, ShieldAlert, KeyRound, GitPullRequest, CircleDot, AlertTriangle, Pin, ExternalLink, Check
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { SPRING } from './ui/motion'
@@ -50,6 +50,7 @@ export function Header({
     onToggleOrgDrawer,
     isAdmin = false,
     onOpenAdminDLQ,
+    onOpenAdminLicenses,
     onOpenCommandPalette = () => {},
 }) {
     const [showUserMenu, setShowUserMenu] = useState(false)
@@ -276,6 +277,7 @@ export function Header({
                                             onClose={closeUserMenu}
                                             isAdmin={isAdmin}
                                             onOpenAdminDLQ={onOpenAdminDLQ}
+                                            onOpenAdminLicenses={onOpenAdminLicenses}
                                         />
                                     )}
                                 </div>
@@ -509,7 +511,7 @@ function useCloseOnFocusLeave(ref, onClose) {
 }
 
 // User Dropdown Menu
-function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, onOpenSettings, onMigrationHistory, onViewChange, onClose, isAdmin = false, onOpenAdminDLQ }) {
+function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, onOpenSettings, onMigrationHistory, onViewChange, onClose, isAdmin = false, onOpenAdminDLQ, onOpenAdminLicenses }) {
     // Escape-to-close + focus into the menu on open + focus return to the
     // trigger on close (the menu only mounts while open).
     const trapRef = useFocusTrap(true, onClose)
@@ -596,6 +598,11 @@ function UserDropdown({ user, orgs, onLogout, onReauthorize, onOpenOrgManager, o
                         <MenuButton icon={ShieldAlert} onClick={() => { onOpenAdminDLQ?.(); onClose() }}>
                             DLQ Admin
                         </MenuButton>
+                        {onOpenAdminLicenses && (
+                            <MenuButton icon={KeyRound} onClick={() => { onOpenAdminLicenses(); onClose() }}>
+                                Licences
+                            </MenuButton>
+                        )}
                     </div>
                 )}
                 <div className="border-t border-slate-100 dark:border-slate-700 mt-2 pt-2">
