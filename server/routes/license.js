@@ -22,8 +22,11 @@ import {
 import {
   installLimit,
   newerKeyFor,
+  noteSharingLevel,
   recordCheckin,
+  revokeReasonOf,
   revokedLidsFor,
+  sharingLevel,
   subscriptionRefFor,
 } from '../lib/license-installs.js'
 import { sendOk, sendError } from '../lib/response-shapes.js'
@@ -33,7 +36,7 @@ import {
   setStoredLicense,
   clearStoredLicense,
 } from '../lib/license-store.js'
-import { auditLog } from '../lib/audit.js'
+import { auditLog, auditLogDirect } from '../lib/audit.js'
 import { config } from '../config.js'
 import { readFileSync, existsSync } from 'fs'
 import { join, dirname } from 'path'
@@ -136,15 +139,19 @@ router.get('/', (req, res) => {
 /**
  * POST /api/v1/license/checkin — a self-hosted installation reports in.
  *
- * Body: { key, installId, name?, version? }. The signed key is the
- * credential (no session, CSRF-exempt); it may be expired, because fetching
- * the next key after the old one ran out is the point. The answer carries
- * the newest valid key of the subscription (automatic renewal), the
- * subscription's revoked key ids, and how many installations use it against
- * how many the plan covers. Over the limit is reported, never refused.
+ * Body: { key, installId, machine?, platform?, name?, version? }. The signed
+ * key is the credential (no session, CSRF-exempt); it may be expired, because
+ * fetching the next key after the old one ran out is the point. `machine` is
+ * the installation's salted hash of its OS machine id, when it has one.
+ *
+ * The answer carries the newest valid key of the subscription (automatic
+ * renewal), the subscription's revoked key ids, and the installation's number
+ * and the machine count against the plan. Over the limit is reported, never
+ * refused. An installation the operator blocked gets no new key; one that
+ * presents a key revoked by a rotation, and was kept, gets the replacement.
  */
 router.post('/checkin', checkinLimiter, async (req, res) => {
-  const { key, installId, name, version } = req.body || {}
+  const { key, installId, machine, platform, name, version } = req.body || {}
   if (typeof key !== 'string' || key.length > 4000 || typeof installId !== 'string' || !INSTALL_ID.test(installId)) {
     return sendError(res, 400, 'Send the licence key and a UUID v4 install id.', { code: 'invalid_request' })
   }
@@ -158,29 +165,55 @@ router.post('/checkin', checkinLimiter, async (req, res) => {
 
   try {
     const subRef = subscriptionRefFor(payload.lid)
-    const cleanName = typeof name === 'string'
-      ? [...name].filter((ch) => ch.charCodeAt(0) >= 32 && ch !== '<' && ch !== '>').join('').trim().slice(0, 80) || null
-      : null
-    const cleanVersion = typeof version === 'string' ? version.trim().slice(0, 32) || null : null
-    const { active } = recordCheckin({ subRef, lid: payload.lid, installId, name: cleanName, ip: req.ip, version: cleanVersion })
+    const { seq, blocked, active } = recordCheckin({
+      subRef,
+      lid: payload.lid,
+      tier: typeof payload.tier === 'string' ? payload.tier : null,
+      installId,
+      machine: typeof machine === 'string' ? machine.toLowerCase() : null,
+      platform: cleanText(platform, 40),
+      name: cleanText(name, 80),
+      ip: req.ip,
+      version: cleanText(version, 32),
+    })
     const revoked = revokedLidsFor(subRef, payload.lid)
     const presentedRevoked = revoked.includes(payload.lid)
-    const newer = presentedRevoked ? null : newerKeyFor(subRef, payload.lid)
+    const rotatedAway = presentedRevoked && revokeReasonOf(payload.lid) === 'rotated'
+    const newer = blocked || (presentedRevoked && !rotatedAway) ? null : newerKeyFor(subRef, payload.lid)
     const limit = installLimit(payload.tier)
+    const level = sharingLevel(active, limit)
     if (active > limit) {
-      logger.warn({ subRef, lid: payload.lid, active, limit }, 'licence check-in: more active installations than the plan covers')
+      logger.warn({ subRef, lid: payload.lid, active, limit, level }, 'licence check-in: more active machines than the plan covers')
     }
+    if (noteSharingLevel(subRef, level)) {
+      auditLogDirect({
+        actor_user_id: null,
+        action: 'license.sharing_suspected',
+        entity_type: 'license_subscription',
+        entity_id: subRef,
+        metadata: { active, limit, lid: payload.lid },
+      })
+    }
+    let status = 'ok'
+    if (blocked) status = 'blocked'
+    else if (presentedRevoked && !newer) status = 'revoked'
     return sendOk(res, {
-      status: presentedRevoked ? 'revoked' : 'ok',
+      status,
       latestKey: newer?.key ?? null,
       revoked,
-      installs: { active, limit, over: active > limit },
+      installs: { number: seq, active, limit, over: active > limit, level },
     })
   } catch (err) {
     logger.error({ err }, 'licence check-in failed')
     return sendError(res, 500, 'The check-in could not be recorded. The installation keeps its current key.', { code: 'checkin_failed' })
   }
 })
+
+/** Printable text without markup, trimmed to `max`; null when nothing is left. */
+function cleanText(value, max) {
+  if (typeof value !== 'string') return null
+  return [...value].filter((ch) => ch.charCodeAt(0) >= 32 && ch !== '<' && ch !== '>').join('').trim().slice(0, max) || null
+}
 
 router.post('/validate', validateLimiter, async (req, res) => {
   const { key } = req.body
