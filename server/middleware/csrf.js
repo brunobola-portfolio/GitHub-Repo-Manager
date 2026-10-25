@@ -61,6 +61,10 @@ const BYPASS_PREFIXES = [
 const BYPASS_EXACT = [
     '/api/system/shutdown',
     '/api/v1/system/shutdown',
+    // Server-to-server: a self-hosted install posts its licence key here. It
+    // carries no session cookie, so there is nothing for CSRF to protect; the
+    // signed key in the body is the credential.
+    '/api/v1/license/checkin',
 ];
 
 /**

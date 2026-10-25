@@ -16,8 +16,11 @@ An **Ed25519-signed JWT** with a `grm_lic_` prefix. The payload carries
 (`server/lib/license.js`).
 
 Verification is **offline**. An install reads `keys/public.pem` — committed, and
-public by definition — and checks the signature locally. There is no phone-home
-and no activation server, which is what lets an air-gapped self-host work.
+public by definition — and checks the signature locally. Validation needs no
+server, which is what lets an air-gapped self-host work. An install with
+network access also checks in once a day to pick up renewed keys and
+revocations (see "Licence check-in" in billing-and-licensing.md); it never
+needs that to validate.
 
 Two consequences worth stating plainly, because the portal copy will need them:
 

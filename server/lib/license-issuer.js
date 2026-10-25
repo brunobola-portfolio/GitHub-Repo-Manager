@@ -73,7 +73,7 @@ function describeLicenseValidity({ expiresAt, billingPeriod }) {
     const renew = billingPeriod === 'yearly'
         ? 'Each yearly renewal emails you a new key.'
         : 'Each monthly renewal emails you a new key a few days before this one stops.'
-    return `${until} ${renew} On the hosted app nothing changes; on your own install, paste each new key under Settings → License & Plan.`.trim()
+    return `${until} ${renew} On the hosted app nothing changes. Your own install picks each new key up at its daily check-in; an install without network access pastes it under Settings → License & Plan.`.trim()
 }
 
 function tierLabelOf(tier) {

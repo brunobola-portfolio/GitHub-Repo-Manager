@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Licence check-in: renewals arrive by themselves, and installations are
+  counted.** A self-hosted install with a key checks in once a day (and right
+  after activation). It picks up each renewed key automatically, applies
+  revocations from the issuer, and is counted against the installations its
+  plan covers: a Pro key covers one installation plus a spare (staging, a
+  rebuilt server), Enterprise ten. Going over is shown in Settings → License &
+  Plan and recorded on the issuer; it never blocks anything. Validation still
+  needs no network, so an offline install keeps working until the key's end
+  date, and `LICENSE_AUTO_RENEW=false` turns the check-in off. The issuer keeps
+  the installation name, a hash of a random install id, the version and an
+  IPv4 /24, as the privacy policy now states.
+
 ### Changed
 
 - **A full refund now cancels the Stripe subscription**, so a refunded customer

@@ -5,7 +5,7 @@
 **Authentication:** GitHub OAuth via session cookies, or an API key sent as `Authorization: Bearer grm_live_...`. Most endpoints require an authenticated session (`requireAuth` middleware). The server never exposes raw access tokens to the client.
 **CSRF:** All mutating `/api/*` requests (non-GET/HEAD/OPTIONS) require a valid `X-CSRF-Token` header. The OAuth flow and signature-verified webhooks are exempt.
 **Request validation:** Write endpoints validate their JSON body with Zod (`validateBody` middleware). An invalid body returns `400 { error, code: 'VALIDATION_ERROR' }` — see [Shared Response Envelopes](#shared-response-envelopes).
-**Total Endpoints:** 357 route handlers (344 across `server/routes/**` — 78 route files, recounted via `grep -rEc "^\s*router\.(get|post|put|patch|delete)\(" server/routes` — plus 13 app-level routes mounted directly in `server/index.js`: webhooks, health, the browser error-report tunnel `/api/monitoring/tunnel`, `/robots.txt`, `/sitemap.xml`, the RFC 9116 contact file at `/.well-known/security.txt` (and its legacy root spelling), and the brand guide at `/brand`). This document gives full entries for the public-facing and recently-changed surface; lower-level internal routes are summarised under [Additional Endpoints](#additional-endpoints-grouped).
+**Total Endpoints:** 358 route handlers (345 across `server/routes/**` — 78 route files, recounted via `grep -rEc "^\s*router\.(get|post|put|patch|delete)\(" server/routes` — plus 13 app-level routes mounted directly in `server/index.js`: webhooks, health, the browser error-report tunnel `/api/monitoring/tunnel`, `/robots.txt`, `/sitemap.xml`, the RFC 9116 contact file at `/.well-known/security.txt` (and its legacy root spelling), and the brand guide at `/brand`). This document gives full entries for the public-facing and recently-changed surface; lower-level internal routes are summarised under [Additional Endpoints](#additional-endpoints-grouped).
 
 ---
 
@@ -5308,6 +5308,7 @@ Self-hosted Pro/Enterprise license-key management.
 | --- | --- | --- | --- |
 | `GET` | `/api/license` | No | Current license status |
 | `POST` | `/api/license/validate` | No | Validate a license key (rate-limited) |
+| `POST` | `/api/v1/license/checkin` | Signed key in the body | Self-hosted check-in: `{ key, installId (UUID v4), name?, version? }` → `{ status, latestKey, revoked[], installs: { active, limit, over } }`. Accepts an expired key (renewal); CSRF-exempt; 60/h per address. See "Licence check-in" in billing-and-licensing.md |
 | `POST` | `/api/license/install` | Yes | Install a license key (rate-limited) |
 | `DELETE` | `/api/license/install` | Admin | Uninstall the active license |
 

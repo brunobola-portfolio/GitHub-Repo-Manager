@@ -100,6 +100,13 @@ const configSchema = z.object({
     licenseSigningPrivateKeyPem: z.string().optional(),
     // Days a Stripe key outlives its paid period (license-issuer.js licenseGraceDays).
     licenseGraceDays: z.string().optional(),
+    // Self-hosted licence check-in (license-checkin.js) and the issuer's
+    // per-plan installation limits (license-installs.js); validated there.
+    licenseAutoRenew: z.string().optional(),
+    licenseRenewalUrl: z.string().optional(),
+    licenseInstallName: z.string().optional(),
+    licenseInstallsPro: z.string().optional(),
+    licenseInstallsEnterprise: z.string().optional(),
 
     // Data retention (G2)
     dataRetentionDays: z.coerce.number().default(365),
@@ -195,6 +202,11 @@ function loadConfig() {
         securityContact: process.env.SECURITY_CONTACT,
         licenseSigningPrivateKeyPem: process.env.LICENSE_SIGNING_PRIVATE_KEY_PEM,
         licenseGraceDays: process.env.LICENSE_GRACE_DAYS,
+        licenseAutoRenew: process.env.LICENSE_AUTO_RENEW,
+        licenseRenewalUrl: process.env.LICENSE_RENEWAL_URL,
+        licenseInstallName: process.env.LICENSE_INSTALL_NAME,
+        licenseInstallsPro: process.env.LICENSE_INSTALLS_PRO,
+        licenseInstallsEnterprise: process.env.LICENSE_INSTALLS_ENTERPRISE,
         dataRetentionDays: process.env.DATA_RETENTION_DAYS,
         dataRetentionWarningLeadDays: process.env.DATA_RETENTION_WARNING_LEAD_DAYS,
         aiRequireUserConfig: process.env.AI_REQUIRE_USER_CONFIG,

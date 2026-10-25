@@ -56,6 +56,7 @@ import { metricsMiddleware } from './lib/metrics.js';
 import { verifySecretsAtStartup } from './lib/startup-secrets-check.js';
 import { startWorkBoardSweeper, stopWorkBoardSweeper, startKpiSnapshotJob, stopKpiSnapshotJob } from './lib/work-board-sweeper.js';
 import { startEmailRetryWorker, stopEmailRetryWorker } from './lib/email-retry-worker.js';
+import { startLicenseCheckin, stopLicenseCheckin } from './lib/license-checkin.js';
 import { startWebhookRetryWorker, stopWebhookRetryWorker } from './lib/webhook-retry-worker.js';
 import { startGhOutboxWorker, stopGhOutboxWorker } from './lib/gh-outbox.js';
 import { startMaintenanceJanitors, stopMaintenanceJanitors, startDigestJob, stopDigestJob } from './lib/maintenance-janitors.js';
@@ -633,6 +634,11 @@ startMaintenanceJanitors();
 // EMAIL_PROVIDER isn't configured for real delivery.
 startDigestJob();
 
+// Daily licence check-in for a self-hosted install with a key: renewed keys,
+// revocations and the installation count (server/lib/license-checkin.js).
+// No-op on the hosted issuer, in tests, or with LICENSE_AUTO_RENEW=false.
+startLicenseCheckin();
+
 // Recover migration plans orphaned by a previous crash/restart: any plan left
 // 'running' in the DB has no live execution loop now, so reset its in-flight
 // tasks and auto-resume (when credentials are still available) or mark it
@@ -719,6 +725,7 @@ function gracefulShutdown(signal) {
 
         try {
             stopEmailRetryWorker();
+            stopLicenseCheckin();
         } catch (e) {
             logger.warn({ err: e }, 'Could not stop email retry worker');
         }

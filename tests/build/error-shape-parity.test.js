@@ -131,10 +131,10 @@ function scan() {
 const ALLOWLIST = new Set([
     'server/routes/billing.js:165',           // 'subscription_exists'
     'server/routes/billing.js:172',           // 'subscription_on_hold'
-    'server/routes/license.js:75',            // 'license_revoked'
-    'server/routes/license.js:170',           // 'env_license_set'
-    'server/routes/license.js:194',           // 'admin_required_multi_user'
-    'server/routes/license.js:199',           // 'admin_only'
+    'server/routes/license.js:97',            // 'license_revoked'
+    'server/routes/license.js:241',           // 'env_license_set'
+    'server/routes/license.js:265',           // 'admin_required_multi_user'
+    'server/routes/license.js:270',           // 'admin_only'
     'server/routes/migration.js:233',         // 'upgrade_required'
     'server/routes/user-ai-config.js:106',    // 'endpoint_not_allowed'
 ]);
