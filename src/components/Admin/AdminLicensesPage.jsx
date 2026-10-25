@@ -391,6 +391,7 @@ function RotateDialog({ license, installs, onClose, onDone }) {
             footer={
                 <div className="flex justify-end gap-2">
                     <Button variant="secondary" onClick={onClose}>Cancel</Button>
+                    {/* danger-button-allowed: this dialog is the confirmation step; it also requires a written reason */}
                     <Button variant="danger" onClick={submit} disabled={busy || !reason.trim()}>Rotate key</Button>
                 </div>
             }
