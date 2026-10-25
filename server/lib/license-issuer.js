@@ -63,24 +63,23 @@ function formatDate(unixSeconds) {
 }
 
 /**
- * What the customer must do, in plain language. The key's real end date is
- * printed, because "valid for 1 month" said nothing about when to act, and
- * the old monthly line told self-hosters nothing was required while they had
- * to paste a new key every month.
+ * What the customer must do, in plain language. The key's real end date sits
+ * beside it in the facts ("valid for 1 month" said nothing about when to
+ * act), and the old monthly line told self-hosters nothing was required while
+ * they had to paste a new key every month.
  */
-function describeLicenseValidity({ expiresAt, billingPeriod }) {
-    const until = expiresAt ? `This key is valid until ${formatDate(expiresAt)}.` : ''
+function describeLicenseValidity({ billingPeriod }) {
     const renew = billingPeriod === 'yearly'
         ? 'Each yearly renewal emails you a new key.'
         : 'Each monthly renewal emails you a new key a few days before this one stops.'
-    return `${until} ${renew} On the hosted app nothing changes. Your own install picks each new key up at its daily check-in; an install without network access pastes it under Settings → License & Plan.`.trim()
+    return `${renew} On the hosted app nothing changes. Your own install picks each new key up at its daily check-in; an install without network access pastes it under Settings → License & Plan.`
 }
 
 function tierLabelOf(tier) {
     return tier.charAt(0).toUpperCase() + tier.slice(1)
 }
 
-function buildLicenseEmail({ tier, licenseKey, expiresAt, billingPeriod, renewal }) {
+export function buildLicenseEmail({ tier, licenseKey, expiresAt, billingPeriod, renewal }) {
     const tierLabel = tierLabelOf(tier)
     const facts = [{ label: 'Plan', value: `${tierLabel}, billed ${billingPeriod === 'yearly' ? 'yearly' : 'monthly'}` }]
     if (expiresAt) facts.push({ label: 'Valid until', value: { strong: formatDate(expiresAt) } })
@@ -102,7 +101,7 @@ function buildLicenseEmail({ tier, licenseKey, expiresAt, billingPeriod, renewal
             { h: 'Do I need to activate it?' },
             { p: [{ strong: 'Using the hosted app?' }, ` No. Your ${tierLabel} plan is already active on your account; there is nothing to paste.`] },
             { p: [{ strong: 'Running your own install?' }, ' An administrator of that install opens ', { strong: 'Settings → License & Plan → Activate' }, ' and pastes the key. It applies to every account on the install.'] },
-            { p: describeLicenseValidity({ expiresAt, billingPeriod }) },
+            { p: describeLicenseValidity({ billingPeriod }) },
             { note: 'Keep this key safe and treat it like a password. Cancelling your subscription does not switch it off: it keeps working to the end of the period you paid for. A refunded payment revokes it.' },
         ],
         why: `You are getting this because you subscribed to GitHub Repo Manager ${tierLabel}.`,

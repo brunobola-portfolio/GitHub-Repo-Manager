@@ -131,7 +131,7 @@ function itemsHtml(items, empty) {
         `<div class="grm-ink" style="${txt(15, 22, INK, 'font-weight:600;')}word-break:break-word;">${paraHtml(it.title)}</div>` +
         (it.meta ? `<div class="grm-mut" style="${txt(14, 20, MUTED)}word-break:break-word;">${paraHtml(it.meta)}</div>` : '') +
         '</td></tr>').join('')
-    return `${panel(`<td style="padding:4px 18px;"><table ${TABLE} width="100%" style="border-collapse:collapse;">${rows}</table></td>`)}<tr><td style="padding:0 0 18px 0;font-size:0;line-height:0;">&nbsp;</td></tr>`
+    return panel(`<td style="padding:4px 18px;"><table ${TABLE} width="100%" style="border-collapse:collapse;">${rows}</table></td>`)
 }
 
 function panel(inner) {
