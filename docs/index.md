@@ -37,6 +37,11 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.27.0 (2026-10-25) — Licences that last the paid period, help that
+  reaches a person.** Browsing the landing page no longer locks visitors
+  out; Licence keys run to the end of the paid period, plus 7 days; A full
+  refund or a lost chargeback revokes the keys it paid for; Help goes where
+  it can be answered; Compare plans reads by what changes.
 - **v4.26.2 (2026-09-24) — Deploys in seconds; lodash-es advisory closed.**
   Deploys no longer take the site down for ten minutes.
 - **v4.26.1 (2026-09-24) — Current majors, ai scope on every generation
