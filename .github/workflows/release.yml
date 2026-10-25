@@ -28,6 +28,12 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
+    # The commit the gate below verified, and the tag it was reached by. Later
+    # jobs use these instead of resolving the tag again, so a tag moved after
+    # the check cannot swap in a commit that was never verified.
+    outputs:
+      sha: ${{ steps.onmain.outputs.sha }}
+      tag: ${{ steps.onmain.outputs.tag }}
     env:
       # NOTE: NODE_ENV must NOT be 'production' at the job level — that makes
       # `npm ci` skip devDependencies (vite, husky), breaking install + build.
@@ -38,6 +44,21 @@ jobs:
         with:
           ref: ${{ github.event.inputs.tag || github.ref_name }}
           fetch-depth: 0
+
+      # Every later job (windows, deploy) needs this one, so refusing here
+      # keeps an unreviewed commit off the production server: a tag pushed
+      # from a feature branch used to deploy whatever that branch held.
+      - name: Refuse a tag that is not on main
+        id: onmain
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "::error::The commit tagged $TAG is not on main. Merge it to main first, then tag."
+            exit 1
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v7
         with:
@@ -117,11 +138,11 @@ jobs:
       run:
         shell: pwsh
     env:
-      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+      TAG: ${{ needs.release.outputs.tag }}
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.inputs.tag || github.ref_name }}
+          ref: ${{ needs.release.outputs.sha }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v7
@@ -528,12 +549,13 @@ jobs:
       cancel-in-progress: false
     env:
       GITHUB_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ needs.release.outputs.tag }}
     steps:
       - name: Deploy the tagged win-x64 package (backup, health check, rollback)
         shell: pwsh
         run: |
           Set-Location C:\deploy\repomanager
-          .\deploy.ps1 -FromRelease $env:GITHUB_REF_NAME -AppRoot C:\apps\GitHubRepoManager
+          .\deploy.ps1 -FromRelease $env:RELEASE_TAG -AppRoot C:\apps\GitHubRepoManager
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Keep the operator deploy tooling current
         shell: pwsh
