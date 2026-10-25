@@ -39,12 +39,14 @@ Tests for this directory live in `server/__tests__/`.
 
 ## Email
 
-- Sender, Reply-To and the support footer come from
-  `server/lib/email-identity.js` (`resolveSender`, `supportFooter`). Never
+- Sender, Reply-To and the support line come from
+  `server/lib/email-identity.js` (`resolveSender`, `supportFooterParts`). Never
   hardcode an address. bolalabs.pt defaults apply only when `EMAIL_FROM` is on
   that domain; any other install gets only what its operator configured.
-- Escape user-supplied text in HTML bodies with `escapeHtml` and in subjects
-  with `headerSafe`.
+- Every mail body goes through `renderEmail` (`server/lib/email-layout.js`),
+  which builds HTML and plain text from one spec and escapes every segment.
+  Never write a mail's HTML by hand. Lime is a fill only; no images.
+- Escape subjects with `headerSafe`.
 - `sendEmail` resolves `{ ok: false }` on a provider 4xx; it does not throw.
   Check `ok` before recording a delivery.
 
