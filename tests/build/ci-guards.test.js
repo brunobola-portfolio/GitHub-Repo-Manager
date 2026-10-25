@@ -222,7 +222,7 @@ describe('documented npm scripts exist', () => {
         }
     }
     walkDocs('docs')
-    docFiles.push('README.md', 'AGENTS.md', 'CONTRIBUTING.md')
+    docFiles.push('README.md', 'AGENTS.md', 'src/AGENTS.md', 'server/AGENTS.md', 'CONTRIBUTING.md')
 
     const scripts = new Set(Object.keys(JSON.parse(readFileSync('package.json', 'utf8')).scripts || {}))
 

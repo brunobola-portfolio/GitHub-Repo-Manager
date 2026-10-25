@@ -1,149 +1,137 @@
 # AGENTS.md
 
-Agent instructions for GitHub Repo Manager — a React 19 + Vite 8 + Tailwind v4
-frontend with an Express 5 + better-sqlite3 backend. Read this before making
-changes; the README is for humans, this file is for you.
+Instructions for coding agents working on GitHub Repo Manager: a React 19 +
+Vite 8 + Tailwind v4 frontend with an Express 5 + better-sqlite3 backend.
+The README is for humans; this file is for you.
 
-## Setup commands
+Scoped rules live next to the code. Read the one for the area you touch:
+`src/AGENTS.md` (frontend, design system) and `server/AGENTS.md` (backend,
+security, email, licensing).
 
-- Install: `npm install` (rebuilds better-sqlite3 native module via postinstall;
-  if it fails: `npm run fix:native`)
-- Dev (frontend + backend): `npm run dev:all` — Vite on :5173 proxies `/api` to
-  Express on :3001
-- Backend only: `npm run dev:server` · Frontend only: `npm run dev`
-- Kill stuck dev ports: `npm run dev:kill`
-- Production build: `npm run build` (runs a CSS-class guard as prebuild)
+<!-- Maintainers: keep each AGENTS.md under ~200 lines, concrete and
+verifiable. A rule that only matters for one directory goes in that
+directory's AGENTS.md. Facts here are checked by tests/build/ci-guards
+(every `npm run X` must exist). -->
 
-## Testing instructions
+## Commands
 
-- Unit tests: `npx vitest run <paths>` — run ONLY the files you touched while
-  iterating; the full suite (`npx vitest run`, ~7,700 tests) is for final
-  verification, and CI always runs it.
-- E2E: `npx playwright test` (Playwright, mock mode via `vite --mode test`).
-  Do not run the full e2e suite casually; single spec files are fine.
-  Warning: locally, Playwright reuses an existing dev server on :5173 — if a
-  non-mock dev server is running, every spec fails at beforeEach.
-- Test placement is enforced: unit tests live in `tests/` mirroring `src/`
-  (e.g. `src/hooks/useTheme.jsx` → `tests/hooks/useTheme.test.jsx`); backend
-  tests in `server/__tests__/`. NEVER next to source files.
-- `.env.test` pins `VITE_MOCK_MODE=true` for unit tests. To exercise real-fetch
-  branches: `vi.stubEnv('VITE_MOCK_MODE', 'false')` at file top, then load the
-  module with a dynamic `await import(...)`.
-- When partially mocking a module that other code imports widely (validators,
-  auth middleware, ai-provider), use the importOriginal spread pattern —
-  `vi.mock('<mod>', async (io) => ({ ...(await io()), <overrides> }))` — so new
-  exports never break the suite at module load.
-- Honesty gates that must stay green: `tests/pricing-feature-parity.test.js`
-  (pricing surfaces ↔ feature flags, cell-for-cell vs README) and
-  `tests/build/readme-honesty.test.js`. Never weaken them; update them WITH the
-  change they gate.
+- Install: `npm install` (postinstall rebuilds better-sqlite3; if it fails:
+  `npm run fix:native`). Node: `>=22 <25`.
+- Dev, both halves: `npm run dev:all` (Vite :5173 proxies `/api` to Express
+  :3001). Backend only `npm run dev:server`, frontend only `npm run dev`.
+  Stuck ports: `npm run dev:kill`.
+- Mock mode (no GitHub account needed): `NODE_ENV=test VITE_MOCK_MODE=true
+  node server/index.js` plus `npx vite --mode test`.
+- Build: `npm run build` (prebuild runs a CSS-class guard).
+- Lint: `npm run lint` (`eslint . --max-warnings 0`). Pre-commit hooks run
+  eslint --fix plus debug-statement, static-mock-import and raw-z-index guards.
 
-## Code style
+## Tests
 
-- `.jsx` files only — NO TypeScript anywhere. Vite resolves by explicit
-  extension: an `App.jsx` import will not load an `App.tsx`.
-- Tailwind utility classes; design-system classes are opt-in `ds-*` only
-  (`src/design-system.css`). NEVER global CSS element selectors — they break
-  Tailwind.
-- Framer Motion via the shared vocabulary in `src/components/ui/motion.js`
-  (DURATION/EASE/SPRING/TRANSITION) — never hardcode spring/easing values. No
-  hover scale/translate on flat elements.
-- Reuse canonical primitives before writing new UI: `SectionPanel`,
-  `EmptyState`, `Badge`, `Tooltip`, `Spinner`, `PageHeader`, `Kbd`,
-  `AIErrorState`, `QuotaExceededState`.
-- Risk colors come from `src/utils/riskTokens.js` + `ds-risk-*` tokens: fills
-  (500-level) are for graphics only; text uses the `--ds-risk-*-text` variants
-  (they are WCAG AA on both themes — the fills are not, as text).
-- Dark mode: `.dark` class on `<html>`; both themes are hard-gated for
-  color-contrast in the axe e2e suite — but only on the twelve views it
-  scans. Anything else is unverified.
-- Muted TEXT is `text-slate-500 dark:text-slate-400` (4.76:1 on white, 6.96:1
-  on slate-900 — AA on both). The inverse (`text-slate-400 dark:text-slate-500`)
-  fails AA in **both** themes: 2.56:1 on white, 3.75:1 on slate-900. The 99
-  text instances were fixed in v4.13.0; the 41 that remain are all icons.
-- For ICONS the inverse pair is tolerated, but only on the DARK half — 3.75:1
-  clears the 3:1 non-text threshold on slate-900, while 2.56:1 on white does
-  **not**. It is therefore acceptable only for decorative icons (`aria-hidden`,
-  or paired with a visible text label). An icon that is the sole content of an
-  interactive control needs a darker token in light mode.
-- ONE accent ramp: `brand-*` (`src/index.css`). `indigo`, `violet`, `purple`,
-  `fuchsia`, `sky`, `cyan`, `pink` and `teal` are retired and gated
-  (`tests/build/no-off-brand-palette.test.js`). `emerald`/`amber`/`rose`/`slate`
-  stay — those are status, not decoration. Colour used only to tell two cards
-  apart is what the one ramp replaced.
-- Never dim white on a brand fill: `text-white/90` is 4.43:1 on
-  `--ds-accent-brand` and fails the axe gate. Full white, or a `--ds-badge-*`
-  fill/text pair.
-- The mark is a GENERATED component — `src/components/ui/BrandMark.jsx`, emitted
-  by `scripts/gen-brand.mjs`. Render it via `AppLogo` (tile) or `AppLogoIcon`
-  (bare); never draw paths in a component. It picks its own optical cut from
-  `size`, so pass the real pixel size.
-- Cards in a grid need `h-full` on BOTH the motion wrapper and the `Card`. The
-  grid stretches the wrapper; a Card that sizes to its content leaves the row
-  ragged the moment one sibling's text wraps.
-- Brand assets are GENERATED — never hand-edit anything in `brand/` or
-  `public/logo.svg`. Change the geometry in `scripts/gen-brand.mjs`, run
-  `npm run gen:brand`, and commit the outputs together. The mark has two
-  optical cuts: display (25 px and up) and small (24 px and below, ring
-  dropped); using the display cut in a favicon or a 16 px slot is the one
-  mistake this system exists to prevent. Full rules: `docs/BRAND.md`.
-- The brand lime `#7fc528` is FILL ONLY, never text, and never means "healthy"
-  — semantic green (`ds-risk-*`) carries that. The BolaLabs flask is the
-  company mark; it is never the product icon.
-- Events: use `emitAppEvent`/`onAppEvent` with names registered in
-  `APP_EVENTS` (`src/utils/appEvents.js`) — never `window.dispatchEvent`.
-- Lint must be clean at zero warnings: `npm run lint`
-  (`eslint . --max-warnings 0`); pre-commit hooks run eslint --fix plus
-  debug-statement / static-mock-import / raw-z-index guards.
+- Unit: `npx vitest run <paths>`, only the files you touched while iterating.
+  The full suite (~8,000 tests) is for final verification; CI always runs it.
+- Read the `Errors` line, not just `Tests passed`: an unhandled rejection fails
+  the run with every test green. `Failed Suites N` with 0 failed tests under
+  `server/` is usually SQLite WAL contention between workers; re-run that file
+  alone before debugging it.
+- Placement is enforced: `tests/` mirrors `src/` (`src/hooks/useTheme.jsx` →
+  `tests/hooks/useTheme.test.jsx`); backend tests in `server/__tests__/`.
+  Never next to source files.
+- `.env.test` pins `VITE_MOCK_MODE=true`. For real-fetch branches:
+  `vi.stubEnv('VITE_MOCK_MODE', 'false')` at file top, then `await import()`.
+- Partially mocking a widely imported module (validators, auth middleware,
+  ai-provider): `vi.mock('<mod>', async (io) => ({ ...(await io()), ... }))`,
+  so new exports never break the suite at load.
+- E2E: `npx playwright test <spec>`, one spec at a time locally. Playwright
+  reuses any server on :5173; a non-mock dev server makes every spec fail.
+- Honesty gates, never weaken them, update them WITH the change:
+  `tests/pricing-feature-parity.test.js`, `tests/build/readme-honesty.test.js`,
+  `tests/build/docs-facts.test.js` (`docs/index.md` states the route count in
+  two places).
+- A green test is not proof. When you add a guard, break it on purpose and
+  confirm the test reddens. Commit first, restore with
+  `git checkout HEAD -- <file>`; never use a `git stash` round-trip for this.
+- `Dockerfile`, `.dockerignore`, `.github/workflows/release.yml` and
+  `scripts/package-windows.mjs` only run on tags. A change to any of them
+  needs a static gate in `tests/build/` (see `dockerfile-context.test.js`).
+- UI changes: drive the mock app at 1920x1080 and at 390px wide, both themes,
+  before calling it done. Tests alone have missed every phone-layout defect.
 
 ## Architecture map
 
-- Entry: `src/main.jsx` → `index.css`, `design-system.css`, `App.jsx`
-- Frontend: `src/components/` (RepoDetail tabs, PRReview, MigrationWizard,
-  Dashboard, AI modals), `src/hooks/`, `src/contexts/` (ModalContext owns ALL
-  modal state), `src/api/`
-- Backend: `server/index.js` boots Express; routes in `server/routes/`,
-  domain logic in `server/lib/`, AI features in `server/lib/ai-features/`
-- Gating source of truth: `server/lib/feature-flags.js` (TIER_FEATURES) +
-  `server/lib/usage-meter.js` (METRIC_TO_FEATURE) + `server/middleware/require-tier.js`
-- Mock/demo layer: `src/__mocks__/` — dev-only, dynamic-imported behind
-  `import.meta.env.DEV && VITE_MOCK_MODE === 'true'` (inline this guard at
-  every callsite; never alias it, or Vite's dead-code elimination breaks)
+- Entry: `src/main.jsx` → `index.css`, `design-system.css`, `App.jsx`.
+- Frontend: `src/components/`, `src/hooks/`, `src/contexts/` (ModalContext
+  owns ALL modal state), `src/api/`.
+- Backend: `server/index.js` boots Express; routes in `server/routes/`, domain
+  logic in `server/lib/`, AI features in `server/lib/ai-features/`.
+- Tier gating source of truth: `server/lib/feature-flags.js` (TIER_FEATURES),
+  `server/lib/usage-meter.js` (METRIC_TO_FEATURE),
+  `server/middleware/require-tier.js`.
+- Mock/demo layer: `src/__mocks__/`, dev-only (rules in `src/AGENTS.md`).
 
-## Security constraints
+## Product rules
 
-- Never commit `.env` files or credentials; `.dev/` is local-only workspace.
-- SQLite only — parameterized queries always, never string interpolation.
-  PostgreSQL is intentionally unsupported (rejected at boot).
-- Every AI generation route MUST be metered: route through `guardedGenerate`
-  (spend cap + cost recording + audit) or the documented manual
-  `checkAISpendCap`/`recordAISpend` pair. Unmetered provider calls are a
-  regression class with dedicated tests.
-- Anything that writes to a user's repository goes preview-first through
-  `commitOrOpenPR()` — never auto-commit, never invent a new write primitive.
-  Server-side derive/validate file paths; never trust client-echoed paths.
-- New `requireScope('ai')` routes must be added to `AI_GENERATION_ROUTE_PATHS`
-  (exact paths) or `AI_GENERATION_ROUTE_PATTERNS` (parameterised, with their
-  method) in `server/middleware/api-key-auth.js` (parity gates enforce both).
-- Session cookies: `httpOnly`, `sameSite: 'lax'`, `secure` in production.
+- Grounded honesty: copy, docs and generated content never claim a feature,
+  limit or price that the code does not implement. Pricing and README claims
+  are test-enforced.
+- BYOK is permanent: paid tiers sell higher caps, more API keys and support,
+  never managed inference. No copy may imply AI credits are included, or offer
+  your own key as a way around a quota.
+- Names: the product is "GitHub Repo Manager" (short form "RepoManager"), the
+  company is "BolaLabs". Rules in `docs/BRAND.md`.
+- A self-hosted install must never send its users to the upstream vendor
+  (support, sales or email) unless its operator configured that.
 
-## Working discipline
+## Code and workspace
 
-- Never write fake code: real, functional implementations only — no stubs,
-  placeholder returns, or "TODO: implement later" comments unless the user
-  explicitly asked for a scaffold.
-- Comments explain WHY, never WHAT; no conversational narration ("Let's…",
-  "Here we…"), no emojis in code. A comment earns its place only if removing
-  it would cause a specific mistake.
+- JavaScript only: `.jsx`/`.js`, no TypeScript anywhere.
+- Real implementations only: no stubs, placeholder returns or "TODO later"
+  unless a scaffold was asked for.
+- Comments explain WHY, never WHAT; no narration, no emojis. A comment earns
+  its place only if removing it would cause a specific mistake.
+- Improve complex components in place; never add a replacement file beside
+  the real one.
+- Never commit `.env` files or credentials.
+- `.dev/` is gitignored scratch (drafts, screenshots, agent output). Never put
+  loose files in the repo root or create temp folders elsewhere.
+- Docs: `docs/index.md` is the map. Specs in `docs/specs/`, plans in
+  `docs/plans/` (`YYYY-MM-DD-name.md`), validation reports in `docs/reports/`,
+  screenshots in `docs/images/` (`0X_description_hd.png`, 1920x1080). No other
+  subdirectories.
+- Reports for the owner: when the content is complex (an audit, a plan with
+  decisions), write ONE self-contained HTML page (light and dark, no external
+  assets) in `.dev/reports/`, or `docs/reports/` for a product report. Do not
+  write the same content twice in two formats. Simple outcomes stay a short
+  Markdown note or the chat reply.
+- Ask the owner before launching more than one parallel sub-agent: say what
+  each covers, the total count and the model, and recommend one option.
+- Windows shell (Git Bash): `python3` hangs here, use node scripts. One heredoc
+  per command; write scripts containing backslashes with a file, not a heredoc.
 
-## PR instructions
+## Git and pull requests
 
-- Conventional Commits: `type(scope): description`, subject under 72 chars;
-  types: feat, fix, chore, refactor, docs, style, perf, test.
-- CI runs build, lint (zero warnings), the full unit suite, and Playwright e2e
-  with hard a11y gates (axe: color-contrast is blocking on BOTH themes) — all
-  must pass before merge.
-- PRs touching `.github/workflows/` need the repository owner to merge (token
-  scope limitation).
-- Grounded honesty is a product value: generated content must never claim
-  features/limits that don't exist; pricing/README claims are test-enforced.
+- Conventional Commits, `type(scope): description`, subject under 72 chars.
+  Types: feat, fix, chore, refactor, docs, style, perf, test.
+- No AI or tool attribution anywhere: no `Co-Authored-By` trailers, no
+  "Generated with …" lines, in commits, PR titles or PR bodies.
+- New commit over amend. Never skip hooks (`--no-verify`).
+- `git status --short` before staging; stage paths explicitly. Untracked build
+  output (coverage/, dist/, .vite/) gets gitignored, never committed.
+- Every user-visible PR adds bullets under `## [Unreleased]` in CHANGELOG.md;
+  `npm run release` refuses an empty block.
+- CI: build, lint, full unit suite, Playwright e2e with axe color-contrast
+  blocking on both themes.
+- Before any merge, read `gh pr checks <n>` for the LATEST run yourself. Branch
+  protection does not block a merge with failing checks.
+- PRs touching `.github/workflows/` are merged by the repository owner.
+
+## Release and deploy
+
+- `main` is not deployed. Only a tag ships: `npm run release -- <patch|minor>
+  --title "…" --push`, then probe the live host
+  (`https://repomanager.bolalabs.pt/api/health`) and check the CI workflow on
+  `main`, not only Release.
+- `package-lock.json` must be generated on Linux, or `npm ci` fails in CI:
+  `docker run --rm -v "$PWD":/app -w /app node:22 bash -c "npm install
+  --no-audit --no-fund --package-lock-only && npm ci --dry-run"`.
+- Deploy runbooks: `deploy/iis/` and `docs/guides/`.
