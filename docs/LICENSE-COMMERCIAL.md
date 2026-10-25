@@ -73,8 +73,11 @@ caps. What money buys is **headroom**, **more API keys**, and
 
 Each subscription is delivered as a cryptographically signed key that encodes
 the tier, the organisation and the expiry (a seat count is recorded for
-reference and not enforced). Validation is offline — the software never
-phones home.
+reference and not enforced). Validation is offline: the key is checked
+locally, so an installation with no network keeps working until the key's end
+date. An installation with network access checks in once a day to fetch
+renewed keys and revocations and to be counted against the installations its
+plan covers; `LICENSE_AUTO_RENEW=false` turns that off.
 
 The key is an **entitlement**, not a permission: it tells your instance which
 ceilings to apply. It is not what makes your use of the software lawful; the
@@ -109,12 +112,15 @@ software itself. Apache-2.0 permits that to anyone, subscriber or not.
   paid period plus grace).
 - **Cancelling does not switch your key off.** It stops the renewal; the key
   already in your hands keeps working until the end of its own 1-month or
-  12-month window. Self-hosted activation is offline by design — there is no
-  phone-home, and BolaLabs cannot reach into your installation to disable a
-  key you already hold. Since v4.11.0 an operator can revoke a key on an
-  instance **they run**, which is a fraud/abuse control on hosted and
-  self-managed deployments, not a remote kill switch over yours. See
+  12-month window. Validation never needs the network, so BolaLabs cannot
+  switch off a key inside an installation that does not check in. An
+  installation that checks in receives the revocation of a refunded or
+  charged-back key at its next daily check-in. See
   [`billing-and-licensing.md`](billing-and-licensing.md) for the full policy.
+- **Installations.** A Pro key covers one installation plus one more
+  (staging, a rebuilt server); Enterprise covers ten. Installations that check
+  in are counted, and going over is shown in Settings and to BolaLabs. It is
+  never blocked.
 - Upon expiration the ceilings revert to the free tier. The software keeps
   working and stays yours to run — Apache-2.0 does not expire
 - No data is lost upon expiration

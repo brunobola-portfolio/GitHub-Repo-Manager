@@ -696,6 +696,32 @@ export const MIGRATIONS = [
             db.exec('CREATE INDEX IF NOT EXISTS idx_issued_licenses_sub ON issued_licenses(stripe_subscription_id)');
         },
     },
+    {
+        version: 39,
+        name: 'license_installs: installations that checked in per subscription',
+        up(db) {
+            // One row per (subscription, installation). `install_hash` is the
+            // sha256 of a random id the installation generated for itself, never
+            // a hardware fingerprint; `ip_prefix` keeps only the /24 (or IPv6
+            // /48), enough to tell a reinstall from a second site. A key minted
+            // outside Stripe groups under 'lid:<lid>'.
+            db.exec(`
+                CREATE TABLE IF NOT EXISTS license_installs (
+                    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                    sub_ref       TEXT NOT NULL,
+                    lid           TEXT,
+                    install_hash  TEXT NOT NULL,
+                    name          TEXT,
+                    ip_prefix     TEXT,
+                    app_version   TEXT,
+                    first_seen    TEXT NOT NULL DEFAULT (datetime('now')),
+                    last_seen     TEXT NOT NULL DEFAULT (datetime('now')),
+                    UNIQUE (sub_ref, install_hash)
+                )
+            `);
+            db.exec('CREATE INDEX IF NOT EXISTS idx_license_installs_sub_seen ON license_installs(sub_ref, last_seen)');
+        },
+    },
 ];
 
 // The highest version this build of the app knows how to apply. Used to

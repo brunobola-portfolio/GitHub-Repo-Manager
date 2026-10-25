@@ -77,6 +77,8 @@ export async function generateLicenseKey(opts, privateKeyPem) {
 //     POST /api/v1/license/revocations and it takes effect immediately (the
 //     route refreshes require-tier's cache), and permanently (the row survives
 //     restarts — the list, not the process cache, is the source of truth).
+//   • Self-hosted install with network: the daily check-in
+//     (license-checkin.js) brings the issuer's revocations into this table.
 //   • Air-gapped install: a revocation is honoured as soon as the row reaches
 //     that machine, and never before. Nothing else is physically possible — a
 //     vendor cannot reach a box that has no network — and the alternative
@@ -196,6 +198,32 @@ export async function verifyLicenseKey(licenseKey, publicKeyOrResolver) {
   }
 
   return { ok: true, payload }
+}
+
+/**
+ * Check only that a key was signed by us, ignoring its expiry, and return its
+ * payload (or null). For the renewal check-in alone: an install whose key ran
+ * out while the subscription kept paying must still be able to fetch the next
+ * one. Never use this to decide a tier — verifyLicenseKey does that.
+ *
+ * @param {string} licenseKey
+ * @param {string} publicKeyPem
+ * @returns {Promise<object|null>}
+ */
+export async function verifyLicenseSignature(licenseKey, publicKeyPem) {
+  try {
+    if (!licenseKey?.startsWith(LICENSE_PREFIX) || !publicKeyPem) return null
+    const key = await importSPKI(publicKeyPem, ALG)
+    // currentDate at the epoch makes `exp` always in the future for jose,
+    // so only the signature and the algorithm are enforced.
+    const { payload } = await jwtVerify(licenseKey.slice(LICENSE_PREFIX.length), key, {
+      algorithms: ['EdDSA'],
+      currentDate: new Date(0),
+    })
+    return payload
+  } catch {
+    return null
+  }
 }
 
 /**

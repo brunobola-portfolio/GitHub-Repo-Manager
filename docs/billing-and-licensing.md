@@ -133,13 +133,39 @@ An operator lifts a hold with `POST /api/admin/billing/holds/:userId/clear`
 /api/admin/billing/holds` lists them. Lifting reads the subscription from
 Stripe: a cancelled one ends on Free, never back on a paid tier.
 
-The list lives in **that instance's own database**. There is no phone-home, so
-revoking on the hosted deployment does not reach a customer's self-hosted
-install, and BolaLabs cannot remotely disable a key already in someone else's
-hands. Revocation is therefore an operator control (fraud, chargeback, leaked
-key on an instance you run) rather than a DRM mechanism, and it is not
-advertised as one. A checked-online denylist would be the design that changes
-that; it is still out of scope.
+Each instance keeps its own list, so revocation is per-instance. A self-hosted
+install learns the issuer's revocations at its daily check-in (below) and adds
+them to its own list; an install with the check-in off, or without network,
+never hears of them and keeps the key until its own `exp`, which is why Stripe
+keys run only to the paid period end plus grace. Validation never requires the
+network: there is still no phone-home *for validation*, and a key never stops
+working because the issuer could not be reached.
+
+### Licence check-in
+
+A self-hosted install with a key calls `POST /api/v1/license/checkin` on the
+issuer (`LICENSE_RENEWAL_URL`, default `https://repomanager.bolalabs.pt`) right
+after activation and once a day (`server/lib/license-checkin.js`).
+
+- **Sends:** the key, a random install id it generated for itself (never a
+  hardware fingerprint), a name (`LICENSE_INSTALL_NAME`, default the hostname)
+  and the app version.
+- **Receives:** the newest valid key of the subscription, which it verifies
+  locally and installs (automatic renewal; an env-pinned `LICENSE_KEY` is
+  reported as "renewal pending" instead), the subscription's revoked key ids,
+  which it adds to its own list, and `{ active, limit, over }`.
+- **Issuer stores** (`license_installs`, migration 39): subscription, key id,
+  sha256 of the install id, the name, the caller's IPv4 /24 or IPv6 /48, the
+  version, first and last seen. An installation stops counting after 30 days
+  without a check-in.
+- **Limits:** `LICENSE_INSTALLS_PRO` (default 2: one installation plus a
+  spare) and `LICENSE_INSTALLS_ENTERPRISE` (default 10). Over the limit is
+  logged and shown in Settings → License & Plan; nothing is refused.
+- **Off:** `LICENSE_AUTO_RENEW=false`. The hosted service, an instance holding
+  the signing key, and test runs never check in.
+- The endpoint takes no session (CSRF-exempt, the signed key is the
+  credential), accepts an expired key so a lapsed install can fetch its
+  renewal, and is limited to 60 requests per hour per address.
 
 ### Flow overview
 

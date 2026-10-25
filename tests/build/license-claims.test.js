@@ -96,6 +96,22 @@ describe('surfaces do not contradict the shipped capability', () => {
     expect(webhook).toMatch(/revokeKeysFor\(subscriptionId, 'dispute'\)/)
   })
 
+  it('the check-in is described as it ships: validation offline, daily check-in, and how to turn it off', () => {
+    // The check-in made "no phone-home" untrue as a blanket claim. What stays
+    // true, and must stay written down, is that validation never needs the
+    // network and that an operator can switch the check-in off.
+    const policy = readFileSync('docs/billing-and-licensing.md', 'utf8')
+    expect(policy).toMatch(/Validation never requires the\s+network/)
+    expect(policy).toContain('LICENSE_AUTO_RENEW=false')
+    expect(policy).toContain('/api/v1/license/checkin')
+    const commercial = readFileSync('docs/LICENSE-COMMERCIAL.md', 'utf8')
+    expect(commercial).toContain('LICENSE_AUTO_RENEW=false')
+    expect(commercial).not.toMatch(/never\s+phones home/)
+    expect(readFileSync('README.md', 'utf8')).toContain('LICENSE_AUTO_RENEW=false')
+    // And the code does what the docs say: the switch exists.
+    expect(readFileSync('server/lib/license-checkin.js', 'utf8')).toMatch(/LICENSE_AUTO_RENEW/)
+  })
+
   it('no doc points operators at a licence-revocation CLI, because none exists', () => {
     // `npm run admin:revoke` runs admin-grant.mjs --revoke, which clears a
     // USER's admin flag (UPDATE users SET is_admin = 0). Two docs named it as

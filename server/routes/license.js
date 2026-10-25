@@ -17,7 +17,17 @@ import {
   revokeLicense,
   unrevokeLicense,
   verifyLicenseKey,
+  verifyLicenseSignature,
 } from '../lib/license.js'
+import {
+  installLimit,
+  newerKeyFor,
+  recordCheckin,
+  revokedLidsFor,
+  subscriptionRefFor,
+} from '../lib/license-installs.js'
+import { sendOk, sendError } from '../lib/response-shapes.js'
+import { checkInOnce, checkinDisabledReason, lastCheckin } from '../lib/license-checkin.js'
 import {
   getStoredLicense,
   setStoredLicense,
@@ -58,6 +68,18 @@ const installLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'Too many install requests. Try again in a minute.' },
 })
+
+// An installation checks in once a day; this leaves room for retries and a
+// handful of installations behind one address without inviting key probing.
+const checkinLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many check-ins from this address. Try again in an hour.' },
+})
+
+const INSTALL_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 const router = Router()
 
@@ -104,13 +126,62 @@ router.get('/', (req, res) => {
     active: true,
     source: getLicenseSource() || 'license_key',
     tier: info.tier,
-    ...(signedIn ? { org: info.org, email: info.email, seats: info.seats, seatsUsed: activeUsers?.count || 0 } : {}),
+    ...(signedIn ? { org: info.org, email: info.email, seats: info.seats, seatsUsed: activeUsers?.count || 0, checkin: { disabled: checkinDisabledReason(), last: lastCheckin() } } : {}),
     expiresAt: info.exp ? new Date(info.exp * 1000).toISOString() : null,
     issuedAt: info.iat ? new Date(info.iat * 1000).toISOString() : null,
   })
 })
 
 // POST /api/v1/license/validate — validate a key (for setup wizards)
+/**
+ * POST /api/v1/license/checkin — a self-hosted installation reports in.
+ *
+ * Body: { key, installId, name?, version? }. The signed key is the
+ * credential (no session, CSRF-exempt); it may be expired, because fetching
+ * the next key after the old one ran out is the point. The answer carries
+ * the newest valid key of the subscription (automatic renewal), the
+ * subscription's revoked key ids, and how many installations use it against
+ * how many the plan covers. Over the limit is reported, never refused.
+ */
+router.post('/checkin', checkinLimiter, async (req, res) => {
+  const { key, installId, name, version } = req.body || {}
+  if (typeof key !== 'string' || key.length > 4000 || typeof installId !== 'string' || !INSTALL_ID.test(installId)) {
+    return sendError(res, 400, 'Send the licence key and a UUID v4 install id.', { code: 'invalid_request' })
+  }
+  if (!PUBLIC_KEY) {
+    return sendError(res, 503, 'This instance does not issue licences.', { code: 'not_an_issuer' })
+  }
+  const payload = await verifyLicenseSignature(key, PUBLIC_KEY)
+  if (!payload?.lid) {
+    return sendError(res, 400, 'That key was not issued here.', { code: 'invalid_key' })
+  }
+
+  try {
+    const subRef = subscriptionRefFor(payload.lid)
+    const cleanName = typeof name === 'string'
+      ? [...name].filter((ch) => ch.charCodeAt(0) >= 32 && ch !== '<' && ch !== '>').join('').trim().slice(0, 80) || null
+      : null
+    const cleanVersion = typeof version === 'string' ? version.trim().slice(0, 32) || null : null
+    const { active } = recordCheckin({ subRef, lid: payload.lid, installId, name: cleanName, ip: req.ip, version: cleanVersion })
+    const revoked = revokedLidsFor(subRef, payload.lid)
+    const presentedRevoked = revoked.includes(payload.lid)
+    const newer = presentedRevoked ? null : newerKeyFor(subRef, payload.lid)
+    const limit = installLimit(payload.tier)
+    if (active > limit) {
+      logger.warn({ subRef, lid: payload.lid, active, limit }, 'licence check-in: more active installations than the plan covers')
+    }
+    return sendOk(res, {
+      status: presentedRevoked ? 'revoked' : 'ok',
+      latestKey: newer?.key ?? null,
+      revoked,
+      installs: { active, limit, over: active > limit },
+    })
+  } catch (err) {
+    logger.error({ err }, 'licence check-in failed')
+    return sendError(res, 500, 'The check-in could not be recorded. The installation keeps its current key.', { code: 'checkin_failed' })
+  }
+})
+
 router.post('/validate', validateLimiter, async (req, res) => {
   const { key } = req.body
   if (!key || typeof key !== 'string') {
@@ -232,6 +303,10 @@ router.post('/install', requireAuth, installLimiter, async (req, res) => {
     }
 
     const refreshed = await refreshLicenseCache()
+    // Register this installation with the issuer straight away, so the count
+    // and renewal start now rather than at the next daily run. Not awaited:
+    // activation never waits on the network.
+    checkInOnce().catch(() => {})
     auditLog(req, 'license.install', 'license', payload.org ?? 'global', {
       tier: payload.tier,
       org: payload.org ?? null,
@@ -286,7 +361,8 @@ router.delete('/install', requireAuth, requireAdmin, async (req, res) => {
 //
 // Scope note: this is a per-install list, which is the honest shape for a
 // self-hostable product — every operator is the authority for their own
-// deployment, and there is no phone-home. See the SEMANTICS block in
+// deployment. A self-hosted install also learns the issuer's revocations at
+// its daily check-in (lib/license-checkin.js). See the SEMANTICS block in
 // lib/license.js for what that means for air-gapped installs.
 
 const MAX_LID_LENGTH = 128
