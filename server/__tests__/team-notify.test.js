@@ -58,7 +58,7 @@ describe('notifyMemberAdded', () => {
         })
 
         const args = mockSendEmail.mock.calls[0][0]
-        expect(args.html).toMatch(/You were added to the <strong>Platform<\/strong> team/)
+        expect(args.html).toMatch(/You were added to the <strong[^>]*>Platform<\/strong> team/)
         expect(args.text).toMatch(/You were added to the Platform team/)
     })
 

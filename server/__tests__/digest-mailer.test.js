@@ -54,8 +54,7 @@ const {
     findDueDigestUsers,
     sendDigestEmail,
     runDigestPassOnce,
-    buildDigestEmailHtml,
-    buildDigestEmailText,
+    buildDigestEmail,
 } = await import('../lib/digest-mailer.js')
 
 function user(overrides = {}) {
@@ -168,13 +167,13 @@ describe('digest email rendering', () => {
     }
 
     it('HTML escapes user-controlled content (repo/title) to prevent injection', () => {
-        const html = buildDigestEmailHtml(digest, { username: 'alice', unsubscribeUrl: 'https://x/unsub' })
+        const { html } = buildDigestEmail(digest,{ username: 'alice', unsubscribeUrl: 'https://x/unsub' })
         expect(html).not.toContain('<bug>')
         expect(html).toContain('&lt;bug&gt;')
     })
 
     it('text rendering lists the review item plainly', () => {
-        const text = buildDigestEmailText(digest, { username: 'alice', unsubscribeUrl: 'https://x/unsub' })
+        const { text } = buildDigestEmail(digest,{ username: 'alice', unsubscribeUrl: 'https://x/unsub' })
         expect(text).toContain('acme/api #5')
     })
 })

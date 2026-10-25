@@ -180,28 +180,20 @@ export function escapeHtml(value) {
 }
 
 /**
- * The "need help?" line, in both renderings. Empty strings when the operator
- * configured neither a desk URL nor a Reply-To — saying "reply to this email"
- * from a no-reply box is how a customer's question ends in a bounce.
+ * The "need help?" line as email-layout.js text segments. Empty when the
+ * operator configured neither a desk URL nor a Reply-To: saying "reply to
+ * this email" from a no-reply box is how a customer's question ends in a
+ * bounce.
  *
  * @param {string} [lead='Need help?']
- * @returns {{ html: string, text: string }}
+ * @returns {Array<string|{ link: { url: string, label: string } }>}
  */
-export function supportFooter(lead = 'Need help?') {
+export function supportFooterParts(lead = 'Need help?') {
     const { url, email } = supportContact()
-    if (!url && !email) return { html: '', text: '' }
-    const htmlParts = []
-    const textParts = []
-    if (url) {
-        htmlParts.push(`Open a support request at <a href="${escapeHtml(url)}">${escapeHtml(url.replace(/^https:\/\/|\?.*$/g, ''))}</a>`)
-        textParts.push(`Open a support request at ${url}`)
-    }
-    if (email) {
-        htmlParts.push(`${url ? 'or reply' : 'Reply'} to this email (it reaches <a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>)`)
-        textParts.push(`${url ? 'or reply' : 'Reply'} to this email (it reaches ${email})`)
-    }
-    return {
-        html: `${escapeHtml(lead)} ${htmlParts.join(' ')}.`,
-        text: `${lead} ${textParts.join(' ')}.`,
-    }
+    if (!url && !email) return []
+    const parts = [`${lead} `]
+    if (url) parts.push('Open a support request at ', { link: { url, label: url.replace(/^https:\/\/|\?.*$/g, '') } })
+    if (email) parts.push(`${url ? ' or reply' : 'Reply'} to this email (it reaches `, { link: { url: `mailto:${email}`, label: email } }, ')')
+    parts.push('.')
+    return parts
 }

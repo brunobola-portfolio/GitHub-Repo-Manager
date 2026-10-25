@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import {
     resolveSender,
     supportContact,
-    supportFooter,
+    supportFooterParts,
     headerSafe,
     escapeHtml,
     parseMailbox,
@@ -99,15 +99,15 @@ describe('email identity', () => {
         })
         process.env.EMAIL_FROM = 'robot@acme.example'
         expect(supportContact()).toEqual({})
-        expect(supportFooter()).toEqual({ html: '', text: '' })
+        expect(supportFooterParts()).toEqual([])
     })
 
     it('support footer never says "reply" without a Reply-To behind it', () => {
         process.env.EMAIL_FROM = 'robot@acme.example'
         process.env.EMAIL_SUPPORT_URL = 'https://help.acme.example/new'
-        const footer = supportFooter()
-        expect(footer.text).toBe('Need help? Open a support request at https://help.acme.example/new.')
-        expect(footer.text).not.toMatch(/reply/i)
+        const parts = supportFooterParts()
+        expect(parts).toEqual(['Need help? ', 'Open a support request at ', { link: { url: 'https://help.acme.example/new', label: 'help.acme.example/new' } }, '.'])
+        expect(JSON.stringify(parts)).not.toMatch(/reply/i)
     })
 
     it('headerSafe flattens CR/LF so a subject cannot start a new header', () => {

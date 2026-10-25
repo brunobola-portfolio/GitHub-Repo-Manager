@@ -4,7 +4,7 @@
 import { decodeJwt } from 'jose'
 import { generateLicenseKey, addCalendarMonths, revokeLicense, LICENSE_PREFIX } from './license.js'
 import { isEmailDeliveryConfigured, sendEmail } from './email.js'
-import { supportFooter, escapeHtml } from './email-identity.js'
+import { renderEmail } from './email-layout.js'
 import db from '../db.js'
 import logger from './logger.js'
 
@@ -80,61 +80,33 @@ function tierLabelOf(tier) {
     return tier.charAt(0).toUpperCase() + tier.slice(1)
 }
 
-function buildLicenseEmailHtml({ tier, licenseKey, expiresAt, billingPeriod, renewal }) {
-    const tierLabel = escapeHtml(tierLabelOf(tier))
-    const help = supportFooter().html
-    const intro = renewal
-        ? `Your <strong>${tierLabel}</strong> plan renewed. Here is the key for the new period.`
-        : `Thank you for subscribing to the <strong>${tierLabel}</strong> plan.`
-    return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="font-family: sans-serif; line-height: 1.6; color: #222; max-width: 600px; margin: 0 auto; padding: 24px;">
-  <h2>${renewal ? 'Your renewed' : 'Your'} GitHub Repo Manager license key</h2>
-  <p>${intro}</p>
-  <p>Your license key is:</p>
-  <pre style="background: #f4f4f4; border: 1px solid #ddd; border-radius: 4px; padding: 16px; font-family: monospace; font-size: 14px; word-break: break-all;">${escapeHtml(licenseKey)}</pre>
-  <h3>Do I need to activate it?</h3>
-  <p><strong>Using the hosted app?</strong> No. Your ${tierLabel} plan is already active on your account — there is nothing to paste.</p>
-  <p><strong>Running your own install?</strong> An administrator of that install opens <strong>Settings → License &amp; Plan → Activate</strong> and pastes the key. It applies to every account on the install.</p>
-  <p>${escapeHtml(describeLicenseValidity({ expiresAt, billingPeriod }))}</p>
-  <p>Keep this key safe and treat it like a password. Cancelling your subscription does not switch it off — it keeps working to the end of the period you paid for. A refunded payment revokes it.</p>
-${help ? `  <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
-  <p style="font-size: 13px; color: #666;">${help}</p>
-` : ''}</body>
-</html>`
-}
-
-function buildLicenseEmailText({ tier, licenseKey, expiresAt, billingPeriod, renewal }) {
+function buildLicenseEmail({ tier, licenseKey, expiresAt, billingPeriod, renewal }) {
     const tierLabel = tierLabelOf(tier)
-    const help = supportFooter().text
-    const title = `${renewal ? 'Your renewed' : 'Your'} GitHub Repo Manager license key`
-    const intro = renewal
-        ? `Your ${tierLabel} plan renewed. Here is the key for the new period.`
-        : `Thank you for subscribing to the ${tierLabel} plan.`
-    return `${title}
-${'='.repeat(title.length)}
-
-${intro}
-
-Your license key is:
-
-${licenseKey}
-
-Do I need to activate it?
-------------------------
-Using the hosted app? No. Your ${tierLabel} plan is already active on your account.
-Running your own install? An administrator of that install opens
-Settings -> License & Plan -> Activate and pastes the key. It applies to
-every account on the install.
-
-${describeLicenseValidity({ expiresAt, billingPeriod })}
-
-Keep this key safe and treat it like a password. Cancelling your subscription
-does not switch it off — it keeps working to the end of the period you paid for.
-A refunded payment revokes it.${help ? `
-
-${help}` : ''}`
+    const facts = [{ label: 'Plan', value: `${tierLabel}, billed ${billingPeriod === 'yearly' ? 'yearly' : 'monthly'}` }]
+    if (expiresAt) facts.push({ label: 'Valid until', value: { strong: formatDate(expiresAt) } })
+    return renderEmail({
+        subject: licenseSubject(tier, renewal),
+        preheader: renewal
+            ? `Your ${tierLabel} plan renewed. Here is the key for the new period.`
+            : `Your ${tierLabel} key, and whether you need to paste it anywhere.`,
+        eyebrow: `${tierLabel} plan`,
+        heading: `${renewal ? 'Your renewed' : 'Your'} GitHub Repo Manager license key`,
+        blocks: [
+            {
+                p: renewal
+                    ? ['Your ', { strong: tierLabel }, ' plan renewed. Here is the key for the new period.']
+                    : ['Thank you for subscribing to the ', { strong: tierLabel }, ' plan. Your license key is:'],
+            },
+            { secret: licenseKey },
+            { facts },
+            { h: 'Do I need to activate it?' },
+            { p: [{ strong: 'Using the hosted app?' }, ` No. Your ${tierLabel} plan is already active on your account; there is nothing to paste.`] },
+            { p: [{ strong: 'Running your own install?' }, ' An administrator of that install opens ', { strong: 'Settings → License & Plan → Activate' }, ' and pastes the key. It applies to every account on the install.'] },
+            { p: describeLicenseValidity({ expiresAt, billingPeriod }) },
+            { note: 'Keep this key safe and treat it like a password. Cancelling your subscription does not switch it off: it keeps working to the end of the period you paid for. A refunded payment revokes it.' },
+        ],
+        why: `You are getting this because you subscribed to GitHub Repo Manager ${tierLabel}.`,
+    })
 }
 
 function licenseSubject(tier, renewal = false) {
@@ -172,8 +144,7 @@ export const licenseEmailDeadLetterHandler = {
         }
         return {
             subject: licenseSubject(tier, view.renewal),
-            html: buildLicenseEmailHtml(view),
-            text: buildLicenseEmailText(view),
+            ...buildLicenseEmail(view),
         }
     },
     onDelivered(context) {
@@ -316,8 +287,7 @@ export async function issueLicenseForCheckout(opts) {
         const result = await sendEmail({
             to: email,
             subject: licenseSubject(tier, renewal),
-            html: buildLicenseEmailHtml(view),
-            text: buildLicenseEmailText(view),
+            ...buildLicenseEmail(view),
             stream: 'licences',
             // The body is the key: queue the reference, never the secret.
             deadLetter: 'rebuild',
