@@ -33,6 +33,7 @@ services:
       - "EMAIL_FROM_LICENCES=${EMAIL_FROM_LICENCES:-}"
       - "EMAIL_REPLY_TO=${EMAIL_REPLY_TO:-}"
       - "EMAIL_SUPPORT_URL=${EMAIL_SUPPORT_URL:-}"
+      - "SECURITY_CONTACT=${SECURITY_CONTACT:-}"
       - "RESEND_API_KEY=${RESEND_API_KEY:-}"
       # --- Frontend URL — required for CORS + cookies ---
       - "FRONTEND_URL=${FRONTEND_URL:?FRONTEND_URL must be set to the public HTTPS URL of the app}"
