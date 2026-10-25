@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Browsing the landing page no longer locks visitors out.** Every
+  signed-out page load made its boot reads (server status, session, OAuth
+  setup, billing config) against the shared request budgets: about 33 loads
+  in 15 minutes from one IP showed "Can't reach the server" while `/status`
+  said all systems were operational, and five visits used up the sign-in
+  budget, so "Continue with GitHub" was refused for 15 minutes. Those reads
+  now have their own per-IP ceiling and no longer touch the sign-in or API
+  budgets; a POST to the same paths is still limited as before.
+- A 429 on the boot status check is shown as a short wait, not as the
+  server being down.
+- `Retry-After` now says how long is actually left in the window instead of
+  always 15 minutes.
+- The rate-limit notice no longer runs off the right edge of the screen on
+  phones and wide desktops; its dismiss button has a readable icon in both
+  themes.
+
 ## [4.26.2] - 2026-09-24
 
 ### Fixed

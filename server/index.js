@@ -23,7 +23,7 @@ import cors from 'cors';
 import compression from 'compression';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { createTenantLimiters, globalLimiter, createWebhookLimiter } from './middleware/tenant-rate-limit.js';
+import { createTenantLimiters, globalLimiter, createWebhookLimiter, createPublicReadLimiter, isPublicBootRead } from './middleware/tenant-rate-limit.js';
 import { AI_BUCKET_EXTRA_EXPRESS_PATHS } from './middleware/ai-rate-limit-routes.js';
 import { noPathTraversal } from './middleware/no-path-traversal.js';
 import { buildHelmetOptions, permissionsPolicy, noStoreApi } from './lib/http-hardening.js';
@@ -374,13 +374,11 @@ app.use('/api/', monitoringContext);
 app.use('/api/', attachAIProvider());
 
 // Per-tenant limiters AFTER session + tier attachment so req.userTier is available
-const apiLimiter  = await createTenantLimiters('api');
-const authLimiter = await createTenantLimiters('auth', {
-    // /api/auth/session is an idempotent polled read, not a brute-force target.
-    // Letting it flow through the general apiLimiter keeps dev HMR from exhausting
-    // the tight auth budget.
-    skip: (req) => req.path === '/session',
-});
+// Boot reads (status, session, setup-status, billing config) are counted by
+// their own per-IP ceiling, not by the tier buckets: see isPublicBootRead.
+const apiLimiter  = await createTenantLimiters('api', { skip: isPublicBootRead });
+const authLimiter = await createTenantLimiters('auth', { skip: isPublicBootRead });
+app.use('/api/', createPublicReadLimiter());
 // The per-tier 'ai' bucket (tenant-rate-limit.js) was defined but never
 // instantiated/mounted — every LLM-invoking route relied solely on the
 // broader apiLimiter above. Scoped to the ai.js barrel's routes, reachable at

@@ -115,6 +115,26 @@ describe('useAuthBootstrap — real backend boot', () => {
         expect(result.current.systemInitialized).toBeNull()
     })
 
+    it('a 429 on the status probe is throttling, not an outage: no "can\'t reach the server" screen', async () => {
+        h.mockMode = false
+        const { ApiError, ErrorType } = await import('@/utils/api')
+        fetchWithRetry.mockRejectedValue(new ApiError(ErrorType.RATE_LIMIT, null, 429))
+        const { result } = renderHook(() => useAuthBootstrap(mkProps()))
+
+        await waitFor(() => expect(result.current.appLoading).toBe(false))
+        expect(result.current.systemUnreachable).toBe(false)
+        expect(result.current.systemInitialized).toBeNull()
+    })
+
+    it('a resolved 429 status answer is also throttling, not an outage', async () => {
+        h.mockMode = false
+        fetchWithRetry.mockResolvedValue({ ok: false, status: 429, headers: { get: () => 'application/json' }, json: async () => ({}) })
+        const { result } = renderHook(() => useAuthBootstrap(mkProps()))
+
+        await waitFor(() => expect(result.current.appLoading).toBe(false))
+        expect(result.current.systemUnreachable).toBe(false)
+    })
+
     it('treats a 200 whose payload carries no boolean initialized as unreachable, not as a fresh install', async () => {
         h.mockMode = false
         fetchWithRetry.mockResolvedValue({ ok: true, headers: { get: () => 'application/json' }, json: async () => ({}) })
