@@ -20,8 +20,8 @@ describe('release.yml only ships commits that are on main', () => {
     it('the check runs before install and build', () => {
         const guard = releaseJob.indexOf('merge-base --is-ancestor')
         expect(guard).toBeGreaterThan(-1)
-        expect(guard).toBeLessThan(releaseJob.indexOf('npm ci'))
-        expect(guard).toBeLessThan(releaseJob.indexOf('npm run build'))
+        expect(guard).toBeLessThan(releaseJob.indexOf('- run: npm ci'))
+        expect(guard).toBeLessThan(releaseJob.indexOf('run: npm run build'))
     })
 
     it('the deploy and windows jobs depend on the release job', () => {
