@@ -37,6 +37,8 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.27.2 (2026-10-25) — simple-git 4.0.2: the last critical advisory
+  closed.** See the changelog.
 - **v4.27.1 (2026-10-25) — simple-git 4: the critical clone advisory
   closed.** See the changelog.
 - **v4.27.0 (2026-10-25) — Licences that last the paid period, help that

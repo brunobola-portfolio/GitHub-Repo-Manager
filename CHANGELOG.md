@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.27.2] - 2026-10-25
+
 ### Security
 
 - simple-git 4.0.2, which pins `@simple-git/argv-parser` 2.0.1. 4.0.1 pinned
@@ -4449,7 +4451,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.27.1...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.27.2...HEAD
+[4.27.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.27.1...v4.27.2
 [4.27.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.27.0...v4.27.1
 [4.27.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.26.2...v4.27.0
 [4.26.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.26.1...v4.26.2
