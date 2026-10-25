@@ -77,17 +77,24 @@ function resolveSource(src) {
         .map((name) => (dir === '.' ? name : `${dir}/${name}`))
 }
 
+/**
+ * Docker's .dockerignore semantics, not .gitignore's: every pattern is
+ * anchored at the context root, so `*.md` matches `AGENTS.md` but not
+ * `server/AGENTS.md`; only `**` crosses directories. Matching the basename at
+ * any depth (the gitignore rule) made this gate pass files the real build
+ * copies into the image.
+ */
 function matches(pattern, path) {
-    const p = pattern.replace(/^\.\//, '').replace(/^\*\*\//, '')
-    if (p === path) return true
-    // A bare directory name excludes everything under it.
-    if (!p.includes('*') && path.startsWith(`${p}/`)) return true
-    if (p.includes('*')) {
-        const re = new RegExp(`^${p.split('*').map((s) => s.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('[^/]*')}$`)
-        // A glob without a slash applies to the basename at any depth.
-        return re.test(path) || (!p.includes('/') && re.test(path.split('/').pop()))
-    }
-    return false
+    const p = pattern.replace(/^\.?\//, '')
+    const body = p.split(/(\*\*\/|\*\*|\*|\?)/).map((part) => {
+        if (part === '**/') return '(?:.*/)?'
+        if (part === '**') return '.*'
+        if (part === '*') return '[^/]*'
+        if (part === '?') return '[^/]'
+        return part.replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    }).join('')
+    // A pattern that matches a directory excludes everything under it.
+    return new RegExp(`^${body}(?:/.*)?$`).test(path)
 }
 
 describe('the Docker build context', () => {
@@ -115,7 +122,7 @@ describe('the Docker build context', () => {
 
     it('still excludes the things it is meant to', () => {
         // Guards the negation above from being widened into "ship everything".
-        for (const excluded of ['CHANGELOG.md', 'AGENTS.md', 'CLAUDE.md', 'server/AGENTS.md', 'server/CLAUDE.md', 'src/AGENTS.md', 'docs/index.md', 'tests/build/dockerfile-context.test.js']) {
+        for (const excluded of ['CHANGELOG.md', 'AGENTS.md', 'CLAUDE.md', 'server/AGENTS.md', 'server/CLAUDE.md', 'src/AGENTS.md', 'keys/private.pem', 'certs/tls.key', 'docs/index.md', 'tests/build/dockerfile-context.test.js']) {
             expect(reachesContext(excluded), `${excluded} now reaches the image`).toBe(false)
         }
         for (const kept of ['README.md', 'LICENSE', 'NOTICE', 'TRADEMARKS.md']) {
