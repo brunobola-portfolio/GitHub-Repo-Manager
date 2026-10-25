@@ -30,6 +30,7 @@ import {
   MintError,
   DeliveryError,
   AuditWriteError,
+  DEFAULT_LICENCE_SENDER,
 } from './lib/minter.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -149,8 +150,9 @@ export async function runMintAction({ env }) {
       key: license.key,
       payload: license.payload,
       recipient: input.email,
-      fromEmail: env.FROM_EMAIL,
+      fromEmail: env.FROM_EMAIL || DEFAULT_LICENCE_SENDER,
       resendApiKey: env.RESEND_API_KEY,
+      ...(env.REPLY_TO ? { replyTo: env.REPLY_TO } : {}),
     })
   } catch (e) {
     process.stderr.write(`[deliver] ${e.message} (lid=${e.lid})\n`)

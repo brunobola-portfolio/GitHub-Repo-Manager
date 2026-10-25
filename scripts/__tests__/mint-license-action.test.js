@@ -21,7 +21,7 @@ describe('mint-license-action', () => {
       RESEND_API_KEY: 'resend-test',
       LICENSE_LOG_PAT: 'pat-test',
       AUDIT_REPO: 'brunobola-portfolio/license-log',
-      FROM_EMAIL: 'licenses@bolalabs.pt',
+      FROM_EMAIL: 'BolaLabs Licences <licencas@bolalabs.pt>',
       TIER: 'enterprise',
       ORG: 'Test Co',
       EMAIL: 'test@example.com',

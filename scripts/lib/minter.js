@@ -151,6 +151,13 @@ export async function mintLicense(validatedInput, options) {
   return { key, payload, fingerprint, kid }
 }
 
+// Minted keys are signed with the vendor key, so the mail is BolaLabs mail:
+// it leaves from the licence box, and replies land on the support desk — the
+// licence box is send-only.
+export const DEFAULT_LICENCE_SENDER = 'BolaLabs Licences <licencas@bolalabs.pt>'
+export const SUPPORT_EMAIL = 'suporte@bolalabs.pt'
+export const SUPPORT_URL = 'https://bolalabs.pt/en/dashboard?view=support&new=1'
+
 /**
  * Format the license payload into a plaintext email body.
  * Text-only to eliminate stored-XSS risk from attacker-controlled `notes`
@@ -175,17 +182,21 @@ function formatEmailBody({ key, payload }) {
     `  Issued:       ${issued}`,
     `  Expires:      ${expires}`,
     '',
-    'To activate, add this line to your .env file:',
+    'To activate it, an administrator of your install opens',
+    'Settings -> License & Plan -> Activate and pastes the key. It applies to',
+    'every account on that install.',
+    '',
+    'Prefer configuration files? Set this line in the server .env instead and',
+    'restart; a key set there takes precedence over one activated in the app:',
     '',
     `  LICENSE_KEY=${key}`,
     '',
-    'Then restart the server. To verify activation, check the server logs for:',
+    'Keep this key safe and treat it like a password.',
     '',
-    `  License validated: ${payload.tier} tier (org: ${payload.org}, expires: ${expires})`,
+    `Questions? Open a support request at ${SUPPORT_URL}`,
+    `or reply to this email (it reaches ${SUPPORT_EMAIL}).`,
     '',
-    'Questions? Reply to this email.',
-    '',
-    '— Bola Labs',
+    '— BolaLabs',
   ].join('\n')
 }
 
@@ -195,7 +206,7 @@ function formatEmailBody({ key, payload }) {
  * Text-only body. Throws DeliveryError on non-2xx or network failure,
  * with `lid` attached so the caller can reconcile from the pending audit entry.
  */
-export async function deliverLicense({ key, payload, recipient, fromEmail, resendApiKey }) {
+export async function deliverLicense({ key, payload, recipient, fromEmail, resendApiKey, replyTo = SUPPORT_EMAIL }) {
   if (!key) throw new DeliveryError('key is required (cannot deliver a dry-run)', { lid: payload?.lid })
   if (!recipient) throw new DeliveryError('recipient is required', { lid: payload?.lid })
   if (!fromEmail) throw new DeliveryError('fromEmail is required', { lid: payload?.lid })
@@ -206,6 +217,8 @@ export async function deliverLicense({ key, payload, recipient, fromEmail, resen
     to: [recipient],
     subject: 'Your GitHub Repo Manager license key',
     text: formatEmailBody({ key, payload }),
+    ...(replyTo ? { reply_to: replyTo } : {}),
+    headers: { 'Auto-Submitted': 'auto-generated' },
   }
 
   let response
@@ -215,6 +228,9 @@ export async function deliverLicense({ key, payload, recipient, fromEmail, resen
       headers: {
         'Authorization': `Bearer ${resendApiKey}`,
         'Content-Type': 'application/json',
+        // One key per minted licence: a workflow re-run after a timed-out
+        // request must not mail the same key twice.
+        ...(payload?.lid ? { 'Idempotency-Key': `mint-${payload.lid}` } : {}),
       },
       body: JSON.stringify(body),
     })

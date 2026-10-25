@@ -23,7 +23,7 @@ describe('mint-failure-notify', () => {
 
     await notifyFailure({
       resendApiKey: 'test-key',
-      fromEmail: 'licenses@bolalabs.pt',
+      fromEmail: 'BolaLabs Licences <licencas@bolalabs.pt>',
       toEmail: 'bruno@bolalabs.pt',
       runId: '1234567890',
       repo: 'brunobola-portfolio/GitHub-Repo-Manager',
@@ -44,12 +44,32 @@ describe('mint-failure-notify', () => {
     expect(body.text).not.toMatch(/private_pem/i)
   })
 
+  it('defaults to the licencas@ box (licenses@ does not exist) and marks the mail as automated', async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({ id: 'n' }) })
+
+    await notifyFailure({ resendApiKey: 'k', runId: '77', repo: 'o/r', eventName: 'repository_dispatch' })
+
+    const [, init] = fetchMock.mock.calls[0]
+    const body = JSON.parse(init.body)
+    expect(body.from).toBe('BolaLabs Licences <licencas@bolalabs.pt>')
+    expect(body.to).toEqual(['bruno@bolalabs.pt'])
+    expect(body.headers).toEqual({ 'Auto-Submitted': 'auto-generated' })
+    expect(init.headers['Idempotency-Key']).toBe('mint-failure-77')
+  })
+
+  it('keeps the subject on one line', async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({ id: 'n' }) })
+    await notifyFailure({ resendApiKey: 'k', runId: '1', repo: 'o/r', eventName: 'x\r\nBcc: a@b.c' })
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body)
+    expect(body.subject).not.toMatch(/[\r\n]/)
+  })
+
   it('is a no-op if resendApiKey is missing (graceful degradation)', async () => {
     // If Resend is unconfigured, the failure notifier should exit silently
     // rather than throwing — it's already a failure handler.
     await expect(notifyFailure({
       resendApiKey: '',
-      fromEmail: 'licenses@bolalabs.pt',
+      fromEmail: 'BolaLabs Licences <licencas@bolalabs.pt>',
       toEmail: 'bruno@bolalabs.pt',
       runId: '1', repo: 'r', eventName: 'e',
     })).resolves.toBeUndefined()

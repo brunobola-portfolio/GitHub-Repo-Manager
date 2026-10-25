@@ -15,6 +15,9 @@
 
 import { parseArgs } from 'node:util'
 
+const DEFAULT_FROM = 'BolaLabs Licences <licencas@bolalabs.pt>'
+const DEFAULT_TO = 'bruno@bolalabs.pt'
+
 export async function notifyFailure({ resendApiKey, fromEmail, toEmail, runId, repo, eventName }) {
   if (!resendApiKey) {
     // Graceful degradation — if Resend isn't configured, exit silently.
@@ -38,10 +41,11 @@ export async function notifyFailure({ resendApiKey, fromEmail, toEmail, runId, r
   ].join('\n')
 
   const body = {
-    from: fromEmail || 'licenses@bolalabs.pt',
-    to: [toEmail || 'bruno@bolalabs.pt'],
-    subject: `⚠️ License mint workflow failed (${eventName})`,
+    from: fromEmail || DEFAULT_FROM,
+    to: [toEmail || DEFAULT_TO],
+    subject: `License mint workflow failed (${String(eventName ?? '').replace(/[\r\n]+/g, ' ')})`,
     text,
+    headers: { 'Auto-Submitted': 'auto-generated' },
   }
 
   try {
@@ -50,6 +54,7 @@ export async function notifyFailure({ resendApiKey, fromEmail, toEmail, runId, r
       headers: {
         'Authorization': `Bearer ${resendApiKey}`,
         'Content-Type': 'application/json',
+        ...(runId ? { 'Idempotency-Key': `mint-failure-${runId}` } : {}),
       },
       body: JSON.stringify(body),
     })
@@ -72,8 +77,8 @@ if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith
   })
   notifyFailure({
     resendApiKey: process.env.RESEND_API_KEY,
-    fromEmail: 'licenses@bolalabs.pt',
-    toEmail: 'bruno@bolalabs.pt',
+    fromEmail: process.env.FROM_EMAIL || DEFAULT_FROM,
+    toEmail: DEFAULT_TO,
     runId: values['run-id'],
     repo: values['repo'],
     eventName: values['event'],

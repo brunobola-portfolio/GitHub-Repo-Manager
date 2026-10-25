@@ -300,7 +300,7 @@ describe('deliverLicense', () => {
     const result = await deliverLicense({
       ...sampleLicense,
       recipient: 'bruno@bolalabs.pt',
-      fromEmail: 'licenses@bolalabs.pt',
+      fromEmail: 'BolaLabs Licences <licencas@bolalabs.pt>',
       resendApiKey: 'test-key',
     })
 
@@ -312,7 +312,7 @@ describe('deliverLicense', () => {
     expect(init.headers['Content-Type']).toBe('application/json')
 
     const body = JSON.parse(init.body)
-    expect(body.from).toBe('licenses@bolalabs.pt')
+    expect(body.from).toBe('BolaLabs Licences <licencas@bolalabs.pt>')
     expect(body.to).toEqual(['bruno@bolalabs.pt'])
     expect(body.subject).toMatch(/license key/i)
     expect(body.text).toContain('grm_lic_sample')
@@ -322,6 +322,44 @@ describe('deliverLicense', () => {
     expect(body.html).toBeUndefined()
 
     expect(result).toEqual({ messageId: 'resend-msg-001' })
+  })
+
+  it('routes replies to the support desk and marks the mail as automated', async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({ id: 'm' }) })
+
+    await deliverLicense({
+      ...sampleLicense,
+      recipient: 'customer@example.com',
+      fromEmail: 'BolaLabs Licences <licencas@bolalabs.pt>',
+      resendApiKey: 'test-key',
+    })
+
+    const [, init] = fetchMock.mock.calls[0]
+    const body = JSON.parse(init.body)
+    expect(body.reply_to).toBe('suporte@bolalabs.pt')
+    expect(body.headers).toEqual({ 'Auto-Submitted': 'auto-generated' })
+    // A re-run after a timeout must not mail the same key twice.
+    expect(init.headers['Idempotency-Key']).toBe('mint-lic_abc')
+  })
+
+  it('tells the customer how to activate in the app and where support lives', async () => {
+    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({ id: 'm' }) })
+
+    await deliverLicense({
+      ...sampleLicense,
+      recipient: 'customer@example.com',
+      fromEmail: 'BolaLabs Licences <licencas@bolalabs.pt>',
+      resendApiKey: 'test-key',
+    })
+
+    const { text } = JSON.parse(fetchMock.mock.calls[0][1].body)
+    expect(text).toContain('Settings -> License & Plan -> Activate')
+    expect(text).toContain('LICENSE_KEY=grm_lic_sample')
+    expect(text).toContain('https://bolalabs.pt/en/dashboard?view=support&new=1')
+    expect(text).toContain('suporte@bolalabs.pt')
+    expect(text).toContain('— BolaLabs')
+    expect(text).not.toContain('— Bola Labs')
+    expect(text).not.toContain('licenses@')
   })
 
   it('throws DeliveryError on non-2xx response', async () => {
@@ -335,7 +373,7 @@ describe('deliverLicense', () => {
       deliverLicense({
         ...sampleLicense,
         recipient: 'bruno@bolalabs.pt',
-        fromEmail: 'licenses@bolalabs.pt',
+        fromEmail: 'BolaLabs Licences <licencas@bolalabs.pt>',
         resendApiKey: 'test-key',
       })
     ).rejects.toBeInstanceOf(DeliveryError)
@@ -352,7 +390,7 @@ describe('deliverLicense', () => {
       await deliverLicense({
         ...sampleLicense,
         recipient: 'bruno@bolalabs.pt',
-        fromEmail: 'licenses@bolalabs.pt',
+        fromEmail: 'BolaLabs Licences <licencas@bolalabs.pt>',
         resendApiKey: 'test-key',
       })
       expect.fail('should have thrown')
@@ -368,7 +406,7 @@ describe('deliverLicense', () => {
       deliverLicense({
         ...sampleLicense,
         recipient: 'bruno@bolalabs.pt',
-        fromEmail: 'licenses@bolalabs.pt',
+        fromEmail: 'BolaLabs Licences <licencas@bolalabs.pt>',
         resendApiKey: 'test-key',
       })
     ).rejects.toBeInstanceOf(DeliveryError)
