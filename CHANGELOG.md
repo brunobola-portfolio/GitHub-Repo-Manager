@@ -23,6 +23,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Every e-mail the app sends has one designed layout**, matching the
+  BolaLabs site's mail: licence keys, team invitations, the AI-credential
+  retention warning and the digest. It works in Outlook, Gmail and Apple Mail,
+  adapts to dark mode and phones, and loads no images or tracking pixels. The
+  licence mail shows the plan and end date at a glance and the key in a panel
+  that selects with one tap; the digest lists only sections with something in
+  them and links back to the app; the retention warning states the period the
+  operator configured instead of a fixed 365 days.
 - **A full refund now cancels the Stripe subscription**, so a refunded customer
   is never charged again (it used to stay active and keep billing an account
   that had been put on Free). An open dispute pauses collection instead, and
