@@ -13,7 +13,7 @@
  * Secret precedence (first non-empty wins):
  *   process.env.SESSION_SECRET → process.env.GITHUB_CLIENT_SECRET → random per-process secret
  *
- * Copyright (c) 2025-2026 Bola Labs. All rights reserved.
+ * Copyright (c) 2025-2026 BolaLabs. Licensed under the Apache License 2.0.
  */
 
 import { createHmac, createHash, randomBytes, timingSafeEqual } from 'node:crypto'

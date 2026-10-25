@@ -7,7 +7,7 @@
     "node": ">=22.14 <25"
   },
   "description": "One dashboard for GitHub repositories, teams and CI/CD: a cross-repo Work Board with DORA metrics, AI Deep Review and Azure DevOps/TFVC migration. Bring your own AI key. Apache-2.0.",
-  "author": "Bruno Marques - Bola Labs, Inc.",
+  "author": "BolaLabs",
   "license": "Apache-2.0",
   "keywords": [
     "github",

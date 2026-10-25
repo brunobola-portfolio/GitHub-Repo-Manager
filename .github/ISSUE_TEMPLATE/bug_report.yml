@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         Thanks for taking the time to report a bug. Please fill out the fields below — the more detail, the faster the fix.
-        For security vulnerabilities, **do not file a public issue** — email bruno@bolalabs.pt instead.
+        For security vulnerabilities, **do not file a public issue** — email suporte@bolalabs.pt instead.
 
   - type: textarea
     id: description

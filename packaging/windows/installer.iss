@@ -25,7 +25,7 @@
 ; it in via /DMyAppPublisher, same mechanism as MyAppVersion. The fallback
 ; here exists only so a bare local `iscc installer.iss` still works.
 #ifndef MyAppPublisher
-  #define MyAppPublisher "Bola Labs, Inc."
+  #define MyAppPublisher "BolaLabs"
 #endif
 
 #define MyAppName "GitHub Repo Manager"

@@ -28,7 +28,7 @@
 import { useEffect } from 'react'
 
 const UPDATED = '12 September 2026'
-const CONTROLLER_EMAIL = 'bruno@bolalabs.pt'
+const CONTROLLER_EMAIL = 'suporte@bolalabs.pt'
 const SOURCE_URL = 'https://github.com/brunobola-portfolio/GitHub-Repo-Manager'
 const LICENCE_URL = `${SOURCE_URL}/blob/main/LICENSE`
 const SUBSCRIPTION_DOC_URL = `${SOURCE_URL}/blob/main/docs/LICENSE-COMMERCIAL.md`
@@ -70,7 +70,7 @@ export default function TermsPage() {
 
                 <Section id="who" title="Who you are contracting with">
                     <p>
-                        BolaLabs (Bruno Silva Marques), Portugal, contactable at{' '}
+                        BolaLabs, Portugal, contactable at{' '}
                         <a href={`mailto:${CONTROLLER_EMAIL}`} className="underline">
                             {CONTROLLER_EMAIL}
                         </a>

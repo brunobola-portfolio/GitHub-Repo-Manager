@@ -6,7 +6,7 @@
  * Vite's dead-code elimination drops the entire import branch in
  * production builds, so no string from this file ships to dist/.
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  * Licensed under the Apache License 2.0 (SPDX: Apache-2.0). See LICENSE in the project root.
  */
 

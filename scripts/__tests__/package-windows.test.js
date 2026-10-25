@@ -178,15 +178,15 @@ describe('getPackageVersion / assertDistBuilt (fake repo tree)', () => {
   })
 
   it('getPublisher extracts the company half of "<person> - <company>"', () => {
-    writeFileSync(path.join(repoRoot, 'package.json'), JSON.stringify({ author: 'Bruno Marques - Bola Labs, Inc.' }))
-    expect(getPublisher(repoRoot)).toBe('Bola Labs, Inc.')
+    writeFileSync(path.join(repoRoot, 'package.json'), JSON.stringify({ author: 'BolaLabs' }))
+    expect(getPublisher(repoRoot)).toBe('BolaLabs')
   })
 
   it('getPublisher matches this repo\'s real package.json author field', () => {
     // Regression guard: if the real author field's format ever changes,
     // this fails loudly instead of installer.iss silently shipping a wrong
     // Publisher via the /D define computed the same way in CI.
-    expect(getPublisher()).toBe('Bola Labs, Inc.')
+    expect(getPublisher()).toBe('BolaLabs')
   })
 
   it('getPublisher falls back to the whole author string when there is no " - " separator', () => {

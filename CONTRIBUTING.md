@@ -14,7 +14,7 @@ Before your first contribution can be merged, you must sign our [CLA](CLA.md) by
 commenting "I have read the CLA and I agree" on your pull request. This is a one-time
 requirement.
 
-The CLA grants Bola Labs the right to include your contributions in both the open-source
+The CLA grants BolaLabs the right to include your contributions in both the open-source
 and commercially licensed versions. You retain full copyright over your work.
 
 ## Prerequisites
@@ -186,7 +186,7 @@ Use the [feature request template](https://github.com/brunobola-portfolio/GitHub
 
 ## Code of Conduct
 
-This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating you agree to uphold it. Report unacceptable behaviour to [bruno@bolalabs.pt](mailto:bruno@bolalabs.pt).
+This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating you agree to uphold it. Report unacceptable behaviour to [suporte@bolalabs.pt](mailto:suporte@bolalabs.pt).
 
 ## License
 

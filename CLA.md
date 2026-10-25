@@ -3,7 +3,7 @@
 ## GitHub Repo Manager - Individual Contributor License Agreement
 
 Thank you for your interest in contributing to GitHub Repo Manager (the "Project"),
-maintained by Bruno Marques / Bola Labs ("We" or "Us").
+maintained by BolaLabs ("We" or "Us").
 
 By submitting a pull request or other contribution to this Project, you agree to the
 following terms:
@@ -17,7 +17,7 @@ following terms:
 
 ### 2. Grant of Rights
 
-You grant to Bola Labs a perpetual, worldwide, non-exclusive, no-charge, royalty-free,
+You grant to BolaLabs a perpetual, worldwide, non-exclusive, no-charge, royalty-free,
 irrevocable license to use, reproduce, prepare derivative works of, publicly display,
 publicly perform, sublicense, and distribute your Contributions and derivative works.
 

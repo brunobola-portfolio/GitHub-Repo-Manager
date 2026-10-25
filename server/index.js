@@ -4,7 +4,7 @@
  * Built with Express.js, this server handles GitHub OAuth authentication
  * and acts as a secure proxy for GitHub API operations.
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  */
 
 // MUST stay the first import. ESM evaluates the graph depth-first in source

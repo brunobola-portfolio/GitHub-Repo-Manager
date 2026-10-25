@@ -44,15 +44,7 @@ function LandingFooter() {
           >
             BolaLabs
           </a>
-          {' '}product · built by{' '}
-          <a
-            href="https://www.linkedin.com/in/bolalabs/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-slate-600 dark:text-slate-300 font-medium hover:text-brand-600 dark:hover:text-brand-400 transition-colors duration-200"
-          >
-            Bruno Marques
-          </a>
+          {' '}product
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">

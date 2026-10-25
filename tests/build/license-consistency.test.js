@@ -53,7 +53,7 @@ describe('the licence is Apache-2.0, everywhere it is claimed', () => {
         // licence nobody can rely on.
         expect(license.match(/^ {3}\d\. /gm)?.length).toBe(9)
         expect(license).toContain('APPENDIX: How to apply')
-        expect(license).toContain('Bola Labs, Inc.')
+        expect(license).toContain('BolaLabs')
     })
 
     it('the package manifest agrees with the LICENSE file', () => {
@@ -63,7 +63,7 @@ describe('the licence is Apache-2.0, everywhere it is claimed', () => {
     it('ships a NOTICE, which Apache-2.0 §4(d) gives meaning to', () => {
         const notice = readFileSync('NOTICE', 'utf8')
         expect(notice).toContain('Apache License, Version 2.0')
-        expect(notice).toContain('Bola Labs')
+        expect(notice).toContain('BolaLabs')
     })
 
     it('reserves the mark in writing, because §6 does not do it for you', () => {

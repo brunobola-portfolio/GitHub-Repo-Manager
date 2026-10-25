@@ -17,7 +17,7 @@
 import { useEffect } from 'react'
 
 const UPDATED = '12 September 2026'
-const CONTROLLER_EMAIL = 'bruno@bolalabs.pt'
+const CONTROLLER_EMAIL = 'suporte@bolalabs.pt'
 const SOURCE_URL = 'https://github.com/brunobola-portfolio/GitHub-Repo-Manager'
 const TECHNICAL_DOC_URL = `${SOURCE_URL}/blob/main/docs/privacy-and-data.md`
 
@@ -59,7 +59,7 @@ export default function PrivacyPage() {
 
                 <Section id="controller" title="Who is responsible">
                     <p>
-                        BolaLabs (Bruno Silva Marques), Portugal, is the data controller for this
+                        BolaLabs, Portugal, is the data controller for this
                         hosted instance. For anything in this policy — including access, export or
                         erasure requests — write to{' '}
                         <a className="underline ds-focus-ring rounded" href={`mailto:${CONTROLLER_EMAIL}`}>

@@ -19,7 +19,7 @@ If you discover a security vulnerability in GitHub Repo Manager, please report i
 
 **Do NOT open a public GitHub Issue for security vulnerabilities.**
 
-Instead, please email **bruno@bolalabs.pt** with:
+Instead, please email **suporte@bolalabs.pt** with:
 
 1. A description of the vulnerability
 2. Steps to reproduce the issue
@@ -65,7 +65,7 @@ We will acknowledge your report within **48 hours** and aim to provide a fix wit
 
 - **SQLite** with WAL mode for concurrent read performance
 - All user data is local to the server instance (**no cloud telemetry**) — it
-  is never sent to Bola Labs, and a self-hosted instance is the sole
+  is never sent to BolaLabs, and a self-hosted instance is the sole
   controller of everything below
 
 **Personal data actually stored** (GDPR-relevant inventory — the schema is in

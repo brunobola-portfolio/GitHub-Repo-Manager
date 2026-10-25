@@ -24,7 +24,7 @@
  *   - a short, exact allowlist of /api/auth/* mutations (see
  *     AUTH_BYPASS_EXACT below) — NOT the whole /api/auth/* subtree (B-19).
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  */
 
 import crypto from 'crypto';

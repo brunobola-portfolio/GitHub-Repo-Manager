@@ -13,9 +13,9 @@ describe('TermsPage — what a buyer must be told before paying', () => {
     it('names the counterparty and a working contact', () => {
         render(<TermsPage />)
         expect(screen.getByRole('heading', { level: 1, name: /terms of service/i })).toBeInTheDocument()
-        expect(screen.getByText(/BolaLabs \(Bruno Silva Marques\)/)).toBeInTheDocument()
-        expect(screen.getAllByRole('link', { name: /bruno@bolalabs\.pt/i })[0])
-            .toHaveAttribute('href', 'mailto:bruno@bolalabs.pt')
+        expect(screen.getByText(/BolaLabs, Portugal/)).toBeInTheDocument()
+        expect(screen.getAllByRole('link', { name: /suporte@bolalabs\.pt/i })[0])
+            .toHaveAttribute('href', 'mailto:suporte@bolalabs.pt')
     })
 
     it('states the price in the currency the checkout actually charges', () => {

@@ -14,7 +14,7 @@
  *   POST   /:owner/:repo/releases
  *   DELETE /:owner/:repo/releases/:release_id
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  */
 
 import express from 'express';

@@ -23,7 +23,7 @@
  * Shared helpers (requireAI, handleAIError, providerGenerateWithRetry) live
  * in ./ai/shared.js and are imported by each sub-router.
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  */
 
 import express from 'express';

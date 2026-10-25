@@ -9,7 +9,7 @@
  * check". Two of those were the commercial licence terms.
  *
  * The claim that stays TRUE is narrower and worth keeping precise: the list is
- * per-instance, so Bola Labs cannot disable a key on someone else's
+ * per-instance, so BolaLabs cannot disable a key on someone else's
  * self-hosted install. This gate pins the capability to the copy, so shipping
  * one without the other fails here rather than in a customer's inbox.
  */
