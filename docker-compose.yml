@@ -89,6 +89,7 @@ services:
       # without Stripe Tax and a registration.
       - "STRIPE_AUTOMATIC_TAX=${STRIPE_AUTOMATIC_TAX:-false}"
       - "LICENSE_SIGNING_PRIVATE_KEY_PEM=${LICENSE_SIGNING_PRIVATE_KEY_PEM:-}"
+      - "LICENSE_GRACE_DAYS=${LICENSE_GRACE_DAYS:-}"
       # Second key during credential-encryption key rotation; decrypt-only.
       - "CREDENTIAL_ENCRYPTION_KEY_PREVIOUS=${CREDENTIAL_ENCRYPTION_KEY_PREVIOUS:-}"
       # Self-hosted activation key (server/config.js reads LICENSE_KEY; env

@@ -77,6 +77,25 @@ describe('surfaces do not contradict the shipped capability', () => {
     expect(policy).toMatch(/per-instance/i)
   })
 
+  it('no surface promises self-hosters that renewal needs no action, or that a key never expires', () => {
+    // Every monthly email said "no action needed" while a self-hosted admin
+    // had to paste each new key, and the docs said a key "never actually
+    // expires" while it died before its replacement was minted.
+    for (const phrase of ['no action needed', 'never actually expires', 'replaced every cycle', 'replaced every billing cycle']) {
+      expect(readFileSync(EMAIL_SOURCE, 'utf8').toLowerCase()).not.toContain(phrase)
+      for (const doc of POLICY_DOCS) {
+        expect(readFileSync(doc, 'utf8').toLowerCase(), `${doc}: "${phrase}"`).not.toContain(phrase)
+      }
+    }
+  })
+
+  it('the policy doc states that refunds revoke keys, and that is wired in the webhook', () => {
+    expect(readFileSync('docs/billing-and-licensing.md', 'utf8')).toMatch(/refunds and lost disputes revoke/i)
+    const webhook = readFileSync('server/routes/stripe-webhooks.js', 'utf8')
+    expect(webhook).toMatch(/revokeKeysFor\(subscriptionId, 'refund'\)/)
+    expect(webhook).toMatch(/revokeKeysFor\(subscriptionId, 'dispute'\)/)
+  })
+
   it('no doc points operators at a licence-revocation CLI, because none exists', () => {
     // `npm run admin:revoke` runs admin-grant.mjs --revoke, which clears a
     // USER's admin flag (UPDATE users SET is_admin = 0). Two docs named it as

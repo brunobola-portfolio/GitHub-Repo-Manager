@@ -57,16 +57,27 @@ When a user completes a Stripe checkout, the server automatically mints a signed
 The emailed key's validity always matches what was actually paid for — it is
 **never** a flat 12 months regardless of billing cadence:
 
-- **Monthly plan** → the key is valid for **1 month**. Each renewal invoice
-  (`invoice.paid` with `billing_reason: 'subscription_cycle'`) mints and
-  emails a **fresh** 1-month key automatically, so an active monthly
-  subscriber's key never actually expires — it just gets replaced every
-  billing cycle. The very first invoice of a new subscription
+- **Expiry = paid period end + grace.** `exp` is the Stripe period end
+  (`sub.current_period_end` at checkout, the invoice line's `period.end` on
+  renewal) plus `LICENSE_GRACE_DAYS` (default 7, 0–30). A key counted from
+  the moment it was minted used to die about an hour before Stripe charged
+  the renewal, so every monthly self-hosted install dropped to Free once a
+  month. With no period end available the issuer falls back to 1 or 12
+  calendar months.
+- **Monthly plan** → each renewal invoice (`invoice.paid` with
+  `billing_reason: 'subscription_cycle'`) mints and emails a new key, marked
+  as a renewal. The previous key overlaps it until its own grace ends. A
+  self-hosted administrator pastes the new key; the hosted service needs
+  nothing. The very first invoice of a new subscription
   (`billing_reason: 'subscription_create'`) does **not** trigger a second
-  reissue — the initial `checkout.session.completed` handler already emailed
-  the first key, and reissuing again would double-email day one.
-- **Yearly plan** → the key is valid for **12 months**, matching the annual
-  billing cycle. No mid-year reissue.
+  issue — `checkout.session.completed` already emailed the first key.
+- **Yearly plan** → the key covers the paid year plus grace. No mid-year
+  reissue.
+- **`org` claim** → the buyer's business name, else the Stripe customer name,
+  else a company email domain (`resolveLicenseOrg`). The tax id is never put
+  in a key.
+- **A key that fails to sign or persist throws**, so the webhook answers 5xx
+  and Stripe retries; it used to answer 200 for a key that did not exist.
 - The billing cadence is read from `session.metadata.billingPeriod` (set by
   `routes/billing.js` at checkout) and persisted on
   `user_subscriptions.billing_period` so the renewal path can look it up
@@ -95,6 +106,14 @@ HTTP routes and nothing else: `POST /api/license/revocations`,
 > it runs `admin-grant.mjs --revoke`, which clears a *user's admin flag*
 > (`UPDATE users SET is_admin = 0`). Reaching for it during a chargeback would
 > leave the key working and demote an administrator instead.
+
+**Refunds and lost disputes revoke automatically.** A full `charge.refunded`,
+or `charge.dispute.closed` with status `lost`, revokes every live key of that
+subscription by `lid` (`revokeSubscriptionLicenses` in
+`server/lib/license-issuer.js`) and refreshes the hosted licence cache. An
+open dispute only holds the subscription; it may still be won. Keys minted
+before `issued_licenses.lid` existed (migration 38) cannot be revoked this
+way and simply expire.
 
 The list lives in **that instance's own database**. There is no phone-home, so
 revoking on the hosted deployment does not reach a customer's self-hosted
@@ -164,7 +183,12 @@ If email delivery fails:
 | `stripe_session_id` | Stripe checkout session ID (unique — idempotency key) |
 | `tier` | `'pro'` or `'enterprise'` |
 | `license_key` | Full signed license key string (`grm_lic_...`) |
-| `expires_at` | Expiry timestamp — 1 month from issue for a monthly plan, 12 months for yearly (see "License duration policy" above) |
+| `expires_at` | Expiry timestamp, identical to the key's `exp`: paid period end + grace (see "License duration policy" above) |
+| `lid` | The key's licence id, used to revoke it (migration 38; NULL on older rows) |
+| `org` | The `org` claim signed into the key |
+| `billing_period` | `monthly` or `yearly` |
+| `period_end` | End of the paid period the key covers |
+| `revoked_at`, `revoke_reason` | Set when a refund (`refund`) or lost dispute (`dispute`) revoked the key |
 | `issued_at` | Row creation timestamp |
 | `email_delivered` | `1` if the email was sent successfully, `0` otherwise |
 | `email_delivered_at` | Timestamp of successful delivery |

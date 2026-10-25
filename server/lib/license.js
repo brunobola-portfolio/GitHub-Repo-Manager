@@ -32,13 +32,21 @@ export function addCalendarMonths(unixSeconds, months) {
   return Math.floor(d.getTime() / 1000)
 }
 
+/**
+ * @param {object} opts
+ * @param {number} [opts.expiresAt] unix seconds; wins over `months`. Stripe keys
+ *   pass the paid period's end plus grace, so the next key exists before this
+ *   one stops (a key counted from minting died before its renewal was minted).
+ */
 export async function generateLicenseKey(opts, privateKeyPem) {
-  const { org, email, tier, seats, months, features, kid } = opts
+  const { org, email, tier, seats, months, features, kid, expiresAt } = opts
   const lid = randomUUID()
   const now = Math.floor(Date.now() / 1000)
-  const exp = months > 0
-    ? addCalendarMonths(now, months)
-    : now - 1
+  const exp = Number.isFinite(expiresAt) && expiresAt > now
+    ? Math.floor(expiresAt)
+    : months > 0
+      ? addCalendarMonths(now, months)
+      : now - 1
 
   const payload = { lid, org, email, tier, seats }
   if (features && features.length > 0) payload.features = features

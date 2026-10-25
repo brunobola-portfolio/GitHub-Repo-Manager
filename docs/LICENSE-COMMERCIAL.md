@@ -93,14 +93,19 @@ software itself. Apache-2.0 permits that to anyone, subscriber or not.
 ## 6. Term and Renewal
 
 - **The license term matches the billing period you paid for**, never a flat
-  12 months. A monthly subscription is issued a **1-month** key; an annual
-  subscription is issued a **12-month** key
-  ([`server/routes/stripe-webhooks.js`](../server/routes/stripe-webhooks.js)
-  derives `licenseMonths` from `session.metadata.billingPeriod`).
-- **Monthly keys renew automatically.** Each paid renewal invoice mints and
-  emails a fresh 1-month key, so an active monthly subscriber's key is
-  replaced every cycle rather than expiring. Annual keys are not reissued
-  mid-year.
+  12 months. A key is valid until the end of the paid period plus a **7-day
+  grace**: a monthly subscription's key covers that month, an annual
+  subscription's key covers that year
+  ([`server/lib/license-issuer.js`](../server/lib/license-issuer.js)
+  `licenseExpiry`).
+- **Each paid renewal emails a new key** before the previous one stops (the
+  grace is what guarantees the overlap). On the hosted service nothing needs
+  doing. On a self-hosted install an administrator pastes the new key under
+  Settings → License & Plan.
+- **A full refund or a lost chargeback revokes the keys it paid for.** The
+  hosted service stops honouring them at once; a self-hosted install that
+  never sees the revocation keeps the key only until its own end date (the
+  paid period plus grace).
 - **Cancelling does not switch your key off.** It stops the renewal; the key
   already in your hands keeps working until the end of its own 1-month or
   12-month window. Self-hosted activation is offline by design — there is no

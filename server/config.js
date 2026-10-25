@@ -96,6 +96,8 @@ const configSchema = z.object({
 
     // License issuance — Ed25519 PEM key. Required in prod when Stripe is enabled.
     licenseSigningPrivateKeyPem: z.string().optional(),
+    // Days a Stripe key outlives its paid period (license-issuer.js licenseGraceDays).
+    licenseGraceDays: z.string().optional(),
 
     // Data retention (G2)
     dataRetentionDays: z.coerce.number().default(365),
@@ -189,6 +191,7 @@ function loadConfig() {
         resendApiKey: process.env.RESEND_API_KEY,
         emailFrom: process.env.EMAIL_FROM,
         licenseSigningPrivateKeyPem: process.env.LICENSE_SIGNING_PRIVATE_KEY_PEM,
+        licenseGraceDays: process.env.LICENSE_GRACE_DAYS,
         dataRetentionDays: process.env.DATA_RETENTION_DAYS,
         dataRetentionWarningLeadDays: process.env.DATA_RETENTION_WARNING_LEAD_DAYS,
         aiRequireUserConfig: process.env.AI_REQUIRE_USER_CONFIG,

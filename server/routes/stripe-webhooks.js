@@ -2,7 +2,7 @@ import { getStripe, isStripeEnabled } from '../lib/stripe.js';
 import { config } from '../config.js';
 import db from '../db.js';
 import logger from '../lib/logger.js';
-import { issueLicenseForCheckout } from '../lib/license-issuer.js';
+import { issueLicenseForCheckout, resolveLicenseOrg, revokeSubscriptionLicenses } from '../lib/license-issuer.js';
 
 const VALID_TIERS = new Set(['free', 'pro', 'enterprise']);
 
@@ -68,6 +68,40 @@ export function normaliseStripeEventShape(event) {
         if (obj.current_period_end == null && item?.current_period_end != null) obj.current_period_end = item.current_period_end;
     }
     return event;
+}
+
+/**
+ * End of the period an invoice paid for, in unix seconds. A renewal invoice
+ * carries one subscription line; proration can add more, so the latest end
+ * wins. null when Stripe sent no period (the issuer then counts months).
+ */
+export function invoicePeriodEnd(invoice) {
+    const ends = (invoice?.lines?.data || []).map((l) => l?.period?.end).filter(Number.isFinite);
+    return ends.length ? Math.max(...ends) : null;
+}
+
+async function subscriptionPeriodEnd(stripe, subscriptionId) {
+    if (!subscriptionId) return null;
+    try {
+        const sub = await stripe.subscriptions.retrieve(subscriptionId);
+        const end = sub?.current_period_end ?? sub?.items?.data?.[0]?.current_period_end;
+        return Number.isFinite(end) ? end : null;
+    } catch (err) {
+        // The key still gets a calendar-month expiry; only the grace is lost.
+        logger.warn({ err, subscriptionId }, 'stripe-webhook: could not read the subscription period end');
+        return null;
+    }
+}
+
+async function revokeKeysFor(subscriptionId, reason) {
+    const revoked = revokeSubscriptionLicenses(subscriptionId, reason);
+    if (revoked > 0) {
+        // Loaded on use: require-tier pulls in the licence store and config,
+        // which this module otherwise has no reason to load at import time.
+        const { refreshLicenseCache } = await import('../middleware/require-tier.js');
+        await refreshLicenseCache();
+    }
+    logger.warn({ subscriptionId, reason, revoked }, 'stripe-webhook: subscription licence keys revoked');
 }
 
 export async function stripeWebhookHandler(req, res) {
@@ -225,6 +259,13 @@ export async function stripeWebhookHandler(req, res) {
                                 tier,
                                 seats: parseInt(session.metadata?.seats) || 1,
                                 months: licenseMonths,
+                                billingPeriod,
+                                periodEnd: await subscriptionPeriodEnd(stripe, session.subscription),
+                                org: resolveLicenseOrg({
+                                    businessName: session.collected_information?.business_name ?? session.customer_details?.business_name,
+                                    customerName: stripeCustomer.name ?? session.customer_details?.name,
+                                    email: recipientEmail,
+                                }),
                                 stripeSubscriptionId: session.subscription,
                                 stripeSessionId: session.id,
                             });
@@ -362,6 +403,12 @@ export async function stripeWebhookHandler(req, res) {
                     { subscriptionId, eventType: event.type, rowsUpdated: result.changes },
                     'stripe-webhook: subscription downgraded to free after refund/dispute'
                 );
+                // A full refund returns the money that paid for the keys, so
+                // they are revoked. An open dispute only holds: it may still
+                // be won, and charge.dispute.closed (lost) revokes then.
+                if (event.type === 'charge.refunded') {
+                    await revokeKeysFor(subscriptionId, 'refund');
+                }
                 break;
             }
 
@@ -371,8 +418,8 @@ export async function stripeWebhookHandler(req, res) {
             // row. A lost dispute leaves the hold exactly where it is.
             case 'charge.dispute.closed': {
                 const dispute = event.data.object;
-                if (dispute.status !== 'won') {
-                    logger.info({ disputeId: dispute.id, status: dispute.status }, 'stripe-webhook: dispute closed without a win, hold stands');
+                if (dispute.status !== 'won' && dispute.status !== 'lost') {
+                    logger.info({ disputeId: dispute.id, status: dispute.status }, 'stripe-webhook: dispute closed without a decision, hold stands');
                     break;
                 }
 
@@ -392,6 +439,14 @@ export async function stripeWebhookHandler(req, res) {
                 }
 
                 if (!subscriptionId) break;
+
+                // Lost: the bank took the money back. The hold stands and the
+                // keys it paid for are revoked.
+                if (dispute.status === 'lost') {
+                    await revokeKeysFor(subscriptionId, 'dispute');
+                    logger.warn({ subscriptionId, disputeId: dispute.id }, 'stripe-webhook: dispute lost, hold stands, keys revoked');
+                    break;
+                }
 
                 const sub = await stripe.subscriptions.retrieve(subscriptionId);
                 const rawTier = sub.metadata?.tier || sub.items?.data?.[0]?.price?.metadata?.tier || 'pro';
@@ -445,6 +500,9 @@ export async function stripeWebhookHandler(req, res) {
                                 tier,
                                 seats: 1,
                                 months: deferred.billing_period === 'yearly' ? 12 : 1,
+                                billingPeriod: deferred.billing_period === 'yearly' ? 'yearly' : 'monthly',
+                                periodEnd: invoicePeriodEnd(invoice),
+                                org: resolveLicenseOrg({ customerName: invoice.customer_name, email: recipientEmail }),
                                 stripeSubscriptionId: invoice.subscription,
                                 stripeSessionId: invoice.id,
                             });
@@ -503,6 +561,10 @@ export async function stripeWebhookHandler(req, res) {
                                     tier: subRow.tier,
                                     seats: 1,
                                     months: subRow.billing_period === 'yearly' ? 12 : 1,
+                                    billingPeriod: subRow.billing_period === 'yearly' ? 'yearly' : 'monthly',
+                                    periodEnd: invoicePeriodEnd(invoice),
+                                    org: resolveLicenseOrg({ customerName: invoice.customer_name, email: recipientEmail }),
+                                    renewal: true,
                                     stripeSubscriptionId: invoice.subscription,
                                     // invoice.id is the natural idempotency key
                                     // for a renewal reissue — one license per

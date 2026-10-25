@@ -678,6 +678,24 @@ export const MIGRATIONS = [
             db.exec('CREATE INDEX IF NOT EXISTS idx_wbhs_user_repo_time ON work_board_health_snapshots(user_id, repo_full_name, captured_at)');
         },
     },
+    {
+        version: 38,
+        name: 'issued_licenses: lid, org, period end and revocation state',
+        up(db) {
+            // Without the key's `lid` a refund could not revoke the key it paid
+            // for, and without the period end nothing could tell which key is
+            // the live one for a subscription. Rows minted before this have
+            // NULLs; they expire on their own `expires_at`.
+            addColumnIfMissing(db, 'issued_licenses', 'lid', 'TEXT');
+            addColumnIfMissing(db, 'issued_licenses', 'org', 'TEXT');
+            addColumnIfMissing(db, 'issued_licenses', 'billing_period', 'TEXT');
+            addColumnIfMissing(db, 'issued_licenses', 'period_end', 'DATETIME');
+            addColumnIfMissing(db, 'issued_licenses', 'revoked_at', 'DATETIME');
+            addColumnIfMissing(db, 'issued_licenses', 'revoke_reason', 'TEXT');
+            db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_issued_licenses_lid ON issued_licenses(lid) WHERE lid IS NOT NULL');
+            db.exec('CREATE INDEX IF NOT EXISTS idx_issued_licenses_sub ON issued_licenses(stripe_subscription_id)');
+        },
+    },
 ];
 
 // The highest version this build of the app knows how to apply. Used to

@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 const mockPrepare = vi.fn()
 
 vi.mock('../db.js', () => ({
-    default: { prepare: mockPrepare },
+    default: { prepare: mockPrepare, transaction: (fn) => (...args) => fn(...args) },
 }))
 
 vi.mock('../lib/logger.js', () => ({
@@ -266,6 +266,7 @@ describe('issueLicenseForCheckout', () => {
             stripeSessionId: OPTS.stripeSessionId,
             tier: OPTS.tier,
             months: 12,
+            renewal: false,
         })
         expect(JSON.stringify(args.context)).not.toContain('grm_lic_key')
         expect(args.text).not.toContain('bruno@bolalabs.pt')
@@ -274,7 +275,7 @@ describe('issueLicenseForCheckout', () => {
     it('dead-letter handler rebuilds the email from issued_licenses and records delivery', async () => {
         const updateStmt = makeStmt()
         setupDb([
-            [/SELECT license_key, tier FROM issued_licenses/, makeStmt({ get: { license_key: 'grm_lic_stored', tier: 'pro' } })],
+            [/SELECT license_key, tier, expires_at, billing_period FROM issued_licenses/, makeStmt({ get: { license_key: 'grm_lic_stored', tier: 'pro' } })],
             [/UPDATE issued_licenses/, updateStmt],
         ])
 
@@ -289,9 +290,147 @@ describe('issueLicenseForCheckout', () => {
     })
 
     it('dead-letter handler returns null when the licence row is gone', async () => {
-        setupDb([[/SELECT license_key, tier FROM issued_licenses/, makeStmt({ get: undefined })]])
+        setupDb([[/SELECT license_key, tier, expires_at, billing_period FROM issued_licenses/, makeStmt({ get: undefined })]])
         const { licenseEmailDeadLetterHandler } = await import('../lib/license-issuer.js')
         expect(licenseEmailDeadLetterHandler.rebuild({ stripeSessionId: 'cs_missing' })).toBeNull()
         expect(licenseEmailDeadLetterHandler.rebuild({})).toBeNull()
+    })
+})
+
+// A JWT-shaped key whose payload carries a lid, so the issuer can store it.
+function fakeKey(lid) {
+    const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url')
+    return `grm_lic_${b64({ alg: 'EdDSA' })}.${b64({ lid, tier: 'pro' })}.sig`
+}
+
+describe('licence expiry and org', () => {
+    const originalGrace = process.env.LICENSE_GRACE_DAYS
+    afterEach(() => {
+        if (originalGrace === undefined) delete process.env.LICENSE_GRACE_DAYS
+        else process.env.LICENSE_GRACE_DAYS = originalGrace
+    })
+
+    it('a key outlives its paid period by the grace, so the renewal key exists first', async () => {
+        const { licenseExpiry } = await import('../lib/license-issuer.js')
+        const now = 1_800_000_000
+        const periodEnd = now + 30 * 86400
+        expect(licenseExpiry({ periodEnd, months: 1, now })).toBe(periodEnd + 7 * 86400)
+        process.env.LICENSE_GRACE_DAYS = '3'
+        expect(licenseExpiry({ periodEnd, months: 1, now })).toBe(periodEnd + 3 * 86400)
+        process.env.LICENSE_GRACE_DAYS = '999'
+        expect(licenseExpiry({ periodEnd, months: 1, now })).toBe(periodEnd + 7 * 86400)
+    })
+
+    it('without a period end it falls back to calendar months from now', async () => {
+        const { licenseExpiry } = await import('../lib/license-issuer.js')
+        const { addCalendarMonths } = await import('../lib/license.js')
+        const now = 1_800_000_000
+        expect(licenseExpiry({ periodEnd: null, months: 12, now })).toBe(addCalendarMonths(now, 12))
+        expect(licenseExpiry({ periodEnd: now - 10, months: 1, now })).toBe(addCalendarMonths(now, 1))
+    })
+
+    it('org: business name, then customer name, then a company domain, never a free-mail domain', async () => {
+        const { resolveLicenseOrg } = await import('../lib/license-issuer.js')
+        expect(resolveLicenseOrg({ businessName: ' Acme,\nLda ', customerName: 'Jo', email: 'a@acme.pt' })).toBe('Acme, Lda')
+        expect(resolveLicenseOrg({ customerName: 'Joana Silva', email: 'j@gmail.com' })).toBe('Joana Silva')
+        expect(resolveLicenseOrg({ email: 'dev@acme.pt' })).toBe('acme.pt')
+        expect(resolveLicenseOrg({ email: 'dev@gmail.com' })).toBe('dev@gmail.com')
+        expect(resolveLicenseOrg({})).toBeNull()
+    })
+})
+
+describe('issuing with a period end', () => {
+    beforeEach(() => {
+        mockPrepare.mockReset()
+        vi.mocked(generateLicenseKey).mockReset()
+        vi.mocked(sendEmail).mockReset().mockResolvedValue({ ok: true, id: 'e' })
+        vi.mocked(isEmailDeliveryConfigured).mockReturnValue(true)
+        process.env.LICENSE_SIGNING_PRIVATE_KEY_PEM = 'FAKE_PEM'
+        delete process.env.LICENSE_GRACE_DAYS
+    })
+
+    it('signs exp = period end + grace with the org, and stores lid, org and period', async () => {
+        vi.mocked(generateLicenseKey).mockResolvedValue(fakeKey('lid-123'))
+        const insert = makeStmt()
+        setupDb([[/SELECT license_key/, makeStmt()], [/INSERT OR IGNORE INTO issued_licenses/, insert]])
+        const periodEnd = Math.floor(Date.now() / 1000) + 30 * 86400
+        const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
+        await issueLicenseForCheckout({ ...OPTS, months: 1, periodEnd, org: 'Acme, Lda', billingPeriod: 'monthly' })
+
+        expect(generateLicenseKey).toHaveBeenCalledWith(
+            expect.objectContaining({ org: 'Acme, Lda', expiresAt: periodEnd + 7 * 86400 }),
+            'FAKE_PEM'
+        )
+        const args = insert.run.mock.calls[0]
+        expect(args).toContain('lid-123')
+        expect(args).toContain('Acme, Lda')
+        expect(args).toContain('monthly')
+        expect(args).toContain(new Date(periodEnd * 1000).toISOString())
+        expect(args).toContain(new Date((periodEnd + 7 * 86400) * 1000).toISOString())
+    })
+
+    it('a signing failure throws so Stripe retries, instead of answering 200 for a key that does not exist', async () => {
+        vi.mocked(generateLicenseKey).mockRejectedValue(new Error('bad pem'))
+        setupDb([[/SELECT license_key/, makeStmt()]])
+        const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
+        await expect(issueLicenseForCheckout(OPTS)).rejects.toThrow(/generation failed/)
+    })
+
+    it('a persistence failure throws too', async () => {
+        vi.mocked(generateLicenseKey).mockResolvedValue(fakeKey('lid-x'))
+        const insert = makeStmt()
+        insert.run.mockImplementation(() => { throw new Error('disk full') })
+        setupDb([[/SELECT license_key/, makeStmt()], [/INSERT OR IGNORE INTO issued_licenses/, insert]])
+        const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
+        await expect(issueLicenseForCheckout(OPTS)).rejects.toThrow(/persistence failed/)
+        expect(sendEmail).not.toHaveBeenCalled()
+    })
+
+    it('the email names the real end date and never promises self-hosters "no action needed"', async () => {
+        vi.mocked(generateLicenseKey).mockResolvedValue(fakeKey('lid-m'))
+        setupDb([[/SELECT license_key/, makeStmt()], [/INSERT OR IGNORE INTO issued_licenses/, makeStmt()]])
+        const periodEnd = Date.UTC(2031, 0, 10) / 1000
+        const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
+        await issueLicenseForCheckout({ ...OPTS, months: 1, periodEnd, billingPeriod: 'monthly' })
+        const [mail] = sendEmail.mock.calls[0]
+        expect(mail.text).toContain('valid until 2031-01-17')
+        expect(mail.text).toMatch(/paste each new key under Settings/)
+        expect(mail.text.toLowerCase()).not.toContain('no action needed')
+        expect(mail.subject).not.toMatch(/renewed/)
+    })
+
+    it('a renewal says so instead of thanking the customer for subscribing again', async () => {
+        vi.mocked(generateLicenseKey).mockResolvedValue(fakeKey('lid-r'))
+        setupDb([[/SELECT license_key/, makeStmt()], [/INSERT OR IGNORE INTO issued_licenses/, makeStmt()]])
+        const { issueLicenseForCheckout } = await import('../lib/license-issuer.js')
+        await issueLicenseForCheckout({ ...OPTS, renewal: true, stripeSessionId: 'in_1' })
+        const [mail] = sendEmail.mock.calls[0]
+        expect(mail.subject).toMatch(/renewed/)
+        expect(mail.text).not.toContain('Thank you for subscribing')
+        expect(mail.context.renewal).toBe(true)
+    })
+})
+
+describe('revokeSubscriptionLicenses', () => {
+    it('revokes every live key of the subscription and marks the rows', async () => {
+        mockPrepare.mockReset()
+        const select = makeStmt()
+        select.all.mockReturnValue([
+            { lid: 'a', org: 'Acme', tier: 'pro', expires_at: '2031-01-01T00:00:00.000Z' },
+            { lid: 'b', org: 'Acme', tier: 'pro', expires_at: '2031-02-01T00:00:00.000Z' },
+        ])
+        const revoke = makeStmt()
+        const mark = makeStmt()
+        setupDb([
+            [/SELECT lid, org, tier, expires_at FROM issued_licenses/, select],
+            [/INSERT INTO revoked_licenses/, revoke],
+            [/UPDATE issued_licenses SET revoked_at/, mark],
+        ])
+        const { revokeSubscriptionLicenses } = await import('../lib/license-issuer.js')
+        expect(revokeSubscriptionLicenses('sub_1', 'refund')).toBe(2)
+        expect(select.all).toHaveBeenCalledWith('sub_1')
+        expect(revoke.run).toHaveBeenCalledTimes(2)
+        expect(revoke.run.mock.calls[0][0]).toMatchObject({ lid: 'a', reason: 'refund', org: 'Acme' })
+        expect(mark.run).toHaveBeenCalledWith('refund', 'b')
     })
 })

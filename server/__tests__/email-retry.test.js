@@ -253,7 +253,8 @@ describe('email retry + dead-letter', () => {
             CREATE TABLE issued_licenses (
                 id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, stripe_subscription_id TEXT,
                 stripe_session_id TEXT UNIQUE, tier TEXT, license_key TEXT, expires_at TEXT,
-                email_delivered INTEGER DEFAULT 0, email_delivered_at DATETIME
+                email_delivered INTEGER DEFAULT 0, email_delivered_at DATETIME,
+                lid TEXT, org TEXT, billing_period TEXT, period_end DATETIME, revoked_at DATETIME, revoke_reason TEXT
             )
         `)
         memDb.prepare(`INSERT INTO issued_licenses (user_id, stripe_session_id, tier, license_key) VALUES (1, 'cs_42', 'pro', 'grm_lic_REBUILT')`).run()
