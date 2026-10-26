@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- **Error monitoring stays restrictive on the next Sentry SDK.** Sentry 11
+  collects cookies, request bodies and database queries unless told not to;
+  both the server and the browser now say so explicitly, and a build gate
+  keeps it that way. Nothing changes in what is sent today.
+
 ### Fixed
 
 - **A declined renewal no longer drops you to Free while the card is being
