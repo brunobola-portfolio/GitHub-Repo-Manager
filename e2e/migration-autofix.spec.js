@@ -116,7 +116,7 @@ test.describe('Migration Auto-Fix Drawer', () => {
     await page.getByRole('option', { name: 'APOS' }).click()
 
     // Click Next to advance to repoSelect
-    await page.getByRole('button', { name: /Next/i }).click()
+    await page.getByRole('button', { name: 'Next', exact: true }).click()
 
     // Step 3: repoSelect — the step title is rendered as a paragraph in the
     // wizard's stepInfo block, not as an ARIA heading, so match by text.
