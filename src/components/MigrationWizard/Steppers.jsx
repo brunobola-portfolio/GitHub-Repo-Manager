@@ -279,7 +279,6 @@ export function SidebarStepper({
                   type="button"
                   onClick={() => isClickable && onGoToStep(step)}
                   disabled={!isClickable}
-                  aria-label={`${label}${isActiveLike ? ' (current)' : status === 'done' ? ' (done)' : ''}`}
                   aria-current={isActiveLike ? 'step' : undefined}
                   title={!isClickable && status === 'pending' ? `Available after "${STEP_LABELS[steps[currentStepIndex]] || ''}"` : undefined}
                   className={`
@@ -298,6 +297,8 @@ export function SidebarStepper({
                     <div className="flex items-center gap-1.5">
                       <span className={`ds-text-sm font-semibold truncate leading-tight ${tone.label}`}>
                         {label}
+                        {/* Status as text after the visible label, not an aria-label over it (WCAG 2.5.3). */}
+                        {status === 'done' && <span className="sr-only"> (done)</span>}
                       </span>
                       {tone.pill && (
                         <span className={`ds-eyebrow px-1.5 py-0.5 rounded-md leading-none ${tone.pill.cls}`}>
@@ -347,7 +348,8 @@ export function HorizontalStepper({ steps, currentStepIndex, onGoToStep }) {
                   type="button"
                   onClick={() => onGoToStep(step)}
                   disabled={!isCompleted}
-                  aria-label={`${label}${isActive ? ' (current)' : isCompleted ? ' (completed)' : ''}`}
+                  // The disc shows the step number until done, so the name starts with it (WCAG 2.5.3).
+                  aria-label={isCompleted ? `${label} (completed)` : `${index + 1}. ${label}${isActive ? ' (current)' : ''}`}
                   aria-current={isActive ? 'step' : undefined}
                   className={`
                     flex items-center justify-center rounded-full text-xs font-bold transition-all

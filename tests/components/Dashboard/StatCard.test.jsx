@@ -24,7 +24,7 @@ describe('Dashboard StatCard — interactive variant', () => {
 
 	it('renders as a button when onClick is provided', () => {
 		render(<StatCard title="Total" value={42} icon={Folder} onClick={() => { }} hint="View all repositories" />)
-		const btn = screen.getByRole('button', { name: /Total — View all repositories/i })
+		const btn = screen.getByRole('button', { name: /^Total\s*\d+\b.*View all repositories/i })
 		expect(btn).toBeInTheDocument()
 		expect(btn).toHaveAttribute('tabindex', '0')
 	})

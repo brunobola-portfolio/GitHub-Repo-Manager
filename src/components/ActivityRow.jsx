@@ -34,13 +34,14 @@ export function ActivityRow({ event }) {
                     <div className="mt-1.5 flex items-center gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">
                         <button
                             className="ds-text-micro font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline flex items-center gap-1"
-                            aria-label="View activity details"
                             onClick={() => {
                                 const repoName = event.repo?.name
                                 if (repoName) window.open(`https://github.com/${repoName}`, '_blank', 'noopener')
                             }}
                         >
-                            View Details <ExternalLink className="w-2.5 h-2.5" />
+                            View Details
+                            <span className="sr-only"> of {event.repo?.name || 'this repository'} on GitHub (opens in a new tab)</span>
+                            <ExternalLink className="w-2.5 h-2.5" aria-hidden="true" />
                         </button>
                     </div>
                 </div>

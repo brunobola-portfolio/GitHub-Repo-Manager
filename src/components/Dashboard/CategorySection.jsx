@@ -71,7 +71,6 @@ export function CategorySection({
                     type="button"
                     onClick={() => setIsExpanded((v) => !v)}
                     aria-expanded={isExpanded}
-                    aria-label={isExpanded ? `Collapse ${title}` : `Expand ${title}`}
                     className="group flex-1 min-w-0 flex items-center gap-3 text-left ds-focus-ring rounded-xl"
                 >
                     {Icon && (
