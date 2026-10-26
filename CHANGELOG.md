@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   subscriptions, so the first failed renewal removed Pro at once even though
   Stripe was still retrying and had emailed a link to fix the card. `past_due`
   and `trialing` now keep it; access ends when Stripe gives up and cancels.
+- **The Terms and Privacy pages identify the seller as "BolaLabs, Portugal,
+  Europe"**, with the legal identification sent by email on request to
+  customers, data subjects and authorities. A build gate keeps tax numbers,
+  personal names and personal addresses off every public surface.
 - **Accessible names now contain the visible text** (WCAG 2.5.3): the Work
   Board button with its count, the dashboard's "what needs you" cards and the
   mobile Filter button were announced under a different name than they show.
