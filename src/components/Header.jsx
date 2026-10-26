@@ -465,13 +465,17 @@ function HeaderIconButton({ onClick, label, title, children, disabled, active, .
 // Navigation Button Component
 function NavButton({ active, onClick, icon, label, badge }) {
     const IconComponent = icon
+    const badgeText = badge > 9 ? '9+' : String(badge)
+    // The name must contain the visible text (WCAG 2.5.3): "Work Board 5",
+    // not "Work Board", or speech users saying what they see miss the button.
+    const name = badge > 0 ? `${label} ${badgeText}, ${badge} need attention` : label
     return (
         <Tooltip label={label}>
             <button
                 type="button"
                 onClick={onClick}
                 aria-current={active ? 'page' : undefined}
-                aria-label={label}
+                aria-label={name}
                 className={`relative flex items-center gap-1.5 px-2.5 lg:px-3.5 h-[34px] rounded-[9px] ds-text-sm font-semibold transition-all duration-200 ds-focus-ring ds-font-display ${active
                     ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-slate-100 ds-elevation-sm'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/50 dark:hover:bg-slate-600/40'
@@ -480,11 +484,8 @@ function NavButton({ active, onClick, icon, label, badge }) {
                 {IconComponent && <IconComponent className="w-4 h-4" />}
                 <span className="hidden nav:inline">{label}</span>
                 {badge > 0 && (
-                    <span
-                        aria-label={`${badge} items need attention`}
-                        className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 ds-text-micro font-bold rounded-full bg-brand-500 text-white"
-                    >
-                        {badge > 9 ? '9+' : badge}
+                    <span className="ml-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 ds-text-micro font-bold rounded-full bg-brand-500 text-white">
+                        {badgeText}
                     </span>
                 )}
             </button>
