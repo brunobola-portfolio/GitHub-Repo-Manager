@@ -340,6 +340,8 @@ describe('PricingPage — resumes a checkout intent carried through sign-in', ()
         render(<PricingPage />)
         await waitFor(() => screen.getByRole('button', { name: /contact us about pro/i }))
         expect(checkoutCalls()).toHaveLength(0)
-        expect(window.location.search).toBe('')
+        // The flag is cleared by its own effect once the probe settles, which can land
+        // after the contact button renders; wait for it rather than race it.
+        await waitFor(() => expect(window.location.search).toBe(''))
     })
 })
