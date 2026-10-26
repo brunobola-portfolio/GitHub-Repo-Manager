@@ -37,6 +37,14 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.28.1 (2026-10-26) — Kept access while a card is retried, seller by
+  brand only, safer monitoring.** Error monitoring stays restrictive on the
+  next Sentry SDK; A declined renewal no longer drops you to Free while the
+  card is being
+  retried; The Terms and Privacy pages identify the seller
+  as "BolaLabs, Portugal,
+  Europe"; Accessible names now contain the
+  visible text.
 - **v4.28.0 (2026-10-25) — Licences per machine, leak control, premium
   e-mail.** Licence check-in: renewals arrive by themselves, and
   installations are
