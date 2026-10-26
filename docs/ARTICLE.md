@@ -1,6 +1,6 @@
 # The GitHub Dashboard That Thinks: Building an AI-Native Repository Platform
 
-*By Bruno Silva Marques, Bola Labs — GitHub Repo Manager v4.7.0, July 2026*
+*By BolaLabs — GitHub Repo Manager v4.7.0, July 2026*
 
 ---
 
@@ -180,4 +180,4 @@ Dev demo mode runs the full UI with 87 realistic mock repositories and mock AI r
 
 ---
 
-*Bruno Silva Marques is the founder of Bola Labs, building modern developer tools at the intersection of AI and software engineering. If GitHub Repo Manager is useful to you, a star on the [repository](https://github.com/brunobola-portfolio/GitHub-Repo-Manager) genuinely helps.*
+*BolaLabs builds developer tools at the intersection of AI and software engineering. If GitHub Repo Manager is useful to you, a star on the [repository](https://github.com/brunobola-portfolio/GitHub-Repo-Manager) genuinely helps.*

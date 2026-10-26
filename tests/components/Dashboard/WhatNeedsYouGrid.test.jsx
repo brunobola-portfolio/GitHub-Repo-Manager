@@ -50,9 +50,10 @@ describe('WhatNeedsYouGrid', () => {
     it('renders three category cards with counts after fetch', async () => {
         mockCounts(5, 3, 7)
         renderPro(<WhatNeedsYouGrid onOpenWorkBoard={() => {}} />)
-        await waitFor(() => expect(screen.getByLabelText(/5 reviews waiting/i)).toBeInTheDocument())
-        expect(screen.getByLabelText(/3 stale prs/i)).toBeInTheDocument()
-        expect(screen.getByLabelText(/7 issues/i)).toBeInTheDocument()
+        // The accessible name starts with the visible text (WCAG 2.5.3 label in name).
+        await waitFor(() => expect(screen.getByRole('button', { name: /^reviews waiting\s*5\b.*work board reviews tab/i })).toBeInTheDocument())
+        expect(screen.getByRole('button', { name: /^stale prs\s*3\b/i })).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: /issues.*\b7\b/i })).toBeInTheDocument()
     })
 
     it('shows empty state when all counts are zero', async () => {
@@ -65,8 +66,8 @@ describe('WhatNeedsYouGrid', () => {
         mockCounts(2, 0, 0)
         const onOpen = vi.fn()
         renderPro(<WhatNeedsYouGrid onOpenWorkBoard={onOpen} />)
-        await waitFor(() => screen.getByLabelText(/2 reviews waiting/i))
-        fireEvent.click(screen.getByLabelText(/2 reviews waiting/i))
+        const card = await screen.findByRole('button', { name: /^reviews waiting\s*2\b/i })
+        fireEvent.click(card)
         expect(onOpen).toHaveBeenCalledWith({ initialTab: 'reviews' })
     })
 

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **A declined renewal no longer drops you to Free while the card is being
+  retried.** The hosted app kept the paid tier only for `active`
+  subscriptions, so the first failed renewal removed Pro at once even though
+  Stripe was still retrying and had emailed a link to fix the card. `past_due`
+  and `trialing` now keep it; access ends when Stripe gives up and cancels.
+- **Accessible names now contain the visible text** (WCAG 2.5.3): the Work
+  Board button with its count, the dashboard's "what needs you" cards and the
+  mobile Filter button were announced under a different name than they show.
+
 ## [4.28.0] - 2026-10-25
 
 ### Added
