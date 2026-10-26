@@ -176,7 +176,7 @@ Dev demo mode runs the full UI with 87 realistic mock repositories and mock AI r
 
 ## Licensing
 
-**Apache-2.0** — free to run, modify, embed and redistribute, forever, with no copyleft. The name and the mark are reserved (Apache-2.0 §6, spelled out in `TRADEMARKS.md`): fork freely, rename the fork. A **commercial subscription** buys capacity, a hosted instance and support — never permission, which the licence already granted — **[bruno@bolalabs.pt](mailto:bruno@bolalabs.pt)**.
+**Apache-2.0** — free to run, modify, embed and redistribute, forever, with no copyleft. The name and the mark are reserved (Apache-2.0 §6, spelled out in `TRADEMARKS.md`): fork freely, rename the fork. A **commercial subscription** buys capacity, a hosted instance and support — never permission, which the licence already granted — **[suporte@bolalabs.pt](mailto:suporte@bolalabs.pt)**.
 
 ---
 

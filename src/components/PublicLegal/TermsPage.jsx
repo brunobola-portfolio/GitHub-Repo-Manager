@@ -70,12 +70,14 @@ export default function TermsPage() {
 
                 <Section id="who" title="Who you are contracting with">
                     <p>
-                        BolaLabs (NIF PT217885802), Portugal, contactable at{' '}
+                        BolaLabs, Portugal, Europe, contactable at{' '}
                         <a href={`mailto:${CONTROLLER_EMAIL}`} className="underline">
                             {CONTROLLER_EMAIL}
                         </a>
-                        . Using this service means accepting these terms. If you are buying on behalf
-                        of a company, you confirm you may bind it.
+                        . The provider&apos;s legal identification details are sent on request, by
+                        email to that address, to customers and competent authorities. Using this
+                        service means accepting these terms. If you are buying on behalf of a
+                        company, you confirm you may bind it.
                     </p>
                 </Section>
 

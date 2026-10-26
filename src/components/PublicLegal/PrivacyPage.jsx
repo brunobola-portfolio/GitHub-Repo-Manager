@@ -59,9 +59,10 @@ export default function PrivacyPage() {
 
                 <Section id="controller" title="Who is responsible">
                     <p>
-                        BolaLabs (NIF PT217885802), Portugal, is the data controller for this
-                        hosted instance. For anything in this policy — including access, export or
-                        erasure requests — write to{' '}
+                        BolaLabs, Portugal, Europe, is the data controller for this hosted
+                        instance; its legal identification details are provided on request to data
+                        subjects and competent authorities. For anything in this policy — including
+                        access, export or erasure requests — write to{' '}
                         <a className="underline ds-focus-ring rounded" href={`mailto:${CONTROLLER_EMAIL}`}>
                             {CONTROLLER_EMAIL}
                         </a>
