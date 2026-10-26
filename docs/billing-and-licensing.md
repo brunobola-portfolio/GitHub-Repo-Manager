@@ -127,6 +127,15 @@ retries):
 | Dispute opened | Free (`disputed` hold) | collection paused (`pause_collection: void`) | kept |
 | Dispute won | restored from Stripe | collection resumed | kept |
 | Dispute lost | stays on hold | cancelled | revoked |
+| Renewal declined | kept (`past_due`) while Stripe retries | retried (Smart Retries); Stripe emails the customer a link to fix the card | the current key runs to its own end (period end + grace); no renewal key until paid |
+| Retries exhausted | Free | cancelled by Stripe (`customer.subscription.deleted`) when the Dashboard is set to cancel after the last retry | expires on its own `exp` |
+| Declined renewal then paid | kept | active | renewal key issued; installs pick it up at check-in |
+
+The paid tier on the hosted app follows `active`, `trialing` and `past_due`
+(`server/middleware/require-tier.js`). Stripe Dashboard settings this table
+assumes: Billing → Revenue recovery → Retries on Smart Retries with "cancel
+the subscription" after the last attempt, and Revenue recovery → Emails with
+"Send emails when card payments fail" on.
 
 An operator lifts a hold with `POST /api/admin/billing/holds/:userId/clear`
 (reason required, audited as `billing.hold.clear`); `GET
