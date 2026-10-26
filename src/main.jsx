@@ -55,6 +55,22 @@ if (sentryDsn) {
     environment: import.meta.env.MODE,
     release: `github-repo-manager@${import.meta.env.VITE_APP_VERSION}`,
     sendDefaultPii: false,
+    // Sentry 11 replaced sendDefaultPii with dataCollection and made the
+    // unset default permissive: cookies (the session), full request and
+    // response bodies (prompts, keys), database query data and user info.
+    // sendDefaultPii is kept for v10, which ignores this block; v11 ignores
+    // sendDefaultPii and reads this one. Both say: collect nothing personal.
+    dataCollection: {
+        userInfo: false,
+        cookies: false,
+        httpHeaders: { request: { deny: ['forwarded', '-ip', 'remote-', 'via', '-user', 'authorization', 'cookie', 'x-api-key', 'x-csrf-token'] }, response: { deny: ['forwarded', '-ip', 'remote-', 'via', '-user', 'authorization', 'cookie', 'x-api-key', 'x-csrf-token'] } },
+        httpBodies: [],
+        urlQueryParams: { deny: ['code', 'state', 'token', 'access_token', 'key', 'forwarded', '-ip', 'remote-', 'via', '-user'] },
+        genAI: { inputs: false, outputs: false },
+        databaseQueryData: false,
+        queues: false,
+        graphQL: { document: false, variables: false },
+    },
     // OAuth callbacks carry ?code=&state= in the URL for a moment; nothing
     // with a credential in it leaves the browser.
     beforeSend(event) {
