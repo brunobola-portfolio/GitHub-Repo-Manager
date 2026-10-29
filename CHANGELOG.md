@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.28.2] - 2026-10-29
+
 ### Fixed
 
 - **Signed-in users no longer hit "Rate limit exceeded" after a few clicks.**
@@ -4533,7 +4535,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.28.1...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.28.2...HEAD
+[4.28.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.28.1...v4.28.2
 [4.28.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.28.0...v4.28.1
 [4.28.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.27.2...v4.28.0
 [4.27.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.27.1...v4.27.2

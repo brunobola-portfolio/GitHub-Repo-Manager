@@ -37,6 +37,9 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.28.2 (2026-10-29) — Signed-in users keep browsing; an honest
+  rate-limit screen.** Signed-in users no longer hit "Rate limit exceeded"
+  after a few clicks.
 - **v4.28.1 (2026-10-26) — Kept access while a card is retried, seller by
   brand only, safer monitoring.** Error monitoring stays restrictive on the
   next Sentry SDK; A declined renewal no longer drops you to Free while the
