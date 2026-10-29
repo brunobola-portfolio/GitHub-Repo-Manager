@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Signed-in users no longer hit "Rate limit exceeded" after a few clicks.**
+  A signed-in Free account shared the anonymous budget of 100 requests per 15
+  minutes, and one repository screen makes a few dozen, so normal browsing
+  ended on "Couldn't load your GitHub profile". Signed-in sessions now get
+  1,500 / 3,000 / 6,000 per 15 minutes (Free / Pro / Enterprise), counted per
+  user; anonymous traffic and API keys keep their limits. When the limit is
+  reached, the screen now says it is Repo Manager's own limit and frees up in
+  minutes, instead of blaming GitHub.
+
 ## [4.28.1] - 2026-10-26
 
 ### Security
