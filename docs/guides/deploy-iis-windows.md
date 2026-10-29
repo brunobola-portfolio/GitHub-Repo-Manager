@@ -466,6 +466,7 @@ becomes reachable from the internet, where the mistakes are one-way.
 | JSON body | 10 KB globally, 4 MB on paths under `/api/ai/` and `/api/v1/ai/` | `server/index.js` — a 20 KB post to a normal route returns **413** |
 | Upload / import body | 30 MB | `maxAllowedContentLength` in the shipped `web.config` |
 | Anonymous rate limit | 100 requests / 15 min per IP (the Free-tier `api` bucket; a 200/15 min pre-session safety net sits in front) | Keyed on `req.ip`, which is why check 6 matters |
+| Signed-in rate limit | 1,500 / 3,000 / 6,000 requests / 15 min per user (Free / Pro / Enterprise); API keys keep 100 / 500 / 2,000 per key | Keyed on the session's user id, so it holds behind a shared office IP (`computeSignedInApiLimits` in `tenant-rate-limit.js`) |
 | Response timeout | 20 min | ARR `timeout` in `web.config`, sized for long AI streams |
 | Session | 24 h rolling, 7-day absolute | `server/index.js`, `session-absolute-timeout.js` |
 

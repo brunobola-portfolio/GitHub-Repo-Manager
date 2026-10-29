@@ -319,3 +319,48 @@ describe('Retry-After', () => {
         }
     })
 })
+
+describe('signed-in browser sessions', () => {
+    const originalNodeEnv = process.env.NODE_ENV
+    beforeEach(() => { process.env.NODE_ENV = 'production' })
+    afterEach(() => {
+        if (originalNodeEnv === undefined) delete process.env.NODE_ENV
+        else process.env.NODE_ENV = originalNodeEnv
+    })
+
+    function appAs(userId) {
+        return createTenantLimiters('api').then((limiter) => {
+            const app = express()
+            app.use((req, _res, next) => { if (userId) req.session = { userId }; req.userTier = 'free'; next() })
+            app.use('/api', limiter)
+            app.get('/api/user', (_req, res) => res.json({ ok: true }))
+            return app
+        })
+    }
+
+    async function hit(app, n, headers = {}) {
+        let last
+        for (let i = 0; i < n; i++) last = await request(app).get('/api/user').set(headers)
+        return last
+    }
+
+    it('a signed-in Free user is not stopped after the anonymous 100 requests', async () => {
+        const app = await appAs(42)
+        const res = await hit(app, 150)
+        expect(res.status).toBe(200)
+        expect(Number(res.headers['ratelimit-limit'] ?? res.headers['ratelimit-policy']?.split(';')[0])).toBe(1500)
+    })
+
+    it('anonymous traffic keeps the 100 per 15 minutes per IP', async () => {
+        const app = await appAs(null)
+        expect((await hit(app, 100)).status).toBe(200)
+        expect((await hit(app, 1)).status).toBe(429)
+    })
+
+    it('an API key keeps its tier budget even with a session present', async () => {
+        const app = await appAs(43)
+        const auth = { Authorization: 'Bearer grm_live_tokenAAAAAAAA' }
+        expect((await hit(app, 100, auth)).status).toBe(200)
+        expect((await hit(app, 1, auth)).status).toBe(429)
+    })
+})
