@@ -448,7 +448,7 @@ function AppContent() {
   if (!user && session?.authenticated && !githubLoading && error) {
     return (
       <>
-        <ProfileLoadFailed message={error} onRetry={fetchGitHubUser} onSignOut={handleLogout} />
+        <ProfileLoadFailed message={error} status={errorInfo?.status} onRetry={fetchGitHubUser} onSignOut={handleLogout} />
         <ToastViewport />
       </>
     )
