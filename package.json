@@ -95,7 +95,7 @@
     "express": "^5.3.0",
     "express-rate-limit": "^8.7.1",
     "express-session": "^1.19.0",
-    "framer-motion": "^13.4.0",
+    "framer-motion": "^14.7.1",
     "helmet": "^8.3.0",
     "ioredis": "^6.0.0",
     "jose": "^6.2.13",
