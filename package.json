@@ -140,7 +140,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
     "pino-pretty": "^13.2.0",
-    "postcss": "^8.5.28",
+    "postcss": "^8.5.32",
     "rehype-parse": "^9.0.1",
     "rehype-stringify": "^10.0.1",
     "rollup-plugin-visualizer": "^7.1.1",
