@@ -234,6 +234,12 @@ router.post('/checkout', requireAuth, requireStripe, async (req, res) => {
             // the path to its hash route (useAppRouter path aliases).
             cancel_url: `${config.frontendUrl}/pricing?billing=cancel`,
             metadata,
+            // Codes are created and limited in the operator's own Stripe
+            // dashboard (amount, product, redemptions, expiry); with none
+            // defined the field accepts nothing. Nothing downstream reads the
+            // amount paid, so a discounted checkout runs the same webhook,
+            // licence and refund path as a full-price one.
+            allow_promotion_codes: true,
             ...tax,
         });
 
