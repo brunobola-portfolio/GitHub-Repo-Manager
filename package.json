@@ -112,7 +112,7 @@
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "simple-git": "^4.0.2",
-    "stripe": "^22.6.2",
+    "stripe": "^23.0.1",
     "tailwind-merge": "^3.7.0",
     "zod": "^4.6.7"
   },
