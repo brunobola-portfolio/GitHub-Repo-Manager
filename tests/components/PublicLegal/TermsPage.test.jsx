@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import TermsPage from '../../../src/components/PublicLegal/TermsPage.jsx'
+import { resetSupportCache } from '../../../src/utils/supportContact.js'
 
 /*
  * Until now the only terms were docs/LICENSE-COMMERCIAL.md on GitHub, which
@@ -71,5 +72,32 @@ describe('TermsPage — what a buyer must be told before paying', () => {
     it('titles the document as itself, not as the application', () => {
         render(<TermsPage />)
         expect(document.title).toBe('Terms of service — GitHub Repo Manager')
+    })
+})
+
+describe('TermsPage — the complaints book', () => {
+    const setShell = (support) => {
+        document.head.querySelectorAll('meta[name="grm-support"]').forEach((m) => m.remove())
+        if (support) {
+            const meta = document.createElement('meta')
+            meta.setAttribute('name', 'grm-support')
+            meta.setAttribute('content', JSON.stringify(support))
+            document.head.appendChild(meta)
+        }
+        resetSupportCache()
+    }
+
+    it('points to the official complaints book on the BolaLabs instance', () => {
+        setShell({ complaintsBookUrl: 'https://www.livroreclamacoes.pt/Inicio/' })
+        render(<TermsPage />)
+        expect(screen.getByRole('link', { name: 'Livro de Reclamações' }))
+            .toHaveAttribute('href', 'https://www.livroreclamacoes.pt/Inicio/')
+        setShell(null)
+    })
+
+    it('leaves it out when the instance has no entry of its own', () => {
+        setShell(null)
+        render(<TermsPage />)
+        expect(screen.queryByRole('link', { name: /livro de reclama/i })).toBeNull()
     })
 })

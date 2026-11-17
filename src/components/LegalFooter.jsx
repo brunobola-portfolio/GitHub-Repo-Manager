@@ -1,3 +1,5 @@
+import { getSupport } from '../utils/supportContact'
+
 /**
  * Provenance footer.
  *
@@ -25,8 +27,10 @@ const SUBSCRIPTION_URL = '/terms'
 // controller is and how to get their data out.
 const PRIVACY_URL = '/privacy'
 const ROADMAP_URL = `${SOURCE_URL}/blob/main/ROADMAP.md`
+const LINK = 'whitespace-nowrap underline hover:text-brand-600 dark:hover:text-brand-400 ds-focus-ring rounded'
 
 export function LegalFooter() {
+  const { complaintsBookUrl } = getSupport()
   return (
     <footer
       aria-label="Legal and source-code attribution"
@@ -46,17 +50,17 @@ export function LegalFooter() {
             href={SOURCE_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-brand-600 dark:hover:text-brand-400 ds-focus-ring rounded"
+            className={LINK}
           >
             Source code (Apache-2.0)
           </a>
         </span>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <a
             href="/status"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-brand-600 dark:hover:text-brand-400 ds-focus-ring rounded"
+            className={LINK}
           >
             Status
           </a>
@@ -64,22 +68,27 @@ export function LegalFooter() {
             href={SUBSCRIPTION_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-brand-600 dark:hover:text-brand-400 ds-focus-ring rounded"
+            className={LINK}
           >
             Subscriptions
           </a>
           <a
             href={PRIVACY_URL}
-            className="underline hover:text-brand-600 dark:hover:text-brand-400 ds-focus-ring rounded"
+            className={LINK}
           >
             Privacy &amp; data
           </a>
           <a
             href={ROADMAP_URL}
-            className="underline hover:text-brand-600 dark:hover:text-brand-400 ds-focus-ring rounded"
+            className={LINK}
           >
             Roadmap
           </a>
+          {complaintsBookUrl && (
+            <a href={complaintsBookUrl} target="_blank" rel="noopener noreferrer" lang="pt" className={LINK}>
+              Livro de Reclamações
+            </a>
+          )}
         </div>
       </div>
     </footer>

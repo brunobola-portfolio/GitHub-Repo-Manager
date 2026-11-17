@@ -74,3 +74,19 @@ describe('supportContact', () => {
         expect(supportHref({ subject: 'Stripe down' })).toBe('mailto:help@acme.example?subject=Stripe%20down')
     })
 })
+
+describe('supportContact — the complaints book', () => {
+    afterEach(() => setMeta(undefined))
+
+    it('passes on the official Livro de Reclamações address from the house instance', () => {
+        setMeta({ ...HOUSE, complaintsBookUrl: 'https://www.livroreclamacoes.pt/Inicio/' })
+        expect(getSupport().complaintsBookUrl).toBe('https://www.livroreclamacoes.pt/Inicio/')
+    })
+
+    it('never links anywhere else, whatever the shell says', () => {
+        for (const bad of ['https://evil.example/livro', 'http://www.livroreclamacoes.pt/Inicio/', 'https://www.livroreclamacoes.pt.evil.example/']) {
+            setMeta({ ...HOUSE, complaintsBookUrl: bad })
+            expect(getSupport().complaintsBookUrl).toBeUndefined()
+        }
+    })
+})

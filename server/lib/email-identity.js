@@ -27,6 +27,11 @@ const HOUSE_DEFAULTS = {
     // The BolaLabs support desk. The dashboard sends a signed-out visitor
     // through sign-in and back here (`next`), straight into a new request.
     supportUrl: `https://${HOUSE_DOMAIN}/en/dashboard?view=support&new=1`,
+    // Portuguese law (DL 74/2017) requires a seller in Portugal to show access
+    // to the official electronic complaints book. It names BolaLabs as the
+    // seller, so only the house instance shows it; a self-hosted operator has
+    // their own obligations and their own entry.
+    complaintsBookUrl: 'https://www.livroreclamacoes.pt/Inicio/',
 }
 const GENERIC_SYSTEM_NAME = 'RepoManager'
 
@@ -153,7 +158,7 @@ const HOUSE_SALES_URL = `https://${HOUSE_DOMAIN}/en/contact?topic=repomanager`
  * (EMAIL_SUPPORT_URL / EMAIL_REPLY_TO). Self-hosted builds used to bake
  * the maintainer's personal address into every "contact support" link.
  *
- * @returns {{ url?: string, email?: string, salesUrl: string }}
+ * @returns {{ url?: string, email?: string, salesUrl: string, complaintsBookUrl?: string }}
  */
 export function publicSupport() {
     const sender = resolveSender('system')
@@ -166,6 +171,7 @@ export function publicSupport() {
         ...(deskUrl ? { url: deskUrl } : {}),
         ...(email ? { email } : {}),
         salesUrl: house ? HOUSE_SALES_URL : PUBLISHER_LICENCE_URL,
+        ...(house ? { complaintsBookUrl: HOUSE_DEFAULTS.complaintsBookUrl } : {}),
     }
 }
 

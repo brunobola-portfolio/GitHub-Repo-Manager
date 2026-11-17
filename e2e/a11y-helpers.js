@@ -35,6 +35,21 @@ const DEFERRED_SERIOUS_RULES = ['scrollable-region-focusable']
  * gated rules (nested-interactive, roles, names) are unaffected by this wait.
  */
 async function settleAnimations(page) {
+  // First let every finite Web Animation finish: Framer runs its opacity
+  // fades as WAAPI animations, and a slow CI runner can take longer than the
+  // stability poll's cap to play a staggered reveal, which is how a mid-fade
+  // blend still reached axe as a contrast failure. Infinite loops (spinners,
+  // shimmer) are skipped; the cap keeps a stuck animation from hanging the scan.
+  await page.evaluate(() => {
+    const finite = (document.getAnimations?.() ?? []).filter((a) => {
+      const end = a.effect?.getComputedTiming?.().endTime
+      return Number.isFinite(end) && a.playState === 'running'
+    })
+    return Promise.race([
+      Promise.allSettled(finite.map((a) => a.finished)),
+      new Promise((resolve) => setTimeout(resolve, 4000)),
+    ])
+  })
   await page.evaluate(
     () =>
       new Promise((resolve) => {
