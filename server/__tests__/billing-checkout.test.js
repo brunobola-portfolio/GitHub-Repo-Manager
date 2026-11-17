@@ -110,6 +110,14 @@ describe('POST /billing/checkout — tax collection is opt-in per deployment', (
     })
 })
 
+describe('POST /billing/checkout — promotion codes', () => {
+    it('lets the buyer enter a promotion code from the operator’s Stripe account', async () => {
+        const res = await request(makeApp()).post('/api/v1/billing/checkout').send({ tier: 'pro' })
+        expect(res.status).toBe(200)
+        expect(mockSessionsCreate.mock.calls.at(-1)[0]).toMatchObject({ allow_promotion_codes: true })
+    })
+})
+
 describe('POST /billing/portal — names the configuration when one is set', () => {
     // A configuration created through the API is never Stripe's "default",
     // and a portal session created without naming one fails in live mode —

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Promotion codes at checkout.** The Stripe checkout now has an "Add
+  promotion code" field. Codes, and their limits, are created in the
+  operator's own Stripe dashboard; with none defined, any code entered is refused.
+
 ## [4.28.4] - 2026-11-17
 
 ### Fixed
