@@ -800,7 +800,7 @@ function AppContent() {
           covered on mobile by the MobileQuickActionsFab menu (Import / Create
           / AI / Search), the SelectionBar (bulk actions when items selected),
           the bottom-nav More drawer (History / Settings / Re-authorize /
-          Logout), and Pricing via the user (avatar) menu's "Plans & billing". */}
+          Sign out), and Pricing via the user (avatar) menu's "Plans & billing". */}
       <Suspense fallback={null}>
         <MobileOrgDrawer
           user={user}

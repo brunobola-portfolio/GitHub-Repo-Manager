@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Signing out now really signs you out, and signing back in works first
+  time.** A request still running when you clicked "Sign out" could save the
+  ended session back, so you stayed half signed in and the next sign-in
+  failed or landed on the old account. An ended session now stays ended, on
+  one server or several (Redis).
+- **After signing out, GitHub asks which account to use.** Before, GitHub
+  silently signed the same account back in, so switching accounts looked
+  broken. Every "Sign out" now lands on a clean start page that confirms it.
+- **Sign-out clears its cookie over plain http too** (the Windows package),
+  where it used to leave the old session cookie behind.
+- The start page no longer logs a 401 error in the browser console when
+  nobody is signed in, and the Permissions-Policy header drops the retired
+  `interest-cohort` feature that Chrome warned about.
+
 ## [4.28.2] - 2026-10-29
 
 ### Fixed

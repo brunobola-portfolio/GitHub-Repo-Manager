@@ -143,13 +143,13 @@ describe('Header', () => {
         expect(dashboard).not.toHaveAttribute('aria-current', 'page')
     })
 
-    it('opens the user menu on click and exposes Logout + View Profile', () => {
+    it('opens the user menu on click and exposes Sign out + View Profile', () => {
         renderHeader()
         const trigger = screen.getByRole('button', { name: /open user menu/i })
         fireEvent.click(trigger)
-        // After click, the menu content ("Logout" / "View Profile") should be
+        // After click, the menu content ("Sign out" / "View Profile") should be
         // in the DOM.
-        expect(screen.getByText('Logout')).toBeInTheDocument()
+        expect(screen.getByText('Sign out')).toBeInTheDocument()
         expect(screen.getByText('View Profile')).toBeInTheDocument()
         expect(screen.getByText('Settings')).toBeInTheDocument()
     })
