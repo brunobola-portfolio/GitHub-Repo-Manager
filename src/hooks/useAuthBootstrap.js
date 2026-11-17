@@ -80,9 +80,9 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
                 return
             }
 
-            // Use raw fetch here — a 401 means "not logged in", NOT "session expired".
-            // fetchWithRetry would trigger notifySessionExpired on 401, showing the
-            // expiry banner even when the user simply hasn't logged in yet.
+            // Raw fetch: fetchWithRetry treats any 401 as an expired session and
+            // would show the expiry banner to someone who never signed in (an
+            // older server still answers 401 here when nobody is signed in).
             const res = await fetch(`${API_BASE_URL}/api/auth/session`, { credentials: 'include' })
             if (res.ok) {
                 const data = await res.json().catch(() => null)
