@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from 'vitest';
-import { resolvePublicOrigin, renderShell, robotsTxt, securityTxt, sitemapXml, softwareApplicationJsonLd, shellStatus } from '../lib/spa-shell.js';
+import { resolvePublicOrigin, renderShell, robotsTxt, securityTxt, securityContact, sitemapXml, softwareApplicationJsonLd, shellStatus } from '../lib/spa-shell.js';
 
 const req = (host, protocol = 'https') => ({ protocol, get: (h) => (h.toLowerCase() === 'host' ? host : undefined) });
 
@@ -30,6 +30,18 @@ describe('resolvePublicOrigin', () => {
 
 describe('renderShell', () => {
     const html = '<html><head><link rel="canonical" href="__PUBLIC_ORIGIN__/"><meta property="og:image" content="__PUBLIC_ORIGIN__/og-1200x630.png"></head><body></body></html>';
+
+    it('hands the browser its support contacts in an escaped meta, and none when there are none', () => {
+        const support = { url: 'https://desk.example/new?a=1&b="x"', email: 'h@acme.example', salesUrl: 'https://bolalabs.pt/en/repomanager' };
+        const out = renderShell(html, { origin: 'https://x.example', version: '1.0.0', support });
+        const content = /<meta name="grm-support" content="([^"]*)">/.exec(out)?.[1];
+        expect(content, 'meta missing').toBeTruthy();
+        expect(content).not.toMatch(/["<>]/);
+        const decoded = content.replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)));
+        expect(JSON.parse(decoded)).toEqual(support);
+        expect(renderShell(html, { origin: 'https://x.example', version: '1.0.0', support: {} })).not.toContain('grm-support');
+        expect(renderShell(html, { origin: 'https://x.example', version: '1.0.0' })).not.toContain('grm-support');
+    });
 
     it('fills every placeholder with the origin and adds one JSON-LD block inside <head>', () => {
         const out = renderShell(html, { origin: 'https://repomanager.example.pt', version: '4.24.4' });
@@ -128,12 +140,33 @@ describe('the priced offer follows what the deployment can actually charge', () 
 
 describe('securityTxt', () => {
     it('names a contact, a policy and an expiry a year out', () => {
-        const txt = securityTxt('https://repomanager.example.pt', new Date('2026-09-12T00:00:00.000Z'));
-        expect(txt).toContain('Contact: https://repomanager.example.pt/security');
-        expect(txt).toContain('Contact: mailto:security@bolalabs.pt');
+        const txt = securityTxt('https://repomanager.example.pt', new Date('2026-09-12T00:00:00.000Z'), 'mailto:suporte@bolalabs.pt');
+        expect(txt).toContain('Contact: mailto:suporte@bolalabs.pt');
         // RFC 9116 requires Expires; a stale file is treated as absent.
         expect(txt).toContain('Expires: 2027-09-12T00:00:00Z');
         expect(txt).toMatch(/^Policy: https:\/\/github\.com\//m);
+    });
+
+    it('every Contact reaches someone: no SPA path that 404s, no address outside the real mailboxes', () => {
+        // The mailboxes bolalabs.pt actually forwards (550 for anything else).
+        const LIVE = new Set(['bruno', 'suporte', 'licencas', 'licenses', 'site', 'no-reply', 'noreply'].map((u) => `${u}@bolalabs.pt`));
+        const origin = 'https://repomanager.example.pt';
+        const contacts = securityTxt(origin, new Date(), securityContact(undefined))
+            .split('\n').filter((l) => l.startsWith('Contact: ')).map((l) => l.slice(9));
+        expect(contacts.length).toBeGreaterThan(0);
+        for (const c of contacts) {
+            const url = new URL(c);
+            if (url.origin === origin) expect(shellStatus(url.pathname), c).toBe(200);
+            if (url.protocol === 'mailto:' && url.pathname.endsWith('@bolalabs.pt')) expect(LIVE.has(url.pathname), c).toBe(true);
+        }
+    });
+
+    it('an operator can point reports at their own team, and junk is ignored', () => {
+        expect(securityContact('mailto:sec@acme.example')).toBe('mailto:sec@acme.example');
+        expect(securityContact('https://acme.example/security')).toBe('https://acme.example/security');
+        expect(securityContact('sec@acme.example')).toBe('mailto:suporte@bolalabs.pt');
+        expect(securityContact('http://acme.example')).toBe('mailto:suporte@bolalabs.pt');
+        expect(securityContact('  ')).toBe('mailto:suporte@bolalabs.pt');
     });
 });
 

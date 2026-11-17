@@ -6,7 +6,7 @@
  *   import.meta.env.DEV && import.meta.env.VITE_MOCK_MODE === 'true'
  * Vite's DCE drops the entire import branch in production bundles.
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  * Licensed under the Apache License 2.0. See LICENSE in the project root.
  */
 import { mockRepoByFullName } from './mockRepos'

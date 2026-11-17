@@ -15,7 +15,7 @@ import { twMerge } from 'tailwind-merge'
  *     service="Stripe billing"
  *     reason="Self-hosted deployments need STRIPE_SECRET_KEY set."
  *     docsHref="https://github.com/brunobola-portfolio/GitHub-Repo-Manager/blob/main/docs/guides/stripe-setup.md"
- *     contactEmail="bruno@bolalabs.pt" />
+ *     contactHref={supportHref({ category: "incident" })} />
  *
  * Variants: card (default) | banner | inline.
  */
@@ -24,6 +24,7 @@ export function ServiceUnavailable({
     reason,
     docsHref,
     contactEmail,
+    contactHref,
     contactSubject,
     variant = 'card',
     onDismiss,
@@ -32,7 +33,7 @@ export function ServiceUnavailable({
     if (variant === 'banner') {
         return (
             <BannerService service={service} reason={reason} docsHref={docsHref}
-                contactEmail={contactEmail} contactSubject={contactSubject}
+                contactEmail={contactEmail} contactHref={contactHref} contactSubject={contactSubject}
                 onDismiss={onDismiss} className={className} />
         )
     }
@@ -43,16 +44,33 @@ export function ServiceUnavailable({
     }
     return (
         <CardService service={service} reason={reason} docsHref={docsHref}
-            contactEmail={contactEmail} contactSubject={contactSubject}
+            contactEmail={contactEmail} contactHref={contactHref} contactSubject={contactSubject}
             className={className} />
     )
+}
+
+/** A desk URL opens in a new tab; a bare address becomes a mailto. */
+function contactLink({ contactEmail, contactHref, contactSubject }) {
+    if (contactHref) {
+        const external = /^https?:/.test(contactHref) ? { target: '_blank', rel: 'noopener noreferrer' } : {}
+        return { href: contactHref, external, label: 'Contact support' }
+    }
+    if (contactEmail) {
+        return {
+            href: `mailto:${contactEmail}${contactSubject ? `?subject=${encodeURIComponent(contactSubject)}` : ''}`,
+            external: {},
+            label: contactEmail,
+        }
+    }
+    return null
 }
 
 /* ------------------------------------------------------------------ */
 /* Card                                                                */
 /* ------------------------------------------------------------------ */
 
-function CardService({ service, reason, docsHref, contactEmail, contactSubject, className }) {
+function CardService({ service, reason, docsHref, contactEmail, contactHref, contactSubject, className }) {
+    const contact = contactLink({ contactEmail, contactHref, contactSubject })
     return (
         <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -112,9 +130,10 @@ function CardService({ service, reason, docsHref, contactEmail, contactSubject, 
                             <BookOpen className="w-3.5 h-3.5" /> Setup guide
                         </a>
                     )}
-                    {contactEmail && (
+                    {contact && (
                         <a
-                            href={`mailto:${contactEmail}${contactSubject ? `?subject=${encodeURIComponent(contactSubject)}` : ''}`}
+                            href={contact.href}
+                            {...contact.external}
                             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold
                                        bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200
                                        border border-slate-200 dark:border-slate-700
@@ -133,7 +152,8 @@ function CardService({ service, reason, docsHref, contactEmail, contactSubject, 
 /* Banner (used by PricingPage and similar)                            */
 /* ------------------------------------------------------------------ */
 
-function BannerService({ service, reason, docsHref, contactEmail, contactSubject, onDismiss, className }) {
+function BannerService({ service, reason, docsHref, contactEmail, contactHref, contactSubject, onDismiss, className }) {
+    const contact = contactLink({ contactEmail, contactHref, contactSubject })
     return (
         <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -178,14 +198,15 @@ function BannerService({ service, reason, docsHref, contactEmail, contactSubject
                         <BookOpen className="w-3 h-3" /> Setup
                     </a>
                 )}
-                {contactEmail && (
+                {contact && (
                     <a
-                        href={`mailto:${contactEmail}${contactSubject ? `?subject=${encodeURIComponent(contactSubject)}` : ''}`}
+                        href={contact.href}
+                        {...contact.external}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium
                                    text-amber-900 dark:text-amber-200
                                    underline underline-offset-2 hover:no-underline ds-focus-ring"
                     >
-                        <Mail className="w-3 h-3" /> {contactEmail}
+                        <Mail className="w-3 h-3" /> {contact.label}
                     </a>
                 )}
                 {onDismiss && (

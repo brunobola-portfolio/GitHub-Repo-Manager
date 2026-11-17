@@ -266,7 +266,6 @@ export function RepoFilterBar({
 						variant="ghost"
 						size="sm"
 						onClick={() => setFilterSheetOpen(true)}
-						aria-label={`Open filters${activeFilterCount > 0 ? ` (${activeFilterCount} active)` : ''}`}
 						className="flex-1 justify-start"
 					>
 						<SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
@@ -274,6 +273,7 @@ export function RepoFilterBar({
 						{activeFilterCount > 0 && (
 							<span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 ds-text-micro font-semibold rounded-full bg-brand-500 text-white">
 								{activeFilterCount}
+								<span className="sr-only"> active</span>
 							</span>
 						)}
 					</Button>

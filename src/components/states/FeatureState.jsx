@@ -1,7 +1,7 @@
 import { UpgradeRequired } from './UpgradeRequired'
 import { ServiceUnavailable } from './ServiceUnavailable'
 import { FeatureError } from './FeatureError'
-import { SUPPORT_EMAIL } from '../../utils/supportContact'
+import { supportHref } from '../../utils/supportContact'
 
 /**
  * Renders the right empty/error state for a parsed API descriptor.
@@ -19,7 +19,8 @@ export function FeatureState({
     feature,
     benefits,
     onRetry,
-    contactEmail = SUPPORT_EMAIL,
+    contactEmail,
+    contactHref,
     contactSubject,
     docsHref,
     pricingHref = '#/pricing',
@@ -50,6 +51,7 @@ export function FeatureState({
                     reason={error.hint ?? undefined}
                     docsHref={docsHref}
                     contactEmail={contactEmail}
+                    contactHref={contactHref ?? (contactEmail ? undefined : supportHref({ category: 'incident', subject: contactSubject }))}
                     contactSubject={contactSubject}
                     variant={variant}
                     className={className}

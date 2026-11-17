@@ -114,7 +114,9 @@ function applyRouteHead(html, origin, path) {
         .replace(/(<meta property="og:description" content=")[^"]*(")/, `$1${description}$2`);
 }
 
-export function renderShell(html, { origin, version, sentryDsn, stripeEnabled = false, path = '/' }) {
+const attr = (value) => String(value).replace(/[&"<>]/g, (c) => `&#${c.charCodeAt(0)};`);
+
+export function renderShell(html, { origin, version, sentryDsn, stripeEnabled = false, path = '/', support = null }) {
     const filled = applyRouteHead(html.replace(PLACEHOLDER, origin), origin, path);
     // "<" inside the JSON could close the script element early; escape it as
     // JSON allows so the block stays inert data whatever the strings contain.
@@ -122,7 +124,12 @@ export function renderShell(html, { origin, version, sentryDsn, stripeEnabled = 
     // Browser telemetry is runtime configuration: the meta tag carries the
     // deployment's public DSN (or is absent), so one build serves every
     // install and the CSP needs no inline script to deliver it.
-    const meta = sentryDsn ? `<meta name="grm-sentry-dsn" content="${String(sentryDsn).replace(/[&"<>]/g, (c) => `&#${c.charCodeAt(0)};`)}">\n    ` : '';
+    // Runtime contacts (email-identity.js publicSupport), so one build serves
+    // the hosted app and every self-hosted install with the right desk.
+    const supportMeta = support && Object.keys(support).length
+        ? `<meta name="grm-support" content="${attr(JSON.stringify(support))}">\n    `
+        : '';
+    const meta = (sentryDsn ? `<meta name="grm-sentry-dsn" content="${attr(sentryDsn)}">\n    ` : '') + supportMeta;
     const block = `${meta}<script type="application/ld+json">${json}</script>`;
     return filled.includes('</head>')
         ? filled.replace('</head>', `    ${block}\n  </head>`)
@@ -163,12 +170,26 @@ export function robotsTxt(origin) {
  * public issue or nothing. `Expires` is required by the RFC — a year out, and
  * the deploy that renders this file is what refreshes it.
  */
-export function securityTxt(origin, now = new Date()) {
+const UPSTREAM_SECURITY_CONTACT = 'mailto:suporte@bolalabs.pt';
+
+/**
+ * SECURITY_CONTACT lets an operator receive reports for their own install
+ * (a mailto: or https: URI). Without it, reports reach the maintainer named
+ * in SECURITY.md. Both previous contacts were dead: `${origin}/security` was
+ * not a route (the SPA answered 404) and security@bolalabs.pt was never a
+ * mailbox, so every report bounced.
+ */
+export function securityContact(raw = process.env.SECURITY_CONTACT) {
+    const value = raw?.trim();
+    if (value && /^(mailto:[^\s@]+@[^\s@]+\.[^\s@]+|https:\/\/[^\s"<>]+)$/.test(value)) return value;
+    return UPSTREAM_SECURITY_CONTACT;
+}
+
+export function securityTxt(origin, now = new Date(), contact = securityContact()) {
     const expires = new Date(now.getTime());
     expires.setUTCFullYear(expires.getUTCFullYear() + 1);
     return [
-        `Contact: ${origin}/security`,
-        'Contact: mailto:security@bolalabs.pt',
+        `Contact: ${contact}`,
         `Expires: ${expires.toISOString().replace(/\.\d{3}Z$/, 'Z')}`,
         'Preferred-Languages: en, pt',
         `Policy: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/blob/main/SECURITY.md`,

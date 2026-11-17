@@ -16,7 +16,7 @@
  *     and will be stamped on the next login.
  *   - Expired sessions are destroyed and the response is 401.
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  */
 
 export const ABSOLUTE_TIMEOUT_MS = 7 * 24 * 3600 * 1000; // 7 days

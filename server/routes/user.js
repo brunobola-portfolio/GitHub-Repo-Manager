@@ -6,7 +6,7 @@
  * - GET /activity - Get user activity events
  * - GET /search/users - Search GitHub users
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  */
 
 import express from 'express';

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2025-2026 Bola Labs, Inc. Licensed under the Apache License 2.0.
+// Copyright 2025-2026 BolaLabs Licensed under the Apache License 2.0.
 /**
  * Hard-delete resolved DLQ rows older than N days so the dead-letter tables
  * don't grow unbounded. Distinct from the retry workers — those only touch

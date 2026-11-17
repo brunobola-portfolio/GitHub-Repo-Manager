@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2025-2026 Bola Labs, Inc. Licensed under the Apache License 2.0.
+// Copyright 2025-2026 BolaLabs Licensed under the Apache License 2.0.
 /*
  * An instance licence must not upgrade a multi-tenant deployment.
  *

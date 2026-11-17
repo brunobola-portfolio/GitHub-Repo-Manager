@@ -67,7 +67,6 @@ function CategoryCard({ category, data, onClick }) {
     const hasCount = data.count > 0
     const delta = data.delta
     const showDelta = delta !== null && delta !== 0
-    const ariaLabel = `${data.count} ${category.label.toLowerCase()}, opens Work Board ${category.tab} tab`
 
     const lastClass = category.id === 'issues' ? 'col-span-2 sm:col-span-1' : ''
 
@@ -75,7 +74,6 @@ function CategoryCard({ category, data, onClick }) {
         <button
             type="button"
             onClick={onClick}
-            aria-label={ariaLabel}
             className={`group flex flex-col gap-2.5 p-4 text-left bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl ${tone.hoverBorder} hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset ${tone.ring} transition-all ${lastClass}`}
         >
             <div className={`w-8 h-8 rounded-lg ${tone.iconBg} flex items-center justify-center`}>
@@ -102,8 +100,10 @@ function CategoryCard({ category, data, onClick }) {
                 <div className="ds-text-micro text-slate-500 dark:text-slate-400">{deltaContext(data.baselineAt)}</div>
             )}
             <div className="text-xs font-medium text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                Open <ArrowRight className="w-3 h-3" />
+                Open <ArrowRight className="w-3 h-3" aria-hidden="true" />
             </div>
+            {/* The name comes from the visible text, so it always contains it (WCAG 2.5.3). */}
+            <span className="sr-only">, in the Work Board {category.tab} tab</span>
         </button>
     )
 }

@@ -6,7 +6,7 @@
  * - Get/update organization details
  * - Organization repositories (list, create)
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  */
 
 import express from 'express';

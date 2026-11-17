@@ -9,7 +9,7 @@
  * Lives in lib/ rather than routes/_shared.js so non-route callers can use it
  * without importing an Express router's dependencies.
  *
- * Copyright (c) 2025-2026 Bola Labs, Inc.
+ * Copyright (c) 2025-2026 BolaLabs
  */
 
 // A GitHub username/owner: starts and ends with alphanumeric, may contain

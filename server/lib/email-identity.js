@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2025-2026 Bola Labs, Inc. Licensed under the Apache License 2.0.
+// Copyright 2025-2026 BolaLabs Licensed under the Apache License 2.0.
 
 /**
  * Who an outbound email is from, and where replies go.
@@ -139,6 +139,36 @@ export function supportContact() {
     return { ...(url ? { url } : {}), ...(sender?.replyTo ? { email: sender.replyTo } : {}) }
 }
 
+/**
+ * Licences are sold only by the publisher, whoever hosts the instance, so
+ * "buy a licence" may point upstream from any install. Support may not.
+ */
+export const PUBLISHER_LICENCE_URL = `https://${HOUSE_DOMAIN}/en/repomanager`
+const HOUSE_SALES_URL = `https://${HOUSE_DOMAIN}/en/contact?topic=repomanager`
+
+/**
+ * Contacts the web app may show, sent to the browser in the shell (see
+ * spa-shell.js renderShell). Same rule as the email footer: the BolaLabs
+ * desk only on the house domain, otherwise only what the operator set
+ * (EMAIL_SUPPORT_URL / EMAIL_REPLY_TO). Self-hosted builds used to bake
+ * the maintainer's personal address into every "contact support" link.
+ *
+ * @returns {{ url?: string, email?: string, salesUrl: string }}
+ */
+export function publicSupport() {
+    const sender = resolveSender('system')
+    const house = sender ? domainOf(sender.address) === HOUSE_DOMAIN : false
+    const { url, email } = supportContact()
+    const deskUrl = url && house && url === HOUSE_DEFAULTS.supportUrl
+        ? `${url}&product=repomanager`
+        : url
+    return {
+        ...(deskUrl ? { url: deskUrl } : {}),
+        ...(email ? { email } : {}),
+        salesUrl: house ? HOUSE_SALES_URL : PUBLISHER_LICENCE_URL,
+    }
+}
+
 /** Headers every automated message carries (RFC 3834): auto-responders must not answer it. */
 export const AUTOMATED_HEADERS = Object.freeze({ 'Auto-Submitted': 'auto-generated' })
 
@@ -150,28 +180,20 @@ export function escapeHtml(value) {
 }
 
 /**
- * The "need help?" line, in both renderings. Empty strings when the operator
- * configured neither a desk URL nor a Reply-To — saying "reply to this email"
- * from a no-reply box is how a customer's question ends in a bounce.
+ * The "need help?" line as email-layout.js text segments. Empty when the
+ * operator configured neither a desk URL nor a Reply-To: saying "reply to
+ * this email" from a no-reply box is how a customer's question ends in a
+ * bounce.
  *
  * @param {string} [lead='Need help?']
- * @returns {{ html: string, text: string }}
+ * @returns {Array<string|{ link: { url: string, label: string } }>}
  */
-export function supportFooter(lead = 'Need help?') {
+export function supportFooterParts(lead = 'Need help?') {
     const { url, email } = supportContact()
-    if (!url && !email) return { html: '', text: '' }
-    const htmlParts = []
-    const textParts = []
-    if (url) {
-        htmlParts.push(`Open a support request at <a href="${escapeHtml(url)}">${escapeHtml(url.replace(/^https:\/\/|\?.*$/g, ''))}</a>`)
-        textParts.push(`Open a support request at ${url}`)
-    }
-    if (email) {
-        htmlParts.push(`${url ? 'or reply' : 'Reply'} to this email (it reaches <a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>)`)
-        textParts.push(`${url ? 'or reply' : 'Reply'} to this email (it reaches ${email})`)
-    }
-    return {
-        html: `${escapeHtml(lead)} ${htmlParts.join(' ')}.`,
-        text: `${lead} ${textParts.join(' ')}.`,
-    }
+    if (!url && !email) return []
+    const parts = [`${lead} `]
+    if (url) parts.push('Open a support request at ', { link: { url, label: url.replace(/^https:\/\/|\?.*$/g, '') } })
+    if (email) parts.push(`${url ? ' or reply' : 'Reply'} to this email (it reaches `, { link: { url: `mailto:${email}`, label: email } }, ')')
+    parts.push('.')
+    return parts
 }

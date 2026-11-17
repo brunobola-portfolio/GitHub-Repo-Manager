@@ -339,9 +339,9 @@ export function DashboardPremium({
                                         key={team.id}
                                         className={className}
                                         onClick={() => onTeamClick(team)}
-                                        aria-label={`Open team ${team.name}`}
                                     >
                                         {inner}
+                                        <span className="sr-only">, open team</span>
                                     </motion.button>
                                 ) : (
                                     <motion.div key={team.id} className={className}>

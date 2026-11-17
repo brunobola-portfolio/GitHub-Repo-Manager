@@ -21,7 +21,7 @@
  *   GET    /:owner/:repo/commits                 — list commits
  *   GET    /:owner/:repo/compare/:basehead       — compare commits
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  */
 
 import express from 'express';

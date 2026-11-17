@@ -109,10 +109,11 @@ export function InlineEditField({
             tabIndex={disabled ? -1 : 0}
             onClick={enterEdit}
             onKeyDown={onWrapperKey}
-            aria-label={ariaLabel ? `Edit ${ariaLabel}` : undefined}
             aria-disabled={disabled || undefined}
             className={`group w-full flex items-center gap-1.5 -mx-1 px-1 py-0.5 rounded-md transition-colors ${disabled ? 'cursor-default' : 'cursor-text hover:bg-slate-100 dark:hover:bg-slate-800/60'} ds-focus-ring`}
         >
+            {/* "Edit website: example.com" — the name keeps the visible value (WCAG 2.5.3). */}
+            {ariaLabel && <span className="sr-only">Edit {ariaLabel}: </span>}
             <span className="flex-1 min-w-0 truncate">{display}</span>
             {!disabled && (
                 <Pencil className="w-3 h-3 shrink-0 text-slate-400 opacity-60 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100 transition-opacity" aria-hidden="true" />

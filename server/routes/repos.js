@@ -25,7 +25,7 @@
  * `router.param('repo', ...)` validators — Express param validators are
  * router-local, so replicating them keeps each sub-file self-contained.
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  */
 
 import express from 'express';

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2025-2026 Bola Labs, Inc. Licensed under the Apache License 2.0.
+// Copyright 2025-2026 BolaLabs Licensed under the Apache License 2.0.
 
 import { generateLicenseKey, parseLicenseKey } from '../server/lib/license.js'
 import { readFileSync, existsSync } from 'fs'

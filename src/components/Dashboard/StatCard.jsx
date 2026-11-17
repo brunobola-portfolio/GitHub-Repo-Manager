@@ -57,7 +57,8 @@ export const StatCard = memo(function StatCard({
             className="h-full rounded-2xl ds-focus-ring"
             role={interactive ? 'button' : undefined}
             tabIndex={interactive ? 0 : undefined}
-            aria-label={interactive ? `${title}${hint ? ` — ${hint}` : ''}` : undefined}
+            /* No aria-label: the name comes from the visible title, value and
+               hint, so it always contains what is on screen (WCAG 2.5.3). */
             onClick={interactive ? onClick : undefined}
             onKeyDown={interactive ? handleKeyDown : undefined}
             title={interactive && hint ? hint : undefined}

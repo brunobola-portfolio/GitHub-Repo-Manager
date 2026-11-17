@@ -110,6 +110,8 @@ async function resolvePrices() {
             amount: price.unit_amount,
             currency: price.currency,
             interval: price.recurring?.interval ?? null,
+            // exclusive | inclusive | unspecified: whether VAT is added on top.
+            taxBehavior: price.tax_behavior ?? 'unspecified',
         };
     });
 
@@ -132,6 +134,9 @@ router.get('/config', async (req, res) => {
     }
     res.json({
         stripeEnabled: isStripeEnabled(),
+        // Whether checkout calculates VAT, so the pricing pages say "+ VAT" only
+        // when it will actually be charged.
+        automaticTax: Boolean(config.stripeAutomaticTax),
         yearlyBillingAvailable: isYearlyBillingAvailable(),
         prices,
     });

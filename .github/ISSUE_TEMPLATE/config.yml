@@ -2,7 +2,7 @@ blank_issues_enabled: false
 contact_links:
   - name: Security vulnerability
     url: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/security/policy
-    about: For security issues, please email bruno@bolalabs.pt instead of opening a public issue. See SECURITY.md.
+    about: For security issues, please email suporte@bolalabs.pt instead of opening a public issue. See SECURITY.md.
   - name: Question, support, billing or licence
     url: https://bolalabs.pt/en/dashboard?view=support&new=1
     about: Support for the hosted app and for licences runs through the BolaLabs support desk (or email suporte@bolalabs.pt). Issues here are for reproducible bugs and feature requests.

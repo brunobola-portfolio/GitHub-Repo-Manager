@@ -7,6 +7,110 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.28.2] - 2026-10-29
+
+### Fixed
+
+- **Signed-in users no longer hit "Rate limit exceeded" after a few clicks.**
+  A signed-in Free account shared the anonymous budget of 100 requests per 15
+  minutes, and one repository screen makes a few dozen, so normal browsing
+  ended on "Couldn't load your GitHub profile". Signed-in sessions now get
+  1,500 / 3,000 / 6,000 per 15 minutes (Free / Pro / Enterprise), counted per
+  user; anonymous traffic and API keys keep their limits. When the limit is
+  reached, the screen now says it is Repo Manager's own limit and frees up in
+  minutes, instead of blaming GitHub.
+
+## [4.28.1] - 2026-10-26
+
+### Security
+
+- **Error monitoring stays restrictive on the next Sentry SDK.** Sentry 11
+  collects cookies, request bodies and database queries unless told not to;
+  both the server and the browser now say so explicitly, and a build gate
+  keeps it that way. Nothing changes in what is sent today.
+
+### Fixed
+
+- **A declined renewal no longer drops you to Free while the card is being
+  retried.** The hosted app kept the paid tier only for `active`
+  subscriptions, so the first failed renewal removed Pro at once even though
+  Stripe was still retrying and had emailed a link to fix the card. `past_due`
+  and `trialing` now keep it; access ends when Stripe gives up and cancels.
+- **The Terms and Privacy pages identify the seller as "BolaLabs, Portugal,
+  Europe"**, with the legal identification sent by email on request to
+  customers, data subjects and authorities. A build gate keeps tax numbers,
+  personal names and personal addresses off every public surface.
+- **Accessible names now contain the visible text** (WCAG 2.5.3): the Work
+  Board button with its count, the dashboard's "what needs you" cards and the
+  mobile Filter button were announced under a different name than they show.
+
+## [4.28.0] - 2026-10-25
+
+### Added
+
+- **Licence check-in: renewals arrive by themselves, and installations are
+  counted.** A self-hosted install with a key checks in once a day (and right
+  after activation). It picks up each renewed key automatically, applies
+  revocations from the issuer, and is counted against the installations its
+  plan covers: a Pro key covers one installation plus a spare (staging, a
+  rebuilt server), Enterprise ten. Going over is shown in Settings → License &
+  Plan and recorded on the issuer; it never blocks anything. Validation still
+  needs no network, so an offline install keeps working until the key's end
+  date, and `LICENSE_AUTO_RENEW=false` turns the check-in off. The issuer keeps
+  the installation name, a hash of a random install id, the version and an
+  IPv4 /24, as the privacy policy now states.
+- **Licences are counted by machine, and a shared key can be stopped without
+  touching the customer.** The check-in also sends a salted hash of the
+  machine's OS id (never the id itself) and its platform, so a reinstall on the
+  same machine is not counted twice; each installation gets a number the
+  customer sees in Settings and can quote to support. Inside Docker the
+  image's id is ignored; `LICENSE_MACHINE_ID` passes the host's. A key running
+  on more than twice the machines its plan covers is audited as suspected
+  sharing. The issuing instance has a new **Admin → Licences** page listing
+  every subscription's machines, networks and installations, with two
+  actions: block renewals for an installation (its key runs to its end date
+  and is never replaced; a reinstall on that machine stays blocked), or rotate
+  the key, which emails the customer a replacement, revokes the old one, and
+  hands the new key only to the installations kept. A copy of the old key
+  appearing afterwards gets nothing until the operator vouches for it.
+
+### Changed
+
+- **Every e-mail the app sends has one designed layout**, matching the
+  BolaLabs site's mail: licence keys, team invitations, the AI-credential
+  retention warning and the digest. It works in Outlook, Gmail and Apple Mail,
+  adapts to dark mode and phones, and loads no images or tracking pixels. The
+  licence mail shows the plan and end date at a glance and the key in a panel
+  that selects with one tap; the digest lists only sections with something in
+  them and links back to the app; the retention warning states the period the
+  operator configured instead of a fixed 365 days.
+- **A full refund now cancels the Stripe subscription**, so a refunded customer
+  is never charged again (it used to stay active and keep billing an account
+  that had been put on Free). An open dispute pauses collection instead, and
+  collection resumes if the dispute is won; a lost dispute cancels. Operators
+  can list and lift billing holds (`/api/admin/billing/holds`), with a reason
+  that goes to the audit log.
+
+## [4.27.2] - 2026-10-25
+
+### Security
+
+- simple-git 4.0.2, which pins `@simple-git/argv-parser` 2.0.1. 4.0.1 pinned
+  the vulnerable 2.0.0 exactly, so the critical advisory stayed open after
+  the upgrade in 4.27.1.
+
+## [4.27.1] - 2026-10-25
+
+### Security
+
+- simple-git 4.0.1 closes a critical advisory in the library the server uses
+  to clone repositories from user-supplied URLs (import, mirror sync, wiki,
+  tagging). The code moved to the named `simpleGit` export in 4.27.0, so the
+  major upgrade needed no further change.
+- shell-quote updated through concurrently (development tooling only).
+
+## [4.27.0] - 2026-10-25
+
 ### Fixed
 
 - **Browsing the landing page no longer locks visitors out.** Every
@@ -24,6 +128,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The rate-limit notice no longer runs off the right edge of the screen on
   phones and wide desktops; its dismiss button has a readable icon in both
   themes.
+- **Licence keys run to the end of the paid period, plus 7 days.** A key used
+  to expire one month after it was minted, which is about an hour before
+  Stripe charged the renewal, so every monthly self-hosted install dropped
+  to Free once a month. `LICENSE_GRACE_DAYS` (0–30) tunes the overlap.
+- **A full refund or a lost chargeback revokes the keys it paid for**, at
+  once on the hosted service; an offline install keeps a key only until its
+  own end date. An open dispute still only holds the account.
+- A key that fails to sign or save now makes Stripe retry the webhook instead
+  of silently answering 200 for a key that does not exist.
+- `/.well-known/security.txt` named a page that did not exist and a mailbox
+  that bounced. It now names a working address, or `SECURITY_CONTACT` when an
+  operator sets one.
+- The in-app pricing FAQ promised a prorated upgrade and an Enterprise
+  proof-of-concept period that do not exist; the Terms pointed to a
+  "Settings → Billing" tab that does not exist (it is License & Plan →
+  Manage); "Unlimited team members" was listed as an Enterprise extra although
+  every plan has it.
+
+### Changed
+
+- **Help goes where it can be answered.** The hosted app's "contact support"
+  links open the BolaLabs support desk with Repo Manager preselected, and
+  "contact sales" opens the BolaLabs contact form. A self-hosted install
+  shows only the contacts its operator configured (`EMAIL_SUPPORT_URL`,
+  `EMAIL_REPLY_TO`) — it no longer sends its users to the maintainer's
+  personal inbox — and links licence questions to the public product page.
+- **Compare plans reads by what changes.** The 40-row comparison table on the
+  pricing page is now a list of what every plan includes plus a plan switcher
+  that shows only the differences, with search.
+- Prices are shown as €19 a month **+ VAT**, matching the Terms.
+- Licence keys carry the buyer's organisation (business name, else customer
+  name, else company e-mail domain; never a tax id), and the licence e-mail
+  states the key's real end date, has a renewal version, and no longer tells
+  self-hosters "no action needed".
+- E-mail now comes from a sender per purpose: licence keys from
+  `licencas@bolalabs.pt`, everything else from the system sender, with
+  replies going to the support desk; automated mail carries
+  `Auto-Submitted` and an idempotency key.
+- The landing page footer links Privacy and Terms. The README explains how to
+  buy and activate a licence for your own install.
+
+### Security
+
+- Team and inviter names are escaped in team-notification e-mails, and
+  subjects are kept to one line.
+- The failed-e-mail queue no longer stores licence keys: a retry reads the key
+  back from the licence table, and resolved rows are deleted after 30 days.
+- body-parser 2.4.0 (request-body denial of service), dompurify 3.4.17,
+  ip-address 10.7.5, and the production minor group (express/proxy-addr,
+  zod, katex among them).
 
 ## [4.26.2] - 2026-09-24
 
@@ -4381,7 +4535,13 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.26.2...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.28.2...HEAD
+[4.28.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.28.1...v4.28.2
+[4.28.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.28.0...v4.28.1
+[4.28.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.27.2...v4.28.0
+[4.27.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.27.1...v4.27.2
+[4.27.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.27.0...v4.27.1
+[4.27.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.26.2...v4.27.0
 [4.26.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.26.1...v4.26.2
 [4.26.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.26.0...v4.26.1
 [4.26.0]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.25.14...v4.26.0

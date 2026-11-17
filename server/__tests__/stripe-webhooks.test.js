@@ -40,7 +40,7 @@ const mockStripeInstance = {
     },
     charges: { retrieve: vi.fn() },
     invoices: { retrieve: vi.fn() },
-    subscriptions: { retrieve: vi.fn() },
+    subscriptions: { retrieve: vi.fn(), cancel: vi.fn(async () => ({})), update: vi.fn(async () => ({})) },
 }
 
 vi.mock('../lib/stripe.js', () => ({
@@ -1087,6 +1087,71 @@ describe('stripeWebhookHandler', () => {
             expect(res.statusCode).toBe(200)
             expect(revokeSubscriptionLicenses).toHaveBeenCalledWith('sub_ref', 'dispute')
             expect(restore).not.toHaveBeenCalled()
+        })
+
+        describe('what happens to the Stripe subscription', () => {
+            const dbOk = () => mockPrepare.mockImplementation(() => ({ get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) }))
+            const run = async (event) => {
+                mockStripeInstance.webhooks.constructEvent.mockReturnValue(event)
+                const { req, res } = makeReqRes({ headers: { 'stripe-signature': 'sig' } })
+                await stripeWebhookHandler(req, res)
+                return res
+            }
+            beforeEach(() => {
+                mockStripeInstance.subscriptions.retrieve.mockReset()
+                mockStripeInstance.subscriptions.cancel.mockClear()
+                mockStripeInstance.subscriptions.update.mockClear()
+                wireChargeChain()
+                dbOk()
+            })
+
+            it('a full refund cancels it at once, without proration, so the customer is never charged again', async () => {
+                mockStripeInstance.subscriptions.retrieve.mockResolvedValue({ id: 'sub_ref', status: 'active' })
+                const res = await run({ id: 'evt_cancel_1', type: 'charge.refunded', data: { object: { id: 'ch_full', refunded: true } } })
+                expect(res.statusCode).toBe(200)
+                expect(mockStripeInstance.subscriptions.cancel).toHaveBeenCalledWith('sub_ref', { prorate: false, invoice_now: false })
+            })
+
+            it('a retry after it is already cancelled does nothing', async () => {
+                mockStripeInstance.subscriptions.retrieve.mockResolvedValue({ id: 'sub_ref', status: 'canceled' })
+                const res = await run({ id: 'evt_cancel_2', type: 'charge.refunded', data: { object: { id: 'ch_full', refunded: true } } })
+                expect(res.statusCode).toBe(200)
+                expect(mockStripeInstance.subscriptions.cancel).not.toHaveBeenCalled()
+            })
+
+            it('an open dispute pauses collection instead of cancelling', async () => {
+                mockStripeInstance.subscriptions.retrieve.mockResolvedValue({ id: 'sub_ref', status: 'active', pause_collection: null })
+                const res = await run({ id: 'evt_pause', type: 'charge.dispute.created', data: { object: { id: 'dp_9', charge: 'ch_full' } } })
+                expect(res.statusCode).toBe(200)
+                expect(mockStripeInstance.subscriptions.update).toHaveBeenCalledWith('sub_ref', { pause_collection: { behavior: 'void' } })
+                expect(mockStripeInstance.subscriptions.cancel).not.toHaveBeenCalled()
+            })
+
+            it('a won dispute resumes collection', async () => {
+                mockStripeInstance.subscriptions.retrieve.mockResolvedValue({ id: 'sub_ref', status: 'active', pause_collection: { behavior: 'void' }, metadata: { tier: 'pro' } })
+                const res = await run({ id: 'evt_resume', type: 'charge.dispute.closed', data: { object: { id: 'dp_9', charge: 'ch_full', status: 'won' } } })
+                expect(res.statusCode).toBe(200)
+                expect(mockStripeInstance.subscriptions.update).toHaveBeenCalledWith('sub_ref', { pause_collection: '' })
+            })
+
+            it('a lost dispute cancels it', async () => {
+                mockStripeInstance.subscriptions.retrieve.mockResolvedValue({ id: 'sub_ref', status: 'active', pause_collection: { behavior: 'void' } })
+                const res = await run({ id: 'evt_lost_cancel', type: 'charge.dispute.closed', data: { object: { id: 'dp_9', charge: 'ch_full', status: 'lost' } } })
+                expect(res.statusCode).toBe(200)
+                expect(mockStripeInstance.subscriptions.cancel).toHaveBeenCalledWith('sub_ref', { prorate: false, invoice_now: false })
+            })
+
+            it('a Stripe failure answers 5xx so the refund is retried, never left charging', async () => {
+                mockStripeInstance.subscriptions.retrieve.mockResolvedValue({ id: 'sub_ref', status: 'active' })
+                mockStripeInstance.subscriptions.cancel.mockRejectedValueOnce(new Error('stripe down'))
+                const forget = vi.fn(() => ({ changes: 1 }))
+                mockPrepare.mockImplementation((sql) => /DELETE FROM webhook_events/.test(sql)
+                    ? { run: forget }
+                    : { get: vi.fn(), run: vi.fn(() => ({ changes: 1 })), all: vi.fn(() => []) })
+                const res = await run({ id: 'evt_cancel_fail', type: 'charge.refunded', data: { object: { id: 'ch_full', refunded: true } } })
+                expect(res.statusCode).toBe(500)
+                expect(forget).toHaveBeenCalledWith('evt_cancel_fail', 'stripe')
+            })
         })
 
         it('does not let customer.subscription.updated lift a refund hold', async () => {

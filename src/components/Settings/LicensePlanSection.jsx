@@ -174,6 +174,48 @@ function UpgradePrompt({ onUpgradePro, onUpgradeEnterprise }) {
     )
 }
 
+/**
+ * What the daily licence check-in last reported (server/lib/license-checkin.js):
+ * installations against the plan, automatic renewal, or why it is off. The
+ * hosted service and test runs do not check in, so they show nothing.
+ */
+export function CheckinStatus({ checkin, expiresAt }) {
+    if (!checkin || checkin.disabled === 'issuer' || checkin.disabled === 'test') return null
+    const line = 'text-xs text-slate-500 dark:text-slate-400 leading-relaxed'
+    const warn = 'p-3 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-xs text-amber-800 dark:text-amber-200 leading-relaxed'
+    if (checkin.disabled === 'disabled') {
+        return <p className={line}>Automatic renewal is off on this installation (<code>LICENSE_AUTO_RENEW=false</code>). Paste each renewed key under Change License Key.</p>
+    }
+    const last = checkin.last
+    if (!last) return <p className={line}>This installation has not checked in with the licence service yet. It does so once a day.</p>
+    if (last.error) {
+        return <p className={line}>The last check-in ({formatDate(last.at)}) could not reach the licence service. Nothing changes: this key keeps working until {formatDate(expiresAt)}.</p>
+    }
+    const installs = last.installs
+    const machines = (n) => `${n} ${n === 1 ? 'machine' : 'machines'}`
+    return (
+        <div className="space-y-2">
+            {last.status === 'blocked' ? (
+                <p className={warn}>
+                    The licence service stopped renewals for this installation. This key keeps working until {formatDate(expiresAt)} and will not be replaced. If this installation is yours, contact support and quote installation #{installs?.number ?? '?'}.
+                </p>
+            ) : installs?.over ? (
+                <p className={warn}>
+                    This key is active on {machines(installs.active)} and your plan covers {installs.limit}. Stop the ones you no longer use (they stop counting after 30 days without a check-in), or contact us to cover more.
+                </p>
+            ) : installs ? (
+                <p className={line}>Used on {installs.active} of the {machines(installs.limit)} your plan covers. Last check-in {formatDate(last.at)}.</p>
+            ) : null}
+            {installs?.number && <p className={line}>This is installation #{installs.number} of this licence; quote it when you contact support.</p>}
+            {last.renewedTo && <p className={line}>Renewed automatically: the key is now valid until {formatDate(last.renewedTo)}.</p>}
+            {last.renewalPending && (
+                <p className={warn}>A renewed key is ready, but this installation reads its key from <code>LICENSE_KEY</code>. Update that variable with the key from your latest licence e-mail and restart.</p>
+            )}
+            {last.status === 'revoked' && <p className={warn}>The licence service reports this key as revoked. Contact support if that is unexpected.</p>}
+        </div>
+    )
+}
+
 function LicenseCard({ license, onChangeLicenseKey }) {
     const [expanded, setExpanded] = useState(false)
     const tierConfig = TIER_CONFIG[license.tier] || TIER_CONFIG.free
@@ -234,6 +276,12 @@ function LicenseCard({ license, onChangeLicenseKey }) {
                     </p>
                 </div>
             </div>
+
+            {license.checkin && (
+                <div className="mt-4">
+                    <CheckinStatus checkin={license.checkin} expiresAt={license.expiresAt} />
+                </div>
+            )}
 
             {expanded && (
                 <motion.div

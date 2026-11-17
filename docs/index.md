@@ -11,7 +11,7 @@ below links to the canonical page for that topic.
 | Go from sign-in to a migration dry run | [First five minutes](guides/first-five-minutes.md) |
 | Understand the system at a glance | [Architecture overview](architecture/overview.md) |
 | Run a production instance | [Operations runbook](operations.md) |
-| Call the API | [API reference](api/API.md) (355 route handlers — recounted via `grep`, see API.md header) |
+| Call the API | [API reference](api/API.md) (363 route handlers — recounted via `grep`, see API.md header) |
 | Configure an AI provider | [AI Providers (BYOK)](ai-providers.md) |
 | Run on Windows without Docker or Node.js | [Windows guide](windows.md) |
 | Publish on a public domain behind IIS | [IIS deployment guide](guides/deploy-iis-windows.md) |
@@ -37,6 +37,34 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.28.2 (2026-10-29) — Signed-in users keep browsing; an honest
+  rate-limit screen.** Signed-in users no longer hit "Rate limit exceeded"
+  after a few clicks.
+- **v4.28.1 (2026-10-26) — Kept access while a card is retried, seller by
+  brand only, safer monitoring.** Error monitoring stays restrictive on the
+  next Sentry SDK; A declined renewal no longer drops you to Free while the
+  card is being
+  retried; The Terms and Privacy pages identify the seller
+  as "BolaLabs, Portugal,
+  Europe"; Accessible names now contain the
+  visible text.
+- **v4.28.0 (2026-10-25) — Licences per machine, leak control, premium
+  e-mail.** Licence check-in: renewals arrive by themselves, and
+  installations are
+  counted; Licences are counted by machine, and a shared
+  key can be stopped without
+  touching the customer; Every e-mail the app
+  sends has one designed layout; A full refund now cancels the Stripe
+  subscription.
+- **v4.27.2 (2026-10-25) — simple-git 4.0.2: the last critical advisory
+  closed.** See the changelog.
+- **v4.27.1 (2026-10-25) — simple-git 4: the critical clone advisory
+  closed.** See the changelog.
+- **v4.27.0 (2026-10-25) — Licences that last the paid period, help that
+  reaches a person.** Browsing the landing page no longer locks visitors
+  out; Licence keys run to the end of the paid period, plus 7 days; A full
+  refund or a lost chargeback revokes the keys it paid for; Help goes where
+  it can be answered; Compare plans reads by what changes.
 - **v4.26.2 (2026-09-24) — Deploys in seconds; lodash-es advisory closed.**
   Deploys no longer take the site down for ten minutes.
 - **v4.26.1 (2026-09-24) — Current majors, ai scope on every generation
@@ -232,7 +260,7 @@ The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](
 
 ## API reference
 
-- [API Reference](api/API.md) — 355 route handlers across 77 route
+- [API Reference](api/API.md) — 363 route handlers across 79 route
   modules (recounted via `grep`; see the API.md header for the exact
   command). Every endpoint documented with auth requirements,
   request/response shape, and error codes.

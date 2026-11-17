@@ -27,8 +27,8 @@
  */
 import { useEffect } from 'react'
 
-const UPDATED = '12 September 2026'
-const CONTROLLER_EMAIL = 'bruno@bolalabs.pt'
+const UPDATED = '26 October 2026'
+const CONTROLLER_EMAIL = 'suporte@bolalabs.pt'
 const SOURCE_URL = 'https://github.com/brunobola-portfolio/GitHub-Repo-Manager'
 const LICENCE_URL = `${SOURCE_URL}/blob/main/LICENSE`
 const SUBSCRIPTION_DOC_URL = `${SOURCE_URL}/blob/main/docs/LICENSE-COMMERCIAL.md`
@@ -70,12 +70,14 @@ export default function TermsPage() {
 
                 <Section id="who" title="Who you are contracting with">
                     <p>
-                        BolaLabs (Bruno Silva Marques), Portugal, contactable at{' '}
+                        BolaLabs, Portugal, Europe, contactable at{' '}
                         <a href={`mailto:${CONTROLLER_EMAIL}`} className="underline">
                             {CONTROLLER_EMAIL}
                         </a>
-                        . Using this service means accepting these terms. If you are buying on behalf
-                        of a company, you confirm you may bind it.
+                        . The provider&apos;s legal identification details are sent on request, by
+                        email to that address, to customers and competent authorities. Using this
+                        service means accepting these terms. If you are buying on behalf of a
+                        company, you confirm you may bind it.
                     </p>
                 </Section>
 
@@ -139,7 +141,7 @@ export default function TermsPage() {
 
                 <Section id="cancelling" title="Cancelling, and what happens next">
                     <p>
-                        You can cancel at any time from <strong>Settings → Billing</strong>, which
+                        You can cancel at any time from <strong>Settings → License &amp; Plan → Manage</strong>, which
                         opens Stripe's own portal. Cancelling stops the next renewal; it does not cut
                         off the period you already paid for.
                     </p>

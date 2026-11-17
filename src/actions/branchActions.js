@@ -7,7 +7,7 @@
  * write its `run`, and ensure tests/actions/branchActions.test.js still
  * passes.
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  */
 
 import { Eye, Copy, Trash2, ShieldCheck } from 'lucide-react'

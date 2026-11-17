@@ -9,7 +9,7 @@
  *   POST  /:owner/:repo/issues/:issue_number/comments
  *   GET   /:owner/:repo/issues/:issue_number/comments
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  */
 
 import express from 'express';

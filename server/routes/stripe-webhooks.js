@@ -20,7 +20,7 @@ const HOLD_STATUSES = new Set(['refunded', 'disputed']);
  * tampered if the Stripe account is compromised). Falls back to the supplied
  * `metadataTier` if we can't fetch the price (e.g. line items missing).
  */
-async function reconcileTierFromPrice(stripe, sessionOrSub, metadataTier, sessionId) {
+export async function reconcileTierFromPrice(stripe, sessionOrSub, metadataTier, sessionId) {
     try {
         let priceTier = null;
         if (sessionId) {
@@ -91,6 +91,44 @@ async function subscriptionPeriodEnd(stripe, subscriptionId) {
         logger.warn({ err, subscriptionId }, 'stripe-webhook: could not read the subscription period end');
         return null;
     }
+}
+
+/**
+ * What happens to the Stripe subscription when money comes back.
+ *
+ * - Full refund: the customer asked for their money and got it, so the
+ *   subscription is cancelled at once; leaving it active kept charging a
+ *   customer we had put on Free.
+ * - Dispute opened: the outcome is unknown, so collection is paused
+ *   (invoices are voided, not charged) rather than cancelled, and resumed if
+ *   the dispute is won.
+ * - Dispute lost: cancelled.
+ *
+ * Each action reads the subscription first and does nothing when it is
+ * already in the wanted state, so a webhook retry is harmless. A Stripe
+ * error propagates: the webhook answers 5xx and Stripe retries, because a
+ * refunded customer must not be charged again.
+ *
+ * @param {'cancel'|'pause'|'resume'} action
+ */
+export async function applySubscriptionAction(stripe, subscriptionId, action) {
+    const sub = await stripe.subscriptions.retrieve(subscriptionId);
+    if (!sub || sub.status === 'canceled' || sub.status === 'incomplete_expired') return 'already-ended';
+    if (action === 'cancel') {
+        await stripe.subscriptions.cancel(subscriptionId, { prorate: false, invoice_now: false });
+        return 'cancelled';
+    }
+    if (action === 'pause') {
+        if (sub.pause_collection?.behavior === 'void') return 'already-paused';
+        await stripe.subscriptions.update(subscriptionId, { pause_collection: { behavior: 'void' } });
+        return 'paused';
+    }
+    if (action === 'resume') {
+        if (!sub.pause_collection) return 'not-paused';
+        await stripe.subscriptions.update(subscriptionId, { pause_collection: '' });
+        return 'resumed';
+    }
+    throw new Error(`unknown subscription action: ${action}`);
 }
 
 async function revokeKeysFor(subscriptionId, reason) {
@@ -408,6 +446,11 @@ export async function stripeWebhookHandler(req, res) {
                 // be won, and charge.dispute.closed (lost) revokes then.
                 if (event.type === 'charge.refunded') {
                     await revokeKeysFor(subscriptionId, 'refund');
+                    const outcome = await applySubscriptionAction(stripe, subscriptionId, 'cancel');
+                    logger.warn({ subscriptionId, outcome }, 'stripe-webhook: full refund, subscription cancelled');
+                } else {
+                    const outcome = await applySubscriptionAction(stripe, subscriptionId, 'pause');
+                    logger.warn({ subscriptionId, outcome }, 'stripe-webhook: dispute opened, collection paused');
                 }
                 break;
             }
@@ -444,10 +487,13 @@ export async function stripeWebhookHandler(req, res) {
                 // keys it paid for are revoked.
                 if (dispute.status === 'lost') {
                     await revokeKeysFor(subscriptionId, 'dispute');
-                    logger.warn({ subscriptionId, disputeId: dispute.id }, 'stripe-webhook: dispute lost, hold stands, keys revoked');
+                    const outcome = await applySubscriptionAction(stripe, subscriptionId, 'cancel');
+                    logger.warn({ subscriptionId, disputeId: dispute.id, outcome }, 'stripe-webhook: dispute lost, keys revoked, subscription cancelled');
                     break;
                 }
 
+                // Won: the money stays, so billing resumes where it paused.
+                await applySubscriptionAction(stripe, subscriptionId, 'resume');
                 const sub = await stripe.subscriptions.retrieve(subscriptionId);
                 const rawTier = sub.metadata?.tier || sub.items?.data?.[0]?.price?.metadata?.tier || 'pro';
                 const tier = await reconcileTierFromPrice(stripe, sub, rawTier, null);

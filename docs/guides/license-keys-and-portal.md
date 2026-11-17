@@ -16,8 +16,11 @@ An **Ed25519-signed JWT** with a `grm_lic_` prefix. The payload carries
 (`server/lib/license.js`).
 
 Verification is **offline**. An install reads `keys/public.pem` — committed, and
-public by definition — and checks the signature locally. There is no phone-home
-and no activation server, which is what lets an air-gapped self-host work.
+public by definition — and checks the signature locally. Validation needs no
+server, which is what lets an air-gapped self-host work. An install with
+network access also checks in once a day to pick up renewed keys and
+revocations (see "Licence check-in" in billing-and-licensing.md); it never
+needs that to validate.
 
 Two consequences worth stating plainly, because the portal copy will need them:
 
@@ -29,9 +32,15 @@ Two consequences worth stating plainly, because the portal copy will need them:
   they run — via `POST /api/license/revocations` (admin-authenticated; there
   is no CLI for it, and `npm run admin:revoke` is a *user admin-flag* tool,
   not this) — and `verifyLicenseKey()` consults that list on every check. It
-  is a local list, so it does not reach a customer's own self-hosted install.
-  Never let the portal imply otherwise — that claim is
+  is a local list. It reaches a customer's own self-hosted install only through
+  that install's daily check-in, and never one that has the check-in off or no
+  network, which keeps its key until the key's own end date. Never let the
+  portal imply more — that claim is
   [test-enforced](../../tests/build/license-claims.test.js).
+- **A shared key is answered from Admin → Licences** on the issuing instance:
+  block renewals for an installation, or rotate the key and keep only the
+  installations the customer confirms. See "A shared or leaked key" in
+  billing-and-licensing.md.
 
 ---
 

@@ -1,6 +1,6 @@
 # The GitHub Dashboard That Thinks: Building an AI-Native Repository Platform
 
-*By Bruno Silva Marques, Bola Labs — GitHub Repo Manager v4.7.0, July 2026*
+*By BolaLabs — GitHub Repo Manager v4.7.0, July 2026*
 
 ---
 
@@ -97,7 +97,7 @@ Anything that writes to a user's repository goes preview-first through a single 
 ## Architecture at a glance
 
 - **Frontend** — React 19.2 + Vite 8 + Tailwind CSS 4.1, code-split under explicit gzip budgets enforced by a CI gate (the entry chunk was cut 11% this month and the budget lowered to lock it). Framer Motion drives animation from a shared motion vocabulary.
-- **Backend** — Express 5.2 with **342 route handlers across 77 route modules**, fronted by Helmet, tier-aware rate limiting, CSRF double-submit tokens, an SSRF + DNS-rebinding guard on import-from-URL, and rolling sessions with an absolute ceiling.
+- **Backend** — Express 5.2 with **350 route handlers across 79 route modules**, fronted by Helmet, tier-aware rate limiting, CSRF double-submit tokens, an SSRF + DNS-rebinding guard on import-from-URL, and rolling sessions with an absolute ceiling.
 - **Data** — better-sqlite3 (WAL), every per-user table keyed by `user_id`, WAL-safe scheduled backups, maintenance janitors.
 - **Integrations** — GitHub REST API, Azure DevOps API v7.1, Stripe billing, Resend email (with retry + dead-letter queue), BYOK AI providers, and a GitHub API circuit breaker.
 
@@ -176,8 +176,8 @@ Dev demo mode runs the full UI with 87 realistic mock repositories and mock AI r
 
 ## Licensing
 
-**Apache-2.0** — free to run, modify, embed and redistribute, forever, with no copyleft. The name and the mark are reserved (Apache-2.0 §6, spelled out in `TRADEMARKS.md`): fork freely, rename the fork. A **commercial subscription** buys capacity, a hosted instance and support — never permission, which the licence already granted — **[bruno@bolalabs.pt](mailto:bruno@bolalabs.pt)**.
+**Apache-2.0** — free to run, modify, embed and redistribute, forever, with no copyleft. The name and the mark are reserved (Apache-2.0 §6, spelled out in `TRADEMARKS.md`): fork freely, rename the fork. A **commercial subscription** buys capacity, a hosted instance and support — never permission, which the licence already granted — **[suporte@bolalabs.pt](mailto:suporte@bolalabs.pt)**.
 
 ---
 
-*Bruno Silva Marques is the founder of Bola Labs, building modern developer tools at the intersection of AI and software engineering. If GitHub Repo Manager is useful to you, a star on the [repository](https://github.com/brunobola-portfolio/GitHub-Repo-Manager) genuinely helps.*
+*BolaLabs builds developer tools at the intersection of AI and software engineering. If GitHub Repo Manager is useful to you, a star on the [repository](https://github.com/brunobola-portfolio/GitHub-Repo-Manager) genuinely helps.*

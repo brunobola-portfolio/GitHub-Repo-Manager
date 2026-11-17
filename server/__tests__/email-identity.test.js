@@ -3,10 +3,12 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import {
     resolveSender,
     supportContact,
-    supportFooter,
+    supportFooterParts,
     headerSafe,
     escapeHtml,
     parseMailbox,
+    publicSupport,
+    PUBLISHER_LICENCE_URL,
 } from '../lib/email-identity.js'
 
 const VARS = ['EMAIL_FROM', 'EMAIL_FROM_LICENCES', 'EMAIL_REPLY_TO', 'EMAIL_SUPPORT_URL']
@@ -97,15 +99,15 @@ describe('email identity', () => {
         })
         process.env.EMAIL_FROM = 'robot@acme.example'
         expect(supportContact()).toEqual({})
-        expect(supportFooter()).toEqual({ html: '', text: '' })
+        expect(supportFooterParts()).toEqual([])
     })
 
     it('support footer never says "reply" without a Reply-To behind it', () => {
         process.env.EMAIL_FROM = 'robot@acme.example'
         process.env.EMAIL_SUPPORT_URL = 'https://help.acme.example/new'
-        const footer = supportFooter()
-        expect(footer.text).toBe('Need help? Open a support request at https://help.acme.example/new.')
-        expect(footer.text).not.toMatch(/reply/i)
+        const parts = supportFooterParts()
+        expect(parts).toEqual(['Need help? ', 'Open a support request at ', { link: { url: 'https://help.acme.example/new', label: 'help.acme.example/new' } }, '.'])
+        expect(JSON.stringify(parts)).not.toMatch(/reply/i)
     })
 
     it('headerSafe flattens CR/LF so a subject cannot start a new header', () => {
@@ -114,6 +116,28 @@ describe('email identity', () => {
 
     it('escapeHtml neutralises markup', () => {
         expect(escapeHtml('<a href="x">t</a> & \'q\'')).toBe('&lt;a href=&quot;x&quot;&gt;t&lt;/a&gt; &amp; &#39;q&#39;')
+    })
+
+    it('publicSupport on the house domain: the BolaLabs desk tagged with the product, suporte@ and the sales form', () => {
+        process.env.EMAIL_FROM = 'no-reply@bolalabs.pt'
+        expect(publicSupport()).toEqual({
+            url: 'https://bolalabs.pt/en/dashboard?view=support&new=1&product=repomanager',
+            email: 'suporte@bolalabs.pt',
+            salesUrl: 'https://bolalabs.pt/en/contact?topic=repomanager',
+        })
+    })
+
+    it('publicSupport elsewhere: no BolaLabs desk or mailbox, only what the operator set, and the publisher licence page', () => {
+        process.env.EMAIL_FROM = 'no-reply@acme.example'
+        expect(publicSupport()).toEqual({ salesUrl: PUBLISHER_LICENCE_URL })
+        process.env.EMAIL_SUPPORT_URL = 'https://desk.acme.example/new'
+        process.env.EMAIL_REPLY_TO = 'help@acme.example'
+        expect(publicSupport()).toEqual({ url: 'https://desk.acme.example/new', email: 'help@acme.example', salesUrl: PUBLISHER_LICENCE_URL })
+        expect(JSON.stringify(publicSupport())).not.toMatch(/suporte@|dashboard?view=support/)
+    })
+
+    it('publicSupport without any sender configured shows no contact', () => {
+        expect(publicSupport()).toEqual({ salesUrl: PUBLISHER_LICENCE_URL })
     })
 
     it('parseMailbox reads both forms', () => {

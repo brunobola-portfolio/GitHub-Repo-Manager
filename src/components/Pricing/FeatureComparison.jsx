@@ -1,11 +1,9 @@
-import React, { useRef } from 'react'
+import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
+import { Check, Minus, Search } from 'lucide-react'
 import { EASE, DURATION } from '../ui/motion'
-import { Check, X } from 'lucide-react'
-import { Card } from '../ui/Card'
-import { STICKY_HEAD_SHADOW_CLASS } from '../ui/_variants'
-import { useStickyHeaderShadow } from '../../hooks/useStickyHeaderShadow'
-import { useBelowBreakpoint } from '../../hooks/useMediaQuery'
+import { TabBar } from '../ui/TabBar'
+import { Input } from '../ui/form'
 
 const TIERS = ['Free', 'Pro', 'Enterprise']
 
@@ -196,97 +194,76 @@ const CATEGORIES = [
   },
 ]
 
-function CellValue({ value, colIndex, compact = false }) {
-  if (typeof value === 'boolean') {
-    return value ? (
-      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15">
-        <Check className="w-3.5 h-3.5 ds-text-success" strokeWidth={2.5} aria-label="Included" />
-      </span>
-    ) : (
-      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 dark:bg-white/[0.04]">
-        <X className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600" strokeWidth={2.5} aria-label="Not included" />
-      </span>
-    )
-  }
-  const highlightCol = colIndex === 1 // Pro column = highlighted
-  return (
-    <span
-      className={`font-semibold ${compact ? 'ds-text-meta break-words' : 'text-sm'}
-        ${highlightCol
-          ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
-          : 'text-slate-700 dark:text-slate-200'
-        }`}
-    >
-      {value}
+
+const PLAN_TABS = TIERS.map((tier, i) => ({
+  id: tier.toLowerCase(),
+  label: tier,
+  badge: i === 1 ? (
+    /* --ds-badge-brand-*, not bg-brand-500: white on brand-500 measured
+       4.58:1, and brand-500 is the fill the badge pair keeps off text. */
+    <span className="ml-1 px-1.5 py-0.5 rounded ds-text-micro font-bold bg-[color:var(--ds-badge-brand-fill)] text-[color:var(--ds-badge-brand-text)]">
+      Popular
     </span>
-  )
+  ) : null,
+}))
+
+const sameOnEveryPlan = (row) => row.values.every((v) => v === row.values[0])
+
+/** Plain words for a cell, so a value reads the same in a sentence and in a hint. */
+function describe(value) {
+  if (value === true) return 'Included'
+  if (value === false) return 'Not included'
+  return value
 }
 
-/**
- * Sub-`sm` layout: one block per feature with all three tier values labelled
- * inline.
- *
- * The desktop table is `min-w-[600px]` inside an `overflow-x-auto` Card. At
- * 375px that container measures 310px, so Free starts at x=327 — every plan
- * value sat entirely off-screen behind a hard vertical crop, with no edge fade,
- * no scroll hint and no visible scrollbar. On the pricing page, on a phone.
- * Horizontal scroll is the wrong primitive for a 4-column matrix at that width;
- * stacking is, so the two layouts are mutually exclusive (rendered by
- * `useBelowBreakpoint`, not `sm:hidden`) — a CSS-only swap would duplicate all
- * ~30 rows in the DOM and in the accessibility tree.
- */
-function StackedComparison() {
+// Split once: most of the product is identical on every plan, and showing it
+// as three equal columns hid the handful of rows that actually differ.
+const EVERY_PLAN = CATEGORIES.flatMap((cat) => cat.rows.filter((row) => sameOnEveryPlan(row) && row.values[0] !== false))
+const BY_PLAN = CATEGORIES
+  .map((cat) => ({ name: cat.name, rows: cat.rows.filter((row) => !sameOnEveryPlan(row)) }))
+  .filter((cat) => cat.rows.length > 0)
+
+function matches(row, query) {
+  return !query || row.feature.toLowerCase().includes(query)
+}
+
+function PlanValue({ row, planIndex }) {
+  const value = row.values[planIndex]
+  // The comparison a reader is making: on a paid plan, what Free gives; on
+  // Free, what the first upgrade gives.
+  const refIndex = planIndex === 0 ? 1 : 0
+  const ref = row.values[refIndex]
+  const hint = ref !== value ? `${TIERS[refIndex]}: ${describe(ref)}` : null
   return (
-    <div className="space-y-4" data-testid="feature-comparison-stacked">
-      {CATEGORIES.map((cat) => (
-        <section
-          key={cat.name}
-          className="rounded-2xl border border-[color:var(--ds-elevation-border)] bg-white dark:bg-slate-900 shadow-[var(--ds-shadow-sm)] overflow-hidden"
-          aria-labelledby={`cmp-${cat.name.replace(/\W+/g, '-')}`}
-        >
-          <h3
-            id={`cmp-${cat.name.replace(/\W+/g, '-')}`}
-            className="ds-eyebrow px-4 py-2.5 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-white/[0.02] border-b border-slate-100 dark:border-white/[0.06]"
-          >
-            {cat.name}
-          </h3>
-          <ul className="divide-y divide-slate-100 dark:divide-white/[0.06]">
-            {cat.rows.map((row) => (
-              <li key={row.feature} className="px-4 py-3">
-                <p className="text-sm text-slate-700 dark:text-slate-200 mb-2 break-words">
-                  {row.feature}
-                </p>
-                <dl className="grid grid-cols-3 gap-1.5">
-                  {row.values.map((val, colIdx) => (
-                    <div
-                      key={colIdx}
-                      className={`rounded-lg px-1.5 py-1.5 text-center min-w-0 ${colIdx === 1
-                        ? 'bg-brand-50 dark:bg-brand-500/[0.10]'
-                        : 'bg-slate-50 dark:bg-white/[0.03]'
-                      }`}
-                    >
-                      <dt className="ds-eyebrow text-slate-500 dark:text-slate-400">
-                        {TIERS[colIdx]}
-                      </dt>
-                      <dd className="mt-1 leading-tight">
-                        <CellValue value={val} colIndex={colIdx} compact />
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
+    <div className="text-right shrink-0 max-w-[55%]">
+      <p className={`text-sm font-semibold inline-flex items-center gap-1.5 justify-end ${
+        value === false
+          ? 'text-slate-500 dark:text-slate-400'
+          : planIndex === 0
+            ? 'text-slate-800 dark:text-slate-100'
+            : 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]'
+      }`}>
+        {value === true && <Check className="w-4 h-4 ds-text-success" strokeWidth={2.5} aria-hidden="true" />}
+        {value === false && <Minus className="w-4 h-4" aria-hidden="true" />}
+        {describe(value)}
+      </p>
+      {hint && <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{hint}</p>}
     </div>
   )
 }
 
 export function FeatureComparison() {
-  const tableScrollRef = useRef(null)
-  const elevated = useStickyHeaderShadow(tableScrollRef)
-  const isPhone = useBelowBreakpoint('sm')
+  const [plan, setPlan] = useState('pro')
+  const [rawQuery, setRawQuery] = useState('')
+  const query = rawQuery.trim().toLowerCase()
+  const planIndex = TIERS.findIndex((t) => t.toLowerCase() === plan)
+
+  const everyPlan = useMemo(() => EVERY_PLAN.filter((row) => matches(row, query)), [query])
+  const byPlan = useMemo(
+    () => BY_PLAN.map((cat) => ({ ...cat, rows: cat.rows.filter((row) => matches(row, query)) })).filter((cat) => cat.rows.length),
+    [query],
+  )
+  const nothing = everyPlan.length === 0 && byPlan.length === 0
 
   return (
     <motion.div
@@ -294,113 +271,159 @@ export function FeatureComparison() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-80px' }}
       transition={{ duration: DURATION.ambient, ease: EASE.emphasized }}
-      className="w-full"
+      className="w-full max-w-4xl mx-auto"
     >
-      <div className="text-center mb-10">
+      <div className="mb-8">
         <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-white ds-font-display mb-3">
-          Compare all <span className="text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">features</span>
+          Compare plans
         </h2>
-        <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base max-w-lg mx-auto">
-          A full breakdown of what's included in each plan.
+        <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base max-w-2xl">
+          Most of the product is the same on every plan. Pick a plan to see what changes.
         </p>
       </div>
 
-      {isPhone ? <StackedComparison /> : (
-      <Card className="overflow-x-auto">
-        <div
-          ref={tableScrollRef}
-          className="overflow-y-auto max-h-[560px]"
-        >
-        <table className="w-full min-w-[600px] border-collapse">
-          <caption className="sr-only">Feature comparison by plan: Free, Pro and Enterprise</caption>
-          {/* Sticky header */}
-          <thead className={`transition-shadow${elevated ? ` ${STICKY_HEAD_SHADOW_CLASS}` : ''}`}>
-            <tr className="border-b border-slate-200/60 dark:border-white/[0.08]">
-              <th scope="col" className="sticky top-0 left-0 z-20 w-1/2 px-6 py-5 text-left text-sm font-semibold text-slate-500 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md">
-                Feature
-              </th>
-              {TIERS.map((tier, i) => (
-                <th
-                  key={tier}
-                  scope="col"
-                  className={`sticky top-0 z-10 w-1/6 px-4 py-5 text-center text-sm font-bold backdrop-blur-md
-                    ${i === 1
-                      ? 'text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] bg-brand-50/80 dark:bg-brand-500/[0.08]'
-                      : 'text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-slate-900/80'
-                    }`}
-                >
-                  {tier}
-                  {i === 1 && (
-                    /* --ds-badge-brand-*, not bg-brand-500: white on
-                       brand-500 measured 4.58:1 here, and brand-500 is the
-                       exact fill the badge pair exists to keep off text. */
-                    <span className="ml-1.5 inline-block px-1.5 py-0.5 rounded ds-text-micro font-bold bg-[color:var(--ds-badge-brand-fill)] text-[color:var(--ds-badge-brand-text)] align-middle">
-                      Popular
-                    </span>
-                  )}
-                </th>
-              ))}
-            </tr>
-          </thead>
-
-          <tbody>
-            {CATEGORIES.map((cat, catIdx) => (
-              <React.Fragment key={catIdx}>
-                {/* Category header row */}
-                <tr className="border-b border-slate-100 dark:border-white/[0.04]">
-                  <td
-                    colSpan={4}
-                    className="ds-eyebrow px-6 py-3 text-slate-500 dark:text-slate-400 bg-slate-50/70 dark:bg-white/[0.02]"
-                  >
-                    {cat.name}
-                  </td>
-                </tr>
-
-                {/* Feature rows */}
-                {cat.rows.map((row, rowIdx) => {
-                  const isLast = rowIdx === cat.rows.length - 1
-                  return (
-                    <tr
-                      key={`${catIdx}-${rowIdx}`}
-                      className={`group transition-colors duration-150 hover:bg-slate-50/60 dark:hover:bg-white/[0.03]
-                        ${!isLast ? 'border-b border-slate-100/70 dark:border-white/[0.04]' : ''}`}
-                    >
-                      <th scope="row" className="px-6 py-3.5 text-sm font-normal text-left text-slate-600 dark:text-slate-300">
-                        {row.feature}
-                      </th>
-                      {row.values.map((val, colIdx) => (
-                        <td
-                          key={colIdx}
-                          className={`px-4 py-3.5 text-center
-                            ${colIdx === 1 ? 'bg-brand-50/40 dark:bg-brand-500/[0.05]' : ''}`}
-                        >
-                          <CellValue value={val} colIndex={colIdx} />
-                        </td>
-                      ))}
-                    </tr>
-                  )
-                })}
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+        <TabBar
+          tabs={PLAN_TABS}
+          activeTab={plan}
+          onTabChange={setPlan}
+          layoutId="plan-compare"
+          ariaLabel="Plan to show"
+          className="self-start"
+        />
+        <div className="sm:ml-auto sm:w-64">
+          <Input
+            type="search"
+            value={rawQuery}
+            onChange={(e) => setRawQuery(e.target.value)}
+            placeholder="Find a feature"
+            aria-label="Find a feature"
+            leadingIcon={Search}
+            size="sm"
+          />
         </div>
-      </Card>
+      </div>
+
+      {nothing ? (
+        <div className="rounded-2xl border border-[color:var(--ds-elevation-border)] bg-white dark:bg-slate-900 px-6 py-10 text-center">
+          <p className="text-sm text-slate-600 dark:text-slate-300">No feature matches “{rawQuery.trim()}”.</p>
+          <button
+            type="button"
+            onClick={() => setRawQuery('')}
+            className="mt-3 text-sm font-semibold text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline ds-focus-ring rounded"
+          >
+            Clear the search
+          </button>
+        </div>
+      ) : (
+        <div className="grid gap-5 lg:grid-cols-[1.15fr_1fr] items-start">
+          {byPlan.length > 0 && (
+            <section
+              role="tabpanel"
+              id={`tabpanel-plan-compare-${plan}`}
+              aria-labelledby={`tab-plan-compare-${plan}`}
+              className="rounded-2xl border border-[color:var(--ds-elevation-border)] bg-white dark:bg-slate-900 p-5 sm:p-6"
+            >
+              <h3 className="text-base font-semibold text-slate-800 dark:text-white">
+                {planIndex === 0 ? 'Limits on Free' : `What ${TIERS[planIndex]} adds`}
+              </h3>
+              {(() => {
+                const rows = byPlan.flatMap((cat) => cat.rows)
+                // On a paid plan most differences are the same answer, "no cap";
+                // one block of them reads faster than a column repeating it.
+                const lifted = planIndex > 0
+                  ? rows.filter((row) => row.values[planIndex] === 'Unlimited')
+                  : rows.filter((row) => row.values[1] === 'Unlimited' && row.values[0] !== false)
+                const missing = rows.filter((row) => row.values[planIndex] === false)
+                const rest = rows.filter((row) => !lifted.includes(row) && !missing.includes(row))
+                const higher = TIERS.findIndex((_, i) => i > planIndex && missing.some((row) => row.values[i] !== false))
+                return (
+                  <>
+                    {rest.length > 0 && (
+                      <ul className="mt-2 divide-y divide-slate-100 dark:divide-white/[0.06]">
+                        {rest.map((row) => (
+                          <li key={row.feature} className="flex items-start justify-between gap-4 py-2.5">
+                            <span className="text-sm text-slate-700 dark:text-slate-200 min-w-0 break-words">{row.feature}</span>
+                            <PlanValue row={row} planIndex={planIndex} />
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {lifted.length > 0 && (
+                      <div className="mt-4 rounded-xl bg-brand-50/60 dark:bg-brand-500/[0.07] p-4">
+                        <h4 className="text-sm font-semibold text-slate-800 dark:text-white">
+                          {planIndex > 0 ? `Unlimited on ${TIERS[planIndex]}` : 'Monthly caps on Free'}
+                        </h4>
+                        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                          {planIndex > 0 ? 'The Free limit is shown under each one.' : 'Each one is unlimited on Pro.'}
+                        </p>
+                        <ul className="mt-3 grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
+                          {lifted.map((row) => (
+                            <li key={row.feature} className="min-w-0">
+                              <p className="text-sm text-slate-700 dark:text-slate-200 break-words">{row.feature}</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">{planIndex > 0 ? `Free: ${describe(row.values[0])}` : describe(row.values[0])}</p>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {missing.length > 0 && (
+                      <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">
+                        Not on {TIERS[planIndex]}: {missing.map((row) => row.feature).join(', ')}.
+                        {higher > -1 && (
+                          <>
+                            {' '}
+                            <button
+                              type="button"
+                              onClick={() => setPlan(TIERS[higher].toLowerCase())}
+                              className="font-semibold text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline ds-focus-ring rounded"
+                            >
+                              See {TIERS[higher]}
+                            </button>
+                          </>
+                        )}
+                      </p>
+                    )}
+                  </>
+                )
+              })()}
+            </section>
+          )}
+
+          {everyPlan.length > 0 && (
+            <section
+              aria-labelledby="cmp-every-plan"
+              className="rounded-2xl border border-[color:var(--ds-elevation-border)] bg-white dark:bg-slate-900 p-5 sm:p-6"
+            >
+              <h3 id="cmp-every-plan" className="text-base font-semibold text-slate-800 dark:text-white">
+                On every plan, Free included
+              </h3>
+              <ul className="mt-4 space-y-2.5">
+                {everyPlan.map((row) => (
+                  <li key={row.feature} className="flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-200">
+                    <Check className="w-4 h-4 mt-0.5 shrink-0 ds-text-success" strokeWidth={2.5} aria-hidden="true" />
+                    <span className="min-w-0">
+                      {row.feature}
+                      {typeof row.values[0] === 'string' && (
+                        <span className="text-slate-500 dark:text-slate-400"> · {row.values[0]}</span>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
       )}
 
-      {/* Per-individual AI-quota disclaimer — Teams are unlimited-seat on every
-          tier, but AI usage (queries, Deep Review, PR Chat, etc.) is metered
-          against each person's own account/subscription, not pooled per team. */}
-      <p className="mt-4 text-center text-xs text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
-        Teams are unlimited on every plan. AI usage quotas above are metered per individual account, even within a team.
+      {/* AI usage is metered per person even inside a team; teams themselves
+          are unlimited on every plan. */}
+      <p className="mt-5 text-xs text-slate-500 dark:text-slate-400 max-w-2xl">
+        Teams are unlimited on every plan. AI quotas are metered per individual account, even within a team.
       </p>
-      {/* "Repo Advisor" names two surfaces. This row is the floating
-          conversational assistant (POST /api/ai/chat), which no deployment
-          flag gates; only the Work Board's Repo Advisor card sits behind
-          WORK_BOARD_AI_ENABLED. The earlier wording here was copied from the
-          README, which had the same conflation, and sent self-hosters looking
-          for a switch they never needed. */}
-      <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
+      {/* "Repo Advisor" names two surfaces: the conversational assistant (no
+          deployment flag) and the Work Board card behind WORK_BOARD_AI_ENABLED. */}
+      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 max-w-2xl">
         &dagger; The conversational Repo Advisor works out of the box — a BYOK key is all it
         needs. The separate Repo Advisor card inside the Work Board is operator-enabled:
         self-hosted deployments need{' '}

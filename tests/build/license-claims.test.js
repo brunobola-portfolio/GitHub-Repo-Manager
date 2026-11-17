@@ -9,7 +9,7 @@
  * check". Two of those were the commercial licence terms.
  *
  * The claim that stays TRUE is narrower and worth keeping precise: the list is
- * per-instance, so Bola Labs cannot disable a key on someone else's
+ * per-instance, so BolaLabs cannot disable a key on someone else's
  * self-hosted install. This gate pins the capability to the copy, so shipping
  * one without the other fails here rather than in a customer's inbox.
  */
@@ -94,6 +94,34 @@ describe('surfaces do not contradict the shipped capability', () => {
     const webhook = readFileSync('server/routes/stripe-webhooks.js', 'utf8')
     expect(webhook).toMatch(/revokeKeysFor\(subscriptionId, 'refund'\)/)
     expect(webhook).toMatch(/revokeKeysFor\(subscriptionId, 'dispute'\)/)
+  })
+
+  it('the check-in is described as it ships: validation offline, daily check-in, and how to turn it off', () => {
+    // The check-in made "no phone-home" untrue as a blanket claim. What stays
+    // true, and must stay written down, is that validation never needs the
+    // network and that an operator can switch the check-in off.
+    const policy = readFileSync('docs/billing-and-licensing.md', 'utf8')
+    expect(policy).toMatch(/Validation never requires the\s+network/)
+    expect(policy).toContain('LICENSE_AUTO_RENEW=false')
+    expect(policy).toContain('/api/v1/license/checkin')
+    const commercial = readFileSync('docs/LICENSE-COMMERCIAL.md', 'utf8')
+    expect(commercial).toContain('LICENSE_AUTO_RENEW=false')
+    expect(commercial).not.toMatch(/never\s+phones home/)
+    expect(readFileSync('README.md', 'utf8')).toContain('LICENSE_AUTO_RENEW=false')
+    // And the code does what the docs say: the switch exists.
+    expect(readFileSync('server/lib/license-checkin.js', 'utf8')).toMatch(/LICENSE_AUTO_RENEW/)
+  })
+
+  it('every privacy surface states the machine hash the check-in actually sends', () => {
+    // The check-in sends a hash of the OS machine id. A privacy page listing
+    // what the issuer keeps without it would understate what leaves the box.
+    const client = readFileSync('server/lib/license-checkin.js', 'utf8')
+    expect(client).toMatch(/machine: machineOnce\(\)/)
+    expect(readFileSync('src/components/PublicLegal/PrivacyPage.jsx', 'utf8')).toMatch(/hash of\s+the machine/)
+    const inventory = readFileSync('docs/privacy-and-data.md', 'utf8')
+    expect(inventory).toMatch(/BolaLabs licence service/)
+    expect(inventory).toMatch(/hash of the machine's OS id/)
+    expect(readFileSync('docs/billing-and-licensing.md', 'utf8')).toMatch(/never\s+widen/)
   })
 
   it('no doc points operators at a licence-revocation CLI, because none exists', () => {

@@ -44,18 +44,26 @@ function LandingFooter() {
           >
             BolaLabs
           </a>
-          {' '}product · built by{' '}
-          <a
-            href="https://www.linkedin.com/in/bolalabs/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-slate-600 dark:text-slate-300 font-medium hover:text-brand-600 dark:hover:text-brand-400 transition-colors duration-200"
-          >
-            Bruno Marques
-          </a>
+          {' '}product
         </p>
 
-        <div className="flex items-center gap-5">
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+          {/* The legal pages are public routes; a visitor deciding whether to
+              grant GitHub access must be able to reach them from here. */}
+          <a
+            href="/privacy"
+            className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors duration-200 ds-font-display"
+          >
+            Privacy
+          </a>
+          <span className="text-slate-200 dark:text-slate-700" aria-hidden="true">·</span>
+          <a
+            href="/terms"
+            className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors duration-200 ds-font-display"
+          >
+            Terms
+          </a>
+          <span className="text-slate-200 dark:text-slate-700" aria-hidden="true">·</span>
           <a
             href="https://github.com/brunobola-portfolio/GitHub-Repo-Manager"
             target="_blank"

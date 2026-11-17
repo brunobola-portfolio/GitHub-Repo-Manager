@@ -16,8 +16,8 @@
  */
 import { useEffect } from 'react'
 
-const UPDATED = '12 September 2026'
-const CONTROLLER_EMAIL = 'bruno@bolalabs.pt'
+const UPDATED = '26 October 2026'
+const CONTROLLER_EMAIL = 'suporte@bolalabs.pt'
 const SOURCE_URL = 'https://github.com/brunobola-portfolio/GitHub-Repo-Manager'
 const TECHNICAL_DOC_URL = `${SOURCE_URL}/blob/main/docs/privacy-and-data.md`
 
@@ -59,9 +59,10 @@ export default function PrivacyPage() {
 
                 <Section id="controller" title="Who is responsible">
                     <p>
-                        BolaLabs (Bruno Silva Marques), Portugal, is the data controller for this
-                        hosted instance. For anything in this policy — including access, export or
-                        erasure requests — write to{' '}
+                        BolaLabs, Portugal, Europe, is the data controller for this hosted
+                        instance; its legal identification details are provided on request to data
+                        subjects and competent authorities. For anything in this policy — including
+                        access, export or erasure requests — write to{' '}
                         <a className="underline ds-focus-ring rounded" href={`mailto:${CONTROLLER_EMAIL}`}>
                             {CONTROLLER_EMAIL}
                         </a>
@@ -252,6 +253,19 @@ export default function PrivacyPage() {
                             docs/privacy-and-data.md
                         </a>
                         .
+                    </p>
+                    <p>
+                        A self-hosted installation with a licence key checks in with this service
+                        once a day to receive renewed keys and revocations. For that we keep, per
+                        subscription: the installation&apos;s name (its hostname unless the operator
+                        sets another), a one-way hash of a random installation id, a one-way hash of
+                        the machine&apos;s operating-system id (never the id itself), its platform
+                        (for example linux-x64), the version, the first three parts of its IP
+                        address (a /24), its installation number, and when it was first and last
+                        seen. It is used only to deliver renewals, to count machines against the
+                        plan and to stop renewals for a copy of the key used outside the
+                        customer&apos;s organisation. An operator can turn it off with{' '}
+                        <code>LICENSE_AUTO_RENEW=false</code>.
                     </p>
                 </Section>
 

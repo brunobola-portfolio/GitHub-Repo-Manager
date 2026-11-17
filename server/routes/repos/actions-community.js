@@ -30,7 +30,7 @@
  *     POST /:owner/:repo/agent-rules/generate
  *     POST /:owner/:repo/agent-rules/commit
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  */
 
 import express from 'express';

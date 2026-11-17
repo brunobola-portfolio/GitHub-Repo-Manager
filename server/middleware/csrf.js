@@ -24,7 +24,7 @@
  *   - a short, exact allowlist of /api/auth/* mutations (see
  *     AUTH_BYPASS_EXACT below) — NOT the whole /api/auth/* subtree (B-19).
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  */
 
 import crypto from 'crypto';
@@ -61,6 +61,10 @@ const BYPASS_PREFIXES = [
 const BYPASS_EXACT = [
     '/api/system/shutdown',
     '/api/v1/system/shutdown',
+    // Server-to-server: a self-hosted install posts its licence key here. It
+    // carries no session cookie, so there is nothing for CSRF to protect; the
+    // signed key in the body is the credential.
+    '/api/v1/license/checkin',
 ];
 
 /**

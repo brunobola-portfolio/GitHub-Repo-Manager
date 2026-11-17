@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2025-2026 Bola Labs, Inc. Licensed under the Apache License 2.0.
+// Copyright 2025-2026 BolaLabs Licensed under the Apache License 2.0.
 
 import { readFileSync, existsSync } from 'fs'
 import { join, dirname } from 'path'
@@ -69,14 +69,20 @@ export async function resolveEffectiveTier(stripeTier, licenseKey, publicKey) {
 // prepared at module load: some test fixtures swap the underlying db behind a
 // Proxy after import.
 let stripeTierStmt = null
+// `past_due` keeps the paid tier: Stripe is still retrying the card (Smart
+// Retries, up to the window set in the Dashboard) and has emailed the customer
+// a link to fix it. Dropping to Free on the first decline punished an expired
+// card as if it were a cancellation. Access ends when Stripe gives up and the
+// subscription is deleted, or on refund/dispute holds, which are not listed.
+const PAID_STATUSES = ['active', 'trialing', 'past_due']
 function getStripeTier(userId) {
   if (!userId) return null
   if (!stripeTierStmt) {
     stripeTierStmt = db.prepare(
-      'SELECT tier FROM user_subscriptions WHERE user_id = ? AND status = ?'
+      `SELECT tier FROM user_subscriptions WHERE user_id = ? AND status IN (${PAID_STATUSES.map(() => '?').join(', ')})`
     )
   }
-  const row = stripeTierStmt.get(userId, 'active')
+  const row = stripeTierStmt.get(userId, ...PAID_STATUSES)
   return row?.tier || null
 }
 

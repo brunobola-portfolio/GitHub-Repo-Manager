@@ -11,7 +11,7 @@
  *
  * Spec: docs/specs/2026-07-18-community-wow-wave6.md (Feature 1, Slice 2).
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  */
 
 import express from 'express';

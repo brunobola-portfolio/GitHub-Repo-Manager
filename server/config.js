@@ -93,11 +93,21 @@ const configSchema = z.object({
     emailProvider: z.enum(['console', 'resend']).default('console'),
     resendApiKey: z.string().optional(),
     emailFrom: z.string().optional(),
+    // security.txt Contact (spa-shell.js securityContact); validated there.
+    securityContact: z.string().optional(),
 
     // License issuance — Ed25519 PEM key. Required in prod when Stripe is enabled.
     licenseSigningPrivateKeyPem: z.string().optional(),
     // Days a Stripe key outlives its paid period (license-issuer.js licenseGraceDays).
     licenseGraceDays: z.string().optional(),
+    // Self-hosted licence check-in (license-checkin.js) and the issuer's
+    // per-plan installation limits (license-installs.js); validated there.
+    licenseAutoRenew: z.string().optional(),
+    licenseRenewalUrl: z.string().optional(),
+    licenseInstallName: z.string().optional(),
+    licenseMachineId: z.string().optional(),
+    licenseInstallsPro: z.string().optional(),
+    licenseInstallsEnterprise: z.string().optional(),
 
     // Data retention (G2)
     dataRetentionDays: z.coerce.number().default(365),
@@ -190,8 +200,15 @@ function loadConfig() {
         emailProvider: process.env.EMAIL_PROVIDER,
         resendApiKey: process.env.RESEND_API_KEY,
         emailFrom: process.env.EMAIL_FROM,
+        securityContact: process.env.SECURITY_CONTACT,
         licenseSigningPrivateKeyPem: process.env.LICENSE_SIGNING_PRIVATE_KEY_PEM,
         licenseGraceDays: process.env.LICENSE_GRACE_DAYS,
+        licenseAutoRenew: process.env.LICENSE_AUTO_RENEW,
+        licenseRenewalUrl: process.env.LICENSE_RENEWAL_URL,
+        licenseInstallName: process.env.LICENSE_INSTALL_NAME,
+        licenseMachineId: process.env.LICENSE_MACHINE_ID,
+        licenseInstallsPro: process.env.LICENSE_INSTALLS_PRO,
+        licenseInstallsEnterprise: process.env.LICENSE_INSTALLS_ENTERPRISE,
         dataRetentionDays: process.env.DATA_RETENTION_DAYS,
         dataRetentionWarningLeadDays: process.env.DATA_RETENTION_WARNING_LEAD_DAYS,
         aiRequireUserConfig: process.env.AI_REQUIRE_USER_CONFIG,

@@ -696,6 +696,71 @@ export const MIGRATIONS = [
             db.exec('CREATE INDEX IF NOT EXISTS idx_issued_licenses_sub ON issued_licenses(stripe_subscription_id)');
         },
     },
+    {
+        version: 39,
+        name: 'license_installs: installations that checked in per subscription',
+        up(db) {
+            // One row per (subscription, installation). `install_hash` is the
+            // sha256 of a random id the installation generated for itself, never
+            // a hardware fingerprint; `ip_prefix` keeps only the /24 (or IPv6
+            // /48), enough to tell a reinstall from a second site. A key minted
+            // outside Stripe groups under 'lid:<lid>'.
+            db.exec(`
+                CREATE TABLE IF NOT EXISTS license_installs (
+                    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                    sub_ref       TEXT NOT NULL,
+                    lid           TEXT,
+                    install_hash  TEXT NOT NULL,
+                    name          TEXT,
+                    ip_prefix     TEXT,
+                    app_version   TEXT,
+                    first_seen    TEXT NOT NULL DEFAULT (datetime('now')),
+                    last_seen     TEXT NOT NULL DEFAULT (datetime('now')),
+                    UNIQUE (sub_ref, install_hash)
+                )
+            `);
+            db.exec('CREATE INDEX IF NOT EXISTS idx_license_installs_sub_seen ON license_installs(sub_ref, last_seen)');
+        },
+    },
+    {
+        version: 40,
+        name: 'license_installs: machine, number, blocking; license_alerts',
+        up(db) {
+            // `machine_hash` is a salted sha256 of the OS machine id, sent by
+            // the installation: a reinstall on the same machine (a wiped data
+            // volume, a new install id) is still one machine, and a block
+            // follows the machine rather than the throwaway install id. `seq`
+            // is the installation's number within its subscription, shown to
+            // the customer and the operator; it is assigned once and never
+            // reused. Rows that predate this are numbered in arrival order.
+            addColumnIfMissing(db, 'license_installs', 'machine_hash', 'TEXT');
+            addColumnIfMissing(db, 'license_installs', 'platform', 'TEXT');
+            addColumnIfMissing(db, 'license_installs', 'tier', 'TEXT');
+            addColumnIfMissing(db, 'license_installs', 'seq', 'INTEGER');
+            addColumnIfMissing(db, 'license_installs', 'blocked_at', 'TEXT');
+            addColumnIfMissing(db, 'license_installs', 'blocked_reason', 'TEXT');
+            // When the operator kept this installation through a key rotation.
+            // Only a kept installation is handed the replacement for a rotated
+            // key; a new install id presenting the leaked key gets nothing.
+            addColumnIfMissing(db, 'license_installs', 'rotation_kept_at', 'TEXT');
+            db.exec(`
+                UPDATE license_installs SET seq = (
+                    SELECT COUNT(*) FROM license_installs AS o
+                    WHERE o.sub_ref = license_installs.sub_ref AND o.id <= license_installs.id
+                ) WHERE seq IS NULL
+            `);
+            db.exec('CREATE INDEX IF NOT EXISTS idx_license_installs_machine ON license_installs(sub_ref, machine_hash)');
+            // The last sharing level raised per subscription, so an escalation
+            // is audited once rather than on every daily check-in.
+            db.exec(`
+                CREATE TABLE IF NOT EXISTS license_alerts (
+                    sub_ref     TEXT PRIMARY KEY,
+                    level       TEXT NOT NULL,
+                    changed_at  TEXT NOT NULL DEFAULT (datetime('now'))
+                )
+            `);
+        },
+    },
 ];
 
 // The highest version this build of the app knows how to apply. Used to

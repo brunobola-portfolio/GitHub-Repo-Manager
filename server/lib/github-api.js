@@ -9,7 +9,7 @@
  * - Module-scope circuit breaker to fail fast during a GitHub incident
  * - Standardized error parsing
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  */
 
 import crypto from 'crypto';

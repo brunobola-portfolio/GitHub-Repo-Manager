@@ -11,7 +11,7 @@
 import { mkdtempSync, rmSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import simpleGit from 'simple-git'
+import { simpleGit } from 'simple-git'
 
 const FETCH_TIMEOUT_MS = 120_000  // 2 min cap on clone
 

@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2025-2026 Bola Labs, Inc. Licensed under the Apache License 2.0.
+// Copyright 2025-2026 BolaLabs Licensed under the Apache License 2.0.
 
 import { decodeJwt } from 'jose'
 import { generateLicenseKey, addCalendarMonths, revokeLicense, LICENSE_PREFIX } from './license.js'
 import { isEmailDeliveryConfigured, sendEmail } from './email.js'
-import { supportFooter, escapeHtml } from './email-identity.js'
+import { renderEmail } from './email-layout.js'
+import { activeInstallSeqs, blockInstall, markKeptForRotation } from './license-installs.js'
 import db from '../db.js'
 import logger from './logger.js'
 
@@ -63,84 +64,66 @@ function formatDate(unixSeconds) {
 }
 
 /**
- * What the customer must do, in plain language. The key's real end date is
- * printed, because "valid for 1 month" said nothing about when to act, and
- * the old monthly line told self-hosters nothing was required while they had
- * to paste a new key every month.
+ * What the customer must do, in plain language. The key's real end date sits
+ * beside it in the facts ("valid for 1 month" said nothing about when to
+ * act), and the old monthly line told self-hosters nothing was required while
+ * they had to paste a new key every month.
  */
-function describeLicenseValidity({ expiresAt, billingPeriod }) {
-    const until = expiresAt ? `This key is valid until ${formatDate(expiresAt)}.` : ''
+function describeLicenseValidity({ billingPeriod }) {
     const renew = billingPeriod === 'yearly'
         ? 'Each yearly renewal emails you a new key.'
         : 'Each monthly renewal emails you a new key a few days before this one stops.'
-    return `${until} ${renew} On the hosted app nothing changes; on your own install, paste each new key under Settings → License & Plan.`.trim()
+    return `${renew} On the hosted app nothing changes. Your own install picks each new key up at its daily check-in; an install without network access pastes it under Settings → License & Plan.`
 }
 
 function tierLabelOf(tier) {
     return tier.charAt(0).toUpperCase() + tier.slice(1)
 }
 
-function buildLicenseEmailHtml({ tier, licenseKey, expiresAt, billingPeriod, renewal }) {
-    const tierLabel = escapeHtml(tierLabelOf(tier))
-    const help = supportFooter().html
-    const intro = renewal
-        ? `Your <strong>${tierLabel}</strong> plan renewed. Here is the key for the new period.`
-        : `Thank you for subscribing to the <strong>${tierLabel}</strong> plan.`
-    return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="font-family: sans-serif; line-height: 1.6; color: #222; max-width: 600px; margin: 0 auto; padding: 24px;">
-  <h2>${renewal ? 'Your renewed' : 'Your'} GitHub Repo Manager license key</h2>
-  <p>${intro}</p>
-  <p>Your license key is:</p>
-  <pre style="background: #f4f4f4; border: 1px solid #ddd; border-radius: 4px; padding: 16px; font-family: monospace; font-size: 14px; word-break: break-all;">${escapeHtml(licenseKey)}</pre>
-  <h3>Do I need to activate it?</h3>
-  <p><strong>Using the hosted app?</strong> No. Your ${tierLabel} plan is already active on your account — there is nothing to paste.</p>
-  <p><strong>Running your own install?</strong> An administrator of that install opens <strong>Settings → License &amp; Plan → Activate</strong> and pastes the key. It applies to every account on the install.</p>
-  <p>${escapeHtml(describeLicenseValidity({ expiresAt, billingPeriod }))}</p>
-  <p>Keep this key safe and treat it like a password. Cancelling your subscription does not switch it off — it keeps working to the end of the period you paid for. A refunded payment revokes it.</p>
-${help ? `  <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
-  <p style="font-size: 13px; color: #666;">${help}</p>
-` : ''}</body>
-</html>`
+const LEAD = {
+    new: (t) => ['Thank you for subscribing to the ', { strong: t }, ' plan. Your license key is:'],
+    renewal: (t) => ['Your ', { strong: t }, ' plan renewed. Here is the key for the new period.'],
+    replacement: (t) => ['Your ', { strong: t }, ' key was replaced and the previous one no longer renews. Installations you chose to keep receive this key at their next daily check-in; anywhere else, paste it as below.'],
 }
 
-function buildLicenseEmailText({ tier, licenseKey, expiresAt, billingPeriod, renewal }) {
+const PREHEADER = {
+    new: (t) => `Your ${t} key, and whether you need to paste it anywhere.`,
+    renewal: (t) => `Your ${t} plan renewed. Here is the key for the new period.`,
+    replacement: (t) => `Your ${t} key was replaced. Here is the new one.`,
+}
+
+function variantOf({ renewal, replacement }) {
+    if (replacement) return 'replacement'
+    return renewal ? 'renewal' : 'new'
+}
+
+export function buildLicenseEmail({ tier, licenseKey, expiresAt, billingPeriod, renewal, replacement }) {
     const tierLabel = tierLabelOf(tier)
-    const help = supportFooter().text
-    const title = `${renewal ? 'Your renewed' : 'Your'} GitHub Repo Manager license key`
-    const intro = renewal
-        ? `Your ${tierLabel} plan renewed. Here is the key for the new period.`
-        : `Thank you for subscribing to the ${tierLabel} plan.`
-    return `${title}
-${'='.repeat(title.length)}
-
-${intro}
-
-Your license key is:
-
-${licenseKey}
-
-Do I need to activate it?
-------------------------
-Using the hosted app? No. Your ${tierLabel} plan is already active on your account.
-Running your own install? An administrator of that install opens
-Settings -> License & Plan -> Activate and pastes the key. It applies to
-every account on the install.
-
-${describeLicenseValidity({ expiresAt, billingPeriod })}
-
-Keep this key safe and treat it like a password. Cancelling your subscription
-does not switch it off — it keeps working to the end of the period you paid for.
-A refunded payment revokes it.${help ? `
-
-${help}` : ''}`
+    const variant = variantOf({ renewal, replacement })
+    const facts = [{ label: 'Plan', value: `${tierLabel}, billed ${billingPeriod === 'yearly' ? 'yearly' : 'monthly'}` }]
+    if (expiresAt) facts.push({ label: 'Valid until', value: { strong: formatDate(expiresAt) } })
+    return renderEmail({
+        subject: licenseSubject(tier, { renewal, replacement }),
+        preheader: PREHEADER[variant](tierLabel),
+        eyebrow: `${tierLabel} plan`,
+        heading: `${{ new: 'Your', renewal: 'Your renewed', replacement: 'Your replacement' }[variant]} GitHub Repo Manager license key`,
+        blocks: [
+            { p: LEAD[variant](tierLabel) },
+            { secret: licenseKey },
+            { facts },
+            { h: 'Do I need to activate it?' },
+            { p: [{ strong: 'Using the hosted app?' }, ` No. Your ${tierLabel} plan is already active on your account; there is nothing to paste.`] },
+            { p: [{ strong: 'Running your own install?' }, ' An administrator of that install opens ', { strong: 'Settings → License & Plan → Activate' }, ' and pastes the key. It applies to every account on the install.'] },
+            { p: describeLicenseValidity({ billingPeriod }) },
+            { note: 'Keep this key safe and treat it like a password. Cancelling your subscription does not switch it off: it keeps working to the end of the period you paid for. A refunded payment revokes it.' },
+        ],
+        why: `You are getting this because you subscribed to GitHub Repo Manager ${tierLabel}.`,
+    })
 }
 
-function licenseSubject(tier, renewal = false) {
-    return renewal
-        ? `Your renewed GitHub Repo Manager license — ${tier} plan`
-        : `Your GitHub Repo Manager license — ${tier} plan`
+function licenseSubject(tier, { renewal = false, replacement = false } = {}) {
+    const word = { new: '', renewal: 'renewed ', replacement: 'replacement ' }[variantOf({ renewal, replacement })]
+    return `Your ${word}GitHub Repo Manager license — ${tier} plan`
 }
 
 function unixOf(iso) {
@@ -150,7 +133,7 @@ function unixOf(iso) {
 
 /**
  * Dead-letter handler for licence emails. The queue row holds only
- * `{ kind, stripeSessionId, tier, months, renewal }`; the key is read back
+ * `{ kind, stripeSessionId, tier, months, renewal, replacement }`; the key is read back
  * from `issued_licenses` — the one place it is meant to live — when the
  * worker sends, and a delivered retry records itself there like a first-try
  * success.
@@ -169,11 +152,11 @@ export const licenseEmailDeadLetterHandler = {
             expiresAt: unixOf(row.expires_at),
             billingPeriod: row.billing_period || (context.months >= 12 ? 'yearly' : 'monthly'),
             renewal: context.renewal === true,
+            replacement: context.replacement === true,
         }
         return {
-            subject: licenseSubject(tier, view.renewal),
-            html: buildLicenseEmailHtml(view),
-            text: buildLicenseEmailText(view),
+            subject: licenseSubject(tier, view),
+            ...buildLicenseEmail(view),
         }
     },
     onDelivered(context) {
@@ -315,9 +298,8 @@ export async function issueLicenseForCheckout(opts) {
     try {
         const result = await sendEmail({
             to: email,
-            subject: licenseSubject(tier, renewal),
-            html: buildLicenseEmailHtml(view),
-            text: buildLicenseEmailText(view),
+            subject: licenseSubject(tier, { renewal }),
+            ...buildLicenseEmail(view),
             stream: 'licences',
             // The body is the key: queue the reference, never the secret.
             deadLetter: 'rebuild',
@@ -369,4 +351,107 @@ export function revokeSubscriptionLicenses(stripeSubscriptionId, reason) {
         }
     })()
     return rows.length
+}
+
+/** Thrown by rotateSubscriptionLicense with a machine-readable `code`. */
+export class LicenseRotationError extends Error {
+    constructor(code, message) {
+        super(message)
+        this.code = code
+    }
+}
+
+/**
+ * Replace a subscription's key after it leaked. A new key with the same
+ * holder, plan and end date is minted and emailed; every other live key of
+ * the subscription is revoked with reason 'rotated'; every active
+ * installation the operator did not keep is blocked from renewals.
+ *
+ * The kept installations still hold the old key, which is now revoked. They
+ * are marked as kept, and at their next check-in the issuer hands them the new
+ * key, so a rotation costs the customer nothing on the machines they actually
+ * run. Anything else presenting the old key, including a fresh install id,
+ * gets nothing.
+ *
+ * @param {{ subscriptionId: string, keep?: number[], note?: string|null, actorId?: number|null }} opts
+ * @returns {Promise<{ lid: string, revoked: number, blocked: number, emailDelivered: boolean }>}
+ */
+export async function rotateSubscriptionLicense({ subscriptionId, keep = [], note = null, actorId = null }) {
+    const privateKeyPem = process.env.LICENSE_SIGNING_PRIVATE_KEY_PEM
+    if (!privateKeyPem) throw new LicenseRotationError('not_an_issuer', 'This instance does not hold the licence signing key.')
+    const current = db.prepare(`
+        SELECT * FROM issued_licenses
+        WHERE stripe_subscription_id = ? AND lid IS NOT NULL AND revoked_at IS NULL
+          AND (expires_at IS NULL OR julianday(expires_at) > julianday('now'))
+        ORDER BY julianday(expires_at) DESC, id DESC LIMIT 1
+    `).get(subscriptionId)
+    if (!current) throw new LicenseRotationError('no_live_key', 'This subscription has no live key to replace.')
+
+    let claims = {}
+    try { claims = decodeJwt(current.license_key.slice(LICENSE_PREFIX.length)) } catch { /* the row is the source of truth below */ }
+    const expiresAt = unixOf(current.expires_at)
+    const user = db.prepare('SELECT email FROM users WHERE id = ?').get(current.user_id)
+    const email = user?.email || claims.email || null
+
+    const licenseKey = await generateLicenseKey({
+        org: current.org || claims.org || undefined,
+        email: email || undefined,
+        tier: current.tier,
+        seats: claims.seats ?? 1,
+        months: 1,
+        expiresAt: expiresAt ?? undefined,
+    }, privateKeyPem)
+    const lid = lidOf(licenseKey)
+    const sessionId = `rotation:${lid}`
+    const reason = note ? `rotated: ${String(note).slice(0, 200)}` : 'rotated'
+
+    const kept = new Set(keep.map(Number))
+    let revoked = 0
+    let blocked = 0
+    db.transaction(() => {
+        db.prepare(`
+            INSERT INTO issued_licenses
+                (user_id, stripe_subscription_id, stripe_session_id, tier, license_key, expires_at,
+                 lid, org, billing_period, period_end)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(current.user_id, subscriptionId, sessionId, current.tier, licenseKey,
+            expiresAt ? new Date(expiresAt * 1000).toISOString() : current.expires_at,
+            lid, current.org, current.billing_period, current.period_end)
+        const mark = db.prepare("UPDATE issued_licenses SET revoked_at = datetime('now'), revoke_reason = 'rotated' WHERE lid = ?")
+        for (const row of db.prepare(LIVE_SUBSCRIPTION_KEYS_SQL).all(subscriptionId)) {
+            if (row.lid === lid) continue
+            revokeLicense(db, { lid: row.lid, reason, revokedBy: actorId, org: row.org, tier: row.tier, expiresAt: row.expires_at })
+            mark.run(row.lid)
+            revoked++
+        }
+        // After the revocations, so the kept mark is never older than the
+        // revocation it answers (the check-in compares the two).
+        const active = activeInstallSeqs(subscriptionId)
+        markKeptForRotation(subscriptionId, active.filter((seq) => kept.has(seq)))
+        for (const seq of active) {
+            if (!kept.has(seq)) blocked += blockInstall(subscriptionId, seq, 'Not kept when the key was rotated')
+        }
+    })()
+
+    let emailDelivered = false
+    if (email && isEmailDeliveryConfigured()) {
+        const view = { tier: current.tier, licenseKey, expiresAt, billingPeriod: current.billing_period || 'monthly', replacement: true }
+        try {
+            const result = await sendEmail({
+                to: email,
+                subject: licenseSubject(current.tier, view),
+                ...buildLicenseEmail(view),
+                stream: 'licences',
+                deadLetter: 'rebuild',
+                context: { kind: LICENSE_EMAIL_KIND, stripeSessionId: sessionId, tier: current.tier, months: 1, replacement: true },
+                idempotencyKey: `license-${sessionId}`,
+            })
+            emailDelivered = result.ok === true
+            if (emailDelivered) markEmailDelivered(sessionId)
+        } catch (err) {
+            logger.error({ err, subscriptionId }, 'license-issuer: replacement key email failed')
+        }
+    }
+    logger.warn({ subscriptionId, lid, revoked, blocked, emailDelivered }, 'license-issuer: subscription key rotated')
+    return { lid, revoked, blocked, emailDelivered }
 }

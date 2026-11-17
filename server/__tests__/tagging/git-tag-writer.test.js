@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import simpleGit from 'simple-git'
+import { simpleGit } from 'simple-git'
 import { createGitTagWriter } from '../../lib/tagging/git-tag-writer.js'
 
 describe('gitTagWriter.createAnnotatedTag', () => {

@@ -16,3 +16,13 @@ describe('ProfileLoadFailed', () => {
         expect(screen.queryByRole('button', { name: /^sign in/i })).toBeNull()
     })
 })
+
+describe('ProfileLoadFailed on a 429', () => {
+    it("names this app's request limit instead of blaming GitHub", () => {
+        render(<ProfileLoadFailed message="Rate limit exceeded. Please try again later." status={429} onRetry={() => {}} />)
+        const alert = screen.getByRole('alert')
+        expect(alert).toHaveTextContent(/Too many requests for a moment/)
+        expect(alert).toHaveTextContent(/frees up within a few minutes/)
+        expect(alert).not.toHaveTextContent(/GitHub did not answer/)
+    })
+})

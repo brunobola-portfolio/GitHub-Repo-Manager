@@ -12,7 +12,7 @@
  *   useOrgs  - Organizations, stats, activity feed
  *   useAI    - AI chat, suggestions, README generation
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  * Licensed under the Apache License 2.0 (SPDX: Apache-2.0). See LICENSE in the project root.
  */
 

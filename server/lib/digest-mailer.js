@@ -15,6 +15,7 @@ import { config } from '../config.js';
 import { sendEmail, isEmailDeliveryConfigured } from './email.js';
 import { buildNotificationsDigest } from './notifications-digest.js';
 import { issueUnsubscribeToken } from './digest-unsubscribe-token.js';
+import { renderEmail } from './email-layout.js';
 
 const PERIOD_MS = {
     daily: 24 * 60 * 60 * 1000,
@@ -69,78 +70,47 @@ function digestSubject(digest) {
     return `Your GitHub Repo Manager digest — ${total} item${total === 1 ? '' : 's'} to look at`;
 }
 
-const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-}[c]));
-
-function htmlList(items, render) {
-    if (!items.length) return '<p style="color:#888;margin:4px 0 16px;">Nothing here.</p>';
-    return `<ul style="padding-left:18px;margin:4px 0 16px;">${items.map((i) => `<li style="margin-bottom:4px;">${render(i)}</li>`).join('')}</ul>`;
+function readableDate(iso) {
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime())
+        ? String(iso ?? '')
+        : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 }
 
-function textList(items, render) {
-    if (!items.length) return '  (none)';
-    return items.map((i) => `  - ${render(i)}`).join('\n');
-}
+const gh = (repo, kind, n) => ({ link: { url: `https://github.com/${repo}/${kind}/${n}`, label: `${repo} #${n}` } });
 
 /**
+ * Only the sections with something in them; an all-quiet digest says so in
+ * one line instead of four "Nothing here." headings.
+ *
  * @param {ReturnType<typeof buildNotificationsDigest>} digest
- * @param {{username: string, unsubscribeUrl: string}} opts
+ * @param {{username: string, unsubscribeUrl: string, appUrl?: string}} opts
+ * @returns {{ html: string, text: string }}
  */
-export function buildDigestEmailHtml(digest, { username, unsubscribeUrl }) {
-    return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"></head>
-<body style="font-family: sans-serif; line-height: 1.6; color: #222; max-width: 600px; margin: 0 auto; padding: 24px;">
-  <h2>Hi ${escapeHtml(username || 'there')}, here's what's new</h2>
-  <p style="color:#666;font-size:13px;">Since ${escapeHtml(digest.since)}</p>
+export function buildDigestEmail(digest, { username, unsubscribeUrl, appUrl }) {
+    const sections = [
+        ['Reviews requested', digest.items.reviews, (r) => ({ title: gh(r.repo, 'pull', r.prNumber), meta: r.title })],
+        ['Issues assigned to you', digest.items.issues, (r) => ({ title: gh(r.repo, 'issues', r.issueNumber), meta: r.title })],
+        ['Failed migrations', digest.items.failed_migrations, (r) => ({ title: r.repo, meta: r.reason })],
+        ['Pinned repos gone quiet', digest.items.stale_pinned, (r) => ({ title: r.repo, meta: `Quiet since ${readableDate(r.lastActivity)}` })],
+    ].filter(([, items]) => items.length);
 
-  <h3 style="margin-bottom:0;">Reviews requested (${digest.totals.reviews})</h3>
-  ${htmlList(digest.items.reviews, (r) => `<a href="https://github.com/${escapeHtml(r.repo)}/pull/${r.prNumber}">${escapeHtml(r.repo)} #${r.prNumber}</a> — ${escapeHtml(r.title)}`)}
+    const total = digestTotal(digest);
+    const blocks = [{ p: `Here is what changed since ${readableDate(digest.since)}.` }];
+    if (!sections.length) blocks.push({ p: 'Nothing needs you right now.' });
+    for (const [label, items, render] of sections) {
+        blocks.push({ h: `${label} (${items.length})` }, { items: items.map(render) });
+    }
+    if (appUrl) blocks.push({ button: { label: 'Open GitHub Repo Manager', url: appUrl } });
 
-  <h3 style="margin-bottom:0;">Issues assigned (${digest.totals.issues})</h3>
-  ${htmlList(digest.items.issues, (r) => `<a href="https://github.com/${escapeHtml(r.repo)}/issues/${r.issueNumber}">${escapeHtml(r.repo)} #${r.issueNumber}</a> — ${escapeHtml(r.title)}`)}
-
-  <h3 style="margin-bottom:0;">Failed migrations (${digest.totals.failed_migrations})</h3>
-  ${htmlList(digest.items.failed_migrations, (r) => `${escapeHtml(r.repo)} — ${escapeHtml(r.reason)}`)}
-
-  <h3 style="margin-bottom:0;">Stale pinned repos (${digest.totals.stale_pinned})</h3>
-  ${htmlList(digest.items.stale_pinned, (r) => `${escapeHtml(r.repo)} — quiet since ${escapeHtml(r.lastActivity)}`)}
-
-  <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;">
-  <p style="font-size: 13px; color: #666;">
-    You're getting this because you opted into email digests in GitHub Repo Manager.
-    <a href="${escapeHtml(unsubscribeUrl)}">Unsubscribe</a> at any time — no login required.
-  </p>
-</body>
-</html>`;
-}
-
-/**
- * @param {ReturnType<typeof buildNotificationsDigest>} digest
- * @param {{username: string, unsubscribeUrl: string}} opts
- */
-export function buildDigestEmailText(digest, { username, unsubscribeUrl }) {
-    return `Hi ${username || 'there'}, here's what's new
-${'='.repeat(40)}
-
-Since ${digest.since}
-
-Reviews requested (${digest.totals.reviews})
-${textList(digest.items.reviews, (r) => `${r.repo} #${r.prNumber} - ${r.title}`)}
-
-Issues assigned (${digest.totals.issues})
-${textList(digest.items.issues, (r) => `${r.repo} #${r.issueNumber} - ${r.title}`)}
-
-Failed migrations (${digest.totals.failed_migrations})
-${textList(digest.items.failed_migrations, (r) => `${r.repo} - ${r.reason}`)}
-
-Stale pinned repos (${digest.totals.stale_pinned})
-${textList(digest.items.stale_pinned, (r) => `${r.repo} - quiet since ${r.lastActivity}`)}
-
---
-You're getting this because you opted into email digests in GitHub Repo Manager.
-Unsubscribe (no login required): ${unsubscribeUrl}`;
+    return renderEmail({
+        subject: digestSubject(digest),
+        preheader: total === 0 ? 'All quiet since your last digest.' : `${total} item${total === 1 ? '' : 's'} to look at.`,
+        heading: `Hi ${username || 'there'}, here's what's new`,
+        blocks,
+        why: ["You're getting this because you opted into email digests. ", { link: { url: unsubscribeUrl, label: 'Unsubscribe' } }, ' at any time, no sign-in needed.'],
+        help: false,
+    });
 }
 
 /**
@@ -164,8 +134,7 @@ export async function sendDigestEmail(user, { now = new Date() } = {}) {
     const result = await sendEmail({
         to: user.email,
         subject: digestSubject(digest),
-        html: buildDigestEmailHtml(digest, { username: user.username, unsubscribeUrl }),
-        text: buildDigestEmailText(digest, { username: user.username, unsubscribeUrl }),
+        ...buildDigestEmail(digest, { username: user.username, unsubscribeUrl, appUrl: config.frontendUrl }),
         context: { kind: 'notifications_digest', userId: user.id },
         // The body carries a live unsubscribe token, and a failed digest is
         // already re-sent by the next pass (digest_last_sent_at only moves on

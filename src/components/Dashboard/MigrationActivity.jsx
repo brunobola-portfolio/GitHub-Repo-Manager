@@ -161,7 +161,6 @@ export function MigrationActivity({ loading: parentLoading }) {
                 initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
                 onClick={openHistory}
-                aria-label={`Open migration history for ${job.sourceName}`}
                 className="w-full text-left flex items-center gap-3 p-3 rounded-xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/30 dark:border-slate-800/30 hover:border-brand-300 dark:hover:border-brand-500/50 hover:shadow-md ds-focus-ring transition-all cursor-pointer"
               >
                 <div className={`w-8 h-8 rounded-lg ${config.bg} flex items-center justify-center shrink-0`}>
@@ -174,9 +173,11 @@ export function MigrationActivity({ loading: parentLoading }) {
                       {job.sourceName}
                     </span>
                     {isTfvc && (
-                      <span className="ds-eyebrow px-1.5 py-0.5 rounded bg-amber-900/20 text-amber-400 shrink-0">TFVC</span>
+                      <span className="ds-eyebrow px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-300 shrink-0">TFVC</span>
                     )}
                   </div>
+                  {/* Named by the visible text plus this, never instead of it (WCAG 2.5.3). */}
+                  <span className="sr-only">, open its migration history</span>
                   <div className="flex items-center gap-2 ds-text-meta text-slate-500 dark:text-slate-400 mt-0.5">
                     {job.targetFullName && (
                       <>
@@ -223,8 +224,9 @@ function MiniStat({ label, value, icon: Icon, color, animate, onClick }) {
     </>
   )
   return onClick ? (
-    <button type="button" onClick={onClick} aria-label={`Open migration history (${label}: ${value})`} className={className}>
+    <button type="button" onClick={onClick} className={className}>
       {inner}
+      <span className="sr-only">, open migration history</span>
     </button>
   ) : (
     <div className={className}>{inner}</div>

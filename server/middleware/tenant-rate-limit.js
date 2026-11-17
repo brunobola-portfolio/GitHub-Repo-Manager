@@ -43,6 +43,12 @@ function computeTierLimits() {
     };
 }
 
+/** `api` budget per 15 minutes for a signed-in browser session, by tier. */
+export function computeSignedInApiLimits() {
+    if (isDev()) return { free: 10000, pro: 10000, enterprise: 10000 };
+    return { free: 1500, pro: 3000, enterprise: 6000 };
+}
+
 /**
  * Creates a rate limiter middleware that dynamically applies per-tier limits.
  *
@@ -75,8 +81,18 @@ export async function createTenantLimiters(type = 'api', options = {}) {
     return rateLimit({
         windowMs: 15 * 60 * 1000, // 15 minutes
         max: (req) => {
-            const tiers = computeTierLimits();
             const tier = req.userTier || 'free';
+            // A browser session is one person driving the app: a single repo
+            // screen fires a few dozen reads, so the anonymous 100/15 min sent a
+            // signed-in Free user to "Rate limit exceeded" after a handful of
+            // clicks. Its bucket is keyed by user id (below), so it cannot be
+            // shared or rotated; the per-IP net still holds anonymous traffic,
+            // and bearer keys keep their tier budgets.
+            if (type === 'api' && req.session?.userId && !bearerApiKey(req)) {
+                const signedIn = computeSignedInApiLimits();
+                return signedIn[tier] ?? signedIn.free;
+            }
+            const tiers = computeTierLimits();
             return tiers[tier]?.[type] ?? tiers.free[type];
         },
         keyGenerator: (req) => {

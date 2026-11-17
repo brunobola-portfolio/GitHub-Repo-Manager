@@ -2,7 +2,8 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown, ArrowRight, Sparkles, GitBranch, Shield, Cpu } from 'lucide-react'
 import { PricingCard } from './PricingCard'
-import { SUPPORT_EMAIL } from '../../utils/supportContact'
+import { salesHref, supportHref } from '../../utils/supportContact'
+import { taxSuffix, taxNote } from '../../utils/priceTax'
 import { FeatureComparison } from './FeatureComparison'
 import { API_BASE_URL } from '../../config'
 import { apiCall } from '../../utils/api'
@@ -82,7 +83,6 @@ const TIERS_MONTHLY = [
     features: [
       { label: 'Everything in Pro, unlimited', included: true },
       { label: 'Unlimited AI queries', included: true },
-      { label: 'Unlimited team members', included: true },
       { label: 'Audit Logs', included: true },
       { label: 'SSO / SAML (roadmap)', included: false },
       { label: 'API keys', included: '100' },
@@ -146,7 +146,7 @@ function applyYearly(tier, isYearly) {
 const FAQS = [
   {
     q: 'Can I switch plans later?',
-    a: "Yes — you can upgrade or downgrade at any time. When upgrading, you'll be charged a prorated amount for the remainder of your billing period. Downgrades take effect at the next renewal.",
+    a: 'Yes. Cancel Pro at any time from Settings → License & Plan → Manage; it stays active to the end of the period you paid for, then reverts to Free. Enterprise is arranged by e-mail.',
   },
   {
     q: 'What counts as an AI query?',
@@ -158,7 +158,7 @@ const FAQS = [
   },
   {
     q: 'Do you offer a free trial for Pro or Enterprise?',
-    a: 'The Free plan is generous enough to evaluate the product with no credit card, and Pro is month-to-month — cancel anytime. Enterprise plans include a guided proof-of-concept period. Contact sales for details.',
+    a: 'The Free plan is generous enough to evaluate the product with no credit card, and Pro is month-to-month — cancel anytime. For Enterprise, contact sales.',
   },
 ]
 
@@ -214,7 +214,8 @@ function FaqItem({ q, a, index }) {
 }
 
 /* ─── Main page ─── */
-const SALES_EMAIL = SUPPORT_EMAIL
+// Licences are sold by the publisher; sales opens its contact page in a new tab.
+const openSales = () => window.open(salesHref(), '_blank', 'noopener,noreferrer')
 
 // The client is never told which deployment mode it is running in:
 // /api/v1/billing/config answers with stripeEnabled / yearlyBillingAvailable /
@@ -241,6 +242,8 @@ export function PricingPage({ onGetStarted } = {}) {
   const [selfServe, setSelfServe] = useState(null)
   const [probeSettled, setProbeSettled] = useState(false)
   const [stripePrices, setStripePrices] = useState(null)
+  // The whole /billing/config answer: VAT wording follows what checkout charges.
+  const [billing, setBilling] = useState(null)
   const [checkoutLoading, setCheckoutLoading] = useState(null)
   // Stays on Pricing when checkout is unavailable so the user actually sees
   // the explanation (previously we navigated home and the banner never showed).
@@ -260,6 +263,7 @@ export function PricingPage({ onGetStarted } = {}) {
         if (cancelled) return
         setYearlyAvailable(!!data?.yearlyBillingAvailable)
         setStripePrices(data?.prices ?? null)
+        setBilling(data ?? null)
         // Only an answer that actually carries the field decides this: a
         // malformed or truncated response must not read as "cannot sell".
         if (data && 'stripeEnabled' in data) setSelfServe(Boolean(data.stripeEnabled))
@@ -321,7 +325,7 @@ export function PricingPage({ onGetStarted } = {}) {
 
   const handleTierAction = useCallback((tier) => {
     if (tier === 'Enterprise') {
-      window.location.href = `mailto:${SALES_EMAIL}?subject=${encodeURIComponent('GitHub Repo Manager — Enterprise inquiry')}&body=${encodeURIComponent('Hello,\n\nI\'m interested in the Enterprise plan for GitHub Repo Manager.\n\nOrganization: \nTeam size: \nUse case: \n')}`
+      openSales()
       return
     }
     if (tier === 'Pro') {
@@ -329,7 +333,7 @@ export function PricingPage({ onGetStarted } = {}) {
       // user through a checkout that answers 503 and an error banner they have
       // to read to understand what happened.
       if (selfServe === false) {
-        window.location.href = `mailto:${SALES_EMAIL}?subject=${encodeURIComponent('GitHub Repo Manager — Pro inquiry')}`
+        openSales()
         return
       }
       handleCheckout('pro', isYearly ? 'yearly' : 'monthly')
@@ -387,8 +391,7 @@ export function PricingPage({ onGetStarted } = {}) {
               variant="banner"
               service="Stripe checkout"
               reason={CHECKOUT_UNAVAILABLE_REASON}
-              contactEmail={SALES_EMAIL}
-              contactSubject="GitHub Repo Manager — Pro license inquiry"
+              contactHref={salesHref()}
               onDismiss={() => setCheckoutState(null)}
               className="mb-8"
             />
@@ -530,6 +533,7 @@ export function PricingPage({ onGetStarted } = {}) {
               key={tier.tier}
               {...tier}
               period={isYearly ? 'year' : 'month'}
+              taxSuffix={taxSuffix(billing)}
               ctaText={
                 checkoutLoading === tier.tier.toLowerCase()
                   ? 'Redirecting...'
@@ -541,6 +545,12 @@ export function PricingPage({ onGetStarted } = {}) {
             />
           ))}
         </motion.div>
+
+        {taxNote(billing) && (
+          <p className="-mt-14 sm:-mt-20 mb-20 sm:mb-28 text-center text-xs text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
+            {taxNote(billing)}
+          </p>
+        )}
 
         {/* ── Feature comparison table ── */}
         <div className="mb-20 sm:mb-28">
@@ -560,9 +570,9 @@ export function PricingPage({ onGetStarted } = {}) {
               Frequently asked <span className="text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)]">questions</span>
             </h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base max-w-lg mx-auto">
-              Can't find the answer? Reach us at{' '}
-              <a href={`mailto:${SALES_EMAIL}`} className="text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline">
-                {SALES_EMAIL}
+              Can't find the answer?{' '}
+              <a href={supportHref({ category: 'question' }) || salesHref()} target="_blank" rel="noopener noreferrer" className="text-[color:var(--ds-accent-brand)] dark:text-[color:var(--ds-accent-brand-dark)] hover:underline">
+                Ask us
               </a>
             </p>
           </motion.div>

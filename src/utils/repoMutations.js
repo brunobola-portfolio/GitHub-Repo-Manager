@@ -11,7 +11,7 @@
  * Transport: every helper goes through `bulkExecuteWithConfirmation`,
  * which performs the server-enforced two-step dry-run + execute flow.
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  * Licensed under the Apache License 2.0 (SPDX: Apache-2.0). See LICENSE in the project root.
  */
 

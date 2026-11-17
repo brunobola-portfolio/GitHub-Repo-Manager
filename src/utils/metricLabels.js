@@ -10,7 +10,7 @@
  * entry here falls back to a de-slugged form rather than rendering raw, so a
  * new metric degrades to "Ai New Thing" instead of leaking `ai_new_thing`.
  *
- * Copyright (c) 2025-2026 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025-2026 BolaLabs
  * Licensed under the Apache License 2.0 (SPDX: Apache-2.0).
  */
 

@@ -1,7 +1,7 @@
 # Subscription Agreement
 
 **GitHub Repo Manager — commercial subscription**
-**Bola Labs**
+**BolaLabs**
 
 ## 1. What this is
 
@@ -23,9 +23,9 @@ accountability on top of a licence you already have.
 | Embed it in a proprietary product | ✓ | ✓ |
 | Redistribute it | ✓ | ✓ |
 | Higher monthly AI and API ceilings | — | ✓ |
-| Hosted instance, run by us | — | ✓ |
-| Priority support (no contracted response time) | — | ✓ |
-| Compliance and audit deliverables | — | ✓ |
+| Hosted instance, run by us | ✓ (free tier included) | ✓ |
+| Priority support (no contracted response time) | — | Enterprise |
+| Compliance and audit deliverables | — | Enterprise |
 | Use of the RepoManager name and mark | — | by agreement — see [TRADEMARKS.md](../TRADEMARKS.md) |
 
 Under the previous AGPL-3.0 licence, the thing being sold was an exemption
@@ -44,8 +44,8 @@ caps. What money buys is **headroom**, **more API keys**, and
 
 | Tier | What it adds over Free | Seats |
 |------|------------------------|-------|
-| **Pro** | AI queries: 10,000/month (Free: 1,000) · every per-feature AI cap lifted to unlimited (e.g. semantic search 375/month → unlimited, full migrations 5/month → unlimited) · API keys: 50 (Free: 25) · email support | As purchased |
-| **Enterprise** | Everything in Pro + AI queries unlimited · audit log with export (Enterprise-only; `auditLog`/`auditExport` are `false` on Free and Pro) · API keys: 100 · priority support (e-mail, prioritised) · white-glove migration services | As purchased |
+| **Pro** | AI queries: 10,000/month (Free: 1,000) · every per-feature AI cap lifted to unlimited (e.g. semantic search 375/month → unlimited, full migrations 5/month → unlimited) · API keys: 50 (Free: 25) · email support | Not limited — one key covers every account on the install |
+| **Enterprise** | Everything in Pro + AI queries unlimited · audit log with export (Enterprise-only; `auditLog`/`auditExport` are `false` on Free and Pro) · API keys: 100 · priority support (e-mail, prioritised) · white-glove migration services | Not limited — one key covers every account on the install |
 
 > **Note.** The exact numbers above are a rendering of
 > [`server/lib/feature-flags.js`](../server/lib/feature-flags.js)
@@ -63,7 +63,7 @@ caps. What money buys is **headroom**, **more API keys**, and
 > - **BYOK is permanent.** No tier includes managed inference or model
 >   credits. You configure your own provider key (Anthropic, OpenAI, Gemini,
 >   OpenRouter, or a local model) and are billed by that provider directly;
->   Bola Labs never proxies or resells inference.
+>   BolaLabs never proxies or resells inference.
 > - **Priority support** and **white-glove migration services** are manual,
 >   contracted deliverables — they are not gated by a feature flag. Priority
 >   support means the ticket is triaged ahead of the Community/Email queue;
@@ -72,8 +72,12 @@ caps. What money buys is **headroom**, **more API keys**, and
 ## 4. Subscription Key
 
 Each subscription is delivered as a cryptographically signed key that encodes
-the tier, seat count and expiry. Validation is offline — the software never
-phones home.
+the tier, the organisation and the expiry (a seat count is recorded for
+reference and not enforced). Validation is offline: the key is checked
+locally, so an installation with no network keeps working until the key's end
+date. An installation with network access checks in once a day to fetch
+renewed keys and revocations and to be counted against the machines its plan
+covers; `LICENSE_AUTO_RENEW=false` turns that off.
 
 The key is an **entitlement**, not a permission: it tells your instance which
 ceilings to apply. It is not what makes your use of the software lawful; the
@@ -83,7 +87,7 @@ Apache licence already did that, for everyone, unconditionally.
 
 - Subscription keys are non-transferable and bound to the purchasing organization
 - Reselling a key, or sharing one across organizations, ends the subscription
-- No rights to the Bola Labs or RepoManager name or mark — those are reserved
+- No rights to the BolaLabs or RepoManager name or mark — those are reserved
   separately in [TRADEMARKS.md](../TRADEMARKS.md), and Apache-2.0 §6 says the
   same thing
 
@@ -108,29 +112,41 @@ software itself. Apache-2.0 permits that to anyone, subscriber or not.
   paid period plus grace).
 - **Cancelling does not switch your key off.** It stops the renewal; the key
   already in your hands keeps working until the end of its own 1-month or
-  12-month window. Self-hosted activation is offline by design — there is no
-  phone-home, and Bola Labs cannot reach into your installation to disable a
-  key you already hold. Since v4.11.0 an operator can revoke a key on an
-  instance **they run**, which is a fraud/abuse control on hosted and
-  self-managed deployments, not a remote kill switch over yours. See
+  12-month window. Validation never needs the network, so BolaLabs cannot
+  switch off a key inside an installation that does not check in. An
+  installation that checks in receives the revocation of a refunded or
+  charged-back key at its next daily check-in. See
   [`billing-and-licensing.md`](billing-and-licensing.md) for the full policy.
+- **Installations.** A Pro key covers one machine plus one more (staging, a
+  rebuilt server); Enterprise covers ten. Installations that check in are
+  counted by machine (a reinstall on the same machine is not a second one),
+  each gets an installation number, and going over is shown in Settings and to
+  BolaLabs. Going over is never blocked.
+- **A key that is shared beyond your organisation.** BolaLabs may stop
+  renewals for a specific installation it does not recognise, or replace your
+  key: you receive the new key by e-mail, the installations you confirm keep
+  working without any action, and the old key is revoked. Your own
+  installations keep working throughout; nothing is switched off before the
+  end date of the key it holds.
 - Upon expiration the ceilings revert to the free tier. The software keeps
   working and stays yours to run — Apache-2.0 does not expire
 - No data is lost upon expiration
 
 ## 7. Support
 
-- **Pro:** Email support (bruno@bolalabs.pt)
+- **Pro:** Email support through the [BolaLabs support desk](https://bolalabs.pt/en/dashboard?view=support&new=1&product=repomanager) or `suporte@bolalabs.pt`
 - **Enterprise:** Priority support (e-mail, prioritised) and white-glove migration services — no contracted response-time guarantees
 
 ## 8. Contact
 
 For subscription enquiries:
-- Email: bruno@bolalabs.pt
-- Web: <https://bolalabs.pt>
+- Support desk: <https://bolalabs.pt/en/dashboard?view=support&new=1&product=repomanager>
+- Email: `suporte@bolalabs.pt` (licence keys arrive from `licencas@bolalabs.pt`)
+- Web: <https://bolalabs.pt/en/repomanager>
 
-(There is no `/license` page yet. Until there is, this document is the terms,
-and the email is the way in.)
+Terms for the hosted service and for subscriptions bought on it:
+<https://repomanager.bolalabs.pt/terms>. This document summarises what a
+subscription key means for a self-hosted install.
 
 ## See also
 

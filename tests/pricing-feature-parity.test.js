@@ -172,11 +172,12 @@ describe('Pricing page ↔ feature-flags parity', () => {
         expect(section).toMatch(/API keys[^}]*included:\s*'?100'?/)
     })
 
-    it('Enterprise team-members copy reflects unlimited tier', () => {
-        const enterprise = getFeatures('enterprise')
-        expect(enterprise.teamMembersMax).toBe(Infinity)
-        const section = tierSection('Enterprise')
-        expect(section).toMatch(/Unlimited team members/i)
+    it('unlimited teams is stated on Free, and never sold as an Enterprise upgrade', () => {
+        // teamMembersMax is Infinity on every tier, so listing "Unlimited team
+        // members" among Enterprise's extras implied the lower tiers lacked it.
+        for (const tier of ['free', 'pro', 'enterprise']) expect(getFeatures(tier).teamMembersMax).toBe(Infinity)
+        expect(tierSection('Free')).toMatch(/Teams — unlimited/i)
+        expect(tierSection('Enterprise')).not.toMatch(/Unlimited team members/i)
     })
 
     it('Free semanticSearch=true — present on Free tier (capped)', () => {

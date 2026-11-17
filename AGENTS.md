@@ -79,6 +79,10 @@ directory's AGENTS.md. Facts here are checked by tests/build/ci-guards
   your own key as a way around a quota.
 - Names: the product is "GitHub Repo Manager" (short form "RepoManager"), the
   company is "BolaLabs". Rules in `docs/BRAND.md`.
+- The holder is the registered brand **BolaLabs**: copyright lines, legal pages
+  and footers never carry a personal name. Public contact is the BolaLabs
+  support desk or `suporte@bolalabs.pt`; licence keys come from
+  `licencas@bolalabs.pt`.
 - A self-hosted install must never send its users to the upstream vendor
   (support, sales or email) unless its operator configured that.
 

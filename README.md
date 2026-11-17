@@ -26,7 +26,7 @@
 
 **Free-first** (full AI surface + every Work Board tab + unlimited teams on Free) · **Self-hosting free forever** (Apache-2.0) · **Native on Windows**
 
-[**Open the app**](https://repomanager.bolalabs.pt) · [Website](https://bolalabs.pt/en/repomanager) · [**Try the Demo**](#quick-start-demo-mode) · [Features](#features) · [Installation](#installation) · [Documentation](docs/index.md) · [Pricing](#plans--pricing) · [Download for Windows](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest) · [What's new in v4.26.2 — Deploys in seconds; lodash-es advisory closed](CHANGELOG.md#4262---2026-09-24)
+[**Open the app**](https://repomanager.bolalabs.pt) · [Website](https://bolalabs.pt/en/repomanager) · [**Try the Demo**](#quick-start-demo-mode) · [Features](#features) · [Installation](#installation) · [Documentation](docs/index.md) · [Pricing](#plans--pricing) · [Download for Windows](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest) · [What's new in v4.28.2 — Signed-in users keep browsing; an honest rate-limit screen](CHANGELOG.md#4282---2026-10-29)
 
 <sub>Production-hardened — AES-256-GCM BYOK · rolling sessions + CSRF double-submit · GitHub API circuit breaker · SSRF + DNS-rebinding guard · dual-theme a11y gate.</sub>
 
@@ -176,18 +176,16 @@ The full AI surface ships on **every tier including Free**, each capability with
   <img alt="Conversational action dispatch: a natural-language request goes through the BYOK AI, which returns an action validated against a five-entry allow-list (Migration Wizard, Create Repo, Transfer, History, Settings); any unknown action type is dropped" src="docs/images/action-dispatch.svg" width="820">
 </picture>
 
-| Capability | What it does |
-|---|---|
-| **Repo Advisor** | Conversational assistant that answers questions *and* dispatches real app actions (open the Migration Wizard, Create Repo, Transfer, …) from natural-language intent. Works out of the box on a self-hosted install — a BYOK key is all it needs. Not to be confused with the Repo Advisor *card inside the Work Board*, which is the surface behind a deployment flag — see the † note under [Plans & Pricing](#plans--pricing) |
-| **Repository insights** | Quality scoring 0–100 across documentation, community, engineering, and polish, with pattern detection and fixes |
-| **Semantic search** | Natural-language repo search over real vector embeddings |
-| **AI Deep Review** | Walkthrough + line comments with one-click suggestions, PR slash commands, and streaming PR chat — batched into one GitHub review ([guide](docs/features/ai-deep-review.md)) |
-| **README Studio** | Generate a professional README, or improve an existing one section-by-section |
-| **AI Diagram Generator** | Repo-aware Mermaid architecture / flow diagrams |
-| **Agent Rules Generator** | Draft `AGENTS.md` / `CLAUDE.md` from your repo conventions |
-| **Security Posture summary** | Plain-language security posture with prioritized actions |
-| **AI Image Generation** | Social preview / hero / logo images, capability-gated with honest cost pills |
-| **Commit Generator** | Conventional commit messages from a diff |
+- **Repo Advisor** — Conversational assistant that answers questions *and* dispatches real app actions (open the Migration Wizard, Create Repo, Transfer, …) from natural-language intent. Works out of the box on a self-hosted install — a BYOK key is all it needs. Not to be confused with the Repo Advisor *card inside the Work Board*, which is the surface behind a deployment flag — see the † note under [Plans & Pricing](#plans--pricing)
+- **Repository insights** — Quality scoring 0–100 across documentation, community, engineering, and polish, with pattern detection and fixes
+- **Semantic search** — Natural-language repo search over real vector embeddings
+- **AI Deep Review** — Walkthrough + line comments with one-click suggestions, PR slash commands, and streaming PR chat — batched into one GitHub review ([guide](docs/features/ai-deep-review.md))
+- **README Studio** — Generate a professional README, or improve an existing one section-by-section
+- **AI Diagram Generator** — Repo-aware Mermaid architecture / flow diagrams
+- **Agent Rules Generator** — Draft `AGENTS.md` / `CLAUDE.md` from your repo conventions
+- **Security Posture summary** — Plain-language security posture with prioritized actions
+- **AI Image Generation** — Social preview / hero / logo images, capability-gated with honest cost pills
+- **Commit Generator** — Conventional commit messages from a diff
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/ai-deep-review.svg">
@@ -231,10 +229,10 @@ Every capture is the real app in mock mode at 1920×1080 — no mock-ups. The fu
 | | |
 |---|---|
 | **Dashboard (dark)**<br>![Dashboard dark mode](docs/images/01_dashboard_dark_hd.png) | **Dashboard (light)**<br>![Dashboard light mode](docs/images/01_dashboard_light_hd.png) |
-| **Work Board (dark)**<br>![Work Board dark](docs/images/33_work_board_dark_hd.png) | **Work Board — filters applied**<br>![Work Board with filters active](docs/images/37_work_board_filters_active_hd.png) |
-| **Repositories**<br>![Repositories grid](docs/images/06_repositories_dark_hd.png) | **Team Hub**<br>![Team collaboration hub](docs/images/07_teams_dark_hd.png) |
+| **Work Board (dark)**<br>![Work Board dark](docs/images/33_work_board_dark_hd.png) | **Repositories**<br>![Repositories grid](docs/images/06_repositories_dark_hd.png) |
+| **Team Hub**<br>![Team collaboration hub](docs/images/07_teams_dark_hd.png) | **Migration Wizard**<br>![Azure DevOps migration wizard](docs/images/08_migration_wizard_hd.png) |
 | **AI Insights — quality**<br>![AI Insights quality tab](docs/images/40_ai_quality_tab_routed_hd.png) | **Agent Rules Generator**<br>![Agent Rules generator](docs/images/46_agent_rules_generator_hd.png) |
-| **Live Inbox — mobile**<br>![Live Inbox on a 375px viewport](docs/images/16_dashboard_live_inbox_mobile_hd.png) | **Migration Wizard**<br>![Azure DevOps migration wizard](docs/images/08_migration_wizard_hd.png) |
+| **Live Inbox — mobile**<br>![Live Inbox on a 375px viewport](docs/images/16_dashboard_live_inbox_mobile_hd.png) | |
 
 ---
 
@@ -247,7 +245,18 @@ The hosted product is **free-first**: nearly every product feature — bulk ops,
   <img alt="Free-first tier gating: three sources of truth — feature-flags.js TIER_FEATURES, usage-meter.js METRIC_TO_FEATURE, and the require-tier middleware — feed one gating decision checking whether a feature is allowed and within its monthly cap, returning a 429 quota state on overflow" src="docs/images/tier-gating.svg" width="900">
 </picture>
 
-| Feature                                | Free            | Pro (€19/mo)  | Enterprise |
+**Free** — everything below with a monthly cap on each AI feature: 1,000 AI queries a month in total, 25 API keys, unlimited repositories and teams, bulk operations, migrations (5 Azure DevOps cloud migrations a month) and community support.
+
+**Pro — €19 a month + VAT** — every per-feature cap lifted, 10,000 AI queries a month, 50 API keys and email support.
+
+**Enterprise — by agreement** — unlimited AI queries, 100 API keys, the audit log with export, priority support and white-glove migration services.
+
+Every plan is bring-your-own-key: no plan includes AI inference.
+
+<details>
+<summary><strong>Full comparison, feature by feature</strong></summary>
+
+| Feature                                | Free            | Pro (€19/mo + VAT) | Enterprise |
 |----------------------------------------|-----------------|---------------|------------|
 | Repositories managed                   | Unlimited       | Unlimited     | Unlimited  |
 | Repo Advisor (conversational) †        | ✓               | ✓             | ✓          |
@@ -282,11 +291,15 @@ The hosted product is **free-first**: nearly every product feature — bulk ops,
 | Priority support                       | ✗               | ✗             | ✓          |
 | White-glove migration services         | ✗               | ✗             | ✓          |
 
+</details>
+
 † **"Repo Advisor" names two surfaces, and only one of them is behind a flag.** The floating conversational assistant in this row is `POST /api/ai/chat` (`server/routes/ai/core.js`) — no deployment flag gates it, and it works out of the box on a self-hosted install with nothing but a BYOK key. Inside the Work Board, the 7-day trend summary card needs only a BYOK key; the suggestion chips and the preview-then-apply edits are the gated part: `server/middleware/work-board-ai-gate.js` returns `404 AI_FEATURE_FLAG_OFF` unless `WORK_BOARD_AI_ENABLED=true` is set in the environment (`docker-compose.yml` forwards the variable), and each user must then opt in under `Settings → Work Board`. Both are tier-free — no plan unlocks either. No row in this matrix is gated by an environment flag.
 
 **Audit Logs** is a full page (`#/audit`), not a tab buried in Settings — it filters by action (fed from the log itself, so the filter list never drifts from what's actually recorded) and includes a **Verify chain** action that walks the append-only SHA-256 hash chain end to end and reports the first broken link, if any; CSV/JSON export is unchanged. The Settings modal's Audit Log tab is now a summary that links through.
 
-Self-hosting is free forever under Apache-2.0 — see [LICENSE](LICENSE). The matrix above applies to self-hosted Pro/Enterprise licenses today (Stripe checkout → emailed license key — see [`docs/billing-and-licensing.md`](docs/billing-and-licensing.md)), and to the hosted app at repomanager.bolalabs.pt, where Stripe sets the account's tier directly. Bulk transfer and bulk delete carry a tier-independent daily anti-abuse ceiling on top of the dry-run + confirmation-token safety flow, regardless of plan. Priority Support and White-glove migration are manual, service-based deliverables (support ticket + contract), not gated by a feature flag.
+Self-hosting is free forever under Apache-2.0 — see [LICENSE](LICENSE). The matrix above applies to the hosted app at repomanager.bolalabs.pt, where Stripe sets the account's tier directly, and to self-hosted installs running a licence key.
+
+**Buying a licence for your own install.** Subscribe on the hosted app at <https://repomanager.bolalabs.pt/pricing>; the key is e-mailed from `licencas@bolalabs.pt`. An administrator of your install opens **Settings → License & Plan → Activate** and pastes it — it applies to every account on that install and is checked offline, so an install without network keeps working until the key's end date. Once a day an install with network access checks in with the licence service: it picks up each renewed key automatically, applies revocations, and is counted against the machines the plan covers (a Pro key covers one plus a spare, counted by a hash of the machine id so a reinstall is not a second machine; going over is shown, never blocked). `LICENSE_AUTO_RENEW=false` turns the check-in off for air-gapped installs, which paste each renewed key by hand. Prices exclude VAT. Support: the [BolaLabs support desk](https://bolalabs.pt/en/dashboard?view=support&new=1&product=repomanager) or `suporte@bolalabs.pt`. Details: [`docs/billing-and-licensing.md`](docs/billing-and-licensing.md). Bulk transfer and bulk delete carry a tier-independent daily anti-abuse ceiling on top of the dry-run + confirmation-token safety flow, regardless of plan. Priority Support and White-glove migration are manual, service-based deliverables (support ticket + contract), not gated by a feature flag.
 
 See the [Free Tier Expansion spec](docs/specs/2026-04-15-free-tier-expansion.md) for the design rationale and enforcement details.
 
@@ -305,12 +318,10 @@ A complete platform for moving from Azure DevOps to GitHub, driven by a guided w
 
 ### What you can migrate
 
-| Source | What | How |
-|--------|------|-----|
-| **Git repos** | Complete history, branches, tags | Direct clone with full preservation (`clone --bare` / `push --mirror`) |
-| **TFVC repos** | Up to 180 days of history | Automatic TFVC-to-Git conversion via the Azure Import API |
-| **Work items** | Types, states, comments, attachments | Azure Boards → GitHub Issues with field mapping |
-| **Wikis** | All pages and content | Git-based clone with markdown conversion |
+- **Git repos** — Complete history, branches, tags. Direct clone with full preservation (`clone --bare` / `push --mirror`).
+- **TFVC repos** — Up to 180 days of history. Automatic TFVC-to-Git conversion via the Azure Import API.
+- **Work items** — Types, states, comments, attachments. Azure Boards → GitHub Issues with field mapping.
+- **Wikis** — All pages and content. Git-based clone with markdown conversion.
 
 ### Migration features
 
@@ -442,13 +453,8 @@ deployment guide, including the `docker run` form for the prebuilt image.
 
 ### Mock Mode vs. Real Mode
 
-| Feature | Demo mode (`npm run demo`) | Real mode (`npm run dev:all`) |
-|---------|--------------------|-----------|
-| **Setup** | Zero config — no `.env` | GitHub OAuth + `.env` |
-| **Repositories** | 87 mock repos | Your real repos |
-| **AI features** | Mock responses | AI-powered (BYOK) |
-| **Migration** | UI only | Fully functional |
-| **Best for** | Demos, UI testing | Production use |
+- **Demo mode** (`npm run demo`) — no configuration and no `.env`: 87 sample repositories, simulated AI answers and a migration wizard you can click through without moving anything. Use it to try the product or test the UI.
+- **Real mode** (`npm run dev:all`) — GitHub OAuth and a `.env`: your own repositories, AI on your own key, and migrations that run for real. Use it in production.
 
 ### Environment variables
 
@@ -687,11 +693,11 @@ permission needed, no fee.
 The **name and the mark are reserved** — that is Apache-2.0 §6, spelled out in
 [`TRADEMARKS.md`](TRADEMARKS.md). Fork freely; rename the fork.
 
-A **commercial subscription** buys capacity, a hosted instance, priority
-support and compliance deliverables — never permission, which the
-licence above already gave you. See
-[`docs/LICENSE-COMMERCIAL.md`](docs/LICENSE-COMMERCIAL.md) or contact
-[bruno@bolalabs.pt](mailto:bruno@bolalabs.pt).
+A **commercial subscription** buys capacity (higher AI and API ceilings)
+and, on Enterprise, priority support, audit export and white-glove
+migration — never permission, which the licence above already gave you.
+See [`docs/LICENSE-COMMERCIAL.md`](docs/LICENSE-COMMERCIAL.md) or open a
+request at the [BolaLabs support desk](https://bolalabs.pt/en/dashboard?view=support&new=1&product=repomanager).
 
 <details>
 <summary><strong>Was this AGPL?</strong></summary>
@@ -719,7 +725,7 @@ something untrue.
 
 <div align="center">
 
-**Bruno Silva Marques** · [Bola Labs](https://github.com/brunobola-portfolio)
+**[BolaLabs](https://bolalabs.pt)**
 
 [![GitHub](https://img.shields.io/badge/GitHub-brunobola--portfolio-181717?style=flat-square&logo=github)](https://github.com/brunobola-portfolio)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=flat-square&logo=linkedin)](https://www.linkedin.com/in/bolalabs/)

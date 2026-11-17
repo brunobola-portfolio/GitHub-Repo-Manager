@@ -124,7 +124,7 @@ export function getPackageVersion(repoRoot = REPO_ROOT_DEFAULT) {
 /**
  * Single source of truth for the installer/winget "Publisher" field.
  * package.json's "author" is "<person> - <company>" (e.g.
- * "Bruno Marques - Bola Labs, Inc."); the company half is what ships as
+ * "BolaLabs"); the company half is what ships as
  * AppPublisher in installer.iss (passed in via /D, mirroring how
  * MyAppVersion is threaded through) — never hardcode it a second time
  * there. The winget locale template is a static reference file wingetcreate

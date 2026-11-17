@@ -12,7 +12,7 @@
  * Concurrency is capped to keep the AI quota humane and to give the UI a
  * staggered "row arriving" feel rather than a thundering herd.
  *
- * Copyright (c) 2025 Bruno Marques - Bola Labs, Inc.
+ * Copyright (c) 2025 BolaLabs
  * Licensed under the Apache License 2.0 (SPDX: Apache-2.0). See LICENSE in the project root.
  */
 

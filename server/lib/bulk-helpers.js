@@ -3,7 +3,7 @@
  *
  * Shared execution helper for all destructive bulk endpoints.
  *
- * Copyright (c) 2025-2026 Bola Labs. All rights reserved.
+ * Copyright (c) 2025-2026 BolaLabs. Licensed under the Apache License 2.0.
  */
 
 import { issueToken, verifyToken } from './bulk-confirmation.js'
