@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Livro de Reclamações.** The hosted service at repomanager.bolalabs.pt now
+  links to Portugal's official electronic complaints book in its footer and
+  in the Terms, as Portuguese law requires of a seller. Self-hosted installs
+  do not show it: the entry is BolaLabs'.
+
 ### Fixed
 
 - **Signing out now really signs you out, and signing back in works first
