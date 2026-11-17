@@ -23,6 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   nobody is signed in, and the Permissions-Policy header drops the retired
   `interest-cohort` feature that Chrome warned about.
 
+### Security
+
+- The build's `postcss-selector-parser` moves to 6.1.6, closing a CPU
+  exhaustion advisory (build-time only; nothing in the shipped app used it).
+
 ## [4.28.2] - 2026-10-29
 
 ### Fixed
