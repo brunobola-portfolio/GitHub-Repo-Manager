@@ -32,7 +32,11 @@ function readMeta() {
 const isHttps = (v) => typeof v === 'string' && /^https:\/\/[^\s"<>]+$/.test(v)
 const isEmail = (v) => typeof v === 'string' && /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(v)
 
-/** @returns {{ url?: string, email?: string, salesUrl: string }} */
+// Only the official platform: the shell meta is server data, but a link a
+// visitor follows for a legal right must not be redirectable by it.
+const isComplaintsBook = (v) => isHttps(v) && /^https:\/\/www\.livroreclamacoes\.pt\//.test(v)
+
+/** @returns {{ url?: string, email?: string, salesUrl: string, complaintsBookUrl?: string }} */
 export function getSupport() {
     if (cached) return cached
     const meta = readMeta()
@@ -42,6 +46,7 @@ export function getSupport() {
         ...(isHttps(meta.url) ? { url: meta.url } : {}),
         ...(email ? { email } : {}),
         salesUrl: isHttps(meta.salesUrl) ? meta.salesUrl : PUBLISHER_LICENCE_URL,
+        ...(isComplaintsBook(meta.complaintsBookUrl) ? { complaintsBookUrl: meta.complaintsBookUrl } : {}),
     }
     return cached
 }

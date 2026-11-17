@@ -26,6 +26,7 @@
  * promises to keep in sync.
  */
 import { useEffect } from 'react'
+import { getSupport } from '../../utils/supportContact'
 
 const UPDATED = '26 October 2026'
 const CONTROLLER_EMAIL = 'suporte@bolalabs.pt'
@@ -47,6 +48,7 @@ function Section({ id, title, children }) {
 }
 
 export default function TermsPage() {
+    const { complaintsBookUrl } = getSupport()
     useEffect(() => {
         document.title = 'Terms of service — GitHub Repo Manager'
     }, [])
@@ -223,6 +225,16 @@ export default function TermsPage() {
                         jurisdiction of the courts of the district of Lisbon, without prejudice to
                         any applicable mandatory consumer-protection rules.
                     </p>
+                    {complaintsBookUrl && (
+                        <p>
+                            You can also file a complaint in the official electronic complaints
+                            book,{' '}
+                            <a href={complaintsBookUrl} target="_blank" rel="noopener noreferrer" lang="pt" className="underline">
+                                Livro de Reclamações
+                            </a>
+                            . It reaches the regulator as well as BolaLabs.
+                        </p>
+                    )}
                 </Section>
 
                 <Section id="changes" title="Changes to these terms">

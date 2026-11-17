@@ -124,6 +124,7 @@ describe('email identity', () => {
             url: 'https://bolalabs.pt/en/dashboard?view=support&new=1&product=repomanager',
             email: 'suporte@bolalabs.pt',
             salesUrl: 'https://bolalabs.pt/en/contact?topic=repomanager',
+            complaintsBookUrl: 'https://www.livroreclamacoes.pt/Inicio/',
         })
     })
 
