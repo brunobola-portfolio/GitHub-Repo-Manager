@@ -115,6 +115,20 @@ export function sanitizeNextPath(raw) {
     return raw;
 }
 
+// Set at logout, read by the next /login. GitHub re-authorises an app it
+// already trusts without a single click, so "Sign out" followed by "Sign in"
+// put the same account straight back: to the person who signed out in order
+// to switch accounts, it looked as if signing out had not worked.
+const SIGNED_OUT_COOKIE = 'grm_signed_out';
+const SIGNED_OUT_RE = new RegExp(`(?:^|;\\s*)${SIGNED_OUT_COOKIE}=1(?:;|$)`);
+
+// Secure only over TLS, like the session cookie ('auto'): the Windows package
+// serves http://127.0.0.1, where a browser refuses to set or clear a Secure
+// cookie, so a fixed secure:true left the session cookie behind at logout.
+function cookieOptions(req) {
+    return { httpOnly: true, sameSite: 'lax', secure: Boolean(req.secure), path: '/' };
+}
+
 // Initiates the GitHub OAuth flow
 router.get('/login', authRouteLimiter, (req, res) => {
     const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } = process.env;
@@ -142,6 +156,10 @@ router.get('/login', authRouteLimiter, (req, res) => {
     const BASE_SCOPE = 'repo read:org';
     const ELEVATED_SCOPE = 'repo delete_repo read:org admin:org';
     const scope = req.query.elevated === '1' ? ELEVATED_SCOPE : BASE_SCOPE;
+    // After an explicit sign-out, let the user pick the GitHub account again
+    // (documented authorize parameter: prompt=select_account).
+    const afterSignOut = SIGNED_OUT_RE.test(req.headers.cookie || '');
+    if (afterSignOut) res.clearCookie(SIGNED_OUT_COOKIE, cookieOptions(req));
     const redirectUri = `${resolveCallbackOrigin(req)}/api/auth/callback`;
     const state = randomUUID();
     req.session.oauthState = state;
@@ -149,7 +167,7 @@ router.get('/login', authRouteLimiter, (req, res) => {
     if (next) req.session.postLoginRedirect = next;
     else delete req.session.postLoginRedirect;
     req.session.save(() => {
-        const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}`;
+        const authUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${state}${afterSignOut ? '&prompt=select_account' : ''}`;
         res.redirect(authUrl);
     });
 });
@@ -305,7 +323,10 @@ router.get('/session', (req, res) => {
             hasToken: true
         });
     } else {
-        res.status(401).json({ authenticated: false });
+        // 200, not 401: "nobody is signed in" is the normal answer on the
+        // landing page, and a 401 printed a red error in every visitor's
+        // console, including right after a deliberate sign-out.
+        res.json({ authenticated: false });
     }
 });
 
@@ -316,12 +337,8 @@ router.post('/logout', (req, res) => {
         if (err) {
             req.log?.error?.({ err }, 'Session destroy failed');
         }
-        res.clearCookie('connect.sid', {
-            httpOnly: true,
-            sameSite: 'lax',
-            secure: config.nodeEnv === 'production',
-            path: '/',
-        });
+        res.clearCookie('connect.sid', cookieOptions(req));
+        res.cookie(SIGNED_OUT_COOKIE, '1', { ...cookieOptions(req), maxAge: 30 * 24 * 60 * 60 * 1000 });
         res.json({ success: true });
     });
 });

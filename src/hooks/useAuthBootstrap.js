@@ -3,8 +3,9 @@ import { emitAppEvent, APP_EVENTS } from '../utils/appEvents'
 import { writeQuery } from '../utils/urlQuery'
 import { AUTH_ENDPOINTS, API_BASE_URL, MOCK_MODE } from '../config'
 import { getAuthSetupStatus } from '../api/authSetup'
-import { onSessionExpired, resetSessionExpired, fetchWithRetry, safeParseJson, apiCall, markSessionActive, markSessionEnded } from '../utils/api'
+import { onSessionExpired, resetSessionExpired, fetchWithRetry, safeParseJson, markSessionActive } from '../utils/api'
 import { mark } from '../lib/observability'
+import { signOut } from '../utils/signOut'
 
 // Every code a redirect from /api/auth/login|callback can carry, mapped to a
 // toast tone + a human explanation. 'rate_limited' is deliberately absent —
@@ -197,15 +198,7 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
         window.location.href = next ? `${AUTH_ENDPOINTS.login}?next=${encodeURIComponent(next)}` : AUTH_ENDPOINTS.login
     }
 
-    const handleLogout = async () => {
-        markSessionEnded()
-        try {
-            await apiCall(AUTH_ENDPOINTS.logout, { method: 'POST' })
-            window.location.reload()
-        } catch {
-            window.location.reload()
-        }
-    }
+    const handleLogout = () => signOut()
 
     // Listen for session expiry from the API layer
     useEffect(() => {
@@ -286,6 +279,15 @@ export function useAuthBootstrap({ toast, fetchGitHubUser, user }) {
             toast.info?.('Checkout cancelled — nothing was charged.')
         }
     }, [user, toast])
+
+    // Confirmation after a sign-out (handleLogout lands here with ?signed_out=1).
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search)
+        if (params.get('signed_out') !== '1') return
+        toast.success('You’re signed out. Sign in again to choose a GitHub account.')
+        params.delete('signed_out')
+        writeQuery(params)
+    }, [toast])
 
     // OAuth-flow error redirects (?error=<code> from /api/auth/login|callback).
     // Every code gets a human explanation instead of a silently-stripped param;

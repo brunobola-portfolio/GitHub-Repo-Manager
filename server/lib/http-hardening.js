@@ -57,7 +57,7 @@ export function buildHelmetOptions({ nodeEnv, frontendUrl } = {}) {
  * leaving the header absent.
  */
 export function permissionsPolicy(req, res, next) {
-    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), browsing-topics=()');
     next();
 }
 

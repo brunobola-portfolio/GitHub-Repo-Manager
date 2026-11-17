@@ -409,9 +409,10 @@ describe('GitHub OAuth /callback fail-closed', () => {
         expect(res.headers.location).toBe(`${FRONTEND_URL}?error=auth_failed`)
         expect(res.headers.location).not.toBe(FRONTEND_URL)
 
-        // No authenticated session: a follow-up /session must report 401.
+        // No authenticated session: a follow-up /session reports it (200, not
+        // an error: "nobody signed in" is the normal anonymous answer).
         const sessionRes = await agent.get('/api/auth/session')
-        expect(sessionRes.status).toBe(401)
+        expect(sessionRes.status).toBe(200)
         expect(sessionRes.body).toEqual({ authenticated: false })
     })
 
@@ -428,7 +429,7 @@ describe('GitHub OAuth /callback fail-closed', () => {
         expect(res.headers.location).not.toBe(FRONTEND_URL)
 
         const sessionRes = await agent.get('/api/auth/session')
-        expect(sessionRes.status).toBe(401)
+        expect(sessionRes.status).toBe(200)
         expect(sessionRes.body).toEqual({ authenticated: false })
     })
 
@@ -755,5 +756,60 @@ describe('GET /login?next= remembers where to return', () => {
         await agent.get('/api/auth/login?next=https%3A%2F%2Fevil.example')
         const peek = await agent.get('/peek')
         expect(peek.body.next).toBeNull()
+    })
+})
+
+describe('sign out, then sign in again', () => {
+    const app = ({ secure = false } = {}) => {
+        const a = express()
+        if (secure) a.use((req, _res, next) => { Object.defineProperty(req, 'secure', { value: true }); next() })
+        a.use(session({ secret: 'test-secret', resave: false, saveUninitialized: true }))
+        a.use('/api/auth', authRouter)
+        return a
+    }
+    const promptOf = (location) => new URL(location).searchParams.get('prompt')
+
+    beforeEach(() => {
+        process.env.GITHUB_CLIENT_ID = 'Iv1.testclientid'
+        process.env.GITHUB_CLIENT_SECRET = 'test-secret-value'
+    })
+
+    it('an anonymous /session is a normal 200, not an error', async () => {
+        const res = await request(app()).get('/api/auth/session')
+        expect(res.status).toBe(200)
+        expect(res.body).toEqual({ authenticated: false })
+    })
+
+    it('logout clears the session cookie and marks the browser as signed out', async () => {
+        const res = await request(app()).post('/api/auth/logout')
+        expect(res.status).toBe(200)
+        const cookies = res.headers['set-cookie'].join('\n')
+        expect(cookies).toMatch(/connect\.sid=;.*Expires=Thu, 01 Jan 1970/)
+        expect(cookies).toMatch(/grm_signed_out=1;.*HttpOnly/)
+    })
+
+    it('the first sign-in after a sign-out shows GitHub’s account picker, once', async () => {
+        const agent = request.agent(app())
+        expect(promptOf((await agent.get('/api/auth/login')).headers.location)).toBeNull()
+        await agent.post('/api/auth/logout')
+        const after = await agent.get('/api/auth/login')
+        expect(promptOf(after.headers.location)).toBe('select_account')
+        expect(after.headers['set-cookie'].join('\n')).toMatch(/grm_signed_out=;.*Expires=Thu, 01 Jan 1970/)
+        expect(promptOf((await agent.get('/api/auth/login')).headers.location)).toBeNull()
+    })
+
+    it('a look-alike cookie does not trigger the picker', async () => {
+        const res = await request(app()).get('/api/auth/login').set('Cookie', 'xgrm_signed_out=1; grm_signed_out=10')
+        expect(promptOf(res.headers.location)).toBeNull()
+    })
+
+    it('over plain http (the Windows package) the cookies are not Secure, so the browser accepts the clear', async () => {
+        const res = await request(app()).post('/api/auth/logout')
+        expect(res.headers['set-cookie'].join('\n')).not.toMatch(/Secure/)
+    })
+
+    it('over https the cookies are Secure', async () => {
+        const res = await request(app({ secure: true })).post('/api/auth/logout')
+        for (const c of res.headers['set-cookie']) expect(c).toMatch(/Secure/)
     })
 })
