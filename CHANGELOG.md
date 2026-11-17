@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.28.4] - 2026-11-17
+
 ### Fixed
 
 - **The start page links the Livro de Reclamações too.** 4.28.3 put it in
@@ -4574,7 +4576,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.28.3...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.28.4...HEAD
+[4.28.4]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.28.3...v4.28.4
 [4.28.3]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.28.2...v4.28.3
 [4.28.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.28.1...v4.28.2
 [4.28.1]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.28.0...v4.28.1
