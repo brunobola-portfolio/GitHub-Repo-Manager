@@ -169,7 +169,7 @@ export function OrgPanel({
 									className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 data-[highlighted]:bg-rose-50 dark:data-[highlighted]:bg-rose-900/20 data-[highlighted]:text-rose-800 dark:data-[highlighted]:text-rose-300 rounded-xl cursor-pointer outline-none transition-colors"
 									onSelect={() => { signOut() }}
 								>
-									Sign Out
+									Sign out
 								</DropdownMenu.Item>
 							</DropdownMenu.Content>
 						</DropdownMenu.Portal>
