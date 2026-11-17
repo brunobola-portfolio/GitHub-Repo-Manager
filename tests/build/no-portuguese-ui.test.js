@@ -88,6 +88,12 @@ const PT_WORDS = new RegExp(
 // the guard now covers every file in the ROOTS with no exclusions.
 const EXCLUDE = new Set()
 
+// Proper names the law requires verbatim, removed from a line before it is
+// checked. "Livro de Reclamações" is the official name of Portugal's complaints
+// book (DL 74/2017); a translation would not be the access the law asks for.
+// Exact phrases only: the rest of the line is still scanned.
+const LEGAL_NAMES = ['Livro de Reclamações']
+
 // Root-level entry files that live outside the scanned dirs but still carry
 // user-facing copy — e.g. App.jsx injects AI-Assistant chat messages at
 // runtime (these have no accents + no common tokens, so they evade unless
@@ -124,7 +130,8 @@ describe('No Portuguese in UI copy (app-wide)', () => {
   ]
   for (const file of files) {
     const stripped = stripComments(readFileSync(file, 'utf8'))
-    stripped.split('\n').forEach((line, i) => {
+    stripped.split('\n').forEach((raw, i) => {
+      const line = LEGAL_NAMES.reduce((l, name) => l.split(name).join(''), raw)
       if (PT_ACCENTS.test(line) || PT_WORDS.test(line)) {
         violations.push(`${file.replace(/\\/g, '/')}:${i + 1}: ${line.trim()}`)
       }
