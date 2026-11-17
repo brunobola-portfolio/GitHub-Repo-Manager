@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The start page links the Livro de Reclamações too.** 4.28.3 put it in
+  the signed-in footer and the Terms, but a visitor deciding whether to buy
+  sees the start page first, and its footer did not have it. Hosted service
+  only, as before.
+
 ## [4.28.3] - 2026-11-17
 
 ### Added

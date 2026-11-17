@@ -8,6 +8,7 @@ import { FeaturesSection } from './FeaturesSection'
 import { PricingPreview } from './PricingPreview'
 import { CTASection } from './CTASection'
 import { useTheme } from '../../hooks/useTheme'
+import { getSupport } from '../../utils/supportContact'
 
 function ThemeToggleButton() {
   const { isDark, toggleTheme } = useTheme()
@@ -25,6 +26,7 @@ function ThemeToggleButton() {
 }
 
 function LandingFooter() {
+  const { complaintsBookUrl } = getSupport()
   return (
     <motion.footer
       initial={{ opacity: 0 }}
@@ -63,6 +65,20 @@ function LandingFooter() {
           >
             Terms
           </a>
+          {complaintsBookUrl && (
+            <>
+              <span className="text-slate-200 dark:text-slate-700" aria-hidden="true">·</span>
+              <a
+                href={complaintsBookUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                lang="pt"
+                className="whitespace-nowrap text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors duration-200 ds-font-display"
+              >
+                Livro de Reclamações
+              </a>
+            </>
+          )}
           <span className="text-slate-200 dark:text-slate-700" aria-hidden="true">·</span>
           <a
             href="https://github.com/brunobola-portfolio/GitHub-Repo-Manager"
