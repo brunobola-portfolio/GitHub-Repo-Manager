@@ -17,14 +17,14 @@ test.describe('Authentication Flow (Mock Mode)', () => {
     await expect(page.getByRole('button', { name: 'Teams' })).toBeVisible()
   })
 
-  test('should show user menu with logout option', async ({ page }) => {
+  test('should show user menu with sign-out option', async ({ page }) => {
     await page.goto('/')
     await expect(page.getByAltText('dev-user')).toBeVisible({ timeout: 15000 })
 
     const userMenuButton = page.getByLabel(/open user menu/i)
     await userMenuButton.click()
 
-    await expect(page.getByText('Logout')).toBeVisible()
+    await expect(page.getByText('Sign out')).toBeVisible()
     await expect(page.getByText('View Profile')).toBeVisible()
     await expect(page.getByText('Re-authorize Permissions')).toBeVisible()
   })

@@ -57,8 +57,12 @@ async function run() {
         check('setup-status advertises the public origin, not loopback', typeof body?.callbackUrl === 'string' && body.callbackUrl.startsWith(origin + '/'), body?.callbackUrl)
     }
     {
-        const { res } = await get('/api/auth/session')
-        check('anonymous session probe is 401 (not 500, not 200)', res.status === 401, String(res.status))
+        const { res, text } = await get('/api/auth/session')
+        let body = null
+        try { body = JSON.parse(text) } catch { /* not JSON */ }
+        check('anonymous session probe is 200 with authenticated=false', res.status === 200 && body?.authenticated === false, `${res.status} ${text.slice(0, 80)}`)
+        const pp = res.headers.get('permissions-policy') || ''
+        check('Permissions-Policy names only features browsers know', pp.includes('browsing-topics=()') && !pp.includes('interest-cohort'), pp)
     }
 
     // 3. Sign-in leaves for GitHub with the public callback.

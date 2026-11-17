@@ -1,5 +1,4 @@
 import { useState, memo } from 'react'
-import { API_BASE_URL } from '../config'
 import {
 	Building2, Plus, Search,
 	Settings, Shield,
@@ -13,7 +12,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { TAP, EASE, DURATION } from './ui/motion'
 import { useModal } from '../hooks/useModal'
 import { Input } from './ui/form'
-import { apiCall } from '../utils/api'
+import { signOut } from '../utils/signOut'
 
 export function OrgPanel({
 	orgs = [],
@@ -168,13 +167,9 @@ export function OrgPanel({
 								<DropdownMenu.Separator className="h-px bg-slate-200/70 dark:bg-slate-700/70 my-1.5" />
 								<DropdownMenu.Item
 									className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 data-[highlighted]:bg-rose-50 dark:data-[highlighted]:bg-rose-900/20 data-[highlighted]:text-rose-800 dark:data-[highlighted]:text-rose-300 rounded-xl cursor-pointer outline-none transition-colors"
-									onSelect={() => {
-										apiCall(`${API_BASE_URL}/api/auth/logout`, { method: 'POST' })
-											.catch(() => { /* logging out regardless — see .finally below */ })
-											.finally(() => window.location.reload())
-									}}
+									onSelect={() => { signOut() }}
 								>
-									Sign Out
+									Sign out
 								</DropdownMenu.Item>
 							</DropdownMenu.Content>
 						</DropdownMenu.Portal>

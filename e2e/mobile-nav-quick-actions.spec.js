@@ -19,13 +19,13 @@ test.describe('Mobile nav + quick actions', () => {
         await expect(nav.getByRole('button', { name: /more/i })).toBeVisible()
     })
 
-    test('More button opens a sheet with Settings/Logout', async ({ page }) => {
+    test('More button opens a sheet with Settings/Sign out', async ({ page }) => {
         // Pricing left the More sheet 2026-09-05 (2026-09-04 panel, R1) — it's
         // reached from the user (avatar) menu's "Plans & billing" instead,
         // covered by the next test.
         await page.getByRole('button', { name: /more/i }).click()
         await expect(page.getByRole('button', { name: /settings/i })).toBeVisible()
-        await expect(page.getByRole('button', { name: /logout/i })).toBeVisible()
+        await expect(page.getByRole('button', { name: /sign out/i })).toBeVisible()
     })
 
     test('Pricing is reachable from the user menu as "Plans & billing"', async ({ page }) => {
