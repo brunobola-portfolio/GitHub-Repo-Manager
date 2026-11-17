@@ -268,6 +268,23 @@ describe('retention is restart-proof', () => {
         expect(fs.readdirSync(backupDir).length).toBeGreaterThanOrEqual(2);
     });
 
+    it('two forced backups in the same millisecond keep both files', async () => {
+        const frozen = Date.now();
+        const RealDate = Date;
+        const FrozenDate = class extends RealDate {
+            constructor(...args) { super(...(args.length ? args : [frozen])); }
+            static now() { return frozen; }
+        };
+        globalThis.Date = FrozenDate;
+        try {
+            await runDbBackupOnce({ database: srcDb, dir: backupDir, minIntervalHours: 0 });
+            await runDbBackupOnce({ database: srcDb, dir: backupDir, minIntervalHours: 0 });
+        } finally {
+            globalThis.Date = RealDate;
+        }
+        expect(fs.readdirSync(backupDir).filter((f) => f.endsWith('.db'))).toHaveLength(2);
+    });
+
     it('DB_BACKUP_KEEP still drives the count tier', async () => {
         // Nine backups all taken on the same (simulated) day, so the daily tier
         // protects exactly one of them and DB_BACKUP_KEEP decides the rest.

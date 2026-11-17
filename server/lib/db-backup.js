@@ -297,7 +297,11 @@ export async function runDbBackupOnce({ database, dir, keep, keepDailyDays, minI
 
     fs.mkdirSync(backupDir, { recursive: true });
     // Filesystem-safe ISO stamp (drop ':' and '.' which are illegal on Windows).
-    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    // Never at or behind the newest stamp: two backups in the same millisecond
+    // (a forced run on a small database) produced one name, and the rename
+    // silently replaced the first backup with the second.
+    const stampMs = latest ? Math.max(Date.now(), latest.timeMs + 1) : Date.now();
+    const stamp = new Date(stampMs).toISOString().replace(/[:.]/g, '-');
     const destPath = path.join(backupDir, `${BACKUP_PREFIX}${stamp}${BACKUP_SUFFIX}`);
     const tmpPath = `${destPath}${PARTIAL_SUFFIX}`;
 
