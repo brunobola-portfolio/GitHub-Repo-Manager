@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the signed-in footer and the Terms, but a visitor deciding whether to buy
   sees the start page first, and its footer did not have it. Hosted service
   only, as before.
+- Two database backups taken in the same millisecond no longer share a
+  file name, where the second silently replaced the first.
 
 ## [4.28.3] - 2026-11-17
 
