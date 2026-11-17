@@ -96,6 +96,39 @@ if (window.Animation?.prototype?.cancel) {
   }
 }
 
+// framer-motion 14.7+ starts transform animations (x, y, scale) by building
+// `new Animation(new KeyframeEffect(...))` and assigning `startTime`, which
+// per spec plays an idle animation. happy-dom 21 keeps `startTime` as a plain
+// field, so the animation never runs, `onfinish` never fires and every
+// AnimatePresence exit with a transform keeps its element mounted forever
+// (happy-dom#2575). Assigning a resolved start time now plays it.
+if (window.Animation) {
+  const NativeAnimation = window.Animation
+  class SpecStartTimeAnimation extends NativeAnimation {
+    constructor(...args) {
+      super(...args)
+      let startTime = this.startTime
+      let insidePlay = false
+      Object.defineProperty(this, 'startTime', {
+        configurable: true,
+        enumerable: true,
+        get: () => startTime,
+        set: (value) => {
+          startTime = value
+          if (insidePlay || value == null) return
+          if (this.playState === 'idle' || this.playState === 'paused') {
+            insidePlay = true
+            try { this.play() } finally { insidePlay = false }
+            startTime = value
+          }
+        },
+      })
+    }
+  }
+  window.Animation = SpecStartTimeAnimation
+  globalThis.Animation = SpecStartTimeAnimation
+}
+
 // Mock IntersectionObserver for animation tests
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}
