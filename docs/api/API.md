@@ -198,7 +198,10 @@ Check the current session status.
 }
 ```
 
-**Unauthenticated Response (401):**
+**Unauthenticated Response (200):**
+Not being signed in is a normal answer, not an error, so the start page
+logs nothing in the browser console.
+
 ```json
 {
   "authenticated": false

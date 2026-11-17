@@ -50,6 +50,7 @@ import { aiService } from './ai-service.js';
 import { safeError, attachAIProvider } from './middleware/auth.js';
 import { ERROR_CODE } from './lib/response-shapes.js';
 import { createSQLiteStore } from './lib/session-store.js';
+import { withSessionTombstones } from './lib/session-tombstones.js';
 import logger, { requestLoggerMiddleware } from './lib/logger.js';
 import { requestTiming } from './middleware/request-timing.js';
 import { metricsMiddleware } from './lib/metrics.js';
@@ -334,16 +335,26 @@ const sessionConfig = {
 
 if (config.redisUrl) {
     const { createRedisStore } = await import('./lib/session-store-redis.js');
-    const { store } = createRedisStore();
-    sessionConfig.store = store;
+    const { store, client } = createRedisStore();
+    // Another instance may finish a request for a session this one destroyed,
+    // so the tombstone has to live where every instance can see it.
+    sessionConfig.store = withSessionTombstones(store, {
+        remote: {
+            mark: (sid, ttlMs) => client.set(`sess:tomb:${sid}`, '1', { PX: ttlMs }).then(() => {}),
+            has: async (sid) => (await client.exists(`sess:tomb:${sid}`)) > 0,
+        },
+    });
     logger.info('[sessions] Using Redis session store');
 } else if (config.nodeEnv !== 'test') {
     // Development AND production both use the SQLite-backed store so dev
-    // restarts don't drop user sessions. Tests fall through to the in-memory
-    // default (intentional — each test should start with a clean slate).
+    // restarts don't drop user sessions.
     const SQLiteStore = createSQLiteStore(session);
-    sessionConfig.store = new SQLiteStore(db);
+    sessionConfig.store = withSessionTombstones(new SQLiteStore(db));
     logger.info('[sessions] Using SQLite session store');
+} else {
+    // Tests keep a clean in-memory store, guarded like the real ones so a
+    // logout race behaves the same in every environment.
+    sessionConfig.store = withSessionTombstones(new session.MemoryStore());
 }
 
 app.use(session(sessionConfig));

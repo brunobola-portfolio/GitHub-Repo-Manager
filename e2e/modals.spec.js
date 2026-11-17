@@ -47,18 +47,18 @@ test.describe('Modal Interactions', () => {
   test('should open user menu and close it', async ({ page }) => {
     const userMenu = page.getByLabel(/open user menu/i)
     await userMenu.click()
-    await expect(page.getByText('Logout')).toBeVisible()
+    await expect(page.getByText('Sign out')).toBeVisible()
 
     // Click elsewhere to close
     await page.locator('header').click({ position: { x: 10, y: 10 } })
-    await expect(page.getByText('Logout')).not.toBeVisible({ timeout: 5000 })
+    await expect(page.getByText('Sign out')).not.toBeVisible({ timeout: 5000 })
   })
 
   test('should show user menu options', async ({ page }) => {
     const userMenu = page.getByLabel(/open user menu/i)
     await userMenu.click()
 
-    await expect(page.getByText('Logout')).toBeVisible()
+    await expect(page.getByText('Sign out')).toBeVisible()
     await expect(page.getByText('View Profile')).toBeVisible()
     await expect(page.getByText('Re-authorize Permissions')).toBeVisible()
   })

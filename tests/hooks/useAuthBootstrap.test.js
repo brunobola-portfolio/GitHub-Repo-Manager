@@ -180,7 +180,7 @@ describe('useAuthBootstrap — handleLogin / handleLogout', () => {
         // Replace window.location so assigning .href doesn't hit jsdom's
         // "not implemented: navigation" throw — mirrors AboutSection.test.jsx.
         delete window.location
-        window.location = { ...originalLocation, href: '', reload: vi.fn() }
+        window.location = { ...originalLocation, href: '', reload: vi.fn(), replace: vi.fn() }
     })
     afterEach(() => {
         window.location = originalLocation
@@ -217,7 +217,7 @@ describe('useAuthBootstrap — handleLogin / handleLogout', () => {
         expect(window.location.href).toBe('/api/auth/login')
     })
 
-    it('handleLogout calls the logout endpoint then reloads', async () => {
+    it('handleLogout ends the session, then loads a clean landing page with the confirmation', async () => {
         global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
         const { result } = renderHook(() => useAuthBootstrap(mkProps()))
         await waitFor(() => expect(result.current.appLoading).toBe(false))
@@ -225,7 +225,22 @@ describe('useAuthBootstrap — handleLogin / handleLogout', () => {
         await act(async () => { await result.current.handleLogout() })
 
         expect(apiCall).toHaveBeenCalledWith('/api/auth/logout', { method: 'POST' })
-        expect(window.location.reload).toHaveBeenCalledTimes(1)
+        // A fresh landing page, not a reload of the signed-in route.
+        expect(window.location.replace).toHaveBeenCalledWith('/?signed_out=1')
+        expect(window.location.reload).not.toHaveBeenCalled()
+    })
+
+    it('when the server cannot confirm the logout, lands without claiming it', async () => {
+        global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+        apiCall.mockImplementation((url) => (url === '/api/auth/logout' ? Promise.reject(new Error('offline')) : Promise.resolve({})))
+        const { result } = renderHook(() => useAuthBootstrap(mkProps()))
+        await waitFor(() => expect(result.current.appLoading).toBe(false))
+
+        await act(async () => { await result.current.handleLogout() })
+
+        expect(window.location.replace).toHaveBeenCalledWith('/')
+        expect(window.location.replace).not.toHaveBeenCalledWith('/?signed_out=1')
+        apiCall.mockImplementation(() => Promise.resolve({}))
     })
 })
 
@@ -300,6 +315,17 @@ describe('useAuthBootstrap — ?error=session_expired', () => {
         const toast = { warning: vi.fn(), success: vi.fn(), error: vi.fn(), info: vi.fn() }
         renderHook(() => useAuthBootstrap(mkProps({ toast })))
         await waitFor(() => expect(toast.info).toHaveBeenCalledWith(expect.stringMatching(/session expired/i)))
+        expect(window.location.search).toBe('')
+    })
+})
+
+describe('useAuthBootstrap — after a sign-out', () => {
+    it('confirms the sign-out once and strips the parameter', async () => {
+        window.history.replaceState(null, '', '/?signed_out=1')
+        const props = mkProps({ toast: { warning: vi.fn(), success: vi.fn(), error: vi.fn(), info: vi.fn() } })
+        renderHook(() => useAuthBootstrap(props))
+        await waitFor(() => expect(props.toast.success).toHaveBeenCalledTimes(1))
+        expect(props.toast.success.mock.calls[0][0]).toMatch(/signed out/i)
         expect(window.location.search).toBe('')
     })
 })

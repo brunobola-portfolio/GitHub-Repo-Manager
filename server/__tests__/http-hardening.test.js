@@ -65,7 +65,7 @@ describe('the rest of the production header set', () => {
 
     it('denies the browser features this app never uses', async () => {
         const res = await request(appFor('production')).get('/');
-        expect(res.headers['permissions-policy']).toBe('camera=(), microphone=(), geolocation=(), interest-cohort=()');
+        expect(res.headers['permissions-policy']).toBe('camera=(), microphone=(), geolocation=(), browsing-topics=()');
     });
 
     it('keeps the deployment origin in connect-src so the SPA can reach its own API', async () => {

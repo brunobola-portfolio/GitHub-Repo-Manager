@@ -73,7 +73,7 @@ test.describe('Dashboard & Navigation', () => {
     await expect(userMenuButton).toBeVisible()
     await userMenuButton.click()
 
-    await expect(page.getByText('Logout')).toBeVisible()
+    await expect(page.getByText('Sign out')).toBeVisible()
     await expect(page.getByText('View Profile')).toBeVisible()
   })
 
