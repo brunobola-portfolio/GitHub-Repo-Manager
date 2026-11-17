@@ -26,7 +26,7 @@
 
 **Free-first** (full AI surface + every Work Board tab + unlimited teams on Free) · **Self-hosting free forever** (Apache-2.0) · **Native on Windows**
 
-[**Open the app**](https://repomanager.bolalabs.pt) · [Website](https://bolalabs.pt/en/repomanager) · [**Try the Demo**](#quick-start-demo-mode) · [Features](#features) · [Installation](#installation) · [Documentation](docs/index.md) · [Pricing](#plans--pricing) · [Download for Windows](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest) · [What's new in v4.28.4 — Complaints book on the start page, and safer backups](CHANGELOG.md#4284---2026-11-17)
+[**Open the app**](https://repomanager.bolalabs.pt) · [Website](https://bolalabs.pt/en/repomanager) · [**Try the Demo**](#quick-start-demo-mode) · [Features](#features) · [Installation](#installation) · [Documentation](docs/index.md) · [Pricing](#plans--pricing) · [Download for Windows](https://github.com/brunobola-portfolio/GitHub-Repo-Manager/releases/latest) · [What's new in v4.28.5 — Promotion codes at checkout](CHANGELOG.md#4285---2026-11-17)
 
 <sub>Production-hardened — AES-256-GCM BYOK · rolling sessions + CSRF double-submit · GitHub API circuit breaker · SSRF + DNS-rebinding guard · dual-theme a11y gate.</sub>
 

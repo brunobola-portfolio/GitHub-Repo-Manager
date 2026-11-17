@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.28.5] - 2026-11-17
+
 ### Added
 
 - **Promotion codes at checkout.** The Stripe checkout now has an "Add
@@ -4582,7 +4584,8 @@ A hardening sprint focused on closing P0–P4 audit findings: security depth (CS
 
 ---
 
-[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.28.4...HEAD
+[Unreleased]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.28.5...HEAD
+[4.28.5]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.28.4...v4.28.5
 [4.28.4]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.28.3...v4.28.4
 [4.28.3]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.28.2...v4.28.3
 [4.28.2]: https://github.com/brunobola-portfolio/GitHub-Repo-Manager/compare/v4.28.1...v4.28.2

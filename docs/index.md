@@ -37,6 +37,8 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.28.5 (2026-11-17) — Promotion codes at checkout.** Promotion codes at
+  checkout.
 - **v4.28.4 (2026-11-17) — Complaints book on the start page, and safer
   backups.** The start page links the Livro de Reclamações too.
 - **v4.28.3 (2026-11-17) — Sign out that really signs out, and the
