@@ -37,6 +37,11 @@ below links to the canonical page for that topic.
 
 The latest releases, in brief. Full detail and older releases: [`CHANGELOG.md`](../CHANGELOG.md).
 
+- **v4.28.3 (2026-11-17) — Sign out that really signs out, and the
+  complaints book.** Livro de Reclamações; Signing out now really signs you
+  out, and signing back in works first
+  time; After signing out, GitHub
+  asks which account to use; Sign-out clears its cookie over plain http too.
 - **v4.28.2 (2026-10-29) — Signed-in users keep browsing; an honest
   rate-limit screen.** Signed-in users no longer hit "Rate limit exceeded"
   after a few clicks.
